@@ -173,7 +173,7 @@ mod fns {
     //     }
     // }
 
-    impl<'h, Y: Qualifier, K: Clone, InnerK: Clone, Tag, InnerTag, InnermostLr> Hide<'h, Y, MapUnionRepr<Tag, K, MapUnionRepr<InnerTag, InnerK, InnermostLr>>>
+    impl<Y: Qualifier, K: Clone, InnerK: Clone, Tag, InnerTag, InnermostLr> Hide<Y, MapUnionRepr<Tag, K, MapUnionRepr<InnerTag, InnerK, InnermostLr>>>
     where
         InnermostLr: LatticeRepr,
         InnerTag: MapTag<InnerK, InnermostLr::Repr>,
@@ -184,7 +184,7 @@ mod fns {
         MapUnionRepr<Tag, K, MapUnionRepr<InnerTag, InnerK, InnermostLr>>: LatticeRepr,
         <MapUnionRepr<Tag, K, MapUnionRepr<InnerTag, InnerK, InnermostLr>> as LatticeRepr>::Repr: IntoIterator<Item = (K, <MapUnionRepr<InnerTag, InnerK, InnermostLr> as LatticeRepr>::Repr)>,
     {
-        pub fn transpose<'g, TargetTag, TargetInnerTag>(self) -> Hide<'g, Y, MapUnionRepr<TargetTag, InnerK, MapUnionRepr<TargetInnerTag, K, InnermostLr>>>
+        pub fn transpose<TargetTag, TargetInnerTag>(self) -> Hide<Y, MapUnionRepr<TargetTag, InnerK, MapUnionRepr<TargetInnerTag, K, InnermostLr>>>
         where
             TargetInnerTag: MapTag<K, InnermostLr::Repr>,
             MapUnionRepr<TargetInnerTag, K, InnermostLr>: LatticeRepr,
@@ -207,13 +207,13 @@ mod fns {
         }
     }
 
-    impl<'h, Y: Qualifier, K: Clone, Tag, InnerLr: LatticeRepr> Hide<'h, Y, MapUnionRepr<Tag, K, InnerLr>>
+    impl<Y: Qualifier, K: Clone, Tag, InnerLr: LatticeRepr> Hide<Y, MapUnionRepr<Tag, K, InnerLr>>
     where
         Tag: MapTag<K, InnerLr::Repr>,
         MapUnionRepr<Tag, K, InnerLr>: LatticeRepr,
         <MapUnionRepr<Tag, K, InnerLr> as LatticeRepr>::Repr: IntoIterator<Item = (K, InnerLr::Repr)>,
     {
-        pub fn fold_values<'g, TargetLr>(self) -> Hide<'g, Y, TargetLr>
+        pub fn fold_values<TargetLr>(self) -> Hide<Y, TargetLr>
         where
             TargetLr: LatticeRepr + Merge<InnerLr>,
             TargetLr::Repr: Default,
@@ -226,7 +226,7 @@ mod fns {
         }
     }
 
-    impl<'h, Y: Qualifier, K: Clone, V: Clone, Tag, SetUnionLr> Hide<'h, Y, MapUnionRepr<Tag, K, SetUnionLr>>
+    impl<Y: Qualifier, K: Clone, V: Clone, Tag, SetUnionLr> Hide<Y, MapUnionRepr<Tag, K, SetUnionLr>>
     where
         SetUnionLr: LatticeRepr<Lattice = SetUnion<V>>,
         <SetUnionLr as LatticeRepr>::Repr: IntoIterator<Item = V>,
@@ -234,7 +234,7 @@ mod fns {
         MapUnionRepr<Tag, K, SetUnionLr>: LatticeRepr,
         <MapUnionRepr<Tag, K, SetUnionLr> as LatticeRepr>::Repr: IntoIterator<Item = (K, SetUnionLr::Repr)>,
     {
-        pub fn flatten_keyed<'g, TargetTag>(self) -> Hide<'g, Y, SetUnionRepr<TargetTag, (K, V)>>
+        pub fn flatten_keyed<TargetTag>(self) -> Hide<Y, SetUnionRepr<TargetTag, (K, V)>>
         where
             TargetTag: SetTag<(K, V)>,
             SetUnionRepr<TargetTag, (K, V)>: LatticeRepr + Merge<SetUnionRepr<tag::SINGLE, (K, V)>>,

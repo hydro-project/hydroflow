@@ -1,5 +1,6 @@
 use crate::hide::{Hide, Delta, Cumul};
 use crate::lattice::{LatticeRepr, Merge, Convert};
+use crate::lattice::pair::{PairRepr};
 
 use super::{Op, OpDelta, OpCumul};
 
@@ -21,7 +22,7 @@ where
     type ILatRepr = PrecOp::ILatRepr;
     type OLatRepr = OLr;
 
-    type State = (PrecOp::State, Hide<'static, Cumul, OLr>);
+    type State = PairRepr<PrecOp::State, OLr>;
 }
 
 impl<PrecOp, OLr> OpDelta for StateMerge<PrecOp, OLr>
@@ -32,10 +33,10 @@ where
     OLr: LatticeRepr + Merge<PrecOp::OLatRepr> + 'static,
 
 {
-    fn get_delta<'h>(state: &'h mut Self::State, input: Hide<'h, Delta, Self::ILatRepr>)
-        -> Hide<'h, Delta, Self::OLatRepr>
+    fn get_delta<'h>(state: Hide<Cumul, Self::State>, input: Hide<Delta, Self::ILatRepr>)
+        -> Hide<Delta, Self::OLatRepr>
     {
-        let (prec_state, self_state) = state;
+        let (prec_state, self_state) = state.split();
         let item = PrecOp::get_delta(prec_state, input);
         Merge::merge_hide(self_state, item.clone());
         return Convert::convert_hide(item);

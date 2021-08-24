@@ -132,8 +132,8 @@ mod fns {
 
     use super::*;
 
-    impl<'h, Y: Qualifier, Ra: LatticeRepr, Rb: LatticeRepr> Hide<'h, Y, PairRepr<Ra, Rb>> {
-        pub fn split(self) -> (Hide<'h, Y, Ra>, Hide<'h, Y, Rb>) {
+    impl<Y: Qualifier, Ra: LatticeRepr, Rb: LatticeRepr> Hide<Y, PairRepr<Ra, Rb>> {
+        pub fn split(self) -> (Hide<Y, Ra>, Hide<Y, Rb>) {
             let (a, b) = self.into_reveal();
             (Hide::new(a), Hide::new(b))
         }
@@ -143,12 +143,12 @@ mod fns {
         }
     }
 
-    impl<'h, Y: Qualifier, Ra: LatticeRepr, Rb: LatticeRepr> Hide<'h, Y, PairRepr<Ra, Rb>>
+    impl<Y: Qualifier, Ra: LatticeRepr, Rb: LatticeRepr> Hide<Y, PairRepr<Ra, Rb>>
     where
         Ra::Repr: IntoIterator,
         Rb::Repr: Clone,
     {
-        pub fn partial_cartesian_product<TargetTag>(self) -> Hide<'h, Y, SetUnionRepr<TargetTag, (<Ra::Repr as IntoIterator>::Item, Rb::Repr)>>
+        pub fn partial_cartesian_product<TargetTag>(self) -> Hide<Y, SetUnionRepr<TargetTag, (<Ra::Repr as IntoIterator>::Item, Rb::Repr)>>
         where
             TargetTag: SetTag<(<Ra::Repr as IntoIterator>::Item, Rb::Repr)>,
             SetUnionRepr<TargetTag, (<Ra::Repr as IntoIterator>::Item, Rb::Repr)>: LatticeRepr,

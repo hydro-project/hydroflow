@@ -5,17 +5,17 @@ pub trait Op {
     type ILatRepr: LatticeRepr;
     type OLatRepr: LatticeRepr;
 
-    type State;
+    type State: LatticeRepr;
 }
 
 pub trait OpDelta: Op {
-    fn get_delta<'h>(state: &'h mut Self::State, input: Hide<'h, Delta, Self::ILatRepr>)
-        -> Hide<'h, Delta, Self::OLatRepr>;
+    fn get_delta<'h>(state: Hide<Cumul, Self::State>, input: Hide<Delta, Self::ILatRepr>)
+        -> Hide<Delta, Self::OLatRepr>;
 }
 
 pub trait OpCumul: Op {
-    fn get_value<'a>(state: &'a mut Self::State)
-        -> Hide<'a, Cumul, Self::OLatRepr>;
+    fn get_value<'h>(state: Hide<Cumul, Self::State>)
+        -> Hide<Cumul, Self::OLatRepr>;
 }
 
 pub mod state_merge;
