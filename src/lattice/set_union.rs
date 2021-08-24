@@ -160,17 +160,17 @@ fn __assert_merges() {
 
 mod fns {
     use crate::collections::Single;
-    use crate::hide::{Hide, Qualifier, Delta, Value};
+    use crate::hide::{Hide, Qualifier, Delta, Cumul};
     use crate::lattice::ord::MaxRepr;
 
     use super::*;
 
-    impl<'h, Tag: SetTag<T>, T> Hide<'h, Value, SetUnionRepr<Tag, T>>
+    impl<'h, Tag: SetTag<T>, T> Hide<'h, Cumul, SetUnionRepr<Tag, T>>
     where
         Tag::Bind: Clone,
         <SetUnionRepr<Tag, T> as LatticeRepr>::Repr: Collection<T, ()>,
     {
-        pub fn len(&self) -> Hide<Value, MaxRepr<usize>> {
+        pub fn len(&self) -> Hide<Cumul, MaxRepr<usize>> {
             Hide::new(self.reveal_ref().len())
         }
     }
@@ -180,7 +180,7 @@ mod fns {
         Tag::Bind: Clone,
         <SetUnionRepr<Tag, T> as LatticeRepr>::Repr: Collection<T, ()>,
     {
-        pub fn contains(&self, val: &T) -> Hide<Value, MaxRepr<bool>> {
+        pub fn contains(&self, val: &T) -> Hide<Cumul, MaxRepr<bool>> {
             Hide::new(self.reveal_ref().get(val).is_some())
         }
     }
@@ -296,31 +296,32 @@ mod fns {
         SetUnionRepr<Tag, T>: LatticeRepr,
         <SetUnionRepr<Tag, T> as LatticeRepr>::Repr: IntoIterator<Item = T>,
     {
-        pub fn fold<'g, TargetLr, MergeLr>(self) -> Hide<'g, Y, TargetLr>
-        where
-            MergeLr: LatticeRepr<Repr = T>,
-            TargetLr: LatticeRepr + Merge<MergeLr>,
-            <TargetLr as LatticeRepr>::Repr: Default,
-        {
-            let mut out = Hide::new(Default::default());
-            for t in self.into_reveal().into_iter() {
-                <TargetLr as Merge<MergeLr>>::merge_hide(&mut out, Hide::<Delta, _>::new(t));
-            }
-            out
-        }
+        //// CAUSES ICE FOR SOME REASON https://github.com/rust-lang/rust/issues/71113
+        // pub fn fold<'g, TargetLr, MergeLr>(self) -> Hide<'g, Y, TargetLr>
+        // where
+        //     MergeLr: LatticeRepr<Repr = T>,
+        //     TargetLr: LatticeRepr + Merge<MergeLr>,
+        //     <TargetLr as LatticeRepr>::Repr: Default,
+        // {
+        //     let mut out = Hide::new(Default::default());
+        //     for t in self.into_reveal().into_iter() {
+        //         <TargetLr as Merge<MergeLr>>::merge_hide(&mut out, Hide::<Delta, _>::new(t));
+        //     }
+        //     out
+        // }
     }
 
     fn __test_things() {
-        let my_lattice: Hide<Value, SetUnionRepr<tag::HASH_SET, u32>> =
+        let my_lattice: Hide<Cumul, SetUnionRepr<tag::HASH_SET, u32>> =
             Hide::new(vec![ 0, 1, 2, 3, 5, 8, 13 ].into_iter().collect());
 
-        let _: Hide<Value, MaxRepr<usize>> = my_lattice.len();
-        let _: Hide<Value, MaxRepr<bool>>  = my_lattice.contains(&4);
+        let _: Hide<Cumul, MaxRepr<usize>> = my_lattice.len();
+        let _: Hide<Cumul, MaxRepr<bool>>  = my_lattice.contains(&4);
 
         let my_delta: Hide<Delta, SetUnionRepr<tag::HASH_SET, u32>> =
             Hide::new(vec![ 0, 1, 2, 3, 5, 8, 13 ].into_iter().collect());
 
-        // let _: Hide<Value, MaxRepr<usize>> = my_delta.len();
-        let _: Hide<Value, MaxRepr<bool>>  = my_delta.contains(&4);
+        // let _: Hide<Cumul, MaxRepr<usize>> = my_delta.len();
+        let _: Hide<Cumul, MaxRepr<bool>>  = my_delta.contains(&4);
     }
 }
