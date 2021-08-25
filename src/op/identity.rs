@@ -19,8 +19,7 @@ impl<Lr: LatticeRepr> OpDelta for Identity<Lr> {
     type LatReprDeltaOut = Lr;
 
     fn get_delta<'h>(_state: &'h mut Hide<Cumul, Self::State>, element: Cow<'h, Hide<Delta, Self::LatReprDeltaIn>>)
-        -> Cow<'h, Hide<Delta, Self::LatReprDeltaOut>>
-    {
+        -> Cow<'h, Hide<Delta, Self::LatReprDeltaOut>> {
         element
     }
 }

@@ -12,7 +12,7 @@ pub mod null;
 
 pub trait Lattice {}
 
-pub trait LatticeRepr {
+pub trait LatticeRepr: 'static {
     type Lattice: Lattice;
     type Repr: Clone;
 
@@ -40,6 +40,7 @@ pub trait Convert<Target: LatticeRepr<Lattice = Self::Lattice>>: LatticeRepr {
     where
         Self: Sized,
     {
+        // TODO MAKES EXTRA CLONE (into_owned())...
         Hide::new(Self::convert(this.into_owned().into_reveal()))
     }
 }

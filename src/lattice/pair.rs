@@ -1,5 +1,6 @@
 use std::cmp::Ordering;
 use ref_cast::RefCast;
+use either::Either;
 use super::{Lattice, LatticeRepr, Merge, Compare, Convert, Debottom, Top};
 use super::bottom::BottomRepr;
 
@@ -16,6 +17,14 @@ pub struct PairRepr<Ra: LatticeRepr, Rb: LatticeRepr> {
 impl<Ra: LatticeRepr, Rb: LatticeRepr> LatticeRepr for PairRepr<Ra, Rb> {
     type Lattice = Pair<Ra::Lattice, Rb::Lattice>;
     type Repr = (Ra::Repr, Rb::Repr);
+}
+
+pub struct PairEitherRepr<Ra: LatticeRepr, Rb: LatticeRepr> {
+    _phantom: std::marker::PhantomData<(Ra, Rb)>,
+}
+impl<Ra: LatticeRepr, Rb: LatticeRepr> LatticeRepr for PairEitherRepr<Ra, Rb> {
+    type Lattice = Pair<Ra::Lattice, Rb::Lattice>;
+    type Repr = Either<Ra::Repr, Rb::Repr>;
 }
 
 impl<SelfRA, SelfRB, DeltaRA, DeltaRB, La, Lb> Merge<PairRepr<DeltaRA, DeltaRB>> for PairRepr<SelfRA, SelfRB>

@@ -1,6 +1,6 @@
+use std::borrow::Cow;
 use ref_cast::RefCast;
 use crate::lattice::LatticeRepr;
-
 
 pub trait Qualifier {}
 pub enum Delta {}
@@ -42,6 +42,22 @@ impl<Y: Qualifier, Lr: LatticeRepr + ?Sized> Hide<Y, Lr> {
 
     pub fn into_qualifier_reveal<Z: Qualifier>(self) -> Hide<Z, Lr> {
         Hide::new(self.value)
+    }
+}
+
+impl<Y: Qualifier, Lr: LatticeRepr> Hide<Y, Lr> {
+    pub fn reveal_cow<'h>(this: Cow<'h, Self>) -> Cow<'h, Lr::Repr> {
+        match this {
+            Cow::Owned(hide) => Cow::Owned(hide.into_reveal()),
+            Cow::Borrowed(hide) => Cow::Borrowed(hide.reveal_ref()),
+        }
+    }
+
+    pub fn as_delta_cow<'h>(this: Cow<'h, Self>) -> Cow<'h, Hide<Delta, Lr>> {
+        match this {
+            Cow::Owned(hide) => Cow::Owned(hide.into_delta()),
+            Cow::Borrowed(hide) => Cow::Borrowed(Hide::ref_cast(hide.reveal_ref())),
+        }
     }
 }
 

@@ -21,7 +21,7 @@ impl<T> SetTag<T> for tag::OPTION {}
 impl<T, const N: usize> SetTag<T> for tag::ARRAY<N> {}
 impl<T, const N: usize> SetTag<T> for tag::MASKED_ARRAY<N> {}
 
-pub struct SetUnionRepr<Tag: SetTag<T>, T> {
+pub struct SetUnionRepr<Tag: SetTag<T>, T: 'static> {
     _phantom: std::marker::PhantomData<(Tag, T)>,
 }
 

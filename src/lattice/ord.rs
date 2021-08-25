@@ -5,7 +5,7 @@ pub struct Max<T: Ord> {
 }
 impl<T: Ord> Lattice for Max<T> {}
 
-pub struct MaxRepr<T: Ord> {
+pub struct MaxRepr<T: 'static + Ord> {
     _phantom: std::marker::PhantomData<T>,
 }
 
@@ -46,7 +46,7 @@ pub struct Min<T: Ord> {
 }
 impl<T: Ord> Lattice for Min<T> {}
 
-pub struct MinRepr<T: Ord> {
+pub struct MinRepr<T: 'static + Ord> {
     _phantom: std::marker::PhantomData<T>,
 }
 

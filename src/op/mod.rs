@@ -11,7 +11,7 @@ pub trait Op {
 }
 
 pub trait OpDelta: Op {
-    type LatReprDeltaIn: LatticeRepr;
+    type LatReprDeltaIn:  LatticeRepr;
     type LatReprDeltaOut: LatticeRepr<Lattice = Self::Lat>;
 
     #[must_use]
