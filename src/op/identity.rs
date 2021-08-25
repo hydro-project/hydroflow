@@ -9,15 +9,17 @@ pub struct Identity<Lr: LatticeRepr> {
 }
 
 impl<Lr: LatticeRepr> Op for Identity<Lr> {
-    type ILatRepr = Lr;
-    type OLatRepr = Lr;
+    type Lat = Lr::Lattice;
 
     type State = NullRepr;
 }
 
-impl<OLr: LatticeRepr> OpDelta for Identity<OLr> {
-    fn get_delta<'h>(_state: &'h mut Hide<Cumul, Self::State>, element: Cow<'h, Hide<Delta, Self::ILatRepr>>)
-        -> Cow<'h, Hide<Delta, Self::OLatRepr>>
+impl<Lr: LatticeRepr> OpDelta for Identity<Lr> {
+    type LatReprDeltaIn = Lr;
+    type LatReprDeltaOut = Lr;
+
+    fn get_delta<'h>(_state: &'h mut Hide<Cumul, Self::State>, element: Cow<'h, Hide<Delta, Self::LatReprDeltaIn>>)
+        -> Cow<'h, Hide<Delta, Self::LatReprDeltaOut>>
     {
         element
     }

@@ -1,56 +1,55 @@
 use std::borrow::Cow;
 use crate::hide::{Hide, Delta, Cumul};
-use crate::lattice::{LatticeRepr, Merge, Convert};
+use crate::lattice::{LatticeRepr, Merge};
 use crate::lattice::pair::{PairRepr};
 
 use super::{Op, OpDelta, OpCumul};
 
-pub struct StateMerge<PrecOp, OLr>
+pub struct StateMerge<PrecOp, Lr>
 where
     PrecOp: OpDelta,
-    PrecOp::OLatRepr: Convert<OLr>,
-    OLr: LatticeRepr + Merge<PrecOp::OLatRepr> + 'static,
+    Lr: LatticeRepr + Merge<PrecOp::LatReprDeltaOut>,
 {
-    _phantom: std::marker::PhantomData<(PrecOp, OLr)>,
+    _phantom: std::marker::PhantomData<(PrecOp, Lr)>,
 }
 
-impl<PrecOp, OLr> Op for StateMerge<PrecOp, OLr>
+impl<PrecOp, Lr> Op for StateMerge<PrecOp, Lr>
 where
     PrecOp: OpDelta,
-    PrecOp::OLatRepr: Convert<OLr>,
-    OLr: LatticeRepr + Merge<PrecOp::OLatRepr> + 'static,
+    Lr: LatticeRepr + Merge<PrecOp::LatReprDeltaOut>,
 {
-    type ILatRepr = PrecOp::ILatRepr;
-    type OLatRepr = OLr;
+    type Lat = <PrecOp::LatReprDeltaOut as LatticeRepr>::Lattice;
 
-    type State = PairRepr<PrecOp::State, OLr>;
+    type State = PairRepr<PrecOp::State, Lr>;
 }
 
-impl<PrecOp, OLr> OpDelta for StateMerge<PrecOp, OLr>
+impl<PrecOp, Lr> OpDelta for StateMerge<PrecOp, Lr>
 where
     PrecOp: OpDelta,
-    PrecOp::OLatRepr: Convert<OLr> + 'static,
-    <PrecOp::OLatRepr as LatticeRepr>::Repr: 'static,
-    OLr: LatticeRepr + Merge<PrecOp::OLatRepr> + 'static,
+    Lr: LatticeRepr + Merge<PrecOp::LatReprDeltaOut>,
 {
-    fn get_delta<'h>(state: &'h mut Hide<Cumul, Self::State>, element: Cow<'h, Hide<Delta, Self::ILatRepr>>)
-        -> Cow<'h, Hide<Delta, Self::OLatRepr>>
+    type LatReprDeltaIn = PrecOp::LatReprDeltaIn;
+    type LatReprDeltaOut = PrecOp::LatReprDeltaOut;
+
+    fn get_delta<'h>(state: &'h mut Hide<Cumul, Self::State>, element: Cow<'h, Hide<Delta, Self::LatReprDeltaIn>>)
+        -> Cow<'h, Hide<Delta, Self::LatReprDeltaOut>>
     {
         let (prec_state, self_state) = state.split_mut();
         let element = PrecOp::get_delta(prec_state, element);
         Merge::merge_hide(self_state, element.clone().into_owned());
-        return Cow::Owned(Convert::convert_hide_cow(element)); // TODO
+        return element;
     }
 }
 
-impl<PrecOp, OLr> OpCumul for StateMerge<PrecOp, OLr>
+impl<PrecOp, Lr> OpCumul for StateMerge<PrecOp, Lr>
 where
     PrecOp: OpDelta,
-    PrecOp::OLatRepr: Convert<OLr>,
-    OLr: LatticeRepr + Merge<PrecOp::OLatRepr> + 'static,
+    Lr: LatticeRepr + Merge<PrecOp::LatReprDeltaOut>,
 {
+    type LatReprCumulOut = Lr;
+
     fn get_cumul<'h>(state: &'h mut Hide<Cumul, Self::State>)
-        -> Cow<'h, Hide<Cumul, Self::OLatRepr>>
+        -> Cow<'h, Hide<Cumul, Self::LatReprCumulOut>>
     {
         let (_prec_state, self_state) = state.split_mut();
         return Cow::Borrowed(&*self_state);
