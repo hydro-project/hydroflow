@@ -142,6 +142,7 @@ fn __assert_merges() {
 }
 
 mod fns {
+    use std::borrow::Cow;
     use std::iter::FromIterator;
 
     use crate::hide::{Hide, Qualifier};
@@ -154,9 +155,25 @@ mod fns {
             let (a, b) = self.into_reveal();
             (Hide::new(a), Hide::new(b))
         }
+        pub fn split_ref(&self) -> (&Hide<Y, Ra>, &Hide<Y, Rb>) {
+            let (a, b) = self.reveal_ref();
+            (RefCast::ref_cast(a), RefCast::ref_cast(b))
+        }
         pub fn split_mut(&mut self) -> (&mut Hide<Y, Ra>, &mut Hide<Y, Rb>) {
             let (a, b) = self.reveal_mut();
             (RefCast::ref_cast_mut(a), RefCast::ref_cast_mut(b))
+        }
+        pub fn split_cow<'h>(this: Cow<'h, Self>) -> (Cow<'h, Hide<Y, Ra>>, Cow<'h, Hide<Y, Rb>>) {
+            match this {
+                Cow::Owned(hide) => {
+                    let (a, b) = hide.split();
+                    (Cow::Owned(a), Cow::Owned(b))
+                }
+                Cow::Borrowed(hide) => {
+                    let (a, b) = hide.split_ref();
+                    (Cow::Borrowed(a), Cow::Borrowed(b))
+                }
+            }
         }
 
         pub fn zip(a: Hide<Y, Ra>, b: Hide<Y, Rb>) -> Self {

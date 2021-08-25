@@ -29,3 +29,4 @@ pub trait OpCumul: Op {
 
 pub mod identity;
 pub mod state_merge;
+pub mod split_binary;

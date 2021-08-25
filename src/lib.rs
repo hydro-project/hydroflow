@@ -10,4 +10,6 @@ pub mod hide;
 
 pub mod lattice;
 
+pub mod func;
+
 pub mod op;
