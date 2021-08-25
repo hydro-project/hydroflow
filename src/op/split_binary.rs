@@ -159,7 +159,7 @@ mod tests {
         };
         let element_a_3 = {
             let mut map: <MyLatReprA as LatticeRepr>::Repr = Default::default();
-            map.insert("Joseph", vec!["Gonzales"].into_iter().collect());
+            map.insert("Joseph", vec!["Gonzalez"].into_iter().collect());
             map
         };
 
