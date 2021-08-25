@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use crate::hide::{Hide, Qualifier};
 
 pub mod set_union;
@@ -7,6 +8,7 @@ pub mod pair;
 pub mod dom_pair;
 pub mod bottom;
 pub mod top;
+pub mod null;
 
 pub trait Lattice {}
 
@@ -32,6 +34,13 @@ pub trait Convert<Target: LatticeRepr<Lattice = Self::Lattice>>: LatticeRepr {
 
     fn convert_hide<Y: Qualifier>(this: Hide<Y, Self>) -> Hide<Y, Target> {
         Hide::new(Self::convert(this.into_reveal()))
+    }
+
+    fn convert_hide_cow<'h, Y: Qualifier>(this: Cow<'h, Hide<Y, Self>>) -> Hide<Y, Target>
+    where
+        Self: Sized,
+    {
+        Hide::new(Self::convert(this.into_owned().into_reveal()))
     }
 }
 

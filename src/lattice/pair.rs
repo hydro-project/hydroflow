@@ -1,5 +1,5 @@
 use std::cmp::Ordering;
-
+use ref_cast::RefCast;
 use super::{Lattice, LatticeRepr, Merge, Compare, Convert, Debottom, Top};
 use super::bottom::BottomRepr;
 
@@ -34,6 +34,23 @@ where
     fn merge(this: &mut <PairRepr<SelfRA, SelfRB> as LatticeRepr>::Repr, delta: <PairRepr<DeltaRA, DeltaRB> as LatticeRepr>::Repr) -> bool {
         // Do NOT use short-circuiting `&&`.
         SelfRA::merge(&mut this.0, delta.0) & SelfRB::merge(&mut this.1, delta.1)
+    }
+}
+
+// TODO make this more generic.
+impl<SelfRA, SelfRB, TargetRA, TargetRB, La, Lb> Convert<PairRepr<TargetRA, TargetRB>> for PairRepr<SelfRA, SelfRB>
+where
+    La: Lattice,
+    Lb: Lattice,
+    SelfRA:   LatticeRepr<Lattice = La>,
+    SelfRB:   LatticeRepr<Lattice = Lb>,
+    TargetRA: LatticeRepr<Lattice = La>,
+    TargetRB: LatticeRepr<Lattice = Lb>,
+    SelfRA: Convert<TargetRA>,
+    SelfRB: Convert<TargetRB>,
+{
+    fn convert(this: Self::Repr) -> <PairRepr<TargetRA, TargetRB> as LatticeRepr>::Repr {
+        (SelfRA::convert(this.0), SelfRB::convert(this.1))
     }
 }
 
@@ -136,6 +153,10 @@ mod fns {
         pub fn split(self) -> (Hide<Y, Ra>, Hide<Y, Rb>) {
             let (a, b) = self.into_reveal();
             (Hide::new(a), Hide::new(b))
+        }
+        pub fn split_mut(&mut self) -> (&mut Hide<Y, Ra>, &mut Hide<Y, Rb>) {
+            let (a, b) = self.reveal_mut();
+            (RefCast::ref_cast_mut(a), RefCast::ref_cast_mut(b))
         }
 
         pub fn zip(a: Hide<Y, Ra>, b: Hide<Y, Rb>) -> Self {
