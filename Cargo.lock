@@ -15,6 +15,7 @@ dependencies = [
  "either",
  "ref-cast",
  "serde",
+ "static-rc",
  "static_assertions",
  "std_collection_traits",
 ]
@@ -62,6 +63,12 @@ name = "serde"
 version = "1.0.127"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f03b9878abf6d14e6779d3f24f07b2cfa90352cfec4acc5aab8f1ac7f146fae8"
+
+[[package]]
+name = "static-rc"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "80d794b4356c4963c73cda00eb2ad18cd560003ed6183803566c9a423c12f33c"
 
 [[package]]
 name = "static_assertions"

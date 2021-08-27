@@ -13,3 +13,5 @@ pub mod lattice;
 pub mod func;
 
 pub mod op;
+
+pub mod graph;
