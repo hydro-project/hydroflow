@@ -1,6 +1,5 @@
 use std::borrow::Cow;
 use std::cell::RefCell;
-use std::collections::HashMap;
 use std::rc::Rc;
 
 use crate::tag;
@@ -8,7 +7,6 @@ use crate::lattice::{Lattice, LatticeRepr, Merge};
 use crate::lattice::set_union::SetUnionRepr;
 use crate::lattice::pair::PairRepr;
 use crate::lattice::null::NullRepr;
-use crate::lattice::map_union::MapUnionRepr;
 use crate::hide::{Hide, Cumul, Delta};
 use crate::op::OpDelta;
 
@@ -83,20 +81,57 @@ impl LatticeRepr for GraphLatRepr {
     type Repr = GraphRepr;
 }
 
+type GraphLatReprInternal = SetUnionRepr::<tag::HASH_SET, UniqueTag<OperatorId, Rc<dyn OpPtr<LatReprDeltaIn = NullRepr>>>>;
+
 #[derive(Clone)]
 pub struct GraphRepr {
-    ops: HashMap<OperatorId, Rc<dyn OpPtr<LatReprDeltaIn = NullRepr>>>, // TODO: change equality check.
+    ops: <GraphLatReprInternal as LatticeRepr>::Repr,
 }
 
 impl Merge<GraphLatRepr> for GraphLatRepr {
     fn merge(this: &mut Self::Repr, delta: Self::Repr) -> bool {
-        <MapUnionRepr::<tag::HASH_MAP, _, _>>::merge(&mut this.ops, delta.ops)
+        <GraphLatReprInternal as Merge<GraphLatReprInternal>>::merge(&mut this.ops, delta.ops)
     }
 }
 
 
 
 
+
+
+
+
+#[derive(Debug, Clone, Copy)]
+pub struct UniqueTag<T, U>(pub T, pub U);
+impl<T: PartialEq, U> PartialEq for UniqueTag<T, U> {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.eq(&other.0)
+    }
+}
+impl<T: Eq, U> Eq for UniqueTag<T, U> {}
+impl<T: PartialOrd, U> PartialOrd for UniqueTag<T, U> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.0.partial_cmp(&other.0)
+    }
+}
+impl<T: Ord, U> Ord for UniqueTag<T, U> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.0.cmp(&other.0)
+    }
+}
+impl<T: std::hash::Hash, U> std::hash::Hash for UniqueTag<T, U> {
+    fn hash<H>(&self, state: &mut H)
+    where
+        H: std::hash::Hasher
+    {
+        self.0.hash(state)
+    }
+}
+impl<T, U> std::borrow::Borrow<T> for UniqueTag<T, U> {
+    fn borrow(&self) -> &T {
+        &self.0
+    }
+}
 
 
 
