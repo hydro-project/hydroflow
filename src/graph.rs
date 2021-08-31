@@ -7,6 +7,7 @@ use crate::lattice::{Lattice, LatticeRepr, Merge};
 use crate::lattice::set_union::SetUnionRepr;
 use crate::lattice::pair::PairRepr;
 use crate::lattice::null::NullRepr;
+use crate::lattice::bottom::BottomRepr;
 use crate::hide::{Hide, Cumul, Delta};
 use crate::op::OpDelta;
 
@@ -35,11 +36,18 @@ pub struct DynSplitPoint<O: OpDelta> {
 impl<O: OpDelta> OpWrapper for DynSplitPoint<O> {
     type LatReprDeltaIn = O::LatReprDeltaIn;
 
-    type State = PairRepr<SetUnionRepr<tag::HASH_SET, Rc<dyn OpPtr<LatReprDeltaIn = O::LatReprDeltaOut>>> /* TODO: change equality check */, O::State>;
+    // Make the RHS OPTIONAL - via BottomRepr. -- RUNTIME PANIC IF None.
+    // None is how represents a disconnected piece of the graph.
+    type State = PairRepr<
+        SetUnionRepr<tag::HASH_SET, Rc<dyn OpPtr<LatReprDeltaIn = O::LatReprDeltaOut>>> /* TODO: change equality check */,
+        BottomRepr<O::State>
+    >;
 
     #[must_use]
     fn get_delta<'h>(state: &'h mut Hide<Cumul, Self::State>, element: Cow<'h, Hide<Delta, Self::LatReprDeltaIn>>) -> Feedback {
         let (state_ptrs, state_prec) = state.split_mut();
+        // Warning: CAN PANIC!!
+        let state_prec = state_prec.unwrap_mut();
         let element = O::get_delta(state_prec, element);
 
         let mut result = Ok(());
