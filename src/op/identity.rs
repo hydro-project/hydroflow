@@ -4,6 +4,7 @@ use crate::lattice::LatticeRepr;
 use crate::lattice::null::NullRepr;
 use super::{Op, OpDelta};
 
+// TODO: this should be called ingress or PRIMER something.
 pub struct Identity<Lr: LatticeRepr> {
     _phantom: std::marker::PhantomData<Lr>,
 }

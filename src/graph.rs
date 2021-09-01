@@ -6,10 +6,10 @@ use crate::tag;
 use crate::lattice::{Lattice, LatticeRepr, Merge};
 use crate::lattice::set_union::SetUnionRepr;
 use crate::lattice::pair::PairRepr;
-use crate::lattice::null::NullRepr;
+use crate::lattice::ord::MaxRepr;
 use crate::lattice::bottom::BottomRepr;
 use crate::hide::{Hide, Cumul, Delta};
-use crate::op::OpDelta;
+use crate::op::{OpDelta, OpCumul};
 
 
 
@@ -30,49 +30,53 @@ pub trait OpWrapper {
     fn get_delta<'h>(state: &'h mut Hide<Cumul, Self::State>, element: Cow<'h, Hide<Delta, Self::LatReprDeltaIn>>) -> Feedback;
 }
 
-pub struct DynSplitPoint<O: OpDelta> {
+pub struct DynSplitPoint<O: OpDelta + OpCumul> {
     _phantom: std::marker::PhantomData<O>,
 }
-impl<O: OpDelta> OpWrapper for DynSplitPoint<O> {
+impl<O: OpDelta + OpCumul> OpWrapper for DynSplitPoint<O> {
     type LatReprDeltaIn = O::LatReprDeltaIn;
 
     // Make the RHS OPTIONAL - via BottomRepr. -- RUNTIME PANIC IF None.
     // None is how represents a disconnected piece of the graph.
     type State = PairRepr<
-        SetUnionRepr<tag::HASH_SET, Rc<dyn OpPtr<LatReprDeltaIn = O::LatReprDeltaOut>>> /* TODO: change equality check */,
+        SetUnionRepr<tag::HASH_SET, Rc<dyn CompEdge<LatReprDeltaIn = O::LatReprDeltaOut>>> /* TODO: change equality check */,
         BottomRepr<O::State>
     >;
 
     #[must_use]
     fn get_delta<'h>(state: &'h mut Hide<Cumul, Self::State>, element: Cow<'h, Hide<Delta, Self::LatReprDeltaIn>>) -> Feedback {
         let (state_ptrs, state_prec) = state.split_mut();
-        // Warning: CAN PANIC!!
-        let state_prec = state_prec.unwrap_mut();
+
+        // REVEAL?
+        let state_prec = state_prec.reveal_ok_or_mut("Cannot run disconnected component!".to_owned())?;
         let element = O::get_delta(state_prec, element);
 
-        let mut result = Ok(());
         for next_ptr in state_ptrs.reveal_ref() { // REVEAL!
-            let next_result = next_ptr.push(element.clone());
-            // Propegate error message. ?
-            result = result.and(next_result);
+            next_ptr.push(element.clone())?;
         }
-        return result;
+        return Ok(());
     }
 }
 
 
 
-pub trait OpPtr {
+pub trait CompEdge {
     type LatReprDeltaIn: LatticeRepr;
+
+    fn needs_cumul(&self) -> Hide<Cumul, MaxRepr<bool>>;
 
     fn push<'h>(&self, element: Cow<'h, Hide<Delta, Self::LatReprDeltaIn>>) -> Result<(), String>;
 }
 
-struct DynSplitOpPtr<O: OpWrapper> {
-    state: Rc<RefCell<Hide<Cumul, O::State>>>,
+struct DynSplitCompEdge<O: OpWrapper> {
+    state: RefCell<Hide<Cumul, O::State>>,
 }
-impl<O: OpWrapper> OpPtr for DynSplitOpPtr<O> {
+impl<O: OpWrapper> CompEdge for DynSplitCompEdge<O> {
     type LatReprDeltaIn = O::LatReprDeltaIn;
+
+    fn needs_cumul(&self) -> Hide<Cumul, MaxRepr<bool>> {
+        
+    }
 
     fn push<'h>(&self, element: Cow<'h, Hide<Delta, Self::LatReprDeltaIn>>) -> Result<(), String> {
         O::get_delta(&mut *self.state.borrow_mut(), element)
@@ -89,7 +93,10 @@ impl LatticeRepr for GraphLatRepr {
     type Repr = GraphRepr;
 }
 
-type GraphLatReprInternal = SetUnionRepr::<tag::HASH_SET, UniqueTag<OperatorId, Rc<dyn OpPtr<LatReprDeltaIn = NullRepr>>>>;
+type GraphLatReprInternal = SetUnionRepr::<
+    tag::HASH_SET,
+    UniqueTag<OperatorId, Rc<dyn CompEdge<LatReprDeltaIn = MaxRepr<u32>>>> // TODO: <-- This lattice type should encompass the types of all egress.
+>;
 
 #[derive(Clone)]
 pub struct GraphRepr {
@@ -102,6 +109,43 @@ impl Merge<GraphLatRepr> for GraphLatRepr {
     }
 }
 
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    use std::collections::HashSet;
+    use crate::op::identity::Identity;
+    use crate::op::debug::Debug as DebugOp;
+
+    #[test]
+    fn test_basic() {
+        type From_LatRepr = MaxRepr<u32>;
+        type From_Pipeline = DebugOp<Identity<From_LatRepr>>;
+        type From_WrapperEdge = DynSplitPoint<From_Pipeline>;
+
+        type From_StateLatRepr = <From_WrapperEdge as OpWrapper>::State;
+
+        let from_state: <From_StateLatRepr as LatticeRepr>::Repr = (HashSet::new(), Some(()));
+
+        let from_ptr_edge_0: DynSplitCompEdge<From_WrapperEdge> = DynSplitCompEdge {
+            state: RefCell::new(Hide::new(from_state)),
+        };
+        // Keep an RC around so we can push into it.
+        // In the future we want the Graph to do this somehow.
+        // Such as having the components generate their own inputs when you poke them?
+        let from_ptr_edge_0 = Rc::new(from_ptr_edge_0);
+
+        let tag_edge_to_0: UniqueTag<String, Rc<dyn CompEdge<LatReprDeltaIn = MaxRepr<u32>>>> = UniqueTag(
+            "my_og_edge".to_owned(),
+            from_ptr_edge_0.clone(),
+        );
+
+        let mut graph_state: <GraphLatReprInternal as LatticeRepr>::Repr = HashSet::new();
+        graph_state.insert(tag_edge_to_0);
+
+
+    }
+}
 
 
 
