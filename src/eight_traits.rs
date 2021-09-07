@@ -1,21 +1,26 @@
-// pub trait IsComplete {}
-// pub enum Complete {}
-// impl IsComplete for Complete {}
-// pub enum Incomplete {}
-// impl IsComplete for Incomplete {}
-
-// pub trait IsTimeOrdered {}
-// pub enum TimeOrdered {}
-// impl IsTimeOrdered for TimeOrdered {}
-// pub enum NotTimeOrdered {}
-// impl IsTimeOrdered for NotTimeOrdered {}
-
-// pub trait IsLatticeOrdered {}
-// pub enum LatticeOrdered {}
-// impl IsLatticeOrdered for LatticeOrdered {}
-// pub enum NotLatticeOrdered {}
-// impl IsLatticeOrdered for NotLatticeOrdered {}
-
+#[derive(Debug, Clone, Copy, Default)]
+#[derive(PartialOrd, Ord, PartialEq, Eq)]
+pub struct OpMeta {
+    pub complete: bool,
+    pub time_ordered: bool,
+    pub lattice_ordered: bool,
+}
+impl OpMeta {
+    pub const fn default() -> Self {
+        Self {
+            complete: false,
+            time_ordered: false,
+            lattice_ordered: false,
+        }
+    }
+    pub const fn combine(a: Self, b: Self) -> Self {
+        Self {
+            complete: a.complete || b.complete,
+            time_ordered: a.time_ordered || b.time_ordered,
+            lattice_ordered: a.lattice_ordered || b.lattice_ordered,
+        }
+    }
+}
 
 // MACRO-GENERATED (TODO):
 macro_rules! generate_ops_helper {
@@ -32,12 +37,12 @@ macro_rules! generate_ops_helper {
             #[doc = "\n- LATTICE_ORDERED: "]
             #[doc = stringify!($c)]
             #[allow(trivial_bounds)]
-            impl Op<$a, $b, $c> for $name
+            impl Op<{OpMeta { complete: $a, time_ordered: $b, lattice_ordered: $c }}> for $name
             where
-                Self: OpImpl<{$mapper($a, $b, $c).0 || $a}, {$mapper($a, $b, $c).1 || $b}, {$mapper($a, $b, $c).2 || $c}>,
+                Self: OpImpl<{OpMeta::combine($mapper(OpMeta { complete: $a, time_ordered: $b, lattice_ordered: $c }), OpMeta { complete: $a, time_ordered: $b, lattice_ordered: $c })}>,
             {
                 fn get() {
-                    <$name as OpImpl<{$mapper($a, $b, $c).0 || $a}, {$mapper($a, $b, $c).1 || $b}, {$mapper($a, $b, $c).2 || $c}>>::get()
+                    <$name as OpImpl<{OpMeta::combine($mapper(OpMeta { complete: $a, time_ordered: $b, lattice_ordered: $c }), OpMeta { complete: $a, time_ordered: $b, lattice_ordered: $c })}>>::get()
                 }
             }
         )*
@@ -61,11 +66,11 @@ macro_rules! generate_ops {
     };
 }
 
-pub trait OpImpl<const COMPLETE: bool, const TIME_ORDERED: bool, const LATTICE_ORDERED: bool> {
+pub trait OpImpl<const META: OpMeta> {
     fn get() {}
 }
 
-pub trait Op<const COMPLETE: bool, const TIME_ORDERED: bool, const LATTICE_ORDERED: bool> {
+pub trait Op<const META: OpMeta> {
     fn get() {}
 }
 
@@ -74,17 +79,17 @@ pub trait Op<const COMPLETE: bool, const TIME_ORDERED: bool, const LATTICE_ORDER
 
 pub enum MySpookyOp {}
 
-impl OpImpl<true, false, false> for MySpookyOp {
+impl OpImpl<{OpMeta { complete: true, ..OpMeta::default() }}> for MySpookyOp {
     fn get() {}
 }
-impl OpImpl<false, true, false> for MySpookyOp {
+impl OpImpl<{OpMeta { time_ordered: true, ..OpMeta::default() }}> for MySpookyOp {
     fn get() {}
 }
 
-const fn spooky_disambig(complete: bool, time_ordered: bool, lattice_ordered: bool) -> (bool, bool, bool) {
-    match (complete, time_ordered, lattice_ordered) {
-        (false, false, false) => ( true, false, false),
-        _ => (false, false, false),
+const fn spooky_disambig(meta: OpMeta) -> OpMeta {
+    match meta {
+        OpMeta { complete: false, time_ordered: false, lattice_ordered: false } => OpMeta { complete: true, ..OpMeta::default() },
+        _ => OpMeta::default(),
     }
 }
 

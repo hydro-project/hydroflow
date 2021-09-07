@@ -1,3 +1,4 @@
+#![feature(const_generics)]
 #![feature(generic_associated_types)]
 #![feature(trivial_bounds)]
 #![feature(type_alias_impl_trait)]
