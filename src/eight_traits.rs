@@ -1,11 +1,12 @@
 #[derive(Debug, Clone, Copy, Default)]
 #[derive(PartialOrd, Ord, PartialEq, Eq)]
-pub struct OpMeta {
+pub struct OpProps {
     pub complete: bool,
     pub time_ordered: bool,
     pub lattice_ordered: bool,
 }
-impl OpMeta {
+
+impl OpProps {
     pub const fn default() -> Self {
         Self {
             complete: false,
@@ -37,12 +38,12 @@ macro_rules! generate_ops_helper {
             #[doc = "\n- LATTICE_ORDERED: "]
             #[doc = stringify!($c)]
             #[allow(trivial_bounds)]
-            impl Op<{OpMeta { complete: $a, time_ordered: $b, lattice_ordered: $c }}> for $name
+            impl Op<{OpProps { complete: $a, time_ordered: $b, lattice_ordered: $c }}> for $name
             where
-                Self: OpImpl<{OpMeta::combine($mapper(OpMeta { complete: $a, time_ordered: $b, lattice_ordered: $c }), OpMeta { complete: $a, time_ordered: $b, lattice_ordered: $c })}>,
+                Self: OpImpl<{OpProps::combine($mapper(OpProps { complete: $a, time_ordered: $b, lattice_ordered: $c }), OpProps { complete: $a, time_ordered: $b, lattice_ordered: $c })}>,
             {
                 fn get() {
-                    <$name as OpImpl<{OpMeta::combine($mapper(OpMeta { complete: $a, time_ordered: $b, lattice_ordered: $c }), OpMeta { complete: $a, time_ordered: $b, lattice_ordered: $c })}>>::get()
+                    <$name as OpImpl<{OpProps::combine($mapper(OpProps { complete: $a, time_ordered: $b, lattice_ordered: $c }), OpProps { complete: $a, time_ordered: $b, lattice_ordered: $c })}>>::get()
                 }
             }
         )*
@@ -66,11 +67,11 @@ macro_rules! generate_ops {
     };
 }
 
-pub trait OpImpl<const META: OpMeta> {
+pub trait OpImpl<const META: OpProps> {
     fn get() {}
 }
 
-pub trait Op<const META: OpMeta> {
+pub trait Op<const META: OpProps> {
     fn get() {}
 }
 
@@ -79,17 +80,17 @@ pub trait Op<const META: OpMeta> {
 
 pub enum MySpookyOp {}
 
-impl OpImpl<{OpMeta { complete: true, ..OpMeta::default() }}> for MySpookyOp {
+impl OpImpl<{OpProps { complete: true, ..OpProps::default() }}> for MySpookyOp {
     fn get() {}
 }
-impl OpImpl<{OpMeta { time_ordered: true, ..OpMeta::default() }}> for MySpookyOp {
+impl OpImpl<{OpProps { time_ordered: true, ..OpProps::default() }}> for MySpookyOp {
     fn get() {}
 }
 
-const fn spooky_disambig(meta: OpMeta) -> OpMeta {
+const fn spooky_disambig(meta: OpProps) -> OpProps {
     match meta {
-        OpMeta { complete: false, time_ordered: false, lattice_ordered: false } => OpMeta { complete: true, ..OpMeta::default() },
-        _ => OpMeta::default(),
+        OpProps { complete: false, time_ordered: false, lattice_ordered: false } => OpProps { complete: true, ..OpProps::default() },
+        _ => OpProps::default(),
     }
 }
 
