@@ -22,28 +22,29 @@ impl<Lr: LatticeRepr> Debottom for BottomRepr<Lr> {
 
 mod fns {
     use ref_cast::RefCast;
-    use crate::hide::{Hide, Qualifier};
+    use crate::hide::{Hide};
+    use crate::eight_traits::OpProps;
 
     use super::*;
 
-    impl<Y: Qualifier, R: LatticeRepr> Hide<Y, BottomRepr<R>> {
-        pub fn unwrap(self) -> Hide<Y, R> {
+    impl<R: LatticeRepr, const META: OpProps> Hide<BottomRepr<R>, META> {
+        pub fn reveal_unwrap(self) -> Hide<R, META> {
             Hide::new(self.into_reveal().unwrap())
         }
-        pub fn unwrap_ref<'h>(&'h self) -> &'h Hide<Y, R> {
+        pub fn reveal_unwrap_ref<'h>(&'h self) -> &'h Hide<R, META> {
             Hide::ref_cast(self.reveal_ref().as_ref().unwrap())
         }
-        pub fn unwrap_mut<'h>(&'h mut self) -> &'h mut Hide<Y, R> {
+        pub fn reveal_unwrap_mut<'h>(&'h mut self) -> &'h mut Hide<R, META> {
             Hide::ref_cast_mut(self.reveal_mut().as_mut().unwrap())
         }
 
-        pub fn reveal_ok_or<E>(self, err: E) -> Result<Hide<Y, R>, E> {
+        pub fn reveal_ok_or<E>(self, err: E) -> Result<Hide<R, META>, E> {
             self.into_reveal().ok_or(err).map(|elem| Hide::new(elem))
         }
-        pub fn reveal_ok_or_ref<'h, E>(&'h self, err: E) -> Result<&'h Hide<Y, R>, E> {
+        pub fn reveal_ok_or_ref<'h, E>(&'h self, err: E) -> Result<&'h Hide<R, META>, E> {
             self.reveal_ref().as_ref().ok_or(err).map(|elem| Hide::ref_cast(elem))
         }
-        pub fn reveal_ok_or_mut<'h, E>(&'h mut self, err: E) -> Result<&'h mut Hide<Y, R>, E> {
+        pub fn reveal_ok_or_mut<'h, E>(&'h mut self, err: E) -> Result<&'h mut Hide<R, META>, E> {
             self.reveal_mut().as_mut().ok_or(err).map(|elem| Hide::ref_cast_mut(elem))
         }
     }

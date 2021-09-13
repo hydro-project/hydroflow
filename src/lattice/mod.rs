@@ -1,5 +1,6 @@
 use std::borrow::Cow;
-use crate::hide::{Hide, Qualifier};
+use crate::hide::{Hide};
+use crate::eight_traits::OpProps;
 
 pub mod set_union;
 pub mod map_union;
@@ -24,7 +25,7 @@ pub trait Merge<Delta: LatticeRepr>: LatticeRepr<Lattice = Delta::Lattice> {
     /// Merge DELTA into THIS. Return TRUE if THIS changed, FALSE if THIS was unchanged.
     fn merge(this: &mut Self::Repr, delta: Delta::Repr) -> bool;
 
-    fn merge_hide<Y: Qualifier, Z: Qualifier>(this: &mut Hide<Y, Self>, delta: Hide<Z, Delta>) -> bool {
+    fn merge_hide<const META_THIS: OpProps, const META_DELTA: OpProps>(this: &mut Hide<Self, META_THIS>, delta: Hide<Delta, META_DELTA>) -> bool {
         Self::merge(this.reveal_mut(), delta.into_reveal())
     }
 }
@@ -32,11 +33,11 @@ pub trait Merge<Delta: LatticeRepr>: LatticeRepr<Lattice = Delta::Lattice> {
 pub trait Convert<Target: LatticeRepr<Lattice = Self::Lattice>>: LatticeRepr {
     fn convert(this: Self::Repr) -> Target::Repr;
 
-    fn convert_hide<Y: Qualifier>(this: Hide<Y, Self>) -> Hide<Y, Target> {
+    fn convert_hide<const META: OpProps>(this: Hide<Self, META>) -> Hide<Target, META> {
         Hide::new(Self::convert(this.into_reveal()))
     }
 
-    fn convert_hide_cow<'h, Y: Qualifier>(this: Cow<'h, Hide<Y, Self>>) -> Hide<Y, Target>
+    fn convert_hide_cow<'h, const META: OpProps>(this: Cow<'h, Hide<Self, META>>) -> Hide<Target, META>
     where
         Self: Sized,
     {

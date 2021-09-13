@@ -154,25 +154,26 @@ mod fns {
     use std::borrow::Cow;
     use std::iter::FromIterator;
 
-    use crate::hide::{Hide, Qualifier};
+    use crate::hide::{Hide};
     use crate::lattice::set_union::{SetUnionRepr, SetTag};
+    use crate::eight_traits::OpProps;
 
     use super::*;
 
-    impl<Y: Qualifier, Ra: LatticeRepr, Rb: LatticeRepr> Hide<Y, PairRepr<Ra, Rb>> {
-        pub fn split(self) -> (Hide<Y, Ra>, Hide<Y, Rb>) {
+    impl<Ra: LatticeRepr, Rb: LatticeRepr, const META: OpProps> Hide<PairRepr<Ra, Rb>, META> {
+        pub fn split(self) -> (Hide<Ra, META>, Hide<Rb, META>) {
             let (a, b) = self.into_reveal();
             (Hide::new(a), Hide::new(b))
         }
-        pub fn split_ref(&self) -> (&Hide<Y, Ra>, &Hide<Y, Rb>) {
+        pub fn split_ref(&self) -> (&Hide<Ra, META>, &Hide<Rb, META>) {
             let (a, b) = self.reveal_ref();
             (RefCast::ref_cast(a), RefCast::ref_cast(b))
         }
-        pub fn split_mut(&mut self) -> (&mut Hide<Y, Ra>, &mut Hide<Y, Rb>) {
+        pub fn split_mut(&mut self) -> (&mut Hide<Ra, META>, &mut Hide<Rb, META>) {
             let (a, b) = self.reveal_mut();
             (RefCast::ref_cast_mut(a), RefCast::ref_cast_mut(b))
         }
-        pub fn split_cow<'h>(this: Cow<'h, Self>) -> (Cow<'h, Hide<Y, Ra>>, Cow<'h, Hide<Y, Rb>>) {
+        pub fn split_cow<'h>(this: Cow<'h, Self>) -> (Cow<'h, Hide<Ra, META>>, Cow<'h, Hide<Rb, META>>) {
             match this {
                 Cow::Owned(hide) => {
                     let (a, b) = hide.split();
@@ -185,17 +186,17 @@ mod fns {
             }
         }
 
-        pub fn zip(a: Hide<Y, Ra>, b: Hide<Y, Rb>) -> Self {
+        pub fn zip(a: Hide<Ra, META>, b: Hide<Rb, META>) -> Self {
             Hide::new((a.into_reveal(), b.into_reveal()))
         }
     }
 
-    impl<Y: Qualifier, Ra: LatticeRepr, Rb: LatticeRepr> Hide<Y, PairRepr<Ra, Rb>>
+    impl<Ra: LatticeRepr, Rb: LatticeRepr, const META: OpProps> Hide<PairRepr<Ra, Rb>, META>
     where
         Ra::Repr: IntoIterator,
         Rb::Repr: Clone,
     {
-        pub fn partial_cartesian_product<TargetTag>(self) -> Hide<Y, SetUnionRepr<TargetTag, (<Ra::Repr as IntoIterator>::Item, Rb::Repr)>>
+        pub fn partial_cartesian_product<TargetTag>(self) -> Hide<SetUnionRepr<TargetTag, (<Ra::Repr as IntoIterator>::Item, Rb::Repr)>, META>
         where
             TargetTag: SetTag<(<Ra::Repr as IntoIterator>::Item, Rb::Repr)>,
             SetUnionRepr<TargetTag, (<Ra::Repr as IntoIterator>::Item, Rb::Repr)>: LatticeRepr,
