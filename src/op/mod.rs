@@ -4,7 +4,6 @@ use crate::hide::{Hide, Delta, Cumul};
 use crate::lattice::{Lattice, LatticeRepr};
 
 pub trait Op {
-    // TODO: separate REPRs for Delta and Cumul.
     type Lat: Lattice;
 
     type State: LatticeRepr;

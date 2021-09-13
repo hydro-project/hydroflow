@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 use ref_cast::RefCast;
 use crate::lattice::LatticeRepr;
+use crate::eight_traits::OpProps;
 
 pub trait Qualifier {}
 pub enum Delta {}
@@ -10,17 +11,24 @@ impl Qualifier for Cumul {}
 
 #[derive(RefCast)]
 #[repr(transparent)]
-pub struct Hide<Y: Qualifier, Lr: LatticeRepr + ?Sized>
+pub struct Hide<Lr: LatticeRepr + ?Sized, const PROPS: OpProps>
 {
     value: Lr::Repr,
-    _phantom: std::marker::PhantomData<Y>,
+    // _phantom: std::marker::PhantomData,
 }
 
-impl<Y: Qualifier, Lr: LatticeRepr + ?Sized> Hide<Y, Lr> {
+pub const fn PROPS_into_delta(props: OpProps) -> OpProps {
+    OpProps {
+        lattice_ordered: true,
+        ..props
+    }
+}
+
+impl<Lr: LatticeRepr + ?Sized, const PROPS: OpProps> Hide<Lr, PROPS> {
     pub fn new(value: Lr::Repr) -> Self {
         Self {
             value,
-            _phantom: std::marker::PhantomData,
+            // _phantom: std::marker::PhantomData,
         }
     }
 
@@ -36,16 +44,16 @@ impl<Y: Qualifier, Lr: LatticeRepr + ?Sized> Hide<Y, Lr> {
         &mut self.value
     }
 
-    pub fn into_delta(self) -> Hide<Delta, Lr> {
+    pub fn into_delta(self) -> Hide<Lr, {PROPS_into_delta(PROPS)}> {
         Hide::new(self.value)
     }
 
-    pub fn into_qualifier_reveal<Z: Qualifier>(self) -> Hide<Z, Lr> {
+    pub fn into_qualifier_reveal<const NEW_PROPS: OpProps>(self) -> Hide<Lr, NEW_PROPS> {
         Hide::new(self.value)
     }
 }
 
-impl<Y: Qualifier, Lr: LatticeRepr> Hide<Y, Lr> {
+impl<Lr: LatticeRepr, const PROPS: OpProps> Hide<Lr, PROPS> {
     pub fn reveal_cow<'h>(this: Cow<'h, Self>) -> Cow<'h, Lr::Repr> {
         match this {
             Cow::Owned(hide) => Cow::Owned(hide.into_reveal()),
@@ -53,7 +61,7 @@ impl<Y: Qualifier, Lr: LatticeRepr> Hide<Y, Lr> {
         }
     }
 
-    pub fn as_delta_cow<'h>(this: Cow<'h, Self>) -> Cow<'h, Hide<Delta, Lr>> {
+    pub fn as_delta_cow<'h>(this: Cow<'h, Self>) -> Cow<'h, Hide<Lr, {PROPS_into_delta(PROPS)}>> {
         match this {
             Cow::Owned(hide) => Cow::Owned(hide.into_delta()),
             Cow::Borrowed(hide) => Cow::Borrowed(Hide::ref_cast(hide.reveal_ref())),
@@ -61,11 +69,11 @@ impl<Y: Qualifier, Lr: LatticeRepr> Hide<Y, Lr> {
     }
 }
 
-impl<'h, Y: Qualifier, Lr: LatticeRepr + 'h> Clone for Hide<Y, Lr> {
+impl<Lr: LatticeRepr, const PROPS: OpProps> Clone for Hide<Lr, PROPS> {
     fn clone(&self) -> Self {
         Self {
             value: self.value.clone(),
-            _phantom: std::marker::PhantomData,
+            // _phantom: std::marker::PhantomData,
         }
     }
 }

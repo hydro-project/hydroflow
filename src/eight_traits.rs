@@ -3,7 +3,7 @@
 pub struct OpProps {
     pub complete: bool,
     pub time_ordered: bool,
-    pub lattice_ordered: bool,
+    pub lattice_ordered: bool, // E.g. cumulative.
 }
 
 impl OpProps {
