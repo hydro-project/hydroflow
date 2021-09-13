@@ -160,22 +160,23 @@ fn __assert_merges() {
 
 mod fns {
     use crate::collections::Single;
-    use crate::hide::{Hide, Delta, Cumul};
+    use crate::hide::{Hide};
     use crate::lattice::ord::MaxRepr;
-    use crate::eight_traits::OpProps;
+    use crate::props::{OpProps};
 
     use super::*;
 
-    impl<Tag: SetTag<T>, T, const COMPLETE: bool, const TIME_ORDERED: bool>
-        Hide<SetUnionRepr<Tag, T>, {OpProps { complete: COMPLETE, time_ordered: TIME_ORDERED, lattice_ordered: true }}>
-    where
-        Tag::Bind: Clone,
-        <SetUnionRepr<Tag, T> as LatticeRepr>::Repr: Collection<T, ()>,
-    {
-        pub fn len(&self) -> Hide<MaxRepr<usize>, {OpProps { complete: COMPLETE, time_ordered: TIME_ORDERED, lattice_ordered: true }}> {
-            Hide::new(self.reveal_ref().len())
-        }
-    }
+    // // TODO!!!
+    // impl<Tag: SetTag<T>, T, const COMPLETE: bool, const TIME_ORDERED: bool>
+    //     Hide<SetUnionRepr<Tag, T>, {require_lattice_ordered(COMPLETE, TIME_ORDERED)}>
+    // where
+    //     Tag::Bind: Clone,
+    //     <SetUnionRepr<Tag, T> as LatticeRepr>::Repr: Collection<T, ()>,
+    // {
+    //     pub fn len(&self) -> Hide<MaxRepr<usize>, {require_lattice_ordered(COMPLETE, TIME_ORDERED)}> {
+    //         Hide::new(self.reveal_ref().len())
+    //     }
+    // }
 
     impl<Tag: SetTag<T>, T, const META: OpProps> Hide<SetUnionRepr<Tag, T>, META>
     where
@@ -293,37 +294,37 @@ mod fns {
         }
     }
 
-    impl<Tag: SetTag<T>, T, const META: OpProps> Hide<SetUnionRepr<Tag, T>, META>
-    where
-        SetUnionRepr<Tag, T>: LatticeRepr,
-        <SetUnionRepr<Tag, T> as LatticeRepr>::Repr: IntoIterator<Item = T>,
-    {
-        //// CAUSES ICE FOR SOME REASON https://github.com/rust-lang/rust/issues/71113
-        // pub fn fold<TargetLr, MergeLr>(self) -> Hide<Y, TargetLr>
-        // where
-        //     MergeLr: LatticeRepr<Repr = T>,
-        //     TargetLr: LatticeRepr + Merge<MergeLr>,
-        //     <TargetLr as LatticeRepr>::Repr: Default,
-        // {
-        //     let mut out = Hide::new(Default::default());
-        //     for t in self.into_reveal().into_iter() {
-        //         <TargetLr as Merge<MergeLr>>::merge_hide(&mut out, Hide::<Delta, _>::new(t));
-        //     }
-        //     out
-        // }
-    }
+    // impl<Tag: SetTag<T>, T, const META: OpProps> Hide<SetUnionRepr<Tag, T>, META>
+    // where
+    //     SetUnionRepr<Tag, T>: LatticeRepr,
+    //     <SetUnionRepr<Tag, T> as LatticeRepr>::Repr: IntoIterator<Item = T>,
+    // {
+    //     //// CAUSES ICE FOR SOME REASON https://github.com/rust-lang/rust/issues/71113
+    //     // pub fn fold<TargetLr, MergeLr>(self) -> Hide<Y, TargetLr>
+    //     // where
+    //     //     MergeLr: LatticeRepr<Repr = T>,
+    //     //     TargetLr: LatticeRepr + Merge<MergeLr>,
+    //     //     <TargetLr as LatticeRepr>::Repr: Default,
+    //     // {
+    //     //     let mut out = Hide::new(Default::default());
+    //     //     for t in self.into_reveal().into_iter() {
+    //     //         <TargetLr as Merge<MergeLr>>::merge_hide(&mut out, Hide::<Delta, _>::new(t));
+    //     //     }
+    //     //     out
+    //     // }
+    // }
 
-    fn __test_things() {
-        let my_lattice: Hide<Cumul, SetUnionRepr<tag::HASH_SET, u32>> =
-            Hide::new(vec![ 0, 1, 2, 3, 5, 8, 13 ].into_iter().collect());
+    // fn __test_things() {
+    //     let my_lattice: Hide<Cumul, SetUnionRepr<tag::HASH_SET, u32>> =
+    //         Hide::new(vec![ 0, 1, 2, 3, 5, 8, 13 ].into_iter().collect());
 
-        let _: Hide<Cumul, MaxRepr<usize>> = my_lattice.len();
-        let _: Hide<Cumul, MaxRepr<bool>>  = my_lattice.contains(&4);
+    //     let _: Hide<Cumul, MaxRepr<usize>> = my_lattice.len();
+    //     let _: Hide<Cumul, MaxRepr<bool>>  = my_lattice.contains(&4);
 
-        let my_delta: Hide<Delta, SetUnionRepr<tag::HASH_SET, u32>> =
-            Hide::new(vec![ 0, 1, 2, 3, 5, 8, 13 ].into_iter().collect());
+    //     let my_delta: Hide<Delta, SetUnionRepr<tag::HASH_SET, u32>> =
+    //         Hide::new(vec![ 0, 1, 2, 3, 5, 8, 13 ].into_iter().collect());
 
-        // let _: Hide<Cumul, MaxRepr<usize>> = my_delta.len();
-        let _: Hide<Cumul, MaxRepr<bool>>  = my_delta.contains(&4);
-    }
+    //     // let _: Hide<Cumul, MaxRepr<usize>> = my_delta.len();
+    //     let _: Hide<Cumul, MaxRepr<bool>>  = my_delta.contains(&4);
+    // }
 }

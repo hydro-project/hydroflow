@@ -1,15 +1,14 @@
 use std::borrow::Cow;
 use crate::lattice::LatticeRepr;
-use crate::lattice::pair::PairRepr;
-use crate::hide::{Hide, Qualifier, Cumul};
-use crate::eight_traits::OpProps;
+use crate::hide::{Hide};
+use crate::props::{OpProps, require_lattice_ordered};
 
 pub trait Monotone {
     type InLatRepr:  LatticeRepr;
     type OutLatRepr: LatticeRepr;
     fn call<'h, const COMPLETE: bool, const TIME_ORDERED: bool>
-        (item: Cow<'h, Hide<Self::InLatRepr, {OpProps { complete: COMPLETE, time_ordered: TIME_ORDERED, lattice_ordered: true}}>>)
-        -> Cow<'h, Hide<Self::OutLatRepr, {OpProps { complete: COMPLETE, time_ordered: TIME_ORDERED, lattice_ordered: true}}>>;
+        (item: Cow<'h, Hide<Self::InLatRepr, {require_lattice_ordered(COMPLETE, TIME_ORDERED)}>>)
+        -> Cow<'h, Hide<Self::OutLatRepr, {require_lattice_ordered(COMPLETE, TIME_ORDERED)}>>;
 }
 
 pub trait Morphism {
@@ -26,8 +25,8 @@ impl<F: Morphism + ?Sized> Monotone for MorphismAsMonotone<F> {
     type InLatRepr  = F::InLatRepr;
     type OutLatRepr = F::OutLatRepr;
     fn call<'h, const COMPLETE: bool, const TIME_ORDERED: bool>
-        (item: Cow<'h, Hide<Self::InLatRepr, {OpProps { complete: COMPLETE, time_ordered: TIME_ORDERED, lattice_ordered: true}}>>)
-        -> Cow<'h, Hide<Self::OutLatRepr, {OpProps { complete: COMPLETE, time_ordered: TIME_ORDERED, lattice_ordered: true}}>>
+        (item: Cow<'h, Hide<Self::InLatRepr, {require_lattice_ordered(COMPLETE, TIME_ORDERED)}>>)
+        -> Cow<'h, Hide<Self::OutLatRepr, {require_lattice_ordered(COMPLETE, TIME_ORDERED)}>>
     {
         F::call(item)
     }

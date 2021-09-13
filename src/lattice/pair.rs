@@ -156,7 +156,7 @@ mod fns {
 
     use crate::hide::{Hide};
     use crate::lattice::set_union::{SetUnionRepr, SetTag};
-    use crate::eight_traits::OpProps;
+    use crate::props::OpProps;
 
     use super::*;
 

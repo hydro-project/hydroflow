@@ -23,7 +23,7 @@ impl<Lr: LatticeRepr> Debottom for BottomRepr<Lr> {
 mod fns {
     use ref_cast::RefCast;
     use crate::hide::{Hide};
-    use crate::eight_traits::OpProps;
+    use crate::props::OpProps;
 
     use super::*;
 

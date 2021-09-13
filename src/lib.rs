@@ -7,7 +7,6 @@
 
 pub mod collections;
 
-pub mod tag;
 
 pub mod hide;
 
@@ -19,4 +18,8 @@ pub mod op;
 
 pub mod graph;
 
-pub mod eight_traits;
+// pub mod eight_traits;
+
+pub mod props;
+
+pub mod tag;

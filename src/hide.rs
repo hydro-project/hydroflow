@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 use ref_cast::RefCast;
 use crate::lattice::LatticeRepr;
-use crate::eight_traits::OpProps;
+use crate::props::OpProps;
 
 pub trait Qualifier {}
 pub enum Delta {}

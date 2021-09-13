@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 use crate::hide::{Hide};
-use crate::eight_traits::OpProps;
+use crate::props::OpProps;
 
 pub mod set_union;
 pub mod map_union;
