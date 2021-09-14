@@ -27,24 +27,24 @@ mod fns {
 
     use super::*;
 
-    impl<R: LatticeRepr, const META: OpProps> Hide<BottomRepr<R>, META> {
-        pub fn reveal_unwrap(self) -> Hide<R, META> {
-            Hide::new(self.into_reveal().unwrap())
+    impl<R: LatticeRepr, Props: OpProps> Hide<BottomRepr<R>, Props> {
+        pub fn reveal_unwrap(self) -> Hide<R, Props> {
+            <Hide<R, Props>>::new(Self::into_reveal(self).unwrap())
         }
-        pub fn reveal_unwrap_ref<'h>(&'h self) -> &'h Hide<R, META> {
-            Hide::ref_cast(self.reveal_ref().as_ref().unwrap())
+        pub fn reveal_unwrap_ref<'h>(&'h self) -> &'h Hide<R, Props> {
+            <Hide<R, Props>>::ref_cast(Self::reveal_ref(self).as_ref().unwrap())
         }
-        pub fn reveal_unwrap_mut<'h>(&'h mut self) -> &'h mut Hide<R, META> {
+        pub fn reveal_unwrap_mut<'h>(&'h mut self) -> &'h mut Hide<R, Props> {
             Hide::ref_cast_mut(self.reveal_mut().as_mut().unwrap())
         }
 
-        pub fn reveal_ok_or<E>(self, err: E) -> Result<Hide<R, META>, E> {
-            self.into_reveal().ok_or(err).map(|elem| Hide::new(elem))
+        pub fn reveal_ok_or<E>(self, err: E) -> Result<Hide<R, Props>, E> {
+            Self::into_reveal(self).ok_or(err).map(|elem| <Hide<R, Props>>::new(elem))
         }
-        pub fn reveal_ok_or_ref<'h, E>(&'h self, err: E) -> Result<&'h Hide<R, META>, E> {
-            self.reveal_ref().as_ref().ok_or(err).map(|elem| Hide::ref_cast(elem))
+        pub fn reveal_ok_or_ref<'h, E>(&'h self, err: E) -> Result<&'h Hide<R, Props>, E> {
+            Self::reveal_ref(self).as_ref().ok_or(err).map(|elem| <Hide<R, Props>>::ref_cast(elem))
         }
-        pub fn reveal_ok_or_mut<'h, E>(&'h mut self, err: E) -> Result<&'h mut Hide<R, META>, E> {
+        pub fn reveal_ok_or_mut<'h, E>(&'h mut self, err: E) -> Result<&'h mut Hide<R, Props>, E> {
             self.reveal_mut().as_mut().ok_or(err).map(|elem| Hide::ref_cast_mut(elem))
         }
     }

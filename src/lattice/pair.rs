@@ -160,53 +160,53 @@ mod fns {
 
     use super::*;
 
-    impl<Ra: LatticeRepr, Rb: LatticeRepr, const META: OpProps> Hide<PairRepr<Ra, Rb>, META> {
-        pub fn split(self) -> (Hide<Ra, META>, Hide<Rb, META>) {
-            let (a, b) = self.into_reveal();
-            (Hide::new(a), Hide::new(b))
+    impl<Ra: LatticeRepr, Rb: LatticeRepr, Props: OpProps> Hide<PairRepr<Ra, Rb>, Props> {
+        pub fn split(self) -> (Hide<Ra, Props>, Hide<Rb, Props>) {
+            let (a, b) = Self::into_reveal(self);
+            (<Hide<Ra, Props>>::new(a), <Hide<Rb, Props>>::new(b))
         }
-        pub fn split_ref(&self) -> (&Hide<Ra, META>, &Hide<Rb, META>) {
-            let (a, b) = self.reveal_ref();
+        pub fn split_ref(&self) -> (&Hide<Ra, Props>, &Hide<Rb, Props>) {
+            let (a, b) = Self::reveal_ref(self);
             (RefCast::ref_cast(a), RefCast::ref_cast(b))
         }
-        pub fn split_mut(&mut self) -> (&mut Hide<Ra, META>, &mut Hide<Rb, META>) {
+        pub fn split_mut(&mut self) -> (&mut Hide<Ra, Props>, &mut Hide<Rb, Props>) {
             let (a, b) = self.reveal_mut();
             (RefCast::ref_cast_mut(a), RefCast::ref_cast_mut(b))
         }
-        pub fn split_cow<'h>(this: Cow<'h, Self>) -> (Cow<'h, Hide<Ra, META>>, Cow<'h, Hide<Rb, META>>) {
+        pub fn split_cow<'h>(this: Cow<'h, Self>) -> (Cow<'h, Hide<Ra, Props>>, Cow<'h, Hide<Rb, Props>>) {
             match this {
                 Cow::Owned(hide) => {
-                    let (a, b) = hide.split();
+                    let (a, b) = Self::split(hide);
                     (Cow::Owned(a), Cow::Owned(b))
                 }
                 Cow::Borrowed(hide) => {
-                    let (a, b) = hide.split_ref();
+                    let (a, b) = Self::split_ref(hide);
                     (Cow::Borrowed(a), Cow::Borrowed(b))
                 }
             }
         }
 
-        pub fn zip(a: Hide<Ra, META>, b: Hide<Rb, META>) -> Self {
-            Hide::new((a.into_reveal(), b.into_reveal()))
+        pub fn zip(a: Hide<Ra, Props>, b: Hide<Rb, Props>) -> Self {
+            Self::new((<Hide<Ra, Props>>::into_reveal(a), <Hide<Rb, Props>>::into_reveal(b)))
         }
     }
 
-    impl<Ra: LatticeRepr, Rb: LatticeRepr, const META: OpProps> Hide<PairRepr<Ra, Rb>, META>
+    impl<Ra: LatticeRepr, Rb: LatticeRepr, Props: OpProps> Hide<PairRepr<Ra, Rb>, Props>
     where
         Ra::Repr: IntoIterator,
         Rb::Repr: Clone,
     {
-        pub fn partial_cartesian_product<TargetTag>(self) -> Hide<SetUnionRepr<TargetTag, (<Ra::Repr as IntoIterator>::Item, Rb::Repr)>, META>
+        pub fn partial_cartesian_product<TargetTag>(self) -> Hide<SetUnionRepr<TargetTag, (<Ra::Repr as IntoIterator>::Item, Rb::Repr)>, Props>
         where
             TargetTag: SetTag<(<Ra::Repr as IntoIterator>::Item, Rb::Repr)>,
             SetUnionRepr<TargetTag, (<Ra::Repr as IntoIterator>::Item, Rb::Repr)>: LatticeRepr,
             <SetUnionRepr<TargetTag, (<Ra::Repr as IntoIterator>::Item, Rb::Repr)> as LatticeRepr>::Repr: Clone + FromIterator<(<Ra::Repr as IntoIterator>::Item, Rb::Repr)>,
         {
-            let (a, b) = self.into_reveal();
+            let (a, b) = Self::into_reveal(self);
             let out = a.into_iter()
                 .map(|item_a| (item_a, b.clone()))
                 .collect();
-            Hide::new(out)
+            <Hide<SetUnionRepr<TargetTag, (<Ra::Repr as IntoIterator>::Item, Rb::Repr)>, Props>>::new(out)
         }
     }
 }

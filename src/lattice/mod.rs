@@ -25,24 +25,24 @@ pub trait Merge<Delta: LatticeRepr>: LatticeRepr<Lattice = Delta::Lattice> {
     /// Merge DELTA into THIS. Return TRUE if THIS changed, FALSE if THIS was unchanged.
     fn merge(this: &mut Self::Repr, delta: Delta::Repr) -> bool;
 
-    fn merge_hide<const META_THIS: OpProps, const META_DELTA: OpProps>(this: &mut Hide<Self, META_THIS>, delta: Hide<Delta, META_DELTA>) -> bool {
-        Self::merge(this.reveal_mut(), delta.into_reveal())
+    fn merge_hide<PropsThis: OpProps, PropsDelta: OpProps>(this: &mut Hide<Self, PropsThis>, delta: Hide<Delta, PropsDelta>) -> bool {
+        Self::merge(this.reveal_mut(), <Hide<Delta, PropsDelta>>::into_reveal(delta))
     }
 }
 
 pub trait Convert<Target: LatticeRepr<Lattice = Self::Lattice>>: LatticeRepr {
     fn convert(this: Self::Repr) -> Target::Repr;
 
-    fn convert_hide<const META: OpProps>(this: Hide<Self, META>) -> Hide<Target, META> {
-        Hide::new(Self::convert(this.into_reveal()))
+    fn convert_hide<Props: OpProps>(this: Hide<Self, Props>) -> Hide<Target, Props> {
+        <Hide<Target, Props>>::new(Self::convert(<Hide<Self, Props>>::into_reveal(this)))
     }
 
-    fn convert_hide_cow<'h, const META: OpProps>(this: Cow<'h, Hide<Self, META>>) -> Hide<Target, META>
+    fn convert_hide_cow<'h, Props: OpProps>(this: Cow<'h, Hide<Self, Props>>) -> Hide<Target, Props>
     where
         Self: Sized,
     {
         // TODO MAKES EXTRA CLONE (into_owned())...
-        Hide::new(Self::convert(this.into_owned().into_reveal()))
+        <Hide<Target, Props>>::new(Self::convert(<Hide<Self, Props>>::into_reveal(this.into_owned())))
     }
 }
 
