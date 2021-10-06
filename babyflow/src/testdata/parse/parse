@@ -1,0 +1,117 @@
+parse
+a(1).
+a(B).
+a(z).
+----
+Syntax {
+    clauses: [
+        Clause {
+            head: Predicate {
+                name: "a",
+                args: [
+                    Datum(
+                        Int(
+                            1,
+                        ),
+                    ),
+                ],
+            },
+            body: [],
+        },
+        Clause {
+            head: Predicate {
+                name: "a",
+                args: [
+                    Var(
+                        "B",
+                    ),
+                ],
+            },
+            body: [],
+        },
+        Clause {
+            head: Predicate {
+                name: "a",
+                args: [
+                    Datum(
+                        Atom(
+                            "z",
+                        ),
+                    ),
+                ],
+            },
+            body: [],
+        },
+    ],
+}
+
+parse
+a(A) <- b(1, A).
+----
+Syntax {
+    clauses: [
+        Clause {
+            head: Predicate {
+                name: "a",
+                args: [
+                    Var(
+                        "A",
+                    ),
+                ],
+            },
+            body: [
+                Predicate {
+                    name: "b",
+                    args: [
+                        Datum(
+                            Int(
+                                1,
+                            ),
+                        ),
+                        Var(
+                            "A",
+                        ),
+                    ],
+                },
+            ],
+        },
+    ],
+}
+
+parse
+a(A) <- b(1, A, a).
+----
+Syntax {
+    clauses: [
+        Clause {
+            head: Predicate {
+                name: "a",
+                args: [
+                    Var(
+                        "A",
+                    ),
+                ],
+            },
+            body: [
+                Predicate {
+                    name: "b",
+                    args: [
+                        Datum(
+                            Int(
+                                1,
+                            ),
+                        ),
+                        Var(
+                            "A",
+                        ),
+                        Datum(
+                            Atom(
+                                "a",
+                            ),
+                        ),
+                    ],
+                },
+            ],
+        },
+    ],
+}
