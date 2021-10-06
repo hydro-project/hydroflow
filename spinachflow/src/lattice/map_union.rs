@@ -24,7 +24,7 @@ pub struct MapUnionRepr<Tag: MapTag<K, B::Repr>, K, B: LatticeRepr> {
     _phantom: std::marker::PhantomData<(Tag, K, B)>,
 }
 
-impl<Tag: MapTag<K, B::Repr>, K: 'static, B: LatticeRepr> LatticeRepr for MapUnionRepr<Tag, K, B>
+impl<Tag: MapTag<K, B::Repr>, K, B: LatticeRepr> LatticeRepr for MapUnionRepr<Tag, K, B>
 where
     Tag::Bind: Clone,
 {
@@ -159,9 +159,8 @@ where
 // }
 
 mod fns {
-    use crate::hide::{Hide};
+    use crate::hide::{Hide, Qualifier};
     use crate::lattice::set_union::{SetTag, SetUnion, SetUnionRepr};
-    use crate::props::OpProps;
 
     use super::*;
 
@@ -174,7 +173,7 @@ mod fns {
     //     }
     // }
 
-    impl<K: Clone, InnerK: Clone, Tag, InnerTag, InnermostLr, Props: OpProps> Hide<MapUnionRepr<Tag, K, MapUnionRepr<InnerTag, InnerK, InnermostLr>>, Props>
+    impl<Y: Qualifier, K: Clone, InnerK: Clone, Tag, InnerTag, InnermostLr> Hide<Y, MapUnionRepr<Tag, K, MapUnionRepr<InnerTag, InnerK, InnermostLr>>>
     where
         InnermostLr: LatticeRepr,
         InnerTag: MapTag<InnerK, InnermostLr::Repr>,
@@ -185,7 +184,7 @@ mod fns {
         MapUnionRepr<Tag, K, MapUnionRepr<InnerTag, InnerK, InnermostLr>>: LatticeRepr,
         <MapUnionRepr<Tag, K, MapUnionRepr<InnerTag, InnerK, InnermostLr>> as LatticeRepr>::Repr: IntoIterator<Item = (K, <MapUnionRepr<InnerTag, InnerK, InnermostLr> as LatticeRepr>::Repr)>,
     {
-        pub fn transpose<TargetTag, TargetInnerTag>(self) -> Hide<MapUnionRepr<TargetTag, InnerK, MapUnionRepr<TargetInnerTag, K, InnermostLr>>, Props>
+        pub fn transpose<TargetTag, TargetInnerTag>(self) -> Hide<Y, MapUnionRepr<TargetTag, InnerK, MapUnionRepr<TargetInnerTag, K, InnermostLr>>>
         where
             TargetInnerTag: MapTag<K, InnermostLr::Repr>,
             MapUnionRepr<TargetInnerTag, K, InnermostLr>: LatticeRepr,
@@ -197,37 +196,37 @@ mod fns {
         {
             let mut out = <<MapUnionRepr<TargetTag, InnerK, MapUnionRepr<TargetInnerTag, K, InnermostLr>> as LatticeRepr>::Repr as Default>::default();
 
-            for (outer_k, inner_map) in Self::into_reveal(self).into_iter() {
+            for (outer_k, inner_map) in self.into_reveal().into_iter() {
                 for (inner_k, value) in inner_map.into_iter() {
                     <MapUnionRepr<TargetTag, InnerK, MapUnionRepr<TargetInnerTag, K, InnermostLr>> as Merge<MapUnionRepr<tag::SINGLE, InnerK, MapUnionRepr<tag::SINGLE, K, InnermostLr>>>>
                         ::merge(&mut out, Single((inner_k, Single((outer_k.clone(), value)))));
                 }
             }
 
-            <Hide<MapUnionRepr<TargetTag, InnerK, MapUnionRepr<TargetInnerTag, K, InnermostLr>>, Props>>::new(out)
+            Hide::new(out)
         }
     }
 
-    impl<K: Clone, Tag, InnerLr: LatticeRepr, Props: OpProps> Hide<MapUnionRepr<Tag, K, InnerLr>, Props>
+    impl<Y: Qualifier, K: Clone, Tag, InnerLr: LatticeRepr> Hide<Y, MapUnionRepr<Tag, K, InnerLr>>
     where
         Tag: MapTag<K, InnerLr::Repr>,
         MapUnionRepr<Tag, K, InnerLr>: LatticeRepr,
         <MapUnionRepr<Tag, K, InnerLr> as LatticeRepr>::Repr: IntoIterator<Item = (K, InnerLr::Repr)>,
     {
-        pub fn fold_values<TargetLr>(self) -> Hide<TargetLr, Props>
+        pub fn fold_values<TargetLr>(self) -> Hide<Y, TargetLr>
         where
             TargetLr: LatticeRepr + Merge<InnerLr>,
             TargetLr::Repr: Default,
         {
             let mut out = <TargetLr::Repr as Default>::default();
-            for (_key, val) in Self::into_reveal(self).into_iter() {
+            for (_key, val) in self.into_reveal().into_iter() {
                 <TargetLr as Merge<InnerLr>>::merge(&mut out, val);
             }
-            <Hide<TargetLr, Props>>::new(out)
+            Hide::new(out)
         }
     }
 
-    impl<K: Clone, V: Clone, Tag, SetUnionLr, Props: OpProps> Hide<MapUnionRepr<Tag, K, SetUnionLr>, Props>
+    impl<Y: Qualifier, K: Clone, V: Clone, Tag, SetUnionLr> Hide<Y, MapUnionRepr<Tag, K, SetUnionLr>>
     where
         SetUnionLr: LatticeRepr<Lattice = SetUnion<V>>,
         <SetUnionLr as LatticeRepr>::Repr: IntoIterator<Item = V>,
@@ -235,19 +234,19 @@ mod fns {
         MapUnionRepr<Tag, K, SetUnionLr>: LatticeRepr,
         <MapUnionRepr<Tag, K, SetUnionLr> as LatticeRepr>::Repr: IntoIterator<Item = (K, SetUnionLr::Repr)>,
     {
-        pub fn flatten_keyed<TargetTag>(self) -> Hide<SetUnionRepr<TargetTag, (K, V)>, Props>
+        pub fn flatten_keyed<TargetTag>(self) -> Hide<Y, SetUnionRepr<TargetTag, (K, V)>>
         where
             TargetTag: SetTag<(K, V)>,
             SetUnionRepr<TargetTag, (K, V)>: LatticeRepr + Merge<SetUnionRepr<tag::SINGLE, (K, V)>>,
             <SetUnionRepr<TargetTag, (K, V)> as LatticeRepr>::Repr: Default,
         {
             let mut out = <<SetUnionRepr<TargetTag, (K, V)> as LatticeRepr>::Repr as Default>::default();
-            for (key, vals) in Self::into_reveal(self).into_iter() {
+            for (key, vals) in self.into_reveal().into_iter() {
                 for val in vals.into_iter() {
                     <SetUnionRepr<TargetTag, (K, V)> as Merge<SetUnionRepr<tag::SINGLE, (K, V)>>>::merge(&mut out, Single((key.clone(), val)));
                 }
             }
-            <Hide<SetUnionRepr<TargetTag, (K, V)>, Props>>::new(out)
+            Hide::new(out)
         }
     }
 }

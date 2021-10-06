@@ -1,23 +1,21 @@
-use std::borrow::Cow;
-use ref_cast::RefCast;
 use crate::lattice::LatticeRepr;
-use crate::props::{OpProps};
+
+use ref_cast::RefCast;
 
 pub trait Qualifier {}
 pub enum Delta {}
 impl Qualifier for Delta {}
-pub enum Cumul {}
-impl Qualifier for Cumul {}
+pub enum Value {}
+impl Qualifier for Value {}
 
 #[derive(RefCast)]
 #[repr(transparent)]
-pub struct Hide<Lr: LatticeRepr + ?Sized, Props: OpProps>
-{
+pub struct Hide<Y: Qualifier, Lr: LatticeRepr + ?Sized> {
     value: Lr::Repr,
-    _phantom: std::marker::PhantomData<Props>,
+    _phantom: std::marker::PhantomData<Y>,
 }
 
-impl<Lr: LatticeRepr + ?Sized, Props: OpProps> Hide<Lr, Props> {
+impl<Y: Qualifier, Lr: LatticeRepr + ?Sized> Hide<Y, Lr> {
     pub fn new(value: Lr::Repr) -> Self {
         Self {
             value,
@@ -37,38 +35,16 @@ impl<Lr: LatticeRepr + ?Sized, Props: OpProps> Hide<Lr, Props> {
         &mut self.value
     }
 
-    // pub fn into_delta(self) -> Hide<Lr, OpProps_Or<Props, (False, False, True)>>
-    // where
-    //     Props: OpProps_OrComp<(False, False, True)>, // TODO THIS IS WRONG
-    // {
-    //     Hide::<Lr, OpProps_Or<Props, (False, False, True)>>::new(self.value)
-    // }
+    pub fn into_delta(self) -> Hide<Delta, Lr> {
+        Hide::new(self.value)
+    }
 
-    pub fn into_qualifier_reveal<NewProps: OpProps>(self) -> Hide<Lr, NewProps> {
-        Hide::<Lr, NewProps>::new(self.value)
+    pub fn into_qualifier_reveal<Z: Qualifier>(self) -> Hide<Z, Lr> {
+        Hide::new(self.value)
     }
 }
 
-impl<Lr: LatticeRepr, Props: OpProps> Hide<Lr, Props> {
-    pub fn reveal_cow<'h>(this: Cow<'h, Self>) -> Cow<'h, Lr::Repr> {
-        match this {
-            Cow::Owned(hide) => Cow::Owned(Self::into_reveal(hide)),
-            Cow::Borrowed(hide) => Cow::Borrowed(Self::reveal_ref(hide)),
-        }
-    }
-
-    // pub fn as_delta_cow<'h>(this: Cow<'h, Self>) -> Cow<'h, Hide<Lr, OpProps_Or<Props, (False, False, True)>>>
-    // where
-    //     Props: OpProps_OrComp<(False, False, True)>, // TODO THIS IS WRONG
-    // {
-    //     match this {
-    //         Cow::Owned(hide) => Cow::Owned(Self::into_delta(hide)),
-    //         Cow::Borrowed(hide) => Cow::Borrowed(Hide::<Lr, OpProps_Or<Props, (False, False, True)>>::ref_cast(Self::reveal_ref(hide))),
-    //     }
-    // }
-}
-
-impl<Lr: LatticeRepr, Props: OpProps> Clone for Hide<Lr, Props> {
+impl<Y: Qualifier, Lr: LatticeRepr> Clone for Hide<Y, Lr> {
     fn clone(&self) -> Self {
         Self {
             value: self.value.clone(),

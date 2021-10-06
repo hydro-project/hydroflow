@@ -1,6 +1,5 @@
 use std::cmp::Ordering;
-use ref_cast::RefCast;
-use either::Either;
+
 use super::{Lattice, LatticeRepr, Merge, Compare, Convert, Debottom, Top};
 use super::bottom::BottomRepr;
 
@@ -19,14 +18,6 @@ impl<Ra: LatticeRepr, Rb: LatticeRepr> LatticeRepr for PairRepr<Ra, Rb> {
     type Repr = (Ra::Repr, Rb::Repr);
 }
 
-pub struct PairEitherRepr<Ra: LatticeRepr, Rb: LatticeRepr> {
-    _phantom: std::marker::PhantomData<(Ra, Rb)>,
-}
-impl<Ra: LatticeRepr, Rb: LatticeRepr> LatticeRepr for PairEitherRepr<Ra, Rb> {
-    type Lattice = Pair<Ra::Lattice, Rb::Lattice>;
-    type Repr = Either<Ra::Repr, Rb::Repr>;
-}
-
 impl<SelfRA, SelfRB, DeltaRA, DeltaRB, La, Lb> Merge<PairRepr<DeltaRA, DeltaRB>> for PairRepr<SelfRA, SelfRB>
 where
     La: Lattice,
@@ -43,23 +34,6 @@ where
     fn merge(this: &mut <PairRepr<SelfRA, SelfRB> as LatticeRepr>::Repr, delta: <PairRepr<DeltaRA, DeltaRB> as LatticeRepr>::Repr) -> bool {
         // Do NOT use short-circuiting `&&`.
         SelfRA::merge(&mut this.0, delta.0) & SelfRB::merge(&mut this.1, delta.1)
-    }
-}
-
-// TODO make this more generic.
-impl<SelfRA, SelfRB, TargetRA, TargetRB, La, Lb> Convert<PairRepr<TargetRA, TargetRB>> for PairRepr<SelfRA, SelfRB>
-where
-    La: Lattice,
-    Lb: Lattice,
-    SelfRA:   LatticeRepr<Lattice = La>,
-    SelfRB:   LatticeRepr<Lattice = Lb>,
-    TargetRA: LatticeRepr<Lattice = La>,
-    TargetRB: LatticeRepr<Lattice = Lb>,
-    SelfRA: Convert<TargetRA>,
-    SelfRB: Convert<TargetRB>,
-{
-    fn convert(this: Self::Repr) -> <PairRepr<TargetRA, TargetRB> as LatticeRepr>::Repr {
-        (SelfRA::convert(this.0), SelfRB::convert(this.1))
     }
 }
 
@@ -151,62 +125,40 @@ fn __assert_merges() {
 }
 
 mod fns {
-    use std::borrow::Cow;
     use std::iter::FromIterator;
 
-    use crate::hide::{Hide};
+    use crate::hide::{Hide, Qualifier};
     use crate::lattice::set_union::{SetUnionRepr, SetTag};
-    use crate::props::OpProps;
 
     use super::*;
 
-    impl<Ra: LatticeRepr, Rb: LatticeRepr, Props: OpProps> Hide<PairRepr<Ra, Rb>, Props> {
-        pub fn split(self) -> (Hide<Ra, Props>, Hide<Rb, Props>) {
-            let (a, b) = Self::into_reveal(self);
-            (<Hide<Ra, Props>>::new(a), <Hide<Rb, Props>>::new(b))
-        }
-        pub fn split_ref(&self) -> (&Hide<Ra, Props>, &Hide<Rb, Props>) {
-            let (a, b) = Self::reveal_ref(self);
-            (RefCast::ref_cast(a), RefCast::ref_cast(b))
-        }
-        pub fn split_mut(&mut self) -> (&mut Hide<Ra, Props>, &mut Hide<Rb, Props>) {
-            let (a, b) = self.reveal_mut();
-            (RefCast::ref_cast_mut(a), RefCast::ref_cast_mut(b))
-        }
-        pub fn split_cow<'h>(this: Cow<'h, Self>) -> (Cow<'h, Hide<Ra, Props>>, Cow<'h, Hide<Rb, Props>>) {
-            match this {
-                Cow::Owned(hide) => {
-                    let (a, b) = Self::split(hide);
-                    (Cow::Owned(a), Cow::Owned(b))
-                }
-                Cow::Borrowed(hide) => {
-                    let (a, b) = Self::split_ref(hide);
-                    (Cow::Borrowed(a), Cow::Borrowed(b))
-                }
-            }
+    impl<Y: Qualifier, Ra: LatticeRepr, Rb: LatticeRepr> Hide<Y, PairRepr<Ra, Rb>> {
+        pub fn split(self) -> (Hide<Y, Ra>, Hide<Y, Rb>) {
+            let (a, b) = self.into_reveal();
+            (Hide::new(a), Hide::new(b))
         }
 
-        pub fn zip(a: Hide<Ra, Props>, b: Hide<Rb, Props>) -> Self {
-            Self::new((<Hide<Ra, Props>>::into_reveal(a), <Hide<Rb, Props>>::into_reveal(b)))
+        pub fn zip(a: Hide<Y, Ra>, b: Hide<Y, Rb>) -> Self {
+            Hide::new((a.into_reveal(), b.into_reveal()))
         }
     }
 
-    impl<Ra: LatticeRepr, Rb: LatticeRepr, Props: OpProps> Hide<PairRepr<Ra, Rb>, Props>
+    impl<Y: Qualifier, Ra: LatticeRepr, Rb: LatticeRepr> Hide<Y, PairRepr<Ra, Rb>>
     where
         Ra::Repr: IntoIterator,
         Rb::Repr: Clone,
     {
-        pub fn partial_cartesian_product<TargetTag>(self) -> Hide<SetUnionRepr<TargetTag, (<Ra::Repr as IntoIterator>::Item, Rb::Repr)>, Props>
+        pub fn partial_cartesian_product<TargetTag>(self) -> Hide<Y, SetUnionRepr<TargetTag, (<Ra::Repr as IntoIterator>::Item, Rb::Repr)>>
         where
             TargetTag: SetTag<(<Ra::Repr as IntoIterator>::Item, Rb::Repr)>,
             SetUnionRepr<TargetTag, (<Ra::Repr as IntoIterator>::Item, Rb::Repr)>: LatticeRepr,
             <SetUnionRepr<TargetTag, (<Ra::Repr as IntoIterator>::Item, Rb::Repr)> as LatticeRepr>::Repr: Clone + FromIterator<(<Ra::Repr as IntoIterator>::Item, Rb::Repr)>,
         {
-            let (a, b) = Self::into_reveal(self);
+            let (a, b) = self.into_reveal();
             let out = a.into_iter()
                 .map(|item_a| (item_a, b.clone()))
                 .collect();
-            <Hide<SetUnionRepr<TargetTag, (<Ra::Repr as IntoIterator>::Item, Rb::Repr)>, Props>>::new(out)
+            Hide::new(out)
         }
     }
 }

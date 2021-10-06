@@ -1,54 +1,69 @@
-use std::borrow::Cow;
+//! All the standard operators.
 
-use crate::hide::{Hide};
-use crate::lattice::{LatticeRepr};
-use crate::props::{OpProps};
+mod optrait;
+pub use optrait::*;
 
-pub trait OpInternal<Props: OpProps> {
-    type LatReprIn:  LatticeRepr;
-    type LatReprOut: LatticeRepr;
-
-    type PropsOut: OpProps;
-
-    #[must_use]
-    fn run<'h>(&'h mut self, element: Cow<'h, Hide<Self::LatReprIn, Props>>)
-        -> Cow<'h, Hide<Self::LatReprOut, Self::PropsOut>>;
-}
+mod opext;
+pub use opext::*;
 
 
-pub trait Op<Props: OpProps> {
-    type LatReprIn:  LatticeRepr;
-    type LatReprOut: LatticeRepr;
 
-    type PropsOut: OpProps;
+mod nullop;
+pub use nullop::*;
 
-    #[must_use]
-    fn run<'h>(&'h mut self, element: Cow<'h, Hide<Self::LatReprIn, Props>>)
-        -> Cow<'h, Hide<Self::LatReprOut, Self::PropsOut>>;
-}
+mod constop;
+pub use constop::*;
 
-// pub trait OpImpl<const META: OpProps> {
-//     fn get() {}
-// }
+mod onceop;
+pub use onceop::*;
 
-// pub trait Op<const META: OpProps> {
-//     fn get() {}
-// }
+mod iterop;
+pub use iterop::*;
 
+mod debugop;
+pub use debugop::*;
 
-// pub trait OpDelta: Op {
-//     type LatReprDeltaIn:  LatticeRepr;
-//     type LatReprDeltaOut: LatticeRepr<Lattice = Self::Lat>;
+mod debottomop;
+pub use debottomop::*;
 
-//     #[must_use]
-//     fn get_delta<'h>(state: &'h mut Hide<Cumul, Self::State>, element: Cow<'h, Hide<Delta, Self::LatReprDeltaIn>>)
-//         -> Cow<'h, Hide<Delta, Self::LatReprDeltaOut>>;
-// }
+mod dynop;
+pub use dynop::*;
 
-// pub trait OpCumul: Op {
-//     type LatReprCumulOut: LatticeRepr<Lattice = Self::Lat>;
+mod latticeop;
+pub use latticeop::*;
 
-//     #[must_use]
-//     fn get_cumul<'h>(state: &'h mut Hide<Cumul, Self::State>)
-//         -> Cow<'h, Hide<Cumul, Self::LatReprCumulOut>>;
-// }
+mod morphop;
+pub use morphop::*;
+
+mod splitop;
+pub use splitop::*;
+
+mod switchop;
+pub use switchop::*;
+
+mod mergeop;
+pub use mergeop::*;
+
+mod binaryop;
+pub use binaryop::*;
+
+mod readop;
+pub use readop::*;
+
+mod zipop;
+pub use zipop::*;
+
+mod channelop;
+pub use channelop::*;
+
+mod tcpop;
+pub use tcpop::*;
+
+mod tcpserverop;
+pub use tcpserverop::*;
+
+mod batchconvertop;
+pub use batchconvertop::*;
+
+mod topop;
+pub use topop::*;

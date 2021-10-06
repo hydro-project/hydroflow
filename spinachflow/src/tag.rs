@@ -4,11 +4,11 @@ use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 use crate::collections::{Single, Array, MaskedArray};
 
-pub trait Tag1<T>: 'static {
+pub trait Tag1<T> {
     type Bind;
 }
 
-pub trait Tag2<T, U>: 'static {
+pub trait Tag2<T, U> {
     type Bind;
 }
 

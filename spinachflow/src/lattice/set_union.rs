@@ -21,7 +21,7 @@ impl<T> SetTag<T> for tag::OPTION {}
 impl<T, const N: usize> SetTag<T> for tag::ARRAY<N> {}
 impl<T, const N: usize> SetTag<T> for tag::MASKED_ARRAY<N> {}
 
-pub struct SetUnionRepr<Tag: SetTag<T>, T: 'static> {
+pub struct SetUnionRepr<Tag: SetTag<T>, T> {
     _phantom: std::marker::PhantomData<(Tag, T)>,
 }
 
@@ -160,70 +160,67 @@ fn __assert_merges() {
 
 mod fns {
     use crate::collections::Single;
-    use crate::hide::{Hide};
+    use crate::hide::{Hide, Qualifier, Delta, Value};
     use crate::lattice::ord::MaxRepr;
-    use crate::props::{OpProps};
 
     use super::*;
 
-    // // TODO!!!
-    // impl<Tag: SetTag<T>, T, const COMPLETE: bool, const TIME_ORDERED: bool>
-    //     Hide<SetUnionRepr<Tag, T>, {require_lattice_ordered(COMPLETE, TIME_ORDERED)}>
-    // where
-    //     Tag::Bind: Clone,
-    //     <SetUnionRepr<Tag, T> as LatticeRepr>::Repr: Collection<T, ()>,
-    // {
-    //     pub fn len(&self) -> Hide<MaxRepr<usize>, {require_lattice_ordered(COMPLETE, TIME_ORDERED)}> {
-    //         Hide::new(self.reveal_ref().len())
-    //     }
-    // }
-
-    impl<Tag: SetTag<T>, T, Props: OpProps> Hide<SetUnionRepr<Tag, T>, Props>
+    impl<Tag: SetTag<T>, T> Hide<Value, SetUnionRepr<Tag, T>>
     where
         Tag::Bind: Clone,
         <SetUnionRepr<Tag, T> as LatticeRepr>::Repr: Collection<T, ()>,
     {
-        pub fn contains(&self, val: &T) -> Hide<MaxRepr<bool>, Props> {
-            <Hide<_, Props>>::new(Self::reveal_ref(self).get(val).is_some())
+        pub fn len(&self) -> Hide<Value, MaxRepr<usize>> {
+            Hide::new(self.reveal_ref().len())
         }
     }
 
-    impl<T, Props: OpProps> Hide<SetUnionRepr<tag::SINGLE, T>, Props>
+    impl<Y: Qualifier, Tag: SetTag<T>, T> Hide<Y, SetUnionRepr<Tag, T>>
+    where
+        Tag::Bind: Clone,
+        <SetUnionRepr<Tag, T> as LatticeRepr>::Repr: Collection<T, ()>,
+    {
+        pub fn contains(&self, val: &T) -> Hide<Value, MaxRepr<bool>> {
+            Hide::new(self.reveal_ref().get(val).is_some())
+        }
+    }
+
+    impl<Y: Qualifier, T> Hide<Y, SetUnionRepr<tag::SINGLE, T>>
     where
         T: Clone,
     {
-        pub fn map_one<U: Clone, F: Fn(T) -> U>(self, f: F) -> Hide<SetUnionRepr<tag::SINGLE, U>, Props> {
-            <Hide<_, Props>>::new(crate::collections::Single((f)(Self::into_reveal(self).0)))
+        pub fn map_one<U: Clone, F: Fn(T) -> U>(self, f: F) -> Hide<Y, SetUnionRepr<tag::SINGLE, U>> {
+            Hide::new(crate::collections::Single((f)(self.into_reveal().0)))
         }
 
-        pub fn filter_map_one<U: Clone, F: Fn(T) -> Option<U>>(self, f: F) -> Hide<SetUnionRepr<tag::OPTION, U>, Props> {
-            <Hide<_, Props>>::new((f)(Self::into_reveal(self).0))
+        pub fn filter_map_one<U: Clone, F: Fn(T) -> Option<U>>(self, f: F) -> Hide<Y, SetUnionRepr<tag::OPTION, U>> {
+            Hide::new((f)(self.into_reveal().0))
         }
 
-        pub fn switch_one<F: Fn(&T) -> bool>(self, f: F) -> (Hide<SetUnionRepr<tag::OPTION, T>, Props>, Hide<SetUnionRepr<tag::OPTION, T>, Props>) {
-            let item = Self::into_reveal(self).0;
+        pub fn switch_one<F: Fn(&T) -> bool>(self, f: F) -> (Hide<Y, SetUnionRepr<tag::OPTION, T>>, Hide<Y, SetUnionRepr<tag::OPTION, T>>) {
+            let item = self.into_reveal().0;
             if (f)(&item) {
-                (<Hide<_, Props>>::new(Some(item)), <Hide<_, Props>>::new(None))
+                (Hide::new(Some(item)), Hide::new(None))
             }
             else {
-                (<Hide<_, Props>>::new(None), <Hide<_, Props>>::new(Some(item)))
+                (Hide::new(None), Hide::new(Some(item)))
             }
         }
     }
 
-    impl<T, Props: OpProps> Hide<SetUnionRepr<tag::OPTION, T>, Props>
+    impl<Y: Qualifier, T> Hide<Y, SetUnionRepr<tag::OPTION, T>>
     where
         T: Clone,
     {
-        pub fn map_one<U: Clone, F: Fn(T) -> U>(self, f: F) -> Hide<SetUnionRepr<tag::OPTION, U>, Props> {
-            <Hide<_, Props>>::new(Self::into_reveal(self).map(f))
+        pub fn map_one<U: Clone, F: Fn(T) -> U>(self, f: F) -> Hide<Y, SetUnionRepr<tag::OPTION, U>> {
+            Hide::new(self.into_reveal().map(f))
         }
 
-        pub fn filter_map_one<U: Clone, F: Fn(T) -> Option<U>>(self, f: F) -> Hide<SetUnionRepr<tag::OPTION, U>, Props> {
+        pub fn filter_map_one<U: Clone, F: Fn(T) -> Option<U>>(self, f: F) -> Hide<Y, SetUnionRepr<tag::OPTION, U>> {
             Hide::new(self.into_reveal().and_then(f))
         }
 
-        pub fn switch_one<F: Fn(&T) -> bool>(self, f: F) -> (Hide<SetUnionRepr<tag::OPTION, T>, Props>, Hide<SetUnionRepr<tag::OPTION, T>, Props>) {
+        pub fn switch_one<F: Fn(&T) -> bool>(self, f: F) -> (Hide<Y, SetUnionRepr<tag::OPTION, T>>, Hide<Y, SetUnionRepr<tag::OPTION, T>>) {
             if let Some(item) = self.into_reveal() {
                 if (f)(&item) {
                     (Hide::new(Some(item)), Hide::new(None))
@@ -238,12 +235,12 @@ mod fns {
         }
     }
 
-    impl<Tag: SetTag<T>, T, Props: OpProps> Hide<SetUnionRepr<Tag, T>, Props>
+    impl<Y: Qualifier, Tag: SetTag<T>, T> Hide<Y, SetUnionRepr<Tag, T>>
     where
         SetUnionRepr<Tag, T>: LatticeRepr,
         <SetUnionRepr<Tag, T> as LatticeRepr>::Repr: IntoIterator<Item = T>,
     {
-        pub fn filter_map<U, TargetTag: SetTag<U>, F: Fn(T) -> Option<U>>(self, f: F) -> Hide<SetUnionRepr<TargetTag, U>, Props>
+        pub fn filter_map<U, TargetTag: SetTag<U>, F: Fn(T) -> Option<U>>(self, f: F) -> Hide<Y, SetUnionRepr<TargetTag, U>>
         where
             SetUnionRepr<TargetTag, U>: LatticeRepr<Lattice = SetUnion<U>>,
             <SetUnionRepr<TargetTag, U> as LatticeRepr>::Repr: FromIterator<U>,
@@ -251,7 +248,7 @@ mod fns {
             Hide::new(self.into_reveal().into_iter().filter_map(f).collect())
         }
 
-        pub fn map<U, TargetTag: SetTag<U>, F: Fn(T) -> U>(self, f: F) -> Hide<SetUnionRepr<TargetTag, U>, Props>
+        pub fn map<U, TargetTag: SetTag<U>, F: Fn(T) -> U>(self, f: F) -> Hide<Y, SetUnionRepr<TargetTag, U>>
         where
             SetUnionRepr<TargetTag, U>: LatticeRepr<Lattice = SetUnion<U>>,
             <SetUnionRepr<TargetTag, U> as LatticeRepr>::Repr: FromIterator<U>,
@@ -259,7 +256,7 @@ mod fns {
             Hide::new(self.into_reveal().into_iter().map(f).collect())
         }
 
-        pub fn filter<TargetTag: SetTag<T>, F: Fn(&T) -> bool>(self, f: F) -> Hide<SetUnionRepr<TargetTag, T>, Props>
+        pub fn filter<TargetTag: SetTag<T>, F: Fn(&T) -> bool>(self, f: F) -> Hide<Y, SetUnionRepr<TargetTag, T>>
         where
             SetUnionRepr<TargetTag, T>: LatticeRepr<Lattice = SetUnion<T>>,
             <SetUnionRepr<TargetTag, T> as LatticeRepr>::Repr: FromIterator<T>,
@@ -267,7 +264,7 @@ mod fns {
             Hide::new(self.into_reveal().into_iter().filter(f).collect())
         }
 
-        pub fn flatten<TargetTag: SetTag<T::Item>>(self) -> Hide<SetUnionRepr<TargetTag, T::Item>, Props>
+        pub fn flatten<TargetTag: SetTag<T::Item>>(self) -> Hide<Y, SetUnionRepr<TargetTag, T::Item>>
         where
             T: IntoIterator,
             SetUnionRepr<TargetTag, T::Item>: LatticeRepr<Lattice = SetUnion<T::Item>>,
@@ -276,7 +273,7 @@ mod fns {
             Hide::new(self.into_reveal().into_iter().flatten().collect())
         }
 
-        pub fn switch<TargetTag: SetTag<T>, F: Fn(&T) -> bool>(self, f: F) -> (Hide<SetUnionRepr<TargetTag, T>, Props>, Hide<SetUnionRepr<TargetTag, T>, Props>)
+        pub fn switch<TargetTag: SetTag<T>, F: Fn(&T) -> bool>(self, f: F) -> (Hide<Y, SetUnionRepr<TargetTag, T>>, Hide<Y, SetUnionRepr<TargetTag, T>>)
         where
             T: Clone,
             SetUnionRepr<TargetTag, T>: LatticeRepr<Lattice = SetUnion<T>> + Merge<SetUnionRepr<tag::SINGLE, T>>,
@@ -294,37 +291,36 @@ mod fns {
         }
     }
 
-    // impl<Tag: SetTag<T>, T, Props: OpProps> Hide<SetUnionRepr<Tag, T>, Props>
-    // where
-    //     SetUnionRepr<Tag, T>: LatticeRepr,
-    //     <SetUnionRepr<Tag, T> as LatticeRepr>::Repr: IntoIterator<Item = T>,
-    // {
-    //     //// CAUSES ICE FOR SOME REASON https://github.com/rust-lang/rust/issues/71113
-    //     // pub fn fold<TargetLr, MergeLr>(self) -> Hide<Y, TargetLr>
-    //     // where
-    //     //     MergeLr: LatticeRepr<Repr = T>,
-    //     //     TargetLr: LatticeRepr + Merge<MergeLr>,
-    //     //     <TargetLr as LatticeRepr>::Repr: Default,
-    //     // {
-    //     //     let mut out = Hide::new(Default::default());
-    //     //     for t in self.into_reveal().into_iter() {
-    //     //         <TargetLr as Merge<MergeLr>>::merge_hide(&mut out, Hide::<Delta, _>::new(t));
-    //     //     }
-    //     //     out
-    //     // }
-    // }
+    impl<Y: Qualifier, Tag: SetTag<T>, T> Hide<Y, SetUnionRepr<Tag, T>>
+    where
+        SetUnionRepr<Tag, T>: LatticeRepr,
+        <SetUnionRepr<Tag, T> as LatticeRepr>::Repr: IntoIterator<Item = T>,
+    {
+        pub fn fold<TargetLr, MergeLr>(self) -> Hide<Y, TargetLr>
+        where
+            MergeLr: LatticeRepr<Repr = T>,
+            TargetLr: LatticeRepr + Merge<MergeLr>,
+            <TargetLr as LatticeRepr>::Repr: Default,
+        {
+            let mut out = Hide::new(Default::default());
+            for t in self.into_reveal().into_iter() {
+                <TargetLr as Merge<MergeLr>>::merge_hide(&mut out, Hide::<Delta, _>::new(t));
+            }
+            out
+        }
+    }
 
-    // fn __test_things() {
-    //     let my_lattice: Hide<Cumul, SetUnionRepr<tag::HASH_SET, u32>> =
-    //         Hide::new(vec![ 0, 1, 2, 3, 5, 8, 13 ].into_iter().collect());
+    fn __test_things() {
+        let my_lattice: Hide<Value, SetUnionRepr<tag::HASH_SET, u32>> =
+            Hide::new(vec![ 0, 1, 2, 3, 5, 8, 13 ].into_iter().collect());
 
-    //     let _: Hide<Cumul, MaxRepr<usize>> = my_lattice.len();
-    //     let _: Hide<Cumul, MaxRepr<bool>>  = my_lattice.contains(&4);
+        let _: Hide<Value, MaxRepr<usize>> = my_lattice.len();
+        let _: Hide<Value, MaxRepr<bool>>  = my_lattice.contains(&4);
 
-    //     let my_delta: Hide<Delta, SetUnionRepr<tag::HASH_SET, u32>> =
-    //         Hide::new(vec![ 0, 1, 2, 3, 5, 8, 13 ].into_iter().collect());
+        let my_delta: Hide<Delta, SetUnionRepr<tag::HASH_SET, u32>> =
+            Hide::new(vec![ 0, 1, 2, 3, 5, 8, 13 ].into_iter().collect());
 
-    //     // let _: Hide<Cumul, MaxRepr<usize>> = my_delta.len();
-    //     let _: Hide<Cumul, MaxRepr<bool>>  = my_delta.contains(&4);
-    // }
+        // let _: Hide<Value, MaxRepr<usize>> = my_delta.len();
+        let _: Hide<Value, MaxRepr<bool>>  = my_delta.contains(&4);
+    }
 }
