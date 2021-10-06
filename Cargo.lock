@@ -1097,6 +1097,20 @@ dependencies = [
 [[package]]
 name = "spinachflow"
 version = "0.1.0"
+dependencies = [
+ "bincode",
+ "bytes",
+ "const-random",
+ "either",
+ "futures",
+ "futures-core",
+ "ref-cast",
+ "serde",
+ "static_assertions",
+ "tokio",
+ "tokio-stream",
+ "tokio-util",
+]
 
 [[package]]
 name = "stable_deref_trait"
