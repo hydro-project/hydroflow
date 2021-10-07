@@ -6,6 +6,7 @@
 #![feature(array_methods)]
 #![feature(array_zip)]
 #![feature(associated_type_defaults)]
+#![feature(async_stream)]
 #![feature(cell_update)]
 #![feature(core_intrinsics)]
 #![feature(const_type_id)]
@@ -20,11 +21,12 @@
 
 // Rexports
 
+pub use bincode;
+pub use bytes;
+pub use futures;
+pub use serde;
 pub use tokio;
 pub use tokio_util;
-pub use bytes;
-pub use serde;
-pub use bincode;
 
 // Modules
 
@@ -45,4 +47,6 @@ pub mod comp;
 pub mod metadata;
 
 pub mod tcp_server;
+
+pub mod stream;
 
