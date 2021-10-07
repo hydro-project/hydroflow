@@ -16,5 +16,5 @@ spinachflow = { path = "../spinachflow" }
 timely = "*"
 
 [[bench]]
-name = "fork_join"
+name = "fan_in"
 harness = false
