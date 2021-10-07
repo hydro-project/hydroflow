@@ -28,10 +28,8 @@ fn benchmark_babyflow(c: &mut Criterion) {
 
             let op = q.concat(sources);
 
-            let sum = Rc::new(RefCell::new(0));
-            let c = sum.clone();
             op.sink(move |v| {
-                *(*c).borrow_mut() += v;
+                black_box(v);
             });
 
             (*q.df).borrow_mut().run();
