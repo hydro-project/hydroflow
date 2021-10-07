@@ -8,7 +8,7 @@ use futures::stream::Stream;
 use pin_project::pin_project;
 
 #[pin_project]
-pub struct Split<S>
+pub struct AsymSplit<S>
 where
     S: Stream,
     S::Item: Clone,
@@ -17,7 +17,7 @@ where
     stream: S,
     splits: Vec<Rc<RefCell<SideSplitState<S::Item>>>>,
 }
-impl<S> Split<S>
+impl<S> AsymSplit<S>
 where
     S: Stream,
     S::Item: Clone,
@@ -37,7 +37,7 @@ where
         split
     }
 }
-impl<S> Stream for Split<S>
+impl<S> Stream for AsymSplit<S>
 where
     S: Stream,
     S::Item: Clone,
@@ -116,7 +116,7 @@ pub async fn test_asym_split_merge() {
     let stream = futures::stream::iter(0..10_000);
 
     seq_macro::seq!(__i in 0..10 {
-        let mut splitter = Split::new(stream);
+        let mut splitter = AsymSplit::new(stream);
         let mut i = 0;
         let splits = [(); BRANCH_FACTOR - 1].map(|_| {
             i += 1;
