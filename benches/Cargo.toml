@@ -16,5 +16,5 @@ spinachflow = { path = "../spinachflow" }
 timely = "*"
 
 [[bench]]
-name = "fan_in"
+name = "fan_out"
 harness = false

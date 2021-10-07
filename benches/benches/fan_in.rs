@@ -13,30 +13,6 @@ use timely::dataflow::operators::{Concat, Concatenate, Filter, Inspect, Map, ToS
 const NUM_OPS: usize = 20;
 const NUM_INTS: usize = 1_000_000;
 
-fn benchmark_raw(c: &mut Criterion) {
-    c.bench_function("raw", |b| {
-        b.iter(|| {
-            let mut evens = Vec::new();
-            let mut odds = Vec::new();
-
-            let mut data: Vec<_> = (0..NUM_INTS).collect();
-
-            for _ in 0..NUM_OPS {
-                for i in data.drain(..) {
-                    if i % 2 == 0 {
-                        evens.push(i);
-                    } else {
-                        odds.push(i)
-                    }
-                }
-
-                data.extend(evens.drain(..));
-                data.extend(odds.drain(..));
-            }
-        })
-    });
-}
-
 fn benchmark_babyflow(c: &mut Criterion) {
     c.bench_function("babyflow", |b| {
         b.iter(|| {
@@ -59,7 +35,6 @@ fn benchmark_babyflow(c: &mut Criterion) {
             });
 
             (*q.df).borrow_mut().run();
-            // println!("{}", (*sum).borrow());
         })
     });
 }
@@ -82,5 +57,5 @@ fn benchmark_timely(c: &mut Criterion) {
     });
 }
 
-criterion_group!(fork_join_dataflow, benchmark_babyflow, benchmark_timely);
-criterion_main!(fork_join_dataflow);
+criterion_group!(fan_in_dataflow, benchmark_babyflow, benchmark_timely);
+criterion_main!(fan_in_dataflow);
