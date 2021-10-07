@@ -1,14 +1,6 @@
-#![allow(dead_code, unused_imports)]
-
-use babyflow::babyflow::{Operator, Query};
+use babyflow::babyflow::Query;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use std::cell::RefCell;
-use std::rc::Rc;
-use std::sync::mpsc::channel;
-use std::sync::{Arc, Mutex};
-use std::thread::{self, sleep};
-use std::time::Duration;
-use timely::dataflow::operators::{Concat, Concatenate, Filter, Inspect, Map, ToStream};
+use timely::dataflow::operators::{Concatenate, Inspect, ToStream};
 
 const NUM_OPS: usize = 20;
 const NUM_INTS: usize = 1_000_000;

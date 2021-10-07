@@ -1,10 +1,7 @@
-#![allow(dead_code, unused_imports)]
-
 use babyflow::babyflow::Query;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use std::sync::mpsc::channel;
-use std::thread::{self, sleep};
-use std::time::Duration;
+use std::thread;
 use timely::dataflow::operators::{Inspect, Map, ToStream};
 
 const NUM_OPS: usize = 20;
@@ -123,8 +120,6 @@ fn benchmark_iter_collect(c: &mut Criterion) {
 }
 
 async fn benchmark_spinach(num_ints: usize) {
-    use spinachflow::comp::Comp;
-
     type MyLatRepr = spinachflow::lattice::set_union::SetUnionRepr<spinachflow::tag::VEC, usize>;
     let op = <spinachflow::op::OnceOp<MyLatRepr>>::new((0..num_ints).collect());
 
@@ -161,8 +156,6 @@ fn criterion_spinach(c: &mut Criterion) {
 }
 
 fn benchmark_spinach_chunks(num_ints: usize) -> impl std::future::Future {
-    use spinachflow::comp::Comp;
-
     type MyLatRepr = spinachflow::lattice::set_union::SetUnionRepr<spinachflow::tag::VEC, usize>;
 
     struct MyMorphism();

@@ -1,10 +1,5 @@
-#![allow(dead_code, unused_imports)]
-
 use babyflow::babyflow::Query;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use std::sync::mpsc::channel;
-use std::thread::{self, sleep};
-use std::time::Duration;
 use timely::dataflow::operators::{Inspect, Map, ToStream};
 
 const NUM_OPS: usize = 20;
@@ -43,32 +38,6 @@ fn benchmark_babyflow(c: &mut Criterion) {
 
             (*q.df).borrow_mut().run();
         })
-    });
-}
-
-fn benchmark_pipeline(c: &mut Criterion) {
-    c.bench_function("pipeline", |b| {
-        b.iter(|| {
-            let (input, mut output) = channel();
-
-            for _ in 0..NUM_OPS {
-                let (tx, mut rx) = channel();
-                std::mem::swap(&mut output, &mut rx);
-                thread::spawn(move || {
-                    for elt in rx {
-                        tx.send(elt).unwrap();
-                    }
-                });
-            }
-
-            for i in 0..NUM_ROWS {
-                input.send(i).unwrap();
-            }
-            drop(input);
-            for elt in output {
-                black_box(elt);
-            }
-        });
     });
 }
 
@@ -115,8 +84,6 @@ fn benchmark_iter(c: &mut Criterion) {
 }
 
 async fn benchmark_spinach(num_ints: usize) {
-    use spinachflow::comp::Comp;
-
     type MyLatRepr = spinachflow::lattice::set_union::SetUnionRepr<spinachflow::tag::VEC, String>;
     let op = <spinachflow::op::OnceOp<MyLatRepr>>::new(
         (0..num_ints).map(|_| STARTING_STRING.to_owned()).collect(),
