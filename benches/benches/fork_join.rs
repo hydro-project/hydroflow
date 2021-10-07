@@ -3,8 +3,8 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use timely::dataflow::operators::{Concatenate, Filter, Inspect, ToStream};
 
 const NUM_OPS: usize = 20;
-const NUM_INTS: usize = 1_000_000;
-const BRANCH_FACTOR: usize = 2;
+const NUM_INTS: usize = 100;
+const BRANCH_FACTOR: usize = 10;
 
 fn benchmark_raw(c: &mut Criterion) {
     c.bench_function("raw", |b| {
@@ -171,6 +171,37 @@ fn benchmark_spinach_switch(c: &mut Criterion) {
     });
 }
 
+fn benchmark_spinachflow(c: &mut Criterion) {
+    c.bench_function("spinachflow (streams)", |b| {
+        b.to_async(
+            tokio::runtime::Builder::new_current_thread()
+                .build()
+                .unwrap(),
+        )
+        .iter(|| {
+            async {
+                let stream = spinachflow::futures::stream::iter(0..NUM_INTS);
+
+                ///// MAGIC NUMBER!!!!!!!! is NUM_OPS
+                seq_macro::seq!(N in 0..20 {
+                    let splitter = spinachflow::stream::Splitter::new(stream);
+                    let splits = [(); BRANCH_FACTOR].map(|_| splitter.add_split());
+                    let stream = spinachflow::stream::SelectArr::new(splits);
+                });
+
+                let mut stream = stream;
+                loop {
+                    use spinachflow::futures::StreamExt;
+                    let item = stream.next().await;
+                    if item.is_none() {
+                        break;
+                    }
+                }
+            }
+        });
+    });
+}
+
 // criterion_group!(
 //     name = fork_join_dataflow;
 //     config = Criterion::default().with_profiler(PProfProfiler::new(100, Output::Flamegraph(None)));
@@ -182,7 +213,8 @@ criterion_group!(
     benchmark_babyflow,
     benchmark_timely,
     benchmark_raw,
-    benchmark_spinach,
-    benchmark_spinach_switch,
+    // benchmark_spinach,
+    // benchmark_spinach_switch,
+    benchmark_spinachflow,
 );
 criterion_main!(fork_join_dataflow);

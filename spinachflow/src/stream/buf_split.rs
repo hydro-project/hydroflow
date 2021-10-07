@@ -1,3 +1,5 @@
+///// DOESN'T WORK!!!!
+
 use std::cell::RefCell;
 use std::pin::Pin;
 use std::rc::Rc;
@@ -5,11 +7,11 @@ use std::task::{Context, Poll, Waker};
 
 use futures::stream::Stream;
 
-pub struct Splitter<S: Stream> {
+pub struct BufSplitter<S: Stream> {
     stream: Rc<RefCell<Pin<Box<S>>>>,
-    splits: Rc<RefCell<Vec<Rc<RefCell<SplitData<S::Item>>>>>>,
+    splits: Rc<RefCell<Vec<Rc<RefCell<BufSplitData<S::Item>>>>>>,
 }
-impl<S: Stream> Clone for Splitter<S> {
+impl<S: Stream> Clone for BufSplitter<S> {
     fn clone(&self) -> Self {
         Self {
             stream: self.stream.clone(),
@@ -17,55 +19,58 @@ impl<S: Stream> Clone for Splitter<S> {
         }
     }
 }
-impl<S: Stream> Splitter<S> {
+impl<S: Stream> BufSplitter<S> {
     pub fn new(stream: S) -> Self {
         Self {
             stream: Rc::new(RefCell::new(Box::pin(stream))),
             splits: Rc::new(RefCell::new(Vec::new())),
         }
     }
-    pub fn add_split(&self) -> Split<S> {
-        let data = Rc::new(RefCell::new(SplitData::default()));
+    pub fn add_split(&self) -> BufSplit<S> {
+        let data = Rc::new(RefCell::new(BufSplitData::default()));
         self.splits.borrow_mut().push(data.clone());
-        Split {
+        BufSplit {
             splitter: self.clone(),
             data,
         }
     }
 }
 
-pub struct SplitData<T> {
-    item: Option<T>,
+pub struct BufSplitData<T> {
+    items: std::collections::VecDeque<T>,
     waker: Option<Waker>,
 }
-impl<T> Default for SplitData<T> {
+impl<T> Default for BufSplitData<T> {
     fn default() -> Self {
         Self {
-            item: Default::default(),
+            items: Default::default(),
             waker: Default::default(),
         }
     }
 }
 
-pub struct Split<S: Stream> {
-    splitter: Splitter<S>,
-    data: Rc<RefCell<SplitData<S::Item>>>,
+pub struct BufSplit<S: Stream> {
+    splitter: BufSplitter<S>,
+    data: Rc<RefCell<BufSplitData<S::Item>>>,
 }
-impl<S: Stream> Stream for Split<S>
+impl<S: Stream> Stream for BufSplit<S>
 where
     S::Item: Clone,
 {
     type Item = S::Item;
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-        let mut data = self.data.borrow_mut();
-        match data.item.take() {
-            Some(item) => {
-                return Poll::Ready(Some(item));
-            }
-            None => {
-                data.waker.replace(cx.waker().clone());
+        {
+            let mut data = self.data.borrow_mut();
+            match data.items.pop_front() {
+                Some(item) => {
+                    return Poll::Ready(Some(item));
+                }
+                None => {
+                    data.waker.replace(cx.waker().clone());
+                }
             }
         }
+
         let splits = self.splitter.splits.borrow();
 
         // Get our index.
@@ -81,7 +86,7 @@ where
         // Check if other splits are ready to receive a value.
         for split in splits_after.iter().chain(splits_before.iter()) {
             let split = split.borrow();
-            if let Some(_) = split.item {
+            if 87 < split.items.len() {
                 // If any split has it's value filled, wake it up and return pending.
                 if let Some(waker) = &split.waker {
                     waker.wake_by_ref();
@@ -96,23 +101,28 @@ where
             Poll::Ready(Some(item)) => {
                 for split in splits_after.iter().chain(splits_before.iter()) {
                     let mut split = split.borrow_mut();
-                    let old_item = split.item.replace(item.clone());
-                    assert!(old_item.is_none());
-
+                    split.items.push_back(item.clone());
                     if let Some(waker) = &split.waker {
                         waker.wake_by_ref();
                     }
                 }
+                // println!("Poll::Ready(Some(item))");
                 Poll::Ready(Some(item))
             }
-            Poll::Ready(None) => Poll::Ready(None),
-            Poll::Pending => Poll::Pending,
+            Poll::Ready(None) => {
+                // println!("Poll::Ready(None)");
+                Poll::Ready(None)
+            }
+            Poll::Pending => {
+                // println!("Poll::Pending");
+                Poll::Pending
+            }
         }
     }
 }
 
 #[tokio::test]
-pub async fn test_split_merge() {
+pub async fn test_buf_split_merge() {
     const BRANCH_FACTOR: usize = 10;
 
     use futures::StreamExt;
@@ -121,7 +131,7 @@ pub async fn test_split_merge() {
     let stream = futures::stream::iter(0..10_000);
 
     seq_macro::seq!(__i in 0..20 {
-        let splitter = Splitter::new(stream);
+        let splitter = BufSplitter::new(stream);
         let mut i = 0;
         let splits = [(); BRANCH_FACTOR].map(|_| {
             let r = i;
@@ -129,15 +139,15 @@ pub async fn test_split_merge() {
             splitter.add_split().filter(move |x| ready(r == x % BRANCH_FACTOR))
         });
         let stream = super::SelectArr::new(splits);
+
+        let stream = super::Debug::new(stream, format!("d {}", __i));
         let stream: Pin<Box<dyn Stream<Item = usize>>> = Box::pin(stream);
     });
 
     let mut stream = stream;
-    for _i in 1.. {
+    for i in 1.. {
         let item = stream.next().await;
-        // if 0 == i % 1000 {
-        //     println!("{}: {:?}", i, item);
-        // }
+        println!("{}: {:?}", i, item);
         if item.is_none() {
             break;
         }

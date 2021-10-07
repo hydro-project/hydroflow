@@ -6,7 +6,7 @@
 #![feature(array_methods)]
 #![feature(array_zip)]
 #![feature(associated_type_defaults)]
-#![feature(async_stream)]
+// #![feature(async_stream)]
 #![feature(cell_update)]
 #![feature(core_intrinsics)]
 #![feature(const_type_id)]

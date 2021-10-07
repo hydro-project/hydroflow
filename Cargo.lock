@@ -1135,6 +1135,7 @@ dependencies = [
  "futures-core",
  "pin-project",
  "ref-cast",
+ "seq-macro",
  "serde",
  "static_assertions",
  "tokio",
