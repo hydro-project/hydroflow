@@ -1,7 +1,7 @@
 #![allow(dead_code, unused_imports)]
 
+use babyflow::babyflow::Query;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use datalog::babyflow::Query;
 use std::sync::mpsc::channel;
 use std::thread::{self, sleep};
 use std::time::Duration;
@@ -123,30 +123,30 @@ fn benchmark_iter_collect(c: &mut Criterion) {
 }
 
 async fn benchmark_spinach(num_ints: usize) {
-    use spinach::comp::Comp;
+    use spinachflow::comp::Comp;
 
-    type MyLatRepr = spinach::lattice::set_union::SetUnionRepr<spinach::tag::VEC, usize>;
-    let op = <spinach::op::OnceOp<MyLatRepr>>::new((0..num_ints).collect());
+    type MyLatRepr = spinachflow::lattice::set_union::SetUnionRepr<spinachflow::tag::VEC, usize>;
+    let op = <spinachflow::op::OnceOp<MyLatRepr>>::new((0..num_ints).collect());
 
     struct MyMorphism();
-    impl spinach::func::unary::Morphism for MyMorphism {
+    impl spinachflow::func::unary::Morphism for MyMorphism {
         type InLatRepr = MyLatRepr;
         type OutLatRepr = MyLatRepr;
-        fn call<Y: spinach::hide::Qualifier>(
+        fn call<Y: spinachflow::hide::Qualifier>(
             &self,
-            item: spinach::hide::Hide<Y, Self::InLatRepr>,
-        ) -> spinach::hide::Hide<Y, Self::OutLatRepr> {
+            item: spinachflow::hide::Hide<Y, Self::InLatRepr>,
+        ) -> spinachflow::hide::Hide<Y, Self::OutLatRepr> {
             item.map(|x| x + 1)
         }
     }
 
     ///// MAGIC NUMBER!!!!!!!! is NUM_OPS
     seq_macro::seq!(N in 0..20 {
-        let op = spinach::op::MorphismOp::new(op, MyMorphism());
+        let op = spinachflow::op::MorphismOp::new(op, MyMorphism());
     });
 
-    let comp = spinach::comp::NullComp::new(op);
-    spinach::comp::CompExt::run(&comp).await.unwrap_err();
+    let comp = spinachflow::comp::NullComp::new(op);
+    spinachflow::comp::CompExt::run(&comp).await.unwrap_err();
 }
 
 fn criterion_spinach(c: &mut Criterion) {
@@ -161,18 +161,18 @@ fn criterion_spinach(c: &mut Criterion) {
 }
 
 fn benchmark_spinach_chunks(num_ints: usize) -> impl std::future::Future {
-    use spinach::comp::Comp;
+    use spinachflow::comp::Comp;
 
-    type MyLatRepr = spinach::lattice::set_union::SetUnionRepr<spinach::tag::VEC, usize>;
+    type MyLatRepr = spinachflow::lattice::set_union::SetUnionRepr<spinachflow::tag::VEC, usize>;
 
     struct MyMorphism();
-    impl spinach::func::unary::Morphism for MyMorphism {
+    impl spinachflow::func::unary::Morphism for MyMorphism {
         type InLatRepr = MyLatRepr;
         type OutLatRepr = MyLatRepr;
-        fn call<Y: spinach::hide::Qualifier>(
+        fn call<Y: spinachflow::hide::Qualifier>(
             &self,
-            item: spinach::hide::Hide<Y, Self::InLatRepr>,
-        ) -> spinach::hide::Hide<Y, Self::OutLatRepr> {
+            item: spinachflow::hide::Hide<Y, Self::InLatRepr>,
+        ) -> spinachflow::hide::Hide<Y, Self::OutLatRepr> {
             item.map(black_box)
         }
     }
@@ -192,16 +192,16 @@ fn benchmark_spinach_chunks(num_ints: usize) -> impl std::future::Future {
     let local = tokio::task::LocalSet::new();
 
     for chunk in chunks {
-        let op = <spinach::op::IterOp<MyLatRepr, _>>::new(chunk);
+        let op = <spinachflow::op::IterOp<MyLatRepr, _>>::new(chunk);
 
         ///// MAGIC NUMBER!!!!!!!! is NUM_OPS
         seq_macro::seq!(N in 0..20 {
-            let op = spinach::op::MorphismOp::new(op, MyMorphism());
+            let op = spinachflow::op::MorphismOp::new(op, MyMorphism());
         });
 
-        let comp = spinach::comp::NullComp::new(op);
+        let comp = spinachflow::comp::NullComp::new(op);
         local.spawn_local(async move {
-            spinach::comp::CompExt::run(&comp).await.unwrap_err();
+            spinachflow::comp::CompExt::run(&comp).await.unwrap_err();
         });
     }
     local

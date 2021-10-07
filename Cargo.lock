@@ -78,6 +78,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cdb031dd78e28731d87d56cc8ffef4a8f36ca26c38fe2de700543e627f8a464a"
 
 [[package]]
+name = "babyflow"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "criterion",
+ "datadriven",
+ "pprof",
+ "spinach",
+]
+
+[[package]]
 name = "backtrace"
 version = "0.3.61"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -90,6 +101,18 @@ dependencies = [
  "miniz_oxide",
  "object",
  "rustc-demangle",
+]
+
+[[package]]
+name = "benches"
+version = "0.1.0"
+dependencies = [
+ "babyflow",
+ "criterion",
+ "seq-macro",
+ "spinachflow",
+ "timely",
+ "tokio",
 ]
 
 [[package]]
@@ -318,20 +341,6 @@ checksum = "5c496e3277b660041bd6a2c0618593e99c3ba450b30d5f8d89035f78c87b4106"
 dependencies = [
  "anyhow",
  "futures",
-]
-
-[[package]]
-name = "datalog"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "criterion",
- "datadriven",
- "pprof",
- "seq-macro",
- "spinach",
- "timely",
- "tokio",
 ]
 
 [[package]]

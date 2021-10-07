@@ -1,5 +1,5 @@
 [package]
-name = "datalog"
+name = "babyflow"
 version = "0.1.0"
 authors = ["Justin Jaffray <justin.jaffray@gmail.com>"]
 edition = "2018"
@@ -12,12 +12,5 @@ datadriven = "0.6.0"
 
 [dev-dependencies]
 criterion = { version = "0.3", features = [ "async_tokio" ] }
-seq-macro = "0.2"
 spinach = { git = "https://github.com/MingweiSamuel/spinach", rev="622fdb8" }
-timely = "*"
-tokio = { version = "1.0", features = [ "rt-multi-thread" ] }
 pprof = { version = "0.4", features = ["flamegraph", "criterion"] }
-
-[[bench]]
-name = "fork_join"
-harness = false

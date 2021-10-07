@@ -1,8 +1,7 @@
 #![allow(dead_code, unused_imports)]
 
+use babyflow::babyflow::{Operator, Query};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use datalog::babyflow::{Operator, Query};
-use pprof::criterion::{Output, PProfProfiler};
 use std::sync::mpsc::channel;
 use std::thread::{self, sleep};
 use std::time::Duration;
@@ -68,47 +67,47 @@ fn benchmark_spinach(c: &mut Criterion) {
         )
         .iter(|| {
             async {
-                use spinach::comp::Comp;
+                use spinachflow::comp::Comp;
 
                 type MyLatRepr =
-                    spinach::lattice::set_union::SetUnionRepr<spinach::tag::VEC, usize>;
-                let op = <spinach::op::OnceOp<MyLatRepr>>::new((0..NUM_INTS).collect());
+                    spinachflow::lattice::set_union::SetUnionRepr<spinachflow::tag::VEC, usize>;
+                let op = <spinachflow::op::OnceOp<MyLatRepr>>::new((0..NUM_INTS).collect());
 
                 struct Even();
-                impl spinach::func::unary::Morphism for Even {
+                impl spinachflow::func::unary::Morphism for Even {
                     type InLatRepr = MyLatRepr;
                     type OutLatRepr = MyLatRepr;
-                    fn call<Y: spinach::hide::Qualifier>(
+                    fn call<Y: spinachflow::hide::Qualifier>(
                         &self,
-                        item: spinach::hide::Hide<Y, Self::InLatRepr>,
-                    ) -> spinach::hide::Hide<Y, Self::OutLatRepr> {
+                        item: spinachflow::hide::Hide<Y, Self::InLatRepr>,
+                    ) -> spinachflow::hide::Hide<Y, Self::OutLatRepr> {
                         item.filter(|i| 0 == i % 2)
                     }
                 }
 
                 struct Odds();
-                impl spinach::func::unary::Morphism for Odds {
+                impl spinachflow::func::unary::Morphism for Odds {
                     type InLatRepr = MyLatRepr;
                     type OutLatRepr = MyLatRepr;
-                    fn call<Y: spinach::hide::Qualifier>(
+                    fn call<Y: spinachflow::hide::Qualifier>(
                         &self,
-                        item: spinach::hide::Hide<Y, Self::InLatRepr>,
-                    ) -> spinach::hide::Hide<Y, Self::OutLatRepr> {
+                        item: spinachflow::hide::Hide<Y, Self::InLatRepr>,
+                    ) -> spinachflow::hide::Hide<Y, Self::OutLatRepr> {
                         item.filter(|i| 1 == i % 2)
                     }
                 }
 
                 ///// MAGIC NUMBER!!!!!!!! is NUM_OPS
                 seq_macro::seq!(N in 0..20 {
-                    let [ op_even, op_odds ] = spinach::op::fixed_split::<_, 2>(op);
-                    let op_even = spinach::op::MorphismOp::new(op_even, Even());
-                    let op_odds = spinach::op::MorphismOp::new(op_odds, Odds());
-                    let op = spinach::op::MergeOp::new(op_even, op_odds);
-                    let op = spinach::op::DynOpDelta::new(Box::new(op));
+                    let [ op_even, op_odds ] = spinachflow::op::fixed_split::<_, 2>(op);
+                    let op_even = spinachflow::op::MorphismOp::new(op_even, Even());
+                    let op_odds = spinachflow::op::MorphismOp::new(op_odds, Odds());
+                    let op = spinachflow::op::MergeOp::new(op_even, op_odds);
+                    let op = spinachflow::op::DynOpDelta::new(Box::new(op));
                 });
 
-                let comp = spinach::comp::NullComp::new(op);
-                spinach::comp::CompExt::run(&comp).await.unwrap_err();
+                let comp = spinachflow::comp::NullComp::new(op);
+                spinachflow::comp::CompExt::run(&comp).await.unwrap_err();
             }
         });
     });
@@ -123,35 +122,35 @@ fn benchmark_spinach_switch(c: &mut Criterion) {
         )
         .iter(|| {
             async {
-                use spinach::comp::Comp;
+                use spinachflow::comp::Comp;
 
                 type MyLatRepr =
-                    spinach::lattice::set_union::SetUnionRepr<spinach::tag::VEC, usize>;
-                let op = <spinach::op::OnceOp<MyLatRepr>>::new((0..NUM_INTS).collect());
+                    spinachflow::lattice::set_union::SetUnionRepr<spinachflow::tag::VEC, usize>;
+                let op = <spinachflow::op::OnceOp<MyLatRepr>>::new((0..NUM_INTS).collect());
 
                 struct SwitchEvenOdd();
-                impl spinach::func::unary::Morphism for SwitchEvenOdd {
+                impl spinachflow::func::unary::Morphism for SwitchEvenOdd {
                     type InLatRepr = MyLatRepr;
-                    type OutLatRepr = spinach::lattice::pair::PairRepr<MyLatRepr, MyLatRepr>;
-                    fn call<Y: spinach::hide::Qualifier>(
+                    type OutLatRepr = spinachflow::lattice::pair::PairRepr<MyLatRepr, MyLatRepr>;
+                    fn call<Y: spinachflow::hide::Qualifier>(
                         &self,
-                        item: spinach::hide::Hide<Y, Self::InLatRepr>,
-                    ) -> spinach::hide::Hide<Y, Self::OutLatRepr> {
+                        item: spinachflow::hide::Hide<Y, Self::InLatRepr>,
+                    ) -> spinachflow::hide::Hide<Y, Self::OutLatRepr> {
                         let (a, b) = item.switch(|i| 0 == i % 2);
-                        spinach::hide::Hide::zip(a, b)
+                        spinachflow::hide::Hide::zip(a, b)
                     }
                 }
 
                 ///// MAGIC NUMBER!!!!!!!! is NUM_OPS
                 seq_macro::seq!(N in 0..20 {
-                    let op = spinach::op::MorphismOp::new(op, SwitchEvenOdd());
-                    let ( op_even, op_odds ) = spinach::op::SwitchOp::new(op);
-                    let op = spinach::op::MergeOp::new(op_even, op_odds);
-                    let op = spinach::op::DynOpDelta::new(Box::new(op));
+                    let op = spinachflow::op::MorphismOp::new(op, SwitchEvenOdd());
+                    let ( op_even, op_odds ) = spinachflow::op::SwitchOp::new(op);
+                    let op = spinachflow::op::MergeOp::new(op_even, op_odds);
+                    let op = spinachflow::op::DynOpDelta::new(Box::new(op));
                 });
 
-                let comp = spinach::comp::NullComp::new(op);
-                spinach::comp::CompExt::run(&comp).await.unwrap_err();
+                let comp = spinachflow::comp::NullComp::new(op);
+                spinachflow::comp::CompExt::run(&comp).await.unwrap_err();
             }
         });
     });

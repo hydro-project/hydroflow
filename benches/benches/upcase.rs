@@ -1,7 +1,7 @@
 #![allow(dead_code, unused_imports)]
 
+use babyflow::babyflow::Query;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use datalog::babyflow::Query;
 use std::sync::mpsc::channel;
 use std::thread::{self, sleep};
 use std::time::Duration;
@@ -115,32 +115,32 @@ fn benchmark_iter(c: &mut Criterion) {
 }
 
 async fn benchmark_spinach(num_ints: usize) {
-    use spinach::comp::Comp;
+    use spinachflow::comp::Comp;
 
-    type MyLatRepr = spinach::lattice::set_union::SetUnionRepr<spinach::tag::VEC, String>;
-    let op = <spinach::op::OnceOp<MyLatRepr>>::new(
+    type MyLatRepr = spinachflow::lattice::set_union::SetUnionRepr<spinachflow::tag::VEC, String>;
+    let op = <spinachflow::op::OnceOp<MyLatRepr>>::new(
         (0..num_ints).map(|_| STARTING_STRING.to_owned()).collect(),
     );
 
     struct MyMorphism();
-    impl spinach::func::unary::Morphism for MyMorphism {
+    impl spinachflow::func::unary::Morphism for MyMorphism {
         type InLatRepr = MyLatRepr;
         type OutLatRepr = MyLatRepr;
-        fn call<Y: spinach::hide::Qualifier>(
+        fn call<Y: spinachflow::hide::Qualifier>(
             &self,
-            item: spinach::hide::Hide<Y, Self::InLatRepr>,
-        ) -> spinach::hide::Hide<Y, Self::OutLatRepr> {
+            item: spinachflow::hide::Hide<Y, Self::InLatRepr>,
+        ) -> spinachflow::hide::Hide<Y, Self::OutLatRepr> {
             item.map(operation)
         }
     }
 
     ///// MAGIC NUMBER!!!!!!!! is NUM_OPS
     seq_macro::seq!(N in 0..20 {
-        let op = spinach::op::MorphismOp::new(op, MyMorphism());
+        let op = spinachflow::op::MorphismOp::new(op, MyMorphism());
     });
 
-    let comp = spinach::comp::NullComp::new(op);
-    spinach::comp::CompExt::run(&comp).await.unwrap_err();
+    let comp = spinachflow::comp::NullComp::new(op);
+    spinachflow::comp::CompExt::run(&comp).await.unwrap_err();
 }
 
 fn criterion_spinach(c: &mut Criterion) {
