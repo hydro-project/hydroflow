@@ -7,7 +7,6 @@ use timely::dataflow::{
     operators::{Operator, ToStream},
 };
 
-// const NUM_OPS: usize = 20;
 const NUM_INTS: usize = 100_000;
 
 fn benchmark_babyflow(c: &mut Criterion) {
