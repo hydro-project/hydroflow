@@ -37,5 +37,55 @@ fn benchmark_timely(c: &mut Criterion) {
     });
 }
 
-criterion_group!(fan_out_dataflow, benchmark_babyflow, benchmark_timely);
+fn benchmark_spinachflow_asym(c: &mut Criterion) {
+    c.bench_function("spinachflow (asym)", |b| {
+        b.to_async(
+            tokio::runtime::Builder::new_current_thread()
+                .build()
+                .unwrap(),
+        )
+        .iter(|| {
+            async {
+                use spinachflow::futures::StreamExt;
+
+                let local_set = spinachflow::tokio::task::LocalSet::new();
+
+                let stream = spinachflow::futures::stream::iter(0..NUM_INTS);
+                let mut asym_split = spinachflow::stream::AsymSplit::new(stream);
+
+                // N - 1
+                for _ in 1..NUM_OPS {
+                    let split = asym_split.add_split();
+                    local_set.spawn_local(async move {
+                        let mut split = split;
+                        loop {
+                            let item = split.next().await;
+                            if item.is_none() {
+                                break;
+                            }
+                        }
+                    });
+                }
+                // 1
+                local_set.spawn_local(async move {
+                    let mut split = asym_split;
+                    loop {
+                        let item = split.next().await;
+                        if item.is_none() {
+                            break;
+                        }
+                    }
+                });
+
+                local_set.await;
+            }
+        });
+    });
+}
+
+criterion_group!(fan_out_dataflow,
+    benchmark_babyflow,
+    benchmark_timely,
+    benchmark_spinachflow_asym,
+);
 criterion_main!(fan_out_dataflow);
