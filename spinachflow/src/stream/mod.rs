@@ -7,6 +7,9 @@ pub use select_all::*;
 mod split;
 pub use split::*;
 
+mod join;
+pub use join::*;
+
 // mod buf_split;
 // pub use buf_split::*;
 

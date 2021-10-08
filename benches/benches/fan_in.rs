@@ -91,7 +91,7 @@ fn benchmark_iters(c: &mut Criterion) {
 }
 
 fn benchmark_for_loops(c: &mut Criterion) {
-    c.bench_function("for loops", |b| {
+    c.bench_function("loops", |b| {
         b.iter(|| {
             let iters: Vec<_> = (0..NUM_OPS).map(make_ints).collect();
             for iter in iters {
