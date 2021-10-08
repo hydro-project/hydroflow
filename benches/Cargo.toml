@@ -38,3 +38,7 @@ harness = false
 [[bench]]
 name = "upcase"
 harness = false
+
+[[bench]]
+name = "join"
+harness = false
