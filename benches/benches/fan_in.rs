@@ -61,6 +61,7 @@ fn benchmark_spinachflow(c: &mut Criterion) {
         .iter(|| {
             async {
                 use spinachflow::futures::StreamExt;
+                use spinachflow::futures::future::ready;
 
                 let mut i = 0;
                 let streams = [(); NUM_OPS].map(|_| {
@@ -68,12 +69,34 @@ fn benchmark_spinachflow(c: &mut Criterion) {
                     spinachflow::futures::stream::iter(make_ints(i - 1))
                 });
                 let stream = spinachflow::stream::SelectArr::new(streams);
+                let stream = stream.map(|x| ready(black_box(x)));
                 let mut stream = stream;
-                loop {
-                    let item = stream.next().await;
-                    if item.map(black_box).is_none() {
-                        break;
-                    }
+                while stream.next().await.is_some() {}
+            }
+        });
+    });
+}
+
+fn benchmark_iters(c: &mut Criterion) {
+    c.bench_function("iters", |b| {
+        b.iter(|| {
+            let iters: Vec<_> = (0..NUM_OPS).map(make_ints).collect();
+            iters.into_iter()
+                .flatten()
+                .for_each(|x| {
+                    black_box(x);
+                });
+        });
+    });
+}
+
+fn benchmark_for_loops(c: &mut Criterion) {
+    c.bench_function("for loops", |b| {
+        b.iter(|| {
+            let iters: Vec<_> = (0..NUM_OPS).map(make_ints).collect();
+            for iter in iters {
+                for x in iter {
+                    black_box(x);
                 }
             }
         });
@@ -83,5 +106,8 @@ fn benchmark_spinachflow(c: &mut Criterion) {
 criterion_group!(fan_in_dataflow,
     benchmark_babyflow,
     benchmark_timely,
-    benchmark_spinachflow);
+    benchmark_spinachflow,
+    benchmark_iters,
+    benchmark_for_loops,
+);
 criterion_main!(fan_in_dataflow);
