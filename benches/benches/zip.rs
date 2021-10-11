@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use babyflow::babyflow::Query;
+use babyflow::babyflow::{Query, RecvCtx};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use timely::dataflow::{
     channels::pact::Pipeline,
@@ -10,26 +10,29 @@ use timely::dataflow::{
 const NUM_INTS: usize = 1_000_000;
 
 fn benchmark_babyflow(c: &mut Criterion) {
+    enum State<T, U> {
+        None,
+        Left(T),
+        Right(U),
+    }
     c.bench_function("babyflow", |b| {
         b.iter(|| {
-            unimplemented!();
+            let mut q = Query::new();
 
-            // let mut q = Query::new();
+            let lhs = q.source(move |send| {
+                send.give_iterator((0..NUM_INTS).map(|x| (x, x)));
+            });
+            let rhs = q.source(move |send| {
+                send.give_iterator((0..NUM_INTS).map(|x| (x, x)));
+            });
 
-            // let lhs = q.source(move |send| {
-            //     send.give_iterator((0..NUM_INTS).map(|x| (x, x)));
-            // });
-            // let rhs = q.source(move |send| {
-            //     send.give_iterator((0..NUM_INTS).map(|x| (x, x)));
-            // });
+            let zipped = lhs.zip(rhs);
 
-            // let op = lhs.join(rhs);
+            zipped.sink(move |v| {
+                black_box(v);
+            });
 
-            // op.sink(move |v| {
-            //     black_box(v);
-            // });
-
-            // (*q.df).borrow_mut().run();
+            (*q.df).borrow_mut().run();
         })
     });
 }
@@ -143,7 +146,7 @@ fn benchmark_sol(c: &mut Criterion) {
 
 criterion_group!(
     zip_dataflow,
-    // benchmark_babyflow,
+    benchmark_babyflow,
     // benchmark_timely,
     benchmark_spinachflow,
     // benchmark_sol,

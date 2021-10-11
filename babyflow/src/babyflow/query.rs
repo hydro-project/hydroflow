@@ -110,6 +110,61 @@ where
         });
         df.add_edge(self.output_port.clone(), input);
     }
+
+    pub fn zip<U>(self, o: Operator<U>) -> Operator<(T, U)>
+    where
+        U: 'static + Clone,
+        T: 'static,
+    {
+        enum State<T, U> {
+            None,
+            Left(T),
+            Right(U),
+        }
+
+        let mut df = (*self.df).borrow_mut();
+        let mut cur_state = State::None;
+        let (in1, in2, output_port) =
+            df.add_op_2(move |lhs: &RecvCtx<T>, rhs: &RecvCtx<U>, out| loop {
+                match &cur_state {
+                    State::None => match (lhs.pull(), rhs.pull()) {
+                        (None, None) => {
+                            return;
+                        }
+                        (Some(l), None) => {
+                            cur_state = State::Left(l);
+                            return;
+                        }
+                        (None, Some(r)) => {
+                            cur_state = State::Right(r);
+                            return;
+                        }
+                        (Some(l), Some(r)) => out.push((l, r)),
+                    },
+                    State::Left(l) => match rhs.pull() {
+                        None => {
+                            return;
+                        }
+                        // TODO: this clone seems sketchy.
+                        Some(r) => out.push((l.clone(), r)),
+                    },
+                    State::Right(r) => match lhs.pull() {
+                        None => {
+                            return;
+                        }
+                        Some(l) => out.push((l, r.clone())),
+                    },
+                }
+            });
+
+        df.add_edge(self.output_port, in1);
+        df.add_edge(o.output_port, in2);
+
+        Operator {
+            df: self.df.clone(),
+            output_port,
+        }
+    }
 }
 
 impl<K, V> Operator<(K, V)>
