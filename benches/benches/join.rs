@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use babyflow::babyflow::Query;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use spinachflow::stream::Join;
 use timely::dataflow::{
     channels::pact::Pipeline,
     operators::{Operator, ToStream},
@@ -10,7 +11,7 @@ use timely::dataflow::{
 const NUM_INTS: usize = 100_000;
 
 fn benchmark_babyflow(c: &mut Criterion) {
-    c.bench_function("babyflow", |b| {
+    c.bench_function("join/babyflow", |b| {
         b.iter(|| {
             let mut q = Query::new();
 
@@ -33,7 +34,7 @@ fn benchmark_babyflow(c: &mut Criterion) {
 }
 
 fn benchmark_timely(c: &mut Criterion) {
-    c.bench_function("timely", |b| {
+    c.bench_function("join/timely", |b| {
         b.iter(|| {
             timely::example(move |scope| {
                 let lhs = (0..NUM_INTS).map(|x| (x, x)).to_stream(scope);
@@ -82,31 +83,29 @@ fn benchmark_timely(c: &mut Criterion) {
 }
 
 fn benchmark_spinachflow(c: &mut Criterion) {
-    c.bench_function("spinachflow", |b| {
+    c.bench_function("join/spinachflow", |b| {
         b.to_async(
             tokio::runtime::Builder::new_current_thread()
                 .build()
                 .unwrap(),
         )
-        .iter(|| {
-            async {
-                use spinachflow::futures::StreamExt;
-                use spinachflow::futures::future::ready;
+        .iter(|| async {
+            use spinachflow::futures::future::ready;
+            use spinachflow::futures::StreamExt;
 
-                let stream_a = spinachflow::futures::stream::iter((0..NUM_INTS).map(|x| (x, x)));
-                let stream_b = spinachflow::futures::stream::iter((0..NUM_INTS).map(|x| (x, x)));
-                let stream = spinachflow::stream::Join::new(stream_a, stream_b);
+            let stream_a = spinachflow::futures::stream::iter((0..NUM_INTS).map(|x| (x, x)));
+            let stream_b = spinachflow::futures::stream::iter((0..NUM_INTS).map(|x| (x, x)));
+            let stream = Join::new(stream_a, stream_b);
 
-                let stream = stream.map(|x| ready(black_box(x)));
-                let mut stream = stream;
-                while stream.next().await.is_some() {}
-            }
+            let stream = stream.map(|x| ready(black_box(x)));
+            let mut stream = stream;
+            while stream.next().await.is_some() {}
         });
     });
 }
 
 fn benchmark_sol(c: &mut Criterion) {
-    c.bench_function("sol", |b| {
+    c.bench_function("join/sol", |b| {
         b.iter(|| {
             let iter_a = (0..NUM_INTS).map(|x| (x, x));
             let iter_b = (0..NUM_INTS).map(|x| (x, x));
@@ -114,9 +113,7 @@ fn benchmark_sol(c: &mut Criterion) {
             let mut items_b = HashMap::new();
 
             for (key, val_a) in iter_a {
-                items_a.entry(key)
-                    .or_insert_with(Vec::new)
-                    .push(val_a);
+                items_a.entry(key).or_insert_with(Vec::new).push(val_a);
                 if let Some(vals_b) = items_b.get(&key) {
                     for val_b in vals_b {
                         black_box((key, val_a, val_b));
@@ -124,9 +121,7 @@ fn benchmark_sol(c: &mut Criterion) {
                 }
             }
             for (key, val_b) in iter_b {
-                items_b.entry(key)
-                    .or_insert_with(Vec::new)
-                    .push(val_b);
+                items_b.entry(key).or_insert_with(Vec::new).push(val_b);
                 if let Some(vals_a) = items_a.get(&key) {
                     for val_a in vals_a {
                         black_box((key, val_a, val_b));
@@ -137,7 +132,8 @@ fn benchmark_sol(c: &mut Criterion) {
     });
 }
 
-criterion_group!(fan_in_dataflow,
+criterion_group!(
+    fan_in_dataflow,
     benchmark_babyflow,
     benchmark_timely,
     benchmark_spinachflow,

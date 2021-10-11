@@ -10,7 +10,7 @@ fn make_ints(i: usize) -> impl Iterator<Item = usize> {
 }
 
 fn benchmark_babyflow(c: &mut Criterion) {
-    c.bench_function("babyflow", |b| {
+    c.bench_function("fan_in/babyflow", |b| {
         b.iter(|| {
             let mut q = Query::new();
 
@@ -34,7 +34,7 @@ fn benchmark_babyflow(c: &mut Criterion) {
 }
 
 fn benchmark_timely(c: &mut Criterion) {
-    c.bench_function("timely", |b| {
+    c.bench_function("fan_in/timely", |b| {
         b.iter(|| {
             timely::example(move |scope| {
                 let sources: Vec<_> = (0..NUM_OPS)
@@ -52,46 +52,42 @@ fn benchmark_timely(c: &mut Criterion) {
 }
 
 fn benchmark_spinachflow(c: &mut Criterion) {
-    c.bench_function("spinachflow", |b| {
+    c.bench_function("fan_in/spinachflow", |b| {
         b.to_async(
             tokio::runtime::Builder::new_current_thread()
                 .build()
                 .unwrap(),
         )
-        .iter(|| {
-            async {
-                use spinachflow::futures::StreamExt;
-                use spinachflow::futures::future::ready;
+        .iter(|| async {
+            use spinachflow::futures::future::ready;
+            use spinachflow::futures::StreamExt;
 
-                let mut i = 0;
-                let streams = [(); NUM_OPS].map(|_| {
-                    i += 1;
-                    spinachflow::futures::stream::iter(make_ints(i - 1))
-                });
-                let stream = spinachflow::stream::SelectArr::new(streams);
-                let stream = stream.map(|x| ready(black_box(x)));
-                let mut stream = stream;
-                while stream.next().await.is_some() {}
-            }
+            let mut i = 0;
+            let streams = [(); NUM_OPS].map(|_| {
+                i += 1;
+                spinachflow::futures::stream::iter(make_ints(i - 1))
+            });
+            let stream = spinachflow::stream::SelectArr::new(streams);
+            let stream = stream.map(|x| ready(black_box(x)));
+            let mut stream = stream;
+            while stream.next().await.is_some() {}
         });
     });
 }
 
 fn benchmark_iters(c: &mut Criterion) {
-    c.bench_function("iters", |b| {
+    c.bench_function("fan_in/iters", |b| {
         b.iter(|| {
             let iters: Vec<_> = (0..NUM_OPS).map(make_ints).collect();
-            iters.into_iter()
-                .flatten()
-                .for_each(|x| {
-                    black_box(x);
-                });
+            iters.into_iter().flatten().for_each(|x| {
+                black_box(x);
+            });
         });
     });
 }
 
 fn benchmark_for_loops(c: &mut Criterion) {
-    c.bench_function("loops", |b| {
+    c.bench_function("fan_in/loops", |b| {
         b.iter(|| {
             let iters: Vec<_> = (0..NUM_OPS).map(make_ints).collect();
             for iter in iters {
@@ -103,7 +99,8 @@ fn benchmark_for_loops(c: &mut Criterion) {
     });
 }
 
-criterion_group!(fan_in_dataflow,
+criterion_group!(
+    fan_in_dataflow,
     benchmark_babyflow,
     benchmark_timely,
     benchmark_spinachflow,

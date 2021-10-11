@@ -92,19 +92,17 @@ fn benchmark_spinachflow(c: &mut Criterion) {
                 .build()
                 .unwrap(),
         )
-        .iter(|| {
-            async {
-                use spinachflow::futures::StreamExt;
-                use spinachflow::futures::future::ready;
+        .iter(|| async {
+            use spinachflow::futures::future::ready;
+            use spinachflow::futures::StreamExt;
 
-                let stream_a = spinachflow::futures::stream::iter(0..NUM_INTS);
-                let stream_b = spinachflow::futures::stream::iter(0..NUM_INTS);
-                let stream = stream_a.zip(stream_b);
+            let stream_a = spinachflow::futures::stream::iter(0..NUM_INTS);
+            let stream_b = spinachflow::futures::stream::iter(0..NUM_INTS);
+            let stream = stream_a.zip(stream_b);
 
-                let stream = stream.map(|x| ready(black_box(x)));
-                let mut stream = stream;
-                while stream.next().await.is_some() {}
-            }
+            let stream = stream.map(|x| ready(black_box(x)));
+            let mut stream = stream;
+            while stream.next().await.is_some() {}
         });
     });
 }
@@ -143,7 +141,8 @@ fn benchmark_sol(c: &mut Criterion) {
     });
 }
 
-criterion_group!(zip_dataflow,
+criterion_group!(
+    zip_dataflow,
     // benchmark_babyflow,
     // benchmark_timely,
     benchmark_spinachflow,

@@ -18,7 +18,7 @@ fn operation(mut s: String) -> String {
 // This benchmark runs babyflow which more-or-less just copies the data directly
 // between the operators, but with some extra overhead.
 fn benchmark_babyflow(c: &mut Criterion) {
-    c.bench_function("babyflow", |b| {
+    c.bench_function("upcase/babyflow", |b| {
         b.iter(|| {
             let mut q = Query::new();
 
@@ -45,7 +45,7 @@ fn benchmark_babyflow(c: &mut Criterion) {
 // overhead, so this should theoretically be the fastest achievable (with a
 // single thread).
 fn benchmark_raw_copy(c: &mut Criterion) {
-    c.bench_function("raw copy", |b| {
+    c.bench_function("upcase/raw", |b| {
         b.iter(|| {
             let mut data: Vec<_> = (0..NUM_ROWS).map(|_| STARTING_STRING.to_owned()).collect();
             let mut next = Vec::new();
@@ -63,7 +63,7 @@ fn benchmark_raw_copy(c: &mut Criterion) {
 }
 
 fn benchmark_iter(c: &mut Criterion) {
-    c.bench_function("iter", |b| {
+    c.bench_function("upcase/iter", |b| {
         b.iter(|| {
             let data: Vec<_> = (0..NUM_ROWS).map(|_| STARTING_STRING.to_owned()).collect();
 
@@ -111,7 +111,7 @@ async fn benchmark_spinach(num_ints: usize) {
 }
 
 fn criterion_spinach(c: &mut Criterion) {
-    c.bench_function("spinach", |b| {
+    c.bench_function("upcase/spinach", |b| {
         b.to_async(
             tokio::runtime::Builder::new_current_thread()
                 .build()
@@ -122,7 +122,7 @@ fn criterion_spinach(c: &mut Criterion) {
 }
 
 fn benchmark_timely(c: &mut Criterion) {
-    c.bench_function("timely", |b| {
+    c.bench_function("upcase/timely", |b| {
         b.iter(|| {
             timely::example(|scope| {
                 let mut op = (0..NUM_ROWS)

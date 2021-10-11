@@ -10,7 +10,7 @@ const NUM_INTS: usize = 1_000_000;
 // This benchmark runs babyflow which more-or-less just copies the data directly
 // between the operators, but with some extra overhead.
 fn benchmark_babyflow(c: &mut Criterion) {
-    c.bench_function("babyflow", |b| {
+    c.bench_function("identity/babyflow", |b| {
         b.iter(|| {
             let mut q = Query::new();
 
@@ -34,7 +34,7 @@ fn benchmark_babyflow(c: &mut Criterion) {
 }
 
 fn benchmark_pipeline(c: &mut Criterion) {
-    c.bench_function("pipeline", |b| {
+    c.bench_function("identity/pipeline", |b| {
         b.iter(|| {
             let (input, mut output) = channel();
 
@@ -63,7 +63,7 @@ fn benchmark_pipeline(c: &mut Criterion) {
 // overhead, so this should theoretically be the fastest achievable (with a
 // single thread).
 fn benchmark_raw_copy(c: &mut Criterion) {
-    c.bench_function("raw copy", |b| {
+    c.bench_function("identity/raw", |b| {
         b.iter(|| {
             let mut data: Vec<_> = (0..NUM_INTS).collect();
             let mut next = Vec::new();
@@ -81,7 +81,7 @@ fn benchmark_raw_copy(c: &mut Criterion) {
 }
 
 fn benchmark_iter(c: &mut Criterion) {
-    c.bench_function("iter", |b| {
+    c.bench_function("identity/iter", |b| {
         b.iter(|| {
             let data: Vec<_> = (0..NUM_INTS).collect();
 
@@ -102,7 +102,7 @@ fn benchmark_iter(c: &mut Criterion) {
 }
 
 fn benchmark_iter_collect(c: &mut Criterion) {
-    c.bench_function("iter-collect", |b| {
+    c.bench_function("identity/iter-collect", |b| {
         b.iter(|| {
             let mut data: Vec<_> = (0..NUM_INTS).collect();
 
@@ -145,7 +145,7 @@ async fn benchmark_spinach(num_ints: usize) {
 }
 
 fn criterion_spinach(c: &mut Criterion) {
-    c.bench_function("spinach", |b| {
+    c.bench_function("identity/spinach", |b| {
         b.to_async(
             tokio::runtime::Builder::new_current_thread()
                 .build()
@@ -201,7 +201,7 @@ fn benchmark_spinach_chunks(num_ints: usize) -> impl std::future::Future {
 }
 
 fn criterion_spinach_chunks(c: &mut Criterion) {
-    c.bench_function("spinach (size 10_000 chunks in 100 tasks)", |b| {
+    c.bench_function("identity/spinach (size 10_000 chunks in 100 tasks)", |b| {
         b.to_async(
             tokio::runtime::Builder::new_current_thread()
                 .build()
@@ -212,7 +212,7 @@ fn criterion_spinach_chunks(c: &mut Criterion) {
 }
 
 fn benchmark_timely(c: &mut Criterion) {
-    c.bench_function("timely", |b| {
+    c.bench_function("identity/timely", |b| {
         b.iter(|| {
             timely::example(|scope| {
                 let mut op = (0..NUM_INTS).to_stream(scope);

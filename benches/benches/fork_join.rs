@@ -7,7 +7,7 @@ const NUM_INTS: usize = 100_000;
 const BRANCH_FACTOR: usize = 5;
 
 fn benchmark_raw(c: &mut Criterion) {
-    c.bench_function("raw", |b| {
+    c.bench_function("fork_join/raw", |b| {
         b.iter(|| {
             let mut parts = [(); BRANCH_FACTOR].map(|_| Vec::new());
             let mut data: Vec<_> = (0..NUM_INTS).collect();
@@ -26,7 +26,7 @@ fn benchmark_raw(c: &mut Criterion) {
 }
 
 fn benchmark_babyflow(c: &mut Criterion) {
-    c.bench_function("babyflow", |b| {
+    c.bench_function("fork_join/babyflow", |b| {
         b.iter(|| {
             let mut q = Query::new();
 
@@ -50,7 +50,7 @@ fn benchmark_babyflow(c: &mut Criterion) {
 }
 
 fn benchmark_timely(c: &mut Criterion) {
-    c.bench_function("timely", |b| {
+    c.bench_function("fork_join/timely", |b| {
         b.iter(|| {
             timely::example(|scope| {
                 let mut op = (0..NUM_INTS).to_stream(scope);
@@ -73,7 +73,7 @@ fn benchmark_timely(c: &mut Criterion) {
 }
 
 fn benchmark_spinachflow_asym(c: &mut Criterion) {
-    c.bench_function("spinachflow (asymmetric)", |b| {
+    c.bench_function("fork_join/spinachflow (asymmetric)", |b| {
         b.to_async(
             tokio::runtime::Builder::new_current_thread()
                 .build()
