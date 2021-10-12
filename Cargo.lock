@@ -84,7 +84,7 @@ dependencies = [
  "anyhow",
  "criterion",
  "datadriven",
- "pprof",
+ "pprof 0.4.4",
  "spinach",
 ]
 
@@ -109,6 +109,7 @@ version = "0.1.0"
 dependencies = [
  "babyflow",
  "criterion",
+ "pprof 0.5.0",
  "seq-macro",
  "spinachflow",
  "timely",
@@ -815,6 +816,25 @@ name = "pprof"
 version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2c7600124d694d855283caf9f333befe2abce090833bb638009aeddd9e156dee"
+dependencies = [
+ "backtrace",
+ "criterion",
+ "inferno",
+ "lazy_static",
+ "libc",
+ "log",
+ "nix",
+ "parking_lot",
+ "symbolic-demangle",
+ "tempfile",
+ "thiserror",
+]
+
+[[package]]
+name = "pprof"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c9fb4eee2f2c4f7d48fe5a33008dececbc405d0e58d2a94afe742d4f175bc401"
 dependencies = [
  "backtrace",
  "criterion",

@@ -42,3 +42,20 @@ impl<S: Stream + Unpin, const N: usize> Stream for SelectArr<S, N> {
         not_ready
     }
 }
+
+#[tokio::test]
+async fn test_select_arr() {
+    const NUM_OPS: usize = 5;
+    const NUM_INTS: usize = 1000;
+
+    use crate::futures::StreamExt;
+    use crate::futures::future::ready;
+
+    let streams = [(); NUM_OPS].map(|_| {
+        crate::futures::stream::iter(0..NUM_INTS)
+    });
+    let stream = SelectArr::new(streams);
+    let stream = stream.map(|x| ready(x));
+    let mut stream = stream;
+    while stream.next().await.is_some() {}
+}

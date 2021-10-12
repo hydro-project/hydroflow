@@ -1,5 +1,6 @@
 use babyflow::babyflow::Query;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use pprof::criterion::{PProfProfiler, Output};
 use timely::dataflow::operators::{Concatenate, Inspect, ToStream};
 
 const NUM_OPS: usize = 20;
@@ -100,11 +101,13 @@ fn benchmark_for_loops(c: &mut Criterion) {
 }
 
 criterion_group!(
-    fan_in_dataflow,
-    benchmark_babyflow,
-    benchmark_timely,
-    benchmark_spinachflow,
-    benchmark_iters,
-    benchmark_for_loops,
+    name = fan_in_dataflow;
+    config = Criterion::default().with_profiler(PProfProfiler::new(100, Output::Flamegraph(None)));
+    targets =
+        benchmark_babyflow,
+        benchmark_timely,
+        benchmark_spinachflow,
+        benchmark_iters,
+        benchmark_for_loops,
 );
 criterion_main!(fan_in_dataflow);
