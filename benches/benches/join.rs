@@ -2,12 +2,13 @@ use std::collections::HashMap;
 
 use babyflow::babyflow::Query;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use spinachflow::stream::Join;
 use timely::dataflow::{
     channels::pact::Pipeline,
     operators::{Operator, ToStream},
 };
 
-trait JoinValue: Clone + std::hash::Hash {
+trait JoinValue: Clone + std::hash::Hash + Eq {
     fn name() -> &'static str;
     fn new(i: usize) -> Self;
 }
@@ -120,35 +121,36 @@ where
     );
 }
 
-// fn benchmark_spinachflow<L, R>(c: &mut Criterion)
-// where
-//     L: 'static + JoinValue,
-//     R: 'static + JoinValue,
-// {
-//     c.bench_function(
-//         format!("join/{}/{}/spinachflow", L::name(), R::name()).as_str(),
-//         |b| {
-//             b.to_async(
-//                 tokio::runtime::Builder::new_current_thread()
-//                     .build()
-//                     .unwrap(),
-//             )
-//             .iter(|| async {
-//                 use spinachflow::futures::future::ready;
+fn benchmark_spinachflow<L, R>(c: &mut Criterion)
+where
+    L: 'static + JoinValue,
+    R: 'static + JoinValue,
+{
+    c.bench_function(
+        format!("join/{}/{}/spinachflow", L::name(), R::name()).as_str(),
+        |b| {
+            b.to_async(
+                tokio::runtime::Builder::new_current_thread()
+                    .build()
+                    .unwrap(),
+            )
+            .iter(|| async {
+                use spinachflow::futures::future::ready;
+                use spinachflow::futures::stream::StreamExt;
 
-//                 let stream_a =
-//                     spinachflow::futures::stream::iter((0..NUM_INTS).map(|x| (x, L::new(x))));
-//                 let stream_b =
-//                     spinachflow::futures::stream::iter((0..NUM_INTS).map(|x| (x, R::new(x))));
-//                 let stream = Join::new(stream_a, stream_b);
+                let stream_a =
+                    spinachflow::futures::stream::iter((0..NUM_INTS).map(|x| (x, L::new(x))));
+                let stream_b =
+                    spinachflow::futures::stream::iter((0..NUM_INTS).map(|x| (x, R::new(x))));
+                let stream = Join::new(stream_a, stream_b);
 
-//                 let stream = stream.map(|x| ready(black_box(x)));
-//                 let mut stream = stream;
-//                 while stream.next().await.is_some() {}
-//             });
-//         },
-//     );
-// }
+                let stream = stream.map(|x| ready(black_box(x)));
+                let mut stream = stream;
+                while stream.next().await.is_some() {}
+            });
+        },
+    );
+}
 
 fn benchmark_sol<L, R>(c: &mut Criterion)
 where
@@ -189,11 +191,11 @@ criterion_group!(
     fan_in_dataflow,
     benchmark_babyflow<usize, usize>,
     benchmark_timely<usize, usize>,
-    // benchmark_spinachflow<usize, usize>,
+    benchmark_spinachflow<usize, usize>,
     benchmark_sol<usize, usize>,
     benchmark_babyflow<String, String>,
     benchmark_timely<String, String>,
-    // benchmark_spinachflow<String,String>,
+    benchmark_spinachflow<String,String>,
     benchmark_sol<String, String>,
 );
 criterion_main!(fan_in_dataflow);
