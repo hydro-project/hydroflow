@@ -1,0 +1,119 @@
+# Based on https://github.com/actions-rs/meta/blob/master/recipes/quickstart.md
+#
+# While our "example" application has the platform-specific code,
+# for simplicity we are compiling and testing everything on the Ubuntu environment only.
+# For multi-OS testing see the `cross.yml` workflow.
+
+on: [push]
+
+name: Quickstart
+
+jobs:
+  check:
+    name: Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install nightly toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          override: true
+
+      - name: Run cargo check
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+
+  test:
+    name: Test Suite
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install nightly toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          override: true
+
+      - name: Run cargo test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+
+  lints:
+    name: Lints
+    if: false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install nightly toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          override: true
+          components: rustfmt, clippy
+
+      - name: Run cargo fmt
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
+
+      - name: Run cargo clippy
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: -- -D warnings
+
+  docs:
+    name: Docs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install nightly toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          override: true
+
+      - name: Run cargo doc
+        uses: actions-rs/cargo@v1
+        with:
+          command: doc
+
+      - name: Push to gh-pages
+        shell: bash
+        env:
+          BASE_DIR: target/doc
+        run: |
+          git -C "$BASE_DIR" init -q
+          git -C "$BASE_DIR" remote add origin "$(git remote get-url origin)"
+          git -C "$BASE_DIR" fetch origin gh-pages:gh-pages
+          git -C "$BASE_DIR" config credential.helper "$(git config credential.helper)"
+          git -C "$BASE_DIR" config 'http.https://github.com/.extraheader' "$(git config 'http.https://github.com/.extraheader')"
+          git -C "$BASE_DIR" config core.autocrlf input
+          git -C "$BASE_DIR" config core.safecrlf false
+          git -C "$BASE_DIR" symbolic-ref HEAD refs/heads/gh-pages
+          git -C "$BASE_DIR" reset
+          git -C "$BASE_DIR" checkout -- .gitignore index.html
+          git -C "$BASE_DIR" add -A
+          if git -C "$BASE_DIR" -c 'user.name=github-actions[bot]' -c 'user.email=41898282+github-actions[bot]@users.noreply.github.com' \
+            commit -m "Autogen Docs $(date -I) $(git rev-parse HEAD)";
+          then
+            git -C "$BASE_DIR" push -u origin gh-pages --quiet
+          else
+            echo 'No changes to commit'
+          fi
