@@ -295,7 +295,7 @@ impl Hydroflow {
 
 #[test]
 fn map_filter() {
-    // A simple dataflow with one source feeding into one sink.
+    // A simple dataflow with one source feeding into one sink with some processing in the middle.
     let mut df = Hydroflow::new();
 
     let data = [1, 2, 3, 4];
