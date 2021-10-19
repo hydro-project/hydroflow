@@ -120,7 +120,7 @@ impl<H: Handoff> SendCtx<H> {
 }
 
 /**
- * Handle corresponding to a [SendCtx]. Consumed by [Dataflow::add_edge] to construct the Hydroflow graph.
+ * Handle corresponding to a [SendCtx]. Consumed by [Hydroflow::add_edge] to construct the Hydroflow graph.
  */
 pub struct OutputPort<H: Handoff> {
     handoff: Rc<RefCell<Option<H::Writable>>>,
@@ -142,7 +142,7 @@ impl<T> Iterator for &RecvCtx<VecHandoff<T>> {
 }
 
 /**
- * Handle corresponding to a [RecvCtx]. Consumed by [Dataflow::add_edge] to construct the Hydroflow graph.
+ * Handle corresponding to a [RecvCtx]. Consumed by [Hydroflow::add_edge] to construct the Hydroflow graph.
  */
 // TODO: figure out how to explain succinctly why this and output port both use Writable
 pub struct InputPort<H: Handoff> {
@@ -150,9 +150,9 @@ pub struct InputPort<H: Handoff> {
 }
 
 /**
- * Represents a compiled subtree. Used internally by [Dataflow] to erase the input/output [Handoff] types.
+ * Represents a compiled subgraph. Used internally by [Dataflow] to erase the input/output [Handoff] types.
  */
-trait OpSubtree {
+trait Subgraph {
     // TODO: pass in some scheduling info?
     fn run(&mut self);
 }
@@ -160,7 +160,7 @@ trait OpSubtree {
 /**
  * Closure-based [OpSubtree] implementation.
  */
-struct ClosureOpSubtree<F, R, W>
+struct ClosureSubgraph<F, R, W>
 where
     F: FnMut(&RecvCtx<R>, &SendCtx<W>),
     R: Handoff,
@@ -170,7 +170,7 @@ where
     recv: RecvCtx<R>,
     send: SendCtx<W>,
 }
-impl<F, R, W> OpSubtree for ClosureOpSubtree<F, R, W>
+impl<F, R, W> Subgraph for ClosureSubgraph<F, R, W>
 where
     F: FnMut(&RecvCtx<R>, &SendCtx<W>),
     R: Handoff,
@@ -184,18 +184,18 @@ where
 /**
  * A Hydroflow graph. Owns, schedules, and runs the compiled subgraphs.
  */
-pub struct Dataflow {
-    operators: SlotMap<OpId, (Box<dyn HandoffMeta>, Box<dyn OpSubtree>)>,
+pub struct Hydroflow {
+    subgraphs: SlotMap<OpId, (Box<dyn HandoffMeta>, Box<dyn Subgraph>)>,
     // TODO: track the graph structure and schedule.
 }
-impl Default for Dataflow {
+impl Default for Hydroflow {
     fn default() -> Self {
-        Self {
-            operators: Default::default(),
+        Hydroflow {
+            subgraphs: Default::default(),
         }
     }
 }
-impl Dataflow {
+impl Hydroflow {
     /**
      * Create an new empty Dataflow graph.
      */
@@ -208,15 +208,15 @@ impl Dataflow {
      * Blocks until completion.
      */
     pub fn run(&mut self) {
-        for (_meta, op) in self.operators.values_mut() {
-            op.run(); // TODO: TODOTOTODODOTOTOD
+        for (_meta, sg) in self.subgraphs.values_mut() {
+            sg.run(); // TODO: TODOTOTODODOTOTOD
         }
         let mut any = true;
         while any {
             any = false;
-            for (meta, op) in self.operators.values_mut() {
+            for (meta, sg) in self.subgraphs.values_mut() {
                 if meta.has_data() {
-                    op.run();
+                    sg.run();
                     any = true;
                 }
             }
@@ -227,10 +227,7 @@ impl Dataflow {
      * Adds a new compiled subraph with a single input and output, and returns the input/output handles.
      */
     #[must_use]
-    pub fn add_op<F, R, W>(
-        &mut self,
-        op_subtree: F,
-    ) -> (InputPort<R>, OutputPort<W>)
+    pub fn add_inout<F, R, W>(&mut self, subgraph: F) -> (InputPort<R>, OutputPort<W>)
     where
         F: 'static + FnMut(&RecvCtx<R>, &SendCtx<W>),
         R: 'static + Handoff,
@@ -252,13 +249,13 @@ impl Dataflow {
             handoff: send.handoff.clone(),
         };
 
-        let op: ClosureOpSubtree<F, R, W> = ClosureOpSubtree {
-            f: op_subtree,
+        let sg: ClosureSubgraph<F, R, W> = ClosureSubgraph {
+            f: subgraph,
             recv,
             send,
         };
 
-        self.operators.insert((Box::new(meta), Box::new(op)));
+        self.subgraphs.insert((Box::new(meta), Box::new(sg)));
 
         (input_port, output_port)
     }
@@ -267,12 +264,12 @@ impl Dataflow {
      * Adds a new compiled subgraph with no inputs and one output.
      */
     #[must_use]
-    pub fn add_source<F, W>(&mut self, mut op_subtree: F) -> OutputPort<W>
+    pub fn add_source<F, W>(&mut self, mut subgraph: F) -> OutputPort<W>
     where
         F: 'static + FnMut(&SendCtx<W>),
         W: 'static + Handoff,
     {
-        self.add_op::<_, NullHandoff, W>(move |_, send| op_subtree(send))
+        self.add_inout::<_, NullHandoff, W>(move |_, send| subgraph(send))
             .1
     }
 
@@ -280,20 +277,17 @@ impl Dataflow {
      * Adds a new compiled subgraph with one inputs and no outputs.
      */
     #[must_use]
-    pub fn add_sink<F, R>(&mut self, mut op_subtree: F) -> InputPort<R>
+    pub fn add_sink<F, R>(&mut self, mut subgraph: F) -> InputPort<R>
     where
         F: 'static + FnMut(&RecvCtx<R>),
         R: 'static + Handoff,
     {
-        self.add_op::<_, R, NullHandoff>(move |recv, _| op_subtree(recv))
+        self.add_inout::<_, R, NullHandoff>(move |recv, _| subgraph(recv))
             .0
     }
 
-    pub fn add_edge<H>(
-        &mut self,
-        output_port: OutputPort<H>,
-        input_port: InputPort<H>,
-    ) where
+    pub fn add_edge<H>(&mut self, output_port: OutputPort<H>, input_port: InputPort<H>)
+    where
         H: Handoff,
     {
         let old_handoff = output_port.handoff.borrow_mut().replace(input_port.handoff);
@@ -304,7 +298,7 @@ impl Dataflow {
 #[test]
 fn map_filter() {
     // A simple dataflow with one source feeding into one sink.
-    let mut df = Dataflow::new();
+    let mut df = Hydroflow::new();
 
     let data = [1, 2, 3, 4];
     let source = df.add_source(move |send| {
