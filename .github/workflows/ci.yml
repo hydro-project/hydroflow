@@ -62,8 +62,7 @@ jobs:
   lints:
     name: Lints
     needs: pre_job
-    # if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
-    if: false
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources

@@ -28,6 +28,7 @@ pub trait Handoff {
  * The write piece of a handoff.
  */
 pub trait Writable<T> {
+    #[allow(clippy::result_unit_err)]
     fn try_give(&mut self, item: T) -> Result<(), ()>;
 }
 /**
@@ -118,6 +119,7 @@ pub struct SendCtx<H: Handoff> {
 }
 impl<H: Handoff> SendCtx<H> {
     // TODO: represent backpressure in this return value.
+    #[allow(clippy::result_unit_err)]
     pub fn try_give(&mut self, item: H::Item) -> Result<(), ()> {
         self.once.get().try_give(item)
     }
@@ -279,12 +281,14 @@ where
 pub struct Hydroflow {
     // TODO(justin): instead of this being a vec of metas, it could be
     // implemented for 2-tuples of metas.
+    #[allow(clippy::type_complexity)]
     subgraphs: SlotMap<OpId, (Vec<Box<dyn HandoffMeta>>, Box<dyn Subgraph>)>,
     // TODO: track the graph structure and schedule.
 }
+#[allow(clippy::derivable_impls)]
 impl Default for Hydroflow {
     fn default() -> Self {
-        Hydroflow {
+        Self {
             subgraphs: Default::default(),
         }
     }
@@ -349,7 +353,6 @@ impl Hydroflow {
     /**
      * Adds a new compiled subraph with a single input and output, and returns the input/output handles.
      */
-    #[must_use]
     pub fn add_inout<F, R, W>(&mut self, mut subgraph: F) -> (InputPort<R>, OutputPort<W>)
     where
         F: 'static + FnMut(&mut RecvCtx<R>, &mut SendCtx<W>),
@@ -364,7 +367,6 @@ impl Hydroflow {
     /**
      * Adds a new compiled subraph with one input and two outputs, and returns the input/output handles.
      */
-    #[must_use]
     pub fn add_binary_out<F, R, W1, W2>(
         &mut self,
         mut subgraph: F,
@@ -385,7 +387,6 @@ impl Hydroflow {
     /**
      * Adds a new compiled subraph with two inputs and a single output, and returns the input/output handles.
      */
-    #[must_use]
     pub fn add_binary<F, R1, R2, W>(
         &mut self,
         mut subgraph: F,
@@ -406,7 +407,6 @@ impl Hydroflow {
     /**
      * Adds a new compiled subgraph with no inputs and one output.
      */
-    #[must_use]
     pub fn add_source<F, W>(&mut self, mut subgraph: F) -> OutputPort<W>
     where
         F: 'static + FnMut(&mut SendCtx<W>),
@@ -419,7 +419,6 @@ impl Hydroflow {
     /**
      * Adds a new compiled subgraph with one inputs and no outputs.
      */
-    #[must_use]
     pub fn add_sink<F, R>(&mut self, mut subgraph: F) -> InputPort<R>
     where
         F: 'static + FnMut(&mut RecvCtx<R>),
