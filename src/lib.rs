@@ -124,6 +124,7 @@ impl<H: Handoff> SendCtx<H> {
 /**
  * Handle corresponding to a [SendCtx]. Consumed by [Hydroflow::add_edge] to construct the Hydroflow graph.
  */
+#[must_use]
 pub struct OutputPort<H: Handoff> {
     once: util::SendOnce<H::Writable>,
 }
@@ -147,6 +148,7 @@ impl<T> Iterator for &RecvCtx<VecHandoff<T>> {
  * Handle corresponding to a [RecvCtx]. Consumed by [Hydroflow::add_edge] to construct the Hydroflow graph.
  */
 // TODO: figure out how to explain succinctly why this and output port both use Writable
+#[must_use]
 pub struct InputPort<H: Handoff> {
     handoff: H::Writable,
 }
