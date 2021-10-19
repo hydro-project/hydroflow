@@ -307,15 +307,39 @@ fn map_filter() {
         }
     });
 
+    let (map_in, map_out) = df.add_inout(
+        |recv: &RecvCtx<VecHandoff<i32>>, send: &SendCtx<VecHandoff<_>>| {
+            for x in recv {
+                send.try_give(3 * x + 1).unwrap();
+            }
+        },
+    );
+
+    let (filter_in, filter_out) = df.add_inout(
+        |recv: &RecvCtx<VecHandoff<i32>>, send: &SendCtx<VecHandoff<_>>| {
+            for x in recv {
+                if x % 2 == 0 {
+                    send.try_give(x).unwrap();
+                }
+            }
+        },
+    );
+
+    let outputs = Rc::new(RefCell::new(Vec::new()));
+    let inner_outputs = outputs.clone();
     let sink = df.add_sink(move |recv| {
         for x in recv {
-            println!("x = {}", x);
+            (*inner_outputs).borrow_mut().push(x);
         }
     });
 
-    df.add_edge(source, sink);
+    df.add_edge(source, map_in);
+    df.add_edge(map_out, filter_in);
+    df.add_edge(filter_out, sink);
 
     df.run();
+
+    assert_eq!((*outputs).borrow().clone(), vec![4, 10]);
 }
 
 // #[test]
