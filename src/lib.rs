@@ -6,9 +6,11 @@ use slotmap::SlotMap;
 
 type OpId = slotmap::DefaultKey;
 
-pub trait Handoff<T> {
-    type Readable: Readable<T>;
-    type Writable: Writable<T>;
+pub trait Handoff {
+    type Item;
+
+    type Readable: Readable<Self::Item>;
+    type Writable: Writable<Self::Item>;
     type Meta: HandoffMeta;
 
     fn new() -> (Self::Readable, Self::Writable, Self::Meta);
@@ -24,7 +26,10 @@ pub trait HandoffMeta {
     fn has_data(&self) -> bool;
 }
 
-impl<T> Handoff<T> for () {
+pub enum NullHandoff {}
+impl Handoff for NullHandoff {
+    type Item = ();
+
     type Readable = ();
     type Writable = ();
     type Meta = ();
@@ -50,7 +55,9 @@ impl HandoffMeta for () {
 }
 
 pub struct VecHandoff<T>(std::marker::PhantomData<T>);
-impl<T> Handoff<T> for VecHandoff<T> {
+impl<T> Handoff for VecHandoff<T> {
+    type Item = T;
+
     type Readable = Rc<RefCell<VecDeque<T>>>;
     type Writable = Rc<RefCell<VecDeque<T>>>;
     type Meta = Rc<RefCell<VecDeque<T>>>;
@@ -77,29 +84,23 @@ impl<T> HandoffMeta for Rc<RefCell<VecDeque<T>>> {
     }
 }
 
-pub struct SendCtx<T, W: Writable<T>> {
-    handoff: Rc<RefCell<Option<W>>>,
-
-    _phantom: std::marker::PhantomData<T>,
+pub struct SendCtx<H: Handoff> {
+    handoff: Rc<RefCell<Option<H::Writable>>>,
 }
-impl<T, W: Writable<T>> SendCtx<T, W> {
-    pub fn try_give(&self, item: T) -> Result<(), ()> {
+impl<H: Handoff> SendCtx<H> {
+    pub fn try_give(&self, item: H::Item) -> Result<(), ()> {
         self.handoff.borrow_mut().as_mut().unwrap().try_give(item)
     }
 }
 
-pub struct OutputPort<T, W: Writable<T>> {
-    handoff: Rc<RefCell<Option<W>>>,
-
-    _phantom: std::marker::PhantomData<T>,
+pub struct OutputPort<H: Handoff> {
+    handoff: Rc<RefCell<Option<H::Writable>>>,
 }
 
-pub struct RecvCtx<T, R: Readable<T>> {
-    handoff: Rc<RefCell<R>>,
-
-    _phantom: std::marker::PhantomData<T>,
+pub struct RecvCtx<H: Handoff> {
+    handoff: Rc<RefCell<H::Readable>>,
 }
-impl<T> Iterator for &RecvCtx<T, Rc<RefCell<VecDeque<T>>>> {
+impl<T> Iterator for &RecvCtx<VecHandoff<T>> {
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -109,10 +110,8 @@ impl<T> Iterator for &RecvCtx<T, Rc<RefCell<VecDeque<T>>>> {
 }
 
 // TODO: figure out how to explain succinctly why this and output port both use Writable
-pub struct InputPort<T, W: Writable<T>> {
-    handoff: W,
-
-    _phantom: std::marker::PhantomData<T>,
+pub struct InputPort<H: Handoff> {
+    handoff: H::Writable,
 }
 
 pub trait OpSubtree {
@@ -120,22 +119,21 @@ pub trait OpSubtree {
     fn run(&mut self);
 }
 
-struct ClosureOpSubtree<F, R, W, I, O>
+struct ClosureOpSubtree<F, R, W>
 where
-    F: FnMut(&RecvCtx<I, R>, &SendCtx<O, W>),
-    R: Readable<I>,
-    W: Writable<O>,
+    F: FnMut(&RecvCtx<R>, &SendCtx<W>),
+    R: Handoff,
+    W: Handoff,
 {
     f: F,
-    recv: RecvCtx<I, R>,
-    send: SendCtx<O, W>,
-    _phantom: std::marker::PhantomData<(I, O)>,
+    recv: RecvCtx<R>,
+    send: SendCtx<W>,
 }
-impl<F, R, W, I, O> OpSubtree for ClosureOpSubtree<F, R, W, I, O>
+impl<F, R, W> OpSubtree for ClosureOpSubtree<F, R, W>
 where
-    F: FnMut(&RecvCtx<I, R>, &SendCtx<O, W>),
-    R: Readable<I>,
-    W: Writable<O>,
+    F: FnMut(&RecvCtx<R>, &SendCtx<W>),
+    R: Handoff,
+    W: Handoff,
 {
     fn run(&mut self) {
         (self.f)(&self.recv, &self.send)
@@ -169,49 +167,35 @@ impl Dataflow {
     }
 
     #[must_use]
-    pub fn add_op<F, R, W, I, O>(
+    pub fn add_op<F, R, W>(
         &mut self,
         op_subtree: F,
-    ) -> (InputPort<I, R::Writable>, OutputPort<O, W::Writable>)
+    ) -> (InputPort<R>, OutputPort<W>)
     where
-        F: 'static + FnMut(&RecvCtx<I, R::Readable>, &SendCtx<O, W::Writable>),
-        R: 'static + Handoff<I>,
-        W: 'static + Handoff<O>,
-        I: 'static,
-        O: 'static,
+        F: 'static + FnMut(&RecvCtx<R>, &SendCtx<W>),
+        R: 'static + Handoff,
+        W: 'static + Handoff,
     {
-        let (read_side, write_side, meta) = R::new(); // <-- !!
+        let (read_side, write_side, meta) = R::new();
 
-        // let send = self.make_send_ctx(id);
-        // let s = send.clone();
         let recv = RecvCtx {
             handoff: Rc::new(RefCell::new(read_side)),
-
-            _phantom: std::marker::PhantomData,
         };
         let send = SendCtx {
             handoff: Rc::new(RefCell::new(None)),
-
-            _phantom: std::marker::PhantomData,
         };
 
         let input_port = InputPort {
             handoff: write_side,
-
-            _phantom: std::marker::PhantomData,
         };
         let output_port = OutputPort {
             handoff: send.handoff.clone(),
-
-            _phantom: std::marker::PhantomData,
         };
 
-        let op: ClosureOpSubtree<F, R::Readable, W::Writable, I, O> = ClosureOpSubtree {
+        let op: ClosureOpSubtree<F, R, W> = ClosureOpSubtree {
             f: op_subtree,
             recv,
             send,
-
-            _phantom: std::marker::PhantomData,
         };
 
         self.operators.insert((Box::new(meta), Box::new(op)));
@@ -220,33 +204,31 @@ impl Dataflow {
     }
 
     #[must_use]
-    pub fn add_source<F, W, O>(&mut self, mut op_subtree: F) -> OutputPort<O, W::Writable>
+    pub fn add_source<F, W>(&mut self, mut op_subtree: F) -> OutputPort<W>
     where
-        F: 'static + FnMut(&SendCtx<O, W::Writable>),
-        W: 'static + Handoff<O>,
-        O: 'static,
+        F: 'static + FnMut(&SendCtx<W>),
+        W: 'static + Handoff,
     {
-        self.add_op::<_, (), W, (), O>(move |_, send| op_subtree(send))
+        self.add_op::<_, NullHandoff, W>(move |_, send| op_subtree(send))
             .1
     }
 
     #[must_use]
-    pub fn add_sink<F, R, I>(&mut self, mut op_subtree: F) -> InputPort<I, R::Writable>
+    pub fn add_sink<F, R>(&mut self, mut op_subtree: F) -> InputPort<R>
     where
-        F: 'static + FnMut(&RecvCtx<I, R::Readable>),
-        R: 'static + Handoff<I>,
-        I: 'static,
+        F: 'static + FnMut(&RecvCtx<R>),
+        R: 'static + Handoff,
     {
-        self.add_op::<_, R, (), I, ()>(move |recv, _| op_subtree(recv))
+        self.add_op::<_, R, NullHandoff>(move |recv, _| op_subtree(recv))
             .0
     }
 
-    pub fn add_edge<H, T>(
+    pub fn add_edge<H>(
         &mut self,
-        output_port: OutputPort<T, H::Writable>,
-        input_port: InputPort<T, H::Writable>,
+        output_port: OutputPort<H>,
+        input_port: InputPort<H>,
     ) where
-        H: Handoff<T>,
+        H: Handoff,
     {
         let old_handoff = output_port.handoff.borrow_mut().replace(input_port.handoff);
         assert!(old_handoff.is_none());
@@ -257,20 +239,20 @@ impl Dataflow {
 fn map_filter() {
     let mut df = Dataflow::new();
 
-    let mut data = vec![1, 2, 3, 4];
-    let source = df.add_source::<_, VecHandoff<_>, _>(move |send| {
-        for x in data.drain(..) {
+    let data = [1, 2, 3, 4];
+    let source = df.add_source(move |send| {
+        for x in data {
             send.try_give(x).unwrap();
         }
     });
 
-    let sink = df.add_sink::<_, VecHandoff<_>, _>(move |recv| {
+    let sink = df.add_sink(move |recv| {
         for x in recv {
             println!("x = {}", x);
         }
     });
 
-    df.add_edge::<VecHandoff<_>, _>(source, sink);
+    df.add_edge(source, sink);
 
     df.run();
 }
