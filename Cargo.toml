@@ -9,3 +9,10 @@ edition = "2021"
 sealed = "0.3"
 slotmap = "1.0"
 tuple_list = "0.1"
+
+[dev-dependencies]
+criterion = { version = "0.3", features = [ "async_tokio" ] }
+
+[[bench]]
+name = "benches"
+harness = false
