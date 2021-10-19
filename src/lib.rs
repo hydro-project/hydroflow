@@ -5,6 +5,7 @@ use std::collections::VecDeque;
 use std::rc::Rc;
 
 use slotmap::SlotMap;
+use tuple_list::tuple_list as tl;
 
 type OpId = slotmap::DefaultKey;
 
@@ -153,6 +154,78 @@ pub struct InputPort<H: Handoff> {
     handoff: H::Writable,
 }
 
+pub trait HandoffList {
+    type RecvCtx;
+    type InputPort;
+    type Meta;
+    fn make_input() -> (Self::RecvCtx, Self::InputPort, Self::Meta);
+
+    type SendCtx;
+    type OutputPort;
+    fn make_output() -> (Self::SendCtx, Self::OutputPort);
+
+    fn append_meta(vec: &mut Vec<Box<dyn HandoffMeta>>, meta: Self::Meta);
+}
+impl<H, L> HandoffList for (H, L)
+where
+    H: Handoff,
+    H::Meta: 'static,
+    L: HandoffList,
+{
+    type RecvCtx = (RecvCtx<H>, L::RecvCtx);
+    type InputPort = (InputPort<H>, L::InputPort);
+    type Meta = (H::Meta, L::Meta);
+    fn make_input() -> (Self::RecvCtx, Self::InputPort, Self::Meta) {
+        let (read_side, write_side, meta) = H::new();
+
+        let recv = RecvCtx {
+            handoff: Rc::new(RefCell::new(read_side)),
+        };
+        let input = InputPort {
+            handoff: write_side,
+        };
+
+        let (recv_rest, input_rest, meta_rest) = L::make_input();
+
+        ((recv, recv_rest), (input, input_rest), (meta, meta_rest))
+    }
+
+    type SendCtx = (SendCtx<H>, L::SendCtx);
+    type OutputPort = (OutputPort<H>, L::OutputPort);
+    fn make_output() -> (Self::SendCtx, Self::OutputPort) {
+        let (once_send, once_recv) = util::once();
+
+        let send = SendCtx { once: once_recv };
+        let output = OutputPort { once: once_send };
+
+        let (send_rest, output_rest) = L::make_output();
+
+        ((send, send_rest), (output, output_rest))
+    }
+
+    fn append_meta(vec: &mut Vec<Box<dyn HandoffMeta>>, meta: Self::Meta) {
+        let (meta, meta_rest) = meta;
+        vec.push(Box::new(meta));
+        L::append_meta(vec, meta_rest);
+    }
+}
+impl HandoffList for () {
+    type RecvCtx = ();
+    type InputPort = ();
+    type Meta = ();
+    fn make_input() -> (Self::RecvCtx, Self::InputPort, Self::Meta) {
+        ((), (), ())
+    }
+
+    type SendCtx = ();
+    type OutputPort = ();
+    fn make_output() -> (Self::SendCtx, Self::OutputPort) {
+        ((), ())
+    }
+
+    fn append_meta(_vec: &mut Vec<Box<dyn HandoffMeta>>, _meta: Self::Meta) {}
+}
+
 /**
  * Represents a compiled subgraph. Used internally by [Dataflow] to erase the input/output [Handoff] types.
  */
@@ -160,82 +233,27 @@ trait Subgraph {
     // TODO: pass in some scheduling info?
     fn run(&mut self);
 }
-
 /**
- * Unary Closure-based [OpSubtree] implementation.
+ * Closure-based [OpSubtree] implementation.
  */
-struct ClosureSubgraph<F, R, W>
+struct VariadicClosureSubgraph<F, R, W>
 where
-    F: FnMut(&mut RecvCtx<R>, &mut SendCtx<W>),
-    R: Handoff,
-    W: Handoff,
+    F: FnMut(&mut R::RecvCtx, &mut W::SendCtx),
+    R: HandoffList,
+    W: HandoffList,
 {
     f: F,
-    recv: RecvCtx<R>,
-    send: SendCtx<W>,
+    recv: R::RecvCtx,
+    send: W::SendCtx,
 }
-impl<F, R, W> Subgraph for ClosureSubgraph<F, R, W>
+impl<F, R, W> Subgraph for VariadicClosureSubgraph<F, R, W>
 where
-    F: FnMut(&mut RecvCtx<R>, &mut SendCtx<W>),
-    R: Handoff,
-    W: Handoff,
+    F: FnMut(&mut R::RecvCtx, &mut W::SendCtx),
+    R: HandoffList,
+    W: HandoffList,
 {
     fn run(&mut self) {
         (self.f)(&mut self.recv, &mut self.send)
-    }
-}
-
-/**
- * Binary Closure-based [OpSubtree] implementation.
- */
-struct BinaryClosureSubgraph<F, R1, R2, W>
-where
-    F: FnMut(&mut RecvCtx<R1>, &mut RecvCtx<R2>, &mut SendCtx<W>),
-    R1: Handoff,
-    R2: Handoff,
-    W: Handoff,
-{
-    f: F,
-    recv1: RecvCtx<R1>,
-    recv2: RecvCtx<R2>,
-    send: SendCtx<W>,
-}
-impl<F, R1, R2, W> Subgraph for BinaryClosureSubgraph<F, R1, R2, W>
-where
-    F: FnMut(&mut RecvCtx<R1>, &mut RecvCtx<R2>, &mut SendCtx<W>),
-    R1: Handoff,
-    R2: Handoff,
-    W: Handoff,
-{
-    fn run(&mut self) {
-        (self.f)(&mut self.recv1, &mut self.recv2, &mut self.send)
-    }
-}
-
-/**
- * Binary Closure-based [OpSubtree] implementation.
- */
-struct BinaryOutClosureSubgraph<F, R, W1, W2>
-where
-    F: FnMut(&mut RecvCtx<R>, &mut SendCtx<W1>, &mut SendCtx<W2>),
-    R: Handoff,
-    W1: Handoff,
-    W2: Handoff,
-{
-    f: F,
-    recv: RecvCtx<R>,
-    send1: SendCtx<W1>,
-    send2: SendCtx<W2>,
-}
-impl<F, R, W1, W2> Subgraph for BinaryOutClosureSubgraph<F, R, W1, W2>
-where
-    F: FnMut(&mut RecvCtx<R>, &mut SendCtx<W1>, &mut SendCtx<W2>),
-    R: Handoff,
-    W1: Handoff,
-    W2: Handoff,
-{
-    fn run(&mut self) {
-        (self.f)(&mut self.recv, &mut self.send1, &mut self.send2)
     }
 }
 
@@ -284,36 +302,46 @@ impl Hydroflow {
     }
 
     /**
-     * Adds a new compiled subraph with a single input and output, and returns the input/output handles.
+     * Adds a new compiled subgraph with the specified inputs and outputs.
+     *
+     * See [HandoffList] for how to specify inputs and outputs.
      */
     #[must_use]
-    pub fn add_inout<F, R, W>(&mut self, subgraph: F) -> (InputPort<R>, OutputPort<W>)
+    pub fn add_subgraph<F, R, W>(&mut self, subgraph: F) -> (R::InputPort, W::OutputPort)
     where
-        F: 'static + FnMut(&mut RecvCtx<R>, &mut SendCtx<W>),
-        R: 'static + Handoff,
-        W: 'static + Handoff,
+        F: 'static + FnMut(&mut R::RecvCtx, &mut W::SendCtx),
+        R: 'static + HandoffList,
+        W: 'static + HandoffList,
     {
-        let (read_side, write_side, meta) = R::new();
-        let (once_send, once_recv) = util::once();
+        let (recv, input_port, meta) = R::make_input();
+        let (send, output_port) = W::make_output();
 
-        let recv = RecvCtx {
-            handoff: Rc::new(RefCell::new(read_side)),
-        };
-        let send = SendCtx { once: once_recv };
-
-        let input_port = InputPort {
-            handoff: write_side,
-        };
-        let output_port = OutputPort { once: once_send };
-
-        let sg: ClosureSubgraph<F, R, W> = ClosureSubgraph {
+        let sg: VariadicClosureSubgraph<F, R, W> = VariadicClosureSubgraph {
             f: subgraph,
             recv,
             send,
         };
 
-        self.subgraphs.insert((vec![Box::new(meta)], Box::new(sg)));
+        let mut meta_vec = Vec::new();
+        R::append_meta(&mut meta_vec, meta);
 
+        self.subgraphs.insert((meta_vec, Box::new(sg)));
+
+        (input_port, output_port)
+    }
+
+    /**
+     * Adds a new compiled subraph with a single input and output, and returns the input/output handles.
+     */
+    #[must_use]
+    pub fn add_inout<F, R, W>(&mut self, mut subgraph: F) -> (InputPort<R>, OutputPort<W>)
+    where
+        F: 'static + FnMut(&mut RecvCtx<R>, &mut SendCtx<W>),
+        R: 'static + Handoff,
+        W: 'static + Handoff,
+    {
+        let (tl!(input_port), tl!(output_port)) = self
+            .add_subgraph::<_, tl!(R), tl!(W)>(move |tl!(recv), tl!(send)| (subgraph)(recv, send));
         (input_port, output_port)
     }
 
@@ -323,7 +351,7 @@ impl Hydroflow {
     #[must_use]
     pub fn add_binary_out<F, R, W1, W2>(
         &mut self,
-        subgraph: F,
+        mut subgraph: F,
     ) -> (InputPort<R>, OutputPort<W1>, OutputPort<W2>)
     where
         F: 'static + FnMut(&mut RecvCtx<R>, &mut SendCtx<W1>, &mut SendCtx<W2>),
@@ -331,31 +359,10 @@ impl Hydroflow {
         W1: 'static + Handoff,
         W2: 'static + Handoff,
     {
-        let (read_side, write_side, meta) = R::new();
-        let (once_send1, once_recv1) = util::once();
-        let (once_send2, once_recv2) = util::once();
-
-        let recv = RecvCtx {
-            handoff: Rc::new(RefCell::new(read_side)),
-        };
-        let send1 = SendCtx { once: once_recv1 };
-        let send2 = SendCtx { once: once_recv2 };
-
-        let input_port = InputPort {
-            handoff: write_side,
-        };
-        let output_port1 = OutputPort { once: once_send1 };
-        let output_port2 = OutputPort { once: once_send2 };
-
-        let sg: BinaryOutClosureSubgraph<F, R, W1, W2> = BinaryOutClosureSubgraph {
-            f: subgraph,
-            recv,
-            send1,
-            send2,
-        };
-
-        self.subgraphs.insert((vec![Box::new(meta)], Box::new(sg)));
-
+        let (tl!(input_port), tl!(output_port1, output_port2)) = self
+            .add_subgraph::<_, tl!(R), tl!(W1, W2)>(move |tl!(recv), tl!(send1, send2)| {
+                (subgraph)(recv, send1, send2)
+            });
         (input_port, output_port1, output_port2)
     }
 
@@ -365,7 +372,7 @@ impl Hydroflow {
     #[must_use]
     pub fn add_binary<F, R1, R2, W>(
         &mut self,
-        subgraph: F,
+        mut subgraph: F,
     ) -> (InputPort<R1>, InputPort<R2>, OutputPort<W>)
     where
         F: 'static + FnMut(&mut RecvCtx<R1>, &mut RecvCtx<R2>, &mut SendCtx<W>),
@@ -373,36 +380,10 @@ impl Hydroflow {
         R2: 'static + Handoff,
         W: 'static + Handoff,
     {
-        let (read_side1, write_side1, meta1) = R1::new();
-        let (read_side2, write_side2, meta2) = R2::new();
-        let (once_send, once_recv) = util::once();
-
-        let recv1 = RecvCtx {
-            handoff: Rc::new(RefCell::new(read_side1)),
-        };
-        let recv2 = RecvCtx {
-            handoff: Rc::new(RefCell::new(read_side2)),
-        };
-        let send = SendCtx { once: once_recv };
-
-        let input_port1 = InputPort {
-            handoff: write_side1,
-        };
-        let input_port2 = InputPort {
-            handoff: write_side2,
-        };
-        let output_port = OutputPort { once: once_send };
-
-        let sg: BinaryClosureSubgraph<F, R1, R2, W> = BinaryClosureSubgraph {
-            f: subgraph,
-            recv1,
-            recv2,
-            send,
-        };
-
-        self.subgraphs
-            .insert((vec![Box::new(meta1), Box::new(meta2)], Box::new(sg)));
-
+        let (tl!(input_port1, input_port2), tl!(output_port)) = self
+            .add_subgraph::<_, tl!(R1, R2), tl!(W)>(move |tl!(recv1, recv2), tl!(send)| {
+                (subgraph)(recv1, recv2, send)
+            });
         (input_port1, input_port2, output_port)
     }
 
