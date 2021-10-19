@@ -1,3 +1,5 @@
+pub mod util;
+
 use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::rc::Rc;
@@ -110,12 +112,12 @@ impl<T> HandoffMeta for Rc<RefCell<VecDeque<T>>> {
  * Context provided to a compiled component for writing to an [OutputPort].
  */
 pub struct SendCtx<H: Handoff> {
-    handoff: Rc<RefCell<Option<H::Writable>>>,
+    once: util::Once<H::Writable>,
 }
 impl<H: Handoff> SendCtx<H> {
     // TODO: represent backpressure in this return value.
-    pub fn try_give(&self, item: H::Item) -> Result<(), ()> {
-        self.handoff.borrow_mut().as_mut().unwrap().try_give(item)
+    pub fn try_give(&mut self, item: H::Item) -> Result<(), ()> {
+        self.once.get().try_give(item)
     }
 }
 
@@ -123,7 +125,7 @@ impl<H: Handoff> SendCtx<H> {
  * Handle corresponding to a [SendCtx]. Consumed by [Hydroflow::add_edge] to construct the Hydroflow graph.
  */
 pub struct OutputPort<H: Handoff> {
-    handoff: Rc<RefCell<Option<H::Writable>>>,
+    once: util::SendOnce<H::Writable>,
 }
 
 /**
@@ -162,7 +164,7 @@ trait Subgraph {
  */
 struct ClosureSubgraph<F, R, W>
 where
-    F: FnMut(&RecvCtx<R>, &SendCtx<W>),
+    F: FnMut(&mut RecvCtx<R>, &mut SendCtx<W>),
     R: Handoff,
     W: Handoff,
 {
@@ -172,12 +174,12 @@ where
 }
 impl<F, R, W> Subgraph for ClosureSubgraph<F, R, W>
 where
-    F: FnMut(&RecvCtx<R>, &SendCtx<W>),
+    F: FnMut(&mut RecvCtx<R>, &mut SendCtx<W>),
     R: Handoff,
     W: Handoff,
 {
     fn run(&mut self) {
-        (self.f)(&self.recv, &self.send)
+        (self.f)(&mut self.recv, &mut self.send)
     }
 }
 
@@ -229,25 +231,22 @@ impl Hydroflow {
     #[must_use]
     pub fn add_inout<F, R, W>(&mut self, subgraph: F) -> (InputPort<R>, OutputPort<W>)
     where
-        F: 'static + FnMut(&RecvCtx<R>, &SendCtx<W>),
+        F: 'static + FnMut(&mut RecvCtx<R>, &mut SendCtx<W>),
         R: 'static + Handoff,
         W: 'static + Handoff,
     {
         let (read_side, write_side, meta) = R::new();
+        let (once_send, once_recv) = util::once();
 
         let recv = RecvCtx {
             handoff: Rc::new(RefCell::new(read_side)),
         };
-        let send = SendCtx {
-            handoff: Rc::new(RefCell::new(None)),
-        };
+        let send = SendCtx { once: once_recv };
 
         let input_port = InputPort {
             handoff: write_side,
         };
-        let output_port = OutputPort {
-            handoff: send.handoff.clone(),
-        };
+        let output_port = OutputPort { once: once_send };
 
         let sg: ClosureSubgraph<F, R, W> = ClosureSubgraph {
             f: subgraph,
@@ -266,7 +265,7 @@ impl Hydroflow {
     #[must_use]
     pub fn add_source<F, W>(&mut self, mut subgraph: F) -> OutputPort<W>
     where
-        F: 'static + FnMut(&SendCtx<W>),
+        F: 'static + FnMut(&mut SendCtx<W>),
         W: 'static + Handoff,
     {
         self.add_inout::<_, NullHandoff, W>(move |_, send| subgraph(send))
@@ -279,7 +278,7 @@ impl Hydroflow {
     #[must_use]
     pub fn add_sink<F, R>(&mut self, mut subgraph: F) -> InputPort<R>
     where
-        F: 'static + FnMut(&RecvCtx<R>),
+        F: 'static + FnMut(&mut RecvCtx<R>),
         R: 'static + Handoff,
     {
         self.add_inout::<_, R, NullHandoff>(move |recv, _| subgraph(recv))
@@ -290,8 +289,7 @@ impl Hydroflow {
     where
         H: Handoff,
     {
-        let old_handoff = output_port.handoff.borrow_mut().replace(input_port.handoff);
-        assert!(old_handoff.is_none());
+        output_port.once.send(input_port.handoff);
     }
 }
 
@@ -308,16 +306,16 @@ fn map_filter() {
     });
 
     let (map_in, map_out) = df.add_inout(
-        |recv: &RecvCtx<VecHandoff<i32>>, send: &SendCtx<VecHandoff<_>>| {
-            for x in recv {
+        |recv: &mut RecvCtx<VecHandoff<i32>>, send: &mut SendCtx<VecHandoff<_>>| {
+            for x in &*recv {
                 send.try_give(3 * x + 1).unwrap();
             }
         },
     );
 
     let (filter_in, filter_out) = df.add_inout(
-        |recv: &RecvCtx<VecHandoff<i32>>, send: &SendCtx<VecHandoff<_>>| {
-            for x in recv {
+        |recv: &mut RecvCtx<VecHandoff<i32>>, send: &mut SendCtx<VecHandoff<_>>| {
+            for x in &*recv {
                 if x % 2 == 0 {
                     send.try_give(x).unwrap();
                 }
@@ -328,7 +326,7 @@ fn map_filter() {
     let outputs = Rc::new(RefCell::new(Vec::new()));
     let inner_outputs = outputs.clone();
     let sink = df.add_sink(move |recv| {
-        for x in recv {
+        for x in &*recv {
             (*inner_outputs).borrow_mut().push(x);
         }
     });
