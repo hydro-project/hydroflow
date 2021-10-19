@@ -6,6 +6,11 @@ use slotmap::SlotMap;
 
 type OpId = slotmap::DefaultKey;
 
+/**
+ * A trait specifying a handoff point between compiled subgraphs.
+ *
+ * This trait is not meant to be instantiated directly, and instead provides a [Self::new()] associated function to create three separate pieces of a single handoff.
+ */
 pub trait Handoff {
     type Item;
 
@@ -15,17 +20,31 @@ pub trait Handoff {
 
     fn new() -> (Self::Readable, Self::Writable, Self::Meta);
 }
+/**
+ * The write piece of a handoff.
+ */
 pub trait Writable<T> {
     fn try_give(&mut self, item: T) -> Result<(), ()>;
 }
+/**
+ * The read piece of a handoff.
+ */
 pub trait Readable<T> {
     fn try_get(&mut self) -> Option<T>;
 }
+/**
+ * The metadata piece of a handoff.
+ */
 pub trait HandoffMeta {
     // TODO: more fine-grained info here.
     fn has_data(&self) -> bool;
 }
 
+/**
+ * A null handoff which will panic when called.
+ *
+ * This is used in sources and sinks as the unused read or write handoff respectively.
+ */
 pub enum NullHandoff {}
 impl Handoff for NullHandoff {
     type Item = ();
@@ -54,6 +73,9 @@ impl HandoffMeta for () {
     }
 }
 
+/**
+ * A [VecDeque]-based FIFO handoff.
+ */
 pub struct VecHandoff<T>(std::marker::PhantomData<T>);
 impl<T> Handoff for VecHandoff<T> {
     type Item = T;
@@ -84,19 +106,29 @@ impl<T> HandoffMeta for Rc<RefCell<VecDeque<T>>> {
     }
 }
 
+/**
+ * Context provided to a compiled component for writing to an [OutputPort].
+ */
 pub struct SendCtx<H: Handoff> {
     handoff: Rc<RefCell<Option<H::Writable>>>,
 }
 impl<H: Handoff> SendCtx<H> {
+    // TODO: represent backpressure in this return value.
     pub fn try_give(&self, item: H::Item) -> Result<(), ()> {
         self.handoff.borrow_mut().as_mut().unwrap().try_give(item)
     }
 }
 
+/**
+ * Handle corresponding to a [SendCtx]. Consumed by [Dataflow::add_edge] to construct the Hydroflow graph.
+ */
 pub struct OutputPort<H: Handoff> {
     handoff: Rc<RefCell<Option<H::Writable>>>,
 }
 
+/**
+ * Context provided to a compiled component for reading from an [InputPort].
+ */
 pub struct RecvCtx<H: Handoff> {
     handoff: Rc<RefCell<H::Readable>>,
 }
@@ -109,16 +141,25 @@ impl<T> Iterator for &RecvCtx<VecHandoff<T>> {
     }
 }
 
+/**
+ * Handle corresponding to a [RecvCtx]. Consumed by [Dataflow::add_edge] to construct the Hydroflow graph.
+ */
 // TODO: figure out how to explain succinctly why this and output port both use Writable
 pub struct InputPort<H: Handoff> {
     handoff: H::Writable,
 }
 
-pub trait OpSubtree {
+/**
+ * Represents a compiled subtree. Used internally by [Dataflow] to erase the input/output [Handoff] types.
+ */
+trait OpSubtree {
     // TODO: pass in some scheduling info?
     fn run(&mut self);
 }
 
+/**
+ * Closure-based [OpSubtree] implementation.
+ */
 struct ClosureOpSubtree<F, R, W>
 where
     F: FnMut(&RecvCtx<R>, &SendCtx<W>),
@@ -140,16 +181,32 @@ where
     }
 }
 
+/**
+ * A Hydroflow graph. Owns, schedules, and runs the compiled subgraphs.
+ */
 pub struct Dataflow {
     operators: SlotMap<OpId, (Box<dyn HandoffMeta>, Box<dyn OpSubtree>)>,
     // TODO: track the graph structure and schedule.
 }
-impl Dataflow {
-    pub fn new() -> Self {
+impl Default for Dataflow {
+    fn default() -> Self {
         Self {
             operators: Default::default(),
         }
     }
+}
+impl Dataflow {
+    /**
+     * Create an new empty Dataflow graph.
+     */
+    pub fn new() -> Self {
+        Default::default()
+    }
+    /**
+     * Run the dataflow graph.
+     *
+     * Blocks until completion.
+     */
     pub fn run(&mut self) {
         for (_meta, op) in self.operators.values_mut() {
             op.run(); // TODO: TODOTOTODODOTOTOD
@@ -166,6 +223,9 @@ impl Dataflow {
         }
     }
 
+    /**
+     * Adds a new compiled subraph with a single input and output, and returns the input/output handles.
+     */
     #[must_use]
     pub fn add_op<F, R, W>(
         &mut self,
@@ -203,6 +263,9 @@ impl Dataflow {
         (input_port, output_port)
     }
 
+    /**
+     * Adds a new compiled subgraph with no inputs and one output.
+     */
     #[must_use]
     pub fn add_source<F, W>(&mut self, mut op_subtree: F) -> OutputPort<W>
     where
@@ -213,6 +276,9 @@ impl Dataflow {
             .1
     }
 
+    /**
+     * Adds a new compiled subgraph with one inputs and no outputs.
+     */
     #[must_use]
     pub fn add_sink<F, R>(&mut self, mut op_subtree: F) -> InputPort<R>
     where
@@ -237,6 +303,7 @@ impl Dataflow {
 
 #[test]
 fn map_filter() {
+    // A simple dataflow with one source feeding into one sink.
     let mut df = Dataflow::new();
 
     let data = [1, 2, 3, 4];
