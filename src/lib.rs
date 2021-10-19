@@ -160,7 +160,7 @@ trait Subgraph {
 }
 
 /**
- * Closure-based [OpSubtree] implementation.
+ * Unary Closure-based [OpSubtree] implementation.
  */
 struct ClosureSubgraph<F, R, W>
 where
@@ -184,10 +184,66 @@ where
 }
 
 /**
+ * Binary Closure-based [OpSubtree] implementation.
+ */
+struct BinaryClosureSubgraph<F, R1, R2, W>
+where
+    F: FnMut(&mut RecvCtx<R1>, &mut RecvCtx<R2>, &mut SendCtx<W>),
+    R1: Handoff,
+    R2: Handoff,
+    W: Handoff,
+{
+    f: F,
+    recv1: RecvCtx<R1>,
+    recv2: RecvCtx<R2>,
+    send: SendCtx<W>,
+}
+impl<F, R1, R2, W> Subgraph for BinaryClosureSubgraph<F, R1, R2, W>
+where
+    F: FnMut(&mut RecvCtx<R1>, &mut RecvCtx<R2>, &mut SendCtx<W>),
+    R1: Handoff,
+    R2: Handoff,
+    W: Handoff,
+{
+    fn run(&mut self) {
+        (self.f)(&mut self.recv1, &mut self.recv2, &mut self.send)
+    }
+}
+
+/**
+ * Binary Closure-based [OpSubtree] implementation.
+ */
+struct BinaryOutClosureSubgraph<F, R, W1, W2>
+where
+    F: FnMut(&mut RecvCtx<R>, &mut SendCtx<W1>, &mut SendCtx<W2>),
+    R: Handoff,
+    W1: Handoff,
+    W2: Handoff,
+{
+    f: F,
+    recv: RecvCtx<R>,
+    send1: SendCtx<W1>,
+    send2: SendCtx<W2>,
+}
+impl<F, R, W1, W2> Subgraph for BinaryOutClosureSubgraph<F, R, W1, W2>
+where
+    F: FnMut(&mut RecvCtx<R>, &mut SendCtx<W1>, &mut SendCtx<W2>),
+    R: Handoff,
+    W1: Handoff,
+    W2: Handoff,
+{
+    fn run(&mut self) {
+        (self.f)(&mut self.recv, &mut self.send1, &mut self.send2)
+    }
+}
+
+/**
  * A Hydroflow graph. Owns, schedules, and runs the compiled subgraphs.
  */
 pub struct Hydroflow {
-    subgraphs: SlotMap<OpId, (Box<dyn HandoffMeta>, Box<dyn Subgraph>)>,
+    // TODO(justin): instead of this being a vec of metas, it could be
+    // implemented for 2-tuples of metas.
+    subgraphs: SlotMap<OpId, (Vec<Box<dyn HandoffMeta>>, Box<dyn Subgraph>)>,
     // TODO: track the graph structure and schedule.
 }
 impl Default for Hydroflow {
@@ -216,8 +272,8 @@ impl Hydroflow {
         let mut any = true;
         while any {
             any = false;
-            for (meta, sg) in self.subgraphs.values_mut() {
-                if meta.has_data() {
+            for (metas, sg) in self.subgraphs.values_mut() {
+                if metas.iter().any(|m| m.has_data()) {
                     sg.run();
                     any = true;
                 }
@@ -254,9 +310,98 @@ impl Hydroflow {
             send,
         };
 
-        self.subgraphs.insert((Box::new(meta), Box::new(sg)));
+        self.subgraphs.insert((vec![Box::new(meta)], Box::new(sg)));
 
         (input_port, output_port)
+    }
+
+    /**
+     * Adds a new compiled subraph with one input and two outputs, and returns the input/output handles.
+     */
+    #[must_use]
+    pub fn add_binary_out<F, R, W1, W2>(
+        &mut self,
+        subgraph: F,
+    ) -> (InputPort<R>, OutputPort<W1>, OutputPort<W2>)
+    where
+        F: 'static + FnMut(&mut RecvCtx<R>, &mut SendCtx<W1>, &mut SendCtx<W2>),
+        R: 'static + Handoff,
+        W1: 'static + Handoff,
+        W2: 'static + Handoff,
+    {
+        let (read_side, write_side, meta) = R::new();
+        let (once_send1, once_recv1) = util::once();
+        let (once_send2, once_recv2) = util::once();
+
+        let recv = RecvCtx {
+            handoff: Rc::new(RefCell::new(read_side)),
+        };
+        let send1 = SendCtx { once: once_recv1 };
+        let send2 = SendCtx { once: once_recv2 };
+
+        let input_port = InputPort {
+            handoff: write_side,
+        };
+        let output_port1 = OutputPort { once: once_send1 };
+        let output_port2 = OutputPort { once: once_send2 };
+
+        let sg: BinaryOutClosureSubgraph<F, R, W1, W2> = BinaryOutClosureSubgraph {
+            f: subgraph,
+            recv,
+            send1,
+            send2,
+        };
+
+        self.subgraphs.insert((vec![Box::new(meta)], Box::new(sg)));
+
+        (input_port, output_port1, output_port2)
+    }
+
+    /**
+     * Adds a new compiled subraph with two inputs and a single output, and returns the input/output handles.
+     */
+    #[must_use]
+    pub fn add_binary<F, R1, R2, W>(
+        &mut self,
+        subgraph: F,
+    ) -> (InputPort<R1>, InputPort<R2>, OutputPort<W>)
+    where
+        F: 'static + FnMut(&mut RecvCtx<R1>, &mut RecvCtx<R2>, &mut SendCtx<W>),
+        R1: 'static + Handoff,
+        R2: 'static + Handoff,
+        W: 'static + Handoff,
+    {
+        let (read_side1, write_side1, meta1) = R1::new();
+        let (read_side2, write_side2, meta2) = R2::new();
+        let (once_send, once_recv) = util::once();
+
+        let recv1 = RecvCtx {
+            handoff: Rc::new(RefCell::new(read_side1)),
+        };
+        let recv2 = RecvCtx {
+            handoff: Rc::new(RefCell::new(read_side2)),
+        };
+        let send = SendCtx { once: once_recv };
+
+        let input_port1 = InputPort {
+            handoff: write_side1,
+        };
+        let input_port2 = InputPort {
+            handoff: write_side2,
+        };
+        let output_port = OutputPort { once: once_send };
+
+        let sg: BinaryClosureSubgraph<F, R1, R2, W> = BinaryClosureSubgraph {
+            f: subgraph,
+            recv1,
+            recv2,
+            send,
+        };
+
+        self.subgraphs
+            .insert((vec![Box::new(meta1), Box::new(meta2)], Box::new(sg)));
+
+        (input_port1, input_port2, output_port)
     }
 
     /**
@@ -340,56 +485,99 @@ fn map_filter() {
     assert_eq!((*outputs).borrow().clone(), vec![4, 10]);
 }
 
-// #[test]
-// fn make_a_graph() {
-//     let mut df = Dataflow::new();
+mod tests {
+    #![allow(unused_imports)]
+    use std::{
+        cell::RefCell,
+        collections::{HashMap, HashSet},
+        rc::Rc,
+    };
 
-// //    q
-// //    ^ ___
-// //    |/   \
-// //    |     v
-// //    r     f
-// //   ^ ^   /
-// //   |  \_/
-// //   |
-// //   s
-// //
+    use crate::{Hydroflow, RecvCtx, SendCtx, VecHandoff};
 
-//     let q_i = df.add_sink(|recv| {
-//         for r in recv {
-//             println!("got data: {:?}", r):
-//         }
-//     });
+    #[test]
+    fn test_cycle() {
+        // A dataflow that represents graph reachability.
 
-//     // q here should be a WritableHandoff
-//     // implementation of o
-//     let (r_i1, r_i2, r_o1, r_o2) = df.add_op_2_2(|(i1, i2), (o1, o2)| {
-//         for x in i1 {
-//             o1.give(x.clone());
-//             o2.give(x);
-//         }
-//         for x in i2 {
-//             o1.give(x.clone());
-//             o2.give(x);
-//         }
-//     });
+        let mut edges: HashMap<usize, Vec<usize>> = HashMap::new();
+        for (from, to) in &[
+            (1 as usize, 2 as usize),
+            (1, 3),
+            (1, 4),
+            (2, 3),
+            (2, 5),
+            (5, 1),
+            (6, 7),
+            (7, 8),
+        ] {
+            edges.entry(*from).or_insert_with(Vec::new).push(*to);
+        }
 
-//     // implementation of f
-//     let (f_i, f_o) = df.add_op_1_1(|is, o| {
-//         for i in is {
-//             o.give(3*i + 1);
-//         }
-//     });
+        let mut df = Hydroflow::new();
 
-//     let s_o = df.add_source(|send| {
-//         // something
-//         send.send(5);
-//         send.send(6);
-//         send.send(7);
-//     });
+        let mut initially_reachable = vec![1];
+        let reachable = df.add_source(move |send: &mut SendCtx<VecHandoff<usize>>| {
+            for v in initially_reachable.drain(..) {
+                send.try_give(v).unwrap();
+            }
+        });
 
-//     df.add_edge(r_o1, q_i);
-//     df.add_edge(r_o2, f_i);
-//     df.add_edge(f_o,  r_i2);
-//     df.add_edge(s_o,  r_i1);
-// }
+        let mut seen = HashSet::new();
+        let (distinct_in, distinct_out) = df.add_inout(
+            move |recv: &mut RecvCtx<VecHandoff<usize>>, send: &mut SendCtx<VecHandoff<usize>>| {
+                for v in &*recv {
+                    if seen.insert(v) {
+                        send.try_give(v).unwrap();
+                    }
+                }
+            },
+        );
+
+        let (merge_lhs, merge_rhs, merge_out) =
+            df.add_binary(|recv1, recv2, send: &mut SendCtx<VecHandoff<usize>>| {
+                for v in (&*recv1).chain(&*recv2) {
+                    send.try_give(v).unwrap();
+                }
+            });
+
+        let (neighbors_in, neighbors_out) = df.add_inout(move |recv, send| {
+            for v in &*recv {
+                if let Some(neighbors) = edges.get(&v) {
+                    for &n in neighbors {
+                        send.try_give(n).unwrap();
+                    }
+                }
+            }
+        });
+
+        let (tee_in, tee_out1, tee_out2) = df.add_binary_out(
+            |recv: &mut RecvCtx<VecHandoff<usize>>,
+             send1: &mut SendCtx<VecHandoff<usize>>,
+             send2: &mut SendCtx<VecHandoff<usize>>| {
+                for v in &*recv {
+                    send1.try_give(v).unwrap();
+                    send2.try_give(v).unwrap();
+                }
+            },
+        );
+
+        let reachable_verts = Rc::new(RefCell::new(Vec::new()));
+        let reachable_inner = reachable_verts.clone();
+        let sink_in = df.add_sink(move |recv| {
+            for v in &*recv {
+                (*reachable_inner).borrow_mut().push(v);
+            }
+        });
+
+        df.add_edge(reachable, merge_lhs);
+        df.add_edge(neighbors_out, merge_rhs);
+        df.add_edge(merge_out, distinct_in);
+        df.add_edge(distinct_out, tee_in);
+        df.add_edge(tee_out1, neighbors_in);
+        df.add_edge(tee_out2, sink_in);
+
+        df.run();
+
+        assert_eq!((*reachable_verts).borrow().clone(), vec![1, 2, 3, 4, 5]);
+    }
+}
