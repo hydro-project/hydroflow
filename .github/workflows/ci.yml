@@ -1,16 +1,26 @@
-# Based on https://github.com/actions-rs/meta/blob/master/recipes/quickstart.md
-#
-# While our "example" application has the platform-specific code,
-# for simplicity we are compiling and testing everything on the Ubuntu environment only.
-# For multi-OS testing see the `cross.yml` workflow.
+name: CI
 
-on: [push]
-
-name: Quickstart
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
+  pre_job:
+    runs-on: ubuntu-latest
+    outputs:
+      should_skip: ${{ steps.skip_check.outputs.should_skip }}
+    steps:
+      - id: skip_check
+        uses: fkirc/skip-duplicate-actions@v3.4.0
+        with:
+          cancel_others: 'true'
+
   check:
     name: Check
+    needs: pre_job
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
@@ -30,6 +40,8 @@ jobs:
 
   test:
     name: Test Suite
+    needs: pre_job
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
@@ -49,6 +61,8 @@ jobs:
 
   lints:
     name: Lints
+    needs: pre_job
+    # if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     if: false
     runs-on: ubuntu-latest
     steps:
@@ -77,6 +91,8 @@ jobs:
 
   docs:
     name: Docs
+    needs: pre_job
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
@@ -95,6 +111,8 @@ jobs:
           command: doc
 
       - name: Push to gh-pages
+        # Do not deploy PRs.
+        if: ${{ github.event_name != 'pull_request' }}
         shell: bash
         env:
           BASE_DIR: target/doc
