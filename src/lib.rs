@@ -4,8 +4,9 @@ use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::rc::Rc;
 
+use sealed::sealed;
 use slotmap::SlotMap;
-use tuple_list::tuple_list as tl;
+pub use tuple_list::tuple_list as tl;
 
 type OpId = slotmap::DefaultKey;
 
@@ -154,6 +155,19 @@ pub struct InputPort<H: Handoff> {
     handoff: H::Writable,
 }
 
+/**
+ * A variadic list of Handoff types, represented using a lisp-style tuple structure.
+ *
+ * This trait is sealed and not meant to be implemented or used directly. Instead tuple lists (which already implement this trait) should be used, for example:
+ * ```ignore
+ * type MyHandoffList = (VecHandoff<usize>, (VecHandoff<String>, (NullHandoff, ())));
+ * ```
+ * The [`tl!`] (tuple list) macro simplifies usage of this kind:
+ * ```ignore
+ * type MyHandoffList = tl!(VecHandoff<usize>, VecHandoff<String>, NullHandoff);
+ * ```
+ */
+#[sealed]
 pub trait HandoffList {
     type RecvCtx;
     type InputPort;
@@ -166,6 +180,7 @@ pub trait HandoffList {
 
     fn append_meta(vec: &mut Vec<Box<dyn HandoffMeta>>, meta: Self::Meta);
 }
+#[sealed]
 impl<H, L> HandoffList for (H, L)
 where
     H: Handoff,
@@ -209,6 +224,7 @@ where
         L::append_meta(vec, meta_rest);
     }
 }
+#[sealed]
 impl HandoffList for () {
     type RecvCtx = ();
     type InputPort = ();
