@@ -308,7 +308,7 @@ fn map_filter() {
 
     let data = [1, 2, 3, 4];
     let source = df.add_source(move |send| {
-        for x in data {
+        for x in data.into_iter() {
             send.try_give(x).unwrap();
         }
     });
