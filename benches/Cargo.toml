@@ -10,6 +10,7 @@ edition = "2018"
 [dev-dependencies]
 babyflow = { path = "../babyflow" }
 criterion = { version = "0.3", features = [ "async_tokio" ] }
+hydroflow = { path = "../hydroflow" }
 pprof = { version = "0.5", features = [ "flamegraph", "criterion" ] }
 seq-macro = "0.2"
 spinachflow = { path = "../spinachflow" }
