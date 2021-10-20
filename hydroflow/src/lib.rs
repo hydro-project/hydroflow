@@ -12,37 +12,23 @@ type OpId = slotmap::DefaultKey;
 
 /**
  * A trait specifying a handoff point between compiled subgraphs.
- *
- * This trait is not meant to be instantiated directly, and instead provides a [Self::new()] associated function to create three separate pieces of a single handoff.
  */
 pub trait Handoff {
     type Item;
 
-    type Readable: Readable<Self::Item>;
-    type Writable: Writable<Self::Item>;
-    type Meta: HandoffMeta;
+    fn new() -> Self;
 
-    fn new() -> (Self::Readable, Self::Writable, Self::Meta);
-}
-/**
- * The write piece of a handoff.
- */
-pub trait Writable<T> {
     #[allow(clippy::result_unit_err)]
-    fn try_give(&mut self, item: T) -> Result<(), ()>;
+    fn try_give(&mut self, item: Self::Item) -> Result<(), ()>;
+
+    fn is_bottom(&self) -> bool;
 }
 /**
- * The read piece of a handoff.
- */
-pub trait Readable<T> {
-    fn try_get(&mut self) -> Option<T>;
-}
-/**
- * The metadata piece of a handoff.
+ * A handle onto the metadata part of a [Handoff], with no element type.
  */
 pub trait HandoffMeta {
-    // TODO: more fine-grained info here.
-    fn has_data(&self) -> bool;
+    // TODO(justin): more fine-grained info here.
+    fn is_bottom(&self) -> bool;
 }
 
 /**
@@ -50,64 +36,54 @@ pub trait HandoffMeta {
  *
  * This is used in sources and sinks as the unused read or write handoff respectively.
  */
-pub enum NullHandoff {}
+pub struct NullHandoff;
 impl Handoff for NullHandoff {
     type Item = ();
 
-    type Readable = ();
-    type Writable = ();
-    type Meta = ();
-
-    fn new() -> (Self::Readable, Self::Writable, Self::Meta) {
-        ((), (), ())
+    fn new() -> Self {
+        NullHandoff
     }
-}
-impl<T> Writable<T> for () {
-    fn try_give(&mut self, _item: T) -> Result<(), ()> {
+
+    fn try_give(&mut self, _item: Self::Item) -> Result<(), ()> {
         panic!("Tried to write to null handoff.");
     }
-}
-impl<T> Readable<T> for () {
-    fn try_get(&mut self) -> Option<T> {
-        panic!("Tried to read from null handoff.");
+
+    fn is_bottom(&self) -> bool {
+        true
     }
 }
-impl HandoffMeta for () {
-    fn has_data(&self) -> bool {
-        false
+impl HandoffMeta for NullHandoff {
+    fn is_bottom(&self) -> bool {
+        true
     }
 }
 
 /**
  * A [VecDeque]-based FIFO handoff.
  */
-pub struct VecHandoff<T>(std::marker::PhantomData<T>);
+pub struct VecHandoff<T>(VecDeque<T>);
 impl<T> Handoff for VecHandoff<T> {
     type Item = T;
 
-    type Readable = Rc<RefCell<VecDeque<T>>>;
-    type Writable = Rc<RefCell<VecDeque<T>>>;
-    type Meta = Rc<RefCell<VecDeque<T>>>;
-
-    fn new() -> (Self::Readable, Self::Writable, Self::Meta) {
-        let v = Rc::new(RefCell::new(VecDeque::new()));
-        (v.clone(), v.clone(), v)
+    fn new() -> Self {
+        VecHandoff(VecDeque::new())
     }
-}
-impl<T> Writable<T> for Rc<RefCell<VecDeque<T>>> {
-    fn try_give(&mut self, t: T) -> Result<(), ()> {
-        self.borrow_mut().push_back(t);
+
+    fn try_give(&mut self, t: Self::Item) -> Result<(), ()> {
+        self.0.push_back(t);
         Ok(())
     }
-}
-impl<T> Readable<T> for Rc<RefCell<VecDeque<T>>> {
-    fn try_get(&mut self) -> Option<T> {
-        self.borrow_mut().pop_front()
+
+    fn is_bottom(&self) -> bool {
+        self.0.is_empty()
     }
 }
-impl<T> HandoffMeta for Rc<RefCell<VecDeque<T>>> {
-    fn has_data(&self) -> bool {
-        !self.borrow().is_empty()
+impl<H, T> HandoffMeta for Rc<RefCell<H>>
+where
+    H: Handoff<Item = T>,
+{
+    fn is_bottom(&self) -> bool {
+        self.borrow().is_bottom()
     }
 }
 
@@ -115,13 +91,13 @@ impl<T> HandoffMeta for Rc<RefCell<VecDeque<T>>> {
  * Context provided to a compiled component for writing to an [OutputPort].
  */
 pub struct SendCtx<H: Handoff> {
-    once: util::Once<H::Writable>,
+    once: util::Once<Rc<RefCell<H>>>,
 }
 impl<H: Handoff> SendCtx<H> {
     // TODO: represent backpressure in this return value.
     #[allow(clippy::result_unit_err)]
     pub fn try_give(&mut self, item: H::Item) -> Result<(), ()> {
-        self.once.get().try_give(item)
+        (*self.once.get()).borrow_mut().try_give(item)
     }
 }
 
@@ -130,21 +106,21 @@ impl<H: Handoff> SendCtx<H> {
  */
 #[must_use]
 pub struct OutputPort<H: Handoff> {
-    once: util::SendOnce<H::Writable>,
+    once: util::SendOnce<Rc<RefCell<H>>>,
 }
 
 /**
  * Context provided to a compiled component for reading from an [InputPort].
  */
 pub struct RecvCtx<H: Handoff> {
-    handoff: Rc<RefCell<H::Readable>>,
+    handoff: Rc<RefCell<H>>,
 }
 impl<T> Iterator for &RecvCtx<VecHandoff<T>> {
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
         // TODOTOTODOTOTODTOO !!!!!!!! TODO
-        self.handoff.borrow_mut().borrow_mut().pop_front()
+        self.handoff.borrow_mut().0.pop_front()
     }
 }
 
@@ -154,7 +130,7 @@ impl<T> Iterator for &RecvCtx<VecHandoff<T>> {
 // TODO: figure out how to explain succinctly why this and output port both use Writable
 #[must_use]
 pub struct InputPort<H: Handoff> {
-    handoff: H::Writable,
+    handoff: Rc<RefCell<H>>,
 }
 
 /**
@@ -185,26 +161,27 @@ pub trait HandoffList {
 #[sealed]
 impl<H, L> HandoffList for (H, L)
 where
-    H: Handoff,
-    H::Meta: 'static,
+    H: 'static + Handoff,
     L: HandoffList,
 {
     type RecvCtx = (RecvCtx<H>, L::RecvCtx);
     type InputPort = (InputPort<H>, L::InputPort);
-    type Meta = (H::Meta, L::Meta);
+    type Meta = (Rc<RefCell<H>>, L::Meta);
     fn make_input() -> (Self::RecvCtx, Self::InputPort, Self::Meta) {
-        let (read_side, write_side, meta) = H::new();
+        let handoff = H::new();
+
+        let handoff = Rc::new(RefCell::new(handoff));
 
         let recv = RecvCtx {
-            handoff: Rc::new(RefCell::new(read_side)),
+            handoff: handoff.clone(),
         };
         let input = InputPort {
-            handoff: write_side,
+            handoff: handoff.clone(),
         };
 
         let (recv_rest, input_rest, meta_rest) = L::make_input();
 
-        ((recv, recv_rest), (input, input_rest), (meta, meta_rest))
+        ((recv, recv_rest), (input, input_rest), (handoff, meta_rest))
     }
 
     type SendCtx = (SendCtx<H>, L::SendCtx);
@@ -313,7 +290,7 @@ impl Hydroflow {
         while any {
             any = false;
             for (metas, sg) in self.subgraphs.values_mut() {
-                if metas.iter().any(|m| m.has_data()) {
+                if metas.iter().any(|m| !m.is_bottom()) {
                     sg.run();
                     any = true;
                 }
