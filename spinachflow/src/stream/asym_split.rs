@@ -33,7 +33,6 @@ where
         let state = Rc::new(RefCell::new(SideSplitState::default()));
         self.splits.push(state.clone());
 
-        
         SideSplit { state }
     }
 }

@@ -1,10 +1,6 @@
-
-
-use babyflow::babyflow::{Query};
+use babyflow::babyflow::Query;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use timely::dataflow::{
-    operators::{Operator},
-};
+use timely::dataflow::operators::Operator;
 
 const NUM_INTS: usize = 1_000_000;
 
