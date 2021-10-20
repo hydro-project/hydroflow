@@ -1,0 +1,22 @@
+[package]
+name = "spinachflow"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+bincode = "1.0"
+bytes = "1.0"
+const-random = "0.1"
+either = "1.6"
+futures-core = "0.3"
+futures = "0.3"
+pin-project = "1.0"
+ref-cast = "1.0"
+seq-macro = "0.2"
+serde = "1.0"
+static_assertions = "1.1.0"
+tokio = { version = "1", features = [ "io-std", "io-util", "macros", "net", "rt", "sync", "time", "fs" ] }
+tokio-stream = "0.1"
+tokio-util = { version = "0.6", features = [ "codec" ] }
