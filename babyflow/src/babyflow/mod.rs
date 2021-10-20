@@ -158,7 +158,17 @@ impl Dataflow {
     }
 
     pub fn run(&mut self) {
-        while let Some(id) = (*self.schedule).borrow_mut().pop() {
+        // loop {
+        //     let id = if let Some(v) = (*self.schedule).borrow_mut().pop() {
+        //         v
+        //     } else {
+        //         break;
+        //     };
+
+        while let Some(id) = {
+            let mut borrow = (*self.schedule).borrow_mut();
+            borrow.pop()
+        } {
             self.operators[id]();
 
             // If that operator sent out any data, its corresponding dirty bit will be true, so
