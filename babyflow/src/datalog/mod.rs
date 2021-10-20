@@ -221,7 +221,8 @@ fn test_datalog() {
 
             let mut out = String::new();
             let out_rel = &test_case.args.get("out").unwrap()[0];
-            let results = p.render(out_rel);
+            let mut results = p.render(out_rel);
+            results.sort_unstable();
             for res in results {
                 out.push_str(&format!("{}(", out_rel));
                 let mut sep = "";

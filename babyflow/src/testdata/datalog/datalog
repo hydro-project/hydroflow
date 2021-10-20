@@ -3,9 +3,9 @@ a(1).
 a(2).
 a(3).
 ----
-a(3).
-a(2).
 a(1).
+a(2).
+a(3).
 
 run out=reachable
 edge(1, 2).
@@ -21,9 +21,9 @@ reachable(1).
 reachable(A) <- reachable(B), edge(B, A).
 ----
 reachable(1).
-reachable(4).
-reachable(3).
 reachable(2).
+reachable(3).
+reachable(4).
 reachable(5).
 
 run out=tri
@@ -39,6 +39,6 @@ edge(6, 7).
 
 tri(A, B, C) <- edge(A, B), edge(B, C), edge(A, C).
 ----
-tri(2, 4, 5).
 tri(1, 2, 3).
 tri(1, 2, 4).
+tri(2, 4, 5).
