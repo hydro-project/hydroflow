@@ -46,7 +46,5 @@ pub mod comp;
 
 pub mod metadata;
 
-pub mod tcp_server;
-
 pub mod stream;
 

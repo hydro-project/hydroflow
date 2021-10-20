@@ -56,12 +56,6 @@ pub use zipop::*;
 mod channelop;
 pub use channelop::*;
 
-mod tcpop;
-pub use tcpop::*;
-
-mod tcpserverop;
-pub use tcpserverop::*;
-
 mod batchconvertop;
 pub use batchconvertop::*;
 
