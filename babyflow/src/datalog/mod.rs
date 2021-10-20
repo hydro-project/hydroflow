@@ -20,7 +20,7 @@ enum ColExpr {
     Var(usize),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 struct Predicate {
     name: Ident,
     constants: Vec<(usize, Datum)>,
@@ -28,12 +28,12 @@ struct Predicate {
     variables: Vec<(usize, Ident)>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 struct Relation {
     clauses: Vec<(Predicate, Vec<Predicate>)>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct Program {
     idents: HashMap<String, Ident>,
     relations: BTreeMap<Ident, Relation>,
@@ -41,10 +41,7 @@ pub struct Program {
 
 impl Program {
     pub fn new() -> Self {
-        Program {
-            idents: HashMap::new(),
-            relations: BTreeMap::new(),
-        }
+        Default::default()
     }
 
     pub fn build(s: &str) -> Self {

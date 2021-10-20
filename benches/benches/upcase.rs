@@ -31,7 +31,7 @@ impl Operation for UpcaseAllocating {
         "upcase_allocating"
     }
 
-    fn action(mut s: String) -> String {
+    fn action(s: String) -> String {
         s.to_uppercase()
     }
 }

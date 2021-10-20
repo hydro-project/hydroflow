@@ -499,7 +499,7 @@ mod tests {
 
         let mut edges: HashMap<usize, Vec<usize>> = HashMap::new();
         for (from, to) in &[
-            (1 as usize, 2 as usize),
+            (1_usize, 2_usize),
             (1, 3),
             (1, 4),
             (2, 3),

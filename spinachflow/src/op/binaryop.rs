@@ -57,7 +57,7 @@ where
         match self.op_b.poll_delta(ctx) {
             Poll::Ready(Some(delta_b)) => {
                 let out = self.func.call(self.op_a.get_value().into_delta(), delta_b);
-                return Poll::Ready(Some(out));
+                Poll::Ready(Some(out))
             }
             Poll::Ready(None) => not_ready,
             Poll::Pending => Poll::Pending,

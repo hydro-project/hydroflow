@@ -83,7 +83,7 @@ where
         // Check if other splits are ready to receive a value.
         for split in splits_after.iter().chain(splits_before.iter()) {
             let split = split.borrow();
-            if let Some(_) = split.item {
+            if split.item.is_some() {
                 // If any split has it's value filled, wake it up and return pending.
                 if let Some(waker) = &split.waker {
                     waker.wake_by_ref();

@@ -125,53 +125,57 @@ where
         this: &<MapUnionRepr<SelfTag, K, SelfLr> as LatticeRepr>::Repr,
         other: &<MapUnionRepr<DeltaTag, K, DeltaLr> as LatticeRepr>::Repr,
     ) -> Option<Ordering> {
-        if this.len() > other.len() {
-            for (key, this_value) in this.entries() {
-                if let Some(other_value) = other.get(key) {
-                    if let Some(Ordering::Less) = SelfLr::compare(this_value, other_value) {
-                        return None;
-                    }
-                }
-            }
-            Some(Ordering::Greater)
-        } else if this.len() == other.len() {
-            let mut current_ordering = Ordering::Equal;
-            for (key, this_value) in this.entries() {
-                match other.get(key) {
-                    Some(other_value) => {
-                        match SelfLr::compare(this_value, other_value) {
-                            // current_ordering unchanged
-                            Some(Ordering::Equal) => {}
-                            // If we get a strict inequality, check if that conflicts with the current_ordering.
-                            // Then update the current_ordering.
-                            Some(inequal) => {
-                                if inequal.reverse() == current_ordering {
-                                    // Conflict.
-                                    return None;
-                                }
-                                current_ordering = inequal;
-                            }
-                            None => return None,
-                        }
-                    }
-                    None => {
-                        if Ordering::Less == current_ordering {
+        match this.len().cmp(&other.len()) {
+            Ordering::Greater => {
+                for (key, this_value) in this.entries() {
+                    if let Some(other_value) = other.get(key) {
+                        if let Some(Ordering::Less) = SelfLr::compare(this_value, other_value) {
                             return None;
                         }
                     }
                 }
+                Some(Ordering::Greater)
             }
-            Some(current_ordering)
-        } else {
-            // this.len() < other.len()
-            for (key, other_value) in other.entries() {
-                if let Some(this_value) = this.get(key) {
-                    if let Some(Ordering::Greater) = SelfLr::compare(this_value, other_value) {
-                        return None;
+            Ordering::Equal => {
+                let mut current_ordering = Ordering::Equal;
+                for (key, this_value) in this.entries() {
+                    match other.get(key) {
+                        Some(other_value) => {
+                            match SelfLr::compare(this_value, other_value) {
+                                // current_ordering unchanged
+                                Some(Ordering::Equal) => {}
+                                // If we get a strict inequality, check if that conflicts with the current_ordering.
+                                // Then update the current_ordering.
+                                Some(inequal) => {
+                                    if inequal.reverse() == current_ordering {
+                                        // Conflict.
+                                        return None;
+                                    }
+                                    current_ordering = inequal;
+                                }
+                                None => return None,
+                            }
+                        }
+                        None => {
+                            if Ordering::Less == current_ordering {
+                                return None;
+                            }
+                        }
                     }
                 }
+                Some(current_ordering)
             }
-            Some(Ordering::Less)
+            Ordering::Less => {
+                // this.len() < other.len()
+                for (key, other_value) in other.entries() {
+                    if let Some(this_value) = this.get(key) {
+                        if let Some(Ordering::Greater) = SelfLr::compare(this_value, other_value) {
+                            return None;
+                        }
+                    }
+                }
+                Some(Ordering::Less)
+            }
         }
     }
 }

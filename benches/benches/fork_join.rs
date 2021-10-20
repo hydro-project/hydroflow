@@ -17,8 +17,8 @@ fn benchmark_raw(c: &mut Criterion) {
                     parts[i % BRANCH_FACTOR].push(i);
                 }
 
-                for j in 0..BRANCH_FACTOR {
-                    data.extend(parts[j].drain(..));
+                for part in parts.iter_mut() {
+                    data.append(part);
                 }
             }
         })

@@ -69,7 +69,7 @@ fn benchmark_raw_copy(c: &mut Criterion) {
             let mut next = Vec::new();
 
             for _ in 0..NUM_OPS {
-                next.extend(data.drain(..));
+                next.append(&mut data);
                 std::mem::swap(&mut data, &mut next);
             }
 

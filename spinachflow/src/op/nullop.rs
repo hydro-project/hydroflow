@@ -9,11 +9,16 @@ pub struct NullOp<Lr: LatticeRepr> {
     _phantom: std::marker::PhantomData<Lr>,
 }
 
-impl<Lr: LatticeRepr> NullOp<Lr> {
-    pub fn new() -> Self {
+impl<Lr: LatticeRepr> Default for NullOp<Lr> {
+    fn default() -> Self {
         Self {
             _phantom: std::marker::PhantomData,
         }
+    }
+}
+impl<Lr: LatticeRepr> NullOp<Lr> {
+    pub fn new() -> Self {
+        Default::default()
     }
 }
 

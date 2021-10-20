@@ -52,7 +52,7 @@ where
             send.give_vec(&mut recv2.take_all());
         });
         df.add_edge(self.output_port.clone(), input1);
-        df.add_edge(rhs.output_port.clone(), input2);
+        df.add_edge(rhs.output_port, input2);
 
         Operator {
             df: self.df.clone(),
@@ -87,7 +87,7 @@ where
     {
         let mut df = (*self.df).borrow_mut();
         let (input, output_port) = df.add_op(move |recv, send| {
-            send.give_iterator(recv.take_all().drain(..).map(|x| f(x)));
+            send.give_iterator(recv.take_all().drain(..).map(&f));
         });
         df.add_edge(self.output_port.clone(), input);
 
@@ -210,7 +210,7 @@ where
         );
 
         df.add_edge(self.output_port.clone(), input1);
-        df.add_edge(rhs.output_port.clone(), input2);
+        df.add_edge(rhs.output_port, input2);
 
         Operator {
             df: self.df.clone(),
@@ -219,15 +219,13 @@ where
     }
 }
 
+#[derive(Default)]
 pub struct Query {
     pub df: Rc<RefCell<Dataflow>>,
 }
-
 impl Query {
     pub fn new() -> Self {
-        Query {
-            df: Rc::new(RefCell::new(Dataflow::new())),
-        }
+        Default::default()
     }
 
     pub fn wire<T>(&mut self, o: Operator<T>, p: InputPort<T>)

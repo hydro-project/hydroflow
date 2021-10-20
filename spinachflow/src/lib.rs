@@ -1,6 +1,8 @@
-#![allow(clippy::redundant_closure)]
+#![allow(clippy::type_complexity)]
 #![allow(incomplete_features)]
+
 // #![doc = include_str!("../../README.md")]
+
 #![feature(array_methods)]
 #![feature(array_zip)]
 #![feature(associated_type_defaults)]

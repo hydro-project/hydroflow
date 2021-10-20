@@ -191,7 +191,7 @@ where
         // Check if other splits are ready to receive a value.
         {
             let state_other = state_other.borrow();
-            if let Some(_) = state_other.delta {
+            if state_other.delta.is_some() {
                 // Other has it's value filled, wake it up and return pending.
                 if let Some(waker) = &state_other.waker {
                     waker.wake_by_ref()

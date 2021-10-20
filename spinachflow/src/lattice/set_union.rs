@@ -77,24 +77,27 @@ where
         this: &<SetUnionRepr<SelfTag, T> as LatticeRepr>::Repr,
         other: &<SetUnionRepr<TargetTag, T> as LatticeRepr>::Repr,
     ) -> Option<Ordering> {
-        if this.len() > other.len() {
-            if this.keys().all(|key| other.get(key).is_some()) {
-                Some(Ordering::Greater)
-            } else {
-                None
+        match this.len().cmp(&other.len()) {
+            Ordering::Greater => {
+                if this.keys().all(|key| other.get(key).is_some()) {
+                    Some(Ordering::Greater)
+                } else {
+                    None
+                }
             }
-        } else if this.len() == other.len() {
-            if this.keys().all(|key| other.get(key).is_some()) {
-                Some(Ordering::Equal)
-            } else {
-                None
+            Ordering::Equal => {
+                if this.keys().all(|key| other.get(key).is_some()) {
+                    Some(Ordering::Equal)
+                } else {
+                    None
+                }
             }
-        } else {
-            // this.len() < other.len()
-            if other.keys().all(|key| this.get(key).is_some()) {
-                Some(Ordering::Less)
-            } else {
-                None
+            Ordering::Less => {
+                if other.keys().all(|key| this.get(key).is_some()) {
+                    Some(Ordering::Less)
+                } else {
+                    None
+                }
             }
         }
     }

@@ -9,7 +9,7 @@ mod query;
 pub use query::{Operator, Query};
 
 // TODO: make this work without clone.
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 struct Schedule<T>
 where
     T: Eq + std::hash::Hash + Clone,
@@ -43,6 +43,7 @@ where
     }
 }
 
+#[derive(Default)]
 pub struct Dataflow {
     // TODO: transpose these.
     operators: Vec<Box<dyn FnMut()>>,
@@ -77,6 +78,7 @@ where
     O: Clone,
 {
     id: usize,
+    #[allow(clippy::type_complexity)]
     subscribers: Rc<RefCell<Vec<Rc<RefCell<Vec<O>>>>>>,
     dirty: Rc<RefCell<bool>>,
 }
@@ -94,12 +96,12 @@ where
 
     pub fn give_vec(&self, v: &mut Vec<O>) {
         let subs = &*(*self.subscribers).borrow_mut();
-        for i in 0..(subs.len() - 1) {
-            (*subs[i]).borrow_mut().extend_from_slice(&v);
+        for sub in subs.iter().take(subs.len() - 1) {
+            sub.borrow_mut().extend_from_slice(v);
         }
-        if subs.len() > 0 {
+        if !subs.is_empty() {
             if (*subs[subs.len() - 1]).borrow().len() == 0 {
-                (*subs[subs.len() - 1]).replace(std::mem::replace(v, Vec::new()));
+                (*subs[subs.len() - 1]).replace(std::mem::take(v));
             } else {
                 (*subs[subs.len() - 1]).borrow_mut().extend(v.drain(..));
             }
@@ -112,7 +114,7 @@ where
         I: IntoIterator<Item = O>,
     {
         let subs = &*(*self.subscribers).borrow_mut();
-        if subs.len() == 0 {
+        if subs.is_empty() {
             return;
         }
         let mut first = (*subs[0]).borrow_mut();
@@ -156,13 +158,7 @@ impl Dataflow {
     }
 
     pub fn run(&mut self) {
-        loop {
-            let id = if let Some(v) = (*self.schedule).borrow_mut().pop() {
-                v
-            } else {
-                break;
-            };
-
+        while let Some(id) = (*self.schedule).borrow_mut().pop() {
             self.operators[id]();
 
             // If that operator sent out any data, its corresponding dirty bit will be true, so

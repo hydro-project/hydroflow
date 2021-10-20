@@ -33,8 +33,8 @@ where
         let state = Rc::new(RefCell::new(SideSplitState::default()));
         self.splits.push(state.clone());
 
-        let split = SideSplit { state };
-        split
+        
+        SideSplit { state }
     }
 }
 impl<S> Stream for AsymSplit<S>
