@@ -1,9 +1,9 @@
 use crate::comp::{DebugComp, NullComp};
-use crate::func::unary::{Morphism, ClosureMorphism};
 use crate::func::binary::BinaryMorphism;
-use crate::lattice::{Convert, Debottom, LatticeRepr, Merge, Top};
+use crate::func::unary::{ClosureMorphism, Morphism};
+use crate::hide::{Delta, Hide};
 use crate::lattice::pair::PairRepr;
-use crate::hide::{Hide, Delta};
+use crate::lattice::{Convert, Debottom, LatticeRepr, Merge, Top};
 
 use super::*;
 
@@ -28,7 +28,10 @@ pub trait OpExt: Sized + Op {
         MorphismOp::new(self, func)
     }
 
-    fn morphism_closure<Out: LatticeRepr, F>(self, func: F) -> MorphismOp<Self, ClosureMorphism<Self::LatRepr, Out, F>>
+    fn morphism_closure<Out: LatticeRepr, F>(
+        self,
+        func: F,
+    ) -> MorphismOp<Self, ClosureMorphism<Self::LatRepr, Out, F>>
     where
         F: Fn(Hide<Delta, Self::LatRepr>) -> Hide<Delta, Out>,
     {
@@ -42,7 +45,10 @@ pub trait OpExt: Sized + Op {
         TopOp::new(self)
     }
 
-    fn lattice<Lr: LatticeRepr + Merge<Self::LatRepr>>(self, bottom: Lr::Repr) -> LatticeOp<Self, Lr>
+    fn lattice<Lr: LatticeRepr + Merge<Self::LatRepr>>(
+        self,
+        bottom: Lr::Repr,
+    ) -> LatticeOp<Self, Lr>
     where
         Self::LatRepr: Convert<Lr>,
     {
@@ -76,7 +82,12 @@ pub trait OpExt: Sized + Op {
         Splitter::new(self)
     }
 
-    fn switch<Ra: LatticeRepr, Rb: LatticeRepr>(self) -> (SwitchOp<Self, Ra, Rb, switch::SwitchModeA>, SwitchOp<Self, Ra, Rb, switch::SwitchModeB>)
+    fn switch<Ra: LatticeRepr, Rb: LatticeRepr>(
+        self,
+    ) -> (
+        SwitchOp<Self, Ra, Rb, switch::SwitchModeA>,
+        SwitchOp<Self, Ra, Rb, switch::SwitchModeB>,
+    )
     where
         Self: Op<LatRepr = PairRepr<Ra, Rb>>,
     {

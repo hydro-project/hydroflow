@@ -1,15 +1,15 @@
 use std::cell::RefCell;
-use std::pin::Pin;
 use std::marker::Unpin;
+use std::pin::Pin;
 use std::task::{Context, Poll};
 
-use tokio::io::{AsyncRead, Stdin, BufReader, Lines, AsyncBufReadExt};
+use tokio::io::{AsyncBufReadExt, AsyncRead, BufReader, Lines, Stdin};
 
 use crate::collections::Single;
-use crate::hide::{Hide, Delta};
-use crate::tag::{SINGLE};
-use crate::lattice::set_union::{SetUnionRepr};
+use crate::hide::{Delta, Hide};
+use crate::lattice::set_union::SetUnionRepr;
 use crate::metadata::Order;
+use crate::tag::SINGLE;
 
 use super::*;
 
@@ -52,9 +52,14 @@ impl<R: AsyncRead + Unpin> OpDelta for ReadOp<R> {
 
     fn poll_delta(&self, ctx: &mut Context<'_>) -> Poll<Option<Hide<Delta, Self::LatRepr>>> {
         loop {
-            match Pin::new(&mut *self.reader.borrow_mut()).as_mut().poll_next_line(ctx) {
+            match Pin::new(&mut *self.reader.borrow_mut())
+                .as_mut()
+                .poll_next_line(ctx)
+            {
                 Poll::Pending => return Poll::Pending,
-                Poll::Ready(Result::Ok(opt)) => return Poll::Ready(opt.map(|x| Hide::new(Single(x)))),
+                Poll::Ready(Result::Ok(opt)) => {
+                    return Poll::Ready(opt.map(|x| Hide::new(Single(x))))
+                }
                 Poll::Ready(Result::Err(err)) => println!("ERROR: {}", err),
             }
         }

@@ -1,9 +1,9 @@
 use std::future::Future;
-use std::task::{Context, Poll};
 use std::pin::Pin;
+use std::task::{Context, Poll};
 
+use crate::hide::{Delta, Hide};
 use crate::op::OpDelta;
-use crate::hide::{Hide, Delta};
 
 struct Next<'s, O: OpDelta> {
     op: &'s O,

@@ -1,7 +1,7 @@
 use std::cmp::Ordering;
 
-use super::{Lattice, LatticeRepr, Merge, Compare, Convert, Debottom, Top};
 use super::bottom::BottomRepr;
+use super::{Compare, Convert, Debottom, Lattice, LatticeRepr, Merge, Top};
 
 use crate::tag;
 
@@ -18,43 +18,50 @@ impl<Ra: LatticeRepr, Rb: LatticeRepr> LatticeRepr for PairRepr<Ra, Rb> {
     type Repr = (Ra::Repr, Rb::Repr);
 }
 
-impl<SelfRA, SelfRB, DeltaRA, DeltaRB, La, Lb> Merge<PairRepr<DeltaRA, DeltaRB>> for PairRepr<SelfRA, SelfRB>
+impl<SelfRA, SelfRB, DeltaRA, DeltaRB, La, Lb> Merge<PairRepr<DeltaRA, DeltaRB>>
+    for PairRepr<SelfRA, SelfRB>
 where
     La: Lattice,
     Lb: Lattice,
-    SelfRA:  LatticeRepr<Lattice = La>,
-    SelfRB:  LatticeRepr<Lattice = Lb>,
+    SelfRA: LatticeRepr<Lattice = La>,
+    SelfRB: LatticeRepr<Lattice = Lb>,
     DeltaRA: LatticeRepr<Lattice = La>,
     DeltaRB: LatticeRepr<Lattice = Lb>,
-    SelfRA:  Merge<DeltaRA>,
-    SelfRB:  Merge<DeltaRB>,
+    SelfRA: Merge<DeltaRA>,
+    SelfRB: Merge<DeltaRB>,
     DeltaRA: Convert<SelfRA>,
     DeltaRB: Convert<SelfRB>,
 {
-    fn merge(this: &mut <PairRepr<SelfRA, SelfRB> as LatticeRepr>::Repr, delta: <PairRepr<DeltaRA, DeltaRB> as LatticeRepr>::Repr) -> bool {
+    fn merge(
+        this: &mut <PairRepr<SelfRA, SelfRB> as LatticeRepr>::Repr,
+        delta: <PairRepr<DeltaRA, DeltaRB> as LatticeRepr>::Repr,
+    ) -> bool {
         // Do NOT use short-circuiting `&&`.
         SelfRA::merge(&mut this.0, delta.0) & SelfRB::merge(&mut this.1, delta.1)
     }
 }
 
-impl<SelfRA, SelfRB, DeltaRA, DeltaRB, La, Lb> Compare<PairRepr<DeltaRA, DeltaRB>> for PairRepr<SelfRA, SelfRB>
+impl<SelfRA, SelfRB, DeltaRA, DeltaRB, La, Lb> Compare<PairRepr<DeltaRA, DeltaRB>>
+    for PairRepr<SelfRA, SelfRB>
 where
     La: Lattice,
     Lb: Lattice,
-    SelfRA:  LatticeRepr<Lattice = La>,
-    SelfRB:  LatticeRepr<Lattice = Lb>,
+    SelfRA: LatticeRepr<Lattice = La>,
+    SelfRB: LatticeRepr<Lattice = Lb>,
     DeltaRA: LatticeRepr<Lattice = La>,
     DeltaRB: LatticeRepr<Lattice = Lb>,
-    SelfRA:  Compare<DeltaRA>,
-    SelfRB:  Compare<DeltaRB>,
+    SelfRA: Compare<DeltaRA>,
+    SelfRB: Compare<DeltaRB>,
 {
-    fn compare(this: &<PairRepr<SelfRA, SelfRB> as LatticeRepr>::Repr, other: &<PairRepr<DeltaRA, DeltaRB> as LatticeRepr>::Repr) -> Option<Ordering> {
+    fn compare(
+        this: &<PairRepr<SelfRA, SelfRB> as LatticeRepr>::Repr,
+        other: &<PairRepr<DeltaRA, DeltaRB> as LatticeRepr>::Repr,
+    ) -> Option<Ordering> {
         let ord_a = SelfRA::compare(&this.0, &other.0);
         let ord_b = SelfRB::compare(&this.1, &other.1);
         if ord_a == ord_b {
             ord_a
-        }
-        else {
+        } else {
             None
         }
     }
@@ -84,40 +91,43 @@ impl<Ra: Top, Rb: Top> Top for PairRepr<Ra, Rb> {
     }
 }
 
-
 fn __assert_merges() {
     use static_assertions::{assert_impl_all, assert_not_impl_any};
 
-    use super::set_union::{SetUnionRepr};
+    use super::set_union::SetUnionRepr;
 
-    type HashSetHashSet   = PairRepr<SetUnionRepr<tag::HASH_SET, u32>, SetUnionRepr<tag::HASH_SET, u32>>;
-    type HashSetArraySet  = PairRepr<SetUnionRepr<tag::HASH_SET, u32>, SetUnionRepr<tag::ARRAY<8>, u32>>;
-    type ArraySetHashSet  = PairRepr<SetUnionRepr<tag::ARRAY<8>, u32>, SetUnionRepr<tag::HASH_SET, u32>>;
-    type ArraySetArraySet = PairRepr<SetUnionRepr<tag::ARRAY<8>, u32>, SetUnionRepr<tag::ARRAY<8>, u32>>;
+    type HashSetHashSet =
+        PairRepr<SetUnionRepr<tag::HASH_SET, u32>, SetUnionRepr<tag::HASH_SET, u32>>;
+    type HashSetArraySet =
+        PairRepr<SetUnionRepr<tag::HASH_SET, u32>, SetUnionRepr<tag::ARRAY<8>, u32>>;
+    type ArraySetHashSet =
+        PairRepr<SetUnionRepr<tag::ARRAY<8>, u32>, SetUnionRepr<tag::HASH_SET, u32>>;
+    type ArraySetArraySet =
+        PairRepr<SetUnionRepr<tag::ARRAY<8>, u32>, SetUnionRepr<tag::ARRAY<8>, u32>>;
 
-    assert_impl_all!(HashSetHashSet:
-        Merge<HashSetHashSet>,
+    assert_impl_all!(
+        HashSetHashSet: Merge<HashSetHashSet>,
         Merge<HashSetArraySet>,
         Merge<ArraySetHashSet>,
         Merge<ArraySetArraySet>,
     );
 
-    assert_not_impl_any!(HashSetArraySet:
-        Merge<HashSetHashSet>,
+    assert_not_impl_any!(
+        HashSetArraySet: Merge<HashSetHashSet>,
         Merge<HashSetArraySet>,
         Merge<ArraySetHashSet>,
         Merge<ArraySetArraySet>,
     );
 
-    assert_not_impl_any!(ArraySetHashSet:
-        Merge<HashSetHashSet>,
+    assert_not_impl_any!(
+        ArraySetHashSet: Merge<HashSetHashSet>,
         Merge<HashSetArraySet>,
         Merge<ArraySetHashSet>,
         Merge<ArraySetArraySet>,
     );
 
-    assert_not_impl_any!(ArraySetArraySet:
-        Merge<HashSetHashSet>,
+    assert_not_impl_any!(
+        ArraySetArraySet: Merge<HashSetHashSet>,
         Merge<HashSetArraySet>,
         Merge<ArraySetHashSet>,
         Merge<ArraySetArraySet>,
@@ -128,7 +138,7 @@ mod fns {
     use std::iter::FromIterator;
 
     use crate::hide::{Hide, Qualifier};
-    use crate::lattice::set_union::{SetUnionRepr, SetTag};
+    use crate::lattice::set_union::{SetTag, SetUnionRepr};
 
     use super::*;
 
@@ -155,9 +165,7 @@ mod fns {
             <SetUnionRepr<TargetTag, (<Ra::Repr as IntoIterator>::Item, Rb::Repr)> as LatticeRepr>::Repr: Clone + FromIterator<(<Ra::Repr as IntoIterator>::Item, Rb::Repr)>,
         {
             let (a, b) = self.into_reveal();
-            let out = a.into_iter()
-                .map(|item_a| (item_a, b.clone()))
-                .collect();
+            let out = a.into_iter().map(|item_a| (item_a, b.clone())).collect();
             Hide::new(out)
         }
     }

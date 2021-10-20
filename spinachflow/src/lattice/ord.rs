@@ -15,19 +15,24 @@ impl<T: Ord + Clone> LatticeRepr for MaxRepr<T> {
 }
 
 impl<T: Ord + Clone> Merge<MaxRepr<T>> for MaxRepr<T> {
-    fn merge(this: &mut <MaxRepr<T> as LatticeRepr>::Repr, delta: <MaxRepr<T> as LatticeRepr>::Repr) -> bool {
+    fn merge(
+        this: &mut <MaxRepr<T> as LatticeRepr>::Repr,
+        delta: <MaxRepr<T> as LatticeRepr>::Repr,
+    ) -> bool {
         if delta > *this {
             *this = delta;
             true
-        }
-        else {
+        } else {
             false
         }
     }
 }
 
 impl<T: Ord + Clone> Compare<MaxRepr<T>> for MaxRepr<T> {
-    fn compare(this: &<MaxRepr<T> as LatticeRepr>::Repr, other: &<MaxRepr<T> as LatticeRepr>::Repr) -> Option<std::cmp::Ordering> {
+    fn compare(
+        this: &<MaxRepr<T> as LatticeRepr>::Repr,
+        other: &<MaxRepr<T> as LatticeRepr>::Repr,
+    ) -> Option<std::cmp::Ordering> {
         Some(this.cmp(other))
     }
 }
@@ -37,9 +42,6 @@ impl<T: Ord + Clone> Convert<MaxRepr<T>> for MaxRepr<T> {
         this
     }
 }
-
-
-
 
 pub struct Min<T: Ord> {
     _phantom: std::marker::PhantomData<T>,
@@ -56,19 +58,24 @@ impl<T: Ord + Clone> LatticeRepr for MinRepr<T> {
 }
 
 impl<T: Ord + Clone> Merge<MinRepr<T>> for MinRepr<T> {
-    fn merge(this: &mut <MinRepr<T> as LatticeRepr>::Repr, delta: <MinRepr<T> as LatticeRepr>::Repr) -> bool {
+    fn merge(
+        this: &mut <MinRepr<T> as LatticeRepr>::Repr,
+        delta: <MinRepr<T> as LatticeRepr>::Repr,
+    ) -> bool {
         if delta < *this {
             *this = delta;
             true
-        }
-        else {
+        } else {
             false
         }
     }
 }
 
 impl<T: Ord + Clone> Compare<MinRepr<T>> for MinRepr<T> {
-    fn compare(this: &<MinRepr<T> as LatticeRepr>::Repr, other: &<MinRepr<T> as LatticeRepr>::Repr) -> Option<std::cmp::Ordering> {
+    fn compare(
+        this: &<MinRepr<T> as LatticeRepr>::Repr,
+        other: &<MinRepr<T> as LatticeRepr>::Repr,
+    ) -> Option<std::cmp::Ordering> {
         Some(this.cmp(other).reverse())
     }
 }
@@ -78,8 +85,6 @@ impl<T: Ord + Clone> Convert<MinRepr<T>> for MinRepr<T> {
         this
     }
 }
-
-
 
 // TODO: use num traits for all variants of this.
 impl Top for MaxRepr<u64> {

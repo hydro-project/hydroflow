@@ -6,8 +6,6 @@ pub use optrait::*;
 mod opext;
 pub use opext::*;
 
-
-
 mod nullop;
 pub use nullop::*;
 

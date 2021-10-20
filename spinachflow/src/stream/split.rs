@@ -69,10 +69,12 @@ where
         let splits = self.splitter.splits.borrow();
 
         // Get our index.
-        let index = splits.iter()
+        let index = splits
+            .iter()
             .enumerate()
             .find(|(_, split_other)| Rc::ptr_eq(&self.data, split_other))
-            .unwrap().0;
+            .unwrap()
+            .0;
 
         // Iterate in circular order, so each successive split checks the next split.
         let (splits_before, splits_after) = splits.split_at(index);
@@ -115,8 +117,8 @@ where
 pub async fn test_split_merge() {
     const BRANCH_FACTOR: usize = 10;
 
-    use futures::StreamExt;
     use futures::future::ready;
+    use futures::StreamExt;
 
     let stream = futures::stream::iter(0..10_000);
 

@@ -1,7 +1,7 @@
 use std::task::{Context, Poll};
 
-use crate::lattice::{LatticeRepr, Convert};
-use crate::hide::{Hide, Delta, Value};
+use crate::hide::{Delta, Hide, Value};
+use crate::lattice::{Convert, LatticeRepr};
 
 use super::*;
 
@@ -20,7 +20,10 @@ where
     O::LatRepr: Convert<Lr>,
 {
     pub fn new(op: O) -> Self {
-        Self { op, _phantom: std::marker::PhantomData }
+        Self {
+            op,
+            _phantom: std::marker::PhantomData,
+        }
     }
 }
 
@@ -45,7 +48,9 @@ where
 
     fn poll_delta(&self, ctx: &mut Context<'_>) -> Poll<Option<Hide<Delta, Self::LatRepr>>> {
         match self.op.poll_delta(ctx) {
-            Poll::Ready(Some(delta)) => Poll::Ready(Some(<O::LatRepr as Convert<Lr>>::convert_hide(delta))),
+            Poll::Ready(Some(delta)) => {
+                Poll::Ready(Some(<O::LatRepr as Convert<Lr>>::convert_hide(delta)))
+            }
             Poll::Ready(None) => Poll::Ready(None),
             Poll::Pending => Poll::Pending,
         }

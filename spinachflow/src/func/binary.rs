@@ -1,5 +1,5 @@
-use crate::lattice::LatticeRepr;
 use crate::hide::{Hide, Qualifier};
+use crate::lattice::LatticeRepr;
 
 pub trait BinaryMorphism {
     type InLatReprA: LatticeRepr;
@@ -8,9 +8,9 @@ pub trait BinaryMorphism {
 
     fn call<Y: Qualifier>(
         &self,
-        item_a: Hide<Y, Self::InLatReprA>, item_b: Hide<Y, Self::InLatReprB>
-    )
-        -> Hide<Y, Self::OutLatRepr>;
+        item_a: Hide<Y, Self::InLatReprA>,
+        item_b: Hide<Y, Self::InLatReprB>,
+    ) -> Hide<Y, Self::OutLatRepr>;
 }
 
 mod partitioned;

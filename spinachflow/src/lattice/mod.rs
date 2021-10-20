@@ -1,11 +1,11 @@
 use crate::hide::{Hide, Qualifier};
 
-pub mod set_union;
+pub mod bottom;
+pub mod dom_pair;
 pub mod map_union;
 pub mod ord;
 pub mod pair;
-pub mod dom_pair;
-pub mod bottom;
+pub mod set_union;
 pub mod top;
 
 pub trait Lattice {}
@@ -19,7 +19,10 @@ pub trait Merge<Delta: LatticeRepr>: LatticeRepr<Lattice = Delta::Lattice> {
     /// Merge DELTA into THIS. Return TRUE if THIS changed, FALSE if THIS was unchanged.
     fn merge(this: &mut Self::Repr, delta: Delta::Repr) -> bool;
 
-    fn merge_hide<Y: Qualifier, Z: Qualifier>(this: &mut Hide<Y, Self>, delta: Hide<Z, Delta>) -> bool {
+    fn merge_hide<Y: Qualifier, Z: Qualifier>(
+        this: &mut Hide<Y, Self>,
+        delta: Hide<Z, Delta>,
+    ) -> bool {
         Self::merge(this.reveal_mut(), delta.into_reveal())
     }
 }

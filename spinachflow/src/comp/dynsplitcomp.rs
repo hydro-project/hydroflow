@@ -1,12 +1,12 @@
-use std::cell::{RefCell};
+use std::cell::RefCell;
 use std::future::Future;
 use std::iter::IntoIterator;
 
 use futures::future;
 
-use crate::op::{OpDelta, OpValue, Splitter, SplitOp};
-use crate::lattice::LatticeRepr;
 use crate::lattice::set_union::SetUnion;
+use crate::lattice::LatticeRepr;
+use crate::op::{OpDelta, OpValue, SplitOp, Splitter};
 
 use super::{Comp, CompConnector, Next};
 
@@ -61,7 +61,8 @@ where
             }
 
             // Run all the ticks, remove any erroring comps.
-            let tick_results = future::join_all(self.splits.borrow().iter().map(|comp| comp.tick())).await;
+            let tick_results =
+                future::join_all(self.splits.borrow().iter().map(|comp| comp.tick())).await;
             {
                 let mut splits = self.splits.borrow_mut();
                 let mut index = 0;

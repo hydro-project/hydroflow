@@ -1,9 +1,8 @@
-use std::pin::{Pin};
+use std::pin::Pin;
 use std::task::{Context, Poll};
 
 use futures::stream::Stream;
 use pin_project::pin_project;
-
 
 #[pin_project]
 pub struct SelectArr<S: Stream + Unpin, const N: usize> {
@@ -13,10 +12,7 @@ pub struct SelectArr<S: Stream + Unpin, const N: usize> {
 }
 impl<S: Stream + Unpin, const N: usize> SelectArr<S, N> {
     pub fn new(streams: [S; N]) -> Self {
-        Self {
-            streams,
-            i: 0,
-        }
+        Self { streams, i: 0 }
     }
 }
 impl<S: Stream + Unpin, const N: usize> Stream for SelectArr<S, N> {
@@ -48,12 +44,10 @@ async fn test_select_arr() {
     const NUM_OPS: usize = 5;
     const NUM_INTS: usize = 1000;
 
-    use crate::futures::StreamExt;
     use crate::futures::future::ready;
+    use crate::futures::StreamExt;
 
-    let streams = [(); NUM_OPS].map(|_| {
-        crate::futures::stream::iter(0..NUM_INTS)
-    });
+    let streams = [(); NUM_OPS].map(|_| crate::futures::stream::iter(0..NUM_INTS));
     let stream = SelectArr::new(streams);
     let stream = stream.map(|x| ready(x));
     let mut stream = stream;

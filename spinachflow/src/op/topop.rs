@@ -1,8 +1,8 @@
 use std::cell::Cell;
 use std::task::{Context, Poll};
 
-use crate::hide::{Hide, Delta, Value};
-use crate::lattice::{Top};
+use crate::hide::{Delta, Hide, Value};
+use crate::lattice::Top;
 
 use super::*;
 
@@ -49,8 +49,7 @@ where
             Poll::Ready(None)
             // TODO?
             // Poll::Ready(Some(Hide::new(<Self::LatRepr as Top>::top())))
-        }
-        else {
+        } else {
             match self.op.poll_delta(ctx) {
                 Poll::Ready(Some(delta)) => {
                     self.propegate_saturation();
@@ -70,8 +69,7 @@ where
     fn get_value(&self) -> Hide<Value, Self::LatRepr> {
         if self.at_top.get() {
             Hide::new(<Self::LatRepr as Top>::top())
-        }
-        else {
+        } else {
             self.op.get_value()
         }
     }

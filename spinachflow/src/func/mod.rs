@@ -1,4 +1,4 @@
 //! Function traits.
 
-pub mod unary;
 pub mod binary;
+pub mod unary;

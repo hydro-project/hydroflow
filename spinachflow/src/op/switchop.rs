@@ -1,10 +1,10 @@
-use std::cell::{RefCell};
+use std::cell::RefCell;
+use std::rc::Rc;
 use std::task::{Context, Poll, Waker};
-use std::rc::{Rc};
 
-use crate::lattice::LatticeRepr;
+use crate::hide::{Delta, Hide, Qualifier, Value};
 use crate::lattice::pair::PairRepr;
-use crate::hide::{Hide, Qualifier, Delta, Value};
+use crate::lattice::LatticeRepr;
 
 use super::*;
 
@@ -30,10 +30,18 @@ mod private {
 
         const IS_A: bool;
 
-        fn swap_state<'a>(a: &'a RefCell<SwitchOpState<Ra>>, b: &'a RefCell<SwitchOpState<Rb>>)
-            -> (&'a RefCell<SwitchOpState<Self::ThisLatRepr>>, &'a RefCell<SwitchOpState<Self::OtherLatRepr>>);
+        fn swap_state<'a>(
+            a: &'a RefCell<SwitchOpState<Ra>>,
+            b: &'a RefCell<SwitchOpState<Rb>>,
+        ) -> (
+            &'a RefCell<SwitchOpState<Self::ThisLatRepr>>,
+            &'a RefCell<SwitchOpState<Self::OtherLatRepr>>,
+        );
 
-        fn swap<Y: Qualifier>(a: Hide<Y, Ra>, b: Hide<Y, Rb>) -> (Hide<Y, Self::ThisLatRepr>, Hide<Y, Self::OtherLatRepr>);
+        fn swap<Y: Qualifier>(
+            a: Hide<Y, Ra>,
+            b: Hide<Y, Rb>,
+        ) -> (Hide<Y, Self::ThisLatRepr>, Hide<Y, Self::OtherLatRepr>);
     }
 
     impl<Ra: LatticeRepr, Rb: LatticeRepr> SwitchModePrivate<Ra, Rb> for SwitchModeA {
@@ -42,13 +50,20 @@ mod private {
 
         const IS_A: bool = true;
 
-        fn swap_state<'a>(a: &'a RefCell<SwitchOpState<Ra>>, b: &'a RefCell<SwitchOpState<Rb>>)
-            -> (&'a RefCell<SwitchOpState<Self::ThisLatRepr>>, &'a RefCell<SwitchOpState<Self::OtherLatRepr>>)
-        {
+        fn swap_state<'a>(
+            a: &'a RefCell<SwitchOpState<Ra>>,
+            b: &'a RefCell<SwitchOpState<Rb>>,
+        ) -> (
+            &'a RefCell<SwitchOpState<Self::ThisLatRepr>>,
+            &'a RefCell<SwitchOpState<Self::OtherLatRepr>>,
+        ) {
             (a, b)
         }
 
-        fn swap<Y: Qualifier>(a: Hide<Y, Ra>, b: Hide<Y, Rb>) -> (Hide<Y, Self::ThisLatRepr>, Hide<Y, Self::OtherLatRepr>) {
+        fn swap<Y: Qualifier>(
+            a: Hide<Y, Ra>,
+            b: Hide<Y, Rb>,
+        ) -> (Hide<Y, Self::ThisLatRepr>, Hide<Y, Self::OtherLatRepr>) {
             (a, b)
         }
     }
@@ -59,13 +74,20 @@ mod private {
 
         const IS_A: bool = false;
 
-        fn swap_state<'a>(a: &'a RefCell<SwitchOpState<Ra>>, b: &'a RefCell<SwitchOpState<Rb>>)
-            -> (&'a RefCell<SwitchOpState<Self::ThisLatRepr>>, &'a RefCell<SwitchOpState<Self::OtherLatRepr>>)
-        {
+        fn swap_state<'a>(
+            a: &'a RefCell<SwitchOpState<Ra>>,
+            b: &'a RefCell<SwitchOpState<Rb>>,
+        ) -> (
+            &'a RefCell<SwitchOpState<Self::ThisLatRepr>>,
+            &'a RefCell<SwitchOpState<Self::OtherLatRepr>>,
+        ) {
             (b, a)
         }
 
-        fn swap<Y: Qualifier>(a: Hide<Y, Ra>, b: Hide<Y, Rb>) -> (Hide<Y, Self::ThisLatRepr>, Hide<Y, Self::OtherLatRepr>) {
+        fn swap<Y: Qualifier>(
+            a: Hide<Y, Ra>,
+            b: Hide<Y, Rb>,
+        ) -> (Hide<Y, Self::ThisLatRepr>, Hide<Y, Self::OtherLatRepr>) {
             (b, a)
         }
     }
@@ -77,7 +99,10 @@ pub mod switch {
 
     use super::private;
 
-    pub trait SwitchMode<Ra: LatticeRepr, Rb: LatticeRepr>: private::SwitchModePrivate<Ra, Rb> {}
+    pub trait SwitchMode<Ra: LatticeRepr, Rb: LatticeRepr>:
+        private::SwitchModePrivate<Ra, Rb>
+    {
+    }
 
     pub enum SwitchModeA {}
     impl<Ra: LatticeRepr, Rb: LatticeRepr> SwitchMode<Ra, Rb> for SwitchModeA {}
@@ -89,8 +114,6 @@ pub mod switch {
     impl<O: Order, S> Order for SwitchOrder<O, S> {}
 }
 use switch::*;
-
-
 
 pub struct SwitchOp<O, Ra: LatticeRepr, Rb: LatticeRepr, S: SwitchMode<Ra, Rb>>
 where
@@ -112,14 +135,18 @@ where
         let op_a = {
             let (op, (state_a, state_b)) = (&args).clone();
             Self {
-                op, state_a, state_b,
+                op,
+                state_a,
+                state_b,
                 _phantom: std::marker::PhantomData,
             }
         };
 
         let (op, (state_a, state_b)) = args;
         let op_b = SwitchOp {
-            op, state_a, state_b,
+            op,
+            state_a,
+            state_b,
             _phantom: std::marker::PhantomData,
         };
 
@@ -138,7 +165,8 @@ where
     }
 }
 
-impl<O: OpDelta, Ra: LatticeRepr, Rb: LatticeRepr, S: SwitchMode<Ra, Rb>> OpDelta for SwitchOp<O, Ra, Rb, S>
+impl<O: OpDelta, Ra: LatticeRepr, Rb: LatticeRepr, S: SwitchMode<Ra, Rb>> OpDelta
+    for SwitchOp<O, Ra, Rb, S>
 where
     O: OpDelta<LatRepr = PairRepr<Ra, Rb>>,
 {
@@ -168,7 +196,7 @@ where
                 if let Some(waker) = &state_other.waker {
                     waker.wake_by_ref()
                 }
-                return Poll::Pending
+                return Poll::Pending;
             }
         }
 
@@ -197,8 +225,8 @@ where
     }
 }
 
-
-impl<O: OpValue, Ra: LatticeRepr, Rb: LatticeRepr, S: SwitchMode<Ra, Rb>> OpValue for SwitchOp<O, Ra, Rb, S>
+impl<O: OpValue, Ra: LatticeRepr, Rb: LatticeRepr, S: SwitchMode<Ra, Rb>> OpValue
+    for SwitchOp<O, Ra, Rb, S>
 where
     O: OpDelta<LatRepr = PairRepr<Ra, Rb>>,
 {
@@ -207,4 +235,3 @@ where
         S::swap(val_a, val_b).0
     }
 }
-

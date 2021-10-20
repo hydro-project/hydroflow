@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::collections::VecDeque;
-use std::pin::{Pin};
+use std::pin::Pin;
 use std::task::{Context, Poll};
 
 use futures::stream::Stream;
@@ -69,9 +69,12 @@ where
                     .push(val_a.clone());
 
                 if let Some(vals_b) = this.items_b.get(&key) {
-                    this.output_buf.extend(vals_b.iter()
-                        .cloned()
-                        .map(|val_b| (key.clone(), val_a.clone(), val_b)));
+                    this.output_buf.extend(
+                        vals_b
+                            .iter()
+                            .cloned()
+                            .map(|val_b| (key.clone(), val_a.clone(), val_b)),
+                    );
                 }
                 Poll::Pending
             }
@@ -90,9 +93,12 @@ where
                     .push(val_b.clone());
 
                 if let Some(vals_a) = this.items_a.get(&key) {
-                    this.output_buf.extend(vals_a.iter()
-                        .cloned()
-                        .map(|val_a| (key.clone(), val_a, val_b.clone())));
+                    this.output_buf.extend(
+                        vals_a
+                            .iter()
+                            .cloned()
+                            .map(|val_a| (key.clone(), val_a, val_b.clone())),
+                    );
                 }
                 Poll::Pending
             }

@@ -1,7 +1,7 @@
-use std::task::{Context, Poll};
 use std::cell::Cell;
+use std::task::{Context, Poll};
 
-use crate::hide::{Hide, Delta};
+use crate::hide::{Delta, Hide};
 use crate::lattice::LatticeRepr;
 use crate::metadata::Order;
 
@@ -18,12 +18,10 @@ impl<Lr: LatticeRepr> PartialEq for OnceOp<Lr> {
 }
 impl<Lr: LatticeRepr> Eq for OnceOp<Lr> {}
 
-
-
 impl<Lr: LatticeRepr> OnceOp<Lr> {
     pub fn new(value: Lr::Repr) -> Self {
         Self {
-            value: Cell::new(Some(Hide::new(value)))
+            value: Cell::new(Some(Hide::new(value))),
         }
     }
 }
@@ -31,8 +29,7 @@ impl<Lr: LatticeRepr> OnceOp<Lr> {
 impl<Lr: LatticeRepr> Op for OnceOp<Lr> {
     type LatRepr = Lr;
 
-    fn propegate_saturation(&self) {
-    }
+    fn propegate_saturation(&self) {}
 }
 
 impl<Lr: LatticeRepr> OpDelta for OnceOp<Lr> {

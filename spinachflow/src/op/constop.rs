@@ -1,6 +1,6 @@
 use std::task::{Context, Poll};
 
-use crate::hide::{Hide, Delta, Value};
+use crate::hide::{Delta, Hide, Value};
 use crate::lattice::LatticeRepr;
 
 use super::*;
@@ -18,8 +18,7 @@ impl<Lr: LatticeRepr> ConstOp<Lr> {
 impl<Lr: LatticeRepr> Op for ConstOp<Lr> {
     type LatRepr = Lr;
 
-    fn propegate_saturation(&self) {
-    }
+    fn propegate_saturation(&self) {}
 }
 
 impl<Lr: LatticeRepr> OpDelta for ConstOp<Lr> {

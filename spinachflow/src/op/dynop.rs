@@ -1,7 +1,7 @@
 use std::task::{Context, Poll};
 
-use crate::hide::{Hide, Delta};
-use crate::lattice::{LatticeRepr};
+use crate::hide::{Delta, Hide};
+use crate::lattice::LatticeRepr;
 use crate::metadata::Order;
 
 use super::{Op, OpDelta};

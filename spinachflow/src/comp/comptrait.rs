@@ -1,6 +1,6 @@
 use std::future::Future;
-use std::task::{Context, Poll};
 use std::pin::Pin;
+use std::task::{Context, Poll};
 
 use crate::op::Op;
 
@@ -42,11 +42,9 @@ pub trait CompExt: Comp {
 }
 impl<C: Comp> CompExt for C {}
 
-
 pub trait CompConnector<O: Op> {
     type Comp: Comp;
 
     #[must_use]
     fn connect(&self, op: O) -> Self::Comp;
 }
-

@@ -1,7 +1,7 @@
 use std::task::{Context, Poll};
 
-use crate::hide::{Hide, Delta, Value};
 use crate::func::unary::Morphism;
+use crate::hide::{Delta, Hide, Value};
 use crate::metadata::Order;
 
 use super::*;

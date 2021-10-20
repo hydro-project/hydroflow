@@ -1,9 +1,9 @@
 use std::cell::Cell;
 use std::task::{Context, Poll};
 
-use crate::hide::{Hide, Delta};
-use crate::lattice::{LatticeRepr};
+use crate::hide::{Delta, Hide};
 use crate::lattice::set_union::{SetUnion, SetUnionRepr};
+use crate::lattice::LatticeRepr;
 use crate::tag;
 
 use super::*;
@@ -65,13 +65,11 @@ where
 
         let delta_a = match delta_a_opt {
             Some(delta_a) => delta_a,
-            None => {
-                match self.op_a.poll_delta(ctx) {
-                    Poll::Ready(Some(delta_a)) => delta_a,
-                    Poll::Ready(None) => return Poll::Ready(None),
-                    Poll::Pending => return Poll::Pending,
-                }
-            }
+            None => match self.op_a.poll_delta(ctx) {
+                Poll::Ready(Some(delta_a)) => delta_a,
+                Poll::Ready(None) => return Poll::Ready(None),
+                Poll::Pending => return Poll::Pending,
+            },
         };
 
         match self.op_b.poll_delta(ctx) {
@@ -84,10 +82,10 @@ where
                         out.push((val_a.clone(), val_b.clone()));
                     }
                 }
-                return Poll::Ready(Some(Hide::new(out)))
-            },
+                return Poll::Ready(Some(Hide::new(out)));
+            }
             Poll::Ready(None) => panic!(),
-            Poll::Pending => {},
+            Poll::Pending => {}
         };
 
         self.delta_a_opt.replace(Some(delta_a));

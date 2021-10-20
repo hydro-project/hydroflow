@@ -1,4 +1,4 @@
-use crate::hide::{Hide, Qualifier, Delta};
+use crate::hide::{Delta, Hide, Qualifier};
 use crate::lattice::LatticeRepr;
 
 use super::Morphism;
@@ -27,7 +27,7 @@ impl<In: LatticeRepr, Out: LatticeRepr, F> Morphism for ClosureMorphism<In, Out,
 where
     F: Fn(Hide<Delta, In>) -> Hide<Delta, Out>,
 {
-    type InLatRepr  = In;
+    type InLatRepr = In;
     type OutLatRepr = Out;
     fn call<Y: Qualifier>(&self, item: Hide<Y, Self::InLatRepr>) -> Hide<Y, Self::OutLatRepr> {
         (self.func)(item.into_delta()).into_qualifier_reveal()

@@ -1,7 +1,7 @@
-use std::task::{Context, Poll};
 use std::cell::RefCell;
+use std::task::{Context, Poll};
 
-use crate::hide::{Hide, Delta};
+use crate::hide::{Delta, Hide};
 use crate::lattice::LatticeRepr;
 use crate::metadata::Order;
 
@@ -24,8 +24,7 @@ impl<Lr: LatticeRepr, I: IntoIterator<Item = Lr::Repr>> IterOp<Lr, I> {
 impl<Lr: LatticeRepr, I: IntoIterator<Item = Lr::Repr>> Op for IterOp<Lr, I> {
     type LatRepr = Lr;
 
-    fn propegate_saturation(&self) {
-    }
+    fn propegate_saturation(&self) {}
 }
 
 impl<Lr: LatticeRepr, I: IntoIterator<Item = Lr::Repr>> OpDelta for IterOp<Lr, I> {

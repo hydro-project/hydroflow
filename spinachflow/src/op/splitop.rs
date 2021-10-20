@@ -1,17 +1,15 @@
 use std::cell::{Cell, RefCell};
-use std::task::{Context, Poll, Waker};
 use std::rc::{Rc, Weak};
+use std::task::{Context, Poll, Waker};
 
-use crate::hide::{Hide, Delta, Value};
+use crate::hide::{Delta, Hide, Value};
 
 use super::*;
-
 
 pub fn fixed_split<O: Op, const N: usize>(op: O) -> [SplitOp<O>; N] {
     let splitter = Splitter::new(op);
     [(); N].map(|_| splitter.internal_add_split_reveal())
 }
-
 
 struct SplitterState<O: Op> {
     op: O,
@@ -61,9 +59,6 @@ impl<O: Op> Clone for Splitter<O> {
     }
 }
 
-
-
-
 pub struct SplitOp<O: Op> {
     splitter: Rc<SplitterState<O>>,
     split: RefCell<Option<Rc<RefCell<SplitOpState<O>>>>>,
@@ -111,19 +106,22 @@ impl<O: OpDelta> OpDelta for SplitOp<O> {
                                 splits.push(split);
                                 true
                             }
-                            None => false
+                            None => false,
                         }
                     });
                 }
                 // Get our index.
-                let index = splits.iter().enumerate().find_map(|(i, split_other)| {
-                    if Rc::ptr_eq(&split_rc, split_other) {
-                        Some(i)
-                    }
-                    else {
-                        None
-                    }
-                }).expect("WE DONT EXIST :C");
+                let index = splits
+                    .iter()
+                    .enumerate()
+                    .find_map(|(i, split_other)| {
+                        if Rc::ptr_eq(&split_rc, split_other) {
+                            Some(i)
+                        } else {
+                            None
+                        }
+                    })
+                    .expect("WE DONT EXIST :C");
 
                 // Iterate in circular order, so each successive split checks the next split.
                 let (splits_before, splits_after) = splits.split_at_mut(index);
@@ -171,8 +169,6 @@ impl<O: OpValue> OpValue for SplitOp<O> {
         self.splitter.op.get_value()
     }
 }
-
-
 
 struct SplitOpState<O: Op> {
     waker: Option<Waker>,

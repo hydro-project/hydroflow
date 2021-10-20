@@ -1,6 +1,6 @@
 use babyflow::babyflow::Query;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use pprof::criterion::{PProfProfiler, Output};
+use pprof::criterion::{Output, PProfProfiler};
 use timely::dataflow::operators::{Concatenate, Inspect, ToStream};
 
 const NUM_OPS: usize = 20;

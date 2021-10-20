@@ -1,6 +1,6 @@
-use crate::lattice::LatticeRepr;
-use crate::lattice::pair::PairRepr;
 use crate::hide::{Hide, Qualifier};
+use crate::lattice::pair::PairRepr;
+use crate::lattice::LatticeRepr;
 
 use super::BinaryMorphism;
 
@@ -25,10 +25,9 @@ impl<A: LatticeRepr, B: LatticeRepr> BinaryMorphism for Pair<A, B> {
 
     fn call<Y: Qualifier>(
         &self,
-        item_a: Hide<Y, Self::InLatReprA>, item_b: Hide<Y, Self::InLatReprB>
-    )
-        -> Hide<Y, Self::OutLatRepr>
-    {
+        item_a: Hide<Y, Self::InLatReprA>,
+        item_b: Hide<Y, Self::InLatReprB>,
+    ) -> Hide<Y, Self::OutLatRepr> {
         Hide::new((item_a.into_reveal(), item_b.into_reveal()))
     }
 }

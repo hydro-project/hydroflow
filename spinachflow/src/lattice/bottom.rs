@@ -1,4 +1,4 @@
-use super::{LatticeRepr, Debottom};
+use super::{Debottom, LatticeRepr};
 
 pub struct BottomRepr<Lr: LatticeRepr> {
     _phantom: std::marker::PhantomData<Lr>,

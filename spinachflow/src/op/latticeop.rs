@@ -1,8 +1,8 @@
 use std::cell::RefCell;
 use std::task::{Context, Poll};
 
-use crate::lattice::{LatticeRepr, Merge, Convert};
-use crate::hide::{Hide, Delta, Value};
+use crate::hide::{Delta, Hide, Value};
+use crate::lattice::{Convert, LatticeRepr, Merge};
 
 use super::*;
 
@@ -64,7 +64,7 @@ where
                     let state = &mut self.state.borrow_mut();
                     // F::delta(state, &mut delta); // TODO!! Doesn't minimize deltas.
                     if Lr::merge_hide(state, delta.clone()) {
-                        return Poll::Ready(Some(<O::LatRepr as Convert<Lr>>::convert_hide(delta)))
+                        return Poll::Ready(Some(<O::LatRepr as Convert<Lr>>::convert_hide(delta)));
                     }
                     // Else: Delta did not change state, try again.
                 }

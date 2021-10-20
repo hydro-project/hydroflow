@@ -66,7 +66,7 @@ where
                 }
                 Poll::Ready(None)
             }
-            Poll::Pending => Poll::Pending
+            Poll::Pending => Poll::Pending,
         }
     }
 }
@@ -96,11 +96,9 @@ impl<T> Stream for SideSplit<T> {
         state.waker.replace(cx.waker().clone());
         if let Some(item) = state.buf.pop_front() {
             Poll::Ready(Some(item))
-        }
-        else if state.end {
+        } else if state.end {
             Poll::Ready(None)
-        }
-        else {
+        } else {
             Poll::Pending
         }
     }
@@ -110,8 +108,8 @@ impl<T> Stream for SideSplit<T> {
 pub async fn test_asym_split_merge() {
     const BRANCH_FACTOR: usize = 10;
 
-    use futures::StreamExt;
     use futures::future::ready;
+    use futures::StreamExt;
 
     let stream = futures::stream::iter(0..10_000);
 

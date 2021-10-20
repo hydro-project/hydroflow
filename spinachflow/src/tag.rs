@@ -2,7 +2,7 @@
 
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
-use crate::collections::{Single, Array, MaskedArray};
+use crate::collections::{Array, MaskedArray, Single};
 
 pub trait Tag1<T> {
     type Bind;
@@ -11,7 +11,6 @@ pub trait Tag1<T> {
 pub trait Tag2<T, U> {
     type Bind;
 }
-
 
 pub enum HASH_SET {}
 impl<T> Tag1<T> for HASH_SET {
@@ -23,7 +22,6 @@ impl<T, U> Tag2<T, U> for HASH_MAP {
     type Bind = HashMap<T, U>;
 }
 
-
 pub enum BTREE_SET {}
 impl<T> Tag1<T> for BTREE_SET {
     type Bind = BTreeSet<T>;
@@ -34,7 +32,6 @@ impl<T, U> Tag2<T, U> for BTREE_MAP {
     type Bind = BTreeMap<T, U>;
 }
 
-
 pub enum VEC {}
 impl<T> Tag1<T> for VEC {
     type Bind = Vec<T>;
@@ -42,7 +39,6 @@ impl<T> Tag1<T> for VEC {
 impl<T, U> Tag2<T, U> for VEC {
     type Bind = Vec<(T, U)>;
 }
-
 
 pub enum SINGLE {}
 impl<T> Tag1<T> for SINGLE {
@@ -52,7 +48,6 @@ impl<T, U> Tag2<T, U> for SINGLE {
     type Bind = Single<(T, U)>;
 }
 
-
 pub enum OPTION {}
 impl<T> Tag1<T> for OPTION {
     type Bind = Option<T>;
@@ -61,7 +56,6 @@ impl<T, U> Tag2<T, U> for OPTION {
     type Bind = Option<(T, U)>;
 }
 
-
 pub struct ARRAY<const N: usize>([(); N]);
 impl<T, const N: usize> Tag1<T> for ARRAY<N> {
     type Bind = Array<T, N>;
@@ -69,7 +63,6 @@ impl<T, const N: usize> Tag1<T> for ARRAY<N> {
 impl<T, U, const N: usize> Tag2<T, U> for ARRAY<N> {
     type Bind = Array<(T, U), N>;
 }
-
 
 pub struct MASKED_ARRAY<const N: usize>([(); N]);
 impl<T, const N: usize> Tag1<T> for MASKED_ARRAY<N> {

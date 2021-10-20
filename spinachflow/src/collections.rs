@@ -3,10 +3,18 @@ use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::hash::Hash;
 
 fn bool_to_option<'a>(value: bool) -> Option<&'a ()> {
-    if value { Some(&()) } else { None }
+    if value {
+        Some(&())
+    } else {
+        None
+    }
 }
 fn bool_to_option_mut<'a>(value: bool) -> Option<&'a mut ()> {
-    if value { Some(Box::leak(Box::new(()))) } else { None }
+    if value {
+        Some(Box::leak(Box::new(())))
+    } else {
+        None
+    }
 }
 
 pub trait Collection<K, V> {
@@ -17,10 +25,15 @@ pub trait Collection<K, V> {
         0 == self.len()
     }
 
-    type Keys<'s>: Iterator<Item = &'s K> where K: 's;
+    type Keys<'s>: Iterator<Item = &'s K>
+    where
+        K: 's;
     fn keys(&self) -> Self::Keys<'_>;
 
-    type Entries<'s>: Iterator<Item = (&'s K, &'s V)> where K: 's, V: 's;
+    type Entries<'s>: Iterator<Item = (&'s K, &'s V)>
+    where
+        K: 's,
+        V: 's;
     fn entries(&self) -> Self::Entries<'_>;
 }
 
@@ -158,16 +171,20 @@ impl<K: 'static + Eq, const N: usize> Collection<K, ()> for Array<K, N> {
 
 impl<K: 'static + Eq, const N: usize> Collection<K, ()> for MaskedArray<K, N> {
     fn get(&self, key: &K) -> Option<&()> {
-        bool_to_option(self.mask.iter()
+        bool_to_option(
+            self.mask
+                .iter()
                 .zip(self.vals.iter())
-                .any(|(mask, item)| *mask && item == key)
-            )
+                .any(|(mask, item)| *mask && item == key),
+        )
     }
     fn get_mut(&mut self, key: &K) -> Option<&mut ()> {
-        bool_to_option_mut(self.mask.iter()
+        bool_to_option_mut(
+            self.mask
+                .iter()
                 .zip(self.vals.iter())
-                .any(|(mask, item)| *mask && item == key)
-            )
+                .any(|(mask, item)| *mask && item == key),
+        )
     }
     fn len(&self) -> usize {
         self.mask.iter().filter(|mask| **mask).count()
@@ -175,7 +192,8 @@ impl<K: 'static + Eq, const N: usize> Collection<K, ()> for MaskedArray<K, N> {
 
     type Keys<'s> = impl Iterator<Item = &'s K>;
     fn keys(&self) -> Self::Keys<'_> {
-        self.mask.iter()
+        self.mask
+            .iter()
             .zip(self.vals.iter())
             .filter(|(mask, _)| **mask)
             .map(|(_, item)| item)
@@ -186,9 +204,6 @@ impl<K: 'static + Eq, const N: usize> Collection<K, ()> for MaskedArray<K, N> {
         self.keys().map(|k| (k, &()))
     }
 }
-
-
-
 
 impl<K: 'static + Eq + Hash, V: 'static> Collection<K, V> for HashMap<K, V> {
     fn get(&self, key: &K) -> Option<&V> {
@@ -236,14 +251,10 @@ impl<K: 'static + Eq + Ord, V: 'static> Collection<K, V> for BTreeMap<K, V> {
 
 impl<K: 'static + Eq, V: 'static> Collection<K, V> for Vec<(K, V)> {
     fn get(&self, key: &K) -> Option<&V> {
-        self.iter()
-            .find(|(k, _)| k == key)
-            .map(|(_, val)| val)
+        self.iter().find(|(k, _)| k == key).map(|(_, val)| val)
     }
     fn get_mut(&mut self, key: &K) -> Option<&mut V> {
-        self.iter_mut()
-            .find(|(k, _)| k == key)
-            .map(|(_, val)| val)
+        self.iter_mut().find(|(k, _)| k == key).map(|(_, val)| val)
     }
     fn len(&self) -> usize {
         self.len()
@@ -251,25 +262,22 @@ impl<K: 'static + Eq, V: 'static> Collection<K, V> for Vec<(K, V)> {
 
     type Keys<'s> = impl Iterator<Item = &'s K>;
     fn keys(&self) -> Self::Keys<'_> {
-        self.iter()
-            .map(|(k, _)| k)
+        self.iter().map(|(k, _)| k)
     }
 
     type Entries<'s> = impl Iterator<Item = (&'s K, &'s V)>;
     fn entries(&self) -> Self::Entries<'_> {
-        self.iter()
-            .map(|(k, v)| (k, v))
+        self.iter().map(|(k, v)| (k, v))
     }
 }
 
 impl<K: 'static + Eq, V: 'static, const N: usize> Collection<K, V> for Array<(K, V), N> {
     fn get(&self, key: &K) -> Option<&V> {
-        self.0.iter()
-            .find(|(k, _)| k == key)
-            .map(|(_, val)| val)
+        self.0.iter().find(|(k, _)| k == key).map(|(_, val)| val)
     }
     fn get_mut(&mut self, key: &K) -> Option<&mut V> {
-        self.0.iter_mut()
+        self.0
+            .iter_mut()
             .find(|(k, _)| k == key)
             .map(|(_, val)| val)
     }
@@ -279,26 +287,26 @@ impl<K: 'static + Eq, V: 'static, const N: usize> Collection<K, V> for Array<(K,
 
     type Keys<'s> = impl Iterator<Item = &'s K>;
     fn keys(&self) -> Self::Keys<'_> {
-        self.0.iter()
-            .map(|(k, _)| k)
+        self.0.iter().map(|(k, _)| k)
     }
 
     type Entries<'s> = impl Iterator<Item = (&'s K, &'s V)>;
     fn entries(&self) -> Self::Entries<'_> {
-        self.0.iter()
-            .map(|(k, v)| (k, v))
+        self.0.iter().map(|(k, v)| (k, v))
     }
 }
 
 impl<K: 'static + Eq, V: 'static, const N: usize> Collection<K, V> for MaskedArray<(K, V), N> {
     fn get(&self, key: &K) -> Option<&V> {
-        self.mask.iter()
+        self.mask
+            .iter()
             .zip(self.vals.iter())
             .find(|(mask, (k, _))| **mask && k == key)
             .map(|(_, (_, val))| val)
     }
     fn get_mut(&mut self, key: &K) -> Option<&mut V> {
-        self.mask.iter()
+        self.mask
+            .iter()
             .zip(self.vals.iter_mut())
             .find(|(mask, (k, _))| **mask && k == key)
             .map(|(_, (_, val))| val)
@@ -309,7 +317,8 @@ impl<K: 'static + Eq, V: 'static, const N: usize> Collection<K, V> for MaskedArr
 
     type Keys<'s> = impl Iterator<Item = &'s K>;
     fn keys(&self) -> Self::Keys<'_> {
-        self.mask.iter()
+        self.mask
+            .iter()
             .zip(self.vals.iter())
             .filter(|(mask, _)| **mask)
             .map(|(_, (k, _))| k)
@@ -317,17 +326,16 @@ impl<K: 'static + Eq, V: 'static, const N: usize> Collection<K, V> for MaskedArr
 
     type Entries<'s> = impl Iterator<Item = (&'s K, &'s V)>;
     fn entries(&self) -> Self::Entries<'_> {
-        self.mask.iter()
+        self.mask
+            .iter()
             .zip(self.vals.iter())
             .filter(|(mask, _)| **mask)
             .map(|(_, (k, v))| (k, v))
     }
 }
 
-
 #[repr(transparent)]
-#[derive(Debug, Clone, Copy)]
-#[derive(PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Single<T>(pub T);
 impl<T> IntoIterator for Single<T> {
     type Item = T;

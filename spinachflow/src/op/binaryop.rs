@@ -1,7 +1,7 @@
 use std::task::{Context, Poll};
 
 use crate::func::binary::BinaryMorphism;
-use crate::hide::{Hide, Delta, Value};
+use crate::hide::{Delta, Hide, Value};
 use crate::metadata::Order;
 
 use super::*;
@@ -26,7 +26,7 @@ where
 
 impl<A: OpValue, B: OpValue, F> Op for BinaryOp<A, B, F>
 where
-F: BinaryMorphism<InLatReprA = A::LatRepr, InLatReprB = B::LatRepr>,
+    F: BinaryMorphism<InLatReprA = A::LatRepr, InLatReprB = B::LatRepr>,
 {
     type LatRepr = F::OutLatRepr;
 

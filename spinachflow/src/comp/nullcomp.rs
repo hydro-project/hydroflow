@@ -22,8 +22,7 @@ impl<O: OpDelta> Comp for NullComp<O> {
         async move {
             if let Some(_hide) = (Next { op: &self.op }).await {
                 Ok(())
-            }
-            else {
+            } else {
                 Err(())
             }
         }

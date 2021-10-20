@@ -1,7 +1,7 @@
 use std::task::{Context, Poll};
 
-use crate::hide::{Hide, Delta, Value};
-use crate::lattice::{LatticeRepr, Merge, Convert};
+use crate::hide::{Delta, Hide, Value};
+use crate::lattice::{Convert, LatticeRepr, Merge};
 use crate::metadata::Order;
 
 use super::*;
@@ -52,7 +52,9 @@ where
             Poll::Pending => Poll::Pending,
         };
         match self.op_b.poll_delta(ctx) {
-            Poll::Ready(Some(delta)) => Poll::Ready(Some(<B::LatRepr as Convert<A::LatRepr>>::convert_hide(delta))),
+            Poll::Ready(Some(delta)) => Poll::Ready(Some(
+                <B::LatRepr as Convert<A::LatRepr>>::convert_hide(delta),
+            )),
             Poll::Ready(None) => not_ready,
             Poll::Pending => Poll::Pending,
         }

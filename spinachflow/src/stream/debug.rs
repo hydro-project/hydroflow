@@ -1,4 +1,4 @@
-use std::pin::{Pin};
+use std::pin::Pin;
 use std::task::{Context, Poll};
 
 use futures::stream::Stream;
@@ -20,10 +20,7 @@ where
     S::Item: std::fmt::Debug,
 {
     pub fn new(stream: S, tag: String) -> Self {
-        Self {
-            stream,
-            tag,
-        }
+        Self { stream, tag }
     }
 }
 

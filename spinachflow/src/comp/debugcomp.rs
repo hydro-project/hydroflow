@@ -35,8 +35,7 @@ where
             if let Some(hide) = (Next { op: &self.op }).await {
                 println!("{}: {:?}", self.tag, hide.into_reveal());
                 Ok(())
-            }
-            else {
+            } else {
                 Err(())
             }
         }

@@ -1,8 +1,6 @@
 #![allow(clippy::redundant_closure)]
 #![allow(incomplete_features)]
-
 // #![doc = include_str!("../../README.md")]
-
 #![feature(array_methods)]
 #![feature(array_zip)]
 #![feature(associated_type_defaults)]
@@ -16,7 +14,6 @@
 #![feature(try_blocks)]
 #![feature(type_alias_impl_trait)]
 #![feature(never_type)]
-
 #![forbid(unsafe_code)]
 
 // Rexports
@@ -47,4 +44,3 @@ pub mod comp;
 pub mod metadata;
 
 pub mod stream;
-
