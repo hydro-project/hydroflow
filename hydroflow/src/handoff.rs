@@ -2,6 +2,59 @@ use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::rc::Rc;
 
+use crate::collections::Single;
+use crate::collections::Iter;
+
+
+
+pub trait CanReceive<T> {
+    fn try_give(&mut self, item: &mut T);
+}
+
+pub trait Handoff2 {
+    fn new() -> Self;
+
+    fn try_give<T>(&mut self, item: &mut T)
+    where
+        Self: CanReceive<T>,
+    {
+        <Self as CanReceive<T>>::try_give(self, item)
+    }
+}
+
+/**
+ * A [VecDeque]-based FIFO handoff.
+ */
+pub struct VecHandoff2<T>(pub(crate) VecDeque<T>);
+impl<T> Handoff2 for VecHandoff2<T> {
+    fn new() -> Self {
+        Self(VecDeque::new())
+    }
+}
+
+impl<T> CanReceive<Option<T>> for VecHandoff2<T> {
+    fn try_give(&mut self, item: &mut Option<T>) {
+        if let Some(item) = item.take() {
+            self.0.push_back(item)
+        }
+    }
+}
+impl<T, I> CanReceive<Iter<I>> for VecHandoff2<T>
+where
+    I: Iterator<Item = T>,
+{
+    fn try_give(&mut self, iter: &mut Iter<I>) {
+        self.0.extend(&mut iter.0);
+    }
+}
+impl<T> CanReceive<VecDeque<T>> for VecHandoff2<T> {
+    fn try_give(&mut self, vec: &mut VecDeque<T>) {
+        self.0.append(vec);
+    }
+}
+
+
+
 /**
  * A trait specifying a handoff point between compiled subgraphs.
  */

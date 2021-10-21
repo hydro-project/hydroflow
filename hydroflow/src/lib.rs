@@ -1,5 +1,6 @@
 pub mod handoff;
 pub mod util;
+pub mod collections;
 
 use std::cell::RefCell;
 use std::rc::Rc;
