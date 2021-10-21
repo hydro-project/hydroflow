@@ -229,9 +229,9 @@ fn benchmark_timely(c: &mut Criterion) {
 }
 
 fn benchmark_hydroflow(c: &mut Criterion) {
+    use hydroflow::collections::Iter;
     use hydroflow::handoff::VecHandoff;
     use hydroflow::{Hydroflow, RecvCtx, SendCtx};
-    use hydroflow::collections::Iter;
 
     c.bench_function("identity/hydroflow", |b| {
         b.iter(|| {
@@ -241,18 +241,24 @@ fn benchmark_hydroflow(c: &mut Criterion) {
             let mut it = df.add_source(move |send: &mut SendCtx<VecHandoff<_>>| {
                 if !sent {
                     sent = true;
-                    send.try_give(&mut Iter(0..NUM_INTS));
+                    send.give(Iter(0..NUM_INTS));
+                    // // for x in 0..NUM_INTS {
+                    // //     send.try_give(x).unwrap();
+                    // // }
                     // for x in 0..NUM_INTS {
-                    //     send.try_give(x).unwrap();
+                    //     send.try_give(&mut Some(x));
                     // }
                 }
             });
             for _ in 0..NUM_OPS {
                 let (next_in, mut next_out) = df.add_inout(|recv, send| {
                     // send.try_give::<ITER>(recv);
-                    send.try_give(&mut Iter(recv.into_iter()));
+                    send.give(Iter(recv.into_iter()));
+                    // // for x in &*recv {
+                    // //     send.try_give(x).unwrap();
+                    // // }
                     // for x in &*recv {
-                    //     send.try_give(x).unwrap();
+                    //     send.try_give(&mut Some(x));
                     // }
                 });
 

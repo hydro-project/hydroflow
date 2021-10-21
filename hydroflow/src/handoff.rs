@@ -2,28 +2,34 @@ use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::rc::Rc;
 
-use crate::collections::Single;
 use crate::collections::Iter;
 
-
-
+pub trait TryCanReceive<T> {
+    fn try_give(&mut self, item: T) -> Result<T, T>;
+}
 pub trait CanReceive<T> {
-    fn try_give(&mut self, item: &mut T);
+    fn give(&mut self, item: T) -> T;
 }
 
 pub trait Handoff: Default + HandoffMeta {
-    fn try_give<T>(&mut self, item: &mut T)
+    fn give<T>(&mut self, item: T) -> T
     where
         Self: CanReceive<T>,
     {
-        <Self as CanReceive<T>>::try_give(self, item)
+        <Self as CanReceive<T>>::give(self, item)
+    }
+
+    fn try_give<T>(&mut self, item: T) -> Result<T, T>
+    where
+        Self: TryCanReceive<T>,
+    {
+        <Self as TryCanReceive<T>>::try_give(self, item)
     }
 }
 
 #[derive(Default)]
 pub struct NullHandoff;
-impl Handoff for NullHandoff {
-}
+impl Handoff for NullHandoff {}
 
 /**
  * A [VecDeque]-based FIFO handoff.
@@ -34,31 +40,31 @@ impl<T> Default for VecHandoff<T> {
         Self(Default::default())
     }
 }
-impl<T> Handoff for VecHandoff<T> {
-}
+impl<T> Handoff for VecHandoff<T> {}
 
 impl<T> CanReceive<Option<T>> for VecHandoff<T> {
-    fn try_give(&mut self, item: &mut Option<T>) {
+    fn give(&mut self, mut item: Option<T>) -> Option<T> {
         if let Some(item) = item.take() {
             self.0.push_back(item)
         }
+        None
     }
 }
 impl<T, I> CanReceive<Iter<I>> for VecHandoff<T>
 where
     I: Iterator<Item = T>,
 {
-    fn try_give(&mut self, iter: &mut Iter<I>) {
+    fn give(&mut self, mut iter: Iter<I>) -> Iter<I> {
         self.0.extend(&mut iter.0);
+        iter
     }
 }
 impl<T> CanReceive<VecDeque<T>> for VecHandoff<T> {
-    fn try_give(&mut self, vec: &mut VecDeque<T>) {
-        self.0.append(vec);
+    fn give(&mut self, mut vec: VecDeque<T>) -> VecDeque<T> {
+        self.0.extend(vec.drain(..));
+        vec
     }
 }
-
-
 
 // /**
 //  * A trait specifying a handoff point between compiled subgraphs.

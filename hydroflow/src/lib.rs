@@ -1,6 +1,8 @@
+#![feature(never_type)]
+
+pub mod collections;
 pub mod handoff;
 pub mod util;
-pub mod collections;
 
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -9,11 +11,11 @@ use sealed::sealed;
 use slotmap::SlotMap;
 pub use tuple_list::tuple_list as tl;
 
-use handoff::CanReceive;
 use handoff::Handoff;
 use handoff::HandoffMeta;
 use handoff::NullHandoff;
 use handoff::VecHandoff;
+use handoff::{CanReceive, TryCanReceive};
 
 pub type OpId = slotmap::DefaultKey;
 
@@ -26,15 +28,23 @@ pub struct SendCtx<H: Handoff> {
 impl<H: Handoff> SendCtx<H> {
     // // TODO: represent backpressure in this return value.
     // #[allow(clippy::result_unit_err)]
-    // pub fn try_give(&mut self, item: H::Item) -> Result<(), ()> {
+    // pub fn give(self, item: H::Item) -> Result<(), ()> {
     //     (*self.once.get()).borrow_mut().try_give(item)
     // }
-    pub fn try_give<T>(&mut self, item: &mut T)
+    pub fn give<T>(&mut self, item: T) -> T
     where
         H: CanReceive<T>,
     {
         let mut borrow = self.once.get().borrow_mut();
-        <H as CanReceive<T>>::try_give(&mut *borrow, item)
+        <H as CanReceive<T>>::give(&mut *borrow, item)
+    }
+
+    pub fn try_give<T>(&mut self, item: T) -> Result<T, T>
+    where
+        H: TryCanReceive<T>,
+    {
+        let mut borrow = self.once.get().borrow_mut();
+        <H as TryCanReceive<T>>::try_give(&mut *borrow, item)
     }
 }
 
@@ -369,14 +379,14 @@ fn map_filter() {
     let data = [1, 2, 3, 4];
     let source = df.add_source(move |send| {
         for x in data.into_iter() {
-            send.try_give(&mut Some(x));
+            send.give(Some(x));
         }
     });
 
     let (map_in, map_out) = df.add_inout(
         |recv: &mut RecvCtx<VecHandoff<i32>>, send: &mut SendCtx<VecHandoff<_>>| {
             for x in &*recv {
-                send.try_give(&mut Some(3 * x + 1));
+                send.give(Some(3 * x + 1));
             }
         },
     );
@@ -385,7 +395,7 @@ fn map_filter() {
         |recv: &mut RecvCtx<VecHandoff<i32>>, send: &mut SendCtx<VecHandoff<_>>| {
             for x in &*recv {
                 if x % 2 == 0 {
-                    send.try_give(&mut Some(x));
+                    send.give(Some(x));
                 }
             }
         },
@@ -441,7 +451,7 @@ mod tests {
         let mut initially_reachable = vec![1];
         let reachable = df.add_source(move |send: &mut SendCtx<VecHandoff<usize>>| {
             for v in initially_reachable.drain(..) {
-                send.try_give(&mut Some(v));
+                send.give(Some(v));
             }
         });
 
@@ -450,7 +460,7 @@ mod tests {
             move |recv: &mut RecvCtx<VecHandoff<usize>>, send: &mut SendCtx<VecHandoff<usize>>| {
                 for v in &*recv {
                     if seen.insert(v) {
-                        send.try_give(&mut Some(v));
+                        send.give(Some(v));
                     }
                 }
             },
@@ -459,7 +469,7 @@ mod tests {
         let (merge_lhs, merge_rhs, merge_out) =
             df.add_binary(|recv1, recv2, send: &mut SendCtx<VecHandoff<usize>>| {
                 for v in (recv1.into_iter()).chain(recv2.into_iter()) {
-                    send.try_give(&mut Some(v));
+                    send.give(Some(v));
                 }
             });
 
@@ -467,7 +477,7 @@ mod tests {
             for v in &*recv {
                 if let Some(neighbors) = edges.get(&v) {
                     for &n in neighbors {
-                        send.try_give(&mut Some(n));
+                        send.give(Some(n));
                     }
                 }
             }
@@ -478,8 +488,8 @@ mod tests {
              send1: &mut SendCtx<VecHandoff<usize>>,
              send2: &mut SendCtx<VecHandoff<usize>>| {
                 for v in &*recv {
-                    send1.try_give(&mut Some(v));
-                    send2.try_give(&mut Some(v));
+                    send1.give(Some(v));
+                    send2.give(Some(v));
                 }
             },
         );
