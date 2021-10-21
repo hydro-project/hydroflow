@@ -52,14 +52,25 @@ pub struct OutputPort<H: Handoff> {
 pub struct RecvCtx<H: Handoff> {
     handoff: Rc<RefCell<H>>,
 }
-impl<T> Iterator for &RecvCtx<VecHandoff<T>> {
+impl<T> IntoIterator for &RecvCtx<VecHandoff<T>> {
     type Item = T;
+    type IntoIter = std::collections::vec_deque::IntoIter<T>;
 
-    fn next(&mut self) -> Option<Self::Item> {
-        // TODOTOTODOTOTODTOO !!!!!!!! TODO
-        self.handoff.borrow_mut().0.pop_front()
+    fn into_iter(self) -> Self::IntoIter {
+        let mut borrow = self.handoff.borrow_mut();
+        let vec = std::mem::take(&mut *borrow);
+        vec.0.into_iter()
     }
 }
+
+// impl<T> Iterator for &RecvCtx<VecHandoff<T>> {
+//     type Item = T;
+
+//     fn next(&mut self) -> Option<Self::Item> {
+//         // TODOTOTODOTOTODTOO !!!!!!!! TODO
+//         self.handoff.borrow_mut().0.pop_front()
+//     }
+// }
 
 /**
  * Handle corresponding to a [RecvCtx]. Consumed by [Hydroflow::add_edge] to construct the Hydroflow graph.
@@ -447,7 +458,7 @@ mod tests {
 
         let (merge_lhs, merge_rhs, merge_out) =
             df.add_binary(|recv1, recv2, send: &mut SendCtx<VecHandoff<usize>>| {
-                for v in (&*recv1).chain(&*recv2) {
+                for v in (recv1.into_iter()).chain(recv2.into_iter()) {
                     send.try_give(&mut Some(v));
                 }
             });

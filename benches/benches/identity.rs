@@ -249,7 +249,8 @@ fn benchmark_hydroflow(c: &mut Criterion) {
             });
             for _ in 0..NUM_OPS {
                 let (next_in, mut next_out) = df.add_inout(|recv, send| {
-                    send.try_give(&mut Iter(&*recv));
+                    // send.try_give::<ITER>(recv);
+                    send.try_give(&mut Iter(recv.into_iter()));
                     // for x in &*recv {
                     //     send.try_give(x).unwrap();
                     // }
