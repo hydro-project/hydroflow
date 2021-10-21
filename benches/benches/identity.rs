@@ -229,7 +229,8 @@ fn benchmark_timely(c: &mut Criterion) {
 }
 
 fn benchmark_hydroflow(c: &mut Criterion) {
-    use hydroflow::{Hydroflow, RecvCtx, SendCtx, VecHandoff};
+    use hydroflow::handoff::VecHandoff;
+    use hydroflow::{Hydroflow, RecvCtx, SendCtx};
 
     c.bench_function("identity/hydroflow", |b| {
         b.iter(|| {
