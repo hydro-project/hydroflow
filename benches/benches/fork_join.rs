@@ -1,5 +1,6 @@
 use babyflow::babyflow::Query;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use hydroflow::query::Query as Q;
 use hydroflow::{collections::Iter, handoff::VecHandoff, Hydroflow, SendCtx};
 use timely::dataflow::operators::{Concatenate, Filter, Inspect, ToStream};
 
@@ -63,6 +64,32 @@ fn benchmark_hydroflow(c: &mut Criterion) {
             df.add_edge(out2, sink2);
 
             df.run()
+        })
+    });
+}
+
+fn benchmark_hydroflow_builder(c: &mut Criterion) {
+    c.bench_function("fork_join/hydroflow_builder", |b| {
+        b.iter(|| {
+            // TODO(justin): this creates more operators than necessary.
+            let mut q = Q::new();
+
+            let mut source = q.source(|send| {
+                send.give(Iter(0..NUM_INTS));
+            });
+
+            for _ in 0..NUM_OPS {
+                let (mut out1, mut out2) = source.tee();
+                out1 = out1.filter(|x| x % 2 == 0);
+                out2 = out2.filter(|x| x % 2 == 1);
+                source = out1.concat(out2);
+            }
+
+            source.sink(|v| {
+                black_box(v);
+            });
+
+            q.run();
         })
     });
 }
@@ -320,6 +347,7 @@ fn benchmark_spinachflow_asym(c: &mut Criterion) {
 criterion_group!(
     fork_join_dataflow,
     benchmark_hydroflow,
+    benchmark_hydroflow_builder,
     benchmark_babyflow,
     benchmark_timely,
     benchmark_raw,

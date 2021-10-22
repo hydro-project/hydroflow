@@ -2,6 +2,7 @@
 
 pub mod collections;
 pub mod handoff;
+pub mod query;
 pub mod util;
 
 use std::cell::RefCell;
