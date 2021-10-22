@@ -320,6 +320,27 @@ impl Hydroflow {
     }
 
     /**
+     * Adds a new compiled subraph with one input and two outputs, and returns the input/output handles.
+     */
+    pub fn add_binary_in_binary_out<F, R1, R2, W1, W2>(
+        &mut self,
+        mut subgraph: F,
+    ) -> (InputPort<R1>, InputPort<R2>, OutputPort<W1>, OutputPort<W2>)
+    where
+        F: 'static + FnMut(&mut RecvCtx<R1>, &mut RecvCtx<R2>, &mut SendCtx<W1>, &mut SendCtx<W2>),
+        R1: 'static + Handoff,
+        R2: 'static + Handoff,
+        W1: 'static + Handoff,
+        W2: 'static + Handoff,
+    {
+        let (tl!(input_port1, input_port2), tl!(output_port1, output_port2)) = self
+            .add_subgraph::<_, tl!(R1, R2), tl!(W1, W2)>(
+                move |tl!(recv1, recv2), tl!(send1, send2)| (subgraph)(recv1, recv2, send1, send2),
+            );
+        (input_port1, input_port2, output_port1, output_port2)
+    }
+
+    /**
      * Adds a new compiled subraph with two inputs and a single output, and returns the input/output handles.
      */
     pub fn add_binary<F, R1, R2, W>(
@@ -337,6 +358,22 @@ impl Hydroflow {
                 (subgraph)(recv1, recv2, send)
             });
         (input_port1, input_port2, output_port)
+    }
+
+    /**
+     * Adds a new compiled subraph with two inputs and no outputs, and returns the input handles.
+     */
+    pub fn add_binary_sink<F, R1, R2>(&mut self, mut subgraph: F) -> (InputPort<R1>, InputPort<R2>)
+    where
+        F: 'static + FnMut(&mut RecvCtx<R1>, &mut RecvCtx<R2>),
+        R1: 'static + Handoff,
+        R2: 'static + Handoff,
+    {
+        let (tl!(input_port1, input_port2), tl!()) =
+            self.add_subgraph::<_, tl!(R1, R2), tl!()>(move |tl!(recv1, recv2), tl!()| {
+                (subgraph)(recv1, recv2)
+            });
+        (input_port1, input_port2)
     }
 
     /**

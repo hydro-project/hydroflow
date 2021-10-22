@@ -242,24 +242,11 @@ fn benchmark_hydroflow(c: &mut Criterion) {
                 if !sent {
                     sent = true;
                     send.give(Iter(0..NUM_INTS));
-                    // // for x in 0..NUM_INTS {
-                    // //     send.try_give(x).unwrap();
-                    // // }
-                    // for x in 0..NUM_INTS {
-                    //     send.try_give(&mut Some(x));
-                    // }
                 }
             });
             for _ in 0..NUM_OPS {
                 let (next_in, mut next_out) = df.add_inout(|recv, send| {
-                    // send.try_give::<ITER>(recv);
                     send.give(Iter(recv.into_iter()));
-                    // // for x in &*recv {
-                    // //     send.try_give(x).unwrap();
-                    // // }
-                    // for x in &*recv {
-                    //     send.try_give(&mut Some(x));
-                    // }
                 });
 
                 std::mem::swap(&mut it, &mut next_out);
