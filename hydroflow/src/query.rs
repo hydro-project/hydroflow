@@ -124,31 +124,34 @@ where
 }
 
 impl<T: Clone> Operator<T> {
-    pub fn tee(self) -> (Operator<T>, Operator<T>)
+    pub fn tee(self, n: usize) -> Vec<Operator<T>>
     where
         T: 'static,
     {
         // TODO(justin): this is very slow.
-        let (input, output1, output2) = (*self.df).borrow_mut().add_binary_out(
-            move |recv: &mut RecvCtx<VecHandoff<T>>, send1, send2| {
-                for v in recv.into_iter() {
-                    send1.give(Some(v.clone()));
-                    send2.give(Some(v));
+        let (inputs, outputs) = (*self.df).borrow_mut().add_n_in_m_out(
+            1,
+            n,
+            move |recvs: &mut [RecvCtx<VecHandoff<T>>], sends| {
+                // TODO(justin): optimize this (extra clone, etc.).
+                for v in recvs.into_iter().next().unwrap().into_iter() {
+                    for s in &mut *sends {
+                        s.give(Some(v.clone()));
+                    }
                 }
             },
         );
 
-        (*self.df).borrow_mut().add_edge(self.output_port, input);
+        (*self.df)
+            .borrow_mut()
+            .add_edge(self.output_port, inputs.into_iter().next().unwrap());
 
-        (
-            Operator {
+        outputs
+            .into_iter()
+            .map(|output_port| Operator {
                 df: self.df.clone(),
-                output_port: output1,
-            },
-            Operator {
-                df: self.df,
-                output_port: output2,
-            },
-        )
+                output_port,
+            })
+            .collect()
     }
 }

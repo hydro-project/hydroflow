@@ -79,7 +79,8 @@ fn benchmark_hydroflow_builder(c: &mut Criterion) {
             });
 
             for _ in 0..NUM_OPS {
-                let (mut out1, mut out2) = source.tee();
+                let mut outs = source.tee(2).into_iter();
+                let (mut out1, mut out2) = (outs.next().unwrap(), outs.next().unwrap());
                 out1 = out1.filter(|x| x % 2 == 0);
                 out2 = out2.filter(|x| x % 2 == 1);
                 source = out1.concat(out2);

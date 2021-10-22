@@ -1,9 +1,30 @@
 use babyflow::babyflow::Query;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use hydroflow::{collections::Iter, query::Query as Q};
 use timely::dataflow::operators::{Map, ToStream};
 
 const NUM_OPS: usize = 20;
 const NUM_INTS: usize = 1_000_000;
+
+fn benchmark_hydroflow(c: &mut Criterion) {
+    c.bench_function("fan_out/hydroflow", |b| {
+        b.iter(|| {
+            let mut q = Q::new();
+
+            let source = q.source(|send| {
+                send.give(Iter(0..NUM_INTS));
+            });
+
+            for op in source.tee(NUM_OPS) {
+                let _ = op.sink(|x| {
+                    black_box(x);
+                });
+            }
+
+            q.run();
+        })
+    });
+}
 
 fn benchmark_babyflow(c: &mut Criterion) {
     c.bench_function("fan_out/babyflow", |b| {
@@ -97,6 +118,7 @@ fn benchmark_sol(c: &mut Criterion) {
 
 criterion_group!(
     fan_out_dataflow,
+    benchmark_hydroflow,
     benchmark_babyflow,
     benchmark_timely,
     benchmark_spinachflow_asym,
