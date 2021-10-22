@@ -1,5 +1,6 @@
 use babyflow::babyflow::Query;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use hydroflow::{collections::Iter, query::Query as Q};
 use pprof::criterion::{Output, PProfProfiler};
 use timely::dataflow::operators::{Concatenate, Inspect, ToStream};
 
@@ -8,6 +9,30 @@ const NUM_INTS: usize = 1_000_000;
 
 fn make_ints(i: usize) -> impl Iterator<Item = usize> {
     (i * NUM_INTS)..((i + 1) * NUM_INTS)
+}
+
+fn benchmark_hydroflow(c: &mut Criterion) {
+    c.bench_function("fan_in/hydroflow", |b| {
+        b.iter(|| {
+            let mut q = Q::new();
+
+            let sources: Vec<_> = (0..NUM_OPS)
+                .map(|i| {
+                    q.source(move |send| {
+                        send.give(Iter(make_ints(i)));
+                    })
+                })
+                .collect();
+
+            let op = q.concat(sources);
+
+            op.sink(move |v| {
+                black_box(v);
+            });
+
+            q.run();
+        })
+    });
 }
 
 fn benchmark_babyflow(c: &mut Criterion) {
@@ -101,13 +126,23 @@ fn benchmark_for_loops(c: &mut Criterion) {
 }
 
 criterion_group!(
-    name = fan_in_dataflow;
-    config = Criterion::default().with_profiler(PProfProfiler::new(100, Output::Flamegraph(None)));
-    targets =
-        benchmark_babyflow,
-        benchmark_timely,
-        benchmark_spinachflow,
-        benchmark_iters,
-        benchmark_for_loops,
+    fan_in_dataflow,
+    benchmark_babyflow,
+    benchmark_hydroflow,
+    benchmark_timely,
+    benchmark_spinachflow,
+    benchmark_iters,
+    benchmark_for_loops,
 );
+// criterion_group!(
+//     name = fan_in_dataflow;
+//     config = Criterion::default().with_profiler(PProfProfiler::new(100, Output::Flamegraph(None)));
+//     targets =
+//         benchmark_babyflow,
+//         benchmark_hydroflow,
+//         benchmark_timely,
+//         benchmark_spinachflow,
+//         benchmark_iters,
+//         benchmark_for_loops,
+// );
 criterion_main!(fan_in_dataflow);

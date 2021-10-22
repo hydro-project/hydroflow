@@ -25,6 +25,28 @@ impl Query {
         }
     }
 
+    pub fn concat<T>(&mut self, ops: Vec<Operator<T>>) -> Operator<T>
+    where
+        T: 'static,
+    {
+        let (inputs, output) = (*self.df)
+            .borrow_mut()
+            .add_n_in_m_out(ops.len(), 1, |ins, out| {
+                for input in ins {
+                    out[0].give(Iter(input.into_iter()));
+                }
+            });
+
+        for (op, input) in ops.into_iter().zip(inputs.into_iter()) {
+            (*self.df).borrow_mut().add_edge(op.output_port, input)
+        }
+
+        Operator {
+            df: self.df.clone(),
+            output_port: output.into_iter().next().unwrap(),
+        }
+    }
+
     pub fn run(&mut self) {
         (*self.df).borrow_mut().run();
     }

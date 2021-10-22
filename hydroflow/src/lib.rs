@@ -211,6 +211,27 @@ where
     }
 }
 
+struct NtoMClosureSubgraph<F, R, W>
+where
+    F: FnMut(&mut [RecvCtx<R>], &mut [SendCtx<W>]),
+    R: Handoff,
+    W: Handoff,
+{
+    f: F,
+    recvs: Vec<RecvCtx<R>>,
+    sends: Vec<SendCtx<W>>,
+}
+impl<F, R, W> Subgraph for NtoMClosureSubgraph<F, R, W>
+where
+    F: FnMut(&mut [RecvCtx<R>], &mut [SendCtx<W>]),
+    R: Handoff,
+    W: Handoff,
+{
+    fn run(&mut self) {
+        (self.f)(&mut self.recvs, &mut self.sends)
+    }
+}
+
 /**
  * A Hydroflow graph. Owns, schedules, and runs the compiled subgraphs.
  */
@@ -318,6 +339,56 @@ impl Hydroflow {
                 (subgraph)(recv, send1, send2)
             });
         (input_port, output_port1, output_port2)
+    }
+
+    /**
+     * Adds a new compiled subraph with a variable number of inputs and outputs.
+     */
+    pub fn add_n_in_m_out<F, R, W>(
+        &mut self,
+        n: usize,
+        m: usize,
+        subgraph: F,
+    ) -> (Vec<InputPort<R>>, Vec<OutputPort<W>>)
+    where
+        F: 'static + FnMut(&mut [RecvCtx<R>], &mut [SendCtx<W>]),
+        R: 'static + Handoff,
+        W: 'static + Handoff,
+    {
+        let mut recvs = Vec::new();
+        let mut input_ports = Vec::new();
+        let mut input_metas = Vec::new();
+
+        for _ in 0..n {
+            let handoff = Rc::new(RefCell::new(R::default()));
+            recvs.push(RecvCtx {
+                handoff: handoff.clone(),
+            });
+            input_ports.push(InputPort {
+                handoff: handoff.clone(),
+            });
+            input_metas.push(Box::new(handoff) as Box<dyn HandoffMeta>);
+        }
+
+        let mut sends = Vec::new();
+        let mut output_ports = Vec::new();
+
+        for _ in 0..m {
+            let (once_send, once_recv) = util::once();
+            sends.push(SendCtx { once: once_recv });
+            output_ports.push(OutputPort { once: once_send });
+        }
+
+        self.subgraphs.insert((
+            input_metas,
+            Box::new(NtoMClosureSubgraph {
+                f: subgraph,
+                recvs,
+                sends,
+            }),
+        ));
+
+        (input_ports, output_ports)
     }
 
     /**
