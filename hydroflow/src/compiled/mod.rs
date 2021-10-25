@@ -220,6 +220,35 @@ where
     }
 }
 
+pub struct TeeN<O, const N: usize>
+where
+    O: Pusherator,
+    O::Item: Clone,
+{
+    outs: [O; N],
+}
+impl<O, const N: usize> Pusherator for TeeN<O, N>
+where
+    O: Pusherator,
+    O::Item: Clone,
+{
+    type Item = O::Item;
+    fn give(&mut self, item: Self::Item) {
+        for out in &mut self.outs {
+            out.give(item.clone()); // TODO: benchmark removing last extra clone.
+        }
+    }
+}
+impl<O, const N: usize> TeeN<O, N>
+where
+    O: Pusherator,
+    O::Item: Clone,
+{
+    pub fn new(outs: [O; N]) -> Self {
+        Self { outs }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::rc::Rc;

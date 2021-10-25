@@ -1,6 +1,7 @@
 use babyflow::babyflow::Query;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use hydroflow::scheduled::{collections::Iter, query::Query as Q};
+use hydroflow::compiled::{Pivot, TeeN, ForEach};
 use timely::dataflow::operators::{Map, ToStream};
 
 const NUM_OPS: usize = 20;
@@ -29,19 +30,16 @@ fn benchmark_hydroflow_scheduled(c: &mut Criterion) {
 fn benchmark_hydroflow_compiled(c: &mut Criterion) {
     c.bench_function("fan_out/hydroflow/compiled (push)", |b| {
         b.iter(|| {
-            let mut q = Q::new();
+            let source = 0..NUM_INTS;
 
-            let source = q.source(|send| {
-                send.give(Iter(0..NUM_INTS));
-            });
-
-            for op in source.tee(NUM_OPS) {
-                let _ = op.sink(|x| {
+            let sinks = [(); NUM_OPS]
+                .map(|_| ForEach::new(|x: usize| {
                     black_box(x);
-                });
-            }
+                }));
+            let sinks = TeeN::new(sinks);
 
-            q.run();
+            let pivot = Pivot::new(source, sinks);
+            pivot.run();
         })
     });
 }
