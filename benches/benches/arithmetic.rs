@@ -83,9 +83,7 @@ fn benchmark_raw_copy(c: &mut Criterion) {
 fn benchmark_iter(c: &mut Criterion) {
     c.bench_function("arithmetic/iter", |b| {
         b.iter(|| {
-            let data: Vec<_> = (0..NUM_INTS).collect();
-
-            let iter = data.into_iter();
+            let iter = 0..NUM_INTS;
 
             ///// MAGIC NUMBER!!!!!!!! is NUM_OPS
             seq_macro::seq!(_ in 0..20 {

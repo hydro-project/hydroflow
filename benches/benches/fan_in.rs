@@ -103,8 +103,7 @@ fn benchmark_spinachflow(c: &mut Criterion) {
 fn benchmark_iters(c: &mut Criterion) {
     c.bench_function("fan_in/iters", |b| {
         b.iter(|| {
-            let iters: Vec<_> = (0..NUM_OPS).map(make_ints).collect();
-            iters.into_iter().flatten().for_each(|x| {
+            (0..NUM_OPS).map(make_ints).flatten().for_each(|x| {
                 black_box(x);
             });
         });

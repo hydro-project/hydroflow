@@ -98,9 +98,7 @@ fn benchmark_raw_copy<O: 'static + Operation>(c: &mut Criterion) {
 fn benchmark_iter<O: 'static + Operation>(c: &mut Criterion) {
     c.bench_function(format!("{}/iter", O::name()).as_str(), |b| {
         b.iter(|| {
-            let data: Vec<_> = (0..NUM_ROWS).map(|_| STARTING_STRING.to_owned()).collect();
-
-            let iter = data.into_iter();
+            let iter = (0..NUM_ROWS).map(|_| STARTING_STRING.to_owned());
 
             ///// MAGIC NUMBER!!!!!!!! is NUM_OPS
             seq_macro::seq!(_ in 0..20 {
