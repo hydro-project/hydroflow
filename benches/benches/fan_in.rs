@@ -1,6 +1,6 @@
 use babyflow::babyflow::Query;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use hydroflow::{collections::Iter, query::Query as Q};
+use hydroflow::scheduled::{collections::Iter, query::Query as Q};
 use pprof::criterion::{Output, PProfProfiler};
 use timely::dataflow::operators::{Concatenate, Inspect, ToStream};
 
