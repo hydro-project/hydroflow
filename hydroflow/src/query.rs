@@ -66,6 +66,7 @@ where
         U: 'static,
     {
         let (input, output) = (*self.df).borrow_mut().add_inout(move |recv, send| {
+            #[allow(clippy::redundant_closure)]
             send.give(Iter(recv.into_iter().map(|x| f(x))));
         });
 
