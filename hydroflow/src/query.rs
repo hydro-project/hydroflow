@@ -2,15 +2,14 @@ use std::{cell::RefCell, rc::Rc};
 
 use crate::{collections::Iter, handoff::VecHandoff, Hydroflow, OutputPort, RecvCtx, SendCtx};
 
+#[derive(Default)]
 pub struct Query {
     df: Rc<RefCell<Hydroflow>>,
 }
 
 impl Query {
     pub fn new() -> Self {
-        Query {
-            df: Rc::new(RefCell::new(Hydroflow::new())),
-        }
+        Default::default()
     }
 
     pub fn source<F, T>(&mut self, f: F) -> Operator<T>
@@ -134,6 +133,7 @@ impl<T: Clone> Operator<T> {
             n,
             move |recvs: &mut [RecvCtx<VecHandoff<T>>], sends| {
                 // TODO(justin): optimize this (extra clone, etc.).
+                #[allow(clippy::into_iter_on_ref)]
                 for v in recvs.into_iter().next().unwrap().into_iter() {
                     for s in &mut *sends {
                         s.give(Some(v.clone()));
