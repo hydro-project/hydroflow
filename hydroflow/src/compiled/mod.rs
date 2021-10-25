@@ -39,7 +39,7 @@ where
     }
 
     pub fn run(mut self) {
-        while let Some(v) = self.pull.next() {
+        for v in self.pull.by_ref() {
             self.push.give(v);
         }
     }
