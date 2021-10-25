@@ -6,8 +6,8 @@ use timely::dataflow::operators::{Map, ToStream};
 const NUM_OPS: usize = 20;
 const NUM_INTS: usize = 1_000_000;
 
-fn benchmark_hydroflow(c: &mut Criterion) {
-    c.bench_function("fan_out/hydroflow", |b| {
+fn benchmark_hydroflow_scheduled(c: &mut Criterion) {
+    c.bench_function("fan_out/hydroflow/scheduled", |b| {
         b.iter(|| {
             let mut q = Q::new();
 
@@ -25,6 +25,27 @@ fn benchmark_hydroflow(c: &mut Criterion) {
         })
     });
 }
+
+fn benchmark_hydroflow_compiled(c: &mut Criterion) {
+    c.bench_function("fan_out/hydroflow/compiled (push)", |b| {
+        b.iter(|| {
+            let mut q = Q::new();
+
+            let source = q.source(|send| {
+                send.give(Iter(0..NUM_INTS));
+            });
+
+            for op in source.tee(NUM_OPS) {
+                let _ = op.sink(|x| {
+                    black_box(x);
+                });
+            }
+
+            q.run();
+        })
+    });
+}
+
 
 fn benchmark_babyflow(c: &mut Criterion) {
     c.bench_function("fan_out/babyflow", |b| {
@@ -118,7 +139,8 @@ fn benchmark_sol(c: &mut Criterion) {
 
 criterion_group!(
     fan_out_dataflow,
-    benchmark_hydroflow,
+    benchmark_hydroflow_scheduled,
+    benchmark_hydroflow_compiled,
     benchmark_babyflow,
     benchmark_timely,
     benchmark_spinachflow_asym,

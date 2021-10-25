@@ -1,7 +1,6 @@
 use babyflow::babyflow::Query;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use hydroflow::scheduled::{collections::Iter, query::Query as Q};
-use pprof::criterion::{Output, PProfProfiler};
 use timely::dataflow::operators::{Concatenate, Inspect, ToStream};
 
 const NUM_OPS: usize = 20;
@@ -134,6 +133,8 @@ criterion_group!(
     benchmark_iters,
     benchmark_for_loops,
 );
+
+// use pprof::criterion::{Output, PProfProfiler};
 // criterion_group!(
 //     name = fan_in_dataflow;
 //     config = Criterion::default().with_profiler(PProfProfiler::new(100, Output::Flamegraph(None)));
