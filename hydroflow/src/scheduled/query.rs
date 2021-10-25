@@ -1,6 +1,8 @@
 use std::{cell::RefCell, rc::Rc};
 
-use crate::{collections::Iter, handoff::VecHandoff, Hydroflow, OutputPort, RecvCtx, SendCtx};
+use crate::scheduled::{
+    collections::Iter, handoff::VecHandoff, Hydroflow, OutputPort, RecvCtx, SendCtx,
+};
 
 #[derive(Default)]
 pub struct Query {

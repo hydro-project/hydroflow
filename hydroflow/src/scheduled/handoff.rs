@@ -2,7 +2,7 @@ use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::rc::Rc;
 
-use crate::collections::Iter;
+use crate::scheduled::collections::Iter;
 
 pub trait TryCanReceive<T> {
     fn try_give(&mut self, item: T) -> Result<T, T>;
