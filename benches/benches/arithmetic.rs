@@ -142,6 +142,43 @@ async fn benchmark_spinach(num_ints: usize) {
     spinachflow::comp::CompExt::run(&comp).await.unwrap_err();
 }
 
+fn benchmark_hydroflow_compiled(c: &mut Criterion) {
+    use hydroflow::compiled::{ForEach, Map, Pusherator};
+
+    c.bench_function("arithmetic/hydroflow/compiled", |b| {
+        b.iter(|| {
+            let sink = ForEach::new(|x| {
+                black_box(x);
+            });
+
+            let map = Map::new(|x| x + 1, sink);
+            let map = Map::new(|x| x + 1, map);
+            let map = Map::new(|x| x + 1, map);
+            let map = Map::new(|x| x + 1, map);
+            let map = Map::new(|x| x + 1, map);
+            let map = Map::new(|x| x + 1, map);
+            let map = Map::new(|x| x + 1, map);
+            let map = Map::new(|x| x + 1, map);
+            let map = Map::new(|x| x + 1, map);
+            let map = Map::new(|x| x + 1, map);
+            let map = Map::new(|x| x + 1, map);
+            let map = Map::new(|x| x + 1, map);
+            let map = Map::new(|x| x + 1, map);
+            let map = Map::new(|x| x + 1, map);
+            let map = Map::new(|x| x + 1, map);
+            let map = Map::new(|x| x + 1, map);
+            let map = Map::new(|x| x + 1, map);
+            let map = Map::new(|x| x + 1, map);
+            let map = Map::new(|x| x + 1, map);
+            let mut map = Map::new(|x| x + 1, map);
+
+            for i in 0..NUM_INTS {
+                map.give(i);
+            }
+        });
+    });
+}
+
 fn criterion_spinach(c: &mut Criterion) {
     c.bench_function("arithmetic/spinach", |b| {
         b.to_async(
@@ -239,5 +276,6 @@ criterion_group!(
     benchmark_iter,
     benchmark_iter_collect,
     benchmark_raw_copy,
+    benchmark_hydroflow_compiled,
 );
 criterion_main!(identity_dataflow);
