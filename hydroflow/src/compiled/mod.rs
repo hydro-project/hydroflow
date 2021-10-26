@@ -1,4 +1,7 @@
-use std::marker::PhantomData;
+use std::{collections::HashMap, marker::PhantomData};
+
+mod pull;
+use crate::lang::Lattice;
 
 pub trait Pusherator: Sized {
     type Item;
@@ -41,6 +44,49 @@ where
     pub fn run(mut self) {
         for v in self.pull.by_ref() {
             self.push.give(v);
+        }
+    }
+}
+
+pub struct GroupBy<K, V, O>
+where
+    K: Eq + std::hash::Hash + Clone,
+    V: Lattice + Clone,
+    O: Pusherator<Item = (K, V)>,
+{
+    contents: HashMap<K, V>,
+    out: O,
+}
+impl<K, V, O> Pusherator for GroupBy<K, V, O>
+where
+    K: Eq + std::hash::Hash + Clone,
+    V: Lattice + Clone,
+    O: Pusherator<Item = (K, V)>,
+{
+    type Item = (K, V);
+    fn give(&mut self, item: Self::Item) {
+        // TODO(justin): we need a more coherent understanding of time in order
+        // to not emit a ton of extra stuff here.
+        if let Some(v) = self.contents.get_mut(&item.0) {
+            if v.join(&item.1) {
+                self.out.give((item.0, v.clone()));
+            }
+        } else {
+            self.contents.insert(item.0.clone(), item.1.clone());
+            self.out.give(item)
+        }
+    }
+}
+impl<K, V, O> GroupBy<K, V, O>
+where
+    K: Eq + std::hash::Hash + Clone,
+    V: Lattice + Clone,
+    O: Pusherator<Item = (K, V)>,
+{
+    pub fn new(out: O) -> Self {
+        GroupBy {
+            contents: HashMap::new(),
+            out,
         }
     }
 }
@@ -253,7 +299,10 @@ where
 mod tests {
     use std::rc::Rc;
 
-    use crate::compiled::{Filter, ForEach, Map, Partition, Pivot, Pusherator, Tee};
+    use crate::{
+        compiled::{Filter, ForEach, GroupBy, Map, Partition, Pivot, Pusherator, Tee},
+        lang::Max,
+    };
 
     #[test]
     fn linear_chains() {
@@ -346,5 +395,17 @@ mod tests {
 
         assert_eq!(left, vec![0, 2, 4, 6, 8, 10, 12, 14, 16, 18]);
         assert_eq!(right, vec![1, 3, 5, 7, 9, 11, 13, 15, 17, 19]);
+    }
+
+    #[test]
+    fn map_union() {
+        let mut v = Vec::new();
+        let mut pusher = GroupBy::new(ForEach::new(|x| v.push(x)));
+
+        pusher.give((1_usize, Max::new(1)));
+        pusher.give((1, Max::new(2)));
+        pusher.give((1, Max::new(1)));
+
+        assert_eq!(v, vec![(1, Max::new(1)), (1, Max::new(2))]);
     }
 }
