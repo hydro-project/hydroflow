@@ -49,7 +49,7 @@ async fn test_select_arr() {
 
     let streams = [(); NUM_OPS].map(|_| crate::futures::stream::iter(0..NUM_INTS));
     let stream = SelectArr::new(streams);
-    let stream = stream.map(|x| ready(x));
+    let stream = stream.map(ready);
     let mut stream = stream;
     while stream.next().await.is_some() {}
 }

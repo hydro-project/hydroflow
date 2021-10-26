@@ -236,26 +236,27 @@ fn benchmark_hydroflow_compiled(c: &mut Criterion) {
             });
 
             // Lol
-            let map = Map::new(|x| black_box(x), sink);
-            let map = Map::new(|x| black_box(x), map);
-            let map = Map::new(|x| black_box(x), map);
-            let map = Map::new(|x| black_box(x), map);
-            let map = Map::new(|x| black_box(x), map);
-            let map = Map::new(|x| black_box(x), map);
-            let map = Map::new(|x| black_box(x), map);
-            let map = Map::new(|x| black_box(x), map);
-            let map = Map::new(|x| black_box(x), map);
-            let map = Map::new(|x| black_box(x), map);
-            let map = Map::new(|x| black_box(x), map);
-            let map = Map::new(|x| black_box(x), map);
-            let map = Map::new(|x| black_box(x), map);
-            let map = Map::new(|x| black_box(x), map);
-            let map = Map::new(|x| black_box(x), map);
-            let map = Map::new(|x| black_box(x), map);
-            let map = Map::new(|x| black_box(x), map);
-            let map = Map::new(|x| black_box(x), map);
-            let map = Map::new(|x| black_box(x), map);
-            let mut map = Map::new(|x| black_box(x), map);
+            let map = Map::new(black_box, sink);
+            let map = Map::new(black_box, map);
+            let map = Map::new(black_box, map);
+            let map = Map::new(black_box, map);
+            let map = Map::new(black_box, map);
+            let map = Map::new(black_box, map);
+            let map = Map::new(black_box, map);
+            let map = Map::new(black_box, map);
+            let map = Map::new(black_box, map);
+            let map = Map::new(black_box, map);
+            let map = Map::new(black_box, map);
+            let map = Map::new(black_box, map);
+            let map = Map::new(black_box, map);
+            let map = Map::new(black_box, map);
+            let map = Map::new(black_box, map);
+            let map = Map::new(black_box, map);
+            let map = Map::new(black_box, map);
+            let map = Map::new(black_box, map);
+            let map = Map::new(black_box, map);
+            let map = Map::new(black_box, map);
+            let mut map = map;
 
             for i in 0..NUM_INTS {
                 map.give(i);

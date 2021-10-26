@@ -227,7 +227,7 @@ fn test_datalog() {
                     out.push_str(&format!("{}{}", sep, d));
                     sep = ", ";
                 }
-                out.push_str(&format!(").\n"));
+                out.push_str(&").\n".to_string());
             }
             out
         });

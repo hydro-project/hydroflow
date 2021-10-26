@@ -359,7 +359,7 @@ mod tests {
         let mut left = Vec::new();
         let mut right = Vec::new();
         let mut pusher = Map::new(
-            |x| Rc::new(x),
+            Rc::new,
             Tee::new(
                 ForEach::new(|x: Rc<i32>| left.push(*x)),
                 ForEach::new(|x: Rc<i32>| right.push(*x)),

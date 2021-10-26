@@ -281,12 +281,12 @@ fn test_query() {
     let mut q = Query::new();
 
     q.source(|send| {
-        send.push((1 as i64, "a".to_string()));
+        send.push((1_i64, "a".to_string()));
         send.push((2, "b".to_string()));
         send.push((3, "c".to_string()));
     })
     .join(q.source(|send| {
-        send.push((1 as i64, "x".to_string()));
+        send.push((1_i64, "x".to_string()));
         send.push((2, "y".to_string()));
         send.push((2, "y2".to_string()));
         send.push((3, "z".to_string()));
