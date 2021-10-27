@@ -4,6 +4,8 @@ use std::io::{BufRead, BufReader, Cursor};
 use std::rc::Rc;
 
 use criterion::{criterion_group, criterion_main, Criterion};
+use differential_dataflow::input::Input;
+use differential_dataflow::operators::{Iterate, Join, Threshold};
 
 lazy_static::lazy_static! {
     static ref EDGES: HashMap<usize, Vec<usize>> = {
@@ -20,6 +22,16 @@ lazy_static::lazy_static! {
             edges.entry(a).or_insert_with(Vec::new).push(b);
         }
         edges
+    };
+    static ref EDGE_VEC: Vec<(usize, usize)> = {
+        let cursor = Cursor::new(include_bytes!("reachability_edges.txt"));
+        let reader = BufReader::new(cursor);
+
+        reader.lines().map(|line| {
+            let line = line.unwrap();
+            let mut v = line.split_whitespace().map(|n| n.parse::<usize>().unwrap());
+            (v.next().unwrap(), v.next().unwrap())
+        }).collect()
     };
     static ref REACHABLE: HashSet<usize> = {
         let cursor = Cursor::new(include_bytes!("reachability_reachable.txt"));
@@ -72,6 +84,32 @@ fn benchmark_timely(c: &mut Criterion) {
                 .collect();
 
             assert_eq!(&reached, reachable);
+        });
+    });
+}
+
+fn benchmark_differential(c: &mut Criterion) {
+    c.bench_function("reachability/differential", |b| {
+        b.iter(move || {
+            timely::execute_directly(move |worker| {
+                let probe = worker.dataflow::<u32, _, _>(|scope| {
+                    let edges = scope.new_collection_from(EDGE_VEC.iter().cloned()).1;
+                    let roots = scope.new_collection_from(vec![1]).1;
+
+                    let reachable = roots.iterate(|reach| {
+                        edges
+                            .enter(&reach.scope())
+                            .semijoin(reach)
+                            .map(|(_src, dst)| dst)
+                            .concat(reach)
+                            .distinct()
+                    });
+
+                    reachable.probe()
+                });
+
+                worker.step_while(|| !probe.done());
+            });
         });
     });
 }
@@ -150,7 +188,7 @@ fn benchmark_hydroflow(c: &mut Criterion) {
 criterion_group!(
     reachability,
     benchmark_timely,
-    // benchmark_babyflow,
+    benchmark_differential,
     benchmark_hydroflow,
 );
 criterion_main!(reachability);

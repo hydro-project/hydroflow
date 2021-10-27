@@ -17,6 +17,7 @@ rand = "0.8.4"
 seq-macro = "0.2"
 spinachflow = { path = "../spinachflow" }
 timely = "*"
+differential-dataflow = "*"
 tokio = { version = "1.0", features = [ "rt-multi-thread" ] }
 
 [[bench]]
