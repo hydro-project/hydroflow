@@ -1,5 +1,6 @@
 use babyflow::babyflow::Query;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use hydroflow::scheduled::handoff::Handoff;
 use std::sync::mpsc::channel;
 use std::thread;
 use timely::dataflow::operators::{Inspect, Map, ToStream};
@@ -282,16 +283,17 @@ fn benchmark_hydroflow(c: &mut Criterion) {
                 }
             });
             for _ in 0..NUM_OPS {
-                let (next_in, mut next_out) = df.add_inout(|recv, send| {
-                    send.give(Iter(recv.into_iter()));
-                });
+                let (next_in, mut next_out) =
+                    df.add_inout(|recv: &mut RecvCtx<VecHandoff<usize>>, send| {
+                        send.give(Iter(recv.take_inner().into_iter()));
+                    });
 
                 std::mem::swap(&mut it, &mut next_out);
                 df.add_edge(next_out, next_in);
             }
 
             let sink = df.add_sink(|recv: &mut RecvCtx<VecHandoff<usize>>| {
-                for x in &*recv {
+                for x in recv.take_inner() {
                     black_box(x);
                 }
             });

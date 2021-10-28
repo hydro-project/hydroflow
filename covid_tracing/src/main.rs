@@ -48,15 +48,21 @@ fn main() {
         .add_subgraph::<_, MainIn, MainOut>(
             |tl!(contacts_recv, diagnosed_recv, loop_recv), tl!(notifs_send, loop_send)| {
                 let looped = loop_recv
+                    .take_inner()
                     .into_iter()
                     .map(|(pid, t)| (pid, (t, t + TRANSMISSIBLE_DURATION)));
 
-                let exposed = diagnosed_recv.into_iter().chain(looped).map(|x| {
-                    println!("DEBUG: exposed {} {} {}", x.0, x.1 .0, x.1 .1);
-                    x
-                });
+                let exposed = diagnosed_recv
+                    .take_inner()
+                    .into_iter()
+                    .chain(looped)
+                    .map(|x| {
+                        println!("DEBUG: exposed {} {} {}", x.0, x.1 .0, x.1 .1);
+                        x
+                    });
 
                 let contacts = contacts_recv
+                    .take_inner()
                     .into_iter()
                     .flat_map(|(pid_a, pid_b, t)| {
                         println!("DEBUG: contact_flatmap {}, {}, {}", pid_a, pid_b, t);
@@ -107,7 +113,10 @@ fn main() {
     type NotifsIn = tlt!(VecHandoff::<(Pid, Phone)>, VecHandoff::<(Pid, DateTime)>);
     let (tl!(people_in, notifs_in), ()) =
         df.add_subgraph::<_, NotifsIn, ()>(|tl!(peoples, exposures), ()| {
-            let joined = SymmetricHashJoin::new(peoples.into_iter(), exposures.into_iter());
+            let joined = SymmetricHashJoin::new(
+                peoples.take_inner().into_iter(),
+                exposures.take_inner().into_iter(),
+            );
             let joined_push = ForEach::new(|(_pid, phone, exposure)| {
                 println!("To {}: Possible Exposure at {}", phone, exposure);
             });

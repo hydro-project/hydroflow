@@ -30,13 +30,15 @@ impl Query {
     where
         T: 'static,
     {
-        let (inputs, output) = (*self.df)
-            .borrow_mut()
-            .add_n_in_m_out(ops.len(), 1, |ins, out| {
+        let (inputs, output) = (*self.df).borrow_mut().add_n_in_m_out(
+            ops.len(),
+            1,
+            |ins: &mut [RecvCtx<VecHandoff<T>>], out| {
                 for input in ins {
-                    out[0].give(Iter(input.into_iter()));
+                    out[0].give(Iter(input.take_inner().into_iter()));
                 }
-            });
+            },
+        );
 
         for (op, input) in ops.into_iter().zip(inputs.into_iter()) {
             (*self.df).borrow_mut().add_edge(op.output_port, input)
@@ -67,10 +69,13 @@ where
         F: 'static + Fn(T) -> U,
         U: 'static,
     {
-        let (input, output) = (*self.df).borrow_mut().add_inout(move |recv, send| {
-            #[allow(clippy::redundant_closure)]
-            send.give(Iter(recv.into_iter().map(|x| f(x))));
-        });
+        let (input, output) =
+            (*self.df)
+                .borrow_mut()
+                .add_inout(move |recv: &mut RecvCtx<VecHandoff<T>>, send| {
+                    #[allow(clippy::redundant_closure)]
+                    send.give(Iter(recv.take_inner().into_iter().map(|x| f(x))));
+                });
 
         (*self.df).borrow_mut().add_edge(self.output_port, input);
 
@@ -84,9 +89,12 @@ where
     where
         F: 'static + Fn(&T) -> bool,
     {
-        let (input, output) = (*self.df).borrow_mut().add_inout(move |recv, send| {
-            send.give(Iter(recv.into_iter().filter(|x| f(x))));
-        });
+        let (input, output) =
+            (*self.df)
+                .borrow_mut()
+                .add_inout(move |recv: &mut RecvCtx<VecHandoff<T>>, send| {
+                    send.give(Iter(recv.take_inner().into_iter().filter(|x| f(x))));
+                });
 
         (*self.df).borrow_mut().add_edge(self.output_port, input);
 
@@ -98,10 +106,12 @@ where
 
     pub fn concat(self, other: Operator<T>) -> Operator<T> {
         // TODO(justin): this is very slow.
-        let (input1, input2, output) = (*self.df).borrow_mut().add_binary(|recv1, recv2, send| {
-            send.give(Iter(recv1.into_iter()));
-            send.give(Iter(recv2.into_iter()));
-        });
+        let (input1, input2, output) = (*self.df).borrow_mut().add_binary(
+            |recv1: &mut RecvCtx<VecHandoff<T>>, recv2: &mut RecvCtx<VecHandoff<T>>, send| {
+                send.give(Iter(recv1.take_inner().into_iter()));
+                send.give(Iter(recv2.take_inner().into_iter()));
+            },
+        );
         (*self.df).borrow_mut().add_edge(self.output_port, input1);
         (*self.df).borrow_mut().add_edge(other.output_port, input2);
 
@@ -115,11 +125,13 @@ where
     where
         F: 'static + Fn(T),
     {
-        let input = (*self.df).borrow_mut().add_sink(move |recv| {
-            for v in recv.into_iter() {
-                f(v)
-            }
-        });
+        let input = (*self.df)
+            .borrow_mut()
+            .add_sink(move |recv: &mut RecvCtx<VecHandoff<T>>| {
+                for v in recv.take_inner() {
+                    f(v)
+                }
+            });
 
         (*self.df).borrow_mut().add_edge(self.output_port, input);
     }
@@ -137,7 +149,7 @@ impl<T: Clone> Operator<T> {
             move |recvs: &mut [RecvCtx<VecHandoff<T>>], sends| {
                 // TODO(justin): optimize this (extra clone, etc.).
                 #[allow(clippy::into_iter_on_ref)]
-                for v in recvs.into_iter().next().unwrap().into_iter() {
+                for v in recvs.into_iter().next().unwrap().take_inner() {
                     for s in &mut *sends {
                         s.give(Some(v.clone()));
                     }

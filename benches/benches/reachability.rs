@@ -135,30 +135,34 @@ fn benchmark_hydroflow(c: &mut Criterion) {
             let (distinct_in, distinct_out) = df.add_inout(
                 move |recv: &mut RecvCtx<VecHandoff<usize>>,
                       send: &mut SendCtx<VecHandoff<usize>>| {
-                    let iter = recv.into_iter().filter(|v| seen.insert(*v));
+                    let iter = recv.take_inner().into_iter().filter(|v| seen.insert(*v));
                     send.give(Iter(iter));
                 },
             );
 
-            let (merge_lhs, merge_rhs, merge_out) =
-                df.add_binary(|recv1, recv2, send: &mut SendCtx<VecHandoff<usize>>| {
-                    send.give(Iter(recv1.into_iter()));
-                    send.give(Iter(recv2.into_iter()));
-                });
+            let (merge_lhs, merge_rhs, merge_out) = df.add_binary(
+                |recv1: &mut RecvCtx<VecHandoff<_>>,
+                 recv2: &mut RecvCtx<VecHandoff<_>>,
+                 send: &mut SendCtx<VecHandoff<usize>>| {
+                    send.give(Iter(recv1.take_inner().into_iter()));
+                    send.give(Iter(recv2.take_inner().into_iter()));
+                },
+            );
 
-            let (neighbors_in, neighbors_out) = df.add_inout(move |recv, send| {
-                for v in &*recv {
-                    if let Some(neighbors) = edges.get(&v) {
-                        send.give(Iter(neighbors.iter().copied()));
+            let (neighbors_in, neighbors_out) =
+                df.add_inout(move |recv: &mut RecvCtx<VecHandoff<_>>, send| {
+                    for v in recv.take_inner() {
+                        if let Some(neighbors) = edges.get(&v) {
+                            send.give(Iter(neighbors.iter().copied()));
+                        }
                     }
-                }
-            });
+                });
 
             let (tee_in, tee_out1, tee_out2) = df.add_binary_out(
                 |recv: &mut RecvCtx<VecHandoff<usize>>,
                  send1: &mut SendCtx<VecHandoff<usize>>,
                  send2: &mut SendCtx<VecHandoff<usize>>| {
-                    for v in &*recv {
+                    for v in recv.take_inner() {
                         send1.give(Some(v));
                         send2.give(Some(v));
                     }
@@ -167,8 +171,8 @@ fn benchmark_hydroflow(c: &mut Criterion) {
 
             let reachable_verts = Rc::new(RefCell::new(HashSet::new()));
             let reachable_inner = reachable_verts.clone();
-            let sink_in = df.add_sink(move |recv| {
-                (*reachable_inner).borrow_mut().extend(recv.into_iter());
+            let sink_in = df.add_sink(move |recv: &mut RecvCtx<VecHandoff<_>>| {
+                (*reachable_inner).borrow_mut().extend(recv.take_inner());
             });
 
             df.add_edge(reachable_out, merge_lhs);

@@ -61,14 +61,13 @@ pub struct OutputPort<H: Handoff> {
 pub struct RecvCtx<H: Handoff> {
     handoff: Rc<RefCell<H>>,
 }
-impl<T> IntoIterator for &RecvCtx<VecHandoff<T>> {
-    type Item = T;
-    type IntoIter = std::collections::vec_deque::IntoIter<T>;
+impl<H: Handoff> RecvCtx<H> {
+    pub fn take(&mut self) -> H {
+        self.handoff.take()
+    }
 
-    fn into_iter(self) -> Self::IntoIter {
-        let mut borrow = self.handoff.borrow_mut();
-        let vec = std::mem::take(&mut *borrow);
-        vec.0.into_iter()
+    pub fn take_inner(&mut self) -> H::Inner {
+        self.handoff.take().take_inner()
     }
 }
 
@@ -492,7 +491,7 @@ fn map_filter() {
 
     let (map_in, map_out) = df.add_inout(
         |recv: &mut RecvCtx<VecHandoff<i32>>, send: &mut SendCtx<VecHandoff<_>>| {
-            for x in &*recv {
+            for x in recv.take_inner().into_iter() {
                 send.give(Some(3 * x + 1));
             }
         },
@@ -500,7 +499,7 @@ fn map_filter() {
 
     let (filter_in, filter_out) = df.add_inout(
         |recv: &mut RecvCtx<VecHandoff<i32>>, send: &mut SendCtx<VecHandoff<_>>| {
-            for x in &*recv {
+            for x in recv.take_inner().into_iter() {
                 if x % 2 == 0 {
                     send.give(Some(x));
                 }
@@ -510,8 +509,8 @@ fn map_filter() {
 
     let outputs = Rc::new(RefCell::new(Vec::new()));
     let inner_outputs = outputs.clone();
-    let sink = df.add_sink(move |recv| {
-        for x in &*recv {
+    let sink = df.add_sink(move |recv: &mut RecvCtx<VecHandoff<i32>>| {
+        for x in recv.take_inner().into_iter() {
             (*inner_outputs).borrow_mut().push(x);
         }
     });
@@ -533,7 +532,7 @@ mod tests {
         rc::Rc,
     };
 
-    use crate::scheduled::{Hydroflow, RecvCtx, SendCtx, VecHandoff};
+    use crate::scheduled::{handoff::Handoff, Hydroflow, RecvCtx, SendCtx, VecHandoff};
 
     #[test]
     fn test_cycle() {
@@ -565,7 +564,7 @@ mod tests {
         let mut seen = HashSet::new();
         let (distinct_in, distinct_out) = df.add_inout(
             move |recv: &mut RecvCtx<VecHandoff<usize>>, send: &mut SendCtx<VecHandoff<usize>>| {
-                for v in &*recv {
+                for v in recv.take_inner().into_iter() {
                     if seen.insert(v) {
                         send.give(Some(v));
                     }
@@ -573,28 +572,32 @@ mod tests {
             },
         );
 
-        let (merge_lhs, merge_rhs, merge_out) =
-            df.add_binary(|recv1, recv2, send: &mut SendCtx<VecHandoff<usize>>| {
-                for v in (recv1.into_iter()).chain(recv2.into_iter()) {
+        let (merge_lhs, merge_rhs, merge_out) = df.add_binary(
+            |recv1: &mut RecvCtx<VecHandoff<usize>>,
+             recv2: &mut RecvCtx<VecHandoff<usize>>,
+             send: &mut SendCtx<VecHandoff<usize>>| {
+                for v in (recv1.take_inner().into_iter()).chain(recv2.take_inner().into_iter()) {
                     send.give(Some(v));
                 }
-            });
+            },
+        );
 
-        let (neighbors_in, neighbors_out) = df.add_inout(move |recv, send| {
-            for v in &*recv {
-                if let Some(neighbors) = edges.get(&v) {
-                    for &n in neighbors {
-                        send.give(Some(n));
+        let (neighbors_in, neighbors_out) =
+            df.add_inout(move |recv: &mut RecvCtx<VecHandoff<usize>>, send| {
+                for v in recv.take_inner().into_iter() {
+                    if let Some(neighbors) = edges.get(&v) {
+                        for &n in neighbors {
+                            send.give(Some(n));
+                        }
                     }
                 }
-            }
-        });
+            });
 
         let (tee_in, tee_out1, tee_out2) = df.add_binary_out(
             |recv: &mut RecvCtx<VecHandoff<usize>>,
              send1: &mut SendCtx<VecHandoff<usize>>,
              send2: &mut SendCtx<VecHandoff<usize>>| {
-                for v in &*recv {
+                for v in recv.take_inner().into_iter() {
                     send1.give(Some(v));
                     send2.give(Some(v));
                 }
@@ -603,8 +606,8 @@ mod tests {
 
         let reachable_verts = Rc::new(RefCell::new(Vec::new()));
         let reachable_inner = reachable_verts.clone();
-        let sink_in = df.add_sink(move |recv| {
-            for v in &*recv {
+        let sink_in = df.add_sink(move |recv: &mut RecvCtx<VecHandoff<usize>>| {
+            for v in recv.take_inner().into_iter() {
                 (*reachable_inner).borrow_mut().push(v);
             }
         });

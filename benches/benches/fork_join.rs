@@ -1,7 +1,8 @@
 use babyflow::babyflow::Query;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use hydroflow::scheduled::handoff::Handoff;
 use hydroflow::scheduled::query::Query as Q;
-use hydroflow::scheduled::{collections::Iter, handoff::VecHandoff, Hydroflow, SendCtx};
+use hydroflow::scheduled::{collections::Iter, handoff::VecHandoff, Hydroflow, RecvCtx, SendCtx};
 use timely::dataflow::operators::{Concatenate, Filter, Inspect, ToStream};
 
 const NUM_OPS: usize = 20;
@@ -22,8 +23,10 @@ fn benchmark_hydroflow(c: &mut Criterion) {
             });
 
             let (tee_in, mut out1, mut out2) = df.add_binary_out(
-                |recv, send1: &mut SendCtx<VecHandoff<_>>, send2: &mut SendCtx<VecHandoff<_>>| {
-                    for v in recv.into_iter() {
+                |recv: &mut RecvCtx<VecHandoff<_>>,
+                 send1: &mut SendCtx<VecHandoff<_>>,
+                 send2: &mut SendCtx<VecHandoff<_>>| {
+                    for v in recv.take_inner().into_iter() {
                         if v % 2 == 0 {
                             send1.give(Some(v));
                         } else {
@@ -35,30 +38,40 @@ fn benchmark_hydroflow(c: &mut Criterion) {
 
             df.add_edge(source, tee_in);
             for _ in 0..NUM_OPS {
-                let (in1, in2, mut new_out1, mut new_out2) =
-                    df.add_binary_in_binary_out(|recv1, recv2, send1, send2| {
-                        for v in recv1.into_iter().chain(recv2.into_iter()) {
+                let (in1, in2, mut new_out1, mut new_out2) = df.add_binary_in_binary_out(
+                    |recv1: &mut RecvCtx<VecHandoff<_>>,
+                     recv2: &mut RecvCtx<VecHandoff<_>>,
+                     send1,
+                     send2| {
+                        for v in recv1
+                            .take_inner()
+                            .into_iter()
+                            .chain(recv2.take_inner().into_iter())
+                        {
                             if v % 2 == 0 {
                                 send1.give(Some(v));
                             } else {
                                 send2.give(Some(v));
                             }
                         }
-                    });
+                    },
+                );
                 std::mem::swap(&mut out1, &mut new_out1);
                 std::mem::swap(&mut out2, &mut new_out2);
                 df.add_edge(new_out1, in1);
                 df.add_edge(new_out2, in2);
             }
 
-            let (sink1, sink2) = df.add_binary_sink(|recv1, recv2| {
-                for x in recv1.into_iter() {
-                    black_box(x);
-                }
-                for x in recv2.into_iter() {
-                    black_box(x);
-                }
-            });
+            let (sink1, sink2) = df.add_binary_sink(
+                |recv1: &mut RecvCtx<VecHandoff<_>>, recv2: &mut RecvCtx<VecHandoff<_>>| {
+                    for x in recv1.take_inner() {
+                        black_box(x);
+                    }
+                    for x in recv2.take_inner() {
+                        black_box(x);
+                    }
+                },
+            );
 
             df.add_edge(out1, sink1);
             df.add_edge(out2, sink2);
