@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+// use std::collections::HashMap;
 
 // TODO(justin): quick and dirty lattice implementation, we probably want to
 // copy over spinachflow's.

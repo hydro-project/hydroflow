@@ -1,6 +1,6 @@
 use std::{collections::HashMap, marker::PhantomData};
 
-mod pull;
+pub mod pull;
 use crate::lang::Lattice;
 
 pub trait Pusherator: Sized {

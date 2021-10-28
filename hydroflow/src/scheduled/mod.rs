@@ -8,7 +8,7 @@ use std::rc::Rc;
 
 use sealed::sealed;
 use slotmap::SlotMap;
-pub use tuple_list::tuple_list as tl;
+use tuple_list::tuple_list as tl;
 
 use handoff::Handoff;
 use handoff::HandoffMeta;
