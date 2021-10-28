@@ -2,12 +2,12 @@ use hydroflow::compiled::ForEach;
 use hydroflow::compiled::Pivot;
 use hydroflow::compiled::Tee;
 use std::sync::mpsc;
-use std::time::Duration;
+// use std::time::Duration;
 
-use time::Date;
-use time::Month;
-use time::PrimitiveDateTime;
-use time::Time;
+// use time::Date;
+// use time::Month;
+// use time::PrimitiveDateTime;
+// use time::Time;
 
 use hydroflow::compiled::pull::SymmetricHashJoin;
 use hydroflow::scheduled::collections::Iter;
@@ -15,12 +15,13 @@ use hydroflow::scheduled::handoff::VecHandoff;
 use hydroflow::scheduled::{Hydroflow, SendCtx};
 use hydroflow::{tl, tlt};
 
-const TRANSMISSIBLE_DURATION: Duration = Duration::from_secs(14 * 24 * 3600);
+// const TRANSMISSIBLE_DURATION: Duration = Duration::from_secs(14 * 24 * 3600);
+const TRANSMISSIBLE_DURATION: usize = 14;
 
 fn main() {
     type Pid = &'static str;
     type Phone = &'static str;
-    type DateTime = PrimitiveDateTime;
+    type DateTime = usize;
 
     let (contacts_send, contacts_recv) = mpsc::channel::<(Pid, Pid, DateTime)>();
     let (diagnosed_send, diagnosed_recv) = mpsc::channel::<(Pid, (DateTime, DateTime))>();
@@ -38,53 +39,40 @@ fn main() {
         send.give(Iter(people_recv.try_iter()));
     });
 
+    // TODO[mingwei]: not the final API cause its bad.
+    let (mut ltab, mut rtab, mut lbuf, mut rbuf) = Default::default();
+
     type MainIn = tlt!(
-        VecHandoff::<(Pid, Pid, PrimitiveDateTime)>,
+        VecHandoff::<(Pid, Pid, DateTime)>,
         VecHandoff::<(Pid, (DateTime, DateTime))>,
         VecHandoff::<(Pid, DateTime)>
     );
     type MainOut = tlt!(VecHandoff::<(Pid, DateTime)>, VecHandoff::<(Pid, DateTime)>);
     let (tl!(contacts_in, diagnosed_in, loop_in), tl!(notifs_out, loop_out)) = df
         .add_subgraph::<_, MainIn, MainOut>(
-            |tl!(contacts_recv, diagnosed_recv, loop_recv), tl!(notifs_send, loop_send)| {
+            move |tl!(contacts_recv, diagnosed_recv, loop_recv), tl!(notifs_send, loop_send)| {
                 let looped = loop_recv
                     .take_inner()
                     .into_iter()
                     .map(|(pid, t)| (pid, (t, t + TRANSMISSIBLE_DURATION)));
 
-                let exposed = diagnosed_recv
-                    .take_inner()
-                    .into_iter()
-                    .chain(looped)
-                    .map(|x| {
-                        println!("DEBUG: exposed {} {} {}", x.0, x.1 .0, x.1 .1);
-                        x
-                    });
+                let exposed = diagnosed_recv.take_inner().into_iter().chain(looped);
 
                 let contacts = contacts_recv
                     .take_inner()
                     .into_iter()
-                    .flat_map(|(pid_a, pid_b, t)| {
-                        println!("DEBUG: contact_flatmap {}, {}, {}", pid_a, pid_b, t);
-                        vec![
-                            ("asdf", ("asdf", t)),
-                            (pid_a, (pid_b, t)),
-                            (pid_b, (pid_a, t)),
-                        ]
-                    })
-                    .map(|x| {
-                        println!("DEBUG: contact {}, {}, {}", x.0, x.1 .0, x.1 .1);
-                        x
-                    });
+                    .flat_map(|(pid_a, pid_b, t)| vec![(pid_a, (pid_b, t)), (pid_b, (pid_a, t))]);
 
-                let join_exposed_contacts = SymmetricHashJoin::new(exposed, contacts);
+                let join_exposed_contacts = SymmetricHashJoin::new(
+                    exposed, contacts, &mut ltab, &mut rtab, &mut lbuf, &mut rbuf,
+                );
                 let new_exposed = join_exposed_contacts.filter_map(
                     |(_pid_a, (t_from, t_to), (pid_b, t_contact))| {
-                        println!(
-                            "POST_JOIN: {} ({} {}) ({} {})",
-                            _pid_a, t_from, t_to, pid_b, t_contact
-                        );
-                        if t_from <= t_contact && t_contact <= t_to {
+                        if t_from < t_contact && t_contact <= t_to {
+                            // println!(
+                            //     "DEBUG: post_join {} ({} {}) ({} {})",
+                            //     _pid_a, t_from, t_to, pid_b, t_contact
+                            // );
                             Some((pid_b, t_contact))
                         } else {
                             None
@@ -93,10 +81,11 @@ fn main() {
                 );
 
                 let notif_push = ForEach::new(|exposed_person: (Pid, DateTime)| {
-                    println!("NOTIF: {} {}", exposed_person.0, exposed_person.1);
+                    // println!("DEBUG: will_notif {} {}", exposed_person.0, exposed_person.1);
                     notifs_send.give(Some(exposed_person));
                 });
-                let loop_push = ForEach::new(|exposed_person| {
+                let loop_push = ForEach::new(|exposed_person: (Pid, DateTime)| {
+                    // println!("DEBUG: will_loop {}, {}", exposed_person.0, exposed_person.1);
                     loop_send.give(Some(exposed_person));
                 });
                 let push_exposed = Tee::new(notif_push, loop_push);
@@ -110,15 +99,20 @@ fn main() {
     df.add_edge(diagnosed_out, diagnosed_in);
     df.add_edge(loop_out, loop_in);
 
+    // TODO[mingwei]: not the final API cause its bad.
+    let (mut ltab, mut rtab, mut lbuf, mut rbuf) = Default::default();
+
     type NotifsIn = tlt!(VecHandoff::<(Pid, Phone)>, VecHandoff::<(Pid, DateTime)>);
     let (tl!(people_in, notifs_in), ()) =
-        df.add_subgraph::<_, NotifsIn, ()>(|tl!(peoples, exposures), ()| {
+        df.add_subgraph::<_, NotifsIn, ()>(move |tl!(peoples, exposures), ()| {
+            let exposures = exposures.take_inner().into_iter();
+            let peoples = peoples.take_inner().into_iter();
+
             let joined = SymmetricHashJoin::new(
-                peoples.take_inner().into_iter(),
-                exposures.take_inner().into_iter(),
+                peoples, exposures, &mut ltab, &mut rtab, &mut lbuf, &mut rbuf,
             );
-            let joined_push = ForEach::new(|(_pid, phone, exposure)| {
-                println!("To {}: Possible Exposure at {}", phone, exposure);
+            let joined_push = ForEach::new(|(pid, phone, exposure)| {
+                println!("[{}] To {}: Possible Exposure at {}", pid, phone, exposure);
             });
             let pivot = Pivot::new(joined, joined_push);
             pivot.run();
@@ -130,33 +124,36 @@ fn main() {
     df.run();
 
     people_send.send(("Mingwei S", "+1 650 555 7283")).unwrap();
-    people_send.send(("Jusin J", "+1 519 555 3458")).unwrap();
+    people_send.send(("Justin J", "+1 519 555 3458")).unwrap();
     people_send.send(("Mae M", "+1 912 555 9129")).unwrap();
     contacts_send
         .send((
             "Mingwei S",
             "Justin J",
-            DateTime::new(
-                Date::from_calendar_date(2021, Month::October, 31).unwrap(),
-                Time::from_hms(19, 49, 21).unwrap(),
-            ),
+            1031,
+            // DateTime::new(
+            //     Date::from_calendar_date(2021, Month::October, 31).unwrap(),
+            //     Time::from_hms(19, 49, 21).unwrap(),
+            // ),
         ))
         .unwrap();
     contacts_send
         .send((
             "Mingwei S",
             "Joe H",
-            DateTime::new(
-                Date::from_calendar_date(2021, Month::October, 27).unwrap(),
-                Time::from_hms(16, 15, 00).unwrap(),
-            ),
+            1027,
+            // DateTime::new(
+            //     Date::from_calendar_date(2021, Month::October, 27).unwrap(),
+            //     Time::from_hms(16, 15, 00).unwrap(),
+            // ),
         ))
         .unwrap();
 
-    let mae_diag_datetime = DateTime::new(
-        Date::from_calendar_date(2021, Month::October, 22).unwrap(),
-        Time::from_hms(15, 12, 55).unwrap(),
-    );
+    let mae_diag_datetime = 1022;
+    // DateTime::new(
+    //     Date::from_calendar_date(2021, Month::October, 22).unwrap(),
+    //     Time::from_hms(15, 12, 55).unwrap(),
+    // );
     diagnosed_send
         .send((
             "Mae M",
@@ -173,10 +170,11 @@ fn main() {
         .send((
             "Mingwei S",
             "Mae M",
-            DateTime::new(
-                Date::from_calendar_date(2021, Month::October, 28).unwrap(),
-                Time::from_hms(13, 56, 37).unwrap(),
-            ),
+            1028,
+            // DateTime::new(
+            //     Date::from_calendar_date(2021, Month::October, 28).unwrap(),
+            //     Time::from_hms(13, 56, 37).unwrap(),
+            // ),
         ))
         .unwrap();
 

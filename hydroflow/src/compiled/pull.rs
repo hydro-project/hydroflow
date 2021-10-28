@@ -1,99 +1,97 @@
 use std::collections::HashMap;
 
-pub struct SymmetricHashJoin<K, I1, V1, I2, V2>
+pub struct SymmetricHashJoin<'a, K, I1, V1, I2, V2>
 where
     K: Eq + std::hash::Hash + Clone,
-    V1: Clone,
-    V2: Clone,
+    V1: Eq + Clone,
+    V2: Eq + Clone,
     I1: Iterator<Item = (K, V1)>,
     I2: Iterator<Item = (K, V2)>,
 {
     lhs: I1,
-    ltab: HashMap<K, Vec<V1>>,
     rhs: I2,
-    rtab: HashMap<K, Vec<V2>>,
+    ltab: &'a mut HashMap<K, Vec<V1>>,
+    rtab: &'a mut HashMap<K, Vec<V2>>,
     // TODO(justin): this shouldn't clone the buffer.
-    lbuffer: Option<(K, V1, Vec<V2>)>,
-    rbuffer: Option<(K, V2, Vec<V1>)>,
+    lbuffer: &'a mut Option<(K, V1, Vec<V2>)>,
+    rbuffer: &'a mut Option<(K, V2, Vec<V1>)>,
 }
-impl<K, I1, V1, I2, V2> Iterator for SymmetricHashJoin<K, I1, V1, I2, V2>
+impl<'a, K, I1, V1, I2, V2> Iterator for SymmetricHashJoin<'a, K, I1, V1, I2, V2>
 where
     K: Eq + std::hash::Hash + Clone,
-    V1: Clone,
-    V2: Clone,
+    V1: Eq + Clone,
+    V2: Eq + Clone,
     I1: Iterator<Item = (K, V1)>,
     I2: Iterator<Item = (K, V2)>,
 {
     type Item = (K, V1, V2);
 
     fn next(&mut self) -> Option<Self::Item> {
-        let mut left_exhausted = false;
-        let mut right_exhausted = false;
-        while !left_exhausted
-            && !right_exhausted
-            && self.lbuffer.is_none()
-            && self.rbuffer.is_none()
-        {
-            if let Some((k, v1)) = self.lhs.next() {
-                self.ltab
-                    .entry(k.clone())
-                    .or_insert_with(Vec::new)
-                    .push(v1.clone());
-                if let Some(vs) = self.rtab.get(&k) {
-                    self.lbuffer = Some((k, v1, vs.clone()));
+        loop {
+            if let Some((k, v, vs)) = &mut self.lbuffer {
+                // TODO(justin): unnecessary clone (sometimes).
+                let result = (k.clone(), v.clone(), vs.pop().unwrap());
+                if vs.is_empty() {
+                    *self.lbuffer = None;
                 }
-            } else {
-                left_exhausted = true;
-                if let Some((k, v2)) = self.rhs.next() {
-                    // TODO(justin): unnecessary clone (sometimes).
-                    self.rtab
-                        .entry(k.clone())
-                        .or_insert_with(Vec::new)
-                        .push(v2.clone());
-                    if let Some(vs) = self.ltab.get(&k) {
-                        self.rbuffer = Some((k, v2, vs.clone()));
-                    }
-                } else {
-                    right_exhausted = true;
+                return Some(result);
+            } else if let Some((k, v, vs)) = &mut self.rbuffer {
+                // TODO(justin): unnecessary clone (sometimes).
+                let result = (k.clone(), vs.pop().unwrap(), v.clone());
+                if vs.is_empty() {
+                    *self.rbuffer = None;
                 }
+                return Some(result);
             }
-        }
 
-        if let Some((k, v, vs)) = &mut self.lbuffer {
-            // TODO(justin): unnecessary clone (sometimes).
-            let result = (k.clone(), v.clone(), vs.pop().unwrap());
-            if vs.is_empty() {
-                self.lbuffer = None;
+            if let Some((k, v1)) = self.lhs.next() {
+                let vec = self.ltab.entry(k.clone()).or_insert_with(Vec::new);
+                if !vec.contains(&v1) {
+                    vec.push(v1.clone());
+                    if let Some(vs) = self.rtab.get(&k) {
+                        *self.lbuffer = Some((k, v1, vs.clone()));
+                    }
+                }
+                continue;
             }
-            Some(result)
-        } else if let Some((k, v, vs)) = &mut self.rbuffer {
-            // TODO(justin): unnecessary clone (sometimes).
-            let result = (k.clone(), vs.pop().unwrap(), v.clone());
-            if vs.is_empty() {
-                self.rbuffer = None;
+
+            if let Some((k, v2)) = self.rhs.next() {
+                let vec = self.rtab.entry(k.clone()).or_insert_with(Vec::new);
+                if !vec.contains(&v2) {
+                    vec.push(v2.clone());
+                    if let Some(vs) = self.ltab.get(&k) {
+                        *self.rbuffer = Some((k, v2, vs.clone()));
+                    }
+                }
+                continue;
             }
-            Some(result)
-        } else {
-            None
+            return None;
         }
     }
 }
-impl<K, I1, V1, I2, V2> SymmetricHashJoin<K, I1, V1, I2, V2>
+impl<'a, K, I1, V1, I2, V2> SymmetricHashJoin<'a, K, I1, V1, I2, V2>
 where
     K: Eq + std::hash::Hash + Clone,
-    V1: Clone,
-    V2: Clone,
+    V1: Eq + Clone,
+    V2: Eq + Clone,
     I1: Iterator<Item = (K, V1)>,
     I2: Iterator<Item = (K, V2)>,
 {
-    pub fn new(lhs: I1, rhs: I2) -> Self {
-        SymmetricHashJoin {
+    pub fn new(
+        lhs: I1,
+        rhs: I2,
+        ltab: &'a mut HashMap<K, Vec<V1>>,
+        rtab: &'a mut HashMap<K, Vec<V2>>,
+        lbuffer: &'a mut Option<(K, V1, Vec<V2>)>,
+        rbuffer: &'a mut Option<(K, V2, Vec<V1>)>,
+    ) -> Self {
+        Self {
             lhs,
-            ltab: HashMap::new(),
+            ltab,
             rhs,
-            rtab: HashMap::new(),
-            lbuffer: None,
-            rbuffer: None,
+            rtab,
+            lbuffer,
+            rbuffer,
         }
     }
 }
@@ -107,7 +105,9 @@ mod tests {
         let lhs = (0..10).map(|x| (x, format!("left {}", x)));
         let rhs = (6..15).map(|x| (x / 2, format!("right {} / 2", x)));
 
-        let join = SymmetricHashJoin::new(lhs, rhs);
+        let (mut ltab, mut rtab, mut lbuf, mut rbuf) = Default::default();
+
+        let join = SymmetricHashJoin::new(lhs, rhs, &mut ltab, &mut rtab, &mut lbuf, &mut rbuf);
 
         assert_eq!(
             join.collect::<Vec<_>>(),

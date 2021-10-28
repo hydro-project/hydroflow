@@ -1,6 +1,5 @@
-use std::cell::{RefCell, RefMut};
+use std::cell::RefCell;
 use std::collections::VecDeque;
-use std::ops::RangeBounds;
 use std::rc::Rc;
 
 use crate::scheduled::collections::Iter;
@@ -36,9 +35,7 @@ pub trait Handoff: Default + HandoffMeta {
 pub struct NullHandoff;
 impl Handoff for NullHandoff {
     type Inner = ();
-    fn take_inner(&mut self) -> () {
-        ()
-    }
+    fn take_inner(&mut self) -> Self::Inner {}
 }
 
 /**
