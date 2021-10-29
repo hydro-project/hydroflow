@@ -39,8 +39,7 @@ fn main() {
         send.give(Iter(people_recv.try_iter()));
     });
 
-    // TODO[mingwei]: not the final API cause its bad.
-    let (mut ltab, mut rtab, mut lbuf, mut rbuf) = Default::default();
+    let mut exposed_contacts = Default::default();
 
     type MainIn = tlt!(
         VecHandoff::<(Pid, Pid, DateTime)>,
@@ -63,9 +62,8 @@ fn main() {
                     .into_iter()
                     .flat_map(|(pid_a, pid_b, t)| vec![(pid_a, (pid_b, t)), (pid_b, (pid_a, t))]);
 
-                let join_exposed_contacts = SymmetricHashJoin::new(
-                    exposed, contacts, &mut ltab, &mut rtab, &mut lbuf, &mut rbuf,
-                );
+                let join_exposed_contacts =
+                    SymmetricHashJoin::new(exposed, contacts, &mut exposed_contacts);
                 let new_exposed = join_exposed_contacts.filter_map(
                     |(_pid_a, (t_from, t_to), (pid_b, t_contact))| {
                         if t_from < t_contact && t_contact <= t_to {
@@ -99,8 +97,7 @@ fn main() {
     df.add_edge(diagnosed_out, diagnosed_in);
     df.add_edge(loop_out, loop_in);
 
-    // TODO[mingwei]: not the final API cause its bad.
-    let (mut ltab, mut rtab, mut lbuf, mut rbuf) = Default::default();
+    let mut people_exposure = Default::default();
 
     type NotifsIn = tlt!(VecHandoff::<(Pid, Phone)>, VecHandoff::<(Pid, DateTime)>);
     let (tl!(people_in, notifs_in), ()) =
@@ -108,9 +105,7 @@ fn main() {
             let exposures = exposures.take_inner().into_iter();
             let peoples = peoples.take_inner().into_iter();
 
-            let joined = SymmetricHashJoin::new(
-                peoples, exposures, &mut ltab, &mut rtab, &mut lbuf, &mut rbuf,
-            );
+            let joined = SymmetricHashJoin::new(peoples, exposures, &mut people_exposure);
             let joined_push = ForEach::new(|(pid, phone, exposure)| {
                 println!("[{}] To {}: Possible Exposure at {}", pid, phone, exposure);
             });
