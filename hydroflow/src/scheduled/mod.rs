@@ -7,7 +7,6 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use sealed::sealed;
-use slotmap::SlotMap;
 use tuple_list::tuple_list as tl;
 
 use handoff::Handoff;
@@ -16,13 +15,13 @@ use handoff::NullHandoff;
 use handoff::VecHandoff;
 use handoff::{CanReceive, TryCanReceive};
 
-pub type OpId = slotmap::DefaultKey;
+pub type OpId = usize;
 
 /**
  * Context provided to a compiled component for writing to an [OutputPort].
  */
 pub struct SendCtx<H: Handoff> {
-    once: util::Once<Rc<RefCell<H>>>,
+    handoff: Rc<RefCell<H>>,
 }
 impl<H: Handoff> SendCtx<H> {
     // // TODO: represent backpressure in this return value.
@@ -34,7 +33,7 @@ impl<H: Handoff> SendCtx<H> {
     where
         H: CanReceive<T>,
     {
-        let mut borrow = self.once.get().borrow_mut();
+        let mut borrow = (*self.handoff).borrow_mut();
         <H as CanReceive<T>>::give(&mut *borrow, item)
     }
 
@@ -42,7 +41,7 @@ impl<H: Handoff> SendCtx<H> {
     where
         H: TryCanReceive<T>,
     {
-        let mut borrow = self.once.get().borrow_mut();
+        let mut borrow = (*self.handoff).borrow_mut();
         <H as TryCanReceive<T>>::try_give(&mut *borrow, item)
     }
 }
@@ -52,22 +51,18 @@ impl<H: Handoff> SendCtx<H> {
  */
 #[must_use]
 pub struct OutputPort<H: Handoff> {
-    once: util::SendOnce<Rc<RefCell<H>>>,
+    handoff: Rc<RefCell<H>>,
 }
 
 /**
  * Context provided to a compiled component for reading from an [InputPort].
  */
 pub struct RecvCtx<H: Handoff> {
-    handoff: Rc<RefCell<H>>,
+    once: Rc<RefCell<Option<Rc<RefCell<H>>>>>,
 }
 impl<H: Handoff> RecvCtx<H> {
-    pub fn take(&mut self) -> H {
-        self.handoff.take()
-    }
-
     pub fn take_inner(&mut self) -> H::Inner {
-        self.handoff.take().take_inner()
+        (*(*self.once).borrow_mut().as_ref().unwrap().borrow_mut()).take_inner()
     }
 }
 
@@ -86,7 +81,8 @@ impl<H: Handoff> RecvCtx<H> {
 // TODO: figure out how to explain succinctly why this and output port both use Writable
 #[must_use]
 pub struct InputPort<H: Handoff> {
-    handoff: Rc<RefCell<H>>,
+    op_id: OpId,
+    once: Rc<RefCell<Option<Rc<RefCell<H>>>>>,
 }
 
 /**
@@ -106,13 +102,11 @@ pub trait HandoffList {
     type RecvCtx;
     type InputPort;
     type Meta;
-    fn make_input() -> (Self::RecvCtx, Self::InputPort, Self::Meta);
+    fn make_input(op_id: OpId) -> (Self::RecvCtx, Self::InputPort);
 
     type SendCtx;
     type OutputPort;
     fn make_output() -> (Self::SendCtx, Self::OutputPort);
-
-    fn append_meta(vec: &mut Vec<Box<dyn HandoffMeta>>, meta: Self::Meta);
 }
 #[sealed]
 impl<H, L> HandoffList for (H, L)
@@ -123,40 +117,30 @@ where
     type RecvCtx = (RecvCtx<H>, L::RecvCtx);
     type InputPort = (InputPort<H>, L::InputPort);
     type Meta = (Rc<RefCell<H>>, L::Meta);
-    fn make_input() -> (Self::RecvCtx, Self::InputPort, Self::Meta) {
-        let handoff = H::default();
+    fn make_input(op_id: OpId) -> (Self::RecvCtx, Self::InputPort) {
+        let once = Rc::new(RefCell::new(None));
 
-        let handoff = Rc::new(RefCell::new(handoff));
+        let recv = RecvCtx { once: once.clone() };
+        let input = InputPort { op_id, once };
 
-        let recv = RecvCtx {
-            handoff: handoff.clone(),
-        };
-        let input = InputPort {
-            handoff: handoff.clone(),
-        };
+        let (recv_rest, input_rest) = L::make_input(op_id);
 
-        let (recv_rest, input_rest, meta_rest) = L::make_input();
-
-        ((recv, recv_rest), (input, input_rest), (handoff, meta_rest))
+        ((recv, recv_rest), (input, input_rest))
     }
 
     type SendCtx = (SendCtx<H>, L::SendCtx);
     type OutputPort = (OutputPort<H>, L::OutputPort);
     fn make_output() -> (Self::SendCtx, Self::OutputPort) {
-        let (once_send, once_recv) = util::once();
+        let handoff = Rc::new(RefCell::new(H::default()));
 
-        let send = SendCtx { once: once_recv };
-        let output = OutputPort { once: once_send };
+        let send = SendCtx {
+            handoff: handoff.clone(),
+        };
+        let output = OutputPort { handoff };
 
         let (send_rest, output_rest) = L::make_output();
 
         ((send, send_rest), (output, output_rest))
-    }
-
-    fn append_meta(vec: &mut Vec<Box<dyn HandoffMeta>>, meta: Self::Meta) {
-        let (meta, meta_rest) = meta;
-        vec.push(Box::new(meta));
-        L::append_meta(vec, meta_rest);
     }
 }
 #[sealed]
@@ -164,8 +148,8 @@ impl HandoffList for () {
     type RecvCtx = ();
     type InputPort = ();
     type Meta = ();
-    fn make_input() -> (Self::RecvCtx, Self::InputPort, Self::Meta) {
-        ((), (), ())
+    fn make_input(_: OpId) -> (Self::RecvCtx, Self::InputPort) {
+        ((), ())
     }
 
     type SendCtx = ();
@@ -173,8 +157,6 @@ impl HandoffList for () {
     fn make_output() -> (Self::SendCtx, Self::OutputPort) {
         ((), ())
     }
-
-    fn append_meta(_vec: &mut Vec<Box<dyn HandoffMeta>>, _meta: Self::Meta) {}
 }
 
 /**
@@ -236,7 +218,7 @@ pub struct Hydroflow {
     // TODO(justin): instead of this being a vec of metas, it could be
     // implemented for 2-tuples of metas.
     #[allow(clippy::type_complexity)]
-    subgraphs: SlotMap<OpId, (Vec<Box<dyn HandoffMeta>>, Box<dyn Subgraph>)>,
+    subgraphs: Vec<(Vec<Box<dyn HandoffMeta>>, Box<dyn Subgraph>)>,
     // TODO: track the graph structure and schedule.
 }
 #[allow(clippy::derivable_impls)]
@@ -260,13 +242,13 @@ impl Hydroflow {
      * Blocks until completion.
      */
     pub fn run(&mut self) {
-        for (_meta, sg) in self.subgraphs.values_mut() {
+        for (_meta, sg) in self.subgraphs.iter_mut() {
             sg.run(); // TODO: TODOTOTODODOTOTOD
         }
         let mut any = true;
         while any {
             any = false;
-            for (metas, sg) in self.subgraphs.values_mut() {
+            for (metas, sg) in self.subgraphs.iter_mut() {
                 if metas.iter().any(|m| !m.is_bottom()) {
                     sg.run();
                     any = true;
@@ -287,7 +269,10 @@ impl Hydroflow {
         R: 'static + HandoffList,
         W: 'static + HandoffList,
     {
-        let (recv, input_port, meta) = R::make_input();
+        // TODO(justin): make this less sketchy, we just know we're the only person who will append here.
+        let next_id = self.subgraphs.len();
+
+        let (recv, input_port) = R::make_input(next_id);
         let (send, output_port) = W::make_output();
 
         let sg: VariadicClosureSubgraph<F, R, W> = VariadicClosureSubgraph {
@@ -296,10 +281,7 @@ impl Hydroflow {
             send,
         };
 
-        let mut meta_vec = Vec::new();
-        R::append_meta(&mut meta_vec, meta);
-
-        self.subgraphs.insert((meta_vec, Box::new(sg)));
+        self.subgraphs.push((Vec::new(), Box::new(sg)));
 
         (input_port, output_port)
     }
@@ -355,14 +337,15 @@ impl Hydroflow {
         let mut recvs = Vec::new();
         let mut input_ports = Vec::new();
         let mut input_metas = Vec::new();
+        let next_id = self.subgraphs.len();
 
         for _ in 0..n {
             let handoff = Rc::new(RefCell::new(R::default()));
-            recvs.push(RecvCtx {
-                handoff: handoff.clone(),
-            });
+            let once = Rc::new(RefCell::new(None));
+            recvs.push(RecvCtx { once: once.clone() });
             input_ports.push(InputPort {
-                handoff: handoff.clone(),
+                once,
+                op_id: next_id,
             });
             input_metas.push(Box::new(handoff) as Box<dyn HandoffMeta>);
         }
@@ -371,12 +354,15 @@ impl Hydroflow {
         let mut output_ports = Vec::new();
 
         for _ in 0..m {
-            let (once_send, once_recv) = util::once();
-            sends.push(SendCtx { once: once_recv });
-            output_ports.push(OutputPort { once: once_send });
+            let handoff = Rc::new(RefCell::new(W::default()));
+
+            sends.push(SendCtx {
+                handoff: handoff.clone(),
+            });
+            output_ports.push(OutputPort { handoff });
         }
 
-        self.subgraphs.insert((
+        self.subgraphs.push((
             input_metas,
             Box::new(NtoMClosureSubgraph {
                 f: subgraph,
@@ -471,9 +457,12 @@ impl Hydroflow {
 
     pub fn add_edge<H>(&mut self, output_port: OutputPort<H>, input_port: InputPort<H>)
     where
-        H: Handoff,
+        H: 'static + Handoff,
     {
-        output_port.once.send(input_port.handoff);
+        self.subgraphs[input_port.op_id]
+            .0
+            .push(Box::new(output_port.handoff.clone()));
+        *(*input_port.once).borrow_mut() = Some(output_port.handoff.clone());
     }
 }
 
