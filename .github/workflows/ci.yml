@@ -133,7 +133,7 @@ jobs:
           git -C "$WWW_DIR" fetch origin gh-pages:gh-pages
           git -C "$WWW_DIR" symbolic-ref HEAD refs/heads/gh-pages
           git -C "$WWW_DIR" reset
-          git -C "$WWW_DIR" checkout -- .gitignore index.html
+          git -C "$WWW_DIR" checkout -- .gitignore index.md
           git -C "$WWW_DIR" add doc
           if git -C "$WWW_DIR" -c 'user.name=github-actions[bot]' -c 'user.email=41898282+github-actions[bot]@users.noreply.github.com' \
             commit -m "Update Docs $(date -I) $(git rev-parse HEAD)";
@@ -174,12 +174,12 @@ jobs:
           git -C "$WWW_DIR" fetch origin gh-pages:gh-pages
           git -C "$WWW_DIR" symbolic-ref HEAD refs/heads/gh-pages
           git -C "$WWW_DIR" reset
-          git -C "$WWW_DIR" checkout -- .gitignore index.html bench criterion
+          git -C "$WWW_DIR" checkout -- .gitignore index.md bench criterion
+          mkdir -p target/bench
 
       - name: Run benchmark
         run: |
           time cargo bench -p benches -- hydroflow --output-format bencher | tee output.txt
-          mkdir -p target/bench
 
       - name: Generate benchmark page
         uses: benchmark-action/github-action-benchmark@v1
