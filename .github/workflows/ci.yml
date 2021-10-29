@@ -161,12 +161,27 @@ jobs:
           toolchain: nightly
           override: true
 
+      - name: Checkout gh-pages
+        shell: bash
+        run: |
+          mkdir -p "$WWW_DIR"
+          git -C "$WWW_DIR" init -q
+          git -C "$WWW_DIR" remote add origin "$(git remote get-url origin)"
+          git -C "$WWW_DIR" config credential.helper "$(git config credential.helper)"
+          git -C "$WWW_DIR" config 'http.https://github.com/.extraheader' "$(git config 'http.https://github.com/.extraheader')"
+          git -C "$WWW_DIR" config core.autocrlf input
+          git -C "$WWW_DIR" config core.safecrlf false
+          git -C "$WWW_DIR" fetch origin gh-pages:gh-pages
+          git -C "$WWW_DIR" symbolic-ref HEAD refs/heads/gh-pages
+          git -C "$WWW_DIR" reset
+          git -C "$WWW_DIR" checkout -- .gitignore index.html bench criterion
+
       - name: Run benchmark
         run: |
           time cargo bench -p benches -- hydroflow --output-format bencher | tee output.txt
           mkdir -p target/bench
 
-      - name: Store benchmark result
+      - name: Generate benchmark page
         uses: benchmark-action/github-action-benchmark@v1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -182,16 +197,9 @@ jobs:
       - name: Push to gh-pages
         shell: bash
         run: |
-          git -C "$WWW_DIR" init -q
-          git -C "$WWW_DIR" remote add origin "$(git remote get-url origin)"
-          git -C "$WWW_DIR" config credential.helper "$(git config credential.helper)"
-          git -C "$WWW_DIR" config 'http.https://github.com/.extraheader' "$(git config 'http.https://github.com/.extraheader')"
-          git -C "$WWW_DIR" config core.autocrlf input
-          git -C "$WWW_DIR" config core.safecrlf false
-          git -C "$WWW_DIR" fetch origin gh-pages:gh-pages
+          git -C "$WWW_DIR" fetch origin gh-pages
           git -C "$WWW_DIR" symbolic-ref HEAD refs/heads/gh-pages
           git -C "$WWW_DIR" reset
-          git -C "$WWW_DIR" checkout -- .gitignore index.html
           git -C "$WWW_DIR" add bench criterion
           if git -C "$WWW_DIR" -c 'user.name=github-actions[bot]' -c 'user.email=41898282+github-actions[bot]@users.noreply.github.com' \
             commit -m "Update Benchmarks $(date -I) $(git rev-parse HEAD)";
