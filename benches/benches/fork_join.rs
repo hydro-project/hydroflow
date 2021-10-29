@@ -1,6 +1,5 @@
 use babyflow::babyflow::Query;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use hydroflow::scheduled::handoff::Handoff;
 use hydroflow::scheduled::query::Query as Q;
 use hydroflow::scheduled::{collections::Iter, handoff::VecHandoff, Hydroflow, RecvCtx, SendCtx};
 use timely::dataflow::operators::{Concatenate, Filter, Inspect, ToStream};
