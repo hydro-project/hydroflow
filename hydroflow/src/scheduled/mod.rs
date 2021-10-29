@@ -15,6 +15,8 @@ use handoff::NullHandoff;
 use handoff::VecHandoff;
 use handoff::{CanReceive, TryCanReceive};
 
+use self::handoff::TeeingHandoff;
+
 pub type OpId = usize;
 
 /**
@@ -52,6 +54,14 @@ impl<H: Handoff> SendCtx<H> {
 #[must_use]
 pub struct OutputPort<H: Handoff> {
     handoff: Rc<RefCell<H>>,
+}
+
+impl<T: Clone> Clone for OutputPort<TeeingHandoff<T>> {
+    fn clone(&self) -> Self {
+        Self {
+            handoff: Rc::new(RefCell::new(self.handoff.borrow().tee())),
+        }
+    }
 }
 
 /**
@@ -612,4 +622,35 @@ mod tests {
 
         assert_eq!((*reachable_verts).borrow().clone(), vec![1, 2, 3, 4, 5]);
     }
+}
+
+#[test]
+fn test_auto_tee() {
+    let mut df = Hydroflow::new();
+
+    let mut data = vec![1, 2, 3, 4];
+    let source = df.add_source(move |send: &mut SendCtx<TeeingHandoff<_>>| {
+        send.give(std::mem::take(&mut data));
+    });
+
+    let out1 = Rc::new(RefCell::new(Vec::new()));
+    let out1_inner = out1.clone();
+
+    let sink1 = df.add_sink(move |recv: &mut RecvCtx<_>| {
+        out1_inner.borrow_mut().extend(recv.take_inner());
+    });
+
+    let out2 = Rc::new(RefCell::new(Vec::new()));
+    let out2_inner = out2.clone();
+    let sink2 = df.add_sink(move |recv: &mut RecvCtx<_>| {
+        out2_inner.borrow_mut().extend(recv.take_inner());
+    });
+
+    df.add_edge(source.clone(), sink1);
+    df.add_edge(source, sink2);
+
+    df.run();
+
+    assert_eq!((*out1).borrow().clone(), vec![1, 2, 3, 4]);
+    assert_eq!((*out2).borrow().clone(), vec![1, 2, 3, 4]);
 }
