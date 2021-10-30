@@ -190,9 +190,10 @@ fn benchmark_hydroflow_scheduled(c: &mut Criterion) {
 }
 
 fn benchmark_hydroflow(c: &mut Criterion) {
-    use hydroflow::scheduled::collections::Iter;
+    use hydroflow::compiled::{ForEach, Pivot, Tee};
     use hydroflow::scheduled::handoff::VecHandoff;
     use hydroflow::scheduled::{Hydroflow, RecvCtx, SendCtx};
+    use hydroflow::{tl, tlt};
 
     let edges = &*EDGES;
     let reachable = &*REACHABLE;
@@ -207,42 +208,34 @@ fn benchmark_hydroflow(c: &mut Criterion) {
             });
 
             let mut seen = HashSet::new();
-            let (distinct_in, distinct_out) = df.add_inout(
-                move |recv: &mut RecvCtx<VecHandoff<usize>>,
-                      send: &mut SendCtx<VecHandoff<usize>>| {
-                    let iter = recv.take_inner().into_iter().filter(|v| seen.insert(*v));
-                    send.give(Iter(iter));
-                },
-            );
 
-            let (merge_lhs, merge_rhs, merge_out) = df.add_binary(
-                |recv1: &mut RecvCtx<VecHandoff<_>>,
-                 recv2: &mut RecvCtx<VecHandoff<_>>,
-                 send: &mut SendCtx<VecHandoff<usize>>| {
-                    send.give(Iter(recv1.take_inner().into_iter()));
-                    send.give(Iter(recv2.take_inner().into_iter()));
-                },
-            );
+            type MainIn = tlt!(VecHandoff<usize>, VecHandoff<usize>);
+            type MainOut = tlt!(VecHandoff<usize>, VecHandoff<usize>);
+            let (tl!(origins_in, possible_reach_in), tl!(did_reach_out, output_out)) = df
+                .add_subgraph::<_, MainIn, MainOut>(
+                    move |tl!(origins, did_reach_recv), tl!(did_reach_send, output)| {
+                        let origins = origins.take_inner().into_iter();
+                        let possible_reach = did_reach_recv
+                            .take_inner()
+                            .into_iter()
+                            .filter_map(|v| edges.get(&v))
+                            .flatten()
+                            .copied();
 
-            let (neighbors_in, neighbors_out) =
-                df.add_inout(move |recv: &mut RecvCtx<VecHandoff<_>>, send| {
-                    for v in recv.take_inner() {
-                        if let Some(neighbors) = edges.get(&v) {
-                            send.give(Iter(neighbors.iter().copied()));
-                        }
-                    }
-                });
+                        let pull = origins.chain(possible_reach).filter(|v| seen.insert(*v));
 
-            let (tee_in, tee_out1, tee_out2) = df.add_binary_out(
-                |recv: &mut RecvCtx<VecHandoff<usize>>,
-                 send1: &mut SendCtx<VecHandoff<usize>>,
-                 send2: &mut SendCtx<VecHandoff<usize>>| {
-                    for v in recv.take_inner() {
-                        send1.give(Some(v));
-                        send2.give(Some(v));
-                    }
-                },
-            );
+                        let push_reach = ForEach::new(|v| {
+                            did_reach_send.give(Some(v));
+                        });
+                        let push_output = ForEach::new(|v| {
+                            output.give(Some(v));
+                        });
+                        let push = Tee::new(push_reach, push_output);
+
+                        let pivot = Pivot::new(pull, push);
+                        pivot.run();
+                    },
+                );
 
             let reachable_verts = Rc::new(RefCell::new(HashSet::new()));
             let reachable_inner = reachable_verts.clone();
@@ -250,12 +243,9 @@ fn benchmark_hydroflow(c: &mut Criterion) {
                 (*reachable_inner).borrow_mut().extend(recv.take_inner());
             });
 
-            df.add_edge(reachable_out, merge_lhs);
-            df.add_edge(neighbors_out, merge_rhs);
-            df.add_edge(merge_out, distinct_in);
-            df.add_edge(distinct_out, tee_in);
-            df.add_edge(tee_out1, neighbors_in);
-            df.add_edge(tee_out2, sink_in);
+            df.add_edge(reachable_out, origins_in);
+            df.add_edge(did_reach_out, possible_reach_in);
+            df.add_edge(output_out, sink_in);
 
             df.run();
 
