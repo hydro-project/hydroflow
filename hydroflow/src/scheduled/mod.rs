@@ -15,7 +15,7 @@ use handoff::NullHandoff;
 use handoff::VecHandoff;
 use handoff::{CanReceive, TryCanReceive};
 
-use self::handoff::TeeingHandoff;
+use self::handoff::tee::TeeingHandoff;
 
 pub type OpId = usize;
 
@@ -637,13 +637,17 @@ fn test_auto_tee() {
     let out1_inner = out1.clone();
 
     let sink1 = df.add_sink(move |recv: &mut RecvCtx<_>| {
-        out1_inner.borrow_mut().extend(recv.take_inner());
+        for v in recv.take_inner() {
+            out1_inner.borrow_mut().extend(v);
+        }
     });
 
     let out2 = Rc::new(RefCell::new(Vec::new()));
     let out2_inner = out2.clone();
     let sink2 = df.add_sink(move |recv: &mut RecvCtx<_>| {
-        out2_inner.borrow_mut().extend(recv.take_inner());
+        for v in recv.take_inner() {
+            out2_inner.borrow_mut().extend(v);
+        }
     });
 
     df.add_edge(source.clone(), sink1);
