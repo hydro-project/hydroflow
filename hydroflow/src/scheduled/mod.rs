@@ -72,7 +72,7 @@ pub struct RecvCtx<H: Handoff> {
 }
 impl<H: Handoff> RecvCtx<H> {
     pub fn take_inner(&mut self) -> H::Inner {
-        (*(*self.once).borrow_mut().as_ref().unwrap().borrow_mut()).take_inner()
+        (*self.once.borrow_mut().as_ref().unwrap().borrow_mut()).take_inner()
     }
 }
 
@@ -472,7 +472,7 @@ impl Hydroflow {
         self.subgraphs[input_port.op_id]
             .0
             .push(Box::new(output_port.handoff.clone()));
-        *(*input_port.once).borrow_mut() = Some(output_port.handoff.clone());
+        *input_port.once.borrow_mut() = Some(output_port.handoff);
     }
 }
 
