@@ -116,6 +116,7 @@ fn main() {
     df.add_edge(people_out, people_in);
     df.add_edge(notifs_out, notifs_in);
 
+    df.wake_all();
     df.run();
 
     people_send.send(("Mingwei S", "+1 650 555 7283")).unwrap();
@@ -159,6 +160,7 @@ fn main() {
         ))
         .unwrap();
 
+    df.wake_all();
     df.run();
 
     contacts_send
@@ -173,9 +175,13 @@ fn main() {
         ))
         .unwrap();
 
+    df.wake_all();
     df.run();
+    df.wake_all();
     df.run();
+    df.wake_all();
     df.run();
+    df.wake_all();
     df.run();
 
     println!("DONE");
