@@ -146,7 +146,15 @@ jobs:
   benches:
     name: Benchmarks
     needs: pre_job
-    if: ${{ needs.pre_job.outputs.should_skip != 'true' && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.event.inputs.should_bench == 'true')) }}
+    if: >
+      ${{
+        needs.pre_job.outputs.should_skip != 'true' &&
+        (
+          github.event_name == 'schedule' ||
+          (github.event_name == 'workflow_dispatch' && github.event.inputs.should_bench == 'true') ||
+          (github.event_name == 'push' && contains(github.event.head_commit.message, '[ci-bench]'))
+        )
+      }}
     runs-on: ubuntu-latest
     env:
       WWW_DIR: target
