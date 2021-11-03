@@ -267,8 +267,9 @@ fn benchmark_hydroflow_compiled(c: &mut Criterion) {
 
 fn benchmark_hydroflow(c: &mut Criterion) {
     use hydroflow::scheduled::collections::Iter;
+    use hydroflow::scheduled::ctx::{RecvCtx, SendCtx};
     use hydroflow::scheduled::handoff::VecHandoff;
-    use hydroflow::scheduled::{Hydroflow, RecvCtx, SendCtx};
+    use hydroflow::scheduled::Hydroflow;
 
     c.bench_function("identity/hydroflow", |b| {
         b.iter(|| {

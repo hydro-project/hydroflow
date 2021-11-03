@@ -116,8 +116,9 @@ fn benchmark_differential(c: &mut Criterion) {
 
 fn benchmark_hydroflow_scheduled(c: &mut Criterion) {
     use hydroflow::scheduled::collections::Iter;
+    use hydroflow::scheduled::ctx::{RecvCtx, SendCtx};
     use hydroflow::scheduled::handoff::VecHandoff;
-    use hydroflow::scheduled::{Hydroflow, RecvCtx, SendCtx};
+    use hydroflow::scheduled::Hydroflow;
 
     let edges = &*EDGES;
     let reachable = &*REACHABLE;
@@ -191,8 +192,9 @@ fn benchmark_hydroflow_scheduled(c: &mut Criterion) {
 
 fn benchmark_hydroflow(c: &mut Criterion) {
     use hydroflow::compiled::{ForEach, Pivot, Tee};
+    use hydroflow::scheduled::ctx::{RecvCtx, SendCtx};
     use hydroflow::scheduled::handoff::VecHandoff;
-    use hydroflow::scheduled::{Hydroflow, RecvCtx, SendCtx};
+    use hydroflow::scheduled::Hydroflow;
     use hydroflow::{tl, tlt};
 
     let edges = &*EDGES;
