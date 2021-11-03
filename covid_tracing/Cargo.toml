@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 hydroflow = { path = "../hydroflow" }
 time = "0.3"
+rand = "0.8.4"

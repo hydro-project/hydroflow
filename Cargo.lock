@@ -160,6 +160,7 @@ name = "covid_tracing"
 version = "0.1.0"
 dependencies = [
  "hydroflow",
+ "rand",
  "time",
 ]
 
