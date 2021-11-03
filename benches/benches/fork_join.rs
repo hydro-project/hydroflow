@@ -75,7 +75,7 @@ fn benchmark_hydroflow(c: &mut Criterion) {
             df.add_edge(out1, sink1);
             df.add_edge(out2, sink2);
 
-            df.run()
+            df.tick()
         })
     });
 }
@@ -102,7 +102,7 @@ fn benchmark_hydroflow_builder(c: &mut Criterion) {
                 black_box(v);
             });
 
-            q.run();
+            q.tick();
         })
     });
 }

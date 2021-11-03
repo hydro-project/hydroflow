@@ -182,7 +182,7 @@ fn benchmark_hydroflow_scheduled(c: &mut Criterion) {
             df.add_edge(tee_out1, neighbors_in);
             df.add_edge(tee_out2, sink_in);
 
-            df.run();
+            df.tick();
 
             assert_eq!(&*reachable_verts.borrow(), reachable);
         });
@@ -247,7 +247,7 @@ fn benchmark_hydroflow(c: &mut Criterion) {
             df.add_edge(did_reach_out, possible_reach_in);
             df.add_edge(output_out, sink_in);
 
-            df.run();
+            df.tick();
 
             assert_eq!(&*reachable_verts.borrow(), reachable);
         });

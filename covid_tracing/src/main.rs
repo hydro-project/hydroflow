@@ -1,15 +1,9 @@
-use hydroflow::compiled::ForEach;
-use hydroflow::compiled::Pivot;
-use hydroflow::compiled::Tee;
-use std::sync::mpsc;
-// use std::time::Duration;
+#![feature(never_type)]
 
-// use time::Date;
-// use time::Month;
-// use time::PrimitiveDateTime;
-// use time::Time;
+use std::sync::mpsc;
 
 use hydroflow::compiled::pull::SymmetricHashJoin;
+use hydroflow::compiled::{ForEach, Pivot, Tee};
 use hydroflow::scheduled::collections::Iter;
 use hydroflow::scheduled::handoff::VecHandoff;
 use hydroflow::scheduled::{Hydroflow, SendCtx};
@@ -32,12 +26,17 @@ fn main() {
     let contacts_out = df.add_source(move |send: &mut SendCtx<VecHandoff<_>>| {
         send.give(Iter(contacts_recv.try_iter()));
     });
+    let contacts_op_id = contacts_out.op_id();
+
     let diagnosed_out = df.add_source(move |send: &mut SendCtx<VecHandoff<_>>| {
         send.give(Iter(diagnosed_recv.try_iter()));
     });
+    let diagnosed_op_id = diagnosed_out.op_id();
+
     let people_out = df.add_source(move |send: &mut SendCtx<VecHandoff<_>>| {
         send.give(Iter(people_recv.try_iter()));
     });
+    let people_op_id = people_out.op_id();
 
     let mut exposed_contacts = Default::default();
 
@@ -116,73 +115,38 @@ fn main() {
     df.add_edge(people_out, people_in);
     df.add_edge(notifs_out, notifs_in);
 
-    df.wake_all();
-    df.run();
+    let reactor = df.reactor();
+    let (is_done, set_done) = std::sync::mpsc::sync_channel(0);
 
-    people_send.send(("Mingwei S", "+1 650 555 7283")).unwrap();
-    people_send.send(("Justin J", "+1 519 555 3458")).unwrap();
-    people_send.send(("Mae M", "+1 912 555 9129")).unwrap();
-    contacts_send
-        .send((
-            "Mingwei S",
-            "Justin J",
-            1031,
-            // DateTime::new(
-            //     Date::from_calendar_date(2021, Month::October, 31).unwrap(),
-            //     Time::from_hms(19, 49, 21).unwrap(),
-            // ),
-        ))
-        .unwrap();
-    contacts_send
-        .send((
-            "Mingwei S",
-            "Joe H",
-            1027,
-            // DateTime::new(
-            //     Date::from_calendar_date(2021, Month::October, 27).unwrap(),
-            //     Time::from_hms(16, 15, 00).unwrap(),
-            // ),
-        ))
-        .unwrap();
+    std::thread::spawn(move || {
+        people_send.send(("Mingwei S", "+1 650 555 7283")).unwrap();
+        people_send.send(("Justin J", "+1 519 555 3458")).unwrap();
+        people_send.send(("Mae M", "+1 912 555 9129")).unwrap();
+        reactor.trigger(people_op_id).unwrap(); // Notifies scheduler. TODO(mingwei): better API.
 
-    let mae_diag_datetime = 1022;
-    // DateTime::new(
-    //     Date::from_calendar_date(2021, Month::October, 22).unwrap(),
-    //     Time::from_hms(15, 12, 55).unwrap(),
-    // );
-    diagnosed_send
-        .send((
-            "Mae M",
-            (
-                mae_diag_datetime,
-                mae_diag_datetime + TRANSMISSIBLE_DURATION,
-            ),
-        ))
-        .unwrap();
+        contacts_send.send(("Mingwei S", "Justin J", 1031)).unwrap();
+        contacts_send.send(("Mingwei S", "Joe H", 1027)).unwrap();
+        reactor.trigger(contacts_op_id).unwrap();
 
-    df.wake_all();
-    df.run();
+        let mae_diag_datetime = 1022;
+        diagnosed_send
+            .send((
+                "Mae M",
+                (
+                    mae_diag_datetime,
+                    mae_diag_datetime + TRANSMISSIBLE_DURATION,
+                ),
+            ))
+            .unwrap();
+        reactor.trigger(diagnosed_op_id).unwrap();
 
-    contacts_send
-        .send((
-            "Mingwei S",
-            "Mae M",
-            1028,
-            // DateTime::new(
-            //     Date::from_calendar_date(2021, Month::October, 28).unwrap(),
-            //     Time::from_hms(13, 56, 37).unwrap(),
-            // ),
-        ))
-        .unwrap();
+        contacts_send.send(("Mingwei S", "Mae M", 1028)).unwrap();
+        reactor.trigger(contacts_op_id).unwrap();
 
-    df.wake_all();
-    df.run();
-    df.wake_all();
-    df.run();
-    df.wake_all();
-    df.run();
-    df.wake_all();
-    df.run();
+        set_done.recv().unwrap();
+    });
 
-    println!("DONE");
+    while is_done.try_send(()).is_err() {
+        df.tick();
+    }
 }

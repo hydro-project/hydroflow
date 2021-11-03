@@ -452,6 +452,7 @@ name = "hydroflow"
 version = "0.1.0"
 dependencies = [
  "criterion",
+ "futures",
  "sealed",
  "slotmap",
  "tuple_list",

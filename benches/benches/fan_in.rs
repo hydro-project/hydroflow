@@ -29,7 +29,7 @@ fn benchmark_hydroflow(c: &mut Criterion) {
                 black_box(v);
             });
 
-            q.run();
+            q.tick();
         })
     });
 }

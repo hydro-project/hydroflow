@@ -1,3 +1,5 @@
+#![feature(never_type)]
+
 pub mod compiled;
 pub mod lang;
 pub mod scheduled;

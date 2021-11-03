@@ -24,7 +24,7 @@ fn benchmark_hydroflow_scheduled(c: &mut Criterion) {
                 });
             }
 
-            q.run();
+            q.tick();
         })
     });
 }
@@ -55,7 +55,7 @@ fn benchmark_hydroflow_teer(c: &mut Criterion) {
 
             df.add_edge(output, input);
 
-            df.run();
+            df.tick();
         })
     });
 }
