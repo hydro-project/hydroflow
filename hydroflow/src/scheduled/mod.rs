@@ -6,6 +6,7 @@ pub mod util;
 use std::cell::RefCell;
 use std::collections::{HashMap, VecDeque};
 use std::rc::Rc;
+use std::sync::mpsc::{self, Receiver, RecvError, SyncSender, TrySendError};
 
 use sealed::sealed;
 use tuple_list::tuple_list as tl;
@@ -58,7 +59,11 @@ pub struct OutputPort<H: Handoff> {
     op_id: OpId,
     handoff: Rc<RefCell<H>>,
 }
-
+impl<H: Handoff> OutputPort<H> {
+    pub fn op_id(&self) -> OpId {
+        self.op_id
+    }
+}
 impl<T: Clone> Clone for OutputPort<TeeingHandoff<T>> {
     fn clone(&self) -> Self {
         Self {
@@ -97,6 +102,11 @@ impl<H: Handoff> RecvCtx<H> {
 pub struct InputPort<H: Handoff> {
     op_id: OpId,
     once: Rc<RefCell<Option<Rc<RefCell<H>>>>>,
+}
+impl<H: Handoff> InputPort<H> {
+    pub fn op_id(&self) -> OpId {
+        self.op_id
+    }
 }
 
 /**
@@ -225,6 +235,10 @@ where
     }
 }
 
+/**
+ * A subgraph along with its predacessor and successor [OpId]s.
+ * Used internally by the [Hydroflow] struct to represent the dataflow graph structure.
+ */
 struct SubgraphData {
     subgraph: Box<dyn Subgraph>,
     preds: Vec<OpId>,
@@ -241,15 +255,64 @@ impl SubgraphData {
 }
 
 /**
+ * A handle into a specific [Hydroflow] instance for triggering operators to run, possibly from another thread.Default
+ */
+#[derive(Clone)]
+pub struct Reactor {
+    event_queue_send: SyncSender<OpId>,
+}
+impl Reactor {
+    pub fn trigger(&self, op_id: OpId) -> Result<(), TrySendError<usize>> {
+        self.event_queue_send.try_send(op_id)
+    }
+
+    #[cfg(feature = "async")]
+    pub fn into_waker(self, op_id: OpId) -> std::task::Waker {
+        use futures::task::ArcWake;
+        use std::sync::Arc;
+
+        struct ReactorWaker {
+            reactor: Reactor,
+            op_id: OpId,
+        }
+        impl ArcWake for ReactorWaker {
+            fn wake_by_ref(arc_self: &Arc<Self>) {
+                arc_self.reactor.trigger(arc_self.op_id).unwrap(/* TODO(mingwei) */);
+            }
+        }
+
+        let reactor_waker = ReactorWaker {
+            reactor: self,
+            op_id,
+        };
+        futures::task::waker(Arc::new(reactor_waker))
+    }
+}
+
+/**
  * A Hydroflow graph. Owns, schedules, and runs the compiled subgraphs.
  */
-#[derive(Default)]
 pub struct Hydroflow {
-    // TODO(justin): instead of this being a vec of metas, it could be
-    // implemented for 2-tuples of metas.
     subgraphs: Vec<SubgraphData>,
     handoffs: HashMap<HandoffId, Box<dyn HandoffMeta>>,
-    queue: VecDeque<OpId>,
+
+    // TODO(mingwei): separate scheduler into its own struct/trait?
+    ready_queue: VecDeque<OpId>,
+    event_queue_send: SyncSender<OpId>, // TODO(mingwei) remove this, to prevent hanging.
+    event_queue_recv: Receiver<OpId>,
+}
+impl Default for Hydroflow {
+    fn default() -> Self {
+        let (subgraphs, handoffs, ready_queue) = Default::default();
+        let (event_queue_send, event_queue_recv) = mpsc::sync_channel(8_000);
+        Self {
+            subgraphs,
+            handoffs,
+            ready_queue,
+            event_queue_send,
+            event_queue_recv,
+        }
+    }
 }
 impl Hydroflow {
     /**
@@ -260,43 +323,61 @@ impl Hydroflow {
     }
 
     /**
-     * Runs a single subgraph in the dataflow.
-     * Returns false if no work was done.
+     * Returns a reactor for externally scheduling operators, possibly from another thread.
      */
-    pub fn tick(&mut self) -> bool {
-        if let Some(op_id) = self.queue.pop_front() {
-            let sg_data = self.subgraphs.get_mut(op_id).unwrap(/* TODO(mingwei) */);
-            sg_data.subgraph.run();
-            for succ_id in sg_data.succs.iter().copied() {
-                if self.queue.contains(&succ_id) {
-                    // TODO(mingwei): Slow? O(N)
-                    continue;
+    pub fn reactor(&self) -> Reactor {
+        Reactor {
+            event_queue_send: self.event_queue_send.clone(),
+        }
+    }
+
+    /**
+     * Runs the dataflow until no more work is currently available.
+     */
+    pub fn tick(&mut self) {
+        loop {
+            // Add any external jobs to ready queue.
+            self.ready_queue.extend(self.event_queue_recv.try_iter());
+
+            if let Some(op_id) = self.ready_queue.pop_front() {
+                let sg_data = self.subgraphs.get_mut(op_id).unwrap(/* TODO(mingwei) */);
+                sg_data.subgraph.run();
+                for succ_id in sg_data.succs.iter().copied() {
+                    if self.ready_queue.contains(&succ_id) {
+                        // TODO(mingwei): Slow? O(N)
+                        continue;
+                    }
+                    let handoff_id: HandoffId = (op_id, succ_id);
+                    let handoff = self.handoffs.get(&handoff_id).unwrap(/* TODO(mingwei) */);
+                    if !handoff.is_bottom() {
+                        self.ready_queue.push_back(succ_id);
+                    }
                 }
-                let handoff_id: HandoffId = (op_id, succ_id);
-                let handoff = self.handoffs.get(&handoff_id).unwrap(/* TODO(mingwei) */);
-                if !handoff.is_bottom() {
-                    self.queue.push_back(succ_id);
-                }
+            } else {
+                break;
             }
-            true
-        } else {
-            false
         }
     }
 
     /**
      * Run the dataflow graph, blocking until completion.
      */
-    pub fn run(&mut self) {
-        while self.tick() {}
+    pub fn run(&mut self) -> Result<!, RecvError> {
+        loop {
+            // Do any current work.
+            self.tick();
+
+            // Block and wait for an external event.
+            self.ready_queue.push_back(self.event_queue_recv.recv()?);
+        }
     }
 
     /**
      * TODO(mingwei): Hack to re-enqueue all subgraphs.
      */
     pub fn wake_all(&mut self) {
-        self.queue.clear();
-        self.queue.extend(0..self.subgraphs.len());
+        self.ready_queue.clear();
+        self.ready_queue.extend(0..self.subgraphs.len());
     }
 
     /**
@@ -324,7 +405,7 @@ impl Hydroflow {
         };
 
         self.subgraphs.push(SubgraphData::new(sg));
-        self.queue.push_back(op_id);
+        self.ready_queue.push_back(op_id);
 
         (input_port, output_port)
     }
@@ -407,7 +488,7 @@ impl Hydroflow {
             recvs,
             sends,
         }));
-        self.queue.push_back(op_id);
+        self.ready_queue.push_back(op_id);
 
         (input_ports, output_ports)
     }
@@ -556,7 +637,7 @@ fn map_filter() {
     df.add_edge(map_out, filter_in);
     df.add_edge(filter_out, sink);
 
-    df.run();
+    df.tick();
 
     assert_eq!((*outputs).borrow().clone(), vec![4, 10]);
 }
@@ -656,7 +737,7 @@ mod tests {
         df.add_edge(tee_out1, neighbors_in);
         df.add_edge(tee_out2, sink_in);
 
-        df.run();
+        df.tick();
 
         assert_eq!((*reachable_verts).borrow().clone(), vec![1, 2, 3, 4, 5]);
     }
@@ -691,7 +772,7 @@ fn test_auto_tee() {
     df.add_edge(source.clone(), sink1);
     df.add_edge(source, sink2);
 
-    df.run();
+    df.tick();
 
     assert_eq!((*out1).borrow().clone(), vec![1, 2, 3, 4]);
     assert_eq!((*out2).borrow().clone(), vec![1, 2, 3, 4]);

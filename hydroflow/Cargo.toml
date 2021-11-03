@@ -3,9 +3,12 @@ name = "hydroflow"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[features]
+default = [ "async" ]
+async = [ "futures" ]
 
 [dependencies]
+futures = { version = "0.3", optional = true }
 sealed = "0.3"
 slotmap = "1.0"
 tuple_list = "0.1"
