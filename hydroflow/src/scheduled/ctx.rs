@@ -35,7 +35,7 @@ impl<H: Handoff> SendCtx<H> {
 }
 
 /**
- * Handle corresponding to a [SendCtx]. Consumed by [Hydroflow::add_edge] to construct the Hydroflow graph.
+ * Handle corresponding to a [SendCtx]. Consumed by [crate::scheduled::Hydroflow::add_edge] to construct the Hydroflow graph.
  */
 #[must_use]
 pub struct OutputPort<H: Handoff> {
@@ -69,7 +69,7 @@ impl<H: Handoff> RecvCtx<H> {
 }
 
 /**
- * Handle corresponding to a [RecvCtx]. Consumed by [Hydroflow::add_edge] to construct the Hydroflow graph.
+ * Handle corresponding to a [RecvCtx]. Consumed by [crate::scheduled::Hydroflow::add_edge] to construct the Hydroflow graph.
  */
 // TODO: figure out how to explain succinctly why this and output port both use Writable
 #[must_use]
