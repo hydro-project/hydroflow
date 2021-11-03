@@ -1,6 +1,8 @@
 pub mod collections;
+pub mod ctx;
 pub mod handoff;
 pub mod query;
+pub(crate) mod subgraph;
 pub mod util;
 
 use std::cell::RefCell;
@@ -8,286 +10,13 @@ use std::collections::{HashMap, VecDeque};
 use std::rc::Rc;
 use std::sync::mpsc::{self, Receiver, RecvError, SyncSender, TrySendError};
 
-use sealed::sealed;
-use tuple_list::tuple_list as tl;
-
-use handoff::Handoff;
-use handoff::HandoffMeta;
-use handoff::NullHandoff;
-use handoff::VecHandoff;
-use handoff::{CanReceive, TryCanReceive};
-
-use self::handoff::tee::TeeingHandoff;
+use crate::tl;
+use ctx::{InputPort, OutputPort, RecvCtx, SendCtx};
+use handoff::{Handoff, HandoffList, HandoffMeta, NullHandoff, VecHandoff};
+use subgraph::{NtoMClosureSubgraph, Subgraph, VariadicClosureSubgraph};
 
 pub type OpId = usize;
 pub type HandoffId = (OpId, OpId);
-
-/**
- * Context provided to a compiled component for writing to an [OutputPort].
- */
-pub struct SendCtx<H: Handoff> {
-    handoff: Rc<RefCell<H>>,
-}
-impl<H: Handoff> SendCtx<H> {
-    // // TODO: represent backpressure in this return value.
-    // #[allow(clippy::result_unit_err)]
-    // pub fn give(self, item: H::Item) -> Result<(), ()> {
-    //     (*self.once.get()).borrow_mut().try_give(item)
-    // }
-    pub fn give<T>(&mut self, item: T) -> T
-    where
-        H: CanReceive<T>,
-    {
-        let mut borrow = (*self.handoff).borrow_mut();
-        <H as CanReceive<T>>::give(&mut *borrow, item)
-    }
-
-    pub fn try_give<T>(&mut self, item: T) -> Result<T, T>
-    where
-        H: TryCanReceive<T>,
-    {
-        let mut borrow = (*self.handoff).borrow_mut();
-        <H as TryCanReceive<T>>::try_give(&mut *borrow, item)
-    }
-}
-
-/**
- * Handle corresponding to a [SendCtx]. Consumed by [Hydroflow::add_edge] to construct the Hydroflow graph.
- */
-#[must_use]
-pub struct OutputPort<H: Handoff> {
-    op_id: OpId,
-    handoff: Rc<RefCell<H>>,
-}
-impl<H: Handoff> OutputPort<H> {
-    pub fn op_id(&self) -> OpId {
-        self.op_id
-    }
-}
-impl<T: Clone> Clone for OutputPort<TeeingHandoff<T>> {
-    fn clone(&self) -> Self {
-        Self {
-            op_id: self.op_id,
-            handoff: Rc::new(RefCell::new(self.handoff.borrow().tee())),
-        }
-    }
-}
-
-/**
- * Context provided to a compiled component for reading from an [InputPort].
- */
-pub struct RecvCtx<H: Handoff> {
-    once: Rc<RefCell<Option<Rc<RefCell<H>>>>>,
-}
-impl<H: Handoff> RecvCtx<H> {
-    pub fn take_inner(&mut self) -> H::Inner {
-        (*self.once.borrow_mut().as_ref().unwrap().borrow_mut()).take_inner()
-    }
-}
-
-// impl<T> Iterator for &RecvCtx<VecHandoff<T>> {
-//     type Item = T;
-
-//     fn next(&mut self) -> Option<Self::Item> {
-//         // TODOTOTODOTOTODTOO !!!!!!!! TODO
-//         self.handoff.borrow_mut().0.pop_front()
-//     }
-// }
-
-/**
- * Handle corresponding to a [RecvCtx]. Consumed by [Hydroflow::add_edge] to construct the Hydroflow graph.
- */
-// TODO: figure out how to explain succinctly why this and output port both use Writable
-#[must_use]
-pub struct InputPort<H: Handoff> {
-    op_id: OpId,
-    once: Rc<RefCell<Option<Rc<RefCell<H>>>>>,
-}
-impl<H: Handoff> InputPort<H> {
-    pub fn op_id(&self) -> OpId {
-        self.op_id
-    }
-}
-
-/**
- * A variadic list of Handoff types, represented using a lisp-style tuple structure.
- *
- * This trait is sealed and not meant to be implemented or used directly. Instead tuple lists (which already implement this trait) should be used, for example:
- * ```ignore
- * type MyHandoffList = (VecHandoff<usize>, (VecHandoff<String>, (NullHandoff, ())));
- * ```
- * The [`tl!`] (tuple list) macro simplifies usage of this kind:
- * ```ignore
- * type MyHandoffList = tl!(VecHandoff<usize>, VecHandoff<String>, NullHandoff);
- * ```
- */
-#[sealed]
-pub trait HandoffList {
-    type RecvCtx;
-    type InputPort;
-    type Meta;
-    fn make_input(op_id: OpId) -> (Self::RecvCtx, Self::InputPort);
-
-    type SendCtx;
-    type OutputPort;
-    fn make_output(op_id: OpId) -> (Self::SendCtx, Self::OutputPort);
-}
-#[sealed]
-impl<H, L> HandoffList for (H, L)
-where
-    H: 'static + Handoff,
-    L: HandoffList,
-{
-    type RecvCtx = (RecvCtx<H>, L::RecvCtx);
-    type InputPort = (InputPort<H>, L::InputPort);
-    type Meta = (Rc<RefCell<H>>, L::Meta);
-    fn make_input(op_id: OpId) -> (Self::RecvCtx, Self::InputPort) {
-        let once = Rc::new(RefCell::new(None));
-
-        let recv = RecvCtx { once: once.clone() };
-        let input = InputPort { op_id, once };
-
-        let (recv_rest, input_rest) = L::make_input(op_id);
-
-        ((recv, recv_rest), (input, input_rest))
-    }
-
-    type SendCtx = (SendCtx<H>, L::SendCtx);
-    type OutputPort = (OutputPort<H>, L::OutputPort);
-    fn make_output(op_id: OpId) -> (Self::SendCtx, Self::OutputPort) {
-        let handoff = Rc::new(RefCell::new(H::default()));
-
-        let send = SendCtx {
-            handoff: handoff.clone(),
-        };
-        let output = OutputPort { op_id, handoff };
-
-        let (send_rest, output_rest) = L::make_output(op_id);
-
-        ((send, send_rest), (output, output_rest))
-    }
-}
-#[sealed]
-impl HandoffList for () {
-    type RecvCtx = ();
-    type InputPort = ();
-    type Meta = ();
-    fn make_input(_: OpId) -> (Self::RecvCtx, Self::InputPort) {
-        ((), ())
-    }
-
-    type SendCtx = ();
-    type OutputPort = ();
-    fn make_output(_: OpId) -> (Self::SendCtx, Self::OutputPort) {
-        ((), ())
-    }
-}
-
-/**
- * Represents a compiled subgraph. Used internally by [Dataflow] to erase the input/output [Handoff] types.
- */
-trait Subgraph {
-    // TODO: pass in some scheduling info?
-    fn run(&mut self);
-}
-/**
- * Closure-based [OpSubtree] implementation.
- */
-struct VariadicClosureSubgraph<F, R, W>
-where
-    F: FnMut(&mut R::RecvCtx, &mut W::SendCtx),
-    R: HandoffList,
-    W: HandoffList,
-{
-    f: F,
-    recv: R::RecvCtx,
-    send: W::SendCtx,
-}
-impl<F, R, W> Subgraph for VariadicClosureSubgraph<F, R, W>
-where
-    F: FnMut(&mut R::RecvCtx, &mut W::SendCtx),
-    R: HandoffList,
-    W: HandoffList,
-{
-    fn run(&mut self) {
-        (self.f)(&mut self.recv, &mut self.send)
-    }
-}
-
-struct NtoMClosureSubgraph<F, R, W>
-where
-    F: FnMut(&mut [RecvCtx<R>], &mut [SendCtx<W>]),
-    R: Handoff,
-    W: Handoff,
-{
-    f: F,
-    recvs: Vec<RecvCtx<R>>,
-    sends: Vec<SendCtx<W>>,
-}
-impl<F, R, W> Subgraph for NtoMClosureSubgraph<F, R, W>
-where
-    F: FnMut(&mut [RecvCtx<R>], &mut [SendCtx<W>]),
-    R: Handoff,
-    W: Handoff,
-{
-    fn run(&mut self) {
-        (self.f)(&mut self.recvs, &mut self.sends)
-    }
-}
-
-/**
- * A subgraph along with its predacessor and successor [OpId]s.
- * Used internally by the [Hydroflow] struct to represent the dataflow graph structure.
- */
-struct SubgraphData {
-    subgraph: Box<dyn Subgraph>,
-    preds: Vec<OpId>,
-    succs: Vec<OpId>,
-}
-impl SubgraphData {
-    pub fn new(subgraph: impl 'static + Subgraph) -> Self {
-        Self {
-            subgraph: Box::new(subgraph),
-            preds: Default::default(),
-            succs: Default::default(),
-        }
-    }
-}
-
-/**
- * A handle into a specific [Hydroflow] instance for triggering operators to run, possibly from another thread.Default
- */
-#[derive(Clone)]
-pub struct Reactor {
-    event_queue_send: SyncSender<OpId>,
-}
-impl Reactor {
-    pub fn trigger(&self, op_id: OpId) -> Result<(), TrySendError<usize>> {
-        self.event_queue_send.try_send(op_id)
-    }
-
-    #[cfg(feature = "async")]
-    pub fn into_waker(self, op_id: OpId) -> std::task::Waker {
-        use futures::task::ArcWake;
-        use std::sync::Arc;
-
-        struct ReactorWaker {
-            reactor: Reactor,
-            op_id: OpId,
-        }
-        impl ArcWake for ReactorWaker {
-            fn wake_by_ref(arc_self: &Arc<Self>) {
-                arc_self.reactor.trigger(arc_self.op_id).unwrap(/* TODO(mingwei) */);
-            }
-        }
-
-        let reactor_waker = ReactorWaker {
-            reactor: self,
-            op_id,
-        };
-        futures::task::waker(Arc::new(reactor_waker))
-    }
-}
 
 /**
  * A Hydroflow graph. Owns, schedules, and runs the compiled subgraphs.
@@ -386,7 +115,7 @@ impl Hydroflow {
      * See [HandoffList] for how to specify inputs and outputs.
      */
     #[must_use]
-    pub fn add_subgraph<F, R, W>(&mut self, subgraph: F) -> (R::InputPort, W::OutputPort)
+    pub fn add_subgraph<F, R, W>(&mut self, f: F) -> (R::InputPort, W::OutputPort)
     where
         F: 'static + FnMut(&mut R::RecvCtx, &mut W::SendCtx),
         R: 'static + HandoffList,
@@ -398,13 +127,8 @@ impl Hydroflow {
         let (recv, input_port) = R::make_input(op_id);
         let (send, output_port) = W::make_output(op_id);
 
-        let sg: VariadicClosureSubgraph<F, R, W> = VariadicClosureSubgraph {
-            f: subgraph,
-            recv,
-            send,
-        };
-
-        self.subgraphs.push(SubgraphData::new(sg));
+        let subgraph = VariadicClosureSubgraph::<F, R, W>::new(f, recv, send);
+        self.subgraphs.push(SubgraphData::new(subgraph));
         self.ready_queue.push_back(op_id);
 
         (input_port, output_port)
@@ -451,7 +175,7 @@ impl Hydroflow {
         &mut self,
         n: usize,
         m: usize,
-        subgraph: F,
+        f: F,
     ) -> (Vec<InputPort<R>>, Vec<OutputPort<W>>)
     where
         F: 'static + FnMut(&mut [RecvCtx<R>], &mut [SendCtx<W>]),
@@ -483,11 +207,8 @@ impl Hydroflow {
             output_ports.push(OutputPort { op_id, handoff });
         }
 
-        self.subgraphs.push(SubgraphData::new(NtoMClosureSubgraph {
-            f: subgraph,
-            recvs,
-            sends,
-        }));
+        let subraph = NtoMClosureSubgraph::<F, R, W>::new(f, recvs, sends);
+        self.subgraphs.push(SubgraphData::new(subraph));
         self.ready_queue.push_back(op_id);
 
         (input_ports, output_ports)
@@ -595,8 +316,65 @@ impl Hydroflow {
     }
 }
 
+/**
+ * A handle into a specific [Hydroflow] instance for triggering operators to run, possibly from another thread.Default
+ */
+#[derive(Clone)]
+pub struct Reactor {
+    event_queue_send: SyncSender<OpId>,
+}
+impl Reactor {
+    pub fn trigger(&self, op_id: OpId) -> Result<(), TrySendError<usize>> {
+        self.event_queue_send.try_send(op_id)
+    }
+
+    #[cfg(feature = "async")]
+    pub fn into_waker(self, op_id: OpId) -> std::task::Waker {
+        use futures::task::ArcWake;
+        use std::sync::Arc;
+
+        struct ReactorWaker {
+            reactor: Reactor,
+            op_id: OpId,
+        }
+        impl ArcWake for ReactorWaker {
+            fn wake_by_ref(arc_self: &Arc<Self>) {
+                arc_self.reactor.trigger(arc_self.op_id).unwrap(/* TODO(mingwei) */);
+            }
+        }
+
+        let reactor_waker = ReactorWaker {
+            reactor: self,
+            op_id,
+        };
+        futures::task::waker(Arc::new(reactor_waker))
+    }
+}
+
+/**
+ * A subgraph along with its predacessor and successor [OpId]s.
+ * Used internally by the [Hydroflow] struct to represent the dataflow graph structure.
+ */
+struct SubgraphData {
+    subgraph: Box<dyn Subgraph>,
+    preds: Vec<OpId>,
+    succs: Vec<OpId>,
+}
+impl SubgraphData {
+    pub fn new(subgraph: impl 'static + Subgraph) -> Self {
+        Self {
+            subgraph: Box::new(subgraph),
+            preds: Default::default(),
+            succs: Default::default(),
+        }
+    }
+}
+
 #[test]
 fn map_filter() {
+    use std::cell::RefCell;
+    use std::rc::Rc;
+
     // A simple dataflow with one source feeding into one sink with some processing in the middle.
     let mut df = Hydroflow::new();
 
@@ -745,6 +523,11 @@ mod tests {
 
 #[test]
 fn test_auto_tee() {
+    use std::cell::RefCell;
+    use std::rc::Rc;
+
+    use crate::scheduled::handoff::TeeingHandoff;
+
     let mut df = Hydroflow::new();
 
     let mut data = vec![1, 2, 3, 4];

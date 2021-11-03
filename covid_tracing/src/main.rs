@@ -6,8 +6,9 @@ use std::time::Duration;
 use hydroflow::compiled::pull::SymmetricHashJoin;
 use hydroflow::compiled::{ForEach, Pivot, Tee};
 use hydroflow::scheduled::collections::Iter;
+use hydroflow::scheduled::ctx::SendCtx;
 use hydroflow::scheduled::handoff::VecHandoff;
-use hydroflow::scheduled::{Hydroflow, SendCtx};
+use hydroflow::scheduled::Hydroflow;
 use hydroflow::{tl, tlt};
 use rand::Rng;
 

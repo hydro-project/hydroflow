@@ -1,7 +1,9 @@
-pub mod null;
-pub mod tee;
-pub mod vector;
+mod handoff_list;
+mod null;
+mod tee;
+mod vector;
 
+pub use handoff_list::HandoffList;
 pub use null::NullHandoff;
 pub use tee::TeeingHandoff;
 pub use vector::VecHandoff;

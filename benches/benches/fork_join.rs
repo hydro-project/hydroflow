@@ -1,7 +1,10 @@
 use babyflow::babyflow::Query;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use hydroflow::scheduled::collections::Iter;
+use hydroflow::scheduled::ctx::{RecvCtx, SendCtx};
+use hydroflow::scheduled::handoff::VecHandoff;
 use hydroflow::scheduled::query::Query as Q;
-use hydroflow::scheduled::{collections::Iter, handoff::VecHandoff, Hydroflow, RecvCtx, SendCtx};
+use hydroflow::scheduled::Hydroflow;
 use timely::dataflow::operators::{Concatenate, Filter, Inspect, ToStream};
 
 const NUM_OPS: usize = 20;
