@@ -1,6 +1,7 @@
 pub mod collections;
 pub mod ctx;
 pub mod handoff;
+pub mod input;
 pub mod query;
 pub(crate) mod subgraph;
 pub mod util;
@@ -14,6 +15,9 @@ use crate::tl;
 use ctx::{InputPort, OutputPort, RecvCtx, SendCtx};
 use handoff::{Handoff, HandoffList, HandoffMeta, NullHandoff, VecHandoff};
 use subgraph::{NtoMClosureSubgraph, Subgraph, VariadicClosureSubgraph};
+
+use self::handoff::CanReceive;
+use self::input::Input;
 
 pub type OpId = usize;
 pub type HandoffId = usize;
@@ -60,31 +64,39 @@ impl Hydroflow {
         }
     }
 
+    fn enqueue_jobs(&mut self) {
+        for op in self.event_queue_recv.try_iter() {
+            if !self.subgraphs[op].scheduled {
+                self.ready_queue.push_back(op);
+                self.subgraphs[op].scheduled = true;
+            }
+        }
+    }
+
     /**
      * Runs the dataflow until no more work is currently available.
      */
     pub fn tick(&mut self) {
-        loop {
-            // Add any external jobs to ready queue.
-            self.ready_queue.extend(self.event_queue_recv.try_iter());
+        // Add any external jobs to ready queue.
+        self.enqueue_jobs();
 
-            if let Some(op_id) = self.ready_queue.pop_front() {
-                let sg_data = self.subgraphs.get_mut(op_id).unwrap();
-                sg_data.subgraph.run();
-                for handoff_id in sg_data.succs.iter().copied() {
-                    let handoff = self.handoffs.get(handoff_id).unwrap();
-                    let succ_id = handoff.succ;
-                    if self.ready_queue.contains(&succ_id) {
-                        // TODO(mingwei): Slow? O(N)
-                        continue;
-                    }
-                    if !handoff.handoff.is_bottom() {
-                        self.ready_queue.push_back(succ_id);
-                    }
+        while let Some(op_id) = self.ready_queue.pop_front() {
+            self.subgraphs[op_id].scheduled = false;
+            let sg_data = self.subgraphs.get_mut(op_id).unwrap(/* TODO(mingwei) */);
+            sg_data.subgraph.run();
+            for handoff_id in sg_data.succs.iter().copied() {
+                let handoff = self.handoffs.get(handoff_id).unwrap(/* TODO(mingwei) */);
+                let succ_id = handoff.succ;
+                if self.ready_queue.contains(&succ_id) {
+                    // TODO(mingwei): Slow? O(N)
+                    continue;
                 }
-            } else {
-                break;
+                if !handoff.handoff.is_bottom() {
+                    self.ready_queue.push_back(succ_id);
+                }
             }
+
+            self.enqueue_jobs();
         }
     }
 
@@ -185,6 +197,7 @@ impl Hydroflow {
         let mut recvs = Vec::new();
         let mut input_ports = Vec::new();
         let mut input_metas = Vec::new();
+        // TODO(justin): is there a nice way to encapsulate the below?
         let op_id = self.subgraphs.len();
 
         for _ in 0..n {
@@ -269,6 +282,27 @@ impl Hydroflow {
                 (subgraph)(recv1, recv2)
             });
         (input_port1, input_port2)
+    }
+
+    /**
+     * Adds an "input" operator, along with a handle to insert data into it.
+     * TODO(justin): this thing currently cannot be passed across threads, but I
+     * think if we replaced the Vec with a channel it could.
+     */
+    pub fn add_input<T, W>(&mut self) -> (Input<T>, OutputPort<W>)
+    where
+        T: 'static,
+        W: 'static + Handoff + CanReceive<T>,
+    {
+        let input = Rc::new(RefCell::new(Vec::new()));
+        let inner_input = input.clone();
+        let output_port = self.add_source::<_, W>(move |send| {
+            for x in (*inner_input).borrow_mut().drain(..) {
+                send.give(x);
+            }
+        });
+        let id = output_port.op_id;
+        (Input::new(self.reactor(), id, input), output_port)
     }
 
     /**
@@ -378,6 +412,7 @@ struct SubgraphData {
     subgraph: Box<dyn Subgraph>,
     preds: Vec<HandoffId>,
     succs: Vec<HandoffId>,
+    scheduled: bool,
 }
 impl SubgraphData {
     pub fn new(subgraph: impl 'static + Subgraph) -> Self {
@@ -385,6 +420,7 @@ impl SubgraphData {
             subgraph: Box::new(subgraph),
             preds: Default::default(),
             succs: Default::default(),
+            scheduled: true,
         }
     }
 }
@@ -578,4 +614,39 @@ fn test_auto_tee() {
 
     assert_eq!((*out1).borrow().clone(), vec![1, 2, 3, 4]);
     assert_eq!((*out2).borrow().clone(), vec![1, 2, 3, 4]);
+}
+
+#[test]
+fn test_input_handle() {
+    let mut df = Hydroflow::new();
+
+    let (input, output_port) = df.add_input();
+
+    let vec = Rc::new(RefCell::new(Vec::new()));
+    let inner_vec = vec.clone();
+    let input_port = df.add_sink(move |recv: &mut RecvCtx<VecHandoff<usize>>| {
+        for v in recv.take_inner() {
+            (*inner_vec).borrow_mut().push(v);
+        }
+    });
+
+    df.add_edge(output_port, input_port);
+
+    input.give(Some(1));
+    input.give(Some(2));
+    input.give(Some(3));
+    input.flush();
+
+    df.tick();
+
+    assert_eq!((*vec).borrow().clone(), vec![1, 2, 3]);
+
+    input.give(Some(4));
+    input.give(Some(5));
+    input.give(Some(6));
+    input.flush();
+
+    df.tick();
+
+    assert_eq!((*vec).borrow().clone(), vec![1, 2, 3, 4, 5, 6]);
 }
