@@ -6,7 +6,7 @@ pub(crate) mod subgraph;
 pub mod util;
 
 use std::cell::RefCell;
-use std::collections::{HashMap, VecDeque};
+use std::collections::VecDeque;
 use std::rc::Rc;
 use std::sync::mpsc::{self, Receiver, RecvError, SyncSender, TrySendError};
 
@@ -16,14 +16,14 @@ use handoff::{Handoff, HandoffList, HandoffMeta, NullHandoff, VecHandoff};
 use subgraph::{NtoMClosureSubgraph, Subgraph, VariadicClosureSubgraph};
 
 pub type OpId = usize;
-pub type HandoffId = (OpId, OpId);
+pub type HandoffId = usize;
 
 /**
  * A Hydroflow graph. Owns, schedules, and runs the compiled subgraphs.
  */
 pub struct Hydroflow {
     subgraphs: Vec<SubgraphData>,
-    handoffs: HashMap<HandoffId, Box<dyn HandoffMeta>>,
+    handoffs: Vec<HandoffData>,
 
     // TODO(mingwei): separate scheduler into its own struct/trait?
     ready_queue: VecDeque<OpId>,
@@ -69,16 +69,16 @@ impl Hydroflow {
             self.ready_queue.extend(self.event_queue_recv.try_iter());
 
             if let Some(op_id) = self.ready_queue.pop_front() {
-                let sg_data = self.subgraphs.get_mut(op_id).unwrap(/* TODO(mingwei) */);
+                let sg_data = self.subgraphs.get_mut(op_id).unwrap();
                 sg_data.subgraph.run();
-                for succ_id in sg_data.succs.iter().copied() {
+                for handoff_id in sg_data.succs.iter().copied() {
+                    let handoff = self.handoffs.get(handoff_id).unwrap();
+                    let succ_id = handoff.succ;
                     if self.ready_queue.contains(&succ_id) {
                         // TODO(mingwei): Slow? O(N)
                         continue;
                     }
-                    let handoff_id: HandoffId = (op_id, succ_id);
-                    let handoff = self.handoffs.get(&handoff_id).unwrap(/* TODO(mingwei) */);
-                    if !handoff.is_bottom() {
+                    if !handoff.handoff.is_bottom() {
                         self.ready_queue.push_back(succ_id);
                     }
                 }
@@ -207,8 +207,8 @@ impl Hydroflow {
             output_ports.push(OutputPort { op_id, handoff });
         }
 
-        let subraph = NtoMClosureSubgraph::<F, R, W>::new(f, recvs, sends);
-        self.subgraphs.push(SubgraphData::new(subraph));
+        let subgraph = NtoMClosureSubgraph::<F, R, W>::new(f, recvs, sends);
+        self.subgraphs.push(SubgraphData::new(subgraph));
         self.ready_queue.push_back(op_id);
 
         (input_ports, output_ports)
@@ -299,18 +299,18 @@ impl Hydroflow {
     where
         H: 'static + Handoff,
     {
-        // Add successor.
-        self.subgraphs[output_port.op_id]
-            .succs
-            .push(input_port.op_id);
-        // Add predacessor.
-        self.subgraphs[input_port.op_id]
-            .preds
-            .push(output_port.op_id);
         // Insert handoff.
-        let handoff_id: HandoffId = (output_port.op_id, input_port.op_id);
-        self.handoffs
-            .insert(handoff_id, Box::new(output_port.handoff.clone()));
+        let handoff_id: HandoffId = self.handoffs.len();
+        self.handoffs.push(HandoffData::new(
+            output_port.handoff.clone(),
+            output_port.op_id,
+            input_port.op_id,
+        ));
+
+        // Add successor.
+        self.subgraphs[output_port.op_id].succs.push(handoff_id);
+        // Add predacessor.
+        self.subgraphs[input_port.op_id].preds.push(handoff_id);
 
         *input_port.once.borrow_mut() = Some(output_port.handoff);
     }
@@ -352,13 +352,32 @@ impl Reactor {
 }
 
 /**
+ * A handoff and its input and output [OpId]s.
+ */
+struct HandoffData {
+    handoff: Box<dyn HandoffMeta>,
+    #[allow(dead_code)] // TODO(mingwei)
+    pred: OpId,
+    succ: OpId,
+}
+impl HandoffData {
+    pub fn new(handoff: impl 'static + HandoffMeta, pred: OpId, succ: OpId) -> Self {
+        Self {
+            handoff: Box::new(handoff),
+            pred,
+            succ,
+        }
+    }
+}
+
+/**
  * A subgraph along with its predacessor and successor [OpId]s.
  * Used internally by the [Hydroflow] struct to represent the dataflow graph structure.
  */
 struct SubgraphData {
     subgraph: Box<dyn Subgraph>,
-    preds: Vec<OpId>,
-    succs: Vec<OpId>,
+    preds: Vec<HandoffId>,
+    succs: Vec<HandoffId>,
 }
 impl SubgraphData {
     pub fn new(subgraph: impl 'static + Subgraph) -> Self {
