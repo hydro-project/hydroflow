@@ -17,7 +17,7 @@ use handoff::{Handoff, HandoffList, HandoffMeta, NullHandoff, VecHandoff};
 use subgraph::{NtoMClosureSubgraph, Subgraph, VariadicClosureSubgraph};
 
 use self::handoff::CanReceive;
-use self::input::Input;
+use self::input::{Buffer, Input};
 
 pub type OpId = usize;
 pub type HandoffId = usize;
@@ -286,23 +286,39 @@ impl Hydroflow {
 
     /**
      * Adds an "input" operator, along with a handle to insert data into it.
-     * TODO(justin): this thing currently cannot be passed across threads, but I
-     * think if we replaced the Vec with a channel it could.
      */
-    pub fn add_input<T, W>(&mut self) -> (Input<T>, OutputPort<W>)
+    pub fn add_input<T, W>(&mut self) -> (Input<T, Buffer<T>>, OutputPort<W>)
     where
         T: 'static,
         W: 'static + Handoff + CanReceive<T>,
     {
-        let input = Rc::new(RefCell::new(Vec::new()));
+        let input = Buffer::default();
         let inner_input = input.clone();
         let output_port = self.add_source::<_, W>(move |send| {
-            for x in (*inner_input).borrow_mut().drain(..) {
+            for x in (*inner_input.0).borrow_mut().drain(..) {
                 send.give(x);
             }
         });
         let id = output_port.op_id;
         (Input::new(self.reactor(), id, input), output_port)
+    }
+
+    /**
+     * Adds a threadsafe "input" operator, along with a handle to insert data into it.
+     */
+    pub fn add_channel_input<T, W>(&mut self) -> (Input<T, SyncSender<T>>, OutputPort<W>)
+    where
+        T: 'static,
+        W: 'static + Handoff + CanReceive<T>,
+    {
+        let (sender, receiver) = mpsc::sync_channel(8000);
+        let output_port = self.add_source::<_, W>(move |send| {
+            for x in receiver.try_iter() {
+                send.give(x);
+            }
+        });
+        let id = output_port.op_id;
+        (Input::new(self.reactor(), id, sender), output_port)
     }
 
     /**
@@ -351,7 +367,7 @@ impl Hydroflow {
 }
 
 /**
- * A handle into a specific [Hydroflow] instance for triggering operators to run, possibly from another thread.Default
+ * A handle into a specific [Hydroflow] instance for triggering operators to run, possibly from another thread.
  */
 #[derive(Clone)]
 pub struct Reactor {
@@ -649,4 +665,37 @@ fn test_input_handle() {
     df.tick();
 
     assert_eq!((*vec).borrow().clone(), vec![1, 2, 3, 4, 5, 6]);
+}
+
+#[test]
+fn test_input_handle_thread() {
+    let mut df = Hydroflow::new();
+
+    let (input, output_port) = df.add_channel_input();
+
+    let vec = Rc::new(RefCell::new(Vec::new()));
+    let inner_vec = vec.clone();
+    let input_port = df.add_sink(move |recv: &mut RecvCtx<VecHandoff<usize>>| {
+        for v in recv.take_inner() {
+            (*inner_vec).borrow_mut().push(v);
+        }
+    });
+
+    df.add_edge(output_port, input_port);
+
+    let (done, wait) = mpsc::channel();
+
+    std::thread::spawn(move || {
+        input.give(Some(1));
+        input.give(Some(2));
+        input.give(Some(3));
+        input.flush();
+        done.send(()).unwrap();
+    });
+
+    wait.recv().unwrap();
+
+    df.tick();
+
+    assert_eq!((*vec).borrow().clone(), vec![1, 2, 3]);
 }
