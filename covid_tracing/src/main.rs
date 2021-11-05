@@ -1,12 +1,10 @@
 #![feature(never_type)]
 
-use std::sync::mpsc;
 use std::time::Duration;
 
 use hydroflow::compiled::pull::SymmetricHashJoin;
 use hydroflow::compiled::{ForEach, Pivot, Tee};
 use hydroflow::scheduled::collections::Iter;
-use hydroflow::scheduled::ctx::SendCtx;
 use hydroflow::scheduled::handoff::VecHandoff;
 use hydroflow::scheduled::Hydroflow;
 use hydroflow::{tl, tlt};
@@ -23,26 +21,11 @@ fn main() {
     type Phone = &'static str;
     type DateTime = usize;
 
-    let (contacts_send, contacts_recv) = mpsc::channel::<(Pid, Pid, DateTime)>();
-    let (diagnosed_send, diagnosed_recv) = mpsc::channel::<(Pid, (DateTime, DateTime))>();
-    let (people_send, people_recv) = mpsc::channel::<(Pid, (Name, Phone))>();
-
     let mut df = Hydroflow::new();
 
-    let contacts_out = df.add_source(move |send: &mut SendCtx<VecHandoff<_>>| {
-        send.give(Iter(contacts_recv.try_iter()));
-    });
-    let contacts_op_id = contacts_out.op_id();
-
-    let diagnosed_out = df.add_source(move |send: &mut SendCtx<VecHandoff<_>>| {
-        send.give(Iter(diagnosed_recv.try_iter()));
-    });
-    let diagnosed_op_id = diagnosed_out.op_id();
-
-    let people_out = df.add_source(move |send: &mut SendCtx<VecHandoff<_>>| {
-        send.give(Iter(people_recv.try_iter()));
-    });
-    let people_op_id = people_out.op_id();
+    let (contacts_send, contacts_out) = df.add_channel_input();
+    let (diagnosed_send, diagnosed_out) = df.add_channel_input();
+    let (people_send, people_out) = df.add_channel_input();
 
     let mut exposed_contacts = Default::default();
 
@@ -127,17 +110,12 @@ fn main() {
     df.add_edge(people_out, people_in);
     df.add_edge(notifs_out, notifs_in);
 
-    let reactor = df.reactor();
-
     let all_people = people::get_people();
 
     let inner = all_people.clone();
-    let inner_reactor = reactor.clone();
     std::thread::spawn(move || {
-        for person in inner {
-            people_send.send(person).unwrap();
-        }
-        inner_reactor.trigger(people_op_id).unwrap();
+        people_send.give(Iter(inner.into_iter()));
+        people_send.flush();
     });
 
     std::thread::spawn(move || {
@@ -152,10 +130,8 @@ fn main() {
                         let p1 = rng.gen_range(0..all_people.len());
                         let p2 = rng.gen_range(0..all_people.len());
                         if p1 != p2 {
-                            contacts_send
-                                .send((all_people[p1].0, all_people[p2].0, t))
-                                .unwrap();
-                            reactor.trigger(contacts_op_id).unwrap();
+                            contacts_send.give(Some((all_people[p1].0, all_people[p2].0, t)));
+                            contacts_send.flush();
                         }
                     }
                 }
@@ -164,9 +140,8 @@ fn main() {
                     if !all_people.is_empty() {
                         let p = rng.gen_range(0..all_people.len());
                         diagnosed_send
-                            .send((all_people[p].0, (t, t + TRANSMISSIBLE_DURATION)))
-                            .unwrap();
-                        reactor.trigger(diagnosed_op_id).unwrap();
+                            .give(Some((all_people[p].0, (t, t + TRANSMISSIBLE_DURATION))));
+                        diagnosed_send.flush();
                     }
                 }
                 _ => unreachable!(),
