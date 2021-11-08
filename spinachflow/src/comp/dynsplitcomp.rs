@@ -12,10 +12,11 @@ use super::{Comp, CompConnector, Next};
 
 pub struct DynSplitComp<O: OpValue + OpDelta, P, C>
 where
-    P: OpDelta,
+    O: 'static + OpValue + OpDelta,
+    P: 'static + OpDelta,
     P::LatRepr: LatticeRepr<Lattice = SetUnion<C>>,
     <P::LatRepr as LatticeRepr>::Repr: IntoIterator<Item = C>,
-    C: CompConnector<SplitOp<O>>,
+    C: 'static + CompConnector<SplitOp<O>>,
 {
     splitter: Splitter<O>,
     pipe_op: P,
@@ -25,10 +26,11 @@ where
 
 impl<O: OpValue + OpDelta, P, C> DynSplitComp<O, P, C>
 where
-    P: OpDelta,
+    O: 'static + OpValue + OpDelta,
+    P: 'static + OpDelta,
     P::LatRepr: LatticeRepr<Lattice = SetUnion<C>>,
     <P::LatRepr as LatticeRepr>::Repr: IntoIterator<Item = C>,
-    C: CompConnector<SplitOp<O>>,
+    C: 'static + CompConnector<SplitOp<O>>,
 {
     pub fn new(splitter: Splitter<O>, pipe_op: P) -> Self {
         Self {
@@ -40,12 +42,13 @@ where
     }
 }
 
-impl<O: OpValue + OpDelta, P, C> Comp for DynSplitComp<O, P, C>
+impl<O, P, C> Comp for DynSplitComp<O, P, C>
 where
-    P: OpDelta,
+    O: 'static + OpValue + OpDelta,
+    P: 'static + OpDelta,
     P::LatRepr: LatticeRepr<Lattice = SetUnion<C>>,
     <P::LatRepr as LatticeRepr>::Repr: IntoIterator<Item = C>,
-    C: CompConnector<SplitOp<O>>,
+    C: 'static + CompConnector<SplitOp<O>>,
 {
     type Error = <C::Comp as Comp>::Error;
 

@@ -6,16 +6,18 @@ use crate::op::OpDelta;
 
 use super::{Comp, Next};
 
-pub struct DebugComp<O: OpDelta>
+pub struct DebugComp<O>
 where
+    O: 'static + OpDelta,
     <O::LatRepr as LatticeRepr>::Repr: Debug,
 {
     op: O,
     tag: &'static str,
 }
 
-impl<O: OpDelta> DebugComp<O>
+impl<O> DebugComp<O>
 where
+    O: 'static + OpDelta,
     <O::LatRepr as LatticeRepr>::Repr: Debug,
 {
     pub fn new(op: O, tag: &'static str) -> Self {
@@ -23,8 +25,9 @@ where
     }
 }
 
-impl<O: OpDelta> Comp for DebugComp<O>
+impl<O> Comp for DebugComp<O>
 where
+    O: 'static + OpDelta,
     <O::LatRepr as LatticeRepr>::Repr: Debug,
 {
     type Error = ();
