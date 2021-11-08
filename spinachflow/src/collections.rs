@@ -27,13 +27,15 @@ pub trait Collection<K, V> {
 
     type Keys<'s>: Iterator<Item = &'s K>
     where
-        K: 's;
+        K: 's,
+        Self: 's;
     fn keys(&self) -> Self::Keys<'_>;
 
     type Entries<'s>: Iterator<Item = (&'s K, &'s V)>
     where
         K: 's,
-        V: 's;
+        V: 's,
+        Self: 's;
     fn entries(&self) -> Self::Entries<'_>;
 }
 
