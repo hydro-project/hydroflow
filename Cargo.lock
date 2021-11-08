@@ -49,7 +49,7 @@ dependencies = [
  "anyhow",
  "criterion",
  "datadriven",
- "spinach",
+ "spinachflow",
 ]
 
 [[package]]
@@ -882,24 +882,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e1e08e261d0e8f5c43123b7adf3e4ca1690d655377ac93a03b2c9d3e98de1342"
 dependencies = [
  "version_check",
-]
-
-[[package]]
-name = "spinach"
-version = "0.1.0"
-source = "git+https://github.com/MingweiSamuel/spinach?rev=622fdb8#622fdb841ec1130ff2c896a8ca8f87d0e3b8869b"
-dependencies = [
- "bincode",
- "bytes",
- "const-random",
- "futures",
- "futures-core",
- "ref-cast",
- "serde",
- "static_assertions",
- "tokio",
- "tokio-stream",
- "tokio-util",
 ]
 
 [[package]]
