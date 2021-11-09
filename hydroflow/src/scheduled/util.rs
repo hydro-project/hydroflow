@@ -9,7 +9,7 @@ pub fn once<T>() -> (SendOnce<T>, Once<T>) {
     let sender = SendOnce {
         channel: channel.clone(),
     };
-    let once = Once::Unresolved { channel };
+    let once = Once { channel };
     (sender, once)
 }
 
@@ -29,30 +29,11 @@ impl<T> SendOnce<T> {
 /**
  * The receiving half of a once channel.
  */
-pub enum Once<T> {
-    Resolved(T),
-    Unresolved { channel: Rc<RefCell<Option<T>>> },
-    Errored,
+pub struct Once<T> {
+    channel: Rc<RefCell<Option<T>>>,
 }
 impl<T> Once<T> {
-    pub fn get(&mut self) -> &mut T {
-        match self {
-            Self::Resolved(item) => return item,
-            Self::Errored => panic!("Initialization previously failed."),
-            _ => {}
-        }
-
-        *self = match std::mem::replace(self, Self::Errored) {
-            Self::Unresolved { channel } => {
-                let item = Rc::try_unwrap(channel)
-                    .ok()
-                    .expect("Initialization failed: channel is still live.")
-                    .into_inner()
-                    .expect("Initialization failed: item never sent.");
-                Self::Resolved(item)
-            }
-            v => v,
-        };
-        self.get()
+    pub fn get(&mut self) -> std::cell::RefMut<'_, T> {
+        std::cell::RefMut::map(self.channel.borrow_mut(), |x| x.as_mut().unwrap())
     }
 }

@@ -4,6 +4,7 @@ use std::rc::Rc;
 
 use crate::scheduled::handoff::{CanReceive, Handoff, TeeingHandoff, TryCanReceive};
 use crate::scheduled::OpId;
+use crate::scheduled::util::{Once, SendOnce};
 
 /**
  * Context provided to a compiled component for writing to an [OutputPort].
@@ -60,11 +61,11 @@ impl<T: Clone> Clone for OutputPort<TeeingHandoff<T>> {
  * Context provided to a compiled component for reading from an [InputPort].
  */
 pub struct RecvCtx<H: Handoff> {
-    pub(crate) once: Rc<RefCell<Option<Rc<RefCell<H>>>>>,
+    pub(crate) once: Once<Rc<RefCell<H>>>,
 }
 impl<H: Handoff> RecvCtx<H> {
     pub fn take_inner(&mut self) -> H::Inner {
-        (*self.once.borrow_mut().as_ref().unwrap().borrow_mut()).take_inner()
+        (*self.once.get().borrow_mut()).take_inner()
     }
 }
 
@@ -75,7 +76,7 @@ impl<H: Handoff> RecvCtx<H> {
 #[must_use]
 pub struct InputPort<H: Handoff> {
     pub(crate) op_id: OpId,
-    pub(crate) once: Rc<RefCell<Option<Rc<RefCell<H>>>>>,
+    pub(crate) once: SendOnce<Rc<RefCell<H>>>,
 }
 impl<H: Handoff> InputPort<H> {
     pub fn op_id(&self) -> OpId {
