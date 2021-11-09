@@ -202,9 +202,12 @@ impl Hydroflow {
 
         for _ in 0..n {
             let handoff = Rc::new(RefCell::new(R::default()));
-            let once = Rc::new(RefCell::new(None));
-            recvs.push(RecvCtx { once: once.clone() });
-            input_ports.push(InputPort { once, op_id });
+            let (send_once, once) = util::once();
+            recvs.push(RecvCtx { once });
+            input_ports.push(InputPort {
+                op_id,
+                once: send_once,
+            });
             input_metas.push(Box::new(handoff) as Box<dyn HandoffMeta>);
         }
 
@@ -362,7 +365,7 @@ impl Hydroflow {
         // Add predacessor.
         self.subgraphs[input_port.op_id].preds.push(handoff_id);
 
-        *input_port.once.borrow_mut() = Some(output_port.handoff);
+        input_port.once.send(output_port.handoff);
     }
 }
 

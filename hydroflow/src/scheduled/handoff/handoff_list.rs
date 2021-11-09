@@ -6,6 +6,7 @@ use sealed::sealed;
 use crate::scheduled::ctx::{InputPort, OutputPort, RecvCtx, SendCtx};
 use crate::scheduled::handoff::Handoff;
 use crate::scheduled::OpId;
+use crate::scheduled::util;
 
 /**
  * A variadic list of Handoff types, represented using a lisp-style tuple structure.
@@ -40,10 +41,10 @@ where
     type InputPort = (InputPort<H>, L::InputPort);
     type Meta = (Rc<RefCell<H>>, L::Meta);
     fn make_input(op_id: OpId) -> (Self::RecvCtx, Self::InputPort) {
-        let once = Rc::new(RefCell::new(None));
+        let (send_once, once) = util::once();
 
-        let recv = RecvCtx { once: once.clone() };
-        let input = InputPort { op_id, once };
+        let recv = RecvCtx { once };
+        let input = InputPort { op_id, once: send_once };
 
         let (recv_rest, input_rest) = L::make_input(op_id);
 
