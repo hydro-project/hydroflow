@@ -1,3 +1,4 @@
+use std::any::Any;
 use std::{cell::RefCell, collections::VecDeque, rc::Rc};
 
 use super::{CanReceive, Handoff, HandoffMeta};
@@ -58,6 +59,10 @@ where
 }
 
 impl<T> HandoffMeta for TeeingHandoff<T> {
+    fn any_ref(&self) -> &dyn Any {
+        self
+    }
+
     fn is_bottom(&self) -> bool {
         true
     }

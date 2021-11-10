@@ -1,3 +1,4 @@
+use std::any::Any;
 use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::rc::Rc;
@@ -55,6 +56,10 @@ impl<T> CanReceive<VecDeque<T>> for VecHandoff<T> {
 }
 
 impl<T> HandoffMeta for VecHandoff<T> {
+    fn any_ref(&self) -> &dyn Any {
+        self
+    }
+
     fn is_bottom(&self) -> bool {
         (*self.deque).borrow_mut().is_empty()
     }
@@ -64,6 +69,10 @@ impl<H> HandoffMeta for Rc<RefCell<H>>
 where
     H: HandoffMeta,
 {
+    fn any_ref(&self) -> &dyn Any {
+        self
+    }
+
     fn is_bottom(&self) -> bool {
         self.borrow().is_bottom()
     }
