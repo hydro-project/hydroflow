@@ -33,7 +33,7 @@ pub struct Once<T> {
     channel: Rc<RefCell<Option<T>>>,
 }
 impl<T> Once<T> {
-    pub fn get(&mut self) -> std::cell::RefMut<'_, T> {
+    pub fn get(&self) -> std::cell::RefMut<'_, T> {
         std::cell::RefMut::map(self.channel.borrow_mut(), |x| x.as_mut().unwrap())
     }
 }

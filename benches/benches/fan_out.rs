@@ -35,7 +35,7 @@ fn benchmark_hydroflow_teer(c: &mut Criterion) {
     c.bench_function("fan_out/hydroflow/teer", |b| {
         b.iter(|| {
             let mut df = Hydroflow::new();
-            let output = df.add_source(|send: &mut SendCtx<TeeingHandoff<_>>| {
+            let output = df.add_source(|send: &SendCtx<TeeingHandoff<_>>| {
                 send.give((0..NUM_INTS).collect());
             });
 

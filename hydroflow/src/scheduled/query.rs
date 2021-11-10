@@ -17,7 +17,7 @@ impl Query {
     pub fn source<F, T>(&mut self, f: F) -> Operator<T>
     where
         T: 'static,
-        F: 'static + FnMut(&mut SendCtx<VecHandoff<T>>),
+        F: 'static + FnMut(&SendCtx<VecHandoff<T>>),
     {
         let output_port = (*self.df).borrow_mut().add_source(f);
         Operator {
@@ -72,7 +72,7 @@ where
         let (input, output) =
             (*self.df)
                 .borrow_mut()
-                .add_inout(move |recv: &mut RecvCtx<VecHandoff<T>>, send| {
+                .add_inout(move |recv: &RecvCtx<VecHandoff<T>>, send| {
                     #[allow(clippy::redundant_closure)]
                     send.give(Iter(recv.take_inner().into_iter().map(|x| f(x))));
                 });
@@ -92,7 +92,7 @@ where
         let (input, output) =
             (*self.df)
                 .borrow_mut()
-                .add_inout(move |recv: &mut RecvCtx<VecHandoff<T>>, send| {
+                .add_inout(move |recv: &RecvCtx<VecHandoff<T>>, send| {
                     send.give(Iter(recv.take_inner().into_iter().filter(|x| f(x))));
                 });
 
@@ -107,7 +107,7 @@ where
     pub fn concat(self, other: Operator<T>) -> Operator<T> {
         // TODO(justin): this is very slow.
         let (input1, input2, output) = (*self.df).borrow_mut().add_binary(
-            |recv1: &mut RecvCtx<VecHandoff<T>>, recv2: &mut RecvCtx<VecHandoff<T>>, send| {
+            |recv1: &RecvCtx<VecHandoff<T>>, recv2: &RecvCtx<VecHandoff<T>>, send| {
                 send.give(Iter(recv1.take_inner().into_iter()));
                 send.give(Iter(recv2.take_inner().into_iter()));
             },
@@ -127,7 +127,7 @@ where
     {
         let input = (*self.df)
             .borrow_mut()
-            .add_sink(move |recv: &mut RecvCtx<VecHandoff<T>>| {
+            .add_sink(move |recv: &RecvCtx<VecHandoff<T>>| {
                 for v in recv.take_inner() {
                     f(v)
                 }
