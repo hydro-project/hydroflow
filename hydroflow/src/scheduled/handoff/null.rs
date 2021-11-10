@@ -4,7 +4,7 @@ use super::{Handoff, HandoffMeta};
 pub struct NullHandoff;
 impl Handoff for NullHandoff {
     type Inner = ();
-    fn take_inner(&mut self) -> Self::Inner {}
+    fn take_inner(&self) -> Self::Inner {}
 }
 
 impl HandoffMeta for NullHandoff {
