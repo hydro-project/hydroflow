@@ -129,7 +129,7 @@ impl Hydroflow {
     #[must_use]
     pub fn add_subgraph<F, R, W>(&mut self, f: F) -> (R::InputPort, W::OutputPort)
     where
-        F: 'static + FnMut(&mut R::RecvCtx, &mut W::SendCtx),
+        F: 'static + FnMut(&R::RecvCtx, &W::SendCtx),
         R: 'static + HandoffList,
         W: 'static + HandoffList,
     {
@@ -151,7 +151,7 @@ impl Hydroflow {
      */
     pub fn add_inout<F, R, W>(&mut self, mut subgraph: F) -> (InputPort<R>, OutputPort<W>)
     where
-        F: 'static + FnMut(&mut RecvCtx<R>, &mut SendCtx<W>),
+        F: 'static + FnMut(&RecvCtx<R>, &SendCtx<W>),
         R: 'static + Handoff,
         W: 'static + Handoff,
     {
@@ -168,7 +168,7 @@ impl Hydroflow {
         mut subgraph: F,
     ) -> (InputPort<R>, OutputPort<W1>, OutputPort<W2>)
     where
-        F: 'static + FnMut(&mut RecvCtx<R>, &mut SendCtx<W1>, &mut SendCtx<W2>),
+        F: 'static + FnMut(&RecvCtx<R>, &SendCtx<W1>, &SendCtx<W2>),
         R: 'static + Handoff,
         W1: 'static + Handoff,
         W2: 'static + Handoff,
@@ -238,7 +238,7 @@ impl Hydroflow {
         mut subgraph: F,
     ) -> (InputPort<R1>, InputPort<R2>, OutputPort<W1>, OutputPort<W2>)
     where
-        F: 'static + FnMut(&mut RecvCtx<R1>, &mut RecvCtx<R2>, &mut SendCtx<W1>, &mut SendCtx<W2>),
+        F: 'static + FnMut(&RecvCtx<R1>, &RecvCtx<R2>, &SendCtx<W1>, &SendCtx<W2>),
         R1: 'static + Handoff,
         R2: 'static + Handoff,
         W1: 'static + Handoff,
@@ -259,7 +259,7 @@ impl Hydroflow {
         mut subgraph: F,
     ) -> (InputPort<R1>, InputPort<R2>, OutputPort<W>)
     where
-        F: 'static + FnMut(&mut RecvCtx<R1>, &mut RecvCtx<R2>, &mut SendCtx<W>),
+        F: 'static + FnMut(&RecvCtx<R1>, &RecvCtx<R2>, &SendCtx<W>),
         R1: 'static + Handoff,
         R2: 'static + Handoff,
         W: 'static + Handoff,
@@ -276,7 +276,7 @@ impl Hydroflow {
      */
     pub fn add_binary_sink<F, R1, R2>(&mut self, mut subgraph: F) -> (InputPort<R1>, InputPort<R2>)
     where
-        F: 'static + FnMut(&mut RecvCtx<R1>, &mut RecvCtx<R2>),
+        F: 'static + FnMut(&RecvCtx<R1>, &RecvCtx<R2>),
         R1: 'static + Handoff,
         R2: 'static + Handoff,
     {
@@ -329,7 +329,7 @@ impl Hydroflow {
      */
     pub fn add_source<F, W>(&mut self, mut subgraph: F) -> OutputPort<W>
     where
-        F: 'static + FnMut(&mut SendCtx<W>),
+        F: 'static + FnMut(&SendCtx<W>),
         W: 'static + Handoff,
     {
         self.add_inout::<_, NullHandoff, W>(move |_, send| subgraph(send))
@@ -341,7 +341,7 @@ impl Hydroflow {
      */
     pub fn add_sink<F, R>(&mut self, mut subgraph: F) -> InputPort<R>
     where
-        F: 'static + FnMut(&mut RecvCtx<R>),
+        F: 'static + FnMut(&RecvCtx<R>),
         R: 'static + Handoff,
     {
         self.add_inout::<_, R, NullHandoff>(move |recv, _| subgraph(recv))
@@ -460,7 +460,7 @@ fn map_filter() {
     });
 
     let (map_in, map_out) = df.add_inout(
-        |recv: &mut RecvCtx<VecHandoff<i32>>, send: &mut SendCtx<VecHandoff<_>>| {
+        |recv: &RecvCtx<VecHandoff<i32>>, send: &SendCtx<VecHandoff<_>>| {
             for x in recv.take_inner().into_iter() {
                 send.give(Some(3 * x + 1));
             }
@@ -468,7 +468,7 @@ fn map_filter() {
     );
 
     let (filter_in, filter_out) = df.add_inout(
-        |recv: &mut RecvCtx<VecHandoff<i32>>, send: &mut SendCtx<VecHandoff<_>>| {
+        |recv: &RecvCtx<VecHandoff<i32>>, send: &SendCtx<VecHandoff<_>>| {
             for x in recv.take_inner().into_iter() {
                 if x % 2 == 0 {
                     send.give(Some(x));
@@ -479,7 +479,7 @@ fn map_filter() {
 
     let outputs = Rc::new(RefCell::new(Vec::new()));
     let inner_outputs = outputs.clone();
-    let sink = df.add_sink(move |recv: &mut RecvCtx<VecHandoff<i32>>| {
+    let sink = df.add_sink(move |recv: &RecvCtx<VecHandoff<i32>>| {
         for x in recv.take_inner().into_iter() {
             (*inner_outputs).borrow_mut().push(x);
         }
@@ -525,7 +525,7 @@ mod tests {
         let mut df = Hydroflow::new();
 
         let mut initially_reachable = vec![1];
-        let reachable = df.add_source(move |send: &mut SendCtx<VecHandoff<usize>>| {
+        let reachable = df.add_source(move |send: &SendCtx<VecHandoff<usize>>| {
             for v in initially_reachable.drain(..) {
                 send.give(Some(v));
             }
@@ -533,7 +533,7 @@ mod tests {
 
         let mut seen = HashSet::new();
         let (distinct_in, distinct_out) = df.add_inout(
-            move |recv: &mut RecvCtx<VecHandoff<usize>>, send: &mut SendCtx<VecHandoff<usize>>| {
+            move |recv: &RecvCtx<VecHandoff<usize>>, send: &SendCtx<VecHandoff<usize>>| {
                 for v in recv.take_inner().into_iter() {
                     if seen.insert(v) {
                         send.give(Some(v));
@@ -543,9 +543,9 @@ mod tests {
         );
 
         let (merge_lhs, merge_rhs, merge_out) = df.add_binary(
-            |recv1: &mut RecvCtx<VecHandoff<usize>>,
-             recv2: &mut RecvCtx<VecHandoff<usize>>,
-             send: &mut SendCtx<VecHandoff<usize>>| {
+            |recv1: &RecvCtx<VecHandoff<usize>>,
+             recv2: &RecvCtx<VecHandoff<usize>>,
+             send: &SendCtx<VecHandoff<usize>>| {
                 for v in (recv1.take_inner().into_iter()).chain(recv2.take_inner().into_iter()) {
                     send.give(Some(v));
                 }
@@ -553,7 +553,7 @@ mod tests {
         );
 
         let (neighbors_in, neighbors_out) =
-            df.add_inout(move |recv: &mut RecvCtx<VecHandoff<usize>>, send| {
+            df.add_inout(move |recv: &RecvCtx<VecHandoff<usize>>, send| {
                 for v in recv.take_inner().into_iter() {
                     if let Some(neighbors) = edges.get(&v) {
                         for &n in neighbors {
@@ -564,9 +564,9 @@ mod tests {
             });
 
         let (tee_in, tee_out1, tee_out2) = df.add_binary_out(
-            |recv: &mut RecvCtx<VecHandoff<usize>>,
-             send1: &mut SendCtx<VecHandoff<usize>>,
-             send2: &mut SendCtx<VecHandoff<usize>>| {
+            |recv: &RecvCtx<VecHandoff<usize>>,
+             send1: &SendCtx<VecHandoff<usize>>,
+             send2: &SendCtx<VecHandoff<usize>>| {
                 for v in recv.take_inner().into_iter() {
                     send1.give(Some(v));
                     send2.give(Some(v));
@@ -576,7 +576,7 @@ mod tests {
 
         let reachable_verts = Rc::new(RefCell::new(Vec::new()));
         let reachable_inner = reachable_verts.clone();
-        let sink_in = df.add_sink(move |recv: &mut RecvCtx<VecHandoff<usize>>| {
+        let sink_in = df.add_sink(move |recv: &RecvCtx<VecHandoff<usize>>| {
             for v in recv.take_inner().into_iter() {
                 (*reachable_inner).borrow_mut().push(v);
             }
@@ -605,14 +605,14 @@ fn test_auto_tee() {
     let mut df = Hydroflow::new();
 
     let mut data = vec![1, 2, 3, 4];
-    let source = df.add_source(move |send: &mut SendCtx<TeeingHandoff<_>>| {
+    let source = df.add_source(move |send: &SendCtx<TeeingHandoff<_>>| {
         send.give(std::mem::take(&mut data));
     });
 
     let out1 = Rc::new(RefCell::new(Vec::new()));
     let out1_inner = out1.clone();
 
-    let sink1 = df.add_sink(move |recv: &mut RecvCtx<_>| {
+    let sink1 = df.add_sink(move |recv: &RecvCtx<_>| {
         for v in recv.take_inner() {
             out1_inner.borrow_mut().extend(v);
         }
@@ -620,7 +620,7 @@ fn test_auto_tee() {
 
     let out2 = Rc::new(RefCell::new(Vec::new()));
     let out2_inner = out2.clone();
-    let sink2 = df.add_sink(move |recv: &mut RecvCtx<_>| {
+    let sink2 = df.add_sink(move |recv: &RecvCtx<_>| {
         for v in recv.take_inner() {
             out2_inner.borrow_mut().extend(v);
         }
@@ -643,7 +643,7 @@ fn test_input_handle() {
 
     let vec = Rc::new(RefCell::new(Vec::new()));
     let inner_vec = vec.clone();
-    let input_port = df.add_sink(move |recv: &mut RecvCtx<VecHandoff<usize>>| {
+    let input_port = df.add_sink(move |recv: &RecvCtx<VecHandoff<usize>>| {
         for v in recv.take_inner() {
             (*inner_vec).borrow_mut().push(v);
         }
@@ -678,7 +678,7 @@ fn test_input_handle_thread() {
 
     let vec = Rc::new(RefCell::new(Vec::new()));
     let inner_vec = vec.clone();
-    let input_port = df.add_sink(move |recv: &mut RecvCtx<VecHandoff<usize>>| {
+    let input_port = df.add_sink(move |recv: &RecvCtx<VecHandoff<usize>>| {
         for v in recv.take_inner() {
             (*inner_vec).borrow_mut().push(v);
         }

@@ -276,7 +276,7 @@ fn benchmark_hydroflow(c: &mut Criterion) {
             let mut df = Hydroflow::new();
 
             let mut sent = false;
-            let mut it = df.add_source(move |send: &mut SendCtx<VecHandoff<_>>| {
+            let mut it = df.add_source(move |send: &SendCtx<VecHandoff<_>>| {
                 if !sent {
                     sent = true;
                     send.give(Iter(0..NUM_INTS));
@@ -284,7 +284,7 @@ fn benchmark_hydroflow(c: &mut Criterion) {
             });
             for _ in 0..NUM_OPS {
                 let (next_in, mut next_out) =
-                    df.add_inout(|recv: &mut RecvCtx<VecHandoff<usize>>, send| {
+                    df.add_inout(|recv: &RecvCtx<VecHandoff<usize>>, send| {
                         send.give(Iter(recv.take_inner().into_iter()));
                     });
 
@@ -292,7 +292,7 @@ fn benchmark_hydroflow(c: &mut Criterion) {
                 df.add_edge(next_out, next_in);
             }
 
-            let sink = df.add_sink(|recv: &mut RecvCtx<VecHandoff<usize>>| {
+            let sink = df.add_sink(|recv: &RecvCtx<VecHandoff<usize>>| {
                 for x in recv.take_inner() {
                     black_box(x);
                 }
