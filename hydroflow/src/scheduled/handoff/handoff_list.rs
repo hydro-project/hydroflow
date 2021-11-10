@@ -5,8 +5,8 @@ use sealed::sealed;
 
 use crate::scheduled::ctx::{InputPort, OutputPort, RecvCtx, SendCtx};
 use crate::scheduled::handoff::Handoff;
-use crate::scheduled::OpId;
 use crate::scheduled::util;
+use crate::scheduled::OpId;
 
 /**
  * A variadic list of Handoff types, represented using a lisp-style tuple structure.
@@ -44,7 +44,10 @@ where
         let (send_once, once) = util::once();
 
         let recv = RecvCtx { once };
-        let input = InputPort { op_id, once: send_once };
+        let input = InputPort {
+            op_id,
+            once: send_once,
+        };
 
         let (recv_rest, input_rest) = L::make_input(op_id);
 
