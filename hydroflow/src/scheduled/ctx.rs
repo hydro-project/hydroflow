@@ -3,8 +3,8 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use crate::scheduled::handoff::{CanReceive, Handoff, TeeingHandoff, TryCanReceive};
-use crate::scheduled::OpId;
 use crate::scheduled::util::{Once, SendOnce};
+use crate::scheduled::OpId;
 
 /**
  * Context provided to a compiled component for writing to an [OutputPort].
