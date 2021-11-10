@@ -55,7 +55,10 @@ impl Query {
     }
 }
 
-pub struct Operator<T> {
+pub struct Operator<T>
+where
+    T: 'static
+{
     df: Rc<RefCell<Hydroflow>>,
     output_port: OutputPort<VecHandoff<T>>,
 }

@@ -8,6 +8,8 @@ pub use null::NullHandoff;
 pub use tee::TeeingHandoff;
 pub use vector::VecHandoff;
 
+use std::any::Any;
+
 pub trait TryCanReceive<T> {
     fn try_give(&self, item: T) -> Result<T, T>;
 }
@@ -18,7 +20,7 @@ pub trait CanReceive<T> {
 /**
  * A handle onto the metadata part of a [Handoff], with no element type.
  */
-pub trait HandoffMeta {
+pub trait HandoffMeta: Any {
     // TODO(justin): more fine-grained info here.
     fn is_bottom(&self) -> bool;
 }
