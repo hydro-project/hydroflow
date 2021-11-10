@@ -9,7 +9,10 @@ use super::{CanReceive, Handoff, HandoffMeta};
 /**
  * A [VecDeque]-based FIFO handoff.
  */
-pub struct VecHandoff<T> {
+pub struct VecHandoff<T>
+where
+    T: 'static,
+{
     pub(crate) deque: Rc<RefCell<VecDeque<T>>>,
 }
 impl<T> Default for VecHandoff<T> {
