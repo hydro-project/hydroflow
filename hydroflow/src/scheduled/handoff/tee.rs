@@ -21,7 +21,10 @@ struct TeeingHandoffInternal<T> {
 // A [Handoff] which is part of a "family" of handoffs. Writing to this handoff
 // will write to every reader. New readers can be created by calling `tee`.
 #[derive(Clone)]
-pub struct TeeingHandoff<T> {
+pub struct TeeingHandoff<T>
+where
+    T: 'static,
+{
     read_from: usize,
     internal: Rc<RefCell<TeeingHandoffInternal<T>>>,
 }
@@ -37,7 +40,10 @@ impl<T> Default for TeeingHandoff<T> {
     }
 }
 
-impl<T: Clone> TeeingHandoff<T> {
+impl<T> TeeingHandoff<T>
+where
+    T: Clone,
+{
     pub fn tee(&self) -> Self {
         let id = (*self.internal).borrow().readers.len();
         (*self.internal)
