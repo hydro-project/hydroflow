@@ -22,7 +22,7 @@ impl<T> Default for VecHandoff<T> {
 impl<T> Handoff for VecHandoff<T> {
     type Inner = VecDeque<T>;
 
-    fn take_inner(&mut self) -> Self::Inner {
+    fn take_inner(&self) -> Self::Inner {
         self.deque.take()
     }
 }

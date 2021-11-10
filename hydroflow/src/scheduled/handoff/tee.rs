@@ -59,7 +59,7 @@ impl<T> HandoffMeta for TeeingHandoff<T> {
 
 impl<T> Handoff for TeeingHandoff<T> {
     type Inner = VecDeque<Vec<T>>;
-    fn take_inner(&mut self) -> Self::Inner {
+    fn take_inner(&self) -> Self::Inner {
         std::mem::take(&mut (*self.internal).borrow_mut().readers[self.read_from].contents)
     }
 }

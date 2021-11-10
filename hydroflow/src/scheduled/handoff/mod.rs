@@ -26,16 +26,16 @@ pub trait HandoffMeta {
 pub trait Handoff: Default + HandoffMeta {
     type Inner;
 
-    fn take_inner(&mut self) -> Self::Inner;
+    fn take_inner(&self) -> Self::Inner;
 
-    fn give<T>(&mut self, item: T) -> T
+    fn give<T>(&self, item: T) -> T
     where
         Self: CanReceive<T>,
     {
         <Self as CanReceive<T>>::give(self, item)
     }
 
-    fn try_give<T>(&mut self, item: T) -> Result<T, T>
+    fn try_give<T>(&self, item: T) -> Result<T, T>
     where
         Self: TryCanReceive<T>,
     {
