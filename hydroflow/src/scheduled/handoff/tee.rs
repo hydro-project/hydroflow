@@ -68,7 +68,7 @@ impl<T> CanReceive<Vec<T>> for TeeingHandoff<T>
 where
     T: Clone,
 {
-    fn give(&mut self, vec: Vec<T>) -> Vec<T> {
+    fn give(&self, vec: Vec<T>) -> Vec<T> {
         let readers = &mut (*self.internal).borrow_mut().readers;
         for i in 0..(readers.len() - 1) {
             readers[i].contents.push_back(vec.clone());
