@@ -9,10 +9,10 @@ pub use tee::TeeingHandoff;
 pub use vector::VecHandoff;
 
 pub trait TryCanReceive<T> {
-    fn try_give(&mut self, item: T) -> Result<T, T>;
+    fn try_give(&self, item: T) -> Result<T, T>;
 }
 pub trait CanReceive<T> {
-    fn give(&mut self, item: T) -> T;
+    fn give(&self, item: T) -> T;
 }
 
 /**

@@ -18,20 +18,18 @@ impl<H: Handoff> SendCtx<H> {
     // pub fn give(self, item: H::Item) -> Result<(), ()> {
     //     (*self.once.get()).borrow_mut().try_give(item)
     // }
-    pub fn give<T>(&mut self, item: T) -> T
+    pub fn give<T>(&self, item: T) -> T
     where
         H: CanReceive<T>,
     {
-        let mut borrow = (*self.handoff).borrow_mut();
-        <H as CanReceive<T>>::give(&mut *borrow, item)
+        <H as CanReceive<T>>::give(&self.handoff.borrow(), item)
     }
 
-    pub fn try_give<T>(&mut self, item: T) -> Result<T, T>
+    pub fn try_give<T>(&self, item: T) -> Result<T, T>
     where
         H: TryCanReceive<T>,
     {
-        let mut borrow = (*self.handoff).borrow_mut();
-        <H as TryCanReceive<T>>::try_give(&mut *borrow, item)
+        <H as TryCanReceive<T>>::try_give(&self.handoff.borrow(), item)
     }
 }
 

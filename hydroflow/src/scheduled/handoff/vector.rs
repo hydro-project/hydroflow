@@ -28,7 +28,7 @@ impl<T> Handoff for VecHandoff<T> {
 }
 
 impl<T> CanReceive<Option<T>> for VecHandoff<T> {
-    fn give(&mut self, mut item: Option<T>) -> Option<T> {
+    fn give(&self, mut item: Option<T>) -> Option<T> {
         if let Some(item) = item.take() {
             (*self.deque).borrow_mut().push_back(item)
         }
@@ -39,13 +39,13 @@ impl<T, I> CanReceive<Iter<I>> for VecHandoff<T>
 where
     I: Iterator<Item = T>,
 {
-    fn give(&mut self, mut iter: Iter<I>) -> Iter<I> {
+    fn give(&self, mut iter: Iter<I>) -> Iter<I> {
         (*self.deque).borrow_mut().extend(&mut iter.0);
         iter
     }
 }
 impl<T> CanReceive<VecDeque<T>> for VecHandoff<T> {
-    fn give(&mut self, mut vec: VecDeque<T>) -> VecDeque<T> {
+    fn give(&self, mut vec: VecDeque<T>) -> VecDeque<T> {
         (*self.deque).borrow_mut().extend(vec.drain(..));
         vec
     }
