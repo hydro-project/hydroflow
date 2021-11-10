@@ -21,6 +21,8 @@ pub trait CanReceive<T> {
  * A handle onto the metadata part of a [Handoff], with no element type.
  */
 pub trait HandoffMeta: Any {
+    fn any_ref(&self) -> &dyn Any;
+
     // TODO(justin): more fine-grained info here.
     fn is_bottom(&self) -> bool;
 }

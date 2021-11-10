@@ -1,3 +1,4 @@
+use std::any::Any;
 use super::{Handoff, HandoffMeta};
 
 #[derive(Default)]
@@ -8,6 +9,10 @@ impl Handoff for NullHandoff {
 }
 
 impl HandoffMeta for NullHandoff {
+    fn any_ref(&self) -> &dyn Any {
+        self
+    }
+
     fn is_bottom(&self) -> bool {
         true
     }
