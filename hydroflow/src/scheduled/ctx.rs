@@ -62,7 +62,7 @@ pub struct RecvCtx<H: Handoff> {
     pub(crate) once: Once<Rc<RefCell<H>>>,
 }
 impl<H: Handoff> RecvCtx<H> {
-    pub fn take_inner(&mut self) -> H::Inner {
+    pub fn take_inner(&self) -> H::Inner {
         (*self.once.get().borrow_mut()).take_inner()
     }
 }

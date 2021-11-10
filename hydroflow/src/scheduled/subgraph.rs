@@ -13,7 +13,7 @@ pub(crate) trait Subgraph {
  */
 pub(crate) struct VariadicClosureSubgraph<F, R, W>
 where
-    F: FnMut(&mut R::RecvCtx, &mut W::SendCtx),
+    F: FnMut(&R::RecvCtx, &W::SendCtx),
     R: HandoffList,
     W: HandoffList,
 {
@@ -23,7 +23,7 @@ where
 }
 impl<F, R, W> VariadicClosureSubgraph<F, R, W>
 where
-    F: FnMut(&mut R::RecvCtx, &mut W::SendCtx),
+    F: FnMut(&R::RecvCtx, &W::SendCtx),
     R: HandoffList,
     W: HandoffList,
 {
@@ -33,7 +33,7 @@ where
 }
 impl<F, R, W> Subgraph for VariadicClosureSubgraph<F, R, W>
 where
-    F: FnMut(&mut R::RecvCtx, &mut W::SendCtx),
+    F: FnMut(&R::RecvCtx, &W::SendCtx),
     R: HandoffList,
     W: HandoffList,
 {
