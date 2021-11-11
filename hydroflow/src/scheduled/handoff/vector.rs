@@ -16,7 +16,10 @@ where
 {
     pub(crate) deque: Rc<RefCell<VecDeque<T>>>,
 }
-impl<T> Default for VecHandoff<T> {
+impl<T> Default for VecHandoff<T>
+where
+    T: 'static,
+{
     fn default() -> Self {
         Self {
             deque: Default::default(),
