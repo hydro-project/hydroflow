@@ -33,7 +33,7 @@ impl Query {
         let (inputs, output) = (*self.df).borrow_mut().add_n_in_m_out(
             ops.len(),
             1,
-            |ins: &mut [RecvCtx<VecHandoff<T>>], out| {
+            |ins: &[RecvCtx<VecHandoff<T>>], out| {
                 for input in ins {
                     out[0].give(Iter(input.take_inner().into_iter()));
                 }
@@ -146,11 +146,11 @@ impl<T: Clone> Operator<T> {
         let (inputs, outputs) = (*self.df).borrow_mut().add_n_in_m_out(
             1,
             n,
-            move |recvs: &mut [RecvCtx<VecHandoff<T>>], sends| {
+            move |recvs: &[RecvCtx<VecHandoff<T>>], sends| {
                 // TODO(justin): optimize this (extra clone, etc.).
                 #[allow(clippy::into_iter_on_ref)]
                 for v in recvs.into_iter().next().unwrap().take_inner() {
-                    for s in &mut *sends {
+                    for s in sends {
                         s.give(Some(v.clone()));
                     }
                 }
