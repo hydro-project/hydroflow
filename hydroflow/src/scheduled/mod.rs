@@ -14,7 +14,7 @@ use std::sync::mpsc::{self, Receiver, RecvError, SyncSender, TrySendError};
 use crate::tl;
 use ctx::{InputPort, OutputPort, RecvCtx, SendCtx};
 use handoff::{Handoff, HandoffList, HandoffMeta, NullHandoff, VecHandoff};
-use subgraph::{NtoMClosureSubgraph, Subgraph, VariadicClosureSubgraph};
+use subgraph::Subgraph;
 
 use self::handoff::CanReceive;
 use self::input::{Buffer, Input};
@@ -139,7 +139,8 @@ impl Hydroflow {
         let (recv, input_port) = R::make_input(op_id);
         let (send, output_port) = W::make_output(op_id);
 
-        let subgraph = VariadicClosureSubgraph::<F, R, W>::new(f, recv, send);
+        let mut f = f;
+        let subgraph = move || f(&recv, &send);
         self.subgraphs.push(SubgraphData::new(subgraph));
         self.ready_queue.push_back(op_id);
 
@@ -190,7 +191,7 @@ impl Hydroflow {
         f: F,
     ) -> (Vec<InputPort<R>>, Vec<OutputPort<W>>)
     where
-        F: 'static + FnMut(&mut [RecvCtx<R>], &mut [SendCtx<W>]),
+        F: 'static + FnMut(&[RecvCtx<R>], &[SendCtx<W>]),
         R: 'static + Handoff,
         W: 'static + Handoff,
     {
@@ -223,7 +224,8 @@ impl Hydroflow {
             output_ports.push(OutputPort { op_id, handoff });
         }
 
-        let subgraph = NtoMClosureSubgraph::<F, R, W>::new(f, recvs, sends);
+        let mut f = f;
+        let subgraph = move || f(&recvs, &sends);
         self.subgraphs.push(SubgraphData::new(subgraph));
         self.ready_queue.push_back(op_id);
 
