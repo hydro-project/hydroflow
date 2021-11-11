@@ -2,10 +2,10 @@ use babyflow::babyflow::Query;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use hydroflow::compiled::{ForEach, Pivot, TeeN};
 use hydroflow::scheduled::collections::Iter;
-use hydroflow::scheduled::ctx::SendCtx;
-use hydroflow::scheduled::handoff::TeeingHandoff;
+// use hydroflow::scheduled::ctx::SendCtx;
+// use hydroflow::scheduled::handoff::TeeingHandoff;
 use hydroflow::scheduled::query::Query as Q;
-use hydroflow::scheduled::Hydroflow;
+// use hydroflow::scheduled::Hydroflow;
 use timely::dataflow::operators::{Map, ToStream};
 
 const NUM_OPS: usize = 20;
@@ -31,36 +31,36 @@ fn benchmark_hydroflow_scheduled(c: &mut Criterion) {
     });
 }
 
-fn benchmark_hydroflow_teer(c: &mut Criterion) {
-    c.bench_function("fan_out/hydroflow/teer", |b| {
-        b.iter(|| {
-            let mut df = Hydroflow::new();
-            let output = df.add_source(|send: &SendCtx<TeeingHandoff<_>>| {
-                send.give((0..NUM_INTS).collect());
-            });
+// fn benchmark_hydroflow_teer(c: &mut Criterion) {
+//     c.bench_function("fan_out/hydroflow/teer", |b| {
+//         b.iter(|| {
+//             let mut df = Hydroflow::new();
+//             let output = df.add_source(|send: &SendCtx<TeeingHandoff<_>>| {
+//                 send.give((0..NUM_INTS).collect());
+//             });
 
-            for _ in 0..(NUM_OPS - 1) {
-                let input = df.add_sink(|recv| {
-                    for v in recv.take_inner() {
-                        black_box(v);
-                    }
-                });
+//             for _ in 0..(NUM_OPS - 1) {
+//                 let input = df.add_sink(|recv| {
+//                     for v in recv.take_inner() {
+//                         black_box(v);
+//                     }
+//                 });
 
-                df.add_edge(output.clone(), input);
-            }
+//                 df.add_edge(output.clone(), input);
+//             }
 
-            let input = df.add_sink(|recv| {
-                for v in recv.take_inner() {
-                    black_box(v);
-                }
-            });
+//             let input = df.add_sink(|recv| {
+//                 for v in recv.take_inner() {
+//                     black_box(v);
+//                 }
+//             });
 
-            df.add_edge(output, input);
+//             df.add_edge(output, input);
 
-            df.tick();
-        })
-    });
-}
+//             df.tick();
+//         })
+//     });
+// }
 
 fn benchmark_hydroflow_compiled(c: &mut Criterion) {
     c.bench_function("fan_out/hydroflow/compiled (push)", |b| {
@@ -173,7 +173,7 @@ fn benchmark_sol(c: &mut Criterion) {
 criterion_group!(
     fan_out_dataflow,
     benchmark_hydroflow_scheduled,
-    benchmark_hydroflow_teer,
+    // benchmark_hydroflow_teer,
     benchmark_hydroflow_compiled,
     benchmark_babyflow,
     benchmark_timely,
