@@ -1,4 +1,5 @@
 #![feature(never_type)]
+#![cfg_attr(feature = "variadic_generics", feature(generic_associated_types))]
 
 pub mod compiled;
 pub mod lang;

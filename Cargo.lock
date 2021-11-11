@@ -454,6 +454,7 @@ version = "0.1.0"
 dependencies = [
  "criterion",
  "futures",
+ "ref-cast",
  "sealed",
  "slotmap",
  "tuple_list",

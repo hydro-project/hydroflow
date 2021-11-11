@@ -1,16 +1,20 @@
 //! Organizational module for Hydroflow Send/RecvCtx structs and Input/OutputPort structs.
-use std::cell::RefCell;
+use std::cell::Cell;
+use std::marker::PhantomData;
 use std::rc::Rc;
 
-use crate::scheduled::handoff::{CanReceive, Handoff, TeeingHandoff, TryCanReceive};
-use crate::scheduled::util::{Once, SendOnce};
-use crate::scheduled::OpId;
+use ref_cast::RefCast;
+
+use crate::scheduled::handoff::{CanReceive, Handoff, TryCanReceive};
+use crate::scheduled::{HandoffId, OpId};
 
 /**
  * Context provided to a compiled component for writing to an [OutputPort].
  */
+#[derive(RefCast)]
+#[repr(transparent)]
 pub struct SendCtx<H: Handoff> {
-    pub(crate) handoff: Rc<RefCell<H>>,
+    pub(crate) handoff: H,
 }
 impl<H: Handoff> SendCtx<H> {
     // // TODO: represent backpressure in this return value.
@@ -22,14 +26,14 @@ impl<H: Handoff> SendCtx<H> {
     where
         H: CanReceive<T>,
     {
-        <H as CanReceive<T>>::give(&self.handoff.borrow(), item)
+        <H as CanReceive<T>>::give(&self.handoff, item)
     }
 
     pub fn try_give<T>(&self, item: T) -> Result<T, T>
     where
         H: TryCanReceive<T>,
     {
-        <H as TryCanReceive<T>>::try_give(&self.handoff.borrow(), item)
+        <H as TryCanReceive<T>>::try_give(&self.handoff, item)
     }
 }
 
@@ -39,31 +43,34 @@ impl<H: Handoff> SendCtx<H> {
 #[must_use]
 pub struct OutputPort<H: Handoff> {
     pub(crate) op_id: OpId,
-    pub(crate) handoff: Rc<RefCell<H>>,
+    pub(crate) handoff_id: Rc<Cell<Option<HandoffId>>>,
+    pub(crate) _phantom: PhantomData<fn() -> H>,
 }
 impl<H: Handoff> OutputPort<H> {
     pub fn op_id(&self) -> OpId {
         self.op_id
     }
 }
-impl<T: Clone> Clone for OutputPort<TeeingHandoff<T>> {
-    fn clone(&self) -> Self {
-        Self {
-            op_id: self.op_id,
-            handoff: Rc::new(RefCell::new(self.handoff.borrow().tee())),
-        }
-    }
-}
+// impl<T: Clone> Clone for OutputPort<TeeingHandoff<T>> {
+//     fn clone(&self) -> Self {
+//         Self {
+//             op_id: self.op_id,
+//             handoff_id: Rc::new(RefCell::new(self.handoff.borrow().tee())),
+//         }
+//     }
+// }
 
 /**
  * Context provided to a compiled component for reading from an [InputPort].
  */
+#[derive(RefCast)]
+#[repr(transparent)]
 pub struct RecvCtx<H: Handoff> {
-    pub(crate) once: Once<Rc<RefCell<H>>>,
+    pub(crate) handoff: H,
 }
 impl<H: Handoff> RecvCtx<H> {
     pub fn take_inner(&self) -> H::Inner {
-        (*self.once.get().borrow_mut()).take_inner()
+        self.handoff.take_inner()
     }
 }
 
@@ -74,7 +81,8 @@ impl<H: Handoff> RecvCtx<H> {
 #[must_use]
 pub struct InputPort<H: Handoff> {
     pub(crate) op_id: OpId,
-    pub(crate) once: SendOnce<Rc<RefCell<H>>>,
+    pub(crate) handoff_id: Rc<Cell<Option<HandoffId>>>,
+    pub(crate) _phantom: PhantomData<fn() -> H>,
 }
 impl<H: Handoff> InputPort<H> {
     pub fn op_id(&self) -> OpId {
