@@ -119,6 +119,7 @@ fn benchmark_hydroflow_scheduled(c: &mut Criterion) {
     use hydroflow::scheduled::ctx::{RecvCtx, SendCtx};
     use hydroflow::scheduled::handoff::VecHandoff;
     use hydroflow::scheduled::Hydroflow;
+    use hydroflow::{tl, tlt};
 
     let edges = &*EDGES;
     let reachable = &*REACHABLE;
@@ -132,13 +133,21 @@ fn benchmark_hydroflow_scheduled(c: &mut Criterion) {
                 send.give(Some(1));
             });
 
-            let mut seen = HashSet::new();
-            let (distinct_in, distinct_out) = df.add_inout(
-                move |recv: &RecvCtx<VecHandoff<usize>>, send: &SendCtx<VecHandoff<usize>>| {
-                    let iter = recv.take_inner().into_iter().filter(|v| seen.insert(*v));
+            let (tl!(distinct_in), tl!(distinct_out), tl!(seen_port)) = df.add_subgraph_stateful::<_, tlt!(VecHandoff<usize>), tlt!(VecHandoff<usize>), tlt!(RefCell<HashSet<usize>>)>(
+                |tl!(recv), tl!(send), tl!(seen_state)| {
+                    let mut seen_state = seen_state.borrow_mut();
+                    let iter = recv.take_inner().into_iter().filter(|v| seen_state.insert(*v));
                     send.give(Iter(iter));
                 },
             );
+            // let (distinct_in, distinct_out) = df.add_inout(
+            //     move |recv: &RecvCtx<VecHandoff<usize>>, send: &SendCtx<VecHandoff<usize>>| {
+            //         let iter = recv.take_inner().into_iter().filter(|v| seen.insert(*v));
+            //         send.give(Iter(iter));
+            //     },
+            // );
+            let seen_handle = df.add_state(Default::default());
+            df.connect_state(seen_handle, seen_port);
 
             let (merge_lhs, merge_rhs, merge_out) = df.add_binary(
                 |recv1: &RecvCtx<VecHandoff<_>>,

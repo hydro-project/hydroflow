@@ -2,13 +2,18 @@ pub mod collections;
 pub mod ctx;
 pub mod handoff;
 #[cfg(feature = "variadic_generics")]
-pub mod handoff_list;
 pub mod input;
 pub mod query;
+pub mod state;
 pub(crate) mod subgraph;
 pub mod util;
 
-use futures::stream::Stream;
+mod handoff_list;
+pub use handoff_list::HandoffList;
+mod state_list;
+pub use state_list::StateList;
+
+use std::any::Any;
 use std::cell::Cell;
 use std::cell::RefCell;
 use std::collections::VecDeque;
@@ -18,13 +23,14 @@ use std::rc::Rc;
 use std::sync::mpsc::{self, Receiver, RecvError, SyncSender, TrySendError};
 use std::task::{Context, Poll};
 
+use futures::stream::Stream;
 use ref_cast::RefCast;
 
 use crate::tl;
 use ctx::{InputPort, OutputPort, RecvCtx, SendCtx};
 use handoff::{Handoff, HandoffMeta, VecHandoff};
+use state::{StateHandle, StatePort};
 #[cfg(feature = "variadic_generics")]
-use handoff_list::HandoffList;
 use subgraph::Subgraph;
 
 use self::handoff::CanReceive;
@@ -32,14 +38,16 @@ use self::input::{Buffer, Input};
 
 pub type SubgraphId = usize;
 pub type HandoffId = usize;
+pub type StateId = usize;
 
 /**
  * A Hydroflow graph. Owns, schedules, and runs the compiled subgraphs.
  */
 pub struct Hydroflow {
     subgraphs: Vec<SubgraphData>,
-    // pub(crate) only for variadic generics [HandoffList].
-    pub(crate) handoffs: Vec<HandoffData>,
+    handoffs: Vec<HandoffData>,
+
+    states: Vec<StateData>,
 
     // TODO(mingwei): separate scheduler into its own struct/trait?
     ready_queue: VecDeque<SubgraphId>,
@@ -48,11 +56,12 @@ pub struct Hydroflow {
 }
 impl Default for Hydroflow {
     fn default() -> Self {
-        let (subgraphs, handoffs, ready_queue) = Default::default();
+        let (subgraphs, handoffs, states, ready_queue) = Default::default();
         let (event_queue_send, event_queue_recv) = mpsc::sync_channel(8_000);
         Self {
             subgraphs,
             handoffs,
+            states,
             ready_queue,
             event_queue_send,
             event_queue_recv,
@@ -95,7 +104,7 @@ impl Hydroflow {
         while let Some(sg_id) = self.ready_queue.pop_front() {
             self.subgraphs[sg_id].scheduled = false;
             let sg_data = self.subgraphs.get_mut(sg_id).unwrap(/* TODO(mingwei) */);
-            sg_data.subgraph.run(&self.handoffs);
+            sg_data.subgraph.run(&self.handoffs, &self.states);
             for handoff_id in sg_data.succs.iter().copied() {
                 let handoff = self.handoffs.get(handoff_id).unwrap(/* TODO(mingwei) */);
                 let succ_id = handoff.succ;
@@ -138,6 +147,35 @@ impl Hydroflow {
         self.ready_queue.extend(0..self.subgraphs.len());
     }
 
+    pub fn add_subgraph_stateful<F, R, W, S>(
+        &mut self,
+        f: F,
+    ) -> (R::InputPort, W::OutputPort, S::StatePort)
+    where
+        F: 'static + for<'a> FnMut(R::RecvCtx<'a>, W::SendCtx<'a>, S::StateRef<'a>),
+        R: 'static + HandoffList,
+        W: 'static + HandoffList,
+        S: 'static + StateList,
+    {
+        let sg_id = self.subgraphs.len();
+
+        let (input_hids, input_ports) = R::make_input(sg_id);
+        let (output_hids, output_ports) = W::make_output(sg_id);
+        let (state_ids, state_ports) = S::make_port();
+
+        let mut f = f;
+        let subgraph = move |handoffs: &[HandoffData], states: &[StateData]| {
+            let recv = R::make_recv(handoffs, &input_hids);
+            let send = W::make_send(handoffs, &output_hids);
+            let states = S::make_refs(states, &state_ids);
+            f(recv, send, states);
+        };
+        self.subgraphs.push(SubgraphData::new(subgraph));
+        self.ready_queue.push_back(sg_id);
+
+        (input_ports, output_ports, state_ports)
+    }
+
     /**
      * Adds a new compiled subgraph with the specified inputs and outputs.
      *
@@ -158,7 +196,7 @@ impl Hydroflow {
         let (output_hids, output_ports) = W::make_output(sg_id);
 
         let mut f = f;
-        let subgraph = move |handoffs: &[HandoffData]| {
+        let subgraph = move |handoffs: &[HandoffData], _states: &[StateData]| {
             let recv = R::make_recv(handoffs, &input_hids);
             let send = W::make_send(handoffs, &output_hids);
             f(recv, send);
@@ -246,7 +284,7 @@ impl Hydroflow {
             .collect();
 
         let mut f = f;
-        let subgraph = move |handoffs: &[HandoffData]| {
+        let subgraph = move |handoffs: &[HandoffData], _states: &[StateData]| {
             let recvs: Vec<&RecvCtx<R>> = input_hids
                 .iter()
                 .map(|hid| hid.get().expect("Attempted to use unattached handoff."))
@@ -460,6 +498,30 @@ impl Hydroflow {
         self.subgraphs[output_port.sg_id].succs.push(handoff_id);
         self.subgraphs[input_port.sg_id].preds.push(handoff_id);
     }
+
+    pub fn add_state<T>(&mut self, state: T) -> StateHandle<T>
+    where
+        T: Any,
+    {
+        let state_id: StateId = self.states.len();
+
+        let state_data = StateData {
+            state: Box::new(state),
+        };
+        self.states.push(state_data);
+
+        StateHandle {
+            state_id,
+            _phantom: PhantomData,
+        }
+    }
+
+    pub fn connect_state<T>(&mut self, state_handle: StateHandle<T>, state_port: StatePort<T>)
+    where
+        T: Any,
+    {
+        state_port.state_id.set(Some(state_handle.state_id));
+    }
 }
 
 /**
@@ -537,6 +599,10 @@ impl SubgraphData {
             scheduled: true,
         }
     }
+}
+
+pub struct StateData {
+    state: Box<dyn Any>,
 }
 
 #[test]
