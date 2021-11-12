@@ -6,7 +6,7 @@ use std::rc::Rc;
 use ref_cast::RefCast;
 
 use crate::scheduled::handoff::{CanReceive, Handoff, TryCanReceive};
-use crate::scheduled::{HandoffId, OpId};
+use crate::scheduled::{HandoffId, SubgraphId};
 
 /**
  * Context provided to a compiled component for writing to an [OutputPort].
@@ -42,19 +42,14 @@ impl<H: Handoff> SendCtx<H> {
  */
 #[must_use]
 pub struct OutputPort<H: Handoff> {
-    pub(crate) op_id: OpId,
+    pub(crate) sg_id: SubgraphId,
     pub(crate) handoff_id: Rc<Cell<Option<HandoffId>>>,
     pub(crate) _phantom: PhantomData<fn() -> H>,
-}
-impl<H: Handoff> OutputPort<H> {
-    pub fn op_id(&self) -> OpId {
-        self.op_id
-    }
 }
 // impl<T: Clone> Clone for OutputPort<TeeingHandoff<T>> {
 //     fn clone(&self) -> Self {
 //         Self {
-//             op_id: self.op_id,
+//             sg_id: self.sg_id,
 //             handoff_id: Rc::new(RefCell::new(self.handoff.borrow().tee())),
 //         }
 //     }
@@ -77,15 +72,9 @@ impl<H: Handoff> RecvCtx<H> {
 /**
  * Handle corresponding to a [RecvCtx]. Consumed by [crate::scheduled::Hydroflow::add_edge] to construct the Hydroflow graph.
  */
-// TODO: figure out how to explain succinctly why this and output port both use Writable
 #[must_use]
 pub struct InputPort<H: Handoff> {
-    pub(crate) op_id: OpId,
+    pub(crate) sg_id: SubgraphId,
     pub(crate) handoff_id: Rc<Cell<Option<HandoffId>>>,
     pub(crate) _phantom: PhantomData<fn() -> H>,
-}
-impl<H: Handoff> InputPort<H> {
-    pub fn op_id(&self) -> OpId {
-        self.op_id
-    }
 }

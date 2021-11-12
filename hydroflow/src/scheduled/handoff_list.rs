@@ -8,7 +8,7 @@ use sealed::sealed;
 use crate::scheduled::ctx::{InputPort, OutputPort, RecvCtx, SendCtx};
 use crate::scheduled::handoff::Handoff;
 use crate::scheduled::HandoffData;
-use crate::scheduled::{HandoffId, OpId};
+use crate::scheduled::{HandoffId, SubgraphId};
 
 /**
  * A variadic list of Handoff types, represented using a lisp-style tuple structure.
@@ -27,14 +27,14 @@ pub trait HandoffList {
     type InputHid;
     type InputPort;
     type RecvCtx<'a>;
-    fn make_input(op_id: OpId) -> (Self::InputHid, Self::InputPort);
+    fn make_input(sg_id: SubgraphId) -> (Self::InputHid, Self::InputPort);
     fn make_recv<'a>(handoffs: &'a [HandoffData], input_hids: &Self::InputHid)
         -> Self::RecvCtx<'a>;
 
     type OutputHid;
     type OutputPort;
     type SendCtx<'a>;
-    fn make_output(op_id: OpId) -> (Self::OutputHid, Self::OutputPort);
+    fn make_output(sg_id: SubgraphId) -> (Self::OutputHid, Self::OutputPort);
     fn make_send<'a>(
         handoffs: &'a [HandoffData],
         output_hids: &Self::OutputHid,
@@ -49,15 +49,15 @@ where
     type InputHid = (Rc<Cell<Option<HandoffId>>>, L::InputHid);
     type InputPort = (InputPort<H>, L::InputPort);
     type RecvCtx<'a> = (&'a RecvCtx<H>, L::RecvCtx<'a>);
-    fn make_input(op_id: OpId) -> (Self::InputHid, Self::InputPort) {
+    fn make_input(sg_id: SubgraphId) -> (Self::InputHid, Self::InputPort) {
         let hid = <Rc<Cell<Option<HandoffId>>>>::default();
         let input = InputPort {
-            op_id,
+            sg_id,
             handoff_id: hid.clone(),
             _phantom: PhantomData,
         };
 
-        let (hid_rest, input_rest) = L::make_input(op_id);
+        let (hid_rest, input_rest) = L::make_input(sg_id);
 
         ((hid, hid_rest), (input, input_rest))
     }
@@ -83,15 +83,15 @@ where
     type OutputHid = (Rc<Cell<Option<HandoffId>>>, L::OutputHid);
     type OutputPort = (OutputPort<H>, L::OutputPort);
     type SendCtx<'a> = (&'a SendCtx<H>, L::SendCtx<'a>);
-    fn make_output(op_id: OpId) -> (Self::OutputHid, Self::OutputPort) {
+    fn make_output(sg_id: SubgraphId) -> (Self::OutputHid, Self::OutputPort) {
         let hid = <Rc<Cell<Option<HandoffId>>>>::default();
         let output = OutputPort {
-            op_id,
+            sg_id,
             handoff_id: hid.clone(),
             _phantom: PhantomData,
         };
 
-        let (hid_rest, output_rest) = L::make_output(op_id);
+        let (hid_rest, output_rest) = L::make_output(sg_id);
 
         ((hid, hid_rest), (output, output_rest))
     }
@@ -119,7 +119,7 @@ impl HandoffList for () {
     type InputHid = ();
     type InputPort = ();
     type RecvCtx<'a> = ();
-    fn make_input(_: OpId) -> (Self::InputHid, Self::InputPort) {
+    fn make_input(_: SubgraphId) -> (Self::InputHid, Self::InputPort) {
         ((), ())
     }
     fn make_recv<'a>(
@@ -131,7 +131,7 @@ impl HandoffList for () {
     type OutputHid = ();
     type OutputPort = ();
     type SendCtx<'a> = ();
-    fn make_output(_: OpId) -> (Self::OutputHid, Self::OutputPort) {
+    fn make_output(_: SubgraphId) -> (Self::OutputHid, Self::OutputPort) {
         ((), ())
     }
     fn make_send<'a>(
