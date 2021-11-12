@@ -8,11 +8,15 @@ pub mod query;
 pub(crate) mod subgraph;
 pub mod util;
 
+use futures::stream::Stream;
 use std::cell::Cell;
+use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::marker::PhantomData;
+use std::pin::Pin;
 use std::rc::Rc;
 use std::sync::mpsc::{self, Receiver, RecvError, SyncSender, TrySendError};
+use std::task::{Context, Poll};
 
 use ref_cast::RefCast;
 
@@ -113,12 +117,17 @@ impl Hydroflow {
      */
     pub fn run(&mut self) -> Result<!, RecvError> {
         loop {
-            // Do any current work.
             self.tick();
-
-            // Block and wait for an external event.
-            self.ready_queue.push_back(self.event_queue_recv.recv()?);
+            self.poll_events()?;
         }
+    }
+
+    /**
+     * Block and wait for an external event.
+     */
+    fn poll_events(&mut self) -> Result<(), RecvError> {
+        self.ready_queue.push_back(self.event_queue_recv.recv()?);
+        Ok(())
     }
 
     /**
@@ -352,6 +361,34 @@ impl Hydroflow {
         });
         let id = output_port.op_id;
         (Input::new(self.reactor(), id, input), output_port)
+    }
+
+    pub fn add_input_from_stream<T, W, S>(&mut self, mut s: S) -> OutputPort<W>
+    where
+        S: 'static + Stream<Item = T> + Unpin,
+        W: 'static + Handoff + CanReceive<T>,
+    {
+        // TODO(justin): we don't currently have a way to access the op id
+        // directly from inside the operator itself, so we have to do this weird
+        // dance to get it in there. This is safe (as in, the RefCell will be
+        // populated by the time the operator runs) since the operator will not
+        // be run synchronously. It would be nicer if the operator just knew its
+        // own id.
+        let waker = Rc::new(RefCell::new(None));
+        let inner_waker = waker.clone();
+
+        let output_port = self.add_source::<_, W>(move |send| {
+            let waker = (*inner_waker).borrow();
+            let mut ctx = Context::from_waker(waker.as_ref().unwrap());
+            let mut r = Pin::new(&mut s);
+            while let Poll::Ready(Some(v)) = r.poll_next(&mut ctx) {
+                send.give(v);
+                r = Pin::new(&mut s);
+            }
+        });
+        *(*waker).borrow_mut() = Some(self.reactor().into_waker(output_port.op_id));
+
+        output_port
     }
 
     /**
@@ -817,4 +854,70 @@ fn test_input_handle_thread() {
     df.tick();
 
     assert_eq!((*vec).borrow().clone(), vec![1, 2, 3]);
+}
+
+#[test]
+fn test_input_channel() {
+    // This test creates two parallel Hydroflow graphs and bounces messages back
+    // and forth between them.
+
+    use futures::channel::mpsc::channel;
+    use std::cell::Cell;
+
+    let (s1, r1) = channel(8000);
+    let (s2, r2) = channel(8000);
+
+    let mut s1_outer = s1.clone();
+    let pairs = [(s1, r2), (s2, r1)];
+
+    // logger/recv is a channel that each graph plops their messages into, to be
+    // able to trace what happens.
+    let (logger, mut recv) = channel(8000);
+
+    for (mut sender, receiver) in pairs {
+        let mut logger = logger.clone();
+        std::thread::spawn(move || {
+            let done = Rc::new(Cell::new(false));
+            let done_inner = done.clone();
+            let mut df = Hydroflow::new();
+
+            let in_chan = df.add_input_from_stream::<_, VecHandoff<usize>, _>(receiver);
+            let input = df.add_sink(move |recv| {
+                for v in recv.take_inner() {
+                    logger.try_send(v).unwrap();
+                    if v > 0 && sender.try_send(Some(v - 1)).is_err() {
+                        (*done_inner).set(true);
+                    }
+                }
+            });
+            df.add_edge(in_chan, input);
+
+            while !(*done).get() {
+                df.tick();
+                df.poll_events().unwrap();
+            }
+        });
+    }
+
+    s1_outer.try_send(Some(10_usize)).unwrap();
+
+    let mut result = Vec::new();
+    let expected = vec![10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0];
+    loop {
+        let val = recv.try_next();
+        match val {
+            Err(_) => {
+                if result.len() >= expected.len() {
+                    break;
+                }
+            }
+            Ok(None) => {
+                break;
+            }
+            Ok(Some(v)) => {
+                result.push(v);
+            }
+        }
+    }
+    assert_eq!(result, expected);
 }
