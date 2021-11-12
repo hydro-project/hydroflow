@@ -30,7 +30,7 @@ use subgraph::Subgraph;
 use self::handoff::CanReceive;
 use self::input::{Buffer, Input};
 
-pub type OpId = usize;
+pub type SubgraphId = usize;
 pub type HandoffId = usize;
 
 /**
@@ -42,9 +42,9 @@ pub struct Hydroflow {
     pub(crate) handoffs: Vec<HandoffData>,
 
     // TODO(mingwei): separate scheduler into its own struct/trait?
-    ready_queue: VecDeque<OpId>,
-    event_queue_send: SyncSender<OpId>, // TODO(mingwei) remove this, to prevent hanging.
-    event_queue_recv: Receiver<OpId>,
+    ready_queue: VecDeque<SubgraphId>,
+    event_queue_send: SyncSender<SubgraphId>, // TODO(mingwei) remove this, to prevent hanging.
+    event_queue_recv: Receiver<SubgraphId>,
 }
 impl Default for Hydroflow {
     fn default() -> Self {
@@ -68,7 +68,7 @@ impl Hydroflow {
     }
 
     /**
-     * Returns a reactor for externally scheduling operators, possibly from another thread.
+     * Returns a reactor for externally scheduling subgraphs, possibly from another thread.
      */
     pub fn reactor(&self) -> Reactor {
         Reactor {
@@ -77,10 +77,10 @@ impl Hydroflow {
     }
 
     fn enqueue_jobs(&mut self) {
-        for op in self.event_queue_recv.try_iter() {
-            if !self.subgraphs[op].scheduled {
-                self.ready_queue.push_back(op);
-                self.subgraphs[op].scheduled = true;
+        for sg in self.event_queue_recv.try_iter() {
+            if !self.subgraphs[sg].scheduled {
+                self.ready_queue.push_back(sg);
+                self.subgraphs[sg].scheduled = true;
             }
         }
     }
@@ -92,9 +92,9 @@ impl Hydroflow {
         // Add any external jobs to ready queue.
         self.enqueue_jobs();
 
-        while let Some(op_id) = self.ready_queue.pop_front() {
-            self.subgraphs[op_id].scheduled = false;
-            let sg_data = self.subgraphs.get_mut(op_id).unwrap(/* TODO(mingwei) */);
+        while let Some(sg_id) = self.ready_queue.pop_front() {
+            self.subgraphs[sg_id].scheduled = false;
+            let sg_data = self.subgraphs.get_mut(sg_id).unwrap(/* TODO(mingwei) */);
             sg_data.subgraph.run(&self.handoffs);
             for handoff_id in sg_data.succs.iter().copied() {
                 let handoff = self.handoffs.get(handoff_id).unwrap(/* TODO(mingwei) */);
@@ -152,10 +152,10 @@ impl Hydroflow {
         W: 'static + HandoffList,
     {
         // TODO(justin): make this less sketchy, we just know we're the only person who will append here.
-        let op_id = self.subgraphs.len();
+        let sg_id = self.subgraphs.len();
 
-        let (input_hids, input_ports) = R::make_input(op_id);
-        let (output_hids, output_ports) = W::make_output(op_id);
+        let (input_hids, input_ports) = R::make_input(sg_id);
+        let (output_hids, output_ports) = W::make_output(sg_id);
 
         let mut f = f;
         let subgraph = move |handoffs: &[HandoffData]| {
@@ -164,7 +164,7 @@ impl Hydroflow {
             f(recv, send);
         };
         self.subgraphs.push(SubgraphData::new(subgraph));
-        self.ready_queue.push_back(op_id);
+        self.ready_queue.push_back(sg_id);
 
         (input_ports, output_ports)
     }
@@ -219,7 +219,7 @@ impl Hydroflow {
         W: 'static + Handoff,
     {
         // TODO(justin): is there a nice way to encapsulate the below?
-        let op_id = self.subgraphs.len();
+        let sg_id = self.subgraphs.len();
 
         let mut input_hids = Vec::new();
         input_hids.resize_with(n, <Rc<Cell<Option<HandoffId>>>>::default);
@@ -230,7 +230,7 @@ impl Hydroflow {
             .iter()
             .cloned()
             .map(|handoff_id| InputPort {
-                op_id,
+                sg_id,
                 handoff_id,
                 _phantom: PhantomData,
             })
@@ -239,7 +239,7 @@ impl Hydroflow {
             .iter()
             .cloned()
             .map(|handoff_id| OutputPort {
-                op_id,
+                sg_id,
                 handoff_id,
                 _phantom: PhantomData,
             })
@@ -279,7 +279,7 @@ impl Hydroflow {
             f(&recvs, &sends)
         };
         self.subgraphs.push(SubgraphData::new(subgraph));
-        self.ready_queue.push_back(op_id);
+        self.ready_queue.push_back(sg_id);
 
         (input_ports, output_ports)
     }
@@ -359,7 +359,7 @@ impl Hydroflow {
                 send.give(x);
             }
         });
-        let id = output_port.op_id;
+        let id = output_port.sg_id;
         (Input::new(self.reactor(), id, input), output_port)
     }
 
@@ -368,11 +368,11 @@ impl Hydroflow {
         S: 'static + Stream<Item = T> + Unpin,
         W: 'static + Handoff + CanReceive<T>,
     {
-        // TODO(justin): we don't currently have a way to access the op id
-        // directly from inside the operator itself, so we have to do this weird
+        // TODO(justin): we don't currently have a way to access the subgraph id
+        // directly from inside the subgraph itself, so we have to do this weird
         // dance to get it in there. This is safe (as in, the RefCell will be
-        // populated by the time the operator runs) since the operator will not
-        // be run synchronously. It would be nicer if the operator just knew its
+        // populated by the time the subgraph runs) since the subgraph will not
+        // be run synchronously. It would be nicer if the subgraph just knew its
         // own id.
         let waker = Rc::new(RefCell::new(None));
         let inner_waker = waker.clone();
@@ -386,7 +386,7 @@ impl Hydroflow {
                 r = Pin::new(&mut s);
             }
         });
-        *(*waker).borrow_mut() = Some(self.reactor().into_waker(output_port.op_id));
+        *(*waker).borrow_mut() = Some(self.reactor().into_waker(output_port.sg_id));
 
         output_port
     }
@@ -406,7 +406,7 @@ impl Hydroflow {
                 send.give(x);
             }
         });
-        let id = output_port.op_id;
+        let id = output_port.sg_id;
         (Input::new(self.reactor(), id, sender), output_port)
     }
 
@@ -452,64 +452,64 @@ impl Hydroflow {
         let handoff = H::default();
         self.handoffs.push(HandoffData::new(
             handoff,
-            output_port.op_id,
-            input_port.op_id,
+            output_port.sg_id,
+            input_port.sg_id,
         ));
 
         // Add successor & predecessor.
-        self.subgraphs[output_port.op_id].succs.push(handoff_id);
-        self.subgraphs[input_port.op_id].preds.push(handoff_id);
+        self.subgraphs[output_port.sg_id].succs.push(handoff_id);
+        self.subgraphs[input_port.sg_id].preds.push(handoff_id);
     }
 }
 
 /**
- * A handle into a specific [Hydroflow] instance for triggering operators to run, possibly from another thread.
+ * A handle into a specific [Hydroflow] instance for triggering subgraphs to run, possibly from another thread.
  */
 #[derive(Clone)]
 pub struct Reactor {
-    event_queue_send: SyncSender<OpId>,
+    event_queue_send: SyncSender<SubgraphId>,
 }
 impl Reactor {
-    pub fn trigger(&self, op_id: OpId) -> Result<(), TrySendError<usize>> {
-        self.event_queue_send.try_send(op_id)
+    pub fn trigger(&self, sg_id: SubgraphId) -> Result<(), TrySendError<usize>> {
+        self.event_queue_send.try_send(sg_id)
     }
 
     #[cfg(feature = "async")]
-    pub fn into_waker(self, op_id: OpId) -> std::task::Waker {
+    pub fn into_waker(self, sg_id: SubgraphId) -> std::task::Waker {
         use futures::task::ArcWake;
         use std::sync::Arc;
 
         struct ReactorWaker {
             reactor: Reactor,
-            op_id: OpId,
+            sg_id: SubgraphId,
         }
         impl ArcWake for ReactorWaker {
             fn wake_by_ref(arc_self: &Arc<Self>) {
-                arc_self.reactor.trigger(arc_self.op_id).unwrap(/* TODO(mingwei) */);
+                arc_self.reactor.trigger(arc_self.sg_id).unwrap(/* TODO(mingwei) */);
             }
         }
 
         let reactor_waker = ReactorWaker {
             reactor: self,
-            op_id,
+            sg_id,
         };
         futures::task::waker(Arc::new(reactor_waker))
     }
 }
 
 /**
- * A handoff and its input and output [OpId]s.
+ * A handoff and its input and output [SubgraphId]s.
  *
  * NOT PART OF PUBLIC API.
  */
 pub struct HandoffData {
     handoff: Box<dyn HandoffMeta>,
     #[allow(dead_code)] // TODO(mingwei)
-    pred: OpId,
-    succ: OpId,
+    pred: SubgraphId,
+    succ: SubgraphId,
 }
 impl HandoffData {
-    pub fn new(handoff: impl 'static + HandoffMeta, pred: OpId, succ: OpId) -> Self {
+    pub fn new(handoff: impl 'static + HandoffMeta, pred: SubgraphId, succ: SubgraphId) -> Self {
         Self {
             handoff: Box::new(handoff),
             pred,
@@ -519,7 +519,7 @@ impl HandoffData {
 }
 
 /**
- * A subgraph along with its predecessor and successor [OpId]s.
+ * A subgraph along with its predecessor and successor [SubgraphId]s.
  * Used internally by the [Hydroflow] struct to represent the dataflow graph structure.
  */
 struct SubgraphData {

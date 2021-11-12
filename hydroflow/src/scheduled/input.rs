@@ -1,6 +1,6 @@
 use std::{cell::RefCell, marker::PhantomData, rc::Rc, sync::mpsc::SyncSender};
 
-use super::{OpId, Reactor};
+use super::{Reactor, SubgraphId};
 
 pub trait Give<T> {
     fn give(&self, t: T) -> bool;
@@ -40,7 +40,7 @@ where
     G: Give<T>,
 {
     reactor: Reactor,
-    op_id: OpId,
+    sg_id: SubgraphId,
     givable: G,
     _marker: PhantomData<T>,
 }
@@ -48,10 +48,10 @@ impl<T, G> Input<T, G>
 where
     G: Give<T>,
 {
-    pub fn new(reactor: Reactor, op_id: OpId, givable: G) -> Self {
+    pub fn new(reactor: Reactor, sg_id: SubgraphId, givable: G) -> Self {
         Input {
             reactor,
-            op_id,
+            sg_id,
             givable,
             _marker: PhantomData,
         }
@@ -62,6 +62,6 @@ where
     }
 
     pub fn flush(&self) {
-        self.reactor.trigger(self.op_id).unwrap(/* TODO(justin) */);
+        self.reactor.trigger(self.sg_id).unwrap(/* TODO(justin) */);
     }
 }
