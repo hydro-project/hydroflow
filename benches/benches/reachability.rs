@@ -140,12 +140,6 @@ fn benchmark_hydroflow_scheduled(c: &mut Criterion) {
                     send.give(Iter(iter));
                 },
             );
-            // let (distinct_in, distinct_out) = df.add_inout(
-            //     move |recv: &RecvCtx<VecHandoff<usize>>, send: &SendCtx<VecHandoff<usize>>| {
-            //         let iter = recv.take_inner().into_iter().filter(|v| seen.insert(*v));
-            //         send.give(Iter(iter));
-            //     },
-            // );
             let seen_handle = df.add_state(Default::default());
             df.connect_state(seen_handle, seen_port);
 
@@ -217,35 +211,44 @@ fn benchmark_hydroflow(c: &mut Criterion) {
                 send.give(Some(1));
             });
 
-            let mut seen = HashSet::new();
-
             type MainIn = tlt!(VecHandoff<usize>, VecHandoff<usize>);
             type MainOut = tlt!(VecHandoff<usize>, VecHandoff<usize>);
-            let (tl!(origins_in, possible_reach_in), tl!(did_reach_out, output_out)) = df
-                .add_subgraph::<_, MainIn, MainOut>(
-                    move |tl!(origins, did_reach_recv), tl!(did_reach_send, output)| {
-                        let origins = origins.take_inner().into_iter();
-                        let possible_reach = did_reach_recv
-                            .take_inner()
-                            .into_iter()
-                            .filter_map(|v| edges.get(&v))
-                            .flatten()
-                            .copied();
+            type MainState = tlt!(RefCell<HashSet<usize>>);
+            let (
+                tl!(origins_in, possible_reach_in),
+                tl!(did_reach_out, output_out),
+                tl!(seen_port),
+            ) = df.add_subgraph_stateful::<_, MainIn, MainOut, MainState>(
+                move |tl!(origins, did_reach_recv),
+                      tl!(did_reach_send, output),
+                      tl!(seen_state)| {
+                    let origins = origins.take_inner().into_iter();
+                    let possible_reach = did_reach_recv
+                        .take_inner()
+                        .into_iter()
+                        .filter_map(|v| edges.get(&v))
+                        .flatten()
+                        .copied();
 
-                        let pull = origins.chain(possible_reach).filter(|v| seen.insert(*v));
+                    let mut seen_state = seen_state.borrow_mut();
+                    let pull = origins
+                        .chain(possible_reach)
+                        .filter(|v| seen_state.insert(*v));
 
-                        let push_reach = ForEach::new(|v| {
-                            did_reach_send.give(Some(v));
-                        });
-                        let push_output = ForEach::new(|v| {
-                            output.give(Some(v));
-                        });
-                        let push = Tee::new(push_reach, push_output);
+                    let push_reach = ForEach::new(|v| {
+                        did_reach_send.give(Some(v));
+                    });
+                    let push_output = ForEach::new(|v| {
+                        output.give(Some(v));
+                    });
+                    let push = Tee::new(push_reach, push_output);
 
-                        let pivot = Pivot::new(pull, push);
-                        pivot.run();
-                    },
-                );
+                    let pivot = Pivot::new(pull, push);
+                    pivot.run();
+                },
+            );
+            let seen_handle = df.add_state(Default::default());
+            df.connect_state(seen_handle, seen_port);
 
             let reachable_verts = Rc::new(RefCell::new(HashSet::new()));
             let reachable_inner = reachable_verts.clone();
