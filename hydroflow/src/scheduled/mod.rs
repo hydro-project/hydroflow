@@ -513,28 +513,26 @@ pub struct Context<'a> {
     states: &'a mut [StateData],
 }
 impl<'a> Context<'a> {
-    pub fn state_ref<T>(&self, handle: StateHandle<T>) -> &T
+    pub fn state_ref<T>(&self, handle: StateHandle<T>) -> Option<&T>
     where
         T: Any,
     {
-        self.states
-            .get(handle.state_id)
-            .expect("Failed to find state with given handle.")
-            .state
-            .downcast_ref()
-            .expect("StateHandle wrong type T for casting.")
+        self.states.get(handle.state_id).map(|opt| {
+            opt.state
+                .downcast_ref()
+                .expect("StateHandle wrong type T for casting.")
+        })
     }
 
-    pub fn state_mut<T>(&mut self, handle: StateHandle<T>) -> &mut T
+    pub fn state_mut<T>(&mut self, handle: StateHandle<T>) -> Option<&mut T>
     where
         T: Any,
     {
-        self.states
-            .get_mut(handle.state_id)
-            .expect("Failed to find state with given handle.")
-            .state
-            .downcast_mut()
-            .expect("StateHandle wrong type T for casting.")
+        self.states.get_mut(handle.state_id).map(|opt| {
+            opt.state
+                .downcast_mut()
+                .expect("StateHandle wrong type T for casting.")
+        })
     }
 }
 

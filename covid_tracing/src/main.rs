@@ -39,8 +39,8 @@ fn main() {
         VecHandoff::<(Pid, DateTime)>
     );
     type MainOut = tlt!(VecHandoff::<(Pid, DateTime)>, VecHandoff::<(Pid, DateTime)>);
-    let (tl!(contacts_in, diagnosed_in, loop_in), tl!(notifs_out, loop_out)) =
-        df.add_subgraph_stateful::<_, MainIn, MainOut>(
+    let (tl!(contacts_in, diagnosed_in, loop_in), tl!(notifs_out, loop_out)) = df
+        .add_subgraph_stateful::<_, MainIn, MainOut>(
             move |context,
                   tl!(contacts_recv, diagnosed_recv, loop_recv),
                   tl!(notifs_send, loop_send)| {
@@ -56,7 +56,7 @@ fn main() {
                     .into_iter()
                     .flat_map(|(pid_a, pid_b, t)| vec![(pid_a, (pid_b, t)), (pid_b, (pid_a, t))]);
 
-                let mut join_state = context.state_ref(state_handle).borrow_mut();
+                let mut join_state = context.state_ref(state_handle).unwrap().borrow_mut();
                 let join_exposed_contacts =
                     SymmetricHashJoin::new(exposed, contacts, &mut *join_state);
                 let new_exposed = join_exposed_contacts.filter_map(

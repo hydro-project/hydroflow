@@ -137,7 +137,7 @@ fn benchmark_hydroflow_scheduled(c: &mut Criterion) {
             let (tl!(distinct_in), tl!(distinct_out)) = df
                 .add_subgraph_stateful::<_, tlt!(VecHandoff<usize>), tlt!(VecHandoff<usize>)>(
                     move |context, tl!(recv), tl!(send)| {
-                        let mut seen_state = context.state_ref(seen_handle).borrow_mut();
+                        let mut seen_state = context.state_ref(seen_handle).unwrap().borrow_mut();
                         let iter = recv
                             .take_inner()
                             .into_iter()
@@ -229,7 +229,7 @@ fn benchmark_hydroflow(c: &mut Criterion) {
                             .flatten()
                             .copied();
 
-                        let mut seen_state = context.state_ref(seen_handle).borrow_mut();
+                        let mut seen_state = context.state_ref(seen_handle).unwrap().borrow_mut();
                         let pull = origins
                             .chain(possible_reach)
                             .filter(|v| seen_state.insert(*v));
