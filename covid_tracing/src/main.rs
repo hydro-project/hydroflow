@@ -31,6 +31,7 @@ fn main() {
     let (people_send, people_out) = df.add_channel_input();
 
     type MyJoinState = RefCell<JoinState<&'static str, (usize, usize), (&'static str, usize)>>;
+    let state_handle = df.add_state(MyJoinState::default());
 
     type MainIn = tlt!(
         VecHandoff::<(Pid, Pid, DateTime)>,
@@ -38,12 +39,11 @@ fn main() {
         VecHandoff::<(Pid, DateTime)>
     );
     type MainOut = tlt!(VecHandoff::<(Pid, DateTime)>, VecHandoff::<(Pid, DateTime)>);
-    type MainState = tlt!(MyJoinState);
-    let (tl!(contacts_in, diagnosed_in, loop_in), tl!(notifs_out, loop_out), tl!(state_port)) =
-        df.add_subgraph_stateful::<_, MainIn, MainOut, MainState>(
-            move |tl!(contacts_recv, diagnosed_recv, loop_recv),
-                  tl!(notifs_send, loop_send),
-                  tl!(join_state)| {
+    let (tl!(contacts_in, diagnosed_in, loop_in), tl!(notifs_out, loop_out)) =
+        df.add_subgraph_stateful::<_, MainIn, MainOut>(
+            move |context,
+                  tl!(contacts_recv, diagnosed_recv, loop_recv),
+                  tl!(notifs_send, loop_send)| {
                 let looped = loop_recv
                     .take_inner()
                     .into_iter()
@@ -56,7 +56,7 @@ fn main() {
                     .into_iter()
                     .flat_map(|(pid_a, pid_b, t)| vec![(pid_a, (pid_b, t)), (pid_b, (pid_a, t))]);
 
-                let mut join_state = join_state.borrow_mut();
+                let mut join_state = context.state_ref(state_handle).borrow_mut();
                 let join_exposed_contacts =
                     SymmetricHashJoin::new(exposed, contacts, &mut *join_state);
                 let new_exposed = join_exposed_contacts.filter_map(
@@ -91,9 +91,6 @@ fn main() {
     df.add_edge(contacts_out, contacts_in);
     df.add_edge(diagnosed_out, diagnosed_in);
     df.add_edge(loop_out, loop_in);
-
-    let state_handle = df.add_state(MyJoinState::default());
-    df.connect_state(state_handle, state_port);
 
     let mut people_exposure = Default::default();
 

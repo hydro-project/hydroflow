@@ -10,8 +10,6 @@ pub mod util;
 
 mod handoff_list;
 pub use handoff_list::HandoffList;
-mod state_list;
-pub use state_list::StateList;
 
 use std::any::Any;
 use std::cell::Cell;
@@ -29,7 +27,7 @@ use ref_cast::RefCast;
 use crate::tl;
 use ctx::{InputPort, OutputPort, RecvCtx, SendCtx};
 use handoff::{Handoff, HandoffMeta, VecHandoff};
-use state::{StateHandle, StatePort};
+use state::StateHandle;
 #[cfg(feature = "variadic_generics")]
 use subgraph::Subgraph;
 
@@ -151,35 +149,6 @@ impl Hydroflow {
         self.ready_queue.extend(0..self.subgraphs.len());
     }
 
-    pub fn add_subgraph_stateful<F, R, W, S>(
-        &mut self,
-        f: F,
-    ) -> (R::InputPort, W::OutputPort, S::StatePort)
-    where
-        F: 'static + for<'a> FnMut(R::RecvCtx<'a>, W::SendCtx<'a>, S::StateRef<'a>),
-        R: 'static + HandoffList,
-        W: 'static + HandoffList,
-        S: 'static + StateList,
-    {
-        let sg_id = self.subgraphs.len();
-
-        let (input_hids, input_ports) = R::make_input(sg_id);
-        let (output_hids, output_ports) = W::make_output(sg_id);
-        let (state_ids, state_ports) = S::make_port();
-
-        let mut f = f;
-        let subgraph = move |context: Context<'_>| {
-            let recv = R::make_recv(context.handoffs, &input_hids);
-            let send = W::make_send(context.handoffs, &output_hids);
-            let states = S::make_refs(context.states, &state_ids);
-            f(recv, send, states);
-        };
-        self.subgraphs.push(SubgraphData::new(subgraph));
-        self.ready_queue.push_back(sg_id);
-
-        (input_ports, output_ports, state_ports)
-    }
-
     /**
      * Adds a new compiled subgraph with the specified inputs and outputs.
      *
@@ -187,9 +156,12 @@ impl Hydroflow {
      */
     #[cfg(feature = "variadic_generics")]
     #[must_use]
-    pub fn add_subgraph<F, R, W>(&mut self, f: F) -> (R::InputPort, W::OutputPort)
+    pub fn add_subgraph_stateful<F, R, W>(
+        &mut self,
+        mut subgraph: F,
+    ) -> (R::InputPort, W::OutputPort)
     where
-        F: 'static + for<'a> FnMut(R::RecvCtx<'a>, W::SendCtx<'a>),
+        F: 'static + FnMut(&Context<'_>, R::RecvCtx<'_>, W::SendCtx<'_>),
         R: 'static + HandoffList,
         W: 'static + HandoffList,
     {
@@ -199,16 +171,31 @@ impl Hydroflow {
         let (input_hids, input_ports) = R::make_input(sg_id);
         let (output_hids, output_ports) = W::make_output(sg_id);
 
-        let mut f = f;
         let subgraph = move |context: Context<'_>| {
             let recv = R::make_recv(context.handoffs, &input_hids);
             let send = W::make_send(context.handoffs, &output_hids);
-            f(recv, send);
+            (subgraph)(&context, recv, send);
         };
         self.subgraphs.push(SubgraphData::new(subgraph));
         self.ready_queue.push_back(sg_id);
 
         (input_ports, output_ports)
+    }
+
+    /**
+     * Adds a new compiled subgraph with the specified inputs and outputs.
+     *
+     * See [HandoffList] for how to specify inputs and outputs.
+     */
+    #[cfg(feature = "variadic_generics")]
+    #[must_use]
+    pub fn add_subgraph<F, R, W>(&mut self, mut subgraph: F) -> (R::InputPort, W::OutputPort)
+    where
+        F: 'static + FnMut(R::RecvCtx<'_>, W::SendCtx<'_>),
+        R: 'static + HandoffList,
+        W: 'static + HandoffList,
+    {
+        self.add_subgraph_stateful::<_, R, W>(move |_context, recv, send| (subgraph)(recv, send))
     }
 
     /**
@@ -519,18 +506,36 @@ impl Hydroflow {
             _phantom: PhantomData,
         }
     }
-
-    pub fn connect_state<T>(&mut self, state_handle: StateHandle<T>, state_port: StatePort<T>)
-    where
-        T: Any,
-    {
-        state_port.state_id.set(Some(state_handle.state_id));
-    }
 }
 
 pub struct Context<'a> {
     handoffs: &'a mut [HandoffData],
     states: &'a mut [StateData],
+}
+impl<'a> Context<'a> {
+    pub fn state_ref<T>(&self, handle: StateHandle<T>) -> &T
+    where
+        T: Any,
+    {
+        self.states
+            .get(handle.state_id)
+            .expect("Failed to find state with given handle.")
+            .state
+            .downcast_ref()
+            .expect("StateHandle wrong type T for casting.")
+    }
+
+    pub fn state_mut<T>(&mut self, handle: StateHandle<T>) -> &mut T
+    where
+        T: Any,
+    {
+        self.states
+            .get_mut(handle.state_id)
+            .expect("Failed to find state with given handle.")
+            .state
+            .downcast_mut()
+            .expect("StateHandle wrong type T for casting.")
+    }
 }
 
 /**
