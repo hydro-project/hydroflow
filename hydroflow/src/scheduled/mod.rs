@@ -21,7 +21,7 @@ use std::marker::PhantomData;
 use std::pin::Pin;
 use std::rc::Rc;
 use std::sync::mpsc::{self, Receiver, RecvError, SyncSender, TrySendError};
-use std::task::{Context, Poll};
+use std::task::{self, Poll};
 
 use futures::stream::Stream;
 use ref_cast::RefCast;
@@ -104,7 +104,11 @@ impl Hydroflow {
         while let Some(sg_id) = self.ready_queue.pop_front() {
             self.subgraphs[sg_id].scheduled = false;
             let sg_data = self.subgraphs.get_mut(sg_id).unwrap(/* TODO(mingwei) */);
-            sg_data.subgraph.run(&self.handoffs, &self.states);
+            let context = Context {
+                handoffs: &mut self.handoffs,
+                states: &mut self.states,
+            };
+            sg_data.subgraph.run(context);
             for handoff_id in sg_data.succs.iter().copied() {
                 let handoff = self.handoffs.get(handoff_id).unwrap(/* TODO(mingwei) */);
                 let succ_id = handoff.succ;
@@ -164,10 +168,10 @@ impl Hydroflow {
         let (state_ids, state_ports) = S::make_port();
 
         let mut f = f;
-        let subgraph = move |handoffs: &[HandoffData], states: &[StateData]| {
-            let recv = R::make_recv(handoffs, &input_hids);
-            let send = W::make_send(handoffs, &output_hids);
-            let states = S::make_refs(states, &state_ids);
+        let subgraph = move |context: Context<'_>| {
+            let recv = R::make_recv(context.handoffs, &input_hids);
+            let send = W::make_send(context.handoffs, &output_hids);
+            let states = S::make_refs(context.states, &state_ids);
             f(recv, send, states);
         };
         self.subgraphs.push(SubgraphData::new(subgraph));
@@ -196,9 +200,9 @@ impl Hydroflow {
         let (output_hids, output_ports) = W::make_output(sg_id);
 
         let mut f = f;
-        let subgraph = move |handoffs: &[HandoffData], _states: &[StateData]| {
-            let recv = R::make_recv(handoffs, &input_hids);
-            let send = W::make_send(handoffs, &output_hids);
+        let subgraph = move |context: Context<'_>| {
+            let recv = R::make_recv(context.handoffs, &input_hids);
+            let send = W::make_send(context.handoffs, &output_hids);
             f(recv, send);
         };
         self.subgraphs.push(SubgraphData::new(subgraph));
@@ -284,11 +288,11 @@ impl Hydroflow {
             .collect();
 
         let mut f = f;
-        let subgraph = move |handoffs: &[HandoffData], _states: &[StateData]| {
+        let subgraph = move |context: Context<'_>| {
             let recvs: Vec<&RecvCtx<R>> = input_hids
                 .iter()
                 .map(|hid| hid.get().expect("Attempted to use unattached handoff."))
-                .map(|hid| handoffs.get(hid).unwrap())
+                .map(|hid| context.handoffs.get(hid).unwrap())
                 .map(|h_data| {
                     h_data
                         .handoff
@@ -302,7 +306,7 @@ impl Hydroflow {
             let sends: Vec<&SendCtx<W>> = output_hids
                 .iter()
                 .map(|hid| hid.get().expect("Attempted to use unattached handoff."))
-                .map(|hid| handoffs.get(hid).unwrap())
+                .map(|hid| context.handoffs.get(hid).unwrap())
                 .map(|h_data| {
                     h_data
                         .handoff
@@ -417,7 +421,7 @@ impl Hydroflow {
 
         let output_port = self.add_source::<_, W>(move |send| {
             let waker = (*inner_waker).borrow();
-            let mut ctx = Context::from_waker(waker.as_ref().unwrap());
+            let mut ctx = task::Context::from_waker(waker.as_ref().unwrap());
             let mut r = Pin::new(&mut s);
             while let Poll::Ready(Some(v)) = r.poll_next(&mut ctx) {
                 send.give(v);
@@ -522,6 +526,11 @@ impl Hydroflow {
     {
         state_port.state_id.set(Some(state_handle.state_id));
     }
+}
+
+pub struct Context<'a> {
+    handoffs: &'a mut [HandoffData],
+    states: &'a mut [StateData],
 }
 
 /**
