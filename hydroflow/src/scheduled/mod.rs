@@ -137,7 +137,7 @@ impl Hydroflow {
      * Block and wait for an external event.
      */
     fn poll_events(&mut self) -> Result<(), RecvError> {
-        self.ready_queue.push_back(self.event_queue_recv.recv()?);
+        self.ready_queue.extend(self.event_queue_recv.try_iter());
         Ok(())
     }
 
@@ -454,7 +454,7 @@ impl Hydroflow {
     }
 
     /**
-     * Adds a new compiled subgraph with one inputs and no outputs.
+     * Adds a new compiled subgraph with one input and no outputs.
      */
     #[cfg(feature = "variadic_generics")]
     pub fn add_sink<F, R>(&mut self, mut subgraph: F) -> InputPort<R>
