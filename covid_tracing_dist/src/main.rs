@@ -1,6 +1,14 @@
 use clap::{ArgEnum, Parser};
 use database::run_database;
+use futures::{SinkExt, StreamExt};
+use hydroflow::scheduled::{
+    ctx::{InputPort, OutputPort, RecvCtx},
+    handoff::VecHandoff,
+    Hydroflow,
+};
 use serde::{Deserialize, Serialize};
+use tokio::{net::TcpStream, runtime::Runtime};
+use tokio_util::codec::{FramedRead, FramedWrite, LengthDelimitedCodec};
 use tracker::run_tracker;
 
 mod database;
@@ -86,6 +94,31 @@ impl Message {
             _ => panic!("unhandled"),
         }
     }
+}
+
+fn add_tcp_stream(
+    df: &mut Hydroflow,
+    rt: Runtime,
+    stream: TcpStream,
+) -> (
+    InputPort<VecHandoff<Message>>,
+    OutputPort<VecHandoff<Message>>,
+) {
+    let (reader, writer) = stream.into_split();
+    let reader = FramedRead::new(reader, LengthDelimitedCodec::new());
+    let reader_port = df.add_input_from_stream::<_, VecHandoff<_>, _>(
+        reader.map(|buf| Some(<Message>::decode(&buf.unwrap().to_vec()))),
+    );
+    let mut writer = FramedWrite::new(writer, LengthDelimitedCodec::new());
+    let writer_port: InputPort<VecHandoff<Message>> =
+        df.add_sink(move |recv: &RecvCtx<VecHandoff<Message>>| {
+            for v in recv.take_inner() {
+                let mut buf = Vec::new();
+                v.encode(&mut buf);
+                rt.block_on(writer.send(buf.into())).unwrap();
+            }
+        });
+    (writer_port, reader_port)
 }
 
 fn main() {
