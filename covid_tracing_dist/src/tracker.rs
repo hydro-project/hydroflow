@@ -1,28 +1,32 @@
-use crate::{Encodable, Message, Opts, CONTACTS_ADDR, DIAGNOSES_ADDR};
+use crate::{add_tcp_stream, Encodable, Message, Opts, CONTACTS_ADDR, DIAGNOSES_ADDR};
 
-use futures::{SinkExt, StreamExt};
 use hydroflow::{
     compiled::{pull::SymmetricHashJoin, ForEach, Pivot, Tee},
-    scheduled::{handoff::VecHandoff, Hydroflow},
+    scheduled::{
+        ctx::{InputPort, OutputPort},
+        handoff::VecHandoff,
+        Hydroflow,
+    },
     tl, tlt,
 };
 use tokio::{net::TcpStream, runtime::Runtime};
 
-use tokio_util::codec::{FramedRead, FramedWrite, LengthDelimitedCodec};
+// Connect to the address, returning input and output ports to communicate on it.
+fn connect(
+    df: &mut Hydroflow,
+    rt: Runtime,
+    addr: &str,
+) -> (
+    InputPort<VecHandoff<Message>>,
+    OutputPort<VecHandoff<Message>>,
+) {
+    let stream = rt.block_on(TcpStream::connect(addr)).unwrap();
+    add_tcp_stream(df, rt, stream)
+}
 
 pub(crate) fn run_tracker(opts: Opts) {
     let rt = Runtime::new().unwrap();
-
-    let stream = rt.block_on(TcpStream::connect(opts.addr)).unwrap();
-
-    let (reader, writer) = stream.into_split();
-    let reader = FramedRead::new(reader, LengthDelimitedCodec::new());
-
     let mut df = Hydroflow::new();
-
-    let inputter = df.add_input_from_stream::<_, VecHandoff<_>, _>(
-        reader.map(|buf| Some(<Message>::decode(&buf.unwrap().to_vec()))),
-    );
 
     type MultiplexIn = tlt!(VecHandoff::<Message>);
     type MultiplexOut = tlt!(
@@ -100,21 +104,26 @@ pub(crate) fn run_tracker(opts: Opts) {
             },
         );
 
+    let (encoder_in, encoder_out) = df.add_inout(|recv, send| {
+        for v in recv.take_inner() {
+            let mut buf = Vec::new();
+            Encodable::encode(&v, &mut buf);
+            send.give(Some(Message::Data {
+                address: 0,
+                data: buf,
+            }));
+        }
+    });
+
     df.add_edge(contacts, contacts_in);
     df.add_edge(diagnoses, diagnosed_in);
     df.add_edge(loop_out, loop_in);
 
-    let mut writer = FramedWrite::new(writer, LengthDelimitedCodec::new());
-    let send_back = df.add_sink(move |recv| {
-        for v in recv.take_inner() {
-            let mut buf = Vec::new();
-            Encodable::encode(&v, &mut buf);
-            rt.block_on(writer.send(buf.into())).unwrap();
-        }
-    });
+    let (network_out, network_in) = connect(&mut df, rt, opts.addr.as_str());
 
-    df.add_edge(notifs_out, send_back);
-    df.add_edge(inputter, demux_in);
+    df.add_edge(notifs_out, encoder_in);
+    df.add_edge(encoder_out, network_out);
+    df.add_edge(network_in, demux_in);
 
     df.run().unwrap();
 }
