@@ -1,12 +1,11 @@
-use crate::{people, Encodable, Message, Opts, CONTACTS_ADDR, DIAGNOSES_ADDR};
+use crate::{add_tcp_stream, people, Encodable, Message, Opts, CONTACTS_ADDR, DIAGNOSES_ADDR};
 
 use std::time::Duration;
 
-use futures::{SinkExt, StreamExt};
 use hydroflow::{
     compiled::{pull::SymmetricHashJoin, ForEach, Pivot},
     scheduled::{
-        ctx::{RecvCtx, SendCtx},
+        ctx::{InputPort, OutputPort, RecvCtx, SendCtx},
         handoff::VecHandoff,
         Hydroflow,
     },
@@ -14,7 +13,24 @@ use hydroflow::{
 };
 use rand::Rng;
 use tokio::{net::TcpListener, runtime::Runtime};
-use tokio_util::codec::{FramedRead, FramedWrite, LengthDelimitedCodec};
+
+// Waits for a single connection on the specified unix port, returning an input
+// and output port allowing communication on it.
+fn bind_one(
+    df: &mut Hydroflow,
+    rt: Runtime,
+    port: usize,
+) -> (
+    InputPort<VecHandoff<Message>>,
+    OutputPort<VecHandoff<Message>>,
+) {
+    let stream = rt
+        .block_on(TcpListener::bind(format!("localhost:{}", port)))
+        .unwrap();
+    let (stream, _) = rt.block_on(stream.accept()).unwrap();
+
+    add_tcp_stream(df, rt, stream)
+}
 
 pub(crate) fn run_database(opts: Opts) {
     let rt = Runtime::new().unwrap();
@@ -27,13 +43,19 @@ pub(crate) fn run_database(opts: Opts) {
     let (diagnoses_in, diagnoses_out) = df.add_channel_input();
     let (people_in, people_out) = df.add_channel_input();
 
-    let stream = rt
-        .block_on(TcpListener::bind(format!("localhost:{}", opts.port)))
-        .unwrap();
-    println!("awaiting connection: {:?}", stream);
-    let (stream, _) = rt.block_on(stream.accept()).unwrap();
-    println!("connected");
-    let (reader, writer) = stream.into_split();
+    let (network_in, network_out) = bind_one(&mut df, rt, opts.port);
+
+    let (encoded_notifs_in, notifs) = df.add_inout(|recv: &RecvCtx<VecHandoff<_>>, send| {
+        for msg in recv.take_inner().into_iter() {
+            match msg {
+                Message::Data { data, .. } => {
+                    send.give(Some(<(String, usize)>::decode(&data)));
+                }
+            }
+        }
+    });
+
+    df.add_edge(network_out, encoded_notifs_in);
 
     std::thread::spawn(move || {
         let mut t = 0;
@@ -41,6 +63,7 @@ pub(crate) fn run_database(opts: Opts) {
         for (id, (name, phone)) in all_people.clone() {
             people_in.give(Some((id.to_owned(), (name.to_owned(), phone.to_owned()))));
         }
+        people_in.flush();
         loop {
             t += 1;
             match rng.gen_range(0..2) as usize {
@@ -69,17 +92,6 @@ pub(crate) fn run_database(opts: Opts) {
         }
     });
 
-    let mut writer = FramedWrite::new(writer, LengthDelimitedCodec::new());
-    let send = df.add_sink(move |recv: &RecvCtx<VecHandoff<Message>>| {
-        for v in recv.take_inner() {
-            // TODO(justin): Pretty bad to keep allocating like this. Need a
-            // better interface.
-            let mut buf = Vec::new();
-            v.encode(&mut buf);
-            rt.block_on(writer.send(buf.into())).unwrap();
-        }
-    });
-
     let (mut ins, mut out) = df.add_n_in_m_out(
         2,
         1,
@@ -90,7 +102,7 @@ pub(crate) fn run_database(opts: Opts) {
         },
     );
 
-    df.add_edge(out.pop().unwrap(), send);
+    df.add_edge(out.pop().unwrap(), network_in);
 
     let (contacts_merge, diagnoses_merge) = (ins.pop().unwrap(), ins.pop().unwrap());
 
@@ -125,12 +137,6 @@ pub(crate) fn run_database(opts: Opts) {
 
     df.add_edge(diagnoses_out, encode_diagnoses_in);
     df.add_edge(encode_diagnoses_out, diagnoses_merge);
-
-    let reader = FramedRead::new(reader, LengthDelimitedCodec::new());
-
-    let notifs = df.add_input_from_stream::<_, VecHandoff<_>, _>(
-        reader.map(|buf| Some(<(String, usize)>::decode(&buf.unwrap().to_vec()))),
-    );
 
     type SubgraphIn = tlt!(
         VecHandoff::<(String, usize)>,
