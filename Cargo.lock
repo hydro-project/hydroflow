@@ -213,8 +213,6 @@ dependencies = [
  "rand",
  "serde",
  "serde_json",
- "tokio",
- "tokio-util",
 ]
 
 [[package]]
@@ -511,11 +509,14 @@ dependencies = [
 name = "hydroflow"
 version = "0.1.0"
 dependencies = [
+ "bytes",
  "criterion",
  "futures",
  "ref-cast",
  "sealed",
  "slotmap",
+ "tokio",
+ "tokio-util",
  "tuple_list",
 ]
 

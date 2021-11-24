@@ -1,24 +1,11 @@
 use clap::{ArgEnum, Parser};
 use database::run_database;
-use futures::{SinkExt, StreamExt};
-use hydroflow::scheduled::{
-    ctx::{InputPort, OutputPort, RecvCtx},
-    handoff::VecHandoff,
-    Hydroflow,
-};
 use serde::{de::DeserializeOwned, Serialize};
-use tokio::{net::TcpStream, runtime::Runtime};
-use tokio_util::codec::{FramedRead, FramedWrite, LengthDelimitedCodec};
 use tracker::run_tracker;
 
 mod database;
 mod people;
 mod tracker;
-
-const MESSAGE_DATA: u8 = 0;
-
-const TYPE_LEN: usize = 1;
-const ADDRESS_LEN: usize = 4;
 
 // This is a distributed version of the covid tracing app. It somewhat
 // arbitrarily splits apart two "responsibilities" of the app to exercise
@@ -81,61 +68,6 @@ where
 
 const CONTACTS_ADDR: u32 = 0;
 const DIAGNOSES_ADDR: u32 = 1;
-
-#[derive(Clone, Debug)]
-enum Message {
-    Data { address: u32, batch: bytes::Bytes },
-}
-
-impl Message {
-    fn encode(&self, v: &mut Vec<u8>) {
-        match self {
-            Message::Data { address, batch } => {
-                v.push(MESSAGE_DATA);
-                v.extend((*address as u32).to_ne_bytes());
-                v.extend(batch);
-            }
-        }
-    }
-
-    fn decode(v: &bytes::Bytes) -> Self {
-        match v[0] {
-            MESSAGE_DATA => {
-                let address =
-                    u32::from_ne_bytes(v[TYPE_LEN..(TYPE_LEN + ADDRESS_LEN)].try_into().unwrap());
-                let batch = v.slice((TYPE_LEN + ADDRESS_LEN)..);
-                Message::Data { address, batch }
-            }
-            _ => panic!("unhandled"),
-        }
-    }
-}
-
-fn add_tcp_stream(
-    df: &mut Hydroflow,
-    rt: Runtime,
-    stream: TcpStream,
-) -> (
-    InputPort<VecHandoff<Message>>,
-    OutputPort<VecHandoff<Message>>,
-) {
-    let (reader, writer) = stream.into_split();
-    let reader = FramedRead::new(reader, LengthDelimitedCodec::new());
-    let reader_port = df.add_input_from_stream::<_, VecHandoff<_>, _>(
-        reader.map(|buf| Some(<Message>::decode(&buf.unwrap().into()))),
-    );
-    let mut writer = FramedWrite::new(writer, LengthDelimitedCodec::new());
-    let writer_port: InputPort<VecHandoff<Message>> =
-        df.add_sink(move |recv: &RecvCtx<VecHandoff<Message>>| {
-            // TODO(justin): figure out a way to eliminate this extra copy/reuse the buffer here.
-            for v in recv.take_inner() {
-                let mut buf = Vec::new();
-                v.encode(&mut buf);
-                rt.block_on(writer.send(buf.into())).unwrap();
-            }
-        });
-    (writer_port, reader_port)
-}
 
 fn main() {
     let opts = Opts::parse();
