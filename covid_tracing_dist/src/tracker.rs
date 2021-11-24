@@ -1,9 +1,10 @@
-use crate::{add_tcp_stream, Encodable, Message, Opts, CONTACTS_ADDR, DIAGNOSES_ADDR};
+use crate::{add_tcp_stream, Decode, Encode, Message, Opts, CONTACTS_ADDR, DIAGNOSES_ADDR};
 
 use hydroflow::{
     compiled::{pull::SymmetricHashJoin, ForEach, Pivot, Tee},
     scheduled::{
-        ctx::{InputPort, OutputPort},
+        collections::Iter,
+        ctx::{InputPort, OutputPort, RecvCtx},
         handoff::VecHandoff,
         Hydroflow,
     },
@@ -38,12 +39,16 @@ pub(crate) fn run_tracker(opts: Opts) {
         .add_subgraph::<_, MultiplexIn, MultiplexOut>(move |tl!(recv), tl!(send1, send2)| {
             for message in recv.take_inner() {
                 match message {
-                    Message::Data { address, data } => match address {
+                    Message::Data { address, batch } => match address {
                         CONTACTS_ADDR => {
-                            send1.give(Some(<(String, String, usize)>::decode(&data)));
+                            send1.give(Iter(
+                                <Vec<(String, String, usize)>>::decode(batch).into_iter(),
+                            ));
                         }
                         DIAGNOSES_ADDR => {
-                            send2.give(Some(<(String, (usize, usize))>::decode(&data)));
+                            send2.give(Iter(
+                                <Vec<(String, (usize, usize))>>::decode(batch).into_iter(),
+                            ));
                         }
                         _ => panic!("invalid port"),
                     },
@@ -104,16 +109,15 @@ pub(crate) fn run_tracker(opts: Opts) {
             },
         );
 
-    let (encoder_in, encoder_out) = df.add_inout(|recv, send| {
-        for v in recv.take_inner() {
+    let (encoder_in, encoder_out) =
+        df.add_inout(|recv: &RecvCtx<VecHandoff<(String, usize)>>, send| {
             let mut buf = Vec::new();
-            Encodable::encode(&v, &mut buf);
+            recv.take_inner().encode(&mut buf);
             send.give(Some(Message::Data {
                 address: 0,
-                data: buf,
+                batch: buf.into(),
             }));
-        }
-    });
+        });
 
     df.add_edge(contacts, contacts_in);
     df.add_edge(diagnoses, diagnosed_in);

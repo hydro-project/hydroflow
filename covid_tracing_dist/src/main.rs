@@ -6,7 +6,7 @@ use hydroflow::scheduled::{
     handoff::VecHandoff,
     Hydroflow,
 };
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Serialize};
 use tokio::{net::TcpStream, runtime::Runtime};
 use tokio_util::codec::{FramedRead, FramedWrite, LengthDelimitedCodec};
 use tracker::run_tracker;
@@ -14,6 +14,11 @@ use tracker::run_tracker;
 mod database;
 mod people;
 mod tracker;
+
+const MESSAGE_DATA: u8 = 0;
+
+const TYPE_LEN: usize = 1;
+const ADDRESS_LEN: usize = 4;
 
 // This is a distributed version of the covid tracing app. It somewhat
 // arbitrarily splits apart two "responsibilities" of the app to exercise
@@ -46,21 +51,31 @@ struct Opts {
 }
 
 // TODO(justin): this trait kind of sucks but it's a placeholder.
-trait Encodable<'a> {
+trait Encode {
     fn encode(&self, v: &mut Vec<u8>);
-    fn decode(v: &'a [u8]) -> Self;
 }
 
-impl<'a, T> Encodable<'a> for T
+impl<T> Encode for T
 where
-    T: Serialize + Deserialize<'a>,
+    T: Serialize,
 {
     fn encode(&self, v: &mut Vec<u8>) {
         v.extend(serde_json::to_vec(self).unwrap());
     }
-    fn decode(v: &'a [u8]) -> Self {
-        let st = std::str::from_utf8(v).unwrap();
-        serde_json::from_str(st).unwrap()
+}
+
+trait Decode {
+    fn decode(v: bytes::Bytes) -> Self;
+}
+
+// TODO(justin): figure out how to do this without DeserializeOwned
+impl<T> Decode for T
+where
+    T: 'static + DeserializeOwned,
+{
+    fn decode(v: bytes::Bytes) -> Self {
+        let st = std::str::from_utf8(&v).unwrap().to_owned();
+        serde_json::from_str(&st).unwrap()
     }
 }
 
@@ -69,27 +84,27 @@ const DIAGNOSES_ADDR: u32 = 1;
 
 #[derive(Clone, Debug)]
 enum Message {
-    Data { address: u32, data: Vec<u8> },
+    Data { address: u32, batch: bytes::Bytes },
 }
 
 impl Message {
     fn encode(&self, v: &mut Vec<u8>) {
         match self {
-            Message::Data { address, data } => {
-                v.push(0);
-                v.extend((*address as u32).to_be_bytes());
-                v.extend(data);
+            Message::Data { address, batch } => {
+                v.push(MESSAGE_DATA);
+                v.extend((*address as u32).to_ne_bytes());
+                v.extend(batch);
             }
         }
     }
 
-    fn decode(v: &[u8]) -> Self {
+    fn decode(v: &bytes::Bytes) -> Self {
         match v[0] {
-            0 => {
-                let address = u32::from_be_bytes(v[1..5].try_into().unwrap());
-                // TODO(justin): extra clone here.
-                let data = v[5..].to_vec();
-                Message::Data { address, data }
+            MESSAGE_DATA => {
+                let address =
+                    u32::from_ne_bytes(v[TYPE_LEN..(TYPE_LEN + ADDRESS_LEN)].try_into().unwrap());
+                let batch = v.slice((TYPE_LEN + ADDRESS_LEN)..);
+                Message::Data { address, batch }
             }
             _ => panic!("unhandled"),
         }
@@ -107,11 +122,12 @@ fn add_tcp_stream(
     let (reader, writer) = stream.into_split();
     let reader = FramedRead::new(reader, LengthDelimitedCodec::new());
     let reader_port = df.add_input_from_stream::<_, VecHandoff<_>, _>(
-        reader.map(|buf| Some(<Message>::decode(&buf.unwrap().to_vec()))),
+        reader.map(|buf| Some(<Message>::decode(&buf.unwrap().into()))),
     );
     let mut writer = FramedWrite::new(writer, LengthDelimitedCodec::new());
     let writer_port: InputPort<VecHandoff<Message>> =
         df.add_sink(move |recv: &RecvCtx<VecHandoff<Message>>| {
+            // TODO(justin): figure out a way to eliminate this extra copy/reuse the buffer here.
             for v in recv.take_inner() {
                 let mut buf = Vec::new();
                 v.encode(&mut buf);
