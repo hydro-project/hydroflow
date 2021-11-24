@@ -1,10 +1,11 @@
-use crate::{add_tcp_stream, people, Encodable, Message, Opts, CONTACTS_ADDR, DIAGNOSES_ADDR};
+use crate::{add_tcp_stream, people, Decode, Encode, Message, Opts, CONTACTS_ADDR, DIAGNOSES_ADDR};
 
 use std::time::Duration;
 
 use hydroflow::{
     compiled::{pull::SymmetricHashJoin, ForEach, Pivot},
     scheduled::{
+        collections::Iter,
         ctx::{InputPort, OutputPort, RecvCtx, SendCtx},
         handoff::VecHandoff,
         Hydroflow,
@@ -45,11 +46,11 @@ pub(crate) fn run_database(opts: Opts) {
 
     let (network_in, network_out) = bind_one(&mut df, rt, opts.port);
 
-    let (encoded_notifs_in, notifs) = df.add_inout(|recv: &RecvCtx<VecHandoff<_>>, send| {
-        for msg in recv.take_inner().into_iter() {
-            match msg {
-                Message::Data { data, .. } => {
-                    send.give(Some(<(String, usize)>::decode(&data)));
+    let (encoded_notifs_in, notifs) = df.add_inout(|recv: &RecvCtx<VecHandoff<Message>>, send| {
+        for message in recv.take_inner().into_iter() {
+            match message {
+                Message::Data { batch, .. } => {
+                    send.give(Iter(<Vec<(String, usize)>>::decode(batch).into_iter()));
                 }
             }
         }
@@ -108,14 +109,12 @@ pub(crate) fn run_database(opts: Opts) {
 
     let (encode_contacts_in, encode_contacts_out) = df.add_inout(
         |recv: &RecvCtx<VecHandoff<(&'static str, &'static str, usize)>>, send| {
-            for p in recv.take_inner() {
-                let mut v = Vec::new();
-                p.encode(&mut v);
-                send.give(Some(Message::Data {
-                    address: CONTACTS_ADDR,
-                    data: v,
-                }));
-            }
+            let mut buf = Vec::new();
+            recv.take_inner().encode(&mut buf);
+            send.give(Some(Message::Data {
+                address: CONTACTS_ADDR,
+                batch: buf.into(),
+            }));
         },
     );
 
@@ -124,14 +123,12 @@ pub(crate) fn run_database(opts: Opts) {
 
     let (encode_diagnoses_in, encode_diagnoses_out) = df.add_inout(
         |recv: &RecvCtx<VecHandoff<(&'static str, (usize, usize))>>, send| {
-            for p in recv.take_inner() {
-                let mut v = Vec::new();
-                p.encode(&mut v);
-                send.give(Some(Message::Data {
-                    address: DIAGNOSES_ADDR,
-                    data: v,
-                }));
-            }
+            let mut buf = Vec::new();
+            recv.take_inner().encode(&mut buf);
+            send.give(Some(Message::Data {
+                address: DIAGNOSES_ADDR,
+                batch: buf.into(),
+            }));
         },
     );
 
