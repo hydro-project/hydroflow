@@ -1,4 +1,4 @@
-use crate::{add_tcp_stream, people, Decode, Encode, Message, Opts, CONTACTS_ADDR, DIAGNOSES_ADDR};
+use crate::{people, Decode, Encode, Opts, CONTACTS_ADDR, DIAGNOSES_ADDR};
 
 use std::time::Duration;
 
@@ -6,36 +6,16 @@ use hydroflow::{
     compiled::{pull::SymmetricHashJoin, ForEach, Pivot},
     scheduled::{
         collections::Iter,
-        ctx::{InputPort, OutputPort, RecvCtx, SendCtx},
+        ctx::{RecvCtx, SendCtx},
         handoff::VecHandoff,
+        net::{Message, Net},
         Hydroflow,
     },
     tl, tlt,
 };
 use rand::Rng;
-use tokio::{net::TcpListener, runtime::Runtime};
-
-// Waits for a single connection on the specified unix port, returning an input
-// and output port allowing communication on it.
-fn bind_one(
-    df: &mut Hydroflow,
-    rt: Runtime,
-    port: usize,
-) -> (
-    InputPort<VecHandoff<Message>>,
-    OutputPort<VecHandoff<Message>>,
-) {
-    let stream = rt
-        .block_on(TcpListener::bind(format!("localhost:{}", port)))
-        .unwrap();
-    let (stream, _) = rt.block_on(stream.accept()).unwrap();
-
-    add_tcp_stream(df, rt, stream)
-}
 
 pub(crate) fn run_database(opts: Opts) {
-    let rt = Runtime::new().unwrap();
-
     let all_people = people::get_people();
 
     let mut df = Hydroflow::new();
@@ -44,7 +24,7 @@ pub(crate) fn run_database(opts: Opts) {
     let (diagnoses_in, diagnoses_out) = df.add_channel_input();
     let (people_in, people_out) = df.add_channel_input();
 
-    let (network_in, network_out) = bind_one(&mut df, rt, opts.port);
+    let (network_in, network_out) = df.bind_one(opts.port);
 
     let (encoded_notifs_in, notifs) = df.add_inout(|recv: &RecvCtx<VecHandoff<Message>>, send| {
         for message in recv.take_inner().into_iter() {

@@ -10,10 +10,13 @@ variadic_generics = []
 
 [dependencies]
 futures = { version = "0.3", optional = true }
+tokio = { version = "1", features = ["full"] }
+tokio-util = { version = "0.6.9", features = ["codec"] }
 ref-cast = "1.0"
 sealed = "0.3"
 slotmap = "1.0"
 tuple_list = "0.1"
+bytes = "1.1.0"
 
 [dev-dependencies]
 criterion = { version = "0.3", features = [ "async_tokio" ] }
