@@ -1,32 +1,18 @@
-use crate::{add_tcp_stream, Decode, Encode, Message, Opts, CONTACTS_ADDR, DIAGNOSES_ADDR};
+use crate::{Decode, Encode, Opts, CONTACTS_ADDR, DIAGNOSES_ADDR};
 
 use hydroflow::{
     compiled::{pull::SymmetricHashJoin, ForEach, Pivot, Tee},
     scheduled::{
         collections::Iter,
-        ctx::{InputPort, OutputPort, RecvCtx},
+        ctx::RecvCtx,
         handoff::VecHandoff,
+        net::{Message, Net},
         Hydroflow,
     },
     tl, tlt,
 };
-use tokio::{net::TcpStream, runtime::Runtime};
-
-// Connect to the address, returning input and output ports to communicate on it.
-fn connect(
-    df: &mut Hydroflow,
-    rt: Runtime,
-    addr: &str,
-) -> (
-    InputPort<VecHandoff<Message>>,
-    OutputPort<VecHandoff<Message>>,
-) {
-    let stream = rt.block_on(TcpStream::connect(addr)).unwrap();
-    add_tcp_stream(df, rt, stream)
-}
 
 pub(crate) fn run_tracker(opts: Opts) {
-    let rt = Runtime::new().unwrap();
     let mut df = Hydroflow::new();
 
     type MultiplexIn = tlt!(VecHandoff::<Message>);
@@ -123,7 +109,7 @@ pub(crate) fn run_tracker(opts: Opts) {
     df.add_edge(diagnoses, diagnosed_in);
     df.add_edge(loop_out, loop_in);
 
-    let (network_out, network_in) = connect(&mut df, rt, opts.addr.as_str());
+    let (network_out, network_in) = df.connect(opts.addr.as_str());
 
     df.add_edge(notifs_out, encoder_in);
     df.add_edge(encoder_out, network_out);
