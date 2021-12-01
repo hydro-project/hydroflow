@@ -108,8 +108,10 @@ impl Hydroflow {
             self.subgraphs[sg_id].scheduled = false;
             let sg_data = self.subgraphs.get_mut(sg_id).unwrap(/* TODO(mingwei) */);
             let context = Context {
+                subgraph_id: sg_id,
                 handoffs: &mut self.handoffs,
                 states: &mut self.states,
+                event_queue_send: &mut self.event_queue_send,
             };
             sg_data.subgraph.run(context);
             for handoff_id in sg_data.succs.iter().copied() {
@@ -499,10 +501,33 @@ impl Hydroflow {
 }
 
 pub struct Context<'a> {
+    subgraph_id: SubgraphId,
     handoffs: &'a mut [HandoffData],
     states: &'a mut [StateData],
+    event_queue_send: &'a mut SyncSender<SubgraphId>,
 }
 impl<'a> Context<'a> {
+    pub fn waker(&self) -> std::task::Waker {
+        use futures::task::ArcWake;
+        use std::sync::Arc;
+
+        struct ReactorWaker {
+            subgraph_id: SubgraphId,
+            event_queue_send: SyncSender<SubgraphId>,
+        }
+        impl ArcWake for ReactorWaker {
+            fn wake_by_ref(arc_self: &Arc<Self>) {
+                arc_self.event_queue_send.send(arc_self.subgraph_id).unwrap(/* TODO(mingwei) */);
+            }
+        }
+
+        let reactor_waker = ReactorWaker {
+            subgraph_id: self.subgraph_id,
+            event_queue_send: self.event_queue_send.clone(),
+        };
+        futures::task::waker(Arc::new(reactor_waker))
+    }
+
     pub fn state_ref<T>(&self, handle: StateHandle<T>) -> &T
     where
         T: Any,
