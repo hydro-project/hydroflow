@@ -17,7 +17,7 @@ fn benchmark_hydroflow(c: &mut Criterion) {
             let mut df = Hydroflow::new();
 
             let mut sent = false;
-            let source = df.add_source(move |send: &SendCtx<VecHandoff<_>>| {
+            let source = df.add_source(move |_ctx, send: &SendCtx<VecHandoff<_>>| {
                 if !sent {
                     sent = true;
                     send.give(Iter(0..NUM_INTS));
@@ -25,7 +25,8 @@ fn benchmark_hydroflow(c: &mut Criterion) {
             });
 
             let (tee_in, mut out1, mut out2) = df.add_binary_out(
-                |recv: &RecvCtx<VecHandoff<_>>,
+                |_ctx,
+                 recv: &RecvCtx<VecHandoff<_>>,
                  send1: &SendCtx<VecHandoff<_>>,
                  send2: &SendCtx<VecHandoff<_>>| {
                     for v in recv.take_inner().into_iter() {
@@ -41,7 +42,8 @@ fn benchmark_hydroflow(c: &mut Criterion) {
             df.add_edge(source, tee_in);
             for _ in 0..NUM_OPS {
                 let (in1, in2, mut new_out1, mut new_out2) = df.add_binary_in_binary_out(
-                    |recv1: &RecvCtx<VecHandoff<_>>,
+                    |_ctx,
+                     recv1: &RecvCtx<VecHandoff<_>>,
                      recv2: &RecvCtx<VecHandoff<_>>,
                      send1,
                      send2| {
@@ -65,7 +67,7 @@ fn benchmark_hydroflow(c: &mut Criterion) {
             }
 
             let (sink1, sink2) = df.add_binary_sink(
-                |recv1: &RecvCtx<VecHandoff<_>>, recv2: &RecvCtx<VecHandoff<_>>| {
+                |_ctx, recv1: &RecvCtx<VecHandoff<_>>, recv2: &RecvCtx<VecHandoff<_>>| {
                     for x in recv1.take_inner() {
                         black_box(x);
                     }
@@ -89,7 +91,7 @@ fn benchmark_hydroflow_builder(c: &mut Criterion) {
             // TODO(justin): this creates more operators than necessary.
             let mut q = Q::new();
 
-            let mut source = q.source(|send| {
+            let mut source = q.source(|_ctx, send| {
                 send.give(Iter(0..NUM_INTS));
             });
 

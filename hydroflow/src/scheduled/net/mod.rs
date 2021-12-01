@@ -77,7 +77,7 @@ impl Hydroflow {
         let mut writer = FramedWrite::new(writer, LengthDelimitedCodec::new());
         let rt = self.rt.clone();
         let writer_port: InputPort<VecHandoff<Message>> =
-            self.add_sink(move |recv: &RecvCtx<VecHandoff<Message>>| {
+            self.add_sink(move |_ctx, recv: &RecvCtx<VecHandoff<Message>>| {
                 // TODO(justin): figure out a way to eliminate this extra copy/reuse the buffer here.
                 for v in recv.take_inner() {
                     let mut buf = Vec::new();

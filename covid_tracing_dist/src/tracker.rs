@@ -22,7 +22,7 @@ pub(crate) fn run_tracker(opts: Opts) {
     );
 
     let (tl!(demux_in), tl!(contacts, diagnoses)) = df
-        .add_subgraph::<_, MultiplexIn, MultiplexOut>(move |tl!(recv), tl!(send1, send2)| {
+        .add_subgraph::<_, MultiplexIn, MultiplexOut>(move |_ctx, tl!(recv), tl!(send1, send2)| {
             for message in recv.take_inner() {
                 match message {
                     Message::Data { address, batch } => match address {
@@ -54,7 +54,9 @@ pub(crate) fn run_tracker(opts: Opts) {
     type MainOut = tlt!(VecHandoff::<(Pid, DateTime)>, VecHandoff::<(Pid, DateTime)>);
     let (tl!(contacts_in, diagnosed_in, loop_in), tl!(notifs_out, loop_out)) = df
         .add_subgraph::<_, MainIn, MainOut>(
-            move |tl!(contacts_recv, diagnosed_recv, loop_recv), tl!(notifs_send, loop_send)| {
+            move |_ctx,
+                  tl!(contacts_recv, diagnosed_recv, loop_recv),
+                  tl!(notifs_send, loop_send)| {
                 let looped = loop_recv
                     .take_inner()
                     .into_iter()
@@ -96,7 +98,7 @@ pub(crate) fn run_tracker(opts: Opts) {
         );
 
     let (encoder_in, encoder_out) =
-        df.add_inout(|recv: &RecvCtx<VecHandoff<(String, usize)>>, send| {
+        df.add_inout(|_ctx, recv: &RecvCtx<VecHandoff<(String, usize)>>, send| {
             let mut buf = Vec::new();
             recv.take_inner().encode(&mut buf);
             send.give(Some(Message::Data {
