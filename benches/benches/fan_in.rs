@@ -17,7 +17,7 @@ fn benchmark_hydroflow(c: &mut Criterion) {
 
             let sources: Vec<_> = (0..NUM_OPS)
                 .map(|i| {
-                    q.source(move |send| {
+                    q.source(move |_ctx, send| {
                         send.give(Iter(make_ints(i)));
                     })
                 })

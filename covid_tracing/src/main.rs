@@ -40,7 +40,7 @@ fn main() {
     );
     type MainOut = tlt!(VecHandoff::<(Pid, DateTime)>, VecHandoff::<(Pid, DateTime)>);
     let (tl!(contacts_in, diagnosed_in, loop_in), tl!(notifs_out, loop_out)) = df
-        .add_subgraph_stateful::<_, MainIn, MainOut>(
+        .add_subgraph::<_, MainIn, MainOut>(
             move |context,
                   tl!(contacts_recv, diagnosed_recv, loop_recv),
                   tl!(notifs_send, loop_send)| {
@@ -99,7 +99,7 @@ fn main() {
         VecHandoff::<(Pid, DateTime)>
     );
     let (tl!(people_in, notifs_in), ()) =
-        df.add_subgraph::<_, NotifsIn, ()>(move |tl!(peoples, exposures), ()| {
+        df.add_subgraph::<_, NotifsIn, ()>(move |_ctx, tl!(peoples, exposures), ()| {
             let exposures = exposures.take_inner().into_iter();
             let peoples = peoples.take_inner().into_iter();
 

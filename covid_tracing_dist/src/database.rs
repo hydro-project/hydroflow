@@ -26,15 +26,16 @@ pub(crate) fn run_database(opts: Opts) {
 
     let (network_in, network_out) = df.bind_one(opts.port);
 
-    let (encoded_notifs_in, notifs) = df.add_inout(|recv: &RecvCtx<VecHandoff<Message>>, send| {
-        for message in recv.take_inner().into_iter() {
-            match message {
-                Message::Data { batch, .. } => {
-                    send.give(Iter(<Vec<(String, usize)>>::decode(batch).into_iter()));
+    let (encoded_notifs_in, notifs) =
+        df.add_inout(|_ctx, recv: &RecvCtx<VecHandoff<Message>>, send| {
+            for message in recv.take_inner().into_iter() {
+                match message {
+                    Message::Data { batch, .. } => {
+                        send.give(Iter(<Vec<(String, usize)>>::decode(batch).into_iter()));
+                    }
                 }
             }
-        }
-    });
+        });
 
     df.add_edge(network_out, encoded_notifs_in);
 
@@ -88,7 +89,7 @@ pub(crate) fn run_database(opts: Opts) {
     let (contacts_merge, diagnoses_merge) = (ins.pop().unwrap(), ins.pop().unwrap());
 
     let (encode_contacts_in, encode_contacts_out) = df.add_inout(
-        |recv: &RecvCtx<VecHandoff<(&'static str, &'static str, usize)>>, send| {
+        |_ctx, recv: &RecvCtx<VecHandoff<(&'static str, &'static str, usize)>>, send| {
             let mut buf = Vec::new();
             recv.take_inner().encode(&mut buf);
             send.give(Some(Message::Data {
@@ -102,7 +103,7 @@ pub(crate) fn run_database(opts: Opts) {
     df.add_edge(encode_contacts_out, contacts_merge);
 
     let (encode_diagnoses_in, encode_diagnoses_out) = df.add_inout(
-        |recv: &RecvCtx<VecHandoff<(&'static str, (usize, usize))>>, send| {
+        |_ctx, recv: &RecvCtx<VecHandoff<(&'static str, (usize, usize))>>, send| {
             let mut buf = Vec::new();
             recv.take_inner().encode(&mut buf);
             send.give(Some(Message::Data {
@@ -122,7 +123,7 @@ pub(crate) fn run_database(opts: Opts) {
 
     let mut join_state = Default::default();
     let (tl!(notif_sink, people_sink), tl!()) =
-        df.add_subgraph::<_, SubgraphIn, ()>(move |tl!(notifs, people), tl!()| {
+        df.add_subgraph::<_, SubgraphIn, ()>(move |_ctx, tl!(notifs, people), tl!()| {
             let join = SymmetricHashJoin::new(
                 notifs.take_inner().into_iter(),
                 people.take_inner().into_iter(),
