@@ -16,7 +16,7 @@ fn benchmark_hydroflow_scheduled(c: &mut Criterion) {
         b.iter(|| {
             let mut q = Q::new();
 
-            let source = q.source(|send| {
+            let source = q.source(|_ctx, send| {
                 send.give(Iter(0..NUM_INTS));
             });
 
