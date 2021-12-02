@@ -51,9 +51,6 @@ pub struct Hydroflow {
     ready_queue: VecDeque<SubgraphId>,
     event_queue_send: SyncSender<SubgraphId>, // TODO(mingwei) remove this, to prevent hanging.
     event_queue_recv: Receiver<SubgraphId>,
-
-    // TODO(justin): Get this out of here.
-    pub rt: Rc<tokio::runtime::Runtime>,
 }
 impl Default for Hydroflow {
     fn default() -> Self {
@@ -66,7 +63,6 @@ impl Default for Hydroflow {
             ready_queue,
             event_queue_send,
             event_queue_recv,
-            rt: Rc::new(tokio::runtime::Runtime::new().unwrap()),
         }
     }
 }
@@ -136,6 +132,18 @@ impl Hydroflow {
         loop {
             self.tick();
             self.poll_events()?;
+        }
+    }
+
+    /**
+     * Run the dataflow graph to completition asynchronously.
+     */
+    pub async fn run_async(&mut self) -> Result<!, RecvError> {
+        loop {
+            self.tick();
+            self.poll_events()?;
+            tokio::task::yield_now().await;
+            // TODO(mingwei): this busy-spins when other tasks are not running.
         }
     }
 
