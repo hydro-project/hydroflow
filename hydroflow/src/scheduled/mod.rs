@@ -14,7 +14,6 @@ pub use handoff_list::HandoffList;
 
 use std::any::Any;
 use std::cell::Cell;
-use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::marker::PhantomData;
 use std::pin::Pin;
@@ -389,26 +388,15 @@ impl Hydroflow {
         S: 'static + Stream<Item = T> + Unpin,
         W: 'static + Handoff + CanReceive<T>,
     {
-        // TODO(justin): we don't currently have a way to access the subgraph id
-        // directly from inside the subgraph itself, so we have to do this weird
-        // dance to get it in there. This is safe (as in, the RefCell will be
-        // populated by the time the subgraph runs) since the subgraph will not
-        // be run synchronously. It would be nicer if the subgraph just knew its
-        // own id.
-        let waker = Rc::new(RefCell::new(None));
-        let inner_waker = waker.clone();
-
-        let output_port = self.add_source::<_, W>(move |_ctx, send| {
-            let waker = (*inner_waker).borrow();
-            let mut ctx = task::Context::from_waker(waker.as_ref().unwrap());
+        let output_port = self.add_source::<_, W>(move |ctx, send| {
+            let waker = ctx.waker();
+            let mut cx = task::Context::from_waker(&waker);
             let mut r = Pin::new(&mut s);
-            while let Poll::Ready(Some(v)) = r.poll_next(&mut ctx) {
+            while let Poll::Ready(Some(v)) = r.poll_next(&mut cx) {
                 send.give(v);
                 r = Pin::new(&mut s);
             }
         });
-        *(*waker).borrow_mut() = Some(self.reactor().into_waker(output_port.sg_id));
-
         output_port
     }
 
@@ -511,21 +499,21 @@ impl<'a> Context<'a> {
         use futures::task::ArcWake;
         use std::sync::Arc;
 
-        struct ReactorWaker {
+        struct ContextWaker {
             subgraph_id: SubgraphId,
             event_queue_send: SyncSender<SubgraphId>,
         }
-        impl ArcWake for ReactorWaker {
+        impl ArcWake for ContextWaker {
             fn wake_by_ref(arc_self: &Arc<Self>) {
                 arc_self.event_queue_send.send(arc_self.subgraph_id).unwrap(/* TODO(mingwei) */);
             }
         }
 
-        let reactor_waker = ReactorWaker {
+        let context_waker = ContextWaker {
             subgraph_id: self.subgraph_id,
             event_queue_send: self.event_queue_send.clone(),
         };
-        futures::task::waker(Arc::new(reactor_waker))
+        futures::task::waker(Arc::new(context_waker))
     }
 
     pub fn state_ref<T>(&self, handle: StateHandle<T>) -> &T

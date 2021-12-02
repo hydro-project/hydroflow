@@ -1,5 +1,6 @@
 #![feature(never_type)]
 #![cfg_attr(feature = "variadic_generics", feature(generic_associated_types))]
+#![allow(clippy::let_and_return)]
 
 pub mod compiled;
 pub mod lang;
