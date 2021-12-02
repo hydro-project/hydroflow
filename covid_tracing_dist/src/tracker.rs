@@ -2,17 +2,11 @@ use crate::{Decode, Encode, Opts, CONTACTS_ADDR, DIAGNOSES_ADDR};
 
 use hydroflow::{
     compiled::{pull::SymmetricHashJoin, ForEach, Pivot, Tee},
-    scheduled::{
-        collections::Iter,
-        ctx::RecvCtx,
-        handoff::VecHandoff,
-        net::{Message, Net},
-        Hydroflow,
-    },
+    scheduled::{collections::Iter, ctx::RecvCtx, handoff::VecHandoff, net::Message, Hydroflow},
     tl, tlt,
 };
 
-pub(crate) fn run_tracker(opts: Opts) {
+pub(crate) async fn run_tracker(opts: Opts) {
     let mut df = Hydroflow::new();
 
     type MultiplexIn = tlt!(VecHandoff::<Message>);
@@ -111,11 +105,11 @@ pub(crate) fn run_tracker(opts: Opts) {
     df.add_edge(diagnoses, diagnosed_in);
     df.add_edge(loop_out, loop_in);
 
-    let (network_out, network_in) = df.connect(opts.addr.as_str());
+    let (network_out, network_in) = df.connect(opts.addr.as_str()).await;
 
     df.add_edge(notifs_out, encoder_in);
     df.add_edge(encoder_out, network_out);
     df.add_edge(network_in, demux_in);
 
-    df.run().unwrap();
+    df.run_async().await.unwrap();
 }
