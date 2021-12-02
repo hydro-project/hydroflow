@@ -1,4 +1,7 @@
-use futures::{SinkExt, StreamExt};
+use std::collections::VecDeque;
+use std::pin::Pin;
+
+use futures::{Sink, StreamExt};
 use tokio::net::{TcpListener, TcpStream};
 use tokio_util::codec::{FramedRead, FramedWrite, LengthDelimitedCodec};
 
@@ -7,25 +10,6 @@ use super::{
     handoff::VecHandoff,
     Hydroflow,
 };
-
-// Networking extensions for the Hydroflow struct.
-pub trait Net {
-    fn connect(
-        &mut self,
-        addr: &str,
-    ) -> (
-        InputPort<VecHandoff<Message>>,
-        OutputPort<VecHandoff<Message>>,
-    );
-
-    fn bind_one(
-        &mut self,
-        port: usize,
-    ) -> (
-        InputPort<VecHandoff<Message>>,
-        OutputPort<VecHandoff<Message>>,
-    );
-}
 
 const MESSAGE_DATA: u8 = 0;
 
@@ -75,48 +59,59 @@ impl Hydroflow {
             reader.map(|buf| Some(<Message>::decode(&buf.unwrap().into()))),
         );
         let mut writer = FramedWrite::new(writer, LengthDelimitedCodec::new());
-        let rt = self.rt.clone();
+
+        let mut message_queue = VecDeque::new();
+
         let writer_port: InputPort<VecHandoff<Message>> =
-            self.add_sink(move |_ctx, recv: &RecvCtx<VecHandoff<Message>>| {
-                // TODO(justin): figure out a way to eliminate this extra copy/reuse the buffer here.
-                for v in recv.take_inner() {
-                    let mut buf = Vec::new();
-                    v.encode(&mut buf);
-                    (*rt).block_on(writer.send(buf.into())).unwrap();
+            self.add_sink(move |ctx, recv: &RecvCtx<VecHandoff<Message>>| {
+                let waker = ctx.waker();
+                let mut cx = std::task::Context::from_waker(&waker);
+
+                // TODO(mingwei): queue may grow unbounded? Subtle rate matching concern.
+                // TODO(mingwei): put into state system.
+                message_queue.extend(recv.take_inner().into_iter());
+                while !message_queue.is_empty() {
+                    if let std::task::Poll::Ready(Ok(())) =
+                        Pin::new(&mut writer).poll_ready(&mut cx)
+                    {
+                        let v = message_queue.pop_front().unwrap();
+                        let mut buf = Vec::new();
+                        v.encode(&mut buf);
+
+                        Pin::new(&mut writer).start_send(buf.into()).unwrap();
+                    }
                 }
+                let _ = Pin::new(&mut writer).poll_flush(&mut cx);
             });
         (writer_port, reader_port)
     }
-}
 
-impl Net for Hydroflow {
     // Connects to the specified address, returning an input and output port
     // allowing communication on it.
-    fn connect(
+    pub async fn connect(
         &mut self,
         addr: &str,
     ) -> (
         InputPort<VecHandoff<Message>>,
         OutputPort<VecHandoff<Message>>,
     ) {
-        let stream = (*self.rt).block_on(TcpStream::connect(addr)).unwrap();
+        let stream = TcpStream::connect(addr).await.unwrap();
         self.add_tcp_stream(stream)
     }
 
     // Waits for a single connection on the specified unix port, returning an input
     // and output port allowing communication on it.
-    fn bind_one(
+    pub async fn bind_one(
         &mut self,
         port: usize,
     ) -> (
         InputPort<VecHandoff<Message>>,
         OutputPort<VecHandoff<Message>>,
     ) {
-        let stream = (*self.rt)
-            .block_on(TcpListener::bind(format!("localhost:{}", port)))
+        let stream = TcpListener::bind(format!("localhost:{}", port))
+            .await
             .unwrap();
-        let (stream, _) = (*self.rt).block_on(stream.accept()).unwrap();
-
+        let (stream, _) = stream.accept().await.unwrap();
         self.add_tcp_stream(stream)
     }
 }

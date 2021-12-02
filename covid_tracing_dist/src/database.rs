@@ -8,14 +8,14 @@ use hydroflow::{
         collections::Iter,
         ctx::{RecvCtx, SendCtx},
         handoff::VecHandoff,
-        net::{Message, Net},
+        net::Message,
         Hydroflow,
     },
     tl, tlt,
 };
 use rand::Rng;
 
-pub(crate) fn run_database(opts: Opts) {
+pub(crate) async fn run_database(opts: Opts) {
     let all_people = people::get_people();
 
     let mut df = Hydroflow::new();
@@ -24,7 +24,7 @@ pub(crate) fn run_database(opts: Opts) {
     let (diagnoses_in, diagnoses_out) = df.add_channel_input();
     let (people_in, people_out) = df.add_channel_input();
 
-    let (network_in, network_out) = df.bind_one(opts.port);
+    let (network_in, network_out) = df.bind_one(opts.port).await;
 
     let (encoded_notifs_in, notifs) =
         df.add_inout(|_ctx, recv: &RecvCtx<VecHandoff<Message>>, send| {
@@ -139,5 +139,5 @@ pub(crate) fn run_database(opts: Opts) {
     df.add_edge(notifs, notif_sink);
     df.add_edge(people_out, people_sink);
 
-    df.run().unwrap();
+    df.run_async().await.unwrap();
 }

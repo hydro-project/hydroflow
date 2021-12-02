@@ -1,5 +1,6 @@
 use clap::{ArgEnum, Parser};
 use database::run_database;
+use hydroflow::tokio;
 use serde::{de::DeserializeOwned, Serialize};
 use tracker::run_tracker;
 
@@ -69,15 +70,16 @@ where
 const CONTACTS_ADDR: u32 = 0;
 const DIAGNOSES_ADDR: u32 = 1;
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let opts = Opts::parse();
 
     match opts.role {
         Role::Database => {
-            run_database(opts);
+            run_database(opts).await;
         }
         Role::Tracker => {
-            run_tracker(opts);
+            run_tracker(opts).await;
         }
     }
 }
