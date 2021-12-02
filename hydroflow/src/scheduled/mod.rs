@@ -7,6 +7,7 @@ pub mod net;
 pub mod query;
 pub mod state;
 pub(crate) mod subgraph;
+pub mod timestamped_query;
 pub mod util;
 
 mod handoff_list;

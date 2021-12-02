@@ -1,6 +1,8 @@
+mod batched;
 mod tee;
 mod vector;
 
+pub use batched::{BatchedHandoff, TimestampedBatch};
 pub use tee::TeeingHandoff;
 pub use vector::VecHandoff;
 

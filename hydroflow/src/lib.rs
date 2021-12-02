@@ -4,6 +4,7 @@
 
 pub mod compiled;
 pub mod lang;
+pub mod progress;
 pub mod scheduled;
 
 pub use tokio;
