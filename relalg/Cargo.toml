@@ -1,0 +1,9 @@
+[package]
+name = "relalg"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0"
+datadriven = "0.6.0"
+hydroflow = { path = "../hydroflow" }
