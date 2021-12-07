@@ -7,3 +7,5 @@ edition = "2021"
 anyhow = "1.0"
 datadriven = "0.6.0"
 hydroflow = { path = "../hydroflow" }
+quote = "1.0"
+xshell = "0.1"

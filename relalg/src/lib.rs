@@ -3,11 +3,12 @@
 use anyhow::bail;
 use sexp::Sexp;
 
+mod codegen;
 mod runtime;
 mod sexp;
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone)]
-enum Datum {
+pub enum Datum {
     Int(i64),
     String(String),
     Bool(bool),
@@ -21,10 +22,14 @@ impl Datum {
             panic!("was not int")
         }
     }
+
+    pub fn is_true(self) -> bool {
+        matches!(self, Datum::Bool(true))
+    }
 }
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone)]
-enum ScalarExpr {
+pub enum ScalarExpr {
     Literal(Datum),
     ColRef(usize),
     Eq(Box<ScalarExpr>, Box<ScalarExpr>),
@@ -32,7 +37,7 @@ enum ScalarExpr {
 }
 
 impl ScalarExpr {
-    fn eval(&self, data: &[Datum]) -> Datum {
+    pub fn eval(&self, data: &[Datum]) -> Datum {
         match self {
             ScalarExpr::Literal(d) => d.clone(),
             ScalarExpr::ColRef(u) => data[*u].clone(),
@@ -154,12 +159,19 @@ fn parse_relexpr(s: Sexp) -> anyhow::Result<RelExpr> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{parse_relexpr, runtime::run_dataflow, sexp::Sexp};
+    use crate::{codegen::generate_dataflow, parse_relexpr, runtime::run_dataflow, sexp::Sexp};
 
     #[test]
     fn datadriven_tests() {
         datadriven::walk("testdata/", |t| {
             t.run(|test_case| match test_case.directive.as_str() {
+                "compile" => {
+                    let sexps = Sexp::parse(test_case.input.clone()).unwrap();
+                    let sexp = (&sexps[0]).clone();
+                    let rel_expr = parse_relexpr(sexp).unwrap();
+                    let output = generate_dataflow(rel_expr);
+                    format!("{}\n", output)
+                }
                 "build" => {
                     let sexps = Sexp::parse(test_case.input.clone()).unwrap();
                     let sexp = (&sexps[0]).clone();
