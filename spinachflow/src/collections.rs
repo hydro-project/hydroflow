@@ -367,7 +367,7 @@ impl<T, const N: usize> IntoIterator for Array<T, N> {
     type IntoIter = IntoIter<T, N>;
 
     fn into_iter(self) -> Self::IntoIter {
-        IntoIter::new(self.0)
+        IntoIterator::into_iter(self.0)
     }
 }
 
@@ -381,8 +381,8 @@ impl<T, const N: usize> IntoIterator for MaskedArray<T, N> {
     type IntoIter = impl Iterator<Item = Self::Item>;
 
     fn into_iter(self) -> Self::IntoIter {
-        IntoIter::new(self.mask)
-            .zip(IntoIter::new(self.vals))
+        IntoIterator::into_iter(self.mask)
+            .zip(IntoIterator::into_iter(self.vals))
             .filter(|(mask, _)| *mask)
             .map(|(_, val)| val)
     }
