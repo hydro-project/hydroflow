@@ -1,6 +1,7 @@
 use babyflow::babyflow::Query;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use hydroflow::scheduled::{collections::Iter, query::Query as Q};
+use hydroflow::lang::collections::Iter;
+use hydroflow::scheduled::query::Query as Q;
 use timely::dataflow::operators::{Concatenate, Inspect, ToStream};
 
 const NUM_OPS: usize = 20;

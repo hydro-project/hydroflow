@@ -515,6 +515,7 @@ dependencies = [
  "ref-cast",
  "sealed",
  "slotmap",
+ "static_assertions",
  "tokio",
  "tokio-util",
  "tuple_list",

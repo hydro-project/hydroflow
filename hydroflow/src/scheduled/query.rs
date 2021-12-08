@@ -1,6 +1,6 @@
 use std::{cell::RefCell, rc::Rc};
 
-use crate::scheduled::collections::Iter;
+use crate::lang::collections::Iter;
 use crate::scheduled::handoff::VecHandoff;
 use crate::scheduled::{Context, Hydroflow, OutputPort, RecvCtx, SendCtx};
 

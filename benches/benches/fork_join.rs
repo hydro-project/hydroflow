@@ -1,6 +1,6 @@
 use babyflow::babyflow::Query;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use hydroflow::scheduled::collections::Iter;
+use hydroflow::lang::collections::Iter;
 use hydroflow::scheduled::ctx::{RecvCtx, SendCtx};
 use hydroflow::scheduled::handoff::VecHandoff;
 use hydroflow::scheduled::query::Query as Q;
