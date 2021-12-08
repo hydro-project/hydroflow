@@ -61,6 +61,7 @@ jobs:
           profile: minimal
           toolchain: nightly
           override: true
+          components: rustfmt
 
       - name: Run cargo test
         uses: actions-rs/cargo@v1
