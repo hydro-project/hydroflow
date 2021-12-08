@@ -2,12 +2,10 @@
 
 use std::{cell::RefCell, rc::Rc};
 
-use hydroflow::scheduled::{
-    collections::Iter,
-    ctx::{OutputPort, RecvCtx},
-    handoff::VecHandoff,
-    Hydroflow,
-};
+use hydroflow::lang::collections::Iter;
+use hydroflow::scheduled::ctx::{OutputPort, RecvCtx};
+use hydroflow::scheduled::handoff::VecHandoff;
+use hydroflow::scheduled::Hydroflow;
 
 use crate::{Datum, RelExpr};
 

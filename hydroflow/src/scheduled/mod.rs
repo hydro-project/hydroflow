@@ -1,4 +1,3 @@
-pub mod collections;
 pub mod ctx;
 pub mod handoff;
 #[cfg(feature = "variadic_generics")]

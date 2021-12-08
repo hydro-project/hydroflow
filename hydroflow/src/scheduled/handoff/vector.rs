@@ -3,7 +3,7 @@ use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::rc::Rc;
 
-use crate::scheduled::collections::Iter;
+use crate::lang::collections::Iter;
 
 use super::{CanReceive, Handoff, HandoffMeta};
 

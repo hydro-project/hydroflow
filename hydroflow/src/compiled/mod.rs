@@ -1,7 +1,7 @@
 use std::{collections::HashMap, marker::PhantomData};
 
 pub mod pull;
-use crate::lang::Lattice;
+use crate::lang::lattice::{Convert, LatticeRepr, Merge};
 
 pub trait Pusherator: Sized {
     type Item;
@@ -48,45 +48,52 @@ where
     }
 }
 
-pub struct GroupBy<K, V, O>
+// TODO(mingwei): Use map-union lattice to represent groups?
+pub struct GroupBy<K, V, V2, O>
 where
     K: Eq + std::hash::Hash + Clone,
-    V: Lattice + Clone,
-    O: Pusherator<Item = (K, V)>,
+    V: LatticeRepr<Lattice = V2::Lattice> + Merge<V2>,
+    V2: LatticeRepr + Convert<V>,
+    O: Pusherator<Item = (K, V::Repr)>,
 {
-    contents: HashMap<K, V>,
+    contents: HashMap<K, V::Repr>,
     out: O,
+    _phantom: std::marker::PhantomData<fn(V2)>,
 }
-impl<K, V, O> Pusherator for GroupBy<K, V, O>
+impl<K, V, V2, O> Pusherator for GroupBy<K, V, V2, O>
 where
     K: Eq + std::hash::Hash + Clone,
-    V: Lattice + Clone,
-    O: Pusherator<Item = (K, V)>,
+    V: LatticeRepr<Lattice = V2::Lattice> + Merge<V2>,
+    V2: LatticeRepr + Convert<V>,
+    O: Pusherator<Item = (K, V::Repr)>,
 {
-    type Item = (K, V);
+    type Item = (K, V2::Repr);
     fn give(&mut self, item: Self::Item) {
         // TODO(justin): we need a more coherent understanding of time in order
         // to not emit a ton of extra stuff here.
         if let Some(v) = self.contents.get_mut(&item.0) {
-            if v.join(&item.1) {
+            if V::merge(v, item.1) {
                 self.out.give((item.0, v.clone()));
             }
         } else {
-            self.contents.insert(item.0.clone(), item.1.clone());
-            self.out.give(item)
+            let v = V2::convert(item.1);
+            self.contents.insert(item.0.clone(), v.clone());
+            self.out.give((item.0, v));
         }
     }
 }
-impl<K, V, O> GroupBy<K, V, O>
+impl<K, V, V2, O> GroupBy<K, V, V2, O>
 where
     K: Eq + std::hash::Hash + Clone,
-    V: Lattice + Clone,
-    O: Pusherator<Item = (K, V)>,
+    V: LatticeRepr<Lattice = V2::Lattice> + Merge<V2>,
+    V2: LatticeRepr + Convert<V>,
+    O: Pusherator<Item = (K, V::Repr)>,
 {
     pub fn new(out: O) -> Self {
         GroupBy {
             contents: HashMap::new(),
             out,
+            _phantom: PhantomData,
         }
     }
 }
@@ -299,10 +306,8 @@ where
 mod tests {
     use std::rc::Rc;
 
-    use crate::{
-        compiled::{Filter, ForEach, GroupBy, Map, Partition, Pivot, Pusherator, Tee},
-        lang::Max,
-    };
+    use crate::compiled::{Filter, ForEach, GroupBy, Map, Partition, Pivot, Pusherator, Tee};
+    use crate::lang::lattice::ord::MaxRepr;
 
     #[test]
     fn linear_chains() {
@@ -400,12 +405,13 @@ mod tests {
     #[test]
     fn map_union() {
         let mut v = Vec::new();
-        let mut pusher = GroupBy::new(ForEach::new(|x| v.push(x)));
+        let mut pusher =
+            <GroupBy<_, MaxRepr<usize>, MaxRepr<usize>, _>>::new(ForEach::new(|x| v.push(x)));
 
-        pusher.give((1_usize, Max::new(1)));
-        pusher.give((1, Max::new(2)));
-        pusher.give((1, Max::new(1)));
+        pusher.give((1, 1));
+        pusher.give((1, 2));
+        pusher.give((1, 1));
 
-        assert_eq!(v, vec![(1, Max::new(1)), (1, Max::new(2))]);
+        assert_eq!(v, vec![(1, 1), (1, 2)]);
     }
 }
