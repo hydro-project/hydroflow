@@ -2,17 +2,12 @@ use crate::{people, Decode, Encode, Opts, CONTACTS_ADDR, DIAGNOSES_ADDR};
 
 use std::time::Duration;
 
-use hydroflow::{
-    compiled::{pull::SymmetricHashJoin, ForEach, Pivot},
-    scheduled::{
-        collections::Iter,
-        ctx::{RecvCtx, SendCtx},
-        handoff::VecHandoff,
-        net::Message,
-        Hydroflow,
-    },
-    tl, tt,
-};
+use hydroflow::compiled::{pull::SymmetricHashJoin, ForEach, Pivot};
+use hydroflow::lang::collections::Iter;
+use hydroflow::scheduled::ctx::{RecvCtx, SendCtx};
+use hydroflow::scheduled::{handoff::VecHandoff, net::Message, Hydroflow};
+use hydroflow::{tl, tt};
+
 use rand::Rng;
 
 pub(crate) async fn run_database(opts: Opts) {
