@@ -3,14 +3,14 @@ use crate::{Decode, Encode, Opts, CONTACTS_ADDR, DIAGNOSES_ADDR};
 use hydroflow::{
     compiled::{pull::SymmetricHashJoin, ForEach, Pivot, Tee},
     scheduled::{collections::Iter, ctx::RecvCtx, handoff::VecHandoff, net::Message, Hydroflow},
-    tl, tlt,
+    tl, tt,
 };
 
 pub(crate) async fn run_tracker(opts: Opts) {
     let mut df = Hydroflow::new();
 
-    type MultiplexIn = tlt!(VecHandoff::<Message>);
-    type MultiplexOut = tlt!(
+    type MultiplexIn = tt!(VecHandoff::<Message>);
+    type MultiplexOut = tt!(
         VecHandoff::<(String, String, usize)>,
         VecHandoff::<(String, (usize, usize))>,
     );
@@ -40,12 +40,12 @@ pub(crate) async fn run_tracker(opts: Opts) {
     type DateTime = usize;
 
     let mut exposed_contacts = Default::default();
-    type MainIn = tlt!(
+    type MainIn = tt!(
         VecHandoff::<(Pid, Pid, DateTime)>,
         VecHandoff::<(Pid, (DateTime, DateTime))>,
         VecHandoff::<(Pid, DateTime)>
     );
-    type MainOut = tlt!(VecHandoff::<(Pid, DateTime)>, VecHandoff::<(Pid, DateTime)>);
+    type MainOut = tt!(VecHandoff::<(Pid, DateTime)>, VecHandoff::<(Pid, DateTime)>);
     let (tl!(contacts_in, diagnosed_in, loop_in), tl!(notifs_out, loop_out)) = df
         .add_subgraph::<_, MainIn, MainOut>(
             move |_ctx,

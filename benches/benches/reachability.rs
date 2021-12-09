@@ -119,7 +119,7 @@ fn benchmark_hydroflow_scheduled(c: &mut Criterion) {
     use hydroflow::scheduled::ctx::{RecvCtx, SendCtx};
     use hydroflow::scheduled::handoff::VecHandoff;
     use hydroflow::scheduled::Hydroflow;
-    use hydroflow::{tl, tlt};
+    use hydroflow::{tl, tt};
 
     let edges = &*EDGES;
     let reachable = &*REACHABLE;
@@ -135,7 +135,7 @@ fn benchmark_hydroflow_scheduled(c: &mut Criterion) {
 
             let seen_handle = df.add_state::<RefCell<HashSet<usize>>>(Default::default());
             let (tl!(distinct_in), tl!(distinct_out)) = df
-                .add_subgraph::<_, tlt!(VecHandoff<usize>), tlt!(VecHandoff<usize>)>(
+                .add_subgraph::<_, tt!(VecHandoff<usize>), tt!(VecHandoff<usize>)>(
                     move |context, tl!(recv), tl!(send)| {
                         let mut seen_state = context.state_ref(seen_handle).borrow_mut();
                         let iter = recv
@@ -202,7 +202,7 @@ fn benchmark_hydroflow(c: &mut Criterion) {
     use hydroflow::scheduled::ctx::{RecvCtx, SendCtx};
     use hydroflow::scheduled::handoff::VecHandoff;
     use hydroflow::scheduled::Hydroflow;
-    use hydroflow::{tl, tlt};
+    use hydroflow::{tl, tt};
 
     let edges = &*EDGES;
     let reachable = &*REACHABLE;
@@ -218,8 +218,8 @@ fn benchmark_hydroflow(c: &mut Criterion) {
 
             let seen_handle = df.add_state::<RefCell<HashSet<usize>>>(Default::default());
 
-            type MainIn = tlt!(VecHandoff<usize>, VecHandoff<usize>);
-            type MainOut = tlt!(VecHandoff<usize>, VecHandoff<usize>);
+            type MainIn = tt!(VecHandoff<usize>, VecHandoff<usize>);
+            type MainOut = tt!(VecHandoff<usize>, VecHandoff<usize>);
             let (tl!(origins_in, possible_reach_in), tl!(did_reach_out, output_out)) = df
                 .add_subgraph::<_, MainIn, MainOut>(
                     move |context, tl!(origins, did_reach_recv), tl!(did_reach_send, output)| {
