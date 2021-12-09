@@ -9,7 +9,7 @@ use hydroflow::compiled::{ForEach, Pivot, Tee};
 use hydroflow::scheduled::collections::Iter;
 use hydroflow::scheduled::handoff::VecHandoff;
 use hydroflow::scheduled::Hydroflow;
-use hydroflow::{tl, tlt};
+use hydroflow::{tl, tt};
 
 use rand::Rng;
 
@@ -33,12 +33,12 @@ fn main() {
     type MyJoinState = RefCell<JoinState<&'static str, (usize, usize), (&'static str, usize)>>;
     let state_handle = df.add_state(MyJoinState::default());
 
-    type MainIn = tlt!(
+    type MainIn = tt!(
         VecHandoff::<(Pid, Pid, DateTime)>,
         VecHandoff::<(Pid, (DateTime, DateTime))>,
         VecHandoff::<(Pid, DateTime)>
     );
-    type MainOut = tlt!(VecHandoff::<(Pid, DateTime)>, VecHandoff::<(Pid, DateTime)>);
+    type MainOut = tt!(VecHandoff::<(Pid, DateTime)>, VecHandoff::<(Pid, DateTime)>);
     let (tl!(contacts_in, diagnosed_in, loop_in), tl!(notifs_out, loop_out)) = df
         .add_subgraph::<_, MainIn, MainOut>(
             move |context,
@@ -94,7 +94,7 @@ fn main() {
 
     let mut people_exposure = Default::default();
 
-    type NotifsIn = tlt!(
+    type NotifsIn = tt!(
         VecHandoff::<(Pid, (Name, Phone))>,
         VecHandoff::<(Pid, DateTime)>
     );

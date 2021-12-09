@@ -11,7 +11,7 @@ use hydroflow::{
         net::Message,
         Hydroflow,
     },
-    tl, tlt,
+    tl, tt,
 };
 use rand::Rng;
 
@@ -116,7 +116,7 @@ pub(crate) async fn run_database(opts: Opts) {
     df.add_edge(diagnoses_out, encode_diagnoses_in);
     df.add_edge(encode_diagnoses_out, diagnoses_merge);
 
-    type SubgraphIn = tlt!(
+    type SubgraphIn = tt!(
         VecHandoff::<(String, usize)>,
         VecHandoff::<(String, (String, String))>,
     );

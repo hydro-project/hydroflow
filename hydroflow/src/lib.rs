@@ -8,4 +8,4 @@ pub mod scheduled;
 
 pub use tokio;
 pub use tuple_list::tuple_list as tl;
-pub use tuple_list::tuple_list_type as tlt;
+pub use tuple_list::tuple_list_type as tt;
