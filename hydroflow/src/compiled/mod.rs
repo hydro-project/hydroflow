@@ -128,7 +128,7 @@ where
 
 pub struct Map<T, U, F, O>
 where
-    F: Fn(T) -> U,
+    F: FnMut(T) -> U,
     O: Pusherator<Item = U>,
 {
     out: O,
@@ -137,7 +137,7 @@ where
 }
 impl<T, U, F, O> Pusherator for Map<T, U, F, O>
 where
-    F: Fn(T) -> U,
+    F: FnMut(T) -> U,
     O: Pusherator<Item = U>,
 {
     type Item = T;
@@ -147,7 +147,7 @@ where
 }
 impl<T, U, F, O> Map<T, U, F, O>
 where
-    F: Fn(T) -> U,
+    F: FnMut(T) -> U,
     O: Pusherator<Item = U>,
 {
     pub fn new(f: F, out: O) -> Self {
@@ -161,7 +161,7 @@ where
 
 pub struct Filter<T, F, O>
 where
-    F: Fn(&T) -> bool,
+    F: FnMut(&T) -> bool,
     O: Pusherator<Item = T>,
 {
     out: O,
@@ -170,7 +170,7 @@ where
 }
 impl<T, F, O> Pusherator for Filter<T, F, O>
 where
-    F: Fn(&T) -> bool,
+    F: FnMut(&T) -> bool,
     O: Pusherator<Item = T>,
 {
     type Item = T;
@@ -182,7 +182,7 @@ where
 }
 impl<T, F, O> Filter<T, F, O>
 where
-    F: Fn(&T) -> bool,
+    F: FnMut(&T) -> bool,
     O: Pusherator<Item = T>,
 {
     pub fn new(f: F, out: O) -> Self {
