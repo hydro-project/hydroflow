@@ -1,6 +1,8 @@
 use crate::{Decode, Encode, Opts, CONTACTS_ADDR, DIAGNOSES_ADDR};
 
-use hydroflow::compiled::{pull::SymmetricHashJoin, ForEach, Pivot, Tee};
+use hydroflow::compiled::{
+    pull::SymmetricHashJoin, InputBuild, IteratorToPusherator, PusheratorBuild,
+};
 use hydroflow::lang::collections::Iter;
 use hydroflow::scheduled::{ctx::RecvCtx, handoff::VecHandoff, net::Message, Hydroflow};
 use hydroflow::{tl, tt};
@@ -77,15 +79,19 @@ pub(crate) async fn run_tracker(opts: Opts) {
                     },
                 );
 
-                let notif_push = ForEach::new(|exposed_person: (Pid, DateTime)| {
-                    notifs_send.give(Some(exposed_person));
-                });
-                let loop_push = ForEach::new(|exposed_person: (Pid, DateTime)| {
-                    loop_send.give(Some(exposed_person));
-                });
-                let push_exposed = Tee::new(notif_push, loop_push);
+                let pivot = new_exposed
+                    .pusherator()
+                    .tee(
+                        InputBuild::new().for_each(|exposed_person: (Pid, DateTime)| {
+                            // Notif push.
+                            notifs_send.give(Some(exposed_person));
+                        }),
+                    )
+                    .for_each(|exposed_person: (Pid, DateTime)| {
+                        // Loop push.
+                        loop_send.give(Some(exposed_person));
+                    });
 
-                let pivot = Pivot::new(new_exposed, push_exposed);
                 pivot.run();
             },
         );
