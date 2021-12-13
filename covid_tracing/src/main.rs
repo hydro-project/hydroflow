@@ -5,7 +5,7 @@ use std::time::Duration;
 
 use hydroflow::compiled::pull::JoinState;
 use hydroflow::compiled::pull::SymmetricHashJoin;
-use hydroflow::compiled::{ForEach, Pivot, Tee};
+use hydroflow::compiled::{InputBuild, IteratorToPusherator, PusheratorBuild};
 use hydroflow::lang::collections::Iter;
 use hydroflow::scheduled::handoff::VecHandoff;
 use hydroflow::scheduled::Hydroflow;
@@ -62,10 +62,6 @@ fn main() {
                 let new_exposed = join_exposed_contacts.filter_map(
                     |(_pid_a, (t_from, t_to), (pid_b, t_contact))| {
                         if t_from < t_contact && t_contact <= t_to {
-                            // println!(
-                            //     "DEBUG: post_join {} ({} {}) ({} {})",
-                            //     _pid_a, t_from, t_to, pid_b, t_contact
-                            // );
                             Some((pid_b, t_contact))
                         } else {
                             None
@@ -73,17 +69,19 @@ fn main() {
                     },
                 );
 
-                let notif_push = ForEach::new(|exposed_person: (Pid, DateTime)| {
-                    // println!("DEBUG: will_notif {} {}", exposed_person.0, exposed_person.1);
-                    notifs_send.give(Some(exposed_person));
-                });
-                let loop_push = ForEach::new(|exposed_person: (Pid, DateTime)| {
-                    // println!("DEBUG: will_loop {}, {}", exposed_person.0, exposed_person.1);
-                    loop_send.give(Some(exposed_person));
-                });
-                let push_exposed = Tee::new(notif_push, loop_push);
+                let pivot = new_exposed
+                    .pusherator()
+                    .tee(
+                        InputBuild::new().for_each(|exposed_person: (Pid, DateTime)| {
+                            // Notif push.
+                            notifs_send.give(Some(exposed_person));
+                        }),
+                    )
+                    .for_each(|exposed_person: (Pid, DateTime)| {
+                        // Loop push.
+                        loop_send.give(Some(exposed_person));
+                    });
 
-                let pivot = Pivot::new(new_exposed, push_exposed);
                 pivot.run();
             },
         );
@@ -104,13 +102,16 @@ fn main() {
             let peoples = peoples.take_inner().into_iter();
 
             let joined = SymmetricHashJoin::new(peoples, exposures, &mut people_exposure);
-            let joined_push = ForEach::new(|(_pid, (name, phone), exposure)| {
-                println!(
-                    "[{}] To {}: Possible Exposure at t = {}",
-                    name, phone, exposure
-                );
-            });
-            let pivot = Pivot::new(joined, joined_push);
+
+            let pivot = joined
+                .pusherator()
+                .for_each(|(_pid, (name, phone), exposure)| {
+                    println!(
+                        "[{}] To {}: Possible Exposure at t = {}",
+                        name, phone, exposure
+                    );
+                });
+
             pivot.run();
         });
 

@@ -2,7 +2,7 @@ use crate::{people, Decode, Encode, Opts, CONTACTS_ADDR, DIAGNOSES_ADDR};
 
 use std::time::Duration;
 
-use hydroflow::compiled::{pull::SymmetricHashJoin, ForEach, Pivot};
+use hydroflow::compiled::{pull::SymmetricHashJoin, IteratorToPusherator, PusheratorBuild};
 use hydroflow::lang::collections::Iter;
 use hydroflow::scheduled::ctx::{RecvCtx, SendCtx};
 use hydroflow::scheduled::{handoff::VecHandoff, net::Message, Hydroflow};
@@ -119,15 +119,15 @@ pub(crate) async fn run_database(opts: Opts) {
     let mut join_state = Default::default();
     let (tl!(notif_sink, people_sink), tl!()) =
         df.add_subgraph::<_, SubgraphIn, ()>(move |_ctx, tl!(notifs, people), tl!()| {
-            let join = SymmetricHashJoin::new(
+            let pivot = SymmetricHashJoin::new(
                 notifs.take_inner().into_iter(),
                 people.take_inner().into_iter(),
                 &mut join_state,
             )
-            .map(|(_id, t, (name, phone))| (name, phone, t));
-            let notify =
-                ForEach::new(|(name, phone, t)| println!("notifying {}, {}@{}", name, phone, t));
-            let pivot = Pivot::new(join, notify);
+            .map(|(_id, t, (name, phone))| (name, phone, t))
+            .pusherator()
+            .for_each(|(name, phone, t)| println!("notifying {}, {}@{}", name, phone, t));
+
             pivot.run();
         });
 

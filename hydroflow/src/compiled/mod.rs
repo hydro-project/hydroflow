@@ -1,304 +1,91 @@
-use std::{collections::HashMap, marker::PhantomData};
-
+pub mod filter;
+pub mod for_each;
+pub mod group_by;
+pub mod map;
+pub mod partition;
+pub mod pivot;
 pub mod pull;
-use crate::lang::lattice::{Convert, LatticeRepr, Merge};
+pub mod tee;
+
+use std::marker::PhantomData;
 
 pub trait Pusherator: Sized {
     type Item;
     fn give(&mut self, item: Self::Item);
+}
 
-    fn map<F, T>(self, f: F) -> Map<T, Self::Item, F, Self>
+pub trait IteratorToPusherator: Iterator {
+    fn pusherator(self) -> pivot::PivotBuild<Self>
     where
-        F: Fn(T) -> Self::Item,
+        Self: Sized,
     {
-        Map::new(f, self)
+        pivot::PivotBuild::new(self)
+    }
+}
+impl<I> IteratorToPusherator for I where I: Sized + Iterator {}
+
+pub trait PusheratorBuild {
+    type Item;
+
+    type Output<O: Pusherator<Item = Self::Item>>;
+    fn build<O>(self, input: O) -> Self::Output<O>
+    where
+        O: Pusherator<Item = Self::Item>;
+
+    fn map<U, F>(self, f: F) -> map::MapBuild<Self::Item, U, F, Self>
+    where
+        Self: Sized,
+        F: FnMut(Self::Item) -> U,
+    {
+        map::MapBuild::new(self, f)
+    }
+
+    fn filter<F>(self, f: F) -> filter::FilterBuild<Self::Item, F, Self>
+    where
+        Self: Sized,
+        F: FnMut(&Self::Item) -> bool,
+    {
+        filter::FilterBuild::new(self, f)
+    }
+
+    fn tee<O1>(self, first_out: O1) -> tee::TeeBuild<Self::Item, O1, Self>
+    where
+        Self: Sized,
+        Self::Item: Clone,
+        O1: Pusherator<Item = Self::Item>,
+    {
+        tee::TeeBuild::new(self, first_out)
+    }
+
+    fn for_each<F>(self, f: F) -> Self::Output<for_each::ForEach<Self::Item, F>>
+    where
+        Self: Sized,
+        F: FnMut(Self::Item),
+    {
+        self.build(for_each::ForEach::new(f))
     }
 }
 
-pub struct Pivot<T, I, P>
-where
-    I: Iterator<Item = T>,
-    P: Pusherator<Item = T>,
-{
-    pull: I,
-    push: P,
-}
-impl<T, I, P> Pivot<T, I, P>
-where
-    I: Iterator<Item = T>,
-    P: Pusherator<Item = T>,
-{
-    pub fn new(pull: I, push: P) -> Self {
-        Self { pull, push }
-    }
-
-    pub fn step(&mut self) -> bool {
-        if let Some(v) = self.pull.next() {
-            self.push.give(v);
-            true
-        } else {
-            false
-        }
-    }
-
-    pub fn run(mut self) {
-        for v in self.pull.by_ref() {
-            self.push.give(v);
-        }
+pub struct InputBuild<T>(PhantomData<T>);
+impl<T> Default for InputBuild<T> {
+    fn default() -> Self {
+        Self(PhantomData)
     }
 }
-
-// TODO(mingwei): Use map-union lattice to represent groups?
-pub struct GroupBy<K, V, V2, O>
-where
-    K: Eq + std::hash::Hash + Clone,
-    V: LatticeRepr<Lattice = V2::Lattice> + Merge<V2>,
-    V2: LatticeRepr + Convert<V>,
-    O: Pusherator<Item = (K, V::Repr)>,
-{
-    contents: HashMap<K, V::Repr>,
-    out: O,
-    _phantom: std::marker::PhantomData<fn(V2)>,
-}
-impl<K, V, V2, O> Pusherator for GroupBy<K, V, V2, O>
-where
-    K: Eq + std::hash::Hash + Clone,
-    V: LatticeRepr<Lattice = V2::Lattice> + Merge<V2>,
-    V2: LatticeRepr + Convert<V>,
-    O: Pusherator<Item = (K, V::Repr)>,
-{
-    type Item = (K, V2::Repr);
-    fn give(&mut self, item: Self::Item) {
-        // TODO(justin): we need a more coherent understanding of time in order
-        // to not emit a ton of extra stuff here.
-        if let Some(v) = self.contents.get_mut(&item.0) {
-            if V::merge(v, item.1) {
-                self.out.give((item.0, v.clone()));
-            }
-        } else {
-            let v = V2::convert(item.1);
-            self.contents.insert(item.0.clone(), v.clone());
-            self.out.give((item.0, v));
-        }
+impl<T> InputBuild<T> {
+    pub fn new() -> Self {
+        Default::default()
     }
 }
-impl<K, V, V2, O> GroupBy<K, V, V2, O>
-where
-    K: Eq + std::hash::Hash + Clone,
-    V: LatticeRepr<Lattice = V2::Lattice> + Merge<V2>,
-    V2: LatticeRepr + Convert<V>,
-    O: Pusherator<Item = (K, V::Repr)>,
-{
-    pub fn new(out: O) -> Self {
-        GroupBy {
-            contents: HashMap::new(),
-            out,
-            _phantom: PhantomData,
-        }
-    }
-}
-
-pub struct ForEach<T, F>
-where
-    F: FnMut(T),
-{
-    f: F,
-    _marker: PhantomData<T>,
-}
-impl<T, F> Pusherator for ForEach<T, F>
-where
-    F: FnMut(T),
-{
+impl<T> PusheratorBuild for InputBuild<T> {
     type Item = T;
-    fn give(&mut self, item: Self::Item) {
-        (self.f)(item)
-    }
-}
-impl<T, F> ForEach<T, F>
-where
-    F: FnMut(T),
-{
-    pub fn new(f: F) -> Self {
-        ForEach {
-            f,
-            _marker: PhantomData,
-        }
-    }
-}
 
-pub struct Map<T, U, F, O>
-where
-    F: FnMut(T) -> U,
-    O: Pusherator<Item = U>,
-{
-    out: O,
-    f: F,
-    _marker: PhantomData<T>,
-}
-impl<T, U, F, O> Pusherator for Map<T, U, F, O>
-where
-    F: FnMut(T) -> U,
-    O: Pusherator<Item = U>,
-{
-    type Item = T;
-    fn give(&mut self, item: Self::Item) {
-        self.out.give((self.f)(item));
-    }
-}
-impl<T, U, F, O> Map<T, U, F, O>
-where
-    F: FnMut(T) -> U,
-    O: Pusherator<Item = U>,
-{
-    pub fn new(f: F, out: O) -> Self {
-        Map {
-            out,
-            f,
-            _marker: PhantomData,
-        }
-    }
-}
-
-pub struct Filter<T, F, O>
-where
-    F: FnMut(&T) -> bool,
-    O: Pusherator<Item = T>,
-{
-    out: O,
-    f: F,
-    _marker: PhantomData<T>,
-}
-impl<T, F, O> Pusherator for Filter<T, F, O>
-where
-    F: FnMut(&T) -> bool,
-    O: Pusherator<Item = T>,
-{
-    type Item = T;
-    fn give(&mut self, item: Self::Item) {
-        if (self.f)(&item) {
-            self.out.give(item);
-        }
-    }
-}
-impl<T, F, O> Filter<T, F, O>
-where
-    F: FnMut(&T) -> bool,
-    O: Pusherator<Item = T>,
-{
-    pub fn new(f: F, out: O) -> Self {
-        Filter {
-            out,
-            f,
-            _marker: PhantomData,
-        }
-    }
-}
-
-pub struct Partition<T, F, O1, O2>
-where
-    F: Fn(&T) -> bool,
-    O1: Pusherator<Item = T>,
-    O2: Pusherator<Item = T>,
-{
-    out1: O1,
-    out2: O2,
-    f: F,
-    _marker: PhantomData<T>,
-}
-impl<T, F, O1, O2> Pusherator for Partition<T, F, O1, O2>
-where
-    F: Fn(&T) -> bool,
-    O1: Pusherator<Item = T>,
-    O2: Pusherator<Item = T>,
-{
-    type Item = T;
-    fn give(&mut self, item: Self::Item) {
-        if (self.f)(&item) {
-            self.out1.give(item);
-        } else {
-            self.out2.give(item);
-        }
-    }
-}
-impl<T, F, O1, O2> Partition<T, F, O1, O2>
-where
-    F: Fn(&T) -> bool,
-    O1: Pusherator<Item = T>,
-    O2: Pusherator<Item = T>,
-{
-    pub fn new(f: F, out1: O1, out2: O2) -> Self {
-        Partition {
-            out1,
-            out2,
-            f,
-            _marker: PhantomData,
-        }
-    }
-}
-
-pub struct Tee<T, O1, O2>
-where
-    T: Clone,
-    O1: Pusherator<Item = T>,
-    O2: Pusherator<Item = T>,
-{
-    out1: O1,
-    out2: O2,
-    _marker: PhantomData<T>,
-}
-impl<T, O1, O2> Pusherator for Tee<T, O1, O2>
-where
-    T: Clone,
-    O1: Pusherator<Item = T>,
-    O2: Pusherator<Item = T>,
-{
-    type Item = T;
-    fn give(&mut self, item: Self::Item) {
-        self.out1.give(item.clone());
-        self.out2.give(item);
-    }
-}
-impl<T, O1, O2> Tee<T, O1, O2>
-where
-    T: Clone,
-    O1: Pusherator<Item = T>,
-    O2: Pusherator<Item = T>,
-{
-    pub fn new(out1: O1, out2: O2) -> Self {
-        Tee {
-            out1,
-            out2,
-            _marker: PhantomData,
-        }
-    }
-}
-
-pub struct TeeN<O, const N: usize>
-where
-    O: Pusherator,
-    O::Item: Clone,
-{
-    outs: [O; N],
-}
-impl<O, const N: usize> Pusherator for TeeN<O, N>
-where
-    O: Pusherator,
-    O::Item: Clone,
-{
-    type Item = O::Item;
-    fn give(&mut self, item: Self::Item) {
-        for out in &mut self.outs {
-            out.give(item.clone()); // TODO: benchmark removing last extra clone.
-        }
-    }
-}
-impl<O, const N: usize> TeeN<O, N>
-where
-    O: Pusherator,
-    O::Item: Clone,
-{
-    pub fn new(outs: [O; N]) -> Self {
-        Self { outs }
+    type Output<O: Pusherator<Item = Self::Item>> = O;
+    fn build<O>(self, input: O) -> Self::Output<O>
+    where
+        O: Pusherator<Item = Self::Item>,
+    {
+        input
     }
 }
 
@@ -306,7 +93,10 @@ where
 mod tests {
     use std::rc::Rc;
 
-    use crate::compiled::{Filter, ForEach, GroupBy, Map, Partition, Pivot, Pusherator, Tee};
+    use super::{
+        filter::Filter, for_each::ForEach, group_by::GroupBy, map::Map, partition::Partition,
+        pivot::Pivot, tee::Tee, Pusherator,
+    };
     use crate::lang::lattice::ord::MaxRepr;
 
     #[test]
@@ -413,5 +203,89 @@ mod tests {
         pusher.give((1, 1));
 
         assert_eq!(v, vec![(1, 1), (1, 2)]);
+    }
+}
+
+#[cfg(test)]
+mod test_builder {
+    use super::*;
+
+    #[test]
+    fn test_builder_constructed() {
+        let pb = InputBuild::<usize>(PhantomData);
+        let pb = filter::FilterBuild::new(pb, |&x| 0 == x % 2);
+        let pb = map::MapBuild::new(pb, |x| x * x);
+
+        let mut output = Vec::new();
+        let mut pusherator = pb.build(for_each::ForEach::new(|x| output.push(x)));
+
+        for x in 0..10 {
+            pusherator.give(x);
+        }
+
+        assert_eq!(&[0, 4, 16, 36, 64], &*output);
+    }
+
+    #[test]
+    fn test_builder() {
+        let mut output = Vec::new();
+
+        let mut pusherator = <InputBuild<usize>>::new()
+            .filter(|&x| 0 == x % 2)
+            .map(|x| x * x)
+            .for_each(|x| output.push(x));
+
+        for x in 0..10 {
+            pusherator.give(x);
+        }
+
+        assert_eq!(&[0, 4, 16, 36, 64], &*output);
+    }
+
+    #[test]
+    fn test_builder_tee() {
+        let mut output_evn = Vec::new();
+        let mut output_odd = Vec::new();
+
+        let mut pusherator = <InputBuild<usize>>::new()
+            .tee(
+                <InputBuild<usize>>::new()
+                    .filter(|&x| 0 == x % 2)
+                    .for_each(|x| output_evn.push(x)),
+            )
+            .filter(|&x| 1 == x % 2)
+            .for_each(|x| output_odd.push(x));
+
+        for x in 0..10 {
+            pusherator.give(x);
+        }
+
+        assert_eq!(&[0, 2, 4, 6, 8], &*output_evn);
+        assert_eq!(&[1, 3, 5, 7, 9], &*output_odd);
+    }
+
+    #[test]
+    fn test_built_subgraph() {
+        let mut output_evn = Vec::new();
+        let mut output_odd = Vec::new();
+
+        let pivot = [1, 2, 3, 4, 5]
+            .into_iter()
+            .chain([3, 4, 5, 6, 7])
+            .map(|x| x * 9)
+            .pusherator()
+            .map(|x| if 0 == x % 2 { x / 2 } else { 3 * x + 1 })
+            .tee(
+                <InputBuild<usize>>::new()
+                    .filter(|&x| 0 == x % 2)
+                    .for_each(|x| output_evn.push(x)),
+            )
+            .filter(|&x| 1 == x % 2)
+            .for_each(|x| output_odd.push(x));
+
+        pivot.run();
+
+        assert_eq!(&[28, 82, 18, 136, 82, 18, 136, 190], &*output_evn);
+        assert_eq!(&[9, 27], &*output_odd);
     }
 }
