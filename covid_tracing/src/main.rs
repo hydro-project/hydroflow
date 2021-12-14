@@ -7,8 +7,9 @@ use hydroflow::compiled::pull::JoinState;
 use hydroflow::compiled::pull::SymmetricHashJoin;
 use hydroflow::compiled::{InputBuild, IteratorToPusherator, PusheratorBuild};
 use hydroflow::lang::collections::Iter;
+use hydroflow::scheduled::graph::Hydroflow;
+use hydroflow::scheduled::graph_ext::GraphExt;
 use hydroflow::scheduled::handoff::VecHandoff;
-use hydroflow::scheduled::Hydroflow;
 use hydroflow::{tl, tt};
 
 use rand::Rng;

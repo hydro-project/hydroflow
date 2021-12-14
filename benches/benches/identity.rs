@@ -1,5 +1,6 @@
 use babyflow::babyflow::Query;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use hydroflow::scheduled::graph_ext::GraphExt;
 use std::sync::mpsc::channel;
 use std::thread;
 use timely::dataflow::operators::{Inspect, Map, ToStream};
@@ -268,8 +269,8 @@ fn benchmark_hydroflow_compiled(c: &mut Criterion) {
 fn benchmark_hydroflow(c: &mut Criterion) {
     use hydroflow::lang::collections::Iter;
     use hydroflow::scheduled::ctx::{RecvCtx, SendCtx};
+    use hydroflow::scheduled::graph::Hydroflow;
     use hydroflow::scheduled::handoff::VecHandoff;
-    use hydroflow::scheduled::Hydroflow;
 
     c.bench_function("identity/hydroflow", |b| {
         b.iter(|| {

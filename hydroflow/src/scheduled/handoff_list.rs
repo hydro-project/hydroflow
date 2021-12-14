@@ -7,8 +7,9 @@ use sealed::sealed;
 
 use crate::scheduled::ctx::{InputPort, OutputPort, RecvCtx, SendCtx};
 use crate::scheduled::handoff::Handoff;
-use crate::scheduled::HandoffData;
-use crate::scheduled::{HandoffId, SubgraphId};
+
+use super::graph::HandoffData;
+use super::{HandoffId, SubgraphId};
 
 /**
  * A variadic list of Handoff types, represented using a lisp-style tuple structure.

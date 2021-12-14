@@ -63,8 +63,9 @@ use tokio_util::codec::{FramedRead, FramedWrite, LengthDelimitedCodec};
 
 use super::{
     ctx::{InputPort, OutputPort, RecvCtx},
+    graph::Hydroflow,
+    graph_ext::GraphExt,
     handoff::VecHandoff,
-    Hydroflow,
 };
 
 const MESSAGE_DATA: u8 = 0;

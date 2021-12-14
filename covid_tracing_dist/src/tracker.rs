@@ -1,11 +1,12 @@
 use crate::{Decode, Encode, Opts, CONTACTS_ADDR, DIAGNOSES_ADDR};
 
-use hydroflow::compiled::{
-    pull::SymmetricHashJoin, InputBuild, IteratorToPusherator, PusheratorBuild,
-};
 use hydroflow::lang::collections::Iter;
-use hydroflow::scheduled::{ctx::RecvCtx, handoff::VecHandoff, net::Message, Hydroflow};
-use hydroflow::{tl, tt};
+use hydroflow::scheduled::{ctx::RecvCtx, graph::Hydroflow, handoff::VecHandoff, net::Message};
+use hydroflow::{
+    compiled::{pull::SymmetricHashJoin, InputBuild, IteratorToPusherator, PusheratorBuild},
+    scheduled::graph_ext::GraphExt,
+    tl, tt,
+};
 
 pub(crate) async fn run_tracker(opts: Opts) {
     let mut df = Hydroflow::new();

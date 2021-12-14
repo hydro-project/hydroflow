@@ -5,9 +5,11 @@ use std::time::Duration;
 use hydroflow::compiled::{pull::SymmetricHashJoin, IteratorToPusherator, PusheratorBuild};
 use hydroflow::lang::collections::Iter;
 use hydroflow::scheduled::ctx::{RecvCtx, SendCtx};
-use hydroflow::scheduled::{handoff::VecHandoff, net::Message, Hydroflow};
-use hydroflow::{tl, tt};
-
+use hydroflow::scheduled::{handoff::VecHandoff, net::Message};
+use hydroflow::{
+    scheduled::{graph::Hydroflow, graph_ext::GraphExt},
+    tl, tt,
+};
 use rand::Rng;
 
 pub(crate) async fn run_database(opts: Opts) {

@@ -1,8 +1,12 @@
 use std::{cell::RefCell, rc::Rc};
 
 use crate::lang::collections::Iter;
+use crate::scheduled::graph::Hydroflow;
 use crate::scheduled::handoff::VecHandoff;
-use crate::scheduled::{Context, Hydroflow, OutputPort, RecvCtx, SendCtx};
+
+use super::context::Context;
+use super::ctx::{OutputPort, RecvCtx, SendCtx};
+use super::graph_ext::GraphExt;
 
 #[derive(Default)]
 pub struct Query {
