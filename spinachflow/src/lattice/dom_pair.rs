@@ -1,3 +1,20 @@
+//! **[DomPair] is not always a valid lattice, i.e. it does not always satisfy
+//! the ACI properties.
+//!
+//! For example, consider the following:
+//! ```txt
+//! A = ([0, 1], 1)
+//! B = ([1, 0], 1)
+//! C = ([1, 1], 0)
+//!
+//! (AB)C = ([1, 1], 1) join ([1, 1], 0) = ([1, 1], 1)
+//! A(BC) = ([0, 1], 1) join ([1, 1], 0) = ([1, 1], 0)
+//! ```
+//!
+//! However if the LHS is a proper vector clock (monotonic clocks on multiple
+//! machines which increase per lattice instance tagged), then the above
+//! anomaly does not arrise.
+
 use std::cmp::Ordering;
 
 use super::bottom::BottomRepr;
