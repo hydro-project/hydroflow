@@ -1,4 +1,3 @@
-use babyflow::babyflow::Query;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use hydroflow::lang::collections::Iter;
 use hydroflow::scheduled::ctx::{RecvCtx, SendCtx};
@@ -132,30 +131,6 @@ fn benchmark_raw(c: &mut Criterion) {
     });
 }
 
-fn benchmark_babyflow(c: &mut Criterion) {
-    c.bench_function("fork_join/babyflow", |b| {
-        b.iter(|| {
-            let mut q = Query::new();
-
-            let mut op = q.source(move |send| {
-                send.give_iterator(0..NUM_INTS);
-            });
-
-            for _ in 0..NUM_OPS {
-                op = q.concat(
-                    (0..BRANCH_FACTOR).map(|i| op.clone().filter(move |x| x % BRANCH_FACTOR == i)),
-                );
-            }
-
-            op.sink(|i| {
-                black_box(i);
-            });
-
-            (*q.df).borrow_mut().run();
-        })
-    });
-}
-
 fn benchmark_timely(c: &mut Criterion) {
     c.bench_function("fork_join/timely", |b| {
         b.iter(|| {
@@ -176,47 +151,6 @@ fn benchmark_timely(c: &mut Criterion) {
                 });
             });
         })
-    });
-}
-
-fn benchmark_spinachflow_asym(c: &mut Criterion) {
-    c.bench_function("fork_join/spinachflow (asymmetric)", |b| {
-        b.to_async(
-            tokio::runtime::Builder::new_current_thread()
-                .build()
-                .unwrap(),
-        )
-        .iter(|| {
-            async {
-                use spinachflow::futures::StreamExt;
-                use spinachflow::futures::future::ready;
-
-                let stream = spinachflow::futures::stream::iter(0..NUM_INTS);
-
-                ///// MAGIC NUMBER!!!!!!!! is NUM_OPS
-                seq_macro::seq!(N in 0..20 {
-                    let mut asym_split = spinachflow::stream::AsymSplit::new(stream);
-                    let mut i = 0;
-                    let splits = [(); BRANCH_FACTOR - 1].map(|_| {
-                        i += 1;
-                        asym_split.add_split().filter(move |x| ready(i == x % BRANCH_FACTOR))
-                    });
-                    let stream = spinachflow::stream::SelectArr::new(splits);
-
-                    let asym_split = asym_split.filter(|x| ready(0 == x % BRANCH_FACTOR));
-                    let stream = spinachflow::futures::stream::select(asym_split, stream);
-                    let stream: std::pin::Pin<Box<dyn spinachflow::futures::Stream<Item = usize>>> = Box::pin(stream);
-                });
-
-                let mut stream = stream;
-                loop {
-                    let item = stream.next().await;
-                    if item.is_none() {
-                        break;
-                    }
-                }
-            }
-        });
     });
 }
 
@@ -367,12 +301,10 @@ criterion_group!(
     fork_join_dataflow,
     benchmark_hydroflow,
     benchmark_hydroflow_builder,
-    benchmark_babyflow,
     benchmark_timely,
     benchmark_raw,
     // benchmark_spinach,
     // benchmark_spinach_switch,
     // benchmark_spinachflow_symm,
-    benchmark_spinachflow_asym,
 );
 criterion_main!(fork_join_dataflow);
