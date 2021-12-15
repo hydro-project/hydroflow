@@ -4,8 +4,9 @@ use std::{cell::RefCell, rc::Rc};
 
 use hydroflow::lang::collections::Iter;
 use hydroflow::scheduled::ctx::{OutputPort, RecvCtx};
+use hydroflow::scheduled::graph::Hydroflow;
+use hydroflow::scheduled::graph_ext::GraphExt;
 use hydroflow::scheduled::handoff::VecHandoff;
-use hydroflow::scheduled::Hydroflow;
 
 use crate::{Datum, RelExpr};
 

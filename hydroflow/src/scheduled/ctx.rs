@@ -6,7 +6,8 @@ use std::rc::Rc;
 use ref_cast::RefCast;
 
 use crate::scheduled::handoff::{CanReceive, Handoff, TryCanReceive};
-use crate::scheduled::{HandoffId, SubgraphId};
+
+use super::{HandoffId, SubgraphId};
 
 /**
  * Context provided to a compiled component for writing to an [OutputPort].
@@ -38,7 +39,9 @@ impl<H: Handoff> SendCtx<H> {
 }
 
 /**
- * Handle corresponding to a [SendCtx]. Consumed by [crate::scheduled::Hydroflow::add_edge] to construct the Hydroflow graph.
+ * Handle corresponding to a [SendCtx]. Consumed by
+ * [crate::scheduled::graph::Hydroflow::add_edge] to construct the Hydroflow
+ * graph.
  */
 #[must_use]
 pub struct OutputPort<H: Handoff> {
@@ -70,7 +73,9 @@ impl<H: Handoff> RecvCtx<H> {
 }
 
 /**
- * Handle corresponding to a [RecvCtx]. Consumed by [crate::scheduled::Hydroflow::add_edge] to construct the Hydroflow graph.
+ * Handle corresponding to a [RecvCtx]. Consumed by
+ * [crate::scheduled::graph::Hydroflow::add_edge] to construct the Hydroflow
+ * graph.
  */
 #[must_use]
 pub struct InputPort<H: Handoff> {

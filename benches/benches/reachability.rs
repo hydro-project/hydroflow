@@ -6,6 +6,7 @@ use std::rc::Rc;
 use criterion::{criterion_group, criterion_main, Criterion};
 use differential_dataflow::input::Input;
 use differential_dataflow::operators::{Iterate, Join, Threshold};
+use hydroflow::scheduled::graph_ext::GraphExt;
 
 lazy_static::lazy_static! {
     static ref EDGES: HashMap<usize, Vec<usize>> = {
@@ -117,8 +118,8 @@ fn benchmark_differential(c: &mut Criterion) {
 fn benchmark_hydroflow_scheduled(c: &mut Criterion) {
     use hydroflow::lang::collections::Iter;
     use hydroflow::scheduled::ctx::{RecvCtx, SendCtx};
+    use hydroflow::scheduled::graph::Hydroflow;
     use hydroflow::scheduled::handoff::VecHandoff;
-    use hydroflow::scheduled::Hydroflow;
     use hydroflow::{tl, tt};
 
     let edges = &*EDGES;
@@ -200,8 +201,8 @@ fn benchmark_hydroflow_scheduled(c: &mut Criterion) {
 fn benchmark_hydroflow(c: &mut Criterion) {
     use hydroflow::compiled::{ForEach, Pivot, Tee};
     use hydroflow::scheduled::ctx::{RecvCtx, SendCtx};
+    use hydroflow::scheduled::graph::Hydroflow;
     use hydroflow::scheduled::handoff::VecHandoff;
-    use hydroflow::scheduled::Hydroflow;
     use hydroflow::{tl, tt};
 
     let edges = &*EDGES;
