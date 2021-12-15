@@ -1,6 +1,6 @@
 use std::{cell::RefCell, marker::PhantomData, rc::Rc, sync::mpsc::SyncSender};
 
-use super::{Reactor, SubgraphId};
+use super::{reactor::Reactor, SubgraphId};
 
 pub trait Give<T> {
     fn give(&self, t: T) -> bool;

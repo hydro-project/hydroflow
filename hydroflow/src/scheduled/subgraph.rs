@@ -1,4 +1,4 @@
-use crate::scheduled::Context;
+use super::context::Context;
 
 /**
  * Represents a compiled subgraph. Used internally by [Dataflow] to erase the input/output [Handoff] types.
