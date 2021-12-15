@@ -11,8 +11,8 @@ pub mod query;
 pub mod reactor;
 pub mod state;
 pub(crate) mod subgraph;
-pub mod util;
 pub mod type_list;
+pub mod util;
 
 pub type SubgraphId = usize;
 pub type HandoffId = usize;
