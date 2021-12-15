@@ -45,6 +45,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: check
+          args: --all-targets
 
   test:
     name: Test Suite
