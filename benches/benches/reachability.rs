@@ -198,80 +198,80 @@ fn benchmark_hydroflow_scheduled(c: &mut Criterion) {
     });
 }
 
-// TODO(justin): update to use new pusherator API.
-// fn benchmark_hydroflow(c: &mut Criterion) {
-//     use hydroflow::compiled::{ForEach, Pivot, Tee};
-//     use hydroflow::scheduled::ctx::{RecvCtx, SendCtx};
-//     use hydroflow::scheduled::graph::Hydroflow;
-//     use hydroflow::scheduled::handoff::VecHandoff;
-//     use hydroflow::{tl, tt};
+fn benchmark_hydroflow(c: &mut Criterion) {
+    use hydroflow::compiled::{for_each::ForEach, IteratorToPusherator, PusheratorBuild};
+    use hydroflow::scheduled::ctx::{RecvCtx, SendCtx};
+    use hydroflow::scheduled::graph::Hydroflow;
+    use hydroflow::scheduled::handoff::VecHandoff;
+    use hydroflow::{tl, tt};
 
-//     let edges = &*EDGES;
-//     let reachable = &*REACHABLE;
+    let edges = &*EDGES;
+    let reachable = &*REACHABLE;
 
-//     c.bench_function("reachability/hydroflow", |b| {
-//         b.iter(|| {
-//             // A dataflow that represents graph reachability.
-//             let mut df = Hydroflow::new();
+    c.bench_function("reachability/hydroflow", |b| {
+        b.iter(|| {
+            // A dataflow that represents graph reachability.
+            let mut df = Hydroflow::new();
 
-//             let reachable_out = df.add_source(move |_ctx, send: &SendCtx<VecHandoff<usize>>| {
-//                 send.give(Some(1));
-//             });
+            let reachable_out = df.add_source(move |_ctx, send: &SendCtx<VecHandoff<usize>>| {
+                send.give(Some(1));
+            });
 
-//             let seen_handle = df.add_state::<RefCell<HashSet<usize>>>(Default::default());
+            let seen_handle = df.add_state::<RefCell<HashSet<usize>>>(Default::default());
 
-//             type MainIn = tt!(VecHandoff<usize>, VecHandoff<usize>);
-//             type MainOut = tt!(VecHandoff<usize>, VecHandoff<usize>);
-//             let (tl!(origins_in, possible_reach_in), tl!(did_reach_out, output_out)) = df
-//                 .add_subgraph::<_, MainIn, MainOut>(
-//                     move |context, tl!(origins, did_reach_recv), tl!(did_reach_send, output)| {
-//                         let origins = origins.take_inner().into_iter();
-//                         let possible_reach = did_reach_recv
-//                             .take_inner()
-//                             .into_iter()
-//                             .filter_map(|v| edges.get(&v))
-//                             .flatten()
-//                             .copied();
+            type MainIn = tt!(VecHandoff<usize>, VecHandoff<usize>);
+            type MainOut = tt!(VecHandoff<usize>, VecHandoff<usize>);
+            let (tl!(origins_in, possible_reach_in), tl!(did_reach_out, output_out)) = df
+                .add_subgraph::<_, MainIn, MainOut>(
+                    move |context, tl!(origins, did_reach_recv), tl!(did_reach_send, output)| {
+                        let origins = origins.take_inner().into_iter();
+                        let possible_reach = did_reach_recv
+                            .take_inner()
+                            .into_iter()
+                            .filter_map(|v| edges.get(&v))
+                            .flatten()
+                            .copied();
 
-//                         let mut seen_state = context.state_ref(seen_handle).borrow_mut();
-//                         let pull = origins
-//                             .chain(possible_reach)
-//                             .filter(|v| seen_state.insert(*v));
+                        let mut seen_state = context.state_ref(seen_handle).borrow_mut();
+                        let pull = origins
+                            .chain(possible_reach)
+                            .filter(|v| seen_state.insert(*v));
 
-//                         let push_reach = ForEach::new(|v| {
-//                             did_reach_send.give(Some(v));
-//                         });
-//                         let push_output = ForEach::new(|v| {
-//                             output.give(Some(v));
-//                         });
-//                         let push = Tee::new(push_reach, push_output);
+                        let pivot = pull
+                            .pusherator()
+                            .tee(ForEach::new(|v| {
+                                did_reach_send.give(Some(v));
+                            }))
+                            .for_each(|v| {
+                                output.give(Some(v));
+                            });
 
-//                         let pivot = Pivot::new(pull, push);
-//                         pivot.run();
-//                     },
-//                 );
+                        pivot.run();
+                    },
+                );
 
-//             let reachable_verts = Rc::new(RefCell::new(HashSet::new()));
-//             let reachable_inner = reachable_verts.clone();
-//             let sink_in = df.add_sink(move |_ctx, recv: &RecvCtx<VecHandoff<_>>| {
-//                 (*reachable_inner).borrow_mut().extend(recv.take_inner());
-//             });
+            let reachable_verts = Rc::new(RefCell::new(HashSet::new()));
+            let reachable_inner = reachable_verts.clone();
+            let sink_in = df.add_sink(move |_ctx, recv: &RecvCtx<VecHandoff<_>>| {
+                (*reachable_inner).borrow_mut().extend(recv.take_inner());
+            });
 
-//             df.add_edge(reachable_out, origins_in);
-//             df.add_edge(did_reach_out, possible_reach_in);
-//             df.add_edge(output_out, sink_in);
+            df.add_edge(reachable_out, origins_in);
+            df.add_edge(did_reach_out, possible_reach_in);
+            df.add_edge(output_out, sink_in);
 
-//             df.tick();
+            df.tick();
 
-//             assert_eq!(&*reachable_verts.borrow(), reachable);
-//         });
-//     });
-// }
+            assert_eq!(&*reachable_verts.borrow(), reachable);
+        });
+    });
+}
 
 criterion_group!(
     reachability,
     benchmark_timely,
     benchmark_differential,
     benchmark_hydroflow_scheduled,
+    benchmark_hydroflow,
 );
 criterion_main!(reachability);
