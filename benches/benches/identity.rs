@@ -108,45 +108,40 @@ fn benchmark_timely(c: &mut Criterion) {
     });
 }
 
-// TODO(justin): update to use new pusherator API.
-// fn benchmark_hydroflow_compiled(c: &mut Criterion) {
-//     use hydroflow::compiled::{ForEach, Map, Pusherator};
+fn benchmark_hydroflow_compiled(c: &mut Criterion) {
+    use hydroflow::compiled::{InputBuild, Pusherator, PusheratorBuild};
 
-//     c.bench_function("identity/hydroflow/compiled", |b| {
-//         b.iter(|| {
-//             let sink = ForEach::new(|x| {
-//                 black_box(x);
-//             });
+    c.bench_function("identity/hydroflow/compiled", |b| {
+        b.iter(|| {
+            let mut pusherator = InputBuild::<usize>::new()
+                .map(black_box)
+                .map(black_box)
+                .map(black_box)
+                .map(black_box)
+                .map(black_box)
+                .map(black_box)
+                .map(black_box)
+                .map(black_box)
+                .map(black_box)
+                .map(black_box)
+                .map(black_box)
+                .map(black_box)
+                .map(black_box)
+                .map(black_box)
+                .map(black_box)
+                .map(black_box)
+                .map(black_box)
+                .map(black_box)
+                .map(black_box)
+                .map(black_box)
+                .for_each(|x| std::mem::drop(black_box(x)));
 
-//             // Lol
-//             let map = Map::new(black_box, sink);
-//             let map = Map::new(black_box, map);
-//             let map = Map::new(black_box, map);
-//             let map = Map::new(black_box, map);
-//             let map = Map::new(black_box, map);
-//             let map = Map::new(black_box, map);
-//             let map = Map::new(black_box, map);
-//             let map = Map::new(black_box, map);
-//             let map = Map::new(black_box, map);
-//             let map = Map::new(black_box, map);
-//             let map = Map::new(black_box, map);
-//             let map = Map::new(black_box, map);
-//             let map = Map::new(black_box, map);
-//             let map = Map::new(black_box, map);
-//             let map = Map::new(black_box, map);
-//             let map = Map::new(black_box, map);
-//             let map = Map::new(black_box, map);
-//             let map = Map::new(black_box, map);
-//             let map = Map::new(black_box, map);
-//             let map = Map::new(black_box, map);
-//             let mut map = map;
-
-//             for i in 0..NUM_INTS {
-//                 map.give(i);
-//             }
-//         });
-//     });
-// }
+            for i in 0..NUM_INTS {
+                pusherator.give(i);
+            }
+        });
+    });
+}
 
 fn benchmark_hydroflow(c: &mut Criterion) {
     use hydroflow::lang::collections::Iter;
@@ -195,5 +190,6 @@ criterion_group!(
     benchmark_iter_collect,
     benchmark_raw_copy,
     benchmark_hydroflow,
+    benchmark_hydroflow_compiled,
 );
 criterion_main!(identity_dataflow);
