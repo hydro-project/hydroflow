@@ -254,23 +254,30 @@ impl Hydroflow {
     where
         H: 'static + Handoff,
     {
-        let handoff_id: HandoffId = self.handoffs.len();
+        let handoff_id = self.add_handoff::<H>(output_port.sg_id, input_port.sg_id);
 
         // Send handoff_ids.
         input_port.handoff_id.set(Some(handoff_id));
         output_port.handoff_id.set(Some(handoff_id));
+    }
+
+    pub fn add_handoff<H: Handoff>(
+        &mut self,
+        pred_id: SubgraphId,
+        succ_id: SubgraphId,
+    ) -> HandoffId {
+        let handoff_id: HandoffId = self.handoffs.len();
 
         // Create and insert handoff.
         let handoff = H::default();
-        self.handoffs.push(HandoffData::new(
-            handoff,
-            output_port.sg_id,
-            input_port.sg_id,
-        ));
+        self.handoffs
+            .push(HandoffData::new(handoff, pred_id, succ_id));
 
         // Add successor & predecessor.
-        self.subgraphs[output_port.sg_id].succs.push(handoff_id);
-        self.subgraphs[input_port.sg_id].preds.push(handoff_id);
+        self.subgraphs[pred_id].succs.push(handoff_id);
+        self.subgraphs[succ_id].preds.push(handoff_id);
+
+        handoff_id
     }
 
     pub fn add_state<T>(&mut self, state: T) -> StateHandle<T>
