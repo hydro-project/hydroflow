@@ -2,6 +2,7 @@ use crate::{Decode, Encode, Opts, CONTACTS_ADDR, DIAGNOSES_ADDR};
 
 use hydroflow::lang::collections::Iter;
 use hydroflow::scheduled::{ctx::RecvCtx, graph::Hydroflow, handoff::VecHandoff, net::Message};
+use hydroflow::tokio::net::TcpStream;
 use hydroflow::{
     compiled::{pull::SymmetricHashJoin, InputBuild, IteratorToPusherator, PusheratorBuild},
     scheduled::graph_ext::GraphExt,
@@ -111,7 +112,10 @@ pub(crate) async fn run_tracker(opts: Opts) {
     df.add_edge(diagnoses, diagnosed_in);
     df.add_edge(loop_out, loop_in);
 
-    let (network_out, network_in) = df.connect(opts.addr.as_str()).await;
+    let stream = TcpStream::connect(format!("localhost:{}", opts.addr))
+        .await
+        .unwrap();
+    let (network_out, network_in) = df.add_tcp_stream(stream);
 
     df.add_edge(notifs_out, encoder_in);
     df.add_edge(encoder_out, network_out);

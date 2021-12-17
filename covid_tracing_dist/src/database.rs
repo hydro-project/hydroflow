@@ -6,6 +6,7 @@ use hydroflow::compiled::{pull::SymmetricHashJoin, IteratorToPusherator, Pushera
 use hydroflow::lang::collections::Iter;
 use hydroflow::scheduled::ctx::{RecvCtx, SendCtx};
 use hydroflow::scheduled::{handoff::VecHandoff, net::Message};
+use hydroflow::tokio::net::TcpListener;
 use hydroflow::{
     scheduled::{graph::Hydroflow, graph_ext::GraphExt},
     tl, tt,
@@ -21,7 +22,12 @@ pub(crate) async fn run_database(opts: Opts) {
     let (diagnoses_in, diagnoses_out) = df.add_channel_input();
     let (people_in, people_out) = df.add_channel_input();
 
-    let (network_in, network_out) = df.bind_one(opts.port).await;
+    let stream = TcpListener::bind(format!("localhost:{}", opts.port))
+        .await
+        .unwrap();
+
+    let (stream, _) = stream.accept().await.unwrap();
+    let (network_in, network_out) = df.add_tcp_stream(stream);
 
     let (encoded_notifs_in, notifs) =
         df.add_inout(|_ctx, recv: &RecvCtx<VecHandoff<Message>>, send| {
