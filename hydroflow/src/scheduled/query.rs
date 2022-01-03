@@ -92,6 +92,7 @@ where
         }
     }
 
+    #[must_use]
     pub fn filter<F>(self, f: F) -> Operator<T>
     where
         F: 'static + Fn(&T) -> bool,
@@ -111,6 +112,7 @@ where
         }
     }
 
+    #[must_use]
     pub fn concat(self, other: Operator<T>) -> Operator<T> {
         // TODO(justin): this is very slow.
         let (input1, input2, output) = (*self.df).borrow_mut().add_binary(
