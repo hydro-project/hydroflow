@@ -28,7 +28,7 @@ pub struct CrossJoinState<V1, V2> {
     ltab: Vec<V1>,
     rtab: Vec<V2>,
     eventside: Side,
-    opposite_ix: Range<usize>
+    opposite_ix: Range<usize>,
 }
 
 impl<'a, V1, V2> Default for CrossJoinState<V1, V2> {
@@ -151,7 +151,7 @@ where
                         let l = self.state.ltab.last().unwrap().clone();
                         let r = self.state.rtab.get(i).unwrap().clone();
                         return Some((l, r));
-                    } 
+                    }
                 }
                 Side::Right => {
                     if let Some(i) = self.state.opposite_ix.next() {
@@ -160,7 +160,7 @@ where
                         let r = self.state.rtab.last().unwrap().clone();
                         return Some((l, r));
                     }
-                } 
+                }
             }
 
             // IF WE'RE HERE THERE'S NO CURRENT ITERATION.
@@ -197,7 +197,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::compiled::pull::{JoinState, SymmetricHashJoin, CrossJoin, CrossJoinState};
+    use crate::compiled::pull::{CrossJoin, CrossJoinState, JoinState, SymmetricHashJoin};
 
     #[test]
     fn hash_join() {
