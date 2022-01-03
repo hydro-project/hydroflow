@@ -20,23 +20,23 @@ impl<K, V1, V2> Default for JoinState<K, V1, V2> {
     }
 }
 
-enum Side {
-    Left,
-    Right,
-}
-pub struct CrossJoinState<V1, V2> {
+// enum Side {
+//     Left,
+//     Right,
+// }
+pub struct RippleJoinState<V1, V2> {
     ltab: Vec<V1>,
     rtab: Vec<V2>,
-    eventside: Side,
+    draw_from_left: bool,
     opposite_ix: Range<usize>,
 }
 
-impl<'a, V1, V2> Default for CrossJoinState<V1, V2> {
+impl<'a, V1, V2> Default for RippleJoinState<V1, V2> {
     fn default() -> Self {
         Self {
             ltab: Vec::new(),
             rtab: Vec::new(),
-            eventside: Side::Left,
+            draw_from_left: true,
             opposite_ix: 0..0,
         }
     }
@@ -121,7 +121,7 @@ where
     }
 }
 
-pub struct CrossJoin<I1, V1, I2, V2>
+pub struct RippleJoin<I1, V1, I2, V2>
 where
     V1: Eq + Clone,
     V2: Eq + Clone,
@@ -130,10 +130,10 @@ where
 {
     lhs: I1,
     rhs: I2,
-    state: CrossJoinState<V1, V2>,
+    state: RippleJoinState<V1, V2>,
 }
 
-impl<I1, V1: 'static, I2, V2: 'static> Iterator for CrossJoin<I1, V1, I2, V2>
+impl<I1, V1: 'static, I2, V2: 'static> Iterator for RippleJoin<I1, V1, I2, V2>
 where
     V1: Eq + Clone,
     V2: Eq + Clone,
@@ -144,57 +144,65 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
-            match self.state.eventside {
-                Side::Left => {
-                    if let Some(i) = self.state.opposite_ix.next() {
+            // see if there's a match from the opposite's iterator
+            if let Some(i) = self.state.opposite_ix.next() {
+                if self.state.draw_from_left {
                         let l = self.state.ltab.last().unwrap().clone();
                         let r = self.state.rtab.get(i).unwrap().clone();
                         return Some((l, r));
-                    }
-                }
-                Side::Right => {
-                    if let Some(i) = self.state.opposite_ix.next() {
+                } else {
                         let l = self.state.ltab.get(i).unwrap().clone();
                         let r = self.state.rtab.last().unwrap().clone();
                         return Some((l, r));
+                }
+            }
+            // else fetch a new tuple, alternating the sides we fetch from,
+            // so we draw from each input at the same rate.
+            let mut found_new = false;
+            for _i in ["opposite", "same"] {
+                // toggle sides
+                self.state.draw_from_left = !self.state.draw_from_left;
+
+                // try to fetch from the specified side
+                if self.state.draw_from_left {
+                    if let Some(l) = self.lhs.next() {
+                        self.state.draw_from_left = true;
+                        self.state.ltab.push(l);
+                        self.state.opposite_ix = 0..self.state.rtab.len();
+                        found_new = true;
+                        break;
+                    }
+                } else {
+                    if let Some(r) = self.rhs.next() {
+                        self.state.draw_from_left = false;
+                        self.state.rtab.push(r);
+                        self.state.opposite_ix = 0..self.state.ltab.len();
+                        found_new = true;
+                        break;
                     }
                 }
             }
-
-            // If we're here there's no current iteration.
-            // Check for lhs events then rhs events. (Fairness/buffering concerns?)
-            if let Some(l) = self.lhs.next() {
-                self.state.eventside = Side::Left;
-                self.state.ltab.push(l);
-                self.state.opposite_ix = 0..self.state.rtab.len();
-                continue;
+            if !found_new {
+                return None;
             }
-
-            if let Some(r) = self.rhs.next() {
-                self.state.eventside = Side::Right;
-                self.state.rtab.push(r);
-                self.state.opposite_ix = 0..self.state.ltab.len();
-                continue;
-            }
-            return None;
         }
     }
 }
-impl<'a, I1, V1, I2, V2> CrossJoin<I1, V1, I2, V2>
+impl<'a, I1, V1, I2, V2> RippleJoin<I1, V1, I2, V2>
 where
     V1: Eq + Clone,
     V2: Eq + Clone,
     I1: Iterator<Item = V1>,
     I2: Iterator<Item = V2>,
 {
-    pub fn new(lhs: I1, rhs: I2, state: CrossJoinState<V1, V2>) -> Self {
+    pub fn new(lhs: I1, rhs: I2, state: RippleJoinState<V1, V2>) -> Self {
         Self { lhs, rhs, state }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::compiled::pull::{CrossJoin, CrossJoinState, JoinState, SymmetricHashJoin};
+    use crate::compiled::pull::{JoinState, RippleJoin, RippleJoinState, SymmetricHashJoin};
 
     #[test]
     fn hash_join() {
@@ -221,24 +229,24 @@ mod tests {
     }
 
     #[test]
-    fn cross_join() {
+    fn ripple_join() {
         let lhs = (0..3).map(|x| (format!("left {}", x)));
         let rhs = (10..13).map(|x| (format!("right {}", x)));
 
-        let state = CrossJoinState::default();
-        let join = CrossJoin::new(lhs, rhs, state);
+        let state = RippleJoinState::default();
+        let join = RippleJoin::new(lhs, rhs, state);
 
         assert_eq!(
             join.collect::<Vec<_>>(),
             vec![
                 ("left 0".into(), "right 10".into()),
-                ("left 1".into(), "right 10".into()),
-                ("left 2".into(), "right 10".into()),
                 ("left 0".into(), "right 11".into()),
+                ("left 1".into(), "right 10".into()),
                 ("left 1".into(), "right 11".into()),
-                ("left 2".into(), "right 11".into()),
                 ("left 0".into(), "right 12".into()),
                 ("left 1".into(), "right 12".into()),
+                ("left 2".into(), "right 10".into()),
+                ("left 2".into(), "right 11".into()),
                 ("left 2".into(), "right 12".into())
             ]
         );
