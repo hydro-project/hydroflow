@@ -116,7 +116,9 @@ fn benchmark_hydroflow_compiled(c: &mut Criterion) {
                 .map(|x| x + 1)
                 .map(|x| x + 1)
                 .map(|x| x + 1)
-                .for_each(|x| std::mem::drop(black_box(x)));
+                .for_each(|x| {
+                    black_box(x);
+                });
 
             for i in 0..NUM_INTS {
                 pusherator.give(i);
