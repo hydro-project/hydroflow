@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::ops::Range;
 
 #[derive(Debug)]
 pub struct JoinState<K, V1, V2> {
@@ -19,6 +20,28 @@ impl<K, V1, V2> Default for JoinState<K, V1, V2> {
     }
 }
 
+enum Side {
+    Left,
+    Right,
+}
+pub struct CrossJoinState<V1, V2> {
+    ltab: Vec<V1>,
+    rtab: Vec<V2>,
+    eventside: Side,
+    opposite_ix: Range<usize>
+}
+
+impl<'a, V1, V2> Default for CrossJoinState<V1, V2> {
+    fn default() -> Self {
+        Self {
+            ltab: Vec::new(),
+            rtab: Vec::new(),
+            eventside: Side::Left,
+            opposite_ix: 0..0,
+        }
+    }
+}
+
 pub struct SymmetricHashJoin<'a, K, I1, V1, I2, V2>
 where
     K: Eq + std::hash::Hash + Clone,
@@ -31,6 +54,7 @@ where
     rhs: I2,
     state: &'a mut JoinState<K, V1, V2>,
 }
+
 impl<'a, K, I1, V1, I2, V2> Iterator for SymmetricHashJoin<'a, K, I1, V1, I2, V2>
 where
     K: Eq + std::hash::Hash + Clone,
@@ -97,9 +121,83 @@ where
     }
 }
 
+pub struct CrossJoin<I1, V1, I2, V2>
+where
+    V1: Eq + Clone,
+    V2: Eq + Clone,
+    I1: Iterator<Item = V1>,
+    I2: Iterator<Item = V2>,
+{
+    lhs: I1,
+    rhs: I2,
+    state: CrossJoinState<V1, V2>,
+}
+
+impl<I1, V1: 'static, I2, V2: 'static> Iterator for CrossJoin<I1, V1, I2, V2>
+where
+    V1: Eq + Clone,
+    V2: Eq + Clone,
+    I1: Iterator<Item = V1>,
+    I2: Iterator<Item = V2>,
+{
+    type Item = (V1, V2);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            match self.state.eventside {
+                Side::Left => {
+                    if let Some(i) = self.state.opposite_ix.next() {
+                        // TODO(justin): unnecessary clone (sometimes).
+                        let l = self.state.ltab.last().unwrap().clone();
+                        let r = self.state.rtab.get(i).unwrap().clone();
+                        return Some((l, r));
+                    } 
+                }
+                Side::Right => {
+                    if let Some(i) = self.state.opposite_ix.next() {
+                        // TODO(justin): unnecessary clone (sometimes).
+                        let l = self.state.ltab.get(i).unwrap().clone();
+                        let r = self.state.rtab.last().unwrap().clone();
+                        return Some((l, r));
+                    }
+                } 
+            }
+
+            // IF WE'RE HERE THERE'S NO CURRENT ITERATION.
+            // CHECK lhs INPUT THEN rhs INPUT
+            if let Some(l) = self.lhs.next() {
+                self.state.eventside = Side::Left;
+                self.state.ltab.push(l.clone());
+                self.state.opposite_ix = 0..self.state.rtab.len();
+                continue;
+            }
+
+            if let Some(r) = self.rhs.next() {
+                self.state.eventside = Side::Right;
+                self.state.rtab.push(r.clone());
+                self.state.opposite_ix = 0..self.state.ltab.len();
+                continue;
+            }
+            return None;
+        }
+    }
+}
+impl<'a, I1, V1, I2, V2> CrossJoin<I1, V1, I2, V2>
+where
+    V1: Eq + Clone,
+    V2: Eq + Clone,
+    I1: Iterator<Item = V1>,
+    I2: Iterator<Item = V2>,
+{
+    pub fn new(lhs: I1, rhs: I2, state: CrossJoinState<V1, V2>) -> Self {
+        Self { lhs, rhs, state }
+    }
+}
+
+
 #[cfg(test)]
 mod tests {
-    use crate::compiled::pull::{JoinState, SymmetricHashJoin};
+    use crate::compiled::pull::{JoinState, SymmetricHashJoin, CrossJoin, CrossJoinState};
 
     #[test]
     fn hash_join() {
@@ -121,6 +219,30 @@ mod tests {
                 (6, "left 6".into(), "right 12 / 2".into()),
                 (6, "left 6".into(), "right 13 / 2".into()),
                 (7, "left 7".into(), "right 14 / 2".into())
+            ]
+        );
+    }
+
+    #[test]
+    fn cross_join() {
+        let lhs = (0..3).map(|x| (format!("left {}", x)));
+        let rhs = (10..13).map(|x| (format!("right {}", x)));
+
+        let state = CrossJoinState::default();
+        let join = CrossJoin::new(lhs, rhs, state);
+
+        assert_eq!(
+            join.collect::<Vec<_>>(),
+            vec![
+                ("left 0".into(), "right 10".into()),
+                ("left 1".into(), "right 10".into()),
+                ("left 2".into(), "right 10".into()),
+                ("left 0".into(), "right 11".into()),
+                ("left 1".into(), "right 11".into()),
+                ("left 2".into(), "right 11".into()),
+                ("left 0".into(), "right 12".into()),
+                ("left 1".into(), "right 12".into()),
+                ("left 2".into(), "right 12".into())
             ]
         );
     }
