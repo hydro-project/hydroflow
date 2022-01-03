@@ -194,7 +194,6 @@ where
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use crate::compiled::pull::{CrossJoin, CrossJoinState, JoinState, SymmetricHashJoin};
