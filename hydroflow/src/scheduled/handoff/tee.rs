@@ -45,6 +45,7 @@ impl<T> TeeingHandoff<T>
 where
     T: Clone,
 {
+    #[must_use]
     pub fn tee(&self) -> Self {
         let id = (*self.internal).borrow().readers.len();
         (*self.internal)
