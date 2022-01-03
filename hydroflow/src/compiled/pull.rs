@@ -147,7 +147,6 @@ where
             match self.state.eventside {
                 Side::Left => {
                     if let Some(i) = self.state.opposite_ix.next() {
-                        // TODO(justin): unnecessary clone (sometimes).
                         let l = self.state.ltab.last().unwrap().clone();
                         let r = self.state.rtab.get(i).unwrap().clone();
                         return Some((l, r));
@@ -155,7 +154,6 @@ where
                 }
                 Side::Right => {
                     if let Some(i) = self.state.opposite_ix.next() {
-                        // TODO(justin): unnecessary clone (sometimes).
                         let l = self.state.ltab.get(i).unwrap().clone();
                         let r = self.state.rtab.last().unwrap().clone();
                         return Some((l, r));
@@ -163,18 +161,18 @@ where
                 }
             }
 
-            // IF WE'RE HERE THERE'S NO CURRENT ITERATION.
-            // CHECK lhs INPUT THEN rhs INPUT
+            // If we're here there's no current iteration.
+            // Check for lhs events then rhs events. (Fairness/buffering concerns?)
             if let Some(l) = self.lhs.next() {
                 self.state.eventside = Side::Left;
-                self.state.ltab.push(l.clone());
+                self.state.ltab.push(l);
                 self.state.opposite_ix = 0..self.state.rtab.len();
                 continue;
             }
 
             if let Some(r) = self.rhs.next() {
                 self.state.eventside = Side::Right;
-                self.state.rtab.push(r.clone());
+                self.state.rtab.push(r);
                 self.state.opposite_ix = 0..self.state.ltab.len();
                 continue;
             }
