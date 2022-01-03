@@ -20,10 +20,6 @@ impl<K, V1, V2> Default for JoinState<K, V1, V2> {
     }
 }
 
-// enum Side {
-//     Left,
-//     Right,
-// }
 pub struct RippleJoinState<V1, V2> {
     ltab: Vec<V1>,
     rtab: Vec<V2>,
@@ -147,13 +143,13 @@ where
             // see if there's a match from the opposite's iterator
             if let Some(i) = self.state.opposite_ix.next() {
                 if self.state.draw_from_left {
-                        let l = self.state.ltab.last().unwrap().clone();
-                        let r = self.state.rtab.get(i).unwrap().clone();
-                        return Some((l, r));
+                    let l = self.state.ltab.last().unwrap().clone();
+                    let r = self.state.rtab.get(i).unwrap().clone();
+                    return Some((l, r));
                 } else {
-                        let l = self.state.ltab.get(i).unwrap().clone();
-                        let r = self.state.rtab.last().unwrap().clone();
-                        return Some((l, r));
+                    let l = self.state.ltab.get(i).unwrap().clone();
+                    let r = self.state.rtab.last().unwrap().clone();
+                    return Some((l, r));
                 }
             }
             // else fetch a new tuple, alternating the sides we fetch from,
