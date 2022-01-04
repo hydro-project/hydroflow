@@ -2,7 +2,7 @@ mod handoff_list;
 mod tee;
 mod vector;
 
-pub use handoff_list::HandoffList;
+pub use handoff_list::{HandoffList, HandoffListSplit};
 pub use tee::TeeingHandoff;
 pub use vector::VecHandoff;
 
