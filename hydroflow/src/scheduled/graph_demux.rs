@@ -27,7 +27,7 @@ pub trait GraphDemux {
         F: 'static + Fn(&T) -> K,
         K: 'static + std::hash::Hash + PartialEq + Eq,
         W: 'static + Handoff + CanReceive<Option<T>>,
-        T: 'static;
+        T: 'static + std::fmt::Debug;
 
     /**
      * Add another edge to demux, such that values who key to `k` will be sent
@@ -46,7 +46,7 @@ impl GraphDemux for Hydroflow {
         F: 'static + Fn(&T) -> K,
         K: 'static + std::hash::Hash + PartialEq + Eq,
         W: 'static + Handoff + CanReceive<Option<T>>,
-        T: 'static,
+        T: 'static + std::fmt::Debug,
     {
         let outputs_outer: Rc<RefCell<HashMap<K, HandoffId>>> =
             Rc::new(RefCell::new(HashMap::new()));

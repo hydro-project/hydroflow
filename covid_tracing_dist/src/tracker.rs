@@ -21,20 +21,19 @@ pub(crate) async fn run_tracker(opts: Opts) {
     let (tl!(demux_in), tl!(contacts, diagnoses)) = df
         .add_subgraph::<_, MultiplexIn, MultiplexOut>(move |_ctx, tl!(recv), tl!(send1, send2)| {
             for message in recv.take_inner() {
-                match message {
-                    Message::Data { address, batch } => match address {
-                        CONTACTS_ADDR => {
-                            send1.give(Iter(
-                                <Vec<(String, String, usize)>>::decode(batch).into_iter(),
-                            ));
-                        }
-                        DIAGNOSES_ADDR => {
-                            send2.give(Iter(
-                                <Vec<(String, (usize, usize))>>::decode(batch).into_iter(),
-                            ));
-                        }
-                        _ => panic!("invalid port"),
-                    },
+                let Message { address, batch } = message;
+                match address {
+                    CONTACTS_ADDR => {
+                        send1.give(Iter(
+                            <Vec<(String, String, usize)>>::decode(batch).into_iter(),
+                        ));
+                    }
+                    DIAGNOSES_ADDR => {
+                        send2.give(Iter(
+                            <Vec<(String, (usize, usize))>>::decode(batch).into_iter(),
+                        ));
+                    }
+                    _ => panic!("invalid port"),
                 }
             }
         });
@@ -102,7 +101,7 @@ pub(crate) async fn run_tracker(opts: Opts) {
         df.add_inout(|_ctx, recv: &RecvCtx<VecHandoff<(String, usize)>>, send| {
             let mut buf = Vec::new();
             recv.take_inner().encode(&mut buf);
-            send.give(Some(Message::Data {
+            send.give(Some(Message {
                 address: 0,
                 batch: buf.into(),
             }));
