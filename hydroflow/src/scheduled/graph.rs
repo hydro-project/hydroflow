@@ -9,8 +9,7 @@ use ref_cast::RefCast;
 
 use super::context::Context;
 use super::ctx::{InputPort, OutputPort, RecvCtx, SendCtx};
-use super::handoff::{Handoff, HandoffMeta};
-use super::handoff_list::HandoffList;
+use super::handoff::{Handoff, HandoffList, HandoffMeta};
 use super::reactor::Reactor;
 use super::state::StateHandle;
 #[cfg(feature = "variadic_generics")]
