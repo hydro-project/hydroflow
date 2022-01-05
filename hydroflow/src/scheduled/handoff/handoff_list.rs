@@ -6,10 +6,10 @@ use ref_cast::RefCast;
 use sealed::sealed;
 
 use crate::scheduled::ctx::{InputPort, OutputPort, RecvCtx, SendCtx};
-use crate::scheduled::handoff::Handoff;
+use crate::scheduled::graph::HandoffData;
+use crate::scheduled::{HandoffId, SubgraphId};
 
-use super::graph::HandoffData;
-use super::{HandoffId, SubgraphId};
+use super::Handoff;
 
 /**
  * A variadic list of Handoff types, represented using a lisp-style tuple structure.

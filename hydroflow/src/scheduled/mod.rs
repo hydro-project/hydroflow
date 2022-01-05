@@ -13,9 +13,6 @@ pub mod state;
 pub(crate) mod subgraph;
 pub mod util;
 
-mod handoff_list;
-pub use handoff_list::HandoffList;
-
 pub type SubgraphId = usize;
 pub type HandoffId = usize;
 pub type StateId = usize;
