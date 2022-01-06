@@ -32,11 +32,9 @@ pub(crate) async fn run_database(opts: Opts) {
     let (encoded_notifs_in, notifs) =
         df.add_inout(|_ctx, recv: &RecvCtx<VecHandoff<Message>>, send| {
             for message in recv.take_inner().into_iter() {
-                match message {
-                    Message::Data { batch, .. } => {
-                        send.give(Iter(<Vec<(String, usize)>>::decode(batch).into_iter()));
-                    }
-                }
+                send.give(Iter(
+                    <Vec<(String, usize)>>::decode(message.batch).into_iter(),
+                ));
             }
         });
 
@@ -95,7 +93,7 @@ pub(crate) async fn run_database(opts: Opts) {
         |_ctx, recv: &RecvCtx<VecHandoff<(&'static str, &'static str, usize)>>, send| {
             let mut buf = Vec::new();
             recv.take_inner().encode(&mut buf);
-            send.give(Some(Message::Data {
+            send.give(Some(Message {
                 address: CONTACTS_ADDR,
                 batch: buf.into(),
             }));
@@ -109,7 +107,7 @@ pub(crate) async fn run_database(opts: Opts) {
         |_ctx, recv: &RecvCtx<VecHandoff<(&'static str, (usize, usize))>>, send| {
             let mut buf = Vec::new();
             recv.take_inner().encode(&mut buf);
-            send.give(Some(Message::Data {
+            send.give(Some(Message {
                 address: DIAGNOSES_ADDR,
                 batch: buf.into(),
             }));
