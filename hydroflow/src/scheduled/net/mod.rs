@@ -71,37 +71,28 @@ use super::{
     handoff::VecHandoff,
 };
 
-const MESSAGE_DATA: u8 = 0;
+pub mod network_vertex;
 
-const TYPE_LEN: usize = 1;
 const ADDRESS_LEN: usize = 4;
 
+// TODO(justin): I don't think we should include the address here, that should
+// just be a part of the bytes being sent.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Message {
-    Data { address: u32, batch: bytes::Bytes },
+pub struct Message {
+    pub address: u32,
+    pub batch: bytes::Bytes,
 }
 
 impl Message {
     fn encode(&self, v: &mut Vec<u8>) {
-        match self {
-            Message::Data { address, batch } => {
-                v.push(MESSAGE_DATA);
-                v.extend((*address as u32).to_ne_bytes());
-                v.extend(batch);
-            }
-        }
+        v.extend(self.address.to_ne_bytes());
+        v.extend(self.batch.iter());
     }
 
-    fn decode(v: &bytes::Bytes) -> Self {
-        match v[0] {
-            MESSAGE_DATA => {
-                let address =
-                    u32::from_ne_bytes(v[TYPE_LEN..(TYPE_LEN + ADDRESS_LEN)].try_into().unwrap());
-                let batch = v.slice((TYPE_LEN + ADDRESS_LEN)..);
-                Message::Data { address, batch }
-            }
-            _ => panic!("unhandled"),
-        }
+    pub fn decode(v: &bytes::Bytes) -> Self {
+        let address = u32::from_ne_bytes(v[0..ADDRESS_LEN].try_into().unwrap());
+        let batch = v.slice(ADDRESS_LEN..);
+        Message { address, batch }
     }
 }
 
