@@ -15,6 +15,99 @@ use hydroflow::{
 use tokio::net::{TcpListener, TcpStream};
 use tokio_util::codec::{FramedRead, LengthDelimitedCodec};
 
+// This test sets up an echo server and runs a few connections to it.
+#[test]
+fn test_echo_server() {
+    let (log_message, all_received_messages) = channel();
+
+    let (server_port_send, server_port_recv) = std::sync::mpsc::channel();
+
+    // First, spin up the server.
+    {
+        std::thread::spawn(move || {
+            let rt = tokio::runtime::Runtime::new().unwrap();
+            rt.block_on(async move {
+                let mut df = Hydroflow::new();
+                let (port, incoming_messages, conns, outgoing_messages) = df.listen_tcp().await;
+                server_port_send.send(port).unwrap();
+
+                let conn_port = df.add_sink(move |_ctx, _recv| {
+                    // Do nothing, but we could respond to getting a connection.
+                });
+
+                df.add_edge(conns, conn_port);
+
+                let (receiver_port, sender_port) = df.add_inout(move |_ctx, recv, send| {
+                    for (client, v) in recv.take_inner() {
+                        send.give(Some((client, v)));
+                    }
+                });
+
+                df.add_edge(incoming_messages, receiver_port);
+                df.add_edge(sender_port, outgoing_messages);
+
+                df.run_async().await.unwrap();
+            });
+        });
+    }
+
+    let server_port = server_port_recv.recv().unwrap();
+
+    // Connect to it some number of times.
+    for idx in 0..3 {
+        let log_message = log_message.clone();
+        std::thread::spawn(move || {
+            let rt = tokio::runtime::Runtime::new().unwrap();
+            rt.block_on(async move {
+                let mut df = Hydroflow::new();
+
+                let (outgoing_messages, incoming_messages) =
+                    df.connect_tcp(format!("localhost:{}", server_port)).await;
+
+                let (input, port) = df.add_input();
+                df.add_edge(port, outgoing_messages);
+
+                let receiver_port =
+                    df.add_sink(move |_ctx, recv: &RecvCtx<VecHandoff<Message>>| {
+                        for v in recv.take_inner() {
+                            log_message
+                                .send(format!(
+                                    "[CLIENT#{}] received back {:?}",
+                                    idx,
+                                    String::from_utf8(v.batch.to_vec()).unwrap()
+                                ))
+                                .unwrap();
+                        }
+                    });
+
+                input.give(Some(Message {
+                    address: 0,
+                    batch: format!("Hello world {}!", idx).into(),
+                }));
+
+                df.add_edge(incoming_messages, receiver_port);
+
+                df.run_async().await.unwrap();
+            });
+        });
+    }
+
+    let expected_messages: HashSet<String> = [
+        "[CLIENT#0] received back \"Hello world 0!\"".into(),
+        "[CLIENT#1] received back \"Hello world 1!\"".into(),
+        "[CLIENT#2] received back \"Hello world 2!\"".into(),
+    ]
+    .into_iter()
+    .collect();
+
+    let mut actual_messages = HashSet::new();
+    while actual_messages.len() < expected_messages.len() {
+        actual_messages.insert(all_received_messages.recv().unwrap());
+    }
+
+    assert_eq!(expected_messages, actual_messages);
+}
+
 #[test]
 fn test_star_vertex() {
     // This test constructs 3 Hydroflow graphs that all send messages to each other.
@@ -27,15 +120,15 @@ fn test_star_vertex() {
     // assert that the set of messages is sane at the end.
     let (log_message, all_received_messages) = channel();
 
-    let mut handles = Vec::new();
-
     // Each iteration of this loops spins up another Hydroflow graph.
     for id in 0..NUM_PARTICIPANTS {
         let addresses = addresses.clone();
         let log_message = log_message.clone();
-        handles.push(std::thread::spawn(move || {
+        std::thread::spawn(move || {
             let rt = tokio::runtime::Runtime::new().unwrap();
             rt.block_on(async move {
+                let mut df = Hydroflow::new();
+
                 // First, start listening on a port.
                 let listener = TcpListener::bind("localhost:0").await.unwrap();
                 let addr = listener.local_addr().unwrap();
@@ -50,8 +143,6 @@ fn test_star_vertex() {
                 }
 
                 let addresses = addresses.lock().unwrap().clone();
-
-                let mut df = Hydroflow::new();
 
                 // Set up the messages we will send to other participants.
                 let (mut conns, egress_edge) = df.add_egress_vertex();
@@ -73,13 +164,11 @@ fn test_star_vertex() {
                         let mut reader = FramedRead::new(reader, LengthDelimitedCodec::new());
                         let mut incoming_send = incoming_send.clone();
                         tokio::spawn(async move {
-                            loop {
-                                while let Some(msg) = reader.next().await {
-                                    // TODO(justin): figure out error handling here.
-                                    let msg = msg.unwrap();
-                                    let msg = Message::decode(&msg.freeze());
-                                    incoming_send.feed(msg).await.unwrap();
-                                }
+                            while let Some(msg) = reader.next().await {
+                                // TODO(justin): figure out error handling here.
+                                let msg = msg.unwrap();
+                                let msg = Message::decode(&msg.freeze());
+                                incoming_send.feed(msg).await.unwrap();
                             }
                         });
                     }
@@ -140,7 +229,7 @@ fn test_star_vertex() {
 
                 df.run_async().await.unwrap();
             })
-        }));
+        });
     }
 
     let expected_messages: HashSet<String> = [

@@ -1,14 +1,17 @@
 use std::{collections::HashMap, pin::Pin};
 
-use futures::{Sink, StreamExt};
-use tokio::net::tcp::OwnedWriteHalf;
-use tokio_util::codec::{FramedWrite, LengthDelimitedCodec};
+use futures::{Sink, SinkExt, StreamExt};
+use tokio::net::{tcp::OwnedWriteHalf, TcpListener, TcpStream, ToSocketAddrs};
+use tokio_util::codec::{FramedRead, FramedWrite, LengthDelimitedCodec};
 
-use crate::scheduled::{
-    ctx::{InputPort, RecvCtx},
-    graph::Hydroflow,
-    graph_ext::GraphExt,
-    handoff::VecHandoff,
+use crate::{
+    lang::collections::Iter,
+    scheduled::{
+        ctx::{InputPort, OutputPort, RecvCtx},
+        graph::Hydroflow,
+        graph_ext::GraphExt,
+        handoff::VecHandoff,
+    },
 };
 
 use super::Message;
@@ -18,6 +21,94 @@ pub type ReceiverId = u32;
 pub type OutboundMessage = (ReceiverId, Message);
 
 impl Hydroflow {
+    // TODO(justin): this needs to return a result/get rid of all the unwraps, I
+    // guess we need a HydroflowError?
+    pub async fn listen_tcp(
+        &mut self,
+    ) -> (
+        u16,
+        OutputPort<VecHandoff<(ReceiverId, Message)>>,
+        OutputPort<VecHandoff<ReceiverId>>,
+        InputPort<VecHandoff<(u32, Message)>>,
+    ) {
+        let listener = TcpListener::bind("localhost:0").await.unwrap();
+        let port = listener.local_addr().unwrap().port();
+
+        let (mut conns, egress_edge) = self.add_egress_vertex();
+        // TODO(justin): figure out an appropriate buffer here.
+        let (incoming_send, incoming_messages) = futures::channel::mpsc::channel(1024);
+        let (mut incoming_conns, conns_recv) = futures::channel::mpsc::channel(1024);
+
+        // Listen to incoming connections and spawn a tokio task for each one,
+        // which feeds into the channel.
+        // TODO(justin): give some way to get a handle into this thing.
+        tokio::spawn(async move {
+            let mut conn_id = 0;
+            loop {
+                let (socket, _) = listener.accept().await.unwrap();
+                let (reader, writer) = socket.into_split();
+                conns.feed((conn_id, writer)).await.unwrap();
+                conns.flush().await.unwrap();
+                let mut reader = FramedRead::new(reader, LengthDelimitedCodec::new());
+                let mut incoming_send = incoming_send.clone();
+                let id = conn_id;
+                incoming_conns.feed(conn_id).await.unwrap();
+                incoming_conns.flush().await.unwrap();
+                tokio::spawn(async move {
+                    while let Some(msg) = reader.next().await {
+                        // TODO(justin): figure out error handling here.
+                        let msg = msg.unwrap();
+                        let msg = Message::decode(&msg.freeze());
+                        incoming_send.feed((id, msg)).await.unwrap();
+                    }
+                    // TODO(justin): The connection is closed, so we should
+                    // clean up its metadata somehow and issue a retraction for
+                    // the connection.
+                });
+                conn_id += 1;
+            }
+        });
+
+        let incoming_messages = self.add_input_from_stream(incoming_messages.map(Some));
+        let conns_recv = self.add_input_from_stream(conns_recv.map(Some));
+
+        (port, incoming_messages, conns_recv, egress_edge)
+    }
+
+    // TODO(justin): we should have a vertex that can dynamically connect to
+    // stuff based on data instead of this.
+    pub async fn connect_tcp<A>(
+        &mut self,
+        addr: A,
+    ) -> (
+        InputPort<VecHandoff<Message>>,
+        OutputPort<VecHandoff<Message>>,
+    )
+    where
+        A: ToSocketAddrs,
+    {
+        let stream = TcpStream::connect(addr).await.unwrap();
+
+        let (reader, writer) = stream.into_split();
+
+        let (mut conns, egress_edge) = self.add_egress_vertex();
+        conns.feed((0, writer)).await.unwrap();
+        conns.flush().await.unwrap();
+
+        let (result_in, send) = self.add_inout(|_ctx, recv: &RecvCtx<VecHandoff<_>>, send| {
+            send.give(Iter(recv.take_inner().into_iter().map(|msg| (0, msg))));
+        });
+
+        self.add_edge(send, egress_edge);
+
+        let incoming_messages = self.add_input_from_stream(
+            FramedRead::new(reader, LengthDelimitedCodec::new())
+                .map(|msg| Message::decode(&msg.unwrap().freeze()))
+                .map(Some),
+        );
+        (result_in, incoming_messages)
+    }
+
     // TODO(justin): Add docs here once the semantics are a bit more nailed down.
     pub fn add_egress_vertex(
         &mut self,
@@ -60,6 +151,7 @@ impl Hydroflow {
                         {
                             let mut data = Vec::new();
                             msg.encode(&mut data);
+                            // TODO(justin): need to handle if the connection has closed.
                             Pin::new(&mut writer).start_send(data.into()).unwrap();
                         }
                         let _ = Pin::new(&mut writer).poll_flush(&mut cx);
