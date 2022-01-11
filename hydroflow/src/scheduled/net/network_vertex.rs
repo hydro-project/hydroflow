@@ -1,6 +1,7 @@
-use std::{collections::HashMap, pin::Pin};
+use core::task;
+use std::{collections::HashMap, pin::Pin, task::Poll};
 
-use futures::{Sink, SinkExt, StreamExt};
+use futures::{Future, Sink, SinkExt, StreamExt};
 use tokio::net::{tcp::OwnedWriteHalf, TcpListener, TcpStream, ToSocketAddrs};
 use tokio_util::codec::{FramedRead, FramedWrite, LengthDelimitedCodec};
 
@@ -16,28 +17,19 @@ use crate::{
 
 use super::Message;
 
-pub type ReceiverId = u32;
-
+pub type ReceiverId = u16;
 pub type OutboundMessage = (ReceiverId, Message);
+pub type Address = String;
 
 impl Hydroflow {
     // TODO(justin): this needs to return a result/get rid of all the unwraps, I
     // guess we need a HydroflowError?
-    pub async fn listen_tcp(
-        &mut self,
-    ) -> (
-        u16,
-        OutputPort<VecHandoff<(ReceiverId, Message)>>,
-        OutputPort<VecHandoff<ReceiverId>>,
-        InputPort<VecHandoff<(u32, Message)>>,
-    ) {
+    pub async fn listen_tcp(&mut self) -> (u16, OutputPort<VecHandoff<(ReceiverId, Message)>>) {
         let listener = TcpListener::bind("localhost:0").await.unwrap();
         let port = listener.local_addr().unwrap().port();
 
-        let (mut conns, egress_edge) = self.add_egress_vertex();
         // TODO(justin): figure out an appropriate buffer here.
         let (incoming_send, incoming_messages) = futures::channel::mpsc::channel(1024);
-        let (mut incoming_conns, conns_recv) = futures::channel::mpsc::channel(1024);
 
         // Listen to incoming connections and spawn a tokio task for each one,
         // which feeds into the channel.
@@ -46,14 +38,10 @@ impl Hydroflow {
             let mut conn_id = 0;
             loop {
                 let (socket, _) = listener.accept().await.unwrap();
-                let (reader, writer) = socket.into_split();
-                conns.feed((conn_id, writer)).await.unwrap();
-                conns.flush().await.unwrap();
+                let (reader, _) = socket.into_split();
                 let mut reader = FramedRead::new(reader, LengthDelimitedCodec::new());
                 let mut incoming_send = incoming_send.clone();
                 let id = conn_id;
-                incoming_conns.feed(conn_id).await.unwrap();
-                incoming_conns.flush().await.unwrap();
                 tokio::spawn(async move {
                     while let Some(msg) = reader.next().await {
                         // TODO(justin): figure out error handling here.
@@ -70,13 +58,130 @@ impl Hydroflow {
         });
 
         let incoming_messages = self.add_input_from_stream(incoming_messages.map(Some));
-        let conns_recv = self.add_input_from_stream(conns_recv.map(Some));
 
-        (port, incoming_messages, conns_recv, egress_edge)
+        (port, incoming_messages)
     }
 
-    // TODO(justin): we should have a vertex that can dynamically connect to
-    // stuff based on data instead of this.
+    pub async fn outbound_tcp_vertex(&mut self) -> InputPort<VecHandoff<(Address, Message)>> {
+        let (mut connection_reqs_send, mut connection_reqs_recv) =
+            futures::channel::mpsc::channel(1024);
+        let (mut connections_send, mut connections_recv) = futures::channel::mpsc::channel(1024);
+
+        // TODO(justin): handle errors here.
+        // Spawn an actor which establishes connections.
+        tokio::spawn(async move {
+            while let Some(addr) = connection_reqs_recv.next().await {
+                let addr: Address = addr;
+                let stream = TcpStream::connect(addr.clone()).await.unwrap();
+                connections_send.send((addr, stream)).await.unwrap();
+            }
+        });
+
+        enum ConnStatus {
+            Pending(Vec<Message>),
+            Connected(FramedWrite<TcpStream, LengthDelimitedCodec>),
+        }
+
+        let (mut outbound_messages_send, mut outbound_messages_recv) =
+            futures::channel::mpsc::channel(1024);
+        tokio::spawn(async move {
+            // TODO(justin): this cache should be global to the entire Hydroflow
+            // instance so we can reuse connections from inbound connections.
+            let mut connections = HashMap::<Address, ConnStatus>::new();
+
+            loop {
+                tokio::select! {
+                    Some((addr, msg)) = outbound_messages_recv.next() => {
+                        let addr: Address = addr;
+                        let msg: Message = msg;
+                        match connections.get_mut(&addr) {
+                            None => {
+                                // We have not seen this address before, open a
+                                // connection to it and buffer the message to be
+                                // sent once it's open.
+
+                                // TODO(justin): what do we do if the buffer is full here?
+                                connection_reqs_send.try_send(addr.clone()).unwrap();
+                                connections.insert(addr, ConnStatus::Pending(vec![msg]));
+                            }
+                            Some(ConnStatus::Pending(msgs)) => {
+                                // We have seen this address before but we're
+                                // still trying to connect to it, so buffer this
+                                // message so that when we _do_ connect we will
+                                // send it.
+                                msgs.push(msg);
+                            }
+                            Some(ConnStatus::Connected(conn)) => {
+                                // TODO(justin): move the actual sending here
+                                // into a different task so we don't have to
+                                // wait for the send.
+                                let mut data = Vec::new();
+                                msg.encode(&mut data);
+                                conn.send(data.into()).await.unwrap();
+                            }
+                        }
+                    },
+                    Some((addr, conn)) = connections_recv.next() => {
+                        match connections.get_mut(&addr) {
+                            Some(ConnStatus::Pending(msgs)) => {
+                                let mut conn = FramedWrite::new(conn, LengthDelimitedCodec::new());
+                                for msg in msgs.drain(..) {
+                                    // TODO(justin): move the actual sending here
+                                    // into a different task so we don't have to
+                                    // wait for the send.
+                                    let mut data = Vec::new();
+                                    msg.encode(&mut data);
+                                    conn.send(data.into()).await.unwrap();
+                                }
+                                connections.insert(addr, ConnStatus::Connected(conn));
+                            }
+                            None => {
+                                // This means nobody ever requested this
+                                // connection, so we shouldn't have initiated it
+                                // in the first place.
+                                unreachable!()
+                            }
+                            Some(ConnStatus::Connected(_tcp)) => {
+                                // This means we were already connected, so we
+                                // shouldn't have connected again. If the
+                                // connection cache becomes shared this could
+                                // become reachable.
+                                unreachable!()
+                            }
+                        }
+                    },
+                    else => break,
+                }
+            }
+        });
+
+        let mut buffered_messages = Vec::new();
+        let mut next_messages = Vec::new();
+        let input_port = self.add_sink(move |ctx, recv| {
+            buffered_messages.extend(recv.take_inner());
+            for msg in buffered_messages.drain(..) {
+                if let Err(e) = outbound_messages_send.try_send(msg) {
+                    next_messages.push(e.into_inner());
+                }
+            }
+
+            let waker = ctx.waker();
+            let mut cx = task::Context::from_waker(&waker);
+            let mut flush = outbound_messages_send.flush();
+            let r = Pin::new(&mut flush);
+
+            // TODO(justin): not sure how to handle this.
+            match r.poll(&mut cx) {
+                Poll::Pending => {}
+                Poll::Ready(Ok(())) => {}
+                Poll::Ready(Err(_)) => {}
+            }
+
+            std::mem::swap(&mut buffered_messages, &mut next_messages);
+        });
+        input_port
+    }
+
     pub async fn connect_tcp<A>(
         &mut self,
         addr: A,
