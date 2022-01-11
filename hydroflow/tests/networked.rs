@@ -22,11 +22,14 @@ fn test_echo_server() {
             let rt = tokio::runtime::Runtime::new().unwrap();
             rt.block_on(async move {
                 let mut df = Hydroflow::new();
-                let (port, incoming_messages) = df.listen_tcp().await;
+
+                let (port, incoming_messages) = df.inbound_tcp_vertex().await;
+                let outbound_messages = df.outbound_tcp_vertex().await;
+
                 server_port_send.send(port).unwrap();
 
                 let (receiver_port, sender_port) = df.add_inout(move |_ctx, recv, send| {
-                    for (_, msg) in recv.take_inner() {
+                    for msg in recv.take_inner() {
                         let mut msg: Message = msg;
                         let addr = format!("localhost:{}", msg.address);
                         msg.address = port.try_into().unwrap();
@@ -35,7 +38,6 @@ fn test_echo_server() {
                 });
                 df.add_edge(incoming_messages, receiver_port);
 
-                let outbound_messages = df.outbound_tcp_vertex().await;
                 df.add_edge(sender_port, outbound_messages);
 
                 df.run_async().await.unwrap();
@@ -53,16 +55,15 @@ fn test_echo_server() {
             rt.block_on(async move {
                 let mut df = Hydroflow::new();
 
-                let (port, incoming_messages) = df.listen_tcp().await;
-
+                let (port, incoming_messages) = df.inbound_tcp_vertex().await;
                 let outbound_messages = df.outbound_tcp_vertex().await;
 
                 let (input, given_inputs) = df.add_input();
                 df.add_edge(given_inputs, outbound_messages);
 
                 let receiver_port =
-                    df.add_sink(move |_ctx, recv: &RecvCtx<VecHandoff<(u16, Message)>>| {
-                        for (_, v) in recv.take_inner() {
+                    df.add_sink(move |_ctx, recv: &RecvCtx<VecHandoff<Message>>| {
+                        for v in recv.take_inner() {
                             log_message
                                 .send(format!(
                                     "[CLIENT#{}] received back {:?}",
