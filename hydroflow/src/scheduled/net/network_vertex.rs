@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use futures::{SinkExt, StreamExt};
+use serde::{de::DeserializeOwned, Serialize};
 use tokio::net::{TcpListener, TcpStream};
 use tokio_util::codec::{FramedRead, FramedWrite, LengthDelimitedCodec};
 
@@ -11,17 +12,26 @@ use crate::scheduled::{
     handoff::VecHandoff,
 };
 
-use super::Message;
-
 pub type Address = String;
 
 // These methods can't be wrapped up in a trait because async methods are not
 // allowed in traits (yet).
 
 impl Hydroflow {
-    // Listen on a port and send any messages received along the output edge.
-    // Returns the port bound to.
-    pub async fn inbound_tcp_vertex(&mut self) -> (u16, OutputPort<VecHandoff<Message>>) {
+    // TODO(justin): this needs to return a result/get rid of all the unwraps, I
+    // guess we need a HydroflowError?
+    /// Begins listening on some TCP port. Returns an [OutputPort] representing
+    /// the stream of messages received. Currently there is no notion of
+    /// identity to the connections received, if they are to be attached to some
+    /// participant in the system, that needs to be included in the message
+    /// directly.
+    ///
+    /// The messages will be interpreted to be bincode-encoded, length-delimited
+    /// messages, as produced by [Self::outbound_tcp_vertex].
+    pub async fn inbound_tcp_vertex<T>(&mut self) -> (u16, OutputPort<VecHandoff<T>>)
+    where
+        T: 'static + DeserializeOwned + Send,
+    {
         let listener = TcpListener::bind("localhost:0").await.unwrap();
         let port = listener.local_addr().unwrap().port();
 
@@ -41,12 +51,11 @@ impl Hydroflow {
                     while let Some(msg) = reader.next().await {
                         // TODO(justin): figure out error handling here.
                         let msg = msg.unwrap();
-                        let msg = Message::decode(&msg.freeze());
-                        incoming_send.send(msg).await.unwrap();
+                        let out = bincode::deserialize(&msg).unwrap();
+                        incoming_send.send(out).await.unwrap();
                     }
                     // TODO(justin): The connection is closed, so we should
-                    // clean up its metadata somehow and issue a retraction for
-                    // the connection.
+                    // clean up its metadata.
                 });
             }
         });
@@ -56,8 +65,10 @@ impl Hydroflow {
         (port, incoming_messages)
     }
 
-    // Create a TCP vertex which allows sending messages to a network address.
-    pub async fn outbound_tcp_vertex(&mut self) -> InputPort<VecHandoff<(Address, Message)>> {
+    pub async fn outbound_tcp_vertex<T>(&mut self) -> InputPort<VecHandoff<(Address, T)>>
+    where
+        T: 'static + Serialize + Send,
+    {
         let (mut connection_reqs_send, mut connection_reqs_recv) =
             futures::channel::mpsc::channel(1024);
         let (mut connections_send, mut connections_recv) = futures::channel::mpsc::channel(1024);
@@ -72,8 +83,8 @@ impl Hydroflow {
             }
         });
 
-        enum ConnStatus {
-            Pending(Vec<Message>),
+        enum ConnStatus<T> {
+            Pending(Vec<T>),
             Connected(FramedWrite<TcpStream, LengthDelimitedCodec>),
         }
 
@@ -82,13 +93,13 @@ impl Hydroflow {
         tokio::spawn(async move {
             // TODO(justin): this cache should be global to the entire Hydroflow
             // instance so we can reuse connections from inbound connections.
-            let mut connections = HashMap::<Address, ConnStatus>::new();
+            let mut connections = HashMap::<Address, ConnStatus<T>>::new();
 
             loop {
                 tokio::select! {
                     Some((addr, msg)) = outbound_messages_recv.next() => {
                         let addr: Address = addr;
-                        let msg: Message = msg;
+                        let msg: T = msg;
                         match connections.get_mut(&addr) {
                             None => {
                                 // We have not seen this address before, open a
@@ -110,9 +121,8 @@ impl Hydroflow {
                                 // TODO(justin): move the actual sending here
                                 // into a different task so we don't have to
                                 // wait for the send.
-                                let mut data = Vec::new();
-                                msg.encode(&mut data);
-                                conn.send(data.into()).await.unwrap();
+                                let msg = bincode::serialize(&msg).unwrap();
+                                conn.send(msg.into()).await.unwrap();
                             }
                         }
                     },
@@ -125,9 +135,8 @@ impl Hydroflow {
                                     // TODO(justin): move the actual sending here
                                     // into a different task so we don't have to
                                     // wait for the send.
-                                    let mut data = Vec::new();
-                                    msg.encode(&mut data);
-                                    conn.send(data.into()).await.unwrap();
+                                    let msg = bincode::serialize(&msg).unwrap();
+                                    conn.send(msg.into()).await.unwrap();
                                 }
                                 connections.insert(addr, ConnStatus::Connected(conn));
                             }

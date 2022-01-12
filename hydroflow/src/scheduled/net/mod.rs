@@ -57,6 +57,7 @@
 use std::collections::VecDeque;
 use std::pin::Pin;
 
+use byteorder::{NetworkEndian, WriteBytesExt};
 use futures::{Sink, StreamExt};
 use tokio::net::{
     tcp::{OwnedReadHalf, OwnedWriteHalf},
@@ -85,12 +86,12 @@ pub struct Message {
 
 impl Message {
     fn encode(&self, v: &mut Vec<u8>) {
-        v.extend(self.address.to_ne_bytes());
+        v.write_u32::<NetworkEndian>(self.address).unwrap();
         v.extend(self.batch.iter());
     }
 
-    pub fn decode(v: &bytes::Bytes) -> Self {
-        let address = u32::from_ne_bytes(v[0..ADDRESS_LEN].try_into().unwrap());
+    pub fn decode(v: bytes::Bytes) -> Self {
+        let address = u32::from_le_bytes(v[0..ADDRESS_LEN].try_into().unwrap());
         let batch = v.slice(ADDRESS_LEN..);
         Message { address, batch }
     }
@@ -103,7 +104,7 @@ impl Hydroflow {
     ) -> OutputPort<VecHandoff<Message>> {
         let reader = FramedRead::new(reader, LengthDelimitedCodec::new());
         self.add_input_from_stream::<_, VecHandoff<_>, _>(
-            reader.map(|buf| Some(<Message>::decode(&buf.unwrap().into()))),
+            reader.map(|buf| Some(<Message>::decode(buf.unwrap().into()))),
         )
     }
 
