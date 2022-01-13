@@ -1,7 +1,17 @@
 use std::{collections::HashSet, sync::mpsc::channel};
 
-use hydroflow::scheduled::{
-    ctx::RecvCtx, graph::Hydroflow, graph_ext::GraphExt, handoff::VecHandoff,
+use hydroflow::{
+    builder::{
+        prelude::{BaseSurface, PullSurface, PushSurface},
+        surface::pull_handoff::HandoffPullSurface,
+        HydroflowBuilder,
+    },
+    scheduled::{
+        ctx::{OutputPort, RecvCtx},
+        graph::Hydroflow,
+        graph_ext::GraphExt,
+        handoff::VecHandoff,
+    },
 };
 use serde::{Deserialize, Serialize};
 
@@ -49,7 +59,6 @@ fn test_echo_server() {
                 df.add_edge(incoming_messages, receiver_port);
 
                 df.add_edge(sender_port, outbound_messages);
-
                 df.run_async().await.unwrap();
             });
         });
@@ -93,6 +102,111 @@ fn test_echo_server() {
                 )));
 
                 df.run_async().await.unwrap();
+            });
+        });
+    }
+
+    let expected_messages: HashSet<String> = [
+        "[CLIENT#0] received back \"Hello world 0!\"".into(),
+        "[CLIENT#1] received back \"Hello world 1!\"".into(),
+        "[CLIENT#2] received back \"Hello world 2!\"".into(),
+    ]
+    .into_iter()
+    .collect();
+
+    let mut actual_messages = HashSet::new();
+    while actual_messages.len() < expected_messages.len() {
+        actual_messages.insert(all_received_messages.recv().unwrap());
+    }
+
+    assert_eq!(expected_messages, actual_messages);
+}
+
+// This test sets up an echo server and runs a few connections to it.
+#[test]
+fn test_echo_server_builder() {
+    let (log_message, all_received_messages) = channel();
+
+    let (server_port_send, server_port_recv) = std::sync::mpsc::channel();
+
+    // First, spin up the server.
+    {
+        std::thread::spawn(move || {
+            let rt = tokio::runtime::Runtime::new().unwrap();
+            rt.block_on(async move {
+                let mut builder = HydroflowBuilder::default();
+
+                let (port, incoming_messages): (_, OutputPort<VecHandoff<EchoRequest>>) =
+                    builder.hydroflow.inbound_tcp_vertex().await;
+                server_port_send.send(port).unwrap();
+
+                let handler: HandoffPullSurface<VecHandoff<EchoRequest>> =
+                    builder.wrap_input(incoming_messages);
+
+                let outbound_messages = builder.hydroflow.outbound_tcp_vertex().await;
+                let outbound_messages = builder.wrap_output(outbound_messages);
+
+                builder.add_subgraph(
+                    handler
+                        .flat_map(std::convert::identity)
+                        .map(|echo_request| {
+                            (
+                                echo_request.return_addr,
+                                EchoResponse {
+                                    payload: echo_request.payload,
+                                },
+                            )
+                        })
+                        .pivot()
+                        .map(Some)
+                        .reverse(outbound_messages),
+                );
+
+                builder.build().run_async().await.unwrap();
+            });
+        });
+    }
+
+    let server_port = server_port_recv.recv().unwrap();
+
+    // Connect to it some number of times.
+    for idx in 0..3 {
+        let log_message = log_message.clone();
+        std::thread::spawn(move || {
+            let rt = tokio::runtime::Runtime::new().unwrap();
+            rt.block_on(async move {
+                let mut builder = HydroflowBuilder::default();
+
+                let (port, responses) = builder.hydroflow.inbound_tcp_vertex().await;
+
+                let outbound_messages = builder.hydroflow.outbound_tcp_vertex().await;
+                let (input, requests) = builder.hydroflow.add_input();
+                builder.hydroflow.add_edge(requests, outbound_messages);
+
+                let responses = builder.wrap_input(responses);
+
+                builder.add_subgraph(responses.flat_map(std::convert::identity).pivot().for_each(
+                    move |response: EchoResponse| {
+                        log_message
+                            .send(format!(
+                                "[CLIENT#{}] received back {:?}",
+                                idx, response.payload
+                            ))
+                            .unwrap()
+                    },
+                ));
+
+                let server_addr = format!("localhost:{}", server_port);
+
+                input.give(Some((
+                    server_addr.clone(),
+                    EchoRequest {
+                        return_addr: format!("localhost:{}", port),
+                        payload: format!("Hello world {}!", idx),
+                    },
+                )));
+
+                builder.build().run_async().await.unwrap();
             });
         });
     }

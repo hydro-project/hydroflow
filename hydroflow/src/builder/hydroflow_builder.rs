@@ -22,7 +22,7 @@ use super::surface::{PullSurface, PushSurfaceReversed};
 /// The user-facing entry point for the Surface API.
 #[derive(Default)]
 pub struct HydroflowBuilder {
-    hydroflow: Hydroflow,
+    pub hydroflow: Hydroflow,
     port_connectors: Vec<Box<dyn PortConnector>>,
 }
 impl HydroflowBuilder {
@@ -38,6 +38,29 @@ impl HydroflowBuilder {
         self.port_connectors.push(Box::new(port_connector));
 
         (push, pull)
+    }
+
+    pub fn wrap_input<H>(&mut self, output_port: OutputPort<H>) -> HandoffPullSurface<H>
+    where
+        H: Handoff,
+    {
+        let (output_port_connector, pull) = BothPortConnector::with_output(output_port);
+        self.port_connectors.push(Box::new(output_port_connector));
+
+        pull
+    }
+
+    pub fn wrap_output<H, T>(
+        &mut self,
+        input_port: InputPort<H>,
+    ) -> HandoffPushSurfaceReversed<H, T>
+    where
+        H: Handoff + CanReceive<T>,
+    {
+        let (input_port_connector, push) = BothPortConnector::with_input(input_port);
+        self.port_connectors.push(Box::new(input_port_connector));
+
+        push
     }
 
     /// Adds a `pivot` created via the Surface API.
