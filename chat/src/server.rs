@@ -37,6 +37,22 @@ pub(crate) async fn run_server(opts: Opts) {
        println!("{:?}", x); 
     });
 
+    let stream = TcpListener::bind(format!("localhost:{}", opts.port))
+        .await
+        .unwrap();
+    let (stream, _) = stream.accept().await.unwrap();
+
+    // inbound msgs stuff
+    let msgs_out = hf.add_read_tcp_stream(stream);
+
+    let sg = msgs_out
+        .flat_map(std::convert::identity)
+        .flat_map(|message| <Vec<(String, String)>>::decode(message.batch).into_iter())
+        .ripple_join(members_out)
+        .pivot()
+        .for_each(|x| {
+            println!("{:?}", x);
+        });
     hf.add_subgraph(sg);
 
     let mut hf = hf.build();
