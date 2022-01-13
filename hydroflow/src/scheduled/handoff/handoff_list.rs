@@ -11,18 +11,16 @@ use crate::scheduled::{HandoffId, SubgraphId};
 
 use super::Handoff;
 
-/**
- * A variadic list of Handoff types, represented using a lisp-style tuple structure.
- *
- * This trait is sealed and not meant to be implemented or used directly. Instead tuple lists (which already implement this trait) should be used, for example:
- * ```ignore
- * type MyHandoffList = (VecHandoff<usize>, (VecHandoff<String>, (TeeingHandoff<u32>, ())));
- * ```
- * The [`tl!`] (tuple list) macro simplifies usage of this kind:
- * ```ignore
- * type MyHandoffList = tl!(VecHandoff<usize>, VecHandoff<String>, TeeingHandoff<u32>);
- * ```
- */
+/// A variadic list of Handoff types, represented using a lisp-style tuple structure.
+///
+/// This trait is sealed and not meant to be implemented or used directly. Instead tuple lists (which already implement this trait) should be used, for example:
+/// ```ignore
+/// type MyHandoffList = (VecHandoff<usize>, (VecHandoff<String>, (TeeingHandoff<u32>, ())));
+/// ```
+/// The [`tl!`] (tuple list) macro simplifies usage of this kind:
+/// ```ignore
+/// type MyHandoffList = tl!(VecHandoff<usize>, VecHandoff<String>, TeeingHandoff<u32>);
+/// ```
 #[sealed]
 pub trait HandoffList {
     type InputHid;
