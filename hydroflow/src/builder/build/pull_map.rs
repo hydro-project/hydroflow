@@ -23,7 +23,7 @@ where
 type PullBuildImpl<'slf, 'hof, Prev, Func, Out>
 where
     Prev: PullBuild,
-= std::iter::Map<Prev::Build<'slf, 'hof>, impl 'slf + FnMut(Prev::ItemOut) -> Out>;
+= std::iter::Map<Prev::Build<'slf, 'hof>, impl FnMut(Prev::ItemOut) -> Out>;
 
 impl<Prev, Func, Out> PullBuildBase for MapPullBuild<Prev, Func>
 where
