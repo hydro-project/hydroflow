@@ -32,7 +32,7 @@ where
 type PushBuildImpl<'slf, 'hof, Next, Func, In>
 where
     Next: PushBuild,
-= Map<In, Next::ItemIn, impl 'slf + FnMut(In) -> Next::ItemIn, Next::Build<'slf, 'hof>>;
+= Map<In, Next::ItemIn, impl FnMut(In) -> Next::ItemIn, Next::Build<'slf, 'hof>>;
 
 impl<Next, Func, In> PushBuildBase for MapPushBuild<Next, Func, In>
 where

@@ -32,7 +32,7 @@ where
 type PushBuildImpl<'slf, 'hof, Next, Func, In, Out>
 where
     Next: PushBuild,
-= FlatMap<In, Out, impl 'slf + FnMut(In) -> Out, Next::Build<'slf, 'hof>>;
+= FlatMap<In, Out, impl FnMut(In) -> Out, Next::Build<'slf, 'hof>>;
 
 impl<Next, Func, In, Out> PushBuildBase for FlatMapPushBuild<Next, Func, In>
 where

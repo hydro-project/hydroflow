@@ -25,7 +25,7 @@ where
 type PushBuildImpl<'slf, 'hof, Next, Func>
 where
     Next: PushBuild,
-= Filter<Next::ItemIn, impl 'slf + FnMut(&Next::ItemIn) -> bool, Next::Build<'slf, 'hof>>;
+= Filter<Next::ItemIn, impl FnMut(&Next::ItemIn) -> bool, Next::Build<'slf, 'hof>>;
 
 impl<Next, Func> PushBuildBase for FilterPushBuild<Next, Func>
 where
