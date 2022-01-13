@@ -24,7 +24,7 @@ where
 type PullBuildImpl<'slf, 'hof, Prev, Func, Out>
 where
     Prev: PullBuild,
-= std::iter::FlatMap<Prev::Build<'slf, 'hof>, Out, impl 'slf + FnMut(Prev::ItemOut) -> Out>;
+= std::iter::FlatMap<Prev::Build<'slf, 'hof>, Out, impl FnMut(Prev::ItemOut) -> Out>;
 
 impl<Prev, Func, Out> PullBuildBase for FlatMapPullBuild<Prev, Func>
 where

@@ -23,7 +23,7 @@ where
 type PullBuildImpl<'slf, 'hof, Prev, Func>
 where
     Prev: PullBuild,
-= std::iter::Filter<Prev::Build<'slf, 'hof>, impl 'slf + FnMut(&Prev::ItemOut) -> bool>;
+= std::iter::Filter<Prev::Build<'slf, 'hof>, impl FnMut(&Prev::ItemOut) -> bool>;
 
 impl<Prev, Func> PullBuildBase for FilterPullBuild<Prev, Func>
 where
