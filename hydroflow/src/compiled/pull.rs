@@ -117,7 +117,7 @@ where
     }
 }
 
-pub struct RippleJoin<I1, V1, I2, V2>
+pub struct RippleJoin<'a, I1, V1, I2, V2>
 where
     V1: Eq + Clone,
     V2: Eq + Clone,
@@ -126,10 +126,10 @@ where
 {
     lhs: I1,
     rhs: I2,
-    state: RippleJoinState<V1, V2>,
+    state: &'a mut RippleJoinState<V1, V2>,
 }
 
-impl<I1, V1: 'static, I2, V2: 'static> Iterator for RippleJoin<I1, V1, I2, V2>
+impl<'a, I1, V1: 'static, I2, V2: 'static> Iterator for RippleJoin<'a, I1, V1, I2, V2>
 where
     V1: Eq + Clone,
     V2: Eq + Clone,
@@ -185,14 +185,14 @@ where
         }
     }
 }
-impl<'a, I1, V1, I2, V2> RippleJoin<I1, V1, I2, V2>
+impl<'a, I1, V1, I2, V2> RippleJoin<'a, I1, V1, I2, V2>
 where
     V1: Eq + Clone,
     V2: Eq + Clone,
     I1: Iterator<Item = V1>,
     I2: Iterator<Item = V2>,
 {
-    pub fn new(lhs: I1, rhs: I2, state: RippleJoinState<V1, V2>) -> Self {
+    pub fn new(lhs: I1, rhs: I2, state: &'a mut RippleJoinState<V1, V2>) -> Self {
         Self { lhs, rhs, state }
     }
 }
@@ -230,8 +230,8 @@ mod tests {
         let lhs = (0..3).map(|x| (format!("left {}", x)));
         let rhs = (10..13).map(|x| (format!("right {}", x)));
 
-        let state = RippleJoinState::default();
-        let join = RippleJoin::new(lhs, rhs, state);
+        let mut state = RippleJoinState::default();
+        let join = RippleJoin::new(lhs, rhs, &mut state);
 
         assert_eq!(
             join.collect::<Vec<_>>(),
