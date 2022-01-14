@@ -20,14 +20,14 @@ impl<K, V1, V2> Default for JoinState<K, V1, V2> {
     }
 }
 
-pub struct RippleJoinState<V1, V2> {
+pub struct CrossJoinState<V1, V2> {
     ltab: Vec<V1>,
     rtab: Vec<V2>,
     draw_from_left: bool,
     opposite_ix: Range<usize>,
 }
 
-impl<'a, V1, V2> Default for RippleJoinState<V1, V2> {
+impl<'a, V1, V2> Default for CrossJoinState<V1, V2> {
     fn default() -> Self {
         Self {
             ltab: Vec::new(),
@@ -117,7 +117,7 @@ where
     }
 }
 
-pub struct RippleJoin<'a, I1, V1, I2, V2>
+pub struct CrossJoin<'a, I1, V1, I2, V2>
 where
     V1: Eq + Clone,
     V2: Eq + Clone,
@@ -126,10 +126,10 @@ where
 {
     lhs: I1,
     rhs: I2,
-    state: &'a mut RippleJoinState<V1, V2>,
+    state: &'a mut CrossJoinState<V1, V2>,
 }
 
-impl<'a, I1, V1: 'static, I2, V2: 'static> Iterator for RippleJoin<'a, I1, V1, I2, V2>
+impl<'a, I1, V1: 'static, I2, V2: 'static> Iterator for CrossJoin<'a, I1, V1, I2, V2>
 where
     V1: Eq + Clone,
     V2: Eq + Clone,
@@ -185,21 +185,21 @@ where
         }
     }
 }
-impl<'a, I1, V1, I2, V2> RippleJoin<'a, I1, V1, I2, V2>
+impl<'a, I1, V1, I2, V2> CrossJoin<'a, I1, V1, I2, V2>
 where
     V1: Eq + Clone,
     V2: Eq + Clone,
     I1: Iterator<Item = V1>,
     I2: Iterator<Item = V2>,
 {
-    pub fn new(lhs: I1, rhs: I2, state: &'a mut RippleJoinState<V1, V2>) -> Self {
+    pub fn new(lhs: I1, rhs: I2, state: &'a mut CrossJoinState<V1, V2>) -> Self {
         Self { lhs, rhs, state }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::compiled::pull::{JoinState, RippleJoin, RippleJoinState, SymmetricHashJoin};
+    use crate::compiled::pull::{CrossJoin, CrossJoinState, JoinState, SymmetricHashJoin};
 
     #[test]
     fn hash_join() {
@@ -226,12 +226,12 @@ mod tests {
     }
 
     #[test]
-    fn ripple_join() {
+    fn cross_join() {
         let lhs = (0..3).map(|x| (format!("left {}", x)));
         let rhs = (10..13).map(|x| (format!("right {}", x)));
 
-        let mut state = RippleJoinState::default();
-        let join = RippleJoin::new(lhs, rhs, &mut state);
+        let mut state = CrossJoinState::default();
+        let join = CrossJoin::new(lhs, rhs, &mut state);
 
         assert_eq!(
             join.collect::<Vec<_>>(),

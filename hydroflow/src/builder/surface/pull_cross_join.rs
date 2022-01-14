@@ -1,11 +1,11 @@
 use super::{BaseSurface, PullSurface};
 
-use crate::builder::build::pull_ripple_join::RippleJoinPullBuild;
+use crate::builder::build::pull_cross_join::CrossJoinPullBuild;
 use crate::builder::connect::BinaryPullConnect;
 use crate::scheduled::handoff::{HandoffList, HandoffListSplit};
 use crate::scheduled::type_list::Extend;
 
-pub struct RippleJoinPullSurface<PrevA, PrevB>
+pub struct CrossJoinPullSurface<PrevA, PrevB>
 where
     PrevA: PullSurface,
     PrevB: PullSurface,
@@ -15,7 +15,7 @@ where
     prev_a: PrevA,
     prev_b: PrevB,
 }
-impl<PrevA, PrevB> RippleJoinPullSurface<PrevA, PrevB>
+impl<PrevA, PrevB> CrossJoinPullSurface<PrevA, PrevB>
 where
     PrevA: PullSurface,
     PrevB: PullSurface,
@@ -27,7 +27,7 @@ where
     }
 }
 
-impl<PrevA, PrevB> BaseSurface for RippleJoinPullSurface<PrevA, PrevB>
+impl<PrevA, PrevB> BaseSurface for CrossJoinPullSurface<PrevA, PrevB>
 where
     PrevA: PullSurface,
     PrevB: PullSurface,
@@ -37,7 +37,7 @@ where
     type ItemOut = (PrevA::ItemOut, PrevB::ItemOut);
 }
 
-impl<PrevA, PrevB> PullSurface for RippleJoinPullSurface<PrevA, PrevB>
+impl<PrevA, PrevB> PullSurface for CrossJoinPullSurface<PrevA, PrevB>
 where
     PrevA: PullSurface,
     PrevB: PullSurface,
@@ -51,13 +51,13 @@ where
     type InputHandoffs = <PrevA::InputHandoffs as Extend<PrevB::InputHandoffs>>::Extended;
 
     type Connect = BinaryPullConnect<PrevA::Connect, PrevB::Connect>;
-    type Build = RippleJoinPullBuild<PrevA::Build, PrevB::Build>;
+    type Build = CrossJoinPullBuild<PrevA::Build, PrevB::Build>;
 
     fn into_parts(self) -> (Self::Connect, Self::Build) {
         let (connect_a, build_a) = self.prev_a.into_parts();
         let (connect_b, build_b) = self.prev_b.into_parts();
         let connect = BinaryPullConnect::new(connect_a, connect_b);
-        let build = RippleJoinPullBuild::new(build_a, build_b);
+        let build = CrossJoinPullBuild::new(build_a, build_b);
         (connect, build)
     }
 }
