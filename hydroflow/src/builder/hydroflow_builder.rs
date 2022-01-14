@@ -2,10 +2,12 @@ use super::build::{PullBuild, PushBuild};
 use super::connect::{PullConnect, PushConnect};
 use super::surface::pivot::PivotSurface;
 
+use std::cell::Cell;
 use std::rc::Rc;
 use std::sync::mpsc::SyncSender;
 
 use crate::compiled::pivot::Pivot;
+use crate::scheduled::ctx::{InputPort, OutputPort};
 use crate::scheduled::graph::Hydroflow;
 use crate::scheduled::graph_ext::GraphExt;
 use crate::scheduled::handoff::{CanReceive, Handoff, VecHandoff};
@@ -21,8 +23,7 @@ use super::surface::{PullSurface, PushSurfaceReversed};
 #[derive(Default)]
 pub struct HydroflowBuilder {
     hydroflow: Hydroflow,
-    // TODO(mingwei): use a dedicated trait instead of FnOnce?
-    handoff_connectors: Vec<Box<dyn FnOnce(&mut Hydroflow)>>,
+    port_connectors: Vec<Box<dyn PortConnector>>,
 }
 impl HydroflowBuilder {
     /// Creates a handoff, returning push and pull ends which can be chained
@@ -33,19 +34,9 @@ impl HydroflowBuilder {
     where
         H: Handoff + CanReceive<T>,
     {
-        let push_port = Default::default();
-        let push = HandoffPushSurfaceReversed::new(Rc::clone(&push_port));
+        let (port_connector, push, pull) = BothPortConnector::with_neither();
+        self.port_connectors.push(Box::new(port_connector));
 
-        let pull_port = Default::default();
-        let pull = HandoffPullSurface::new(Rc::clone(&pull_port));
-
-        self.handoff_connectors.push(Box::new(move |hydroflow| {
-            if let (Some(output_port), Some(input_port)) = (push_port.take(), pull_port.take()) {
-                hydroflow.add_edge(output_port, input_port);
-            } else {
-                panic!("Handoff was never connected!!"); // TODO(mingwei): more informative error messages.
-            }
-        }));
         (push, pull)
     }
 
@@ -80,16 +71,8 @@ impl HydroflowBuilder {
     {
         let (input, output_port) = self.hydroflow.add_channel_input();
 
-        let pull_port = Default::default();
-        let pull = HandoffPullSurface::new(Rc::clone(&pull_port));
-
-        self.handoff_connectors.push(Box::new(move |hydroflow| {
-            if let Some(input_port) = pull_port.take() {
-                hydroflow.add_edge(output_port, input_port);
-            } else {
-                panic!("Channel input was never connected!!"); // TODO(mingwei): more informative error messages.
-            }
-        }));
+        let (output_port_connector, pull) = BothPortConnector::with_output(output_port);
+        self.port_connectors.push(Box::new(output_port_connector));
 
         (input, pull)
     }
@@ -100,16 +83,9 @@ impl HydroflowBuilder {
     ) -> HandoffPushSurfaceReversed<VecHandoff<Message>, Option<Message>> {
         let input_port = self.hydroflow.add_write_tcp_stream(stream);
 
-        let push_port = Default::default();
-        let push = HandoffPushSurfaceReversed::new(Rc::clone(&push_port));
-
-        self.handoff_connectors.push(Box::new(move |hydroflow| {
-            if let Some(output_port) = push_port.take() {
-                hydroflow.add_edge(output_port, input_port);
-            } else {
-                panic!("TCP stream output was never connected!!"); // TODO(mingwei): more informative error messages.
-            }
-        }));
+        let (input_port_connector, push) =
+            BothPortConnector::with_input::<Option<Message>>(input_port);
+        self.port_connectors.push(Box::new(input_port_connector));
 
         push
     }
@@ -120,16 +96,8 @@ impl HydroflowBuilder {
     ) -> HandoffPullSurface<VecHandoff<Message>> {
         let output_port = self.hydroflow.add_read_tcp_stream(stream);
 
-        let pull_port = Default::default();
-        let pull = HandoffPullSurface::new(Rc::clone(&pull_port));
-
-        self.handoff_connectors.push(Box::new(move |hydroflow| {
-            if let Some(input_port) = pull_port.take() {
-                hydroflow.add_edge(output_port, input_port);
-            } else {
-                panic!("TCP stream input was never connected!!"); // TODO(mingwei): more informative error messages.
-            }
-        }));
+        let (output_port_connector, pull) = BothPortConnector::with_output(output_port);
+        self.port_connectors.push(Box::new(output_port_connector));
 
         pull
     }
@@ -144,35 +112,19 @@ impl HydroflowBuilder {
     ) {
         let (input_port, output_port) = self.hydroflow.add_tcp_stream(stream);
 
-        let pull_port = Default::default();
-        let pull = HandoffPullSurface::new(Rc::clone(&pull_port));
+        let (input_port_connector, push) =
+            BothPortConnector::with_input::<Option<Message>>(input_port);
+        self.port_connectors.push(Box::new(input_port_connector));
 
-        self.handoff_connectors.push(Box::new(move |hydroflow| {
-            if let Some(input_port) = pull_port.take() {
-                hydroflow.add_edge(output_port, input_port);
-            } else {
-                panic!("TCP stream input was never connected!!"); // TODO(mingwei): more informative error messages.
-            }
-        }));
-
-        let push_port = Default::default();
-        let push = HandoffPushSurfaceReversed::new(Rc::clone(&push_port));
-
-        self.handoff_connectors.push(Box::new(move |hydroflow| {
-            if let Some(output_port) = push_port.take() {
-                hydroflow.add_edge(output_port, input_port);
-            } else {
-                panic!("TCP stream output was never connected!!"); // TODO(mingwei): more informative error messages.
-            }
-        }));
+        let (output_port_connector, pull) = BothPortConnector::with_output(output_port);
+        self.port_connectors.push(Box::new(output_port_connector));
 
         (push, pull)
     }
 
     pub fn build(mut self) -> Hydroflow {
-        for handoff_connector in self.handoff_connectors {
-            // TODO(mingwei): be more principled with this.
-            (handoff_connector)(&mut self.hydroflow);
+        for handoff_connector in self.port_connectors {
+            handoff_connector.connect(&mut self.hydroflow);
         }
         self.hydroflow
     }
@@ -194,5 +146,77 @@ impl HydroflowBuilder {
     /// ```
     pub fn start_tee<T>(&self) -> StartPushSurface<T> {
         StartPushSurface::new()
+    }
+}
+
+/// Internal helper struct, run to connect all handoffs on [`HydroflowBuilder::build()`].
+trait PortConnector {
+    // TODO(mingwei): return result for informative error message.
+    fn connect(self: Box<Self>, hydroflow: &mut Hydroflow);
+}
+
+struct BothPortConnector<Hof>
+where
+    Hof: Handoff,
+{
+    output_port: Rc<Cell<Option<OutputPort<Hof>>>>,
+    input_port: Rc<Cell<Option<InputPort<Hof>>>>,
+}
+impl<Hof> BothPortConnector<Hof>
+where
+    Hof: Handoff,
+{
+    pub fn with_output(output_port: OutputPort<Hof>) -> (Self, HandoffPullSurface<Hof>) {
+        let this = Self {
+            output_port: Rc::new(Cell::new(Some(output_port))),
+            input_port: Default::default(),
+        };
+        let pull = HandoffPullSurface::new(Rc::clone(&this.input_port));
+        (this, pull)
+    }
+
+    pub fn with_input<T>(input_port: InputPort<Hof>) -> (Self, HandoffPushSurfaceReversed<Hof, T>)
+    where
+        Hof: CanReceive<T>,
+    {
+        let this = Self {
+            output_port: Default::default(),
+            input_port: Rc::new(Cell::new(Some(input_port))),
+        };
+        let push = HandoffPushSurfaceReversed::new(Rc::clone(&this.output_port));
+        (this, push)
+    }
+
+    pub fn with_neither<T>() -> (
+        Self,
+        HandoffPushSurfaceReversed<Hof, T>,
+        HandoffPullSurface<Hof>,
+    )
+    where
+        Hof: CanReceive<T>,
+    {
+        let this = Self {
+            output_port: Default::default(),
+            input_port: Default::default(),
+        };
+        let pull = HandoffPullSurface::new(Rc::clone(&this.input_port));
+        let push = HandoffPushSurfaceReversed::new(Rc::clone(&this.output_port));
+
+        (this, push, pull)
+    }
+}
+impl<Hof> PortConnector for BothPortConnector<Hof>
+where
+    Hof: Handoff,
+{
+    fn connect(self: Box<Self>, hydroflow: &mut Hydroflow) {
+        // TODO(mingwei): more informative error handling.
+        if let (Some(output_port), Some(input_port)) =
+            (self.output_port.take(), self.input_port.take())
+        {
+            hydroflow.add_edge(output_port, input_port);
+        } else {
+            panic!("Ports were never connected!!");
+        }
     }
 }
