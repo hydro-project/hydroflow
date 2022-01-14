@@ -1,10 +1,10 @@
 use super::{PullBuild, PullBuildBase};
 
-use crate::compiled::pull::{RippleJoin, RippleJoinState};
+use crate::compiled::pull::{CrossJoin, CrossJoinState};
 use crate::scheduled::handoff::{HandoffList, HandoffListSplit};
 use crate::scheduled::type_list::Extend;
 
-pub struct RippleJoinPullBuild<PrevA, PrevB>
+pub struct CrossJoinPullBuild<PrevA, PrevB>
 where
     PrevA: PullBuild,
     PrevB: PullBuild,
@@ -13,9 +13,9 @@ where
 {
     prev_a: PrevA,
     prev_b: PrevB,
-    state: RippleJoinState<PrevA::ItemOut, PrevB::ItemOut>,
+    state: CrossJoinState<PrevA::ItemOut, PrevB::ItemOut>,
 }
-impl<PrevA, PrevB> RippleJoinPullBuild<PrevA, PrevB>
+impl<PrevA, PrevB> CrossJoinPullBuild<PrevA, PrevB>
 where
     PrevA: PullBuild,
     PrevB: PullBuild,
@@ -31,7 +31,7 @@ where
     }
 }
 
-impl<PrevA, PrevB> PullBuildBase for RippleJoinPullBuild<PrevA, PrevB>
+impl<PrevA, PrevB> PullBuildBase for CrossJoinPullBuild<PrevA, PrevB>
 where
     PrevA: PullBuild,
     PrevB: PullBuild,
@@ -39,7 +39,7 @@ where
     PrevB::ItemOut: 'static + Eq + Clone,
 {
     type ItemOut = (PrevA::ItemOut, PrevB::ItemOut);
-    type Build<'slf, 'hof> = RippleJoin<
+    type Build<'slf, 'hof> = CrossJoin<
         'slf,
         PrevA::Build<'slf, 'hof>,
         PrevA::ItemOut,
@@ -48,7 +48,7 @@ where
     >;
 }
 
-impl<PrevA, PrevB> PullBuild for RippleJoinPullBuild<PrevA, PrevB>
+impl<PrevA, PrevB> PullBuild for CrossJoinPullBuild<PrevA, PrevB>
 where
     PrevA: PullBuild,
     PrevB: PullBuild,
@@ -69,6 +69,6 @@ where
             <Self::InputHandoffs as HandoffListSplit<_>>::split_recv_ctx(input);
         let iter_a = self.prev_a.build(input_a);
         let iter_b = self.prev_b.build(input_b);
-        RippleJoin::new(iter_a, iter_b, &mut self.state)
+        CrossJoin::new(iter_a, iter_b, &mut self.state)
     }
 }
