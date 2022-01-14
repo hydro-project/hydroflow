@@ -27,7 +27,9 @@ pub(crate) fn generate_dataflow(r: RelExpr) -> String {
 
 // TODO(justin): How do we make this portable/run on CI?
 fn run_rustfmt(s: String) -> anyhow::Result<String> {
-    Ok(cmd!("rustfmt").stdin(s).read()?)
+    Ok(cmd!("rustfmt --config newline_style=Unix")
+        .stdin(s)
+        .read()?)
 }
 
 struct SubgraphBuilder {
