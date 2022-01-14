@@ -26,6 +26,7 @@ pub mod pivot;
 pub mod pull_chain;
 pub mod pull_handoff;
 pub mod pull_join;
+pub mod pull_ripple_join;
 
 pub mod push_for_each;
 pub mod push_handoff;
@@ -98,6 +99,19 @@ pub trait PullSurface: BaseSurface {
         ValOther: 'static + Eq + Clone,
     {
         pull_join::JoinPullSurface::new(self, other)
+    }
+
+    fn ripple_join<Other>(
+        self,
+        other: Other,
+    ) -> pull_ripple_join::RippleJoinPullSurface<Self, Other>
+    where
+        Self: Sized + PullSurface,
+        Other: PullSurface,
+        Self::ItemOut: 'static + Eq + Clone,
+        Other::ItemOut: 'static + Eq + Clone,
+    {
+        pull_ripple_join::RippleJoinPullSurface::new(self, other)
     }
 
     fn pivot(self) -> push_pivot::PivotPushSurface<Self>
