@@ -1,5 +1,5 @@
 pub mod filter;
-pub mod flat_map;
+pub mod flatten;
 pub mod for_each;
 pub mod group_by;
 pub mod map;
