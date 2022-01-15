@@ -19,7 +19,7 @@ use super::build::{PullBuild, PushBuild};
 use super::connect::{PullConnect, PushConnect};
 
 pub mod filter;
-pub mod flat_map;
+pub mod flatten;
 pub mod map;
 pub mod pivot;
 
@@ -53,13 +53,21 @@ pub trait BaseSurface {
         map::MapSurface::new(self, func)
     }
 
-    fn flat_map<Func, Out>(self, func: Func) -> flat_map::FlatMapSurface<Self, Func>
+    fn flat_map<Func, Out>(self, func: Func) -> flatten::FlattenSurface<map::MapSurface<Self, Func>>
     where
         Self: Sized,
         Func: FnMut(Self::ItemOut) -> Out,
         Out: IntoIterator,
     {
-        flat_map::FlatMapSurface::new(self, func)
+        self.map(func).flatten()
+    }
+
+    fn flatten(self) -> flatten::FlattenSurface<Self>
+    where
+        Self: Sized,
+        Self::ItemOut: IntoIterator,
+    {
+        flatten::FlattenSurface::new(self)
     }
 
     fn filter<Func>(self, func: Func) -> filter::FilterSurface<Self, Func>
