@@ -116,10 +116,11 @@ jobs:
           toolchain: nightly
           override: true
 
-      - name: Run cargo doc --no-deps
+      - name: Run cargo doc
         uses: actions-rs/cargo@v1
         with:
           command: doc
+          args: --no-deps
 
       - name: Push to gh-pages
         # Do not deploy PRs.
