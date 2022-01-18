@@ -24,7 +24,7 @@ struct Opts {
     #[clap(arg_enum, long)]
     role: Role,
     #[clap(long)]
-    port: usize,
+    port: u16,
     #[clap(long)]
     addr: String,
 }
@@ -61,6 +61,12 @@ where
 const SERVER_ADDR: u32 = 0;
 const CLIENT1_ADDR: u32 = 1;
 const CLIENT2_ADDR: u32 = 2;
+
+// #[derive(Serialize, Deserialize)]
+// struct Message {
+//     from: String,
+//     message: String,
+// }
 
 #[tokio::main]
 async fn main() {

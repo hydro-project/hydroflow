@@ -8,32 +8,33 @@ use hydroflow::tokio::net::TcpListener;
 pub(crate) async fn run_server(opts: Opts) {
     let mut hf = HydroflowBuilder::default();
 
-    let stream = TcpListener::bind(format!("localhost:{}", opts.port))
-        .await
-        .unwrap();
-    let (stream, _) = stream.accept().await.unwrap();
-
-    // inbound msgs stuff
-    let msgs_out = hf.add_read_tcp_stream(stream);
+    let members_in = hf.hydroflow.inbound_tcp_vertex_port::<(String,String)>(opts.port).await;
+    let members_in = hf.wrap_input(members_in);
+    println!("Listening for member joins on {}", opts.port);
     
+    let (port, msgs_in) = hf.hydroflow.inbound_tcp_vertex::<String>().await;
+    let msgs_in = hf.wrap_input(msgs_in);
+    println!("Listening for messages on {}", port);
+
     let (members_in, members_out) = 
         hf.add_channel_input::<Option<_>, VecHandoff<(String, String)>>();
-    // let (msgs, msgs_out) = hf.add_channel_input::<Option<_>, VecHandoff<(String, String)>>();
 
     let members_out = members_out.flat_map(std::convert::identity);
-    let msgs_out = 
-        msgs_out
-        .flat_map(std::convert::identity)
-        .flat_map(|message| <Vec<(String, String)>>::decode(message.batch).into_iter());
-    // let msgs_out = msgs_out.flat_map(std::convert::identity);
+    let msgs_in = msgs_in.flat_map(std::convert::identity);
 
-    let sg = members_out.cross_join(msgs_out)
+    let sg = members_out.cross_join(msgs_in)
                         .pivot()
                         .for_each(|x| {
        println!("{:?}", x); 
     });
 
     hf.add_subgraph(sg);
+
+    // TODO: integrate these tcp vertices into builder
+    // let (port, messages) = hf.wrap_input(hf.hydroflow.inbound_tcp_vertex().await);
+    // let outbound_messages = hf.wrap_output(hf.hydroflow.outbound_tcp_vertex().await);
+    
+    // -> (ip:port, )
 
     let mut hf = hf.build();
 

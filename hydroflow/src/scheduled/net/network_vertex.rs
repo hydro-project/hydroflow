@@ -18,6 +18,20 @@ pub type Address = String;
 // allowed in traits (yet).
 
 impl Hydroflow {
+    // TODO(justin): document these, but they're derivatives of inbound_tcp_vertex_internal.
+    pub async fn inbound_tcp_vertex_port<T>(&mut self, port: u16) -> OutputPort<VecHandoff<T>>
+    where
+        T: 'static + DeserializeOwned + Send,
+    {
+        self.inbound_tcp_vertex_internal(Some(port)).await.1
+    }
+
+    pub async fn inbound_tcp_vertex<T>(&mut self) -> (u16, OutputPort<VecHandoff<T>>)
+    where
+        T: 'static + DeserializeOwned + Send,
+    {
+        self.inbound_tcp_vertex_internal(None).await
+    }
     // TODO(justin): this needs to return a result/get rid of all the unwraps, I
     // guess we need a HydroflowError?
     /// Begins listening on some TCP port. Returns an [OutputPort] representing
@@ -28,11 +42,11 @@ impl Hydroflow {
     ///
     /// The messages will be interpreted to be bincode-encoded, length-delimited
     /// messages, as produced by [Self::outbound_tcp_vertex].
-    pub async fn inbound_tcp_vertex<T>(&mut self) -> (u16, OutputPort<VecHandoff<T>>)
+    async fn inbound_tcp_vertex_internal<T>(&mut self, port: Option<u16>) -> (u16, OutputPort<VecHandoff<T>>)
     where
         T: 'static + DeserializeOwned + Send,
     {
-        let listener = TcpListener::bind("localhost:0").await.unwrap();
+        let listener = TcpListener::bind(format!("localhost:{}", port.unwrap_or(0))).await.unwrap();
         let port = listener.local_addr().unwrap().port();
 
         // TODO(justin): figure out an appropriate buffer here.
