@@ -27,7 +27,6 @@ pub mod pull_chain;
 pub mod pull_cross_join;
 pub mod pull_handoff;
 pub mod pull_join;
-pub mod pull_ripple_join;
 
 pub mod push_for_each;
 pub mod push_handoff;

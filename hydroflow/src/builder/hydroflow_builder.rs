@@ -22,7 +22,7 @@ use super::surface::{PullSurface, PushSurfaceReversed};
 /// The user-facing entry point for the Surface API.
 #[derive(Default)]
 pub struct HydroflowBuilder {
-    hydroflow: Hydroflow,
+    pub hydroflow: Hydroflow,
     port_connectors: Vec<Box<dyn PortConnector>>,
 }
 impl HydroflowBuilder {
@@ -38,6 +38,29 @@ impl HydroflowBuilder {
         self.port_connectors.push(Box::new(port_connector));
 
         (push, pull)
+    }
+
+    pub fn wrap_input<H>(&mut self, output_port: OutputPort<H>) -> HandoffPullSurface<H>
+    where
+        H: Handoff,
+    {
+        let (output_port_connector, pull) = BothPortConnector::with_output(output_port);
+        self.port_connectors.push(Box::new(output_port_connector));
+
+        pull
+    }
+
+    pub fn wrap_output<H, T>(
+        &mut self,
+        input_port: InputPort<H>,
+    ) -> HandoffPushSurfaceReversed<H, T>
+    where
+        H: Handoff + CanReceive<T>,
+    {
+        let (input_port_connector, push) = BothPortConnector::with_input(input_port);
+        self.port_connectors.push(Box::new(input_port_connector));
+
+        push
     }
 
     /// Adds a `pivot` created via the Surface API.
@@ -77,132 +100,47 @@ impl HydroflowBuilder {
         (input, pull)
     }
 
-    pub fn add_write_tcp_stream(&mut self, stream: tokio::net::TcpStream) -> HandoffPushSurfaceReversed<VecHandoff<Message>, Option<Message>> {
+    pub fn add_write_tcp_stream(
+        &mut self,
+        stream: tokio::net::TcpStream,
+    ) -> HandoffPushSurfaceReversed<VecHandoff<Message>, Option<Message>> {
         let input_port = self.hydroflow.add_write_tcp_stream(stream);
 
-        let push_port = Default::default();
-        let push = HandoffPushSurfaceReversed::new(Rc::clone(&push_port));
-
-        self.handoff_connectors.push(Box::new(move |hydroflow| {
-            if let Some(output_port) = push_port.take() {
-                hydroflow.add_edge(output_port, input_port);
-            } else {
-                panic!("TCP stream output was never connected!!"); // TODO(mingwei): more informative error messages.
-            }
-        }));
+        let (input_port_connector, push) =
+            BothPortConnector::with_input::<Option<Message>>(input_port);
+        self.port_connectors.push(Box::new(input_port_connector));
 
         push
     }
 
-    pub fn add_read_tcp_stream(&mut self, stream: tokio::net::TcpStream) -> HandoffPullSurface<VecHandoff<Message>> {
+    pub fn add_read_tcp_stream(
+        &mut self,
+        stream: tokio::net::TcpStream,
+    ) -> HandoffPullSurface<VecHandoff<Message>> {
         let output_port = self.hydroflow.add_read_tcp_stream(stream);
 
-        let pull_port = Default::default();
-        let pull = HandoffPullSurface::new(Rc::clone(&pull_port));
-
-        self.handoff_connectors.push(Box::new(move |hydroflow| {
-            if let Some(input_port) = pull_port.take() {
-                hydroflow.add_edge(output_port, input_port);
-            } else {
-                panic!("TCP stream input was never connected!!"); // TODO(mingwei): more informative error messages.
-            }
-        }));
+        let (output_port_connector, pull) = BothPortConnector::with_output(output_port);
+        self.port_connectors.push(Box::new(output_port_connector));
 
         pull
     }
 
+    #[allow(clippy::type_complexity)] // TODO(mingwei).
     pub fn add_tcp_stream(
         &mut self,
         stream: tokio::net::TcpStream,
-    ) -> (HandoffPushSurfaceReversed<VecHandoff<Message>, Option<Message>>, HandoffPullSurface<VecHandoff<Message>>) {
+    ) -> (
+        HandoffPushSurfaceReversed<VecHandoff<Message>, Option<Message>>,
+        HandoffPullSurface<VecHandoff<Message>>,
+    ) {
         let (input_port, output_port) = self.hydroflow.add_tcp_stream(stream);
-        
-        let pull_port = Default::default();
-        let pull = HandoffPullSurface::new(Rc::clone(&pull_port));
 
-        self.handoff_connectors.push(Box::new(move |hydroflow| {
-            if let Some(input_port) = pull_port.take() {
-                hydroflow.add_edge(output_port, input_port);
-            } else {
-                panic!("TCP stream input was never connected!!"); // TODO(mingwei): more informative error messages.
-            }
-        }));
+        let (input_port_connector, push) =
+            BothPortConnector::with_input::<Option<Message>>(input_port);
+        self.port_connectors.push(Box::new(input_port_connector));
 
-        let push_port = Default::default();
-        let push = HandoffPushSurfaceReversed::new(Rc::clone(&push_port));
-
-        self.handoff_connectors.push(Box::new(move |hydroflow| {
-            if let Some(output_port) = push_port.take() {
-                hydroflow.add_edge(output_port, input_port);
-            } else {
-                panic!("TCP stream output was never connected!!"); // TODO(mingwei): more informative error messages.
-            }
-        }));
-
-        (push, pull)
-    }
-
-    pub fn add_write_tcp_stream(&mut self, stream: tokio::net::TcpStream) -> HandoffPushSurfaceReversed<VecHandoff<Message>, Option<Message>> {
-        let input_port = self.hydroflow.add_write_tcp_stream(stream);
-
-        let push_port = Default::default();
-        let push = HandoffPushSurfaceReversed::new(Rc::clone(&push_port));
-
-        self.handoff_connectors.push(Box::new(move |hydroflow| {
-            if let Some(output_port) = push_port.take() {
-                hydroflow.add_edge(output_port, input_port);
-            } else {
-                panic!("TCP stream output was never connected!!"); // TODO(mingwei): more informative error messages.
-            }
-        }));
-
-        push
-    }
-
-    pub fn add_read_tcp_stream(&mut self, stream: tokio::net::TcpStream) -> HandoffPullSurface<VecHandoff<Message>> {
-        let output_port = self.hydroflow.add_read_tcp_stream(stream);
-
-        let pull_port = Default::default();
-        let pull = HandoffPullSurface::new(Rc::clone(&pull_port));
-
-        self.handoff_connectors.push(Box::new(move |hydroflow| {
-            if let Some(input_port) = pull_port.take() {
-                hydroflow.add_edge(output_port, input_port);
-            } else {
-                panic!("TCP stream input was never connected!!"); // TODO(mingwei): more informative error messages.
-            }
-        }));
-
-        pull
-    }
-
-    pub fn add_tcp_stream(
-        &mut self,
-        stream: tokio::net::TcpStream,
-    ) -> (HandoffPushSurfaceReversed<VecHandoff<Message>, Option<Message>>, HandoffPullSurface<VecHandoff<Message>>) {
-        let (input_port, output_port) = self.hydroflow.add_tcp_stream(stream);
-        
-        let pull_port = Default::default();
-        let pull = HandoffPullSurface::new(Rc::clone(&pull_port));
-
-        self.handoff_connectors.push(Box::new(move |hydroflow| {
-            if let Some(input_port) = pull_port.take() {
-                hydroflow.add_edge(output_port, input_port);
-            } else {
-                panic!("TCP stream input was never connected!!"); // TODO(mingwei): more informative error messages.
-            }
-        }));
-
-        let push_port = Default::default();
-        let push = HandoffPushSurfaceReversed::new(Rc::clone(&push_port));
-
-        self.handoff_connectors.push(Box::new(move |hydroflow| {
-            if let Some(output_port) = push_port.take() {
-                hydroflow.add_edge(output_port, input_port);
-            } else {
-                panic!("TCP stream output was never connected!!"); // TODO(mingwei): more informative error messages.
-            }
-        }));
+        let (output_port_connector, pull) = BothPortConnector::with_output(output_port);
+        self.port_connectors.push(Box::new(output_port_connector));
 
         (push, pull)
     }

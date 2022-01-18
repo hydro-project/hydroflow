@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 use crate::{Decode, Opts};
 
 use hydroflow::scheduled::{handoff::VecHandoff};
@@ -7,11 +6,6 @@ use hydroflow::tokio::net::TcpListener;
 
 
 pub(crate) async fn run_server(opts: Opts) {
-    // let stream = TcpListener::bind(format!("localhost:{}", opts.port))
-    // .await
-    // .unwrap();
-    // let (stream, _) = stream.accept().await.unwrap();
-
     let mut hf = HydroflowBuilder::default();
 
     let stream = TcpListener::bind(format!("localhost:{}", opts.port))
@@ -22,7 +16,8 @@ pub(crate) async fn run_server(opts: Opts) {
     // inbound msgs stuff
     let msgs_out = hf.add_read_tcp_stream(stream);
     
-    let (members_in, members_out) = hf.add_channel_input::<Option<_>, VecHandoff<(String, String)>>();
+    let (members_in, members_out) = 
+        hf.add_channel_input::<Option<_>, VecHandoff<(String, String)>>();
     // let (msgs, msgs_out) = hf.add_channel_input::<Option<_>, VecHandoff<(String, String)>>();
 
     let members_out = members_out.flat_map(std::convert::identity);
@@ -33,49 +28,11 @@ pub(crate) async fn run_server(opts: Opts) {
     // let msgs_out = msgs_out.flat_map(std::convert::identity);
 
     let sg = members_out.cross_join(msgs_out)
-                                                      .pivot()
-                                                      .for_each(|x| {
+                        .pivot()
+                        .for_each(|x| {
        println!("{:?}", x); 
     });
-=======
-use crate::{Decode, Encode, Opts};
 
-use hydroflow::builder::prelude::*;
-use hydroflow::lang::collections::Iter;
-use hydroflow::scheduled::{ctx::RecvCtx, graph::Hydroflow, handoff::VecHandoff, net::Message};
-use hydroflow::tokio::net::{TcpListener, TcpStream};
-use hydroflow::{
-    compiled::{pull::SymmetricHashJoin, InputBuild, IteratorToPusherator, PusheratorBuild},
-    scheduled::graph_ext::GraphExt,
-    tl, tt,
-};
-
-pub(crate) async fn run_server(opts: Opts) {
-    let mut hf = HydroflowBuilder::default();
-
-
-    let (members_in, members_out) =
-        hf.add_channel_input::<Option<_>, VecHandoff<(String, String)>>();
-
-    let members_out = members_out.flat_map(std::convert::identity);
->>>>>>> 5b57c3c17af04652584333314a7acbf41a5f4791
-
-    let stream = TcpListener::bind(format!("localhost:{}", opts.port))
-        .await
-        .unwrap();
-    let (stream, _) = stream.accept().await.unwrap();
-
-    // inbound msgs stuff
-    let msgs_out = hf.add_read_tcp_stream(stream);
-
-    let sg = msgs_out
-        .flat_map(std::convert::identity)
-        .flat_map(|message| <Vec<(String, String)>>::decode(message.batch).into_iter())
-        .ripple_join(members_out)
-        .pivot()
-        .for_each(|x| {
-            println!("{:?}", x);
-        });
     hf.add_subgraph(sg);
 
     let mut hf = hf.build();
