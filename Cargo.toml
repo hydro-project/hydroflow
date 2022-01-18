@@ -3,6 +3,7 @@
 members = [
     "hydroflow",
     "benches",
+    "chat",
     "covid_tracing",
     "covid_tracing_dist",
     "relalg",
