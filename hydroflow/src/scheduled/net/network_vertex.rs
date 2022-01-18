@@ -42,11 +42,16 @@ impl Hydroflow {
     ///
     /// The messages will be interpreted to be bincode-encoded, length-delimited
     /// messages, as produced by [Self::outbound_tcp_vertex].
-    async fn inbound_tcp_vertex_internal<T>(&mut self, port: Option<u16>) -> (u16, OutputPort<VecHandoff<T>>)
+    async fn inbound_tcp_vertex_internal<T>(
+        &mut self,
+        port: Option<u16>,
+    ) -> (u16, OutputPort<VecHandoff<T>>)
     where
         T: 'static + DeserializeOwned + Send,
     {
-        let listener = TcpListener::bind(format!("localhost:{}", port.unwrap_or(0))).await.unwrap();
+        let listener = TcpListener::bind(format!("localhost:{}", port.unwrap_or(0)))
+            .await
+            .unwrap();
         let port = listener.local_addr().unwrap().port();
 
         // TODO(justin): figure out an appropriate buffer here.

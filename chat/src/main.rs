@@ -5,6 +5,7 @@ use serde::{de::DeserializeOwned, Serialize};
 use server::run_server;
 
 mod client;
+mod protocol;
 mod server;
 
 // This is a distributed version of the covid tracing app. It somewhat
@@ -28,45 +29,6 @@ struct Opts {
     #[clap(long)]
     addr: String,
 }
-
-// TODO(justin): this trait kind of sucks but it's a placeholder.
-trait Encode {
-    fn encode(&self, v: &mut Vec<u8>);
-}
-
-impl<T> Encode for T
-where
-    T: Serialize,
-{
-    fn encode(&self, v: &mut Vec<u8>) {
-        v.extend(serde_json::to_vec(self).unwrap());
-    }
-}
-
-trait Decode {
-    fn decode(v: bytes::Bytes) -> Self;
-}
-
-// TODO(justin): figure out how to do this without DeserializeOwned
-impl<T> Decode for T
-where
-    T: 'static + DeserializeOwned,
-{
-    fn decode(v: bytes::Bytes) -> Self {
-        let st = std::str::from_utf8(&v).unwrap().to_owned();
-        serde_json::from_str(&st).unwrap()
-    }
-}
-
-const SERVER_ADDR: u32 = 0;
-const CLIENT1_ADDR: u32 = 1;
-const CLIENT2_ADDR: u32 = 2;
-
-// #[derive(Serialize, Deserialize)]
-// struct Message {
-//     from: String,
-//     message: String,
-// }
 
 #[tokio::main]
 async fn main() {
