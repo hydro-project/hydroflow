@@ -19,6 +19,7 @@ use super::build::{PullBuild, PushBuild};
 use super::connect::{PullConnect, PushConnect};
 
 pub mod filter;
+pub mod filter_map;
 pub mod flatten;
 pub mod map;
 pub mod pivot;
@@ -77,7 +78,28 @@ pub trait BaseSurface {
     {
         filter::FilterSurface::new(self, func)
     }
+
+    fn filter_map<Func, Out>(self, func: Func) -> filter_map::FilterMapSurface<Self, Func>
+    where
+        Self: Sized,
+        Func: FnMut(Self::ItemOut) -> Option<Out>,
+    {
+        filter_map::FilterMapSurface::new(self, func)
+    }
+
+    fn inspect<Func>(self, mut func: Func) -> map::MapSurface<Self, InspectMapFunc<Self, Func>>
+    where
+        Self: Sized,
+        Func: FnMut(&Self::ItemOut),
+    {
+        self.map(move |item| {
+            func(&item);
+            item
+        })
+    }
 }
+
+pub type InspectMapFunc<Prev: BaseSurface, Func> = impl FnMut(Prev::ItemOut) -> Prev::ItemOut;
 
 pub trait PullSurface: BaseSurface {
     type InputHandoffs: HandoffList;
