@@ -97,8 +97,10 @@ impl Hydroflow {
         tokio::spawn(async move {
             while let Some(addr) = connection_reqs_recv.next().await {
                 let addr: Address = addr;
-                let stream = TcpStream::connect(addr.clone()).await.unwrap();
-                connections_send.send((addr, stream)).await.unwrap();
+                connections_send
+                    .send((addr.clone(), TcpStream::connect(addr.clone()).await))
+                    .await
+                    .unwrap();
             }
         });
 
@@ -147,30 +149,45 @@ impl Hydroflow {
                     },
 
                     Some((addr, conn)) = connections_recv.next() => {
-                        match connections.get_mut(&addr) {
-                            Some(ConnStatus::Pending(msgs)) => {
-                                let mut conn = FramedWrite::new(conn, LengthDelimitedCodec::new());
-                                for msg in msgs.drain(..) {
-                                    // TODO(justin): move the actual sending here
-                                    // into a different task so we don't have to
-                                    // wait for the send.
-                                    let msg = bincode::serialize(&msg).unwrap();
-                                    conn.send(msg.into()).await.unwrap();
+                        match conn {
+                            Ok(conn) => {
+                                match connections.get_mut(&addr) {
+                                    Some(ConnStatus::Pending(msgs)) => {
+                                        let mut conn = FramedWrite::new(conn, LengthDelimitedCodec::new());
+                                        for msg in msgs.drain(..) {
+                                            // TODO(justin): move the actual sending here
+                                            // into a different task so we don't have to
+                                            // wait for the send.
+                                            let msg = bincode::serialize(&msg).unwrap();
+                                            conn.send(msg.into()).await.unwrap();
+                                        }
+                                        connections.insert(addr, ConnStatus::Connected(conn));
+                                    }
+                                    None => {
+                                        // This means nobody ever requested this
+                                        // connection, so we shouldn't have initiated it
+                                        // in the first place.
+                                        unreachable!()
+                                    }
+                                    Some(ConnStatus::Connected(_tcp)) => {
+                                        // This means we were already connected, so we
+                                        // shouldn't have connected again. If the
+                                        // connection cache becomes shared this could
+                                        // become reachable.
+                                        unreachable!()
+                                    }
                                 }
-                                connections.insert(addr, ConnStatus::Connected(conn));
                             }
-                            None => {
-                                // This means nobody ever requested this
-                                // connection, so we shouldn't have initiated it
-                                // in the first place.
-                                unreachable!()
-                            }
-                            Some(ConnStatus::Connected(_tcp)) => {
-                                // This means we were already connected, so we
-                                // shouldn't have connected again. If the
-                                // connection cache becomes shared this could
-                                // become reachable.
-                                unreachable!()
+                            Err(e) => {
+                                // We couldn't connect to the address for some
+                                // reason.
+                                // TODO(justin): once we have a clearer picture
+                                // of error handling, we could do something like
+                                // send this error along a pipe to be handled by
+                                // someone else. For now, just log it and drop
+                                // any pending messages.
+                                eprintln!("couldn't connect to {}: {}", addr, e);
+                                connections.remove(&addr);
                             }
                         }
                     },
