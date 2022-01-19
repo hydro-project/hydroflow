@@ -7,8 +7,10 @@ pub mod pull_flatten;
 pub mod pull_handoff;
 pub mod pull_join;
 pub mod pull_map;
+pub mod pull_filter_map;
 
 pub mod push_filter;
+pub mod push_filter_map;
 pub mod push_flatten;
 pub mod push_for_each;
 pub mod push_handoff;
