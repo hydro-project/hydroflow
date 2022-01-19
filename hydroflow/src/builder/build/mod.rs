@@ -3,11 +3,11 @@
 pub mod pull_chain;
 pub mod pull_cross_join;
 pub mod pull_filter;
+pub mod pull_filter_map;
 pub mod pull_flatten;
 pub mod pull_handoff;
 pub mod pull_join;
 pub mod pull_map;
-pub mod pull_filter_map;
 
 pub mod push_filter;
 pub mod push_filter_map;
