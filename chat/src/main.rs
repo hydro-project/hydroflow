@@ -1,7 +1,6 @@
 use clap::{ArgEnum, Parser};
 use client::run_client;
 use hydroflow::tokio;
-use serde::{de::DeserializeOwned, Serialize};
 use server::run_server;
 
 mod client;
