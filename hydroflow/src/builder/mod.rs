@@ -121,20 +121,16 @@ fn test_teeing() {
     let output_evn_take = Rc::clone(&output_evn);
     let output_odd_take = Rc::clone(&output_odd);
 
-    let sg = ingress
-        .flat_map(std::convert::identity)
-        .flat_map(|x| [11 * x, x])
-        .pivot()
-        .tee(
-            builder
-                .start_tee()
-                .filter(|&x| 0 == x % 2)
-                .for_each(move |x| output_evn_take.borrow_mut().push(x)),
-            builder
-                .start_tee()
-                .filter(|&x| 1 == x % 2)
-                .for_each(move |x| output_odd_take.borrow_mut().push(x)),
-        );
+    let sg = ingress.flatten().flat_map(|x| [11 * x, x]).pivot().tee(
+        builder
+            .start_tee()
+            .filter(|&x| 0 == x % 2)
+            .for_each(move |x| output_evn_take.borrow_mut().push(x)),
+        builder
+            .start_tee()
+            .filter(|&x| 1 == x % 2)
+            .for_each(move |x| output_odd_take.borrow_mut().push(x)),
+    );
     builder.add_subgraph(sg);
 
     let mut hydroflow = builder.build();
@@ -176,13 +172,13 @@ fn test_covid() {
         builder.add_channel_input::<Option<(Pid, (Name, Phone))>, VecHandoff<_>>();
 
     let exposed = loop_recv
-        .flat_map(std::convert::identity)
+        .flatten()
         .map(|(pid, t)| (pid, (t, t + TRANSMISSIBLE_DURATION)))
-        .chain(diagnosed.flat_map(std::convert::identity));
+        .chain(diagnosed.flatten());
 
     builder.add_subgraph(
         contacts
-            .flat_map(std::convert::identity)
+            .flatten()
             .flat_map(|(pid_a, pid_b, t)| [(pid_a, (pid_b, t)), (pid_b, (pid_a, t))])
             .join(exposed)
             .filter(|(_pid_a, (_pid_b, t_contact), (t_from, t_to))| {
@@ -196,8 +192,8 @@ fn test_covid() {
 
     builder.add_subgraph(
         notifs_recv
-            .flat_map(std::convert::identity)
-            .join(peoples.flat_map(std::convert::identity))
+            .flatten()
+            .join(peoples.flatten())
             .pivot()
             .for_each(|(_pid, exposure_time, (name, phone))| {
                 println!(

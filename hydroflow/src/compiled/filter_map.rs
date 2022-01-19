@@ -49,10 +49,7 @@ where
     F: FnMut(P::Item) -> Option<Out>,
 {
     pub fn new(prev: P, f: F) -> Self {
-        Self {
-            prev,
-            f,
-        }
+        Self { prev, f }
     }
 }
 impl<P, F, Out> PusheratorBuild for FilterMapBuild<P, F>

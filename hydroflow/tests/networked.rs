@@ -49,7 +49,7 @@ fn start_echo_server() -> u16 {
 
                 builder.add_subgraph(
                     handler
-                        .flat_map(std::convert::identity)
+                        .flatten()
                         .map(|echo_request| {
                             (
                                 echo_request.return_addr,
@@ -94,7 +94,7 @@ fn test_echo_server() {
 
                 let responses = builder.wrap_input(responses);
 
-                builder.add_subgraph(responses.flat_map(std::convert::identity).pivot().for_each(
+                builder.add_subgraph(responses.flatten().pivot().for_each(
                     move |response: EchoResponse| {
                         log_message
                             .send(format!(
