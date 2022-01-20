@@ -31,6 +31,7 @@ pub mod pull_join;
 
 pub mod push_for_each;
 pub mod push_handoff;
+pub mod push_partition;
 pub mod push_pivot;
 pub mod push_start;
 pub mod push_tee;
@@ -188,6 +189,26 @@ pub trait PushSurface: BaseSurface {
         Func: FnMut(Self::ItemOut),
     {
         let next = push_for_each::ForEachPushSurfaceReversed::new(func);
+        self.reverse(next)
+    }
+
+    fn partition<Func, NextA, NextB>(
+        self,
+        func: Func,
+        next_a: NextA,
+        next_b: NextB,
+    ) -> Self::Output<push_partition::PartitionPushSurfaceReversed<NextA, NextB, Func>>
+    where
+        Self: Sized,
+        Func: Fn(&Self::ItemOut) -> bool,
+        NextA: PushSurfaceReversed<ItemIn = Self::ItemOut>,
+        NextB: PushSurfaceReversed<ItemIn = Self::ItemOut>,
+
+        NextA::OutputHandoffs: Extend<NextB::OutputHandoffs>,
+        <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended:
+            HandoffList + HandoffListSplit<NextA::OutputHandoffs, Suffix = NextB::OutputHandoffs>,
+    {
+        let next = push_partition::PartitionPushSurfaceReversed::new(func, next_a, next_b);
         self.reverse(next)
     }
 }

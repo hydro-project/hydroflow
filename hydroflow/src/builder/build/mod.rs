@@ -15,6 +15,7 @@ pub mod push_flatten;
 pub mod push_for_each;
 pub mod push_handoff;
 pub mod push_map;
+pub mod push_partition;
 pub mod push_tee;
 
 use crate::compiled::Pusherator;
