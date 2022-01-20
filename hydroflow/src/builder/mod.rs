@@ -121,20 +121,16 @@ fn test_teeing() {
     let output_evn_take = Rc::clone(&output_evn);
     let output_odd_take = Rc::clone(&output_odd);
 
-    let sg = ingress
-        .flat_map(std::convert::identity)
-        .flat_map(|x| [11 * x, x])
-        .pivot()
-        .tee(
-            builder
-                .start_tee()
-                .filter(|&x| 0 == x % 2)
-                .for_each(move |x| output_evn_take.borrow_mut().push(x)),
-            builder
-                .start_tee()
-                .filter(|&x| 1 == x % 2)
-                .for_each(move |x| output_odd_take.borrow_mut().push(x)),
-        );
+    let sg = ingress.flatten().flat_map(|x| [11 * x, x]).pivot().tee(
+        builder
+            .start_tee()
+            .filter(|&x| 0 == x % 2)
+            .for_each(move |x| output_evn_take.borrow_mut().push(x)),
+        builder
+            .start_tee()
+            .filter(|&x| 1 == x % 2)
+            .for_each(move |x| output_odd_take.borrow_mut().push(x)),
+    );
     builder.add_subgraph(sg);
 
     let mut hydroflow = builder.build();
@@ -149,6 +145,50 @@ fn test_teeing() {
         assert_eq!(&[22, 2, 44, 4, 66, 6, 88, 8], &**output_evn.borrow());
         assert_eq!(&[11, 1, 33, 3, 55, 5, 77, 7], &**output_odd.borrow());
     }
+}
+
+#[test]
+fn test_partition() {
+    use std::{cell::RefCell, rc::Rc};
+
+    use crate::scheduled::handoff::VecHandoff;
+    use prelude::*;
+
+    let mut builder = HydroflowBuilder::default();
+
+    let (data_send, data) = builder.add_channel_input::<Option<u64>, VecHandoff<_>>();
+
+    let out = Rc::new(RefCell::new(Vec::new()));
+    let even_out = out.clone();
+    let odd_out = out.clone();
+
+    builder.add_subgraph(
+        data.flatten().pivot().partition(
+            |x| *x % 2 == 0,
+            builder
+                .start_tee()
+                .for_each(move |x| (*even_out).borrow_mut().push(("even", x))),
+            builder
+                .start_tee()
+                .for_each(move |x| (*odd_out).borrow_mut().push(("odd", x))),
+        ),
+    );
+
+    data_send.give(Some(1));
+    data_send.give(Some(2));
+    data_send.give(Some(3));
+    data_send.give(Some(4));
+    data_send.give(Some(5));
+
+    builder.build().tick();
+
+    let mut out = (*out).take();
+    out.sort_unstable();
+
+    assert_eq!(
+        &[("even", 2), ("even", 4), ("odd", 1), ("odd", 3), ("odd", 5)],
+        &*out,
+    );
 }
 
 #[test]
@@ -176,13 +216,13 @@ fn test_covid() {
         builder.add_channel_input::<Option<(Pid, (Name, Phone))>, VecHandoff<_>>();
 
     let exposed = loop_recv
-        .flat_map(std::convert::identity)
+        .flatten()
         .map(|(pid, t)| (pid, (t, t + TRANSMISSIBLE_DURATION)))
-        .chain(diagnosed.flat_map(std::convert::identity));
+        .chain(diagnosed.flatten());
 
     builder.add_subgraph(
         contacts
-            .flat_map(std::convert::identity)
+            .flatten()
             .flat_map(|(pid_a, pid_b, t)| [(pid_a, (pid_b, t)), (pid_b, (pid_a, t))])
             .join(exposed)
             .filter(|(_pid_a, (_pid_b, t_contact), (t_from, t_to))| {
@@ -196,8 +236,8 @@ fn test_covid() {
 
     builder.add_subgraph(
         notifs_recv
-            .flat_map(std::convert::identity)
-            .join(peoples.flat_map(std::convert::identity))
+            .flatten()
+            .join(peoples.flatten())
             .pivot()
             .for_each(|(_pid, exposure_time, (name, phone))| {
                 println!(

@@ -19,6 +19,7 @@ use super::build::{PullBuild, PushBuild};
 use super::connect::{PullConnect, PushConnect};
 
 pub mod filter;
+pub mod filter_map;
 pub mod flatten;
 pub mod map;
 pub mod pivot;
@@ -30,6 +31,7 @@ pub mod pull_join;
 
 pub mod push_for_each;
 pub mod push_handoff;
+pub mod push_partition;
 pub mod push_pivot;
 pub mod push_start;
 pub mod push_tee;
@@ -77,7 +79,28 @@ pub trait BaseSurface {
     {
         filter::FilterSurface::new(self, func)
     }
+
+    fn filter_map<Func, Out>(self, func: Func) -> filter_map::FilterMapSurface<Self, Func>
+    where
+        Self: Sized,
+        Func: FnMut(Self::ItemOut) -> Option<Out>,
+    {
+        filter_map::FilterMapSurface::new(self, func)
+    }
+
+    fn inspect<Func>(self, mut func: Func) -> map::MapSurface<Self, InspectMapFunc<Self, Func>>
+    where
+        Self: Sized,
+        Func: FnMut(&Self::ItemOut),
+    {
+        self.map(move |item| {
+            func(&item);
+            item
+        })
+    }
 }
+
+pub type InspectMapFunc<Prev: BaseSurface, Func> = impl FnMut(Prev::ItemOut) -> Prev::ItemOut;
 
 pub trait PullSurface: BaseSurface {
     type InputHandoffs: HandoffList;
@@ -166,6 +189,26 @@ pub trait PushSurface: BaseSurface {
         Func: FnMut(Self::ItemOut),
     {
         let next = push_for_each::ForEachPushSurfaceReversed::new(func);
+        self.reverse(next)
+    }
+
+    fn partition<Func, NextA, NextB>(
+        self,
+        func: Func,
+        next_a: NextA,
+        next_b: NextB,
+    ) -> Self::Output<push_partition::PartitionPushSurfaceReversed<NextA, NextB, Func>>
+    where
+        Self: Sized,
+        Func: Fn(&Self::ItemOut) -> bool,
+        NextA: PushSurfaceReversed<ItemIn = Self::ItemOut>,
+        NextB: PushSurfaceReversed<ItemIn = Self::ItemOut>,
+
+        NextA::OutputHandoffs: Extend<NextB::OutputHandoffs>,
+        <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended:
+            HandoffList + HandoffListSplit<NextA::OutputHandoffs, Suffix = NextB::OutputHandoffs>,
+    {
+        let next = push_partition::PartitionPushSurfaceReversed::new(func, next_a, next_b);
         self.reverse(next)
     }
 }
