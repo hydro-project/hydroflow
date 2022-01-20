@@ -148,6 +148,50 @@ fn test_teeing() {
 }
 
 #[test]
+fn test_partition() {
+    use std::{cell::RefCell, rc::Rc};
+
+    use crate::scheduled::handoff::VecHandoff;
+    use prelude::*;
+
+    let mut builder = HydroflowBuilder::default();
+
+    let (data_send, data) = builder.add_channel_input::<Option<u64>, VecHandoff<_>>();
+
+    let out = Rc::new(RefCell::new(Vec::new()));
+    let even_out = out.clone();
+    let odd_out = out.clone();
+
+    builder.add_subgraph(
+        data.flatten().pivot().partition(
+            |x| *x % 2 == 0,
+            builder
+                .start_tee()
+                .for_each(move |x| (*even_out).borrow_mut().push(("even", x))),
+            builder
+                .start_tee()
+                .for_each(move |x| (*odd_out).borrow_mut().push(("odd", x))),
+        ),
+    );
+
+    data_send.give(Some(1));
+    data_send.give(Some(2));
+    data_send.give(Some(3));
+    data_send.give(Some(4));
+    data_send.give(Some(5));
+
+    builder.build().tick();
+
+    let mut out = (*out).take();
+    out.sort_unstable();
+
+    assert_eq!(
+        &[("even", 2), ("even", 4), ("odd", 1), ("odd", 3), ("odd", 5)],
+        &*out,
+    );
+}
+
+#[test]
 fn test_covid() {
     use crate::scheduled::handoff::VecHandoff;
     use prelude::*;
