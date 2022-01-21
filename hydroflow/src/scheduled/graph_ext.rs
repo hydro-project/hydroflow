@@ -96,6 +96,7 @@ pub trait GraphExt {
 
     /**
      * Adds an "input" operator, returning a handle to insert data into it.
+     * TODO(justin): make this thing work better
      */
     fn add_input<T, W>(&mut self) -> (Input<T, super::input::Buffer<T>>, OutputPort<W>)
     where
