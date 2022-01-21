@@ -1,3 +1,6 @@
+use chrono::prelude::*;
+use colored::Colorize;
+
 use crate::protocol::{ChatMessage, MemberRequest, MemberResponse};
 use crate::Opts;
 use hydroflow::builder::prelude::*;
@@ -10,7 +13,6 @@ pub(crate) async fn run_client(opts: Opts) {
     // setup connection req/resp ports
     let connect_req = df.hydroflow.outbound_tcp_vertex::<MemberRequest>().await;
     let connect_req = df.wrap_output(connect_req);
-
     let (connect_response_port, connect_resp) =
         df.hydroflow.inbound_tcp_vertex::<MemberResponse>().await;
     let connect_resp = df.wrap_input(connect_resp);
@@ -24,7 +26,6 @@ pub(crate) async fn run_client(opts: Opts) {
     // setup stdio input handler
     let (text_in, text_out) = df.add_channel_input::<Option<_>, VecHandoff<String>>();
     hydroflow::tokio::spawn(async move {
-        // this boilerplate from tokio seems like a bummer to have in every program that needs kb input
         // TODO(mingwei): temp, need to integrate stream into surface API.
         use hydroflow::tokio::io::AsyncBufReadExt;
 
@@ -41,7 +42,7 @@ pub(crate) async fn run_client(opts: Opts) {
     let connect_addr = format!("localhost:{}", connect_response_port);
     let messages_addr = format!("localhost:{}", messages_port);
 
-    // set up the connection flow
+    // set up the flow for requesting to be a member
     let (my_info_set, my_info_get) = df
         .hydroflow
         .add_input::<Option<(String, MemberRequest)>, VecHandoff<(String, MemberRequest)>>();
@@ -49,28 +50,27 @@ pub(crate) async fn run_client(opts: Opts) {
     my_info_set.give(Some((
         addr,
         MemberRequest {
-            nickname: opts.name.clone(),
+            nickname: opts.name.clone().to_string(),
             connect_addr,
             messages_addr,
         },
     )));
     df.add_subgraph(my_info_get.pivot().reverse(connect_req));
 
-    // set up the message send flow
+    let nickname = opts.name.clone();
+    let nick2 = nickname.clone();
+    // set up the flow for sending messages
     let sg = connect_resp
-        .flat_map(std::convert::identity)
-        .map(|msg| {
-            println!("received {:?}", msg);
-            msg
-        })
-        .cross_join(text_out.flat_map(std::convert::identity))
+        .flatten()
+        .cross_join(text_out.flatten())
         .pivot()
         .map(move |(member_response, text)| {
             (
                 format!("localhost:{}", member_response.messages_port),
                 ChatMessage {
-                    nickname: opts.name.clone(),
+                    nickname: nickname.to_string(),
                     message: text,
+                    ts: Utc::now(),
                 },
             )
         })
@@ -78,13 +78,24 @@ pub(crate) async fn run_client(opts: Opts) {
         .reverse(messages_send);
     df.add_subgraph(sg);
 
-    // set up the message receive flow
+    // set up the flow for receiving messages
     df.add_subgraph(
         messages_recv
-            .flat_map(std::convert::identity)
+            .flatten()
+            .filter(move |x| x.nickname != nick2)
             .pivot()
-            .for_each(|msg| {
-                println!("received message {:?}", msg);
+            .for_each(move |msg| {
+                print!(
+                    "{} {}: {}",
+                    msg.ts
+                        .with_timezone(&Local)
+                        .format("%b %-d, %-I:%M:%S")
+                        .to_string()
+                        .truecolor(126, 126, 126)
+                        .italic(),
+                    msg.nickname.green().italic(),
+                    msg.message.to_string(),
+                );
             }),
     );
 

@@ -13,3 +13,5 @@ byteorder = "1.4.3"
 bytes = "1.1.0"
 rand = "0.8.4"
 bincode = "1.3"
+chrono = { version = "0.4", features = ["serde"] }
+colored = "2.0"

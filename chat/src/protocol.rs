@@ -1,3 +1,4 @@
+use chrono::prelude::*;
 use serde::{Deserialize, Serialize};
 
 // Member Request
@@ -17,4 +18,5 @@ pub struct MemberResponse {
 pub struct ChatMessage {
     pub nickname: String,
     pub message: String,
+    pub ts: DateTime<Utc>,
 }
