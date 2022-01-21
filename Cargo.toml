@@ -3,8 +3,8 @@
 members = [
     "hydroflow",
     "benches",
-    "chat",
-    "covid_tracing",
-    "covid_tracing_dist",
+    "examples/chat",
+    "examples/covid_tracing",
+    "examples/covid_tracing_dist",
     "relalg",
 ]
