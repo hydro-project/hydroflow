@@ -50,7 +50,7 @@ pub(crate) async fn run_client(opts: Opts) {
     my_info_set.give(Some((
         addr,
         MemberRequest {
-            nickname: opts.name.clone().to_string(),
+            nickname: opts.name.clone(),
             connect_addr,
             messages_addr,
         },
@@ -94,7 +94,7 @@ pub(crate) async fn run_client(opts: Opts) {
                         .truecolor(126, 126, 126)
                         .italic(),
                     msg.nickname.green().italic(),
-                    msg.message.to_string(),
+                    msg.message,
                 );
             }),
     );
