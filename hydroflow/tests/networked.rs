@@ -1,14 +1,28 @@
-use std::{collections::HashSet, sync::mpsc::channel};
+use std::{
+    collections::{hash_map::DefaultHasher, HashMap, HashSet},
+    hash::{Hash, Hasher},
+    sync::{mpsc::channel, Arc, Mutex},
+    time::Duration,
+};
 
 use futures::{SinkExt, StreamExt};
 use hydroflow::{
     builder::{
         prelude::{BaseSurface, PullSurface, PushSurface},
-        surface::pull_handoff::HandoffPullSurface,
+        surface::{
+            pull_handoff::HandoffPullSurface, push_handoff::HandoffPushSurfaceReversed,
+            push_start::StartPushSurface,
+        },
         HydroflowBuilder,
     },
-    scheduled::{ctx::OutputPort, graph_ext::GraphExt, handoff::VecHandoff},
+    lang::collections::Iter,
+    scheduled::{
+        ctx::{OutputPort, SendCtx},
+        graph_ext::GraphExt,
+        handoff::VecHandoff,
+    },
 };
+use rand::Rng;
 use serde::{Deserialize, Serialize};
 use tokio::{
     net::{TcpListener, TcpStream},
@@ -270,4 +284,258 @@ fn test_echo_server_reconnect() {
             }
         );
     });
+}
+
+macro_rules! exchange {
+    (
+        $num_participants:ident,
+        $local_id:ident,
+        $addresses:ident,
+        $input:ident,
+        $local_inputs_send:ident,
+        $outbound_messages:ident,
+    ) => {
+        $addresses
+            .join($input.map(move |(x, v)| {
+                let mut s = DefaultHasher::new();
+                x.hash(&mut s);
+                let hash_val = s.finish();
+                (hash_val % $num_participants, (x, v))
+            }))
+            .pivot()
+            .partition(
+                move |&(id, _, _)| id == $local_id,
+                StartPushSurface::new()
+                    .map(|(_, _, v)| Some(v))
+                    .reverse($local_inputs_send),
+                StartPushSurface::new()
+                    .map(|(_id, address, data)| Some((address, data)))
+                    .reverse($outbound_messages),
+            )
+    };
+}
+
+async fn open_connection(
+    builder: &mut HydroflowBuilder,
+) -> (
+    u16,
+    HandoffPullSurface<VecHandoff<(u64, String)>>,
+    HandoffPushSurfaceReversed<
+        VecHandoff<(String, (u64, String))>,
+        Option<(String, (u64, String))>,
+    >,
+) {
+    let (port, messages) = builder
+        .hydroflow
+        .inbound_tcp_vertex::<(u64, String)>()
+        .await;
+    let inbound_messages = builder.wrap_input(messages);
+    let outbound_messages = builder
+        .hydroflow
+        .outbound_tcp_vertex::<(u64, String)>()
+        .await;
+    let outbound_messages = builder.wrap_output(outbound_messages);
+    (port, inbound_messages, outbound_messages)
+}
+
+type Message = (String, (u64, String));
+
+fn build_exchange(
+    builder: &mut HydroflowBuilder,
+    num_participants: u64,
+    mut address_book: HashMap<u64, String>,
+    mut rows: Vec<(u64, String)>,
+    my_id: u64,
+    outbound_messages: HandoffPushSurfaceReversed<VecHandoff<Message>, Option<Message>>,
+) -> HandoffPullSurface<VecHandoff<(u64, String)>> {
+    let addresses = builder
+        .hydroflow
+        .add_source(move |_ctx, send: &SendCtx<VecHandoff<_>>| {
+            send.give(Iter(address_book.drain()));
+        });
+    let addresses = builder.wrap_input(addresses);
+    let data =
+        builder
+            .hydroflow
+            .add_source(move |_ctx, send: &SendCtx<VecHandoff<(u64, String)>>| {
+                send.give(Iter(rows.drain(..)));
+            });
+    let data = builder.wrap_input(data).flatten();
+    let (local_inputs_send, local_inputs_recv) =
+        builder.make_handoff::<VecHandoff<(u64, String)>, Option<(u64, String)>>();
+    let addresses_flat = addresses.flatten();
+    builder.add_subgraph(exchange!(
+        num_participants,
+        my_id,
+        addresses_flat,
+        data,
+        local_inputs_send,
+        outbound_messages,
+    ));
+    local_inputs_recv
+}
+
+#[test]
+fn test_exchange() {
+    // This test sets up a dataflow with a number of participants each having a
+    // random subset of data, then does an exchange, and has each participant
+    // run a local join on the exchanged data.
+
+    #[derive(Debug, Clone)]
+    struct Participant {
+        english: Vec<(u64, String)>,
+        french: Vec<(u64, String)>,
+        id: u64,
+    }
+
+    const NUM_PARTICIPANTS: u64 = 3;
+
+    let mut local_data: Vec<_> = (0..NUM_PARTICIPANTS)
+        .map(|_| (Vec::new(), Vec::new()))
+        .collect();
+
+    let data = [
+        (0, "zero", "zero"),
+        (1, "one", "une"),
+        (2, "two", "deux"),
+        (3, "three", "trois"),
+        (4, "four", "quatre"),
+        (5, "five", "cinq"),
+        (6, "six", "six"),
+        (7, "seven", "sept"),
+        (8, "eight", "huit"),
+        (9, "nine", "neuf"),
+        (10, "ten", "dix"),
+    ];
+
+    // Shuffle the data between the participants.
+    let mut rng = rand::thread_rng();
+    for (val, english, french) in &data {
+        // Pick someone to take the English word.
+        let english_recepient = rng.gen_range(0..NUM_PARTICIPANTS) as usize;
+        local_data[english_recepient]
+            .0
+            .push((*val, (*english).to_owned()));
+
+        let french_recepient = rng.gen_range(0..NUM_PARTICIPANTS) as usize;
+        local_data[french_recepient]
+            .1
+            .push((*val, (*french).to_owned()));
+    }
+
+    let participants: Vec<_> = local_data
+        .into_iter()
+        .enumerate()
+        .map(|(i, (english, french))| Participant {
+            english,
+            french,
+            id: i as u64,
+        })
+        .collect();
+
+    let english_address_book = Arc::new(Mutex::new(HashMap::new()));
+    let french_address_book = Arc::new(Mutex::new(HashMap::new()));
+
+    let (receipts_tx, receipts_rx) = std::sync::mpsc::channel();
+
+    for p in participants {
+        let english_address_book = english_address_book.clone();
+        let french_address_book = french_address_book.clone();
+        let receipts_tx = receipts_tx.clone();
+        std::thread::spawn(move || {
+            let rt = tokio::runtime::Runtime::new().unwrap();
+            rt.block_on(async move {
+                let mut builder = HydroflowBuilder::default();
+
+                // Set up English communication.
+                let (port, english_inbound_messages, english_outbound_messages) =
+                    open_connection(&mut builder).await;
+
+                english_address_book
+                    .lock()
+                    .unwrap()
+                    .insert(p.id, format!("localhost:{}", port));
+
+                // Set up French communication.
+                let (port, french_inbound_messages, french_outbound_messages) =
+                    open_connection(&mut builder).await;
+
+                french_address_book
+                    .lock()
+                    .unwrap()
+                    .insert(p.id, format!("localhost:{}", port));
+
+                // Wait for everyone to fill in their connection info.
+                while english_address_book.lock().unwrap().len() < NUM_PARTICIPANTS as usize
+                    || french_address_book.lock().unwrap().len() < NUM_PARTICIPANTS as usize
+                {
+                    std::thread::sleep(Duration::from_millis(30));
+                }
+
+                // Build the French exchanged input.
+                let french_address_book = french_address_book.lock().unwrap().clone();
+                let local_french_inputs_recv = build_exchange(
+                    &mut builder,
+                    NUM_PARTICIPANTS,
+                    french_address_book,
+                    p.french.clone(),
+                    p.id,
+                    french_outbound_messages,
+                );
+
+                // Build the English exchanged input.
+                let english_address_book = english_address_book.lock().unwrap().clone();
+                let local_english_inputs_recv = build_exchange(
+                    &mut builder,
+                    NUM_PARTICIPANTS,
+                    english_address_book,
+                    p.english.clone(),
+                    p.id,
+                    english_outbound_messages,
+                );
+
+                // Join them.
+                builder.add_subgraph(
+                    english_inbound_messages
+                        .chain(local_english_inputs_recv)
+                        .flatten()
+                        .join(
+                            french_inbound_messages
+                                .chain(local_french_inputs_recv)
+                                .flatten(),
+                        )
+                        .pivot()
+                        .for_each(move |(v, english, french)| {
+                            receipts_tx.send((v, english, french)).unwrap();
+                        }),
+                );
+
+                builder.build().run_async().await.unwrap();
+            });
+        });
+    }
+
+    let mut out = Vec::new();
+    while out.len() < data.len() {
+        out.push(receipts_rx.recv().unwrap());
+    }
+    out.sort_unstable();
+
+    // If all went well, we should match up the English words with the French words.
+    assert_eq!(
+        &out,
+        &[
+            (0, "zero".to_owned(), "zero".to_owned()),
+            (1, "one".to_owned(), "une".to_owned()),
+            (2, "two".to_owned(), "deux".to_owned()),
+            (3, "three".to_owned(), "trois".to_owned()),
+            (4, "four".to_owned(), "quatre".to_owned()),
+            (5, "five".to_owned(), "cinq".to_owned()),
+            (6, "six".to_owned(), "six".to_owned()),
+            (7, "seven".to_owned(), "sept".to_owned()),
+            (8, "eight".to_owned(), "huit".to_owned()),
+            (9, "nine".to_owned(), "neuf".to_owned()),
+            (10, "ten".to_owned(), "dix".to_owned())
+        ]
+    );
 }
