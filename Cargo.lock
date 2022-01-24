@@ -516,6 +516,7 @@ dependencies = [
  "bytes",
  "criterion",
  "futures",
+ "rand",
  "ref-cast",
  "sealed",
  "serde",
