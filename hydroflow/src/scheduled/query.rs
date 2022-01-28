@@ -3,6 +3,7 @@ use std::{cell::RefCell, rc::Rc};
 use crate::lang::collections::Iter;
 use crate::scheduled::graph::Hydroflow;
 use crate::scheduled::handoff::VecHandoff;
+use crate::{tl, tt};
 
 use super::context::Context;
 use super::ctx::{OutputPort, RecvCtx, SendCtx};
@@ -23,7 +24,7 @@ impl Query {
         T: 'static,
         F: 'static + FnMut(&Context<'_>, &SendCtx<VecHandoff<T>>),
     {
-        let output_port = (*self.df).borrow_mut().add_source(f);
+        let output_port = self.df.borrow_mut().add_source(f);
         Operator {
             df: self.df.clone(),
             output_port,
@@ -34,23 +35,23 @@ impl Query {
     where
         T: 'static,
     {
-        let (inputs, output) = (*self.df).borrow_mut().add_n_in_m_out(
-            ops.len(),
-            1,
-            |ins: &[&RecvCtx<VecHandoff<T>>], out| {
-                for input in ins {
+        let mut df = self.df.borrow_mut();
+
+        let (input_port, output_port) = df.make_handoff();
+
+        df.add_subgraph_homogeneous(
+            ops.into_iter().map(|op| op.output_port).collect(),
+            vec![input_port],
+            |ins, out| {
+                for &input in ins {
                     out[0].give(Iter(input.take_inner().into_iter()));
                 }
             },
         );
 
-        for (op, input) in ops.into_iter().zip(inputs.into_iter()) {
-            (*self.df).borrow_mut().add_edge(op.output_port, input)
-        }
-
         Operator {
             df: self.df.clone(),
-            output_port: output.into_iter().next().unwrap(),
+            output_port,
         }
     }
 
@@ -71,62 +72,58 @@ impl<T> Operator<T>
 where
     T: 'static,
 {
-    pub fn map<U, F>(self, f: F) -> Operator<U>
+    pub fn map<U, F>(self, mut f: F) -> Operator<U>
     where
         F: 'static + Fn(T) -> U,
         U: 'static,
     {
-        let (input, output) =
-            (*self.df)
+        let output_port =
+            self.df
                 .borrow_mut()
-                .add_inout(move |_ctx, recv: &RecvCtx<VecHandoff<T>>, send| {
-                    #[allow(clippy::redundant_closure)]
-                    send.give(Iter(recv.take_inner().into_iter().map(|x| f(x))));
+                .add_inout(self.output_port, move |_ctx, recv, send| {
+                    send.give(Iter(recv.take_inner().into_iter().map(&mut f)));
                 });
-
-        (*self.df).borrow_mut().add_edge(self.output_port, input);
 
         Operator {
             df: self.df,
-            output_port: output,
+            output_port,
         }
     }
 
     #[must_use]
-    pub fn filter<F>(self, f: F) -> Operator<T>
+    pub fn filter<F>(self, mut f: F) -> Operator<T>
     where
         F: 'static + Fn(&T) -> bool,
     {
-        let (input, output) =
-            (*self.df)
+        let output_port =
+            self.df
                 .borrow_mut()
-                .add_inout(move |_ctx, recv: &RecvCtx<VecHandoff<T>>, send| {
-                    send.give(Iter(recv.take_inner().into_iter().filter(|x| f(x))));
+                .add_inout(self.output_port, move |_ctx, recv, send| {
+                    send.give(Iter(recv.take_inner().into_iter().filter(&mut f)));
                 });
-
-        (*self.df).borrow_mut().add_edge(self.output_port, input);
 
         Operator {
             df: self.df,
-            output_port: output,
+            output_port,
         }
     }
 
     #[must_use]
     pub fn concat(self, other: Operator<T>) -> Operator<T> {
         // TODO(justin): this is very slow.
-        let (input1, input2, output) = (*self.df).borrow_mut().add_binary(
+
+        let output_port = self.df.borrow_mut().add_binary(
+            self.output_port,
+            other.output_port,
             |_ctx, recv1: &RecvCtx<VecHandoff<T>>, recv2: &RecvCtx<VecHandoff<T>>, send| {
                 send.give(Iter(recv1.take_inner().into_iter()));
                 send.give(Iter(recv2.take_inner().into_iter()));
             },
         );
-        (*self.df).borrow_mut().add_edge(self.output_port, input1);
-        (*self.df).borrow_mut().add_edge(other.output_port, input2);
 
         Operator {
             df: self.df,
-            output_port: output,
+            output_port,
         }
     }
 
@@ -134,18 +131,18 @@ where
     where
         F: 'static + Fn(T),
     {
-        let input = (*self.df)
-            .borrow_mut()
-            .add_sink(move |_ctx, recv: &RecvCtx<VecHandoff<T>>| {
+        self.df.borrow_mut().add_sink(
+            self.output_port,
+            move |_ctx, recv: &RecvCtx<VecHandoff<T>>| {
                 for v in recv.take_inner() {
                     f(v)
                 }
-            });
-
-        (*self.df).borrow_mut().add_edge(self.output_port, input);
+            },
+        );
     }
 }
 
+/*
 impl<T: Clone> Operator<T> {
     pub fn tee(self, n: usize) -> Vec<Operator<T>>
     where
@@ -179,3 +176,4 @@ impl<T: Clone> Operator<T> {
             .collect()
     }
 }
+*/

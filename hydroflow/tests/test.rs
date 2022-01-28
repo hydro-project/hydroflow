@@ -11,10 +11,10 @@ use hydroflow::scheduled::{
     graph_ext::GraphExt,
     handoff::VecHandoff,
 };
+use hydroflow::{tl, tt};
 
 #[test]
 fn map_filter() {
-    use hydroflow::scheduled::graph_ext::GraphExt;
     use hydroflow::scheduled::handoff::VecHandoff;
     use std::cell::RefCell;
     use std::rc::Rc;
@@ -22,23 +22,31 @@ fn map_filter() {
     // A simple dataflow with one source feeding into one sink with some processing in the middle.
     let mut df = Hydroflow::new();
 
+    let (source, map_in) = df.make_handoff();
+    let (map_out, filter_in) = df.make_handoff();
+    let (filter_out, sink) = df.make_handoff();
+
     let data = [1, 2, 3, 4];
-    let source = df.add_source(move |_ctx, send| {
+    df.add_subgraph::<tt!(), tt!(VecHandoff<i32>), _>(tl!(), tl!(source), move |_ctx, tl!(), tl!(send)| {
         for x in data.into_iter() {
             send.give(Some(x));
         }
     });
 
-    let (map_in, map_out) = df.add_inout(
-        |_ctx, recv: &RecvCtx<VecHandoff<i32>>, send: &SendCtx<VecHandoff<_>>| {
+    df.add_subgraph::<tt!(VecHandoff<i32>), tt!(VecHandoff<i32>), _>(
+        tl!(map_in),
+        tl!(map_out),
+        |_ctx, tl!(recv), tl!(send)| {
             for x in recv.take_inner().into_iter() {
                 send.give(Some(3 * x + 1));
             }
         },
     );
 
-    let (filter_in, filter_out) = df.add_inout(
-        |_ctx, recv: &RecvCtx<VecHandoff<i32>>, send: &SendCtx<VecHandoff<_>>| {
+    df.add_subgraph::<tt!(VecHandoff<i32>), tt!(VecHandoff<i32>), _>(
+        tl!(filter_in),
+        tl!(filter_out),
+        |_ctx, tl!(recv), tl!(send)| {
             for x in recv.take_inner().into_iter() {
                 if x % 2 == 0 {
                     send.give(Some(x));
@@ -49,15 +57,15 @@ fn map_filter() {
 
     let outputs = Rc::new(RefCell::new(Vec::new()));
     let inner_outputs = outputs.clone();
-    let sink = df.add_sink(move |_ctx, recv: &RecvCtx<VecHandoff<i32>>| {
-        for x in recv.take_inner().into_iter() {
-            (*inner_outputs).borrow_mut().push(x);
-        }
-    });
-
-    df.add_edge(source, map_in);
-    df.add_edge(map_out, filter_in);
-    df.add_edge(filter_out, sink);
+    df.add_subgraph::<tt!(VecHandoff<i32>), tt!(), _>(
+        tl!(sink),
+        tl!(),
+        move |_ctx, tl!(recv), tl!()| {
+            for x in recv.take_inner().into_iter() {
+                (*inner_outputs).borrow_mut().push(x);
+            }
+        },
+    );
 
     df.tick();
 

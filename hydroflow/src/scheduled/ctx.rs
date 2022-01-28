@@ -1,13 +1,29 @@
 //! Organizational module for Hydroflow Send/RecvCtx structs and Input/OutputPort structs.
-use std::cell::Cell;
 use std::marker::PhantomData;
-use std::rc::Rc;
 
 use ref_cast::RefCast;
 
 use crate::scheduled::handoff::{CanReceive, Handoff, TryCanReceive};
 
-use super::{HandoffId, SubgraphId};
+use super::HandoffId;
+
+#[must_use]
+pub struct InputPort<H>
+where
+    H: Handoff,
+{
+    pub(crate) handoff_id: HandoffId,
+    pub(crate) _marker: PhantomData<fn() -> H>,
+}
+
+#[must_use]
+pub struct OutputPort<H>
+where
+    H: Handoff,
+{
+    pub(crate) handoff_id: HandoffId,
+    pub(crate) _marker: PhantomData<fn() -> H>,
+}
 
 /**
  * Context provided to a compiled component for writing to an [OutputPort].
@@ -38,25 +54,25 @@ impl<H: Handoff> SendCtx<H> {
     }
 }
 
-/**
- * Handle corresponding to a [SendCtx]. Consumed by
- * [crate::scheduled::graph::Hydroflow::add_edge] to construct the Hydroflow
- * graph.
- */
-#[must_use]
-pub struct OutputPort<H: Handoff> {
-    pub(crate) sg_id: SubgraphId,
-    pub(crate) handoff_id: Rc<Cell<Option<HandoffId>>>,
-    pub(crate) _phantom: PhantomData<fn() -> H>,
-}
-// impl<T: Clone> Clone for OutputPort<TeeingHandoff<T>> {
-//     fn clone(&self) -> Self {
-//         Self {
-//             sg_id: self.sg_id,
-//             handoff_id: Rc::new(RefCell::new(self.handoff.borrow().tee())),
-//         }
-//     }
+// /**
+//  * Handle corresponding to a [SendCtx]. Consumed by
+//  * [crate::scheduled::graph::Hydroflow::add_edge] to construct the Hydroflow
+//  * graph.
+//  */
+// #[must_use]
+// pub struct OutputPort<H: Handoff> {
+//     pub(crate) sg_id: SubgraphId,
+//     pub(crate) handoff_id: Rc<Cell<Option<HandoffId>>>,
+//     pub(crate) _phantom: PhantomData<fn() -> H>,
 // }
+// // impl<T: Clone> Clone for OutputPort<TeeingHandoff<T>> {
+// //     fn clone(&self) -> Self {
+// //         Self {
+// //             sg_id: self.sg_id,
+// //             handoff_id: Rc::new(RefCell::new(self.handoff.borrow().tee())),
+// //         }
+// //     }
+// // }
 
 /**
  * Context provided to a compiled component for reading from an [InputPort].
@@ -72,14 +88,14 @@ impl<H: Handoff> RecvCtx<H> {
     }
 }
 
-/**
- * Handle corresponding to a [RecvCtx]. Consumed by
- * [crate::scheduled::graph::Hydroflow::add_edge] to construct the Hydroflow
- * graph.
- */
-#[must_use]
-pub struct InputPort<H: Handoff> {
-    pub(crate) sg_id: SubgraphId,
-    pub(crate) handoff_id: Rc<Cell<Option<HandoffId>>>,
-    pub(crate) _phantom: PhantomData<fn() -> H>,
-}
+// /**
+//  * Handle corresponding to a [RecvCtx]. Consumed by
+//  * [crate::scheduled::graph::Hydroflow::add_edge] to construct the Hydroflow
+//  * graph.
+//  */
+// #[must_use]
+// pub struct InputPort<H: Handoff> {
+//     pub(crate) sg_id: SubgraphId,
+//     pub(crate) handoff_id: Rc<Cell<Option<HandoffId>>>,
+//     pub(crate) _phantom: PhantomData<fn() -> H>,
+// }

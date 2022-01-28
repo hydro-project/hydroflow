@@ -1,14 +1,10 @@
-use std::cell::Cell;
-use std::marker::PhantomData;
-use std::rc::Rc;
-
 use ref_cast::RefCast;
 use sealed::sealed;
 
 use crate::scheduled::ctx::{InputPort, OutputPort, RecvCtx, SendCtx};
 use crate::scheduled::graph::HandoffData;
 use crate::scheduled::type_list::TypeList;
-use crate::scheduled::{HandoffId, SubgraphId};
+use crate::scheduled::SubgraphId;
 
 use super::Handoff;
 
@@ -24,20 +20,30 @@ use super::Handoff;
 /// ```
 #[sealed]
 pub trait HandoffList: TypeList {
-    type InputHid: TypeList;
-    type InputPort: TypeList;
-    type RecvCtx<'a>: TypeList;
-    fn make_input(sg_id: SubgraphId) -> (Self::InputHid, Self::InputPort);
-    fn make_recv<'a>(handoffs: &'a [HandoffData], input_hids: &Self::InputHid)
-        -> Self::RecvCtx<'a>;
-
-    type OutputHid: TypeList;
     type OutputPort: TypeList;
+    fn set_succs<'a>(
+        sg_id: SubgraphId,
+        handoffs: &'a mut [HandoffData],
+        recv_ports: &Self::OutputPort,
+    );
+
+    type RecvCtx<'a>: TypeList;
+    fn make_recv<'a>(
+        handoffs: &'a [HandoffData],
+        recv_ports: &Self::OutputPort,
+    ) -> Self::RecvCtx<'a>;
+
+    type InputPort: TypeList;
+    fn set_preds<'a>(
+        sg_id: SubgraphId,
+        handoffs: &'a mut [HandoffData],
+        send_ports: &Self::InputPort,
+    );
+
     type SendCtx<'a>: TypeList;
-    fn make_output(sg_id: SubgraphId) -> (Self::OutputHid, Self::OutputPort);
     fn make_send<'a>(
         handoffs: &'a [HandoffData],
-        output_hids: &Self::OutputHid,
+        send_ports: &Self::InputPort,
     ) -> Self::SendCtx<'a>;
 }
 #[sealed]
@@ -46,27 +52,25 @@ where
     H: 'static + Handoff,
     L: HandoffList,
 {
-    type InputHid = (Rc<Cell<Option<HandoffId>>>, L::InputHid);
-    type InputPort = (InputPort<H>, L::InputPort);
-    type RecvCtx<'a> = (&'a RecvCtx<H>, L::RecvCtx<'a>);
-    fn make_input(sg_id: SubgraphId) -> (Self::InputHid, Self::InputPort) {
-        let hid = <Rc<Cell<Option<HandoffId>>>>::default();
-        let input = InputPort {
-            sg_id,
-            handoff_id: hid.clone(),
-            _phantom: PhantomData,
-        };
+    type OutputPort = (OutputPort<H>, L::OutputPort);
+    fn set_succs<'a>(
+        sg_id: SubgraphId,
+        handoffs: &'a mut [HandoffData],
+        recv_ports: &Self::OutputPort,
+    ) {
+        let (hid, hid_rest) = recv_ports;
 
-        let (hid_rest, input_rest) = L::make_input(sg_id);
-
-        ((hid, hid_rest), (input, input_rest))
+        handoffs.get_mut(hid.handoff_id).unwrap().succs.push(sg_id);
+        L::set_succs(sg_id, handoffs, hid_rest);
     }
+
+    type RecvCtx<'a> = (&'a RecvCtx<H>, L::RecvCtx<'a>);
     fn make_recv<'a>(
         handoffs: &'a [HandoffData],
-        input_hids: &Self::InputHid,
+        recv_ports: &Self::OutputPort,
     ) -> Self::RecvCtx<'a> {
-        let (hid, hid_rest) = input_hids;
-        let hid = hid.get().expect("Attempted to use unattached handoff.");
+        let (hid, hid_rest) = recv_ports;
+        let hid = hid.handoff_id;
         let handoff = handoffs
             .get(hid)
             .unwrap()
@@ -80,27 +84,25 @@ where
         (ctx, ctx_rest)
     }
 
-    type OutputHid = (Rc<Cell<Option<HandoffId>>>, L::OutputHid);
-    type OutputPort = (OutputPort<H>, L::OutputPort);
-    type SendCtx<'a> = (&'a SendCtx<H>, L::SendCtx<'a>);
-    fn make_output(sg_id: SubgraphId) -> (Self::OutputHid, Self::OutputPort) {
-        let hid = <Rc<Cell<Option<HandoffId>>>>::default();
-        let output = OutputPort {
-            sg_id,
-            handoff_id: hid.clone(),
-            _phantom: PhantomData,
-        };
+    type InputPort = (InputPort<H>, L::InputPort);
+    fn set_preds<'a>(
+        sg_id: SubgraphId,
+        handoffs: &'a mut [HandoffData],
+        send_ports: &Self::InputPort,
+    ) {
+        let (hid, hid_rest) = send_ports;
 
-        let (hid_rest, output_rest) = L::make_output(sg_id);
-
-        ((hid, hid_rest), (output, output_rest))
+        handoffs.get_mut(hid.handoff_id).unwrap().preds.push(sg_id);
+        L::set_preds(sg_id, handoffs, hid_rest);
     }
+
+    type SendCtx<'a> = (&'a SendCtx<H>, L::SendCtx<'a>);
     fn make_send<'a>(
         handoffs: &'a [HandoffData],
-        output_hids: &Self::OutputHid,
+        send_ports: &Self::InputPort,
     ) -> Self::SendCtx<'a> {
-        let (hid, hid_rest) = output_hids;
-        let hid = hid.get().expect("Attempted to use unattached handoff.");
+        let (hid, hid_rest) = send_ports;
+        let hid = hid.handoff_id;
         let handoff = handoffs
             .get(hid)
             .unwrap()
@@ -116,27 +118,33 @@ where
 }
 #[sealed]
 impl HandoffList for () {
-    type InputHid = ();
-    type InputPort = ();
-    type RecvCtx<'a> = ();
-    fn make_input(_: SubgraphId) -> (Self::InputHid, Self::InputPort) {
-        ((), ())
+    type OutputPort = ();
+    fn set_succs<'a>(
+        _sg_id: SubgraphId,
+        _handoffs: &'a mut [HandoffData],
+        _recv_ports: &Self::OutputPort,
+    ) {
     }
+
+    type RecvCtx<'a> = ();
     fn make_recv<'a>(
         _handoffs: &'a [HandoffData],
-        _input_hids: &Self::InputHid,
+        _recv_ports: &Self::InputPort,
     ) -> Self::RecvCtx<'a> {
     }
 
-    type OutputHid = ();
-    type OutputPort = ();
-    type SendCtx<'a> = ();
-    fn make_output(_: SubgraphId) -> (Self::OutputHid, Self::OutputPort) {
-        ((), ())
+    type InputPort = ();
+    fn set_preds<'a>(
+        _sg_id: SubgraphId,
+        _handoffs: &'a mut [HandoffData],
+        _send_ports: &Self::InputPort,
+    ) {
     }
+
+    type SendCtx<'a> = ();
     fn make_send<'a>(
         _handoffs: &'a [HandoffData],
-        _output_hids: &Self::OutputHid,
+        _send_ports: &Self::OutputPort,
     ) -> Self::SendCtx<'a> {
     }
 }
