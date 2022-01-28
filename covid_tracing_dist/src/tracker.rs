@@ -1,7 +1,7 @@
 use crate::{Decode, Encode, Opts, CONTACTS_ADDR, DIAGNOSES_ADDR};
 
 use hydroflow::lang::collections::Iter;
-use hydroflow::scheduled::{ctx::RecvCtx, graph::Hydroflow, handoff::VecHandoff, net::Message};
+use hydroflow::scheduled::{port::RecvCtx, graph::Hydroflow, handoff::VecHandoff, net::Message};
 use hydroflow::tokio::net::TcpStream;
 use hydroflow::{
     compiled::{pull::SymmetricHashJoin, InputBuild, IteratorToPusherator, PusheratorBuild},

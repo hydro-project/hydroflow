@@ -117,7 +117,7 @@ fn benchmark_differential(c: &mut Criterion) {
 
 fn benchmark_hydroflow_scheduled(c: &mut Criterion) {
     use hydroflow::lang::collections::Iter;
-    use hydroflow::scheduled::ctx::{RecvCtx, SendCtx};
+    use hydroflow::scheduled::port::{RecvCtx, SendCtx};
     use hydroflow::scheduled::graph::Hydroflow;
     use hydroflow::scheduled::handoff::VecHandoff;
     use hydroflow::{tl, tt};
@@ -200,7 +200,7 @@ fn benchmark_hydroflow_scheduled(c: &mut Criterion) {
 
 fn benchmark_hydroflow(c: &mut Criterion) {
     use hydroflow::compiled::{for_each::ForEach, IteratorToPusherator, PusheratorBuild};
-    use hydroflow::scheduled::ctx::{RecvCtx, SendCtx};
+    use hydroflow::scheduled::port::{RecvCtx, SendCtx};
     use hydroflow::scheduled::graph::Hydroflow;
     use hydroflow::scheduled::handoff::VecHandoff;
     use hydroflow::{tl, tt};

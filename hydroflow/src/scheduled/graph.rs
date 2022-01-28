@@ -6,8 +6,8 @@ use std::sync::mpsc::{self, Receiver, RecvError, SyncSender};
 use ref_cast::RefCast;
 
 use super::context::Context;
-use super::ctx::{InputPort, OutputPort, RecvCtx, SendCtx};
-use super::handoff::{Handoff, HandoffList, HandoffMeta};
+use super::port::{InputPort, OutputPort, RecvCtx, SendCtx};
+use super::handoff::{Handoff, HandoffList, HandoffMeta, SendPortList, RecvPortList};
 use super::reactor::Reactor;
 use super::state::StateHandle;
 #[cfg(feature = "variadic_generics")]
@@ -141,25 +141,24 @@ impl Hydroflow {
     /// Adds a new compiled subgraph with the specified inputs and outputs.
     ///
     /// See [HandoffList] for how to specify inputs and outputs.
-    // TODO(mingwei): restructure HANDOFF_LIST for better type inference?.
     pub fn add_subgraph<R, W, F>(
         &mut self,
-        recv_ports: R::OutputPort,
-        send_ports: W::InputPort,
+        recv_ports: R,
+        send_ports: W,
         mut subgraph: F,
     ) where
-        R: 'static + HandoffList,
-        W: 'static + HandoffList,
-        F: 'static + FnMut(&Context<'_>, R::RecvCtx<'_>, W::SendCtx<'_>),
+        R: 'static + RecvPortList,
+        W: 'static + SendPortList,
+        F: 'static + FnMut(&Context<'_>, R::Ctx<'_>, W::Ctx<'_>),
     {
         let sg_id = self.subgraphs.len();
 
-        R::set_succs(sg_id, &mut *self.handoffs, &recv_ports);
-        W::set_preds(sg_id, &mut *self.handoffs, &send_ports);
+        recv_ports.set_graph_meta(&mut *self.handoffs, None, Some(sg_id));
+        send_ports.set_graph_meta(&mut *self.handoffs, Some(sg_id), None);
 
         let subgraph = move |context: Context<'_>| {
-            let recv = R::make_recv(context.handoffs, &recv_ports);
-            let send = W::make_send(context.handoffs, &send_ports);
+            let recv = recv_ports.make_ctx(context.handoffs);
+            let send = send_ports.make_ctx(context.handoffs);
             (subgraph)(&context, recv, send);
         };
         self.subgraphs.push(SubgraphData::new(subgraph));
@@ -288,6 +287,7 @@ impl HandoffData {
  */
 struct SubgraphData {
     subgraph: Box<dyn Subgraph>,
+    #[allow(dead_code)]
     preds: Vec<HandoffId>,
     succs: Vec<HandoffId>,
     scheduled: bool,
