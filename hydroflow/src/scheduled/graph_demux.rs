@@ -1,7 +1,7 @@
 use std::{cell::RefCell, collections::HashMap, marker::PhantomData, rc::Rc};
 
 use super::{
-    ctx::{InputPort, RecvCtx},
+    port::{InputPort, RecvCtx},
     graph::Hydroflow,
     graph_ext::GraphExt,
     handoff::{CanReceive, Handoff, VecHandoff},

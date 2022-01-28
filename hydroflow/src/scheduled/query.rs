@@ -6,7 +6,7 @@ use crate::scheduled::handoff::VecHandoff;
 use crate::{tl, tt};
 
 use super::context::Context;
-use super::ctx::{OutputPort, RecvCtx, SendCtx};
+use super::port::{OutputPort, RecvCtx, SendCtx};
 use super::graph_ext::GraphExt;
 
 #[derive(Default)]

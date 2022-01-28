@@ -66,7 +66,7 @@ use tokio::net::{
 use tokio_util::codec::{FramedRead, FramedWrite, LengthDelimitedCodec};
 
 use super::{
-    ctx::{InputPort, OutputPort, RecvCtx},
+    port::{InputPort, OutputPort, RecvCtx},
     graph::Hydroflow,
     graph_ext::GraphExt,
     handoff::VecHandoff,

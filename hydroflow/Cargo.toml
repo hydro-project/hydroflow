@@ -12,7 +12,7 @@ variadic_generics = []
 bytes = "1.1.0"
 futures = { version = "0.3", optional = true }
 ref-cast = "1.0"
-sealed = "0.3"
+sealed = "0.4"
 slotmap = "1.0"
 static_assertions = "1.1.0"
 tokio = { version = "1", features = ["full"] }

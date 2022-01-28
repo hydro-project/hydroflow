@@ -147,7 +147,7 @@ fn benchmark_hydroflow_compiled(c: &mut Criterion) {
 
 fn benchmark_hydroflow(c: &mut Criterion) {
     use hydroflow::lang::collections::Iter;
-    use hydroflow::scheduled::ctx::{RecvCtx, SendCtx};
+    use hydroflow::scheduled::port::{RecvCtx, SendCtx};
     use hydroflow::scheduled::graph::Hydroflow;
     use hydroflow::scheduled::handoff::VecHandoff;
 
