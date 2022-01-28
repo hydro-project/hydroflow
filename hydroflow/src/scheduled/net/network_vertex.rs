@@ -198,7 +198,9 @@ impl Hydroflow {
 
         let mut buffered_messages = Vec::new();
         let mut next_messages = Vec::new();
-        let input_port = self.add_sink(move |_ctx, recv| {
+        let (input_port, output_port) = self.make_handoff();
+        self.add_sink(output_port, move |_ctx, recv| {
+
             buffered_messages.extend(recv.take_inner());
             for msg in buffered_messages.drain(..) {
                 if let Err(e) = outbound_messages_send.try_send(msg) {
@@ -219,6 +221,7 @@ impl Hydroflow {
 
             std::mem::swap(&mut buffered_messages, &mut next_messages);
         });
+
         input_port
     }
 }

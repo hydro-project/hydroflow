@@ -1,8 +1,6 @@
 use std::any::Any;
-use std::cell::Cell;
 use std::collections::VecDeque;
 use std::marker::PhantomData;
-use std::rc::Rc;
 use std::sync::mpsc::{self, Receiver, RecvError, SyncSender};
 
 use ref_cast::RefCast;
@@ -85,15 +83,16 @@ impl Hydroflow {
                 event_queue_send: &mut self.event_queue_send,
             };
             sg_data.subgraph.run(context);
-            for handoff_id in sg_data.succs.iter().copied() {
+            for &handoff_id in sg_data.succs.iter() {
                 let handoff = self.handoffs.get(handoff_id).unwrap(/* TODO(mingwei) */);
-                let succ_id = handoff.succ;
-                if self.ready_queue.contains(&succ_id) {
-                    // TODO(mingwei): Slow? O(N)
-                    continue;
-                }
-                if !handoff.handoff.is_bottom() {
-                    self.ready_queue.push_back(succ_id);
+                for &succ_id in handoff.succs.iter() {
+                    if self.ready_queue.contains(&succ_id) {
+                        // TODO(mingwei): Slow? O(N)
+                        continue;
+                    }
+                    if !handoff.handoff.is_bottom() {
+                        self.ready_queue.push_back(succ_id);
+                    }
                 }
             }
 
@@ -139,82 +138,58 @@ impl Hydroflow {
         self.ready_queue.extend(0..self.subgraphs.len());
     }
 
-    /**
-     * Adds a new compiled subgraph with the specified inputs and outputs.
-     *
-     * See [HandoffList] for how to specify inputs and outputs.
-     */
-    #[cfg(feature = "variadic_generics")]
-    #[must_use]
-    pub fn add_subgraph<F, R, W>(&mut self, mut subgraph: F) -> (R::InputPort, W::OutputPort)
-    where
-        F: 'static + FnMut(&Context<'_>, R::RecvCtx<'_>, W::SendCtx<'_>),
+    /// Adds a new compiled subgraph with the specified inputs and outputs.
+    ///
+    /// See [HandoffList] for how to specify inputs and outputs.
+    // TODO(mingwei): restructure HANDOFF_LIST for better type inference?.
+    pub fn add_subgraph<R, W, F>(
+        &mut self,
+        recv_ports: R::OutputPort,
+        send_ports: W::InputPort,
+        mut subgraph: F,
+    ) where
         R: 'static + HandoffList,
         W: 'static + HandoffList,
+        F: 'static + FnMut(&Context<'_>, R::RecvCtx<'_>, W::SendCtx<'_>),
     {
-        // TODO(justin): make this less sketchy, we just know we're the only person who will append here.
         let sg_id = self.subgraphs.len();
 
-        let (input_hids, input_ports) = R::make_input(sg_id);
-        let (output_hids, output_ports) = W::make_output(sg_id);
+        R::set_succs(sg_id, &mut *self.handoffs, &recv_ports);
+        W::set_preds(sg_id, &mut *self.handoffs, &send_ports);
 
         let subgraph = move |context: Context<'_>| {
-            let recv = R::make_recv(context.handoffs, &input_hids);
-            let send = W::make_send(context.handoffs, &output_hids);
+            let recv = R::make_recv(context.handoffs, &recv_ports);
+            let send = W::make_send(context.handoffs, &send_ports);
             (subgraph)(&context, recv, send);
         };
         self.subgraphs.push(SubgraphData::new(subgraph));
         self.ready_queue.push_back(sg_id);
-
-        (input_ports, output_ports)
     }
 
-    /**
-     * Adds a new compiled subraph with a variable number of inputs and outputs.
-     */
-    pub fn add_n_in_m_out<F, R, W>(
+    /// Adds a new compiled subraph with a variable number of inputs and outputs of the same respective handoff types.
+    pub fn add_subgraph_homogeneous<R, W, F>(
         &mut self,
-        n: usize,
-        m: usize,
-        f: F,
-    ) -> (Vec<InputPort<R>>, Vec<OutputPort<W>>)
-    where
-        F: 'static + FnMut(&[&RecvCtx<R>], &[&SendCtx<W>]),
+        recv_ports: Vec<OutputPort<R>>,
+        send_ports: Vec<InputPort<W>>,
+        mut subgraph: F,
+    ) where
         R: 'static + Handoff,
         W: 'static + Handoff,
+        F: 'static + FnMut(&[&RecvCtx<R>], &[&SendCtx<W>]),
     {
-        // TODO(justin): is there a nice way to encapsulate the below?
         let sg_id = self.subgraphs.len();
 
-        let mut input_hids = Vec::new();
-        input_hids.resize_with(n, <Rc<Cell<Option<HandoffId>>>>::default);
-        let mut output_hids = Vec::new();
-        output_hids.resize_with(m, <Rc<Cell<Option<HandoffId>>>>::default);
+        for recv_port in recv_ports.iter() {
+            self.handoffs[recv_port.handoff_id].succs.push(sg_id);
+        }
+        for send_port in send_ports.iter() {
+            self.handoffs[send_port.handoff_id].preds.push(sg_id);
+        }
 
-        let input_ports = input_hids
-            .iter()
-            .cloned()
-            .map(|handoff_id| InputPort {
-                sg_id,
-                handoff_id,
-                _phantom: PhantomData,
-            })
-            .collect();
-        let output_ports = output_hids
-            .iter()
-            .cloned()
-            .map(|handoff_id| OutputPort {
-                sg_id,
-                handoff_id,
-                _phantom: PhantomData,
-            })
-            .collect();
-
-        let mut f = f;
         let subgraph = move |context: Context<'_>| {
-            let recvs: Vec<&RecvCtx<R>> = input_hids
+            let recvs: Vec<&RecvCtx<R>> = recv_ports
                 .iter()
-                .map(|hid| hid.get().expect("Attempted to use unattached handoff."))
+                .map(|hid| hid.handoff_id)
                 .map(|hid| context.handoffs.get(hid).unwrap())
                 .map(|h_data| {
                     h_data
@@ -226,9 +201,9 @@ impl Hydroflow {
                 .map(RefCast::ref_cast)
                 .collect();
 
-            let sends: Vec<&SendCtx<W>> = output_hids
+            let sends: Vec<&SendCtx<W>> = send_ports
                 .iter()
-                .map(|hid| hid.get().expect("Attempted to use unattached handoff."))
+                .map(|hid| hid.handoff_id)
                 .map(|hid| context.handoffs.get(hid).unwrap())
                 .map(|h_data| {
                     h_data
@@ -240,43 +215,32 @@ impl Hydroflow {
                 .map(RefCast::ref_cast)
                 .collect();
 
-            // self.handoffs.
-            f(&recvs, &sends)
+            (subgraph)(&recvs, &sends)
         };
         self.subgraphs.push(SubgraphData::new(subgraph));
         self.ready_queue.push_back(sg_id);
-
-        (input_ports, output_ports)
     }
 
-    pub fn add_edge<H>(&mut self, output_port: OutputPort<H>, input_port: InputPort<H>)
+    pub fn make_handoff<H>(&mut self) -> (InputPort<H>, OutputPort<H>)
     where
         H: 'static + Handoff,
     {
-        let handoff_id = self.add_handoff::<H>(output_port.sg_id, input_port.sg_id);
-
-        // Send handoff_ids.
-        input_port.handoff_id.set(Some(handoff_id));
-        output_port.handoff_id.set(Some(handoff_id));
-    }
-
-    pub fn add_handoff<H: Handoff>(
-        &mut self,
-        pred_id: SubgraphId,
-        succ_id: SubgraphId,
-    ) -> HandoffId {
         let handoff_id: HandoffId = self.handoffs.len();
 
         // Create and insert handoff.
         let handoff = H::default();
-        self.handoffs
-            .push(HandoffData::new(handoff, pred_id, succ_id));
+        self.handoffs.push(HandoffData::new(handoff));
 
-        // Add successor & predecessor.
-        self.subgraphs[pred_id].succs.push(handoff_id);
-        self.subgraphs[succ_id].preds.push(handoff_id);
-
-        handoff_id
+        // Make ports.
+        let input_port = InputPort {
+            handoff_id,
+            _marker: PhantomData,
+        };
+        let output_port = OutputPort {
+            handoff_id,
+            _marker: PhantomData,
+        };
+        (input_port, output_port)
     }
 
     pub fn add_state<T>(&mut self, state: T) -> StateHandle<T>
@@ -303,17 +267,17 @@ impl Hydroflow {
  * NOT PART OF PUBLIC API.
  */
 pub struct HandoffData {
-    pub handoff: Box<dyn HandoffMeta>,
-    #[allow(dead_code)] // TODO(mingwei)
-    pred: SubgraphId,
-    succ: SubgraphId,
+    pub(crate) handoff: Box<dyn HandoffMeta>,
+    pub(crate) preds: Vec<SubgraphId>,
+    pub(crate) succs: Vec<SubgraphId>,
 }
 impl HandoffData {
-    pub fn new(handoff: impl 'static + HandoffMeta, pred: SubgraphId, succ: SubgraphId) -> Self {
+    pub fn new(handoff: impl 'static + HandoffMeta) -> Self {
+        let (preds, succs) = Default::default();
         Self {
             handoff: Box::new(handoff),
-            pred,
-            succ,
+            preds,
+            succs,
         }
     }
 }

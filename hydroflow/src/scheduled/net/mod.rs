@@ -114,24 +114,34 @@ impl Hydroflow {
     ) -> InputPort<VecHandoff<Message>> {
         let mut writer = FramedWrite::new(writer, LengthDelimitedCodec::new());
         let mut message_queue = VecDeque::new();
-        self.add_sink(move |ctx, recv: &RecvCtx<VecHandoff<Message>>| {
-            let waker = ctx.waker();
-            let mut cx = std::task::Context::from_waker(&waker);
 
-            // TODO(mingwei): queue may grow unbounded? Subtle rate matching concern.
-            // TODO(mingwei): put into state system.
-            message_queue.extend(recv.take_inner().into_iter());
-            while !message_queue.is_empty() {
-                if let std::task::Poll::Ready(Ok(())) = Pin::new(&mut writer).poll_ready(&mut cx) {
-                    let v = message_queue.pop_front().unwrap();
-                    let mut buf = Vec::new();
-                    v.encode(&mut buf);
+        let (input_port, output_port) = self.make_handoff::<VecHandoff<Message>>();
 
-                    Pin::new(&mut writer).start_send(buf.into()).unwrap();
+        self.add_sink(
+            output_port,
+            move |ctx, recv| {
+                let waker = ctx.waker();
+                let mut cx = std::task::Context::from_waker(&waker);
+
+                // TODO(mingwei): queue may grow unbounded? Subtle rate matching concern.
+                // TODO(mingwei): put into state system.
+                message_queue.extend(recv.take_inner().into_iter());
+                while !message_queue.is_empty() {
+                    if let std::task::Poll::Ready(Ok(())) =
+                        Pin::new(&mut writer).poll_ready(&mut cx)
+                    {
+                        let v = message_queue.pop_front().unwrap();
+                        let mut buf = Vec::new();
+                        v.encode(&mut buf);
+
+                        Pin::new(&mut writer).start_send(buf.into()).unwrap();
+                    }
                 }
-            }
-            let _ = Pin::new(&mut writer).poll_flush(&mut cx);
-        })
+                let _ = Pin::new(&mut writer).poll_flush(&mut cx);
+            },
+        );
+
+        input_port
     }
 
     pub fn add_write_tcp_stream(&mut self, stream: TcpStream) -> InputPort<VecHandoff<Message>> {

@@ -13,7 +13,7 @@ use super::{
 
 pub struct Demux<K, W> {
     outputs: Rc<RefCell<HashMap<K, usize>>>,
-    id: SubgraphId,
+    // id: SubgraphId,
     _marker: PhantomData<W>,
 }
 
@@ -51,7 +51,10 @@ impl GraphDemux for Hydroflow {
         let outputs_outer: Rc<RefCell<HashMap<K, HandoffId>>> =
             Rc::new(RefCell::new(HashMap::new()));
         let outputs = outputs_outer.clone();
-        let input = self.add_sink(move |ctx, recv: &RecvCtx<VecHandoff<T>>| {
+
+        let (input_port, output_port) = self.make_handoff();
+
+        self.add_sink(output_port, move |ctx, recv: &RecvCtx<VecHandoff<T>>| {
             for v in recv.take_inner() {
                 match (*outputs).borrow().get(&sorter(&v)) {
                     None => {
@@ -73,13 +76,14 @@ impl GraphDemux for Hydroflow {
                 }
             }
         });
+
         (
             Demux {
                 outputs: outputs_outer,
-                id: input.sg_id,
+                // id: sg_id,
                 _marker: PhantomData,
             },
-            input,
+            input_port,
         )
     }
 
