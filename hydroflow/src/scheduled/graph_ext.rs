@@ -5,10 +5,10 @@ use futures::Stream;
 
 use super::{
     context::Context,
-    ctx::{InputPort, OutputPort, RecvCtx, SendCtx},
     graph::Hydroflow,
     handoff::{CanReceive, Handoff},
     input::Input,
+    port::{InputPort, OutputPort, RecvCtx, SendCtx},
 };
 use crate::{tl, tt};
 
@@ -120,7 +120,7 @@ impl GraphExt for Hydroflow {
     {
         let (input_port, new_output_port) = self.make_handoff();
 
-        self.add_subgraph::<tt!(R), tt!(W), _>(
+        self.add_subgraph(
             tl!(output_port),
             tl!(input_port),
             move |ctx, tl!(recv), tl!(send)| (subgraph)(ctx, recv, send),
@@ -183,7 +183,7 @@ impl GraphExt for Hydroflow {
     {
         let (input_port, new_output_port) = self.make_handoff();
 
-        self.add_subgraph::<tt!(R1, R2), tt!(W), _>(
+        self.add_subgraph(
             tl!(output_port_1, output_port_2),
             tl!(input_port),
             move |ctx, tl!(recv_1, recv_2), tl!(send)| (subgraph)(ctx, recv_1, recv_2, send),
@@ -232,11 +232,9 @@ impl GraphExt for Hydroflow {
         F: 'static + FnMut(&Context<'_>, &RecvCtx<R>),
         R: 'static + Handoff,
     {
-        self.add_subgraph::<tt!(R), tt!(), _>(
-            tl!(output_port),
-            tl!(),
-            move |ctx, tl!(recv), tl!()| (subgraph)(ctx, recv),
-        );
+        self.add_subgraph(tl!(output_port), tl!(), move |ctx, tl!(recv), tl!()| {
+            (subgraph)(ctx, recv)
+        });
     }
 
     fn add_source<F, W>(&mut self, mut subgraph: F) -> OutputPort<W>
@@ -246,11 +244,9 @@ impl GraphExt for Hydroflow {
     {
         let (input_port, output_port) = self.make_handoff();
 
-        self.add_subgraph::<tt!(), tt!(W), _>(
-            tl!(),
-            tl!(input_port),
-            move |ctx, tl!(), tl!(send)| (subgraph)(ctx, send),
-        );
+        self.add_subgraph(tl!(), tl!(input_port), move |ctx, tl!(), tl!(send)| {
+            (subgraph)(ctx, send)
+        });
 
         output_port
     }
