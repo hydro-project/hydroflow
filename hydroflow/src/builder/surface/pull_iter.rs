@@ -1,14 +1,7 @@
 use super::{BaseSurface, PullSurface};
 
-use std::cell::Cell;
-use std::rc::Rc;
-
-use crate::builder::build::pull_handoff::HandoffPullBuild;
 use crate::builder::build::pull_iter::IterPullBuild;
-use crate::builder::connect::{HandoffPullConnect, NullPullConnect};
-use crate::scheduled::ctx::InputPort;
-use crate::scheduled::handoff::Handoff;
-use crate::tt;
+use crate::builder::connect::NullPullConnect;
 
 pub struct IterPullSurface<I, T>
 where

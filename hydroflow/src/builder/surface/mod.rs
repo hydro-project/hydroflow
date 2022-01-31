@@ -37,6 +37,8 @@ pub mod push_pivot;
 pub mod push_start;
 pub mod push_tee;
 
+pub mod exchange;
+
 use std::hash::Hash;
 
 use crate::scheduled::handoff::{HandoffList, HandoffListSplit};
@@ -129,6 +131,9 @@ pub trait PullSurface: BaseSurface {
         Key: 'static + Eq + Hash + Clone,
         ValSelf: 'static + Eq + Clone,
         ValOther: 'static + Eq + Clone,
+        Self::InputHandoffs: Extend<Other::InputHandoffs>,
+        <Self::InputHandoffs as Extend<Other::InputHandoffs>>::Extended:
+            HandoffList + HandoffListSplit<Self::InputHandoffs, Suffix = Other::InputHandoffs>,
     {
         pull_join::JoinPullSurface::new(self, other)
     }
