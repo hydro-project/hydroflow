@@ -7,7 +7,7 @@ use ref_cast::RefCast;
 
 use super::context::Context;
 use super::port::{InputPort, OutputPort, RecvCtx, SendCtx};
-use super::handoff::{Handoff, HandoffList, HandoffMeta, SendPortList, RecvPortList};
+use super::handoff::{Handoff, HandoffMeta, SendPortList, RecvPortList};
 use super::reactor::Reactor;
 use super::state::StateHandle;
 #[cfg(feature = "variadic_generics")]
@@ -140,7 +140,7 @@ impl Hydroflow {
 
     /// Adds a new compiled subgraph with the specified inputs and outputs.
     ///
-    /// See [HandoffList] for how to specify inputs and outputs.
+    /// See [TODO] for how to specify inputs and outputs.
     pub fn add_subgraph<R, W, F>(
         &mut self,
         recv_ports: R,
