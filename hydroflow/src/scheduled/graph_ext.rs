@@ -1,305 +1,115 @@
 use core::task;
-use std::{pin::Pin, sync::mpsc::SyncSender, task::Poll};
+use std::{pin::Pin, task::Poll};
 
 use futures::Stream;
 
-use super::{
-    context::Context,
-    graph::Hydroflow,
-    handoff::{CanReceive, Handoff},
-    input::Input,
-    port::{InputPort, OutputPort, RecvCtx, SendCtx},
-};
-use crate::{tl, tt};
+use super::context::Context;
+use super::graph::Hydroflow;
+use super::handoff::{CanReceive, Handoff};
+use super::port::{InputPort, OutputPort, RecvCtx, SendCtx};
 
-// Convenience extension methods for the Hydroflow struct.
+macro_rules! subgraph_ext {
+    (
+        $fn_name:ident,
+        ( $($recv_param:ident : $recv_generic:ident),* ),
+        ( $($send_param:ident : $send_generic:ident),* )
+    ) => {
+        fn $fn_name <F, $($recv_generic,)* $($send_generic),*>
+            (&mut self, $($recv_param : OutputPort< $recv_generic >,)* $($send_param : InputPort< $send_generic >,)* subgraph: F)
+        where
+            F: 'static + FnMut(&Context<'_>, $(&RecvCtx< $recv_generic >,)* $(&SendCtx< $send_generic >),*),
+            $($recv_generic : 'static + Handoff,)*
+            $($send_generic : 'static + Handoff,)*;
+    };
+    (
+        impl
+        $fn_name:ident,
+        ( $($recv_param:ident : $recv_generic:ident),* ),
+        ( $($send_param:ident : $send_generic:ident),* )
+    ) => {
+        fn $fn_name <F, $($recv_generic,)* $($send_generic),*>
+            (&mut self, $($recv_param : OutputPort< $recv_generic >,)* $($send_param : InputPort< $send_generic >,)* subgraph: F)
+        where
+            F: 'static + FnMut(&Context<'_>, $(&RecvCtx< $recv_generic >,)* $(&SendCtx< $send_generic >),*),
+            $($recv_generic : 'static + Handoff,)*
+            $($send_generic : 'static + Handoff,)*
+        {
+            let mut subgraph = subgraph;
+            self.add_subgraph(
+                crate::tl!($($recv_param),*),
+                crate::tl!($($send_param),*),
+                move |ctx, crate::tl!($($recv_param),*), crate::tl!($($send_param),*)|
+                    (subgraph)(ctx, $($recv_param,)* $($send_param),*),
+            );
+        }
+    };
+}
 
+/// Convenience extension methods for the Hydroflow struct.
 pub trait GraphExt {
-    /**
-     * Adds a new compiled subgraph with a single input and output, and returns the input/output handles.
-     */
-    fn add_inout<F, R, W>(&mut self, output_port: OutputPort<R>, subgraph: F) -> OutputPort<W>
-    where
-        F: 'static + FnMut(&Context<'_>, &RecvCtx<R>, &SendCtx<W>),
-        R: 'static + Handoff,
-        W: 'static + Handoff;
+    subgraph_ext!(add_subgraph_sink, (recv_port: R), ());
+    subgraph_ext!(add_subgraph_source, (), (send_port: W));
 
-    // /**
-    //  * Adds a new compiled subgraph with one input and two outputs, and returns the input/output handles.
-    //  */
-    // fn add_binary_out<F, R, W1, W2>(
-    //     &mut self,
-    //     subgraph: F,
-    // ) -> (InputPort<R>, OutputPort<W1>, OutputPort<W2>)
-    // where
-    //     F: 'static + FnMut(&Context<'_>, &RecvCtx<R>, &SendCtx<W1>, &SendCtx<W2>),
-    //     R: 'static + Handoff,
-    //     W1: 'static + Handoff,
-    //     W2: 'static + Handoff;
+    subgraph_ext!(add_subgraph_in_out, (recv_port: R), (send_port: W));
+    subgraph_ext!(
+        add_subgraph_in_2out,
+        (recv_port: R),
+        (send_port_1: W1, send_port_2: W2)
+    );
 
-    // /**
-    //  * Adds a new compiled subgraph with one input and two outputs, and returns the input/output handles.
-    //  */
-    // fn add_binary_in_binary_out<F, R1, R2, W1, W2>(
-    //     &mut self,
-    //     subgraph: F,
-    // ) -> (InputPort<R1>, InputPort<R2>, OutputPort<W1>, OutputPort<W2>)
-    // where
-    //     F: 'static + FnMut(&Context<'_>, &RecvCtx<R1>, &RecvCtx<R2>, &SendCtx<W1>, &SendCtx<W2>),
-    //     R1: 'static + Handoff,
-    //     R2: 'static + Handoff,
-    //     W1: 'static + Handoff,
-    //     W2: 'static + Handoff;
+    subgraph_ext!(
+        add_subgraph_2in_out,
+        (recv_port_1: R1, recv_port_2: R2),
+        (send_port: W)
+    );
+    subgraph_ext!(
+        add_subgraph_2in_2out,
+        (recv_port_1: R1, recv_port_2: R2),
+        (send_port_1: W1, send_port_2: W2)
+    );
 
-    /**
-     * Adds a new compiled subraph with two inputs and a single output, and returns the input/output handles.
-     */
-    fn add_binary<F, R1, R2, W>(
-        &mut self,
-        output_port_1: OutputPort<R1>,
-        output_port_2: OutputPort<R2>,
-        subgraph: F,
-    ) -> OutputPort<W>
-    where
-        F: 'static + FnMut(&Context<'_>, &RecvCtx<R1>, &RecvCtx<R2>, &SendCtx<W>),
-        R1: 'static + Handoff,
-        R2: 'static + Handoff,
-        W: 'static + Handoff;
-
-    // /**
-    //  * Adds a new compiled subraph with two inputs and no outputs, and returns the input handles.
-    //  */
-    // fn add_binary_sink<F, R1, R2>(&mut self, subgraph: F) -> (InputPort<R1>, InputPort<R2>)
-    // where
-    //     F: 'static + FnMut(&Context<'_>, &RecvCtx<R1>, &RecvCtx<R2>),
-    //     R1: 'static + Handoff,
-    //     R2: 'static + Handoff;
-
-    /**
-     * Adds a new compiled subgraph with one input and no outputs.
-     */
-    fn add_sink<F, R>(&mut self, output_port: OutputPort<R>, subgraph: F)
-    where
-        F: 'static + FnMut(&Context<'_>, &RecvCtx<R>),
-        R: 'static + Handoff;
-
-    /**
-     * Adds a new compiled subgraph with one output and no inputs.
-     */
-    fn add_source<F, W>(&mut self, subgraph: F) -> OutputPort<W>
-    where
-        F: 'static + FnMut(&Context<'_>, &SendCtx<W>),
-        W: 'static + Handoff;
-
-    // fn add_channel_input<T, W>(&mut self) -> (Input<T, SyncSender<T>>, OutputPort<W>)
-    // where
-    //     T: 'static,
-    //     W: 'static + Handoff + CanReceive<T>;
-
-    // /**
-    //  * Adds an "input" operator, returning a handle to insert data into it.
-    //  * TODO(justin): make this thing work better
-    //  */
-    // fn add_input<T, W>(&mut self) -> (Input<T, super::input::Buffer<T>>, OutputPort<W>)
-    // where
-    //     T: 'static,
-    //     W: 'static + Handoff + CanReceive<T>;
-
-    fn add_input_from_stream<T, W, S>(&mut self, s: S) -> OutputPort<W>
+    fn add_input_from_stream<T, W, S>(&mut self, send_port: InputPort<W>, stream: S)
     where
         S: 'static + Stream<Item = T> + Unpin,
         W: 'static + Handoff + CanReceive<T>;
 }
 
 impl GraphExt for Hydroflow {
-    fn add_inout<F, R, W>(&mut self, output_port: OutputPort<R>, mut subgraph: F) -> OutputPort<W>
-    where
-        F: 'static + FnMut(&Context<'_>, &RecvCtx<R>, &SendCtx<W>),
-        R: 'static + Handoff,
-        W: 'static + Handoff,
-    {
-        let (input_port, new_output_port) = self.make_handoff();
+    subgraph_ext!(impl add_subgraph_sink, (recv_port: R), ());
+    subgraph_ext!(impl add_subgraph_source, (), (send_port: W));
 
-        self.add_subgraph(
-            tl!(output_port),
-            tl!(input_port),
-            move |ctx, tl!(recv), tl!(send)| (subgraph)(ctx, recv, send),
-        );
+    subgraph_ext!(impl add_subgraph_in_out, (recv_port: R), (send_port: W));
+    subgraph_ext!(
+        impl add_subgraph_in_2out,
+        (recv_port: R),
+        (send_port_1: W1, send_port_2: W2)
+    );
 
-        new_output_port
-    }
+    subgraph_ext!(
+        impl add_subgraph_2in_out,
+        (recv_port_1: R1, recv_port_2: R2),
+        (send_port: W)
+    );
+    subgraph_ext!(
+        impl add_subgraph_2in_2out,
+        (recv_port_1: R1, recv_port_2: R2),
+        (send_port_1: W1, send_port_2: W2)
+    );
 
-    // fn add_binary_out<F, R, W1, W2>(
-    //     &mut self,
-    //     mut subgraph: F,
-    // ) -> (InputPort<R>, OutputPort<W1>, OutputPort<W2>)
-    // where
-    //     F: 'static + FnMut(&Context<'_>, &RecvCtx<R>, &SendCtx<W1>, &SendCtx<W2>),
-    //     R: 'static + Handoff,
-    //     W1: 'static + Handoff,
-    //     W2: 'static + Handoff,
-    // {
-    //     let (tl!(input_port), tl!(output_port1, output_port2)) = self
-    //         .add_subgraph::<_, tl!(R), tl!(W1, W2)>(move |ctx, tl!(recv), tl!(send1, send2)| {
-    //             (subgraph)(ctx, recv, send1, send2)
-    //         });
-    //     (input_port, output_port1, output_port2)
-    // }
-
-    // fn add_binary_in_binary_out<F, R1, R2, W1, W2>(
-    //     &mut self,
-    //     mut subgraph: F,
-    // ) -> (InputPort<R1>, InputPort<R2>, OutputPort<W1>, OutputPort<W2>)
-    // where
-    //     F: 'static + FnMut(&Context<'_>, &RecvCtx<R1>, &RecvCtx<R2>, &SendCtx<W1>, &SendCtx<W2>),
-    //     R1: 'static + Handoff,
-    //     R2: 'static + Handoff,
-    //     W1: 'static + Handoff,
-    //     W2: 'static + Handoff,
-    // {
-    //     let (tl!(input_port1, input_port2), tl!(output_port1, output_port2)) = self
-    //         .add_subgraph::<_, tl!(R1, R2), tl!(W1, W2)>(
-    //             move |ctx, tl!(recv1, recv2), tl!(send1, send2)| {
-    //                 (subgraph)(ctx, recv1, recv2, send1, send2)
-    //             },
-    //         );
-    //     (input_port1, input_port2, output_port1, output_port2)
-    // }
-
-    /**
-     * Adds a new compiled subraph with two inputs and a single output, and returns the input/output handles.
-     */
-    fn add_binary<F, R1, R2, W>(
-        &mut self,
-        output_port_1: OutputPort<R1>,
-        output_port_2: OutputPort<R2>,
-        mut subgraph: F,
-    ) -> OutputPort<W>
-    where
-        F: 'static + FnMut(&Context<'_>, &RecvCtx<R1>, &RecvCtx<R2>, &SendCtx<W>),
-        R1: 'static + Handoff,
-        R2: 'static + Handoff,
-        W: 'static + Handoff,
-    {
-        let (input_port, new_output_port) = self.make_handoff();
-
-        self.add_subgraph(
-            tl!(output_port_1, output_port_2),
-            tl!(input_port),
-            move |ctx, tl!(recv_1, recv_2), tl!(send)| (subgraph)(ctx, recv_1, recv_2, send),
-        );
-
-        new_output_port
-    }
-
-    // /**
-    //  * Adds a new compiled subraph with two inputs and a single output, and returns the input/output handles.
-    //  */
-    // #[cfg(feature = "variadic_generics")]
-    // fn add_binary<F, R1, R2, W>(
-    //     &mut self,
-    //     mut subgraph: F,
-    // ) -> (InputPort<R1>, InputPort<R2>, OutputPort<W>)
-    // where
-    //     F: 'static + FnMut(&Context<'_>, &RecvCtx<R1>, &RecvCtx<R2>, &SendCtx<W>),
-    //     R1: 'static + Handoff,
-    //     R2: 'static + Handoff,
-    //     W: 'static + Handoff,
-    // {
-    //     let (tl!(input_port1, input_port2), tl!(output_port)) = self
-    //         .add_subgraph::<_, tl!(R1, R2), tl!(W)>(move |ctx, tl!(recv1, recv2), tl!(send)| {
-    //             (subgraph)(ctx, recv1, recv2, send)
-    //         });
-    //     (input_port1, input_port2, output_port)
-    // }
-
-    // #[cfg(feature = "variadic_generics")]
-    // fn add_binary_sink<F, R1, R2>(&mut self, mut subgraph: F) -> (InputPort<R1>, InputPort<R2>)
-    // where
-    //     F: 'static + FnMut(&Context<'_>, &RecvCtx<R1>, &RecvCtx<R2>),
-    //     R1: 'static + Handoff,
-    //     R2: 'static + Handoff,
-    // {
-    //     let (tl!(input_port1, input_port2), tl!()) =
-    //         self.add_subgraph::<_, tl!(R1, R2), tl!()>(move |ctx, tl!(recv1, recv2), tl!()| {
-    //             (subgraph)(ctx, recv1, recv2)
-    //         });
-    //     (input_port1, input_port2)
-    // }
-
-    fn add_sink<F, R>(&mut self, output_port: OutputPort<R>, mut subgraph: F)
-    where
-        F: 'static + FnMut(&Context<'_>, &RecvCtx<R>),
-        R: 'static + Handoff,
-    {
-        self.add_subgraph(tl!(output_port), tl!(), move |ctx, tl!(recv), tl!()| {
-            (subgraph)(ctx, recv)
-        });
-    }
-
-    fn add_source<F, W>(&mut self, mut subgraph: F) -> OutputPort<W>
-    where
-        F: 'static + FnMut(&Context<'_>, &SendCtx<W>),
-        W: 'static + Handoff,
-    {
-        let (input_port, output_port) = self.make_handoff();
-
-        self.add_subgraph(tl!(), tl!(input_port), move |ctx, tl!(), tl!(send)| {
-            (subgraph)(ctx, send)
-        });
-
-        output_port
-    }
-
-    // #[cfg(feature = "variadic_generics")]
-    // fn add_channel_input<T, W>(&mut self) -> (Input<T, SyncSender<T>>, OutputPort<W>)
-    // where
-    //     T: 'static,
-    //     W: 'static + Handoff + CanReceive<T>,
-    // {
-    //     use std::sync::mpsc;
-
-    //     let (sender, receiver) = mpsc::sync_channel(8000);
-    //     let output_port = self.add_source::<_, W>(move |_ctx, send| {
-    //         for x in receiver.try_iter() {
-    //             send.give(x);
-    //         }
-    //     });
-    //     let id = output_port.sg_id;
-    //     (Input::new(self.reactor(), id, sender), output_port)
-    // }
-
-    // #[cfg(feature = "variadic_generics")]
-    // fn add_input<T, W>(&mut self) -> (Input<T, super::input::Buffer<T>>, OutputPort<W>)
-    // where
-    //     T: 'static,
-    //     W: 'static + Handoff + CanReceive<T>,
-    // {
-    //     let input = super::input::Buffer::default();
-    //     let inner_input = input.clone();
-    //     let output_port = self.add_source::<_, W>(move |_ctx, send| {
-    //         for x in (*inner_input.0).borrow_mut().drain(..) {
-    //             send.give(x);
-    //         }
-    //     });
-    //     let id = output_port.sg_id;
-    //     (Input::new(self.reactor(), id, input), output_port)
-    // }
-
-    fn add_input_from_stream<T, W, S>(&mut self, mut s: S) -> OutputPort<W>
+    fn add_input_from_stream<T, W, S>(&mut self, send_port: InputPort<W>, stream: S)
     where
         S: 'static + Stream<Item = T> + Unpin,
         W: 'static + Handoff + CanReceive<T>,
     {
-        let output_port = self.add_source::<_, W>(move |ctx, send| {
+        let mut stream = stream;
+        self.add_subgraph_source::<_, W>(send_port, move |ctx, send| {
             let waker = ctx.waker();
             let mut cx = task::Context::from_waker(&waker);
-            let mut r = Pin::new(&mut s);
+            let mut r = Pin::new(&mut stream);
             while let Poll::Ready(Some(v)) = r.poll_next(&mut cx) {
                 send.give(v);
-                r = Pin::new(&mut s);
+                r = Pin::new(&mut stream);
             }
         });
-        output_port
     }
 }

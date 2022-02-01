@@ -3,11 +3,10 @@ use std::{cell::RefCell, rc::Rc};
 use crate::lang::collections::Iter;
 use crate::scheduled::graph::Hydroflow;
 use crate::scheduled::handoff::VecHandoff;
-use crate::{tl, tt};
 
 use super::context::Context;
-use super::port::{OutputPort, RecvCtx, SendCtx};
 use super::graph_ext::GraphExt;
+use super::port::{OutputPort, RecvCtx, SendCtx};
 
 #[derive(Default)]
 pub struct Query {
@@ -24,10 +23,14 @@ impl Query {
         T: 'static,
         F: 'static + FnMut(&Context<'_>, &SendCtx<VecHandoff<T>>),
     {
-        let output_port = self.df.borrow_mut().add_source(f);
+        let mut df = self.df.borrow_mut();
+
+        let (send_port, recv_port) = df.make_handoff();
+        df.add_subgraph_source(send_port, f);
+
         Operator {
             df: self.df.clone(),
-            output_port,
+            recv_port,
         }
     }
 
@@ -37,11 +40,10 @@ impl Query {
     {
         let mut df = self.df.borrow_mut();
 
-        let (input_port, output_port) = df.make_handoff();
-
+        let (send_port, recv_port) = df.make_handoff();
         df.add_subgraph_homogeneous(
-            ops.into_iter().map(|op| op.output_port).collect(),
-            vec![input_port],
+            ops.into_iter().map(|op| op.recv_port).collect(),
+            vec![send_port],
             |ins, out| {
                 for &input in ins {
                     out[0].give(Iter(input.take_inner().into_iter()));
@@ -51,7 +53,7 @@ impl Query {
 
         Operator {
             df: self.df.clone(),
-            output_port,
+            recv_port,
         }
     }
 
@@ -65,7 +67,7 @@ where
     T: 'static,
 {
     df: Rc<RefCell<Hydroflow>>,
-    output_port: OutputPort<VecHandoff<T>>,
+    recv_port: OutputPort<VecHandoff<T>>,
 }
 
 impl<T> Operator<T>
@@ -77,16 +79,17 @@ where
         F: 'static + Fn(T) -> U,
         U: 'static,
     {
-        let output_port =
-            self.df
-                .borrow_mut()
-                .add_inout(self.output_port, move |_ctx, recv, send| {
-                    send.give(Iter(recv.take_inner().into_iter().map(&mut f)));
-                });
+        let mut df = self.df.borrow_mut();
 
+        let (send_port, recv_port) = df.make_handoff();
+        df.add_subgraph_in_out(self.recv_port, send_port, move |_ctx, recv, send| {
+            send.give(Iter(recv.take_inner().into_iter().map(&mut f)));
+        });
+
+        std::mem::drop(df);
         Operator {
             df: self.df,
-            output_port,
+            recv_port,
         }
     }
 
@@ -95,16 +98,17 @@ where
     where
         F: 'static + Fn(&T) -> bool,
     {
-        let output_port =
-            self.df
-                .borrow_mut()
-                .add_inout(self.output_port, move |_ctx, recv, send| {
-                    send.give(Iter(recv.take_inner().into_iter().filter(&mut f)));
-                });
+        let mut df = self.df.borrow_mut();
 
+        let (send_port, recv_port) = df.make_handoff();
+        df.add_subgraph_in_out(self.recv_port, send_port, move |_ctx, recv, send| {
+            send.give(Iter(recv.take_inner().into_iter().filter(&mut f)));
+        });
+
+        std::mem::drop(df);
         Operator {
             df: self.df,
-            output_port,
+            recv_port,
         }
     }
 
@@ -112,18 +116,23 @@ where
     pub fn concat(self, other: Operator<T>) -> Operator<T> {
         // TODO(justin): this is very slow.
 
-        let output_port = self.df.borrow_mut().add_binary(
-            self.output_port,
-            other.output_port,
-            |_ctx, recv1: &RecvCtx<VecHandoff<T>>, recv2: &RecvCtx<VecHandoff<T>>, send| {
+        let mut df = self.df.borrow_mut();
+
+        let (send_port, recv_port) = df.make_handoff::<VecHandoff<T>>();
+        df.add_subgraph_2in_out(
+            self.recv_port,
+            other.recv_port,
+            send_port,
+            |_ctx, recv1, recv2, send| {
                 send.give(Iter(recv1.take_inner().into_iter()));
                 send.give(Iter(recv2.take_inner().into_iter()));
             },
         );
 
+        std::mem::drop(df);
         Operator {
             df: self.df,
-            output_port,
+            recv_port,
         }
     }
 
@@ -131,8 +140,8 @@ where
     where
         F: 'static + Fn(T),
     {
-        self.df.borrow_mut().add_sink(
-            self.output_port,
+        self.df.borrow_mut().add_subgraph_sink(
+            self.recv_port,
             move |_ctx, recv: &RecvCtx<VecHandoff<T>>| {
                 for v in recv.take_inner() {
                     f(v)

@@ -66,10 +66,10 @@ use tokio::net::{
 use tokio_util::codec::{FramedRead, FramedWrite, LengthDelimitedCodec};
 
 use super::{
-    port::{InputPort, OutputPort, RecvCtx},
     graph::Hydroflow,
     graph_ext::GraphExt,
     handoff::VecHandoff,
+    port::{InputPort, OutputPort, RecvCtx},
 };
 
 pub mod network_vertex;
@@ -103,9 +103,12 @@ impl Hydroflow {
         reader: OwnedReadHalf,
     ) -> OutputPort<VecHandoff<Message>> {
         let reader = FramedRead::new(reader, LengthDelimitedCodec::new());
-        self.add_input_from_stream::<_, VecHandoff<_>, _>(
+        let (send_port, recv_port) = self.make_handoff();
+        self.add_input_from_stream(
+            send_port,
             reader.map(|buf| Some(<Message>::decode(buf.unwrap().into()))),
-        )
+        );
+        recv_port
     }
 
     fn register_write_tcp_stream(
@@ -116,8 +119,7 @@ impl Hydroflow {
         let mut message_queue = VecDeque::new();
 
         let (input_port, output_port) = self.make_handoff::<VecHandoff<Message>>();
-
-        self.add_sink(
+        self.add_subgraph_sink(
             output_port,
             move |ctx, recv| {
                 let waker = ctx.waker();
