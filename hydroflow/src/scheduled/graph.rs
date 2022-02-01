@@ -6,8 +6,8 @@ use std::sync::mpsc::{self, Receiver, RecvError, SyncSender};
 use ref_cast::RefCast;
 
 use super::context::Context;
+use super::handoff::{Handoff, HandoffMeta, RecvPortList, SendPortList};
 use super::port::{InputPort, OutputPort, RecvCtx, SendCtx};
-use super::handoff::{Handoff, HandoffMeta, SendPortList, RecvPortList};
 use super::reactor::Reactor;
 use super::state::StateHandle;
 #[cfg(feature = "variadic_generics")]
@@ -141,27 +141,24 @@ impl Hydroflow {
     /// Adds a new compiled subgraph with the specified inputs and outputs.
     ///
     /// See [TODO] for how to specify inputs and outputs.
-    pub fn add_subgraph<R, W, F>(
-        &mut self,
-        recv_ports: R,
-        send_ports: W,
-        mut subgraph: F,
-    ) where
+    pub fn add_subgraph<R, W, F>(&mut self, recv_ports: R, send_ports: W, mut subgraph: F)
+    where
         R: 'static + RecvPortList,
         W: 'static + SendPortList,
         F: 'static + FnMut(&Context<'_>, R::Ctx<'_>, W::Ctx<'_>),
     {
         let sg_id = self.subgraphs.len();
 
-        recv_ports.set_graph_meta(&mut *self.handoffs, None, Some(sg_id));
-        send_ports.set_graph_meta(&mut *self.handoffs, Some(sg_id), None);
+        let (mut subgraph_preds, mut subgraph_succs) = Default::default();
+        recv_ports.set_graph_meta(&mut *self.handoffs, None, Some(sg_id), &mut subgraph_preds);
+        send_ports.set_graph_meta(&mut *self.handoffs, Some(sg_id), None, &mut subgraph_succs);
 
         let subgraph = move |context: Context<'_>| {
             let recv = recv_ports.make_ctx(context.handoffs);
             let send = send_ports.make_ctx(context.handoffs);
             (subgraph)(&context, recv, send);
         };
-        self.subgraphs.push(SubgraphData::new(subgraph));
+        self.subgraphs.push(SubgraphData::new(subgraph, subgraph_preds, subgraph_succs));
         self.ready_queue.push_back(sg_id);
     }
 
@@ -177,6 +174,9 @@ impl Hydroflow {
         F: 'static + FnMut(&[&RecvCtx<R>], &[&SendCtx<W>]),
     {
         let sg_id = self.subgraphs.len();
+
+        let subgraph_preds = recv_ports.iter().map(|port| port.handoff_id).collect();
+        let subgraph_succs = send_ports.iter().map(|port| port.handoff_id).collect();
 
         for recv_port in recv_ports.iter() {
             self.handoffs[recv_port.handoff_id].succs.push(sg_id);
@@ -216,7 +216,7 @@ impl Hydroflow {
 
             (subgraph)(&recvs, &sends)
         };
-        self.subgraphs.push(SubgraphData::new(subgraph));
+        self.subgraphs.push(SubgraphData::new(subgraph, subgraph_preds, subgraph_succs));
         self.ready_queue.push_back(sg_id);
     }
 
@@ -270,6 +270,14 @@ pub struct HandoffData {
     pub(crate) preds: Vec<SubgraphId>,
     pub(crate) succs: Vec<SubgraphId>,
 }
+impl std::fmt::Debug for HandoffData {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        f.debug_struct("HandoffData")
+            .field("preds", &self.preds)
+            .field("succs", &self.succs)
+            .finish_non_exhaustive()
+    }
+}
 impl HandoffData {
     pub fn new(handoff: impl 'static + HandoffMeta) -> Self {
         let (preds, succs) = Default::default();
@@ -293,11 +301,11 @@ struct SubgraphData {
     scheduled: bool,
 }
 impl SubgraphData {
-    pub fn new(subgraph: impl 'static + Subgraph) -> Self {
+    pub fn new(subgraph: impl 'static + Subgraph, preds: Vec<HandoffId>, succs: Vec<HandoffId>) -> Self {
         Self {
             subgraph: Box::new(subgraph),
-            preds: Default::default(),
-            succs: Default::default(),
+            preds,
+            succs,
             scheduled: true,
         }
     }
