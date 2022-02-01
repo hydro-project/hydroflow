@@ -6,10 +6,10 @@ use std::{
 };
 
 use hydroflow::scheduled::{
-    port::{RecvCtx, SendCtx},
     graph::Hydroflow,
     graph_ext::GraphExt,
     handoff::VecHandoff,
+    port::{RecvCtx, SendCtx},
 };
 use hydroflow::{tl, tt};
 
@@ -33,15 +33,11 @@ fn map_filter() {
         }
     });
 
-    df.add_subgraph(
-        tl!(map_in),
-        tl!(map_out),
-        |_ctx, tl!(recv), tl!(send)| {
-            for x in recv.take_inner().into_iter() {
-                send.give(Some(3 * x + 1));
-            }
-        },
-    );
+    df.add_subgraph(tl!(map_in), tl!(map_out), |_ctx, tl!(recv), tl!(send)| {
+        for x in recv.take_inner().into_iter() {
+            send.give(Some(3 * x + 1));
+        }
+    });
 
     df.add_subgraph(
         tl!(filter_in),
@@ -57,166 +53,156 @@ fn map_filter() {
 
     let outputs = Rc::new(RefCell::new(Vec::new()));
     let inner_outputs = outputs.clone();
-    df.add_subgraph(
-        tl!(sink),
-        tl!(),
-        move |_ctx, tl!(recv), tl!()| {
-            for x in recv.take_inner().into_iter() {
-                (*inner_outputs).borrow_mut().push(x);
-            }
-        },
-    );
+    df.add_subgraph(tl!(sink), tl!(), move |_ctx, tl!(recv), tl!()| {
+        for x in recv.take_inner().into_iter() {
+            (*inner_outputs).borrow_mut().push(x);
+        }
+    });
 
     df.tick();
 
     assert_eq!((*outputs).borrow().clone(), vec![4, 10]);
 }
 
-// #[test]
-// fn test_basic_variadic() {
-//     let mut df = Hydroflow::new();
-//     let source_handle = df.add_source(move |_ctx, send: &SendCtx<VecHandoff<usize>>| {
-//         send.give(Some(5));
-//     });
+#[test]
+fn test_basic_variadic() {
+    let mut df = Hydroflow::new();
+    let (source_send, sink_recv) = df.make_handoff::<VecHandoff<usize>>();
+    df.add_subgraph_source(source_send, move |_ctx, send| {
+        send.give(Some(5));
+    });
 
-//     let val = <Rc<Cell<Option<usize>>>>::default();
-//     let val_ref = val.clone();
+    let val = <Rc<Cell<Option<usize>>>>::default();
+    let val_ref = val.clone();
 
-//     let sink_handle = df.add_sink(move |_ctx, recv: &RecvCtx<VecHandoff<usize>>| {
-//         for v in recv.take_inner().into_iter() {
-//             let old_val = val_ref.replace(Some(v));
-//             assert!(old_val.is_none()); // Only run once.
-//         }
-//     });
+    df.add_subgraph_sink(sink_recv, move |_ctx, recv| {
+        for v in recv.take_inner().into_iter() {
+            let old_val = val_ref.replace(Some(v));
+            assert!(old_val.is_none()); // Only run once.
+        }
+    });
 
-//     df.add_edge(source_handle, sink_handle);
-//     df.tick();
+    df.tick();
 
-//     assert_eq!(Some(5), val.get());
-// }
+    assert_eq!(Some(5), val.get());
+}
 
-// #[test]
-// fn test_basic_n_m() {
-//     let mut df = Hydroflow::new();
-//     let (_, mut source_handle) = df.add_n_in_m_out(
-//         0,
-//         1,
-//         move |_: &[&RecvCtx<VecHandoff<usize>>], send: &[&SendCtx<VecHandoff<usize>>]| {
-//             send[0].give(Some(5));
-//         },
-//     );
+#[test]
+fn test_basic_n_m() {
+    let mut df = Hydroflow::new();
 
-//     let val = <Rc<Cell<Option<usize>>>>::default();
-//     let val_ref = val.clone();
+    let (source_send, sink_recv) = df.make_handoff::<VecHandoff<usize>>();
 
-//     let (mut sink_handle, _) = df.add_n_in_m_out(
-//         1,
-//         0,
-//         move |recv: &[&RecvCtx<VecHandoff<usize>>], _: &[&SendCtx<VecHandoff<usize>>]| {
-//             for v in recv[0].take_inner().into_iter() {
-//                 let old_val = val_ref.replace(Some(v));
-//                 assert!(old_val.is_none()); // Only run once.
-//             }
-//         },
-//     );
+    df.add_subgraph_homogeneous(
+        vec![],
+        vec![source_send],
+        move |_: &[&RecvCtx<VecHandoff<usize>>], send| {
+            send[0].give(Some(5));
+        },
+    );
 
-//     df.add_edge(source_handle.pop().unwrap(), sink_handle.pop().unwrap());
-//     df.tick();
+    let val = <Rc<Cell<Option<usize>>>>::default();
+    let val_ref = val.clone();
 
-//     assert_eq!(Some(5), val.get());
-// }
+    df.add_subgraph_homogeneous(
+        vec![sink_recv],
+        vec![],
+        move |recv, _: &[&SendCtx<VecHandoff<usize>>]| {
+            for v in recv[0].take_inner().into_iter() {
+                let old_val = val_ref.replace(Some(v));
+                assert!(old_val.is_none()); // Only run once.
+            }
+        },
+    );
 
-// #[test]
-// fn test_cycle() {
-//     // A dataflow that represents graph reachability.
+    df.tick();
 
-//     let mut edges: HashMap<usize, Vec<usize>> = HashMap::new();
-//     for (from, to) in &[
-//         (1_usize, 2_usize),
-//         (1, 3),
-//         (1, 4),
-//         (2, 3),
-//         (2, 5),
-//         (5, 1),
-//         (6, 7),
-//         (7, 8),
-//     ] {
-//         edges.entry(*from).or_insert_with(Vec::new).push(*to);
-//     }
+    assert_eq!(Some(5), val.get());
+}
 
-//     let mut df = Hydroflow::new();
+#[test]
+fn test_cycle() {
+    // A dataflow that represents graph reachability.
 
-//     let mut initially_reachable = vec![1];
-//     let reachable = df.add_source(move |_ctx, send: &SendCtx<VecHandoff<usize>>| {
-//         for v in initially_reachable.drain(..) {
-//             send.give(Some(v));
-//         }
-//     });
+    let mut edges: HashMap<usize, Vec<usize>> = HashMap::new();
+    for (from, to) in [
+        (1, 2),
+        (1, 3),
+        (1, 4),
+        (2, 3),
+        (2, 5),
+        (5, 1),
+        (6, 7),
+        (7, 8),
+    ] {
+        edges.entry(from).or_insert_with(Vec::new).push(to);
+    }
 
-//     let mut seen = HashSet::new();
-//     let (distinct_in, distinct_out) = df.add_inout(
-//         move |_ctx, recv: &RecvCtx<VecHandoff<usize>>, send: &SendCtx<VecHandoff<usize>>| {
-//             for v in recv.take_inner().into_iter() {
-//                 if seen.insert(v) {
-//                     send.give(Some(v));
-//                 }
-//             }
-//         },
-//     );
+    let mut df = Hydroflow::new();
 
-//     let (merge_lhs, merge_rhs, merge_out) = df.add_binary(
-//         |_ctx,
-//          recv1: &RecvCtx<VecHandoff<usize>>,
-//          recv2: &RecvCtx<VecHandoff<usize>>,
-//          send: &SendCtx<VecHandoff<usize>>| {
-//             for v in (recv1.take_inner().into_iter()).chain(recv2.take_inner().into_iter()) {
-//                 send.give(Some(v));
-//             }
-//         },
-//     );
+    let (reachable, merge_lhs) = df.make_handoff::<VecHandoff<usize>>();
+    let (neighbors_out, merge_rhs) = df.make_handoff::<VecHandoff<usize>>();
+    let (merge_out, distinct_in) = df.make_handoff::<VecHandoff<usize>>();
+    let (distinct_out, tee_in) = df.make_handoff::<VecHandoff<usize>>();
+    let (tee_out1, neighbors_in) = df.make_handoff::<VecHandoff<usize>>();
+    let (tee_out2, sink_in) = df.make_handoff::<VecHandoff<usize>>();
 
-//     let (neighbors_in, neighbors_out) =
-//         df.add_inout(move |_ctx, recv: &RecvCtx<VecHandoff<usize>>, send| {
-//             for v in recv.take_inner().into_iter() {
-//                 if let Some(neighbors) = edges.get(&v) {
-//                     for &n in neighbors {
-//                         send.give(Some(n));
-//                     }
-//                 }
-//             }
-//         });
+    let mut initially_reachable = vec![1];
+    df.add_subgraph_source(reachable, move |_ctx, send| {
+        for v in initially_reachable.drain(..) {
+            send.give(Some(v));
+        }
+    });
 
-//     let (tee_in, tee_out1, tee_out2) = df.add_binary_out(
-//         |_ctx,
-//          recv: &RecvCtx<VecHandoff<usize>>,
-//          send1: &SendCtx<VecHandoff<usize>>,
-//          send2: &SendCtx<VecHandoff<usize>>| {
-//             for v in recv.take_inner().into_iter() {
-//                 send1.give(Some(v));
-//                 send2.give(Some(v));
-//             }
-//         },
-//     );
+    df.add_subgraph_2in_out(
+        merge_lhs,
+        merge_rhs,
+        merge_out,
+        |_ctx, recv1, recv2, send| {
+            for v in (recv1.take_inner().into_iter()).chain(recv2.take_inner().into_iter()) {
+                send.give(Some(v));
+            }
+        },
+    );
 
-//     let reachable_verts = Rc::new(RefCell::new(Vec::new()));
-//     let reachable_inner = reachable_verts.clone();
-//     let sink_in = df.add_sink(move |_ctx, recv: &RecvCtx<VecHandoff<usize>>| {
-//         for v in recv.take_inner().into_iter() {
-//             (*reachable_inner).borrow_mut().push(v);
-//         }
-//     });
+    let mut seen = HashSet::new();
+    df.add_subgraph_in_out(distinct_in, distinct_out, move |_ctx, recv, send| {
+        for v in recv.take_inner().into_iter() {
+            if seen.insert(v) {
+                send.give(Some(v));
+            }
+        }
+    });
 
-//     df.add_edge(reachable, merge_lhs);
-//     df.add_edge(neighbors_out, merge_rhs);
-//     df.add_edge(merge_out, distinct_in);
-//     df.add_edge(distinct_out, tee_in);
-//     df.add_edge(tee_out1, neighbors_in);
-//     df.add_edge(tee_out2, sink_in);
+    df.add_subgraph_in_out(neighbors_in, neighbors_out, move |_ctx, recv, send| {
+        for v in recv.take_inner().into_iter() {
+            if let Some(neighbors) = edges.get(&v) {
+                for &n in neighbors {
+                    send.give(Some(n));
+                }
+            }
+        }
+    });
 
-//     df.tick();
+    df.add_subgraph_in_2out(tee_in, tee_out1, tee_out2, |_ctx, recv, send1, send2| {
+        for v in recv.take_inner().into_iter() {
+            send1.give(Some(v));
+            send2.give(Some(v));
+        }
+    });
 
-//     assert_eq!((*reachable_verts).borrow().clone(), vec![1, 2, 3, 4, 5]);
-// }
+    let reachable_verts = Rc::new(RefCell::new(Vec::new()));
+    let reachable_inner = reachable_verts.clone();
+    df.add_subgraph_sink(sink_in, move |_ctx, recv| {
+        for v in recv.take_inner().into_iter() {
+            (*reachable_inner).borrow_mut().push(v);
+        }
+    });
+
+    df.tick();
+
+    assert_eq!(&*reachable_verts.borrow(), &[1, 2, 3, 4, 5]);
+}
 
 // // #[test]
 // // fn test_auto_tee() {
