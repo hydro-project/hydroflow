@@ -4,7 +4,7 @@ use sealed::sealed;
 use crate::scheduled::graph::HandoffData;
 use crate::scheduled::port::{BaseCtx, BasePort};
 use crate::scheduled::type_list::TypeList;
-use crate::scheduled::SubgraphId;
+use crate::scheduled::{SubgraphId, HandoffId};
 
 use super::Handoff;
 
@@ -20,11 +20,13 @@ impl<T: BasePortList<false>> RecvPortList for T {}
 
 #[sealed]
 pub trait BasePortList<const S: bool>: TypeList {
+    #[allow(clippy::ptr_arg)]
     fn set_graph_meta<'a>(
         &self,
         handoffs: &'a mut [HandoffData],
         pred: Option<SubgraphId>,
         succ: Option<SubgraphId>,
+        out_handoff_ids: &mut Vec<HandoffId>,
     );
 
     type Ctx<'a>: TypeList;
@@ -41,8 +43,12 @@ where
         handoffs: &'a mut [HandoffData],
         pred: Option<SubgraphId>,
         succ: Option<SubgraphId>,
+        out_handoff_ids: &mut Vec<HandoffId>,
     ) {
         let (this, rest) = self;
+
+        out_handoff_ids.push(this.handoff_id);
+
         let handoff = handoffs.get_mut(this.handoff_id).unwrap();
         if let Some(pred) = pred {
             handoff.preds.push(pred);
@@ -50,7 +56,7 @@ where
         if let Some(succ) = succ {
             handoff.succs.push(succ);
         }
-        rest.set_graph_meta(handoffs, pred, succ);
+        rest.set_graph_meta(handoffs, pred, succ, out_handoff_ids);
     }
 
     type Ctx<'a> = (&'a BaseCtx<H, S>, Rest::Ctx<'a>);
@@ -76,6 +82,7 @@ impl<const S: bool> BasePortList<S> for () {
         _handoffs: &'a mut [HandoffData],
         _pred: Option<SubgraphId>,
         _succ: Option<SubgraphId>,
+        _out_handoff_ids: &mut Vec<HandoffId>,
     ) {
     }
 
