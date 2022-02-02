@@ -27,6 +27,7 @@ pub mod pivot;
 pub mod pull_chain;
 pub mod pull_cross_join;
 pub mod pull_handoff;
+pub mod pull_iter;
 pub mod pull_join;
 
 pub mod push_for_each;
@@ -35,6 +36,8 @@ pub mod push_partition;
 pub mod push_pivot;
 pub mod push_start;
 pub mod push_tee;
+
+pub mod exchange;
 
 use std::hash::Hash;
 
@@ -128,6 +131,9 @@ pub trait PullSurface: BaseSurface {
         Key: 'static + Eq + Hash + Clone,
         ValSelf: 'static + Eq + Clone,
         ValOther: 'static + Eq + Clone,
+        Self::InputHandoffs: Extend<Other::InputHandoffs>,
+        <Self::InputHandoffs as Extend<Other::InputHandoffs>>::Extended:
+            HandoffList + HandoffListSplit<Self::InputHandoffs, Suffix = Other::InputHandoffs>,
     {
         pull_join::JoinPullSurface::new(self, other)
     }

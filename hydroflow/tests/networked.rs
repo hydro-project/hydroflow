@@ -1,6 +1,5 @@
 use std::{
-    collections::{hash_map::DefaultHasher, HashMap, HashSet},
-    hash::{Hash, Hasher},
+    collections::{HashMap, HashSet},
     sync::{mpsc::channel, Arc, Mutex},
     time::Duration,
 };
@@ -10,17 +9,12 @@ use hydroflow::{
     builder::{
         prelude::{BaseSurface, PullSurface, PushSurface},
         surface::{
-            pull_handoff::HandoffPullSurface, push_handoff::HandoffPushSurfaceReversed,
-            push_start::StartPushSurface,
+            exchange::Exchange, pull_handoff::HandoffPullSurface, pull_iter::IterPullSurface,
+            push_handoff::HandoffPushSurfaceReversed,
         },
         HydroflowBuilder,
     },
-    lang::collections::Iter,
-    scheduled::{
-        ctx::{OutputPort, SendCtx},
-        graph_ext::GraphExt,
-        handoff::VecHandoff,
-    },
+    scheduled::{ctx::OutputPort, graph_ext::GraphExt, handoff::VecHandoff},
 };
 use rand::Rng;
 use serde::{Deserialize, Serialize};
@@ -286,35 +280,6 @@ fn test_echo_server_reconnect() {
     });
 }
 
-macro_rules! exchange {
-    (
-        $num_participants:ident,
-        $local_id:ident,
-        $addresses:ident,
-        $input:ident,
-        $local_inputs_send:ident,
-        $outbound_messages:ident,
-    ) => {
-        $addresses
-            .join($input.map(move |(x, v)| {
-                let mut s = DefaultHasher::new();
-                x.hash(&mut s);
-                let hash_val = s.finish();
-                (hash_val % $num_participants, (x, v))
-            }))
-            .pivot()
-            .partition(
-                move |&(id, _, _)| id == $local_id,
-                StartPushSurface::new()
-                    .map(|(_, _, v)| Some(v))
-                    .reverse($local_inputs_send),
-                StartPushSurface::new()
-                    .map(|(_id, address, data)| Some((address, data)))
-                    .reverse($outbound_messages),
-            )
-    };
-}
-
 async fn open_connection(
     builder: &mut HydroflowBuilder,
 ) -> (
@@ -336,43 +301,6 @@ async fn open_connection(
         .await;
     let outbound_messages = builder.wrap_output(outbound_messages);
     (port, inbound_messages, outbound_messages)
-}
-
-type Message = (String, (u64, String));
-
-fn build_exchange(
-    builder: &mut HydroflowBuilder,
-    num_participants: u64,
-    mut address_book: HashMap<u64, String>,
-    mut rows: Vec<(u64, String)>,
-    my_id: u64,
-    outbound_messages: HandoffPushSurfaceReversed<VecHandoff<Message>, Option<Message>>,
-) -> HandoffPullSurface<VecHandoff<(u64, String)>> {
-    let addresses = builder
-        .hydroflow
-        .add_source(move |_ctx, send: &SendCtx<VecHandoff<_>>| {
-            send.give(Iter(address_book.drain()));
-        });
-    let addresses = builder.wrap_input(addresses);
-    let data =
-        builder
-            .hydroflow
-            .add_source(move |_ctx, send: &SendCtx<VecHandoff<(u64, String)>>| {
-                send.give(Iter(rows.drain(..)));
-            });
-    let data = builder.wrap_input(data).flatten();
-    let (local_inputs_send, local_inputs_recv) =
-        builder.make_handoff::<VecHandoff<(u64, String)>, Option<(u64, String)>>();
-    let addresses_flat = addresses.flatten();
-    builder.add_subgraph(exchange!(
-        num_participants,
-        my_id,
-        addresses_flat,
-        data,
-        local_inputs_send,
-        outbound_messages,
-    ));
-    local_inputs_recv
 }
 
 #[test]
@@ -474,41 +402,30 @@ fn test_exchange() {
 
                 // Build the French exchanged input.
                 let french_address_book = french_address_book.lock().unwrap().clone();
-                let local_french_inputs_recv = build_exchange(
+                let french = IterPullSurface::new(p.french.into_iter()).exchange(
                     &mut builder,
-                    NUM_PARTICIPANTS,
                     french_address_book,
-                    p.french.clone(),
+                    french_inbound_messages.flatten(),
                     p.id,
                     french_outbound_messages,
                 );
 
                 // Build the English exchanged input.
                 let english_address_book = english_address_book.lock().unwrap().clone();
-                let local_english_inputs_recv = build_exchange(
+                let english = IterPullSurface::new(p.english.into_iter()).exchange(
                     &mut builder,
-                    NUM_PARTICIPANTS,
                     english_address_book,
-                    p.english.clone(),
+                    english_inbound_messages.flatten(),
                     p.id,
                     english_outbound_messages,
                 );
 
+                let join = english.join(french);
+
                 // Join them.
-                builder.add_subgraph(
-                    english_inbound_messages
-                        .chain(local_english_inputs_recv)
-                        .flatten()
-                        .join(
-                            french_inbound_messages
-                                .chain(local_french_inputs_recv)
-                                .flatten(),
-                        )
-                        .pivot()
-                        .for_each(move |(v, english, french)| {
-                            receipts_tx.send((v, english, french)).unwrap();
-                        }),
-                );
+                builder.add_subgraph(join.pivot().for_each(move |(v, english, french)| {
+                    receipts_tx.send((v, english, french)).unwrap();
+                }));
 
                 builder.build().run_async().await.unwrap();
             });
