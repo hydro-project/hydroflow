@@ -10,7 +10,7 @@ use hydroflow::lang::collections::Iter;
 use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::scheduled::graph_ext::GraphExt;
 use hydroflow::scheduled::handoff::VecHandoff;
-use hydroflow::{tl, tt};
+use hydroflow::tl;
 
 use rand::Rng;
 
@@ -27,78 +27,70 @@ fn main() {
 
     let mut df = Hydroflow::new();
 
-    let (contacts_send, contacts_out) = df.add_channel_input();
-    let (diagnosed_send, diagnosed_out) = df.add_channel_input();
-    let (people_send, people_out) = df.add_channel_input();
+    let (contacts_send, contacts_recv) =
+        df.add_channel_input::<_, VecHandoff<(Pid, Pid, DateTime)>>();
+    let (diagnosed_send, diagnosed_recv) =
+        df.add_channel_input::<_, VecHandoff<(Pid, (DateTime, DateTime))>>();
+    let (people_send, people_recv) = df.add_channel_input::<_, VecHandoff<(Pid, (Name, Phone))>>();
+
+    let (loop_send, loop_recv) = df.make_handoff::<VecHandoff<(Pid, DateTime)>>();
+    let (notifs_send, notifs_recv) = df.make_handoff::<VecHandoff<(Pid, DateTime)>>();
 
     type MyJoinState = RefCell<JoinState<&'static str, (usize, usize), (&'static str, usize)>>;
     let state_handle = df.add_state(MyJoinState::default());
 
-    type MainIn = tt!(
-        VecHandoff::<(Pid, Pid, DateTime)>,
-        VecHandoff::<(Pid, (DateTime, DateTime))>,
-        VecHandoff::<(Pid, DateTime)>
+    df.add_subgraph(
+        tl!(contacts_recv, diagnosed_recv, loop_recv),
+        tl!(notifs_send, loop_send),
+        move |context,
+              tl!(contacts_recv, diagnosed_recv, loop_recv),
+              tl!(notifs_send, loop_send)| {
+            let looped = loop_recv
+                .take_inner()
+                .into_iter()
+                .map(|(pid, t)| (pid, (t, t + TRANSMISSIBLE_DURATION)));
+
+            let exposed = diagnosed_recv.take_inner().into_iter().chain(looped);
+
+            let contacts = contacts_recv
+                .take_inner()
+                .into_iter()
+                .flat_map(|(pid_a, pid_b, t)| vec![(pid_a, (pid_b, t)), (pid_b, (pid_a, t))]);
+
+            let mut join_state = context.state_ref(state_handle).borrow_mut();
+            let join_exposed_contacts = SymmetricHashJoin::new(exposed, contacts, &mut *join_state);
+            let new_exposed =
+                join_exposed_contacts.filter_map(|(_pid_a, (t_from, t_to), (pid_b, t_contact))| {
+                    if t_from < t_contact && t_contact <= t_to {
+                        Some((pid_b, t_contact))
+                    } else {
+                        None
+                    }
+                });
+
+            let pivot = new_exposed
+                .pusherator()
+                .tee(
+                    InputBuild::new().for_each(|exposed_person: (Pid, DateTime)| {
+                        // Notif push.
+                        notifs_send.give(Some(exposed_person));
+                    }),
+                )
+                .for_each(|exposed_person: (Pid, DateTime)| {
+                    // Loop push.
+                    loop_send.give(Some(exposed_person));
+                });
+
+            pivot.run();
+        },
     );
-    type MainOut = tt!(VecHandoff::<(Pid, DateTime)>, VecHandoff::<(Pid, DateTime)>);
-    let (tl!(contacts_in, diagnosed_in, loop_in), tl!(notifs_out, loop_out)) = df
-        .add_subgraph::<_, MainIn, MainOut>(
-            move |context,
-                  tl!(contacts_recv, diagnosed_recv, loop_recv),
-                  tl!(notifs_send, loop_send)| {
-                let looped = loop_recv
-                    .take_inner()
-                    .into_iter()
-                    .map(|(pid, t)| (pid, (t, t + TRANSMISSIBLE_DURATION)));
-
-                let exposed = diagnosed_recv.take_inner().into_iter().chain(looped);
-
-                let contacts = contacts_recv
-                    .take_inner()
-                    .into_iter()
-                    .flat_map(|(pid_a, pid_b, t)| vec![(pid_a, (pid_b, t)), (pid_b, (pid_a, t))]);
-
-                let mut join_state = context.state_ref(state_handle).borrow_mut();
-                let join_exposed_contacts =
-                    SymmetricHashJoin::new(exposed, contacts, &mut *join_state);
-                let new_exposed = join_exposed_contacts.filter_map(
-                    |(_pid_a, (t_from, t_to), (pid_b, t_contact))| {
-                        if t_from < t_contact && t_contact <= t_to {
-                            Some((pid_b, t_contact))
-                        } else {
-                            None
-                        }
-                    },
-                );
-
-                let pivot = new_exposed
-                    .pusherator()
-                    .tee(
-                        InputBuild::new().for_each(|exposed_person: (Pid, DateTime)| {
-                            // Notif push.
-                            notifs_send.give(Some(exposed_person));
-                        }),
-                    )
-                    .for_each(|exposed_person: (Pid, DateTime)| {
-                        // Loop push.
-                        loop_send.give(Some(exposed_person));
-                    });
-
-                pivot.run();
-            },
-        );
-
-    df.add_edge(contacts_out, contacts_in);
-    df.add_edge(diagnosed_out, diagnosed_in);
-    df.add_edge(loop_out, loop_in);
 
     let mut people_exposure = Default::default();
 
-    type NotifsIn = tt!(
-        VecHandoff::<(Pid, (Name, Phone))>,
-        VecHandoff::<(Pid, DateTime)>
-    );
-    let (tl!(people_in, notifs_in), ()) =
-        df.add_subgraph::<_, NotifsIn, ()>(move |_ctx, tl!(peoples, exposures), ()| {
+    df.add_subgraph(
+        tl!(people_recv, notifs_recv),
+        tl!(),
+        move |_ctx, tl!(peoples, exposures), ()| {
             let exposures = exposures.take_inner().into_iter();
             let peoples = peoples.take_inner().into_iter();
 
@@ -114,10 +106,8 @@ fn main() {
                 });
 
             pivot.run();
-        });
-
-    df.add_edge(people_out, people_in);
-    df.add_edge(notifs_out, notifs_in);
+        },
+    );
 
     let all_people = people::get_people();
 
