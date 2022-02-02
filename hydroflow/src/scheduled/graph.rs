@@ -141,7 +141,12 @@ impl Hydroflow {
     /// Adds a new compiled subgraph with the specified inputs and outputs.
     ///
     /// See [TODO] for how to specify inputs and outputs.
-    pub fn add_subgraph<R, W, F>(&mut self, recv_ports: R, send_ports: W, mut subgraph: F)
+    pub fn add_subgraph<R, W, F>(
+        &mut self,
+        recv_ports: R,
+        send_ports: W,
+        mut subgraph: F,
+    ) -> SubgraphId
     where
         R: 'static + RecvPortList,
         W: 'static + SendPortList,
@@ -158,8 +163,11 @@ impl Hydroflow {
             let send = send_ports.make_ctx(context.handoffs);
             (subgraph)(&context, recv, send);
         };
-        self.subgraphs.push(SubgraphData::new(subgraph, subgraph_preds, subgraph_succs));
+        self.subgraphs
+            .push(SubgraphData::new(subgraph, subgraph_preds, subgraph_succs));
         self.ready_queue.push_back(sg_id);
+
+        sg_id
     }
 
     /// Adds a new compiled subraph with a variable number of inputs and outputs of the same respective handoff types.
@@ -168,7 +176,8 @@ impl Hydroflow {
         recv_ports: Vec<OutputPort<R>>,
         send_ports: Vec<InputPort<W>>,
         mut subgraph: F,
-    ) where
+    ) -> SubgraphId
+    where
         R: 'static + Handoff,
         W: 'static + Handoff,
         F: 'static + FnMut(&[&RecvCtx<R>], &[&SendCtx<W>]),
@@ -216,8 +225,11 @@ impl Hydroflow {
 
             (subgraph)(&recvs, &sends)
         };
-        self.subgraphs.push(SubgraphData::new(subgraph, subgraph_preds, subgraph_succs));
+        self.subgraphs
+            .push(SubgraphData::new(subgraph, subgraph_preds, subgraph_succs));
         self.ready_queue.push_back(sg_id);
+
+        sg_id
     }
 
     pub fn make_handoff<H>(&mut self) -> (InputPort<H>, OutputPort<H>)
@@ -301,7 +313,11 @@ struct SubgraphData {
     scheduled: bool,
 }
 impl SubgraphData {
-    pub fn new(subgraph: impl 'static + Subgraph, preds: Vec<HandoffId>, succs: Vec<HandoffId>) -> Self {
+    pub fn new(
+        subgraph: impl 'static + Subgraph,
+        preds: Vec<HandoffId>,
+        succs: Vec<HandoffId>,
+    ) -> Self {
         Self {
             subgraph: Box::new(subgraph),
             preds,
