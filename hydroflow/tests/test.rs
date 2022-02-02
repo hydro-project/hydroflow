@@ -11,7 +11,7 @@ use hydroflow::scheduled::{
     handoff::VecHandoff,
     port::{RecvCtx, SendCtx},
 };
-use hydroflow::{tl, tt};
+use hydroflow::tl;
 
 #[test]
 fn map_filter() {
@@ -204,186 +204,182 @@ fn test_cycle() {
     assert_eq!(&*reachable_verts.borrow(), &[1, 2, 3, 4, 5]);
 }
 
-// // #[test]
-// // fn test_auto_tee() {
-// //     use std::cell::RefCell;
-// //     use std::rc::Rc;
-
-// //     use crate::scheduled::handoff::TeeingHandoff;
-
-// //     let mut df = Hydroflow::new();
-
-// //     let mut data = vec![1, 2, 3, 4];
-// //     let source = df.add_source(move |send: &SendCtx<TeeingHandoff<_>>| {
-// //         send.give(std::mem::take(&mut data));
-// //     });
-
-// //     let out1 = Rc::new(RefCell::new(Vec::new()));
-// //     let out1_inner = out1.clone();
-
-// //     let sink1 = df.add_sink(move |recv: &RecvCtx<_>| {
-// //         for v in recv.take_inner() {
-// //             out1_inner.borrow_mut().extend(v);
-// //         }
-// //     });
-
-// //     let out2 = Rc::new(RefCell::new(Vec::new()));
-// //     let out2_inner = out2.clone();
-// //     let sink2 = df.add_sink(move |recv: &RecvCtx<_>| {
-// //         for v in recv.take_inner() {
-// //             out2_inner.borrow_mut().extend(v);
-// //         }
-// //     });
-
-// //     df.add_edge(source.clone(), sink1);
-// //     df.add_edge(source, sink2);
-
-// //     df.tick();
-
-// //     assert_eq!((*out1).borrow().clone(), vec![1, 2, 3, 4]);
-// //     assert_eq!((*out2).borrow().clone(), vec![1, 2, 3, 4]);
-// // }
-
 // #[test]
-// fn test_input_handle() {
-//     use hydroflow::scheduled::graph_ext::GraphExt;
-//     use hydroflow::scheduled::handoff::VecHandoff;
+// fn test_auto_tee() {
 //     use std::cell::RefCell;
+//     use std::rc::Rc;
+
+//     use crate::scheduled::handoff::TeeingHandoff;
 
 //     let mut df = Hydroflow::new();
 
-//     let (input, output_port) = df.add_input();
+//     let mut data = vec![1, 2, 3, 4];
+//     let source = df.add_source(move |send: &SendCtx<TeeingHandoff<_>>| {
+//         send.give(std::mem::take(&mut data));
+//     });
 
-//     let vec = Rc::new(RefCell::new(Vec::new()));
-//     let inner_vec = vec.clone();
-//     let input_port = df.add_sink(move |_ctx, recv: &RecvCtx<VecHandoff<usize>>| {
+//     let out1 = Rc::new(RefCell::new(Vec::new()));
+//     let out1_inner = out1.clone();
+
+//     let sink1 = df.add_sink(move |recv: &RecvCtx<_>| {
 //         for v in recv.take_inner() {
-//             (*inner_vec).borrow_mut().push(v);
+//             out1_inner.borrow_mut().extend(v);
 //         }
 //     });
 
-//     df.add_edge(output_port, input_port);
-
-//     input.give(Some(1));
-//     input.give(Some(2));
-//     input.give(Some(3));
-//     input.flush();
-
-//     df.tick();
-
-//     assert_eq!((*vec).borrow().clone(), vec![1, 2, 3]);
-
-//     input.give(Some(4));
-//     input.give(Some(5));
-//     input.give(Some(6));
-//     input.flush();
-
-//     df.tick();
-
-//     assert_eq!((*vec).borrow().clone(), vec![1, 2, 3, 4, 5, 6]);
-// }
-
-// #[test]
-// fn test_input_handle_thread() {
-//     use hydroflow::scheduled::graph_ext::GraphExt;
-//     use hydroflow::scheduled::handoff::VecHandoff;
-//     use std::cell::RefCell;
-
-//     let mut df = Hydroflow::new();
-
-//     let (input, output_port) = df.add_channel_input();
-
-//     let vec = Rc::new(RefCell::new(Vec::new()));
-//     let inner_vec = vec.clone();
-//     let input_port = df.add_sink(move |_ctx, recv: &RecvCtx<VecHandoff<usize>>| {
+//     let out2 = Rc::new(RefCell::new(Vec::new()));
+//     let out2_inner = out2.clone();
+//     let sink2 = df.add_sink(move |recv: &RecvCtx<_>| {
 //         for v in recv.take_inner() {
-//             (*inner_vec).borrow_mut().push(v);
+//             out2_inner.borrow_mut().extend(v);
 //         }
 //     });
 
-//     df.add_edge(output_port, input_port);
-
-//     let (done, wait) = mpsc::channel();
-
-//     std::thread::spawn(move || {
-//         input.give(Some(1));
-//         input.give(Some(2));
-//         input.give(Some(3));
-//         input.flush();
-//         done.send(()).unwrap();
-//     });
-
-//     wait.recv().unwrap();
+//     df.add_edge(source.clone(), sink1);
+//     df.add_edge(source, sink2);
 
 //     df.tick();
 
-//     assert_eq!((*vec).borrow().clone(), vec![1, 2, 3]);
+//     assert_eq!((*out1).borrow().clone(), vec![1, 2, 3, 4]);
+//     assert_eq!((*out2).borrow().clone(), vec![1, 2, 3, 4]);
 // }
 
-// #[test]
-// fn test_input_channel() {
-//     // This test creates two parallel Hydroflow graphs and bounces messages back
-//     // and forth between them.
+#[test]
+fn test_input_handle() {
+    use hydroflow::scheduled::graph_ext::GraphExt;
+    use hydroflow::scheduled::handoff::VecHandoff;
+    use std::cell::RefCell;
 
-//     use futures::channel::mpsc::channel;
-//     use hydroflow::scheduled::graph_ext::GraphExt;
-//     use hydroflow::scheduled::handoff::VecHandoff;
-//     use std::cell::Cell;
+    let mut df = Hydroflow::new();
 
-//     let (s1, r1) = channel(8000);
-//     let (s2, r2) = channel(8000);
+    let (input, recv_port) = df.add_input();
 
-//     let mut s1_outer = s1.clone();
-//     let pairs = [(s1, r2), (s2, r1)];
+    let vec = Rc::new(RefCell::new(Vec::new()));
+    let inner_vec = vec.clone();
+    df.add_subgraph_sink(recv_port, move |_ctx, recv: &RecvCtx<VecHandoff<usize>>| {
+        for v in recv.take_inner() {
+            (*inner_vec).borrow_mut().push(v);
+        }
+    });
 
-//     // logger/recv is a channel that each graph plops their messages into, to be
-//     // able to trace what happens.
-//     let (logger, mut recv) = channel(8000);
+    input.give(Some(1));
+    input.give(Some(2));
+    input.give(Some(3));
+    input.flush();
 
-//     for (mut sender, receiver) in pairs {
-//         let mut logger = logger.clone();
-//         std::thread::spawn(move || {
-//             let done = Rc::new(Cell::new(false));
-//             let done_inner = done.clone();
-//             let mut df = Hydroflow::new();
+    df.tick();
 
-//             let in_chan = df.add_input_from_stream::<_, VecHandoff<usize>, _>(receiver);
-//             let input = df.add_sink(move |_ctx, recv| {
-//                 for v in recv.take_inner() {
-//                     logger.try_send(v).unwrap();
-//                     if v > 0 && sender.try_send(Some(v - 1)).is_err() {
-//                         (*done_inner).set(true);
-//                     }
-//                 }
-//             });
-//             df.add_edge(in_chan, input);
+    assert_eq!((*vec).borrow().clone(), vec![1, 2, 3]);
 
-//             while !(*done).get() {
-//                 df.tick();
-//                 df.poll_events().unwrap();
-//             }
-//         });
-//     }
+    input.give(Some(4));
+    input.give(Some(5));
+    input.give(Some(6));
+    input.flush();
 
-//     s1_outer.try_send(Some(10_usize)).unwrap();
+    df.tick();
 
-//     let mut result = Vec::new();
-//     let expected = vec![10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0];
-//     loop {
-//         let val = recv.try_next();
-//         match val {
-//             Err(_) => {
-//                 if result.len() >= expected.len() {
-//                     break;
-//                 }
-//             }
-//             Ok(None) => {
-//                 break;
-//             }
-//             Ok(Some(v)) => {
-//                 result.push(v);
-//             }
-//         }
-//     }
-//     assert_eq!(result, expected);
-// }
+    assert_eq!((*vec).borrow().clone(), vec![1, 2, 3, 4, 5, 6]);
+}
+
+#[test]
+fn test_input_handle_thread() {
+    use hydroflow::scheduled::graph_ext::GraphExt;
+    use hydroflow::scheduled::handoff::VecHandoff;
+    use std::cell::RefCell;
+
+    let mut df = Hydroflow::new();
+
+    let (input, recv_port) = df.add_channel_input();
+
+    let vec = Rc::new(RefCell::new(Vec::new()));
+    let inner_vec = vec.clone();
+    df.add_subgraph_sink(recv_port, move |_ctx, recv: &RecvCtx<VecHandoff<usize>>| {
+        for v in recv.take_inner() {
+            (*inner_vec).borrow_mut().push(v);
+        }
+    });
+
+    let (done, wait) = mpsc::channel();
+
+    std::thread::spawn(move || {
+        input.give(Some(1));
+        input.give(Some(2));
+        input.give(Some(3));
+        input.flush();
+        done.send(()).unwrap();
+    });
+
+    wait.recv().unwrap();
+
+    df.tick();
+
+    assert_eq!((*vec).borrow().clone(), vec![1, 2, 3]);
+}
+
+#[test]
+fn test_input_channel() {
+    // This test creates two parallel Hydroflow graphs and bounces messages back
+    // and forth between them.
+
+    use futures::channel::mpsc::channel;
+    use hydroflow::scheduled::graph_ext::GraphExt;
+    use hydroflow::scheduled::handoff::VecHandoff;
+    use std::cell::Cell;
+
+    let (s1, r1) = channel(8000);
+    let (s2, r2) = channel(8000);
+
+    let mut s1_outer = s1.clone();
+    let pairs = [(s1, r2), (s2, r1)];
+
+    // logger/recv is a channel that each graph plops their messages into, to be
+    // able to trace what happens.
+    let (logger, mut recv) = channel(8000);
+
+    for (mut sender, receiver) in pairs {
+        let mut logger = logger.clone();
+        std::thread::spawn(move || {
+            let done = Rc::new(Cell::new(false));
+            let done_inner = done.clone();
+            let mut df = Hydroflow::new();
+
+            let (in_chan, input) = df.make_handoff();
+            df.add_input_from_stream::<_, VecHandoff<usize>, _>(in_chan, receiver);
+            df.add_subgraph_sink(input, move |_ctx, recv| {
+                for v in recv.take_inner() {
+                    logger.try_send(v).unwrap();
+                    if v > 0 && sender.try_send(Some(v - 1)).is_err() {
+                        (*done_inner).set(true);
+                    }
+                }
+            });
+
+            while !(*done).get() {
+                df.tick();
+                df.poll_events().unwrap();
+            }
+        });
+    }
+
+    s1_outer.try_send(Some(10_usize)).unwrap();
+
+    let mut result = Vec::new();
+    let expected = vec![10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0];
+    loop {
+        let val = recv.try_next();
+        match val {
+            Err(_) => {
+                if result.len() >= expected.len() {
+                    break;
+                }
+            }
+            Ok(None) => {
+                break;
+            }
+            Ok(Some(v)) => {
+                result.push(v);
+            }
+        }
+    }
+    assert_eq!(result, expected);
+}
