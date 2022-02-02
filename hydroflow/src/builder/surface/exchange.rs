@@ -15,6 +15,9 @@ use super::{
 pub type ExchangeSurface<Key, Val, Other> =
     ChainPullSurface<FlattenSurface<HandoffPullSurface<VecHandoff<(Key, Val)>>>, Other>;
 
+pub type BroadcastSurface<T, Other> =
+    ChainPullSurface<FlattenSurface<HandoffPullSurface<VecHandoff<T>>>, Other>;
+
 pub type NetworkOut<T> = HandoffPushSurfaceReversed<VecHandoff<(String, T)>, Option<(String, T)>>;
 
 pub trait Exchange
@@ -35,6 +38,19 @@ where
         Val: Eq + Clone,
         Self: 'static + PullSurface<ItemOut = (Key, Val)>,
         Other: PullSurface<ItemOut = (Key, Val)>;
+
+    fn broadcast<Other, T>(
+        self,
+        builder: &mut HydroflowBuilder,
+        addresses: Vec<String>,
+        remote_input: Other,
+        outbound_messages: NetworkOut<<Self as BaseSurface>::ItemOut>,
+    ) -> BroadcastSurface<T, Other>
+    where
+        Self: Sized,
+        T: Eq + Clone,
+        Self: 'static + PullSurface<ItemOut = T>,
+        Other: PullSurface<ItemOut = T>;
 }
 
 impl<T> Exchange for T
@@ -81,6 +97,39 @@ where
                         .reverse(local_inputs_send),
                     StartPushSurface::new()
                         .map(|(_id, address, data)| Some((address, data)))
+                        .reverse(outbound_messages),
+                ),
+        );
+
+        local_inputs_recv.flatten().chain(remote_input)
+    }
+
+    fn broadcast<Other, U>(
+        self,
+        builder: &mut HydroflowBuilder,
+        addresses: Vec<String>,
+        remote_input: Other,
+        outbound_messages: NetworkOut<<Self as BaseSurface>::ItemOut>,
+    ) -> BroadcastSurface<U, Other>
+    where
+        Self: Sized,
+        U: Eq + Clone,
+        Self: 'static + PullSurface<ItemOut = U>,
+        Other: PullSurface<ItemOut = U>,
+    {
+        let (local_inputs_send, local_inputs_recv) =
+            builder.make_handoff::<VecHandoff<U>, Option<U>>();
+
+        builder.add_subgraph(
+            IterPullSurface::new(addresses.into_iter())
+                .cross_join(self)
+                .pivot()
+                .tee(
+                    StartPushSurface::new()
+                        .map(|(_, v)| Some(v))
+                        .reverse(local_inputs_send),
+                    StartPushSurface::new()
+                        .map(|(address, data)| Some((address, data)))
                         .reverse(outbound_messages),
                 ),
         );
