@@ -6,6 +6,7 @@ pub mod pull_filter;
 pub mod pull_filter_map;
 pub mod pull_flatten;
 pub mod pull_handoff;
+pub mod pull_iter;
 pub mod pull_join;
 pub mod pull_map;
 

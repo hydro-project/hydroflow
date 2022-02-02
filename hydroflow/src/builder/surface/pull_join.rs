@@ -11,6 +11,9 @@ pub struct JoinPullSurface<PrevA, PrevB>
 where
     PrevA: PullSurface,
     PrevB: PullSurface,
+    PrevA::InputHandoffs: Extend<PrevB::InputHandoffs>,
+    <PrevA::InputHandoffs as Extend<PrevB::InputHandoffs>>::Extended:
+        HandoffList + HandoffListSplit<PrevA::InputHandoffs, Suffix = PrevB::InputHandoffs>,
 {
     prev_a: PrevA,
     prev_b: PrevB,
@@ -22,6 +25,9 @@ where
     Key: 'static + Eq + Hash + Clone,
     ValA: 'static + Eq + Clone,
     ValB: 'static + Eq + Clone,
+    PrevA::InputHandoffs: Extend<PrevB::InputHandoffs>,
+    <PrevA::InputHandoffs as Extend<PrevB::InputHandoffs>>::Extended:
+        HandoffList + HandoffListSplit<PrevA::InputHandoffs, Suffix = PrevB::InputHandoffs>,
 {
     pub fn new(prev_a: PrevA, prev_b: PrevB) -> Self {
         Self { prev_a, prev_b }
@@ -35,6 +41,9 @@ where
     Key: 'static + Eq + Hash + Clone,
     ValA: 'static + Eq + Clone,
     ValB: 'static + Eq + Clone,
+    PrevA::InputHandoffs: Extend<PrevB::InputHandoffs>,
+    <PrevA::InputHandoffs as Extend<PrevB::InputHandoffs>>::Extended:
+        HandoffList + HandoffListSplit<PrevA::InputHandoffs, Suffix = PrevB::InputHandoffs>,
 {
     type ItemOut = (Key, ValA, ValB);
 }
