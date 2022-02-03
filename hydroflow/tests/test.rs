@@ -96,7 +96,7 @@ fn test_basic_n_m() {
     df.add_subgraph_homogeneous(
         vec![],
         vec![source_send],
-        move |_: &[&RecvCtx<VecHandoff<usize>>], send| {
+        move |_ctx, _recv: &[&RecvCtx<VecHandoff<usize>>], send| {
             send[0].give(Some(5));
         },
     );
@@ -107,7 +107,7 @@ fn test_basic_n_m() {
     df.add_subgraph_homogeneous(
         vec![sink_recv],
         vec![],
-        move |recv, _: &[&SendCtx<VecHandoff<usize>>]| {
+        move |_ctx, recv, _send: &[&SendCtx<VecHandoff<usize>>]| {
             for v in recv[0].take_inner().into_iter() {
                 let old_val = val_ref.replace(Some(v));
                 assert!(old_val.is_none()); // Only run once.
