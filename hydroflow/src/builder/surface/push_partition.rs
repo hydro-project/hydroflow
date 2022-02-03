@@ -11,8 +11,8 @@ where
     NextB: PushSurfaceReversed<ItemIn = NextA::ItemIn>,
 
     NextA::OutputHandoffs: Extend<NextB::OutputHandoffs>,
-    <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended: SendPortList
-        + BasePortListSplit<NextA::OutputHandoffs, false, Suffix = NextB::OutputHandoffs>,
+    <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended:
+        SendPortList + BasePortListSplit<NextA::OutputHandoffs, Suffix = NextB::OutputHandoffs>,
 {
     func: Func,
     next_a: NextA,
@@ -25,8 +25,8 @@ where
     NextB: PushSurfaceReversed<ItemIn = NextA::ItemIn>,
 
     NextA::OutputHandoffs: Extend<NextB::OutputHandoffs>,
-    <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended: SendPortList
-        + BasePortListSplit<NextA::OutputHandoffs, false, Suffix = NextB::OutputHandoffs>,
+    <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended:
+        SendPortList + BasePortListSplit<NextA::OutputHandoffs, Suffix = NextB::OutputHandoffs>,
 {
     pub fn new(func: Func, next_a: NextA, next_b: NextB) -> Self {
         Self {
@@ -44,16 +44,19 @@ where
     NextB: PushSurfaceReversed<ItemIn = NextA::ItemIn>,
 
     NextA::OutputHandoffs: Extend<NextB::OutputHandoffs>,
-    <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended: SendPortList
-        + BasePortListSplit<NextA::OutputHandoffs, false, Suffix = NextB::OutputHandoffs>,
+    <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended:
+        SendPortList + BasePortListSplit<NextA::OutputHandoffs, Suffix = NextB::OutputHandoffs>,
 {
-    type OutputHandoffs = <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended;
-
     type ItemIn = NextA::ItemIn;
 
+    type OutputHandoffs = <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended;
     type Build = PartitionPushBuild<NextA::Build, NextB::Build, Func>;
 
-    fn into_build(self) -> Self::Build {
-        PartitionPushBuild::new(self.next_a.into_build(), self.next_b.into_build())
+    fn into_parts(self) -> (Self::Connect, Self::Build) {
+        let (connect_a, build_a) = self.next_a.into_parts();
+        let (connect_b, build_b) = self.next_b.into_parts();
+        let connect = connect_a.extend(connect_b);
+        let build = PartitionPushBuild::new(self.func, build_a, build_b);
+        (connect, build)
     }
 }

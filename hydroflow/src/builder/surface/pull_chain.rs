@@ -48,10 +48,13 @@ where
         + BasePortListSplit<PrevA::InputHandoffs, false, Suffix = PrevB::InputHandoffs>,
 {
     type InputHandoffs = <PrevA::InputHandoffs as Extend<PrevB::InputHandoffs>>::Extended;
-
     type Build = ChainPullBuild<PrevA::Build, PrevB::Build>;
 
-    fn into_build(self) -> Self::Build {
-        ChainPullBuild::new(self.prev_a.into_build(), self.prev_b.into_build())
+    fn into_parts(self) -> (Self::Connect, Self::Build) {
+        let (connect_a, build_a) = self.prev_a.into_parts();
+        let (connect_b, build_b) = self.prev_b.into_parts();
+        let connect = connect_a.extend(connect_b);
+        let build = ChainPullBuild::new(build_a, build_b);
+        (connect, build)
     }
 }

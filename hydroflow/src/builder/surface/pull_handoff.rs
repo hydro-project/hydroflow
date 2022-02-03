@@ -9,7 +9,7 @@ pub struct HandoffPullSurface<Hof>
 where
     Hof: Handoff,
 {
-    port: Option<InputPort<Hof>>,
+    port: InputPort<Hof>,
 }
 
 impl<Hof> HandoffPullSurface<Hof>
@@ -17,7 +17,7 @@ where
     Hof: Handoff,
 {
     pub fn new(port: InputPort<Hof>) -> Self {
-        Self { port: Some(port) }
+        Self { port }
     }
 }
 
@@ -33,10 +33,9 @@ where
     Hof: Handoff,
 {
     type InputHandoffs = tt!(Hof);
-
     type Build = HandoffPullBuild<Hof>;
 
-    fn into_build(self) -> Self::Build {
-        HandoffPullBuild::new()
+    fn into_parts(self) -> (Self::InputHandoffs, Self::Build) {
+        (self.port, HandoffPullBuild::new())
     }
 }

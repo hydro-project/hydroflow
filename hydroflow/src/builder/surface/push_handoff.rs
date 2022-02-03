@@ -5,13 +5,13 @@ use std::marker::PhantomData;
 use crate::builder::build::push_handoff::HandoffPushBuild;
 use crate::scheduled::handoff::{CanReceive, Handoff};
 use crate::scheduled::port::OutputPort;
-use crate::tt;
+use crate::{tl, tt};
 
 pub struct HandoffPushSurfaceReversed<Hof, In>
 where
     Hof: Handoff + CanReceive<In>,
 {
-    port: Option<OutputPort<Hof>>,
+    port: OutputPort<Hof>,
     _phantom: PhantomData<fn(In)>,
 }
 
@@ -21,7 +21,7 @@ where
 {
     pub fn new(port: OutputPort<Hof>) -> Self {
         Self {
-            port: Some(port),
+            port,
             _phantom: PhantomData,
         }
     }
@@ -31,13 +31,12 @@ impl<Hof, In> PushSurfaceReversed for HandoffPushSurfaceReversed<Hof, In>
 where
     Hof: Handoff + CanReceive<In>,
 {
-    type OutputHandoffs = tt!(Hof);
-
     type ItemIn = In;
 
+    type OutputHandoffs = tt!(OutputPort<Hof>);
     type Build = HandoffPushBuild<Hof, In>;
 
-    fn into_build(self) -> Self::Build {
-        HandoffPushBuild::new()
+    fn into_parts(self) -> Self::Build {
+        (tl!(self.port), HandoffPushBuild::new())
     }
 }

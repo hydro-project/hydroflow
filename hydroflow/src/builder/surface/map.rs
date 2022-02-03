@@ -36,11 +36,12 @@ where
     Func: FnMut(Prev::ItemOut) -> Out,
 {
     type InputHandoffs = Prev::InputHandoffs;
-
     type Build = MapPullBuild<Prev::Build, Func>;
 
-    fn into_build(self) -> Self::Build {
-        MapPullBuild::new(self.prev.into_build(), self.func)
+    fn into_parts(self) -> (Self::InputHandoffs, Self::Build) {
+        let (connect, build) = self.prev.into_parts();
+        let build = MapPullBuild::new(build, self.func);
+        (connect, build)
     }
 }
 
@@ -90,13 +91,14 @@ where
     Next: PushSurfaceReversed,
     Func: FnMut(In) -> Next::ItemIn,
 {
-    type OutputHandoffs = Next::OutputHandoffs;
-
     type ItemIn = In;
 
+    type OutputHandoffs = Next::OutputHandoffs;
     type Build = MapPushBuild<Next::Build, Func, In>;
 
-    fn into_build(self) -> Self::Build {
-        MapPushBuild::new(self.prev.into_build(), self.func)
+    fn into_parts(self) -> (Self::OutputHandoffs, Self::Build) {
+        let (connect, build) = self.next.into_parts();
+        let build = MapPushBuild::new(build, self.func);
+        (connect, build)
     }
 }
