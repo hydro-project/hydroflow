@@ -1,4 +1,3 @@
-/*
 use std::{
     collections::{HashMap, HashSet},
     sync::{mpsc::channel, Arc, Mutex},
@@ -15,7 +14,8 @@ use hydroflow::{
         },
         HydroflowBuilder,
     },
-    scheduled::{ctx::OutputPort, graph_ext::GraphExt, handoff::VecHandoff},
+    lang::collections::Iter,
+    scheduled::{graph_ext::GraphExt, handoff::VecHandoff, port::OutputPort},
 };
 use rand::Rng;
 use serde::{Deserialize, Serialize};
@@ -98,8 +98,18 @@ fn test_echo_server() {
                 let (port, responses) = builder.hydroflow.inbound_tcp_vertex().await;
 
                 let outbound_messages = builder.hydroflow.outbound_tcp_vertex().await;
-                let (input, requests) = builder.hydroflow.add_input();
-                builder.hydroflow.add_edge(requests, outbound_messages);
+                let (input, requests) = builder
+                    .hydroflow
+                    .add_input::<_, VecHandoff<(String, EchoRequest)>>();
+                // TODO(mingwei): fix this once network methods take ports as arguments instead of returning them.
+                // // builder.hydroflow.add_edge(requests, outbound_messages);
+                builder.hydroflow.add_subgraph_in_out(
+                    requests,
+                    outbound_messages,
+                    |_ctx, recv, send| {
+                        send.give(Iter(recv.take_inner().into_iter()));
+                    },
+                );
 
                 let responses = builder.wrap_input(responses);
 
@@ -457,4 +467,3 @@ fn test_exchange() {
         ]
     );
 }
-*/
