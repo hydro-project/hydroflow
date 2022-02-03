@@ -147,7 +147,6 @@ fn benchmark_hydroflow_compiled(c: &mut Criterion) {
 
 fn benchmark_hydroflow(c: &mut Criterion) {
     use hydroflow::lang::collections::Iter;
-    use hydroflow::scheduled::port::{RecvCtx, SendCtx};
     use hydroflow::scheduled::graph::Hydroflow;
     use hydroflow::scheduled::handoff::VecHandoff;
 
@@ -155,29 +154,30 @@ fn benchmark_hydroflow(c: &mut Criterion) {
         b.iter(|| {
             let mut df = Hydroflow::new();
 
+            let (next_send, mut next_recv) = df.make_handoff::<VecHandoff<usize>>();
+
             let mut sent = false;
-            let mut it = df.add_source(move |_ctx, send: &SendCtx<VecHandoff<_>>| {
+            df.add_subgraph_source(next_send, move |_ctx, send| {
                 if !sent {
                     sent = true;
                     send.give(Iter(0..NUM_INTS));
                 }
             });
             for _ in 0..NUM_OPS {
-                let (next_in, mut next_out) =
-                    df.add_inout(|_ctx, recv: &RecvCtx<VecHandoff<usize>>, send| {
-                        send.give(Iter(recv.take_inner().into_iter()));
-                    });
+                let (next_send, next_next_recv) = df.make_handoff();
 
-                std::mem::swap(&mut it, &mut next_out);
-                df.add_edge(next_out, next_in);
+                df.add_subgraph_in_out(next_recv, next_send, |_ctx, recv, send| {
+                    send.give(Iter(recv.take_inner().into_iter()));
+                });
+
+                next_recv = next_next_recv;
             }
 
-            let sink = df.add_sink(|_ctx, recv: &RecvCtx<VecHandoff<usize>>| {
+            df.add_subgraph_sink(next_recv, |_ctx, recv| {
                 for x in recv.take_inner() {
                     black_box(x);
                 }
             });
-            df.add_edge(it, sink);
 
             df.tick();
         });
