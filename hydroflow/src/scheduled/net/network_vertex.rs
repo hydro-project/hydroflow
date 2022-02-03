@@ -6,10 +6,10 @@ use tokio::net::{TcpListener, TcpStream};
 use tokio_util::codec::{FramedRead, FramedWrite, LengthDelimitedCodec};
 
 use crate::scheduled::{
-    port::{InputPort, OutputPort},
     graph::Hydroflow,
     graph_ext::GraphExt,
     handoff::VecHandoff,
+    port::{InputPort, OutputPort},
 };
 
 pub type Address = String;
@@ -201,7 +201,6 @@ impl Hydroflow {
         let mut next_messages = Vec::new();
         let (input_port, output_port) = self.make_handoff();
         self.add_subgraph_sink(output_port, move |_ctx, recv| {
-
             buffered_messages.extend(recv.take_inner());
             for msg in buffered_messages.drain(..) {
                 if let Err(e) = outbound_messages_send.try_send(msg) {
