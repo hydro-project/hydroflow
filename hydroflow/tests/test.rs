@@ -93,7 +93,7 @@ fn test_basic_n_m() {
 
     let (source_send, sink_recv) = df.make_handoff::<VecHandoff<usize>>();
 
-    df.add_subgraph_homogeneous(
+    df.add_subgraph_n_m(
         vec![],
         vec![source_send],
         move |_ctx, _recv: &[&RecvCtx<VecHandoff<usize>>], send| {
@@ -104,7 +104,7 @@ fn test_basic_n_m() {
     let val = <Rc<Cell<Option<usize>>>>::default();
     let val_ref = val.clone();
 
-    df.add_subgraph_homogeneous(
+    df.add_subgraph_n_m(
         vec![sink_recv],
         vec![],
         move |_ctx, recv, _send: &[&SendCtx<VecHandoff<usize>>]| {
