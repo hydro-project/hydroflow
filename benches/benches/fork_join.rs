@@ -3,7 +3,7 @@ use hydroflow::lang::collections::Iter;
 use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::scheduled::graph_ext::GraphExt;
 use hydroflow::scheduled::handoff::VecHandoff;
-// use hydroflow::scheduled::query::Query as Q;
+use hydroflow::scheduled::query::Query as Q;
 use timely::dataflow::operators::{Concatenate, Filter, Inspect, ToStream};
 
 const NUM_OPS: usize = 20;
@@ -80,8 +80,6 @@ fn benchmark_hydroflow(c: &mut Criterion) {
     });
 }
 
-/*
-TODO(mingwei)
 fn benchmark_hydroflow_builder(c: &mut Criterion) {
     c.bench_function("fork_join/hydroflow_builder", |b| {
         b.iter(|| {
@@ -108,7 +106,6 @@ fn benchmark_hydroflow_builder(c: &mut Criterion) {
         })
     });
 }
-*/
 
 fn benchmark_raw(c: &mut Criterion) {
     c.bench_function("fork_join/raw", |b| {
@@ -298,7 +295,7 @@ fn benchmark_timely(c: &mut Criterion) {
 criterion_group!(
     fork_join_dataflow,
     benchmark_hydroflow,
-    // benchmark_hydroflow_builder,
+    benchmark_hydroflow_builder,
     benchmark_timely,
     benchmark_raw,
     // benchmark_spinach,
