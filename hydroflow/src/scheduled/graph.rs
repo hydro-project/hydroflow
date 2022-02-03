@@ -171,7 +171,7 @@ impl Hydroflow {
     }
 
     /// Adds a new compiled subraph with a variable number of inputs and outputs of the same respective handoff types.
-    pub fn add_subgraph_homogeneous<R, W, F>(
+    pub fn add_subgraph_n_m<R, W, F>(
         &mut self,
         recv_ports: Vec<OutputPort<R>>,
         send_ports: Vec<InputPort<W>>,

@@ -41,7 +41,7 @@ impl Query {
         let mut df = self.df.borrow_mut();
 
         let (send_port, recv_port) = df.make_handoff();
-        df.add_subgraph_homogeneous(
+        df.add_subgraph_n_m(
             ops.into_iter().map(|op| op.recv_port).collect(),
             vec![send_port],
             |_ctx, ins, out| {
@@ -171,7 +171,7 @@ impl<T: Clone> Operator<T> {
             });
         }
 
-        df.add_subgraph_homogeneous(vec![self.recv_port], sends, move |_ctx, recvs, sends| {
+        df.add_subgraph_n_m(vec![self.recv_port], sends, move |_ctx, recvs, sends| {
             let input = recvs.iter().next().unwrap().take_inner();
             if let Some((&last_output, outputs)) = sends.split_last() {
                 for output in outputs {
