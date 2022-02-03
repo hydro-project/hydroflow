@@ -151,38 +151,36 @@ where
     }
 }
 
-/*
 impl<T: Clone> Operator<T> {
     pub fn tee(self, n: usize) -> Vec<Operator<T>>
     where
         T: 'static,
     {
-        // TODO(justin): this is very slow.
-        let (inputs, outputs) = (*self.df).borrow_mut().add_n_in_m_out(
-            1,
-            n,
-            move |recvs: &[&RecvCtx<VecHandoff<T>>], sends| {
-                // TODO(justin): optimize this (extra clone, etc.).
-                #[allow(clippy::into_iter_on_ref)]
-                for v in recvs.into_iter().next().unwrap().take_inner() {
-                    for s in sends {
-                        s.give(Some(v.clone()));
-                    }
-                }
-            },
-        );
+        // TODO(justin): this is very slow. TODO(mingwei) use teeing handoff once its added.
 
-        (*self.df)
-            .borrow_mut()
-            .add_edge(self.output_port, inputs.into_iter().next().unwrap());
+        let mut df = self.df.borrow_mut();
 
-        outputs
-            .into_iter()
-            .map(|output_port| Operator {
+        let mut sends = Vec::with_capacity(n);
+        let mut recvs = Vec::with_capacity(n);
+        for _ in 0..n {
+            let (send_port, recv_port) = df.make_handoff::<VecHandoff<T>>();
+            sends.push(send_port);
+            recvs.push(Operator {
                 df: self.df.clone(),
-                output_port,
-            })
-            .collect()
+                recv_port,
+            });
+        }
+
+        df.add_subgraph_homogeneous(vec![self.recv_port], sends, move |_ctx, recvs, sends| {
+            let input = recvs.iter().next().unwrap().take_inner();
+            if let Some((&last_output, outputs)) = sends.split_last() {
+                for output in outputs {
+                    output.give(Iter(input.iter().cloned()));
+                }
+                last_output.give(Iter(input.into_iter()));
+            }
+        });
+
+        recvs
     }
 }
-*/
