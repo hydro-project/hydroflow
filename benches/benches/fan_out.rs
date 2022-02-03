@@ -1,15 +1,14 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-// use hydroflow::lang::collections::Iter;
+use hydroflow::lang::collections::Iter;
 // use hydroflow::scheduled::ctx::SendCtx;
 // use hydroflow::scheduled::handoff::TeeingHandoff;
-// use hydroflow::scheduled::query::Query as Q;
+use hydroflow::scheduled::query::Query as Q;
 // use hydroflow::scheduled::Hydroflow;
 use timely::dataflow::operators::{Map, ToStream};
 
 const NUM_OPS: usize = 20;
 const NUM_INTS: usize = 1_000_000;
 
-/*
 fn benchmark_hydroflow_scheduled(c: &mut Criterion) {
     c.bench_function("fan_out/hydroflow/scheduled", |b| {
         b.iter(|| {
@@ -29,7 +28,6 @@ fn benchmark_hydroflow_scheduled(c: &mut Criterion) {
         })
     });
 }
-*/
 
 // fn benchmark_hydroflow_teer(c: &mut Criterion) {
 //     c.bench_function("fan_out/hydroflow/teer", |b| {
@@ -90,7 +88,7 @@ fn benchmark_sol(c: &mut Criterion) {
 
 criterion_group!(
     fan_out_dataflow,
-    // benchmark_hydroflow_scheduled,
+    benchmark_hydroflow_scheduled,
     // benchmark_hydroflow_teer,
     benchmark_timely,
     benchmark_sol,
