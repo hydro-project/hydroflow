@@ -180,7 +180,7 @@ impl Hydroflow {
     where
         R: 'static + Handoff,
         W: 'static + Handoff,
-        F: 'static + FnMut(&[&RecvCtx<R>], &[&SendCtx<W>]),
+        F: 'static + FnMut(&Context<'_>, &[&RecvCtx<R>], &[&SendCtx<W>]),
     {
         let sg_id = self.subgraphs.len();
 
@@ -223,7 +223,7 @@ impl Hydroflow {
                 .map(RefCast::ref_cast)
                 .collect();
 
-            (subgraph)(&recvs, &sends)
+            (subgraph)(&context, &recvs, &sends)
         };
         self.subgraphs
             .push(SubgraphData::new(subgraph, subgraph_preds, subgraph_succs));

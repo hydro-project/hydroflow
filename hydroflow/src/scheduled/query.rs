@@ -44,7 +44,7 @@ impl Query {
         df.add_subgraph_homogeneous(
             ops.into_iter().map(|op| op.recv_port).collect(),
             vec![send_port],
-            |ins, out| {
+            |_ctx, ins, out| {
                 for &input in ins {
                     out[0].give(Iter(input.take_inner().into_iter()));
                 }
