@@ -111,9 +111,7 @@ pub(crate) async fn run_tracker(opts: Opts) {
     df.add_edge(diagnoses, diagnosed_in);
     df.add_edge(loop_out, loop_in);
 
-    let stream = TcpStream::connect(format!("localhost:{}", opts.addr))
-        .await
-        .unwrap();
+    let stream = TcpStream::connect(opts.addr).await.unwrap();
     let (network_out, network_in) = df.add_tcp_stream(stream);
 
     df.add_edge(notifs_out, encoder_in);

@@ -91,7 +91,7 @@ impl Message {
     }
 
     pub fn decode(v: bytes::Bytes) -> Self {
-        let address = u32::from_le_bytes(v[0..ADDRESS_LEN].try_into().unwrap());
+        let address = u32::from_be_bytes(v[0..ADDRESS_LEN].try_into().unwrap());
         let batch = v.slice(ADDRESS_LEN..);
         Message { address, batch }
     }
