@@ -53,6 +53,8 @@ macro_rules! subgraph_ext {
 /// Convenience extension methods for the Hydroflow struct.
 pub trait GraphExt {
     subgraph_ext!(add_subgraph_sink, (recv_port: R), ());
+    subgraph_ext!(add_subgraph_2sink, (recv_port_1: R1, recv_port_2: R2), ());
+
     subgraph_ext!(add_subgraph_source, (), (send_port: W));
 
     subgraph_ext!(add_subgraph_in_out, (recv_port: R), (send_port: W));
@@ -93,6 +95,12 @@ pub trait GraphExt {
 
 impl GraphExt for Hydroflow {
     subgraph_ext!(impl add_subgraph_sink, (recv_port: R), ());
+    subgraph_ext!(
+        impl add_subgraph_2sink,
+        (recv_port_1: R1, recv_port_2: R2),
+        ()
+    );
+
     subgraph_ext!(impl add_subgraph_source, (), (send_port: W));
 
     subgraph_ext!(impl add_subgraph_in_out, (recv_port: R), (send_port: W));
