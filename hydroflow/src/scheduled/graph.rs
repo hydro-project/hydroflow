@@ -140,7 +140,7 @@ impl Hydroflow {
 
     /// Adds a new compiled subgraph with the specified inputs and outputs.
     ///
-    /// See [TODO] for how to specify inputs and outputs.
+    /// TODO(mingwei): add example in doc.
     pub fn add_subgraph<R, W, F>(
         &mut self,
         recv_ports: R,
