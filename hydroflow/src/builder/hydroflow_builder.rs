@@ -1,9 +1,6 @@
 use super::build::{PullBuild, PushBuild};
-use super::connect::{PullConnect, PushConnect};
 use super::surface::pivot::PivotSurface;
 
-use std::cell::Cell;
-use std::rc::Rc;
 use std::sync::mpsc::SyncSender;
 
 use crate::compiled::pivot::Pivot;
@@ -13,6 +10,7 @@ use crate::scheduled::handoff::{CanReceive, Handoff, VecHandoff};
 use crate::scheduled::input::Input;
 use crate::scheduled::net::Message;
 use crate::scheduled::port::{InputPort, OutputPort};
+use crate::scheduled::SubgraphId;
 
 use super::surface::pull_handoff::HandoffPullSurface;
 use super::surface::push_handoff::HandoffPushSurfaceReversed;
@@ -54,26 +52,20 @@ impl HydroflowBuilder {
     }
 
     /// Adds a `pivot` created via the Surface API.
-    pub fn add_subgraph<Pull, Push>(&mut self, pivot: PivotSurface<Pull, Push>)
+    pub fn add_subgraph<Pull, Push>(&mut self, pivot: PivotSurface<Pull, Push>) -> SubgraphId
     where
         Pull: 'static + PullSurface,
         Push: 'static + PushSurfaceReversed<ItemIn = Pull::ItemOut>,
     {
-        let ((pull_connect, push_connect), (mut pull_build, mut push_build)) = pivot.into_parts();
+        let ((send_ports, recv_ports), (mut pull_build, mut push_build)) = pivot.into_parts();
 
-        let (input_ports, output_ports) = self
-            .hydroflow
-            .add_subgraph::<_, Pull::InputHandoffs, Push::OutputHandoffs>(
-                move |_ctx, recv_ctx, send_ctx| {
-                    let pull = pull_build.build(recv_ctx);
-                    let push = push_build.build(send_ctx);
-                    let pivot = Pivot::new(pull, push);
-                    pivot.run();
-                },
-            );
-
-        pull_connect.connect(input_ports);
-        push_connect.connect(output_ports);
+        self.hydroflow
+            .add_subgraph(recv_ports, send_ports, move |_ctx, recv_ctx, send_ctx| {
+                let pull = pull_build.build(recv_ctx);
+                let push = push_build.build(send_ctx);
+                let pivot = Pivot::new(pull, push);
+                pivot.run();
+            })
     }
 
     /// Creates a new external channel input.
@@ -83,10 +75,7 @@ impl HydroflowBuilder {
         W: 'static + Handoff + CanReceive<T>,
     {
         let (input, output_port) = self.hydroflow.add_channel_input();
-
-        let (output_port_connector, pull) = BothPortConnector::with_output(output_port);
-        self.port_connectors.push(Box::new(output_port_connector));
-
+        let pull = HandoffPullSurface::new(output_port);
         (input, pull)
     }
 
@@ -95,11 +84,7 @@ impl HydroflowBuilder {
         stream: tokio::net::TcpStream,
     ) -> HandoffPushSurfaceReversed<VecHandoff<Message>, Option<Message>> {
         let input_port = self.hydroflow.add_write_tcp_stream(stream);
-
-        let (input_port_connector, push) =
-            BothPortConnector::with_input::<Option<Message>>(input_port);
-        self.port_connectors.push(Box::new(input_port_connector));
-
+        let push = HandoffPushSurfaceReversed::new(input_port);
         push
     }
 
@@ -108,10 +93,7 @@ impl HydroflowBuilder {
         stream: tokio::net::TcpStream,
     ) -> HandoffPullSurface<VecHandoff<Message>> {
         let output_port = self.hydroflow.add_read_tcp_stream(stream);
-
-        let (output_port_connector, pull) = BothPortConnector::with_output(output_port);
-        self.port_connectors.push(Box::new(output_port_connector));
-
+        let pull = HandoffPullSurface::new(output_port);
         pull
     }
 
@@ -125,12 +107,8 @@ impl HydroflowBuilder {
     ) {
         let (input_port, output_port) = self.hydroflow.add_tcp_stream(stream);
 
-        let (input_port_connector, push) =
-            BothPortConnector::with_input::<Option<Message>>(input_port);
-        self.port_connectors.push(Box::new(input_port_connector));
-
-        let (output_port_connector, pull) = BothPortConnector::with_output(output_port);
-        self.port_connectors.push(Box::new(output_port_connector));
+        let push = HandoffPushSurfaceReversed::new(input_port);
+        let pull = HandoffPullSurface::new(output_port);
 
         (push, pull)
     }

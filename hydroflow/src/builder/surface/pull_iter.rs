@@ -30,10 +30,9 @@ where
     I: 'static + Iterator<Item = T>,
 {
     type InputHandoffs = ();
-
     type Build = IterPullBuild<I, T>;
 
-    fn into_build(self) -> Self::Build {
-        IterPullBuild::new(self.it)
+    fn into_parts(self) -> (Self::InputHandoffs, Self::Build) {
+        ((), IterPullBuild::new(self.it))
     }
 }

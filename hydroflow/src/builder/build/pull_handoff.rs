@@ -2,7 +2,8 @@ use super::{PullBuild, PullBuildBase};
 
 use std::marker::PhantomData;
 
-use crate::scheduled::handoff::{Handoff, HandoffList};
+use crate::scheduled::handoff::handoff_list::RecvPortList;
+use crate::scheduled::handoff::Handoff;
 use crate::{tl, tt};
 
 pub struct HandoffPullBuild<Hof>
@@ -48,7 +49,7 @@ where
 
     fn build<'slf, 'hof>(
         &'slf mut self,
-        handoffs: <Self::InputHandoffs as HandoffList>::RecvCtx<'hof>,
+        handoffs: <Self::InputHandoffs as RecvPortList>::Ctx<'hof>,
     ) -> Self::Build<'slf, 'hof> {
         let tl!(handoff) = handoffs;
         [handoff.take_inner()].into_iter()

@@ -3,7 +3,6 @@ use super::PushSurfaceReversed;
 use std::marker::PhantomData;
 
 use crate::builder::build::push_for_each::ForEachPushBuild;
-use crate::tt;
 
 pub struct ForEachPushSurfaceReversed<Func, In>
 where
@@ -28,13 +27,12 @@ impl<Func, In> PushSurfaceReversed for ForEachPushSurfaceReversed<Func, In>
 where
     Func: FnMut(In),
 {
-    type OutputHandoffs = tt!();
-
     type ItemIn = In;
 
+    type OutputHandoffs = ();
     type Build = ForEachPushBuild<Func, In>;
 
-    fn into_build(self) -> Self::Build {
-        ForEachPushBuild::new(self.func)
+    fn into_parts(self) -> (Self::OutputHandoffs, Self::Build) {
+        ((), ForEachPushBuild::new(self.func))
     }
 }

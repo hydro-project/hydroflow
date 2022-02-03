@@ -1,6 +1,6 @@
 use super::{PullBuild, PullBuildBase};
 
-use crate::scheduled::handoff::HandoffList;
+use crate::scheduled::handoff::handoff_list::RecvPortList;
 
 pub struct FilterMapPullBuild<Prev, Func>
 where
@@ -43,7 +43,7 @@ where
 
     fn build<'slf, 'hof>(
         &'slf mut self,
-        handoffs: <Self::InputHandoffs as HandoffList>::RecvCtx<'hof>,
+        handoffs: <Self::InputHandoffs as RecvPortList>::Ctx<'hof>,
     ) -> Self::Build<'slf, 'hof> {
         self.prev.build(handoffs).filter_map(|x| (self.func)(x))
     }

@@ -10,7 +10,6 @@ pub struct JoinPullSurface<PrevA, PrevB>
 where
     PrevA: PullSurface,
     PrevB: PullSurface,
-    PrevA::InputHandoffs: Extend<PrevB::InputHandoffs>,
 
     PrevA::InputHandoffs: Extend<PrevB::InputHandoffs>,
     <PrevA::InputHandoffs as Extend<PrevB::InputHandoffs>>::Extended: RecvPortList
@@ -64,10 +63,13 @@ where
         + BasePortListSplit<PrevA::InputHandoffs, false, Suffix = PrevB::InputHandoffs>,
 {
     type InputHandoffs = <PrevA::InputHandoffs as Extend<PrevB::InputHandoffs>>::Extended;
-
     type Build = JoinPullBuild<PrevA::Build, PrevB::Build, Key, ValA, ValB>;
 
-    fn into_build(self) -> Self::Build {
-        JoinPullBuild::new(self.prev_a.into_build(), self.prev_b.into_build())
+    fn into_parts(self) -> (Self::InputHandoffs, Self::Build) {
+        let (connect_a, build_a) = self.prev_a.into_parts();
+        let (connect_b, build_b) = self.prev_b.into_parts();
+        let connect = connect_a.extend(connect_b);
+        let build = JoinPullBuild::new(build_a, build_b);
+        (connect, build)
     }
 }
