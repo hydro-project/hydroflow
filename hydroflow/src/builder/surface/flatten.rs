@@ -37,13 +37,10 @@ where
 {
     type InputHandoffs = Prev::InputHandoffs;
 
-    type Connect = Prev::Connect;
     type Build = FlattenPullBuild<Prev::Build>;
 
-    fn into_parts(self) -> (Self::Connect, Self::Build) {
-        let (connect, build) = self.prev.into_parts();
-        let build = FlattenPullBuild::new(build);
-        (connect, build)
+    fn into_build(self) -> Self::Build {
+        FlattenPullBuild::new(self.prev.into_build())
     }
 }
 
@@ -95,12 +92,9 @@ where
 
     type ItemIn = In;
 
-    type Connect = Next::Connect;
     type Build = FlattenPushBuild<Next::Build, In>;
 
-    fn into_parts(self) -> (Self::Connect, Self::Build) {
-        let (connect, build) = self.next.into_parts();
-        let build = FlattenPushBuild::new(build);
-        (connect, build)
+    fn into_build(self) -> Self::Build {
+        FlattenPushBuild::new(self.prev.into_build())
     }
 }

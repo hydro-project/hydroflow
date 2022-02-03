@@ -37,13 +37,10 @@ where
 {
     type InputHandoffs = Prev::InputHandoffs;
 
-    type Connect = Prev::Connect;
     type Build = FilterMapPullBuild<Prev::Build, Func>;
 
-    fn into_parts(self) -> (Self::Connect, Self::Build) {
-        let (connect, build) = self.prev.into_parts();
-        let build = FilterMapPullBuild::new(build, self.func);
-        (connect, build)
+    fn into_build(self) -> Self::Build {
+        FilterMapPullBuild::new(self.prev.into_build(), self.func)
     }
 }
 
@@ -93,16 +90,12 @@ where
     Next: PushSurfaceReversed,
     Func: FnMut(In) -> Option<Next::ItemIn>,
 {
-    type OutputHandoffs = Next::OutputHandoffs;
-
     type ItemIn = In;
 
-    type Connect = Next::Connect;
+    type OutputHandoffs = Next::OutputHandoffs;
     type Build = FilterMapPushBuild<Next::Build, Func, In>;
 
-    fn into_parts(self) -> (Self::Connect, Self::Build) {
-        let (connect, build) = self.next.into_parts();
-        let build = FilterMapPushBuild::new(build, self.func);
-        (connect, build)
+    fn into_parts(self) -> Self::Build {
+        FilterMapPushBuild::new(self.prev.into_build(), self.func)
     }
 }
