@@ -36,11 +36,12 @@ where
     Prev::ItemOut: IntoIterator,
 {
     type InputHandoffs = Prev::InputHandoffs;
-
     type Build = FlattenPullBuild<Prev::Build>;
 
-    fn into_build(self) -> Self::Build {
-        FlattenPullBuild::new(self.prev.into_build())
+    fn into_parts(self) -> (Self::InputHandoffs, Self::Build) {
+        let (connect, build) = self.prev.into_parts();
+        let build = FlattenPullBuild::new(build);
+        (connect, build)
     }
 }
 
@@ -88,13 +89,14 @@ where
     Next: PushSurfaceReversed,
     In: IntoIterator<Item = Next::ItemIn>,
 {
-    type OutputHandoffs = Next::OutputHandoffs;
-
     type ItemIn = In;
 
+    type OutputHandoffs = Next::OutputHandoffs;
     type Build = FlattenPushBuild<Next::Build, In>;
 
-    fn into_build(self) -> Self::Build {
-        FlattenPushBuild::new(self.prev.into_build())
+    fn into_parts(self) -> (Self::OutputHandoffs, Self::Build) {
+        let (connect, build) = self.next.into_parts();
+        let build = FlattenPushBuild::new(build);
+        (connect, build)
     }
 }
