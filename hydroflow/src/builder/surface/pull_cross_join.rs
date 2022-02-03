@@ -62,7 +62,7 @@ where
     type InputHandoffs = <PrevA::InputHandoffs as Extend<PrevB::InputHandoffs>>::Extended;
     type Build = CrossJoinPullBuild<PrevA::Build, PrevB::Build>;
 
-    fn into_parts(self) -> (Self::Connect, Self::Build) {
+    fn into_parts(self) -> (Self::InputHandoffs, Self::Build) {
         let (connect_a, build_a) = self.prev_a.into_parts();
         let (connect_b, build_b) = self.prev_b.into_parts();
         let connect = connect_a.extend(connect_b);

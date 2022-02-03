@@ -146,6 +146,10 @@ pub trait PullSurface: BaseSurface {
         Other: PullSurface,
         Self::ItemOut: 'static + Eq + Clone,
         Other::ItemOut: 'static + Eq + Clone,
+
+        Self::InputHandoffs: Extend<Other::InputHandoffs>,
+        <Self::InputHandoffs as Extend<Other::InputHandoffs>>::Extended: RecvPortList
+            + BasePortListSplit<Self::InputHandoffs, false, Suffix = Other::InputHandoffs>,
     {
         pull_cross_join::CrossJoinPullSurface::new(self, other)
     }
@@ -182,7 +186,7 @@ pub trait PushSurface: BaseSurface {
 
         NextA::OutputHandoffs: Extend<NextB::OutputHandoffs>,
         <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended: SendPortList
-            + BasePortListSplit<NextA::OutputHandoffs, false, Suffix = NextB::OutputHandoffs>,
+            + BasePortListSplit<NextA::OutputHandoffs, true, Suffix = NextB::OutputHandoffs>,
     {
         let next = push_tee::TeePushSurfaceReversed::new(next_a, next_b);
         self.reverse(next)
@@ -214,7 +218,7 @@ pub trait PushSurface: BaseSurface {
 
         NextA::OutputHandoffs: Extend<NextB::OutputHandoffs>,
         <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended: SendPortList
-            + BasePortListSplit<NextA::OutputHandoffs, false, Suffix = NextB::OutputHandoffs>,
+            + BasePortListSplit<NextA::OutputHandoffs, true, Suffix = NextB::OutputHandoffs>,
     {
         let next = push_partition::PartitionPushSurfaceReversed::new(func, next_a, next_b);
         self.reverse(next)

@@ -5,7 +5,10 @@ type Parts<Pull, Push>
 where
     Pull: PullSurface,
     Push: PushSurfaceReversed<ItemIn = Pull::ItemOut>,
-= ((Pull::Connect, Push::Connect), (Pull::Build, Push::Build));
+= (
+    (Pull::InputHandoffs, Push::OutputHandoffs),
+    (Pull::Build, Push::Build),
+);
 
 /// The combination of both Pull and Push surface halves.
 pub struct PivotSurface<Pull, Push>
