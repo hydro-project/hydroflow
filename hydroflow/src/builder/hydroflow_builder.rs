@@ -57,7 +57,7 @@ impl HydroflowBuilder {
         Pull: 'static + PullSurface,
         Push: 'static + PushSurfaceReversed<ItemIn = Pull::ItemOut>,
     {
-        let ((send_ports, recv_ports), (mut pull_build, mut push_build)) = pivot.into_parts();
+        let ((recv_ports, send_ports), (mut pull_build, mut push_build)) = pivot.into_parts();
 
         self.hydroflow
             .add_subgraph(recv_ports, send_ports, move |_ctx, recv_ctx, send_ctx| {
@@ -113,10 +113,7 @@ impl HydroflowBuilder {
         (push, pull)
     }
 
-    pub fn build(mut self) -> Hydroflow {
-        for handoff_connector in self.port_connectors {
-            handoff_connector.connect(&mut self.hydroflow);
-        }
+    pub fn build(self) -> Hydroflow {
         self.hydroflow
     }
 

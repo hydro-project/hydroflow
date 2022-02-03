@@ -1,6 +1,6 @@
 use super::{PullBuild, PullBuildBase};
 
-use crate::scheduled::handoff::handoff_list::RecvPortList;
+use crate::scheduled::handoff::handoff_list::BasePortList;
 
 pub struct FlattenPullBuild<Prev>
 where
@@ -36,7 +36,7 @@ where
 
     fn build<'slf, 'hof>(
         &'slf mut self,
-        handoffs: <Self::InputHandoffs as RecvPortList>::Ctx<'hof>,
+        handoffs: <Self::InputHandoffs as BasePortList<false>>::Ctx<'hof>,
     ) -> Self::Build<'slf, 'hof> {
         self.prev.build(handoffs).flatten()
     }

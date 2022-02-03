@@ -20,7 +20,7 @@ pub mod push_partition;
 pub mod push_tee;
 
 use crate::compiled::Pusherator;
-use crate::scheduled::handoff::handoff_list::{RecvPortList, SendPortList};
+use crate::scheduled::handoff::handoff_list::{BasePortList, RecvPortList, SendPortList};
 
 pub trait PullBuildBase {
     type ItemOut;
@@ -32,7 +32,7 @@ pub trait PullBuild: PullBuildBase {
     /// Builds the iterator for a single run of the subgraph.
     fn build<'slf, 'hof>(
         &'slf mut self,
-        handoffs: <Self::InputHandoffs as RecvPortList>::Ctx<'hof>,
+        handoffs: <Self::InputHandoffs as BasePortList<false>>::Ctx<'hof>,
     ) -> Self::Build<'slf, 'hof>;
 }
 
@@ -46,6 +46,6 @@ pub trait PushBuild: PushBuildBase {
     /// Builds the pusherator for a single run of the subgraph.
     fn build<'slf, 'hof>(
         &'slf mut self,
-        handoffs: <Self::OutputHandoffs as SendPortList>::Ctx<'hof>,
+        handoffs: <Self::OutputHandoffs as BasePortList<true>>::Ctx<'hof>,
     ) -> Self::Build<'slf, 'hof>;
 }
