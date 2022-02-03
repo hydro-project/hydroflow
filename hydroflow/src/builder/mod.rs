@@ -12,13 +12,14 @@
 //! ```text
 //!               (A) Surface API
 //!         (B) (Push Surface Reversed*)
-//!                  /            \
-//!                 /              \
-//!        (C) Connector   (D) Subgraph Builder
-//!                                  |
-//!                       (E) Iterator/Pusherator
+//!                      |
+//!            (D) Subgraph Builder
+//!                      |
+//!           (E) Iterator/Pusherator
 //! ```
 //! <sup>*Only used with `Push` to reverse the ownership direction.</sup>
+//!
+//! (Note (C) used to be `Connectors` but they're no longer needed)
 //!
 //! ### Layer Descriptions
 //! <table>
@@ -47,16 +48,6 @@
 //!     <td><code>PushSurfaceReversed</code></td>
 //! </tr>
 //! <tr>
-//!     <td>(C) Connectors</td>
-//!     <td>
-//!         &bull; Connects <code>OutputPort</code>s and <code>InputPort</code>s, splits type lists in order to do so.<br>
-//!         &bull; Does not go to any lower layers.<br>
-//!         &bull; Uses the input/output <code>HandoffList</code> variadic type.
-//!     </td>
-//!     <td><code>PullConnect</code></td>
-//!     <td><code>PushConnect</code></td>
-//! </tr>
-//! <tr>
 //!     <td>(D) Subgraph Builders</td>
 //!     <td>
 //!         &bull; On each subgraph invocation, constructs the (E) iterators and pivot which will be run.<br>
@@ -81,10 +72,9 @@
 //!
 //! The layers are used in [HydroflowBuilder::add_subgraph]. The method
 //! receives a pivot with `PullSurface` and `PushSurfaceReversed` halves. Then
-//! `into_parts()` splits them into the build half and the connector half.
-//! The build half is used to create the subgraph which gives back
-//! input/output ports. Then the connector half is used to connect up those
-//! ports.
+//! `into_parts()` splits them into the ports half and the build half. Those
+//! are then both sent to [Hydroflow::add_subgraph()](crate::scheduled::graph::Hydroflow::add_subgraph)
+//! to create a subgraph.
 
 pub mod build;
 pub mod surface;
