@@ -9,22 +9,14 @@ use crate::scheduled::{HandoffId, SubgraphId};
 use super::Handoff;
 
 #[sealed]
-pub trait SendPortList: BasePortList<true> {
-    type Ctx<'a>: TypeList;
-}
+pub trait SendPortList: BasePortList<true> {}
 #[sealed]
-impl<T: BasePortList<true>> SendPortList for T {
-    type Ctx<'a> = T::Ctx<'a>;
-}
+impl<T: BasePortList<true>> SendPortList for T {}
 
 #[sealed]
-pub trait RecvPortList: BasePortList<false> {
-    type Ctx<'a>: TypeList;
-}
+pub trait RecvPortList: BasePortList<false> {}
 #[sealed]
-impl<T: BasePortList<false>> RecvPortList for T {
-    type Ctx<'a> = T::Ctx<'a>;
-}
+impl<T: BasePortList<false>> RecvPortList for T {}
 
 #[sealed]
 pub trait BasePortList<const S: bool>: TypeList {
