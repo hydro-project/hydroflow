@@ -1,7 +1,6 @@
 use super::{BaseSurface, PullSurface};
 
 use crate::builder::build::pull_iter::IterPullBuild;
-use crate::builder::connect::NullPullConnect;
 
 pub struct IterPullSurface<I, T>
 where
@@ -32,12 +31,9 @@ where
 {
     type InputHandoffs = ();
 
-    type Connect = NullPullConnect;
     type Build = IterPullBuild<I, T>;
 
-    fn into_parts(self) -> (Self::Connect, Self::Build) {
-        let connect = NullPullConnect;
-        let build = IterPullBuild::new(self.it);
-        (connect, build)
+    fn into_build(self) -> Self::Build {
+        IterPullBuild::new(self.it)
     }
 }

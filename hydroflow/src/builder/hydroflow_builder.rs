@@ -7,12 +7,12 @@ use std::rc::Rc;
 use std::sync::mpsc::SyncSender;
 
 use crate::compiled::pivot::Pivot;
-use crate::scheduled::ctx::{InputPort, OutputPort};
 use crate::scheduled::graph::Hydroflow;
 use crate::scheduled::graph_ext::GraphExt;
 use crate::scheduled::handoff::{CanReceive, Handoff, VecHandoff};
 use crate::scheduled::input::Input;
 use crate::scheduled::net::Message;
+use crate::scheduled::port::{InputPort, OutputPort};
 
 use super::surface::pull_handoff::HandoffPullSurface;
 use super::surface::push_handoff::HandoffPushSurfaceReversed;
@@ -23,7 +23,6 @@ use super::surface::{PullSurface, PushSurfaceReversed};
 #[derive(Default)]
 pub struct HydroflowBuilder {
     pub hydroflow: Hydroflow,
-    port_connectors: Vec<Box<dyn PortConnector>>,
 }
 impl HydroflowBuilder {
     /// Creates a handoff, returning push and pull ends which can be chained
@@ -34,33 +33,24 @@ impl HydroflowBuilder {
     where
         H: Handoff + CanReceive<T>,
     {
-        let (port_connector, push, pull) = BothPortConnector::with_neither();
-        self.port_connectors.push(Box::new(port_connector));
-
+        let (send, recv) = self.hydroflow.make_handoff();
+        let push = HandoffPushSurfaceReversed::new(send);
+        let pull = HandoffPullSurface::new(recv);
         (push, pull)
     }
 
-    pub fn wrap_input<H>(&mut self, output_port: OutputPort<H>) -> HandoffPullSurface<H>
+    pub fn wrap_input<H>(&mut self, recv_port: OutputPort<H>) -> HandoffPullSurface<H>
     where
         H: Handoff,
     {
-        let (output_port_connector, pull) = BothPortConnector::with_output(output_port);
-        self.port_connectors.push(Box::new(output_port_connector));
-
-        pull
+        HandoffPullSurface::new(recv_port)
     }
 
-    pub fn wrap_output<H, T>(
-        &mut self,
-        input_port: InputPort<H>,
-    ) -> HandoffPushSurfaceReversed<H, T>
+    pub fn wrap_output<H, T>(&mut self, send_port: InputPort<H>) -> HandoffPushSurfaceReversed<H, T>
     where
         H: Handoff + CanReceive<T>,
     {
-        let (input_port_connector, push) = BothPortConnector::with_input(input_port);
-        self.port_connectors.push(Box::new(input_port_connector));
-
-        push
+        HandoffPushSurfaceReversed::new(send_port)
     }
 
     /// Adds a `pivot` created via the Surface API.
@@ -169,77 +159,5 @@ impl HydroflowBuilder {
     /// ```
     pub fn start_tee<T>(&self) -> StartPushSurface<T> {
         StartPushSurface::new()
-    }
-}
-
-/// Internal helper struct, run to connect all handoffs on [`HydroflowBuilder::build()`].
-trait PortConnector {
-    // TODO(mingwei): return result for informative error message.
-    fn connect(self: Box<Self>, hydroflow: &mut Hydroflow);
-}
-
-struct BothPortConnector<Hof>
-where
-    Hof: Handoff,
-{
-    output_port: Rc<Cell<Option<OutputPort<Hof>>>>,
-    input_port: Rc<Cell<Option<InputPort<Hof>>>>,
-}
-impl<Hof> BothPortConnector<Hof>
-where
-    Hof: Handoff,
-{
-    pub fn with_output(output_port: OutputPort<Hof>) -> (Self, HandoffPullSurface<Hof>) {
-        let this = Self {
-            output_port: Rc::new(Cell::new(Some(output_port))),
-            input_port: Default::default(),
-        };
-        let pull = HandoffPullSurface::new(Rc::clone(&this.input_port));
-        (this, pull)
-    }
-
-    pub fn with_input<T>(input_port: InputPort<Hof>) -> (Self, HandoffPushSurfaceReversed<Hof, T>)
-    where
-        Hof: CanReceive<T>,
-    {
-        let this = Self {
-            output_port: Default::default(),
-            input_port: Rc::new(Cell::new(Some(input_port))),
-        };
-        let push = HandoffPushSurfaceReversed::new(Rc::clone(&this.output_port));
-        (this, push)
-    }
-
-    pub fn with_neither<T>() -> (
-        Self,
-        HandoffPushSurfaceReversed<Hof, T>,
-        HandoffPullSurface<Hof>,
-    )
-    where
-        Hof: CanReceive<T>,
-    {
-        let this = Self {
-            output_port: Default::default(),
-            input_port: Default::default(),
-        };
-        let pull = HandoffPullSurface::new(Rc::clone(&this.input_port));
-        let push = HandoffPushSurfaceReversed::new(Rc::clone(&this.output_port));
-
-        (this, push, pull)
-    }
-}
-impl<Hof> PortConnector for BothPortConnector<Hof>
-where
-    Hof: Handoff,
-{
-    fn connect(self: Box<Self>, hydroflow: &mut Hydroflow) {
-        // TODO(mingwei): more informative error handling.
-        if let (Some(output_port), Some(input_port)) =
-            (self.output_port.take(), self.input_port.take())
-        {
-            hydroflow.add_edge(output_port, input_port);
-        } else {
-            panic!("Ports were never connected!!");
-        }
     }
 }

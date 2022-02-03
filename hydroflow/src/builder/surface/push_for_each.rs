@@ -3,7 +3,6 @@ use super::PushSurfaceReversed;
 use std::marker::PhantomData;
 
 use crate::builder::build::push_for_each::ForEachPushBuild;
-use crate::builder::connect::NullPushConnect;
 use crate::tt;
 
 pub struct ForEachPushSurfaceReversed<Func, In>
@@ -33,12 +32,9 @@ where
 
     type ItemIn = In;
 
-    type Connect = NullPushConnect;
     type Build = ForEachPushBuild<Func, In>;
 
-    fn into_parts(self) -> (Self::Connect, Self::Build) {
-        let connect = NullPushConnect::new();
-        let build = ForEachPushBuild::new(self.func);
-        (connect, build)
+    fn into_build(self) -> Self::Build {
+        ForEachPushBuild::new(self.func)
     }
 }
