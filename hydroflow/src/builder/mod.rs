@@ -87,7 +87,6 @@
 //! ports.
 
 pub mod build;
-pub mod connect;
 pub mod surface;
 
 mod hydroflow_builder;

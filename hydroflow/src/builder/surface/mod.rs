@@ -16,7 +16,6 @@
 //! For implementation info see [super].
 
 use super::build::{PullBuild, PushBuild};
-use super::connect::{PullConnect, PushConnect};
 
 pub mod filter;
 pub mod filter_map;
@@ -41,7 +40,7 @@ pub mod exchange;
 
 use std::hash::Hash;
 
-use crate::scheduled::handoff::{HandoffList, HandoffListSplit};
+use crate::scheduled::handoff::handoff_list::{BasePortListSplit, RecvPortList, SendPortList};
 use crate::scheduled::type_list::Extend;
 
 /// Common trait shared between push and pull surface APIs.
@@ -106,17 +105,19 @@ pub trait BaseSurface {
 pub type InspectMapFunc<Prev: BaseSurface, Func> = impl FnMut(Prev::ItemOut) -> Prev::ItemOut;
 
 pub trait PullSurface: BaseSurface {
-    type InputHandoffs: HandoffList;
-
-    type Connect: PullConnect<InputHandoffs = Self::InputHandoffs>;
+    type InputHandoffs: RecvPortList;
     type Build: PullBuild<InputHandoffs = Self::InputHandoffs, ItemOut = Self::ItemOut>;
 
-    fn into_parts(self) -> (Self::Connect, Self::Build);
+    fn into_parts(self) -> (Self::InputHandoffs, Self::Build);
 
     fn chain<Other>(self, other: Other) -> pull_chain::ChainPullSurface<Self, Other>
     where
         Self: Sized,
         Other: PullSurface<ItemOut = Self::ItemOut>,
+
+        Self::InputHandoffs: Extend<Other::InputHandoffs>,
+        <Self::InputHandoffs as Extend<Other::InputHandoffs>>::Extended: RecvPortList
+            + BasePortListSplit<Self::InputHandoffs, false, Suffix = Other::InputHandoffs>,
     {
         pull_chain::ChainPullSurface::new(self, other)
     }
@@ -131,9 +132,10 @@ pub trait PullSurface: BaseSurface {
         Key: 'static + Eq + Hash + Clone,
         ValSelf: 'static + Eq + Clone,
         ValOther: 'static + Eq + Clone,
+
         Self::InputHandoffs: Extend<Other::InputHandoffs>,
-        <Self::InputHandoffs as Extend<Other::InputHandoffs>>::Extended:
-            HandoffList + HandoffListSplit<Self::InputHandoffs, Suffix = Other::InputHandoffs>,
+        <Self::InputHandoffs as Extend<Other::InputHandoffs>>::Extended: RecvPortList
+            + BasePortListSplit<Self::InputHandoffs, false, Suffix = Other::InputHandoffs>,
     {
         pull_join::JoinPullSurface::new(self, other)
     }
@@ -179,8 +181,8 @@ pub trait PushSurface: BaseSurface {
         NextB: PushSurfaceReversed<ItemIn = Self::ItemOut>,
 
         NextA::OutputHandoffs: Extend<NextB::OutputHandoffs>,
-        <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended:
-            HandoffList + HandoffListSplit<NextA::OutputHandoffs, Suffix = NextB::OutputHandoffs>,
+        <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended: SendPortList
+            + BasePortListSplit<NextA::OutputHandoffs, false, Suffix = NextB::OutputHandoffs>,
     {
         let next = push_tee::TeePushSurfaceReversed::new(next_a, next_b);
         self.reverse(next)
@@ -211,8 +213,8 @@ pub trait PushSurface: BaseSurface {
         NextB: PushSurfaceReversed<ItemIn = Self::ItemOut>,
 
         NextA::OutputHandoffs: Extend<NextB::OutputHandoffs>,
-        <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended:
-            HandoffList + HandoffListSplit<NextA::OutputHandoffs, Suffix = NextB::OutputHandoffs>,
+        <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended: SendPortList
+            + BasePortListSplit<NextA::OutputHandoffs, false, Suffix = NextB::OutputHandoffs>,
     {
         let next = push_partition::PartitionPushSurfaceReversed::new(func, next_a, next_b);
         self.reverse(next)
@@ -226,12 +228,10 @@ pub trait PushSurface: BaseSurface {
 ///
 /// This is the already-reversed, [PushSurface] does the actual reversing.
 pub trait PushSurfaceReversed {
-    type OutputHandoffs: HandoffList;
-
     type ItemIn;
 
-    type Connect: PushConnect<OutputHandoffs = Self::OutputHandoffs>;
+    type OutputHandoffs: SendPortList;
     type Build: PushBuild<OutputHandoffs = Self::OutputHandoffs, ItemIn = Self::ItemIn>;
 
-    fn into_parts(self) -> (Self::Connect, Self::Build);
+    fn into_parts(self) -> (Self::OutputHandoffs, Self::Build);
 }

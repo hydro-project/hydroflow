@@ -35,13 +35,10 @@ where
 {
     type InputHandoffs = Prev::InputHandoffs;
 
-    type Connect = Prev::Connect;
     type Build = FilterPullBuild<Prev::Build, Func>;
 
-    fn into_parts(self) -> (Self::Connect, Self::Build) {
-        let (connect, build) = self.prev.into_parts();
-        let build = FilterPullBuild::new(build, self.func);
-        (connect, build)
+    fn into_build(self) -> Self::Build {
+        FilterPullBuild::new(self.prev.into_build(), self.func)
     }
 }
 
@@ -90,12 +87,9 @@ where
 
     type ItemIn = Next::ItemIn;
 
-    type Connect = Next::Connect;
     type Build = FilterPushBuild<Next::Build, Func>;
 
-    fn into_parts(self) -> (Self::Connect, Self::Build) {
-        let (connect, build) = self.next.into_parts();
-        let build = FilterPushBuild::new(build, self.func);
-        (connect, build)
+    fn into_build(self) -> Self::Build {
+        FilterPushBuild::new(self.prev.into_build(), self.func)
     }
 }

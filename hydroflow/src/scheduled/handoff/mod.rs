@@ -1,4 +1,4 @@
-mod handoff_list;
+pub mod handoff_list;
 mod tee;
 mod vector;
 

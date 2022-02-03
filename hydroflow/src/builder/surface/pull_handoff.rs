@@ -1,27 +1,23 @@
 use super::{BaseSurface, PullSurface};
 
-use std::cell::Cell;
-use std::rc::Rc;
-
 use crate::builder::build::pull_handoff::HandoffPullBuild;
-use crate::builder::connect::HandoffPullConnect;
-use crate::scheduled::ctx::InputPort;
 use crate::scheduled::handoff::Handoff;
+use crate::scheduled::port::InputPort;
 use crate::tt;
 
 pub struct HandoffPullSurface<Hof>
 where
     Hof: Handoff,
 {
-    port: Rc<Cell<Option<InputPort<Hof>>>>,
+    port: Option<InputPort<Hof>>,
 }
 
 impl<Hof> HandoffPullSurface<Hof>
 where
     Hof: Handoff,
 {
-    pub fn new(port: Rc<Cell<Option<InputPort<Hof>>>>) -> Self {
-        Self { port }
+    pub fn new(port: InputPort<Hof>) -> Self {
+        Self { port: Some(port) }
     }
 }
 
@@ -38,12 +34,9 @@ where
 {
     type InputHandoffs = tt!(Hof);
 
-    type Connect = HandoffPullConnect<Hof>;
     type Build = HandoffPullBuild<Hof>;
 
-    fn into_parts(self) -> (Self::Connect, Self::Build) {
-        let connect = HandoffPullConnect::new(self.port);
-        let build = HandoffPullBuild::new();
-        (connect, build)
+    fn into_build(self) -> Self::Build {
+        HandoffPullBuild::new()
     }
 }
