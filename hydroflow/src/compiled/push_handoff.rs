@@ -2,8 +2,8 @@ use super::Pusherator;
 
 use std::marker::PhantomData;
 
-use crate::scheduled::port::SendCtx;
 use crate::scheduled::handoff::{CanReceive, Handoff};
+use crate::scheduled::port::SendCtx;
 
 pub struct PushHandoff<'a, H, T>
 where
