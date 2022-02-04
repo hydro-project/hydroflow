@@ -3,5 +3,6 @@
 members = [
     "hydroflow",
     "benches",
+    "kvs",
     "relalg",
 ]
