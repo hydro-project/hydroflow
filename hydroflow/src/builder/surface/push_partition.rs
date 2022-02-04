@@ -1,7 +1,8 @@
 use super::PushSurfaceReversed;
 
 use crate::builder::build::push_partition::PartitionPushBuild;
-use crate::scheduled::handoff::handoff_list::{BasePortListSplit, SendPortList};
+use crate::scheduled::handoff::handoff_list::{PortList, PortListSplit};
+use crate::scheduled::port::SEND;
 use crate::scheduled::type_list::Extend;
 
 pub struct PartitionPushSurfaceReversed<NextA, NextB, Func>
@@ -11,8 +12,8 @@ where
     NextB: PushSurfaceReversed<ItemIn = NextA::ItemIn>,
 
     NextA::OutputHandoffs: Extend<NextB::OutputHandoffs>,
-    <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended: SendPortList
-        + BasePortListSplit<NextA::OutputHandoffs, true, Suffix = NextB::OutputHandoffs>,
+    <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended:
+        PortList<SEND> + PortListSplit<SEND, NextA::OutputHandoffs, Suffix = NextB::OutputHandoffs>,
 {
     func: Func,
     next_a: NextA,
@@ -25,8 +26,8 @@ where
     NextB: PushSurfaceReversed<ItemIn = NextA::ItemIn>,
 
     NextA::OutputHandoffs: Extend<NextB::OutputHandoffs>,
-    <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended: SendPortList
-        + BasePortListSplit<NextA::OutputHandoffs, true, Suffix = NextB::OutputHandoffs>,
+    <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended:
+        PortList<SEND> + PortListSplit<SEND, NextA::OutputHandoffs, Suffix = NextB::OutputHandoffs>,
 {
     pub fn new(func: Func, next_a: NextA, next_b: NextB) -> Self {
         Self {
@@ -44,8 +45,8 @@ where
     NextB: PushSurfaceReversed<ItemIn = NextA::ItemIn>,
 
     NextA::OutputHandoffs: Extend<NextB::OutputHandoffs>,
-    <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended: SendPortList
-        + BasePortListSplit<NextA::OutputHandoffs, true, Suffix = NextB::OutputHandoffs>,
+    <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended:
+        PortList<SEND> + PortListSplit<SEND, NextA::OutputHandoffs, Suffix = NextB::OutputHandoffs>,
 {
     type ItemIn = NextA::ItemIn;
 

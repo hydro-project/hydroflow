@@ -2,24 +2,17 @@ use ref_cast::RefCast;
 use sealed::sealed;
 
 use crate::scheduled::graph::HandoffData;
-use crate::scheduled::port::{BaseCtx, BasePort};
+use crate::scheduled::port::{Polarity, Port, PortCtx};
 use crate::scheduled::type_list::TypeList;
 use crate::scheduled::{HandoffId, SubgraphId};
 
 use super::Handoff;
 
 #[sealed]
-pub trait SendPortList: BasePortList<true> {}
-#[sealed]
-impl<T: BasePortList<true>> SendPortList for T {}
-
-#[sealed]
-pub trait RecvPortList: BasePortList<false> {}
-#[sealed]
-impl<T: BasePortList<false>> RecvPortList for T {}
-
-#[sealed]
-pub trait BasePortList<const S: bool>: TypeList {
+pub trait PortList<S>: TypeList
+where
+    S: Polarity,
+{
     #[allow(clippy::ptr_arg)]
     fn set_graph_meta<'a>(
         &self,
@@ -33,10 +26,11 @@ pub trait BasePortList<const S: bool>: TypeList {
     fn make_ctx<'a>(&self, handoffs: &'a [HandoffData]) -> Self::Ctx<'a>;
 }
 #[sealed]
-impl<Rest, H, const S: bool> BasePortList<S> for (BasePort<H, S>, Rest)
+impl<S, Rest, H> PortList<S> for (Port<S, H>, Rest)
 where
+    S: Polarity,
     H: Handoff,
-    Rest: BasePortList<S>,
+    Rest: PortList<S>,
 {
     fn set_graph_meta<'a>(
         &self,
@@ -59,7 +53,7 @@ where
         rest.set_graph_meta(handoffs, pred, succ, out_handoff_ids);
     }
 
-    type Ctx<'a> = (&'a BaseCtx<H, S>, Rest::Ctx<'a>);
+    type Ctx<'a> = (&'a PortCtx<S, H>, Rest::Ctx<'a>);
     fn make_ctx<'a>(&self, handoffs: &'a [HandoffData]) -> Self::Ctx<'a> {
         let (this, rest) = self;
         let handoff = handoffs
@@ -76,7 +70,10 @@ where
     }
 }
 #[sealed]
-impl<const S: bool> BasePortList<S> for () {
+impl<S> PortList<S> for ()
+where
+    S: Polarity,
+{
     fn set_graph_meta<'a>(
         &self,
         _handoffs: &'a mut [HandoffData],
@@ -91,23 +88,23 @@ impl<const S: bool> BasePortList<S> for () {
 }
 
 #[sealed]
-pub trait BasePortListSplit<A, const S: bool>: BasePortList<S>
+pub trait PortListSplit<S, A>: PortList<S>
 where
-    A: BasePortList<S>,
+    S: Polarity,
+    A: PortList<S>,
 {
-    type Suffix: BasePortList<S>;
+    type Suffix: PortList<S>;
 
     #[allow(clippy::needless_lifetimes)]
-    fn split_ctx<'a>(
-        ctx: Self::Ctx<'a>,
-    ) -> (A::Ctx<'a>, <Self::Suffix as BasePortList<S>>::Ctx<'a>);
+    fn split_ctx<'a>(ctx: Self::Ctx<'a>) -> (A::Ctx<'a>, <Self::Suffix as PortList<S>>::Ctx<'a>);
 }
 #[sealed]
-impl<H, T, U, const S: bool> BasePortListSplit<(BasePort<H, S>, U), S> for (BasePort<H, S>, T)
+impl<S, H, T, U> PortListSplit<S, (Port<S, H>, U)> for (Port<S, H>, T)
 where
+    S: Polarity,
     H: Handoff,
-    T: BasePortListSplit<U, S>,
-    U: BasePortList<S>,
+    T: PortListSplit<S, U>,
+    U: PortList<S>,
 {
     type Suffix = T::Suffix;
 
@@ -115,18 +112,19 @@ where
     fn split_ctx<'a>(
         ctx: Self::Ctx<'a>,
     ) -> (
-        <(BasePort<H, S>, U) as BasePortList<S>>::Ctx<'a>,
-        <Self::Suffix as BasePortList<S>>::Ctx<'a>,
+        <(Port<S, H>, U) as PortList<S>>::Ctx<'a>,
+        <Self::Suffix as PortList<S>>::Ctx<'a>,
     ) {
         let (x, t) = ctx;
-        let (u, v) = <T as BasePortListSplit<U, S>>::split_ctx(t);
+        let (u, v) = T::split_ctx(t);
         ((x, u), v)
     }
 }
 #[sealed]
-impl<T, const S: bool> BasePortListSplit<(), S> for T
+impl<S, T> PortListSplit<S, ()> for T
 where
-    T: BasePortList<S>,
+    S: Polarity,
+    T: PortList<S>,
 {
     type Suffix = T;
 

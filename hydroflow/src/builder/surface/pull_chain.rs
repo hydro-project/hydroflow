@@ -1,7 +1,8 @@
 use super::{BaseSurface, PullSurface};
 
 use crate::builder::build::pull_chain::ChainPullBuild;
-use crate::scheduled::handoff::handoff_list::{BasePortListSplit, RecvPortList};
+use crate::scheduled::handoff::handoff_list::{PortList, PortListSplit};
+use crate::scheduled::port::RECV;
 use crate::scheduled::type_list::Extend;
 
 pub struct ChainPullSurface<PrevA, PrevB>
@@ -10,8 +11,8 @@ where
     PrevB: PullSurface<ItemOut = PrevA::ItemOut>,
 
     PrevA::InputHandoffs: Extend<PrevB::InputHandoffs>,
-    <PrevA::InputHandoffs as Extend<PrevB::InputHandoffs>>::Extended: RecvPortList
-        + BasePortListSplit<PrevA::InputHandoffs, false, Suffix = PrevB::InputHandoffs>,
+    <PrevA::InputHandoffs as Extend<PrevB::InputHandoffs>>::Extended:
+        PortList<RECV> + PortListSplit<RECV, PrevA::InputHandoffs, Suffix = PrevB::InputHandoffs>,
 {
     prev_a: PrevA,
     prev_b: PrevB,
@@ -22,8 +23,8 @@ where
     PrevB: PullSurface<ItemOut = PrevA::ItemOut>,
 
     PrevA::InputHandoffs: Extend<PrevB::InputHandoffs>,
-    <PrevA::InputHandoffs as Extend<PrevB::InputHandoffs>>::Extended: RecvPortList
-        + BasePortListSplit<PrevA::InputHandoffs, false, Suffix = PrevB::InputHandoffs>,
+    <PrevA::InputHandoffs as Extend<PrevB::InputHandoffs>>::Extended:
+        PortList<RECV> + PortListSplit<RECV, PrevA::InputHandoffs, Suffix = PrevB::InputHandoffs>,
 {
     pub fn new(prev_a: PrevA, prev_b: PrevB) -> Self {
         Self { prev_a, prev_b }
@@ -36,8 +37,8 @@ where
     PrevB: PullSurface<ItemOut = PrevA::ItemOut>,
 
     PrevA::InputHandoffs: Extend<PrevB::InputHandoffs>,
-    <PrevA::InputHandoffs as Extend<PrevB::InputHandoffs>>::Extended: RecvPortList
-        + BasePortListSplit<PrevA::InputHandoffs, false, Suffix = PrevB::InputHandoffs>,
+    <PrevA::InputHandoffs as Extend<PrevB::InputHandoffs>>::Extended:
+        PortList<RECV> + PortListSplit<RECV, PrevA::InputHandoffs, Suffix = PrevB::InputHandoffs>,
 {
     type ItemOut = PrevA::ItemOut;
 }
@@ -48,8 +49,8 @@ where
     PrevB: PullSurface<ItemOut = PrevA::ItemOut>,
 
     PrevA::InputHandoffs: Extend<PrevB::InputHandoffs>,
-    <PrevA::InputHandoffs as Extend<PrevB::InputHandoffs>>::Extended: RecvPortList
-        + BasePortListSplit<PrevA::InputHandoffs, false, Suffix = PrevB::InputHandoffs>,
+    <PrevA::InputHandoffs as Extend<PrevB::InputHandoffs>>::Extended:
+        PortList<RECV> + PortListSplit<RECV, PrevA::InputHandoffs, Suffix = PrevB::InputHandoffs>,
 {
     type InputHandoffs = <PrevA::InputHandoffs as Extend<PrevB::InputHandoffs>>::Extended;
     type Build = ChainPullBuild<PrevA::Build, PrevB::Build>;

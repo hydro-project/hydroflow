@@ -1,7 +1,8 @@
 use super::PushSurfaceReversed;
 
 use crate::builder::build::push_tee::TeePushBuild;
-use crate::scheduled::handoff::handoff_list::{BasePortListSplit, SendPortList};
+use crate::scheduled::handoff::handoff_list::{PortList, PortListSplit};
+use crate::scheduled::port::SEND;
 use crate::scheduled::type_list::Extend;
 
 pub struct TeePushSurfaceReversed<NextA, NextB>
@@ -11,8 +12,8 @@ where
     NextA::ItemIn: Clone,
 
     NextA::OutputHandoffs: Extend<NextB::OutputHandoffs>,
-    <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended: SendPortList
-        + BasePortListSplit<NextA::OutputHandoffs, true, Suffix = NextB::OutputHandoffs>,
+    <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended:
+        PortList<SEND> + PortListSplit<SEND, NextA::OutputHandoffs, Suffix = NextB::OutputHandoffs>,
 {
     next_a: NextA,
     next_b: NextB,
@@ -24,8 +25,8 @@ where
     NextA::ItemIn: Clone,
 
     NextA::OutputHandoffs: Extend<NextB::OutputHandoffs>,
-    <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended: SendPortList
-        + BasePortListSplit<NextA::OutputHandoffs, true, Suffix = NextB::OutputHandoffs>,
+    <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended:
+        PortList<SEND> + PortListSplit<SEND, NextA::OutputHandoffs, Suffix = NextB::OutputHandoffs>,
 {
     pub fn new(next_a: NextA, next_b: NextB) -> Self {
         Self { next_a, next_b }
@@ -39,8 +40,8 @@ where
     NextA::ItemIn: Clone,
 
     NextA::OutputHandoffs: Extend<NextB::OutputHandoffs>,
-    <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended: SendPortList
-        + BasePortListSplit<NextA::OutputHandoffs, true, Suffix = NextB::OutputHandoffs>,
+    <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended:
+        PortList<SEND> + PortListSplit<SEND, NextA::OutputHandoffs, Suffix = NextB::OutputHandoffs>,
 {
     type ItemIn = NextA::ItemIn;
 

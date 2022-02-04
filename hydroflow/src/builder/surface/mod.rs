@@ -40,7 +40,8 @@ pub mod exchange;
 
 use std::hash::Hash;
 
-use crate::scheduled::handoff::handoff_list::{BasePortListSplit, RecvPortList, SendPortList};
+use crate::scheduled::handoff::handoff_list::{PortList, PortListSplit};
+use crate::scheduled::port::{RECV, SEND};
 use crate::scheduled::type_list::Extend;
 
 /// Common trait shared between push and pull surface APIs.
@@ -105,7 +106,7 @@ pub trait BaseSurface {
 pub type InspectMapFunc<Prev: BaseSurface, Func> = impl FnMut(Prev::ItemOut) -> Prev::ItemOut;
 
 pub trait PullSurface: BaseSurface {
-    type InputHandoffs: RecvPortList;
+    type InputHandoffs: PortList<RECV>;
     type Build: PullBuild<InputHandoffs = Self::InputHandoffs, ItemOut = Self::ItemOut>;
 
     fn into_parts(self) -> (Self::InputHandoffs, Self::Build);
@@ -116,8 +117,8 @@ pub trait PullSurface: BaseSurface {
         Other: PullSurface<ItemOut = Self::ItemOut>,
 
         Self::InputHandoffs: Extend<Other::InputHandoffs>,
-        <Self::InputHandoffs as Extend<Other::InputHandoffs>>::Extended: RecvPortList
-            + BasePortListSplit<Self::InputHandoffs, false, Suffix = Other::InputHandoffs>,
+        <Self::InputHandoffs as Extend<Other::InputHandoffs>>::Extended: PortList<RECV>
+            + PortListSplit<RECV, Self::InputHandoffs, Suffix = Other::InputHandoffs>,
     {
         pull_chain::ChainPullSurface::new(self, other)
     }
@@ -134,8 +135,8 @@ pub trait PullSurface: BaseSurface {
         ValOther: 'static + Eq + Clone,
 
         Self::InputHandoffs: Extend<Other::InputHandoffs>,
-        <Self::InputHandoffs as Extend<Other::InputHandoffs>>::Extended: RecvPortList
-            + BasePortListSplit<Self::InputHandoffs, false, Suffix = Other::InputHandoffs>,
+        <Self::InputHandoffs as Extend<Other::InputHandoffs>>::Extended: PortList<RECV>
+            + PortListSplit<RECV, Self::InputHandoffs, Suffix = Other::InputHandoffs>,
     {
         pull_join::JoinPullSurface::new(self, other)
     }
@@ -148,8 +149,8 @@ pub trait PullSurface: BaseSurface {
         Other::ItemOut: 'static + Eq + Clone,
 
         Self::InputHandoffs: Extend<Other::InputHandoffs>,
-        <Self::InputHandoffs as Extend<Other::InputHandoffs>>::Extended: RecvPortList
-            + BasePortListSplit<Self::InputHandoffs, false, Suffix = Other::InputHandoffs>,
+        <Self::InputHandoffs as Extend<Other::InputHandoffs>>::Extended: PortList<RECV>
+            + PortListSplit<RECV, Self::InputHandoffs, Suffix = Other::InputHandoffs>,
     {
         pull_cross_join::CrossJoinPullSurface::new(self, other)
     }
@@ -185,8 +186,8 @@ pub trait PushSurface: BaseSurface {
         NextB: PushSurfaceReversed<ItemIn = Self::ItemOut>,
 
         NextA::OutputHandoffs: Extend<NextB::OutputHandoffs>,
-        <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended: SendPortList
-            + BasePortListSplit<NextA::OutputHandoffs, true, Suffix = NextB::OutputHandoffs>,
+        <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended: PortList<SEND>
+            + PortListSplit<SEND, NextA::OutputHandoffs, Suffix = NextB::OutputHandoffs>,
     {
         let next = push_tee::TeePushSurfaceReversed::new(next_a, next_b);
         self.reverse(next)
@@ -217,8 +218,8 @@ pub trait PushSurface: BaseSurface {
         NextB: PushSurfaceReversed<ItemIn = Self::ItemOut>,
 
         NextA::OutputHandoffs: Extend<NextB::OutputHandoffs>,
-        <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended: SendPortList
-            + BasePortListSplit<NextA::OutputHandoffs, true, Suffix = NextB::OutputHandoffs>,
+        <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended: PortList<SEND>
+            + PortListSplit<SEND, NextA::OutputHandoffs, Suffix = NextB::OutputHandoffs>,
     {
         let next = push_partition::PartitionPushSurfaceReversed::new(func, next_a, next_b);
         self.reverse(next)
@@ -234,7 +235,7 @@ pub trait PushSurface: BaseSurface {
 pub trait PushSurfaceReversed {
     type ItemIn;
 
-    type OutputHandoffs: SendPortList;
+    type OutputHandoffs: PortList<SEND>;
     type Build: PushBuild<OutputHandoffs = Self::OutputHandoffs, ItemIn = Self::ItemIn>;
 
     fn into_parts(self) -> (Self::OutputHandoffs, Self::Build);

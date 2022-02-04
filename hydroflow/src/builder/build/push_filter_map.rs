@@ -3,7 +3,8 @@ use super::{PushBuild, PushBuildBase};
 use std::marker::PhantomData;
 
 use crate::compiled::filter_map::FilterMap;
-use crate::scheduled::handoff::handoff_list::BasePortList;
+use crate::scheduled::handoff::handoff_list::PortList;
+use crate::scheduled::port::SEND;
 
 pub struct FilterMapPushBuild<Next, Func, In>
 where
@@ -52,7 +53,7 @@ where
 
     fn build<'slf, 'hof>(
         &'slf mut self,
-        handoffs: <Self::OutputHandoffs as BasePortList<true>>::Ctx<'hof>,
+        handoffs: <Self::OutputHandoffs as PortList<SEND>>::Ctx<'hof>,
     ) -> Self::Build<'slf, 'hof> {
         FilterMap::new(|x| (self.func)(x), self.next.build(handoffs))
     }

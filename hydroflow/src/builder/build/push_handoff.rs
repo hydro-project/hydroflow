@@ -3,9 +3,9 @@ use super::{PushBuild, PushBuildBase};
 use std::marker::PhantomData;
 
 use crate::compiled::push_handoff::PushHandoff;
-use crate::scheduled::handoff::handoff_list::BasePortList;
+use crate::scheduled::handoff::handoff_list::PortList;
 use crate::scheduled::handoff::{CanReceive, Handoff};
-use crate::scheduled::port::InputPort;
+use crate::scheduled::port::{InputPort, SEND};
 use crate::{tl, tt};
 
 pub struct HandoffPushBuild<Hof, In>
@@ -51,7 +51,7 @@ where
 
     fn build<'slf, 'hof>(
         &'slf mut self,
-        handoffs: <Self::OutputHandoffs as BasePortList<true>>::Ctx<'hof>,
+        handoffs: <Self::OutputHandoffs as PortList<SEND>>::Ctx<'hof>,
     ) -> Self::Build<'slf, 'hof> {
         let tl!(handoff) = handoffs;
         PushHandoff::new(handoff)
