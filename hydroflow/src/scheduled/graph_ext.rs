@@ -75,7 +75,7 @@ pub trait GraphExt {
         (send_port_1: W1, send_port_2: W2)
     );
 
-    fn add_channel_input<T, W>(&mut self) -> (Input<T, SyncSender<T>>, RecvPort<W>)
+    fn add_channel_input<T, W>(&mut self, send_port: SendPort<W>) -> Input<T, SyncSender<T>>
     where
         T: 'static,
         W: 'static + Handoff + CanReceive<T>;
@@ -121,7 +121,7 @@ impl GraphExt for Hydroflow {
         (send_port_1: W1, send_port_2: W2)
     );
 
-    fn add_channel_input<T, W>(&mut self) -> (Input<T, SyncSender<T>>, RecvPort<W>)
+    fn add_channel_input<T, W>(&mut self, send_port: SendPort<W>) -> Input<T, SyncSender<T>>
     where
         T: 'static,
         W: 'static + Handoff + CanReceive<T>,
@@ -129,13 +129,12 @@ impl GraphExt for Hydroflow {
         use std::sync::mpsc;
 
         let (sender, receiver) = mpsc::sync_channel(8000);
-        let (send_port, recv_port) = self.make_edge();
         let sg_id = self.add_subgraph_source::<_, W>(send_port, move |_ctx, send| {
             for x in receiver.try_iter() {
                 send.give(x);
             }
         });
-        (Input::new(self.reactor(), sg_id, sender), recv_port)
+        Input::new(self.reactor(), sg_id, sender)
     }
 
     fn add_input<T, W>(&mut self, send_port: SendPort<W>) -> Input<T, super::input::Buffer<T>>

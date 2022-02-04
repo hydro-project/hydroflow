@@ -21,12 +21,14 @@ pub(crate) async fn run_database(opts: Opts) {
     let (encode_contacts_out, contacts_merge) = df.make_edge::<VecHandoff<Message>>();
     let (encode_diagnoses_out, diagnoses_merge) = df.make_edge::<VecHandoff<Message>>();
 
-    let (contacts_in, contacts_out) =
-        df.add_channel_input::<_, VecHandoff<(&'static str, &'static str, usize)>>();
-    let (diagnoses_in, diagnoses_out) =
-        df.add_channel_input::<_, VecHandoff<(&'static str, (usize, usize))>>();
-    let (people_in, people_out) =
-        df.add_channel_input::<_, VecHandoff<(String, (String, String))>>();
+    let (contacts_send, contacts_recv) =
+        df.make_edge::<VecHandoff<(&'static str, &'static str, usize)>>();
+    let contacts_send = df.add_channel_input(contacts_send);
+    let (diagnosed_send, diagnosed_recv) =
+        df.make_edge::<VecHandoff<(&'static str, (usize, usize))>>();
+    let diagnosed_send = df.add_channel_input(diagnosed_send);
+    let (people_send, people_recv) = df.make_edge::<VecHandoff<(String, (String, String))>>();
+    let people_send = df.add_channel_input(people_send);
 
     let stream = TcpListener::bind(format!("localhost:{}", opts.port))
         .await
@@ -47,9 +49,9 @@ pub(crate) async fn run_database(opts: Opts) {
         let mut t = 0;
         let mut rng = rand::thread_rng();
         for (id, (name, phone)) in all_people.clone() {
-            people_in.give(Some((id.to_owned(), (name.to_owned(), phone.to_owned()))));
+            people_send.give(Some((id.to_owned(), (name.to_owned(), phone.to_owned()))));
         }
-        people_in.flush();
+        people_send.flush();
         loop {
             t += 1;
             match rng.gen_range(0..2) as usize {
@@ -59,8 +61,8 @@ pub(crate) async fn run_database(opts: Opts) {
                         let p1 = rng.gen_range(0..all_people.len());
                         let p2 = rng.gen_range(0..all_people.len());
                         if p1 != p2 {
-                            contacts_in.give(Some((all_people[p1].0, all_people[p2].0, t)));
-                            contacts_in.flush();
+                            contacts_send.give(Some((all_people[p1].0, all_people[p2].0, t)));
+                            contacts_send.flush();
                         }
                     }
                 }
@@ -68,8 +70,8 @@ pub(crate) async fn run_database(opts: Opts) {
                     // Diagnosis.
                     if !all_people.is_empty() {
                         let p = rng.gen_range(0..all_people.len());
-                        diagnoses_in.give(Some((all_people[p].0, (t, t + 14))));
-                        diagnoses_in.flush();
+                        diagnosed_send.give(Some((all_people[p].0, (t, t + 14))));
+                        diagnosed_send.flush();
                     }
                 }
                 _ => unreachable!(),
@@ -89,7 +91,7 @@ pub(crate) async fn run_database(opts: Opts) {
         },
     );
 
-    df.add_subgraph_in_out(contacts_out, encode_contacts_out, |_ctx, recv, send| {
+    df.add_subgraph_in_out(contacts_recv, encode_contacts_out, |_ctx, recv, send| {
         let mut buf = Vec::new();
         recv.take_inner().encode(&mut buf);
         send.give(Some(Message {
@@ -98,7 +100,7 @@ pub(crate) async fn run_database(opts: Opts) {
         }));
     });
 
-    df.add_subgraph_in_out(diagnoses_out, encode_diagnoses_out, |_ctx, recv, send| {
+    df.add_subgraph_in_out(diagnosed_recv, encode_diagnoses_out, |_ctx, recv, send| {
         let mut buf = Vec::new();
         recv.take_inner().encode(&mut buf);
         send.give(Some(Message {
@@ -109,7 +111,7 @@ pub(crate) async fn run_database(opts: Opts) {
 
     let mut join_state = Default::default();
     df.add_subgraph(
-        tl!(notif_sink, people_out),
+        tl!(notif_sink, people_recv),
         tl!(),
         move |_ctx, tl!(notifs, people), tl!()| {
             let pivot = SymmetricHashJoin::new(
