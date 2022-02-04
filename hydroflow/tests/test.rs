@@ -252,11 +252,12 @@ fn test_input_handle() {
 
     let mut df = Hydroflow::new();
 
-    let (input, recv_port) = df.add_input();
+    let (send_port, recv_port) = df.make_edge::<VecHandoff<usize>>();
+    let input = df.add_input(send_port);
 
     let vec = Rc::new(RefCell::new(Vec::new()));
     let inner_vec = vec.clone();
-    df.add_subgraph_sink(recv_port, move |_ctx, recv: &RecvCtx<VecHandoff<usize>>| {
+    df.add_subgraph_sink(recv_port, move |_ctx, recv| {
         for v in recv.take_inner() {
             (*inner_vec).borrow_mut().push(v);
         }
