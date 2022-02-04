@@ -4,7 +4,7 @@ use std::marker::PhantomData;
 
 use crate::scheduled::handoff::handoff_list::PortList;
 use crate::scheduled::handoff::Handoff;
-use crate::scheduled::port::{OutputPort, RECV};
+use crate::scheduled::port::{RecvPort, RECV};
 use crate::{tl, tt};
 
 pub struct HandoffPullBuild<Hof>
@@ -46,7 +46,7 @@ impl<Hof> PullBuild for HandoffPullBuild<Hof>
 where
     Hof: Handoff,
 {
-    type InputHandoffs = tt!(OutputPort<Hof>);
+    type InputHandoffs = tt!(RecvPort<Hof>);
 
     fn build<'slf, 'hof>(
         &'slf mut self,

@@ -8,7 +8,7 @@ use super::context::Context;
 use super::graph::Hydroflow;
 use super::handoff::{CanReceive, Handoff};
 use super::input::Input;
-use super::port::{InputPort, OutputPort, RecvCtx, SendCtx};
+use super::port::{RecvCtx, RecvPort, SendCtx, SendPort};
 use super::SubgraphId;
 
 macro_rules! subgraph_ext {
@@ -18,7 +18,7 @@ macro_rules! subgraph_ext {
         ( $($send_param:ident : $send_generic:ident),* )
     ) => {
         fn $fn_name <F, $($recv_generic,)* $($send_generic),*>
-            (&mut self, $($recv_param : OutputPort< $recv_generic >,)* $($send_param : InputPort< $send_generic >,)* subgraph: F)
+            (&mut self, $($recv_param : RecvPort< $recv_generic >,)* $($send_param : SendPort< $send_generic >,)* subgraph: F)
             -> SubgraphId
         where
             F: 'static + FnMut(&Context<'_>, $(&RecvCtx< $recv_generic >,)* $(&SendCtx< $send_generic >),*),
@@ -32,7 +32,7 @@ macro_rules! subgraph_ext {
         ( $($send_param:ident : $send_generic:ident),* )
     ) => {
         fn $fn_name <F, $($recv_generic,)* $($send_generic),*>
-            (&mut self, $($recv_param : OutputPort< $recv_generic >,)* $($send_param : InputPort< $send_generic >,)* subgraph: F)
+            (&mut self, $($recv_param : RecvPort< $recv_generic >,)* $($send_param : SendPort< $send_generic >,)* subgraph: F)
             -> SubgraphId
         where
             F: 'static + FnMut(&Context<'_>, $(&RecvCtx< $recv_generic >,)* $(&SendCtx< $send_generic >),*),
@@ -75,19 +75,19 @@ pub trait GraphExt {
         (send_port_1: W1, send_port_2: W2)
     );
 
-    fn add_channel_input<T, W>(&mut self) -> (Input<T, SyncSender<T>>, OutputPort<W>)
+    fn add_channel_input<T, W>(&mut self) -> (Input<T, SyncSender<T>>, RecvPort<W>)
     where
         T: 'static,
         W: 'static + Handoff + CanReceive<T>;
 
     /// Adds an "input" operator, returning a handle to insert data into it.
     /// TODO(justin): make this thing work better
-    fn add_input<T, W>(&mut self) -> (Input<T, super::input::Buffer<T>>, OutputPort<W>)
+    fn add_input<T, W>(&mut self) -> (Input<T, super::input::Buffer<T>>, RecvPort<W>)
     where
         T: 'static,
         W: 'static + Handoff + CanReceive<T>;
 
-    fn add_input_from_stream<T, W, S>(&mut self, send_port: InputPort<W>, stream: S)
+    fn add_input_from_stream<T, W, S>(&mut self, send_port: SendPort<W>, stream: S)
     where
         S: 'static + Stream<Item = T> + Unpin,
         W: 'static + Handoff + CanReceive<T>;
@@ -121,7 +121,7 @@ impl GraphExt for Hydroflow {
         (send_port_1: W1, send_port_2: W2)
     );
 
-    fn add_channel_input<T, W>(&mut self) -> (Input<T, SyncSender<T>>, OutputPort<W>)
+    fn add_channel_input<T, W>(&mut self) -> (Input<T, SyncSender<T>>, RecvPort<W>)
     where
         T: 'static,
         W: 'static + Handoff + CanReceive<T>,
@@ -138,7 +138,7 @@ impl GraphExt for Hydroflow {
         (Input::new(self.reactor(), sg_id, sender), recv_port)
     }
 
-    fn add_input<T, W>(&mut self) -> (Input<T, super::input::Buffer<T>>, OutputPort<W>)
+    fn add_input<T, W>(&mut self) -> (Input<T, super::input::Buffer<T>>, RecvPort<W>)
     where
         T: 'static,
         W: 'static + Handoff + CanReceive<T>,
@@ -154,7 +154,7 @@ impl GraphExt for Hydroflow {
         (Input::new(self.reactor(), sg_id, input), recv_port)
     }
 
-    fn add_input_from_stream<T, W, S>(&mut self, send_port: InputPort<W>, stream: S)
+    fn add_input_from_stream<T, W, S>(&mut self, send_port: SendPort<W>, stream: S)
     where
         S: 'static + Stream<Item = T> + Unpin,
         W: 'static + Handoff + CanReceive<T>,
