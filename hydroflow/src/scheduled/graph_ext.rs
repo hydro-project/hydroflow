@@ -82,7 +82,7 @@ pub trait GraphExt {
 
     /// Adds an "input" operator, returning a handle to insert data into it.
     /// TODO(justin): make this thing work better
-    fn add_input<T, W>(&mut self) -> (Input<T, super::input::Buffer<T>>, RecvPort<W>)
+    fn add_input<T, W>(&mut self, send_port: SendPort<W>) -> Input<T, super::input::Buffer<T>>
     where
         T: 'static,
         W: 'static + Handoff + CanReceive<T>;
@@ -138,20 +138,19 @@ impl GraphExt for Hydroflow {
         (Input::new(self.reactor(), sg_id, sender), recv_port)
     }
 
-    fn add_input<T, W>(&mut self) -> (Input<T, super::input::Buffer<T>>, RecvPort<W>)
+    fn add_input<T, W>(&mut self, send_port: SendPort<W>) -> Input<T, super::input::Buffer<T>>
     where
         T: 'static,
         W: 'static + Handoff + CanReceive<T>,
     {
         let input = super::input::Buffer::default();
         let inner_input = input.clone();
-        let (send_port, recv_port) = self.make_edge::<W>();
         let sg_id = self.add_subgraph_source::<_, W>(send_port, move |_ctx, send| {
             for x in (*inner_input.0).borrow_mut().drain(..) {
                 send.give(x);
             }
         });
-        (Input::new(self.reactor(), sg_id, input), recv_port)
+        Input::new(self.reactor(), sg_id, input)
     }
 
     fn add_input_from_stream<T, W, S>(&mut self, send_port: SendPort<W>, stream: S)
