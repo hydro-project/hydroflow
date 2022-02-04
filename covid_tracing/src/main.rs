@@ -27,11 +27,13 @@ fn main() {
 
     let mut df = Hydroflow::new();
 
-    let (contacts_send, contacts_recv) =
-        df.add_channel_input::<_, VecHandoff<(Pid, Pid, DateTime)>>();
+    let (contacts_send, contacts_recv) = df.make_edge::<VecHandoff<(Pid, Pid, DateTime)>>();
+    let contacts_send = df.add_channel_input(contacts_send);
     let (diagnosed_send, diagnosed_recv) =
-        df.add_channel_input::<_, VecHandoff<(Pid, (DateTime, DateTime))>>();
-    let (people_send, people_recv) = df.add_channel_input::<_, VecHandoff<(Pid, (Name, Phone))>>();
+        df.make_edge::<VecHandoff<(Pid, (DateTime, DateTime))>>();
+    let diagnosed_send = df.add_channel_input(diagnosed_send);
+    let (people_send, people_recv) = df.make_edge::<VecHandoff<(Pid, (Name, Phone))>>();
+    let people_send = df.add_channel_input(people_send);
 
     let (loop_send, loop_recv) = df.make_edge::<VecHandoff<(Pid, DateTime)>>();
     let (notifs_send, notifs_recv) = df.make_edge::<VecHandoff<(Pid, DateTime)>>();
