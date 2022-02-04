@@ -79,7 +79,7 @@ impl Hydroflow {
             }
         });
 
-        let (send_port, recv_port) = self.make_handoff();
+        let (send_port, recv_port) = self.make_edge();
         self.add_input_from_stream(send_port, incoming_messages.map(Some));
 
         (port, recv_port)
@@ -199,7 +199,7 @@ impl Hydroflow {
 
         let mut buffered_messages = Vec::new();
         let mut next_messages = Vec::new();
-        let (input_port, output_port) = self.make_handoff();
+        let (input_port, output_port) = self.make_edge();
         self.add_subgraph_sink(output_port, move |_ctx, recv| {
             buffered_messages.extend(recv.take_inner());
             for msg in buffered_messages.drain(..) {

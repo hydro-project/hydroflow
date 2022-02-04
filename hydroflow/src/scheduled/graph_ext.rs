@@ -129,7 +129,7 @@ impl GraphExt for Hydroflow {
         use std::sync::mpsc;
 
         let (sender, receiver) = mpsc::sync_channel(8000);
-        let (send_port, recv_port) = self.make_handoff();
+        let (send_port, recv_port) = self.make_edge();
         let sg_id = self.add_subgraph_source::<_, W>(send_port, move |_ctx, send| {
             for x in receiver.try_iter() {
                 send.give(x);
@@ -145,7 +145,7 @@ impl GraphExt for Hydroflow {
     {
         let input = super::input::Buffer::default();
         let inner_input = input.clone();
-        let (send_port, recv_port) = self.make_handoff::<W>();
+        let (send_port, recv_port) = self.make_edge::<W>();
         let sg_id = self.add_subgraph_source::<_, W>(send_port, move |_ctx, send| {
             for x in (*inner_input.0).borrow_mut().drain(..) {
                 send.give(x);

@@ -31,7 +31,7 @@ pub(crate) fn run_dataflow(r: RelExpr) -> Vec<Vec<Datum>> {
 }
 
 fn render_relational(df: &mut Hydroflow, r: RelExpr) -> OutputPort<VecHandoff<Vec<Datum>>> {
-    let (send_port, recv_port) = df.make_handoff();
+    let (send_port, recv_port) = df.make_edge();
     match r {
         RelExpr::Values(mut v) => {
             // TODO: drip-feed data?

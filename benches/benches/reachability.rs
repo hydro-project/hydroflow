@@ -130,12 +130,12 @@ fn benchmark_hydroflow_scheduled(c: &mut Criterion) {
             let mut df = Hydroflow::new();
 
             type Hoff = VecHandoff<usize>;
-            let (reachable_out, merge_lhs) = df.make_handoff::<Hoff>();
-            let (neighbors_out, merge_rhs) = df.make_handoff::<Hoff>();
-            let (merge_out, distinct_in) = df.make_handoff::<Hoff>();
-            let (distinct_out, tee_in) = df.make_handoff::<Hoff>();
-            let (tee_out1, neighbors_in) = df.make_handoff::<Hoff>();
-            let (tee_out2, sink_in) = df.make_handoff::<Hoff>();
+            let (reachable_out, merge_lhs) = df.make_edge::<Hoff>();
+            let (neighbors_out, merge_rhs) = df.make_edge::<Hoff>();
+            let (merge_out, distinct_in) = df.make_edge::<Hoff>();
+            let (distinct_out, tee_in) = df.make_edge::<Hoff>();
+            let (tee_out1, neighbors_in) = df.make_edge::<Hoff>();
+            let (tee_out2, sink_in) = df.make_edge::<Hoff>();
 
             df.add_subgraph_source(reachable_out, move |_ctx, send| {
                 send.give(Some(1));
@@ -207,9 +207,9 @@ fn benchmark_hydroflow(c: &mut Criterion) {
             // A dataflow that represents graph reachability.
             let mut df = Hydroflow::new();
 
-            let (reachable_out, origins_in) = df.make_handoff::<VecHandoff<usize>>();
-            let (did_reach_out, possible_reach_in) = df.make_handoff::<VecHandoff<usize>>();
-            let (output_out, sink_in) = df.make_handoff::<VecHandoff<usize>>();
+            let (reachable_out, origins_in) = df.make_edge::<VecHandoff<usize>>();
+            let (did_reach_out, possible_reach_in) = df.make_edge::<VecHandoff<usize>>();
+            let (output_out, sink_in) = df.make_edge::<VecHandoff<usize>>();
 
             df.add_subgraph_source(reachable_out, move |_ctx, send| {
                 send.give(Some(1));

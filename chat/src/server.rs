@@ -41,8 +41,7 @@ pub(crate) async fn run_server(opts: Opts) {
 
     // 2. feed new members into the join
     // But first, we need a buffer to turn push into pull for cross_join.
-    let (memberships_push, memberships_pull) =
-        hf.make_handoff::<VecHandoff<String>, Option<String>>();
+    let (memberships_push, memberships_pull) = hf.make_edge::<VecHandoff<String>, Option<String>>();
     // and now the other start_tee
     let member_join_input = hf
         .start_tee()

@@ -22,9 +22,9 @@ fn map_filter() {
     // A simple dataflow with one source feeding into one sink with some processing in the middle.
     let mut df = Hydroflow::new();
 
-    let (source, map_in) = df.make_handoff::<VecHandoff<i32>>();
-    let (map_out, filter_in) = df.make_handoff::<VecHandoff<i32>>();
-    let (filter_out, sink) = df.make_handoff::<VecHandoff<i32>>();
+    let (source, map_in) = df.make_edge::<VecHandoff<i32>>();
+    let (map_out, filter_in) = df.make_edge::<VecHandoff<i32>>();
+    let (filter_out, sink) = df.make_edge::<VecHandoff<i32>>();
 
     let data = [1, 2, 3, 4];
     df.add_subgraph(tl!(), tl!(source), move |_ctx, tl!(), tl!(send)| {
@@ -67,7 +67,7 @@ fn map_filter() {
 #[test]
 fn test_basic_variadic() {
     let mut df = Hydroflow::new();
-    let (source_send, sink_recv) = df.make_handoff::<VecHandoff<usize>>();
+    let (source_send, sink_recv) = df.make_edge::<VecHandoff<usize>>();
     df.add_subgraph_source(source_send, move |_ctx, send| {
         send.give(Some(5));
     });
@@ -91,7 +91,7 @@ fn test_basic_variadic() {
 fn test_basic_n_m() {
     let mut df = Hydroflow::new();
 
-    let (source_send, sink_recv) = df.make_handoff::<VecHandoff<usize>>();
+    let (source_send, sink_recv) = df.make_edge::<VecHandoff<usize>>();
 
     df.add_subgraph_n_m(
         vec![],
@@ -140,12 +140,12 @@ fn test_cycle() {
 
     let mut df = Hydroflow::new();
 
-    let (reachable, merge_lhs) = df.make_handoff::<VecHandoff<usize>>();
-    let (neighbors_out, merge_rhs) = df.make_handoff::<VecHandoff<usize>>();
-    let (merge_out, distinct_in) = df.make_handoff::<VecHandoff<usize>>();
-    let (distinct_out, tee_in) = df.make_handoff::<VecHandoff<usize>>();
-    let (tee_out1, neighbors_in) = df.make_handoff::<VecHandoff<usize>>();
-    let (tee_out2, sink_in) = df.make_handoff::<VecHandoff<usize>>();
+    let (reachable, merge_lhs) = df.make_edge::<VecHandoff<usize>>();
+    let (neighbors_out, merge_rhs) = df.make_edge::<VecHandoff<usize>>();
+    let (merge_out, distinct_in) = df.make_edge::<VecHandoff<usize>>();
+    let (distinct_out, tee_in) = df.make_edge::<VecHandoff<usize>>();
+    let (tee_out1, neighbors_in) = df.make_edge::<VecHandoff<usize>>();
+    let (tee_out2, sink_in) = df.make_edge::<VecHandoff<usize>>();
 
     let mut initially_reachable = vec![1];
     df.add_subgraph_source(reachable, move |_ctx, send| {
@@ -343,7 +343,7 @@ fn test_input_channel() {
             let done_inner = done.clone();
             let mut df = Hydroflow::new();
 
-            let (in_chan, input) = df.make_handoff();
+            let (in_chan, input) = df.make_edge();
             df.add_input_from_stream::<_, VecHandoff<usize>, _>(in_chan, receiver);
             df.add_subgraph_sink(input, move |_ctx, recv| {
                 for v in recv.take_inner() {

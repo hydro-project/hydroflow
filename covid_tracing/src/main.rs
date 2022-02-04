@@ -33,8 +33,8 @@ fn main() {
         df.add_channel_input::<_, VecHandoff<(Pid, (DateTime, DateTime))>>();
     let (people_send, people_recv) = df.add_channel_input::<_, VecHandoff<(Pid, (Name, Phone))>>();
 
-    let (loop_send, loop_recv) = df.make_handoff::<VecHandoff<(Pid, DateTime)>>();
-    let (notifs_send, notifs_recv) = df.make_handoff::<VecHandoff<(Pid, DateTime)>>();
+    let (loop_send, loop_recv) = df.make_edge::<VecHandoff<(Pid, DateTime)>>();
+    let (notifs_send, notifs_recv) = df.make_edge::<VecHandoff<(Pid, DateTime)>>();
 
     type MyJoinState = RefCell<JoinState<&'static str, (usize, usize), (&'static str, usize)>>;
     let state_handle = df.add_state(MyJoinState::default());

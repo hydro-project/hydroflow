@@ -15,7 +15,7 @@ fn benchmark_hydroflow(c: &mut Criterion) {
         b.iter(|| {
             let mut df = Hydroflow::new();
 
-            let (start_send, start_recv) = df.make_handoff::<VecHandoff<usize>>();
+            let (start_send, start_recv) = df.make_edge::<VecHandoff<usize>>();
 
             let mut sent = false;
             df.add_subgraph_source(start_send, move |_ctx, send| {
@@ -25,8 +25,8 @@ fn benchmark_hydroflow(c: &mut Criterion) {
                 }
             });
 
-            let (send1, mut recv1) = df.make_handoff::<VecHandoff<_>>();
-            let (send2, mut recv2) = df.make_handoff::<VecHandoff<_>>();
+            let (send1, mut recv1) = df.make_edge::<VecHandoff<_>>();
+            let (send2, mut recv2) = df.make_edge::<VecHandoff<_>>();
 
             df.add_subgraph_in_2out(start_recv, send1, send2, |_ctx, recv, send1, send2| {
                 for v in recv.take_inner().into_iter() {
@@ -39,8 +39,8 @@ fn benchmark_hydroflow(c: &mut Criterion) {
             });
 
             for _ in 0..NUM_OPS {
-                let (send1, next_recv1) = df.make_handoff();
-                let (send2, next_recv2) = df.make_handoff();
+                let (send1, next_recv1) = df.make_edge();
+                let (send2, next_recv2) = df.make_edge();
 
                 df.add_subgraph_2in_2out(
                     recv1,

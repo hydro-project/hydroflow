@@ -73,7 +73,7 @@ where
         Other: PullSurface<ItemOut = (Key, Val)>,
     {
         let (local_inputs_send, local_inputs_recv) =
-            builder.make_handoff::<VecHandoff<(Key, Val)>, Option<(Key, Val)>>();
+            builder.make_edge::<VecHandoff<(Key, Val)>, Option<(Key, Val)>>();
 
         let num_participants: u64 = address_book.len().try_into().unwrap();
 
@@ -118,7 +118,7 @@ where
         Other: PullSurface<ItemOut = U>,
     {
         let (local_inputs_send, local_inputs_recv) =
-            builder.make_handoff::<VecHandoff<U>, Option<U>>();
+            builder.make_edge::<VecHandoff<U>, Option<U>>();
 
         builder.add_subgraph(
             IterPullSurface::new(addresses.into_iter())
