@@ -6,7 +6,7 @@ use hydroflow::lang::collections::Iter;
 use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::scheduled::graph_ext::GraphExt;
 use hydroflow::scheduled::handoff::VecHandoff;
-use hydroflow::scheduled::port::{OutputPort, RecvCtx};
+use hydroflow::scheduled::port::OutputPort;
 
 use crate::{Datum, RelExpr};
 

@@ -69,7 +69,7 @@ use super::{
     graph::Hydroflow,
     graph_ext::GraphExt,
     handoff::VecHandoff,
-    port::{InputPort, OutputPort, RecvCtx},
+    port::{InputPort, OutputPort},
 };
 
 pub mod network_vertex;
