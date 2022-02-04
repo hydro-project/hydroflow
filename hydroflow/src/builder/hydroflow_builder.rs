@@ -25,13 +25,11 @@ pub struct HydroflowBuilder {
 impl HydroflowBuilder {
     /// Creates a handoff, returning push and pull ends which can be chained
     /// using the Surface API.
-    pub fn make_handoff<H, T>(
-        &mut self,
-    ) -> (HandoffPushSurfaceReversed<H, T>, HandoffPullSurface<H>)
+    pub fn make_edge<H, T>(&mut self) -> (HandoffPushSurfaceReversed<H, T>, HandoffPullSurface<H>)
     where
         H: Handoff + CanReceive<T>,
     {
-        let (send, recv) = self.hydroflow.make_handoff();
+        let (send, recv) = self.hydroflow.make_edge();
         let push = HandoffPushSurfaceReversed::new(send);
         let pull = HandoffPullSurface::new(recv);
         (push, pull)

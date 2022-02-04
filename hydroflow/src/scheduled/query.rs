@@ -25,7 +25,7 @@ impl Query {
     {
         let mut df = self.df.borrow_mut();
 
-        let (send_port, recv_port) = df.make_handoff();
+        let (send_port, recv_port) = df.make_edge();
         df.add_subgraph_source(send_port, f);
 
         Operator {
@@ -40,7 +40,7 @@ impl Query {
     {
         let mut df = self.df.borrow_mut();
 
-        let (send_port, recv_port) = df.make_handoff();
+        let (send_port, recv_port) = df.make_edge();
         df.add_subgraph_n_m(
             ops.into_iter().map(|op| op.recv_port).collect(),
             vec![send_port],
@@ -81,7 +81,7 @@ where
     {
         let mut df = self.df.borrow_mut();
 
-        let (send_port, recv_port) = df.make_handoff();
+        let (send_port, recv_port) = df.make_edge();
         df.add_subgraph_in_out(self.recv_port, send_port, move |_ctx, recv, send| {
             send.give(Iter(recv.take_inner().into_iter().map(&mut f)));
         });
@@ -100,7 +100,7 @@ where
     {
         let mut df = self.df.borrow_mut();
 
-        let (send_port, recv_port) = df.make_handoff();
+        let (send_port, recv_port) = df.make_edge();
         df.add_subgraph_in_out(self.recv_port, send_port, move |_ctx, recv, send| {
             send.give(Iter(recv.take_inner().into_iter().filter(&mut f)));
         });
@@ -118,7 +118,7 @@ where
 
         let mut df = self.df.borrow_mut();
 
-        let (send_port, recv_port) = df.make_handoff::<VecHandoff<T>>();
+        let (send_port, recv_port) = df.make_edge::<VecHandoff<T>>();
         df.add_subgraph_2in_out(
             self.recv_port,
             other.recv_port,
@@ -163,7 +163,7 @@ impl<T: Clone> Operator<T> {
         let mut sends = Vec::with_capacity(n);
         let mut recvs = Vec::with_capacity(n);
         for _ in 0..n {
-            let (send_port, recv_port) = df.make_handoff::<VecHandoff<T>>();
+            let (send_port, recv_port) = df.make_edge::<VecHandoff<T>>();
             sends.push(send_port);
             recvs.push(Operator {
                 df: self.df.clone(),

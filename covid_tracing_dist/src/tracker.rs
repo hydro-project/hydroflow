@@ -15,10 +15,10 @@ pub(crate) async fn run_tracker(opts: Opts) {
     let stream = TcpStream::connect(opts.addr).await.unwrap();
     let (network_out, network_in) = df.add_tcp_stream(stream);
 
-    let (contacts, contacts_in) = df.make_handoff::<VecHandoff<(String, String, usize)>>();
-    let (diagnoses, diagnosed_in) = df.make_handoff::<VecHandoff<(String, (usize, usize))>>();
-    let (loop_out, loop_in) = df.make_handoff::<VecHandoff<(Pid, DateTime)>>();
-    let (notifs_out, encoder_in) = df.make_handoff::<VecHandoff<(Pid, DateTime)>>();
+    let (contacts, contacts_in) = df.make_edge::<VecHandoff<(String, String, usize)>>();
+    let (diagnoses, diagnosed_in) = df.make_edge::<VecHandoff<(String, (usize, usize))>>();
+    let (loop_out, loop_in) = df.make_edge::<VecHandoff<(Pid, DateTime)>>();
+    let (notifs_out, encoder_in) = df.make_edge::<VecHandoff<(Pid, DateTime)>>();
 
     df.add_subgraph(
         tl!(network_in),

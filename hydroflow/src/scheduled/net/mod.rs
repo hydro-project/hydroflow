@@ -103,7 +103,7 @@ impl Hydroflow {
         reader: OwnedReadHalf,
     ) -> OutputPort<VecHandoff<Message>> {
         let reader = FramedRead::new(reader, LengthDelimitedCodec::new());
-        let (send_port, recv_port) = self.make_handoff();
+        let (send_port, recv_port) = self.make_edge();
         self.add_input_from_stream(
             send_port,
             reader.map(|buf| Some(<Message>::decode(buf.unwrap().into()))),
@@ -118,7 +118,7 @@ impl Hydroflow {
         let mut writer = FramedWrite::new(writer, LengthDelimitedCodec::new());
         let mut message_queue = VecDeque::new();
 
-        let (input_port, output_port) = self.make_handoff::<VecHandoff<Message>>();
+        let (input_port, output_port) = self.make_edge::<VecHandoff<Message>>();
         self.add_subgraph_sink(output_port, move |ctx, recv| {
             let waker = ctx.waker();
             let mut cx = std::task::Context::from_waker(&waker);
