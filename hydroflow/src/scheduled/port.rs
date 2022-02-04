@@ -8,10 +8,21 @@ use crate::scheduled::handoff::{CanReceive, Handoff, TryCanReceive};
 
 use super::HandoffId;
 
+/// An empty trait used to denote [`Polarity`]: either **send** or **receive**.
+///
+/// [`InputPort`] and [`RecvPort`] have identical representations (via [`Port`]) but are not
+/// interchangable, so [`SEND`] and [`RECV`] which implement this trait are used to differentiate
+/// between the two polarities.
 #[sealed]
 pub trait Polarity: 'static {}
 
+/// An uninstantiable type used to tag port [`Polarity`] as **send**.
+///
+/// See also: [`RECV`].
 pub enum SEND {}
+/// An uninstantiable type used to tag port [`Polarity`] as **receive**.
+///
+/// See also: [`SEND`].
 pub enum RECV {}
 #[sealed]
 impl Polarity for SEND {}
@@ -40,7 +51,7 @@ pub struct PortCtx<S: Polarity, H> {
 pub type SendCtx<H> = PortCtx<SEND, H>;
 pub type RecvCtx<H> = PortCtx<RECV, H>;
 
-/// Context provided to a compiled component for writing to an [OutputPort].
+/// Context provided to a subgraph for writing to an [`OutputPort`].
 impl<H: Handoff> SendCtx<H> {
     // TODO: represent backpressure in this return value.
     pub fn give<T>(&self, item: T) -> T
@@ -58,7 +69,7 @@ impl<H: Handoff> SendCtx<H> {
     }
 }
 
-/// Context provided to a compiled component for reading from an [InputPort].
+/// Context provided to a subgraph for reading from an [`InputPort`].
 impl<H: Handoff> RecvCtx<H> {
     pub fn take_inner(&self) -> H::Inner {
         self.handoff.take_inner()
