@@ -6,7 +6,7 @@ use hydroflow::lang::collections::Iter;
 use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::scheduled::graph_ext::GraphExt;
 use hydroflow::scheduled::handoff::VecHandoff;
-use hydroflow::scheduled::port::OutputPort;
+use hydroflow::scheduled::port::RecvPort;
 
 use crate::{Datum, RelExpr};
 
@@ -30,7 +30,7 @@ pub(crate) fn run_dataflow(r: RelExpr) -> Vec<Vec<Datum>> {
     v.clone()
 }
 
-fn render_relational(df: &mut Hydroflow, r: RelExpr) -> OutputPort<VecHandoff<Vec<Datum>>> {
+fn render_relational(df: &mut Hydroflow, r: RelExpr) -> RecvPort<VecHandoff<Vec<Datum>>> {
     let (send_port, recv_port) = df.make_edge();
     match r {
         RelExpr::Values(mut v) => {

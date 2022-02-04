@@ -10,7 +10,7 @@ use super::HandoffId;
 
 /// An empty trait used to denote [`Polarity`]: either **send** or **receive**.
 ///
-/// [`InputPort`] and [`RecvPort`] have identical representations (via [`Port`]) but are not
+/// [`SendPort`] and [`RecvPort`] have identical representations (via [`Port`]) but are not
 /// interchangable, so [`SEND`] and [`RECV`] which implement this trait are used to differentiate
 /// between the two polarities.
 #[sealed]
@@ -38,8 +38,8 @@ where
     #[allow(clippy::type_complexity)]
     pub(crate) _marker: PhantomData<(*const S, fn() -> H)>,
 }
-pub type InputPort<H> = Port<SEND, H>;
-pub type OutputPort<H> = Port<RECV, H>;
+pub type SendPort<H> = Port<SEND, H>;
+pub type RecvPort<H> = Port<RECV, H>;
 
 #[derive(RefCast)]
 #[repr(transparent)]
@@ -51,7 +51,7 @@ pub struct PortCtx<S: Polarity, H> {
 pub type SendCtx<H> = PortCtx<SEND, H>;
 pub type RecvCtx<H> = PortCtx<RECV, H>;
 
-/// Context provided to a subgraph for writing to an [`OutputPort`].
+/// Context provided to a subgraph for reading from a handoff. Corresponds to a [`SendPort`].
 impl<H: Handoff> SendCtx<H> {
     // TODO: represent backpressure in this return value.
     pub fn give<T>(&self, item: T) -> T
@@ -69,7 +69,7 @@ impl<H: Handoff> SendCtx<H> {
     }
 }
 
-/// Context provided to a subgraph for reading from an [`InputPort`].
+/// Context provided to a subgraph for reading from a handoff. Corresponds to a [`RecvPort`].
 impl<H: Handoff> RecvCtx<H> {
     pub fn take_inner(&self) -> H::Inner {
         self.handoff.take_inner()

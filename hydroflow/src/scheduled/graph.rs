@@ -8,7 +8,7 @@ use ref_cast::RefCast;
 use super::context::Context;
 use super::handoff::handoff_list::PortList;
 use super::handoff::{Handoff, HandoffMeta};
-use super::port::{InputPort, OutputPort, RecvCtx, SendCtx, RECV, SEND};
+use super::port::{RecvCtx, RecvPort, SendCtx, SendPort, RECV, SEND};
 use super::reactor::Reactor;
 use super::state::StateHandle;
 #[cfg(feature = "variadic_generics")]
@@ -174,8 +174,8 @@ impl Hydroflow {
     /// Adds a new compiled subraph with a variable number of inputs and outputs of the same respective handoff types.
     pub fn add_subgraph_n_m<R, W, F>(
         &mut self,
-        recv_ports: Vec<OutputPort<R>>,
-        send_ports: Vec<InputPort<W>>,
+        recv_ports: Vec<RecvPort<R>>,
+        send_ports: Vec<SendPort<W>>,
         mut subgraph: F,
     ) -> SubgraphId
     where
@@ -233,7 +233,7 @@ impl Hydroflow {
         sg_id
     }
 
-    pub fn make_edge<H>(&mut self) -> (InputPort<H>, OutputPort<H>)
+    pub fn make_edge<H>(&mut self) -> (SendPort<H>, RecvPort<H>)
     where
         H: 'static + Handoff,
     {
@@ -244,11 +244,11 @@ impl Hydroflow {
         self.handoffs.push(HandoffData::new(handoff));
 
         // Make ports.
-        let input_port = InputPort {
+        let input_port = SendPort {
             handoff_id,
             _marker: PhantomData,
         };
-        let output_port = OutputPort {
+        let output_port = RecvPort {
             handoff_id,
             _marker: PhantomData,
         };

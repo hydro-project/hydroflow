@@ -9,7 +9,7 @@ use crate::scheduled::graph_ext::GraphExt;
 use crate::scheduled::handoff::{CanReceive, Handoff, VecHandoff};
 use crate::scheduled::input::Input;
 use crate::scheduled::net::Message;
-use crate::scheduled::port::{InputPort, OutputPort};
+use crate::scheduled::port::{RecvPort, SendPort};
 use crate::scheduled::SubgraphId;
 
 use super::surface::pull_handoff::HandoffPullSurface;
@@ -35,14 +35,14 @@ impl HydroflowBuilder {
         (push, pull)
     }
 
-    pub fn wrap_input<H>(&mut self, recv_port: OutputPort<H>) -> HandoffPullSurface<H>
+    pub fn wrap_input<H>(&mut self, recv_port: RecvPort<H>) -> HandoffPullSurface<H>
     where
         H: Handoff,
     {
         HandoffPullSurface::new(recv_port)
     }
 
-    pub fn wrap_output<H, T>(&mut self, send_port: InputPort<H>) -> HandoffPushSurfaceReversed<H, T>
+    pub fn wrap_output<H, T>(&mut self, send_port: SendPort<H>) -> HandoffPushSurfaceReversed<H, T>
     where
         H: Handoff + CanReceive<T>,
     {
