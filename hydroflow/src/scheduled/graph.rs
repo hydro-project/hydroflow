@@ -6,8 +6,9 @@ use std::sync::mpsc::{self, Receiver, RecvError, SyncSender};
 use ref_cast::RefCast;
 
 use super::context::Context;
-use super::handoff::{Handoff, HandoffMeta, RecvPortList, SendPortList};
-use super::port::{InputPort, OutputPort, RecvCtx, SendCtx};
+use super::handoff::handoff_list::PortList;
+use super::handoff::{Handoff, HandoffMeta};
+use super::port::{InputPort, OutputPort, RecvCtx, SendCtx, RECV, SEND};
 use super::reactor::Reactor;
 use super::state::StateHandle;
 #[cfg(feature = "variadic_generics")]
@@ -148,8 +149,8 @@ impl Hydroflow {
         mut subgraph: F,
     ) -> SubgraphId
     where
-        R: 'static + RecvPortList,
-        W: 'static + SendPortList,
+        R: 'static + PortList<RECV>,
+        W: 'static + PortList<SEND>,
         F: 'static + FnMut(&Context<'_>, R::Ctx<'_>, W::Ctx<'_>),
     {
         let sg_id = self.subgraphs.len();

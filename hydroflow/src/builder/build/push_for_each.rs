@@ -3,7 +3,8 @@ use super::{PushBuild, PushBuildBase};
 use std::marker::PhantomData;
 
 use crate::compiled::for_each::ForEach;
-use crate::scheduled::handoff::handoff_list::BasePortList;
+use crate::scheduled::handoff::handoff_list::PortList;
+use crate::scheduled::port::SEND;
 use crate::tt;
 
 pub struct ForEachPushBuild<Func, In>
@@ -44,7 +45,7 @@ where
 
     fn build<'slf, 'hof>(
         &'slf mut self,
-        (): <Self::OutputHandoffs as BasePortList<true>>::Ctx<'hof>,
+        (): <Self::OutputHandoffs as PortList<SEND>>::Ctx<'hof>,
     ) -> Self::Build<'slf, 'hof> {
         ForEach::new(|x| (self.func)(x))
     }

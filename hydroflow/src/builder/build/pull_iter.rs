@@ -1,6 +1,6 @@
 use super::{PullBuild, PullBuildBase};
 
-use crate::scheduled::handoff::handoff_list::BasePortList;
+use crate::scheduled::{handoff::handoff_list::PortList, port::RECV};
 
 pub struct IterPullBuild<I, T>
 where
@@ -33,7 +33,7 @@ where
 
     fn build<'slf, 'hof>(
         &'slf mut self,
-        _handoffs: <Self::InputHandoffs as BasePortList<false>>::Ctx<'hof>,
+        _handoffs: <Self::InputHandoffs as PortList<RECV>>::Ctx<'hof>,
     ) -> Self::Build<'slf, 'hof> {
         &mut self.it
     }

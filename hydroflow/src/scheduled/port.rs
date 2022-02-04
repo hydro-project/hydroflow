@@ -2,31 +2,43 @@
 use std::marker::PhantomData;
 
 use ref_cast::RefCast;
+use sealed::sealed;
 
 use crate::scheduled::handoff::{CanReceive, Handoff, TryCanReceive};
 
 use super::HandoffId;
 
+#[sealed]
+pub trait Polarity: 'static {}
+
+pub enum SEND {}
+pub enum RECV {}
+#[sealed]
+impl Polarity for SEND {}
+#[sealed]
+impl Polarity for RECV {}
+
 #[must_use]
-pub struct BasePort<H, const S: bool>
+pub struct Port<S: Polarity, H>
 where
     H: Handoff,
 {
     pub(crate) handoff_id: HandoffId,
-    pub(crate) _marker: PhantomData<fn() -> H>,
+    #[allow(clippy::type_complexity)]
+    pub(crate) _marker: PhantomData<(*const S, fn() -> H)>,
 }
-
-pub type InputPort<H> = BasePort<H, true>; // SendPort
-pub type OutputPort<H> = BasePort<H, false>; // RecvPort
+pub type InputPort<H> = Port<SEND, H>;
+pub type OutputPort<H> = Port<RECV, H>;
 
 #[derive(RefCast)]
 #[repr(transparent)]
-pub struct BaseCtx<H, const S: bool> {
+pub struct PortCtx<S: Polarity, H> {
     pub(crate) handoff: H,
+    pub(crate) _marker: PhantomData<*const S>,
 }
 
-pub type SendCtx<H> = BaseCtx<H, true>;
-pub type RecvCtx<H> = BaseCtx<H, false>;
+pub type SendCtx<H> = PortCtx<SEND, H>;
+pub type RecvCtx<H> = PortCtx<RECV, H>;
 
 /// Context provided to a compiled component for writing to an [OutputPort].
 impl<H: Handoff> SendCtx<H> {

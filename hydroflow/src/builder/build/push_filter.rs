@@ -1,7 +1,8 @@
 use super::{PushBuild, PushBuildBase};
 
 use crate::compiled::filter::Filter;
-use crate::scheduled::handoff::handoff_list::BasePortList;
+use crate::scheduled::handoff::handoff_list::PortList;
+use crate::scheduled::port::SEND;
 
 pub struct FilterPushBuild<Next, Func>
 where
@@ -45,7 +46,7 @@ where
 
     fn build<'slf, 'hof>(
         &'slf mut self,
-        handoffs: <Self::OutputHandoffs as BasePortList<true>>::Ctx<'hof>,
+        handoffs: <Self::OutputHandoffs as PortList<SEND>>::Ctx<'hof>,
     ) -> Self::Build<'slf, 'hof> {
         Filter::new(|x| (self.func)(x), self.next.build(handoffs))
     }
