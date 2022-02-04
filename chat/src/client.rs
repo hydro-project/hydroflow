@@ -43,10 +43,11 @@ pub(crate) async fn run_client(opts: Opts) {
     let messages_addr = format!("localhost:{}", messages_port);
 
     // set up the flow for requesting to be a member
-    let (my_info_set, my_info_get) = df
+    let (my_info_send, my_info_recv) = df
         .hydroflow
-        .add_input::<Option<(String, MemberRequest)>, VecHandoff<(String, MemberRequest)>>();
-    let my_info_get = df.wrap_input(my_info_get);
+        .make_edge::<VecHandoff<(String, MemberRequest)>>();
+    let my_info_set = df.hydroflow.add_input(my_info_send);
+    let my_info_get = df.wrap_input(my_info_recv);
     my_info_set.give(Some((
         addr,
         MemberRequest {
