@@ -72,8 +72,9 @@ impl HydroflowBuilder {
         T: 'static,
         W: 'static + Handoff + CanReceive<T>,
     {
-        let (input, output_port) = self.hydroflow.add_channel_input();
-        let pull = HandoffPullSurface::new(output_port);
+        let (send_port, recv_port) = self.hydroflow.make_edge();
+        let input = self.hydroflow.add_channel_input(send_port);
+        let pull = HandoffPullSurface::new(recv_port);
         (input, pull)
     }
 
