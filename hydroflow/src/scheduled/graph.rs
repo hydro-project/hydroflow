@@ -232,7 +232,7 @@ impl Hydroflow {
         sg_id
     }
 
-    pub fn make_handoff<H>(&mut self) -> (InputPort<H>, OutputPort<H>)
+    pub fn make_edge<H>(&mut self) -> (InputPort<H>, OutputPort<H>)
     where
         H: 'static + Handoff,
     {

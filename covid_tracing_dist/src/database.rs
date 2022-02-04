@@ -17,9 +17,9 @@ pub(crate) async fn run_database(opts: Opts) {
 
     let mut df = Hydroflow::new();
 
-    let (notifs, notif_sink) = df.make_handoff::<VecHandoff<(String, usize)>>();
-    let (encode_contacts_out, contacts_merge) = df.make_handoff::<VecHandoff<Message>>();
-    let (encode_diagnoses_out, diagnoses_merge) = df.make_handoff::<VecHandoff<Message>>();
+    let (notifs, notif_sink) = df.make_edge::<VecHandoff<(String, usize)>>();
+    let (encode_contacts_out, contacts_merge) = df.make_edge::<VecHandoff<Message>>();
+    let (encode_diagnoses_out, diagnoses_merge) = df.make_edge::<VecHandoff<Message>>();
 
     let (contacts_in, contacts_out) =
         df.add_channel_input::<_, VecHandoff<(&'static str, &'static str, usize)>>();

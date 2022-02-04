@@ -194,8 +194,8 @@ fn test_covid() {
 
     let mut builder = HydroflowBuilder::default();
 
-    let (loop_send, loop_recv) = builder.make_handoff::<VecHandoff<(Pid, DateTime)>, _>();
-    let (notifs_send, notifs_recv) = builder.make_handoff::<VecHandoff<(Pid, DateTime)>, _>();
+    let (loop_send, loop_recv) = builder.make_edge::<VecHandoff<(Pid, DateTime)>, _>();
+    let (notifs_send, notifs_recv) = builder.make_edge::<VecHandoff<(Pid, DateTime)>, _>();
 
     let (diagnosed_send, diagnosed) =
         builder.add_channel_input::<Option<(Pid, (DateTime, DateTime))>, VecHandoff<_>>();
