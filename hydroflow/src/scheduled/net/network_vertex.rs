@@ -9,7 +9,7 @@ use crate::scheduled::{
     graph::Hydroflow,
     graph_ext::GraphExt,
     handoff::VecHandoff,
-    port::{InputPort, OutputPort},
+    port::{RecvPort, SendPort},
 };
 
 pub type Address = String;
@@ -19,14 +19,14 @@ pub type Address = String;
 
 impl Hydroflow {
     // TODO(justin): document these, but they're derivatives of inbound_tcp_vertex_internal.
-    pub async fn inbound_tcp_vertex_port<T>(&mut self, port: u16) -> OutputPort<VecHandoff<T>>
+    pub async fn inbound_tcp_vertex_port<T>(&mut self, port: u16) -> RecvPort<VecHandoff<T>>
     where
         T: 'static + DeserializeOwned + Send,
     {
         self.inbound_tcp_vertex_internal(Some(port)).await.1
     }
 
-    pub async fn inbound_tcp_vertex<T>(&mut self) -> (u16, OutputPort<VecHandoff<T>>)
+    pub async fn inbound_tcp_vertex<T>(&mut self) -> (u16, RecvPort<VecHandoff<T>>)
     where
         T: 'static + DeserializeOwned + Send,
     {
@@ -45,7 +45,7 @@ impl Hydroflow {
     async fn inbound_tcp_vertex_internal<T>(
         &mut self,
         port: Option<u16>,
-    ) -> (u16, OutputPort<VecHandoff<T>>)
+    ) -> (u16, RecvPort<VecHandoff<T>>)
     where
         T: 'static + DeserializeOwned + Send,
     {
@@ -85,7 +85,7 @@ impl Hydroflow {
         (port, recv_port)
     }
 
-    pub async fn outbound_tcp_vertex<T>(&mut self) -> InputPort<VecHandoff<(Address, T)>>
+    pub async fn outbound_tcp_vertex<T>(&mut self) -> SendPort<VecHandoff<(Address, T)>>
     where
         T: 'static + Serialize + Send,
     {

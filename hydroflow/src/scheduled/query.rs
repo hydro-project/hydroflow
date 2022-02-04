@@ -6,7 +6,7 @@ use crate::scheduled::handoff::VecHandoff;
 
 use super::context::Context;
 use super::graph_ext::GraphExt;
-use super::port::{OutputPort, RecvCtx, SendCtx};
+use super::port::{RecvCtx, RecvPort, SendCtx};
 
 #[derive(Default)]
 pub struct Query {
@@ -67,7 +67,7 @@ where
     T: 'static,
 {
     df: Rc<RefCell<Hydroflow>>,
-    recv_port: OutputPort<VecHandoff<T>>,
+    recv_port: RecvPort<VecHandoff<T>>,
 }
 
 impl<T> Operator<T>

@@ -69,7 +69,7 @@ use super::{
     graph::Hydroflow,
     graph_ext::GraphExt,
     handoff::VecHandoff,
-    port::{InputPort, OutputPort},
+    port::{RecvPort, SendPort},
 };
 
 pub mod network_vertex;
@@ -98,10 +98,7 @@ impl Message {
 }
 
 impl Hydroflow {
-    fn register_read_tcp_stream(
-        &mut self,
-        reader: OwnedReadHalf,
-    ) -> OutputPort<VecHandoff<Message>> {
+    fn register_read_tcp_stream(&mut self, reader: OwnedReadHalf) -> RecvPort<VecHandoff<Message>> {
         let reader = FramedRead::new(reader, LengthDelimitedCodec::new());
         let (send_port, recv_port) = self.make_edge();
         self.add_input_from_stream(
@@ -114,7 +111,7 @@ impl Hydroflow {
     fn register_write_tcp_stream(
         &mut self,
         writer: OwnedWriteHalf,
-    ) -> InputPort<VecHandoff<Message>> {
+    ) -> SendPort<VecHandoff<Message>> {
         let mut writer = FramedWrite::new(writer, LengthDelimitedCodec::new());
         let mut message_queue = VecDeque::new();
 
@@ -141,13 +138,13 @@ impl Hydroflow {
         input_port
     }
 
-    pub fn add_write_tcp_stream(&mut self, stream: TcpStream) -> InputPort<VecHandoff<Message>> {
+    pub fn add_write_tcp_stream(&mut self, stream: TcpStream) -> SendPort<VecHandoff<Message>> {
         let (_, writer) = stream.into_split();
 
         self.register_write_tcp_stream(writer)
     }
 
-    pub fn add_read_tcp_stream(&mut self, stream: TcpStream) -> OutputPort<VecHandoff<Message>> {
+    pub fn add_read_tcp_stream(&mut self, stream: TcpStream) -> RecvPort<VecHandoff<Message>> {
         let (reader, _) = stream.into_split();
 
         self.register_read_tcp_stream(reader)
@@ -156,10 +153,7 @@ impl Hydroflow {
     pub fn add_tcp_stream(
         &mut self,
         stream: TcpStream,
-    ) -> (
-        InputPort<VecHandoff<Message>>,
-        OutputPort<VecHandoff<Message>>,
-    ) {
+    ) -> (SendPort<VecHandoff<Message>>, RecvPort<VecHandoff<Message>>) {
         let (reader, writer) = stream.into_split();
 
         (

@@ -15,7 +15,7 @@ use hydroflow::{
         HydroflowBuilder,
     },
     lang::collections::Iter,
-    scheduled::{graph_ext::GraphExt, handoff::VecHandoff, port::OutputPort},
+    scheduled::{graph_ext::GraphExt, handoff::VecHandoff, port::RecvPort},
 };
 use rand::Rng;
 use serde::{Deserialize, Serialize};
@@ -46,7 +46,7 @@ fn start_echo_server() -> u16 {
             rt.block_on(async move {
                 let mut builder = HydroflowBuilder::default();
 
-                let (port, incoming_messages): (_, OutputPort<VecHandoff<EchoRequest>>) =
+                let (port, incoming_messages): (_, RecvPort<VecHandoff<EchoRequest>>) =
                     builder.hydroflow.inbound_tcp_vertex().await;
                 server_port_send.send(port).unwrap();
 
