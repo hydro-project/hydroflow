@@ -1,7 +1,8 @@
 use super::{BaseSurface, PullSurface};
 
 use crate::builder::build::pull_cross_join::CrossJoinPullBuild;
-use crate::scheduled::handoff::handoff_list::{BasePortListSplit, RecvPortList};
+use crate::scheduled::handoff::handoff_list::{PortList, PortListSplit};
+use crate::scheduled::port::RECV;
 use crate::scheduled::type_list::Extend;
 
 pub struct CrossJoinPullSurface<PrevA, PrevB>
@@ -12,8 +13,8 @@ where
     PrevB::ItemOut: 'static + Eq + Clone,
 
     PrevA::InputHandoffs: Extend<PrevB::InputHandoffs>,
-    <PrevA::InputHandoffs as Extend<PrevB::InputHandoffs>>::Extended: RecvPortList
-        + BasePortListSplit<PrevA::InputHandoffs, false, Suffix = PrevB::InputHandoffs>,
+    <PrevA::InputHandoffs as Extend<PrevB::InputHandoffs>>::Extended:
+        PortList<RECV> + PortListSplit<RECV, PrevA::InputHandoffs, Suffix = PrevB::InputHandoffs>,
 {
     prev_a: PrevA,
     prev_b: PrevB,
@@ -26,8 +27,8 @@ where
     PrevB::ItemOut: 'static + Eq + Clone,
 
     PrevA::InputHandoffs: Extend<PrevB::InputHandoffs>,
-    <PrevA::InputHandoffs as Extend<PrevB::InputHandoffs>>::Extended: RecvPortList
-        + BasePortListSplit<PrevA::InputHandoffs, false, Suffix = PrevB::InputHandoffs>,
+    <PrevA::InputHandoffs as Extend<PrevB::InputHandoffs>>::Extended:
+        PortList<RECV> + PortListSplit<RECV, PrevA::InputHandoffs, Suffix = PrevB::InputHandoffs>,
 {
     pub fn new(prev_a: PrevA, prev_b: PrevB) -> Self {
         Self { prev_a, prev_b }
@@ -42,8 +43,8 @@ where
     PrevB::ItemOut: 'static + Eq + Clone,
 
     PrevA::InputHandoffs: Extend<PrevB::InputHandoffs>,
-    <PrevA::InputHandoffs as Extend<PrevB::InputHandoffs>>::Extended: RecvPortList
-        + BasePortListSplit<PrevA::InputHandoffs, false, Suffix = PrevB::InputHandoffs>,
+    <PrevA::InputHandoffs as Extend<PrevB::InputHandoffs>>::Extended:
+        PortList<RECV> + PortListSplit<RECV, PrevA::InputHandoffs, Suffix = PrevB::InputHandoffs>,
 {
     type ItemOut = (PrevA::ItemOut, PrevB::ItemOut);
 }
@@ -56,8 +57,8 @@ where
     PrevB::ItemOut: 'static + Eq + Clone,
 
     PrevA::InputHandoffs: Extend<PrevB::InputHandoffs>,
-    <PrevA::InputHandoffs as Extend<PrevB::InputHandoffs>>::Extended: RecvPortList
-        + BasePortListSplit<PrevA::InputHandoffs, false, Suffix = PrevB::InputHandoffs>,
+    <PrevA::InputHandoffs as Extend<PrevB::InputHandoffs>>::Extended:
+        PortList<RECV> + PortListSplit<RECV, PrevA::InputHandoffs, Suffix = PrevB::InputHandoffs>,
 {
     type InputHandoffs = <PrevA::InputHandoffs as Extend<PrevB::InputHandoffs>>::Extended;
     type Build = CrossJoinPullBuild<PrevA::Build, PrevB::Build>;
