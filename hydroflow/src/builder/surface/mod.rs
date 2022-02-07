@@ -155,7 +155,7 @@ pub trait PullSurface: BaseSurface {
         pull_cross_join::CrossJoinPullSurface::new(self, other)
     }
 
-    fn pivot(self) -> push_pivot::PivotPushSurface<Self>
+    fn pull_to_push(self) -> push_pivot::PivotPushSurface<Self>
     where
         Self: Sized,
     {

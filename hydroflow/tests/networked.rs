@@ -66,7 +66,7 @@ fn start_echo_server() -> u16 {
                                 },
                             )
                         })
-                        .pivot()
+                        .pull_to_push()
                         .map(Some)
                         .reverse(outbound_messages),
                 );
@@ -103,7 +103,7 @@ fn test_echo_server() {
 
                 let responses = builder.wrap_input(responses);
 
-                builder.add_subgraph(responses.flatten().pivot().for_each(
+                builder.add_subgraph(responses.flatten().pull_to_push().for_each(
                     move |response: EchoResponse| {
                         log_message
                             .send(format!(
@@ -424,7 +424,7 @@ fn test_exchange() {
                 let join = english.join(french);
 
                 // Join them.
-                builder.add_subgraph(join.pivot().for_each(move |(v, english, french)| {
+                builder.add_subgraph(join.pull_to_push().for_each(move |(v, english, french)| {
                     receipts_tx.send((v, english, french)).unwrap();
                 }));
 

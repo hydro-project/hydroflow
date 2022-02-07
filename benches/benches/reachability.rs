@@ -235,7 +235,7 @@ fn benchmark_hydroflow(c: &mut Criterion) {
                         .filter(|v| seen_state.insert(*v));
 
                     let pivot = pull
-                        .pusherator()
+                        .pull_to_push()
                         .tee(ForEach::new(|v| {
                             did_reach_send.give(Some(v));
                         }))

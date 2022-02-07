@@ -110,7 +110,7 @@ fn test_teeing() {
     let output_evn_take = Rc::clone(&output_evn);
     let output_odd_take = Rc::clone(&output_odd);
 
-    let sg = ingress.flatten().flat_map(|x| [11 * x, x]).pivot().tee(
+    let sg = ingress.flatten().flat_map(|x| [11 * x, x]).pull_to_push().tee(
         builder
             .start_tee()
             .filter(|&x| 0 == x % 2)
@@ -152,7 +152,7 @@ fn test_partition() {
     let odd_out = out.clone();
 
     builder.add_subgraph(
-        data.flatten().pivot().partition(
+        data.flatten().pull_to_push().partition(
             |x| *x % 2 == 0,
             builder
                 .start_tee()
@@ -218,7 +218,7 @@ fn test_covid() {
                 (t_from..=t_to).contains(&t_contact)
             })
             .map(|(_pid_a, pid_b_t_contact, _t_from_to)| pid_b_t_contact)
-            .pivot()
+            .pull_to_push()
             .map(Some) // For handoff CanReceive.
             .tee(notifs_send, loop_send),
     );
@@ -227,7 +227,7 @@ fn test_covid() {
         notifs_recv
             .flatten()
             .join(peoples.flatten())
-            .pivot()
+            .pull_to_push()
             .for_each(|(_pid, exposure_time, (name, phone))| {
                 println!(
                     "[{}] To {}: Possible Exposure at t = {}",

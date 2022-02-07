@@ -18,7 +18,7 @@ pub trait Pusherator: Sized {
 }
 
 pub trait IteratorToPusherator: Iterator {
-    fn pusherator(self) -> pivot::PivotBuild<Self>
+    fn pull_to_push(self) -> pivot::PivotBuild<Self>
     where
         Self: Sized,
     {
@@ -287,7 +287,7 @@ mod test_builder {
             .into_iter()
             .chain([3, 4, 5, 6, 7])
             .map(|x| x * 9)
-            .pusherator()
+            .pull_to_push()
             .map(|x| if 0 == x % 2 { x / 2 } else { 3 * x + 1 })
             .tee(
                 <InputBuild<usize>>::new()
