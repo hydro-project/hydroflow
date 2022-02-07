@@ -120,7 +120,7 @@ pub(crate) async fn run_database(opts: Opts) {
                 &mut join_state,
             )
             .map(|(_id, t, (name, phone))| (name, phone, t))
-            .pusherator()
+            .pull_to_push()
             .for_each(|(name, phone, t)| println!("notifying {}, {}@{}", name, phone, t));
 
             pivot.run();

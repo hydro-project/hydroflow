@@ -89,7 +89,7 @@ where
                     let hash_val = s.finish();
                     (hash_val % num_participants, (x, v))
                 }))
-                .pivot()
+                .pull_to_push()
                 .partition(
                     move |&(id, _, _)| id == my_id,
                     StartPushSurface::new()
@@ -123,7 +123,7 @@ where
         builder.add_subgraph(
             IterPullSurface::new(addresses.into_iter())
                 .cross_join(self)
-                .pivot()
+                .pull_to_push()
                 .tee(
                     StartPushSurface::new()
                         .map(|(_, v)| Some(v))

@@ -77,7 +77,7 @@ pub(crate) async fn run_tracker(opts: Opts) {
                 });
 
             let pivot = new_exposed
-                .pusherator()
+                .pull_to_push()
                 .tee(
                     InputBuild::new().for_each(|exposed_person: (Pid, DateTime)| {
                         // Notif push.

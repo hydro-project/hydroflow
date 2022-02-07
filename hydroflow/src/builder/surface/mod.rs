@@ -10,7 +10,7 @@
 //!
 //! * [`BaseSurface`] provides linear chaining methods like [`BaseSurface::map`], [`BaseSurface::filter`], etc..
 //! * [`PullSurface`] provides methods to combine multiple input streams: [`PullSurface::chain`], [`PullSurface::join`].
-//!     * To switch to push, call [`PullSurface::pivot`].
+//!     * To switch to push, call [`PullSurface::pull_to_push`].
 //! * [`PushSurface`] provides sink chaining methods and methods to split into multiple output streams: [`PushSurface::tee`], [`PushSurface::for_each`].
 //!
 //! For implementation info see [super].
@@ -155,7 +155,7 @@ pub trait PullSurface: BaseSurface {
         pull_cross_join::CrossJoinPullSurface::new(self, other)
     }
 
-    fn pivot(self) -> push_pivot::PivotPushSurface<Self>
+    fn pull_to_push(self) -> push_pivot::PivotPushSurface<Self>
     where
         Self: Sized,
     {
