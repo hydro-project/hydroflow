@@ -121,6 +121,8 @@ jobs:
         with:
           command: doc
           args: --no-deps
+        env:
+          RUSTDOCFLAGS: -Dwarnings
 
       - name: Push to gh-pages
         # Do not deploy PRs.
