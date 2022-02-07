@@ -56,7 +56,7 @@ pub(crate) async fn run_client(opts: Opts) {
             messages_addr,
         },
     )));
-    df.add_subgraph(my_info_get.pull_to_push().reverse(connect_req));
+    df.add_subgraph(my_info_get.pull_to_push().push_to(connect_req));
 
     let nickname = opts.name.clone();
     let nick2 = nickname.clone();
@@ -76,7 +76,7 @@ pub(crate) async fn run_client(opts: Opts) {
             )
         })
         .map(Some)
-        .reverse(messages_send);
+        .push_to(messages_send);
     df.add_subgraph(sg);
 
     // set up the flow for receiving messages

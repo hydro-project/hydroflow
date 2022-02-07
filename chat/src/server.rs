@@ -37,7 +37,7 @@ pub(crate) async fn run_server(opts: Opts) {
                 },
             ))
         })
-        .reverse(members_out);
+        .push_to(members_out);
 
     // 2. feed new members into the join
     // But first, we need a buffer to turn push into pull for cross_join.
@@ -47,7 +47,7 @@ pub(crate) async fn run_server(opts: Opts) {
         .start_tee()
         .map(|req: MemberRequest| req.messages_addr)
         .map(Some)
-        .reverse(memberships_push);
+        .push_to(memberships_push);
 
     // Now assemble the prelude to the tee
     let sg = members_in
@@ -73,7 +73,7 @@ pub(crate) async fn run_server(opts: Opts) {
             ))
         })
         .pull_to_push()
-        .reverse(messages_out);
+        .push_to(messages_out);
 
     hf.add_subgraph(sg);
 
