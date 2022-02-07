@@ -55,12 +55,12 @@ where
         Next: PushSurfaceReversed<ItemIn = Self::ItemOut>,
     = Prev::Output<MapPushSurfaceReversed<Next, Func, Prev::ItemOut>>;
 
-    fn reverse<Next>(self, next: Next) -> Self::Output<Next>
+    fn push_to<Next>(self, next: Next) -> Self::Output<Next>
     where
         Next: PushSurfaceReversed<ItemIn = Self::ItemOut>,
     {
         self.prev
-            .reverse(MapPushSurfaceReversed::new(next, self.func))
+            .push_to(MapPushSurfaceReversed::new(next, self.func))
     }
 }
 

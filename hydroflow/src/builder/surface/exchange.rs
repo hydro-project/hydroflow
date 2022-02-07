@@ -94,10 +94,10 @@ where
                     move |&(id, _, _)| id == my_id,
                     StartPushSurface::new()
                         .map(|(_, _, v)| Some(v))
-                        .reverse(local_inputs_send),
+                        .push_to(local_inputs_send),
                     StartPushSurface::new()
                         .map(|(_id, address, data)| Some((address, data)))
-                        .reverse(outbound_messages),
+                        .push_to(outbound_messages),
                 ),
         );
 
@@ -127,10 +127,10 @@ where
                 .tee(
                     StartPushSurface::new()
                         .map(|(_, v)| Some(v))
-                        .reverse(local_inputs_send),
+                        .push_to(local_inputs_send),
                     StartPushSurface::new()
                         .map(|(address, data)| Some((address, data)))
-                        .reverse(outbound_messages),
+                        .push_to(outbound_messages),
                 ),
         );
 

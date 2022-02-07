@@ -169,7 +169,7 @@ pub trait PushSurface: BaseSurface {
     where
         Next: PushSurfaceReversed<ItemIn = Self::ItemOut>;
 
-    fn reverse<Next>(self, next: Next) -> Self::Output<Next>
+    fn push_to<Next>(self, next: Next) -> Self::Output<Next>
     where
         Next: PushSurfaceReversed<ItemIn = Self::ItemOut>;
 
@@ -190,7 +190,7 @@ pub trait PushSurface: BaseSurface {
             + PortListSplit<SEND, NextA::OutputHandoffs, Suffix = NextB::OutputHandoffs>,
     {
         let next = push_tee::TeePushSurfaceReversed::new(next_a, next_b);
-        self.reverse(next)
+        self.push_to(next)
     }
 
     fn for_each<Func>(
@@ -202,7 +202,7 @@ pub trait PushSurface: BaseSurface {
         Func: FnMut(Self::ItemOut),
     {
         let next = push_for_each::ForEachPushSurfaceReversed::new(func);
-        self.reverse(next)
+        self.push_to(next)
     }
 
     fn partition<Func, NextA, NextB>(
@@ -222,7 +222,7 @@ pub trait PushSurface: BaseSurface {
             + PortListSplit<SEND, NextA::OutputHandoffs, Suffix = NextB::OutputHandoffs>,
     {
         let next = push_partition::PartitionPushSurfaceReversed::new(func, next_a, next_b);
-        self.reverse(next)
+        self.push_to(next)
     }
 }
 
