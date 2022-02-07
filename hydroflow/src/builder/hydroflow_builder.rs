@@ -1,3 +1,5 @@
+use futures::Stream;
+
 use super::build::{PullBuild, PushBuild};
 use super::surface::pivot::PivotSurface;
 
@@ -76,6 +78,17 @@ impl HydroflowBuilder {
         let input = self.hydroflow.add_channel_input(send_port);
         let pull = HandoffPullSurface::new(recv_port);
         (input, pull)
+    }
+
+    pub fn add_input_from_stream<T, W, S>(&mut self, stream: S) -> HandoffPullSurface<W>
+    where
+        S: 'static + Stream<Item = T> + Unpin,
+        W: 'static + Handoff + CanReceive<T>,
+    {
+        let (send_port, recv_port) = self.hydroflow.make_edge();
+        self.hydroflow.add_input_from_stream(send_port, stream);
+        let pull = HandoffPullSurface::new(recv_port);
+        pull
     }
 
     pub fn add_write_tcp_stream(

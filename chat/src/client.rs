@@ -24,20 +24,16 @@ pub(crate) async fn run_client(opts: Opts) {
     let messages_send = df.wrap_output(messages_send);
 
     // setup stdio input handler
-    let (text_in, text_out) = df.add_channel_input::<Option<_>, VecHandoff<String>>();
-    hydroflow::tokio::spawn(async move {
-        // TODO(mingwei): temp, need to integrate stream into surface API.
-        use hydroflow::tokio::io::AsyncBufReadExt;
+    let text_out = {
+        use futures::stream::StreamExt;
+        use tokio::io::AsyncBufReadExt;
+        let reader = tokio::io::BufReader::new(tokio::io::stdin());
+        let lines = tokio_stream::wrappers::LinesStream::new(reader.lines())
+            .map(|result| Some(result.expect("Failed to read stdin as UTF-8.")));
+        df.add_input_from_stream::<_, VecHandoff<String>, _>(lines)
+    };
 
-        let mut reader = hydroflow::tokio::io::BufReader::new(hydroflow::tokio::io::stdin());
-        let mut buf = String::new();
-        while let Ok(_num_chars) = reader.read_line(&mut buf).await {
-            text_in.give(Some(buf.clone()));
-            text_in.flush();
-            buf.clear(); // TODO(mingwei): Maybe not needed?
-        }
-    });
-
+    // format addresses
     let addr = format!("localhost:{}", opts.port);
     let connect_addr = format!("localhost:{}", connect_response_port);
     let messages_addr = format!("localhost:{}", messages_port);
@@ -86,7 +82,7 @@ pub(crate) async fn run_client(opts: Opts) {
             .filter(move |x| x.nickname != nick2)
             .pull_to_push()
             .for_each(move |msg| {
-                print!(
+                println!(
                     "{} {}: {}",
                     msg.ts
                         .with_timezone(&Local)
