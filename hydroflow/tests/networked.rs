@@ -68,7 +68,7 @@ fn start_echo_server() -> u16 {
                         })
                         .pull_to_push()
                         .map(Some)
-                        .reverse(outbound_messages),
+                        .push_to(outbound_messages),
                 );
 
                 builder.build().run_async().await.unwrap();

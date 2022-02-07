@@ -34,7 +34,7 @@ where
         Next: PushSurfaceReversed<ItemIn = Self::ItemOut>,
     = PivotSurface<Pull, Next>;
 
-    fn reverse<Next>(self, next: Next) -> Self::Output<Next>
+    fn push_to<Next>(self, next: Next) -> Self::Output<Next>
     where
         Next: PushSurfaceReversed<ItemIn = Self::ItemOut>,
     {
