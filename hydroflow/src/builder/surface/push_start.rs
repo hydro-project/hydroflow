@@ -30,7 +30,7 @@ impl<Out> PushSurface for StartPushSurface<Out> {
         Next: PushSurfaceReversed<ItemIn = Self::ItemOut>,
     = Next;
 
-    fn reverse<Next>(self, next: Next) -> Self::Output<Next>
+    fn push_into<Next>(self, next: Next) -> Self::Output<Next>
     where
         Next: PushSurfaceReversed<ItemIn = Self::ItemOut>,
     {

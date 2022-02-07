@@ -55,11 +55,11 @@ where
         Next: PushSurfaceReversed<ItemIn = Self::ItemOut>,
     = Prev::Output<FlattenPushSurfaceReversed<Next, Prev::ItemOut>>;
 
-    fn reverse<Next>(self, next: Next) -> Self::Output<Next>
+    fn push_into<Next>(self, next: Next) -> Self::Output<Next>
     where
         Next: PushSurfaceReversed<ItemIn = Self::ItemOut>,
     {
-        self.prev.reverse(FlattenPushSurfaceReversed::new(next))
+        self.prev.push_into(FlattenPushSurfaceReversed::new(next))
     }
 }
 

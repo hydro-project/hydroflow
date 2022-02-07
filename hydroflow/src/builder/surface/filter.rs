@@ -53,12 +53,12 @@ where
         Next: PushSurfaceReversed<ItemIn = Self::ItemOut>,
     = Prev::Output<FilterPushSurfaceReversed<Next, Func>>;
 
-    fn reverse<Next>(self, next: Next) -> Self::Output<Next>
+    fn push_into<Next>(self, next: Next) -> Self::Output<Next>
     where
         Next: PushSurfaceReversed<ItemIn = Self::ItemOut>,
     {
         self.prev
-            .reverse(FilterPushSurfaceReversed::new(next, self.func))
+            .push_into(FilterPushSurfaceReversed::new(next, self.func))
     }
 }
 
