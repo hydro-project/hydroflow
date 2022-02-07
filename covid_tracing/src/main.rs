@@ -71,7 +71,7 @@ fn main() {
                 });
 
             let pivot = new_exposed
-                .pusherator()
+                .pull_to_push()
                 .tee(
                     InputBuild::new().for_each(|exposed_person: (Pid, DateTime)| {
                         // Notif push.
@@ -99,7 +99,7 @@ fn main() {
             let joined = SymmetricHashJoin::new(peoples, exposures, &mut people_exposure);
 
             let pivot = joined
-                .pusherator()
+                .pull_to_push()
                 .for_each(|(_pid, (name, phone), exposure)| {
                     println!(
                         "[{}] To {}: Possible Exposure at t = {}",

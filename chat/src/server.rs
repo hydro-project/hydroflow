@@ -52,7 +52,7 @@ pub(crate) async fn run_server(opts: Opts) {
     // Now assemble the prelude to the tee
     let sg = members_in
         .flatten()
-        .pivot()
+        .pull_to_push()
         .tee(membership_response, member_join_input);
     hf.add_subgraph(sg);
 
@@ -72,7 +72,7 @@ pub(crate) async fn run_server(opts: Opts) {
                 },
             ))
         })
-        .pivot()
+        .pull_to_push()
         .reverse(messages_out);
 
     hf.add_subgraph(sg);
