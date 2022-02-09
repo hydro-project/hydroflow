@@ -140,7 +140,7 @@ where
 /// ```ignore
 /// type MyHandoffList = (VecHandoff<usize>, (VecHandoff<String>, (TeeingHandoff<u32>, ())));
 /// ```
-/// The [`tl!`] (tuple list) macro simplifies usage of this kind:
+/// The [`tl!`](crate::tl) (tuple list) macro simplifies usage of this kind:
 /// ```ignore
 /// type MyHandoffList = tl!(VecHandoff<usize>, VecHandoff<String>, TeeingHandoff<u32>);
 /// ```
