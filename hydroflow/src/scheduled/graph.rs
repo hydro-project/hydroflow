@@ -1,4 +1,5 @@
 use std::any::Any;
+use std::cell::Cell;
 use std::collections::VecDeque;
 use std::marker::PhantomData;
 use std::sync::mpsc::{self, Receiver, RecvError, SyncSender};
@@ -15,9 +16,7 @@ use super::state::StateHandle;
 use super::subgraph::Subgraph;
 use super::{HandoffId, StateId, SubgraphId};
 
-/**
- * A Hydroflow graph. Owns, schedules, and runs the compiled subgraphs.
- */
+/// A Hydroflow graph. Owns, schedules, and runs the compiled subgraphs.
 pub struct Hydroflow {
     subgraphs: Vec<SubgraphData>,
     handoffs: Vec<HandoffData>,
@@ -44,99 +43,107 @@ impl Default for Hydroflow {
     }
 }
 impl Hydroflow {
-    /**
-     * Create an new empty Dataflow graph.
-     */
+    /// Create a new empty Hydroflow graph.
     pub fn new() -> Self {
         Default::default()
     }
 
-    /**
-     * Returns a reactor for externally scheduling subgraphs, possibly from another thread.
-     */
+    /// Returns a reactor for externally scheduling subgraphs, possibly from another thread.
     pub fn reactor(&self) -> Reactor {
         Reactor::new(self.event_queue_send.clone())
     }
 
-    fn enqueue_jobs(&mut self) {
-        for sg in self.event_queue_recv.try_iter() {
-            if !self.subgraphs[sg].scheduled {
-                self.ready_queue.push_back(sg);
-                self.subgraphs[sg].scheduled = true;
-            }
-        }
-    }
-
-    /**
-     * Runs the dataflow until no more work is currently available.
-     */
+    /// Runs the dataflow until no more work is currently available.
     pub fn tick(&mut self) {
         // Add any external jobs to ready queue.
-        self.enqueue_jobs();
+        self.try_recv_events();
 
         while let Some(sg_id) = self.ready_queue.pop_front() {
-            self.subgraphs[sg_id].scheduled = false;
-            let sg_data = self.subgraphs.get_mut(sg_id).unwrap(/* TODO(mingwei) */);
-            let context = Context {
-                subgraph_id: sg_id,
-                handoffs: &mut self.handoffs,
-                states: &mut self.states,
-                event_queue_send: &mut self.event_queue_send,
-            };
-            sg_data.subgraph.run(context);
-            for &handoff_id in sg_data.succs.iter() {
-                let handoff = self.handoffs.get(handoff_id).unwrap(/* TODO(mingwei) */);
-                for &succ_id in handoff.succs.iter() {
-                    if self.ready_queue.contains(&succ_id) {
-                        // TODO(mingwei): Slow? O(N)
-                        continue;
-                    }
-                    if !handoff.handoff.is_bottom() {
+            {
+                let sg_data = &mut self.subgraphs[sg_id];
+                // This must be true for the subgraph to be enqueued.
+                assert!(sg_data.is_scheduled.take());
+
+                let context = Context {
+                    subgraph_id: sg_id,
+                    handoffs: &mut self.handoffs,
+                    states: &mut self.states,
+                    event_queue_send: &mut self.event_queue_send,
+                };
+                sg_data.subgraph.run(context);
+            }
+
+            for &handoff_id in self.subgraphs[sg_id].succs.iter() {
+                let handoff = &self.handoffs[handoff_id];
+                if !handoff.handoff.is_bottom() {
+                    for &succ_id in handoff.succs.iter() {
+                        let succ_sg_data = &self.subgraphs[succ_id];
+                        if succ_sg_data.is_scheduled.get() {
+                            // Skip if task is already scheduled.
+                            continue;
+                        }
+                        succ_sg_data.is_scheduled.set(true);
                         self.ready_queue.push_back(succ_id);
                     }
                 }
             }
 
-            self.enqueue_jobs();
+            self.try_recv_events();
         }
     }
 
-    /**
-     * Run the dataflow graph, blocking until completion.
-     */
+    /// Run the dataflow graph to completion.
+    ///
+    /// TODO(mingwei): Currently blockes forever, no notion of "completion."
     pub fn run(&mut self) -> Result<!, RecvError> {
         loop {
             self.tick();
-            self.poll_events()?;
+            self.recv_events()?;
         }
     }
 
-    /**
-     * Run the dataflow graph to completion asynchronously.
-     */
+    /// Run the dataflow graph to completion asynchronously
+    ///
+    /// TODO(mingwei): Currently blockes forever, no notion of "completion."
     pub async fn run_async(&mut self) -> Result<!, RecvError> {
         loop {
             self.tick();
-            self.poll_events()?;
-            tokio::task::yield_now().await;
-            // TODO(mingwei): this busy-spins when other tasks are not running.
+            // Repeat until an external event triggers more subgraphs.
+            while 0 == self.try_recv_events() {
+                // TODO(mingwei): this busy-spins when other tasks are not running.
+                tokio::task::yield_now().await;
+            }
         }
     }
 
-    /**
-     * Block and wait for an external event.
-     */
-    pub fn poll_events(&mut self) -> Result<(), RecvError> {
-        self.ready_queue.extend(self.event_queue_recv.try_iter());
-        Ok(())
+    /// Enqueues subgraphs triggered by external events without blocking.
+    ///
+    /// Returns the number of subgraphs enqueued.
+    pub fn try_recv_events(&mut self) -> usize {
+        let mut enqueued_count = 0;
+        self.ready_queue.extend(
+            self.event_queue_recv
+                .try_iter()
+                .filter(|&sg_id| !self.subgraphs[sg_id].is_scheduled.replace(true))
+                .inspect(|_| enqueued_count += 1),
+        );
+        enqueued_count
     }
 
-    /**
-     * TODO(mingwei): Hack to re-enqueue all subgraphs.
-     */
-    pub fn wake_all(&mut self) {
-        self.ready_queue.clear();
-        self.ready_queue.extend(0..self.subgraphs.len());
+    /// Enqueues subgraphs triggered by external events, blocking until at
+    /// least one subgraph is scheduled.
+    pub fn recv_events(&mut self) -> Result<(), RecvError> {
+        loop {
+            let sg_id = self.event_queue_recv.recv()?;
+            if !self.subgraphs[sg_id].is_scheduled.replace(true) {
+                self.ready_queue.push_back(sg_id);
+
+                // Enqueue any other immediate events.
+                self.try_recv_events();
+
+                return Ok(());
+            }
+        }
     }
 
     /// Adds a new compiled subgraph with the specified inputs and outputs.
@@ -164,8 +171,12 @@ impl Hydroflow {
             let send = send_ports.make_ctx(context.handoffs);
             (subgraph)(&context, recv, send);
         };
-        self.subgraphs
-            .push(SubgraphData::new(subgraph, subgraph_preds, subgraph_succs));
+        self.subgraphs.push(SubgraphData::new(
+            subgraph,
+            subgraph_preds,
+            subgraph_succs,
+            true,
+        ));
         self.ready_queue.push_back(sg_id);
 
         sg_id
@@ -226,13 +237,18 @@ impl Hydroflow {
 
             (subgraph)(&context, &recvs, &sends)
         };
-        self.subgraphs
-            .push(SubgraphData::new(subgraph, subgraph_preds, subgraph_succs));
+        self.subgraphs.push(SubgraphData::new(
+            subgraph,
+            subgraph_preds,
+            subgraph_succs,
+            true,
+        ));
         self.ready_queue.push_back(sg_id);
 
         sg_id
     }
 
+    /// Creates a handoff edge and returns the corresponding send and receive ports.
     pub fn make_edge<H>(&mut self) -> (SendPort<H>, RecvPort<H>)
     where
         H: 'static + Handoff,
@@ -273,11 +289,11 @@ impl Hydroflow {
     }
 }
 
-/**
- * A handoff and its input and output [SubgraphId]s.
- *
- * NOT PART OF PUBLIC API.
- */
+/// A handoff and its input and output [SubgraphId]s.
+///
+/// Internal use: used to track the hydroflow graph structure.
+///
+/// TODO(mingwei): restructure `PortList` so this can be crate-private.
 pub struct HandoffData {
     pub(crate) handoff: Box<dyn HandoffMeta>,
     pub(crate) preds: Vec<SubgraphId>,
@@ -302,32 +318,38 @@ impl HandoffData {
     }
 }
 
-/**
- * A subgraph along with its predecessor and successor [SubgraphId]s.
- * Used internally by the [Hydroflow] struct to represent the dataflow graph structure.
- */
+/// A subgraph along with its predecessor and successor [SubgraphId]s.
+///
+/// Used internally by the [Hydroflow] struct to represent the dataflow graph
+/// structure and scheduled state.
 struct SubgraphData {
     subgraph: Box<dyn Subgraph>,
     #[allow(dead_code)]
     preds: Vec<HandoffId>,
     succs: Vec<HandoffId>,
-    scheduled: bool,
+    /// If this subgraph is scheduled in [`Hydroflow::ready_queue`].
+    /// [`Cell`] allows modifying this field when iterating `Self::preds` or
+    /// `Self::succs`, as all `SubgraphData` are owned by the same vec
+    /// `Hydroflow::subgraphs`.
+    is_scheduled: Cell<bool>,
 }
 impl SubgraphData {
     pub fn new(
         subgraph: impl 'static + Subgraph,
         preds: Vec<HandoffId>,
         succs: Vec<HandoffId>,
+        is_scheduled: bool,
     ) -> Self {
         Self {
             subgraph: Box::new(subgraph),
             preds,
             succs,
-            scheduled: true,
+            is_scheduled: Cell::new(is_scheduled),
         }
     }
 }
 
-pub struct StateData {
+/// Internal struct containing a pointer to [`Hydroflow`]-owned state.
+pub(crate) struct StateData {
     pub state: Box<dyn Any>,
 }

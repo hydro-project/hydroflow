@@ -356,9 +356,8 @@ fn test_input_channel() {
                 }
             });
 
-            while !(*done).get() {
+            while !done.get() {
                 df.tick();
-                df.poll_events().unwrap();
             }
         });
     }
