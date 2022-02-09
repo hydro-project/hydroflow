@@ -16,6 +16,9 @@ name = "covid_tracing"
 [[example]]
 name = "covid_tracing_dist"
 
+[[example]]
+name = "graph_reachability"
+
 [dependencies]
 bincode = "1.3"
 byteorder = "1.4.3"
