@@ -1,5 +1,6 @@
 use super::{PullBuild, PullBuildBase};
 
+use crate::scheduled::context::Context;
 use crate::scheduled::handoff::handoff_list::{PortList, PortListSplit};
 use crate::scheduled::port::RECV;
 use crate::scheduled::type_list::Extend;
@@ -57,11 +58,12 @@ where
 
     fn build<'slf, 'hof>(
         &'slf mut self,
+        context: &Context<'_>,
         input: <Self::InputHandoffs as PortList<RECV>>::Ctx<'hof>,
     ) -> Self::Build<'slf, 'hof> {
         let (input_a, input_b) = <Self::InputHandoffs as PortListSplit<_, _>>::split_ctx(input);
-        let iter_a = self.prev_a.build(input_a);
-        let iter_b = self.prev_b.build(input_b);
+        let iter_a = self.prev_a.build(context, input_a);
+        let iter_b = self.prev_b.build(context, input_b);
         iter_a.chain(iter_b)
     }
 }

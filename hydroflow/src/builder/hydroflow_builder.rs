@@ -59,13 +59,16 @@ impl HydroflowBuilder {
     {
         let ((recv_ports, send_ports), (mut pull_build, mut push_build)) = pivot.into_parts();
 
-        self.hydroflow
-            .add_subgraph(recv_ports, send_ports, move |_ctx, recv_ctx, send_ctx| {
-                let pull = pull_build.build(recv_ctx);
-                let push = push_build.build(send_ctx);
+        self.hydroflow.add_subgraph(
+            recv_ports,
+            send_ports,
+            move |context, recv_ctx, send_ctx| {
+                let pull = pull_build.build(context, recv_ctx);
+                let push = push_build.build(context, send_ctx);
                 let pivot = Pivot::new(pull, push);
                 pivot.run();
-            })
+            },
+        )
     }
 
     /// Creates a new external channel input.
