@@ -1,6 +1,7 @@
 use super::{PushBuild, PushBuildBase};
 
 use crate::compiled::filter::Filter;
+use crate::scheduled::context::Context;
 use crate::scheduled::handoff::handoff_list::PortList;
 use crate::scheduled::port::SEND;
 
@@ -46,8 +47,9 @@ where
 
     fn build<'slf, 'hof>(
         &'slf mut self,
+        context: &Context<'_>,
         handoffs: <Self::OutputHandoffs as PortList<SEND>>::Ctx<'hof>,
     ) -> Self::Build<'slf, 'hof> {
-        Filter::new(|x| (self.func)(x), self.next.build(handoffs))
+        Filter::new(|x| (self.func)(x), self.next.build(context, handoffs))
     }
 }

@@ -3,6 +3,7 @@ use super::{PushBuild, PushBuildBase};
 use std::marker::PhantomData;
 
 use crate::compiled::flatten::Flatten;
+use crate::scheduled::context::Context;
 use crate::scheduled::handoff::handoff_list::PortList;
 use crate::scheduled::port::SEND;
 
@@ -45,8 +46,9 @@ where
 
     fn build<'slf, 'hof>(
         &'slf mut self,
+        context: &Context<'_>,
         handoffs: <Self::OutputHandoffs as PortList<SEND>>::Ctx<'hof>,
     ) -> Self::Build<'slf, 'hof> {
-        Flatten::new(self.next.build(handoffs))
+        Flatten::new(self.next.build(context, handoffs))
     }
 }

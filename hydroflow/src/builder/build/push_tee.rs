@@ -1,6 +1,7 @@
 use super::{PushBuild, PushBuildBase};
 
 use crate::compiled::tee::Tee;
+use crate::scheduled::context::Context;
 use crate::scheduled::handoff::handoff_list::{PortList, PortListSplit};
 use crate::scheduled::port::SEND;
 use crate::scheduled::type_list::Extend;
@@ -61,11 +62,12 @@ where
 
     fn build<'slf, 'hof>(
         &'slf mut self,
+        context: &Context<'_>,
         input: <Self::OutputHandoffs as PortList<SEND>>::Ctx<'hof>,
     ) -> Self::Build<'slf, 'hof> {
         let (input_a, input_b) = <Self::OutputHandoffs as PortListSplit<_, _>>::split_ctx(input);
-        let build_a = self.next_a.build(input_a);
-        let build_b = self.next_b.build(input_b);
+        let build_a = self.next_a.build(context, input_a);
+        let build_b = self.next_b.build(context, input_b);
         Tee::new(build_a, build_b)
     }
 }
