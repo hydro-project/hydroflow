@@ -2,35 +2,35 @@ use super::{BaseSurface, PullSurface};
 
 use crate::builder::build::pull_iter::IterPullBuild;
 
-pub struct IterPullSurface<I, T>
+pub struct IterPullSurface<I>
 where
-    I: Iterator<Item = T>,
+    I: Iterator,
 {
     it: I,
 }
 
-impl<I, T> IterPullSurface<I, T>
+impl<I> IterPullSurface<I>
 where
-    I: Iterator<Item = T>,
+    I: Iterator,
 {
     pub fn new(it: I) -> Self {
         Self { it }
     }
 }
 
-impl<I, T> BaseSurface for IterPullSurface<I, T>
+impl<I> BaseSurface for IterPullSurface<I>
 where
-    I: Iterator<Item = T>,
+    I: 'static + Iterator,
 {
-    type ItemOut = T;
+    type ItemOut = I::Item;
 }
 
-impl<I, T> PullSurface for IterPullSurface<I, T>
+impl<I> PullSurface for IterPullSurface<I>
 where
-    I: 'static + Iterator<Item = T>,
+    I: 'static + Iterator,
 {
     type InputHandoffs = ();
-    type Build = IterPullBuild<I, T>;
+    type Build = IterPullBuild<I>;
 
     fn into_parts(self) -> (Self::InputHandoffs, Self::Build) {
         ((), IterPullBuild::new(self.it))

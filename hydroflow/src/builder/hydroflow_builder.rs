@@ -2,6 +2,7 @@ use futures::Stream;
 
 use super::build::{PullBuild, PushBuild};
 use super::surface::pivot::PivotSurface;
+use super::surface::pull_iter::IterPullSurface;
 
 use std::sync::mpsc::SyncSender;
 
@@ -130,6 +131,13 @@ impl HydroflowBuilder {
 
     pub fn build(self) -> Hydroflow {
         self.hydroflow
+    }
+
+    pub fn start_iter<I>(&self, iter: I) -> IterPullSurface<I::IntoIter>
+    where
+        I: IntoIterator,
+    {
+        IterPullSurface::new(iter.into_iter())
     }
 
     /// Start a new branch for teeing.
