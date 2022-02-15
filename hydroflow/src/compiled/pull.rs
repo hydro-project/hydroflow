@@ -2,6 +2,62 @@ use std::collections::HashMap;
 use std::ops::Range;
 
 #[derive(Debug)]
+pub struct BatchJoinState<K, BufV> {
+    tab: HashMap<K, Vec<BufV>>,
+}
+
+impl<K, BufV> Default for BatchJoinState<K, BufV> {
+    fn default() -> Self {
+        Self {
+            tab: HashMap::new(),
+        }
+    }
+}
+
+pub struct BatchJoin<'a, K, Buf, BufV, Stream, StreamV>
+where
+    K: Eq + std::hash::Hash,
+    Buf: Iterator<Item = (K, BufV)>,
+    Stream: Iterator<Item = (K, StreamV)>,
+{
+    buf: Buf,
+    stream: Stream,
+    state: &'a mut BatchJoinState<K, BufV>,
+}
+
+impl<'a, K, Buf, BufV, Stream, StreamV> Iterator for BatchJoin<'a, K, Buf, BufV, Stream, StreamV>
+where
+    K: Eq + std::hash::Hash,
+    Buf: Iterator<Item = (K, BufV)>,
+    Stream: Iterator<Item = (K, StreamV)>,
+{
+    type Item = (K, StreamV, Vec<BufV>);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        for (k, v) in &mut self.buf {
+            self.state.tab.entry(k).or_insert_with(Vec::new).push(v);
+        }
+
+        for (k, v) in &mut self.stream {
+            if let Some(vals) = self.state.tab.remove(&k) {
+                return Some((k, v, vals));
+            }
+        }
+        None
+    }
+}
+impl<'a, K, Buf, BufV, Stream, StreamV> BatchJoin<'a, K, Buf, BufV, Stream, StreamV>
+where
+    K: Eq + std::hash::Hash,
+    Buf: Iterator<Item = (K, BufV)>,
+    Stream: Iterator<Item = (K, StreamV)>,
+{
+    pub fn new(buf: Buf, stream: Stream, state: &'a mut BatchJoinState<K, BufV>) -> Self {
+        Self { buf, stream, state }
+    }
+}
+
+#[derive(Debug)]
 pub struct JoinState<K, V1, V2> {
     ltab: HashMap<K, Vec<V1>>,
     rtab: HashMap<K, Vec<V2>>,
@@ -16,24 +72,6 @@ impl<K, V1, V2> Default for JoinState<K, V1, V2> {
             rtab: HashMap::new(),
             lbuffer: None,
             rbuffer: None,
-        }
-    }
-}
-
-pub struct CrossJoinState<V1, V2> {
-    ltab: Vec<V1>,
-    rtab: Vec<V2>,
-    draw_from_left: bool,
-    opposite_ix: Range<usize>,
-}
-
-impl<'a, V1, V2> Default for CrossJoinState<V1, V2> {
-    fn default() -> Self {
-        Self {
-            ltab: Vec::new(),
-            rtab: Vec::new(),
-            draw_from_left: true,
-            opposite_ix: 0..0,
         }
     }
 }
@@ -114,6 +152,24 @@ where
 {
     pub fn new(lhs: I1, rhs: I2, state: &'a mut JoinState<K, V1, V2>) -> Self {
         Self { lhs, rhs, state }
+    }
+}
+
+pub struct CrossJoinState<V1, V2> {
+    ltab: Vec<V1>,
+    rtab: Vec<V2>,
+    draw_from_left: bool,
+    opposite_ix: Range<usize>,
+}
+
+impl<'a, V1, V2> Default for CrossJoinState<V1, V2> {
+    fn default() -> Self {
+        Self {
+            ltab: Vec::new(),
+            rtab: Vec::new(),
+            draw_from_left: true,
+            opposite_ix: 0..0,
+        }
     }
 }
 

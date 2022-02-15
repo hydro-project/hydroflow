@@ -1,5 +1,6 @@
 //! Internal "subgraph builders" to implement the Surface API. For more info see [super].
 
+pub mod pull_batch;
 pub mod pull_chain;
 pub mod pull_cross_join;
 pub mod pull_filter;
