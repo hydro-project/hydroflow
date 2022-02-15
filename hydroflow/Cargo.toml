@@ -4,9 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [features]
-default = [ "async", "variadic_generics" ]
+default = [ "async" ]
 async = [ "futures" ]
-variadic_generics = []
 
 [[example]]
 name = "chat"

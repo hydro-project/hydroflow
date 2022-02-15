@@ -1,6 +1,6 @@
 #![feature(never_type)]
 #![feature(type_alias_impl_trait)]
-#![cfg_attr(feature = "variadic_generics", feature(generic_associated_types))]
+#![feature(generic_associated_types)]
 #![allow(clippy::let_and_return)]
 
 pub mod builder;

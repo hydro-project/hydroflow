@@ -12,7 +12,6 @@ use super::handoff::{Handoff, HandoffMeta};
 use super::port::{RecvCtx, RecvPort, SendCtx, SendPort, RECV, SEND};
 use super::reactor::Reactor;
 use super::state::StateHandle;
-#[cfg(feature = "variadic_generics")]
 use super::subgraph::Subgraph;
 use super::{HandoffId, StateId, SubgraphId};
 
