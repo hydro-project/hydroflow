@@ -23,6 +23,7 @@ pub mod flatten;
 pub mod map;
 pub mod pivot;
 
+pub mod pull_batch;
 pub mod pull_chain;
 pub mod pull_cross_join;
 pub mod pull_handoff;
@@ -139,6 +140,24 @@ pub trait PullSurface: BaseSurface {
             + PortListSplit<RECV, Self::InputHandoffs, Suffix = Other::InputHandoffs>,
     {
         pull_join::JoinPullSurface::new(self, other)
+    }
+
+    fn batch_with<Other, Key, ValSelf, ValOther>(
+        self,
+        other: Other,
+    ) -> pull_batch::BatchPullSurface<Self, Other>
+    where
+        Self: Sized + PullSurface<ItemOut = (Key, ValSelf)>,
+        Other: PullSurface<ItemOut = (Key, ValOther)>,
+        Key: 'static + Eq + Hash,
+        ValSelf: 'static,
+        ValOther: 'static,
+
+        Self::InputHandoffs: Extend<Other::InputHandoffs>,
+        <Self::InputHandoffs as Extend<Other::InputHandoffs>>::Extended: PortList<RECV>
+            + PortListSplit<RECV, Self::InputHandoffs, Suffix = Other::InputHandoffs>,
+    {
+        pull_batch::BatchPullSurface::new(self, other)
     }
 
     fn cross_join<Other>(self, other: Other) -> pull_cross_join::CrossJoinPullSurface<Self, Other>
