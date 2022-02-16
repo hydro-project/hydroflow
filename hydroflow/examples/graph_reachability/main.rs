@@ -8,8 +8,7 @@ pub fn main() {
     let (send_loop, recv_loop) = builder.make_edge::<VecHandoff<usize>, _>();
 
     builder.add_subgraph(
-        builder
-            .start_iter([0])
+        [0].into_hydroflow()
             .chain(recv_loop.flatten())
             .map(|v| (v, ()))
             .join(recv_edges.flatten())
