@@ -16,14 +16,14 @@ pub(crate) async fn run_tracker(opts: Opts) {
     let (network_out, network_in) = df.add_tcp_stream(stream);
 
     let (contacts, contacts_in) =
-        df.make_edge::<VecHandoff<(String, String, usize)>>("contacts".into());
+        df.make_edge::<_, VecHandoff<(String, String, usize)>>("contacts");
     let (diagnoses, diagnosed_in) =
-        df.make_edge::<VecHandoff<(String, (usize, usize))>>("diagnoses".into());
-    let (loop_out, loop_in) = df.make_edge::<VecHandoff<(Pid, DateTime)>>("loop".into());
-    let (notifs_out, encoder_in) = df.make_edge::<VecHandoff<(Pid, DateTime)>>("notifs".into());
+        df.make_edge::<_, VecHandoff<(String, (usize, usize))>>("diagnoses");
+    let (loop_out, loop_in) = df.make_edge::<_, VecHandoff<(Pid, DateTime)>>("loop");
+    let (notifs_out, encoder_in) = df.make_edge::<_, VecHandoff<(Pid, DateTime)>>("notifs");
 
     df.add_subgraph(
-        "network demux".into(),
+        "network demux",
         tl!(network_in),
         tl!(contacts, diagnoses),
         move |_ctx, tl!(recv), tl!(send1, send2)| {
@@ -51,7 +51,7 @@ pub(crate) async fn run_tracker(opts: Opts) {
 
     let mut exposed_contacts = Default::default();
     df.add_subgraph(
-        "main".into(),
+        "main",
         tl!(contacts_in, diagnosed_in, loop_in),
         tl!(notifs_out, loop_out),
         move |_ctx, tl!(contacts_recv, diagnosed_recv, loop_recv), tl!(notifs_send, loop_send)| {
@@ -98,7 +98,7 @@ pub(crate) async fn run_tracker(opts: Opts) {
     );
 
     df.add_subgraph_in_out(
-        "notifs encoder".into(),
+        "notifs encoder",
         encoder_in,
         network_out,
         |_ctx, recv, send| {

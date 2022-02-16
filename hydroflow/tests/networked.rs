@@ -56,7 +56,7 @@ fn start_echo_server() -> u16 {
                 let outbound_messages = builder.wrap_output(outbound_messages);
 
                 builder.add_subgraph(
-                    "server".into(),
+                    "server",
                     handler
                         .flatten()
                         .map(|echo_request| {
@@ -100,15 +100,15 @@ fn test_echo_server() {
                 let outbound_messages = builder.hydroflow.outbound_tcp_vertex().await;
                 let input = builder
                     .hydroflow
-                    .add_input::<_, VecHandoff<(String, EchoRequest)>>(
-                        "input".into(),
+                    .add_input::<_, _, VecHandoff<(String, EchoRequest)>>(
+                        "input",
                         outbound_messages,
                     );
 
                 let responses = builder.wrap_input(responses);
 
                 builder.add_subgraph(
-                    "client".into(),
+                    "client",
                     responses
                         .flatten()
                         .pull_to_push()
@@ -138,9 +138,9 @@ fn test_echo_server() {
     }
 
     let expected_messages: HashSet<String> = [
-        "[CLIENT#0] received back \"Hello world 0!\"".into(),
-        "[CLIENT#1] received back \"Hello world 1!\"".into(),
-        "[CLIENT#2] received back \"Hello world 2!\"".into(),
+        "[CLIENT#0] received back \"Hello world 0!\"".to_owned(),
+        "[CLIENT#1] received back \"Hello world 1!\"".to_owned(),
+        "[CLIENT#2] received back \"Hello world 2!\"".to_owned(),
     ]
     .into_iter()
     .collect();
@@ -265,25 +265,25 @@ fn test_echo_server_reconnect() {
     rt.block_on(async move {
         let mut client = EchoClient::new().await;
 
-        client.send(server_addr.clone(), "abc".into()).await;
+        client.send(server_addr.clone(), "abc".to_owned()).await;
         let result = client.recv().await.unwrap();
 
         assert_eq!(
             result,
             EchoResponse {
-                payload: "abc".into()
+                payload: "abc".to_owned()
             }
         );
 
         let mut client = EchoClient::new().await;
 
-        client.send(server_addr.clone(), "def".into()).await;
+        client.send(server_addr.clone(), "def".to_owned()).await;
         let result = client.recv().await.unwrap();
 
         assert_eq!(
             result,
             EchoResponse {
-                payload: "def".into()
+                payload: "def".to_owned()
             }
         );
     });
@@ -413,7 +413,7 @@ fn test_exchange() {
                 let french_address_book = french_address_book.lock().unwrap().clone();
                 let french = IterPullSurface::new(p.french.into_iter()).exchange(
                     &mut builder,
-                    "french exchange".into(),
+                    "french exchange",
                     french_address_book,
                     french_inbound_messages.flatten(),
                     p.id,
@@ -424,7 +424,7 @@ fn test_exchange() {
                 let english_address_book = english_address_book.lock().unwrap().clone();
                 let english = IterPullSurface::new(p.english.into_iter()).exchange(
                     &mut builder,
-                    "english exchange".into(),
+                    "english exchange",
                     english_address_book,
                     english_inbound_messages.flatten(),
                     p.id,
@@ -435,7 +435,7 @@ fn test_exchange() {
 
                 // Join them.
                 builder.add_subgraph(
-                    "sink".into(),
+                    "sink",
                     join.pull_to_push().for_each(move |(v, english, french)| {
                         receipts_tx.send((v, english, french)).unwrap();
                     }),
