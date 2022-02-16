@@ -41,7 +41,8 @@ pub(crate) async fn run_server(opts: Opts) {
 
     // 2. feed new members into the join
     // But first, we need a buffer to turn push into pull for cross_join.
-    let (memberships_push, memberships_pull) = hf.make_edge::<VecHandoff<String>, Option<String>>();
+    let (memberships_push, memberships_pull) =
+        hf.make_edge::<VecHandoff<String>, Option<String>>("memberships".into());
     // and now the other start_tee
     let member_join_input = hf
         .start_tee()
@@ -54,7 +55,7 @@ pub(crate) async fn run_server(opts: Opts) {
         .flatten()
         .pull_to_push()
         .tee(membership_response, member_join_input);
-    hf.add_subgraph(sg);
+    hf.add_subgraph("tee members".into(), sg);
 
     // And assemble the cross-join of msgs_in and members_in, flowing to members_out
     let msgs_in = msgs_in.flatten();
@@ -75,7 +76,7 @@ pub(crate) async fn run_server(opts: Opts) {
         .pull_to_push()
         .push_to(messages_out);
 
-    hf.add_subgraph(sg);
+    hf.add_subgraph("main cross-join".into(), sg);
 
     let mut hf = hf.build();
 

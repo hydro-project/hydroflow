@@ -22,24 +22,35 @@ fn map_filter() {
     // A simple dataflow with one source feeding into one sink with some processing in the middle.
     let mut df = Hydroflow::new();
 
-    let (source, map_in) = df.make_edge::<VecHandoff<i32>>();
-    let (map_out, filter_in) = df.make_edge::<VecHandoff<i32>>();
-    let (filter_out, sink) = df.make_edge::<VecHandoff<i32>>();
+    let (source, map_in) = df.make_edge::<VecHandoff<i32>>("source -> map_in".into());
+    let (map_out, filter_in) = df.make_edge::<VecHandoff<i32>>("map_out -> filter_in".into());
+    let (filter_out, sink) = df.make_edge::<VecHandoff<i32>>("filter_out -> sink".into());
 
     let data = [1, 2, 3, 4];
-    df.add_subgraph(tl!(), tl!(source), move |_ctx, tl!(), tl!(send)| {
-        for x in data.into_iter() {
-            send.give(Some(x));
-        }
-    });
-
-    df.add_subgraph(tl!(map_in), tl!(map_out), |_ctx, tl!(recv), tl!(send)| {
-        for x in recv.take_inner().into_iter() {
-            send.give(Some(3 * x + 1));
-        }
-    });
+    df.add_subgraph(
+        "source".into(),
+        tl!(),
+        tl!(source),
+        move |_ctx, tl!(), tl!(send)| {
+            for x in data.into_iter() {
+                send.give(Some(x));
+            }
+        },
+    );
 
     df.add_subgraph(
+        "map".into(),
+        tl!(map_in),
+        tl!(map_out),
+        |_ctx, tl!(recv), tl!(send)| {
+            for x in recv.take_inner().into_iter() {
+                send.give(Some(3 * x + 1));
+            }
+        },
+    );
+
+    df.add_subgraph(
+        "filter".into(),
         tl!(filter_in),
         tl!(filter_out),
         |_ctx, tl!(recv), tl!(send)| {
@@ -53,11 +64,16 @@ fn map_filter() {
 
     let outputs = Rc::new(RefCell::new(Vec::new()));
     let inner_outputs = outputs.clone();
-    df.add_subgraph(tl!(sink), tl!(), move |_ctx, tl!(recv), tl!()| {
-        for x in recv.take_inner().into_iter() {
-            (*inner_outputs).borrow_mut().push(x);
-        }
-    });
+    df.add_subgraph(
+        "sink".into(),
+        tl!(sink),
+        tl!(),
+        move |_ctx, tl!(recv), tl!()| {
+            for x in recv.take_inner().into_iter() {
+                (*inner_outputs).borrow_mut().push(x);
+            }
+        },
+    );
 
     df.tick();
 
@@ -67,15 +83,15 @@ fn map_filter() {
 #[test]
 fn test_basic_variadic() {
     let mut df = Hydroflow::new();
-    let (source_send, sink_recv) = df.make_edge::<VecHandoff<usize>>();
-    df.add_subgraph_source(source_send, move |_ctx, send| {
+    let (source_send, sink_recv) = df.make_edge::<VecHandoff<usize>>("handoff".into());
+    df.add_subgraph_source("source".into(), source_send, move |_ctx, send| {
         send.give(Some(5));
     });
 
     let val = <Rc<Cell<Option<usize>>>>::default();
     let val_ref = val.clone();
 
-    df.add_subgraph_sink(sink_recv, move |_ctx, recv| {
+    df.add_subgraph_sink("sink".into(), sink_recv, move |_ctx, recv| {
         for v in recv.take_inner().into_iter() {
             let old_val = val_ref.replace(Some(v));
             assert!(old_val.is_none()); // Only run once.
@@ -91,9 +107,10 @@ fn test_basic_variadic() {
 fn test_basic_n_m() {
     let mut df = Hydroflow::new();
 
-    let (source_send, sink_recv) = df.make_edge::<VecHandoff<usize>>();
+    let (source_send, sink_recv) = df.make_edge::<VecHandoff<usize>>("handoff".into());
 
     df.add_subgraph_n_m(
+        "source".into(),
         vec![],
         vec![source_send],
         move |_ctx, _recv: &[&RecvCtx<VecHandoff<usize>>], send| {
@@ -105,6 +122,7 @@ fn test_basic_n_m() {
     let val_ref = val.clone();
 
     df.add_subgraph_n_m(
+        "sink".into(),
         vec![sink_recv],
         vec![],
         move |_ctx, recv, _send: &[&SendCtx<VecHandoff<usize>>]| {
@@ -140,21 +158,29 @@ fn test_cycle() {
 
     let mut df = Hydroflow::new();
 
-    let (reachable, merge_lhs) = df.make_edge::<VecHandoff<usize>>();
-    let (neighbors_out, merge_rhs) = df.make_edge::<VecHandoff<usize>>();
-    let (merge_out, distinct_in) = df.make_edge::<VecHandoff<usize>>();
-    let (distinct_out, tee_in) = df.make_edge::<VecHandoff<usize>>();
-    let (tee_out1, neighbors_in) = df.make_edge::<VecHandoff<usize>>();
-    let (tee_out2, sink_in) = df.make_edge::<VecHandoff<usize>>();
+    let (reachable, merge_lhs) = df.make_edge::<VecHandoff<usize>>("reachable -> merge_lhs".into());
+    let (neighbors_out, merge_rhs) =
+        df.make_edge::<VecHandoff<usize>>("neighbors_out -> merge_rhs".into());
+    let (merge_out, distinct_in) =
+        df.make_edge::<VecHandoff<usize>>("merge_out -> distinct_in".into());
+    let (distinct_out, tee_in) = df.make_edge::<VecHandoff<usize>>("distinct_out -> tee_in".into());
+    let (tee_out1, neighbors_in) =
+        df.make_edge::<VecHandoff<usize>>("tee_out1 -> neighbors_in".into());
+    let (tee_out2, sink_in) = df.make_edge::<VecHandoff<usize>>("tee_out2 -> sink_in".into());
 
     let mut initially_reachable = vec![1];
-    df.add_subgraph_source(reachable, move |_ctx, send| {
-        for v in initially_reachable.drain(..) {
-            send.give(Some(v));
-        }
-    });
+    df.add_subgraph_source(
+        "initially reachable source".into(),
+        reachable,
+        move |_ctx, send| {
+            for v in initially_reachable.drain(..) {
+                send.give(Some(v));
+            }
+        },
+    );
 
     df.add_subgraph_2in_out(
+        "merge".into(),
         merge_lhs,
         merge_rhs,
         merge_out,
@@ -166,34 +192,50 @@ fn test_cycle() {
     );
 
     let mut seen = HashSet::new();
-    df.add_subgraph_in_out(distinct_in, distinct_out, move |_ctx, recv, send| {
-        for v in recv.take_inner().into_iter() {
-            if seen.insert(v) {
-                send.give(Some(v));
-            }
-        }
-    });
-
-    df.add_subgraph_in_out(neighbors_in, neighbors_out, move |_ctx, recv, send| {
-        for v in recv.take_inner().into_iter() {
-            if let Some(neighbors) = edges.get(&v) {
-                for &n in neighbors {
-                    send.give(Some(n));
+    df.add_subgraph_in_out(
+        "distinct".into(),
+        distinct_in,
+        distinct_out,
+        move |_ctx, recv, send| {
+            for v in recv.take_inner().into_iter() {
+                if seen.insert(v) {
+                    send.give(Some(v));
                 }
             }
-        }
-    });
+        },
+    );
 
-    df.add_subgraph_in_2out(tee_in, tee_out1, tee_out2, |_ctx, recv, send1, send2| {
-        for v in recv.take_inner().into_iter() {
-            send1.give(Some(v));
-            send2.give(Some(v));
-        }
-    });
+    df.add_subgraph_in_out(
+        "get neighbors".into(),
+        neighbors_in,
+        neighbors_out,
+        move |_ctx, recv, send| {
+            for v in recv.take_inner().into_iter() {
+                if let Some(neighbors) = edges.get(&v) {
+                    for &n in neighbors {
+                        send.give(Some(n));
+                    }
+                }
+            }
+        },
+    );
+
+    df.add_subgraph_in_2out(
+        "tee".into(),
+        tee_in,
+        tee_out1,
+        tee_out2,
+        |_ctx, recv, send1, send2| {
+            for v in recv.take_inner().into_iter() {
+                send1.give(Some(v));
+                send2.give(Some(v));
+            }
+        },
+    );
 
     let reachable_verts = Rc::new(RefCell::new(Vec::new()));
     let reachable_inner = reachable_verts.clone();
-    df.add_subgraph_sink(sink_in, move |_ctx, recv| {
+    df.add_subgraph_sink("sink".into(), sink_in, move |_ctx, recv| {
         for v in recv.take_inner().into_iter() {
             (*reachable_inner).borrow_mut().push(v);
         }
@@ -252,12 +294,12 @@ fn test_input_handle() {
 
     let mut df = Hydroflow::new();
 
-    let (send_port, recv_port) = df.make_edge::<VecHandoff<usize>>();
-    let input = df.add_input(send_port);
+    let (send_port, recv_port) = df.make_edge::<VecHandoff<usize>>("input handoff".into());
+    let input = df.add_input("input".into(), send_port);
 
     let vec = Rc::new(RefCell::new(Vec::new()));
     let inner_vec = vec.clone();
-    df.add_subgraph_sink(recv_port, move |_ctx, recv| {
+    df.add_subgraph_sink("sink".into(), recv_port, move |_ctx, recv| {
         for v in recv.take_inner() {
             (*inner_vec).borrow_mut().push(v);
         }
@@ -290,12 +332,12 @@ fn test_input_handle_thread() {
 
     let mut df = Hydroflow::new();
 
-    let (send_port, recv_port) = df.make_edge::<VecHandoff<usize>>();
-    let input = df.add_channel_input(send_port);
+    let (send_port, recv_port) = df.make_edge::<VecHandoff<usize>>("channel handoff".into());
+    let input = df.add_channel_input("channel".into(), send_port);
 
     let vec = Rc::new(RefCell::new(Vec::new()));
     let inner_vec = vec.clone();
-    df.add_subgraph_sink(recv_port, move |_ctx, recv| {
+    df.add_subgraph_sink("sink".into(), recv_port, move |_ctx, recv| {
         for v in recv.take_inner() {
             (*inner_vec).borrow_mut().push(v);
         }
@@ -345,9 +387,13 @@ fn test_input_channel() {
             let done_inner = done.clone();
             let mut df = Hydroflow::new();
 
-            let (in_chan, input) = df.make_edge();
-            df.add_input_from_stream::<_, VecHandoff<usize>, _>(in_chan, receiver);
-            df.add_subgraph_sink(input, move |_ctx, recv| {
+            let (in_chan, input) = df.make_edge("stream input handoff".into());
+            df.add_input_from_stream::<_, VecHandoff<usize>, _>(
+                "stream input".into(),
+                in_chan,
+                receiver,
+            );
+            df.add_subgraph_sink("sink".into(), input, move |_ctx, recv| {
                 for v in recv.take_inner() {
                     logger.try_send(v).unwrap();
                     if v > 0 && sender.try_send(Some(v - 1)).is_err() {

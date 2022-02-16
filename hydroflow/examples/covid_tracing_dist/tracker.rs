@@ -15,12 +15,15 @@ pub(crate) async fn run_tracker(opts: Opts) {
     let stream = TcpStream::connect(opts.addr).await.unwrap();
     let (network_out, network_in) = df.add_tcp_stream(stream);
 
-    let (contacts, contacts_in) = df.make_edge::<VecHandoff<(String, String, usize)>>();
-    let (diagnoses, diagnosed_in) = df.make_edge::<VecHandoff<(String, (usize, usize))>>();
-    let (loop_out, loop_in) = df.make_edge::<VecHandoff<(Pid, DateTime)>>();
-    let (notifs_out, encoder_in) = df.make_edge::<VecHandoff<(Pid, DateTime)>>();
+    let (contacts, contacts_in) =
+        df.make_edge::<VecHandoff<(String, String, usize)>>("contacts".into());
+    let (diagnoses, diagnosed_in) =
+        df.make_edge::<VecHandoff<(String, (usize, usize))>>("diagnoses".into());
+    let (loop_out, loop_in) = df.make_edge::<VecHandoff<(Pid, DateTime)>>("loop".into());
+    let (notifs_out, encoder_in) = df.make_edge::<VecHandoff<(Pid, DateTime)>>("notifs".into());
 
     df.add_subgraph(
+        "network demux".into(),
         tl!(network_in),
         tl!(contacts, diagnoses),
         move |_ctx, tl!(recv), tl!(send1, send2)| {
@@ -48,6 +51,7 @@ pub(crate) async fn run_tracker(opts: Opts) {
 
     let mut exposed_contacts = Default::default();
     df.add_subgraph(
+        "main".into(),
         tl!(contacts_in, diagnosed_in, loop_in),
         tl!(notifs_out, loop_out),
         move |_ctx, tl!(contacts_recv, diagnosed_recv, loop_recv), tl!(notifs_send, loop_send)| {
@@ -93,14 +97,19 @@ pub(crate) async fn run_tracker(opts: Opts) {
         },
     );
 
-    df.add_subgraph_in_out(encoder_in, network_out, |_ctx, recv, send| {
-        let mut buf = Vec::new();
-        recv.take_inner().encode(&mut buf);
-        send.give(Some(Message {
-            address: 0,
-            batch: buf.into(),
-        }));
-    });
+    df.add_subgraph_in_out(
+        "notifs encoder".into(),
+        encoder_in,
+        network_out,
+        |_ctx, recv, send| {
+            let mut buf = Vec::new();
+            recv.take_inner().encode(&mut buf);
+            send.give(Some(Message {
+                address: 0,
+                batch: buf.into(),
+            }));
+        },
+    );
 
     df.run_async().await.unwrap();
 }

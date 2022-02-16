@@ -1,4 +1,5 @@
 use std::{
+    borrow::Cow,
     collections::{hash_map::DefaultHasher, HashMap},
     hash::Hasher,
 };
@@ -27,6 +28,7 @@ where
     fn exchange<Other, Key, Val>(
         self,
         builder: &mut HydroflowBuilder,
+        name: Cow<'static, str>,
         address_book: HashMap<u64, String>,
         remote_input: Other,
         my_id: u64,
@@ -42,6 +44,7 @@ where
     fn broadcast<Other, T>(
         self,
         builder: &mut HydroflowBuilder,
+        name: Cow<'static, str>,
         addresses: Vec<String>,
         remote_input: Other,
         outbound_messages: NetworkOut<<Self as BaseSurface>::ItemOut>,
@@ -60,6 +63,7 @@ where
     fn exchange<Other, Key, Val>(
         self,
         builder: &mut HydroflowBuilder,
+        name: Cow<'static, str>,
         address_book: HashMap<u64, String>,
         remote_input: Other,
         my_id: u64,
@@ -72,12 +76,15 @@ where
         Self: 'static + PullSurface<ItemOut = (Key, Val)>,
         Other: PullSurface<ItemOut = (Key, Val)>,
     {
-        let (local_inputs_send, local_inputs_recv) =
-            builder.make_edge::<VecHandoff<(Key, Val)>, Option<(Key, Val)>>();
+        let (local_inputs_send, local_inputs_recv) = builder
+            .make_edge::<VecHandoff<(Key, Val)>, Option<(Key, Val)>>(
+                format!("{} handoff", name).into(),
+            );
 
         let num_participants: u64 = address_book.len().try_into().unwrap();
 
         builder.add_subgraph(
+            name,
             IterPullSurface::new(address_book.into_iter())
                 .join(self.map(move |(x, v)| {
                     // TODO(justin): We should make our own thing here, I don't
@@ -107,6 +114,7 @@ where
     fn broadcast<Other, U>(
         self,
         builder: &mut HydroflowBuilder,
+        name: Cow<'static, str>,
         addresses: Vec<String>,
         remote_input: Other,
         outbound_messages: NetworkOut<<Self as BaseSurface>::ItemOut>,
@@ -118,9 +126,10 @@ where
         Other: PullSurface<ItemOut = U>,
     {
         let (local_inputs_send, local_inputs_recv) =
-            builder.make_edge::<VecHandoff<U>, Option<U>>();
+            builder.make_edge::<VecHandoff<U>, Option<U>>(format!("{} handoff", name).into());
 
         builder.add_subgraph(
+            name,
             IterPullSurface::new(addresses.into_iter())
                 .cross_join(self)
                 .pull_to_push()
