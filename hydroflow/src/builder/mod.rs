@@ -82,6 +82,9 @@ pub mod surface;
 mod hydroflow_builder;
 pub use hydroflow_builder::HydroflowBuilder;
 
+mod into_hydroflow;
+pub use into_hydroflow::IntoHydroflow;
+
 /// Prelude to quick-import items needed for using the Surface API.
 ///
 /// Usage:
@@ -90,7 +93,7 @@ pub use hydroflow_builder::HydroflowBuilder;
 /// ```
 pub mod prelude {
     pub use super::surface::{BaseSurface, PullSurface, PushSurface};
-    pub use super::HydroflowBuilder;
+    pub use super::{HydroflowBuilder, IntoHydroflow};
 }
 
 #[test]
