@@ -79,12 +79,8 @@ impl Hydroflow {
             }
         });
 
-        let (send_port, recv_port) = self.make_edge("tcp ingress handoff".into());
-        self.add_input_from_stream(
-            "tcp ingress stream".into(),
-            send_port,
-            incoming_messages.map(Some),
-        );
+        let (send_port, recv_port) = self.make_edge("tcp ingress handoff");
+        self.add_input_from_stream("tcp ingress stream", send_port, incoming_messages.map(Some));
 
         (port, recv_port)
     }
@@ -203,32 +199,28 @@ impl Hydroflow {
 
         let mut buffered_messages = Vec::new();
         let mut next_messages = Vec::new();
-        let (input_port, output_port) = self.make_edge("tcp egress handoff".into());
-        self.add_subgraph_sink(
-            "tcp egress stream".into(),
-            output_port,
-            move |_ctx, recv| {
-                buffered_messages.extend(recv.take_inner());
-                for msg in buffered_messages.drain(..) {
-                    if let Err(e) = outbound_messages_send.try_send(msg) {
-                        // If we weren't able to send a message (say, because the
-                        // buffer is full), we get handed it back in the error. If
-                        // this happens we hang onto the message to try sending it
-                        // again next time.
-                        next_messages.push(e.into_inner());
-                    }
+        let (input_port, output_port) = self.make_edge("tcp egress handoff");
+        self.add_subgraph_sink("tcp egress stream", output_port, move |_ctx, recv| {
+            buffered_messages.extend(recv.take_inner());
+            for msg in buffered_messages.drain(..) {
+                if let Err(e) = outbound_messages_send.try_send(msg) {
+                    // If we weren't able to send a message (say, because the
+                    // buffer is full), we get handed it back in the error. If
+                    // this happens we hang onto the message to try sending it
+                    // again next time.
+                    next_messages.push(e.into_inner());
                 }
+            }
 
-                // NB. we don't need to flush the channel here due to the use of
-                // `try_send`.  It's guaranteed that there was space for the
-                // messages and that they were sent.
+            // NB. we don't need to flush the channel here due to the use of
+            // `try_send`.  It's guaranteed that there was space for the
+            // messages and that they were sent.
 
-                // TODO(justin): we do need to make sure we get rescheduled if
-                // next_messages is empty here.
+            // TODO(justin): we do need to make sure we get rescheduled if
+            // next_messages is empty here.
 
-                std::mem::swap(&mut buffered_messages, &mut next_messages);
-            },
-        );
+            std::mem::swap(&mut buffered_messages, &mut next_messages);
+        });
 
         input_port
     }

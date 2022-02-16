@@ -130,17 +130,15 @@ fn benchmark_hydroflow_scheduled(c: &mut Criterion) {
             let mut df = Hydroflow::new();
 
             type Hoff = VecHandoff<usize>;
-            let (reachable_out, merge_lhs) =
-                df.make_edge::<Hoff>("reachable_out -> merge_lhs".into());
-            let (neighbors_out, merge_rhs) =
-                df.make_edge::<Hoff>("neighbors_out -> merge_rhs".into());
-            let (merge_out, distinct_in) = df.make_edge::<Hoff>("merge_out -> distinct_in".into());
-            let (distinct_out, tee_in) = df.make_edge::<Hoff>("distinct_out -> tee_in".into());
-            let (tee_out1, neighbors_in) = df.make_edge::<Hoff>("tee_out1 -> neighbors_in".into());
-            let (tee_out2, sink_in) = df.make_edge::<Hoff>("tee_out2 -> sink_in".into());
+            let (reachable_out, merge_lhs) = df.make_edge::<_, Hoff>("reachable_out -> merge_lhs");
+            let (neighbors_out, merge_rhs) = df.make_edge::<_, Hoff>("neighbors_out -> merge_rhs");
+            let (merge_out, distinct_in) = df.make_edge::<_, Hoff>("merge_out -> distinct_in");
+            let (distinct_out, tee_in) = df.make_edge::<_, Hoff>("distinct_out -> tee_in");
+            let (tee_out1, neighbors_in) = df.make_edge::<_, Hoff>("tee_out1 -> neighbors_in");
+            let (tee_out2, sink_in) = df.make_edge::<_, Hoff>("tee_out2 -> sink_in");
 
             df.add_subgraph_source(
-                "initially reachable source".into(),
+                "initially reachable source",
                 reachable_out,
                 move |_ctx, send| {
                     send.give(Some(1));
@@ -149,7 +147,7 @@ fn benchmark_hydroflow_scheduled(c: &mut Criterion) {
 
             let seen_handle = df.add_state::<RefCell<HashSet<usize>>>(Default::default());
             df.add_subgraph(
-                "distinct".into(),
+                "distinct",
                 tl!(distinct_in),
                 tl!(distinct_out),
                 move |context, tl!(recv), tl!(send)| {
@@ -163,7 +161,7 @@ fn benchmark_hydroflow_scheduled(c: &mut Criterion) {
             );
 
             df.add_subgraph_2in_out(
-                "merge".into(),
+                "merge",
                 merge_lhs,
                 merge_rhs,
                 merge_out,
@@ -174,7 +172,7 @@ fn benchmark_hydroflow_scheduled(c: &mut Criterion) {
             );
 
             df.add_subgraph_in_out(
-                "get neighbors".into(),
+                "get neighbors",
                 neighbors_in,
                 neighbors_out,
                 move |_ctx, recv, send| {
@@ -187,7 +185,7 @@ fn benchmark_hydroflow_scheduled(c: &mut Criterion) {
             );
 
             df.add_subgraph_in_2out(
-                "tee".into(),
+                "tee",
                 tee_in,
                 tee_out1,
                 tee_out2,
@@ -201,7 +199,7 @@ fn benchmark_hydroflow_scheduled(c: &mut Criterion) {
 
             let reachable_verts = Rc::new(RefCell::new(HashSet::new()));
             let reachable_inner = reachable_verts.clone();
-            df.add_subgraph_sink("output sink".into(), sink_in, move |_ctx, recv| {
+            df.add_subgraph_sink("output sink", sink_in, move |_ctx, recv| {
                 (*reachable_inner).borrow_mut().extend(recv.take_inner());
             });
 
@@ -227,13 +225,13 @@ fn benchmark_hydroflow(c: &mut Criterion) {
             let mut df = Hydroflow::new();
 
             let (reachable_out, origins_in) =
-                df.make_edge::<VecHandoff<usize>>("reachable -> origins".into());
+                df.make_edge::<_, VecHandoff<usize>>("reachable -> origins");
             let (did_reach_out, possible_reach_in) =
-                df.make_edge::<VecHandoff<usize>>("did_reach -> possible_reach".into());
-            let (output_out, sink_in) = df.make_edge::<VecHandoff<usize>>("output -> sink".into());
+                df.make_edge::<_, VecHandoff<usize>>("did_reach -> possible_reach");
+            let (output_out, sink_in) = df.make_edge::<_, VecHandoff<usize>>("output -> sink");
 
             df.add_subgraph_source(
-                "initially reachable source".into(),
+                "initially reachable source",
                 reachable_out,
                 move |_ctx, send| {
                     send.give(Some(1));
@@ -243,7 +241,7 @@ fn benchmark_hydroflow(c: &mut Criterion) {
             let seen_handle = df.add_state::<RefCell<HashSet<usize>>>(Default::default());
 
             df.add_subgraph(
-                "main".into(),
+                "main",
                 tl!(origins_in, possible_reach_in),
                 tl!(did_reach_out, output_out),
                 move |context, tl!(origins, did_reach_recv), tl!(did_reach_send, output)| {
@@ -275,7 +273,7 @@ fn benchmark_hydroflow(c: &mut Criterion) {
 
             let reachable_verts = Rc::new(RefCell::new(HashSet::new()));
             let reachable_inner = reachable_verts.clone();
-            df.add_subgraph_sink("output sink".into(), sink_in, move |_ctx, recv| {
+            df.add_subgraph_sink("output sink", sink_in, move |_ctx, recv| {
                 (*reachable_inner).borrow_mut().extend(recv.take_inner());
             });
 

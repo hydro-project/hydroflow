@@ -7,7 +7,7 @@ use crate::scheduled::handoff::VecHandoff;
 
 use super::context::Context;
 use super::graph_ext::GraphExt;
-use super::port::{RecvCtx, RecvPort, SendCtx};
+use super::port::{RecvPort, SendCtx};
 
 const QUERY_EDGE_NAME: Cow<'static, str> = Cow::Borrowed("query handoff");
 
@@ -29,7 +29,7 @@ impl Query {
         let mut df = self.df.borrow_mut();
 
         let (send_port, recv_port) = df.make_edge(QUERY_EDGE_NAME);
-        df.add_subgraph_source("source".into(), send_port, f);
+        df.add_subgraph_source("source", send_port, f);
 
         Operator {
             df: self.df.clone(),
@@ -45,7 +45,7 @@ impl Query {
 
         let (send_port, recv_port) = df.make_edge(QUERY_EDGE_NAME);
         df.add_subgraph_n_m(
-            "concat".into(),
+            "concat",
             ops.into_iter().map(|op| op.recv_port).collect(),
             vec![send_port],
             |_ctx, ins, out| {
@@ -86,14 +86,9 @@ where
         let mut df = self.df.borrow_mut();
 
         let (send_port, recv_port) = df.make_edge(QUERY_EDGE_NAME);
-        df.add_subgraph_in_out(
-            "map".into(),
-            self.recv_port,
-            send_port,
-            move |_ctx, recv, send| {
-                send.give(Iter(recv.take_inner().into_iter().map(&mut f)));
-            },
-        );
+        df.add_subgraph_in_out("map", self.recv_port, send_port, move |_ctx, recv, send| {
+            send.give(Iter(recv.take_inner().into_iter().map(&mut f)));
+        });
 
         std::mem::drop(df);
         Operator {
@@ -111,7 +106,7 @@ where
 
         let (send_port, recv_port) = df.make_edge(QUERY_EDGE_NAME);
         df.add_subgraph_in_out(
-            "filter".into(),
+            "filter",
             self.recv_port,
             send_port,
             move |_ctx, recv, send| {
@@ -132,9 +127,9 @@ where
 
         let mut df = self.df.borrow_mut();
 
-        let (send_port, recv_port) = df.make_edge::<VecHandoff<T>>(QUERY_EDGE_NAME);
+        let (send_port, recv_port) = df.make_edge(QUERY_EDGE_NAME);
         df.add_subgraph_2in_out(
-            "concat".into(),
+            "concat",
             self.recv_port,
             other.recv_port,
             send_port,
@@ -155,15 +150,13 @@ where
     where
         F: 'static + Fn(T),
     {
-        self.df.borrow_mut().add_subgraph_sink(
-            "sink".into(),
-            self.recv_port,
-            move |_ctx, recv: &RecvCtx<VecHandoff<T>>| {
+        self.df
+            .borrow_mut()
+            .add_subgraph_sink("sink", self.recv_port, move |_ctx, recv| {
                 for v in recv.take_inner() {
                     f(v)
                 }
-            },
-        );
+            });
     }
 }
 
@@ -179,7 +172,7 @@ impl<T: Clone> Operator<T> {
         let mut sends = Vec::with_capacity(n);
         let mut recvs = Vec::with_capacity(n);
         for _ in 0..n {
-            let (send_port, recv_port) = df.make_edge::<VecHandoff<T>>(QUERY_EDGE_NAME);
+            let (send_port, recv_port) = df.make_edge(QUERY_EDGE_NAME);
             sends.push(send_port);
             recvs.push(Operator {
                 df: self.df.clone(),
@@ -188,7 +181,7 @@ impl<T: Clone> Operator<T> {
         }
 
         df.add_subgraph_n_m(
-            "tee".into(),
+            "tee",
             vec![self.recv_port],
             sends,
             move |_ctx, recvs, sends| {

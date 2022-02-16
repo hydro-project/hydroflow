@@ -5,11 +5,11 @@ pub fn main() {
     let mut builder = HydroflowBuilder::default();
 
     let (send_edges, recv_edges) =
-        builder.add_channel_input::<_, VecHandoff<(usize, usize)>>("edge input".into());
-    let (send_loop, recv_loop) = builder.make_edge::<VecHandoff<usize>, _>("loop".into());
+        builder.add_channel_input::<_, _, VecHandoff<(usize, usize)>>("edge input");
+    let (send_loop, recv_loop) = builder.make_edge::<_, VecHandoff<usize>, _>("loop");
 
     builder.add_subgraph(
-        "main".into(),
+        "main",
         [0].into_hydroflow()
             .chain(recv_loop.flatten())
             .map(|v| (v, ()))

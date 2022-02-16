@@ -106,7 +106,7 @@ fn test_teeing() {
 
     let mut builder = HydroflowBuilder::default();
     let (ingress_send, ingress) =
-        builder.add_channel_input::<Option<usize>, VecHandoff<_>>("ingress".into());
+        builder.add_channel_input::<_, Option<usize>, VecHandoff<_>>("ingress");
 
     let output_evn: Rc<RefCell<Vec<usize>>> = Default::default();
     let output_odd: Rc<RefCell<Vec<usize>>> = Default::default();
@@ -128,7 +128,7 @@ fn test_teeing() {
                 .filter(|&x| 1 == x % 2)
                 .for_each(move |x| output_odd_take.borrow_mut().push(x)),
         );
-    builder.add_subgraph("main".into(), sg);
+    builder.add_subgraph("main", sg);
 
     let mut hydroflow = builder.build();
     {
@@ -153,14 +153,14 @@ fn test_partition() {
 
     let mut builder = HydroflowBuilder::default();
 
-    let (data_send, data) = builder.add_channel_input::<Option<u64>, VecHandoff<_>>("data".into());
+    let (data_send, data) = builder.add_channel_input::<_, Option<u64>, VecHandoff<_>>("data");
 
     let out = Rc::new(RefCell::new(Vec::new()));
     let even_out = out.clone();
     let odd_out = out.clone();
 
     builder.add_subgraph(
-        "main".into(),
+        "main",
         data.flatten().pull_to_push().partition(
             |x| *x % 2 == 0,
             builder
@@ -203,19 +203,16 @@ fn test_covid() {
 
     let mut builder = HydroflowBuilder::default();
 
-    let (loop_send, loop_recv) =
-        builder.make_edge::<VecHandoff<(Pid, DateTime)>, _>("loopback".into());
+    let (loop_send, loop_recv) = builder.make_edge::<_, VecHandoff<(Pid, DateTime)>, _>("loopback");
     let (notifs_send, notifs_recv) =
-        builder.make_edge::<VecHandoff<(Pid, DateTime)>, _>("notifs".into());
+        builder.make_edge::<_, VecHandoff<(Pid, DateTime)>, _>("notifs");
 
     let (diagnosed_send, diagnosed) = builder
-        .add_channel_input::<Option<(Pid, (DateTime, DateTime))>, VecHandoff<_>>(
-            "diagnosed".into(),
-        );
+        .add_channel_input::<_, Option<(Pid, (DateTime, DateTime))>, VecHandoff<_>>("diagnosed");
     let (contacts_send, contacts) =
-        builder.add_channel_input::<Option<(Pid, Pid, DateTime)>, VecHandoff<_>>("contacts".into());
+        builder.add_channel_input::<_, Option<(Pid, Pid, DateTime)>, VecHandoff<_>>("contacts");
     let (peoples_send, peoples) =
-        builder.add_channel_input::<Option<(Pid, (Name, Phone))>, VecHandoff<_>>("peoples".into());
+        builder.add_channel_input::<_, Option<(Pid, (Name, Phone))>, VecHandoff<_>>("peoples");
 
     let exposed = loop_recv
         .flatten()
@@ -223,7 +220,7 @@ fn test_covid() {
         .chain(diagnosed.flatten());
 
     builder.add_subgraph(
-        "main loop".into(),
+        "main loop",
         contacts
             .flatten()
             .flat_map(|(pid_a, pid_b, t)| [(pid_a, (pid_b, t)), (pid_b, (pid_a, t))])
@@ -238,7 +235,7 @@ fn test_covid() {
     );
 
     builder.add_subgraph(
-        "nofits".into(),
+        "nofits",
         notifs_recv
             .flatten()
             .join(peoples.flatten())

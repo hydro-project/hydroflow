@@ -29,11 +29,12 @@ pub struct HydroflowBuilder {
 impl HydroflowBuilder {
     /// Creates a handoff, returning push and pull ends which can be chained
     /// using the Surface API.
-    pub fn make_edge<H, T>(
+    pub fn make_edge<Name, H, T>(
         &mut self,
-        name: Cow<'static, str>,
+        name: Name,
     ) -> (HandoffPushSurfaceReversed<H, T>, HandoffPullSurface<H>)
     where
+        Name: Into<Cow<'static, str>>,
         H: Handoff + CanReceive<T>,
     {
         let (send, recv) = self.hydroflow.make_edge(name);
@@ -57,12 +58,13 @@ impl HydroflowBuilder {
     }
 
     /// Adds a `pivot` created via the Surface API.
-    pub fn add_subgraph<Pull, Push>(
+    pub fn add_subgraph<Name, Pull, Push>(
         &mut self,
-        name: Cow<'static, str>,
+        name: Name,
         pivot: PivotSurface<Pull, Push>,
     ) -> SubgraphId
     where
+        Name: Into<Cow<'static, str>>,
         Pull: 'static + PullSurface,
         Push: 'static + PushSurfaceReversed<ItemIn = Pull::ItemOut>,
     {
@@ -82,30 +84,34 @@ impl HydroflowBuilder {
     }
 
     /// Creates a new external channel input.
-    pub fn add_channel_input<T, W>(
+    pub fn add_channel_input<Name, T, W>(
         &mut self,
-        name: Cow<'static, str>,
+        name: Name,
     ) -> (Input<T, SyncSender<T>>, HandoffPullSurface<W>)
     where
+        Name: Into<Cow<'static, str>>,
         T: 'static,
         W: 'static + Handoff + CanReceive<T>,
     {
-        let (send_port, recv_port) = self.hydroflow.make_edge(format!("{} handoff", name).into());
+        let name = name.into();
+        let (send_port, recv_port) = self.hydroflow.make_edge(format!("{} handoff", name));
         let input = self.hydroflow.add_channel_input(name, send_port);
         let pull = HandoffPullSurface::new(recv_port);
         (input, pull)
     }
 
-    pub fn add_input_from_stream<T, W, S>(
+    pub fn add_input_from_stream<Name, T, W, S>(
         &mut self,
-        name: Cow<'static, str>,
+        name: Name,
         stream: S,
     ) -> HandoffPullSurface<W>
     where
+        Name: Into<Cow<'static, str>>,
         S: 'static + Stream<Item = T> + Unpin,
         W: 'static + Handoff + CanReceive<T>,
     {
-        let (send_port, recv_port) = self.hydroflow.make_edge(format!("{} handoff", name).into());
+        let name = name.into();
+        let (send_port, recv_port) = self.hydroflow.make_edge(format!("{} handoff", name));
         self.hydroflow
             .add_input_from_stream(name, send_port, stream);
         let pull = HandoffPullSurface::new(recv_port);
