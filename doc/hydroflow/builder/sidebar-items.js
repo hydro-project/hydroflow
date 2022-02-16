@@ -1,0 +1,1 @@
+initSidebarItems({"mod":[["build","Internal “subgraph builders” to implement the Surface API. For more info see [super]."],["prelude","Prelude to quick-import items needed for using the Surface API."],["surface","Structs used to create the user-facing Surface API."]],"struct":[["HydroflowBuilder","The user-facing entry point for the Surface API."]]});

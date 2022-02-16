@@ -1,0 +1,1 @@
+initSidebarItems({"mod":[["handoff_list",""]],"struct":[["TeeingHandoff",""],["VecHandoff","A [VecDeque]-based FIFO handoff."]],"trait":[["CanReceive",""],["Handoff",""],["HandoffMeta","A handle onto the metadata part of a [Handoff], with no element type."],["TryCanReceive",""]]});

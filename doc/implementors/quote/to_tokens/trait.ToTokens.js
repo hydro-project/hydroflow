@@ -1,0 +1,3 @@
+(function() {var implementors = {};
+implementors["relalg"] = [{"text":"impl <a class=\"trait\" href=\"https://docs.rs/quote/1.0.10/quote/to_tokens/trait.ToTokens.html\" title=\"trait quote::to_tokens::ToTokens\">ToTokens</a> for <a class=\"enum\" href=\"relalg/enum.ScalarExpr.html\" title=\"enum relalg::ScalarExpr\">ScalarExpr</a>","synthetic":false,"types":["relalg::ScalarExpr"]}];
+if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

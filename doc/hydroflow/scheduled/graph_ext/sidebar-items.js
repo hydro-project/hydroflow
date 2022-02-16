@@ -1,0 +1,1 @@
+initSidebarItems({"trait":[["GraphExt","Convenience extension methods for the Hydroflow struct."]]});

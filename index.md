@@ -1,0 +1,5 @@
+---
+---
+- [Hydroflow Docs]({{ "/doc/hydroflow/" | prepend: site.github.url | replace: 'http://', '//' }})
+- [Benchmark History]({{ "/bench/" | prepend: site.github.url | replace: 'http://', '//' }})
+- [Latest Benchmarks]({{ "/criterion/report/" | prepend: site.github.url | replace: 'http://', '//' }})

@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["PivotSurface","The combination of both Pull and Push surface halves."]]});
