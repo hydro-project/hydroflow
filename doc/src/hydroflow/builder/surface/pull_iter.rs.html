@@ -45,35 +45,35 @@
 
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::builder::build::pull_iter::IterPullBuild</span>;
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">IterPullSurface</span><span class="op">&lt;</span><span class="ident">I</span>, <span class="ident">T</span><span class="op">&gt;</span>
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">IterPullSurface</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>
 <span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">Iterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="ident">T</span><span class="op">&gt;</span>,
+    <span class="ident">I</span>: <span class="ident">Iterator</span>,
 {
     <span class="ident">it</span>: <span class="ident">I</span>,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">I</span>, <span class="ident">T</span><span class="op">&gt;</span> <span class="ident">IterPullSurface</span><span class="op">&lt;</span><span class="ident">I</span>, <span class="ident">T</span><span class="op">&gt;</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span> <span class="ident">IterPullSurface</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>
 <span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">Iterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="ident">T</span><span class="op">&gt;</span>,
+    <span class="ident">I</span>: <span class="ident">Iterator</span>,
 {
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">it</span>: <span class="ident">I</span>) -&gt; <span class="self">Self</span> {
         <span class="self">Self</span> { <span class="ident">it</span> }
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">I</span>, <span class="ident">T</span><span class="op">&gt;</span> <span class="ident">BaseSurface</span> <span class="kw">for</span> <span class="ident">IterPullSurface</span><span class="op">&lt;</span><span class="ident">I</span>, <span class="ident">T</span><span class="op">&gt;</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span> <span class="ident">BaseSurface</span> <span class="kw">for</span> <span class="ident">IterPullSurface</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>
 <span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">Iterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="ident">T</span><span class="op">&gt;</span>,
+    <span class="ident">I</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">Iterator</span>,
 {
-    <span class="kw">type</span> <span class="ident">ItemOut</span> <span class="op">=</span> <span class="ident">T</span>;
+    <span class="kw">type</span> <span class="ident">ItemOut</span> <span class="op">=</span> <span class="ident">I::Item</span>;
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">I</span>, <span class="ident">T</span><span class="op">&gt;</span> <span class="ident">PullSurface</span> <span class="kw">for</span> <span class="ident">IterPullSurface</span><span class="op">&lt;</span><span class="ident">I</span>, <span class="ident">T</span><span class="op">&gt;</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span> <span class="ident">PullSurface</span> <span class="kw">for</span> <span class="ident">IterPullSurface</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>
 <span class="kw">where</span>
-    <span class="ident">I</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">Iterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="ident">T</span><span class="op">&gt;</span>,
+    <span class="ident">I</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">Iterator</span>,
 {
     <span class="kw">type</span> <span class="ident">InputHandoffs</span> <span class="op">=</span> ();
-    <span class="kw">type</span> <span class="ident">Build</span> <span class="op">=</span> <span class="ident">IterPullBuild</span><span class="op">&lt;</span><span class="ident">I</span>, <span class="ident">T</span><span class="op">&gt;</span>;
+    <span class="kw">type</span> <span class="ident">Build</span> <span class="op">=</span> <span class="ident">IterPullBuild</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>;
 
     <span class="kw">fn</span> <span class="ident">into_parts</span>(<span class="self">self</span>) -&gt; (<span class="ident"><span class="self">Self</span>::InputHandoffs</span>, <span class="ident"><span class="self">Self</span>::Build</span>) {
         ((), <span class="ident">IterPullBuild::new</span>(<span class="self">self</span>.<span class="ident">it</span>))

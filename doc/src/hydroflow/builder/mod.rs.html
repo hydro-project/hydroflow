@@ -280,6 +280,9 @@
 <span id="275">275</span>
 <span id="276">276</span>
 <span id="277">277</span>
+<span id="278">278</span>
+<span id="279">279</span>
+<span id="280">280</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Hydroflow&#39;s Surface API.</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! ## Internal Documentation</span>
@@ -364,6 +367,9 @@
 <span class="kw">mod</span> <span class="ident">hydroflow_builder</span>;
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">hydroflow_builder::HydroflowBuilder</span>;
 
+<span class="kw">mod</span> <span class="ident">into_hydroflow</span>;
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">into_hydroflow::IntoHydroflow</span>;
+
 <span class="doccomment">/// Prelude to quick-import items needed for using the Surface API.</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// Usage:</span>
@@ -372,7 +378,7 @@
 <span class="doccomment">/// ```</span>
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">prelude</span> {
     <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::surface</span>::{<span class="ident">BaseSurface</span>, <span class="ident">PullSurface</span>, <span class="ident">PushSurface</span>};
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::HydroflowBuilder</span>;
+    <span class="kw">pub</span> <span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">HydroflowBuilder</span>, <span class="ident">IntoHydroflow</span>};
 }
 
 <span class="attribute">#[<span class="ident">test</span>]</span>
