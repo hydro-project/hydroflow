@@ -1,4 +1,5 @@
 use std::any::Any;
+use std::borrow::Cow;
 use std::cell::Cell;
 use std::collections::VecDeque;
 use std::marker::PhantomData;
@@ -150,6 +151,7 @@ impl Hydroflow {
     /// TODO(mingwei): add example in doc.
     pub fn add_subgraph<R, W, F>(
         &mut self,
+        name: Cow<'static, str>,
         recv_ports: R,
         send_ports: W,
         mut subgraph: F,
@@ -171,6 +173,7 @@ impl Hydroflow {
             (subgraph)(&context, recv, send);
         };
         self.subgraphs.push(SubgraphData::new(
+            name,
             subgraph,
             subgraph_preds,
             subgraph_succs,
@@ -184,6 +187,7 @@ impl Hydroflow {
     /// Adds a new compiled subraph with a variable number of inputs and outputs of the same respective handoff types.
     pub fn add_subgraph_n_m<R, W, F>(
         &mut self,
+        name: Cow<'static, str>,
         recv_ports: Vec<RecvPort<R>>,
         send_ports: Vec<SendPort<W>>,
         mut subgraph: F,
@@ -237,6 +241,7 @@ impl Hydroflow {
             (subgraph)(&context, &recvs, &sends)
         };
         self.subgraphs.push(SubgraphData::new(
+            name,
             subgraph,
             subgraph_preds,
             subgraph_succs,
@@ -248,7 +253,7 @@ impl Hydroflow {
     }
 
     /// Creates a handoff edge and returns the corresponding send and receive ports.
-    pub fn make_edge<H>(&mut self) -> (SendPort<H>, RecvPort<H>)
+    pub fn make_edge<H>(&mut self, name: Cow<'static, str>) -> (SendPort<H>, RecvPort<H>)
     where
         H: 'static + Handoff,
     {
@@ -256,7 +261,7 @@ impl Hydroflow {
 
         // Create and insert handoff.
         let handoff = H::default();
-        self.handoffs.push(HandoffData::new(handoff));
+        self.handoffs.push(HandoffData::new(name, handoff));
 
         // Make ports.
         let input_port = SendPort {
@@ -294,6 +299,10 @@ impl Hydroflow {
 ///
 /// TODO(mingwei): restructure `PortList` so this can be crate-private.
 pub struct HandoffData {
+    /// A friendly name for diagnostics.
+    #[allow(dead_code)] // TODO(mingwei): remove attr once used.
+    name: Cow<'static, str>,
+    /// Crate-visible to crate for `handoff_list` internals.
     pub(crate) handoff: Box<dyn HandoffMeta>,
     pub(crate) preds: Vec<SubgraphId>,
     pub(crate) succs: Vec<SubgraphId>,
@@ -307,9 +316,10 @@ impl std::fmt::Debug for HandoffData {
     }
 }
 impl HandoffData {
-    pub fn new(handoff: impl 'static + HandoffMeta) -> Self {
+    pub fn new(name: Cow<'static, str>, handoff: impl 'static + HandoffMeta) -> Self {
         let (preds, succs) = Default::default();
         Self {
+            name,
             handoff: Box::new(handoff),
             preds,
             succs,
@@ -322,6 +332,9 @@ impl HandoffData {
 /// Used internally by the [Hydroflow] struct to represent the dataflow graph
 /// structure and scheduled state.
 struct SubgraphData {
+    /// A friendly name for diagnostics.
+    #[allow(dead_code)] // TODO(mingwei): remove attr once used.
+    name: Cow<'static, str>,
     subgraph: Box<dyn Subgraph>,
     #[allow(dead_code)]
     preds: Vec<HandoffId>,
@@ -334,12 +347,14 @@ struct SubgraphData {
 }
 impl SubgraphData {
     pub fn new(
+        name: Cow<'static, str>,
         subgraph: impl 'static + Subgraph,
         preds: Vec<HandoffId>,
         succs: Vec<HandoffId>,
         is_scheduled: bool,
     ) -> Self {
         Self {
+            name,
             subgraph: Box::new(subgraph),
             preds,
             succs,

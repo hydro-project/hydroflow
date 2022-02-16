@@ -100,8 +100,9 @@ impl Message {
 impl Hydroflow {
     fn register_read_tcp_stream(&mut self, reader: OwnedReadHalf) -> RecvPort<VecHandoff<Message>> {
         let reader = FramedRead::new(reader, LengthDelimitedCodec::new());
-        let (send_port, recv_port) = self.make_edge();
+        let (send_port, recv_port) = self.make_edge("tcp ingress handoff".into());
         self.add_input_from_stream(
+            "tcp ingress".into(),
             send_port,
             reader.map(|buf| Some(<Message>::decode(buf.unwrap().into()))),
         );
@@ -115,8 +116,9 @@ impl Hydroflow {
         let mut writer = FramedWrite::new(writer, LengthDelimitedCodec::new());
         let mut message_queue = VecDeque::new();
 
-        let (input_port, output_port) = self.make_edge::<VecHandoff<Message>>();
-        self.add_subgraph_sink(output_port, move |ctx, recv| {
+        let (input_port, output_port) =
+            self.make_edge::<VecHandoff<Message>>("tcp egress handoff".into());
+        self.add_subgraph_sink("tcp egress".into(), output_port, move |ctx, recv| {
             let waker = ctx.waker();
             let mut cx = std::task::Context::from_waker(&waker);
 

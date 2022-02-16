@@ -1,4 +1,5 @@
 use core::task;
+use std::borrow::Cow;
 use std::sync::mpsc::SyncSender;
 use std::{pin::Pin, task::Poll};
 
@@ -17,9 +18,12 @@ macro_rules! subgraph_ext {
         ( $($recv_param:ident : $recv_generic:ident),* ),
         ( $($send_param:ident : $send_generic:ident),* )
     ) => {
-        fn $fn_name <F, $($recv_generic,)* $($send_generic),*>
-            (&mut self, $($recv_param : RecvPort< $recv_generic >,)* $($send_param : SendPort< $send_generic >,)* subgraph: F)
-            -> SubgraphId
+        fn $fn_name <F, $($recv_generic,)* $($send_generic),*> (
+            &mut self,
+            name: Cow<'static, str>,
+            $($recv_param : RecvPort< $recv_generic >,)*
+            $($send_param : SendPort< $send_generic >,)* subgraph: F
+        ) -> SubgraphId
         where
             F: 'static + FnMut(&Context<'_>, $(&RecvCtx< $recv_generic >,)* $(&SendCtx< $send_generic >),*),
             $($recv_generic : 'static + Handoff,)*
@@ -31,9 +35,12 @@ macro_rules! subgraph_ext {
         ( $($recv_param:ident : $recv_generic:ident),* ),
         ( $($send_param:ident : $send_generic:ident),* )
     ) => {
-        fn $fn_name <F, $($recv_generic,)* $($send_generic),*>
-            (&mut self, $($recv_param : RecvPort< $recv_generic >,)* $($send_param : SendPort< $send_generic >,)* subgraph: F)
-            -> SubgraphId
+        fn $fn_name <F, $($recv_generic,)* $($send_generic),*> (
+            &mut self,
+            name: Cow<'static, str>,
+            $($recv_param : RecvPort< $recv_generic >,)*
+            $($send_param : SendPort< $send_generic >,)* subgraph: F
+        ) -> SubgraphId
         where
             F: 'static + FnMut(&Context<'_>, $(&RecvCtx< $recv_generic >,)* $(&SendCtx< $send_generic >),*),
             $($recv_generic : 'static + Handoff,)*
@@ -41,6 +48,7 @@ macro_rules! subgraph_ext {
         {
             let mut subgraph = subgraph;
             self.add_subgraph(
+                name,
                 crate::tl!($($recv_param),*),
                 crate::tl!($($send_param),*),
                 move |ctx, crate::tl!($($recv_param),*), crate::tl!($($send_param),*)|
@@ -75,20 +83,32 @@ pub trait GraphExt {
         (send_port_1: W1, send_port_2: W2)
     );
 
-    fn add_channel_input<T, W>(&mut self, send_port: SendPort<W>) -> Input<T, SyncSender<T>>
+    fn add_channel_input<T, W>(
+        &mut self,
+        name: Cow<'static, str>,
+        send_port: SendPort<W>,
+    ) -> Input<T, SyncSender<T>>
     where
         T: 'static,
         W: 'static + Handoff + CanReceive<T>;
 
     /// Adds an "input" operator, returning a handle to insert data into it.
     /// TODO(justin): make this thing work better
-    fn add_input<T, W>(&mut self, send_port: SendPort<W>) -> Input<T, super::input::Buffer<T>>
+    fn add_input<T, W>(
+        &mut self,
+        name: Cow<'static, str>,
+        send_port: SendPort<W>,
+    ) -> Input<T, super::input::Buffer<T>>
     where
         T: 'static,
         W: 'static + Handoff + CanReceive<T>;
 
-    fn add_input_from_stream<T, W, S>(&mut self, send_port: SendPort<W>, stream: S)
-    where
+    fn add_input_from_stream<T, W, S>(
+        &mut self,
+        name: Cow<'static, str>,
+        send_port: SendPort<W>,
+        stream: S,
+    ) where
         S: 'static + Stream<Item = T> + Unpin,
         W: 'static + Handoff + CanReceive<T>;
 }
@@ -121,7 +141,11 @@ impl GraphExt for Hydroflow {
         (send_port_1: W1, send_port_2: W2)
     );
 
-    fn add_channel_input<T, W>(&mut self, send_port: SendPort<W>) -> Input<T, SyncSender<T>>
+    fn add_channel_input<T, W>(
+        &mut self,
+        name: Cow<'static, str>,
+        send_port: SendPort<W>,
+    ) -> Input<T, SyncSender<T>>
     where
         T: 'static,
         W: 'static + Handoff + CanReceive<T>,
@@ -129,7 +153,7 @@ impl GraphExt for Hydroflow {
         use std::sync::mpsc;
 
         let (sender, receiver) = mpsc::sync_channel(8000);
-        let sg_id = self.add_subgraph_source::<_, W>(send_port, move |_ctx, send| {
+        let sg_id = self.add_subgraph_source::<_, W>(name, send_port, move |_ctx, send| {
             for x in receiver.try_iter() {
                 send.give(x);
             }
@@ -137,14 +161,18 @@ impl GraphExt for Hydroflow {
         Input::new(self.reactor(), sg_id, sender)
     }
 
-    fn add_input<T, W>(&mut self, send_port: SendPort<W>) -> Input<T, super::input::Buffer<T>>
+    fn add_input<T, W>(
+        &mut self,
+        name: Cow<'static, str>,
+        send_port: SendPort<W>,
+    ) -> Input<T, super::input::Buffer<T>>
     where
         T: 'static,
         W: 'static + Handoff + CanReceive<T>,
     {
         let input = super::input::Buffer::default();
         let inner_input = input.clone();
-        let sg_id = self.add_subgraph_source::<_, W>(send_port, move |_ctx, send| {
+        let sg_id = self.add_subgraph_source::<_, W>(name, send_port, move |_ctx, send| {
             for x in (*inner_input.0).borrow_mut().drain(..) {
                 send.give(x);
             }
@@ -152,13 +180,17 @@ impl GraphExt for Hydroflow {
         Input::new(self.reactor(), sg_id, input)
     }
 
-    fn add_input_from_stream<T, W, S>(&mut self, send_port: SendPort<W>, stream: S)
-    where
+    fn add_input_from_stream<T, W, S>(
+        &mut self,
+        name: Cow<'static, str>,
+        send_port: SendPort<W>,
+        stream: S,
+    ) where
         S: 'static + Stream<Item = T> + Unpin,
         W: 'static + Handoff + CanReceive<T>,
     {
         let mut stream = stream;
-        self.add_subgraph_source::<_, W>(send_port, move |ctx, send| {
+        self.add_subgraph_source::<_, W>(name, send_port, move |ctx, send| {
             let waker = ctx.waker();
             let mut cx = task::Context::from_waker(&waker);
             let mut r = Pin::new(&mut stream);

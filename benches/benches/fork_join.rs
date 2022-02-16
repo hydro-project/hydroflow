@@ -15,34 +15,41 @@ fn benchmark_hydroflow(c: &mut Criterion) {
         b.iter(|| {
             let mut df = Hydroflow::new();
 
-            let (start_send, start_recv) = df.make_edge::<VecHandoff<usize>>();
+            let (start_send, start_recv) = df.make_edge::<VecHandoff<usize>>("start".into());
 
             let mut sent = false;
-            df.add_subgraph_source(start_send, move |_ctx, send| {
+            df.add_subgraph_source("source".into(), start_send, move |_ctx, send| {
                 if !sent {
                     sent = true;
                     send.give(Iter(0..NUM_INTS));
                 }
             });
 
-            let (send1, mut recv1) = df.make_edge::<VecHandoff<_>>();
-            let (send2, mut recv2) = df.make_edge::<VecHandoff<_>>();
+            let (send1, mut recv1) = df.make_edge::<VecHandoff<_>>("1".into());
+            let (send2, mut recv2) = df.make_edge::<VecHandoff<_>>("2".into());
 
-            df.add_subgraph_in_2out(start_recv, send1, send2, |_ctx, recv, send1, send2| {
-                for v in recv.take_inner().into_iter() {
-                    if v % 2 == 0 {
-                        send1.give(Some(v));
-                    } else {
-                        send2.give(Some(v));
+            df.add_subgraph_in_2out(
+                "fork".into(),
+                start_recv,
+                send1,
+                send2,
+                |_ctx, recv, send1, send2| {
+                    for v in recv.take_inner().into_iter() {
+                        if v % 2 == 0 {
+                            send1.give(Some(v));
+                        } else {
+                            send2.give(Some(v));
+                        }
                     }
-                }
-            });
+                },
+            );
 
             for _ in 0..NUM_OPS {
-                let (send1, next_recv1) = df.make_edge();
-                let (send2, next_recv2) = df.make_edge();
+                let (send1, next_recv1) = df.make_edge("1".into());
+                let (send2, next_recv2) = df.make_edge("2".into());
 
                 df.add_subgraph_2in_2out(
+                    "join-fork".into(),
                     recv1,
                     recv2,
                     send1,
@@ -66,7 +73,7 @@ fn benchmark_hydroflow(c: &mut Criterion) {
                 recv2 = next_recv2;
             }
 
-            df.add_subgraph_2sink(recv1, recv2, |_ctx, recv1, recv2| {
+            df.add_subgraph_2sink("join (merge)".into(), recv1, recv2, |_ctx, recv1, recv2| {
                 for x in recv1.take_inner() {
                     black_box(x);
                 }

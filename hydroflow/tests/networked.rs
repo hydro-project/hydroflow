@@ -56,6 +56,7 @@ fn start_echo_server() -> u16 {
                 let outbound_messages = builder.wrap_output(outbound_messages);
 
                 builder.add_subgraph(
+                    "server".into(),
                     handler
                         .flatten()
                         .map(|echo_request| {
@@ -99,20 +100,27 @@ fn test_echo_server() {
                 let outbound_messages = builder.hydroflow.outbound_tcp_vertex().await;
                 let input = builder
                     .hydroflow
-                    .add_input::<_, VecHandoff<(String, EchoRequest)>>(outbound_messages);
+                    .add_input::<_, VecHandoff<(String, EchoRequest)>>(
+                        "input".into(),
+                        outbound_messages,
+                    );
 
                 let responses = builder.wrap_input(responses);
 
-                builder.add_subgraph(responses.flatten().pull_to_push().for_each(
-                    move |response: EchoResponse| {
-                        log_message
-                            .send(format!(
-                                "[CLIENT#{}] received back {:?}",
-                                idx, response.payload
-                            ))
-                            .unwrap()
-                    },
-                ));
+                builder.add_subgraph(
+                    "client".into(),
+                    responses
+                        .flatten()
+                        .pull_to_push()
+                        .for_each(move |response: EchoResponse| {
+                            log_message
+                                .send(format!(
+                                    "[CLIENT#{}] received back {:?}",
+                                    idx, response.payload
+                                ))
+                                .unwrap()
+                        }),
+                );
 
                 let server_addr = format!("localhost:{}", server_port);
 
@@ -405,6 +413,7 @@ fn test_exchange() {
                 let french_address_book = french_address_book.lock().unwrap().clone();
                 let french = IterPullSurface::new(p.french.into_iter()).exchange(
                     &mut builder,
+                    "french exchange".into(),
                     french_address_book,
                     french_inbound_messages.flatten(),
                     p.id,
@@ -415,6 +424,7 @@ fn test_exchange() {
                 let english_address_book = english_address_book.lock().unwrap().clone();
                 let english = IterPullSurface::new(p.english.into_iter()).exchange(
                     &mut builder,
+                    "english exchange".into(),
                     english_address_book,
                     english_inbound_messages.flatten(),
                     p.id,
@@ -424,9 +434,12 @@ fn test_exchange() {
                 let join = english.join(french);
 
                 // Join them.
-                builder.add_subgraph(join.pull_to_push().for_each(move |(v, english, french)| {
-                    receipts_tx.send((v, english, french)).unwrap();
-                }));
+                builder.add_subgraph(
+                    "sink".into(),
+                    join.pull_to_push().for_each(move |(v, english, french)| {
+                        receipts_tx.send((v, english, french)).unwrap();
+                    }),
+                );
 
                 builder.build().run_async().await.unwrap();
             });

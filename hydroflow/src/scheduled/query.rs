@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::{cell::RefCell, rc::Rc};
 
 use crate::lang::collections::Iter;
@@ -7,6 +8,8 @@ use crate::scheduled::handoff::VecHandoff;
 use super::context::Context;
 use super::graph_ext::GraphExt;
 use super::port::{RecvCtx, RecvPort, SendCtx};
+
+const QUERY_EDGE_NAME: Cow<'static, str> = Cow::Borrowed("query handoff");
 
 #[derive(Default)]
 pub struct Query {
@@ -25,8 +28,8 @@ impl Query {
     {
         let mut df = self.df.borrow_mut();
 
-        let (send_port, recv_port) = df.make_edge();
-        df.add_subgraph_source(send_port, f);
+        let (send_port, recv_port) = df.make_edge(QUERY_EDGE_NAME);
+        df.add_subgraph_source("source".into(), send_port, f);
 
         Operator {
             df: self.df.clone(),
@@ -40,8 +43,9 @@ impl Query {
     {
         let mut df = self.df.borrow_mut();
 
-        let (send_port, recv_port) = df.make_edge();
+        let (send_port, recv_port) = df.make_edge(QUERY_EDGE_NAME);
         df.add_subgraph_n_m(
+            "concat".into(),
             ops.into_iter().map(|op| op.recv_port).collect(),
             vec![send_port],
             |_ctx, ins, out| {
@@ -81,10 +85,15 @@ where
     {
         let mut df = self.df.borrow_mut();
 
-        let (send_port, recv_port) = df.make_edge();
-        df.add_subgraph_in_out(self.recv_port, send_port, move |_ctx, recv, send| {
-            send.give(Iter(recv.take_inner().into_iter().map(&mut f)));
-        });
+        let (send_port, recv_port) = df.make_edge(QUERY_EDGE_NAME);
+        df.add_subgraph_in_out(
+            "map".into(),
+            self.recv_port,
+            send_port,
+            move |_ctx, recv, send| {
+                send.give(Iter(recv.take_inner().into_iter().map(&mut f)));
+            },
+        );
 
         std::mem::drop(df);
         Operator {
@@ -100,10 +109,15 @@ where
     {
         let mut df = self.df.borrow_mut();
 
-        let (send_port, recv_port) = df.make_edge();
-        df.add_subgraph_in_out(self.recv_port, send_port, move |_ctx, recv, send| {
-            send.give(Iter(recv.take_inner().into_iter().filter(&mut f)));
-        });
+        let (send_port, recv_port) = df.make_edge(QUERY_EDGE_NAME);
+        df.add_subgraph_in_out(
+            "filter".into(),
+            self.recv_port,
+            send_port,
+            move |_ctx, recv, send| {
+                send.give(Iter(recv.take_inner().into_iter().filter(&mut f)));
+            },
+        );
 
         std::mem::drop(df);
         Operator {
@@ -118,8 +132,9 @@ where
 
         let mut df = self.df.borrow_mut();
 
-        let (send_port, recv_port) = df.make_edge::<VecHandoff<T>>();
+        let (send_port, recv_port) = df.make_edge::<VecHandoff<T>>(QUERY_EDGE_NAME);
         df.add_subgraph_2in_out(
+            "concat".into(),
             self.recv_port,
             other.recv_port,
             send_port,
@@ -141,6 +156,7 @@ where
         F: 'static + Fn(T),
     {
         self.df.borrow_mut().add_subgraph_sink(
+            "sink".into(),
             self.recv_port,
             move |_ctx, recv: &RecvCtx<VecHandoff<T>>| {
                 for v in recv.take_inner() {
@@ -163,7 +179,7 @@ impl<T: Clone> Operator<T> {
         let mut sends = Vec::with_capacity(n);
         let mut recvs = Vec::with_capacity(n);
         for _ in 0..n {
-            let (send_port, recv_port) = df.make_edge::<VecHandoff<T>>();
+            let (send_port, recv_port) = df.make_edge::<VecHandoff<T>>(QUERY_EDGE_NAME);
             sends.push(send_port);
             recvs.push(Operator {
                 df: self.df.clone(),
@@ -171,15 +187,20 @@ impl<T: Clone> Operator<T> {
             });
         }
 
-        df.add_subgraph_n_m(vec![self.recv_port], sends, move |_ctx, recvs, sends| {
-            let input = recvs.iter().next().unwrap().take_inner();
-            if let Some((&last_output, outputs)) = sends.split_last() {
-                for output in outputs {
-                    output.give(Iter(input.iter().cloned()));
+        df.add_subgraph_n_m(
+            "tee".into(),
+            vec![self.recv_port],
+            sends,
+            move |_ctx, recvs, sends| {
+                let input = recvs.iter().next().unwrap().take_inner();
+                if let Some((&last_output, outputs)) = sends.split_last() {
+                    for output in outputs {
+                        output.give(Iter(input.iter().cloned()));
+                    }
+                    last_output.give(Iter(input.into_iter()));
                 }
-                last_output.give(Iter(input.into_iter()));
-            }
-        });
+            },
+        );
 
         recvs
     }

@@ -4,10 +4,12 @@ use hydroflow::scheduled::handoff::VecHandoff;
 pub fn main() {
     let mut builder = HydroflowBuilder::default();
 
-    let (send_edges, recv_edges) = builder.add_channel_input::<_, VecHandoff<(usize, usize)>>();
-    let (send_loop, recv_loop) = builder.make_edge::<VecHandoff<usize>, _>();
+    let (send_edges, recv_edges) =
+        builder.add_channel_input::<_, VecHandoff<(usize, usize)>>("edge input".into());
+    let (send_loop, recv_loop) = builder.make_edge::<VecHandoff<usize>, _>("loop".into());
 
     builder.add_subgraph(
+        "main".into(),
         [0].into_hydroflow()
             .chain(recv_loop.flatten())
             .map(|v| (v, ()))

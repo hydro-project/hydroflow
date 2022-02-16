@@ -4,6 +4,7 @@ use super::build::{PullBuild, PushBuild};
 use super::surface::pivot::PivotSurface;
 use super::surface::pull_iter::IterPullSurface;
 
+use std::borrow::Cow;
 use std::sync::mpsc::SyncSender;
 
 use crate::compiled::pivot::Pivot;
@@ -28,11 +29,14 @@ pub struct HydroflowBuilder {
 impl HydroflowBuilder {
     /// Creates a handoff, returning push and pull ends which can be chained
     /// using the Surface API.
-    pub fn make_edge<H, T>(&mut self) -> (HandoffPushSurfaceReversed<H, T>, HandoffPullSurface<H>)
+    pub fn make_edge<H, T>(
+        &mut self,
+        name: Cow<'static, str>,
+    ) -> (HandoffPushSurfaceReversed<H, T>, HandoffPullSurface<H>)
     where
         H: Handoff + CanReceive<T>,
     {
-        let (send, recv) = self.hydroflow.make_edge();
+        let (send, recv) = self.hydroflow.make_edge(name);
         let push = HandoffPushSurfaceReversed::new(send);
         let pull = HandoffPullSurface::new(recv);
         (push, pull)
@@ -53,7 +57,11 @@ impl HydroflowBuilder {
     }
 
     /// Adds a `pivot` created via the Surface API.
-    pub fn add_subgraph<Pull, Push>(&mut self, pivot: PivotSurface<Pull, Push>) -> SubgraphId
+    pub fn add_subgraph<Pull, Push>(
+        &mut self,
+        name: Cow<'static, str>,
+        pivot: PivotSurface<Pull, Push>,
+    ) -> SubgraphId
     where
         Pull: 'static + PullSurface,
         Push: 'static + PushSurfaceReversed<ItemIn = Pull::ItemOut>,
@@ -61,6 +69,7 @@ impl HydroflowBuilder {
         let ((recv_ports, send_ports), (mut pull_build, mut push_build)) = pivot.into_parts();
 
         self.hydroflow.add_subgraph(
+            name,
             recv_ports,
             send_ports,
             move |context, recv_ctx, send_ctx| {
@@ -73,24 +82,32 @@ impl HydroflowBuilder {
     }
 
     /// Creates a new external channel input.
-    pub fn add_channel_input<T, W>(&mut self) -> (Input<T, SyncSender<T>>, HandoffPullSurface<W>)
+    pub fn add_channel_input<T, W>(
+        &mut self,
+        name: Cow<'static, str>,
+    ) -> (Input<T, SyncSender<T>>, HandoffPullSurface<W>)
     where
         T: 'static,
         W: 'static + Handoff + CanReceive<T>,
     {
-        let (send_port, recv_port) = self.hydroflow.make_edge();
-        let input = self.hydroflow.add_channel_input(send_port);
+        let (send_port, recv_port) = self.hydroflow.make_edge(format!("{} handoff", name).into());
+        let input = self.hydroflow.add_channel_input(name, send_port);
         let pull = HandoffPullSurface::new(recv_port);
         (input, pull)
     }
 
-    pub fn add_input_from_stream<T, W, S>(&mut self, stream: S) -> HandoffPullSurface<W>
+    pub fn add_input_from_stream<T, W, S>(
+        &mut self,
+        name: Cow<'static, str>,
+        stream: S,
+    ) -> HandoffPullSurface<W>
     where
         S: 'static + Stream<Item = T> + Unpin,
         W: 'static + Handoff + CanReceive<T>,
     {
-        let (send_port, recv_port) = self.hydroflow.make_edge();
-        self.hydroflow.add_input_from_stream(send_port, stream);
+        let (send_port, recv_port) = self.hydroflow.make_edge(format!("{} handoff", name).into());
+        self.hydroflow
+            .add_input_from_stream(name, send_port, stream);
         let pull = HandoffPullSurface::new(recv_port);
         pull
     }
