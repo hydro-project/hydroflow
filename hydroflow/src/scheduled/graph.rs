@@ -149,14 +149,15 @@ impl Hydroflow {
     /// Adds a new compiled subgraph with the specified inputs and outputs.
     ///
     /// TODO(mingwei): add example in doc.
-    pub fn add_subgraph<R, W, F>(
+    pub fn add_subgraph<Name, R, W, F>(
         &mut self,
-        name: Cow<'static, str>,
+        name: Name,
         recv_ports: R,
         send_ports: W,
         mut subgraph: F,
     ) -> SubgraphId
     where
+        Name: Into<Cow<'static, str>>,
         R: 'static + PortList<RECV>,
         W: 'static + PortList<SEND>,
         F: 'static + FnMut(&Context<'_>, R::Ctx<'_>, W::Ctx<'_>),
@@ -173,7 +174,7 @@ impl Hydroflow {
             (subgraph)(&context, recv, send);
         };
         self.subgraphs.push(SubgraphData::new(
-            name,
+            name.into(),
             subgraph,
             subgraph_preds,
             subgraph_succs,
@@ -185,14 +186,15 @@ impl Hydroflow {
     }
 
     /// Adds a new compiled subraph with a variable number of inputs and outputs of the same respective handoff types.
-    pub fn add_subgraph_n_m<R, W, F>(
+    pub fn add_subgraph_n_m<Name, R, W, F>(
         &mut self,
-        name: Cow<'static, str>,
+        name: Name,
         recv_ports: Vec<RecvPort<R>>,
         send_ports: Vec<SendPort<W>>,
         mut subgraph: F,
     ) -> SubgraphId
     where
+        Name: Into<Cow<'static, str>>,
         R: 'static + Handoff,
         W: 'static + Handoff,
         F: 'static + FnMut(&Context<'_>, &[&RecvCtx<R>], &[&SendCtx<W>]),
@@ -241,7 +243,7 @@ impl Hydroflow {
             (subgraph)(&context, &recvs, &sends)
         };
         self.subgraphs.push(SubgraphData::new(
-            name,
+            name.into(),
             subgraph,
             subgraph_preds,
             subgraph_succs,
@@ -253,15 +255,16 @@ impl Hydroflow {
     }
 
     /// Creates a handoff edge and returns the corresponding send and receive ports.
-    pub fn make_edge<H>(&mut self, name: Cow<'static, str>) -> (SendPort<H>, RecvPort<H>)
+    pub fn make_edge<Name, H>(&mut self, name: Name) -> (SendPort<H>, RecvPort<H>)
     where
+        Name: Into<Cow<'static, str>>,
         H: 'static + Handoff,
     {
         let handoff_id: HandoffId = self.handoffs.len();
 
         // Create and insert handoff.
         let handoff = H::default();
-        self.handoffs.push(HandoffData::new(name, handoff));
+        self.handoffs.push(HandoffData::new(name.into(), handoff));
 
         // Make ports.
         let input_port = SendPort {

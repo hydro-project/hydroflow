@@ -28,25 +28,24 @@ fn main() {
     let mut df = Hydroflow::new();
 
     let (contacts_send, contacts_recv) =
-        df.make_edge::<VecHandoff<(Pid, Pid, DateTime)>>("contacts".into());
-    let contacts_send = df.add_channel_input("contacts input".into(), contacts_send);
+        df.make_edge::<_, VecHandoff<(Pid, Pid, DateTime)>>("contacts");
+    let contacts_send = df.add_channel_input("contacts input", contacts_send);
 
     let (diagnosed_send, diagnosed_recv) =
-        df.make_edge::<VecHandoff<(Pid, (DateTime, DateTime))>>("diagnosed".into());
-    let diagnosed_send = df.add_channel_input("diagnosed input".into(), diagnosed_send);
+        df.make_edge::<_, VecHandoff<(Pid, (DateTime, DateTime))>>("diagnosed");
+    let diagnosed_send = df.add_channel_input("diagnosed input", diagnosed_send);
 
-    let (people_send, people_recv) =
-        df.make_edge::<VecHandoff<(Pid, (Name, Phone))>>("people".into());
-    let people_send = df.add_channel_input("people input".into(), people_send);
+    let (people_send, people_recv) = df.make_edge::<_, VecHandoff<(Pid, (Name, Phone))>>("people");
+    let people_send = df.add_channel_input("people input", people_send);
 
-    let (loop_send, loop_recv) = df.make_edge::<VecHandoff<(Pid, DateTime)>>("loop".into());
-    let (notifs_send, notifs_recv) = df.make_edge::<VecHandoff<(Pid, DateTime)>>("notifs".into());
+    let (loop_send, loop_recv) = df.make_edge::<_, VecHandoff<(Pid, DateTime)>>("loop");
+    let (notifs_send, notifs_recv) = df.make_edge::<_, VecHandoff<(Pid, DateTime)>>("notifs");
 
     type MyJoinState = RefCell<JoinState<&'static str, (usize, usize), (&'static str, usize)>>;
     let state_handle = df.add_state(MyJoinState::default());
 
     df.add_subgraph(
-        "main".into(),
+        "main",
         tl!(contacts_recv, diagnosed_recv, loop_recv),
         tl!(notifs_send, loop_send),
         move |context,
@@ -95,7 +94,7 @@ fn main() {
     let mut people_exposure = Default::default();
 
     df.add_subgraph(
-        "join people and notifs".into(),
+        "join people and notifs",
         tl!(people_recv, notifs_recv),
         tl!(),
         move |_ctx, tl!(peoples, exposures), ()| {

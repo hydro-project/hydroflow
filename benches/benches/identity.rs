@@ -154,31 +154,26 @@ fn benchmark_hydroflow(c: &mut Criterion) {
         b.iter(|| {
             let mut df = Hydroflow::new();
 
-            let (next_send, mut next_recv) = df.make_edge::<VecHandoff<usize>>("end".into());
+            let (next_send, mut next_recv) = df.make_edge::<_, VecHandoff<usize>>("end");
 
             let mut sent = false;
-            df.add_subgraph_source("source".into(), next_send, move |_ctx, send| {
+            df.add_subgraph_source("source", next_send, move |_ctx, send| {
                 if !sent {
                     sent = true;
                     send.give(Iter(0..NUM_INTS));
                 }
             });
             for _ in 0..NUM_OPS {
-                let (next_send, next_next_recv) = df.make_edge("handoff".into());
+                let (next_send, next_next_recv) = df.make_edge("handoff");
 
-                df.add_subgraph_in_out(
-                    "identity".into(),
-                    next_recv,
-                    next_send,
-                    |_ctx, recv, send| {
-                        send.give(Iter(recv.take_inner().into_iter()));
-                    },
-                );
+                df.add_subgraph_in_out("identity", next_recv, next_send, |_ctx, recv, send| {
+                    send.give(Iter(recv.take_inner().into_iter()));
+                });
 
                 next_recv = next_next_recv;
             }
 
-            df.add_subgraph_sink("sink".into(), next_recv, |_ctx, recv| {
+            df.add_subgraph_sink("sink", next_recv, |_ctx, recv| {
                 for x in recv.take_inner() {
                     black_box(x);
                 }

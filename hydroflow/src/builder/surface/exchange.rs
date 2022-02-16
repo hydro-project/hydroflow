@@ -25,31 +25,33 @@ pub trait Exchange
 where
     Self: PullSurface,
 {
-    fn exchange<Other, Key, Val>(
+    fn exchange<Name, Other, Key, Val>(
         self,
         builder: &mut HydroflowBuilder,
-        name: Cow<'static, str>,
+        name: Name,
         address_book: HashMap<u64, String>,
         remote_input: Other,
         my_id: u64,
         outbound_messages: NetworkOut<<Self as BaseSurface>::ItemOut>,
     ) -> ExchangeSurface<Key, Val, Other>
     where
+        Name: Into<Cow<'static, str>>,
         Self: Sized,
         Key: Eq + std::hash::Hash + Clone,
         Val: Eq + Clone,
         Self: 'static + PullSurface<ItemOut = (Key, Val)>,
         Other: PullSurface<ItemOut = (Key, Val)>;
 
-    fn broadcast<Other, T>(
+    fn broadcast<Name, Other, T>(
         self,
         builder: &mut HydroflowBuilder,
-        name: Cow<'static, str>,
+        name: Name,
         addresses: Vec<String>,
         remote_input: Other,
         outbound_messages: NetworkOut<<Self as BaseSurface>::ItemOut>,
     ) -> BroadcastSurface<T, Other>
     where
+        Name: Into<Cow<'static, str>>,
         Self: Sized,
         T: Eq + Clone,
         Self: 'static + PullSurface<ItemOut = T>,
@@ -60,26 +62,30 @@ impl<T> Exchange for T
 where
     T: PullSurface,
 {
-    fn exchange<Other, Key, Val>(
+    fn exchange<Name, Other, Key, Val>(
         self,
         builder: &mut HydroflowBuilder,
-        name: Cow<'static, str>,
+        name: Name,
         address_book: HashMap<u64, String>,
         remote_input: Other,
         my_id: u64,
         outbound_messages: NetworkOut<<Self as BaseSurface>::ItemOut>,
     ) -> ExchangeSurface<Key, Val, Other>
     where
+        Name: Into<Cow<'static, str>>,
         Self: Sized,
         Key: Eq + std::hash::Hash + Clone,
         Val: Eq + Clone,
         Self: 'static + PullSurface<ItemOut = (Key, Val)>,
         Other: PullSurface<ItemOut = (Key, Val)>,
     {
+        let name = name.into();
+
         let (local_inputs_send, local_inputs_recv) = builder
-            .make_edge::<VecHandoff<(Key, Val)>, Option<(Key, Val)>>(
-                format!("{} handoff", name).into(),
-            );
+            .make_edge::<_, VecHandoff<(Key, Val)>, Option<(Key, Val)>>(format!(
+                "{} handoff",
+                name
+            ));
 
         let num_participants: u64 = address_book.len().try_into().unwrap();
 
@@ -111,22 +117,25 @@ where
         local_inputs_recv.flatten().chain(remote_input)
     }
 
-    fn broadcast<Other, U>(
+    fn broadcast<Name, Other, U>(
         self,
         builder: &mut HydroflowBuilder,
-        name: Cow<'static, str>,
+        name: Name,
         addresses: Vec<String>,
         remote_input: Other,
         outbound_messages: NetworkOut<<Self as BaseSurface>::ItemOut>,
     ) -> BroadcastSurface<U, Other>
     where
+        Name: Into<Cow<'static, str>>,
         Self: Sized,
         U: Eq + Clone,
         Self: 'static + PullSurface<ItemOut = U>,
         Other: PullSurface<ItemOut = U>,
     {
+        let name = name.into();
+
         let (local_inputs_send, local_inputs_recv) =
-            builder.make_edge::<VecHandoff<U>, Option<U>>(format!("{} handoff", name).into());
+            builder.make_edge::<_, VecHandoff<U>, Option<U>>(format!("{} handoff", name));
 
         builder.add_subgraph(
             name,

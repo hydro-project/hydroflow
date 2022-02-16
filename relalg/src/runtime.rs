@@ -18,7 +18,7 @@ pub(crate) fn run_dataflow(r: RelExpr) -> Vec<Vec<Datum>> {
     let output = Rc::new(RefCell::new(Vec::new()));
     let inner = output.clone();
 
-    df.add_subgraph_sink("output sink".into(), output_port, move |_ctx, recv| {
+    df.add_subgraph_sink("output sink", output_port, move |_ctx, recv| {
         for v in recv.take_inner() {
             (*inner).borrow_mut().push(v);
         }
@@ -31,12 +31,12 @@ pub(crate) fn run_dataflow(r: RelExpr) -> Vec<Vec<Datum>> {
 }
 
 fn render_relational(df: &mut Hydroflow, r: RelExpr) -> RecvPort<VecHandoff<Vec<Datum>>> {
-    let (send_port, recv_port) = df.make_edge("handoff".into());
+    let (send_port, recv_port) = df.make_edge("handoff");
     match r {
         RelExpr::Values(mut v) => {
             // TODO: drip-feed data?
             let scope = Vec::new();
-            df.add_subgraph_source("value source".into(), send_port, move |_ctx, send| {
+            df.add_subgraph_source("value source", send_port, move |_ctx, send| {
                 send.give(Iter(
                     v.drain(..)
                         .map(|row| row.into_iter().map(|e| e.eval(&scope)).collect()),
@@ -45,31 +45,21 @@ fn render_relational(df: &mut Hydroflow, r: RelExpr) -> RecvPort<VecHandoff<Vec<
         }
         RelExpr::Filter(preds, v) => {
             let input = render_relational(df, *v);
-            df.add_subgraph_in_out(
-                "filter".into(),
-                input,
-                send_port,
-                move |_ctx, recv, send| {
-                    send.give(Iter(recv.take_inner().into_iter().filter(|row| {
-                        preds.iter().all(|p| p.eval(row) == Datum::Bool(true))
-                    })));
-                },
-            );
+            df.add_subgraph_in_out("filter", input, send_port, move |_ctx, recv, send| {
+                send.give(Iter(recv.take_inner().into_iter().filter(|row| {
+                    preds.iter().all(|p| p.eval(row) == Datum::Bool(true))
+                })));
+            });
         }
         RelExpr::Project(exprs, v) => {
             let input = render_relational(df, *v);
-            df.add_subgraph_in_out(
-                "project".into(),
-                input,
-                send_port,
-                move |_ctx, recv, send| {
-                    send.give(Iter(
-                        recv.take_inner()
-                            .into_iter()
-                            .map(|row| exprs.iter().map(|e| e.eval(&row)).collect()),
-                    ));
-                },
-            );
+            df.add_subgraph_in_out("project", input, send_port, move |_ctx, recv, send| {
+                send.give(Iter(
+                    recv.take_inner()
+                        .into_iter()
+                        .map(|row| exprs.iter().map(|e| e.eval(&row)).collect()),
+                ));
+            });
         }
     }
     recv_port

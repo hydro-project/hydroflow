@@ -17,21 +17,21 @@ pub(crate) async fn run_database(opts: Opts) {
 
     let mut df = Hydroflow::new();
 
-    let (notifs, notif_sink) = df.make_edge::<VecHandoff<(String, usize)>>("notifs".into());
+    let (notifs, notif_sink) = df.make_edge::<_, VecHandoff<(String, usize)>>("notifs");
     let (encode_contacts_out, contacts_merge) =
-        df.make_edge::<VecHandoff<Message>>("encoded contacts".into());
+        df.make_edge::<_, VecHandoff<Message>>("encoded contacts");
     let (encode_diagnoses_out, diagnoses_merge) =
-        df.make_edge::<VecHandoff<Message>>("encoded diagnoses".into());
+        df.make_edge::<_, VecHandoff<Message>>("encoded diagnoses");
 
     let (contacts_send, contacts_recv) =
-        df.make_edge::<VecHandoff<(&'static str, &'static str, usize)>>("contacts".into());
-    let contacts_send = df.add_channel_input("contacts input".into(), contacts_send);
+        df.make_edge::<_, VecHandoff<(&'static str, &'static str, usize)>>("contacts");
+    let contacts_send = df.add_channel_input("contacts input", contacts_send);
     let (diagnosed_send, diagnosed_recv) =
-        df.make_edge::<VecHandoff<(&'static str, (usize, usize))>>("diagnosed".into());
-    let diagnosed_send = df.add_channel_input("diagnosed input".into(), diagnosed_send);
+        df.make_edge::<_, VecHandoff<(&'static str, (usize, usize))>>("diagnosed");
+    let diagnosed_send = df.add_channel_input("diagnosed input", diagnosed_send);
     let (people_send, people_recv) =
-        df.make_edge::<VecHandoff<(String, (String, String))>>("people".into());
-    let people_send = df.add_channel_input("people input".into(), people_send);
+        df.make_edge::<_, VecHandoff<(String, (String, String))>>("people");
+    let people_send = df.add_channel_input("people input", people_send);
 
     let stream = TcpListener::bind(format!("localhost:{}", opts.port))
         .await
@@ -41,7 +41,7 @@ pub(crate) async fn run_database(opts: Opts) {
     let (network_in, network_out) = df.add_tcp_stream(stream);
 
     df.add_subgraph_in_out(
-        "decode messages".into(),
+        "decode messages",
         network_out,
         notifs,
         |_ctx, recv, send| {
@@ -89,7 +89,7 @@ pub(crate) async fn run_database(opts: Opts) {
     });
 
     df.add_subgraph_2in_out(
-        "merge contacts and diagnoses".into(),
+        "merge contacts and diagnoses",
         contacts_merge,
         diagnoses_merge,
         network_in,
@@ -101,7 +101,7 @@ pub(crate) async fn run_database(opts: Opts) {
     );
 
     df.add_subgraph_in_out(
-        "encode contacts".into(),
+        "encode contacts",
         contacts_recv,
         encode_contacts_out,
         |_ctx, recv, send| {
@@ -115,7 +115,7 @@ pub(crate) async fn run_database(opts: Opts) {
     );
 
     df.add_subgraph_in_out(
-        "encode diagnoses".into(),
+        "encode diagnoses",
         diagnosed_recv,
         encode_diagnoses_out,
         |_ctx, recv, send| {
@@ -130,7 +130,7 @@ pub(crate) async fn run_database(opts: Opts) {
 
     let mut join_state = Default::default();
     df.add_subgraph(
-        "join people and notifs".into(),
+        "join people and notifs",
         tl!(notif_sink, people_recv),
         tl!(),
         move |_ctx, tl!(notifs, people), tl!()| {
