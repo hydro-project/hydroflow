@@ -33,11 +33,14 @@ mod tests {
         let outputs = Rc::new(RefCell::new(Vec::new()));
         let mut df = HydroflowBuilder::default();
 
-        let (stream_input, stream_hoff) = df.add_channel_input::<Option<u64>, VecHandoff<_>>();
-        let (ticks_input, ticks_hoff) = df.add_channel_input::<Option<u64>, VecHandoff<_>>();
+        let (stream_input, stream_hoff) =
+            df.add_channel_input::<Option<u64>, VecHandoff<_>>("stream input".into());
+        let (ticks_input, ticks_hoff) =
+            df.add_channel_input::<Option<u64>, VecHandoff<_>>("ticks input".into());
 
         let outputs_inner = outputs.clone();
         df.add_subgraph(
+            "main".into(),
             stream_hoff
                 .flatten()
                 .map(|x| ((), x))

@@ -30,7 +30,7 @@ pub(crate) async fn run_client(opts: Opts) {
         let reader = tokio::io::BufReader::new(tokio::io::stdin());
         let lines = tokio_stream::wrappers::LinesStream::new(reader.lines())
             .map(|result| Some(result.expect("Failed to read stdin as UTF-8.")));
-        df.add_input_from_stream::<_, VecHandoff<String>, _>(lines)
+        df.add_input_from_stream::<_, VecHandoff<String>, _>("stdin".into(), lines)
     };
 
     // format addresses
@@ -39,10 +39,11 @@ pub(crate) async fn run_client(opts: Opts) {
     let messages_addr = format!("localhost:{}", messages_port);
 
     // set up the flow for requesting to be a member
+    // TODO(mingwei): use surface API instead of `wrap_input` here.
     let (my_info_send, my_info_recv) = df
         .hydroflow
-        .make_edge::<VecHandoff<(String, MemberRequest)>>();
-    let my_info_set = df.hydroflow.add_input(my_info_send);
+        .make_edge::<VecHandoff<(String, MemberRequest)>>("my_info".into());
+    let my_info_set = df.hydroflow.add_input("my_info input".into(), my_info_send);
     let my_info_get = df.wrap_input(my_info_recv);
     my_info_set.give(Some((
         addr,
@@ -52,7 +53,10 @@ pub(crate) async fn run_client(opts: Opts) {
             messages_addr,
         },
     )));
-    df.add_subgraph(my_info_get.pull_to_push().push_to(connect_req));
+    df.add_subgraph(
+        "my_info 2".into(),
+        my_info_get.pull_to_push().push_to(connect_req),
+    );
 
     let nickname = opts.name.clone();
     let nick2 = nickname.clone();
@@ -73,10 +77,11 @@ pub(crate) async fn run_client(opts: Opts) {
         })
         .map(Some)
         .push_to(messages_send);
-    df.add_subgraph(sg);
+    df.add_subgraph("sending messages".into(), sg);
 
     // set up the flow for receiving messages
     df.add_subgraph(
+        "receiving messages".into(),
         messages_recv
             .flatten()
             .filter(move |x| x.nickname != nick2)
