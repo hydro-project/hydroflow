@@ -311,8 +311,8 @@
             }
         });
 
-        <span class="kw">let</span> (<span class="ident">send_port</span>, <span class="ident">recv_port</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">make_edge</span>();
-        <span class="self">self</span>.<span class="ident">add_input_from_stream</span>(<span class="ident">send_port</span>, <span class="ident">incoming_messages</span>.<span class="ident">map</span>(<span class="prelude-val">Some</span>));
+        <span class="kw">let</span> (<span class="ident">send_port</span>, <span class="ident">recv_port</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">make_edge</span>(<span class="string">&quot;tcp ingress handoff&quot;</span>);
+        <span class="self">self</span>.<span class="ident">add_input_from_stream</span>(<span class="string">&quot;tcp ingress stream&quot;</span>, <span class="ident">send_port</span>, <span class="ident">incoming_messages</span>.<span class="ident">map</span>(<span class="prelude-val">Some</span>));
 
         (<span class="ident">port</span>, <span class="ident">recv_port</span>)
     }
@@ -431,8 +431,8 @@
 
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buffered_messages</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">next_messages</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
-        <span class="kw">let</span> (<span class="ident">input_port</span>, <span class="ident">output_port</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">make_edge</span>();
-        <span class="self">self</span>.<span class="ident">add_subgraph_sink</span>(<span class="ident">output_port</span>, <span class="kw">move</span> <span class="op">|</span><span class="ident">_ctx</span>, <span class="ident">recv</span><span class="op">|</span> {
+        <span class="kw">let</span> (<span class="ident">input_port</span>, <span class="ident">output_port</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">make_edge</span>(<span class="string">&quot;tcp egress handoff&quot;</span>);
+        <span class="self">self</span>.<span class="ident">add_subgraph_sink</span>(<span class="string">&quot;tcp egress stream&quot;</span>, <span class="ident">output_port</span>, <span class="kw">move</span> <span class="op">|</span><span class="ident">_ctx</span>, <span class="ident">recv</span><span class="op">|</span> {
             <span class="ident">buffered_messages</span>.<span class="ident">extend</span>(<span class="ident">recv</span>.<span class="ident">take_inner</span>());
             <span class="kw">for</span> <span class="ident">msg</span> <span class="kw">in</span> <span class="ident">buffered_messages</span>.<span class="ident">drain</span>(..) {
                 <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>) <span class="op">=</span> <span class="ident">outbound_messages_send</span>.<span class="ident">try_send</span>(<span class="ident">msg</span>) {

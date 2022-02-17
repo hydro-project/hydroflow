@@ -84,6 +84,9 @@
 <span id="79">79</span>
 <span id="80">80</span>
 <span id="81">81</span>
+<span id="82">82</span>
+<span id="83">83</span>
+<span id="84">84</span>
 </pre><pre class="rust"><code><span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">context</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">graph</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">graph_ext</span>;
@@ -119,11 +122,14 @@
         <span class="kw">let</span> <span class="ident">outputs</span> <span class="op">=</span> <span class="ident">Rc::new</span>(<span class="ident">RefCell::new</span>(<span class="ident">Vec::new</span>()));
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">HydroflowBuilder::default</span>();
 
-        <span class="kw">let</span> (<span class="ident">stream_input</span>, <span class="ident">stream_hoff</span>) <span class="op">=</span> <span class="ident">df</span>.<span class="ident">add_channel_input</span>::<span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u64</span><span class="op">&gt;</span>, <span class="ident">VecHandoff</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
-        <span class="kw">let</span> (<span class="ident">ticks_input</span>, <span class="ident">ticks_hoff</span>) <span class="op">=</span> <span class="ident">df</span>.<span class="ident">add_channel_input</span>::<span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u64</span><span class="op">&gt;</span>, <span class="ident">VecHandoff</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
+        <span class="kw">let</span> (<span class="ident">stream_input</span>, <span class="ident">stream_hoff</span>) <span class="op">=</span>
+            <span class="ident">df</span>.<span class="ident">add_channel_input</span>::<span class="op">&lt;</span><span class="kw">_</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u64</span><span class="op">&gt;</span>, <span class="ident">VecHandoff</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="string">&quot;stream input&quot;</span>);
+        <span class="kw">let</span> (<span class="ident">ticks_input</span>, <span class="ident">ticks_hoff</span>) <span class="op">=</span>
+            <span class="ident">df</span>.<span class="ident">add_channel_input</span>::<span class="op">&lt;</span><span class="kw">_</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u64</span><span class="op">&gt;</span>, <span class="ident">VecHandoff</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="string">&quot;ticks input&quot;</span>);
 
         <span class="kw">let</span> <span class="ident">outputs_inner</span> <span class="op">=</span> <span class="ident">outputs</span>.<span class="ident">clone</span>();
         <span class="ident">df</span>.<span class="ident">add_subgraph</span>(
+            <span class="string">&quot;main&quot;</span>,
             <span class="ident">stream_hoff</span>
                 .<span class="ident">flatten</span>()
                 .<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> ((), <span class="ident">x</span>))

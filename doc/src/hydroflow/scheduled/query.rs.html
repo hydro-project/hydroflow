@@ -189,7 +189,22 @@
 <span id="184">184</span>
 <span id="185">185</span>
 <span id="186">186</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">cell::RefCell</span>, <span class="ident">rc::Rc</span>};
+<span id="187">187</span>
+<span id="188">188</span>
+<span id="189">189</span>
+<span id="190">190</span>
+<span id="191">191</span>
+<span id="192">192</span>
+<span id="193">193</span>
+<span id="194">194</span>
+<span id="195">195</span>
+<span id="196">196</span>
+<span id="197">197</span>
+<span id="198">198</span>
+<span id="199">199</span>
+<span id="200">200</span>
+</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::borrow::Cow</span>;
+<span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">cell::RefCell</span>, <span class="ident">rc::Rc</span>};
 
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::lang::collections::Iter</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::graph::Hydroflow</span>;
@@ -197,7 +212,9 @@
 
 <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::context::Context</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::graph_ext::GraphExt</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::port</span>::{<span class="ident">RecvCtx</span>, <span class="ident">RecvPort</span>, <span class="ident">SendCtx</span>};
+<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::port</span>::{<span class="ident">RecvPort</span>, <span class="ident">SendCtx</span>};
+
+<span class="kw">const</span> <span class="ident">QUERY_EDGE_NAME</span>: <span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span>, <span class="ident">str</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Cow::Borrowed</span>(<span class="string">&quot;query handoff&quot;</span>);
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Default</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Query</span> {
@@ -216,8 +233,8 @@
     {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">df</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">df</span>.<span class="ident">borrow_mut</span>();
 
-        <span class="kw">let</span> (<span class="ident">send_port</span>, <span class="ident">recv_port</span>) <span class="op">=</span> <span class="ident">df</span>.<span class="ident">make_edge</span>();
-        <span class="ident">df</span>.<span class="ident">add_subgraph_source</span>(<span class="ident">send_port</span>, <span class="ident">f</span>);
+        <span class="kw">let</span> (<span class="ident">send_port</span>, <span class="ident">recv_port</span>) <span class="op">=</span> <span class="ident">df</span>.<span class="ident">make_edge</span>(<span class="ident">QUERY_EDGE_NAME</span>);
+        <span class="ident">df</span>.<span class="ident">add_subgraph_source</span>(<span class="string">&quot;source&quot;</span>, <span class="ident">send_port</span>, <span class="ident">f</span>);
 
         <span class="ident">Operator</span> {
             <span class="ident">df</span>: <span class="self">self</span>.<span class="ident">df</span>.<span class="ident">clone</span>(),
@@ -231,8 +248,9 @@
     {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">df</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">df</span>.<span class="ident">borrow_mut</span>();
 
-        <span class="kw">let</span> (<span class="ident">send_port</span>, <span class="ident">recv_port</span>) <span class="op">=</span> <span class="ident">df</span>.<span class="ident">make_edge</span>();
+        <span class="kw">let</span> (<span class="ident">send_port</span>, <span class="ident">recv_port</span>) <span class="op">=</span> <span class="ident">df</span>.<span class="ident">make_edge</span>(<span class="ident">QUERY_EDGE_NAME</span>);
         <span class="ident">df</span>.<span class="ident">add_subgraph_n_m</span>(
+            <span class="string">&quot;concat&quot;</span>,
             <span class="ident">ops</span>.<span class="ident">into_iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">op</span><span class="op">|</span> <span class="ident">op</span>.<span class="ident">recv_port</span>).<span class="ident">collect</span>(),
             <span class="macro">vec!</span>[<span class="ident">send_port</span>],
             <span class="op">|</span><span class="ident">_ctx</span>, <span class="ident">ins</span>, <span class="ident">out</span><span class="op">|</span> {
@@ -272,8 +290,8 @@
     {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">df</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">df</span>.<span class="ident">borrow_mut</span>();
 
-        <span class="kw">let</span> (<span class="ident">send_port</span>, <span class="ident">recv_port</span>) <span class="op">=</span> <span class="ident">df</span>.<span class="ident">make_edge</span>();
-        <span class="ident">df</span>.<span class="ident">add_subgraph_in_out</span>(<span class="self">self</span>.<span class="ident">recv_port</span>, <span class="ident">send_port</span>, <span class="kw">move</span> <span class="op">|</span><span class="ident">_ctx</span>, <span class="ident">recv</span>, <span class="ident">send</span><span class="op">|</span> {
+        <span class="kw">let</span> (<span class="ident">send_port</span>, <span class="ident">recv_port</span>) <span class="op">=</span> <span class="ident">df</span>.<span class="ident">make_edge</span>(<span class="ident">QUERY_EDGE_NAME</span>);
+        <span class="ident">df</span>.<span class="ident">add_subgraph_in_out</span>(<span class="string">&quot;map&quot;</span>, <span class="self">self</span>.<span class="ident">recv_port</span>, <span class="ident">send_port</span>, <span class="kw">move</span> <span class="op">|</span><span class="ident">_ctx</span>, <span class="ident">recv</span>, <span class="ident">send</span><span class="op">|</span> {
             <span class="ident">send</span>.<span class="ident">give</span>(<span class="ident">Iter</span>(<span class="ident">recv</span>.<span class="ident">take_inner</span>().<span class="ident">into_iter</span>().<span class="ident">map</span>(<span class="kw-2">&amp;mut</span> <span class="ident">f</span>)));
         });
 
@@ -291,10 +309,15 @@
     {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">df</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">df</span>.<span class="ident">borrow_mut</span>();
 
-        <span class="kw">let</span> (<span class="ident">send_port</span>, <span class="ident">recv_port</span>) <span class="op">=</span> <span class="ident">df</span>.<span class="ident">make_edge</span>();
-        <span class="ident">df</span>.<span class="ident">add_subgraph_in_out</span>(<span class="self">self</span>.<span class="ident">recv_port</span>, <span class="ident">send_port</span>, <span class="kw">move</span> <span class="op">|</span><span class="ident">_ctx</span>, <span class="ident">recv</span>, <span class="ident">send</span><span class="op">|</span> {
-            <span class="ident">send</span>.<span class="ident">give</span>(<span class="ident">Iter</span>(<span class="ident">recv</span>.<span class="ident">take_inner</span>().<span class="ident">into_iter</span>().<span class="ident">filter</span>(<span class="kw-2">&amp;mut</span> <span class="ident">f</span>)));
-        });
+        <span class="kw">let</span> (<span class="ident">send_port</span>, <span class="ident">recv_port</span>) <span class="op">=</span> <span class="ident">df</span>.<span class="ident">make_edge</span>(<span class="ident">QUERY_EDGE_NAME</span>);
+        <span class="ident">df</span>.<span class="ident">add_subgraph_in_out</span>(
+            <span class="string">&quot;filter&quot;</span>,
+            <span class="self">self</span>.<span class="ident">recv_port</span>,
+            <span class="ident">send_port</span>,
+            <span class="kw">move</span> <span class="op">|</span><span class="ident">_ctx</span>, <span class="ident">recv</span>, <span class="ident">send</span><span class="op">|</span> {
+                <span class="ident">send</span>.<span class="ident">give</span>(<span class="ident">Iter</span>(<span class="ident">recv</span>.<span class="ident">take_inner</span>().<span class="ident">into_iter</span>().<span class="ident">filter</span>(<span class="kw-2">&amp;mut</span> <span class="ident">f</span>)));
+            },
+        );
 
         <span class="ident">std::mem::drop</span>(<span class="ident">df</span>);
         <span class="ident">Operator</span> {
@@ -309,8 +332,9 @@
 
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">df</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">df</span>.<span class="ident">borrow_mut</span>();
 
-        <span class="kw">let</span> (<span class="ident">send_port</span>, <span class="ident">recv_port</span>) <span class="op">=</span> <span class="ident">df</span>.<span class="ident">make_edge</span>::<span class="op">&lt;</span><span class="ident">VecHandoff</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>();
+        <span class="kw">let</span> (<span class="ident">send_port</span>, <span class="ident">recv_port</span>) <span class="op">=</span> <span class="ident">df</span>.<span class="ident">make_edge</span>(<span class="ident">QUERY_EDGE_NAME</span>);
         <span class="ident">df</span>.<span class="ident">add_subgraph_2in_out</span>(
+            <span class="string">&quot;concat&quot;</span>,
             <span class="self">self</span>.<span class="ident">recv_port</span>,
             <span class="ident">other</span>.<span class="ident">recv_port</span>,
             <span class="ident">send_port</span>,
@@ -331,14 +355,13 @@
     <span class="kw">where</span>
         <span class="ident">F</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">Fn</span>(<span class="ident">T</span>),
     {
-        <span class="self">self</span>.<span class="ident">df</span>.<span class="ident">borrow_mut</span>().<span class="ident">add_subgraph_sink</span>(
-            <span class="self">self</span>.<span class="ident">recv_port</span>,
-            <span class="kw">move</span> <span class="op">|</span><span class="ident">_ctx</span>, <span class="ident">recv</span>: <span class="kw-2">&amp;</span><span class="ident">RecvCtx</span><span class="op">&lt;</span><span class="ident">VecHandoff</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">|</span> {
+        <span class="self">self</span>.<span class="ident">df</span>
+            .<span class="ident">borrow_mut</span>()
+            .<span class="ident">add_subgraph_sink</span>(<span class="string">&quot;sink&quot;</span>, <span class="self">self</span>.<span class="ident">recv_port</span>, <span class="kw">move</span> <span class="op">|</span><span class="ident">_ctx</span>, <span class="ident">recv</span><span class="op">|</span> {
                 <span class="kw">for</span> <span class="ident">v</span> <span class="kw">in</span> <span class="ident">recv</span>.<span class="ident">take_inner</span>() {
                     <span class="ident">f</span>(<span class="ident">v</span>)
                 }
-            },
-        );
+            });
     }
 }
 
@@ -354,7 +377,7 @@
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">sends</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="ident">n</span>);
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">recvs</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="ident">n</span>);
         <span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span>..<span class="ident">n</span> {
-            <span class="kw">let</span> (<span class="ident">send_port</span>, <span class="ident">recv_port</span>) <span class="op">=</span> <span class="ident">df</span>.<span class="ident">make_edge</span>::<span class="op">&lt;</span><span class="ident">VecHandoff</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>();
+            <span class="kw">let</span> (<span class="ident">send_port</span>, <span class="ident">recv_port</span>) <span class="op">=</span> <span class="ident">df</span>.<span class="ident">make_edge</span>(<span class="ident">QUERY_EDGE_NAME</span>);
             <span class="ident">sends</span>.<span class="ident">push</span>(<span class="ident">send_port</span>);
             <span class="ident">recvs</span>.<span class="ident">push</span>(<span class="ident">Operator</span> {
                 <span class="ident">df</span>: <span class="self">self</span>.<span class="ident">df</span>.<span class="ident">clone</span>(),
@@ -362,15 +385,20 @@
             });
         }
 
-        <span class="ident">df</span>.<span class="ident">add_subgraph_n_m</span>(<span class="macro">vec!</span>[<span class="self">self</span>.<span class="ident">recv_port</span>], <span class="ident">sends</span>, <span class="kw">move</span> <span class="op">|</span><span class="ident">_ctx</span>, <span class="ident">recvs</span>, <span class="ident">sends</span><span class="op">|</span> {
-            <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">recvs</span>.<span class="ident">iter</span>().<span class="ident">next</span>().<span class="ident">unwrap</span>().<span class="ident">take_inner</span>();
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>((<span class="kw-2">&amp;</span><span class="ident">last_output</span>, <span class="ident">outputs</span>)) <span class="op">=</span> <span class="ident">sends</span>.<span class="ident">split_last</span>() {
-                <span class="kw">for</span> <span class="ident">output</span> <span class="kw">in</span> <span class="ident">outputs</span> {
-                    <span class="ident">output</span>.<span class="ident">give</span>(<span class="ident">Iter</span>(<span class="ident">input</span>.<span class="ident">iter</span>().<span class="ident">cloned</span>()));
+        <span class="ident">df</span>.<span class="ident">add_subgraph_n_m</span>(
+            <span class="string">&quot;tee&quot;</span>,
+            <span class="macro">vec!</span>[<span class="self">self</span>.<span class="ident">recv_port</span>],
+            <span class="ident">sends</span>,
+            <span class="kw">move</span> <span class="op">|</span><span class="ident">_ctx</span>, <span class="ident">recvs</span>, <span class="ident">sends</span><span class="op">|</span> {
+                <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">recvs</span>.<span class="ident">iter</span>().<span class="ident">next</span>().<span class="ident">unwrap</span>().<span class="ident">take_inner</span>();
+                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>((<span class="kw-2">&amp;</span><span class="ident">last_output</span>, <span class="ident">outputs</span>)) <span class="op">=</span> <span class="ident">sends</span>.<span class="ident">split_last</span>() {
+                    <span class="kw">for</span> <span class="ident">output</span> <span class="kw">in</span> <span class="ident">outputs</span> {
+                        <span class="ident">output</span>.<span class="ident">give</span>(<span class="ident">Iter</span>(<span class="ident">input</span>.<span class="ident">iter</span>().<span class="ident">cloned</span>()));
+                    }
+                    <span class="ident">last_output</span>.<span class="ident">give</span>(<span class="ident">Iter</span>(<span class="ident">input</span>.<span class="ident">into_iter</span>()));
                 }
-                <span class="ident">last_output</span>.<span class="ident">give</span>(<span class="ident">Iter</span>(<span class="ident">input</span>.<span class="ident">into_iter</span>()));
-            }
-        });
+            },
+        );
 
         <span class="ident">recvs</span>
     }

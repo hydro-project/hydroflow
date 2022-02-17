@@ -142,7 +142,26 @@
 <span id="137">137</span>
 <span id="138">138</span>
 <span id="139">139</span>
+<span id="140">140</span>
+<span id="141">141</span>
+<span id="142">142</span>
+<span id="143">143</span>
+<span id="144">144</span>
+<span id="145">145</span>
+<span id="146">146</span>
+<span id="147">147</span>
+<span id="148">148</span>
+<span id="149">149</span>
+<span id="150">150</span>
+<span id="151">151</span>
+<span id="152">152</span>
+<span id="153">153</span>
+<span id="154">154</span>
+<span id="155">155</span>
+<span id="156">156</span>
+<span id="157">157</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std</span>::{
+    <span class="ident">borrow::Cow</span>,
     <span class="ident">collections</span>::{<span class="ident">hash_map::DefaultHasher</span>, <span class="ident">HashMap</span>},
     <span class="ident">hash::Hasher</span>,
 };
@@ -168,29 +187,33 @@
 <span class="kw">where</span>
     <span class="self">Self</span>: <span class="ident">PullSurface</span>,
 {
-    <span class="kw">fn</span> <span class="ident">exchange</span><span class="op">&lt;</span><span class="ident">Other</span>, <span class="ident">Key</span>, <span class="ident">Val</span><span class="op">&gt;</span>(
+    <span class="kw">fn</span> <span class="ident">exchange</span><span class="op">&lt;</span><span class="ident">Name</span>, <span class="ident">Other</span>, <span class="ident">Key</span>, <span class="ident">Val</span><span class="op">&gt;</span>(
         <span class="self">self</span>,
         <span class="ident">builder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">HydroflowBuilder</span>,
+        <span class="ident">name</span>: <span class="ident">Name</span>,
         <span class="ident">address_book</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">u64</span>, <span class="ident">String</span><span class="op">&gt;</span>,
         <span class="ident">remote_input</span>: <span class="ident">Other</span>,
         <span class="ident">my_id</span>: <span class="ident">u64</span>,
         <span class="ident">outbound_messages</span>: <span class="ident">NetworkOut</span><span class="op">&lt;</span><span class="op">&lt;</span><span class="self">Self</span> <span class="kw">as</span> <span class="ident">BaseSurface</span><span class="op">&gt;</span><span class="ident">::ItemOut</span><span class="op">&gt;</span>,
     ) -&gt; <span class="ident">ExchangeSurface</span><span class="op">&lt;</span><span class="ident">Key</span>, <span class="ident">Val</span>, <span class="ident">Other</span><span class="op">&gt;</span>
     <span class="kw">where</span>
+        <span class="ident">Name</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span>, <span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span>,
         <span class="self">Self</span>: <span class="ident">Sized</span>,
         <span class="ident">Key</span>: <span class="ident">Eq</span> <span class="op">+</span> <span class="ident">std::hash::Hash</span> <span class="op">+</span> <span class="ident">Clone</span>,
         <span class="ident">Val</span>: <span class="ident">Eq</span> <span class="op">+</span> <span class="ident">Clone</span>,
         <span class="self">Self</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">PullSurface</span><span class="op">&lt;</span><span class="ident">ItemOut</span> <span class="op">=</span> (<span class="ident">Key</span>, <span class="ident">Val</span>)<span class="op">&gt;</span>,
         <span class="ident">Other</span>: <span class="ident">PullSurface</span><span class="op">&lt;</span><span class="ident">ItemOut</span> <span class="op">=</span> (<span class="ident">Key</span>, <span class="ident">Val</span>)<span class="op">&gt;</span>;
 
-    <span class="kw">fn</span> <span class="ident">broadcast</span><span class="op">&lt;</span><span class="ident">Other</span>, <span class="ident">T</span><span class="op">&gt;</span>(
+    <span class="kw">fn</span> <span class="ident">broadcast</span><span class="op">&lt;</span><span class="ident">Name</span>, <span class="ident">Other</span>, <span class="ident">T</span><span class="op">&gt;</span>(
         <span class="self">self</span>,
         <span class="ident">builder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">HydroflowBuilder</span>,
+        <span class="ident">name</span>: <span class="ident">Name</span>,
         <span class="ident">addresses</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>,
         <span class="ident">remote_input</span>: <span class="ident">Other</span>,
         <span class="ident">outbound_messages</span>: <span class="ident">NetworkOut</span><span class="op">&lt;</span><span class="op">&lt;</span><span class="self">Self</span> <span class="kw">as</span> <span class="ident">BaseSurface</span><span class="op">&gt;</span><span class="ident">::ItemOut</span><span class="op">&gt;</span>,
     ) -&gt; <span class="ident">BroadcastSurface</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">Other</span><span class="op">&gt;</span>
     <span class="kw">where</span>
+        <span class="ident">Name</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span>, <span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span>,
         <span class="self">Self</span>: <span class="ident">Sized</span>,
         <span class="ident">T</span>: <span class="ident">Eq</span> <span class="op">+</span> <span class="ident">Clone</span>,
         <span class="self">Self</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">PullSurface</span><span class="op">&lt;</span><span class="ident">ItemOut</span> <span class="op">=</span> <span class="ident">T</span><span class="op">&gt;</span>,
@@ -201,27 +224,35 @@
 <span class="kw">where</span>
     <span class="ident">T</span>: <span class="ident">PullSurface</span>,
 {
-    <span class="kw">fn</span> <span class="ident">exchange</span><span class="op">&lt;</span><span class="ident">Other</span>, <span class="ident">Key</span>, <span class="ident">Val</span><span class="op">&gt;</span>(
+    <span class="kw">fn</span> <span class="ident">exchange</span><span class="op">&lt;</span><span class="ident">Name</span>, <span class="ident">Other</span>, <span class="ident">Key</span>, <span class="ident">Val</span><span class="op">&gt;</span>(
         <span class="self">self</span>,
         <span class="ident">builder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">HydroflowBuilder</span>,
+        <span class="ident">name</span>: <span class="ident">Name</span>,
         <span class="ident">address_book</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">u64</span>, <span class="ident">String</span><span class="op">&gt;</span>,
         <span class="ident">remote_input</span>: <span class="ident">Other</span>,
         <span class="ident">my_id</span>: <span class="ident">u64</span>,
         <span class="ident">outbound_messages</span>: <span class="ident">NetworkOut</span><span class="op">&lt;</span><span class="op">&lt;</span><span class="self">Self</span> <span class="kw">as</span> <span class="ident">BaseSurface</span><span class="op">&gt;</span><span class="ident">::ItemOut</span><span class="op">&gt;</span>,
     ) -&gt; <span class="ident">ExchangeSurface</span><span class="op">&lt;</span><span class="ident">Key</span>, <span class="ident">Val</span>, <span class="ident">Other</span><span class="op">&gt;</span>
     <span class="kw">where</span>
+        <span class="ident">Name</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span>, <span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span>,
         <span class="self">Self</span>: <span class="ident">Sized</span>,
         <span class="ident">Key</span>: <span class="ident">Eq</span> <span class="op">+</span> <span class="ident">std::hash::Hash</span> <span class="op">+</span> <span class="ident">Clone</span>,
         <span class="ident">Val</span>: <span class="ident">Eq</span> <span class="op">+</span> <span class="ident">Clone</span>,
         <span class="self">Self</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">PullSurface</span><span class="op">&lt;</span><span class="ident">ItemOut</span> <span class="op">=</span> (<span class="ident">Key</span>, <span class="ident">Val</span>)<span class="op">&gt;</span>,
         <span class="ident">Other</span>: <span class="ident">PullSurface</span><span class="op">&lt;</span><span class="ident">ItemOut</span> <span class="op">=</span> (<span class="ident">Key</span>, <span class="ident">Val</span>)<span class="op">&gt;</span>,
     {
-        <span class="kw">let</span> (<span class="ident">local_inputs_send</span>, <span class="ident">local_inputs_recv</span>) <span class="op">=</span>
-            <span class="ident">builder</span>.<span class="ident">make_edge</span>::<span class="op">&lt;</span><span class="ident">VecHandoff</span><span class="op">&lt;</span>(<span class="ident">Key</span>, <span class="ident">Val</span>)<span class="op">&gt;</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span>(<span class="ident">Key</span>, <span class="ident">Val</span>)<span class="op">&gt;</span><span class="op">&gt;</span>();
+        <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="ident">name</span>.<span class="ident">into</span>();
+
+        <span class="kw">let</span> (<span class="ident">local_inputs_send</span>, <span class="ident">local_inputs_recv</span>) <span class="op">=</span> <span class="ident">builder</span>
+            .<span class="ident">make_edge</span>::<span class="op">&lt;</span><span class="kw">_</span>, <span class="ident">VecHandoff</span><span class="op">&lt;</span>(<span class="ident">Key</span>, <span class="ident">Val</span>)<span class="op">&gt;</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span>(<span class="ident">Key</span>, <span class="ident">Val</span>)<span class="op">&gt;</span><span class="op">&gt;</span>(<span class="macro">format!</span>(
+                <span class="string">&quot;{} handoff&quot;</span>,
+                <span class="ident">name</span>
+            ));
 
         <span class="kw">let</span> <span class="ident">num_participants</span>: <span class="ident">u64</span> <span class="op">=</span> <span class="ident">address_book</span>.<span class="ident">len</span>().<span class="ident">try_into</span>().<span class="ident">unwrap</span>();
 
         <span class="ident">builder</span>.<span class="ident">add_subgraph</span>(
+            <span class="ident">name</span>,
             <span class="ident">IterPullSurface::new</span>(<span class="ident">address_book</span>.<span class="ident">into_iter</span>())
                 .<span class="ident">join</span>(<span class="self">self</span>.<span class="ident">map</span>(<span class="kw">move</span> <span class="op">|</span>(<span class="ident">x</span>, <span class="ident">v</span>)<span class="op">|</span> {
                     <span class="comment">// TODO(justin): We should make our own thing here, I don&#39;t</span>
@@ -248,23 +279,28 @@
         <span class="ident">local_inputs_recv</span>.<span class="ident">flatten</span>().<span class="ident">chain</span>(<span class="ident">remote_input</span>)
     }
 
-    <span class="kw">fn</span> <span class="ident">broadcast</span><span class="op">&lt;</span><span class="ident">Other</span>, <span class="ident">U</span><span class="op">&gt;</span>(
+    <span class="kw">fn</span> <span class="ident">broadcast</span><span class="op">&lt;</span><span class="ident">Name</span>, <span class="ident">Other</span>, <span class="ident">U</span><span class="op">&gt;</span>(
         <span class="self">self</span>,
         <span class="ident">builder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">HydroflowBuilder</span>,
+        <span class="ident">name</span>: <span class="ident">Name</span>,
         <span class="ident">addresses</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>,
         <span class="ident">remote_input</span>: <span class="ident">Other</span>,
         <span class="ident">outbound_messages</span>: <span class="ident">NetworkOut</span><span class="op">&lt;</span><span class="op">&lt;</span><span class="self">Self</span> <span class="kw">as</span> <span class="ident">BaseSurface</span><span class="op">&gt;</span><span class="ident">::ItemOut</span><span class="op">&gt;</span>,
     ) -&gt; <span class="ident">BroadcastSurface</span><span class="op">&lt;</span><span class="ident">U</span>, <span class="ident">Other</span><span class="op">&gt;</span>
     <span class="kw">where</span>
+        <span class="ident">Name</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span>, <span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span>,
         <span class="self">Self</span>: <span class="ident">Sized</span>,
         <span class="ident">U</span>: <span class="ident">Eq</span> <span class="op">+</span> <span class="ident">Clone</span>,
         <span class="self">Self</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">PullSurface</span><span class="op">&lt;</span><span class="ident">ItemOut</span> <span class="op">=</span> <span class="ident">U</span><span class="op">&gt;</span>,
         <span class="ident">Other</span>: <span class="ident">PullSurface</span><span class="op">&lt;</span><span class="ident">ItemOut</span> <span class="op">=</span> <span class="ident">U</span><span class="op">&gt;</span>,
     {
+        <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="ident">name</span>.<span class="ident">into</span>();
+
         <span class="kw">let</span> (<span class="ident">local_inputs_send</span>, <span class="ident">local_inputs_recv</span>) <span class="op">=</span>
-            <span class="ident">builder</span>.<span class="ident">make_edge</span>::<span class="op">&lt;</span><span class="ident">VecHandoff</span><span class="op">&lt;</span><span class="ident">U</span><span class="op">&gt;</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">U</span><span class="op">&gt;</span><span class="op">&gt;</span>();
+            <span class="ident">builder</span>.<span class="ident">make_edge</span>::<span class="op">&lt;</span><span class="kw">_</span>, <span class="ident">VecHandoff</span><span class="op">&lt;</span><span class="ident">U</span><span class="op">&gt;</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">U</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="macro">format!</span>(<span class="string">&quot;{} handoff&quot;</span>, <span class="ident">name</span>));
 
         <span class="ident">builder</span>.<span class="ident">add_subgraph</span>(
+            <span class="ident">name</span>,
             <span class="ident">IterPullSurface::new</span>(<span class="ident">addresses</span>.<span class="ident">into_iter</span>())
                 .<span class="ident">cross_join</span>(<span class="self">self</span>)
                 .<span class="ident">pull_to_push</span>()
