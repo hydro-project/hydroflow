@@ -1,17 +1,17 @@
 use std::{any::Any, sync::mpsc::SyncSender};
 
-use super::{
-    graph::{HandoffData, StateData},
-    state::StateHandle,
-    SubgraphId,
-};
+use slotmap::SlotMap;
+
+use super::graph::{HandoffData, StateData};
+use super::state::StateHandle;
+use super::{HandoffId, StateId, SubgraphId};
 
 // A handle onto the dataflow from within an individual operator.
 
 pub struct Context<'a> {
     pub(crate) subgraph_id: SubgraphId,
-    pub(crate) handoffs: &'a mut [HandoffData],
-    pub(crate) states: &'a mut [StateData],
+    pub(crate) handoffs: &'a mut SlotMap<HandoffId, HandoffData>,
+    pub(crate) states: &'a mut SlotMap<StateId, StateData>,
     pub(crate) event_queue_send: &'a mut SyncSender<SubgraphId>,
 }
 impl<'a> Context<'a> {

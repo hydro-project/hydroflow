@@ -1,5 +1,6 @@
 use ref_cast::RefCast;
 use sealed::sealed;
+use slotmap::SlotMap;
 
 use crate::scheduled::graph::HandoffData;
 use crate::scheduled::port::{Polarity, Port, PortCtx};
@@ -16,14 +17,14 @@ where
     #[allow(clippy::ptr_arg)]
     fn set_graph_meta<'a>(
         &self,
-        handoffs: &'a mut [HandoffData],
+        handoffs: &'a mut SlotMap<HandoffId, HandoffData>,
         pred: Option<SubgraphId>,
         succ: Option<SubgraphId>,
         out_handoff_ids: &mut Vec<HandoffId>,
     );
 
     type Ctx<'a>: TypeList;
-    fn make_ctx<'a>(&self, handoffs: &'a [HandoffData]) -> Self::Ctx<'a>;
+    fn make_ctx<'a>(&self, handoffs: &'a SlotMap<HandoffId, HandoffData>) -> Self::Ctx<'a>;
 }
 #[sealed]
 impl<S, Rest, H> PortList<S> for (Port<S, H>, Rest)
@@ -34,7 +35,7 @@ where
 {
     fn set_graph_meta<'a>(
         &self,
-        handoffs: &'a mut [HandoffData],
+        handoffs: &'a mut SlotMap<HandoffId, HandoffData>,
         pred: Option<SubgraphId>,
         succ: Option<SubgraphId>,
         out_handoff_ids: &mut Vec<HandoffId>,
@@ -54,7 +55,7 @@ where
     }
 
     type Ctx<'a> = (&'a PortCtx<S, H>, Rest::Ctx<'a>);
-    fn make_ctx<'a>(&self, handoffs: &'a [HandoffData]) -> Self::Ctx<'a> {
+    fn make_ctx<'a>(&self, handoffs: &'a SlotMap<HandoffId, HandoffData>) -> Self::Ctx<'a> {
         let (this, rest) = self;
         let handoff = handoffs
             .get(this.handoff_id)
@@ -76,7 +77,7 @@ where
 {
     fn set_graph_meta<'a>(
         &self,
-        _handoffs: &'a mut [HandoffData],
+        _handoffs: &'a mut SlotMap<HandoffId, HandoffData>,
         _pred: Option<SubgraphId>,
         _succ: Option<SubgraphId>,
         _out_handoff_ids: &mut Vec<HandoffId>,
@@ -84,7 +85,7 @@ where
     }
 
     type Ctx<'a> = ();
-    fn make_ctx<'a>(&self, _handoffs: &'a [HandoffData]) -> Self::Ctx<'a> {}
+    fn make_ctx<'a>(&self, _handoffs: &'a SlotMap<HandoffId, HandoffData>) -> Self::Ctx<'a> {}
 }
 
 #[sealed]

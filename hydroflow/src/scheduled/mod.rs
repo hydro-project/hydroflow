@@ -1,3 +1,5 @@
+use slotmap::new_key_type;
+
 pub mod context;
 pub mod graph;
 pub mod graph_ext;
@@ -12,9 +14,11 @@ pub(crate) mod subgraph;
 pub mod type_list;
 pub mod util;
 
-pub type SubgraphId = usize;
-pub type HandoffId = usize;
-pub type StateId = usize;
+new_key_type! {
+    pub struct SubgraphId;
+    pub struct HandoffId;
+    pub struct StateId;
+}
 
 #[cfg(test)]
 mod tests {

@@ -6,6 +6,7 @@ use std::marker::PhantomData;
 use std::sync::mpsc::{self, Receiver, RecvError, SyncSender};
 
 use ref_cast::RefCast;
+use slotmap::SlotMap;
 
 use super::context::Context;
 use super::handoff::handoff_list::PortList;
@@ -18,10 +19,10 @@ use super::{HandoffId, StateId, SubgraphId};
 
 /// A Hydroflow graph. Owns, schedules, and runs the compiled subgraphs.
 pub struct Hydroflow {
-    subgraphs: Vec<SubgraphData>,
-    handoffs: Vec<HandoffData>,
+    subgraphs: SlotMap<SubgraphId, SubgraphData>,
+    handoffs: SlotMap<HandoffId, HandoffData>,
 
-    states: Vec<StateData>,
+    states: SlotMap<StateId, StateData>,
 
     // TODO(mingwei): separate scheduler into its own struct/trait?
     ready_queue: VecDeque<SubgraphId>,
@@ -162,26 +163,19 @@ impl Hydroflow {
         W: 'static + PortList<SEND>,
         F: 'static + FnMut(&Context<'_>, R::Ctx<'_>, W::Ctx<'_>),
     {
-        let sg_id = self.subgraphs.len();
+        let sg_id = self.subgraphs.insert_with_key(|sg_id| {
+            let (mut subgraph_preds, mut subgraph_succs) = Default::default();
+            recv_ports.set_graph_meta(&mut self.handoffs, None, Some(sg_id), &mut subgraph_preds);
+            send_ports.set_graph_meta(&mut self.handoffs, Some(sg_id), None, &mut subgraph_succs);
 
-        let (mut subgraph_preds, mut subgraph_succs) = Default::default();
-        recv_ports.set_graph_meta(&mut *self.handoffs, None, Some(sg_id), &mut subgraph_preds);
-        send_ports.set_graph_meta(&mut *self.handoffs, Some(sg_id), None, &mut subgraph_succs);
-
-        let subgraph = move |context: Context<'_>| {
-            let recv = recv_ports.make_ctx(context.handoffs);
-            let send = send_ports.make_ctx(context.handoffs);
-            (subgraph)(&context, recv, send);
-        };
-        self.subgraphs.push(SubgraphData::new(
-            name.into(),
-            subgraph,
-            subgraph_preds,
-            subgraph_succs,
-            true,
-        ));
+            let subgraph = move |context: Context<'_>| {
+                let recv = recv_ports.make_ctx(context.handoffs);
+                let send = send_ports.make_ctx(context.handoffs);
+                (subgraph)(&context, recv, send);
+            };
+            SubgraphData::new(name.into(), subgraph, subgraph_preds, subgraph_succs, true)
+        });
         self.ready_queue.push_back(sg_id);
-
         sg_id
     }
 
@@ -199,58 +193,51 @@ impl Hydroflow {
         W: 'static + Handoff,
         F: 'static + FnMut(&Context<'_>, &[&RecvCtx<R>], &[&SendCtx<W>]),
     {
-        let sg_id = self.subgraphs.len();
+        let sg_id = self.subgraphs.insert_with_key(|sg_id| {
+            let subgraph_preds = recv_ports.iter().map(|port| port.handoff_id).collect();
+            let subgraph_succs = send_ports.iter().map(|port| port.handoff_id).collect();
 
-        let subgraph_preds = recv_ports.iter().map(|port| port.handoff_id).collect();
-        let subgraph_succs = send_ports.iter().map(|port| port.handoff_id).collect();
+            for recv_port in recv_ports.iter() {
+                self.handoffs[recv_port.handoff_id].succs.push(sg_id);
+            }
+            for send_port in send_ports.iter() {
+                self.handoffs[send_port.handoff_id].preds.push(sg_id);
+            }
 
-        for recv_port in recv_ports.iter() {
-            self.handoffs[recv_port.handoff_id].succs.push(sg_id);
-        }
-        for send_port in send_ports.iter() {
-            self.handoffs[send_port.handoff_id].preds.push(sg_id);
-        }
+            let subgraph = move |context: Context<'_>| {
+                let recvs: Vec<&RecvCtx<R>> = recv_ports
+                    .iter()
+                    .map(|hid| hid.handoff_id)
+                    .map(|hid| context.handoffs.get(hid).unwrap())
+                    .map(|h_data| {
+                        h_data
+                            .handoff
+                            .any_ref()
+                            .downcast_ref()
+                            .expect("Attempted to cast handoff to wrong type.")
+                    })
+                    .map(RefCast::ref_cast)
+                    .collect();
 
-        let subgraph = move |context: Context<'_>| {
-            let recvs: Vec<&RecvCtx<R>> = recv_ports
-                .iter()
-                .map(|hid| hid.handoff_id)
-                .map(|hid| context.handoffs.get(hid).unwrap())
-                .map(|h_data| {
-                    h_data
-                        .handoff
-                        .any_ref()
-                        .downcast_ref()
-                        .expect("Attempted to cast handoff to wrong type.")
-                })
-                .map(RefCast::ref_cast)
-                .collect();
+                let sends: Vec<&SendCtx<W>> = send_ports
+                    .iter()
+                    .map(|hid| hid.handoff_id)
+                    .map(|hid| context.handoffs.get(hid).unwrap())
+                    .map(|h_data| {
+                        h_data
+                            .handoff
+                            .any_ref()
+                            .downcast_ref()
+                            .expect("Attempted to cast handoff to wrong type.")
+                    })
+                    .map(RefCast::ref_cast)
+                    .collect();
 
-            let sends: Vec<&SendCtx<W>> = send_ports
-                .iter()
-                .map(|hid| hid.handoff_id)
-                .map(|hid| context.handoffs.get(hid).unwrap())
-                .map(|h_data| {
-                    h_data
-                        .handoff
-                        .any_ref()
-                        .downcast_ref()
-                        .expect("Attempted to cast handoff to wrong type.")
-                })
-                .map(RefCast::ref_cast)
-                .collect();
-
-            (subgraph)(&context, &recvs, &sends)
-        };
-        self.subgraphs.push(SubgraphData::new(
-            name.into(),
-            subgraph,
-            subgraph_preds,
-            subgraph_succs,
-            true,
-        ));
+                (subgraph)(&context, &recvs, &sends)
+            };
+            SubgraphData::new(name.into(), subgraph, subgraph_preds, subgraph_succs, true)
+        });
         self.ready_queue.push_back(sg_id);
-
         sg_id
     }
 
@@ -260,11 +247,9 @@ impl Hydroflow {
         Name: Into<Cow<'static, str>>,
         H: 'static + Handoff,
     {
-        let handoff_id: HandoffId = self.handoffs.len();
-
         // Create and insert handoff.
         let handoff = H::default();
-        self.handoffs.push(HandoffData::new(name.into(), handoff));
+        let handoff_id = self.handoffs.insert(HandoffData::new(name.into(), handoff));
 
         // Make ports.
         let input_port = SendPort {
@@ -282,12 +267,10 @@ impl Hydroflow {
     where
         T: Any,
     {
-        let state_id: StateId = self.states.len();
-
         let state_data = StateData {
             state: Box::new(state),
         };
-        self.states.push(state_data);
+        let state_id = self.states.insert(state_data);
 
         StateHandle {
             state_id,
