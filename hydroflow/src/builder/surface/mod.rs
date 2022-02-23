@@ -41,6 +41,7 @@ pub mod exchange;
 
 use std::hash::Hash;
 
+use crate::lang::lattice::{LatticeRepr, Merge};
 use crate::scheduled::handoff::handoff_list::{PortList, PortListSplit};
 use crate::scheduled::port::{RECV, SEND};
 use crate::scheduled::type_list::Extend;
@@ -142,16 +143,15 @@ pub trait PullSurface: BaseSurface {
         pull_join::JoinPullSurface::new(self, other)
     }
 
-    fn batch_with<Other, Key, ValSelf, ValOther>(
+    fn batch_with<Other, L, Update, Tick>(
         self,
         other: Other,
-    ) -> pull_batch::BatchPullSurface<Self, Other>
+    ) -> pull_batch::BatchPullSurface<Self, Other, L, Update, Tick>
     where
-        Self: Sized + PullSurface<ItemOut = (Key, ValSelf)>,
-        Other: PullSurface<ItemOut = (Key, ValOther)>,
-        Key: 'static + Eq + Hash,
-        ValSelf: 'static,
-        ValOther: 'static,
+        Self: Sized + PullSurface<ItemOut = Update::Repr>,
+        Other: PullSurface<ItemOut = Tick>,
+        Update: 'static + LatticeRepr,
+        L: 'static + LatticeRepr + Merge<Update>,
 
         Self::InputHandoffs: Extend<Other::InputHandoffs>,
         <Self::InputHandoffs as Extend<Other::InputHandoffs>>::Extended: PortList<RECV>

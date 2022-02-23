@@ -1,20 +1,21 @@
+use std::marker::PhantomData;
+
 use super::{PullBuild, PullBuildBase};
 
-use std::hash::Hash;
-
 use crate::compiled::pull::{BatchJoin, BatchJoinState};
+use crate::lang::lattice::{LatticeRepr, Merge};
 use crate::scheduled::context::Context;
 use crate::scheduled::handoff::handoff_list::{PortList, PortListSplit};
 use crate::scheduled::port::RECV;
 use crate::scheduled::type_list::Extend;
 
-pub struct BatchPullBuild<PrevBuf, PrevStream, Key, BufVal, StreamVal>
+pub struct BatchPullBuild<PrevBuf, PrevStream, L, Update, Tick>
 where
-    PrevBuf: PullBuild<ItemOut = (Key, BufVal)>,
-    PrevStream: PullBuild<ItemOut = (Key, StreamVal)>,
-    Key: 'static + Eq,
-    BufVal: 'static,
-    StreamVal: 'static,
+    PrevBuf: PullBuild<ItemOut = Update::Repr>,
+    PrevStream: PullBuild<ItemOut = Tick>,
+    Update: 'static + LatticeRepr,
+    L: 'static + LatticeRepr + Merge<Update>,
+    L::Repr: Default,
 
     PrevBuf::InputHandoffs: Extend<PrevStream::InputHandoffs>,
     <PrevBuf::InputHandoffs as Extend<PrevStream::InputHandoffs>>::Extended: PortList<RECV>
@@ -22,16 +23,16 @@ where
 {
     prev_a: PrevBuf,
     prev_b: PrevStream,
-    state: BatchJoinState<Key, BufVal>,
+    state: BatchJoinState<L>,
+    _marker: PhantomData<Update>,
 }
-impl<PrevBuf, PrevStream, Key, BufVal, StreamVal>
-    BatchPullBuild<PrevBuf, PrevStream, Key, BufVal, StreamVal>
+impl<PrevBuf, PrevStream, L, Update, Tick> BatchPullBuild<PrevBuf, PrevStream, L, Update, Tick>
 where
-    PrevBuf: PullBuild<ItemOut = (Key, BufVal)>,
-    PrevStream: PullBuild<ItemOut = (Key, StreamVal)>,
-    Key: 'static + Eq + Hash,
-    BufVal: 'static,
-    StreamVal: 'static,
+    PrevBuf: PullBuild<ItemOut = Update::Repr>,
+    PrevStream: PullBuild<ItemOut = Tick>,
+    Update: 'static + LatticeRepr,
+    L: 'static + LatticeRepr + Merge<Update>,
+    L::Repr: Default,
 
     PrevBuf::InputHandoffs: Extend<PrevStream::InputHandoffs>,
     <PrevBuf::InputHandoffs as Extend<PrevStream::InputHandoffs>>::Extended: PortList<RECV>
@@ -42,42 +43,37 @@ where
             prev_a,
             prev_b,
             state: Default::default(),
+            _marker: PhantomData,
         }
     }
 }
 
-impl<PrevBuf, PrevStream, Key, BufVal, StreamVal> PullBuildBase
-    for BatchPullBuild<PrevBuf, PrevStream, Key, BufVal, StreamVal>
+impl<PrevBuf, PrevStream, L, Update, Tick> PullBuildBase
+    for BatchPullBuild<PrevBuf, PrevStream, L, Update, Tick>
 where
-    PrevBuf: PullBuild<ItemOut = (Key, BufVal)>,
-    PrevStream: PullBuild<ItemOut = (Key, StreamVal)>,
-    Key: 'static + Eq + Hash,
-    BufVal: 'static,
-    StreamVal: 'static,
+    PrevBuf: PullBuild<ItemOut = Update::Repr>,
+    PrevStream: PullBuild<ItemOut = Tick>,
+    Update: 'static + LatticeRepr,
+    L: 'static + LatticeRepr + Merge<Update>,
+    L::Repr: Default,
 
     PrevBuf::InputHandoffs: Extend<PrevStream::InputHandoffs>,
     <PrevBuf::InputHandoffs as Extend<PrevStream::InputHandoffs>>::Extended: PortList<RECV>
         + PortListSplit<RECV, PrevBuf::InputHandoffs, Suffix = PrevStream::InputHandoffs>,
 {
-    type ItemOut = (Key, StreamVal, Vec<BufVal>);
-    type Build<'slf, 'hof> = BatchJoin<
-        'slf,
-        Key,
-        PrevBuf::Build<'slf, 'hof>,
-        BufVal,
-        PrevStream::Build<'slf, 'hof>,
-        StreamVal,
-    >;
+    type ItemOut = (Tick, L::Repr);
+    type Build<'slf, 'hof> =
+        BatchJoin<'slf, PrevBuf::Build<'slf, 'hof>, PrevStream::Build<'slf, 'hof>, L, Update, Tick>;
 }
 
-impl<PrevBuf, PrevStream, Key, BufVal, StreamVal> PullBuild
-    for BatchPullBuild<PrevBuf, PrevStream, Key, BufVal, StreamVal>
+impl<PrevBuf, PrevStream, L, Update, Tick> PullBuild
+    for BatchPullBuild<PrevBuf, PrevStream, L, Update, Tick>
 where
-    PrevBuf: PullBuild<ItemOut = (Key, BufVal)>,
-    PrevStream: PullBuild<ItemOut = (Key, StreamVal)>,
-    Key: 'static + Eq + Hash,
-    BufVal: 'static,
-    StreamVal: 'static,
+    PrevBuf: PullBuild<ItemOut = Update::Repr>,
+    PrevStream: PullBuild<ItemOut = Tick>,
+    Update: 'static + LatticeRepr,
+    L: 'static + LatticeRepr + Merge<Update>,
+    L::Repr: Default,
 
     PrevBuf::InputHandoffs: Extend<PrevStream::InputHandoffs>,
     <PrevBuf::InputHandoffs as Extend<PrevStream::InputHandoffs>>::Extended: PortList<RECV>
