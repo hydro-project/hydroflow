@@ -15,7 +15,7 @@ impl Reactor {
         Self { event_queue_send }
     }
 
-    pub fn trigger(&self, sg_id: SubgraphId) -> Result<(), TrySendError<usize>> {
+    pub fn trigger(&self, sg_id: SubgraphId) -> Result<(), TrySendError<SubgraphId>> {
         self.event_queue_send.try_send(sg_id)
     }
 
