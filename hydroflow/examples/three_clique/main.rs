@@ -8,7 +8,7 @@ pub fn main() {
 
     let (send_edges, recv_edges) =
         builder.add_channel_input::<_, _, VecHandoff<(usize, usize)>>("edge input");
-    let (send_a, recv_a) = builder.make_edge::<_, VecHandoff<(usize, usize)>, _>("handoff_a"); 
+    let (send_a, recv_a) = builder.make_edge::<_, VecHandoff<(usize, usize)>, _>("handoff_a");
     let (send_b, recv_b) = builder.make_edge::<_, VecHandoff<(usize, usize)>, _>("handoff_b");
     let (send_c, recv_c) = builder.make_edge::<_, VecHandoff<(usize, usize)>, _>("handoff_c");
 
@@ -30,11 +30,8 @@ pub fn main() {
             .map(|(x, y)| (y, x))
             .join(recv_b.flatten())
             .map(|(y, x, z)| ((z, x), y)) //Here we have found all paths from x to z that go through y. Now we need to find edges that connect z back to x.
-            .join(
-                recv_c
-                    .flatten()
-                    .map(|(z, x)| ((z, x), ()))
-            ).inspect(|&v| println!("three_clique found: {:?}", v))
+            .join(recv_c.flatten().map(|(z, x)| ((z, x), ())))
+            .inspect(|&v| println!("three_clique found: {:?}", v))
             .pull_to_push()
             .for_each(|_| {}),
     );
@@ -53,7 +50,7 @@ pub fn main() {
 
     send_edges.give(Some((6, 5)));
     send_edges.give(Some((6, 0))); //Creates a size three clique (triangle)
-    send_edges.give(Some((10,6))); //Creates a size three clique (triangle)
+    send_edges.give(Some((10, 6))); //Creates a size three clique (triangle)
     send_edges.flush();
     hydroflow.tick();
 }
