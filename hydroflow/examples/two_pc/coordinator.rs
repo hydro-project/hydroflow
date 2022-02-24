@@ -4,9 +4,7 @@ use std::collections::HashSet;
 use crate::Opts;
 
 use crate::protocol::{CoordMsg, MsgType, SubordResponse};
-// use clap::ColorChoice;
 use hydroflow::builder::prelude::*;
-// use hydroflow::compiled::pull::CrossJoin;
 use hydroflow::scheduled::handoff::VecHandoff;
 
 pub(crate) async fn run_coordinator(opts: Opts, subordinates: Vec<String>) {
@@ -14,19 +12,14 @@ pub(crate) async fn run_coordinator(opts: Opts, subordinates: Vec<String>) {
 
     // We provide a command line for users to type a Transaction ID (integer) to commit.
     // setup stdio input handler
-    let (text_in, text_out) = hf.add_channel_input::<_, Option<_>, VecHandoff<String>>("text");
-    hydroflow::tokio::spawn(async move {
-        // TODO(mingwei): temp, need to integrate stream into surface API.
-        use hydroflow::tokio::io::AsyncBufReadExt;
-
-        let mut reader = hydroflow::tokio::io::BufReader::new(hydroflow::tokio::io::stdin());
-        let mut buf = String::new();
-        while let Ok(_num_chars) = reader.read_line(&mut buf).await {
-            text_in.give(Some(buf.clone()));
-            text_in.flush();
-            buf.clear(); // TODO(mingwei): Maybe not needed?
-        }
-    });
+    let text_out = {
+        use futures::stream::StreamExt;
+        use tokio::io::AsyncBufReadExt;
+        let reader = tokio::io::BufReader::new(tokio::io::stdin());
+        let lines = tokio_stream::wrappers::LinesStream::new(reader.lines())
+            .map(|result| Some(result.expect("Failed to read stdin as UTF-8.")));
+        hf.add_input_from_stream::<_, _, VecHandoff<String>, _>("stdin text", lines)
+    };
 
     // setup message send/recv ports
     let msg_recv = hf
@@ -101,11 +94,13 @@ pub(crate) async fn run_coordinator(opts: Opts, subordinates: Vec<String>) {
         "phase 1 init",
         text_out
             .flatten()
-            .map(move |xidstr| match xidstr.trim().parse::<u16>() {
-                Ok(the_xid) => {
-                    let first_use = xids.get(&the_xid);
-                    match first_use {
-                        None => {
+            .filter_map(move |xidstr| {
+                match xidstr.trim().parse::<u16>() {
+                    Ok(the_xid) => {
+                        if xids.contains(&the_xid) {
+                            println!("Transaction ID {} already used", the_xid);
+                            None
+                        } else {
                             xids.insert(the_xid);
                             Some(CoordMsg {
                                 xid: the_xid,
@@ -113,19 +108,12 @@ pub(crate) async fn run_coordinator(opts: Opts, subordinates: Vec<String>) {
                                 mtype: MsgType::Prepare,
                             })
                         }
-                        _ => {
-                            println!("Transaction ID {} already used", the_xid);
-                            None
-                        }
                     }
+                    Err(_) => None,
                 }
-                Err(_) => None,
             })
             .cross_join(subordinates_out_tee_1_pull.flatten())
-            .map(|(msg, addr)| match msg {
-                None => None,
-                _ => Some((addr, msg.unwrap())),
-            })
+            .map(|(msg, addr)| Some((addr, msg)))
             .pull_to_push()
             .push_to(p1_send_push),
     );

@@ -13,9 +13,7 @@ mod coordinator;
 mod protocol;
 mod subordinate;
 
-// This is a distributed version of the covid tracing app. It somewhat
-// arbitrarily splits apart two "responsibilities" of the app to exercise
-// network communication.
+//! This is a remedial 2PC implementation. 
 
 #[derive(Clone, ArgEnum, Debug)]
 enum Role {

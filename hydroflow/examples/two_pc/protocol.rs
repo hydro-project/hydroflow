@@ -17,8 +17,7 @@ pub struct CoordMsg {
     pub mid: u16,
     pub mtype: MsgType,
 }
-// Member Response
-//
+/// Member Response
 #[derive(PartialEq, Eq, Clone, Serialize, Deserialize, Debug)]
 pub struct SubordResponse {
     pub xid: u16,
