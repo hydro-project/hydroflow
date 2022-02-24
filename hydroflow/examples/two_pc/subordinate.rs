@@ -72,26 +72,14 @@ pub(crate) async fn run_subordinate(opts: Opts, coordinator: String) {
             .flatten()
             .map(move |msg| {
                 println!("Xid {:?}: got a {:?}", msg.xid, msg.mtype);
-                let ret = match msg.mtype {
-                    MsgType::Prepare => {
-                        // For now, the subordinate votes arbitrarily
-                        let mtype = if decide(67) {
-                            MsgType::Commit
-                        } else {
-                            MsgType::Abort
-                        };
-                        SubordResponse {
-                            xid: msg.xid,
-                            mid: msg.mid + 1,
-                            addr: my_addr.clone(),
-                            mtype: mtype,
-                        }
-                    }
-                    _ => SubordResponse {
-                        xid: msg.xid,
-                        mid: msg.mid + 1,
-                        addr: my_addr.clone(),
-                        mtype: MsgType::Err,
+                let ret = SubordResponse {
+                    xid: msg.xid,
+                    mid: msg.mid + 1,
+                    addr: my_addr.clone(),
+                    mtype: match msg.mtype {
+                        MsgType::Prepare if decide(67) => MsgType::Commit,
+                        MsgType::Prepare => MsgType::Abort,
+                        _ => MsgType::Err,
                     },
                 };
                 println!("Xid {:?}: returned a {:?}", ret.xid, ret.mtype);
@@ -109,18 +97,13 @@ pub(crate) async fn run_subordinate(opts: Opts, coordinator: String) {
             .flatten()
             .map(move |msg| {
                 println!("Xid {:?}: got a {:?}", msg.xid, msg.mtype);
-                let ret = match msg.mtype {
-                    MsgType::Commit | MsgType::Abort => SubordResponse {
-                        xid: msg.xid,
-                        mid: msg.mid + 1,
-                        addr: my_addr_2.clone(),
-                        mtype: MsgType::AckP2,
-                    },
-                    _ => SubordResponse {
-                        xid: msg.xid,
-                        mid: msg.mid + 1,
-                        addr: my_addr_2.clone(),
-                        mtype: MsgType::Err,
+                let ret = SubordResponse {
+                    xid: msg.xid,
+                    mid: msg.mid + 1,
+                    addr: my_addr_2.clone(),
+                    mtype: match msg.mtype {
+                        MsgType::Abort | MsgType::Commit => MsgType::AckP2,
+                        _ => MsgType::Err,
                     },
                 };
                 println!("Xid {:?}: returned a {:?}", ret.xid, ret.mtype);
@@ -138,18 +121,13 @@ pub(crate) async fn run_subordinate(opts: Opts, coordinator: String) {
             .flatten()
             .map(move |msg| {
                 println!("Xid {:?}: got a {:?}", msg.xid, msg.mtype);
-                let ret = match msg.mtype {
-                    MsgType::End => SubordResponse {
-                        xid: msg.xid,
-                        mid: msg.mid + 1,
-                        addr: my_addr_3.clone(),
-                        mtype: MsgType::Ended,
-                    },
-                    _ => SubordResponse {
-                        xid: msg.xid,
-                        mid: msg.mid + 1,
-                        addr: my_addr_3.clone(),
-                        mtype: MsgType::Err,
+                let ret = SubordResponse {
+                    xid: msg.xid,
+                    mid: msg.mid + 1,
+                    addr: my_addr_3.clone(),
+                    mtype: match msg.mtype {
+                        MsgType::End => MsgType::Ended,
+                        _ => MsgType::Err,
                     },
                 };
                 println!("Xid {:?}: returned a {:?}", ret.xid, ret.mtype);

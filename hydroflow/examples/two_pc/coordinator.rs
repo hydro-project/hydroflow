@@ -142,19 +142,16 @@ pub(crate) async fn run_coordinator(opts: Opts, subordinates: Vec<String>) {
                     == 3
                 {
                     // Abort if any subordinate voted to Abort
-                    if vote_ctr.get(&(msg.xid, MsgType::Abort)).unwrap_or(&0) > &0 {
-                        Some(CoordMsg {
-                            xid: msg.xid,
-                            mid: msg.mid + 1,
-                            mtype: MsgType::Abort,
-                        })
-                    } else {
-                        Some(CoordMsg {
-                            xid: msg.xid,
-                            mid: msg.mid + 1,
-                            mtype: MsgType::Commit,
-                        })
-                    }
+                    Some(CoordMsg {
+                        xid: msg.xid,
+                        mid: msg.mid + 1,
+                        // Abort if any subordinate voted to Abort
+                        mtype: if vote_ctr.get(&(msg.xid, MsgType::Abort)).unwrap_or(&0) > &0 {
+                            MsgType::Abort
+                        } else {
+                            MsgType::Commit
+                        },
+                    })
                 } else {
                     None
                 }
