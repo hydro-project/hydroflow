@@ -13,7 +13,7 @@ mod coordinator;
 mod protocol;
 mod subordinate;
 
-//! This is a remedial 2PC implementation. 
+/// This is a remedial 2PC implementation.
 
 #[derive(Clone, ArgEnum, Debug)]
 enum Role {
