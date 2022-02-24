@@ -1,7 +1,6 @@
 use crate::protocol::{CoordMsg, MsgType, SubordResponse};
 use crate::Opts;
 use hydroflow::builder::prelude::*;
-// use hydroflow::scheduled::graph_ext::GraphExt;
 use hydroflow::scheduled::handoff::VecHandoff;
 
 use rand::Rng;
