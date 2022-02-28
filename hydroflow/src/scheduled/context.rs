@@ -1,4 +1,6 @@
-use std::{any::Any, sync::mpsc::SyncSender};
+use std::any::Any;
+
+use tokio::sync::mpsc::UnboundedSender;
 
 use super::{
     graph::{HandoffData, StateData},
@@ -12,7 +14,7 @@ pub struct Context<'a> {
     pub(crate) subgraph_id: SubgraphId,
     pub(crate) handoffs: &'a mut [HandoffData],
     pub(crate) states: &'a mut [StateData],
-    pub(crate) event_queue_send: &'a mut SyncSender<SubgraphId>,
+    pub(crate) event_queue_send: &'a UnboundedSender<SubgraphId>,
 }
 impl<'a> Context<'a> {
     pub fn waker(&self) -> std::task::Waker {
@@ -21,7 +23,7 @@ impl<'a> Context<'a> {
 
         struct ContextWaker {
             subgraph_id: SubgraphId,
-            event_queue_send: SyncSender<SubgraphId>,
+            event_queue_send: UnboundedSender<SubgraphId>,
         }
         impl ArcWake for ContextWaker {
             fn wake_by_ref(arc_self: &Arc<Self>) {
