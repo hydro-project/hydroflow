@@ -25,19 +25,28 @@ pub struct Hydroflow {
     states: Vec<StateData>,
 
     // TODO(mingwei): separate scheduler into its own struct/trait?
-    ready_queue: VecDeque<SubgraphId>,
+    // Index is stratum, value is FIFO queue for that stratum.
+    ready_queue: Vec<VecDeque<SubgraphId>>,
+    current_strata: usize,
+    current_epoch: usize,
+
     event_queue_send: UnboundedSender<SubgraphId>, // TODO(mingwei) remove this, to prevent hanging.
     event_queue_recv: UnboundedReceiver<SubgraphId>,
 }
 impl Default for Hydroflow {
     fn default() -> Self {
-        let (subgraphs, handoffs, states, ready_queue) = Default::default();
+        let (subgraphs, handoffs, states) = Default::default();
         let (event_queue_send, event_queue_recv) = mpsc::unbounded_channel();
+        let ready_queue = vec![Default::default()];
         Self {
             subgraphs,
             handoffs,
             states,
+
             ready_queue,
+            current_strata: 0,
+            current_epoch: 0,
+
             event_queue_send,
             event_queue_recv,
         }
@@ -59,37 +68,53 @@ impl Hydroflow {
         // Add any external jobs to ready queue.
         self.try_recv_events();
 
-        while let Some(sg_id) = self.ready_queue.pop_front() {
-            {
-                let sg_data = &mut self.subgraphs[sg_id];
-                // This must be true for the subgraph to be enqueued.
-                assert!(sg_data.is_scheduled.take());
+        let mut work_done = true;
+        while work_done {
+            work_done = false;
 
-                let context = Context {
-                    subgraph_id: sg_id,
-                    handoffs: &mut self.handoffs,
-                    states: &mut self.states,
-                    event_queue_send: &self.event_queue_send,
-                };
-                sg_data.subgraph.run(context);
-            }
+            while let Some(sg_id) = self.ready_queue[self.current_strata].pop_front() {
+                work_done = true;
 
-            for &handoff_id in self.subgraphs[sg_id].succs.iter() {
-                let handoff = &self.handoffs[handoff_id];
-                if !handoff.handoff.is_bottom() {
-                    for &succ_id in handoff.succs.iter() {
-                        let succ_sg_data = &self.subgraphs[succ_id];
-                        if succ_sg_data.is_scheduled.get() {
-                            // Skip if task is already scheduled.
-                            continue;
+                {
+                    let sg_data = &mut self.subgraphs[sg_id];
+                    // This must be true for the subgraph to be enqueued.
+                    assert!(sg_data.is_scheduled.take());
+
+                    let context = Context {
+                        subgraph_id: sg_id,
+                        handoffs: &mut self.handoffs,
+                        states: &mut self.states,
+                        event_queue_send: &self.event_queue_send,
+                        current_epoch: self.current_epoch,
+                    };
+                    sg_data.subgraph.run(context);
+                }
+
+                for &handoff_id in self.subgraphs[sg_id].succs.iter() {
+                    let handoff = &self.handoffs[handoff_id];
+                    if !handoff.handoff.is_bottom() {
+                        for &succ_id in handoff.succs.iter() {
+                            let succ_sg_data = &self.subgraphs[succ_id];
+                            if succ_sg_data.is_scheduled.get() {
+                                // Skip if task is already scheduled.
+                                continue;
+                            }
+                            succ_sg_data.is_scheduled.set(true);
+                            self.ready_queue[succ_sg_data.stratum].push_back(succ_id);
                         }
-                        succ_sg_data.is_scheduled.set(true);
-                        self.ready_queue.push_back(succ_id);
                     }
                 }
             }
 
-            self.try_recv_events();
+            if 0 < self.try_recv_events() {
+                work_done = true;
+            }
+
+            self.current_strata = self.current_strata + 1;
+            if self.ready_queue.len() <= self.current_strata {
+                self.current_strata = 0;
+                self.current_epoch += 1;
+            }
         }
     }
 
@@ -120,8 +145,9 @@ impl Hydroflow {
     pub fn try_recv_events(&mut self) -> usize {
         let mut enqueued_count = 0;
         while let Ok(sg_id) = self.event_queue_recv.try_recv() {
-            if !self.subgraphs[sg_id].is_scheduled.replace(true) {
-                self.ready_queue.push_back(sg_id);
+            let sg_data = &self.subgraphs[sg_id];
+            if !sg_data.is_scheduled.replace(true) {
+                self.ready_queue[sg_data.stratum].push_back(sg_id);
                 enqueued_count += 1;
             }
         }
@@ -133,8 +159,9 @@ impl Hydroflow {
     pub fn recv_events(&mut self) -> Option<NonZeroUsize> {
         loop {
             let sg_id = self.event_queue_recv.blocking_recv()?;
-            if !self.subgraphs[sg_id].is_scheduled.replace(true) {
-                self.ready_queue.push_back(sg_id);
+            let sg_data = &self.subgraphs[sg_id];
+            if !sg_data.is_scheduled.replace(true) {
+                self.ready_queue[sg_data.stratum].push_back(sg_id);
 
                 // Enqueue any other immediate events.
                 return Some(NonZeroUsize::new(self.try_recv_events() + 1).unwrap());
@@ -147,8 +174,9 @@ impl Hydroflow {
     pub async fn recv_events_async(&mut self) -> Option<NonZeroUsize> {
         loop {
             let sg_id = self.event_queue_recv.recv().await?;
-            if !self.subgraphs[sg_id].is_scheduled.replace(true) {
-                self.ready_queue.push_back(sg_id);
+            let sg_data = &self.subgraphs[sg_id];
+            if !sg_data.is_scheduled.replace(true) {
+                self.ready_queue[sg_data.stratum].push_back(sg_id);
 
                 // Enqueue any other immediate events.
                 return Some(NonZeroUsize::new(self.try_recv_events() + 1).unwrap());
@@ -185,12 +213,13 @@ impl Hydroflow {
         };
         self.subgraphs.push(SubgraphData::new(
             name.into(),
+            0,
             subgraph,
             subgraph_preds,
             subgraph_succs,
             true,
         ));
-        self.ready_queue.push_back(sg_id);
+        self.ready_queue[0].push_back(sg_id);
 
         sg_id
     }
@@ -254,12 +283,13 @@ impl Hydroflow {
         };
         self.subgraphs.push(SubgraphData::new(
             name.into(),
+            0,
             subgraph,
             subgraph_preds,
             subgraph_succs,
             true,
         ));
-        self.ready_queue.push_back(sg_id);
+        self.ready_queue[0].push_back(sg_id);
 
         sg_id
     }
@@ -348,6 +378,9 @@ struct SubgraphData {
     /// A friendly name for diagnostics.
     #[allow(dead_code)] // TODO(mingwei): remove attr once used.
     name: Cow<'static, str>,
+    /// This subgraph's stratum number.
+    stratum: usize,
+    /// The actual execution code of the subgraph.
     subgraph: Box<dyn Subgraph>,
     #[allow(dead_code)]
     preds: Vec<HandoffId>,
@@ -361,6 +394,7 @@ struct SubgraphData {
 impl SubgraphData {
     pub fn new(
         name: Cow<'static, str>,
+        stratum: usize,
         subgraph: impl 'static + Subgraph,
         preds: Vec<HandoffId>,
         succs: Vec<HandoffId>,
@@ -368,6 +402,7 @@ impl SubgraphData {
     ) -> Self {
         Self {
             name,
+            stratum,
             subgraph: Box::new(subgraph),
             preds,
             succs,
