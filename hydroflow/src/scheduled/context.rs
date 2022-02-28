@@ -15,8 +15,13 @@ pub struct Context<'a> {
     pub(crate) handoffs: &'a mut [HandoffData],
     pub(crate) states: &'a mut [StateData],
     pub(crate) event_queue_send: &'a UnboundedSender<SubgraphId>,
+    pub(crate) current_epoch: usize,
 }
 impl<'a> Context<'a> {
+    pub fn current_epoch(&self) -> usize {
+        self.current_epoch
+    }
+
     pub fn waker(&self) -> std::task::Waker {
         use futures::task::ArcWake;
         use std::sync::Arc;
