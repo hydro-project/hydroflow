@@ -73,10 +73,26 @@ impl HydroflowBuilder {
         Pull: 'static + PullSurface,
         Push: 'static + PushSurfaceReversed<ItemIn = Pull::ItemOut>,
     {
+        self.add_subgraph_stratified(name, 0, pivot)
+    }
+
+    /// Adds a `pivot` created via the Surface API, with the given stratum number.
+    pub fn add_subgraph_stratified<Name, Pull, Push>(
+        &mut self,
+        name: Name,
+        stratum: usize,
+        pivot: PivotSurface<Pull, Push>,
+    ) -> SubgraphId
+    where
+        Name: Into<Cow<'static, str>>,
+        Pull: 'static + PullSurface,
+        Push: 'static + PushSurfaceReversed<ItemIn = Pull::ItemOut>,
+    {
         let ((recv_ports, send_ports), (mut pull_build, mut push_build)) = pivot.into_parts();
 
-        self.hydroflow.add_subgraph(
+        self.hydroflow.add_subgraph_stratified(
             name,
+            stratum,
             recv_ports,
             send_ports,
             move |context, recv_ctx, send_ctx| {
