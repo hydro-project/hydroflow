@@ -27,7 +27,7 @@ pub struct Hydroflow {
     // TODO(mingwei): separate scheduler into its own struct/trait?
     // Index is stratum, value is FIFO queue for that stratum.
     ready_queue: Vec<VecDeque<SubgraphId>>,
-    current_strata: usize,
+    current_stratum: usize,
     current_epoch: usize,
 
     event_queue_send: UnboundedSender<SubgraphId>, // TODO(mingwei) remove this, to prevent hanging.
@@ -35,16 +35,15 @@ pub struct Hydroflow {
 }
 impl Default for Hydroflow {
     fn default() -> Self {
-        let (subgraphs, handoffs, states) = Default::default();
+        let (subgraphs, handoffs, states, ready_queue) = Default::default();
         let (event_queue_send, event_queue_recv) = mpsc::unbounded_channel();
-        let ready_queue = vec![Default::default()];
         Self {
             subgraphs,
             handoffs,
             states,
 
             ready_queue,
-            current_strata: 0,
+            current_stratum: 0,
             current_epoch: 0,
 
             event_queue_send,
@@ -63,59 +62,71 @@ impl Hydroflow {
         Reactor::new(self.event_queue_send.clone())
     }
 
-    /// Runs the dataflow until no more work is currently available.
+    /// Runs the dataflow until no more work is immediately available.
     pub fn tick(&mut self) {
+        while {
+            self.tick_stratum();
+            self.next_stratum()
+        } {}
+    }
+
+    /// Runs the current stratum of the dataflow until no more work is immediately available.
+    pub fn tick_stratum(&mut self) {
         // Add any external jobs to ready queue.
         self.try_recv_events();
 
-        let mut work_done = true;
-        while work_done {
-            work_done = false;
+        while let Some(sg_id) = self.ready_queue[self.current_stratum].pop_front() {
+            {
+                let sg_data = &mut self.subgraphs[sg_id];
+                // This must be true for the subgraph to be enqueued.
+                assert!(sg_data.is_scheduled.take());
 
-            while let Some(sg_id) = self.ready_queue[self.current_strata].pop_front() {
-                work_done = true;
+                let context = Context {
+                    subgraph_id: sg_id,
+                    handoffs: &mut self.handoffs,
+                    states: &mut self.states,
+                    event_queue_send: &self.event_queue_send,
+                    current_epoch: self.current_epoch,
+                };
+                sg_data.subgraph.run(context);
+            }
 
-                {
-                    let sg_data = &mut self.subgraphs[sg_id];
-                    // This must be true for the subgraph to be enqueued.
-                    assert!(sg_data.is_scheduled.take());
-
-                    let context = Context {
-                        subgraph_id: sg_id,
-                        handoffs: &mut self.handoffs,
-                        states: &mut self.states,
-                        event_queue_send: &self.event_queue_send,
-                        current_epoch: self.current_epoch,
-                    };
-                    sg_data.subgraph.run(context);
-                }
-
-                for &handoff_id in self.subgraphs[sg_id].succs.iter() {
-                    let handoff = &self.handoffs[handoff_id];
-                    if !handoff.handoff.is_bottom() {
-                        for &succ_id in handoff.succs.iter() {
-                            let succ_sg_data = &self.subgraphs[succ_id];
-                            if succ_sg_data.is_scheduled.get() {
-                                // Skip if task is already scheduled.
-                                continue;
-                            }
-                            succ_sg_data.is_scheduled.set(true);
-                            self.ready_queue[succ_sg_data.stratum].push_back(succ_id);
+            for &handoff_id in self.subgraphs[sg_id].succs.iter() {
+                let handoff = &self.handoffs[handoff_id];
+                if !handoff.handoff.is_bottom() {
+                    for &succ_id in handoff.succs.iter() {
+                        let succ_sg_data = &self.subgraphs[succ_id];
+                        if succ_sg_data.is_scheduled.get() {
+                            // Skip if task is already scheduled.
+                            continue;
                         }
+                        succ_sg_data.is_scheduled.set(true);
+                        self.ready_queue[succ_sg_data.stratum].push_back(succ_id);
                     }
                 }
             }
 
-            if 0 < self.try_recv_events() {
-                work_done = true;
-            }
+            self.try_recv_events();
+        }
+    }
 
-            self.current_strata = self.current_strata + 1;
-            if self.ready_queue.len() <= self.current_strata {
-                self.current_strata = 0;
-                self.current_epoch += 1;
+    /// Go to the next stratum which has work available. Return true if more work is available, otherwise false if no work is immediately available on any strata.
+    pub fn next_stratum(&mut self) -> bool {
+        self.try_recv_events();
+
+        let mut next_stratum = self.current_stratum;
+        while {
+            next_stratum += 1;
+            next_stratum %= self.ready_queue.len();
+            next_stratum != self.current_stratum
+        } {
+            if !self.ready_queue[next_stratum].is_empty() {
+                self.current_stratum = next_stratum;
+                return true;
             }
         }
+
+        false
     }
 
     /// Run the dataflow graph to completion.
@@ -184,12 +195,29 @@ impl Hydroflow {
         }
     }
 
-    /// Adds a new compiled subgraph with the specified inputs and outputs.
-    ///
-    /// TODO(mingwei): add example in doc.
     pub fn add_subgraph<Name, R, W, F>(
         &mut self,
         name: Name,
+        recv_ports: R,
+        send_ports: W,
+        subgraph: F,
+    ) -> SubgraphId
+    where
+        Name: Into<Cow<'static, str>>,
+        R: 'static + PortList<RECV>,
+        W: 'static + PortList<SEND>,
+        F: 'static + FnMut(&Context<'_>, R::Ctx<'_>, W::Ctx<'_>),
+    {
+        self.add_subgraph_stratified(name, 0, recv_ports, send_ports, subgraph)
+    }
+
+    /// Adds a new compiled subgraph with the specified inputs and outputs.
+    ///
+    /// TODO(mingwei): add example in doc.
+    pub fn add_subgraph_stratified<Name, R, W, F>(
+        &mut self,
+        name: Name,
+        stratum: usize,
         recv_ports: R,
         send_ports: W,
         mut subgraph: F,
@@ -213,21 +241,40 @@ impl Hydroflow {
         };
         self.subgraphs.push(SubgraphData::new(
             name.into(),
-            0,
+            stratum,
             subgraph,
             subgraph_preds,
             subgraph_succs,
             true,
         ));
-        self.ready_queue[0].push_back(sg_id);
+        self.init_stratum(stratum);
+        self.ready_queue[stratum].push_back(sg_id);
 
         sg_id
     }
 
-    /// Adds a new compiled subraph with a variable number of inputs and outputs of the same respective handoff types.
+    /// Adds a new compiled subgraph with a variable number of inputs and outputs of the same respective handoff types.
     pub fn add_subgraph_n_m<Name, R, W, F>(
         &mut self,
         name: Name,
+        recv_ports: Vec<RecvPort<R>>,
+        send_ports: Vec<SendPort<W>>,
+        subgraph: F,
+    ) -> SubgraphId
+    where
+        Name: Into<Cow<'static, str>>,
+        R: 'static + Handoff,
+        W: 'static + Handoff,
+        F: 'static + FnMut(&Context<'_>, &[&RecvCtx<R>], &[&SendCtx<W>]),
+    {
+        self.add_subgraph_stratified_n_m(name, 0, recv_ports, send_ports, subgraph)
+    }
+
+    /// Adds a new compiled subgraph with a variable number of inputs and outputs of the same respective handoff types.
+    pub fn add_subgraph_stratified_n_m<Name, R, W, F>(
+        &mut self,
+        name: Name,
+        stratum: usize,
         recv_ports: Vec<RecvPort<R>>,
         send_ports: Vec<SendPort<W>>,
         mut subgraph: F,
@@ -283,15 +330,23 @@ impl Hydroflow {
         };
         self.subgraphs.push(SubgraphData::new(
             name.into(),
-            0,
+            stratum,
             subgraph,
             subgraph_preds,
             subgraph_succs,
             true,
         ));
-        self.ready_queue[0].push_back(sg_id);
+        self.init_stratum(stratum);
+        self.ready_queue[stratum].push_back(sg_id);
 
         sg_id
+    }
+
+    /// Makes sure stratum STRATUM is initialized.
+    fn init_stratum(&mut self, stratum: usize) {
+        if self.ready_queue.len() <= stratum {
+            self.ready_queue.resize_with(stratum + 1, Default::default);
+        }
     }
 
     /// Creates a handoff edge and returns the corresponding send and receive ports.
