@@ -1,4 +1,5 @@
-use std::sync::mpsc::{SyncSender, TrySendError};
+use tokio::sync::mpsc::error::SendError;
+use tokio::sync::mpsc::UnboundedSender;
 
 use super::SubgraphId;
 
@@ -8,15 +9,15 @@ use super::SubgraphId;
  */
 #[derive(Clone)]
 pub struct Reactor {
-    event_queue_send: SyncSender<SubgraphId>,
+    event_queue_send: UnboundedSender<SubgraphId>,
 }
 impl Reactor {
-    pub fn new(event_queue_send: SyncSender<SubgraphId>) -> Self {
+    pub fn new(event_queue_send: UnboundedSender<SubgraphId>) -> Self {
         Self { event_queue_send }
     }
 
-    pub fn trigger(&self, sg_id: SubgraphId) -> Result<(), TrySendError<usize>> {
-        self.event_queue_send.try_send(sg_id)
+    pub fn trigger(&self, sg_id: SubgraphId) -> Result<(), SendError<usize>> {
+        self.event_queue_send.send(sg_id)
     }
 
     #[cfg(feature = "async")]
