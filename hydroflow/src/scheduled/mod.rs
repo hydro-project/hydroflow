@@ -25,6 +25,7 @@ mod tests {
             prelude::{BaseSurface, PullSurface, PushSurface},
             HydroflowBuilder,
         },
+        lang::{collections::Single, lattice::set_union::SetUnionRepr, tag},
         scheduled::handoff::VecHandoff,
     };
 
@@ -43,9 +44,9 @@ mod tests {
             "main",
             stream_hoff
                 .flatten()
-                .map(|x| ((), x))
-                .batch_with(ticks_hoff.flatten().map(|x| ((), x)))
-                .map(|((), x, v)| (x, v))
+                .map(Single)
+                .batch_with::<_, SetUnionRepr<tag::HASH_SET, u64>, SetUnionRepr<tag::SINGLE, u64>, _>(ticks_hoff.flatten())
+                .map(|(x, v)| (x, v))
                 .pull_to_push()
                 .for_each(move |x| (*outputs_inner).borrow_mut().push(x)),
         );
@@ -60,25 +61,34 @@ mod tests {
         ticks_input.flush();
 
         df.tick();
-        assert_eq!(vec![(1, vec![1, 2, 3])], *outputs.borrow());
+        assert_eq!(vec![(1, [1, 2, 3].into())], *outputs.borrow());
 
         ticks_input.give(Some(2));
         ticks_input.flush();
 
         df.tick();
-        assert_eq!(vec![(1, vec![1, 2, 3])], *outputs.borrow());
+        assert_eq!(
+            vec![(1, [1, 2, 3].into()), (2, [].into())],
+            *outputs.borrow()
+        );
 
         stream_input.give(Some(4));
         stream_input.give(Some(5));
         stream_input.flush();
 
         df.tick();
-        assert_eq!(vec![(1, vec![1, 2, 3])], *outputs.borrow());
+        assert_eq!(
+            vec![(1, [1, 2, 3].into()), (2, [].into())],
+            *outputs.borrow()
+        );
 
         ticks_input.give(Some(3));
         ticks_input.flush();
 
         df.tick();
-        assert_eq!(vec![(1, vec![1, 2, 3]), (3, vec![4, 5])], *outputs.borrow());
+        assert_eq!(
+            vec![(1, [1, 2, 3].into()), (2, [].into()), (3, [4, 5].into())],
+            *outputs.borrow()
+        );
     }
 }

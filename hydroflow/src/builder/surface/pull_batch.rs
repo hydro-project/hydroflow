@@ -1,16 +1,19 @@
 use super::{BaseSurface, PullSurface};
 
-use std::hash::Hash;
+use std::marker::PhantomData;
 
 use crate::builder::build::pull_batch::BatchPullBuild;
+use crate::lang::lattice::{LatticeRepr, Merge};
 use crate::scheduled::handoff::handoff_list::{PortList, PortListSplit};
 use crate::scheduled::port::RECV;
 use crate::scheduled::type_list::Extend;
 
-pub struct BatchPullSurface<PrevBuf, PrevStream>
+pub struct BatchPullSurface<PrevBuf, PrevStream, L, Update, Tick>
 where
     PrevBuf: PullSurface,
     PrevStream: PullSurface,
+    Update: LatticeRepr,
+    L: LatticeRepr + Merge<Update>,
 
     PrevBuf::InputHandoffs: Extend<PrevStream::InputHandoffs>,
     <PrevBuf::InputHandoffs as Extend<PrevStream::InputHandoffs>>::Extended: PortList<RECV>
@@ -18,55 +21,58 @@ where
 {
     prev_a: PrevBuf,
     prev_b: PrevStream,
+    _marker: PhantomData<(L, Update, Tick)>,
 }
-impl<PrevBuf, PrevStream, Key, BufVal, StreamVal> BatchPullSurface<PrevBuf, PrevStream>
+impl<PrevBuf, PrevStream, L, Update, Tick> BatchPullSurface<PrevBuf, PrevStream, L, Update, Tick>
 where
-    PrevBuf: PullSurface<ItemOut = (Key, BufVal)>,
-    PrevStream: PullSurface<ItemOut = (Key, StreamVal)>,
-    Key: 'static + Eq + Hash,
-    BufVal: 'static,
-    StreamVal: 'static,
+    PrevBuf: PullSurface<ItemOut = Update::Repr>,
+    PrevStream: PullSurface<ItemOut = Tick>,
+    Update: 'static + LatticeRepr,
+    L: 'static + LatticeRepr + Merge<Update>,
 
     PrevBuf::InputHandoffs: Extend<PrevStream::InputHandoffs>,
     <PrevBuf::InputHandoffs as Extend<PrevStream::InputHandoffs>>::Extended: PortList<RECV>
         + PortListSplit<RECV, PrevBuf::InputHandoffs, Suffix = PrevStream::InputHandoffs>,
 {
     pub fn new(prev_a: PrevBuf, prev_b: PrevStream) -> Self {
-        Self { prev_a, prev_b }
+        Self {
+            prev_a,
+            prev_b,
+            _marker: PhantomData,
+        }
     }
 }
 
-impl<PrevBuf, PrevStream, Key, BufVal, StreamVal> BaseSurface
-    for BatchPullSurface<PrevBuf, PrevStream>
+impl<PrevBuf, PrevStream, L, Update, Tick> BaseSurface
+    for BatchPullSurface<PrevBuf, PrevStream, L, Update, Tick>
 where
-    PrevBuf: PullSurface<ItemOut = (Key, BufVal)>,
-    PrevStream: PullSurface<ItemOut = (Key, StreamVal)>,
-    Key: 'static + Eq + Hash,
-    BufVal: 'static,
-    StreamVal: 'static,
+    PrevBuf: PullSurface<ItemOut = Update::Repr>,
+    PrevStream: PullSurface<ItemOut = Tick>,
+    L: 'static + LatticeRepr + Merge<Update>,
+    Update: 'static + LatticeRepr,
 
     PrevBuf::InputHandoffs: Extend<PrevStream::InputHandoffs>,
     <PrevBuf::InputHandoffs as Extend<PrevStream::InputHandoffs>>::Extended: PortList<RECV>
         + PortListSplit<RECV, PrevBuf::InputHandoffs, Suffix = PrevStream::InputHandoffs>,
 {
-    type ItemOut = (Key, StreamVal, Vec<BufVal>);
+    type ItemOut = (Tick, L::Repr);
 }
 
-impl<PrevBuf, PrevStream, Key, BufVal, StreamVal> PullSurface
-    for BatchPullSurface<PrevBuf, PrevStream>
+impl<PrevBuf, PrevStream, L, Update, Tick> PullSurface
+    for BatchPullSurface<PrevBuf, PrevStream, L, Update, Tick>
 where
-    PrevBuf: PullSurface<ItemOut = (Key, BufVal)>,
-    PrevStream: PullSurface<ItemOut = (Key, StreamVal)>,
-    Key: 'static + Eq + Hash,
-    BufVal: 'static,
-    StreamVal: 'static,
+    PrevBuf: PullSurface<ItemOut = Update::Repr>,
+    PrevStream: PullSurface<ItemOut = Tick>,
+    L: 'static + LatticeRepr + Merge<Update>,
+    Update: 'static + LatticeRepr,
+    L::Repr: Default,
 
     PrevBuf::InputHandoffs: Extend<PrevStream::InputHandoffs>,
     <PrevBuf::InputHandoffs as Extend<PrevStream::InputHandoffs>>::Extended: PortList<RECV>
         + PortListSplit<RECV, PrevBuf::InputHandoffs, Suffix = PrevStream::InputHandoffs>,
 {
     type InputHandoffs = <PrevBuf::InputHandoffs as Extend<PrevStream::InputHandoffs>>::Extended;
-    type Build = BatchPullBuild<PrevBuf::Build, PrevStream::Build, Key, BufVal, StreamVal>;
+    type Build = BatchPullBuild<PrevBuf::Build, PrevStream::Build, L, Update, Tick>;
 
     fn into_parts(self) -> (Self::InputHandoffs, Self::Build) {
         let (connect_a, build_a) = self.prev_a.into_parts();
