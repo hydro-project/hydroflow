@@ -307,6 +307,7 @@
 
 <span class="kw">use</span> <span class="ident">std::hash::Hash</span>;
 
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::lang::lattice</span>::{<span class="ident">LatticeRepr</span>, <span class="ident">Merge</span>};
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::handoff::handoff_list</span>::{<span class="ident">PortList</span>, <span class="ident">PortListSplit</span>};
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::port</span>::{<span class="ident">RECV</span>, <span class="ident">SEND</span>};
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::type_list::Extend</span>;
@@ -408,16 +409,15 @@
         <span class="ident">pull_join::JoinPullSurface::new</span>(<span class="self">self</span>, <span class="ident">other</span>)
     }
 
-    <span class="kw">fn</span> <span class="ident">batch_with</span><span class="op">&lt;</span><span class="ident">Other</span>, <span class="ident">Key</span>, <span class="ident">ValSelf</span>, <span class="ident">ValOther</span><span class="op">&gt;</span>(
+    <span class="kw">fn</span> <span class="ident">batch_with</span><span class="op">&lt;</span><span class="ident">Other</span>, <span class="ident">L</span>, <span class="ident">Update</span>, <span class="ident">Tick</span><span class="op">&gt;</span>(
         <span class="self">self</span>,
         <span class="ident">other</span>: <span class="ident">Other</span>,
-    ) -&gt; <span class="ident">pull_batch::BatchPullSurface</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">Other</span><span class="op">&gt;</span>
+    ) -&gt; <span class="ident">pull_batch::BatchPullSurface</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">Other</span>, <span class="ident">L</span>, <span class="ident">Update</span>, <span class="ident">Tick</span><span class="op">&gt;</span>
     <span class="kw">where</span>
-        <span class="self">Self</span>: <span class="ident">Sized</span> <span class="op">+</span> <span class="ident">PullSurface</span><span class="op">&lt;</span><span class="ident">ItemOut</span> <span class="op">=</span> (<span class="ident">Key</span>, <span class="ident">ValSelf</span>)<span class="op">&gt;</span>,
-        <span class="ident">Other</span>: <span class="ident">PullSurface</span><span class="op">&lt;</span><span class="ident">ItemOut</span> <span class="op">=</span> (<span class="ident">Key</span>, <span class="ident">ValOther</span>)<span class="op">&gt;</span>,
-        <span class="ident">Key</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">Eq</span> <span class="op">+</span> <span class="ident">Hash</span>,
-        <span class="ident">ValSelf</span>: <span class="lifetime">&#39;static</span>,
-        <span class="ident">ValOther</span>: <span class="lifetime">&#39;static</span>,
+        <span class="self">Self</span>: <span class="ident">Sized</span> <span class="op">+</span> <span class="ident">PullSurface</span><span class="op">&lt;</span><span class="ident">ItemOut</span> <span class="op">=</span> <span class="ident">Update::Repr</span><span class="op">&gt;</span>,
+        <span class="ident">Other</span>: <span class="ident">PullSurface</span><span class="op">&lt;</span><span class="ident">ItemOut</span> <span class="op">=</span> <span class="ident">Tick</span><span class="op">&gt;</span>,
+        <span class="ident">Update</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">LatticeRepr</span>,
+        <span class="ident">L</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">LatticeRepr</span> <span class="op">+</span> <span class="ident">Merge</span><span class="op">&lt;</span><span class="ident">Update</span><span class="op">&gt;</span>,
 
         <span class="ident"><span class="self">Self</span>::InputHandoffs</span>: <span class="ident">Extend</span><span class="op">&lt;</span><span class="ident">Other::InputHandoffs</span><span class="op">&gt;</span>,
         <span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::InputHandoffs</span> <span class="kw">as</span> <span class="ident">Extend</span><span class="op">&lt;</span><span class="ident">Other::InputHandoffs</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::Extended</span>: <span class="ident">PortList</span><span class="op">&lt;</span><span class="ident">RECV</span><span class="op">&gt;</span>

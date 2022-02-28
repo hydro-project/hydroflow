@@ -81,19 +81,28 @@
 <span id="76">76</span>
 <span id="77">77</span>
 <span id="78">78</span>
+<span id="79">79</span>
+<span id="80">80</span>
+<span id="81">81</span>
+<span id="82">82</span>
+<span id="83">83</span>
+<span id="84">84</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">BaseSurface</span>, <span class="ident">PullSurface</span>};
 
-<span class="kw">use</span> <span class="ident">std::hash::Hash</span>;
+<span class="kw">use</span> <span class="ident">std::marker::PhantomData</span>;
 
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::builder::build::pull_batch::BatchPullBuild</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::lang::lattice</span>::{<span class="ident">LatticeRepr</span>, <span class="ident">Merge</span>};
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::handoff::handoff_list</span>::{<span class="ident">PortList</span>, <span class="ident">PortListSplit</span>};
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::port::RECV</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::type_list::Extend</span>;
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">BatchPullSurface</span><span class="op">&lt;</span><span class="ident">PrevBuf</span>, <span class="ident">PrevStream</span><span class="op">&gt;</span>
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">BatchPullSurface</span><span class="op">&lt;</span><span class="ident">PrevBuf</span>, <span class="ident">PrevStream</span>, <span class="ident">L</span>, <span class="ident">Update</span>, <span class="ident">Tick</span><span class="op">&gt;</span>
 <span class="kw">where</span>
     <span class="ident">PrevBuf</span>: <span class="ident">PullSurface</span>,
     <span class="ident">PrevStream</span>: <span class="ident">PullSurface</span>,
+    <span class="ident">Update</span>: <span class="ident">LatticeRepr</span>,
+    <span class="ident">L</span>: <span class="ident">LatticeRepr</span> <span class="op">+</span> <span class="ident">Merge</span><span class="op">&lt;</span><span class="ident">Update</span><span class="op">&gt;</span>,
 
     <span class="ident">PrevBuf::InputHandoffs</span>: <span class="ident">Extend</span><span class="op">&lt;</span><span class="ident">PrevStream::InputHandoffs</span><span class="op">&gt;</span>,
     <span class="op">&lt;</span><span class="ident">PrevBuf::InputHandoffs</span> <span class="kw">as</span> <span class="ident">Extend</span><span class="op">&lt;</span><span class="ident">PrevStream::InputHandoffs</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::Extended</span>: <span class="ident">PortList</span><span class="op">&lt;</span><span class="ident">RECV</span><span class="op">&gt;</span>
@@ -101,55 +110,58 @@
 {
     <span class="ident">prev_a</span>: <span class="ident">PrevBuf</span>,
     <span class="ident">prev_b</span>: <span class="ident">PrevStream</span>,
+    <span class="ident">_marker</span>: <span class="ident">PhantomData</span><span class="op">&lt;</span>(<span class="ident">L</span>, <span class="ident">Update</span>, <span class="ident">Tick</span>)<span class="op">&gt;</span>,
 }
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">PrevBuf</span>, <span class="ident">PrevStream</span>, <span class="ident">Key</span>, <span class="ident">BufVal</span>, <span class="ident">StreamVal</span><span class="op">&gt;</span> <span class="ident">BatchPullSurface</span><span class="op">&lt;</span><span class="ident">PrevBuf</span>, <span class="ident">PrevStream</span><span class="op">&gt;</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">PrevBuf</span>, <span class="ident">PrevStream</span>, <span class="ident">L</span>, <span class="ident">Update</span>, <span class="ident">Tick</span><span class="op">&gt;</span> <span class="ident">BatchPullSurface</span><span class="op">&lt;</span><span class="ident">PrevBuf</span>, <span class="ident">PrevStream</span>, <span class="ident">L</span>, <span class="ident">Update</span>, <span class="ident">Tick</span><span class="op">&gt;</span>
 <span class="kw">where</span>
-    <span class="ident">PrevBuf</span>: <span class="ident">PullSurface</span><span class="op">&lt;</span><span class="ident">ItemOut</span> <span class="op">=</span> (<span class="ident">Key</span>, <span class="ident">BufVal</span>)<span class="op">&gt;</span>,
-    <span class="ident">PrevStream</span>: <span class="ident">PullSurface</span><span class="op">&lt;</span><span class="ident">ItemOut</span> <span class="op">=</span> (<span class="ident">Key</span>, <span class="ident">StreamVal</span>)<span class="op">&gt;</span>,
-    <span class="ident">Key</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">Eq</span> <span class="op">+</span> <span class="ident">Hash</span>,
-    <span class="ident">BufVal</span>: <span class="lifetime">&#39;static</span>,
-    <span class="ident">StreamVal</span>: <span class="lifetime">&#39;static</span>,
+    <span class="ident">PrevBuf</span>: <span class="ident">PullSurface</span><span class="op">&lt;</span><span class="ident">ItemOut</span> <span class="op">=</span> <span class="ident">Update::Repr</span><span class="op">&gt;</span>,
+    <span class="ident">PrevStream</span>: <span class="ident">PullSurface</span><span class="op">&lt;</span><span class="ident">ItemOut</span> <span class="op">=</span> <span class="ident">Tick</span><span class="op">&gt;</span>,
+    <span class="ident">Update</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">LatticeRepr</span>,
+    <span class="ident">L</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">LatticeRepr</span> <span class="op">+</span> <span class="ident">Merge</span><span class="op">&lt;</span><span class="ident">Update</span><span class="op">&gt;</span>,
 
     <span class="ident">PrevBuf::InputHandoffs</span>: <span class="ident">Extend</span><span class="op">&lt;</span><span class="ident">PrevStream::InputHandoffs</span><span class="op">&gt;</span>,
     <span class="op">&lt;</span><span class="ident">PrevBuf::InputHandoffs</span> <span class="kw">as</span> <span class="ident">Extend</span><span class="op">&lt;</span><span class="ident">PrevStream::InputHandoffs</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::Extended</span>: <span class="ident">PortList</span><span class="op">&lt;</span><span class="ident">RECV</span><span class="op">&gt;</span>
         <span class="op">+</span> <span class="ident">PortListSplit</span><span class="op">&lt;</span><span class="ident">RECV</span>, <span class="ident">PrevBuf::InputHandoffs</span>, <span class="ident">Suffix</span> <span class="op">=</span> <span class="ident">PrevStream::InputHandoffs</span><span class="op">&gt;</span>,
 {
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">prev_a</span>: <span class="ident">PrevBuf</span>, <span class="ident">prev_b</span>: <span class="ident">PrevStream</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> { <span class="ident">prev_a</span>, <span class="ident">prev_b</span> }
+        <span class="self">Self</span> {
+            <span class="ident">prev_a</span>,
+            <span class="ident">prev_b</span>,
+            <span class="ident">_marker</span>: <span class="ident">PhantomData</span>,
+        }
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">PrevBuf</span>, <span class="ident">PrevStream</span>, <span class="ident">Key</span>, <span class="ident">BufVal</span>, <span class="ident">StreamVal</span><span class="op">&gt;</span> <span class="ident">BaseSurface</span>
-    <span class="kw">for</span> <span class="ident">BatchPullSurface</span><span class="op">&lt;</span><span class="ident">PrevBuf</span>, <span class="ident">PrevStream</span><span class="op">&gt;</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">PrevBuf</span>, <span class="ident">PrevStream</span>, <span class="ident">L</span>, <span class="ident">Update</span>, <span class="ident">Tick</span><span class="op">&gt;</span> <span class="ident">BaseSurface</span>
+    <span class="kw">for</span> <span class="ident">BatchPullSurface</span><span class="op">&lt;</span><span class="ident">PrevBuf</span>, <span class="ident">PrevStream</span>, <span class="ident">L</span>, <span class="ident">Update</span>, <span class="ident">Tick</span><span class="op">&gt;</span>
 <span class="kw">where</span>
-    <span class="ident">PrevBuf</span>: <span class="ident">PullSurface</span><span class="op">&lt;</span><span class="ident">ItemOut</span> <span class="op">=</span> (<span class="ident">Key</span>, <span class="ident">BufVal</span>)<span class="op">&gt;</span>,
-    <span class="ident">PrevStream</span>: <span class="ident">PullSurface</span><span class="op">&lt;</span><span class="ident">ItemOut</span> <span class="op">=</span> (<span class="ident">Key</span>, <span class="ident">StreamVal</span>)<span class="op">&gt;</span>,
-    <span class="ident">Key</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">Eq</span> <span class="op">+</span> <span class="ident">Hash</span>,
-    <span class="ident">BufVal</span>: <span class="lifetime">&#39;static</span>,
-    <span class="ident">StreamVal</span>: <span class="lifetime">&#39;static</span>,
+    <span class="ident">PrevBuf</span>: <span class="ident">PullSurface</span><span class="op">&lt;</span><span class="ident">ItemOut</span> <span class="op">=</span> <span class="ident">Update::Repr</span><span class="op">&gt;</span>,
+    <span class="ident">PrevStream</span>: <span class="ident">PullSurface</span><span class="op">&lt;</span><span class="ident">ItemOut</span> <span class="op">=</span> <span class="ident">Tick</span><span class="op">&gt;</span>,
+    <span class="ident">L</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">LatticeRepr</span> <span class="op">+</span> <span class="ident">Merge</span><span class="op">&lt;</span><span class="ident">Update</span><span class="op">&gt;</span>,
+    <span class="ident">Update</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">LatticeRepr</span>,
 
     <span class="ident">PrevBuf::InputHandoffs</span>: <span class="ident">Extend</span><span class="op">&lt;</span><span class="ident">PrevStream::InputHandoffs</span><span class="op">&gt;</span>,
     <span class="op">&lt;</span><span class="ident">PrevBuf::InputHandoffs</span> <span class="kw">as</span> <span class="ident">Extend</span><span class="op">&lt;</span><span class="ident">PrevStream::InputHandoffs</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::Extended</span>: <span class="ident">PortList</span><span class="op">&lt;</span><span class="ident">RECV</span><span class="op">&gt;</span>
         <span class="op">+</span> <span class="ident">PortListSplit</span><span class="op">&lt;</span><span class="ident">RECV</span>, <span class="ident">PrevBuf::InputHandoffs</span>, <span class="ident">Suffix</span> <span class="op">=</span> <span class="ident">PrevStream::InputHandoffs</span><span class="op">&gt;</span>,
 {
-    <span class="kw">type</span> <span class="ident">ItemOut</span> <span class="op">=</span> (<span class="ident">Key</span>, <span class="ident">StreamVal</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">BufVal</span><span class="op">&gt;</span>);
+    <span class="kw">type</span> <span class="ident">ItemOut</span> <span class="op">=</span> (<span class="ident">Tick</span>, <span class="ident">L::Repr</span>);
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">PrevBuf</span>, <span class="ident">PrevStream</span>, <span class="ident">Key</span>, <span class="ident">BufVal</span>, <span class="ident">StreamVal</span><span class="op">&gt;</span> <span class="ident">PullSurface</span>
-    <span class="kw">for</span> <span class="ident">BatchPullSurface</span><span class="op">&lt;</span><span class="ident">PrevBuf</span>, <span class="ident">PrevStream</span><span class="op">&gt;</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">PrevBuf</span>, <span class="ident">PrevStream</span>, <span class="ident">L</span>, <span class="ident">Update</span>, <span class="ident">Tick</span><span class="op">&gt;</span> <span class="ident">PullSurface</span>
+    <span class="kw">for</span> <span class="ident">BatchPullSurface</span><span class="op">&lt;</span><span class="ident">PrevBuf</span>, <span class="ident">PrevStream</span>, <span class="ident">L</span>, <span class="ident">Update</span>, <span class="ident">Tick</span><span class="op">&gt;</span>
 <span class="kw">where</span>
-    <span class="ident">PrevBuf</span>: <span class="ident">PullSurface</span><span class="op">&lt;</span><span class="ident">ItemOut</span> <span class="op">=</span> (<span class="ident">Key</span>, <span class="ident">BufVal</span>)<span class="op">&gt;</span>,
-    <span class="ident">PrevStream</span>: <span class="ident">PullSurface</span><span class="op">&lt;</span><span class="ident">ItemOut</span> <span class="op">=</span> (<span class="ident">Key</span>, <span class="ident">StreamVal</span>)<span class="op">&gt;</span>,
-    <span class="ident">Key</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">Eq</span> <span class="op">+</span> <span class="ident">Hash</span>,
-    <span class="ident">BufVal</span>: <span class="lifetime">&#39;static</span>,
-    <span class="ident">StreamVal</span>: <span class="lifetime">&#39;static</span>,
+    <span class="ident">PrevBuf</span>: <span class="ident">PullSurface</span><span class="op">&lt;</span><span class="ident">ItemOut</span> <span class="op">=</span> <span class="ident">Update::Repr</span><span class="op">&gt;</span>,
+    <span class="ident">PrevStream</span>: <span class="ident">PullSurface</span><span class="op">&lt;</span><span class="ident">ItemOut</span> <span class="op">=</span> <span class="ident">Tick</span><span class="op">&gt;</span>,
+    <span class="ident">L</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">LatticeRepr</span> <span class="op">+</span> <span class="ident">Merge</span><span class="op">&lt;</span><span class="ident">Update</span><span class="op">&gt;</span>,
+    <span class="ident">Update</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">LatticeRepr</span>,
+    <span class="ident">L::Repr</span>: <span class="ident">Default</span>,
 
     <span class="ident">PrevBuf::InputHandoffs</span>: <span class="ident">Extend</span><span class="op">&lt;</span><span class="ident">PrevStream::InputHandoffs</span><span class="op">&gt;</span>,
     <span class="op">&lt;</span><span class="ident">PrevBuf::InputHandoffs</span> <span class="kw">as</span> <span class="ident">Extend</span><span class="op">&lt;</span><span class="ident">PrevStream::InputHandoffs</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::Extended</span>: <span class="ident">PortList</span><span class="op">&lt;</span><span class="ident">RECV</span><span class="op">&gt;</span>
         <span class="op">+</span> <span class="ident">PortListSplit</span><span class="op">&lt;</span><span class="ident">RECV</span>, <span class="ident">PrevBuf::InputHandoffs</span>, <span class="ident">Suffix</span> <span class="op">=</span> <span class="ident">PrevStream::InputHandoffs</span><span class="op">&gt;</span>,
 {
     <span class="kw">type</span> <span class="ident">InputHandoffs</span> <span class="op">=</span> <span class="op">&lt;</span><span class="ident">PrevBuf::InputHandoffs</span> <span class="kw">as</span> <span class="ident">Extend</span><span class="op">&lt;</span><span class="ident">PrevStream::InputHandoffs</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::Extended</span>;
-    <span class="kw">type</span> <span class="ident">Build</span> <span class="op">=</span> <span class="ident">BatchPullBuild</span><span class="op">&lt;</span><span class="ident">PrevBuf::Build</span>, <span class="ident">PrevStream::Build</span>, <span class="ident">Key</span>, <span class="ident">BufVal</span>, <span class="ident">StreamVal</span><span class="op">&gt;</span>;
+    <span class="kw">type</span> <span class="ident">Build</span> <span class="op">=</span> <span class="ident">BatchPullBuild</span><span class="op">&lt;</span><span class="ident">PrevBuf::Build</span>, <span class="ident">PrevStream::Build</span>, <span class="ident">L</span>, <span class="ident">Update</span>, <span class="ident">Tick</span><span class="op">&gt;</span>;
 
     <span class="kw">fn</span> <span class="ident">into_parts</span>(<span class="self">self</span>) -&gt; (<span class="ident"><span class="self">Self</span>::InputHandoffs</span>, <span class="ident"><span class="self">Self</span>::Build</span>) {
         <span class="kw">let</span> (<span class="ident">connect_a</span>, <span class="ident">build_a</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">prev_a</span>.<span class="ident">into_parts</span>();

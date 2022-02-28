@@ -87,6 +87,16 @@
 <span id="82">82</span>
 <span id="83">83</span>
 <span id="84">84</span>
+<span id="85">85</span>
+<span id="86">86</span>
+<span id="87">87</span>
+<span id="88">88</span>
+<span id="89">89</span>
+<span id="90">90</span>
+<span id="91">91</span>
+<span id="92">92</span>
+<span id="93">93</span>
+<span id="94">94</span>
 </pre><pre class="rust"><code><span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">context</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">graph</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">graph_ext</span>;
@@ -114,6 +124,7 @@
             <span class="ident">prelude</span>::{<span class="ident">BaseSurface</span>, <span class="ident">PullSurface</span>, <span class="ident">PushSurface</span>},
             <span class="ident">HydroflowBuilder</span>,
         },
+        <span class="ident">lang</span>::{<span class="ident">collections::Single</span>, <span class="ident">lattice::set_union::SetUnionRepr</span>, <span class="ident">tag</span>},
         <span class="ident">scheduled::handoff::VecHandoff</span>,
     };
 
@@ -132,9 +143,9 @@
             <span class="string">&quot;main&quot;</span>,
             <span class="ident">stream_hoff</span>
                 .<span class="ident">flatten</span>()
-                .<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> ((), <span class="ident">x</span>))
-                .<span class="ident">batch_with</span>(<span class="ident">ticks_hoff</span>.<span class="ident">flatten</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> ((), <span class="ident">x</span>)))
-                .<span class="ident">map</span>(<span class="op">|</span>((), <span class="ident">x</span>, <span class="ident">v</span>)<span class="op">|</span> (<span class="ident">x</span>, <span class="ident">v</span>))
+                .<span class="ident">map</span>(<span class="ident">Single</span>)
+                .<span class="ident">batch_with</span>::<span class="op">&lt;</span><span class="kw">_</span>, <span class="ident">SetUnionRepr</span><span class="op">&lt;</span><span class="ident">tag::HASH_SET</span>, <span class="ident">u64</span><span class="op">&gt;</span>, <span class="ident">SetUnionRepr</span><span class="op">&lt;</span><span class="ident">tag::SINGLE</span>, <span class="ident">u64</span><span class="op">&gt;</span>, <span class="kw">_</span><span class="op">&gt;</span>(<span class="ident">ticks_hoff</span>.<span class="ident">flatten</span>())
+                .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">x</span>, <span class="ident">v</span>)<span class="op">|</span> (<span class="ident">x</span>, <span class="ident">v</span>))
                 .<span class="ident">pull_to_push</span>()
                 .<span class="ident">for_each</span>(<span class="kw">move</span> <span class="op">|</span><span class="ident">x</span><span class="op">|</span> (<span class="kw-2">*</span><span class="ident">outputs_inner</span>).<span class="ident">borrow_mut</span>().<span class="ident">push</span>(<span class="ident">x</span>)),
         );
@@ -149,26 +160,35 @@
         <span class="ident">ticks_input</span>.<span class="ident">flush</span>();
 
         <span class="ident">df</span>.<span class="ident">tick</span>();
-        <span class="macro">assert_eq!</span>(<span class="macro">vec!</span>[(<span class="number">1</span>, <span class="macro">vec!</span>[<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>])], <span class="kw-2">*</span><span class="ident">outputs</span>.<span class="ident">borrow</span>());
+        <span class="macro">assert_eq!</span>(<span class="macro">vec!</span>[(<span class="number">1</span>, [<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>].<span class="ident">into</span>())], <span class="kw-2">*</span><span class="ident">outputs</span>.<span class="ident">borrow</span>());
 
         <span class="ident">ticks_input</span>.<span class="ident">give</span>(<span class="prelude-val">Some</span>(<span class="number">2</span>));
         <span class="ident">ticks_input</span>.<span class="ident">flush</span>();
 
         <span class="ident">df</span>.<span class="ident">tick</span>();
-        <span class="macro">assert_eq!</span>(<span class="macro">vec!</span>[(<span class="number">1</span>, <span class="macro">vec!</span>[<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>])], <span class="kw-2">*</span><span class="ident">outputs</span>.<span class="ident">borrow</span>());
+        <span class="macro">assert_eq!</span>(
+            <span class="macro">vec!</span>[(<span class="number">1</span>, [<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>].<span class="ident">into</span>()), (<span class="number">2</span>, [].<span class="ident">into</span>())],
+            <span class="kw-2">*</span><span class="ident">outputs</span>.<span class="ident">borrow</span>()
+        );
 
         <span class="ident">stream_input</span>.<span class="ident">give</span>(<span class="prelude-val">Some</span>(<span class="number">4</span>));
         <span class="ident">stream_input</span>.<span class="ident">give</span>(<span class="prelude-val">Some</span>(<span class="number">5</span>));
         <span class="ident">stream_input</span>.<span class="ident">flush</span>();
 
         <span class="ident">df</span>.<span class="ident">tick</span>();
-        <span class="macro">assert_eq!</span>(<span class="macro">vec!</span>[(<span class="number">1</span>, <span class="macro">vec!</span>[<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>])], <span class="kw-2">*</span><span class="ident">outputs</span>.<span class="ident">borrow</span>());
+        <span class="macro">assert_eq!</span>(
+            <span class="macro">vec!</span>[(<span class="number">1</span>, [<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>].<span class="ident">into</span>()), (<span class="number">2</span>, [].<span class="ident">into</span>())],
+            <span class="kw-2">*</span><span class="ident">outputs</span>.<span class="ident">borrow</span>()
+        );
 
         <span class="ident">ticks_input</span>.<span class="ident">give</span>(<span class="prelude-val">Some</span>(<span class="number">3</span>));
         <span class="ident">ticks_input</span>.<span class="ident">flush</span>();
 
         <span class="ident">df</span>.<span class="ident">tick</span>();
-        <span class="macro">assert_eq!</span>(<span class="macro">vec!</span>[(<span class="number">1</span>, <span class="macro">vec!</span>[<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>]), (<span class="number">3</span>, <span class="macro">vec!</span>[<span class="number">4</span>, <span class="number">5</span>])], <span class="kw-2">*</span><span class="ident">outputs</span>.<span class="ident">borrow</span>());
+        <span class="macro">assert_eq!</span>(
+            <span class="macro">vec!</span>[(<span class="number">1</span>, [<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>].<span class="ident">into</span>()), (<span class="number">2</span>, [].<span class="ident">into</span>()), (<span class="number">3</span>, [<span class="number">4</span>, <span class="number">5</span>].<span class="ident">into</span>())],
+            <span class="kw-2">*</span><span class="ident">outputs</span>.<span class="ident">borrow</span>()
+        );
     }
 }
 </code></pre></div>
