@@ -1,59 +1,78 @@
-use std::collections::HashMap;
 use std::ops::Range;
+use std::{collections::HashMap, marker::PhantomData};
+
+use crate::lang::lattice::{LatticeRepr, Merge};
 
 #[derive(Debug)]
-pub struct BatchJoinState<K, BufV> {
-    tab: HashMap<K, Vec<BufV>>,
+pub struct BatchJoinState<L>
+where
+    L: LatticeRepr,
+    L::Repr: Default,
+{
+    state: L::Repr,
 }
 
-impl<K, BufV> Default for BatchJoinState<K, BufV> {
+impl<L> Default for BatchJoinState<L>
+where
+    L: LatticeRepr,
+    L::Repr: Default,
+{
     fn default() -> Self {
         Self {
-            tab: HashMap::new(),
+            state: Default::default(),
         }
     }
 }
 
-pub struct BatchJoin<'a, K, Buf, BufV, Stream, StreamV>
+pub struct BatchJoin<'a, Buf, Stream, L, Update, Tick>
 where
-    K: Eq + std::hash::Hash,
-    Buf: Iterator<Item = (K, BufV)>,
-    Stream: Iterator<Item = (K, StreamV)>,
+    Buf: Iterator<Item = Update::Repr>,
+    Stream: Iterator<Item = Tick>,
+    Update: LatticeRepr,
+    L: LatticeRepr + Merge<Update>,
+    L::Repr: Default,
 {
     buf: Buf,
     stream: Stream,
-    state: &'a mut BatchJoinState<K, BufV>,
+    state: &'a mut BatchJoinState<L>,
+    _marker: PhantomData<(Update, Tick)>,
 }
 
-impl<'a, K, Buf, BufV, Stream, StreamV> Iterator for BatchJoin<'a, K, Buf, BufV, Stream, StreamV>
+impl<'a, Buf, Stream, L, Update, Tick> Iterator for BatchJoin<'a, Buf, Stream, L, Update, Tick>
 where
-    K: Eq + std::hash::Hash,
-    Buf: Iterator<Item = (K, BufV)>,
-    Stream: Iterator<Item = (K, StreamV)>,
+    Buf: Iterator<Item = Update::Repr>,
+    Stream: Iterator<Item = Tick>,
+    Update: LatticeRepr,
+    L: LatticeRepr + Merge<Update>,
+    L::Repr: Default,
 {
-    type Item = (K, StreamV, Vec<BufV>);
+    type Item = (Tick, L::Repr);
 
     fn next(&mut self) -> Option<Self::Item> {
-        for (k, v) in &mut self.buf {
-            self.state.tab.entry(k).or_insert_with(Vec::new).push(v);
+        for p in &mut self.buf {
+            <L as Merge<Update>>::merge(&mut self.state.state, p);
         }
 
-        for (k, v) in &mut self.stream {
-            if let Some(vals) = self.state.tab.remove(&k) {
-                return Some((k, v, vals));
-            }
-        }
-        None
+        self.stream
+            .next()
+            .map(|t| (t, std::mem::take(&mut self.state.state)))
     }
 }
-impl<'a, K, Buf, BufV, Stream, StreamV> BatchJoin<'a, K, Buf, BufV, Stream, StreamV>
+impl<'a, Buf, Stream, L, Update, Tick> BatchJoin<'a, Buf, Stream, L, Update, Tick>
 where
-    K: Eq + std::hash::Hash,
-    Buf: Iterator<Item = (K, BufV)>,
-    Stream: Iterator<Item = (K, StreamV)>,
+    Buf: Iterator<Item = Update::Repr>,
+    Stream: Iterator<Item = Tick>,
+    Update: LatticeRepr,
+    L: LatticeRepr + Merge<Update>,
+    L::Repr: Default,
 {
-    pub fn new(buf: Buf, stream: Stream, state: &'a mut BatchJoinState<K, BufV>) -> Self {
-        Self { buf, stream, state }
+    pub fn new(buf: Buf, stream: Stream, state: &'a mut BatchJoinState<L>) -> Self {
+        Self {
+            buf,
+            stream,
+            state,
+            _marker: PhantomData,
+        }
     }
 }
 
