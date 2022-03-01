@@ -46,7 +46,9 @@
 <span id="41">41</span>
 <span id="42">42</span>
 <span id="43">43</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::sync::mpsc</span>::{<span class="ident">SyncSender</span>, <span class="ident">TrySendError</span>};
+<span id="44">44</span>
+</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">tokio::sync::mpsc::error::SendError</span>;
+<span class="kw">use</span> <span class="ident">tokio::sync::mpsc::UnboundedSender</span>;
 
 <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::SubgraphId</span>;
 
@@ -56,15 +58,15 @@
  */</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Reactor</span> {
-    <span class="ident">event_queue_send</span>: <span class="ident">SyncSender</span><span class="op">&lt;</span><span class="ident">SubgraphId</span><span class="op">&gt;</span>,
+    <span class="ident">event_queue_send</span>: <span class="ident">UnboundedSender</span><span class="op">&lt;</span><span class="ident">SubgraphId</span><span class="op">&gt;</span>,
 }
 <span class="kw">impl</span> <span class="ident">Reactor</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">event_queue_send</span>: <span class="ident">SyncSender</span><span class="op">&lt;</span><span class="ident">SubgraphId</span><span class="op">&gt;</span>) -&gt; <span class="self">Self</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">event_queue_send</span>: <span class="ident">UnboundedSender</span><span class="op">&lt;</span><span class="ident">SubgraphId</span><span class="op">&gt;</span>) -&gt; <span class="self">Self</span> {
         <span class="self">Self</span> { <span class="ident">event_queue_send</span> }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">trigger</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">sg_id</span>: <span class="ident">SubgraphId</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">TrySendError</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">event_queue_send</span>.<span class="ident">try_send</span>(<span class="ident">sg_id</span>)
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">trigger</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">sg_id</span>: <span class="ident">SubgraphId</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">SendError</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+        <span class="self">self</span>.<span class="ident">event_queue_send</span>.<span class="ident">send</span>(<span class="ident">sg_id</span>)
     }
 
     <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;async&quot;</span>)]</span>
@@ -90,5 +92,5 @@
     }
 }
 </code></pre></div>
-</section><section id="search" class="content hidden"></section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.61.0-nightly (6a7055661 2022-02-27)" ></div>
+</section><section id="search" class="content hidden"></section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.61.0-nightly (4ce374923 2022-02-28)" ></div>
 </body></html>

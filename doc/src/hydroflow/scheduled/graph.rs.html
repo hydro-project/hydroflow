@@ -375,14 +375,25 @@
 <span id="370">370</span>
 <span id="371">371</span>
 <span id="372">372</span>
+<span id="373">373</span>
+<span id="374">374</span>
+<span id="375">375</span>
+<span id="376">376</span>
+<span id="377">377</span>
+<span id="378">378</span>
+<span id="379">379</span>
+<span id="380">380</span>
+<span id="381">381</span>
+<span id="382">382</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::any::Any</span>;
 <span class="kw">use</span> <span class="ident">std::borrow::Cow</span>;
 <span class="kw">use</span> <span class="ident">std::cell::Cell</span>;
 <span class="kw">use</span> <span class="ident">std::collections::VecDeque</span>;
 <span class="kw">use</span> <span class="ident">std::marker::PhantomData</span>;
-<span class="kw">use</span> <span class="ident">std::sync::mpsc</span>::{<span class="self">self</span>, <span class="ident">Receiver</span>, <span class="ident">RecvError</span>, <span class="ident">SyncSender</span>};
+<span class="kw">use</span> <span class="ident">std::num::NonZeroUsize</span>;
 
 <span class="kw">use</span> <span class="ident">ref_cast::RefCast</span>;
+<span class="kw">use</span> <span class="ident">tokio::sync::mpsc</span>::{<span class="self">self</span>, <span class="ident">UnboundedReceiver</span>, <span class="ident">UnboundedSender</span>};
 
 <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::context::Context</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::handoff::handoff_list::PortList</span>;
@@ -402,13 +413,13 @@
 
     <span class="comment">// TODO(mingwei): separate scheduler into its own struct/trait?</span>
     <span class="ident">ready_queue</span>: <span class="ident">VecDeque</span><span class="op">&lt;</span><span class="ident">SubgraphId</span><span class="op">&gt;</span>,
-    <span class="ident">event_queue_send</span>: <span class="ident">SyncSender</span><span class="op">&lt;</span><span class="ident">SubgraphId</span><span class="op">&gt;</span>, <span class="comment">// TODO(mingwei) remove this, to prevent hanging.</span>
-    <span class="ident">event_queue_recv</span>: <span class="ident">Receiver</span><span class="op">&lt;</span><span class="ident">SubgraphId</span><span class="op">&gt;</span>,
+    <span class="ident">event_queue_send</span>: <span class="ident">UnboundedSender</span><span class="op">&lt;</span><span class="ident">SubgraphId</span><span class="op">&gt;</span>, <span class="comment">// TODO(mingwei) remove this, to prevent hanging.</span>
+    <span class="ident">event_queue_recv</span>: <span class="ident">UnboundedReceiver</span><span class="op">&lt;</span><span class="ident">SubgraphId</span><span class="op">&gt;</span>,
 }
 <span class="kw">impl</span> <span class="ident">Default</span> <span class="kw">for</span> <span class="ident">Hydroflow</span> {
     <span class="kw">fn</span> <span class="ident">default</span>() -&gt; <span class="self">Self</span> {
         <span class="kw">let</span> (<span class="ident">subgraphs</span>, <span class="ident">handoffs</span>, <span class="ident">states</span>, <span class="ident">ready_queue</span>) <span class="op">=</span> <span class="ident">Default::default</span>();
-        <span class="kw">let</span> (<span class="ident">event_queue_send</span>, <span class="ident">event_queue_recv</span>) <span class="op">=</span> <span class="ident">mpsc::sync_channel</span>(<span class="number">8_000</span>);
+        <span class="kw">let</span> (<span class="ident">event_queue_send</span>, <span class="ident">event_queue_recv</span>) <span class="op">=</span> <span class="ident">mpsc::unbounded_channel</span>();
         <span class="self">Self</span> {
             <span class="ident">subgraphs</span>,
             <span class="ident">handoffs</span>,
@@ -445,7 +456,7 @@
                     <span class="ident">subgraph_id</span>: <span class="ident">sg_id</span>,
                     <span class="ident">handoffs</span>: <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">handoffs</span>,
                     <span class="ident">states</span>: <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">states</span>,
-                    <span class="ident">event_queue_send</span>: <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">event_queue_send</span>,
+                    <span class="ident">event_queue_send</span>: <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">event_queue_send</span>,
                 };
                 <span class="ident">sg_data</span>.<span class="ident">subgraph</span>.<span class="ident">run</span>(<span class="ident">context</span>);
             }
@@ -472,7 +483,7 @@
     <span class="doccomment">/// Run the dataflow graph to completion.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// TODO(mingwei): Currently blockes forever, no notion of &quot;completion.&quot;</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">run</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="op">!</span>, <span class="ident">RecvError</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">run</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="op">!</span><span class="op">&gt;</span> {
         <span class="kw">loop</span> {
             <span class="self">self</span>.<span class="ident">tick</span>();
             <span class="self">self</span>.<span class="ident">recv_events</span>()<span class="question-mark">?</span>;
@@ -482,14 +493,11 @@
     <span class="doccomment">/// Run the dataflow graph to completion asynchronously</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// TODO(mingwei): Currently blockes forever, no notion of &quot;completion.&quot;</span>
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">run_async</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="op">!</span>, <span class="ident">RecvError</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">run_async</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="op">!</span><span class="op">&gt;</span> {
         <span class="kw">loop</span> {
             <span class="self">self</span>.<span class="ident">tick</span>();
-            <span class="comment">// Repeat until an external event triggers more subgraphs.</span>
-            <span class="kw">while</span> <span class="number">0</span> <span class="op">==</span> <span class="self">self</span>.<span class="ident">try_recv_events</span>() {
-                <span class="comment">// TODO(mingwei): this busy-spins when other tasks are not running.</span>
-                <span class="ident">tokio::task::yield_now</span>().<span class="kw">await</span>;
-            }
+            <span class="self">self</span>.<span class="ident">recv_events_async</span>().<span class="kw">await</span><span class="question-mark">?</span>;
+            <span class="ident">tokio::task::yield_now</span>().<span class="kw">await</span>;
         }
     }
 
@@ -498,27 +506,39 @@
     <span class="doccomment">/// Returns the number of subgraphs enqueued.</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">try_recv_events</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="ident">usize</span> {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">enqueued_count</span> <span class="op">=</span> <span class="number">0</span>;
-        <span class="self">self</span>.<span class="ident">ready_queue</span>.<span class="ident">extend</span>(
-            <span class="self">self</span>.<span class="ident">event_queue_recv</span>
-                .<span class="ident">try_iter</span>()
-                .<span class="ident">filter</span>(<span class="op">|</span><span class="kw-2">&amp;</span><span class="ident">sg_id</span><span class="op">|</span> <span class="op">!</span><span class="self">self</span>.<span class="ident">subgraphs</span>[<span class="ident">sg_id</span>].<span class="ident">is_scheduled</span>.<span class="ident">replace</span>(<span class="bool-val">true</span>))
-                .<span class="ident">inspect</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="ident">enqueued_count</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>),
-        );
+        <span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Ok</span>(<span class="ident">sg_id</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">event_queue_recv</span>.<span class="ident">try_recv</span>() {
+            <span class="kw">if</span> <span class="op">!</span><span class="self">self</span>.<span class="ident">subgraphs</span>[<span class="ident">sg_id</span>].<span class="ident">is_scheduled</span>.<span class="ident">replace</span>(<span class="bool-val">true</span>) {
+                <span class="self">self</span>.<span class="ident">ready_queue</span>.<span class="ident">push_back</span>(<span class="ident">sg_id</span>);
+                <span class="ident">enqueued_count</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+            }
+        }
         <span class="ident">enqueued_count</span>
     }
 
     <span class="doccomment">/// Enqueues subgraphs triggered by external events, blocking until at</span>
     <span class="doccomment">/// least one subgraph is scheduled.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">recv_events</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">RecvError</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">recv_events</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">NonZeroUsize</span><span class="op">&gt;</span> {
         <span class="kw">loop</span> {
-            <span class="kw">let</span> <span class="ident">sg_id</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">event_queue_recv</span>.<span class="ident">recv</span>()<span class="question-mark">?</span>;
+            <span class="kw">let</span> <span class="ident">sg_id</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">event_queue_recv</span>.<span class="ident">blocking_recv</span>()<span class="question-mark">?</span>;
             <span class="kw">if</span> <span class="op">!</span><span class="self">self</span>.<span class="ident">subgraphs</span>[<span class="ident">sg_id</span>].<span class="ident">is_scheduled</span>.<span class="ident">replace</span>(<span class="bool-val">true</span>) {
                 <span class="self">self</span>.<span class="ident">ready_queue</span>.<span class="ident">push_back</span>(<span class="ident">sg_id</span>);
 
                 <span class="comment">// Enqueue any other immediate events.</span>
-                <span class="self">self</span>.<span class="ident">try_recv_events</span>();
+                <span class="kw">return</span> <span class="prelude-val">Some</span>(<span class="ident">NonZeroUsize::new</span>(<span class="self">self</span>.<span class="ident">try_recv_events</span>() <span class="op">+</span> <span class="number">1</span>).<span class="ident">unwrap</span>());
+            }
+        }
+    }
 
-                <span class="kw">return</span> <span class="prelude-val">Ok</span>(());
+    <span class="doccomment">/// Enqueues subgraphs triggered by external events asynchronously, waiting</span>
+    <span class="doccomment">/// until at least one subgraph is scheduled.</span>
+    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">recv_events_async</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">NonZeroUsize</span><span class="op">&gt;</span> {
+        <span class="kw">loop</span> {
+            <span class="kw">let</span> <span class="ident">sg_id</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">event_queue_recv</span>.<span class="ident">recv</span>().<span class="kw">await</span><span class="question-mark">?</span>;
+            <span class="kw">if</span> <span class="op">!</span><span class="self">self</span>.<span class="ident">subgraphs</span>[<span class="ident">sg_id</span>].<span class="ident">is_scheduled</span>.<span class="ident">replace</span>(<span class="bool-val">true</span>) {
+                <span class="self">self</span>.<span class="ident">ready_queue</span>.<span class="ident">push_back</span>(<span class="ident">sg_id</span>);
+
+                <span class="comment">// Enqueue any other immediate events.</span>
+                <span class="kw">return</span> <span class="prelude-val">Some</span>(<span class="ident">NonZeroUsize::new</span>(<span class="self">self</span>.<span class="ident">try_recv_events</span>() <span class="op">+</span> <span class="number">1</span>).<span class="ident">unwrap</span>());
             }
         }
     }
@@ -748,5 +768,5 @@
     <span class="kw">pub</span> <span class="ident">state</span>: <span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">Any</span><span class="op">&gt;</span>,
 }
 </code></pre></div>
-</section><section id="search" class="content hidden"></section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.61.0-nightly (6a7055661 2022-02-27)" ></div>
+</section><section id="search" class="content hidden"></section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.61.0-nightly (4ce374923 2022-02-28)" ></div>
 </body></html>
