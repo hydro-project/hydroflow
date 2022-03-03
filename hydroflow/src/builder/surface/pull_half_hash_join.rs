@@ -28,10 +28,10 @@ impl<PrevBuf, PrevStream, Key, L, Update, StreamVal>
 where
     PrevBuf: PullSurface<ItemOut = (Key, Update::Repr)>,
     PrevStream: PullSurface<ItemOut = (Key, StreamVal)>,
-    Key: 'static + Eq + Hash + Clone,
+    Key: 'static + Eq + Hash,
     L: 'static + LatticeRepr + Merge<Update>,
     Update: 'static + LatticeRepr,
-    StreamVal: 'static + Clone,
+    StreamVal: 'static,
 
     PrevBuf::InputHandoffs: Extend<PrevStream::InputHandoffs>,
     <PrevBuf::InputHandoffs as Extend<PrevStream::InputHandoffs>>::Extended: PortList<RECV>
@@ -51,10 +51,10 @@ impl<PrevBuf, PrevStream, Key, L, Update, StreamVal> BaseSurface
 where
     PrevBuf: PullSurface<ItemOut = (Key, Update::Repr)>,
     PrevStream: PullSurface<ItemOut = (Key, StreamVal)>,
-    Key: 'static + Eq + Hash + Clone,
+    Key: 'static + Eq + Hash,
     L: 'static + LatticeRepr + Merge<Update>,
     Update: 'static + LatticeRepr,
-    StreamVal: 'static + Clone,
+    StreamVal: 'static,
 
     PrevBuf::InputHandoffs: Extend<PrevStream::InputHandoffs>,
     <PrevBuf::InputHandoffs as Extend<PrevStream::InputHandoffs>>::Extended: PortList<RECV>
@@ -68,11 +68,11 @@ impl<PrevBuf, PrevStream, Key, L, Update, StreamVal> PullSurface
 where
     PrevBuf: PullSurface<ItemOut = (Key, Update::Repr)>,
     PrevStream: PullSurface<ItemOut = (Key, StreamVal)>,
-    Key: 'static + Eq + Hash + Clone,
+    Key: 'static + Eq + Hash,
     L: 'static + LatticeRepr + Merge<Update>,
-    L::Repr: Default + Clone,
+    L::Repr: Default,
     Update: 'static + LatticeRepr,
-    StreamVal: 'static + Clone,
+    StreamVal: 'static,
 
     PrevBuf::InputHandoffs: Extend<PrevStream::InputHandoffs>,
     <PrevBuf::InputHandoffs as Extend<PrevStream::InputHandoffs>>::Extended: PortList<RECV>
