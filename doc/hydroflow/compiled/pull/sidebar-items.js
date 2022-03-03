@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["BatchJoin",""],["BatchJoinState",""],["CrossJoin",""],["CrossJoinState",""],["JoinState",""],["SymmetricHashJoin",""]]});
+initSidebarItems({"struct":[["BatchJoin",""],["BatchJoinState",""],["CrossJoin",""],["CrossJoinState",""],["HalfHashJoin",""],["HalfHashJoinState",""],["JoinState",""],["SymmetricHashJoin",""]]});

@@ -264,6 +264,27 @@
 <span id="259">259</span>
 <span id="260">260</span>
 <span id="261">261</span>
+<span id="262">262</span>
+<span id="263">263</span>
+<span id="264">264</span>
+<span id="265">265</span>
+<span id="266">266</span>
+<span id="267">267</span>
+<span id="268">268</span>
+<span id="269">269</span>
+<span id="270">270</span>
+<span id="271">271</span>
+<span id="272">272</span>
+<span id="273">273</span>
+<span id="274">274</span>
+<span id="275">275</span>
+<span id="276">276</span>
+<span id="277">277</span>
+<span id="278">278</span>
+<span id="279">279</span>
+<span id="280">280</span>
+<span id="281">281</span>
+<span id="282">282</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Structs used to create the user-facing Surface API.</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! Main user-facing traits are [`BaseSurface`], [`PullSurface`], and</span>
@@ -292,6 +313,7 @@
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">pull_batch</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">pull_chain</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">pull_cross_join</span>;
+<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">pull_half_hash_join</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">pull_handoff</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">pull_iter</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">pull_join</span>;
@@ -424,6 +446,26 @@
             <span class="op">+</span> <span class="ident">PortListSplit</span><span class="op">&lt;</span><span class="ident">RECV</span>, <span class="ident"><span class="self">Self</span>::InputHandoffs</span>, <span class="ident">Suffix</span> <span class="op">=</span> <span class="ident">Other::InputHandoffs</span><span class="op">&gt;</span>,
     {
         <span class="ident">pull_batch::BatchPullSurface::new</span>(<span class="self">self</span>, <span class="ident">other</span>)
+    }
+
+    <span class="kw">fn</span> <span class="ident">stream_join</span><span class="op">&lt;</span><span class="ident">Other</span>, <span class="ident">Key</span>, <span class="ident">ValSelf</span>, <span class="ident">L</span>, <span class="ident">Update</span><span class="op">&gt;</span>(
+        <span class="self">self</span>,
+        <span class="ident">other</span>: <span class="ident">Other</span>,
+    ) -&gt; <span class="ident">pull_half_hash_join::HalfHashJoinPullSurface</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">Other</span>, <span class="ident">L</span>, <span class="ident">Update</span><span class="op">&gt;</span>
+    <span class="kw">where</span>
+        <span class="self">Self</span>: <span class="ident">Sized</span> <span class="op">+</span> <span class="ident">PullSurface</span><span class="op">&lt;</span><span class="ident">ItemOut</span> <span class="op">=</span> (<span class="ident">Key</span>, <span class="ident">ValSelf</span>)<span class="op">&gt;</span>,
+        <span class="ident">Other</span>: <span class="ident">PullSurface</span><span class="op">&lt;</span><span class="ident">ItemOut</span> <span class="op">=</span> (<span class="ident">Key</span>, <span class="ident">Update::Repr</span>)<span class="op">&gt;</span>,
+        <span class="ident">Key</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">Eq</span> <span class="op">+</span> <span class="ident">Hash</span> <span class="op">+</span> <span class="ident">Clone</span>,
+        <span class="ident">ValSelf</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">Clone</span>,
+        <span class="ident">Update</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">LatticeRepr</span>,
+        <span class="ident">L</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">LatticeRepr</span> <span class="op">+</span> <span class="ident">Merge</span><span class="op">&lt;</span><span class="ident">Update</span><span class="op">&gt;</span>,
+        <span class="ident">L::Repr</span>: <span class="ident">Clone</span>,
+
+        <span class="ident">Other::InputHandoffs</span>: <span class="ident">Extend</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::InputHandoffs</span><span class="op">&gt;</span>,
+        <span class="op">&lt;</span><span class="ident">Other::InputHandoffs</span> <span class="kw">as</span> <span class="ident">Extend</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::InputHandoffs</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::Extended</span>: <span class="ident">PortList</span><span class="op">&lt;</span><span class="ident">RECV</span><span class="op">&gt;</span>
+            <span class="op">+</span> <span class="ident">PortListSplit</span><span class="op">&lt;</span><span class="ident">RECV</span>, <span class="ident">Other::InputHandoffs</span>, <span class="ident">Suffix</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::InputHandoffs</span><span class="op">&gt;</span>,
+    {
+        <span class="ident">pull_half_hash_join::HalfHashJoinPullSurface::new</span>(<span class="self">self</span>, <span class="ident">other</span>)
     }
 
     <span class="kw">fn</span> <span class="ident">cross_join</span><span class="op">&lt;</span><span class="ident">Other</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">other</span>: <span class="ident">Other</span>) -&gt; <span class="ident">pull_cross_join::CrossJoinPullSurface</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">Other</span><span class="op">&gt;</span>
