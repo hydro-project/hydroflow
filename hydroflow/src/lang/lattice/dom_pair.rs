@@ -76,7 +76,10 @@ where
         this: &<DomPairRepr<SelfRA, SelfRB> as LatticeRepr>::Repr,
         other: &<DomPairRepr<DeltaRA, DeltaRB> as LatticeRepr>::Repr,
     ) -> Option<Ordering> {
-        SelfRA::compare(&this.0, &other.0).or_else(|| SelfRB::compare(&this.1, &other.1))
+        match SelfRA::compare(&this.0, &other.0) {
+            Some(Ordering::Equal) => SelfRB::compare(&this.1, &other.1),
+            otherwise => otherwise,
+        }
     }
 }
 
