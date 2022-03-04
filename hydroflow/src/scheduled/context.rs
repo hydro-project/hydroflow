@@ -16,10 +16,17 @@ pub struct Context<'a> {
     pub(crate) states: &'a mut [StateData],
     pub(crate) event_queue_send: &'a UnboundedSender<SubgraphId>,
     pub(crate) current_epoch: usize,
+    pub(crate) current_stratum: usize,
 }
 impl<'a> Context<'a> {
+    // Gets the current epoch (local time) count.
     pub fn current_epoch(&self) -> usize {
         self.current_epoch
+    }
+
+    // Gets the current stratum nubmer.
+    pub fn current_stratum(&self) -> usize {
+        self.current_stratum
     }
 
     pub fn waker(&self) -> std::task::Waker {
