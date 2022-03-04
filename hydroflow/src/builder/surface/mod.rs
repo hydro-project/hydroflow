@@ -94,6 +94,19 @@ pub trait BaseSurface {
         filter_map::FilterMapSurface::new(self, func)
     }
 
+    fn map_scan<State, Func, Out>(
+        self,
+        mut initial_state: State,
+        mut func: Func,
+    ) -> map::MapSurface<Self, MapScanMapFunc<Self, State, Func, Out>>
+    where
+        Self: Sized,
+        Func: FnMut(&mut State, Self::ItemOut) -> Out,
+    {
+        // TODO(mingwei): use state API.
+        self.map(move |item| func(&mut initial_state, item))
+    }
+
     fn inspect<Func>(self, mut func: Func) -> map::MapSurface<Self, InspectMapFunc<Self, Func>>
     where
         Self: Sized,
@@ -106,7 +119,15 @@ pub trait BaseSurface {
     }
 }
 
-pub type InspectMapFunc<Prev: BaseSurface, Func> = impl FnMut(Prev::ItemOut) -> Prev::ItemOut;
+pub type InspectMapFunc<Prev, Func>
+where
+    Prev: BaseSurface,
+= impl FnMut(Prev::ItemOut) -> Prev::ItemOut;
+
+pub type MapScanMapFunc<Prev, State, Func, Out>
+where
+    Prev: BaseSurface,
+= impl FnMut(Prev::ItemOut) -> Out;
 
 pub trait PullSurface: BaseSurface {
     type InputHandoffs: PortList<RECV>;
