@@ -187,6 +187,11 @@
 <span id="182">182</span>
 <span id="183">183</span>
 <span id="184">184</span>
+<span id="185">185</span>
+<span id="186">186</span>
+<span id="187">187</span>
+<span id="188">188</span>
+<span id="189">189</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">futures::Stream</span>;
 
 <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::build</span>::{<span class="ident">PullBuild</span>, <span class="ident">PushBuild</span>};
@@ -216,6 +221,11 @@
     <span class="kw">pub</span> <span class="ident">hydroflow</span>: <span class="ident">Hydroflow</span>,
 }
 <span class="kw">impl</span> <span class="ident">HydroflowBuilder</span> {
+    <span class="doccomment">/// Creates a new empty builder.</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="self">Self</span> {
+        <span class="ident">Default::default</span>()
+    }
+
     <span class="doccomment">/// Creates a handoff, returning push and pull ends which can be chained</span>
     <span class="doccomment">/// using the Surface API.</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">make_edge</span><span class="op">&lt;</span><span class="ident">Name</span>, <span class="ident">H</span>, <span class="ident">T</span><span class="op">&gt;</span>(

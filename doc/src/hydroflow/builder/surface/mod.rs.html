@@ -285,6 +285,27 @@
 <span id="280">280</span>
 <span id="281">281</span>
 <span id="282">282</span>
+<span id="283">283</span>
+<span id="284">284</span>
+<span id="285">285</span>
+<span id="286">286</span>
+<span id="287">287</span>
+<span id="288">288</span>
+<span id="289">289</span>
+<span id="290">290</span>
+<span id="291">291</span>
+<span id="292">292</span>
+<span id="293">293</span>
+<span id="294">294</span>
+<span id="295">295</span>
+<span id="296">296</span>
+<span id="297">297</span>
+<span id="298">298</span>
+<span id="299">299</span>
+<span id="300">300</span>
+<span id="301">301</span>
+<span id="302">302</span>
+<span id="303">303</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Structs used to create the user-facing Surface API.</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! Main user-facing traits are [`BaseSurface`], [`PullSurface`], and</span>
@@ -381,6 +402,19 @@
         <span class="ident">filter_map::FilterMapSurface::new</span>(<span class="self">self</span>, <span class="ident">func</span>)
     }
 
+    <span class="kw">fn</span> <span class="ident">map_scan</span><span class="op">&lt;</span><span class="ident">State</span>, <span class="ident">Func</span>, <span class="ident">Out</span><span class="op">&gt;</span>(
+        <span class="self">self</span>,
+        <span class="kw-2">mut</span> <span class="ident">initial_state</span>: <span class="ident">State</span>,
+        <span class="kw-2">mut</span> <span class="ident">func</span>: <span class="ident">Func</span>,
+    ) -&gt; <span class="ident">map::MapSurface</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">MapScanMapFunc</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">State</span>, <span class="ident">Func</span>, <span class="ident">Out</span><span class="op">&gt;</span><span class="op">&gt;</span>
+    <span class="kw">where</span>
+        <span class="self">Self</span>: <span class="ident">Sized</span>,
+        <span class="ident">Func</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;mut</span> <span class="ident">State</span>, <span class="ident"><span class="self">Self</span>::ItemOut</span>) -&gt; <span class="ident">Out</span>,
+    {
+        <span class="comment">// TODO(mingwei): use state API.</span>
+        <span class="self">self</span>.<span class="ident">map</span>(<span class="kw">move</span> <span class="op">|</span><span class="ident">item</span><span class="op">|</span> <span class="ident">func</span>(<span class="kw-2">&amp;mut</span> <span class="ident">initial_state</span>, <span class="ident">item</span>))
+    }
+
     <span class="kw">fn</span> <span class="ident">inspect</span><span class="op">&lt;</span><span class="ident">Func</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="kw-2">mut</span> <span class="ident">func</span>: <span class="ident">Func</span>) -&gt; <span class="ident">map::MapSurface</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">InspectMapFunc</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">Func</span><span class="op">&gt;</span><span class="op">&gt;</span>
     <span class="kw">where</span>
         <span class="self">Self</span>: <span class="ident">Sized</span>,
@@ -393,7 +427,15 @@
     }
 }
 
-<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">InspectMapFunc</span><span class="op">&lt;</span><span class="ident">Prev</span>: <span class="ident">BaseSurface</span>, <span class="ident">Func</span><span class="op">&gt;</span> <span class="op">=</span> <span class="kw">impl</span> <span class="ident">FnMut</span>(<span class="ident">Prev::ItemOut</span>) -&gt; <span class="ident">Prev::ItemOut</span>;
+<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">InspectMapFunc</span><span class="op">&lt;</span><span class="ident">Prev</span>, <span class="ident">Func</span><span class="op">&gt;</span>
+<span class="kw">where</span>
+    <span class="ident">Prev</span>: <span class="ident">BaseSurface</span>,
+<span class="op">=</span> <span class="kw">impl</span> <span class="ident">FnMut</span>(<span class="ident">Prev::ItemOut</span>) -&gt; <span class="ident">Prev::ItemOut</span>;
+
+<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">MapScanMapFunc</span><span class="op">&lt;</span><span class="ident">Prev</span>, <span class="ident">State</span>, <span class="ident">Func</span>, <span class="ident">Out</span><span class="op">&gt;</span>
+<span class="kw">where</span>
+    <span class="ident">Prev</span>: <span class="ident">BaseSurface</span>,
+<span class="op">=</span> <span class="kw">impl</span> <span class="ident">FnMut</span>(<span class="ident">Prev::ItemOut</span>) -&gt; <span class="ident">Out</span>;
 
 <span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">PullSurface</span>: <span class="ident">BaseSurface</span> {
     <span class="kw">type</span> <span class="ident">InputHandoffs</span>: <span class="ident">PortList</span><span class="op">&lt;</span><span class="ident">RECV</span><span class="op">&gt;</span>;
