@@ -175,19 +175,29 @@ fn groupby_nonmon_surface() {
     input.give(Iter(BATCH_A.iter().cloned()));
     input.flush();
     hf.tick_stratum();
+    assert_eq!((0, 0), (hf.current_epoch(), hf.current_stratum()));
+
     assert_eq!(None, output.get());
+
     hf.tick();
+    assert_eq!((1, 1), (hf.current_epoch(), hf.current_stratum()));
+
     assert_eq!(Some((BATCH_A.len(), "justin")), output.get());
 
     // Give BATCH_B but only run this stratum.
     input.give(Iter(BATCH_B.iter().cloned()));
     input.flush();
+
     hf.tick_stratum();
+    assert_eq!((1, 1), (hf.current_epoch(), hf.current_stratum()));
 
     // Give BATCH_C and run all to completion.
     input.give(Iter(BATCH_C.iter().cloned()));
     input.flush();
+
     hf.tick();
+    assert_eq!((3, 1), (hf.current_epoch(), hf.current_stratum()));
+
     // Second batch has 7+3 = 10 items.
     assert_eq!(Some((BATCH_B.len() + BATCH_C.len(), "mae")), output.get());
     assert_eq!(false, hf.next_stratum());
