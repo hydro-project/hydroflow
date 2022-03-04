@@ -1,4 +1,4 @@
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::rc::Rc;
 
@@ -14,7 +14,7 @@ const BATCH_B: [&'static str; 7] = [
     "mingwei", "lauren", "justin", "mae", "mingwei", "justin", "pierce",
 ];
 /// Third & final batch.
-const BATCH_C: [&'static str; 2] = ["joe", "mae"];
+const BATCH_C: [&'static str; 3] = ["joe", "mae", "zach"];
 
 /// Basic monotonic threshold: release a value once after it has been seen three times.
 /// Uses the core API.
@@ -112,8 +112,83 @@ fn groupby_monotonic_surface() {
     assert_eq!(&["mingwei", "justin", "mae"], &**output.borrow());
 }
 
+/// Non-monotonic barrier. Find the median name.
+/// Takes in BATCH_A in the first epoch, then BATCH_B *and* BATCH_C in the second epoch.
 #[test]
-#[ignore]
-fn groupby_nonmon_core() {
-    todo!("(mingwei): Requires strata.");
+fn groupby_nonmon_surface() {
+    use hydroflow::builder::prelude::*;
+
+    let mut hf_builder = HydroflowBuilder::new();
+    let (input, source_recv) =
+        hf_builder.add_channel_input::<_, _, VecHandoff<&'static str>>("source");
+
+    let (a_send, a_recv) = hf_builder.make_edge::<_, VecHandoff<&'static str>, _>("names a-m");
+    let (z_send, z_recv) = hf_builder.make_edge::<_, VecHandoff<&'static str>, _>("names n-z");
+    let (stratum_boundary_send, stratum_boundary_recv) =
+        hf_builder.make_edge::<_, VecHandoff<&'static str>, _>("names n-z");
+
+    // Make output first, to mess with scheduler order.
+    let output = <Rc<Cell<Option<(usize, &'static str)>>>>::default();
+    let output_ref = output.clone();
+    hf_builder.add_subgraph_stratified(
+        "find median",
+        1,
+        stratum_boundary_recv
+            .map(|mut buffer| {
+                let batch_size = buffer.len();
+                let median = *buffer
+                    .make_contiguous()
+                    .select_nth_unstable(batch_size / 2)
+                    .1;
+                (batch_size, median)
+            })
+            .pull_to_push()
+            .map(Some)
+            .for_each(move |val| output_ref.set(val)),
+    );
+
+    // Partition then re-merge names to make graph more interesting.
+    // Want to have multiple compiled components to test scheduler.
+    hf_builder.add_subgraph_stratified(
+        "split",
+        0,
+        source_recv.flatten().pull_to_push().partition(
+            |&name| name < "n",
+            hf_builder.start_tee().map(Some).push_to(a_send),
+            hf_builder.start_tee().map(Some).push_to(z_send),
+        ),
+    );
+    hf_builder.add_subgraph_stratified(
+        "merge",
+        0,
+        a_recv
+            .flatten()
+            .chain(z_recv.flatten())
+            .pull_to_push()
+            .map(Some)
+            .push_to(stratum_boundary_send),
+    );
+
+    let mut hf = hf_builder.build();
+
+    // Give BATCH_A and cross barrier to run next stratum.
+    input.give(Iter(BATCH_A.iter().cloned()));
+    input.flush();
+    hf.tick_stratum();
+    assert_eq!(None, output.get());
+    hf.tick();
+    assert_eq!(Some((BATCH_A.len(), "justin")), output.get());
+
+    // Give BATCH_B but only run this stratum.
+    input.give(Iter(BATCH_B.iter().cloned()));
+    input.flush();
+    hf.tick_stratum();
+
+    // Give BATCH_C and run all to completion.
+    input.give(Iter(BATCH_C.iter().cloned()));
+    input.flush();
+    hf.tick();
+    // Second batch has 7+3 = 10 items.
+    assert_eq!(Some((BATCH_B.len() + BATCH_C.len(), "mae")), output.get());
+    assert_eq!(false, hf.next_stratum());
 }
