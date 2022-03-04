@@ -1,5 +1,5 @@
 {
-  "lastUpdate": 1646279233724,
+  "lastUpdate": 1646365678690,
   "repoUrl": "https://github.com/hydro-project/hydroflow",
   "entries": {
     "Benchmark": [
@@ -10447,6 +10447,82 @@
             "name": "reachability/hydroflow",
             "value": 3095240,
             "range": "± 45969",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Justin Jaffray",
+            "username": "justinj",
+            "email": "justin.jaffray@gmail.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "a4d94a4bad2483eb11bbe86bc9e7c05f93a30bc8",
+          "message": "Rewrite KVS in dataflow (#91)\n\n* add stream join operator\r\n\r\n* Add KVS in dataflow\r\n\r\nThis is a first pass at a dataflow based KVS. It is missing a bunch of clock\r\nstuff, but I was getting anxious about not merging this so here's an early\r\nversion of it.\r\n\r\nThe structure of the program is roughly as follows:\r\n\r\n```mermaid\r\ngraph BT\r\n    Y[Read Requests] --> Z[Streaming Join]\r\n    X[Received Batches] --> Z\r\n    Z --> Q[Respond to Read Request]\r\n\r\n    F[Write Requests] --> B\r\n    A[Epoch Timer] --> B[Batcher / Merger]\r\n    B --> C[Join]\r\n    G[Ownership] --> C\r\n    C --> E[Network Shuffle]\r\n```",
+          "timestamp": "2022-03-03T20:06:44Z",
+          "url": "https://github.com/hydro-project/hydroflow/commit/a4d94a4bad2483eb11bbe86bc9e7c05f93a30bc8"
+        },
+        "date": 1646365678686,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "arithmetic/hydroflow/compiled",
+            "value": 379450,
+            "range": "± 14058",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fan_in/hydroflow",
+            "value": 210470266,
+            "range": "± 6160975",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fan_out/hydroflow/scheduled",
+            "value": 120967636,
+            "range": "± 3546230",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fork_join/hydroflow",
+            "value": 13315614,
+            "range": "± 517405",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fork_join/hydroflow_builder",
+            "value": 39535762,
+            "range": "± 1265805",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "identity/hydroflow",
+            "value": 61835552,
+            "range": "± 3062415",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "identity/hydroflow/compiled",
+            "value": 18045364,
+            "range": "± 426834",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "reachability/hydroflow/scheduled",
+            "value": 3152387,
+            "range": "± 88568",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "reachability/hydroflow",
+            "value": 3196559,
+            "range": "± 127362",
             "unit": "ns/iter"
           }
         ]
