@@ -27,6 +27,11 @@ pub struct HydroflowBuilder {
     pub hydroflow: Hydroflow,
 }
 impl HydroflowBuilder {
+    /// Creates a new empty builder.
+    pub fn new() -> Self {
+        Default::default()
+    }
+
     /// Creates a handoff, returning push and pull ends which can be chained
     /// using the Surface API.
     pub fn make_edge<Name, H, T>(
