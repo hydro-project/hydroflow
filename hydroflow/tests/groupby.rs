@@ -7,14 +7,19 @@ use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::scheduled::graph_ext::GraphExt;
 use hydroflow::scheduled::handoff::VecHandoff;
 
+/// First batch of items for monotonic threshold test.
 const BATCH_A: [&'static str; 7] = ["megan", "davis", "mingwei", "john", "justin", "joe", "mae"];
+/// Second batch.
 const BATCH_B: [&'static str; 7] = [
     "mingwei", "lauren", "justin", "mae", "mingwei", "justin", "pierce",
 ];
+/// Third & final batch.
 const BATCH_C: [&'static str; 2] = ["joe", "mae"];
 
+/// Basic monotonic threshold: release a value once after it has been seen three times.
+/// Uses the core API.
 #[test]
-fn groupby_core_monotonic() {
+fn groupby_monotonic_core() {
     let mut hf = Hydroflow::new();
 
     let (source_send, source_recv) = hf.make_edge::<_, VecHandoff<&'static str>>("source handoff");
@@ -62,14 +67,10 @@ fn groupby_core_monotonic() {
     assert_eq!(&["mingwei", "justin", "mae"], &**output.borrow());
 }
 
+/// Basic monotonic threshold: release a value once after it has been seen three times.
+/// Uses the surface (builder) API.
 #[test]
-#[ignore]
-fn groupby_core_nonmon() {
-    todo!("(mingwei): Requires strata.");
-}
-
-#[test]
-fn groupby_surface_monotonic() {
+fn groupby_monotonic_surface() {
     use hydroflow::builder::prelude::*;
 
     let mut hf_builder = HydroflowBuilder::new();
@@ -109,4 +110,10 @@ fn groupby_surface_monotonic() {
     input.flush();
     hf.tick();
     assert_eq!(&["mingwei", "justin", "mae"], &**output.borrow());
+}
+
+#[test]
+#[ignore]
+fn groupby_nonmon_core() {
+    todo!("(mingwei): Requires strata.");
 }
