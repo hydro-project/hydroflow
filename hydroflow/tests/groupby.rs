@@ -67,3 +67,46 @@ fn groupby_core_monotonic() {
 fn groupby_core_nonmon() {
     todo!("(mingwei): Requires strata.");
 }
+
+#[test]
+fn groupby_surface_monotonic() {
+    use hydroflow::builder::prelude::*;
+
+    let mut hf_builder = HydroflowBuilder::new();
+    let (input, source_recv) =
+        hf_builder.add_channel_input::<_, _, VecHandoff<&'static str>>("source");
+
+    let output = <Rc<RefCell<Vec<&'static str>>>>::default();
+    let output_ref = output.clone();
+
+    hf_builder.add_subgraph(
+        "main",
+        source_recv
+            .flatten()
+            .map_scan(HashMap::new(), |groups, item| {
+                let count = groups.entry(item).or_default();
+                *count += 1;
+                (item, *count)
+            })
+            .filter_map(|(item, count)| if 3 == count { Some(item) } else { None })
+            .pull_to_push()
+            .for_each(move |item| output_ref.borrow_mut().push(item)),
+    );
+
+    let mut hf = hf_builder.build();
+
+    input.give(Iter(BATCH_A.iter().cloned()));
+    input.flush();
+    hf.tick();
+    assert_eq!(0, output.borrow().len());
+
+    input.give(Iter(BATCH_B.iter().cloned()));
+    input.flush();
+    hf.tick();
+    assert_eq!(&["mingwei", "justin"], &**output.borrow());
+
+    input.give(Iter(BATCH_C.iter().cloned()));
+    input.flush();
+    hf.tick();
+    assert_eq!(&["mingwei", "justin", "mae"], &**output.borrow());
+}
