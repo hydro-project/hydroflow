@@ -74,10 +74,9 @@ impl Hydroflow {
 
     /// Runs the dataflow until no more work is immediately available.
     pub fn tick(&mut self) {
-        while {
+        while self.next_stratum() {
             self.tick_stratum();
-            self.next_stratum()
-        } {}
+        }
     }
 
     /// Runs the current stratum of the dataflow until no more work is immediately available.
@@ -121,25 +120,30 @@ impl Hydroflow {
         }
     }
 
-    /// Go to the next stratum which has work available. Return true if more work is available, otherwise false if no work is immediately available on any strata.
+    /// Go to the next stratum which has work available, possibly the current stratum.
+    /// Return true if more work is available, otherwise false if no work is immediately available on any strata.
     pub fn next_stratum(&mut self) -> bool {
         self.try_recv_events();
 
         let old_stratum = self.current_stratum;
-        while {
+        loop {
+            // If current stratum has work, return true.
+            if !self.ready_queue[self.current_stratum].is_empty() {
+                return true;
+            }
+            // Increment stratum counter.
             self.current_stratum += 1;
             if self.current_stratum >= self.ready_queue.len() {
                 self.current_stratum = 0;
                 self.current_epoch += 1;
             }
-            old_stratum != self.current_stratum
-        } {
-            if !self.ready_queue[self.current_stratum].is_empty() {
-                return true;
+            // After incrementing, exit if we made a full loop around the strata.
+            if old_stratum == self.current_stratum {
+                // Note: if current stratum had work, the very first loop iteration would've
+                // returned true. Therefore we can return false without checking.
+                return false;
             }
         }
-
-        false
     }
 
     /// Run the dataflow graph to completion.
