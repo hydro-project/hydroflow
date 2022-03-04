@@ -62,6 +62,16 @@ impl Hydroflow {
         Reactor::new(self.event_queue_send.clone())
     }
 
+    // Gets the current epoch (local time) count.
+    pub fn current_epoch(&self) -> usize {
+        self.current_epoch
+    }
+
+    // Gets the current stratum nubmer.
+    pub fn current_stratum(&self) -> usize {
+        self.current_stratum
+    }
+
     /// Runs the dataflow until no more work is immediately available.
     pub fn tick(&mut self) {
         while {
@@ -87,6 +97,7 @@ impl Hydroflow {
                     states: &mut self.states,
                     event_queue_send: &self.event_queue_send,
                     current_epoch: self.current_epoch,
+                    current_stratum: self.current_stratum,
                 };
                 sg_data.subgraph.run(context);
             }
@@ -114,14 +125,16 @@ impl Hydroflow {
     pub fn next_stratum(&mut self) -> bool {
         self.try_recv_events();
 
-        let mut next_stratum = self.current_stratum;
+        let old_stratum = self.current_stratum;
         while {
-            next_stratum += 1;
-            next_stratum %= self.ready_queue.len();
-            next_stratum != self.current_stratum
+            self.current_stratum += 1;
+            if self.current_stratum >= self.ready_queue.len() {
+                self.current_stratum = 0;
+                self.current_epoch += 1;
+            }
+            old_stratum != self.current_stratum
         } {
-            if !self.ready_queue[next_stratum].is_empty() {
-                self.current_stratum = next_stratum;
+            if !self.ready_queue[self.current_stratum].is_empty() {
                 return true;
             }
         }
