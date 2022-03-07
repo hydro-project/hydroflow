@@ -182,15 +182,15 @@ pub trait PullSurface: BaseSurface {
         pull_batch::BatchPullSurface::new(self, other)
     }
 
-    fn stream_join<Other, Key, ValSelf, L, Update>(
+    fn half_hash_join<Other, Key, ValSelf, L, Update>(
         self,
         other: Other,
     ) -> pull_half_hash_join::HalfHashJoinPullSurface<Self, Other, L, Update>
     where
         Self: Sized + PullSurface<ItemOut = (Key, ValSelf)>,
         Other: PullSurface<ItemOut = (Key, Update::Repr)>,
-        Key: 'static + Eq + Hash + Clone,
-        ValSelf: 'static + Clone,
+        Key: 'static + Eq + Hash,
+        ValSelf: 'static,
         Update: 'static + LatticeRepr,
         L: 'static + LatticeRepr + Merge<Update>,
         L::Repr: Clone,

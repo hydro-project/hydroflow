@@ -336,6 +336,36 @@ impl<K: 'static + Eq, V: 'static, const N: usize> Collection<K, V> for MaskedArr
     }
 }
 
+impl<K: 'static + Eq, V: 'static> Collection<K, V> for Single<(K, V)> {
+    fn get(&self, key: &K) -> Option<&V> {
+        if key == &self.0 .0 {
+            Some(&self.0 .1)
+        } else {
+            None
+        }
+    }
+    fn get_mut(&mut self, key: &K) -> Option<&mut V> {
+        if key == &self.0 .0 {
+            Some(&mut self.0 .1)
+        } else {
+            None
+        }
+    }
+    fn len(&self) -> usize {
+        1
+    }
+
+    type Keys<'s> = std::iter::Once<&'s K>;
+    fn keys(&self) -> Self::Keys<'_> {
+        std::iter::once(&self.0 .0)
+    }
+
+    type Entries<'s> = std::iter::Once<(&'s K, &'s V)>;
+    fn entries(&self) -> Self::Entries<'_> {
+        std::iter::once((&self.0 .0, &self.0 .1))
+    }
+}
+
 #[repr(transparent)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Single<T>(pub T);
