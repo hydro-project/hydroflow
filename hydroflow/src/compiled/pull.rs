@@ -46,11 +46,10 @@ where
 impl<'a, K, Buf, L, Update, Stream, StreamV> Iterator
     for HalfHashJoin<'a, K, Buf, L, Update, Stream, StreamV>
 where
-    K: Eq + std::hash::Hash + Clone,
+    K: Eq + std::hash::Hash,
     L: LatticeRepr + Merge<Update>,
     L::Repr: Default,
     Update: LatticeRepr,
-    StreamV: Clone,
     Buf: Iterator<Item = (K, Update::Repr)>,
     Stream: Iterator<Item = (K, StreamV)>,
 {

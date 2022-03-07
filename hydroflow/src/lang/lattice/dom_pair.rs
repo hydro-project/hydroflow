@@ -52,11 +52,19 @@ where
     }
 }
 
-impl<Ra: LatticeRepr, Rb: LatticeRepr> Convert<DomPairRepr<Ra, Rb>> for DomPairRepr<Ra, Rb> {
+impl<SelfRa, SelfRb, TargetRa, TargetRb> Convert<DomPairRepr<TargetRa, TargetRb>>
+    for DomPairRepr<SelfRa, SelfRb>
+where
+    SelfRa: LatticeRepr + Convert<TargetRa>,
+    SelfRb: LatticeRepr + Convert<TargetRb>,
+    TargetRa: LatticeRepr<Lattice = SelfRa::Lattice>,
+    TargetRb: LatticeRepr<Lattice = SelfRb::Lattice>,
+{
     fn convert(
-        this: <DomPairRepr<Ra, Rb> as LatticeRepr>::Repr,
-    ) -> <DomPairRepr<Ra, Rb> as LatticeRepr>::Repr {
-        this
+        this: <DomPairRepr<SelfRa, SelfRb> as LatticeRepr>::Repr,
+    ) -> <DomPairRepr<TargetRa, TargetRb> as LatticeRepr>::Repr {
+        let (a, b) = this;
+        (SelfRa::convert(a), SelfRb::convert(b))
     }
 }
 

@@ -1,6 +1,6 @@
 #![feature(never_type)]
 
-use std::time::Duration;
+use std::{collections::HashMap, time::Duration};
 
 use hydroflow::{
     builder::{
@@ -10,7 +10,9 @@ use hydroflow::{
     },
     lang::{
         collections::Single,
-        lattice::{map_union::MapUnionRepr, ord::MaxRepr, set_union::SetUnionRepr},
+        lattice::{
+            dom_pair::DomPairRepr, map_union::MapUnionRepr, ord::MaxRepr, set_union::SetUnionRepr,
+        },
         tag,
     },
     scheduled::handoff::VecHandoff,
@@ -24,7 +26,9 @@ use tokio_stream::{wrappers::ReceiverStream, StreamExt};
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
 struct ActorId(u64);
 
-#[derive(Clone, Debug)]
+type Clock = HashMap<usize, u64>;
+
+#[derive(Debug)]
 enum Message<K, V>
 where
     K: Send + Clone,
@@ -32,6 +36,8 @@ where
 {
     // A KV set request from a client.
     Set(K, V),
+    // A KV get request from a client.
+    Get(K, futures::channel::oneshot::Sender<(Clock, V)>),
     // A set of data that I am responsible for, sent to me by another worker.
     Batch((usize, u64), Vec<(K, V)>),
 }
@@ -53,10 +59,18 @@ fn main() {
             tokio::time::sleep(Duration::from_millis(10)).await;
             for s in &senders {
                 i += 1;
-                s.send(Message::Set(format!("foo{}", i % 100), "bar".into()))
+                s.send(Message::Set(format!("foo{}", i % 100), format!("bar{}", i)))
                     .await
                     .unwrap();
             }
+            i += 1;
+            let (sender, receiver) = futures::channel::oneshot::channel();
+            senders[0]
+                .send(Message::Get("foo50".to_owned(), sender))
+                .await
+                .unwrap();
+
+            println!("got answer: {:?}", receiver.await);
         }
     });
 }
@@ -67,7 +81,7 @@ type MessageSender<K, V> = Sender<Message<K, V>>;
 fn make_communication_matrix<K, V>(n: u64) -> (Matrix<K, V>, Vec<MessageSender<K, V>>)
 where
     K: Send + Clone,
-    V: Send + Clone,
+    V: Ord + Send + Clone,
 {
     let mut receivers = Vec::new();
     let mut senders: Vec<_> = (0..n).map(|_| Vec::new()).collect();
@@ -91,7 +105,7 @@ fn spawn<F, K, V>(n: u64, f: F) -> Vec<Sender<Message<K, V>>>
 where
     F: 'static + Fn(usize, Receiver<Message<K, V>>, Vec<Sender<Message<K, V>>>) + Send + Clone,
     K: 'static + Send + Clone,
-    V: 'static + Send + Clone,
+    V: 'static + Ord + Send + Clone,
 {
     let (matrix, senders) = make_communication_matrix(n);
     for (i, (receiver, senders)) in matrix.into_iter().enumerate() {
@@ -126,6 +140,12 @@ impl Iterator for PerQuantumPulser {
     }
 }
 
+type ClockRepr = MapUnionRepr<tag::HASH_MAP, usize, MaxRepr<u64>>;
+type ClockUpdateRepr = MapUnionRepr<tag::SINGLE, usize, MaxRepr<u64>>;
+
+type ClockedDataRepr<V> = DomPairRepr<ClockRepr, MaxRepr<V>>;
+type ClockedUpdateRepr<V> = DomPairRepr<ClockUpdateRepr, MaxRepr<V>>;
+
 fn spawn_threads<K, V>(workers: u64) -> Vec<Sender<Message<K, V>>>
 where
     K: 'static + Clone + Eq + std::hash::Hash + Send + std::fmt::Debug,
@@ -152,16 +172,13 @@ where
                     }
                 });
 
-                let (reads_send, reads_recv) =
-                    hf.add_channel_input::<_, Option<K>, VecHandoff<K>>("reads");
-
-                let _ = reads_send;
-
                 let q_recv = hf.add_input_from_stream::<_, Option<_>, VecHandoff<_>, _>("writes", ReceiverStream::new(receiver).map(Some));
 
                 // Make the ownership table. Everyone owns everything.
                 let ownership = (0..senders.len()).map(|i| ((), Single(i)));
 
+                let (reads_send, reads_recv) =
+                    hf.make_edge::<_, VecHandoff<(K, futures::channel::oneshot::Sender<(Clock, V)>)>, Option<(K, futures::channel::oneshot::Sender<(Clock, V)>)>>("reads");
                 let (x_send, x_recv) =
                     hf.make_edge::<_, VecHandoff<(usize, u64, Vec<(K, V)>)>, Option<(usize, u64, Vec<(K, V)>)>>("received_batches");
                 let (y_send, y_recv) = hf.make_edge::<_, VecHandoff<(K, V)>, Option<(K, V)>>("write_requests");
@@ -180,7 +197,7 @@ where
                         .map(|(epoch, kv)| {
                             ((), (epoch, kv))
                         })
-                        .stream_join::<_, _, _, SetUnionRepr<tag::VEC, usize>, SetUnionRepr<tag::SINGLE, usize>>(IterPullSurface::new(ownership))
+                        .half_hash_join::<_, _, _, SetUnionRepr<tag::VEC, usize>, SetUnionRepr<tag::SINGLE, usize>>(IterPullSurface::new(ownership))
                         .flat_map(|((), (epoch, (k, v)), receiver)| {
                             receiver.into_iter().map(move |i|
                                 Single(((i, epoch), Single((k.clone(), v.clone()))))
@@ -202,6 +219,7 @@ where
                         }),
                 );
 
+                // TODO(justin): this is super ugly, we probably need a macro or something for this.
                 hf.add_subgraph(
                     "demultiplexer",
                     q_recv.flatten().pull_to_push().partition(
@@ -216,7 +234,9 @@ where
                             })
                             .push_to(y_send),
                         hf.start_tee()
-                            .map(|msg| {
+                        .partition(
+                        |x| matches!(x, Message::Batch(_, _)),
+                            hf.start_tee().map(move |msg| {
                                 if let Message::Batch((id, epoch), batch) = msg {
                                     Some((id, epoch, batch))
                                 } else {
@@ -224,19 +244,39 @@ where
                                 }
                             })
                             .push_to(x_send),
+                            hf.start_tee().map(|msg| {
+                                if let Message::Get(k, sender) = msg {
+                                    Some((k, sender))
+                                } else {
+                                    unreachable!()
+                                }
+                            })
+                            .push_to(reads_send),
+                        )
                     ),
                 );
 
-                hf.add_subgraph("read_handler", reads_recv.flatten().map(|k| (k, ())).stream_join::<_, _, _, MaxRepr<V>, MaxRepr<V>>(
-                    x_recv.flatten().flat_map(|(id, epoch, batch)| {
-                        println!("got batch: {:?} {:?} {:?}", id, epoch, batch);
-                        // TODO(justin): this doesn't do the clocks. I
-                        // think we need to do some weird join against a
-                        // singleton that I don't really understand yet.
-                        batch.into_iter()
-                    })).pull_to_push().for_each(|x| {
-                        println!("read: {:?}", x)
-                    })
+                let my_id = id;
+                hf.add_subgraph(
+                    "read_handler",
+                    reads_recv.flatten().map(
+                        |(k, ch)| (k, ch)
+                        ).half_hash_join::<_, _, _, ClockedDataRepr<V>, ClockedUpdateRepr<V>>(
+                    x_recv
+                        .flatten()
+                        .flat_map(move |(id, epoch, batch)| {
+                            batch.into_iter().map(
+                                move |(k, v)| {
+                                    let x = (k, (Single((id, epoch)), v));
+                                    println!("{} updating with = {:?}", my_id, x);
+                                    x
+                                }
+                            )
+                        }))
+                        .pull_to_push()
+                        .for_each(|(_k, sender, (clock, v))| {
+                            sender.send((clock, v)).unwrap()
+                        })
                 );
 
                 hf.build().run_async().await.unwrap();

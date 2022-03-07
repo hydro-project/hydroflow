@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 hydroflow = { path = "../hydroflow" }
 tokio-stream = { version = "0.1.8" }
+futures = "0.3.21"
