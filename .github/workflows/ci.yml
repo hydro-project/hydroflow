@@ -124,6 +124,10 @@ jobs:
         env:
           RUSTDOCFLAGS: -Dwarnings
 
+      - name: Include design docs
+        shell: bash
+        run: mv design_docs target/
+
       - name: Push to gh-pages
         # Do not deploy PRs.
         if: ${{ github.event_name != 'pull_request' }}
@@ -139,7 +143,7 @@ jobs:
           git -C "$WWW_DIR" symbolic-ref HEAD refs/heads/gh-pages
           git -C "$WWW_DIR" reset
           git -C "$WWW_DIR" checkout -- .gitignore index.md
-          git -C "$WWW_DIR" add doc
+          git -C "$WWW_DIR" add doc design_docs
           if git -C "$WWW_DIR" -c 'user.name=github-actions[bot]' -c 'user.email=41898282+github-actions[bot]@users.noreply.github.com' \
             commit -m "Update Docs $(date -I) $(git rev-parse HEAD)";
           then
