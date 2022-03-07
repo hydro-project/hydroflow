@@ -29,10 +29,9 @@ impl<Pull> PushSurface for PivotPushSurface<Pull>
 where
     Pull: PullSurface,
 {
-    type Output<Next>
+    type Output<Next> = PivotSurface<Pull, Next>
     where
-        Next: PushSurfaceReversed<ItemIn = Self::ItemOut>,
-    = PivotSurface<Pull, Next>;
+        Next: PushSurfaceReversed<ItemIn = Self::ItemOut>;
 
     fn push_to<Next>(self, next: Next) -> Self::Output<Next>
     where

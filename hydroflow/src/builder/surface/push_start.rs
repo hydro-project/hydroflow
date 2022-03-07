@@ -25,10 +25,9 @@ impl<Out> BaseSurface for StartPushSurface<Out> {
 }
 
 impl<Out> PushSurface for StartPushSurface<Out> {
-    type Output<Next>
+    type Output<Next> = Next
     where
-        Next: PushSurfaceReversed<ItemIn = Self::ItemOut>,
-    = Next;
+        Next: PushSurfaceReversed<ItemIn = Self::ItemOut>;
 
     fn push_to<Next>(self, next: Next) -> Self::Output<Next>
     where
