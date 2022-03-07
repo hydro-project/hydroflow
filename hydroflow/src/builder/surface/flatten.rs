@@ -50,10 +50,9 @@ where
     Prev: PushSurface,
     Prev::ItemOut: IntoIterator,
 {
-    type Output<Next>
+    type Output<Next> = Prev::Output<FlattenPushSurfaceReversed<Next, Prev::ItemOut>>
     where
-        Next: PushSurfaceReversed<ItemIn = Self::ItemOut>,
-    = Prev::Output<FlattenPushSurfaceReversed<Next, Prev::ItemOut>>;
+        Next: PushSurfaceReversed<ItemIn = Self::ItemOut>;
 
     fn push_to<Next>(self, next: Next) -> Self::Output<Next>
     where

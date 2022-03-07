@@ -50,10 +50,9 @@ where
     Prev: PushSurface,
     Func: FnMut(Prev::ItemOut) -> Option<Out>,
 {
-    type Output<Next>
+    type Output<Next> = Prev::Output<FilterMapPushSurfaceReversed<Next, Func, Prev::ItemOut>>
     where
-        Next: PushSurfaceReversed<ItemIn = Self::ItemOut>,
-    = Prev::Output<FilterMapPushSurfaceReversed<Next, Func, Prev::ItemOut>>;
+        Next: PushSurfaceReversed<ItemIn = Self::ItemOut>;
 
     fn push_to<Next>(self, next: Next) -> Self::Output<Next>
     where
