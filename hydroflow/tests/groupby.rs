@@ -219,11 +219,12 @@ fn groupby_nonmon_surface() {
             .flat_map(|batch| {
                 batch
                     .into_iter()
-                    .into_grouping_map_by(|employee| employee.department)
-                    .max_by_key(|_department, employee| employee.salary)
+                    .map(|employee| (employee.department, (employee.name, employee.salary)))
+                    .into_grouping_map()
+                    .max_by_key(|_department, (_name, salary)| *salary)
             })
             .pull_to_push()
-            .map(|(department, employee)| (department, employee.name, employee.salary))
+            .map(|(department, (name, salary))| (department, name, salary))
             .for_each(move |val| output_ref.borrow_mut().push(val)),
     );
 
