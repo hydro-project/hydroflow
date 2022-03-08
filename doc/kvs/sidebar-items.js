@@ -1,1 +1,1 @@
-initSidebarItems({"enum":[["Message",""]],"fn":[["main",""],["make_communication_matrix",""],["spawn",""],["spawn_threads",""]],"struct":[["ActorId",""],["PerQuantumPulser",""]],"type":[["Matrix",""],["MessageSender",""]]});
+initSidebarItems({"enum":[["Message",""]],"fn":[["main",""],["make_communication_matrix",""],["spawn",""],["spawn_threads",""]],"struct":[["ActorId",""],["PerQuantumPulser",""]],"type":[["Clock",""],["ClockRepr",""],["ClockUpdateRepr",""],["ClockedDataRepr",""],["ClockedUpdateRepr",""],["Matrix",""],["MessageSender",""]]});
