@@ -46,6 +46,7 @@ clap = { version = "3.0.14", features = [ "derive" ] }
 colored = "2.0"
 criterion = { version = "0.3", features = [ "async_tokio" ] }
 futures = { version = "0.3" }
+itertools = "0.10.3"
 rand = "0.8.4"
 time = "0.3"
 tokio-stream = { version = "0.1.8", features = [ "io-util" ] }

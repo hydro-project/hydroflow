@@ -2,6 +2,8 @@ use std::cell::RefCell;
 use std::collections::{BinaryHeap, HashMap};
 use std::rc::Rc;
 
+use itertools::Itertools;
+
 use hydroflow::lang::collections::Iter;
 use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::scheduled::graph_ext::GraphExt;
@@ -194,7 +196,7 @@ fn groupby_monotonic_surface() {
 
 /// Non-monotonic barrier. Per epoch, for each department find the highest paid employee.
 /// Takes in BATCH_A in the first epoch, then BATCH_B *and* BATCH_C in the second epoch.
-/// SQL: SELECT department, name, salary FROM employees WHERE salary = MAX(salary) GROUP BY department
+/// SQL (per batch): SELECT department, name, salary FROM employees WHERE salary = MAX(salary) GROUP BY department
 #[test]
 fn groupby_nonmon_surface() {
     use hydroflow::builder::prelude::*;
@@ -214,21 +216,11 @@ fn groupby_nonmon_surface() {
         "find median",
         1,
         stratum_boundary_recv
-            .flat_map(|buffer| {
-                let groups = buffer.into_iter().fold(
-                    HashMap::<&'static str, Employee>::new(),
-                    |mut groups, employee| {
-                        if groups
-                            .get(employee.department)
-                            .map(|other_employee| other_employee.salary < employee.salary)
-                            .unwrap_or(true)
-                        {
-                            groups.insert(employee.department, employee);
-                        }
-                        groups
-                    },
-                );
-                groups
+            .flat_map(|batch| {
+                batch
+                    .into_iter()
+                    .into_grouping_map_by(|employee| employee.department)
+                    .max_by_key(|_department, employee| employee.salary)
             })
             .pull_to_push()
             .map(|(department, employee)| (department, employee.name, employee.salary))
