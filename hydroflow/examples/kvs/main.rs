@@ -256,7 +256,6 @@ where
                     ),
                 );
 
-                let my_id = id;
                 hf.add_subgraph(
                     "read_handler",
                     reads_recv.flatten().map(
@@ -267,9 +266,7 @@ where
                         .flat_map(move |(id, epoch, batch)| {
                             batch.into_iter().map(
                                 move |(k, v)| {
-                                    let x = (k, (Single((id, epoch)), v));
-                                    println!("{} updating with = {:?}", my_id, x);
-                                    x
+                                    (k, (Single((id, epoch)), v))
                                 }
                             )
                         }))
