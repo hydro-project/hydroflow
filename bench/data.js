@@ -1,6 +1,6 @@
 window.BENCHMARK_DATA = 
 {
-  "lastUpdate": 1646711180108,
+  "lastUpdate": 1646797594474,
   "repoUrl": "https://github.com/hydro-project/hydroflow",
   "entries": {
     "Benchmark": [
@@ -10828,6 +10828,82 @@ window.BENCHMARK_DATA =
             "name": "reachability/hydroflow",
             "value": 2928456,
             "range": "± 4345",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Mingwei Samuel",
+            "username": "MingweiSamuel",
+            "email": "mingwei.samuel@gmail.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "71fa71a73cdeade8b18bfa4e5d051f5f0976c990",
+          "message": "Make groupby tests more relational-looking (#100)\n\n* Make groupby tests more relational-looking\r\n* Make even more relational with itertools\r\n* Change groupby to use tuples instead of key fn",
+          "timestamp": "2022-03-08T23:22:21Z",
+          "url": "https://github.com/hydro-project/hydroflow/commit/71fa71a73cdeade8b18bfa4e5d051f5f0976c990"
+        },
+        "date": 1646797594470,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "arithmetic/hydroflow/compiled",
+            "value": 400503,
+            "range": "± 13008",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fan_in/hydroflow",
+            "value": 204731429,
+            "range": "± 3500706",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fan_out/hydroflow/scheduled",
+            "value": 116526577,
+            "range": "± 2078274",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fork_join/hydroflow",
+            "value": 11530188,
+            "range": "± 314517",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fork_join/hydroflow_builder",
+            "value": 39279123,
+            "range": "± 1028637",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "identity/hydroflow",
+            "value": 50929475,
+            "range": "± 1482305",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "identity/hydroflow/compiled",
+            "value": 15647178,
+            "range": "± 418191",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "reachability/hydroflow/scheduled",
+            "value": 2864639,
+            "range": "± 86671",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "reachability/hydroflow",
+            "value": 2798608,
+            "range": "± 79628",
             "unit": "ns/iter"
           }
         ]
