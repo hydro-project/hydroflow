@@ -1,1 +1,1 @@
-window.ALL_CRATES = ["hydroflow","kvs","relalg"];
+window.ALL_CRATES = ["hydroflow","relalg"];
