@@ -4,7 +4,6 @@ use colored::Colorize;
 use crate::protocol::{ChatMessage, MemberRequest, MemberResponse};
 use crate::Opts;
 use hydroflow::builder::prelude::*;
-use hydroflow::scheduled::graph_ext::GraphExt;
 use hydroflow::scheduled::handoff::VecHandoff;
 
 pub(crate) async fn run_client(opts: Opts) {
@@ -39,21 +38,21 @@ pub(crate) async fn run_client(opts: Opts) {
     let messages_addr = format!("localhost:{}", messages_port);
 
     // set up the flow for requesting to be a member
-    // TODO(mingwei): use surface API instead of `wrap_input` here.
-    let (my_info_send, my_info_recv) = df
-        .hydroflow
-        .make_edge::<_, VecHandoff<(String, MemberRequest)>>("my_info");
-    let my_info_set = df.hydroflow.add_input("my_info input", my_info_send);
-    let my_info_get = df.wrap_input(my_info_recv);
-    my_info_set.give(Some((
+    let init_info = (
         addr,
         MemberRequest {
             nickname: opts.name.clone(),
             connect_addr,
             messages_addr,
         },
-    )));
-    df.add_subgraph("my_info 2", my_info_get.pull_to_push().push_to(connect_req));
+    );
+    df.add_subgraph(
+        "my_info 2",
+        std::iter::once(Some(init_info))
+            .into_hydroflow()
+            .pull_to_push()
+            .push_to(connect_req),
+    );
 
     let nickname = opts.name.clone();
     let nick2 = nickname.clone();
