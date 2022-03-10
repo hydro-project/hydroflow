@@ -1,7 +1,18 @@
 #![feature(never_type)]
 
-use std::{collections::HashMap, time::Duration};
+extern crate hdrhistogram;
 
+use std::{
+    collections::HashMap,
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc,
+    },
+    time::{Duration, Instant},
+};
+
+use futures::channel::oneshot::Canceled;
+use hdrhistogram::Histogram;
 use hydroflow::{
     builder::{
         prelude::{BaseSurface, PullSurface, PushSurface},
@@ -21,6 +32,7 @@ use hydroflow::{
         sync::mpsc::{channel, Receiver, Sender},
     },
 };
+use rand::Rng;
 use tokio_stream::{wrappers::ReceiverStream, StreamExt};
 
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
@@ -51,28 +63,72 @@ where
 
 fn main() {
     let workers = 2;
-    let senders = spawn_threads::<String, String>(workers);
+    let kvs = Arc::new(Kvs::new(workers));
     let mut i = 0;
+    let mut rng = rand::thread_rng();
     let rt = tokio::runtime::Runtime::new().unwrap();
+    let mut h = Histogram::<u64>::new(2).unwrap();
     rt.block_on(async move {
         loop {
             tokio::time::sleep(Duration::from_millis(10)).await;
-            for s in &senders {
-                i += 1;
-                s.send(Message::Set(format!("foo{}", i % 100), format!("bar{}", i)))
-                    .await
-                    .unwrap();
-            }
-            i += 1;
-            let (sender, receiver) = futures::channel::oneshot::channel();
-            senders[0]
-                .send(Message::Get("foo50".to_owned(), sender))
-                .await
+            let before = Instant::now();
+            kvs.clone()
+                .set(format!("foo{}", i % 99), format!("bar{}", i))
+                .await;
+            h.record(before.elapsed().as_micros().try_into().unwrap())
                 .unwrap();
 
-            println!("got answer: {:?}", receiver.await);
+            i += 1;
+            if rng.gen_range(0..1000) == 0 {
+                kvs.clone().get(format!("foo{}", i % 99)).await.unwrap();
+            }
         }
     });
+}
+
+struct Kvs<K, V>
+where
+    K: Send + Clone,
+    V: Send + Clone,
+{
+    senders: Vec<Sender<Message<K, V>>>,
+    round_robin: AtomicUsize,
+}
+
+impl<K, V> Kvs<K, V>
+where
+    K: 'static + Clone + Eq + std::hash::Hash + Send + std::fmt::Debug,
+    V: 'static + Clone + Send + std::fmt::Debug + Ord + Default,
+{
+    fn new(workers: u64) -> Self {
+        let senders = spawn_threads::<K, V>(workers);
+
+        Kvs {
+            senders,
+            round_robin: AtomicUsize::new(0),
+        }
+    }
+
+    async fn set(self: Arc<Self>, k: K, v: V) {
+        let receiver = self.round_robin.fetch_add(1, Ordering::SeqCst) % self.senders.len();
+        self.senders[receiver]
+            .send(Message::Set(k, v))
+            .await
+            .unwrap();
+    }
+
+    async fn get(self: Arc<Self>, k: K) -> Result<(Clock, V), Canceled> {
+        // TODO: We need to make sure we talk to one that is correct, but for
+        // now since everyone owns everything just send a message to whoever.
+        let receiver_idx = self.round_robin.fetch_add(1, Ordering::SeqCst) % self.senders.len();
+        let (sender, receiver) = futures::channel::oneshot::channel();
+        self.senders[receiver_idx]
+            .send(Message::Get(k, sender))
+            .await
+            .unwrap();
+
+        receiver.await
+    }
 }
 
 type Matrix<K, V> = Vec<(Receiver<Message<K, V>>, Vec<Sender<Message<K, V>>>)>;
@@ -87,7 +143,7 @@ where
     let mut senders: Vec<_> = (0..n).map(|_| Vec::new()).collect();
     let mut extra_senders = Vec::new();
     for _ in 0..n {
-        let (sender, receiver) = channel(1024);
+        let (sender, receiver) = channel(8192);
         receivers.push(receiver);
         for s in senders.iter_mut() {
             s.push(sender.clone())
@@ -265,9 +321,7 @@ where
                         .flatten()
                         .flat_map(move |(id, epoch, batch)| {
                             batch.into_iter().map(
-                                move |(k, v)| {
-                                    (k, (Single((id, epoch)), v))
-                                }
+                                move |(k, v)| (k, (Single((id, epoch)), v))
                             )
                         }))
                         .pull_to_push()
