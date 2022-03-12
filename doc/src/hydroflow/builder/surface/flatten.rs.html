@@ -104,7 +104,6 @@
 <span id="99">99</span>
 <span id="100">100</span>
 <span id="101">101</span>
-<span id="102">102</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">BaseSurface</span>, <span class="ident">PullSurface</span>, <span class="ident">PushSurface</span>, <span class="ident">PushSurfaceReversed</span>};
 
 <span class="kw">use</span> <span class="ident">std::marker::PhantomData</span>;
@@ -157,10 +156,9 @@
     <span class="ident">Prev</span>: <span class="ident">PushSurface</span>,
     <span class="ident">Prev::ItemOut</span>: <span class="ident">IntoIterator</span>,
 {
-    <span class="kw">type</span> <span class="ident">Output</span><span class="op">&lt;</span><span class="ident">Next</span><span class="op">&gt;</span>
+    <span class="kw">type</span> <span class="ident">Output</span><span class="op">&lt;</span><span class="ident">Next</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Prev::Output</span><span class="op">&lt;</span><span class="ident">FlattenPushSurfaceReversed</span><span class="op">&lt;</span><span class="ident">Next</span>, <span class="ident">Prev::ItemOut</span><span class="op">&gt;</span><span class="op">&gt;</span>
     <span class="kw">where</span>
-        <span class="ident">Next</span>: <span class="ident">PushSurfaceReversed</span><span class="op">&lt;</span><span class="ident">ItemIn</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::ItemOut</span><span class="op">&gt;</span>,
-    <span class="op">=</span> <span class="ident">Prev::Output</span><span class="op">&lt;</span><span class="ident">FlattenPushSurfaceReversed</span><span class="op">&lt;</span><span class="ident">Next</span>, <span class="ident">Prev::ItemOut</span><span class="op">&gt;</span><span class="op">&gt;</span>;
+        <span class="ident">Next</span>: <span class="ident">PushSurfaceReversed</span><span class="op">&lt;</span><span class="ident">ItemIn</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::ItemOut</span><span class="op">&gt;</span>;
 
     <span class="kw">fn</span> <span class="ident">push_to</span><span class="op">&lt;</span><span class="ident">Next</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">next</span>: <span class="ident">Next</span>) -&gt; <span class="ident"><span class="self">Self</span>::Output</span><span class="op">&lt;</span><span class="ident">Next</span><span class="op">&gt;</span>
     <span class="kw">where</span>
@@ -208,5 +206,5 @@
     }
 }
 </code></pre></div>
-</section><section id="search" class="content hidden"></section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.61.0-nightly (5f4e06771 2022-03-10)" ></div>
+</section><section id="search" class="content hidden"></section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.61.0-nightly (335ffbfa5 2022-03-11)" ></div>
 </body></html>
