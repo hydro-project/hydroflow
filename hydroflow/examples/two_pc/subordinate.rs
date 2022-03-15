@@ -77,7 +77,7 @@ pub(crate) async fn run_subordinate(opts: Opts, coordinator: String) {
                     mid: msg.mid + 1,
                     addr: my_addr.clone(),
                     mtype: match msg.mtype {
-                        MsgType::Prepare if decide(80) => MsgType::Commit,
+                        MsgType::Prepare if decide(67) => MsgType::Commit,
                         MsgType::Prepare => MsgType::Abort,
                         _ => MsgType::Err,
                     },
