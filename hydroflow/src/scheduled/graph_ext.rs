@@ -1,7 +1,7 @@
 use core::task;
 use std::borrow::Cow;
 use std::sync::mpsc::SyncSender;
-use std::{pin::Pin, task::Poll};
+use std::task::Poll;
 
 use futures::Stream;
 
@@ -114,7 +114,7 @@ pub trait GraphExt {
         stream: S,
     ) where
         Name: Into<Cow<'static, str>>,
-        S: 'static + Stream<Item = T> + Unpin,
+        S: 'static + Stream<Item = T>,
         W: 'static + Handoff + CanReceive<T>;
 }
 
@@ -194,17 +194,15 @@ impl GraphExt for Hydroflow {
         stream: S,
     ) where
         Name: Into<Cow<'static, str>>,
-        S: 'static + Stream<Item = T> + Unpin,
+        S: 'static + Stream<Item = T>,
         W: 'static + Handoff + CanReceive<T>,
     {
-        let mut stream = stream;
+        let mut stream = Box::pin(stream);
         self.add_subgraph_source::<_, _, W>(name, send_port, move |ctx, send| {
             let waker = ctx.waker();
             let mut cx = task::Context::from_waker(&waker);
-            let mut r = Pin::new(&mut stream);
-            while let Poll::Ready(Some(v)) = r.poll_next(&mut cx) {
+            while let Poll::Ready(Some(v)) = stream.as_mut().poll_next(&mut cx) {
                 send.give(v);
-                r = Pin::new(&mut stream);
             }
         });
     }
