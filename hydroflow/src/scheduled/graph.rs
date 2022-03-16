@@ -223,7 +223,7 @@ impl Hydroflow {
         Name: Into<Cow<'static, str>>,
         R: 'static + PortList<RECV>,
         W: 'static + PortList<SEND>,
-        F: 'static + FnMut(&Context<'_>, R::Ctx<'_>, W::Ctx<'_>),
+        F: 'static + for<'ctx> FnMut(&'ctx Context<'ctx>, R::Ctx<'ctx>, W::Ctx<'ctx>),
     {
         self.add_subgraph_stratified(name, 0, recv_ports, send_ports, subgraph)
     }
@@ -243,7 +243,7 @@ impl Hydroflow {
         Name: Into<Cow<'static, str>>,
         R: 'static + PortList<RECV>,
         W: 'static + PortList<SEND>,
-        F: 'static + FnMut(&Context<'_>, R::Ctx<'_>, W::Ctx<'_>),
+        F: 'static + for<'ctx> FnMut(&'ctx Context<'ctx>, R::Ctx<'ctx>, W::Ctx<'ctx>),
     {
         let sg_id = self.subgraphs.len();
 
@@ -282,7 +282,8 @@ impl Hydroflow {
         Name: Into<Cow<'static, str>>,
         R: 'static + Handoff,
         W: 'static + Handoff,
-        F: 'static + FnMut(&Context<'_>, &[&RecvCtx<R>], &[&SendCtx<W>]),
+        F: 'static
+            + for<'ctx> FnMut(&'ctx Context<'ctx>, &'ctx [&'ctx RecvCtx<R>], &'ctx [&'ctx SendCtx<W>]),
     {
         self.add_subgraph_stratified_n_m(name, 0, recv_ports, send_ports, subgraph)
     }
@@ -300,7 +301,8 @@ impl Hydroflow {
         Name: Into<Cow<'static, str>>,
         R: 'static + Handoff,
         W: 'static + Handoff,
-        F: 'static + FnMut(&Context<'_>, &[&RecvCtx<R>], &[&SendCtx<W>]),
+        F: 'static
+            + for<'ctx> FnMut(&'ctx Context<'ctx>, &'ctx [&'ctx RecvCtx<R>], &'ctx [&'ctx SendCtx<W>]),
     {
         let sg_id = self.subgraphs.len();
 

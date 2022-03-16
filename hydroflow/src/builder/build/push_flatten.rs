@@ -34,7 +34,7 @@ where
     In: IntoIterator<Item = Next::ItemIn>,
 {
     type ItemIn = In;
-    type Build<'slf, 'hof> = Flatten<Next::Build<'slf, 'hof>, In>;
+    type Build<'slf, 'ctx> = Flatten<Next::Build<'slf, 'ctx>, In>;
 }
 
 impl<Next, In> PushBuild for FlattenPushBuild<Next, In>
@@ -44,11 +44,11 @@ where
 {
     type OutputHandoffs = Next::OutputHandoffs;
 
-    fn build<'slf, 'hof>(
+    fn build<'slf, 'ctx>(
         &'slf mut self,
-        context: &Context<'_>,
-        handoffs: <Self::OutputHandoffs as PortList<SEND>>::Ctx<'hof>,
-    ) -> Self::Build<'slf, 'hof> {
+        context: &'ctx Context<'ctx>,
+        handoffs: <Self::OutputHandoffs as PortList<SEND>>::Ctx<'ctx>,
+    ) -> Self::Build<'slf, 'ctx> {
         Flatten::new(self.next.build(context, handoffs))
     }
 }

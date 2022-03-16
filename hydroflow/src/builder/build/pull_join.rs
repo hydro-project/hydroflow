@@ -58,12 +58,12 @@ where
         PortList<RECV> + PortListSplit<RECV, PrevA::InputHandoffs, Suffix = PrevB::InputHandoffs>,
 {
     type ItemOut = (Key, ValA, ValB);
-    type Build<'slf, 'hof> = SymmetricHashJoin<
+    type Build<'slf, 'ctx> = SymmetricHashJoin<
         'slf,
         Key,
-        PrevA::Build<'slf, 'hof>,
+        PrevA::Build<'slf, 'ctx>,
         ValA,
-        PrevB::Build<'slf, 'hof>,
+        PrevB::Build<'slf, 'ctx>,
         ValB,
     >;
 }
@@ -82,11 +82,11 @@ where
 {
     type InputHandoffs = <PrevA::InputHandoffs as Extend<PrevB::InputHandoffs>>::Extended;
 
-    fn build<'slf, 'hof>(
+    fn build<'slf, 'ctx>(
         &'slf mut self,
-        context: &Context<'_>,
-        input: <Self::InputHandoffs as PortList<RECV>>::Ctx<'hof>,
-    ) -> Self::Build<'slf, 'hof> {
+        context: &'ctx Context<'ctx>,
+        input: <Self::InputHandoffs as PortList<RECV>>::Ctx<'ctx>,
+    ) -> Self::Build<'slf, 'ctx> {
         let (input_a, input_b) = <Self::InputHandoffs as PortListSplit<_, _>>::split_ctx(input);
         let iter_a = self.prev_a.build(context, input_a);
         let iter_b = self.prev_b.build(context, input_b);

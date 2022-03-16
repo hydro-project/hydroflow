@@ -22,7 +22,7 @@ where
     I: 'static + Iterator,
 {
     type ItemOut = I::Item;
-    type Build<'slf, 'hof> = &'slf mut I;
+    type Build<'slf, 'ctx> = &'slf mut I;
 }
 
 impl<I> PullBuild for IterPullBuild<I>
@@ -31,11 +31,11 @@ where
 {
     type InputHandoffs = ();
 
-    fn build<'slf, 'hof>(
+    fn build<'slf, 'ctx>(
         &'slf mut self,
-        _context: &Context<'_>,
-        _handoffs: <Self::InputHandoffs as PortList<RECV>>::Ctx<'hof>,
-    ) -> Self::Build<'slf, 'hof> {
+        _context: &'ctx Context<'ctx>,
+        _handoffs: <Self::InputHandoffs as PortList<RECV>>::Ctx<'ctx>,
+    ) -> Self::Build<'slf, 'ctx> {
         &mut self.it
     }
 }
