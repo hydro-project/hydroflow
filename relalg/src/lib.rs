@@ -1,4 +1,5 @@
 #![allow(dead_code)]
+#![allow(clippy::iter_with_drain)]
 
 use anyhow::bail;
 use sexp::Sexp;
