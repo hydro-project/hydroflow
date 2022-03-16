@@ -12,7 +12,7 @@ where
 impl<Prev, Func, Out> MapPullBuild<Prev, Func>
 where
     Prev: PullBuild,
-    Func: FnMut(Prev::ItemOut) -> Out,
+    Func: FnMut(&Context<'_>, Prev::ItemOut) -> Out,
 {
     pub fn new(prev: Prev, func: Func) -> Self {
         Self { prev, func }
@@ -28,7 +28,7 @@ where
 impl<Prev, Func, Out> PullBuildBase for MapPullBuild<Prev, Func>
 where
     Prev: PullBuild,
-    Func: FnMut(Prev::ItemOut) -> Out,
+    Func: FnMut(&Context<'_>, Prev::ItemOut) -> Out,
 {
     type ItemOut = Out;
     type Build<'slf, 'ctx> = PullBuildImpl<'slf, 'ctx, Prev, Func, Out>;
@@ -37,7 +37,7 @@ where
 impl<Prev, Func, Out> PullBuild for MapPullBuild<Prev, Func>
 where
     Prev: PullBuild,
-    Func: FnMut(Prev::ItemOut) -> Out,
+    Func: FnMut(&Context<'_>, Prev::ItemOut) -> Out,
 {
     type InputHandoffs = Prev::InputHandoffs;
 
@@ -46,6 +46,8 @@ where
         context: &'ctx Context<'ctx>,
         handoffs: <Self::InputHandoffs as PortList<RECV>>::Ctx<'ctx>,
     ) -> Self::Build<'slf, 'ctx> {
-        self.prev.build(context, handoffs).map(|x| (self.func)(x))
+        self.prev
+            .build(context, handoffs)
+            .map(|x| (self.func)(context, x))
     }
 }
