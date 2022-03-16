@@ -10,7 +10,7 @@ use crate::scheduled::port::SEND;
 pub struct MapPushBuild<Next, Func, In>
 where
     Next: PushBuild,
-    Func: FnMut(In) -> Next::ItemIn,
+    Func: FnMut(&Context<'_>, In) -> Next::ItemIn,
 {
     next: Next,
     func: Func,
@@ -19,7 +19,7 @@ where
 impl<Next, Func, In> MapPushBuild<Next, Func, In>
 where
     Next: PushBuild,
-    Func: FnMut(In) -> Next::ItemIn,
+    Func: FnMut(&Context<'_>, In) -> Next::ItemIn,
 {
     pub fn new(next: Next, func: Func) -> Self {
         Self {
@@ -39,7 +39,7 @@ where
 impl<Next, Func, In> PushBuildBase for MapPushBuild<Next, Func, In>
 where
     Next: PushBuild,
-    Func: FnMut(In) -> Next::ItemIn,
+    Func: FnMut(&Context<'_>, In) -> Next::ItemIn,
 {
     type ItemIn = In;
     type Build<'slf, 'ctx> = PushBuildImpl<'slf, 'ctx, Next, Func, In>;
@@ -48,7 +48,7 @@ where
 impl<Next, Func, In> PushBuild for MapPushBuild<Next, Func, In>
 where
     Next: PushBuild,
-    Func: FnMut(In) -> Next::ItemIn,
+    Func: FnMut(&Context<'_>, In) -> Next::ItemIn,
 {
     type OutputHandoffs = Next::OutputHandoffs;
 
@@ -57,6 +57,9 @@ where
         context: &'ctx Context<'ctx>,
         handoffs: <Self::OutputHandoffs as PortList<SEND>>::Ctx<'ctx>,
     ) -> Self::Build<'slf, 'ctx> {
-        Map::new(|x| (self.func)(x), self.next.build(context, handoffs))
+        Map::new(
+            |x| (self.func)(context, x),
+            self.next.build(context, handoffs),
+        )
     }
 }

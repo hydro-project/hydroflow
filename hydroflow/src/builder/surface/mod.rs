@@ -43,6 +43,7 @@ pub mod exchange;
 use std::hash::Hash;
 
 use crate::lang::lattice::{LatticeRepr, Merge};
+use crate::scheduled::context::Context;
 use crate::scheduled::handoff::handoff_list::{PortList, PortListSplit};
 use crate::scheduled::port::{RECV, SEND};
 use crate::scheduled::type_list::Extend;
@@ -53,15 +54,38 @@ use crate::scheduled::type_list::Extend;
 pub trait BaseSurface {
     type ItemOut;
 
-    fn map<Func, Out>(self, func: Func) -> map::MapSurface<Self, Func>
+    fn map_with_context<Func, Out>(self, func: Func) -> map::MapSurface<Self, Func>
     where
         Self: Sized,
-        Func: FnMut(Self::ItemOut) -> Out,
+        Func: FnMut(&Context<'_>, Self::ItemOut) -> Out,
     {
         map::MapSurface::new(self, func)
     }
 
-    fn flat_map<Func, Out>(self, func: Func) -> flatten::FlattenSurface<map::MapSurface<Self, Func>>
+    fn map<Func, Out>(self, mut func: Func) -> map::MapSurface<Self, MapNoCtxFn<Self, Func, Out>>
+    where
+        Self: Sized,
+        Func: FnMut(Self::ItemOut) -> Out,
+    {
+        map::MapSurface::new(self, move |_ctx, x| (func)(x))
+    }
+
+    fn flat_map_with_context<Func, Out>(
+        self,
+        func: Func,
+    ) -> flatten::FlattenSurface<map::MapSurface<Self, Func>>
+    where
+        Self: Sized,
+        Func: FnMut(&Context<'_>, Self::ItemOut) -> Out,
+        Out: IntoIterator,
+    {
+        self.map_with_context(func).flatten()
+    }
+
+    fn flat_map<Func, Out>(
+        self,
+        func: Func,
+    ) -> flatten::FlattenSurface<map::MapSurface<Self, MapNoCtxFn<Self, Func, Out>>>
     where
         Self: Sized,
         Func: FnMut(Self::ItemOut) -> Out,
@@ -104,7 +128,7 @@ pub trait BaseSurface {
         Func: FnMut(&mut State, Self::ItemOut) -> Out,
     {
         // TODO(mingwei): use state API.
-        self.map(move |item| func(&mut initial_state, item))
+        self.map_with_context(move |_ctx, item| func(&mut initial_state, item))
     }
 
     fn inspect<Func>(self, mut func: Func) -> map::MapSurface<Self, InspectMapFunc<Self, Func>>
@@ -112,22 +136,27 @@ pub trait BaseSurface {
         Self: Sized,
         Func: FnMut(&Self::ItemOut),
     {
-        self.map(move |item| {
+        self.map_with_context(move |_ctx, item| {
             func(&item);
             item
         })
     }
 }
 
-pub type InspectMapFunc<Prev, Func>
+pub type MapNoCtxFn<Prev, Func, Out>
 where
     Prev: BaseSurface,
-= impl FnMut(Prev::ItemOut) -> Prev::ItemOut;
+= impl FnMut(&Context<'_>, Prev::ItemOut) -> Out;
 
 pub type MapScanMapFunc<Prev, State, Func, Out>
 where
     Prev: BaseSurface,
-= impl FnMut(Prev::ItemOut) -> Out;
+= impl FnMut(&Context<'_>, Prev::ItemOut) -> Out;
+
+pub type InspectMapFunc<Prev, Func>
+where
+    Prev: BaseSurface,
+= impl FnMut(&Context<'_>, Prev::ItemOut) -> Prev::ItemOut;
 
 pub trait PullSurface: BaseSurface {
     type InputHandoffs: PortList<RECV>;
