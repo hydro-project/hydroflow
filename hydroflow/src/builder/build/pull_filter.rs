@@ -20,10 +20,10 @@ where
 }
 
 #[allow(type_alias_bounds)]
-type PullBuildImpl<'slf, 'hof, Prev, Func>
+type PullBuildImpl<'slf, 'ctx, Prev, Func>
 where
     Prev: PullBuild,
-= std::iter::Filter<Prev::Build<'slf, 'hof>, impl FnMut(&Prev::ItemOut) -> bool>;
+= std::iter::Filter<Prev::Build<'slf, 'ctx>, impl FnMut(&Prev::ItemOut) -> bool>;
 
 impl<Prev, Func> PullBuildBase for FilterPullBuild<Prev, Func>
 where
@@ -31,7 +31,7 @@ where
     Func: FnMut(&Prev::ItemOut) -> bool,
 {
     type ItemOut = Prev::ItemOut;
-    type Build<'slf, 'hof> = PullBuildImpl<'slf, 'hof, Prev, Func>;
+    type Build<'slf, 'ctx> = PullBuildImpl<'slf, 'ctx, Prev, Func>;
 }
 
 impl<Prev, Func> PullBuild for FilterPullBuild<Prev, Func>
@@ -41,11 +41,11 @@ where
 {
     type InputHandoffs = Prev::InputHandoffs;
 
-    fn build<'slf, 'hof>(
+    fn build<'slf, 'ctx>(
         &'slf mut self,
-        context: &Context<'_>,
-        handoffs: <Self::InputHandoffs as PortList<RECV>>::Ctx<'hof>,
-    ) -> Self::Build<'slf, 'hof> {
+        context: &'ctx Context<'ctx>,
+        handoffs: <Self::InputHandoffs as PortList<RECV>>::Ctx<'ctx>,
+    ) -> Self::Build<'slf, 'ctx> {
         self.prev
             .build(context, handoffs)
             .filter(|x| (self.func)(x))
