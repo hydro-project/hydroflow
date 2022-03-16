@@ -41,7 +41,7 @@ where
     Hof: Handoff + CanReceive<In>,
 {
     type ItemIn = In;
-    type Build<'slf, 'hof> = PushHandoff<'hof, Hof, In>;
+    type Build<'slf, 'ctx> = PushHandoff<'ctx, Hof, In>;
 }
 
 impl<Hof, In> PushBuild for HandoffPushBuild<Hof, In>
@@ -50,11 +50,11 @@ where
 {
     type OutputHandoffs = tt!(SendPort<Hof>);
 
-    fn build<'slf, 'hof>(
+    fn build<'slf, 'ctx>(
         &'slf mut self,
-        _context: &Context<'_>,
-        handoffs: <Self::OutputHandoffs as PortList<SEND>>::Ctx<'hof>,
-    ) -> Self::Build<'slf, 'hof> {
+        _context: &'ctx Context<'ctx>,
+        handoffs: <Self::OutputHandoffs as PortList<SEND>>::Ctx<'ctx>,
+    ) -> Self::Build<'slf, 'ctx> {
         let tl!(handoff) = handoffs;
         PushHandoff::new(handoff)
     }

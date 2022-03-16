@@ -62,8 +62,8 @@ where
         + PortListSplit<RECV, PrevBuf::InputHandoffs, Suffix = PrevStream::InputHandoffs>,
 {
     type ItemOut = (Tick, L::Repr);
-    type Build<'slf, 'hof> =
-        BatchJoin<'slf, PrevBuf::Build<'slf, 'hof>, PrevStream::Build<'slf, 'hof>, L, Update, Tick>;
+    type Build<'slf, 'ctx> =
+        BatchJoin<'slf, PrevBuf::Build<'slf, 'ctx>, PrevStream::Build<'slf, 'ctx>, L, Update, Tick>;
 }
 
 impl<PrevBuf, PrevStream, L, Update, Tick> PullBuild
@@ -81,11 +81,11 @@ where
 {
     type InputHandoffs = <PrevBuf::InputHandoffs as Extend<PrevStream::InputHandoffs>>::Extended;
 
-    fn build<'slf, 'hof>(
+    fn build<'slf, 'ctx>(
         &'slf mut self,
-        context: &Context<'_>,
-        input: <Self::InputHandoffs as PortList<RECV>>::Ctx<'hof>,
-    ) -> Self::Build<'slf, 'hof> {
+        context: &'ctx Context<'ctx>,
+        input: <Self::InputHandoffs as PortList<RECV>>::Ctx<'ctx>,
+    ) -> Self::Build<'slf, 'ctx> {
         let (input_a, input_b) = <Self::InputHandoffs as PortListSplit<_, _>>::split_ctx(input);
         let iter_a = self.prev_a.build(context, input_a);
         let iter_b = self.prev_b.build(context, input_b);

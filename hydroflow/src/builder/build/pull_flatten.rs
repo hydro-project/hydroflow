@@ -24,7 +24,7 @@ where
     Prev::ItemOut: IntoIterator,
 {
     type ItemOut = <Prev::ItemOut as IntoIterator>::Item;
-    type Build<'slf, 'hof> = std::iter::Flatten<Prev::Build<'slf, 'hof>>;
+    type Build<'slf, 'ctx> = std::iter::Flatten<Prev::Build<'slf, 'ctx>>;
 }
 
 impl<Prev> PullBuild for FlattenPullBuild<Prev>
@@ -34,11 +34,11 @@ where
 {
     type InputHandoffs = Prev::InputHandoffs;
 
-    fn build<'slf, 'hof>(
+    fn build<'slf, 'ctx>(
         &'slf mut self,
-        context: &Context<'_>,
-        handoffs: <Self::InputHandoffs as PortList<RECV>>::Ctx<'hof>,
-    ) -> Self::Build<'slf, 'hof> {
+        context: &'ctx Context<'ctx>,
+        handoffs: <Self::InputHandoffs as PortList<RECV>>::Ctx<'ctx>,
+    ) -> Self::Build<'slf, 'ctx> {
         self.prev.build(context, handoffs).flatten()
     }
 }

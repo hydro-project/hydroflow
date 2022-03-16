@@ -40,7 +40,7 @@ where
     Hof: Handoff,
 {
     type ItemOut = Hof::Inner;
-    type Build<'slf, 'hof> = std::array::IntoIter<Hof::Inner, 1>;
+    type Build<'slf, 'ctx> = std::array::IntoIter<Hof::Inner, 1>;
 }
 
 impl<Hof> PullBuild for HandoffPullBuild<Hof>
@@ -49,11 +49,11 @@ where
 {
     type InputHandoffs = tt!(RecvPort<Hof>);
 
-    fn build<'slf, 'hof>(
+    fn build<'slf, 'ctx>(
         &'slf mut self,
-        _context: &Context<'_>,
-        handoffs: <Self::InputHandoffs as PortList<RECV>>::Ctx<'hof>,
-    ) -> Self::Build<'slf, 'hof> {
+        _context: &'ctx Context<'ctx>,
+        handoffs: <Self::InputHandoffs as PortList<RECV>>::Ctx<'ctx>,
+    ) -> Self::Build<'slf, 'ctx> {
         let tl!(handoff) = handoffs;
         [handoff.take_inner()].into_iter()
     }

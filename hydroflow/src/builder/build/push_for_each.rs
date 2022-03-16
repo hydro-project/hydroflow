@@ -28,14 +28,14 @@ where
 }
 
 #[allow(type_alias_bounds)]
-type PushBuildImpl<'slf, 'hof, Func, In> = ForEach<In, impl FnMut(In)>;
+type PushBuildImpl<'slf, 'ctx, Func, In> = ForEach<In, impl FnMut(In)>;
 
 impl<Func, In> PushBuildBase for ForEachPushBuild<Func, In>
 where
     Func: FnMut(In),
 {
     type ItemIn = In;
-    type Build<'slf, 'hof> = PushBuildImpl<'slf, 'hof, Func, In>;
+    type Build<'slf, 'ctx> = PushBuildImpl<'slf, 'ctx, Func, In>;
 }
 
 impl<Func, In> PushBuild for ForEachPushBuild<Func, In>
@@ -44,11 +44,11 @@ where
 {
     type OutputHandoffs = tt!();
 
-    fn build<'slf, 'hof>(
+    fn build<'slf, 'ctx>(
         &'slf mut self,
-        _context: &Context<'_>,
-        (): <Self::OutputHandoffs as PortList<SEND>>::Ctx<'hof>,
-    ) -> Self::Build<'slf, 'hof> {
+        _context: &'ctx Context<'ctx>,
+        (): <Self::OutputHandoffs as PortList<SEND>>::Ctx<'ctx>,
+    ) -> Self::Build<'slf, 'ctx> {
         ForEach::new(|x| (self.func)(x))
     }
 }
