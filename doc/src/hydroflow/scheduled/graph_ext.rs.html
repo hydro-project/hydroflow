@@ -212,12 +212,10 @@
 <span id="207">207</span>
 <span id="208">208</span>
 <span id="209">209</span>
-<span id="210">210</span>
-<span id="211">211</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">core::task</span>;
 <span class="kw">use</span> <span class="ident">std::borrow::Cow</span>;
 <span class="kw">use</span> <span class="ident">std::sync::mpsc::SyncSender</span>;
-<span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">pin::Pin</span>, <span class="ident">task::Poll</span>};
+<span class="kw">use</span> <span class="ident">std::task::Poll</span>;
 
 <span class="kw">use</span> <span class="ident">futures::Stream</span>;
 
@@ -330,7 +328,7 @@
         <span class="ident">stream</span>: <span class="ident">S</span>,
     ) <span class="kw">where</span>
         <span class="ident">Name</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span>, <span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-        <span class="ident">S</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">Stream</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="ident">T</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Unpin</span>,
+        <span class="ident">S</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">Stream</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="ident">T</span><span class="op">&gt;</span>,
         <span class="ident">W</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">Handoff</span> <span class="op">+</span> <span class="ident">CanReceive</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>;
 }
 
@@ -410,17 +408,15 @@
         <span class="ident">stream</span>: <span class="ident">S</span>,
     ) <span class="kw">where</span>
         <span class="ident">Name</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span>, <span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-        <span class="ident">S</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">Stream</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="ident">T</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Unpin</span>,
+        <span class="ident">S</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">Stream</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="ident">T</span><span class="op">&gt;</span>,
         <span class="ident">W</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">Handoff</span> <span class="op">+</span> <span class="ident">CanReceive</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
     {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">stream</span> <span class="op">=</span> <span class="ident">stream</span>;
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">stream</span> <span class="op">=</span> <span class="ident">Box::pin</span>(<span class="ident">stream</span>);
         <span class="self">self</span>.<span class="ident">add_subgraph_source</span>::<span class="op">&lt;</span><span class="kw">_</span>, <span class="kw">_</span>, <span class="ident">W</span><span class="op">&gt;</span>(<span class="ident">name</span>, <span class="ident">send_port</span>, <span class="kw">move</span> <span class="op">|</span><span class="ident">ctx</span>, <span class="ident">send</span><span class="op">|</span> {
             <span class="kw">let</span> <span class="ident">waker</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">waker</span>();
             <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">cx</span> <span class="op">=</span> <span class="ident">task::Context::from_waker</span>(<span class="kw-2">&amp;</span><span class="ident">waker</span>);
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">r</span> <span class="op">=</span> <span class="ident">Pin::new</span>(<span class="kw-2">&amp;mut</span> <span class="ident">stream</span>);
-            <span class="kw">while</span> <span class="kw">let</span> <span class="ident">Poll::Ready</span>(<span class="prelude-val">Some</span>(<span class="ident">v</span>)) <span class="op">=</span> <span class="ident">r</span>.<span class="ident">poll_next</span>(<span class="kw-2">&amp;mut</span> <span class="ident">cx</span>) {
+            <span class="kw">while</span> <span class="kw">let</span> <span class="ident">Poll::Ready</span>(<span class="prelude-val">Some</span>(<span class="ident">v</span>)) <span class="op">=</span> <span class="ident">stream</span>.<span class="ident">as_mut</span>().<span class="ident">poll_next</span>(<span class="kw-2">&amp;mut</span> <span class="ident">cx</span>) {
                 <span class="ident">send</span>.<span class="ident">give</span>(<span class="ident">v</span>);
-                <span class="ident">r</span> <span class="op">=</span> <span class="ident">Pin::new</span>(<span class="kw-2">&amp;mut</span> <span class="ident">stream</span>);
             }
         });
     }
