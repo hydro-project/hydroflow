@@ -54,3 +54,4 @@ rand = "0.8.4"
 time = "0.3"
 tokio-stream = { version = "0.1.8", features = [ "io-util" ] }
 hdrhistogram = "7"
+zipf = "7.0.0"
