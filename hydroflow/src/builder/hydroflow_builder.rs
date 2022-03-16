@@ -128,7 +128,7 @@ impl HydroflowBuilder {
     ) -> HandoffPullSurface<W>
     where
         Name: Into<Cow<'static, str>>,
-        S: 'static + Stream<Item = T> + Unpin,
+        S: 'static + Stream<Item = T>,
         W: 'static + Handoff + CanReceive<T>,
     {
         let name = name.into();
