@@ -153,13 +153,27 @@ pub trait BaseSurface {
         self.map_with_context(move |_ctx, item| func(&mut initial_state, item))
     }
 
-    fn inspect<Func>(self, mut func: Func) -> map::MapSurface<Self, InspectMapFunc<Self, Func>>
+    fn inspect_with_context<Func>(
+        self,
+        mut func: Func,
+    ) -> map::MapSurface<Self, InspectMapFunc<Self, Func>>
+    where
+        Self: Sized,
+        Func: FnMut(&Context<'_>, &Self::ItemOut),
+    {
+        self.map_with_context(move |context, item| {
+            (func)(context, &item);
+            item
+        })
+    }
+
+    fn inspect<Func>(self, mut func: Func) -> map::MapSurface<Self, InspectMapNoCtxFunc<Self, Func>>
     where
         Self: Sized,
         Func: FnMut(&Self::ItemOut),
     {
         self.map_with_context(move |_ctx, item| {
-            func(&item);
+            (func)(&item);
             item
         })
     }
@@ -186,6 +200,11 @@ where
 = impl FnMut(&Context<'_>, Prev::ItemOut) -> Out;
 
 pub type InspectMapFunc<Prev, Func>
+where
+    Prev: BaseSurface,
+= impl FnMut(&Context<'_>, Prev::ItemOut) -> Prev::ItemOut;
+
+pub type InspectMapNoCtxFunc<Prev, Func>
 where
     Prev: BaseSurface,
 = impl FnMut(&Context<'_>, Prev::ItemOut) -> Prev::ItemOut;
