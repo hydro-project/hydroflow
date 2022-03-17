@@ -18,48 +18,64 @@ We should automate this -- very useful!
 ### Coordinator
 ```mermaid
 graph TD;
-    subgraph demux
-    msg_recv-->p1_recv_push;
-    msg_recv-->p2_recv_push;
-    p1_recv_push-->p1_recv_pull;
-    p2_recv_push-->p2_recv_pull;
+    subgraph stratum0
+        subgraph demux
+            msg_recv-->pull_to_push0;
+            pull_to_push0-->partition0-->p1_recv_push;
+            partition0-->p2_recv_push;
+            p1_recv_push-->p1_recv_pull;
+            p2_recv_push-->p2_recv_pull;
+        end
+        subgraph "subordinate count"
+            subordinates_out_tee_4_pull-->map_scan20;
+            map_scan20-->pull_to_push20-->map20;
+            map20-->push_to20-->subordinate_count_1_push;
+            subordinate_count_1_push-->subordinate_count_1_pull;
+        end
+        subgraph "fetch subordinates"
+            subordinates_in-->subordinates_out;
+            subordinates_out-->tee1;
+            tee1-->subordinates_out_tee_1_push;
+            tee1-->tee2;
+            tee2-->tee3;
+            tee2-->subordinates_out_tee_2_push;
+            tee3-->subordinates_out_tee_3_push;
+            tee3-->subordinates_out_tee_4_push;
+            subordinates_out_tee_1_push-->subordinates_out_tee_1_pull;
+            subordinates_out_tee_2_push-->subordinates_out_tee_2_pull;
+            subordinates_out_tee_3_push-->subordinates_out_tee_3_pull;
+            subordinates_out_tee_4_push-->subordinates_out_tee_4_pull;
+        end
+        subgraph "phase 1 init"
+            text_out-->filter_map1-->cross_join1;
+            subordinates_out_tee_1_pull-->cross_join1;
+            cross_join1-->map1-->pull_to_push1-->push_to1-->p1_send_push;
+        end
     end
 
-    subgraph mux
-    p1_send_push-->p1_send_pull;
-    p1_send_pull-->chain1;
-    p2_send_push-->p2_send_pull;
-    p2_send_pull-->chain1;
-    chain1-->chain2;
-    p2_send_end_push-->p2_send_end_pull;
-    p2_send_end_pull-->chain2;
-    chain2-->msg_send;
-    end
+    subgraph stratum1
+        subgraph mux
+        p1_send_push-->p1_send_pull;
+        p1_send_pull-->chain1;
+        p2_send_push-->p2_send_pull;
+        p2_send_pull-->chain1;
+        chain1-->chain2;
+        p2_send_end_push-->p2_send_end_pull;
+        p2_send_end_pull-->chain2;
+        chain2-->msg_send;
+        end
 
-    subgraph "fetch subordinates"
-    subordinates_in-->subordinates_out;
-    subordinates_out-->subordinates_out_tee_1_push;
-    subordinates_out-->subordinates_out_tee_2_push;
-    subordinates_out-->subordinates_out_tee_3_push;
-    subordinates_out_tee_1_push-->subordinates_out_tee_1_pull;
-    subordinates_out_tee_2_push-->subordinates_out_tee_2_pull;
-    subordinates_out_tee_3_push-->subordinates_out_tee_3_pull;
-    end
+        subgraph "collect votes and send command"
+        %% p1_recv_pull-->filter_map2-->map2-->cross_join2;
+        p1_recv_pull-->map021-->cross_join02-->filter_map2-->map2-->cross_join2;
+        subordinate_count_1_pull-->cross_join02;
+        subordinates_out_tee_2_pull-->cross_join2-->map02-->pull_to_push-->push_to-->p2_send_push;
+        end
 
-    subgraph "phase 1 init"
-    text_out-->filter_map1-->cross_join1;
-    subordinates_out_tee_1_pull-->cross_join1;
-    cross_join1-->map1-->pull_to_push1-->push_to1-->p1_send_push;
-    end
-
-    subgraph "collect votes and send command"
-    p1_recv_pull-->filter_map2-->map2-->cross_join2;
-    subordinates_out_tee_2_pull-->cross_join2-->map-->pull_to_push-->push_to-->p2_send_push;
-    end
-
-    subgraph "collect acks and end"
-    p2_recv_pull-->filter_map3-->map3-->cross_join3;
-    subordinates_out_tee_3_pull-->cross_join3-->map4-->pull_to_push2-->push_to2-->p2_send_end_push;
+        subgraph "collect acks and end"
+        p2_recv_pull-->filter_map3-->map3-->cross_join3;
+        subordinates_out_tee_3_pull-->cross_join3-->map4-->pull_to_push2-->push_to2-->p2_send_end_push;
+        end
     end
 ```
 ### Subordinate
