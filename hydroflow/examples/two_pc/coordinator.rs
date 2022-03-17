@@ -149,7 +149,13 @@ pub(crate) async fn run_coordinator(opts: Opts, subordinates: Vec<String>) {
             .push_to(subordinate_count_1_push),
     );
 
-    // Take the max of subordinate counts.
+    // Take the max of subordinate counts. This is because subordinate_count_1_pull (which is
+    // populated in the previous stratum) has a running count of messages. Thus, the maximum
+    // of these counts must be computed here, in the next stratum, once all the running counts
+    // have been generated.
+    //
+    // This is very inefficient unless there is a lot of batching since the max count is
+    // recomputed every tick even though it is a constant that's set in the config file.
     hf.add_subgraph_stratified(
         "max subordinate counts",
         1,
@@ -180,9 +186,11 @@ pub(crate) async fn run_coordinator(opts: Opts, subordinates: Vec<String>) {
             })
             .map_scan(
                 HashMap::<u16, (u32, SubordResponse, bool)>::new(),
-                |txs, msg| {
+                |ballot_counts, msg| {
+                    // Count up the ballots for transactions, partitioned by transaction id.
+                    // Also check for aborts.
                     let commit = msg.mtype == MsgType::Commit;
-                    let v = txs.entry(msg.xid).or_insert((0, msg, commit));
+                    let v = ballot_counts.entry(msg.xid).or_insert((0, msg, commit));
                     v.0 += 1;
                     v.2 = v.2 && commit;
                     v.clone()
@@ -231,11 +239,15 @@ pub(crate) async fn run_coordinator(opts: Opts, subordinates: Vec<String>) {
                 println!("{:?}", msg);
                 msg
             })
-            .map_scan(HashMap::<u16, (u32, SubordResponse)>::new(), |txs, msg| {
-                let v = txs.entry(msg.xid).or_insert((0, msg));
-                v.0 += 1;
-                v.clone()
-            })
+            .map_scan(
+                HashMap::<u16, (u32, SubordResponse)>::new(),
+                |ack_counts, msg| {
+                    // Count up the acks for transactions, partitioned by transaction id.
+                    let v = ack_counts.entry(msg.xid).or_insert((0, msg));
+                    v.0 += 1;
+                    v.clone()
+                },
+            )
             .cross_join(subordinate_max_count_tee_1_pull.flatten())
             .filter_map(
                 move |((recv_count, msg), count)| {
