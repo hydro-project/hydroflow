@@ -359,7 +359,7 @@ pub trait PushSurface: BaseSurface {
         self.for_each_with_context(move |_ctx, x| (func)(x))
     }
 
-    fn partition<Func, NextA, NextB>(
+    fn partition_with_context<Func, NextA, NextB>(
         self,
         func: Func,
         next_a: NextA,
@@ -367,7 +367,7 @@ pub trait PushSurface: BaseSurface {
     ) -> Self::Output<push_partition::PartitionPushSurfaceReversed<NextA, NextB, Func>>
     where
         Self: Sized,
-        Func: Fn(&Self::ItemOut) -> bool,
+        Func: FnMut(&Context<'_>, &Self::ItemOut) -> bool,
         NextA: PushSurfaceReversed<ItemIn = Self::ItemOut>,
         NextB: PushSurfaceReversed<ItemIn = Self::ItemOut>,
 
@@ -378,12 +378,40 @@ pub trait PushSurface: BaseSurface {
         let next = push_partition::PartitionPushSurfaceReversed::new(func, next_a, next_b);
         self.push_to(next)
     }
+
+    fn partition<Func, NextA, NextB>(
+        self,
+        func: Func,
+        next_a: NextA,
+        next_b: NextB,
+    ) -> Self::Output<PartitionNoCtxOutput<Self, Func, NextA, NextB>>
+    where
+        Self: Sized,
+        Func: Fn(&Self::ItemOut) -> bool,
+        NextA: PushSurfaceReversed<ItemIn = Self::ItemOut>,
+        NextB: PushSurfaceReversed<ItemIn = Self::ItemOut>,
+
+        NextA::OutputHandoffs: Extend<NextB::OutputHandoffs>,
+        <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended: PortList<SEND>
+            + PortListSplit<SEND, NextA::OutputHandoffs, Suffix = NextB::OutputHandoffs>,
+    {
+        self.partition_with_context(move |_ctx, x| (func)(x), next_a, next_b)
+    }
 }
 
 pub type ForEachNoCtxFunc<Prev, Func>
 where
     Prev: BaseSurface,
 = impl FnMut(&Context<'_>, Prev::ItemOut);
+
+pub type PartitionNoCtxOutput<Prev, Func, NextA, NextB>
+where
+    Prev: BaseSurface,
+= push_partition::PartitionPushSurfaceReversed<
+    NextA,
+    NextB,
+    impl FnMut(&Context<'_>, &Prev::ItemOut) -> bool,
+>;
 
 /// This extra layer is needed due to the ownership order. In the functional
 /// chaining syntax each operator owns the previous (can only go in order

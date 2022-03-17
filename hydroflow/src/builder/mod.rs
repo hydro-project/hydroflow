@@ -161,8 +161,8 @@ fn test_partition() {
 
     builder.add_subgraph(
         "main",
-        data.flatten().pull_to_push().partition(
-            |x| *x % 2 == 0,
+        data.flatten().pull_to_push().partition_with_context(
+            |_ctx, x| *x % 2 == 0,
             builder
                 .start_tee()
                 .for_each(move |x| (*even_out).borrow_mut().push(("even", x))),

@@ -8,7 +8,7 @@ use crate::scheduled::type_list::Extend;
 
 pub struct PartitionPushBuild<NextA, NextB, Func>
 where
-    Func: Fn(&NextA::ItemIn) -> bool,
+    Func: FnMut(&Context<'_>, &NextA::ItemIn) -> bool,
     NextA: PushBuild,
     NextB: PushBuild<ItemIn = NextA::ItemIn>,
 
@@ -22,7 +22,7 @@ where
 }
 impl<Func, NextA, NextB> PartitionPushBuild<NextA, NextB, Func>
 where
-    Func: Fn(&NextA::ItemIn) -> bool,
+    Func: FnMut(&Context<'_>, &NextA::ItemIn) -> bool,
     NextA: PushBuild,
     NextB: PushBuild<ItemIn = NextA::ItemIn>,
 
@@ -46,14 +46,14 @@ where
     NextB: PushBuild<ItemIn = NextA::ItemIn>,
 = Partition<
     NextA::ItemIn,
-    impl Fn(&NextA::ItemIn) -> bool,
+    impl FnMut(&NextA::ItemIn) -> bool,
     NextA::Build<'slf, 'ctx>,
     NextB::Build<'slf, 'ctx>,
 >;
 
 impl<NextA, NextB, Func> PushBuildBase for PartitionPushBuild<NextA, NextB, Func>
 where
-    Func: Fn(&NextA::ItemIn) -> bool,
+    Func: FnMut(&Context<'_>, &NextA::ItemIn) -> bool,
     NextA: PushBuild,
     NextB: PushBuild<ItemIn = NextA::ItemIn>,
 
@@ -67,7 +67,7 @@ where
 
 impl<NextA, NextB, Func> PushBuild for PartitionPushBuild<NextA, NextB, Func>
 where
-    Func: Fn(&NextA::ItemIn) -> bool,
+    Func: FnMut(&Context<'_>, &NextA::ItemIn) -> bool,
     NextA: PushBuild,
     NextB: PushBuild<ItemIn = NextA::ItemIn>,
 
@@ -85,6 +85,6 @@ where
         let (input_a, input_b) = <Self::OutputHandoffs as PortListSplit<_, _>>::split_ctx(input);
         let build_a = self.next_a.build(context, input_a);
         let build_b = self.next_b.build(context, input_b);
-        Partition::new(|x| (self.func)(x), build_a, build_b)
+        Partition::new(|x| (self.func)(context, x), build_a, build_b)
     }
 }
