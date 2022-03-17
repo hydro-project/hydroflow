@@ -98,10 +98,10 @@
 }
 
 <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">type_alias_bounds</span>)]</span>
-<span class="kw">type</span> <span class="ident">PushBuildImpl</span><span class="op">&lt;</span><span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;hof</span>, <span class="ident">Next</span>, <span class="ident">Func</span>, <span class="ident">In</span><span class="op">&gt;</span>
+<span class="kw">type</span> <span class="ident">PushBuildImpl</span><span class="op">&lt;</span><span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>, <span class="ident">Next</span>, <span class="ident">Func</span>, <span class="ident">In</span><span class="op">&gt;</span>
 <span class="kw">where</span>
     <span class="ident">Next</span>: <span class="ident">PushBuild</span>,
-<span class="op">=</span> <span class="ident">Map</span><span class="op">&lt;</span><span class="ident">In</span>, <span class="ident">Next::ItemIn</span>, <span class="kw">impl</span> <span class="ident">FnMut</span>(<span class="ident">In</span>) -&gt; <span class="ident">Next::ItemIn</span>, <span class="ident">Next::Build</span><span class="op">&lt;</span><span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;hof</span><span class="op">&gt;</span><span class="op">&gt;</span>;
+<span class="op">=</span> <span class="ident">Map</span><span class="op">&lt;</span><span class="ident">In</span>, <span class="ident">Next::ItemIn</span>, <span class="kw">impl</span> <span class="ident">FnMut</span>(<span class="ident">In</span>) -&gt; <span class="ident">Next::ItemIn</span>, <span class="ident">Next::Build</span><span class="op">&lt;</span><span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span><span class="op">&gt;</span><span class="op">&gt;</span>;
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">Next</span>, <span class="ident">Func</span>, <span class="ident">In</span><span class="op">&gt;</span> <span class="ident">PushBuildBase</span> <span class="kw">for</span> <span class="ident">MapPushBuild</span><span class="op">&lt;</span><span class="ident">Next</span>, <span class="ident">Func</span>, <span class="ident">In</span><span class="op">&gt;</span>
 <span class="kw">where</span>
@@ -109,7 +109,7 @@
     <span class="ident">Func</span>: <span class="ident">FnMut</span>(<span class="ident">In</span>) -&gt; <span class="ident">Next::ItemIn</span>,
 {
     <span class="kw">type</span> <span class="ident">ItemIn</span> <span class="op">=</span> <span class="ident">In</span>;
-    <span class="kw">type</span> <span class="ident">Build</span><span class="op">&lt;</span><span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;hof</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">PushBuildImpl</span><span class="op">&lt;</span><span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;hof</span>, <span class="ident">Next</span>, <span class="ident">Func</span>, <span class="ident">In</span><span class="op">&gt;</span>;
+    <span class="kw">type</span> <span class="ident">Build</span><span class="op">&lt;</span><span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">PushBuildImpl</span><span class="op">&lt;</span><span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>, <span class="ident">Next</span>, <span class="ident">Func</span>, <span class="ident">In</span><span class="op">&gt;</span>;
 }
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">Next</span>, <span class="ident">Func</span>, <span class="ident">In</span><span class="op">&gt;</span> <span class="ident">PushBuild</span> <span class="kw">for</span> <span class="ident">MapPushBuild</span><span class="op">&lt;</span><span class="ident">Next</span>, <span class="ident">Func</span>, <span class="ident">In</span><span class="op">&gt;</span>
@@ -119,14 +119,14 @@
 {
     <span class="kw">type</span> <span class="ident">OutputHandoffs</span> <span class="op">=</span> <span class="ident">Next::OutputHandoffs</span>;
 
-    <span class="kw">fn</span> <span class="ident">build</span><span class="op">&lt;</span><span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;hof</span><span class="op">&gt;</span>(
+    <span class="kw">fn</span> <span class="ident">build</span><span class="op">&lt;</span><span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span><span class="op">&gt;</span>(
         <span class="kw-2">&amp;</span><span class="lifetime">&#39;slf</span> <span class="kw-2">mut</span> <span class="self">self</span>,
-        <span class="ident">context</span>: <span class="kw-2">&amp;</span><span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>,
-        <span class="ident">handoffs</span>: <span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::OutputHandoffs</span> <span class="kw">as</span> <span class="ident">PortList</span><span class="op">&lt;</span><span class="ident">SEND</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::Ctx</span><span class="op">&lt;</span><span class="lifetime">&#39;hof</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident"><span class="self">Self</span>::Build</span><span class="op">&lt;</span><span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;hof</span><span class="op">&gt;</span> {
+        <span class="ident">context</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;ctx</span><span class="op">&gt;</span>,
+        <span class="ident">handoffs</span>: <span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::OutputHandoffs</span> <span class="kw">as</span> <span class="ident">PortList</span><span class="op">&lt;</span><span class="ident">SEND</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::Ctx</span><span class="op">&lt;</span><span class="lifetime">&#39;ctx</span><span class="op">&gt;</span>,
+    ) -&gt; <span class="ident"><span class="self">Self</span>::Build</span><span class="op">&lt;</span><span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span><span class="op">&gt;</span> {
         <span class="ident">Map::new</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> (<span class="self">self</span>.<span class="ident">func</span>)(<span class="ident">x</span>), <span class="self">self</span>.<span class="ident">next</span>.<span class="ident">build</span>(<span class="ident">context</span>, <span class="ident">handoffs</span>))
     }
 }
 </code></pre></div>
-</section><section id="search" class="content hidden"></section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.61.0-nightly (52b34550a 2022-03-15)" ></div>
+</section><section id="search" class="content hidden"></section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.61.0-nightly (461e80780 2022-03-16)" ></div>
 </body></html>
