@@ -2,18 +2,18 @@ use super::PushSurfaceReversed;
 
 use std::marker::PhantomData;
 
-use crate::builder::build::push_for_each::ForEachPushBuild;
+use crate::{builder::build::push_for_each::ForEachPushBuild, scheduled::context::Context};
 
 pub struct ForEachPushSurfaceReversed<Func, In>
 where
-    Func: FnMut(In),
+    Func: FnMut(&Context<'_>, In),
 {
     func: Func,
     _phantom: PhantomData<fn(In)>,
 }
 impl<Func, In> ForEachPushSurfaceReversed<Func, In>
 where
-    Func: FnMut(In),
+    Func: FnMut(&Context<'_>, In),
 {
     pub fn new(func: Func) -> Self {
         Self {
@@ -25,7 +25,7 @@ where
 
 impl<Func, In> PushSurfaceReversed for ForEachPushSurfaceReversed<Func, In>
 where
-    Func: FnMut(In),
+    Func: FnMut(&Context<'_>, In),
 {
     type ItemIn = In;
 
