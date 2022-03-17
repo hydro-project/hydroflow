@@ -4,14 +4,15 @@ extern crate hdrhistogram;
 
 use std::{
     collections::HashMap,
-    sync::{
-        atomic::{AtomicUsize, Ordering},
-        Arc,
-    },
+    str::FromStr,
     time::{Duration, Instant},
 };
 
-use futures::channel::oneshot::Canceled;
+use clap::{ArgEnum, Parser};
+use futures::{
+    channel::mpsc::{channel, Receiver, Sender},
+    SinkExt,
+};
 use hdrhistogram::Histogram;
 use hydroflow::{
     builder::{
@@ -27,13 +28,11 @@ use hydroflow::{
         tag,
     },
     scheduled::handoff::VecHandoff,
-    tokio::{
-        self,
-        sync::mpsc::{channel, Receiver, Sender},
-    },
+    tokio,
 };
-use rand::Rng;
-use tokio_stream::{wrappers::ReceiverStream, StreamExt};
+use rand::{prelude::Distribution, Rng};
+use tokio_stream::StreamExt;
+use zipf::ZipfDistribution;
 
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
 struct ActorId(u64);
@@ -61,38 +60,160 @@ where
 {
 }
 
-fn main() {
-    let workers = 2;
-    let kvs = Arc::new(Kvs::new(workers));
-    let mut i = 0;
-    let mut rng = rand::thread_rng();
-    let rt = tokio::runtime::Runtime::new().unwrap();
-    let mut h = Histogram::<u64>::new(2).unwrap();
-    rt.block_on(async move {
-        loop {
-            tokio::time::sleep(Duration::from_millis(10)).await;
-            let before = Instant::now();
-            kvs.clone()
-                .set(format!("foo{}", i % 99), format!("bar{}", i))
-                .await;
-            h.record(before.elapsed().as_micros().try_into().unwrap())
-                .unwrap();
-
-            i += 1;
-            if rng.gen_range(0..1000) == 0 {
-                kvs.clone().get(format!("foo{}", i % 99)).await.unwrap();
-            }
-        }
-    });
+#[derive(ArgEnum, Clone)]
+enum Dist {
+    Uniform(usize),
+    Zipf(ZipfDistribution),
 }
 
+impl Dist {
+    fn sample<R: rand::Rng>(&mut self, rng: &mut R) -> usize {
+        match self {
+            Self::Uniform(n) => rng.gen_range(0..*n),
+            Self::Zipf(d) => d.sample(rng),
+        }
+    }
+
+    fn uniform(n: usize) -> Self {
+        Self::Uniform(n)
+    }
+
+    fn zipf(n: usize, theta: f64) -> Self {
+        Self::Zipf(ZipfDistribution::new(n, theta).unwrap())
+    }
+}
+
+impl FromStr for Dist {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut contents = s.split(',');
+        match contents
+            .next()
+            .ok_or("type of distribution is required (uniform, zipf)")?
+        {
+            "uniform" => {
+                let n: usize = contents
+                    .next()
+                    .ok_or("require a number of keys parameter")?
+                    .parse()
+                    .map_err(|e| format!("{}", e))?;
+
+                Ok(Dist::uniform(n))
+            }
+            "zipf" => {
+                let n: usize = contents
+                    .next()
+                    .ok_or("require a number of keys parameter")?
+                    .parse()
+                    .map_err(|e| format!("{}", e))?;
+
+                let theta: f64 = contents
+                    .next()
+                    .ok_or("require a theta parameter")?
+                    .parse()
+                    .map_err(|e| format!("{}", e))?;
+
+                Ok(Dist::zipf(n, theta))
+            }
+            _ => Err("invalid distribution".into()),
+        }
+    }
+}
+
+#[derive(Parser)]
+struct Args {
+    #[clap(long)]
+    read_percentage: f64,
+    #[clap(long)]
+    num_kvs_workers: u64,
+    #[clap(long)]
+    num_benchmark_workers: u64,
+    #[clap(long)]
+    dist: Dist,
+    #[clap(long)]
+    run_seconds: u64,
+}
+
+fn main() {
+    let args = Args::parse();
+
+    let kvs = Kvs::new(args.num_kvs_workers);
+    let run_duration = Duration::from_millis(10 * 1000);
+
+    let read_percentage = args.read_percentage;
+    let bench_workers = args.num_benchmark_workers;
+
+    let start = Instant::now();
+    let handles: Vec<_> = (0..bench_workers)
+        .map(|_| {
+            let mut kvs = kvs.clone();
+            let mut distribution = args.dist.clone();
+            std::thread::spawn(move || {
+                let mut i = 0;
+                let mut rng = rand::thread_rng();
+                let rt = tokio::runtime::Builder::new_current_thread()
+                    .enable_all()
+                    .build()
+                    .unwrap();
+                let mut writes_hist = Histogram::<u64>::new(2).unwrap();
+                let mut reads_hist = Histogram::<u64>::new(2).unwrap();
+                rt.block_on(async move {
+                    while start.elapsed() < run_duration {
+                        let before = Instant::now();
+                        if rng.gen::<f64>() < read_percentage {
+                            kvs.get(format!("key{}", distribution.sample(&mut rng)))
+                                .await;
+                            reads_hist
+                                .record(before.elapsed().as_micros().try_into().unwrap())
+                                .unwrap();
+                        } else {
+                            kvs.set(
+                                format!("key{}", distribution.sample(&mut rng)),
+                                format!("bar{}", i),
+                            )
+                            .await;
+                            writes_hist
+                                .record(before.elapsed().as_micros().try_into().unwrap())
+                                .unwrap();
+                        }
+                        i += 1;
+                    }
+
+                    (writes_hist, reads_hist)
+                })
+            })
+        })
+        .collect();
+
+    let mut writes_hist = Histogram::<u64>::new(2).unwrap();
+    let mut reads_hist = Histogram::<u64>::new(2).unwrap();
+    for handle in handles {
+        let (writes, reads) = handle.join().unwrap();
+        writes_hist.add(writes).unwrap();
+        reads_hist.add(reads).unwrap();
+    }
+
+    println!(
+        "ops={}, mean (write)={}, p99 (write)={}, p99.9 (write)={}, mean (read)={}, p99 (read)={}, p99.9 (read)={}",
+        writes_hist.len() + reads_hist.len(),
+        writes_hist.mean(),
+        writes_hist.value_at_quantile(0.99),
+        writes_hist.value_at_quantile(0.999),
+        reads_hist.mean(),
+        reads_hist.value_at_quantile(0.99),
+        reads_hist.value_at_quantile(0.999),
+    );
+}
+
+#[derive(Clone)]
 struct Kvs<K, V>
 where
     K: Send + Clone,
     V: Send + Clone,
 {
     senders: Vec<Sender<Message<K, V>>>,
-    round_robin: AtomicUsize,
+    round_robin: usize,
 }
 
 impl<K, V> Kvs<K, V>
@@ -105,29 +226,31 @@ where
 
         Kvs {
             senders,
-            round_robin: AtomicUsize::new(0),
+            round_robin: 0,
         }
     }
 
-    async fn set(self: Arc<Self>, k: K, v: V) {
-        let receiver = self.round_robin.fetch_add(1, Ordering::SeqCst) % self.senders.len();
+    async fn set(&mut self, k: K, v: V) {
+        let receiver = self.round_robin % self.senders.len();
+        self.round_robin += 1;
         self.senders[receiver]
             .send(Message::Set(k, v))
             .await
             .unwrap();
     }
 
-    async fn get(self: Arc<Self>, k: K) -> Result<(Clock, V), Canceled> {
+    async fn get(&mut self, k: K) -> Option<(Clock, V)> {
         // TODO: We need to make sure we talk to one that is correct, but for
         // now since everyone owns everything just send a message to whoever.
-        let receiver_idx = self.round_robin.fetch_add(1, Ordering::SeqCst) % self.senders.len();
+        let receiver_idx = self.round_robin % self.senders.len();
+        self.round_robin += 1;
         let (sender, receiver) = futures::channel::oneshot::channel();
         self.senders[receiver_idx]
             .send(Message::Get(k, sender))
             .await
             .unwrap();
 
-        receiver.await
+        receiver.await.ok()
     }
 }
 
@@ -209,7 +332,7 @@ where
 {
     spawn(
         workers,
-        move |id, receiver: Receiver<Message<K, V>>, senders: Vec<Sender<Message<K, V>>>| {
+        move |id, receiver: Receiver<Message<K, V>>, mut senders: Vec<Sender<Message<K, V>>>| {
             let rt = tokio::runtime::Runtime::new().unwrap();
             rt.block_on(async move {
                 let mut hf = HydroflowBuilder::default();
@@ -228,7 +351,7 @@ where
                     }
                 });
 
-                let q_recv = hf.add_input_from_stream::<_, Option<_>, VecHandoff<_>, _>("writes", ReceiverStream::new(receiver).map(Some));
+                let q_recv = hf.add_input_from_stream::<_, Option<_>, VecHandoff<_>, _>("writes", receiver.map(Some));
 
                 // Make the ownership table. Everyone owns everything.
                 let ownership = (0..senders.len()).map(|i| ((), Single(i)));

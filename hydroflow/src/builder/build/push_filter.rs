@@ -24,10 +24,10 @@ where
 }
 
 #[allow(type_alias_bounds)]
-type PushBuildImpl<'slf, 'hof, Next, Func>
+type PushBuildImpl<'slf, 'ctx, Next, Func>
 where
     Next: PushBuild,
-= Filter<Next::ItemIn, impl FnMut(&Next::ItemIn) -> bool, Next::Build<'slf, 'hof>>;
+= Filter<Next::ItemIn, impl FnMut(&Next::ItemIn) -> bool, Next::Build<'slf, 'ctx>>;
 
 impl<Next, Func> PushBuildBase for FilterPushBuild<Next, Func>
 where
@@ -35,7 +35,7 @@ where
     Func: FnMut(&Next::ItemIn) -> bool,
 {
     type ItemIn = Next::ItemIn;
-    type Build<'slf, 'hof> = PushBuildImpl<'slf, 'hof, Next, Func>;
+    type Build<'slf, 'ctx> = PushBuildImpl<'slf, 'ctx, Next, Func>;
 }
 
 impl<Next, Func> PushBuild for FilterPushBuild<Next, Func>
@@ -45,11 +45,11 @@ where
 {
     type OutputHandoffs = Next::OutputHandoffs;
 
-    fn build<'slf, 'hof>(
+    fn build<'slf, 'ctx>(
         &'slf mut self,
-        context: &Context<'_>,
-        handoffs: <Self::OutputHandoffs as PortList<SEND>>::Ctx<'hof>,
-    ) -> Self::Build<'slf, 'hof> {
+        context: &'ctx Context<'ctx>,
+        handoffs: <Self::OutputHandoffs as PortList<SEND>>::Ctx<'ctx>,
+    ) -> Self::Build<'slf, 'ctx> {
         Filter::new(|x| (self.func)(x), self.next.build(context, handoffs))
     }
 }

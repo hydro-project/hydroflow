@@ -34,24 +34,24 @@ pub trait PullBuild: PullBuildBase {
     type InputHandoffs: PortList<RECV>;
 
     /// Builds the iterator for a single run of the subgraph.
-    fn build<'slf, 'hof>(
+    fn build<'slf, 'ctx>(
         &'slf mut self,
-        context: &Context<'_>,
-        handoffs: <Self::InputHandoffs as PortList<RECV>>::Ctx<'hof>,
-    ) -> Self::Build<'slf, 'hof>;
+        context: &'ctx Context<'ctx>,
+        handoffs: <Self::InputHandoffs as PortList<RECV>>::Ctx<'ctx>,
+    ) -> Self::Build<'slf, 'ctx>;
 }
 
 pub trait PushBuildBase {
     type ItemIn;
-    type Build<'slf, 'hof>: Pusherator<Item = Self::ItemIn>;
+    type Build<'slf, 'ctx>: Pusherator<Item = Self::ItemIn>;
 }
 pub trait PushBuild: PushBuildBase {
     type OutputHandoffs: PortList<SEND>;
 
     /// Builds the pusherator for a single run of the subgraph.
-    fn build<'slf, 'hof>(
+    fn build<'slf, 'ctx>(
         &'slf mut self,
-        context: &Context<'_>,
-        handoffs: <Self::OutputHandoffs as PortList<SEND>>::Ctx<'hof>,
-    ) -> Self::Build<'slf, 'hof>;
+        context: &'ctx Context<'ctx>,
+        handoffs: <Self::OutputHandoffs as PortList<SEND>>::Ctx<'ctx>,
+    ) -> Self::Build<'slf, 'ctx>;
 }

@@ -2,6 +2,7 @@
 #![feature(type_alias_impl_trait)]
 #![feature(generic_associated_types)]
 #![allow(clippy::let_and_return)]
+#![allow(clippy::iter_with_drain)]
 
 pub mod builder;
 pub mod compiled;

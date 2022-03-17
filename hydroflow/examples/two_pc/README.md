@@ -110,9 +110,6 @@ graph TD;
     p2_end_recv_push-->p2_end_recv_pull;
     p2_end_recv_pull-->map6-->pull_to_push6-->foreach;
     end
-    end
-
-
 ```
 ### To Run the code:
 Look in the file `members.json` to find the addresses of the coordinator and subordinates. 

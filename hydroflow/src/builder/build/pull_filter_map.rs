@@ -20,10 +20,10 @@ where
 }
 
 #[allow(type_alias_bounds)]
-type PullBuildImpl<'slf, 'hof, Prev, Func, Out>
+type PullBuildImpl<'slf, 'ctx, Prev, Func, Out>
 where
     Prev: PullBuild,
-= std::iter::FilterMap<Prev::Build<'slf, 'hof>, impl FnMut(Prev::ItemOut) -> Option<Out>>;
+= std::iter::FilterMap<Prev::Build<'slf, 'ctx>, impl FnMut(Prev::ItemOut) -> Option<Out>>;
 
 impl<Prev, Func, Out> PullBuildBase for FilterMapPullBuild<Prev, Func>
 where
@@ -31,7 +31,7 @@ where
     Func: FnMut(Prev::ItemOut) -> Option<Out>,
 {
     type ItemOut = Out;
-    type Build<'slf, 'hof> = PullBuildImpl<'slf, 'hof, Prev, Func, Out>;
+    type Build<'slf, 'ctx> = PullBuildImpl<'slf, 'ctx, Prev, Func, Out>;
 }
 
 impl<Prev, Func, Out> PullBuild for FilterMapPullBuild<Prev, Func>
@@ -41,11 +41,11 @@ where
 {
     type InputHandoffs = Prev::InputHandoffs;
 
-    fn build<'slf, 'hof>(
+    fn build<'slf, 'ctx>(
         &'slf mut self,
-        context: &Context<'_>,
-        handoffs: <Self::InputHandoffs as PortList<RECV>>::Ctx<'hof>,
-    ) -> Self::Build<'slf, 'hof> {
+        context: &'ctx Context<'ctx>,
+        handoffs: <Self::InputHandoffs as PortList<RECV>>::Ctx<'ctx>,
+    ) -> Self::Build<'slf, 'ctx> {
         self.prev
             .build(context, handoffs)
             .filter_map(|x| (self.func)(x))

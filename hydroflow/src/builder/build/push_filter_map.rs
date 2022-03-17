@@ -31,10 +31,10 @@ where
 }
 
 #[allow(type_alias_bounds)]
-type PushBuildImpl<'slf, 'hof, Next, Func, In>
+type PushBuildImpl<'slf, 'ctx, Next, Func, In>
 where
     Next: PushBuild,
-= FilterMap<Next::Build<'slf, 'hof>, impl FnMut(In) -> Option<Next::ItemIn>, In>;
+= FilterMap<Next::Build<'slf, 'ctx>, impl FnMut(In) -> Option<Next::ItemIn>, In>;
 
 impl<Next, Func, In> PushBuildBase for FilterMapPushBuild<Next, Func, In>
 where
@@ -42,7 +42,7 @@ where
     Func: FnMut(In) -> Option<Next::ItemIn>,
 {
     type ItemIn = In;
-    type Build<'slf, 'hof> = PushBuildImpl<'slf, 'hof, Next, Func, In>;
+    type Build<'slf, 'ctx> = PushBuildImpl<'slf, 'ctx, Next, Func, In>;
 }
 
 impl<Next, Func, In> PushBuild for FilterMapPushBuild<Next, Func, In>
@@ -52,11 +52,11 @@ where
 {
     type OutputHandoffs = Next::OutputHandoffs;
 
-    fn build<'slf, 'hof>(
+    fn build<'slf, 'ctx>(
         &'slf mut self,
-        context: &Context<'_>,
-        handoffs: <Self::OutputHandoffs as PortList<SEND>>::Ctx<'hof>,
-    ) -> Self::Build<'slf, 'hof> {
+        context: &'ctx Context<'ctx>,
+        handoffs: <Self::OutputHandoffs as PortList<SEND>>::Ctx<'ctx>,
+    ) -> Self::Build<'slf, 'ctx> {
         FilterMap::new(|x| (self.func)(x), self.next.build(context, handoffs))
     }
 }
