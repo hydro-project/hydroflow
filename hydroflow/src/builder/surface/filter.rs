@@ -2,6 +2,7 @@ use super::{BaseSurface, PullSurface, PushSurface, PushSurfaceReversed};
 
 use crate::builder::build::pull_filter::FilterPullBuild;
 use crate::builder::build::push_filter::FilterPushBuild;
+use crate::scheduled::context::Context;
 
 pub struct FilterSurface<Prev, Func>
 where
@@ -13,7 +14,7 @@ where
 impl<Prev, Func> FilterSurface<Prev, Func>
 where
     Prev: BaseSurface,
-    Func: FnMut(&Prev::ItemOut) -> bool,
+    Func: FnMut(&Context<'_>, &Prev::ItemOut) -> bool,
 {
     pub fn new(prev: Prev, func: Func) -> Self {
         Self { prev, func }
@@ -23,7 +24,7 @@ where
 impl<Prev, Func> BaseSurface for FilterSurface<Prev, Func>
 where
     Prev: BaseSurface,
-    Func: FnMut(&Prev::ItemOut) -> bool,
+    Func: FnMut(&Context<'_>, &Prev::ItemOut) -> bool,
 {
     type ItemOut = Prev::ItemOut;
 }
@@ -31,7 +32,7 @@ where
 impl<Prev, Func> PullSurface for FilterSurface<Prev, Func>
 where
     Prev: PullSurface,
-    Func: FnMut(&Prev::ItemOut) -> bool,
+    Func: FnMut(&Context<'_>, &Prev::ItemOut) -> bool,
 {
     type InputHandoffs = Prev::InputHandoffs;
     type Build = FilterPullBuild<Prev::Build, Func>;
@@ -46,7 +47,7 @@ where
 impl<Prev, Func> PushSurface for FilterSurface<Prev, Func>
 where
     Prev: PushSurface,
-    Func: FnMut(&Prev::ItemOut) -> bool,
+    Func: FnMut(&Context<'_>, &Prev::ItemOut) -> bool,
 {
     type Output<Next> = Prev::Output<FilterPushSurfaceReversed<Next, Func>>
     where
@@ -71,7 +72,7 @@ where
 impl<Next, Func> FilterPushSurfaceReversed<Next, Func>
 where
     Next: PushSurfaceReversed,
-    Func: FnMut(&Next::ItemIn) -> bool,
+    Func: FnMut(&Context<'_>, &Next::ItemIn) -> bool,
 {
     pub fn new(next: Next, func: Func) -> Self {
         Self { next, func }
@@ -81,7 +82,7 @@ where
 impl<Next, Func> PushSurfaceReversed for FilterPushSurfaceReversed<Next, Func>
 where
     Next: PushSurfaceReversed,
-    Func: FnMut(&Next::ItemIn) -> bool,
+    Func: FnMut(&Context<'_>, &Next::ItemIn) -> bool,
 {
     type ItemIn = Next::ItemIn;
 

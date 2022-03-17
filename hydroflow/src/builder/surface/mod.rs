@@ -102,12 +102,20 @@ pub trait BaseSurface {
         flatten::FlattenSurface::new(self)
     }
 
-    fn filter<Func>(self, func: Func) -> filter::FilterSurface<Self, Func>
+    fn filter_with_context<Func>(self, func: Func) -> filter::FilterSurface<Self, Func>
+    where
+        Self: Sized,
+        Func: FnMut(&Context<'_>, &Self::ItemOut) -> bool,
+    {
+        filter::FilterSurface::new(self, func)
+    }
+
+    fn filter<Func>(self, mut func: Func) -> filter::FilterSurface<Self, FilterNoCtxFn<Self, Func>>
     where
         Self: Sized,
         Func: FnMut(&Self::ItemOut) -> bool,
     {
-        filter::FilterSurface::new(self, func)
+        self.filter_with_context(move |_ctx, x| (func)(x))
     }
 
     fn filter_map<Func, Out>(self, func: Func) -> filter_map::FilterMapSurface<Self, Func>
@@ -147,6 +155,11 @@ pub type MapNoCtxFn<Prev, Func, Out>
 where
     Prev: BaseSurface,
 = impl FnMut(&Context<'_>, Prev::ItemOut) -> Out;
+
+pub type FilterNoCtxFn<Prev, Func>
+where
+    Prev: BaseSurface,
+= impl FnMut(&Context<'_>, &Prev::ItemOut) -> bool;
 
 pub type MapScanMapFunc<Prev, State, Func, Out>
 where

@@ -12,7 +12,7 @@ where
 impl<Prev, Func> FilterPullBuild<Prev, Func>
 where
     Prev: PullBuild,
-    Func: FnMut(&Prev::ItemOut) -> bool,
+    Func: FnMut(&Context<'_>, &Prev::ItemOut) -> bool,
 {
     pub fn new(prev: Prev, func: Func) -> Self {
         Self { prev, func }
@@ -28,7 +28,7 @@ where
 impl<Prev, Func> PullBuildBase for FilterPullBuild<Prev, Func>
 where
     Prev: PullBuild,
-    Func: FnMut(&Prev::ItemOut) -> bool,
+    Func: FnMut(&Context<'_>, &Prev::ItemOut) -> bool,
 {
     type ItemOut = Prev::ItemOut;
     type Build<'slf, 'ctx> = PullBuildImpl<'slf, 'ctx, Prev, Func>;
@@ -37,7 +37,7 @@ where
 impl<Prev, Func> PullBuild for FilterPullBuild<Prev, Func>
 where
     Prev: PullBuild,
-    Func: FnMut(&Prev::ItemOut) -> bool,
+    Func: FnMut(&Context<'_>, &Prev::ItemOut) -> bool,
 {
     type InputHandoffs = Prev::InputHandoffs;
 
@@ -48,6 +48,6 @@ where
     ) -> Self::Build<'slf, 'ctx> {
         self.prev
             .build(context, handoffs)
-            .filter(|x| (self.func)(x))
+            .filter(|x| (self.func)(context, x))
     }
 }
