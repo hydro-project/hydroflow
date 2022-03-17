@@ -118,12 +118,26 @@ pub trait BaseSurface {
         self.filter_with_context(move |_ctx, x| (func)(x))
     }
 
-    fn filter_map<Func, Out>(self, func: Func) -> filter_map::FilterMapSurface<Self, Func>
+    fn filter_map_with_context<Func, Out>(
+        self,
+        func: Func,
+    ) -> filter_map::FilterMapSurface<Self, Func>
+    where
+        Self: Sized,
+        Func: FnMut(&Context<'_>, Self::ItemOut) -> Option<Out>,
+    {
+        filter_map::FilterMapSurface::new(self, func)
+    }
+
+    fn filter_map<Func, Out>(
+        self,
+        mut func: Func,
+    ) -> filter_map::FilterMapSurface<Self, FilterMapNoCtxFn<Self, Func, Out>>
     where
         Self: Sized,
         Func: FnMut(Self::ItemOut) -> Option<Out>,
     {
-        filter_map::FilterMapSurface::new(self, func)
+        self.filter_map_with_context(move |_ctx, x| (func)(x))
     }
 
     fn map_scan<State, Func, Out>(
@@ -160,6 +174,11 @@ pub type FilterNoCtxFn<Prev, Func>
 where
     Prev: BaseSurface,
 = impl FnMut(&Context<'_>, &Prev::ItemOut) -> bool;
+
+pub type FilterMapNoCtxFn<Prev, Func, Out>
+where
+    Prev: BaseSurface,
+= impl FnMut(&Context<'_>, Prev::ItemOut) -> Option<Out>;
 
 pub type MapScanMapFunc<Prev, State, Func, Out>
 where
