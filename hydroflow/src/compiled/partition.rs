@@ -4,7 +4,7 @@ use std::marker::PhantomData;
 
 pub struct Partition<T, F, O1, O2>
 where
-    F: Fn(&T) -> bool,
+    F: FnMut(&T) -> bool,
     O1: Pusherator<Item = T>,
     O2: Pusherator<Item = T>,
 {
@@ -15,7 +15,7 @@ where
 }
 impl<T, F, O1, O2> Pusherator for Partition<T, F, O1, O2>
 where
-    F: Fn(&T) -> bool,
+    F: FnMut(&T) -> bool,
     O1: Pusherator<Item = T>,
     O2: Pusherator<Item = T>,
 {
@@ -30,7 +30,7 @@ where
 }
 impl<T, F, O1, O2> Partition<T, F, O1, O2>
 where
-    F: Fn(&T) -> bool,
+    F: FnMut(&T) -> bool,
     O1: Pusherator<Item = T>,
     O2: Pusherator<Item = T>,
 {
@@ -46,7 +46,7 @@ where
 
 pub struct PartitionBuild<T, F, O1, P>
 where
-    F: Fn(&T) -> bool,
+    F: FnMut(&T) -> bool,
     O1: Pusherator<Item = T>,
     P: PusheratorBuild<Item = T>,
 {
@@ -57,7 +57,7 @@ where
 }
 impl<T, F, O1, P> PartitionBuild<T, F, O1, P>
 where
-    F: Fn(&T) -> bool,
+    F: FnMut(&T) -> bool,
     O1: Pusherator<Item = T>,
     P: PusheratorBuild<Item = T>,
 {
@@ -72,7 +72,7 @@ where
 }
 impl<T, F, O1, P> PusheratorBuild for PartitionBuild<T, F, O1, P>
 where
-    F: Fn(&T) -> bool,
+    F: FnMut(&T) -> bool,
     O1: Pusherator<Item = T>,
     P: PusheratorBuild<Item = T>,
 {
