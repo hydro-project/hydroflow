@@ -334,16 +334,29 @@ pub trait PushSurface: BaseSurface {
         self.push_to(next)
     }
 
-    fn for_each<Func>(
+    fn for_each_with_context<Func>(
         self,
         func: Func,
     ) -> Self::Output<push_for_each::ForEachPushSurfaceReversed<Func, Self::ItemOut>>
     where
         Self: Sized,
-        Func: FnMut(Self::ItemOut),
+        Func: FnMut(&Context<'_>, Self::ItemOut),
     {
         let next = push_for_each::ForEachPushSurfaceReversed::new(func);
         self.push_to(next)
+    }
+
+    fn for_each<Func>(
+        self,
+        mut func: Func,
+    ) -> Self::Output<
+        push_for_each::ForEachPushSurfaceReversed<ForEachNoCtxFunc<Self, Func>, Self::ItemOut>,
+    >
+    where
+        Self: Sized,
+        Func: FnMut(Self::ItemOut),
+    {
+        self.for_each_with_context(move |_ctx, x| (func)(x))
     }
 
     fn partition<Func, NextA, NextB>(
@@ -366,6 +379,11 @@ pub trait PushSurface: BaseSurface {
         self.push_to(next)
     }
 }
+
+pub type ForEachNoCtxFunc<Prev, Func>
+where
+    Prev: BaseSurface,
+= impl FnMut(&Context<'_>, Prev::ItemOut);
 
 /// This extra layer is needed due to the ownership order. In the functional
 /// chaining syntax each operator owns the previous (can only go in order
