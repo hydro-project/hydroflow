@@ -55,7 +55,7 @@ impl<'a> Context<'a> {
         T: Any,
     {
         self.states
-            .get(handle.state_id)
+            .get(handle.state_id.0)
             .expect("Failed to find state with given handle.")
             .state
             .downcast_ref()
@@ -67,7 +67,7 @@ impl<'a> Context<'a> {
         T: Any,
     {
         self.states
-            .get_mut(handle.state_id)
+            .get_mut(handle.state_id.0)
             .expect("Failed to find state with given handle.")
             .state
             .downcast_mut()
