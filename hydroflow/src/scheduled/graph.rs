@@ -87,7 +87,7 @@ impl Hydroflow {
 
         while let Some(sg_id) = self.stratum_queues[self.current_stratum].pop_front() {
             {
-                let sg_data = &mut self.subgraphs[sg_id];
+                let sg_data = &mut self.subgraphs[sg_id.0];
                 // This must be true for the subgraph to be enqueued.
                 assert!(sg_data.is_scheduled.take());
 
@@ -102,11 +102,11 @@ impl Hydroflow {
                 sg_data.subgraph.run(context);
             }
 
-            for &handoff_id in self.subgraphs[sg_id].succs.iter() {
-                let handoff = &self.handoffs[handoff_id];
+            for &handoff_id in self.subgraphs[sg_id.0].succs.iter() {
+                let handoff = &self.handoffs[handoff_id.0];
                 if !handoff.handoff.is_bottom() {
                     for &succ_id in handoff.succs.iter() {
-                        let succ_sg_data = &self.subgraphs[succ_id];
+                        let succ_sg_data = &self.subgraphs[succ_id.0];
                         if succ_sg_data.is_scheduled.get() {
                             // Skip if task is already scheduled.
                             continue;
@@ -174,7 +174,7 @@ impl Hydroflow {
     pub fn try_recv_events(&mut self) -> usize {
         let mut enqueued_count = 0;
         while let Ok(sg_id) = self.event_queue_recv.try_recv() {
-            let sg_data = &self.subgraphs[sg_id];
+            let sg_data = &self.subgraphs[sg_id.0];
             if !sg_data.is_scheduled.replace(true) {
                 self.stratum_queues[sg_data.stratum].push_back(sg_id);
                 enqueued_count += 1;
@@ -188,7 +188,7 @@ impl Hydroflow {
     pub fn recv_events(&mut self) -> Option<NonZeroUsize> {
         loop {
             let sg_id = self.event_queue_recv.blocking_recv()?;
-            let sg_data = &self.subgraphs[sg_id];
+            let sg_data = &self.subgraphs[sg_id.0];
             if !sg_data.is_scheduled.replace(true) {
                 self.stratum_queues[sg_data.stratum].push_back(sg_id);
 
@@ -203,7 +203,7 @@ impl Hydroflow {
     pub async fn recv_events_async(&mut self) -> Option<NonZeroUsize> {
         loop {
             let sg_id = self.event_queue_recv.recv().await?;
-            let sg_data = &self.subgraphs[sg_id];
+            let sg_data = &self.subgraphs[sg_id.0];
             if !sg_data.is_scheduled.replace(true) {
                 self.stratum_queues[sg_data.stratum].push_back(sg_id);
 
@@ -246,7 +246,7 @@ impl Hydroflow {
         W: 'static + PortList<SEND>,
         F: 'static + for<'ctx> FnMut(&'ctx Context<'ctx>, R::Ctx<'ctx>, W::Ctx<'ctx>),
     {
-        let sg_id = self.subgraphs.len();
+        let sg_id = SubgraphId(self.subgraphs.len());
 
         let (mut subgraph_preds, mut subgraph_succs) = Default::default();
         recv_ports.set_graph_meta(&mut *self.handoffs, None, Some(sg_id), &mut subgraph_preds);
@@ -306,23 +306,23 @@ impl Hydroflow {
         F: 'static
             + for<'ctx> FnMut(&'ctx Context<'ctx>, &'ctx [&'ctx RecvCtx<R>], &'ctx [&'ctx SendCtx<W>]),
     {
-        let sg_id = self.subgraphs.len();
+        let sg_id = SubgraphId(self.subgraphs.len());
 
         let subgraph_preds = recv_ports.iter().map(|port| port.handoff_id).collect();
         let subgraph_succs = send_ports.iter().map(|port| port.handoff_id).collect();
 
         for recv_port in recv_ports.iter() {
-            self.handoffs[recv_port.handoff_id].succs.push(sg_id);
+            self.handoffs[recv_port.handoff_id.0].succs.push(sg_id);
         }
         for send_port in send_ports.iter() {
-            self.handoffs[send_port.handoff_id].preds.push(sg_id);
+            self.handoffs[send_port.handoff_id.0].preds.push(sg_id);
         }
 
         let subgraph = move |context: Context<'_>| {
             let recvs: Vec<&RecvCtx<R>> = recv_ports
                 .iter()
                 .map(|hid| hid.handoff_id)
-                .map(|hid| context.handoffs.get(hid).unwrap())
+                .map(|hid| context.handoffs.get(hid.0).unwrap())
                 .map(|h_data| {
                     h_data
                         .handoff
@@ -336,7 +336,7 @@ impl Hydroflow {
             let sends: Vec<&SendCtx<W>> = send_ports
                 .iter()
                 .map(|hid| hid.handoff_id)
-                .map(|hid| context.handoffs.get(hid).unwrap())
+                .map(|hid| context.handoffs.get(hid.0).unwrap())
                 .map(|h_data| {
                     h_data
                         .handoff
@@ -378,7 +378,7 @@ impl Hydroflow {
         Name: Into<Cow<'static, str>>,
         H: 'static + Handoff,
     {
-        let handoff_id: HandoffId = self.handoffs.len();
+        let handoff_id = HandoffId(self.handoffs.len());
 
         // Create and insert handoff.
         let handoff = H::default();
@@ -400,7 +400,7 @@ impl Hydroflow {
     where
         T: Any,
     {
-        let state_id: StateId = self.states.len();
+        let state_id = StateId(self.states.len());
 
         let state_data = StateData {
             state: Box::new(state),
