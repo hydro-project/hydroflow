@@ -4,3 +4,4 @@
 - [Design Docs]({{ "/design_docs/" | prepend: site.github.url | replace: 'http://', '//' }})
 - [Benchmark History]({{ "/bench/" | prepend: site.github.url | replace: 'http://', '//' }})
 - [Latest Benchmarks]({{ "/criterion/report/" | prepend: site.github.url | replace: 'http://', '//' }})
+- [Github Repository 🔗](https://github.com/hydro-project/hydroflow)
