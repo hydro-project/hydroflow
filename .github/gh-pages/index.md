@@ -1,5 +1,6 @@
 ---
 ---
+- [The Hydroflow Book]({{ "/book/" | prepend: site.github.url | replace: 'http://', '//' }})
 - [Rust Docs]({{ "/doc/hydroflow/" | prepend: site.github.url | replace: 'http://', '//' }})
 - [Design Docs]({{ "/design_docs/" | prepend: site.github.url | replace: 'http://', '//' }})
 - [Benchmark History]({{ "/bench/" | prepend: site.github.url | replace: 'http://', '//' }})
