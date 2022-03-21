@@ -126,7 +126,7 @@ jobs:
 
       - name: Include design docs
         shell: bash
-        run: mv design_docs target/
+        run: mv design_docs "$WWW_DIR/"
 
       - name: Push to gh-pages
         # Do not deploy PRs.
@@ -142,7 +142,6 @@ jobs:
           git -C "$WWW_DIR" fetch origin gh-pages:gh-pages
           git -C "$WWW_DIR" symbolic-ref HEAD refs/heads/gh-pages
           git -C "$WWW_DIR" reset
-          git -C "$WWW_DIR" checkout -- .gitignore index.md
           git -C "$WWW_DIR" add doc design_docs
           if git -C "$WWW_DIR" -c 'user.name=github-actions[bot]' -c 'user.email=41898282+github-actions[bot]@users.noreply.github.com' \
             commit -m "Update Docs $(date -I) $(git rev-parse HEAD)";
@@ -190,8 +189,8 @@ jobs:
           git -C "$WWW_DIR" fetch origin gh-pages
           git -C "$WWW_DIR" reset --soft origin/gh-pages
           git -C "$WWW_DIR" reset
-          git -C "$WWW_DIR" checkout -- .gitignore index.md bench criterion
-          mkdir -p target/bench
+          git -C "$WWW_DIR" checkout -- bench criterion
+          mkdir -p "$WWW_DIR/bench"
 
       - name: Run benchmark
         run: |
@@ -205,18 +204,21 @@ jobs:
           output-file-path: output.txt
           external-data-json-path: target/bench/data.json
 
-      - name: Write benchmark html/json
-        run: |
-          echo 'window.BENCHMARK_DATA = ' | cat - target/bench/data.json > target/bench/data.js
-          cp .github/assets/index.html target/bench/index.html
+      - name: Write benchmark JSON
+        run: echo 'window.BENCHMARK_DATA = ' | cat - "$WWW_DIR/bench/data.json" > "$WWW_DIR/bench/data.js"
+
+      - name: Write benhmark HTML
+        shell: bash
+        run: node --input-type=module -e "$(curl https://raw.githubusercontent.com/benchmark-action/github-action-benchmark/master/src/default_index_html.ts) console.log(DEFAULT_INDEX_HTML)" > "$WWW_DIR/bench/index.html"
 
       - name: Push to gh-pages
         shell: bash
         run: |
+          cp -r .github/gh-pages/* .github/gh-pages/.gitignore "$WWW_DIR/"
           git -C "$WWW_DIR" fetch origin gh-pages
           git -C "$WWW_DIR" reset --soft origin/gh-pages
           git -C "$WWW_DIR" reset
-          git -C "$WWW_DIR" add bench criterion
+          git -C "$WWW_DIR" add bench criterion $(ls .github/gh-pages)
           if git -C "$WWW_DIR" -c 'user.name=github-actions[bot]' -c 'user.email=41898282+github-actions[bot]@users.noreply.github.com' \
             commit -m "Update Benchmarks $(date -I) $(git rev-parse HEAD)";
           then
