@@ -69,6 +69,11 @@ jobs:
         with:
           command: test
 
+      - name: Install mdBook
+        run: curl -sSL https://github.com/rust-lang/mdBook/releases/download/v0.4.15/mdbook-v0.4.15-x86_64-unknown-linux-gnu.tar.gz | tar -xz
+      - name: Run mdBook tests
+        run: ./mdbook test
+
   lints:
     name: Lints
     needs: pre_job
@@ -124,6 +129,11 @@ jobs:
         env:
           RUSTDOCFLAGS: -Dwarnings
 
+      - name: Install mdBook
+        run: curl -sSL https://github.com/rust-lang/mdBook/releases/download/v0.4.15/mdbook-v0.4.15-x86_64-unknown-linux-gnu.tar.gz | tar -xz
+      - name: Run mdBook build
+        run: ./mdbook build
+
       - name: Include design docs
         shell: bash
         run: mv design_docs "$WWW_DIR/"
@@ -142,7 +152,7 @@ jobs:
           git -C "$WWW_DIR" fetch origin gh-pages:gh-pages
           git -C "$WWW_DIR" symbolic-ref HEAD refs/heads/gh-pages
           git -C "$WWW_DIR" reset
-          git -C "$WWW_DIR" add doc design_docs
+          git -C "$WWW_DIR" add book doc design_docs
           if git -C "$WWW_DIR" -c 'user.name=github-actions[bot]' -c 'user.email=41898282+github-actions[bot]@users.noreply.github.com' \
             commit -m "Update Docs $(date -I) $(git rev-parse HEAD)";
           then
@@ -209,7 +219,7 @@ jobs:
 
       - name: Write benhmark HTML
         shell: bash
-        run: node --input-type=module -e "$(curl https://raw.githubusercontent.com/benchmark-action/github-action-benchmark/master/src/default_index_html.ts) console.log(DEFAULT_INDEX_HTML)" > "$WWW_DIR/bench/index.html"
+        run: node --input-type=module -e "$(curl -sSL https://raw.githubusercontent.com/benchmark-action/github-action-benchmark/master/src/default_index_html.ts) console.log(DEFAULT_INDEX_HTML)" > "$WWW_DIR/bench/index.html"
 
       - name: Push to gh-pages
         shell: bash
