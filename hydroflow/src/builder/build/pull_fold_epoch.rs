@@ -21,6 +21,12 @@ where
     }
 }
 
+#[allow(type_alias_bounds)]
+type PullBuildImpl<'slf, 'ctx, Prev, Init, Func, Out>
+where
+    Prev: PullBuild,
+= std::iter::OnceWith<impl FnOnce() -> Out>;
+
 impl<Prev, Init, Func, Out> PullBuildBase for FoldEpochPullBuild<Prev, Init, Func>
 where
     Prev: PullBuild,
@@ -28,7 +34,7 @@ where
     Func: FnMut(&Context<'_>, Out, Prev::ItemOut) -> Out,
 {
     type ItemOut = Out;
-    type Build<'slf, 'ctx> = std::iter::Once<Out>;
+    type Build<'slf, 'ctx> = PullBuildImpl<'slf, 'ctx, Prev, Init, Func, Out>;
 }
 
 impl<Prev, Init, Func, Out> PullBuild for FoldEpochPullBuild<Prev, Init, Func>
@@ -44,10 +50,10 @@ where
         context: &'ctx Context<'ctx>,
         handoffs: <Self::InputHandoffs as PortList<RECV>>::Ctx<'ctx>,
     ) -> Self::Build<'slf, 'ctx> {
-        std::iter::once(
+        std::iter::once_with(move || {
             self.prev
                 .build(context, handoffs)
-                .fold((self.init)(context), |acc, x| (self.func)(context, acc, x)),
-        )
+                .fold((self.init)(context), |acc, x| (self.func)(context, acc, x))
+        })
     }
 }
