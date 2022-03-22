@@ -31,7 +31,8 @@ where
     Hof: Handoff + CanReceive<In>,
 {
     fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> usize {
-        let my_id = e.add_node(format!("Handoff_{}", self.port.handoff_id));
+        let my_id = e.add_node(format!("Handoff"));
+        e.add_handoff_id(my_id, self.port.handoff_id);
         my_id
     }
 }

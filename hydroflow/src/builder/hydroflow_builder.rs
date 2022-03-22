@@ -90,7 +90,7 @@ impl HydroflowBuilder {
         Pull: 'static + PullSurface + TrackPullDependencies,
         Push: 'static + PushSurfaceReversed<ItemIn = Pull::ItemOut> + TrackPushDependencies,
     {
-        let mut deps = DirectedEdgeSet::default();
+        let mut deps = DirectedEdgeSet::new();
         let pull_root = pivot.pull.insert_dep(&mut deps);
         let push_root = pivot.push.insert_dep(&mut deps);
         let my_id = deps.add_node("PullToPush");

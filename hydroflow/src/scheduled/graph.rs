@@ -1,7 +1,7 @@
 use std::any::Any;
 use std::borrow::Cow;
 use std::cell::Cell;
-use std::collections::{HashSet, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::fmt::Write;
 use std::marker::PhantomData;
 use std::num::NonZeroUsize;
@@ -418,41 +418,42 @@ impl Hydroflow {
     }
 
     fn mermaid_mangle(&self, name: Cow<'static, str>, subg: usize, node: usize) -> String {
-        let res = if name.starts_with("Handoff") {
-            let handoff_id: usize = name.split('_').collect::<Vec<&str>>()[1].parse().unwrap();
+        if name.starts_with("Handoff") {
+            let handoff_id = self.subgraphs[subg].dependencies.handoff_ids[&node];
             let handoff = &self.handoffs[handoff_id];
-            // let name = self.remove_whitespace(handoff.name.clone());
-            format!("Handoff:_{}[\\{}/]", handoff_id, handoff.name)
-            // name
+            format!("Handoff_{}[\\{}/]", handoff_id, handoff.name)
         } else if &*name == "PullToPush" {
             format!("{}.{}[/{}\\]", subg, node, name)
         } else {
-            // format!("{}.{}({})", subg, node, name)
             format!("{}.{}[{}]", subg, node, name)
-        };
-        res
+        }
     }
 
     pub fn render_mermaid(&self) -> String {
-        let mut retval = "graph TD\n".to_string();
+        let mut output = String::new();
+        self.write_mermaid(&mut output);
+        output
+    }
+
+    pub fn write_mermaid(&self, write: &mut impl Write) {
+        let _err = writeln!(write, "graph TD");
         for i in 0..self.subgraphs.len() {
             let d = &self.subgraphs[i].dependencies;
             let name = &self.subgraphs[i].name;
             let stratum = self.subgraphs[i].stratum;
 
             if !d.edges.is_empty() {
-                writeln!(retval, "subgraph stratum{}", stratum).unwrap();
-                writeln!(retval, "subgraph {}{}", name, i).unwrap();
+                writeln!(write, "subgraph stratum{}", stratum).unwrap();
+                writeln!(write, "subgraph {}{}", name, i).unwrap();
                 for e in &d.edges {
                     let from = self.mermaid_mangle(d.node_names[e.0].clone(), i, e.0);
                     let to = self.mermaid_mangle(d.node_names[e.1].clone(), i, e.1);
-                    writeln!(retval, "{} --> {}", from, to,).unwrap();
+                    writeln!(write, "{} --> {}", from, to,).unwrap();
                 }
-                writeln!(retval, "end").unwrap();
-                writeln!(retval, "end").unwrap();
+                writeln!(write, "end").unwrap();
+                writeln!(write, "end").unwrap();
             }
         }
-        retval
     }
 }
 
@@ -460,8 +461,17 @@ impl Hydroflow {
 pub struct DirectedEdgeSet {
     pub node_names: Vec<Cow<'static, str>>,
     pub edges: HashSet<(usize, usize)>,
+    pub handoff_ids: HashMap<usize, usize>,
 }
 impl DirectedEdgeSet {
+    pub fn new() -> Self {
+        let (node_names, edges, handoff_ids) = Default::default();
+        Self {
+            node_names,
+            edges,
+            handoff_ids,
+        }
+    }
     pub fn add_node(&mut self, name: impl Into<Cow<'static, str>>) -> usize {
         let current_index = self.node_names.len();
         self.node_names.insert(current_index, name.into());
@@ -469,6 +479,9 @@ impl DirectedEdgeSet {
     }
     pub fn add_edge(&mut self, edge: (usize, usize)) {
         self.edges.insert(edge);
+    }
+    pub fn add_handoff_id(&mut self, node_id: usize, handoff_id: usize) {
+        self.handoff_ids.insert(node_id, handoff_id);
     }
     pub fn append(&mut self, mut other: DirectedEdgeSet) {
         let base = self.node_names.len();
@@ -478,6 +491,12 @@ impl DirectedEdgeSet {
                 .edges
                 .into_iter()
                 .map(|(from, to)| (from + base, to + base)),
+        );
+        self.handoff_ids.extend(
+            other
+                .handoff_ids
+                .into_iter()
+                .map(|(key, val)| (key + base, val)),
         );
     }
 }
