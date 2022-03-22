@@ -1,4 +1,7 @@
-use super::{BaseSurface, PullSurface, PushSurface, PushSurfaceReversed, TrackPushDependencies, TrackPullDependencies};
+use super::{
+    BaseSurface, PullSurface, PushSurface, PushSurfaceReversed, TrackPullDependencies,
+    TrackPushDependencies,
+};
 
 use std::marker::PhantomData;
 
