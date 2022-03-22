@@ -1,4 +1,4 @@
-use super::PushSurfaceReversed;
+use super::{PushSurfaceReversed, TrackPushDependencies};
 
 use crate::builder::build::push_partition::PartitionPushBuild;
 use crate::scheduled::context::Context;
@@ -36,6 +36,25 @@ where
             next_a,
             next_b,
         }
+    }
+}
+impl<NextA, NextB, Func> TrackPushDependencies for PartitionPushSurfaceReversed<NextA, NextB, Func>
+where
+    Func: Fn(&NextA::ItemIn) -> bool,
+    NextA: PushSurfaceReversed + TrackPushDependencies,
+    NextB: PushSurfaceReversed<ItemIn = NextA::ItemIn> + TrackPushDependencies,
+
+    NextA::OutputHandoffs: Extend<NextB::OutputHandoffs>,
+    <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended:
+        PortList<SEND> + PortListSplit<SEND, NextA::OutputHandoffs, Suffix = NextB::OutputHandoffs>,
+{
+    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> u16 {
+        let my_id = e.add_node("Partition".to_string());
+        let next_a_id = self.next_a.insert_dep(e);
+        let next_b_id = self.next_b.insert_dep(e);
+        e.add_edge((my_id, next_a_id));
+        e.add_edge((my_id, next_b_id));
+        my_id
     }
 }
 

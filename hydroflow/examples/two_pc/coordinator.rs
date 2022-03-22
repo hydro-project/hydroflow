@@ -281,5 +281,8 @@ pub(crate) async fn run_coordinator(opts: Opts, subordinates: Vec<String>) {
         .map(Some)
         .for_each(|x| subordinates_in.give(x));
     subordinates_in.flush();
+    if opts.mermaid {
+        println!("{}", hf.render_mermaid());
+    }
     hf.run_async().await.unwrap();
 }
