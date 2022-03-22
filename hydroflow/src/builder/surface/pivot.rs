@@ -16,8 +16,8 @@ where
     Pull: PullSurface,
     Push: PushSurfaceReversed<ItemIn = Pull::ItemOut>,
 {
-    pull: Pull,
-    push: Push,
+    pub pull: Pull,
+    pub push: Push,
 }
 impl<Pull, Push> PivotSurface<Pull, Push>
 where

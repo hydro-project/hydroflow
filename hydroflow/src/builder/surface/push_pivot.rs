@@ -18,6 +18,18 @@ where
     }
 }
 
+// impl<Pull> TrackPullDependencies for PivotPushSurface<Pull>
+// where
+//     Pull: PullSurface + TrackPullDependencies,
+// {
+//     fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> u16 {
+//         let my_id = e.add_node("PivotPush".to_string());
+//         let pull_id = self.pull.insert_dep(e);
+//         e.add_edge((pull_id, my_id));
+//         my_id
+//     }
+// }
+
 impl<Pull> BaseSurface for PivotPushSurface<Pull>
 where
     Pull: PullSurface,

@@ -1,4 +1,4 @@
-use super::{BaseSurface, PullSurface};
+use super::{BaseSurface, PullSurface, TrackPullDependencies};
 
 use std::hash::Hash;
 
@@ -33,6 +33,27 @@ where
 {
     pub fn new(prev_a: PrevA, prev_b: PrevB) -> Self {
         Self { prev_a, prev_b }
+    }
+}
+impl<PrevA, PrevB, Key, ValA, ValB> TrackPullDependencies for JoinPullSurface<PrevA, PrevB>
+where
+    PrevA: PullSurface<ItemOut = (Key, ValA)> + TrackPullDependencies,
+    PrevB: PullSurface<ItemOut = (Key, ValB)> + TrackPullDependencies,
+    Key: 'static + Eq + Hash + Clone,
+    ValA: 'static + Eq + Clone,
+    ValB: 'static + Eq + Clone,
+
+    PrevA::InputHandoffs: Extend<PrevB::InputHandoffs>,
+    <PrevA::InputHandoffs as Extend<PrevB::InputHandoffs>>::Extended:
+        PortList<RECV> + PortListSplit<RECV, PrevA::InputHandoffs, Suffix = PrevB::InputHandoffs>,
+{
+    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> u16 {
+        let my_id = e.add_node("Join".to_string());
+        let prev_a_id = self.prev_a.insert_dep(e);
+        let prev_b_id = self.prev_b.insert_dep(e);
+        e.add_edge((prev_a_id, my_id));
+        e.add_edge((prev_b_id, my_id));
+        my_id
     }
 }
 

@@ -1,4 +1,4 @@
-use super::PushSurfaceReversed;
+use super::{PushSurfaceReversed, TrackPushDependencies};
 
 use std::marker::PhantomData;
 
@@ -24,6 +24,15 @@ where
             port,
             _phantom: PhantomData,
         }
+    }
+}
+impl<Hof, In> TrackPushDependencies for HandoffPushSurfaceReversed<Hof, In>
+where
+    Hof: Handoff + CanReceive<In>,
+{
+    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> u16 {
+        let my_id = e.add_node(format!("Handoff_{}", self.port.handoff_id));
+        my_id
     }
 }
 

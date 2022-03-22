@@ -1,4 +1,4 @@
-use super::{BaseSurface, PullSurface};
+use super::{BaseSurface, PullSurface, TrackPullDependencies};
 
 use std::hash::Hash;
 use std::marker::PhantomData;
@@ -43,6 +43,29 @@ where
             prev_buf,
             _marker: PhantomData,
         }
+    }
+}
+impl<PrevBuf, PrevStream, Key, L, Update, StreamVal> TrackPullDependencies
+    for HalfHashJoinPullSurface<PrevStream, PrevBuf, L, Update>
+where
+    PrevBuf: PullSurface<ItemOut = (Key, Update::Repr)> + TrackPullDependencies,
+    PrevStream: PullSurface<ItemOut = (Key, StreamVal)> + TrackPullDependencies,
+    Key: 'static + Eq + Hash,
+    L: 'static + LatticeRepr + Merge<Update>,
+    Update: 'static + LatticeRepr,
+    StreamVal: 'static,
+
+    PrevBuf::InputHandoffs: Extend<PrevStream::InputHandoffs>,
+    <PrevBuf::InputHandoffs as Extend<PrevStream::InputHandoffs>>::Extended: PortList<RECV>
+        + PortListSplit<RECV, PrevBuf::InputHandoffs, Suffix = PrevStream::InputHandoffs>,
+{
+    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> u16 {
+        let my_id = e.add_node("HalfHashJoin".to_string());
+        let prev_a_id = self.prev_buf.insert_dep(e);
+        let prev_b_id = self.prev_stream.insert_dep(e);
+        e.add_edge((prev_a_id, my_id));
+        e.add_edge((prev_b_id, my_id));
+        my_id
     }
 }
 

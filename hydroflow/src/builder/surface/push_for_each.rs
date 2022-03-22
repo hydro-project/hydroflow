@@ -1,4 +1,4 @@
-use super::PushSurfaceReversed;
+use super::{PushSurfaceReversed, TrackPushDependencies};
 
 use std::marker::PhantomData;
 
@@ -20,6 +20,15 @@ where
             func,
             _phantom: PhantomData,
         }
+    }
+}
+impl<Func, In> TrackPushDependencies for ForEachPushSurfaceReversed<Func, In>
+where
+    Func: FnMut(In),
+{
+    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> u16 {
+        let my_id = e.add_node("ForEach".to_string());
+        my_id
     }
 }
 
