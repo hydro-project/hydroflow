@@ -1,0 +1,49 @@
+use super::{BaseSurface, PullSurface};
+
+use crate::builder::build::pull_fold_epoch::FoldEpochPullBuild;
+
+use crate::scheduled::context::Context;
+
+pub struct FoldEpochPullSurface<Prev, Init, Func>
+where
+    Prev: BaseSurface,
+{
+    prev: Prev,
+    init: Init,
+    func: Func,
+}
+impl<Prev, Init, Func, Out> FoldEpochPullSurface<Prev, Init, Func>
+where
+    Prev: BaseSurface,
+    Init: FnMut(&Context<'_>) -> Out,
+    Func: FnMut(&Context<'_>, Out, Prev::ItemOut) -> Out,
+{
+    pub fn new(prev: Prev, init: Init, func: Func) -> Self {
+        Self { prev, init, func }
+    }
+}
+
+impl<Prev, Init, Func, Out> BaseSurface for FoldEpochPullSurface<Prev, Init, Func>
+where
+    Prev: BaseSurface,
+    Init: FnMut(&Context<'_>) -> Out,
+    Func: FnMut(&Context<'_>, Out, Prev::ItemOut) -> Out,
+{
+    type ItemOut = Out;
+}
+
+impl<Prev, Init, Func, Out> PullSurface for FoldEpochPullSurface<Prev, Init, Func>
+where
+    Prev: PullSurface,
+    Init: FnMut(&Context<'_>) -> Out,
+    Func: FnMut(&Context<'_>, Out, Prev::ItemOut) -> Out,
+{
+    type InputHandoffs = Prev::InputHandoffs;
+    type Build = FoldEpochPullBuild<Prev::Build, Init, Func>;
+
+    fn into_parts(self) -> (Self::InputHandoffs, Self::Build) {
+        let (connect, build) = self.prev.into_parts();
+        let build = FoldEpochPullBuild::new(build, self.init, self.func);
+        (connect, build)
+    }
+}
