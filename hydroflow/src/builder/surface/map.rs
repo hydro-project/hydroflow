@@ -7,6 +7,7 @@ use std::marker::PhantomData;
 
 use crate::builder::build::pull_map::MapPullBuild;
 use crate::builder::build::push_map::MapPushBuild;
+use crate::scheduled::context::Context;
 
 pub struct MapSurface<Prev, Func>
 where
@@ -18,7 +19,7 @@ where
 impl<Prev, Func, Out> MapSurface<Prev, Func>
 where
     Prev: BaseSurface,
-    Func: FnMut(Prev::ItemOut) -> Out,
+    Func: FnMut(&Context<'_>, Prev::ItemOut) -> Out,
 {
     pub fn new(prev: Prev, func: Func) -> Self {
         Self { prev, func }
@@ -28,7 +29,7 @@ where
 impl<Prev, Func, Out> BaseSurface for MapSurface<Prev, Func>
 where
     Prev: BaseSurface,
-    Func: FnMut(Prev::ItemOut) -> Out,
+    Func: FnMut(&Context<'_>, Prev::ItemOut) -> Out,
 {
     type ItemOut = Out;
 }
@@ -36,7 +37,7 @@ where
 impl<Prev, Func, Out> PullSurface for MapSurface<Prev, Func>
 where
     Prev: PullSurface,
-    Func: FnMut(Prev::ItemOut) -> Out,
+    Func: FnMut(&Context<'_>, Prev::ItemOut) -> Out,
 {
     type InputHandoffs = Prev::InputHandoffs;
     type Build = MapPullBuild<Prev::Build, Func>;
@@ -63,7 +64,7 @@ where
 impl<Prev, Func, Out> PushSurface for MapSurface<Prev, Func>
 where
     Prev: PushSurface,
-    Func: FnMut(Prev::ItemOut) -> Out,
+    Func: FnMut(&Context<'_>, Prev::ItemOut) -> Out,
 {
     type Output<Next> = Prev::Output<MapPushSurfaceReversed<Next, Func, Prev::ItemOut>>
     where
@@ -101,7 +102,7 @@ where
 impl<Next, Func, In> MapPushSurfaceReversed<Next, Func, In>
 where
     Next: PushSurfaceReversed,
-    Func: FnMut(In) -> Next::ItemIn,
+    Func: FnMut(&Context<'_>, In) -> Next::ItemIn,
 {
     pub fn new(next: Next, func: Func) -> Self {
         Self {
@@ -127,7 +128,7 @@ where
 impl<Next, Func, In> PushSurfaceReversed for MapPushSurfaceReversed<Next, Func, In>
 where
     Next: PushSurfaceReversed,
-    Func: FnMut(In) -> Next::ItemIn,
+    Func: FnMut(&Context<'_>, In) -> Next::ItemIn,
 {
     type ItemIn = In;
 

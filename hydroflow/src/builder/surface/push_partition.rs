@@ -1,13 +1,14 @@
 use super::{PushSurfaceReversed, TrackPushDependencies};
 
 use crate::builder::build::push_partition::PartitionPushBuild;
+use crate::scheduled::context::Context;
 use crate::scheduled::handoff::handoff_list::{PortList, PortListSplit};
 use crate::scheduled::port::SEND;
 use crate::scheduled::type_list::Extend;
 
 pub struct PartitionPushSurfaceReversed<NextA, NextB, Func>
 where
-    Func: Fn(&NextA::ItemIn) -> bool,
+    Func: FnMut(&Context<'_>, &NextA::ItemIn) -> bool,
     NextA: PushSurfaceReversed,
     NextB: PushSurfaceReversed<ItemIn = NextA::ItemIn>,
 
@@ -21,7 +22,7 @@ where
 }
 impl<NextA, NextB, Func> PartitionPushSurfaceReversed<NextA, NextB, Func>
 where
-    Func: Fn(&NextA::ItemIn) -> bool,
+    Func: FnMut(&Context<'_>, &NextA::ItemIn) -> bool,
     NextA: PushSurfaceReversed,
     NextB: PushSurfaceReversed<ItemIn = NextA::ItemIn>,
 
@@ -59,7 +60,7 @@ where
 
 impl<NextA, NextB, Func> PushSurfaceReversed for PartitionPushSurfaceReversed<NextA, NextB, Func>
 where
-    Func: Fn(&NextA::ItemIn) -> bool,
+    Func: FnMut(&Context<'_>, &NextA::ItemIn) -> bool,
     NextA: PushSurfaceReversed,
     NextB: PushSurfaceReversed<ItemIn = NextA::ItemIn>,
 

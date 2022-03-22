@@ -7,6 +7,7 @@ use std::marker::PhantomData;
 
 use crate::builder::build::pull_filter_map::FilterMapPullBuild;
 use crate::builder::build::push_filter_map::FilterMapPushBuild;
+use crate::scheduled::context::Context;
 
 pub struct FilterMapSurface<Prev, Func>
 where
@@ -18,7 +19,7 @@ where
 impl<Prev, Func, Out> FilterMapSurface<Prev, Func>
 where
     Prev: BaseSurface,
-    Func: FnMut(Prev::ItemOut) -> Option<Out>,
+    Func: FnMut(&Context<'_>, Prev::ItemOut) -> Option<Out>,
 {
     pub fn new(prev: Prev, func: Func) -> Self {
         Self { prev, func }
@@ -28,7 +29,7 @@ where
 impl<Prev, Func, Out> BaseSurface for FilterMapSurface<Prev, Func>
 where
     Prev: BaseSurface,
-    Func: FnMut(Prev::ItemOut) -> Option<Out>,
+    Func: FnMut(&Context<'_>, Prev::ItemOut) -> Option<Out>,
 {
     type ItemOut = Out;
 }
@@ -36,7 +37,7 @@ where
 impl<Prev, Func, Out> PullSurface for FilterMapSurface<Prev, Func>
 where
     Prev: PullSurface,
-    Func: FnMut(Prev::ItemOut) -> Option<Out>,
+    Func: FnMut(&Context<'_>, Prev::ItemOut) -> Option<Out>,
 {
     type InputHandoffs = Prev::InputHandoffs;
     type Build = FilterMapPullBuild<Prev::Build, Func>;
@@ -63,7 +64,7 @@ where
 impl<Prev, Func, Out> PushSurface for FilterMapSurface<Prev, Func>
 where
     Prev: PushSurface,
-    Func: FnMut(Prev::ItemOut) -> Option<Out>,
+    Func: FnMut(&Context<'_>, Prev::ItemOut) -> Option<Out>,
 {
     type Output<Next> = Prev::Output<FilterMapPushSurfaceReversed<Next, Func, Prev::ItemOut>>
     where
@@ -101,7 +102,7 @@ where
 impl<Next, Func, In> FilterMapPushSurfaceReversed<Next, Func, In>
 where
     Next: PushSurfaceReversed,
-    Func: FnMut(In) -> Option<Next::ItemIn>,
+    Func: FnMut(&Context<'_>, In) -> Option<Next::ItemIn>,
 {
     pub fn new(next: Next, func: Func) -> Self {
         Self {
@@ -115,7 +116,7 @@ where
 impl<Next, Func, In> PushSurfaceReversed for FilterMapPushSurfaceReversed<Next, Func, In>
 where
     Next: PushSurfaceReversed,
-    Func: FnMut(In) -> Option<Next::ItemIn>,
+    Func: FnMut(&Context<'_>, In) -> Option<Next::ItemIn>,
 {
     type ItemIn = In;
 

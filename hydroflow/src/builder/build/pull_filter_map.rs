@@ -12,7 +12,7 @@ where
 impl<Prev, Func, Out> FilterMapPullBuild<Prev, Func>
 where
     Prev: PullBuild,
-    Func: FnMut(Prev::ItemOut) -> Option<Out>,
+    Func: FnMut(&Context<'_>, Prev::ItemOut) -> Option<Out>,
 {
     pub fn new(prev: Prev, func: Func) -> Self {
         Self { prev, func }
@@ -28,7 +28,7 @@ where
 impl<Prev, Func, Out> PullBuildBase for FilterMapPullBuild<Prev, Func>
 where
     Prev: PullBuild,
-    Func: FnMut(Prev::ItemOut) -> Option<Out>,
+    Func: FnMut(&Context<'_>, Prev::ItemOut) -> Option<Out>,
 {
     type ItemOut = Out;
     type Build<'slf, 'ctx> = PullBuildImpl<'slf, 'ctx, Prev, Func, Out>;
@@ -37,7 +37,7 @@ where
 impl<Prev, Func, Out> PullBuild for FilterMapPullBuild<Prev, Func>
 where
     Prev: PullBuild,
-    Func: FnMut(Prev::ItemOut) -> Option<Out>,
+    Func: FnMut(&Context<'_>, Prev::ItemOut) -> Option<Out>,
 {
     type InputHandoffs = Prev::InputHandoffs;
 
@@ -48,6 +48,6 @@ where
     ) -> Self::Build<'slf, 'ctx> {
         self.prev
             .build(context, handoffs)
-            .filter_map(|x| (self.func)(x))
+            .filter_map(|x| (self.func)(context, x))
     }
 }

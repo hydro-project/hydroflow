@@ -103,8 +103,8 @@ where
                     (hash_val % num_participants, (x, v))
                 }))
                 .pull_to_push()
-                .partition(
-                    move |&(id, _, _)| id == my_id,
+                .partition_with_context(
+                    move |_ctx, &(id, _, _)| id == my_id,
                     StartPushSurface::new()
                         .map(|(_, _, v)| Some(v))
                         .push_to(local_inputs_send),

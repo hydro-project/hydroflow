@@ -43,6 +43,7 @@ pub mod exchange;
 use std::hash::Hash;
 
 use crate::lang::lattice::{LatticeRepr, Merge};
+use crate::scheduled::context::Context;
 use crate::scheduled::graph::DirectedEdgeSet;
 use crate::scheduled::handoff::handoff_list::{PortList, PortListSplit};
 use crate::scheduled::port::{RECV, SEND};
@@ -60,15 +61,38 @@ pub trait TrackPullDependencies {
 pub trait BaseSurface {
     type ItemOut;
 
-    fn map<Func, Out>(self, func: Func) -> map::MapSurface<Self, Func>
+    fn map_with_context<Func, Out>(self, func: Func) -> map::MapSurface<Self, Func>
     where
         Self: Sized,
-        Func: FnMut(Self::ItemOut) -> Out,
+        Func: FnMut(&Context<'_>, Self::ItemOut) -> Out,
     {
         map::MapSurface::new(self, func)
     }
 
-    fn flat_map<Func, Out>(self, func: Func) -> flatten::FlattenSurface<map::MapSurface<Self, Func>>
+    fn map<Func, Out>(self, mut func: Func) -> map::MapSurface<Self, MapNoCtxFn<Self, Func, Out>>
+    where
+        Self: Sized,
+        Func: FnMut(Self::ItemOut) -> Out,
+    {
+        map::MapSurface::new(self, move |_ctx, x| (func)(x))
+    }
+
+    fn flat_map_with_context<Func, Out>(
+        self,
+        func: Func,
+    ) -> flatten::FlattenSurface<map::MapSurface<Self, Func>>
+    where
+        Self: Sized,
+        Func: FnMut(&Context<'_>, Self::ItemOut) -> Out,
+        Out: IntoIterator,
+    {
+        self.map_with_context(func).flatten()
+    }
+
+    fn flat_map<Func, Out>(
+        self,
+        func: Func,
+    ) -> flatten::FlattenSurface<map::MapSurface<Self, MapNoCtxFn<Self, Func, Out>>>
     where
         Self: Sized,
         Func: FnMut(Self::ItemOut) -> Out,
@@ -85,20 +109,42 @@ pub trait BaseSurface {
         flatten::FlattenSurface::new(self)
     }
 
-    fn filter<Func>(self, func: Func) -> filter::FilterSurface<Self, Func>
+    fn filter_with_context<Func>(self, func: Func) -> filter::FilterSurface<Self, Func>
     where
         Self: Sized,
-        Func: FnMut(&Self::ItemOut) -> bool,
+        Func: FnMut(&Context<'_>, &Self::ItemOut) -> bool,
     {
         filter::FilterSurface::new(self, func)
     }
 
-    fn filter_map<Func, Out>(self, func: Func) -> filter_map::FilterMapSurface<Self, Func>
+    fn filter<Func>(self, mut func: Func) -> filter::FilterSurface<Self, FilterNoCtxFn<Self, Func>>
+    where
+        Self: Sized,
+        Func: FnMut(&Self::ItemOut) -> bool,
+    {
+        self.filter_with_context(move |_ctx, x| (func)(x))
+    }
+
+    fn filter_map_with_context<Func, Out>(
+        self,
+        func: Func,
+    ) -> filter_map::FilterMapSurface<Self, Func>
+    where
+        Self: Sized,
+        Func: FnMut(&Context<'_>, Self::ItemOut) -> Option<Out>,
+    {
+        filter_map::FilterMapSurface::new(self, func)
+    }
+
+    fn filter_map<Func, Out>(
+        self,
+        mut func: Func,
+    ) -> filter_map::FilterMapSurface<Self, FilterMapNoCtxFn<Self, Func, Out>>
     where
         Self: Sized,
         Func: FnMut(Self::ItemOut) -> Option<Out>,
     {
-        filter_map::FilterMapSurface::new(self, func)
+        self.filter_map_with_context(move |_ctx, x| (func)(x))
     }
 
     fn map_scan<State, Func, Out>(
@@ -111,30 +157,64 @@ pub trait BaseSurface {
         Func: FnMut(&mut State, Self::ItemOut) -> Out,
     {
         // TODO(mingwei): use state API.
-        self.map(move |item| func(&mut initial_state, item))
+        self.map_with_context(move |_ctx, item| func(&mut initial_state, item))
     }
 
-    fn inspect<Func>(self, mut func: Func) -> map::MapSurface<Self, InspectMapFunc<Self, Func>>
+    fn inspect_with_context<Func>(
+        self,
+        mut func: Func,
+    ) -> map::MapSurface<Self, InspectMapFunc<Self, Func>>
+    where
+        Self: Sized,
+        Func: FnMut(&Context<'_>, &Self::ItemOut),
+    {
+        self.map_with_context(move |context, item| {
+            (func)(context, &item);
+            item
+        })
+    }
+
+    fn inspect<Func>(self, mut func: Func) -> map::MapSurface<Self, InspectMapNoCtxFunc<Self, Func>>
     where
         Self: Sized,
         Func: FnMut(&Self::ItemOut),
     {
-        self.map(move |item| {
-            func(&item);
+        self.map_with_context(move |_ctx, item| {
+            (func)(&item);
             item
         })
     }
 }
 
-pub type InspectMapFunc<Prev, Func>
+pub type MapNoCtxFn<Prev, Func, Out>
 where
     Prev: BaseSurface,
-= impl FnMut(Prev::ItemOut) -> Prev::ItemOut;
+= impl FnMut(&Context<'_>, Prev::ItemOut) -> Out;
+
+pub type FilterNoCtxFn<Prev, Func>
+where
+    Prev: BaseSurface,
+= impl FnMut(&Context<'_>, &Prev::ItemOut) -> bool;
+
+pub type FilterMapNoCtxFn<Prev, Func, Out>
+where
+    Prev: BaseSurface,
+= impl FnMut(&Context<'_>, Prev::ItemOut) -> Option<Out>;
 
 pub type MapScanMapFunc<Prev, State, Func, Out>
 where
     Prev: BaseSurface,
-= impl FnMut(Prev::ItemOut) -> Out;
+= impl FnMut(&Context<'_>, Prev::ItemOut) -> Out;
+
+pub type InspectMapFunc<Prev, Func>
+where
+    Prev: BaseSurface,
+= impl FnMut(&Context<'_>, Prev::ItemOut) -> Prev::ItemOut;
+
+pub type InspectMapNoCtxFunc<Prev, Func>
+where
+    Prev: BaseSurface,
+= impl FnMut(&Context<'_>, Prev::ItemOut) -> Prev::ItemOut;
 
 pub trait PullSurface: BaseSurface {
     type InputHandoffs: PortList<RECV>;
@@ -261,19 +341,32 @@ pub trait PushSurface: BaseSurface {
         self.push_to(next)
     }
 
-    fn for_each<Func>(
+    fn for_each_with_context<Func>(
         self,
         func: Func,
     ) -> Self::Output<push_for_each::ForEachPushSurfaceReversed<Func, Self::ItemOut>>
     where
         Self: Sized,
-        Func: FnMut(Self::ItemOut),
+        Func: FnMut(&Context<'_>, Self::ItemOut),
     {
         let next = push_for_each::ForEachPushSurfaceReversed::new(func);
         self.push_to(next)
     }
 
-    fn partition<Func, NextA, NextB>(
+    fn for_each<Func>(
+        self,
+        mut func: Func,
+    ) -> Self::Output<
+        push_for_each::ForEachPushSurfaceReversed<ForEachNoCtxFunc<Self, Func>, Self::ItemOut>,
+    >
+    where
+        Self: Sized,
+        Func: FnMut(Self::ItemOut),
+    {
+        self.for_each_with_context(move |_ctx, x| (func)(x))
+    }
+
+    fn partition_with_context<Func, NextA, NextB>(
         self,
         func: Func,
         next_a: NextA,
@@ -281,7 +374,7 @@ pub trait PushSurface: BaseSurface {
     ) -> Self::Output<push_partition::PartitionPushSurfaceReversed<NextA, NextB, Func>>
     where
         Self: Sized,
-        Func: Fn(&Self::ItemOut) -> bool,
+        Func: FnMut(&Context<'_>, &Self::ItemOut) -> bool,
         NextA: PushSurfaceReversed<ItemIn = Self::ItemOut>,
         NextB: PushSurfaceReversed<ItemIn = Self::ItemOut>,
 
@@ -292,7 +385,40 @@ pub trait PushSurface: BaseSurface {
         let next = push_partition::PartitionPushSurfaceReversed::new(func, next_a, next_b);
         self.push_to(next)
     }
+
+    fn partition<Func, NextA, NextB>(
+        self,
+        func: Func,
+        next_a: NextA,
+        next_b: NextB,
+    ) -> Self::Output<PartitionNoCtxOutput<Self, Func, NextA, NextB>>
+    where
+        Self: Sized,
+        Func: Fn(&Self::ItemOut) -> bool,
+        NextA: PushSurfaceReversed<ItemIn = Self::ItemOut>,
+        NextB: PushSurfaceReversed<ItemIn = Self::ItemOut>,
+
+        NextA::OutputHandoffs: Extend<NextB::OutputHandoffs>,
+        <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended: PortList<SEND>
+            + PortListSplit<SEND, NextA::OutputHandoffs, Suffix = NextB::OutputHandoffs>,
+    {
+        self.partition_with_context(move |_ctx, x| (func)(x), next_a, next_b)
+    }
 }
+
+pub type ForEachNoCtxFunc<Prev, Func>
+where
+    Prev: BaseSurface,
+= impl FnMut(&Context<'_>, Prev::ItemOut);
+
+pub type PartitionNoCtxOutput<Prev, Func, NextA, NextB>
+where
+    Prev: BaseSurface,
+= push_partition::PartitionPushSurfaceReversed<
+    NextA,
+    NextB,
+    impl FnMut(&Context<'_>, &Prev::ItemOut) -> bool,
+>;
 
 /// This extra layer is needed due to the ownership order. In the functional
 /// chaining syntax each operator owns the previous (can only go in order
