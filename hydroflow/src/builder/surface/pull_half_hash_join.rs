@@ -59,7 +59,7 @@ where
     <PrevBuf::InputHandoffs as Extend<PrevStream::InputHandoffs>>::Extended: PortList<RECV>
         + PortListSplit<RECV, PrevBuf::InputHandoffs, Suffix = PrevStream::InputHandoffs>,
 {
-    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> u16 {
+    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> usize {
         let my_id = e.add_node("HalfHashJoin".to_string());
         let prev_a_id = self.prev_buf.insert_dep(e);
         let prev_b_id = self.prev_stream.insert_dep(e);

@@ -91,16 +91,14 @@ impl HydroflowBuilder {
         Push: 'static + PushSurfaceReversed<ItemIn = Pull::ItemOut> + TrackPushDependencies,
     {
         let mut deps = DirectedEdgeSet::default();
-        let pull_side = &pivot.pull;
-        let pull_root = pull_side.insert_dep(&mut deps);
-        let push_side = &pivot.push;
-        let push_root = push_side.insert_dep(&mut deps);
-        let my_id = deps.add_node("PullToPush".to_string());
+        let pull_root = pivot.pull.insert_dep(&mut deps);
+        let push_root = pivot.push.insert_dep(&mut deps);
+        let my_id = deps.add_node("PullToPush");
         deps.edges.insert((pull_root, my_id));
         deps.edges.insert((my_id, push_root));
         let ((recv_ports, send_ports), (mut pull_build, mut push_build)) = pivot.into_parts();
 
-        let subg_id = self.hydroflow.add_subgraph_stratified(
+        let sg_id = self.hydroflow.add_subgraph_stratified(
             name,
             stratum,
             recv_ports,
@@ -112,8 +110,8 @@ impl HydroflowBuilder {
                 pivot.run();
             },
         );
-        self.hydroflow.add_dependencies(subg_id, deps);
-        subg_id
+        self.hydroflow.add_dependencies(sg_id, deps);
+        sg_id
     }
 
     /// Creates a new external channel input.

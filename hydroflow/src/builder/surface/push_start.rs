@@ -21,7 +21,7 @@ impl<Out> StartPushSurface<Out> {
 }
 
 impl<Out> TrackPushDependencies for StartPushSurface<Out> {
-    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> u16 {
+    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> usize {
         let my_id = e.add_node("Start".to_string());
         my_id
     }

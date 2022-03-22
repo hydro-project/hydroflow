@@ -53,7 +53,7 @@ where
     Prev: PullSurface + TrackPullDependencies,
     Func: FnMut(&Context<'_>, Prev::ItemOut) -> Out,
 {
-    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> u16 {
+    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> usize {
         let my_id = e.add_node("Map".to_string());
         let prev_id = self.prev.insert_dep(e);
         e.add_edge((prev_id, my_id));
@@ -83,7 +83,7 @@ where
     Prev: PushSurface + TrackPushDependencies,
     Func: FnMut(&Context<'_>, Prev::ItemOut) -> Out,
 {
-    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> u16 {
+    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> usize {
         let my_id = e.add_node("Map".to_string());
         let prev_id = self.prev.insert_dep(e);
         e.add_edge((prev_id, my_id));
@@ -117,7 +117,7 @@ where
     Next: PushSurfaceReversed + TrackPushDependencies,
     Func: FnMut(&Context<'_>, In) -> Next::ItemIn,
 {
-    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> u16 {
+    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> usize {
         let my_id = e.add_node("Map".to_string());
         let next_id = self.next.insert_dep(e);
         e.add_edge((my_id, next_id));

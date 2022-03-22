@@ -26,7 +26,7 @@ impl<Func, In> TrackPushDependencies for ForEachPushSurfaceReversed<Func, In>
 where
     Func: FnMut(&Context<'_>, In),
 {
-    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> u16 {
+    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> usize {
         let my_id = e.add_node("ForEach".to_string());
         my_id
     }

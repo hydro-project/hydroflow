@@ -42,7 +42,7 @@ where
     <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended:
         PortList<SEND> + PortListSplit<SEND, NextA::OutputHandoffs, Suffix = NextB::OutputHandoffs>,
 {
-    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> u16 {
+    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> usize {
         let my_id = e.add_node("Tee".to_string());
         let next_a_id = self.next_a.insert_dep(e);
         let next_b_id = self.next_b.insert_dep(e);

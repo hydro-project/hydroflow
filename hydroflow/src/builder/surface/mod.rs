@@ -50,10 +50,12 @@ use crate::scheduled::port::{RECV, SEND};
 use crate::scheduled::type_list::Extend;
 
 pub trait TrackPushDependencies {
-    fn insert_dep(&self, e: &mut DirectedEdgeSet) -> u16; // id of the inserted node
+    /// return the id of the inserted node
+    fn insert_dep(&self, e: &mut DirectedEdgeSet) -> usize;
 }
 pub trait TrackPullDependencies {
-    fn insert_dep(&self, e: &mut DirectedEdgeSet) -> u16; // id of the inserted node
+    /// return the id of the inserted node
+    fn insert_dep(&self, e: &mut DirectedEdgeSet) -> usize;
 }
 /// Common trait shared between push and pull surface APIs.
 ///

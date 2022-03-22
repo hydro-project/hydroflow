@@ -24,7 +24,7 @@ impl<Hof> TrackPullDependencies for HandoffPullSurface<Hof>
 where
     Hof: Handoff,
 {
-    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> u16 {
+    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> usize {
         let my_id = e.add_node(format!("Handoff_{}", self.port.handoff_id));
         my_id
     }

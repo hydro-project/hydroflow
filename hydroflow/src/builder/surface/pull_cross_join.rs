@@ -45,7 +45,7 @@ where
     <PrevA::InputHandoffs as Extend<PrevB::InputHandoffs>>::Extended:
         PortList<RECV> + PortListSplit<RECV, PrevA::InputHandoffs, Suffix = PrevB::InputHandoffs>,
 {
-    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> u16 {
+    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> usize {
         let my_id = e.add_node("CrossJoin".to_string());
         let prev_a_id = self.prev_a.insert_dep(e);
         let prev_b_id = self.prev_b.insert_dep(e);

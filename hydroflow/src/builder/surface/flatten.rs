@@ -52,7 +52,7 @@ where
     Prev: PullSurface + TrackPullDependencies,
     Prev::ItemOut: IntoIterator,
 {
-    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> u16 {
+    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> usize {
         let my_id = e.add_node("Flatten".to_string());
         let prev_id = self.prev.insert_dep(e);
         e.add_edge((prev_id, my_id));
@@ -82,7 +82,7 @@ where
     Prev: PushSurface + TrackPushDependencies,
     Prev::ItemOut: IntoIterator,
 {
-    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> u16 {
+    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> usize {
         let my_id = e.add_node("Flatten".to_string());
         let prev_id = self.prev.insert_dep(e);
         e.add_edge((prev_id, my_id));
@@ -115,7 +115,7 @@ where
     Next: PushSurfaceReversed + TrackPushDependencies,
     In: IntoIterator<Item = Next::ItemIn>,
 {
-    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> u16 {
+    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> usize {
         let my_id = e.add_node("Flatten".to_string());
         let next_id = self.next.insert_dep(e);
         e.add_edge((my_id, next_id));

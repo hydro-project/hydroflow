@@ -21,7 +21,7 @@ impl<I> TrackPullDependencies for IterPullSurface<I>
 where
     I: Iterator,
 {
-    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> u16 {
+    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> usize {
         let my_id = e.add_node("Iter".to_string());
         my_id
     }
