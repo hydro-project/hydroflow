@@ -49,7 +49,7 @@ where
 impl<Prev, Func> TrackPullDependencies for FilterSurface<Prev, Func>
 where
     Prev: PullSurface + TrackPullDependencies,
-    Func: FnMut(&Prev::ItemOut) -> bool,
+    Func: FnMut(&Context<'_>, &Prev::ItemOut) -> bool,
 {
     fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> u16 {
         let my_id = e.add_node("Filter".to_string());
@@ -79,7 +79,7 @@ where
 impl<Prev, Func> TrackPushDependencies for FilterSurface<Prev, Func>
 where
     Prev: PushSurface + TrackPushDependencies,
-    Func: FnMut(&Prev::ItemOut) -> bool,
+    Func: FnMut(&Context<'_>, &Prev::ItemOut) -> bool,
 {
     fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> u16 {
         let my_id = e.add_node("Filter".to_string());
@@ -108,7 +108,7 @@ where
 impl<Next, Func> TrackPushDependencies for FilterPushSurfaceReversed<Next, Func>
 where
     Next: PushSurfaceReversed + TrackPushDependencies,
-    Func: FnMut(&Next::ItemIn) -> bool,
+    Func: FnMut(&Context<'_>, &Next::ItemIn) -> bool,
 {
     fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> u16 {
         let my_id = e.add_node("Filter".to_string());

@@ -40,7 +40,7 @@ where
 }
 impl<NextA, NextB, Func> TrackPushDependencies for PartitionPushSurfaceReversed<NextA, NextB, Func>
 where
-    Func: Fn(&NextA::ItemIn) -> bool,
+    Func: FnMut(&Context<'_>, &NextA::ItemIn) -> bool,
     NextA: PushSurfaceReversed + TrackPushDependencies,
     NextB: PushSurfaceReversed<ItemIn = NextA::ItemIn> + TrackPushDependencies,
 
