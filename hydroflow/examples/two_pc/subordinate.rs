@@ -139,5 +139,8 @@ pub(crate) async fn run_subordinate(opts: Opts, coordinator: String) {
 
     let mut hf = hf.build();
     println!("Opening on port {}", opts.port);
+    if opts.mermaid {
+        println!("{}", hf.render_mermaid());
+    }
     hf.run_async().await.unwrap();
 }

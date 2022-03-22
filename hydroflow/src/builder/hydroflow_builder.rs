@@ -8,7 +8,7 @@ use std::borrow::Cow;
 use std::sync::mpsc::SyncSender;
 
 use crate::compiled::pivot::Pivot;
-use crate::scheduled::graph::Hydroflow;
+use crate::scheduled::graph::{DirectedEdgeSet, Hydroflow};
 use crate::scheduled::graph_ext::GraphExt;
 use crate::scheduled::handoff::{CanReceive, Handoff, VecHandoff};
 use crate::scheduled::input::Input;
@@ -19,7 +19,9 @@ use crate::scheduled::SubgraphId;
 use super::surface::pull_handoff::HandoffPullSurface;
 use super::surface::push_handoff::HandoffPushSurfaceReversed;
 use super::surface::push_start::StartPushSurface;
-use super::surface::{PullSurface, PushSurfaceReversed};
+use super::surface::{
+    PullSurface, PushSurfaceReversed, TrackPullDependencies, TrackPushDependencies,
+};
 
 /// The user-facing entry point for the Surface API.
 #[derive(Default)]
@@ -70,8 +72,8 @@ impl HydroflowBuilder {
     ) -> SubgraphId
     where
         Name: Into<Cow<'static, str>>,
-        Pull: 'static + PullSurface,
-        Push: 'static + PushSurfaceReversed<ItemIn = Pull::ItemOut>,
+        Pull: 'static + PullSurface + TrackPullDependencies,
+        Push: 'static + PushSurfaceReversed<ItemIn = Pull::ItemOut> + TrackPushDependencies,
     {
         self.add_subgraph_stratified(name, 0, pivot)
     }
@@ -85,12 +87,20 @@ impl HydroflowBuilder {
     ) -> SubgraphId
     where
         Name: Into<Cow<'static, str>>,
-        Pull: 'static + PullSurface,
-        Push: 'static + PushSurfaceReversed<ItemIn = Pull::ItemOut>,
+        Pull: 'static + PullSurface + TrackPullDependencies,
+        Push: 'static + PushSurfaceReversed<ItemIn = Pull::ItemOut> + TrackPushDependencies,
     {
+        let mut deps = DirectedEdgeSet::default();
+        let pull_side = &pivot.pull;
+        let pull_root = pull_side.insert_dep(&mut deps);
+        let push_side = &pivot.push;
+        let push_root = push_side.insert_dep(&mut deps);
+        let my_id = deps.add_node("PullToPush".to_string());
+        deps.edges.insert((pull_root, my_id));
+        deps.edges.insert((my_id, push_root));
         let ((recv_ports, send_ports), (mut pull_build, mut push_build)) = pivot.into_parts();
 
-        self.hydroflow.add_subgraph_stratified(
+        let subg_id = self.hydroflow.add_subgraph_stratified(
             name,
             stratum,
             recv_ports,
@@ -101,7 +111,9 @@ impl HydroflowBuilder {
                 let pivot = Pivot::new(pull, push);
                 pivot.run();
             },
-        )
+        );
+        self.hydroflow.add_dependencies(subg_id, deps);
+        subg_id
     }
 
     /// Creates a new external channel input.

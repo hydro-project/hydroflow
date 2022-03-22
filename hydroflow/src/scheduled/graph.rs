@@ -1,7 +1,8 @@
 use std::any::Any;
 use std::borrow::Cow;
 use std::cell::Cell;
-use std::collections::VecDeque;
+use std::collections::{HashMap, HashSet, VecDeque};
+use std::fmt::Write;
 use std::marker::PhantomData;
 use std::num::NonZeroUsize;
 
@@ -262,6 +263,7 @@ impl Hydroflow {
             subgraph,
             subgraph_preds,
             subgraph_succs,
+            DirectedEdgeSet::default(),
             true,
         ));
         self.init_stratum(stratum);
@@ -353,6 +355,7 @@ impl Hydroflow {
             subgraph,
             subgraph_preds,
             subgraph_succs,
+            DirectedEdgeSet::default(),
             true,
         ));
         self.init_stratum(stratum);
@@ -409,8 +412,79 @@ impl Hydroflow {
             _phantom: PhantomData,
         }
     }
+
+    pub fn add_dependencies(&mut self, subg_id: SubgraphId, deps: DirectedEdgeSet) {
+        let base = self.subgraphs[subg_id].dependencies.current_id;
+        for (key, val) in deps.node_names {
+            self.subgraphs[subg_id]
+                .dependencies
+                .node_names
+                .insert(key + base, val);
+        }
+        for (from, to) in deps.edges {
+            self.subgraphs[subg_id]
+                .dependencies
+                .edges
+                .insert((from + base, to + base));
+        }
+        self.subgraphs[subg_id].dependencies.current_id += deps.current_id;
+    }
+
+    fn mermaid_mangle(&self, name: String, subg: usize, node: u16) -> String {
+        let res = if name.starts_with("Handoff") {
+            let handoff_id: usize = name.split('_').collect::<Vec<&str>>()[1].parse().unwrap();
+            let handoff = &self.handoffs[handoff_id];
+            // let name = self.remove_whitespace(handoff.name.clone());
+            format!("Handoff:_{}[\\{}/]", handoff_id, handoff.name)
+            // name
+        } else if name.as_str() == "PullToPush" {
+            format!("{}.{}[/{}\\]", subg, node, name)
+        } else {
+            // format!("{}.{}({})", subg, node, name)
+            format!("{}.{}[{}]", subg, node, name)
+        };
+        res
+    }
+
+    pub fn render_mermaid(&self) -> String {
+        let mut retval = "graph TD\n".to_string();
+        for i in 0..self.subgraphs.len() {
+            let d = &self.subgraphs[i].dependencies;
+            let name = &self.subgraphs[i].name;
+            let stratum = self.subgraphs[i].stratum;
+
+            if !d.edges.is_empty() {
+                writeln!(retval, "subgraph stratum{}", stratum).unwrap();
+                writeln!(retval, "subgraph {}{}", name, i).unwrap();
+                for e in &d.edges {
+                    let from = self.mermaid_mangle(d.node_names[&e.0].clone(), i, e.0);
+                    let to = self.mermaid_mangle(d.node_names[&e.1].clone(), i, e.1);
+                    writeln!(retval, "{} --> {}", from, to,).unwrap();
+                }
+                writeln!(retval, "end").unwrap();
+                writeln!(retval, "end").unwrap();
+            }
+        }
+        retval
+    }
 }
 
+#[derive(Debug, Default)]
+pub struct DirectedEdgeSet {
+    pub edges: HashSet<(u16, u16)>,
+    pub node_names: HashMap<u16, String>,
+    current_id: u16,
+}
+impl DirectedEdgeSet {
+    pub fn add_node(&mut self, name: String) -> u16 {
+        self.node_names.insert(self.current_id, name);
+        self.current_id += 1;
+        self.current_id - 1
+    }
+    pub fn add_edge(&mut self, edge: (u16, u16)) {
+        self.edges.insert(edge);
+    }
+}
 /// A handoff and its input and output [SubgraphId]s.
 ///
 /// Internal use: used to track the hydroflow graph structure.
@@ -460,6 +534,7 @@ struct SubgraphData {
     #[allow(dead_code)]
     preds: Vec<HandoffId>,
     succs: Vec<HandoffId>,
+    dependencies: DirectedEdgeSet,
     /// If this subgraph is scheduled in [`Hydroflow::stratum_queues`].
     /// [`Cell`] allows modifying this field when iterating `Self::preds` or
     /// `Self::succs`, as all `SubgraphData` are owned by the same vec
@@ -473,6 +548,7 @@ impl SubgraphData {
         subgraph: impl 'static + Subgraph,
         preds: Vec<HandoffId>,
         succs: Vec<HandoffId>,
+        dependencies: DirectedEdgeSet,
         is_scheduled: bool,
     ) -> Self {
         Self {
@@ -481,6 +557,7 @@ impl SubgraphData {
             subgraph: Box::new(subgraph),
             preds,
             succs,
+            dependencies,
             is_scheduled: Cell::new(is_scheduled),
         }
     }

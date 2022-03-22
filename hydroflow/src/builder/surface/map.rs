@@ -1,4 +1,7 @@
-use super::{BaseSurface, PullSurface, PushSurface, PushSurfaceReversed};
+use super::{
+    BaseSurface, PullSurface, PushSurface, PushSurfaceReversed, TrackPullDependencies,
+    TrackPushDependencies,
+};
 
 use std::marker::PhantomData;
 
@@ -45,6 +48,18 @@ where
         (connect, build)
     }
 }
+impl<Prev, Func, Out> TrackPullDependencies for MapSurface<Prev, Func>
+where
+    Prev: PullSurface + TrackPullDependencies,
+    Func: FnMut(Prev::ItemOut) -> Out,
+{
+    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> u16 {
+        let my_id = e.add_node("Map".to_string());
+        let prev_id = self.prev.insert_dep(e);
+        e.add_edge((prev_id, my_id));
+        my_id
+    }
+}
 
 impl<Prev, Func, Out> PushSurface for MapSurface<Prev, Func>
 where
@@ -61,6 +76,18 @@ where
     {
         self.prev
             .push_to(MapPushSurfaceReversed::new(next, self.func))
+    }
+}
+impl<Prev, Func, Out> TrackPushDependencies for MapSurface<Prev, Func>
+where
+    Prev: PushSurface + TrackPushDependencies,
+    Func: FnMut(Prev::ItemOut) -> Out,
+{
+    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> u16 {
+        let my_id = e.add_node("Map".to_string());
+        let prev_id = self.prev.insert_dep(e);
+        e.add_edge((prev_id, my_id));
+        my_id
     }
 }
 
@@ -83,6 +110,18 @@ where
             func,
             _phantom: PhantomData,
         }
+    }
+}
+impl<Next, Func, In> TrackPushDependencies for MapPushSurfaceReversed<Next, Func, In>
+where
+    Next: PushSurfaceReversed + TrackPushDependencies,
+    Func: FnMut(In) -> Next::ItemIn,
+{
+    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> u16 {
+        let my_id = e.add_node("Map".to_string());
+        let next_id = self.next.insert_dep(e);
+        e.add_edge((my_id, next_id));
+        my_id
     }
 }
 
