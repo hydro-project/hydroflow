@@ -8,14 +8,68 @@ use std::{
 };
 
 use clap::{ArgEnum, Parser};
+use common::Clock;
 use hdrhistogram::Histogram;
 use hydroflow::tokio;
 use rand::{prelude::Distribution, Rng};
 use zipf::ZipfDistribution;
 
-use crate::kvs::Kvs;
+mod common;
+mod kvs_compiled;
+mod kvs_scheduled;
 
-mod kvs;
+// This would ideally be a trait, but trait methods can't be async.
+#[derive(Clone)]
+enum KvsImplementation<K, V>
+where
+    K: 'static + Clone + Eq + std::hash::Hash + Send + std::fmt::Debug,
+    V: 'static + Clone + Send + std::fmt::Debug + Ord + Default,
+{
+    Scheduled(kvs_scheduled::Kvs<K, V>),
+    Compiled(kvs_compiled::Kvs<K, V>),
+}
+
+impl<K, V> KvsImplementation<K, V>
+where
+    K: 'static + Clone + Eq + std::hash::Hash + Send + std::fmt::Debug,
+    V: 'static + Clone + Send + std::fmt::Debug + Ord + Default,
+{
+    async fn set(&mut self, k: K, v: V) {
+        match self {
+            Self::Scheduled(kvs) => kvs.set(k, v).await,
+            Self::Compiled(kvs) => kvs.set(k, v).await,
+        }
+    }
+
+    async fn get(&mut self, k: K) -> Option<(Clock, V)> {
+        match self {
+            Self::Scheduled(kvs) => kvs.get(k).await,
+            Self::Compiled(kvs) => kvs.get(k).await,
+        }
+    }
+}
+
+impl<K, V> FromStr for KvsImplementation<K, V>
+where
+    K: 'static + Clone + Eq + std::hash::Hash + Send + std::fmt::Debug,
+    V: 'static + Clone + Send + std::fmt::Debug + Ord + Default,
+{
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let (kind, workers) = s
+            .split_once(',')
+            .ok_or("need to specify number of workers")?;
+        let workers = workers.parse().map_err(|e| format!("{}", e))?;
+        match kind {
+            "scheduled" => Ok(KvsImplementation::Scheduled(kvs_scheduled::Kvs::new(
+                workers,
+            ))),
+            "compiled" => Ok(KvsImplementation::Compiled(kvs_compiled::Kvs::new(workers))),
+            _ => Err("not a valid implementation".into()),
+        }
+    }
+}
 
 #[derive(ArgEnum, Clone)]
 enum Dist {
@@ -90,13 +144,15 @@ struct Args {
     dist: Dist,
     #[clap(long)]
     run_seconds: u64,
+    #[clap(long)]
+    implementation: KvsImplementation<String, String>,
 }
 
 fn main() {
     let args = Args::parse();
 
-    let kvs = Kvs::new(args.num_kvs_workers);
-    let run_duration = Duration::from_millis(10 * 1000);
+    let kvs = args.implementation;
+    let run_duration = Duration::from_millis(args.run_seconds * 1000);
 
     let read_percentage = args.read_percentage;
     let bench_workers = args.num_benchmark_workers;
