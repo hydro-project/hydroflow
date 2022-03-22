@@ -51,7 +51,7 @@ where
 impl<Prev, Func, Out> TrackPullDependencies for MapSurface<Prev, Func>
 where
     Prev: PullSurface + TrackPullDependencies,
-    Func: FnMut(Prev::ItemOut) -> Out,
+    Func: FnMut(&Context<'_>, Prev::ItemOut) -> Out,
 {
     fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> u16 {
         let my_id = e.add_node("Map".to_string());
@@ -81,7 +81,7 @@ where
 impl<Prev, Func, Out> TrackPushDependencies for MapSurface<Prev, Func>
 where
     Prev: PushSurface + TrackPushDependencies,
-    Func: FnMut(Prev::ItemOut) -> Out,
+    Func: FnMut(&Context<'_>, Prev::ItemOut) -> Out,
 {
     fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> u16 {
         let my_id = e.add_node("Map".to_string());
@@ -115,7 +115,7 @@ where
 impl<Next, Func, In> TrackPushDependencies for MapPushSurfaceReversed<Next, Func, In>
 where
     Next: PushSurfaceReversed + TrackPushDependencies,
-    Func: FnMut(In) -> Next::ItemIn,
+    Func: FnMut(&Context<'_>, In) -> Next::ItemIn,
 {
     fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> u16 {
         let my_id = e.add_node("Map".to_string());
