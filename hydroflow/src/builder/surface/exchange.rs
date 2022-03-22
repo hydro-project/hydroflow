@@ -9,7 +9,7 @@ use crate::{builder::HydroflowBuilder, scheduled::handoff::VecHandoff};
 use super::{
     flatten::FlattenSurface, pull_chain::ChainPullSurface, pull_handoff::HandoffPullSurface,
     pull_iter::IterPullSurface, push_handoff::HandoffPushSurfaceReversed,
-    push_start::StartPushSurface, BaseSurface, PullSurface, PushSurface, TrackPullDependencies,
+    push_start::StartPushSurface, BaseSurface, PullSurface, PushSurface, TrackDependencies,
 };
 
 // Pulled out to satisfy clippy for "complex types."
@@ -60,7 +60,7 @@ where
 
 impl<T> Exchange for T
 where
-    T: PullSurface + TrackPullDependencies,
+    T: PullSurface + TrackDependencies,
 {
     fn exchange<Name, Other, Key, Val>(
         self,

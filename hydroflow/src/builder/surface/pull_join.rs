@@ -1,4 +1,4 @@
-use super::{BaseSurface, PullSurface, TrackPullDependencies};
+use super::{BaseSurface, PullSurface, TrackDependencies};
 
 use std::hash::Hash;
 
@@ -35,10 +35,10 @@ where
         Self { prev_a, prev_b }
     }
 }
-impl<PrevA, PrevB, Key, ValA, ValB> TrackPullDependencies for JoinPullSurface<PrevA, PrevB>
+impl<PrevA, PrevB, Key, ValA, ValB> TrackDependencies for JoinPullSurface<PrevA, PrevB>
 where
-    PrevA: PullSurface<ItemOut = (Key, ValA)> + TrackPullDependencies,
-    PrevB: PullSurface<ItemOut = (Key, ValB)> + TrackPullDependencies,
+    PrevA: PullSurface<ItemOut = (Key, ValA)> + TrackDependencies,
+    PrevB: PullSurface<ItemOut = (Key, ValB)> + TrackDependencies,
     Key: 'static + Eq + Hash + Clone,
     ValA: 'static + Eq + Clone,
     ValB: 'static + Eq + Clone,

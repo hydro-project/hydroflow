@@ -49,11 +49,7 @@ use crate::scheduled::handoff::handoff_list::{PortList, PortListSplit};
 use crate::scheduled::port::{RECV, SEND};
 use crate::scheduled::type_list::Extend;
 
-pub trait TrackPushDependencies {
-    /// return the id of the inserted node
-    fn insert_dep(&self, e: &mut DirectedEdgeSet) -> usize;
-}
-pub trait TrackPullDependencies {
+pub trait TrackDependencies {
     /// return the id of the inserted node
     fn insert_dep(&self, e: &mut DirectedEdgeSet) -> usize;
 }

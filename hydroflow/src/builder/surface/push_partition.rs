@@ -1,4 +1,4 @@
-use super::{PushSurfaceReversed, TrackPushDependencies};
+use super::{PushSurfaceReversed, TrackDependencies};
 
 use crate::builder::build::push_partition::PartitionPushBuild;
 use crate::scheduled::context::Context;
@@ -38,11 +38,11 @@ where
         }
     }
 }
-impl<NextA, NextB, Func> TrackPushDependencies for PartitionPushSurfaceReversed<NextA, NextB, Func>
+impl<NextA, NextB, Func> TrackDependencies for PartitionPushSurfaceReversed<NextA, NextB, Func>
 where
     Func: FnMut(&Context<'_>, &NextA::ItemIn) -> bool,
-    NextA: PushSurfaceReversed + TrackPushDependencies,
-    NextB: PushSurfaceReversed<ItemIn = NextA::ItemIn> + TrackPushDependencies,
+    NextA: PushSurfaceReversed + TrackDependencies,
+    NextB: PushSurfaceReversed<ItemIn = NextA::ItemIn> + TrackDependencies,
 
     NextA::OutputHandoffs: Extend<NextB::OutputHandoffs>,
     <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended:

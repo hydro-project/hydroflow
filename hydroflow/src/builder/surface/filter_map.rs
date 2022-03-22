@@ -1,7 +1,4 @@
-use super::{
-    BaseSurface, PullSurface, PushSurface, PushSurfaceReversed, TrackPullDependencies,
-    TrackPushDependencies,
-};
+use super::{BaseSurface, PullSurface, PushSurface, PushSurfaceReversed, TrackDependencies};
 
 use std::marker::PhantomData;
 
@@ -48,9 +45,9 @@ where
         (connect, build)
     }
 }
-impl<Prev, Func, Out> TrackPullDependencies for FilterMapSurface<Prev, Func>
+impl<Prev, Func, Out> TrackDependencies for FilterMapSurface<Prev, Func>
 where
-    Prev: PullSurface + TrackPullDependencies,
+    Prev: PullSurface + TrackDependencies,
     Func: FnMut(&Context<'_>, Prev::ItemOut) -> Option<Out>,
 {
     fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> usize {
@@ -76,18 +73,6 @@ where
     {
         self.prev
             .push_to(FilterMapPushSurfaceReversed::new(next, self.func))
-    }
-}
-impl<Prev, Func, Out> TrackPushDependencies for FilterMapSurface<Prev, Func>
-where
-    Prev: PushSurface + TrackPushDependencies,
-    Func: FnMut(&Context<'_>, &Prev::ItemOut) -> Option<Out>,
-{
-    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> usize {
-        let my_id = e.add_node("FilterMap".to_string());
-        let prev_id = self.prev.insert_dep(e);
-        e.add_edge((prev_id, my_id));
-        my_id
     }
 }
 

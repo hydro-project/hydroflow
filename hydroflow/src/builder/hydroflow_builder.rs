@@ -19,9 +19,7 @@ use crate::scheduled::SubgraphId;
 use super::surface::pull_handoff::HandoffPullSurface;
 use super::surface::push_handoff::HandoffPushSurfaceReversed;
 use super::surface::push_start::StartPushSurface;
-use super::surface::{
-    PullSurface, PushSurfaceReversed, TrackPullDependencies, TrackPushDependencies,
-};
+use super::surface::{PullSurface, PushSurfaceReversed, TrackDependencies};
 
 /// The user-facing entry point for the Surface API.
 #[derive(Default)]
@@ -72,8 +70,8 @@ impl HydroflowBuilder {
     ) -> SubgraphId
     where
         Name: Into<Cow<'static, str>>,
-        Pull: 'static + PullSurface + TrackPullDependencies,
-        Push: 'static + PushSurfaceReversed<ItemIn = Pull::ItemOut> + TrackPushDependencies,
+        Pull: 'static + PullSurface + TrackDependencies,
+        Push: 'static + PushSurfaceReversed<ItemIn = Pull::ItemOut> + TrackDependencies,
     {
         self.add_subgraph_stratified(name, 0, pivot)
     }
@@ -87,8 +85,8 @@ impl HydroflowBuilder {
     ) -> SubgraphId
     where
         Name: Into<Cow<'static, str>>,
-        Pull: 'static + PullSurface + TrackPullDependencies,
-        Push: 'static + PushSurfaceReversed<ItemIn = Pull::ItemOut> + TrackPushDependencies,
+        Pull: 'static + PullSurface + TrackDependencies,
+        Push: 'static + PushSurfaceReversed<ItemIn = Pull::ItemOut> + TrackDependencies,
     {
         let mut deps = DirectedEdgeSet::new();
         let pull_root = pivot.pull.insert_dep(&mut deps);

@@ -1,4 +1,4 @@
-use super::{BaseSurface, PullSurface, TrackPullDependencies};
+use super::{BaseSurface, PullSurface, TrackDependencies};
 
 use std::hash::Hash;
 use std::marker::PhantomData;
@@ -45,11 +45,11 @@ where
         }
     }
 }
-impl<PrevBuf, PrevStream, Key, L, Update, StreamVal> TrackPullDependencies
+impl<PrevBuf, PrevStream, Key, L, Update, StreamVal> TrackDependencies
     for HalfHashJoinPullSurface<PrevStream, PrevBuf, L, Update>
 where
-    PrevBuf: PullSurface<ItemOut = (Key, Update::Repr)> + TrackPullDependencies,
-    PrevStream: PullSurface<ItemOut = (Key, StreamVal)> + TrackPullDependencies,
+    PrevBuf: PullSurface<ItemOut = (Key, Update::Repr)> + TrackDependencies,
+    PrevStream: PullSurface<ItemOut = (Key, StreamVal)> + TrackDependencies,
     Key: 'static + Eq + Hash,
     L: 'static + LatticeRepr + Merge<Update>,
     Update: 'static + LatticeRepr,

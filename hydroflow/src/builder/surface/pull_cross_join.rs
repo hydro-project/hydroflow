@@ -1,4 +1,4 @@
-use super::{BaseSurface, PullSurface, TrackPullDependencies};
+use super::{BaseSurface, PullSurface, TrackDependencies};
 
 use crate::builder::build::pull_cross_join::CrossJoinPullBuild;
 use crate::scheduled::handoff::handoff_list::{PortList, PortListSplit};
@@ -34,10 +34,10 @@ where
         Self { prev_a, prev_b }
     }
 }
-impl<PrevA, PrevB> TrackPullDependencies for CrossJoinPullSurface<PrevA, PrevB>
+impl<PrevA, PrevB> TrackDependencies for CrossJoinPullSurface<PrevA, PrevB>
 where
-    PrevA: PullSurface + TrackPullDependencies,
-    PrevB: PullSurface + TrackPullDependencies,
+    PrevA: PullSurface + TrackDependencies,
+    PrevB: PullSurface + TrackDependencies,
     PrevA::ItemOut: 'static + Eq + Clone,
     PrevB::ItemOut: 'static + Eq + Clone,
 

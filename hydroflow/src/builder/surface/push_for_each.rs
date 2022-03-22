@@ -1,4 +1,4 @@
-use super::{PushSurfaceReversed, TrackPushDependencies};
+use super::{PushSurfaceReversed, TrackDependencies};
 
 use std::marker::PhantomData;
 
@@ -22,7 +22,7 @@ where
         }
     }
 }
-impl<Func, In> TrackPushDependencies for ForEachPushSurfaceReversed<Func, In>
+impl<Func, In> TrackDependencies for ForEachPushSurfaceReversed<Func, In>
 where
     Func: FnMut(&Context<'_>, In),
 {

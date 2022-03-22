@@ -1,4 +1,4 @@
-use super::{BaseSurface, PullSurface, TrackPullDependencies};
+use super::{BaseSurface, PullSurface, TrackDependencies};
 
 use crate::builder::build::pull_iter::IterPullBuild;
 
@@ -17,7 +17,7 @@ where
         Self { it }
     }
 }
-impl<I> TrackPullDependencies for IterPullSurface<I>
+impl<I> TrackDependencies for IterPullSurface<I>
 where
     I: Iterator,
 {

@@ -1,7 +1,4 @@
-use super::{
-    BaseSurface, PullSurface, PushSurface, PushSurfaceReversed, TrackPullDependencies,
-    TrackPushDependencies,
-};
+use super::{BaseSurface, PullSurface, PushSurface, PushSurfaceReversed, TrackDependencies};
 
 use std::marker::PhantomData;
 
@@ -47,9 +44,9 @@ where
         (connect, build)
     }
 }
-impl<Prev> TrackPullDependencies for FlattenSurface<Prev>
+impl<Prev> TrackDependencies for FlattenSurface<Prev>
 where
-    Prev: PullSurface + TrackPullDependencies,
+    Prev: PullSurface + TrackDependencies,
     Prev::ItemOut: IntoIterator,
 {
     fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> usize {
@@ -77,19 +74,6 @@ where
     }
 }
 
-impl<Prev> TrackPushDependencies for FlattenSurface<Prev>
-where
-    Prev: PushSurface + TrackPushDependencies,
-    Prev::ItemOut: IntoIterator,
-{
-    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> usize {
-        let my_id = e.add_node("Flatten".to_string());
-        let prev_id = self.prev.insert_dep(e);
-        e.add_edge((prev_id, my_id));
-        my_id
-    }
-}
-
 pub struct FlattenPushSurfaceReversed<Next, In>
 where
     Next: PushSurfaceReversed,
@@ -110,9 +94,9 @@ where
         }
     }
 }
-impl<Next, In> TrackPushDependencies for FlattenPushSurfaceReversed<Next, In>
+impl<Next, In> TrackDependencies for FlattenPushSurfaceReversed<Next, In>
 where
-    Next: PushSurfaceReversed + TrackPushDependencies,
+    Next: PushSurfaceReversed + TrackDependencies,
     In: IntoIterator<Item = Next::ItemIn>,
 {
     fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> usize {

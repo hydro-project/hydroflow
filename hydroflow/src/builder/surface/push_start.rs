@@ -1,4 +1,4 @@
-use super::{BaseSurface, PushSurface, PushSurfaceReversed, TrackPushDependencies};
+use super::{BaseSurface, PushSurface, PushSurfaceReversed, TrackDependencies};
 
 use std::marker::PhantomData;
 
@@ -20,7 +20,7 @@ impl<Out> StartPushSurface<Out> {
     }
 }
 
-impl<Out> TrackPushDependencies for StartPushSurface<Out> {
+impl<Out> TrackDependencies for StartPushSurface<Out> {
     fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> usize {
         let my_id = e.add_node("Start".to_string());
         my_id

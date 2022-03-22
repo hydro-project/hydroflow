@@ -1,7 +1,4 @@
-use super::{
-    BaseSurface, PullSurface, PushSurface, PushSurfaceReversed, TrackPullDependencies,
-    TrackPushDependencies,
-};
+use super::{BaseSurface, PullSurface, PushSurface, PushSurfaceReversed, TrackDependencies};
 
 use crate::builder::build::pull_filter::FilterPullBuild;
 use crate::builder::build::push_filter::FilterPushBuild;
@@ -46,9 +43,9 @@ where
         (connect, build)
     }
 }
-impl<Prev, Func> TrackPullDependencies for FilterSurface<Prev, Func>
+impl<Prev, Func> TrackDependencies for FilterSurface<Prev, Func>
 where
-    Prev: PullSurface + TrackPullDependencies,
+    Prev: PullSurface + TrackDependencies,
     Func: FnMut(&Context<'_>, &Prev::ItemOut) -> bool,
 {
     fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> usize {
@@ -76,18 +73,6 @@ where
             .push_to(FilterPushSurfaceReversed::new(next, self.func))
     }
 }
-impl<Prev, Func> TrackPushDependencies for FilterSurface<Prev, Func>
-where
-    Prev: PushSurface + TrackPushDependencies,
-    Func: FnMut(&Context<'_>, &Prev::ItemOut) -> bool,
-{
-    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> usize {
-        let my_id = e.add_node("Filter".to_string());
-        let prev_id = self.prev.insert_dep(e);
-        e.add_edge((prev_id, my_id));
-        my_id
-    }
-}
 
 pub struct FilterPushSurfaceReversed<Next, Func>
 where
@@ -105,9 +90,9 @@ where
         Self { next, func }
     }
 }
-impl<Next, Func> TrackPushDependencies for FilterPushSurfaceReversed<Next, Func>
+impl<Next, Func> TrackDependencies for FilterPushSurfaceReversed<Next, Func>
 where
-    Next: PushSurfaceReversed + TrackPushDependencies,
+    Next: PushSurfaceReversed + TrackDependencies,
     Func: FnMut(&Context<'_>, &Next::ItemIn) -> bool,
 {
     fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> usize {

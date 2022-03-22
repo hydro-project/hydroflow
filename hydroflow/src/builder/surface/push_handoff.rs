@@ -1,4 +1,4 @@
-use super::{PushSurfaceReversed, TrackPushDependencies};
+use super::{PushSurfaceReversed, TrackDependencies};
 
 use std::marker::PhantomData;
 
@@ -26,7 +26,7 @@ where
         }
     }
 }
-impl<Hof, In> TrackPushDependencies for HandoffPushSurfaceReversed<Hof, In>
+impl<Hof, In> TrackDependencies for HandoffPushSurfaceReversed<Hof, In>
 where
     Hof: Handoff + CanReceive<In>,
 {

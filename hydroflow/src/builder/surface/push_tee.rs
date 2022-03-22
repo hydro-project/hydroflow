@@ -1,4 +1,4 @@
-use super::{PushSurfaceReversed, TrackPushDependencies};
+use super::{PushSurfaceReversed, TrackDependencies};
 
 use crate::builder::build::push_tee::TeePushBuild;
 use crate::scheduled::handoff::handoff_list::{PortList, PortListSplit};
@@ -32,10 +32,10 @@ where
         Self { next_a, next_b }
     }
 }
-impl<NextA, NextB> TrackPushDependencies for TeePushSurfaceReversed<NextA, NextB>
+impl<NextA, NextB> TrackDependencies for TeePushSurfaceReversed<NextA, NextB>
 where
-    NextA: PushSurfaceReversed + TrackPushDependencies,
-    NextB: PushSurfaceReversed<ItemIn = NextA::ItemIn> + TrackPushDependencies,
+    NextA: PushSurfaceReversed + TrackDependencies,
+    NextB: PushSurfaceReversed<ItemIn = NextA::ItemIn> + TrackDependencies,
     NextA::ItemIn: Clone,
 
     NextA::OutputHandoffs: Extend<NextB::OutputHandoffs>,

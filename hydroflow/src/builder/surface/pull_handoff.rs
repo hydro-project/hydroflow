@@ -1,4 +1,4 @@
-use super::{BaseSurface, PullSurface, TrackPullDependencies};
+use super::{BaseSurface, PullSurface, TrackDependencies};
 
 use crate::builder::build::pull_handoff::HandoffPullBuild;
 use crate::scheduled::handoff::Handoff;
@@ -20,7 +20,7 @@ where
         Self { port }
     }
 }
-impl<Hof> TrackPullDependencies for HandoffPullSurface<Hof>
+impl<Hof> TrackDependencies for HandoffPullSurface<Hof>
 where
     Hof: Handoff,
 {

@@ -1,4 +1,4 @@
-use super::{BaseSurface, PullSurface, TrackPullDependencies};
+use super::{BaseSurface, PullSurface, TrackDependencies};
 
 use std::marker::PhantomData;
 
@@ -42,11 +42,11 @@ where
         }
     }
 }
-impl<PrevBuf, PrevStream, L, Update, Tick> TrackPullDependencies
+impl<PrevBuf, PrevStream, L, Update, Tick> TrackDependencies
     for BatchPullSurface<PrevBuf, PrevStream, L, Update, Tick>
 where
-    PrevBuf: PullSurface<ItemOut = Update::Repr> + TrackPullDependencies,
-    PrevStream: PullSurface<ItemOut = Tick> + TrackPullDependencies,
+    PrevBuf: PullSurface<ItemOut = Update::Repr> + TrackDependencies,
+    PrevStream: PullSurface<ItemOut = Tick> + TrackDependencies,
     Update: 'static + LatticeRepr,
     L: 'static + LatticeRepr + Merge<Update>,
 

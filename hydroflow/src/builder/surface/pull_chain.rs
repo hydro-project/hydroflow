@@ -1,4 +1,4 @@
-use super::{BaseSurface, PullSurface, TrackPullDependencies};
+use super::{BaseSurface, PullSurface, TrackDependencies};
 
 use crate::builder::build::pull_chain::ChainPullBuild;
 use crate::scheduled::handoff::handoff_list::{PortList, PortListSplit};
@@ -30,10 +30,10 @@ where
         Self { prev_a, prev_b }
     }
 }
-impl<PrevA, PrevB> TrackPullDependencies for ChainPullSurface<PrevA, PrevB>
+impl<PrevA, PrevB> TrackDependencies for ChainPullSurface<PrevA, PrevB>
 where
-    PrevA: PullSurface + TrackPullDependencies,
-    PrevB: PullSurface<ItemOut = PrevA::ItemOut> + TrackPullDependencies,
+    PrevA: PullSurface + TrackDependencies,
+    PrevB: PullSurface<ItemOut = PrevA::ItemOut> + TrackDependencies,
 
     PrevA::InputHandoffs: Extend<PrevB::InputHandoffs>,
     <PrevA::InputHandoffs as Extend<PrevB::InputHandoffs>>::Extended:
