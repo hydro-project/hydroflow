@@ -1,4 +1,4 @@
-use super::{BaseSurface, PullSurface, PushSurface, PushSurfaceReversed, TrackDependencies};
+use super::{BaseSurface, PullSurface, PushSurface, PushSurfaceReversed, StoreDataflowGraph};
 
 use std::marker::PhantomData;
 
@@ -44,12 +44,12 @@ where
         (connect, build)
     }
 }
-impl<Prev> TrackDependencies for FlattenSurface<Prev>
+impl<Prev> StoreDataflowGraph for FlattenSurface<Prev>
 where
-    Prev: PullSurface + TrackDependencies,
+    Prev: PullSurface + StoreDataflowGraph,
     Prev::ItemOut: IntoIterator,
 {
-    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> usize {
+    fn insert_dep(&self, e: &mut super::DataflowGraphStorage) -> usize {
         let my_id = e.add_node("Flatten".to_string());
         let prev_id = self.prev.insert_dep(e);
         e.add_edge((prev_id, my_id));
@@ -94,12 +94,12 @@ where
         }
     }
 }
-impl<Next, In> TrackDependencies for FlattenPushSurfaceReversed<Next, In>
+impl<Next, In> StoreDataflowGraph for FlattenPushSurfaceReversed<Next, In>
 where
-    Next: PushSurfaceReversed + TrackDependencies,
+    Next: PushSurfaceReversed + StoreDataflowGraph,
     In: IntoIterator<Item = Next::ItemIn>,
 {
-    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> usize {
+    fn insert_dep(&self, e: &mut super::DataflowGraphStorage) -> usize {
         let my_id = e.add_node("Flatten".to_string());
         let next_id = self.next.insert_dep(e);
         e.add_edge((my_id, next_id));

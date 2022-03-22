@@ -44,14 +44,14 @@ use std::hash::Hash;
 
 use crate::lang::lattice::{LatticeRepr, Merge};
 use crate::scheduled::context::Context;
-use crate::scheduled::graph::DirectedEdgeSet;
+use crate::scheduled::graph::DataflowGraphStorage;
 use crate::scheduled::handoff::handoff_list::{PortList, PortListSplit};
 use crate::scheduled::port::{RECV, SEND};
 use crate::scheduled::type_list::Extend;
 
-pub trait TrackDependencies {
+pub trait StoreDataflowGraph {
     /// return the id of the inserted node
-    fn insert_dep(&self, e: &mut DirectedEdgeSet) -> usize;
+    fn insert_dep(&self, e: &mut DataflowGraphStorage) -> usize;
 }
 /// Common trait shared between push and pull surface APIs.
 ///

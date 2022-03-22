@@ -1,6 +1,7 @@
-use super::{BaseSurface, PullSurface, TrackDependencies};
+use super::{BaseSurface, PullSurface, StoreDataflowGraph};
 
 use crate::builder::build::pull_chain::ChainPullBuild;
+use crate::scheduled::graph::DataflowGraphStorage;
 use crate::scheduled::handoff::handoff_list::{PortList, PortListSplit};
 use crate::scheduled::port::RECV;
 use crate::scheduled::type_list::Extend;
@@ -30,16 +31,16 @@ where
         Self { prev_a, prev_b }
     }
 }
-impl<PrevA, PrevB> TrackDependencies for ChainPullSurface<PrevA, PrevB>
+impl<PrevA, PrevB> StoreDataflowGraph for ChainPullSurface<PrevA, PrevB>
 where
-    PrevA: PullSurface + TrackDependencies,
-    PrevB: PullSurface<ItemOut = PrevA::ItemOut> + TrackDependencies,
+    PrevA: PullSurface + StoreDataflowGraph,
+    PrevB: PullSurface<ItemOut = PrevA::ItemOut> + StoreDataflowGraph,
 
     PrevA::InputHandoffs: Extend<PrevB::InputHandoffs>,
     <PrevA::InputHandoffs as Extend<PrevB::InputHandoffs>>::Extended:
         PortList<RECV> + PortListSplit<RECV, PrevA::InputHandoffs, Suffix = PrevB::InputHandoffs>,
 {
-    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> usize {
+    fn insert_dep(&self, e: &mut DataflowGraphStorage) -> usize {
         let my_id = e.add_node("Chain".to_string());
         let prev_a_id = self.prev_a.insert_dep(e);
         let prev_b_id = self.prev_b.insert_dep(e);

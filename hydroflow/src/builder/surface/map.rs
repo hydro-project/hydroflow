@@ -1,4 +1,4 @@
-use super::{BaseSurface, PullSurface, PushSurface, PushSurfaceReversed, TrackDependencies};
+use super::{BaseSurface, PullSurface, PushSurface, PushSurfaceReversed, StoreDataflowGraph};
 
 use std::marker::PhantomData;
 
@@ -45,12 +45,12 @@ where
         (connect, build)
     }
 }
-impl<Prev, Func, Out> TrackDependencies for MapSurface<Prev, Func>
+impl<Prev, Func, Out> StoreDataflowGraph for MapSurface<Prev, Func>
 where
-    Prev: PullSurface + TrackDependencies,
+    Prev: PullSurface + StoreDataflowGraph,
     Func: FnMut(&Context<'_>, Prev::ItemOut) -> Out,
 {
-    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> usize {
+    fn insert_dep(&self, e: &mut super::DataflowGraphStorage) -> usize {
         let my_id = e.add_node("Map".to_string());
         let prev_id = self.prev.insert_dep(e);
         e.add_edge((prev_id, my_id));
@@ -97,12 +97,12 @@ where
         }
     }
 }
-impl<Next, Func, In> TrackDependencies for MapPushSurfaceReversed<Next, Func, In>
+impl<Next, Func, In> StoreDataflowGraph for MapPushSurfaceReversed<Next, Func, In>
 where
-    Next: PushSurfaceReversed + TrackDependencies,
+    Next: PushSurfaceReversed + StoreDataflowGraph,
     Func: FnMut(&Context<'_>, In) -> Next::ItemIn,
 {
-    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> usize {
+    fn insert_dep(&self, e: &mut super::DataflowGraphStorage) -> usize {
         let my_id = e.add_node("Map".to_string());
         let next_id = self.next.insert_dep(e);
         e.add_edge((my_id, next_id));

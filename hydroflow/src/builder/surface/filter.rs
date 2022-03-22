@@ -1,4 +1,4 @@
-use super::{BaseSurface, PullSurface, PushSurface, PushSurfaceReversed, TrackDependencies};
+use super::{BaseSurface, PullSurface, PushSurface, PushSurfaceReversed, StoreDataflowGraph};
 
 use crate::builder::build::pull_filter::FilterPullBuild;
 use crate::builder::build::push_filter::FilterPushBuild;
@@ -43,12 +43,12 @@ where
         (connect, build)
     }
 }
-impl<Prev, Func> TrackDependencies for FilterSurface<Prev, Func>
+impl<Prev, Func> StoreDataflowGraph for FilterSurface<Prev, Func>
 where
-    Prev: PullSurface + TrackDependencies,
+    Prev: PullSurface + StoreDataflowGraph,
     Func: FnMut(&Context<'_>, &Prev::ItemOut) -> bool,
 {
-    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> usize {
+    fn insert_dep(&self, e: &mut super::DataflowGraphStorage) -> usize {
         let my_id = e.add_node("Filter".to_string());
         let prev_id = self.prev.insert_dep(e);
         e.add_edge((prev_id, my_id));
@@ -90,12 +90,12 @@ where
         Self { next, func }
     }
 }
-impl<Next, Func> TrackDependencies for FilterPushSurfaceReversed<Next, Func>
+impl<Next, Func> StoreDataflowGraph for FilterPushSurfaceReversed<Next, Func>
 where
-    Next: PushSurfaceReversed + TrackDependencies,
+    Next: PushSurfaceReversed + StoreDataflowGraph,
     Func: FnMut(&Context<'_>, &Next::ItemIn) -> bool,
 {
-    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> usize {
+    fn insert_dep(&self, e: &mut super::DataflowGraphStorage) -> usize {
         let my_id = e.add_node("Filter".to_string());
         let next_id = self.next.insert_dep(e);
         e.add_edge((my_id, next_id));

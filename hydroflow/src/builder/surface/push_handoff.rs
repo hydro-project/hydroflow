@@ -1,4 +1,4 @@
-use super::{PushSurfaceReversed, TrackDependencies};
+use super::{PushSurfaceReversed, StoreDataflowGraph};
 
 use std::marker::PhantomData;
 
@@ -26,11 +26,11 @@ where
         }
     }
 }
-impl<Hof, In> TrackDependencies for HandoffPushSurfaceReversed<Hof, In>
+impl<Hof, In> StoreDataflowGraph for HandoffPushSurfaceReversed<Hof, In>
 where
     Hof: Handoff + CanReceive<In>,
 {
-    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> usize {
+    fn insert_dep(&self, e: &mut super::DataflowGraphStorage) -> usize {
         let my_id = e.add_node(format!("Handoff"));
         e.add_handoff_id(my_id, self.port.handoff_id);
         my_id

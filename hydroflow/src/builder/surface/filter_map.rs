@@ -1,4 +1,4 @@
-use super::{BaseSurface, PullSurface, PushSurface, PushSurfaceReversed, TrackDependencies};
+use super::{BaseSurface, PullSurface, PushSurface, PushSurfaceReversed, StoreDataflowGraph};
 
 use std::marker::PhantomData;
 
@@ -45,12 +45,12 @@ where
         (connect, build)
     }
 }
-impl<Prev, Func, Out> TrackDependencies for FilterMapSurface<Prev, Func>
+impl<Prev, Func, Out> StoreDataflowGraph for FilterMapSurface<Prev, Func>
 where
-    Prev: PullSurface + TrackDependencies,
+    Prev: PullSurface + StoreDataflowGraph,
     Func: FnMut(&Context<'_>, Prev::ItemOut) -> Option<Out>,
 {
-    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> usize {
+    fn insert_dep(&self, e: &mut super::DataflowGraphStorage) -> usize {
         let my_id = e.add_node("FilterMap".to_string());
         let prev_id = self.prev.insert_dep(e);
         e.add_edge((prev_id, my_id));

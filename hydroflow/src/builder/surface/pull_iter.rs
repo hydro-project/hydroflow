@@ -1,4 +1,4 @@
-use super::{BaseSurface, PullSurface, TrackDependencies};
+use super::{BaseSurface, PullSurface, StoreDataflowGraph};
 
 use crate::builder::build::pull_iter::IterPullBuild;
 
@@ -17,13 +17,12 @@ where
         Self { it }
     }
 }
-impl<I> TrackDependencies for IterPullSurface<I>
+impl<I> StoreDataflowGraph for IterPullSurface<I>
 where
     I: Iterator,
 {
-    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> usize {
-        let my_id = e.add_node("Iter".to_string());
-        my_id
+    fn insert_dep(&self, e: &mut super::DataflowGraphStorage) -> usize {
+        e.add_node("Iter".to_string())
     }
 }
 

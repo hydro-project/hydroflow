@@ -1,4 +1,4 @@
-use super::{PushSurfaceReversed, TrackDependencies};
+use super::{PushSurfaceReversed, StoreDataflowGraph};
 
 use crate::builder::build::push_tee::TeePushBuild;
 use crate::scheduled::handoff::handoff_list::{PortList, PortListSplit};
@@ -32,17 +32,17 @@ where
         Self { next_a, next_b }
     }
 }
-impl<NextA, NextB> TrackDependencies for TeePushSurfaceReversed<NextA, NextB>
+impl<NextA, NextB> StoreDataflowGraph for TeePushSurfaceReversed<NextA, NextB>
 where
-    NextA: PushSurfaceReversed + TrackDependencies,
-    NextB: PushSurfaceReversed<ItemIn = NextA::ItemIn> + TrackDependencies,
+    NextA: PushSurfaceReversed + StoreDataflowGraph,
+    NextB: PushSurfaceReversed<ItemIn = NextA::ItemIn> + StoreDataflowGraph,
     NextA::ItemIn: Clone,
 
     NextA::OutputHandoffs: Extend<NextB::OutputHandoffs>,
     <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended:
         PortList<SEND> + PortListSplit<SEND, NextA::OutputHandoffs, Suffix = NextB::OutputHandoffs>,
 {
-    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> usize {
+    fn insert_dep(&self, e: &mut super::DataflowGraphStorage) -> usize {
         let my_id = e.add_node("Tee".to_string());
         let next_a_id = self.next_a.insert_dep(e);
         let next_b_id = self.next_b.insert_dep(e);

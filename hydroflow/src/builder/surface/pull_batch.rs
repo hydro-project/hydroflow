@@ -1,4 +1,4 @@
-use super::{BaseSurface, PullSurface, TrackDependencies};
+use super::{BaseSurface, PullSurface, StoreDataflowGraph};
 
 use std::marker::PhantomData;
 
@@ -42,11 +42,11 @@ where
         }
     }
 }
-impl<PrevBuf, PrevStream, L, Update, Tick> TrackDependencies
+impl<PrevBuf, PrevStream, L, Update, Tick> StoreDataflowGraph
     for BatchPullSurface<PrevBuf, PrevStream, L, Update, Tick>
 where
-    PrevBuf: PullSurface<ItemOut = Update::Repr> + TrackDependencies,
-    PrevStream: PullSurface<ItemOut = Tick> + TrackDependencies,
+    PrevBuf: PullSurface<ItemOut = Update::Repr> + StoreDataflowGraph,
+    PrevStream: PullSurface<ItemOut = Tick> + StoreDataflowGraph,
     Update: 'static + LatticeRepr,
     L: 'static + LatticeRepr + Merge<Update>,
 
@@ -54,7 +54,7 @@ where
     <PrevBuf::InputHandoffs as Extend<PrevStream::InputHandoffs>>::Extended: PortList<RECV>
         + PortListSplit<RECV, PrevBuf::InputHandoffs, Suffix = PrevStream::InputHandoffs>,
 {
-    fn insert_dep(&self, e: &mut super::DirectedEdgeSet) -> usize {
+    fn insert_dep(&self, e: &mut super::DataflowGraphStorage) -> usize {
         let my_id = e.add_node("Batch".to_string());
         let prev_a_id = self.prev_a.insert_dep(e);
         let prev_b_id = self.prev_b.insert_dep(e);
