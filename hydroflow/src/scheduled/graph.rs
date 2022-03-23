@@ -417,18 +417,6 @@ impl Hydroflow {
         self.subgraphs[sg_id.0].dependencies.append(deps);
     }
 
-    fn mermaid_mangle(&self, name: Cow<'static, str>, sg_id: SubgraphId, node: usize) -> String {
-        if name.starts_with("Handoff") {
-            let handoff_id = self.subgraphs[sg_id.0].dependencies.handoff_ids[&node];
-            let handoff = &self.handoffs[handoff_id.0];
-            format!("Handoff_{}[\\{}/]", handoff_id.0, handoff.name)
-        } else if &*name == "PullToPush" {
-            format!("{}.{}[/{}\\]", sg_id.0, node, name)
-        } else {
-            format!("{}.{}[{}]", sg_id.0, node, name)
-        }
-    }
-
     pub fn render_mermaid(&self) -> String {
         let mut output = String::new();
         self.write_mermaid(&mut output).unwrap();
@@ -442,41 +430,74 @@ impl Hydroflow {
             let d = &subgraph.dependencies;
 
             if !d.edges.is_empty() {
-                writeln!(write, "subgraph stratum{}", subgraph.stratum)?;
-                writeln!(write, "subgraph {}{}", subgraph.name, sg_id.0)?;
-                for e in d.edges.iter() {
-                    let from = self.mermaid_mangle(d.node_names[e.0].clone(), sg_id, e.0);
-                    let to = self.mermaid_mangle(d.node_names[e.1].clone(), sg_id, e.1);
-                    writeln!(write, "{} --> {}", from, to,)?;
+                writeln!(write, "  subgraph stratum{}", subgraph.stratum)?;
+                writeln!(write, "    subgraph {}{}", subgraph.name, sg_id.0)?;
+                for (node_id, name) in d.node_names.iter().enumerate() {
+                    if name.starts_with("Handoff") {
+                        let handoff_id = d.handoff_ids[&node_id];
+                        let handoff = &self.handoffs[handoff_id.0];
+                        writeln!(write, "      Handoff_{}[\\{}/]", handoff_id.0, handoff.name)?;
+                    } else if &*name == "PullToPush" {
+                        writeln!(write, "      {}.{}[{}]", sg_id.0, node_id, name)?;
+                    } else {
+                        writeln!(write, "      {}.{}[{}]", sg_id.0, node_id, name)?;
+                    }
                 }
-                writeln!(write, "end")?;
-                writeln!(write, "end")?;
+                writeln!(write)?;
+                for (from, to) in d.edges.iter() {
+                    writeln!(write, "      {0}.{1} --> {0}.{2}", sg_id.0, from, to)?;
+                }
+                writeln!(write, "    end")?;
+                writeln!(write, "  end")?;
             }
         }
         Ok(())
     }
 }
 
+/// A subgraph's ID. Invalid if used in a different [`graph::Hydroflow`]
+/// instance than the original that created it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[repr(transparent)]
+pub struct NodeId(pub(crate) usize);
+
+#[derive(Debug)]
+pub enum NodeInfo {
+    Handoff {
+        name: Cow<'static, str>,
+        id: HandoffId,
+    },
+    Operator {
+        name: Cow<'static, str>,
+    },
+    PullToPush,
+}
+impl NodeInfo {
+
+}
+
 #[derive(Debug, Default)]
 pub struct FlowGraph {
-    node_names: Vec<Cow<'static, str>>,
+    nodes: Vec<NodeInfo>,
     edges: HashSet<(usize, usize)>,
     handoff_ids: HashMap<usize, HandoffId>,
 }
 impl FlowGraph {
     pub fn new() -> Self {
-        let (node_names, edges, handoff_ids) = Default::default();
+        let (nodes, edges, handoff_ids) = Default::default();
         Self {
-            node_names,
+            nodes,
             edges,
             handoff_ids,
         }
     }
-    pub fn add_node(&mut self, name: impl Into<Cow<'static, str>>) -> usize {
-        let current_index = self.node_names.len();
-        self.node_names.insert(current_index, name.into());
+
+    pub fn add_node(&mut self, node_info: NodeInfo) -> usize {
+        let current_index = self.nodes.len();
+        self.nodes.insert(current_index, node_info);
         current_index
     }
+
     pub fn add_edge(&mut self, edge: (usize, usize)) {
         self.edges.insert(edge);
     }
@@ -500,6 +521,7 @@ impl FlowGraph {
         );
     }
 }
+
 /// A handoff and its input and output [SubgraphId]s.
 ///
 /// Internal use: used to track the hydroflow graph structure.
