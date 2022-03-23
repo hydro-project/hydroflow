@@ -459,9 +459,9 @@ impl Hydroflow {
 
 #[derive(Debug, Default)]
 pub struct FlowGraph {
-    pub node_names: Vec<Cow<'static, str>>,
-    pub edges: HashSet<(usize, usize)>,
-    pub handoff_ids: HashMap<usize, HandoffId>,
+    node_names: Vec<Cow<'static, str>>,
+    edges: HashSet<(usize, usize)>,
+    handoff_ids: HashMap<usize, HandoffId>,
 }
 impl FlowGraph {
     pub fn new() -> Self {
