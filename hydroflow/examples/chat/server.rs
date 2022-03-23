@@ -80,5 +80,9 @@ pub(crate) async fn run_server(opts: Opts) {
 
     let mut hf = hf.build();
 
+    if opts.mermaid {
+        println!("{}", hf.render_mermaid());
+    }
+
     hf.run_async().await.unwrap();
 }

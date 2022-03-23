@@ -1,7 +1,14 @@
+use clap::Parser;
 use hydroflow::builder::prelude::*;
 use hydroflow::scheduled::handoff::VecHandoff;
 
+#[derive(Parser, Debug)]
+struct Opts {
+    #[clap(long)]
+    mermaid: bool,
+}
 pub fn main() {
+    let opts = Opts::parse();
     let mut builder = HydroflowBuilder::default();
 
     let (send_edges, recv_edges) =
@@ -22,6 +29,9 @@ pub fn main() {
     );
 
     let mut hydroflow = builder.build();
+    if opts.mermaid {
+        println!("{}", hydroflow.render_mermaid())
+    };
 
     println!("A");
 
