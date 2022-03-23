@@ -1,4 +1,4 @@
-use super::{BaseSurface, PullSurface};
+use super::{AssembleFlowGraph, BaseSurface, PullSurface};
 
 use crate::builder::build::pull_fold_epoch::FoldEpochPullBuild;
 
@@ -20,6 +20,19 @@ where
 {
     pub fn new(prev: Prev, init: Init, func: Func) -> Self {
         Self { prev, init, func }
+    }
+}
+impl<Prev, Init, Func, Out> AssembleFlowGraph for FoldEpochPullSurface<Prev, Init, Func>
+where
+    Prev: BaseSurface + AssembleFlowGraph,
+    Init: FnMut(&Context<'_>) -> Out,
+    Func: FnMut(&Context<'_>, Out, Prev::ItemOut) -> Out,
+{
+    fn insert_dep(&self, e: &mut super::FlowGraph) -> usize {
+        let my_id = e.add_node("FoldEpoch");
+        let prev_id = self.prev.insert_dep(e);
+        e.add_edge((prev_id, my_id));
+        my_id
     }
 }
 

@@ -45,10 +45,15 @@ use std::hash::Hash;
 
 use crate::lang::lattice::{LatticeRepr, Merge};
 use crate::scheduled::context::Context;
+use crate::scheduled::graph::FlowGraph;
 use crate::scheduled::handoff::handoff_list::{PortList, PortListSplit};
 use crate::scheduled::port::{RECV, SEND};
 use crate::scheduled::type_list::Extend;
 
+pub trait AssembleFlowGraph {
+    /// return the id of the inserted node
+    fn insert_dep(&self, e: &mut FlowGraph) -> usize;
+}
 /// Common trait shared between push and pull surface APIs.
 ///
 /// Provides non-push/pull-specific chaining methods.

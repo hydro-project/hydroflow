@@ -1,4 +1,4 @@
-use super::PushSurfaceReversed;
+use super::{AssembleFlowGraph, PushSurfaceReversed};
 
 use std::marker::PhantomData;
 
@@ -20,6 +20,15 @@ where
             func,
             _phantom: PhantomData,
         }
+    }
+}
+impl<Func, In> AssembleFlowGraph for ForEachPushSurfaceReversed<Func, In>
+where
+    Func: FnMut(&Context<'_>, In),
+{
+    fn insert_dep(&self, e: &mut super::FlowGraph) -> usize {
+        let my_id = e.add_node("ForEach");
+        my_id
     }
 }
 

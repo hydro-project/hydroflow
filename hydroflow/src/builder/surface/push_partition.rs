@@ -1,4 +1,4 @@
-use super::PushSurfaceReversed;
+use super::{AssembleFlowGraph, PushSurfaceReversed};
 
 use crate::builder::build::push_partition::PartitionPushBuild;
 use crate::scheduled::context::Context;
@@ -36,6 +36,25 @@ where
             next_a,
             next_b,
         }
+    }
+}
+impl<NextA, NextB, Func> AssembleFlowGraph for PartitionPushSurfaceReversed<NextA, NextB, Func>
+where
+    Func: FnMut(&Context<'_>, &NextA::ItemIn) -> bool,
+    NextA: PushSurfaceReversed + AssembleFlowGraph,
+    NextB: PushSurfaceReversed<ItemIn = NextA::ItemIn> + AssembleFlowGraph,
+
+    NextA::OutputHandoffs: Extend<NextB::OutputHandoffs>,
+    <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended:
+        PortList<SEND> + PortListSplit<SEND, NextA::OutputHandoffs, Suffix = NextB::OutputHandoffs>,
+{
+    fn insert_dep(&self, e: &mut super::FlowGraph) -> usize {
+        let my_id = e.add_node("Partition");
+        let next_a_id = self.next_a.insert_dep(e);
+        let next_b_id = self.next_b.insert_dep(e);
+        e.add_edge((my_id, next_a_id));
+        e.add_edge((my_id, next_b_id));
+        my_id
     }
 }
 

@@ -1,4 +1,4 @@
-use super::{BaseSurface, PullSurface};
+use super::{AssembleFlowGraph, BaseSurface, PullSurface};
 
 use std::marker::PhantomData;
 
@@ -40,6 +40,27 @@ where
             prev_b,
             _marker: PhantomData,
         }
+    }
+}
+impl<PrevBuf, PrevStream, L, Update, Tick> AssembleFlowGraph
+    for BatchPullSurface<PrevBuf, PrevStream, L, Update, Tick>
+where
+    PrevBuf: PullSurface<ItemOut = Update::Repr> + AssembleFlowGraph,
+    PrevStream: PullSurface<ItemOut = Tick> + AssembleFlowGraph,
+    Update: 'static + LatticeRepr,
+    L: 'static + LatticeRepr + Merge<Update>,
+
+    PrevBuf::InputHandoffs: Extend<PrevStream::InputHandoffs>,
+    <PrevBuf::InputHandoffs as Extend<PrevStream::InputHandoffs>>::Extended: PortList<RECV>
+        + PortListSplit<RECV, PrevBuf::InputHandoffs, Suffix = PrevStream::InputHandoffs>,
+{
+    fn insert_dep(&self, e: &mut super::FlowGraph) -> usize {
+        let my_id = e.add_node("Batch");
+        let prev_a_id = self.prev_a.insert_dep(e);
+        let prev_b_id = self.prev_b.insert_dep(e);
+        e.add_edge((prev_a_id, my_id));
+        e.add_edge((prev_b_id, my_id));
+        my_id
     }
 }
 

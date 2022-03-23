@@ -1,4 +1,4 @@
-use super::{BaseSurface, PullSurface, PushSurface, PushSurfaceReversed};
+use super::{AssembleFlowGraph, BaseSurface, PullSurface, PushSurface, PushSurfaceReversed};
 
 use std::marker::PhantomData;
 
@@ -45,6 +45,18 @@ where
         (connect, build)
     }
 }
+impl<Prev, Func, Out> AssembleFlowGraph for MapSurface<Prev, Func>
+where
+    Prev: PullSurface + AssembleFlowGraph,
+    Func: FnMut(&Context<'_>, Prev::ItemOut) -> Out,
+{
+    fn insert_dep(&self, e: &mut super::FlowGraph) -> usize {
+        let my_id = e.add_node("Map");
+        let prev_id = self.prev.insert_dep(e);
+        e.add_edge((prev_id, my_id));
+        my_id
+    }
+}
 
 impl<Prev, Func, Out> PushSurface for MapSurface<Prev, Func>
 where
@@ -83,6 +95,18 @@ where
             func,
             _phantom: PhantomData,
         }
+    }
+}
+impl<Next, Func, In> AssembleFlowGraph for MapPushSurfaceReversed<Next, Func, In>
+where
+    Next: PushSurfaceReversed + AssembleFlowGraph,
+    Func: FnMut(&Context<'_>, In) -> Next::ItemIn,
+{
+    fn insert_dep(&self, e: &mut super::FlowGraph) -> usize {
+        let my_id = e.add_node("Map");
+        let next_id = self.next.insert_dep(e);
+        e.add_edge((my_id, next_id));
+        my_id
     }
 }
 
