@@ -26,6 +26,7 @@ pub mod pivot;
 pub mod pull_batch;
 pub mod pull_chain;
 pub mod pull_cross_join;
+pub mod pull_fold_epoch;
 pub mod pull_half_hash_join;
 pub mod pull_handoff;
 pub mod pull_iter;
@@ -289,7 +290,7 @@ pub trait PullSurface: BaseSurface {
 
     fn cross_join<Other>(self, other: Other) -> pull_cross_join::CrossJoinPullSurface<Self, Other>
     where
-        Self: Sized + PullSurface,
+        Self: Sized,
         Other: PullSurface,
         Self::ItemOut: 'static + Eq + Clone,
         Other::ItemOut: 'static + Eq + Clone,
@@ -299,6 +300,45 @@ pub trait PullSurface: BaseSurface {
             + PortListSplit<RECV, Self::InputHandoffs, Suffix = Other::InputHandoffs>,
     {
         pull_cross_join::CrossJoinPullSurface::new(self, other)
+    }
+
+    /// Folds (accumulates) the input such that only the accumulated value is
+    /// output each epoch. This operator should come after a inter-stratum
+    /// handoff to ensure correct scheduling.
+    ///
+    /// First, creates a accumulation value using the `init` method. Then, for
+    /// each item in the epoch, run `func` to update the accumulation value.
+    /// Finally, at the end of the scheduling quantum, release the single
+    /// accumulation value to the next operator.
+    ///
+    /// ## Example
+    /// ```
+    /// use hydroflow::builder::prelude::*;
+    ///
+    /// let mut builder = HydroflowBuilder::new();
+    /// builder.add_subgraph(
+    ///     "My Subgraph",
+    ///     [100_usize, 500, 30, 120]
+    ///         .into_iter()
+    ///         .into_hydroflow()
+    ///         .fold_epoch(|_ctx| 0, |_ctx, val, next| std::cmp::max(val, next))
+    ///         .pull_to_push()
+    ///         .for_each(|val| assert_eq!(500, val))
+    /// );
+    ///
+    /// builder.build().tick();
+    /// ```
+    fn fold_epoch<Init, Func, Out>(
+        self,
+        init: Init,
+        func: Func,
+    ) -> pull_fold_epoch::FoldEpochPullSurface<Self, Init, Func>
+    where
+        Self: Sized,
+        Init: FnMut(&Context<'_>) -> Out,
+        Func: FnMut(&Context<'_>, Out, Self::ItemOut) -> Out,
+    {
+        pull_fold_epoch::FoldEpochPullSurface::new(self, init, func)
     }
 
     fn pull_to_push(self) -> push_pivot::PivotPushSurface<Self>
