@@ -1,4 +1,4 @@
-use super::{PushSurfaceReversed, AssembleFlowGraph};
+use super::{AssembleFlowGraph, PushSurfaceReversed};
 
 use crate::builder::build::push_tee::TeePushBuild;
 use crate::scheduled::handoff::handoff_list::{PortList, PortListSplit};

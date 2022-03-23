@@ -1,4 +1,4 @@
-use super::{BaseSurface, PushSurface, PushSurfaceReversed, AssembleFlowGraph};
+use super::{AssembleFlowGraph, BaseSurface, PushSurface, PushSurfaceReversed};
 
 use std::marker::PhantomData;
 

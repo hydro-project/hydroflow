@@ -9,7 +9,7 @@ use crate::{builder::HydroflowBuilder, scheduled::handoff::VecHandoff};
 use super::{
     flatten::FlattenSurface, pull_chain::ChainPullSurface, pull_handoff::HandoffPullSurface,
     pull_iter::IterPullSurface, push_handoff::HandoffPushSurfaceReversed,
-    push_start::StartPushSurface, BaseSurface, PullSurface, PushSurface, AssembleFlowGraph,
+    push_start::StartPushSurface, AssembleFlowGraph, BaseSurface, PullSurface, PushSurface,
 };
 
 // Pulled out to satisfy clippy for "complex types."

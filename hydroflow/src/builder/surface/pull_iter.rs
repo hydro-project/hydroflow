@@ -1,4 +1,4 @@
-use super::{BaseSurface, PullSurface, AssembleFlowGraph};
+use super::{AssembleFlowGraph, BaseSurface, PullSurface};
 
 use crate::builder::build::pull_iter::IterPullBuild;
 

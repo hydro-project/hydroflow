@@ -1,4 +1,4 @@
-use super::{BaseSurface, PullSurface, AssembleFlowGraph};
+use super::{AssembleFlowGraph, BaseSurface, PullSurface};
 
 use crate::builder::build::pull_handoff::HandoffPullBuild;
 use crate::scheduled::handoff::Handoff;

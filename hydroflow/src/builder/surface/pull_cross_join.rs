@@ -1,4 +1,4 @@
-use super::{BaseSurface, PullSurface, AssembleFlowGraph};
+use super::{AssembleFlowGraph, BaseSurface, PullSurface};
 
 use crate::builder::build::pull_cross_join::CrossJoinPullBuild;
 use crate::scheduled::handoff::handoff_list::{PortList, PortListSplit};

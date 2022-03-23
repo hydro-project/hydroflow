@@ -1,4 +1,4 @@
-use super::{BaseSurface, PullSurface, AssembleFlowGraph};
+use super::{AssembleFlowGraph, BaseSurface, PullSurface};
 
 use crate::builder::build::pull_chain::ChainPullBuild;
 use crate::scheduled::graph::FlowGraph;

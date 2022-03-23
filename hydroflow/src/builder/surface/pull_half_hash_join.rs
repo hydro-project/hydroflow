@@ -1,4 +1,4 @@
-use super::{BaseSurface, PullSurface, AssembleFlowGraph};
+use super::{AssembleFlowGraph, BaseSurface, PullSurface};
 
 use std::hash::Hash;
 use std::marker::PhantomData;
