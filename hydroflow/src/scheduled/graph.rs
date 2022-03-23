@@ -431,28 +431,29 @@ impl Hydroflow {
 
     pub fn render_mermaid(&self) -> String {
         let mut output = String::new();
-        self.write_mermaid(&mut output);
+        self.write_mermaid(&mut output).unwrap();
         output
     }
 
-    pub fn write_mermaid(&self, write: &mut impl Write) {
-        let _err = writeln!(write, "graph TD");
+    pub fn write_mermaid(&self, write: &mut impl Write) -> std::fmt::Result {
+        writeln!(write, "graph TD")?;
         for (sg_id, subgraph) in self.subgraphs.iter().enumerate() {
             let sg_id = SubgraphId(sg_id);
             let d = &subgraph.dependencies;
 
             if !d.edges.is_empty() {
-                writeln!(write, "subgraph stratum{}", subgraph.stratum).unwrap();
-                writeln!(write, "subgraph {}{}", subgraph.name, sg_id.0).unwrap();
+                writeln!(write, "subgraph stratum{}", subgraph.stratum)?;
+                writeln!(write, "subgraph {}{}", subgraph.name, sg_id.0)?;
                 for e in d.edges.iter() {
                     let from = self.mermaid_mangle(d.node_names[e.0].clone(), sg_id, e.0);
                     let to = self.mermaid_mangle(d.node_names[e.1].clone(), sg_id, e.1);
-                    writeln!(write, "{} --> {}", from, to,).unwrap();
+                    writeln!(write, "{} --> {}", from, to,)?;
                 }
-                writeln!(write, "end").unwrap();
-                writeln!(write, "end").unwrap();
+                writeln!(write, "end")?;
+                writeln!(write, "end")?;
             }
         }
+        Ok(())
     }
 }
 
