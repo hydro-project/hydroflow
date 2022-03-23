@@ -45,7 +45,17 @@
 <span id="40">40</span>
 <span id="41">41</span>
 <span id="42">42</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">super</span>::PushSurfaceReversed</span>;
+<span id="43">43</span>
+<span id="44">44</span>
+<span id="45">45</span>
+<span id="46">46</span>
+<span id="47">47</span>
+<span id="48">48</span>
+<span id="49">49</span>
+<span id="50">50</span>
+<span id="51">51</span>
+<span id="52">52</span>
+</pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">AssembleFlowGraph</span>, <span class="ident">PushSurfaceReversed</span>};
 
 <span class="kw">use</span> <span class="ident">std::marker::PhantomData</span>;
 
@@ -71,6 +81,16 @@
             <span class="ident">port</span>,
             <span class="ident">_phantom</span>: <span class="ident">PhantomData</span>,
         }
+    }
+}
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">Hof</span>, <span class="ident">In</span><span class="op">&gt;</span> <span class="ident">AssembleFlowGraph</span> <span class="kw">for</span> <span class="ident">HandoffPushSurfaceReversed</span><span class="op">&lt;</span><span class="ident">Hof</span>, <span class="ident">In</span><span class="op">&gt;</span>
+<span class="kw">where</span>
+    <span class="ident">Hof</span>: <span class="ident">Handoff</span> <span class="op">+</span> <span class="ident">CanReceive</span><span class="op">&lt;</span><span class="ident">In</span><span class="op">&gt;</span>,
+{
+    <span class="kw">fn</span> <span class="ident">insert_dep</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">e</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="kw">super</span>::FlowGraph</span>) -&gt; <span class="ident">usize</span> {
+        <span class="kw">let</span> <span class="ident">my_id</span> <span class="op">=</span> <span class="ident">e</span>.<span class="ident">add_node</span>(<span class="string">&quot;Handoff&quot;</span>);
+        <span class="ident">e</span>.<span class="ident">add_handoff_id</span>(<span class="ident">my_id</span>, <span class="self">self</span>.<span class="ident">port</span>.<span class="ident">handoff_id</span>);
+        <span class="ident">my_id</span>
     }
 }
 

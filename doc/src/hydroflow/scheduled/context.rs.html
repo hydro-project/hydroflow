@@ -136,7 +136,7 @@
         <span class="ident">T</span>: <span class="ident">Any</span>,
     {
         <span class="self">self</span>.<span class="ident">states</span>
-            .<span class="ident">get</span>(<span class="ident">handle</span>.<span class="ident">state_id</span>)
+            .<span class="ident">get</span>(<span class="ident">handle</span>.<span class="ident">state_id</span>.<span class="number">0</span>)
             .<span class="ident">expect</span>(<span class="string">&quot;Failed to find state with given handle.&quot;</span>)
             .<span class="ident">state</span>
             .<span class="ident">downcast_ref</span>()
@@ -148,7 +148,7 @@
         <span class="ident">T</span>: <span class="ident">Any</span>,
     {
         <span class="self">self</span>.<span class="ident">states</span>
-            .<span class="ident">get_mut</span>(<span class="ident">handle</span>.<span class="ident">state_id</span>)
+            .<span class="ident">get_mut</span>(<span class="ident">handle</span>.<span class="ident">state_id</span>.<span class="number">0</span>)
             .<span class="ident">expect</span>(<span class="string">&quot;Failed to find state with given handle.&quot;</span>)
             .<span class="ident">state</span>
             .<span class="ident">downcast_mut</span>()

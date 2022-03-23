@@ -208,6 +208,14 @@
 <span id="203">203</span>
 <span id="204">204</span>
 <span id="205">205</span>
+<span id="206">206</span>
+<span id="207">207</span>
+<span id="208">208</span>
+<span id="209">209</span>
+<span id="210">210</span>
+<span id="211">211</span>
+<span id="212">212</span>
+<span id="213">213</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">futures::Stream</span>;
 
 <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::build</span>::{<span class="ident">PullBuild</span>, <span class="ident">PushBuild</span>};
@@ -218,7 +226,7 @@
 <span class="kw">use</span> <span class="ident">std::sync::mpsc::SyncSender</span>;
 
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::compiled::pivot::Pivot</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::graph::Hydroflow</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::graph</span>::{<span class="ident">FlowGraph</span>, <span class="ident">Hydroflow</span>};
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::graph_ext::GraphExt</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::handoff</span>::{<span class="ident">CanReceive</span>, <span class="ident">Handoff</span>, <span class="ident">VecHandoff</span>};
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::input::Input</span>;
@@ -229,7 +237,7 @@
 <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::surface::pull_handoff::HandoffPullSurface</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::surface::push_handoff::HandoffPushSurfaceReversed</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::surface::push_start::StartPushSurface</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::surface</span>::{<span class="ident">PullSurface</span>, <span class="ident">PushSurfaceReversed</span>};
+<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::surface</span>::{<span class="ident">AssembleFlowGraph</span>, <span class="ident">PullSurface</span>, <span class="ident">PushSurfaceReversed</span>};
 
 <span class="doccomment">/// The user-facing entry point for the Surface API.</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Default</span>)]</span>
@@ -280,8 +288,8 @@
     ) -&gt; <span class="ident">SubgraphId</span>
     <span class="kw">where</span>
         <span class="ident">Name</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span>, <span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-        <span class="ident">Pull</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">PullSurface</span>,
-        <span class="ident">Push</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">PushSurfaceReversed</span><span class="op">&lt;</span><span class="ident">ItemIn</span> <span class="op">=</span> <span class="ident">Pull::ItemOut</span><span class="op">&gt;</span>,
+        <span class="ident">Pull</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">PullSurface</span> <span class="op">+</span> <span class="ident">AssembleFlowGraph</span>,
+        <span class="ident">Push</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">PushSurfaceReversed</span><span class="op">&lt;</span><span class="ident">ItemIn</span> <span class="op">=</span> <span class="ident">Pull::ItemOut</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">AssembleFlowGraph</span>,
     {
         <span class="self">self</span>.<span class="ident">add_subgraph_stratified</span>(<span class="ident">name</span>, <span class="number">0</span>, <span class="ident">pivot</span>)
     }
@@ -295,12 +303,18 @@
     ) -&gt; <span class="ident">SubgraphId</span>
     <span class="kw">where</span>
         <span class="ident">Name</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span>, <span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-        <span class="ident">Pull</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">PullSurface</span>,
-        <span class="ident">Push</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">PushSurfaceReversed</span><span class="op">&lt;</span><span class="ident">ItemIn</span> <span class="op">=</span> <span class="ident">Pull::ItemOut</span><span class="op">&gt;</span>,
+        <span class="ident">Pull</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">PullSurface</span> <span class="op">+</span> <span class="ident">AssembleFlowGraph</span>,
+        <span class="ident">Push</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">PushSurfaceReversed</span><span class="op">&lt;</span><span class="ident">ItemIn</span> <span class="op">=</span> <span class="ident">Pull::ItemOut</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">AssembleFlowGraph</span>,
     {
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">deps</span> <span class="op">=</span> <span class="ident">FlowGraph::new</span>();
+        <span class="kw">let</span> <span class="ident">pull_root</span> <span class="op">=</span> <span class="ident">pivot</span>.<span class="ident">pull</span>.<span class="ident">insert_dep</span>(<span class="kw-2">&amp;mut</span> <span class="ident">deps</span>);
+        <span class="kw">let</span> <span class="ident">push_root</span> <span class="op">=</span> <span class="ident">pivot</span>.<span class="ident">push</span>.<span class="ident">insert_dep</span>(<span class="kw-2">&amp;mut</span> <span class="ident">deps</span>);
+        <span class="kw">let</span> <span class="ident">my_id</span> <span class="op">=</span> <span class="ident">deps</span>.<span class="ident">add_node</span>(<span class="string">&quot;PullToPush&quot;</span>);
+        <span class="ident">deps</span>.<span class="ident">add_edge</span>((<span class="ident">pull_root</span>, <span class="ident">my_id</span>));
+        <span class="ident">deps</span>.<span class="ident">add_edge</span>((<span class="ident">my_id</span>, <span class="ident">push_root</span>));
         <span class="kw">let</span> ((<span class="ident">recv_ports</span>, <span class="ident">send_ports</span>), (<span class="kw-2">mut</span> <span class="ident">pull_build</span>, <span class="kw-2">mut</span> <span class="ident">push_build</span>)) <span class="op">=</span> <span class="ident">pivot</span>.<span class="ident">into_parts</span>();
 
-        <span class="self">self</span>.<span class="ident">hydroflow</span>.<span class="ident">add_subgraph_stratified</span>(
+        <span class="kw">let</span> <span class="ident">sg_id</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">hydroflow</span>.<span class="ident">add_subgraph_stratified</span>(
             <span class="ident">name</span>,
             <span class="ident">stratum</span>,
             <span class="ident">recv_ports</span>,
@@ -311,7 +325,9 @@
                 <span class="kw">let</span> <span class="ident">pivot</span> <span class="op">=</span> <span class="ident">Pivot::new</span>(<span class="ident">pull</span>, <span class="ident">push</span>);
                 <span class="ident">pivot</span>.<span class="ident">run</span>();
             },
-        )
+        );
+        <span class="self">self</span>.<span class="ident">hydroflow</span>.<span class="ident">add_dependencies</span>(<span class="ident">sg_id</span>, <span class="ident">deps</span>);
+        <span class="ident">sg_id</span>
     }
 
     <span class="doccomment">/// Creates a new external channel input.</span>

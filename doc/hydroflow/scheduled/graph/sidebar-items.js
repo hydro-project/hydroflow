@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["HandoffData","A handoff and its input and output [SubgraphId]s."],["Hydroflow","A Hydroflow graph. Owns, schedules, and runs the compiled subgraphs."]]});
+initSidebarItems({"struct":[["FlowGraph",""],["HandoffData","A handoff and its input and output [SubgraphId]s."],["Hydroflow","A Hydroflow graph. Owns, schedules, and runs the compiled subgraphs."]]});

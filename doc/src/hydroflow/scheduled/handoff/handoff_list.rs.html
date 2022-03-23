@@ -205,7 +205,7 @@
 
         <span class="ident">out_handoff_ids</span>.<span class="ident">push</span>(<span class="ident">this</span>.<span class="ident">handoff_id</span>);
 
-        <span class="kw">let</span> <span class="ident">handoff</span> <span class="op">=</span> <span class="ident">handoffs</span>.<span class="ident">get_mut</span>(<span class="ident">this</span>.<span class="ident">handoff_id</span>).<span class="ident">unwrap</span>();
+        <span class="kw">let</span> <span class="ident">handoff</span> <span class="op">=</span> <span class="ident">handoffs</span>.<span class="ident">get_mut</span>(<span class="ident">this</span>.<span class="ident">handoff_id</span>.<span class="number">0</span>).<span class="ident">unwrap</span>();
         <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">pred</span>) <span class="op">=</span> <span class="ident">pred</span> {
             <span class="ident">handoff</span>.<span class="ident">preds</span>.<span class="ident">push</span>(<span class="ident">pred</span>);
         }
@@ -219,7 +219,7 @@
     <span class="kw">fn</span> <span class="ident">make_ctx</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">handoffs</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">HandoffData</span>]) -&gt; <span class="ident"><span class="self">Self</span>::Ctx</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
         <span class="kw">let</span> (<span class="ident">this</span>, <span class="ident">rest</span>) <span class="op">=</span> <span class="self">self</span>;
         <span class="kw">let</span> <span class="ident">handoff</span> <span class="op">=</span> <span class="ident">handoffs</span>
-            .<span class="ident">get</span>(<span class="ident">this</span>.<span class="ident">handoff_id</span>)
+            .<span class="ident">get</span>(<span class="ident">this</span>.<span class="ident">handoff_id</span>.<span class="number">0</span>)
             .<span class="ident">unwrap</span>()
             .<span class="ident">handoff</span>
             .<span class="ident">any_ref</span>()

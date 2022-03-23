@@ -472,6 +472,11 @@
 <span id="467">467</span>
 <span id="468">468</span>
 <span id="469">469</span>
+<span id="470">470</span>
+<span id="471">471</span>
+<span id="472">472</span>
+<span id="473">473</span>
+<span id="474">474</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Structs used to create the user-facing Surface API.</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! Main user-facing traits are [`BaseSurface`], [`PullSurface`], and</span>
@@ -519,10 +524,15 @@
 
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::lang::lattice</span>::{<span class="ident">LatticeRepr</span>, <span class="ident">Merge</span>};
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::context::Context</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::graph::FlowGraph</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::handoff::handoff_list</span>::{<span class="ident">PortList</span>, <span class="ident">PortListSplit</span>};
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::port</span>::{<span class="ident">RECV</span>, <span class="ident">SEND</span>};
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::type_list::Extend</span>;
 
+<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">AssembleFlowGraph</span> {
+    <span class="doccomment">/// return the id of the inserted node</span>
+    <span class="kw">fn</span> <span class="ident">insert_dep</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">e</span>: <span class="kw-2">&amp;mut</span> <span class="ident">FlowGraph</span>) -&gt; <span class="ident">usize</span>;
+}
 <span class="doccomment">/// Common trait shared between push and pull surface APIs.</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// Provides non-push/pull-specific chaining methods.</span>

@@ -171,7 +171,7 @@
 <span class="kw">use</span> <span class="kw">super</span>::{
     <span class="ident">flatten::FlattenSurface</span>, <span class="ident">pull_chain::ChainPullSurface</span>, <span class="ident">pull_handoff::HandoffPullSurface</span>,
     <span class="ident">pull_iter::IterPullSurface</span>, <span class="ident">push_handoff::HandoffPushSurfaceReversed</span>,
-    <span class="ident">push_start::StartPushSurface</span>, <span class="ident">BaseSurface</span>, <span class="ident">PullSurface</span>, <span class="ident">PushSurface</span>,
+    <span class="ident">push_start::StartPushSurface</span>, <span class="ident">AssembleFlowGraph</span>, <span class="ident">BaseSurface</span>, <span class="ident">PullSurface</span>, <span class="ident">PushSurface</span>,
 };
 
 <span class="comment">// Pulled out to satisfy clippy for &quot;complex types.&quot;</span>
@@ -222,7 +222,7 @@
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">Exchange</span> <span class="kw">for</span> <span class="ident">T</span>
 <span class="kw">where</span>
-    <span class="ident">T</span>: <span class="ident">PullSurface</span>,
+    <span class="ident">T</span>: <span class="ident">PullSurface</span> <span class="op">+</span> <span class="ident">AssembleFlowGraph</span>,
 {
     <span class="kw">fn</span> <span class="ident">exchange</span><span class="op">&lt;</span><span class="ident">Name</span>, <span class="ident">Other</span>, <span class="ident">Key</span>, <span class="ident">Val</span><span class="op">&gt;</span>(
         <span class="self">self</span>,

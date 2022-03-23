@@ -87,7 +87,28 @@
 <span id="82">82</span>
 <span id="83">83</span>
 <span id="84">84</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">BaseSurface</span>, <span class="ident">PullSurface</span>};
+<span id="85">85</span>
+<span id="86">86</span>
+<span id="87">87</span>
+<span id="88">88</span>
+<span id="89">89</span>
+<span id="90">90</span>
+<span id="91">91</span>
+<span id="92">92</span>
+<span id="93">93</span>
+<span id="94">94</span>
+<span id="95">95</span>
+<span id="96">96</span>
+<span id="97">97</span>
+<span id="98">98</span>
+<span id="99">99</span>
+<span id="100">100</span>
+<span id="101">101</span>
+<span id="102">102</span>
+<span id="103">103</span>
+<span id="104">104</span>
+<span id="105">105</span>
+</pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">AssembleFlowGraph</span>, <span class="ident">BaseSurface</span>, <span class="ident">PullSurface</span>};
 
 <span class="kw">use</span> <span class="ident">std::marker::PhantomData</span>;
 
@@ -129,6 +150,27 @@
             <span class="ident">prev_b</span>,
             <span class="ident">_marker</span>: <span class="ident">PhantomData</span>,
         }
+    }
+}
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">PrevBuf</span>, <span class="ident">PrevStream</span>, <span class="ident">L</span>, <span class="ident">Update</span>, <span class="ident">Tick</span><span class="op">&gt;</span> <span class="ident">AssembleFlowGraph</span>
+    <span class="kw">for</span> <span class="ident">BatchPullSurface</span><span class="op">&lt;</span><span class="ident">PrevBuf</span>, <span class="ident">PrevStream</span>, <span class="ident">L</span>, <span class="ident">Update</span>, <span class="ident">Tick</span><span class="op">&gt;</span>
+<span class="kw">where</span>
+    <span class="ident">PrevBuf</span>: <span class="ident">PullSurface</span><span class="op">&lt;</span><span class="ident">ItemOut</span> <span class="op">=</span> <span class="ident">Update::Repr</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">AssembleFlowGraph</span>,
+    <span class="ident">PrevStream</span>: <span class="ident">PullSurface</span><span class="op">&lt;</span><span class="ident">ItemOut</span> <span class="op">=</span> <span class="ident">Tick</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">AssembleFlowGraph</span>,
+    <span class="ident">Update</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">LatticeRepr</span>,
+    <span class="ident">L</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">LatticeRepr</span> <span class="op">+</span> <span class="ident">Merge</span><span class="op">&lt;</span><span class="ident">Update</span><span class="op">&gt;</span>,
+
+    <span class="ident">PrevBuf::InputHandoffs</span>: <span class="ident">Extend</span><span class="op">&lt;</span><span class="ident">PrevStream::InputHandoffs</span><span class="op">&gt;</span>,
+    <span class="op">&lt;</span><span class="ident">PrevBuf::InputHandoffs</span> <span class="kw">as</span> <span class="ident">Extend</span><span class="op">&lt;</span><span class="ident">PrevStream::InputHandoffs</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::Extended</span>: <span class="ident">PortList</span><span class="op">&lt;</span><span class="ident">RECV</span><span class="op">&gt;</span>
+        <span class="op">+</span> <span class="ident">PortListSplit</span><span class="op">&lt;</span><span class="ident">RECV</span>, <span class="ident">PrevBuf::InputHandoffs</span>, <span class="ident">Suffix</span> <span class="op">=</span> <span class="ident">PrevStream::InputHandoffs</span><span class="op">&gt;</span>,
+{
+    <span class="kw">fn</span> <span class="ident">insert_dep</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">e</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="kw">super</span>::FlowGraph</span>) -&gt; <span class="ident">usize</span> {
+        <span class="kw">let</span> <span class="ident">my_id</span> <span class="op">=</span> <span class="ident">e</span>.<span class="ident">add_node</span>(<span class="string">&quot;Batch&quot;</span>);
+        <span class="kw">let</span> <span class="ident">prev_a_id</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">prev_a</span>.<span class="ident">insert_dep</span>(<span class="ident">e</span>);
+        <span class="kw">let</span> <span class="ident">prev_b_id</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">prev_b</span>.<span class="ident">insert_dep</span>(<span class="ident">e</span>);
+        <span class="ident">e</span>.<span class="ident">add_edge</span>((<span class="ident">prev_a_id</span>, <span class="ident">my_id</span>));
+        <span class="ident">e</span>.<span class="ident">add_edge</span>((<span class="ident">prev_b_id</span>, <span class="ident">my_id</span>));
+        <span class="ident">my_id</span>
     }
 }
 

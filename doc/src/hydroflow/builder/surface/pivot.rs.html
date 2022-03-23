@@ -57,8 +57,8 @@
     <span class="ident">Pull</span>: <span class="ident">PullSurface</span>,
     <span class="ident">Push</span>: <span class="ident">PushSurfaceReversed</span><span class="op">&lt;</span><span class="ident">ItemIn</span> <span class="op">=</span> <span class="ident">Pull::ItemOut</span><span class="op">&gt;</span>,
 {
-    <span class="ident">pull</span>: <span class="ident">Pull</span>,
-    <span class="ident">push</span>: <span class="ident">Push</span>,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">pull</span>: <span class="ident">Pull</span>,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">push</span>: <span class="ident">Push</span>,
 }
 <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">Pull</span>, <span class="ident">Push</span><span class="op">&gt;</span> <span class="ident">PivotSurface</span><span class="op">&lt;</span><span class="ident">Pull</span>, <span class="ident">Push</span><span class="op">&gt;</span>
 <span class="kw">where</span>
