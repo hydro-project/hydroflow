@@ -414,18 +414,18 @@ impl Hydroflow {
     }
 
     pub fn add_dependencies(&mut self, sg_id: SubgraphId, deps: FlowGraph) {
-        self.subgraphs[sg_id].dependencies.append(deps);
+        self.subgraphs[sg_id.0].dependencies.append(deps);
     }
 
-    fn mermaid_mangle(&self, name: Cow<'static, str>, subg: usize, node: usize) -> String {
+    fn mermaid_mangle(&self, name: Cow<'static, str>, sg_id: SubgraphId, node: usize) -> String {
         if name.starts_with("Handoff") {
-            let handoff_id = self.subgraphs[subg].dependencies.handoff_ids[&node];
-            let handoff = &self.handoffs[handoff_id];
-            format!("Handoff_{}[\\{}/]", handoff_id, handoff.name)
+            let handoff_id = self.subgraphs[sg_id.0].dependencies.handoff_ids[&node];
+            let handoff = &self.handoffs[handoff_id.0];
+            format!("Handoff_{}[\\{}/]", handoff_id.0, handoff.name)
         } else if &*name == "PullToPush" {
-            format!("{}.{}[/{}\\]", subg, node, name)
+            format!("{}.{}[/{}\\]", sg_id.0, node, name)
         } else {
-            format!("{}.{}[{}]", subg, node, name)
+            format!("{}.{}[{}]", sg_id.0, node, name)
         }
     }
 
@@ -437,17 +437,16 @@ impl Hydroflow {
 
     pub fn write_mermaid(&self, write: &mut impl Write) {
         let _err = writeln!(write, "graph TD");
-        for i in 0..self.subgraphs.len() {
-            let d = &self.subgraphs[i].dependencies;
-            let name = &self.subgraphs[i].name;
-            let stratum = self.subgraphs[i].stratum;
+        for (sg_id, subgraph) in self.subgraphs.iter().enumerate() {
+            let sg_id = SubgraphId(sg_id);
+            let d = &subgraph.dependencies;
 
             if !d.edges.is_empty() {
-                writeln!(write, "subgraph stratum{}", stratum).unwrap();
-                writeln!(write, "subgraph {}{}", name, i).unwrap();
-                for e in &d.edges {
-                    let from = self.mermaid_mangle(d.node_names[e.0].clone(), i, e.0);
-                    let to = self.mermaid_mangle(d.node_names[e.1].clone(), i, e.1);
+                writeln!(write, "subgraph stratum{}", subgraph.stratum).unwrap();
+                writeln!(write, "subgraph {}{}", subgraph.name, sg_id.0).unwrap();
+                for e in d.edges.iter() {
+                    let from = self.mermaid_mangle(d.node_names[e.0].clone(), sg_id, e.0);
+                    let to = self.mermaid_mangle(d.node_names[e.1].clone(), sg_id, e.1);
                     writeln!(write, "{} --> {}", from, to,).unwrap();
                 }
                 writeln!(write, "end").unwrap();
@@ -461,7 +460,7 @@ impl Hydroflow {
 pub struct FlowGraph {
     pub node_names: Vec<Cow<'static, str>>,
     pub edges: HashSet<(usize, usize)>,
-    pub handoff_ids: HashMap<usize, usize>,
+    pub handoff_ids: HashMap<usize, HandoffId>,
 }
 impl FlowGraph {
     pub fn new() -> Self {
@@ -480,7 +479,7 @@ impl FlowGraph {
     pub fn add_edge(&mut self, edge: (usize, usize)) {
         self.edges.insert(edge);
     }
-    pub fn add_handoff_id(&mut self, node_id: usize, handoff_id: usize) {
+    pub fn add_handoff_id(&mut self, node_id: usize, handoff_id: HandoffId) {
         self.handoff_ids.insert(node_id, handoff_id);
     }
     pub fn append(&mut self, mut other: FlowGraph) {
