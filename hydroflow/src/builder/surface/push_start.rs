@@ -1,4 +1,4 @@
-use super::{BaseSurface, PushSurface, PushSurfaceReversed, StoreDataflowGraph};
+use super::{BaseSurface, PushSurface, PushSurfaceReversed, AssembleFlowGraph};
 
 use std::marker::PhantomData;
 
@@ -20,8 +20,8 @@ impl<Out> StartPushSurface<Out> {
     }
 }
 
-impl<Out> StoreDataflowGraph for StartPushSurface<Out> {
-    fn insert_dep(&self, e: &mut super::DataflowGraphStorage) -> usize {
+impl<Out> AssembleFlowGraph for StartPushSurface<Out> {
+    fn insert_dep(&self, e: &mut super::FlowGraph) -> usize {
         let my_id = e.add_node("Start".to_string());
         my_id
     }

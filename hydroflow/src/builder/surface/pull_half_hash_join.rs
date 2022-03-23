@@ -1,4 +1,4 @@
-use super::{BaseSurface, PullSurface, StoreDataflowGraph};
+use super::{BaseSurface, PullSurface, AssembleFlowGraph};
 
 use std::hash::Hash;
 use std::marker::PhantomData;
@@ -45,11 +45,11 @@ where
         }
     }
 }
-impl<PrevBuf, PrevStream, Key, L, Update, StreamVal> StoreDataflowGraph
+impl<PrevBuf, PrevStream, Key, L, Update, StreamVal> AssembleFlowGraph
     for HalfHashJoinPullSurface<PrevStream, PrevBuf, L, Update>
 where
-    PrevBuf: PullSurface<ItemOut = (Key, Update::Repr)> + StoreDataflowGraph,
-    PrevStream: PullSurface<ItemOut = (Key, StreamVal)> + StoreDataflowGraph,
+    PrevBuf: PullSurface<ItemOut = (Key, Update::Repr)> + AssembleFlowGraph,
+    PrevStream: PullSurface<ItemOut = (Key, StreamVal)> + AssembleFlowGraph,
     Key: 'static + Eq + Hash,
     L: 'static + LatticeRepr + Merge<Update>,
     Update: 'static + LatticeRepr,
@@ -59,7 +59,7 @@ where
     <PrevBuf::InputHandoffs as Extend<PrevStream::InputHandoffs>>::Extended: PortList<RECV>
         + PortListSplit<RECV, PrevBuf::InputHandoffs, Suffix = PrevStream::InputHandoffs>,
 {
-    fn insert_dep(&self, e: &mut super::DataflowGraphStorage) -> usize {
+    fn insert_dep(&self, e: &mut super::FlowGraph) -> usize {
         let my_id = e.add_node("HalfHashJoin".to_string());
         let prev_a_id = self.prev_buf.insert_dep(e);
         let prev_b_id = self.prev_stream.insert_dep(e);

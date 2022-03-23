@@ -1,4 +1,4 @@
-use super::{BaseSurface, PullSurface, StoreDataflowGraph};
+use super::{BaseSurface, PullSurface, AssembleFlowGraph};
 
 use std::hash::Hash;
 
@@ -35,10 +35,10 @@ where
         Self { prev_a, prev_b }
     }
 }
-impl<PrevA, PrevB, Key, ValA, ValB> StoreDataflowGraph for JoinPullSurface<PrevA, PrevB>
+impl<PrevA, PrevB, Key, ValA, ValB> AssembleFlowGraph for JoinPullSurface<PrevA, PrevB>
 where
-    PrevA: PullSurface<ItemOut = (Key, ValA)> + StoreDataflowGraph,
-    PrevB: PullSurface<ItemOut = (Key, ValB)> + StoreDataflowGraph,
+    PrevA: PullSurface<ItemOut = (Key, ValA)> + AssembleFlowGraph,
+    PrevB: PullSurface<ItemOut = (Key, ValB)> + AssembleFlowGraph,
     Key: 'static + Eq + Hash + Clone,
     ValA: 'static + Eq + Clone,
     ValB: 'static + Eq + Clone,
@@ -47,7 +47,7 @@ where
     <PrevA::InputHandoffs as Extend<PrevB::InputHandoffs>>::Extended:
         PortList<RECV> + PortListSplit<RECV, PrevA::InputHandoffs, Suffix = PrevB::InputHandoffs>,
 {
-    fn insert_dep(&self, e: &mut super::DataflowGraphStorage) -> usize {
+    fn insert_dep(&self, e: &mut super::FlowGraph) -> usize {
         let my_id = e.add_node("Join".to_string());
         let prev_a_id = self.prev_a.insert_dep(e);
         let prev_b_id = self.prev_b.insert_dep(e);

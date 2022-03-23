@@ -1,4 +1,4 @@
-use super::{BaseSurface, PullSurface, PushSurface, PushSurfaceReversed, StoreDataflowGraph};
+use super::{AssembleFlowGraph, BaseSurface, PullSurface, PushSurface, PushSurfaceReversed};
 
 use std::marker::PhantomData;
 
@@ -45,12 +45,12 @@ where
         (connect, build)
     }
 }
-impl<Prev, Func, Out> StoreDataflowGraph for FilterMapSurface<Prev, Func>
+impl<Prev, Func, Out> AssembleFlowGraph for FilterMapSurface<Prev, Func>
 where
-    Prev: PullSurface + StoreDataflowGraph,
+    Prev: PullSurface + AssembleFlowGraph,
     Func: FnMut(&Context<'_>, Prev::ItemOut) -> Option<Out>,
 {
-    fn insert_dep(&self, e: &mut super::DataflowGraphStorage) -> usize {
+    fn insert_dep(&self, e: &mut super::FlowGraph) -> usize {
         let my_id = e.add_node("FilterMap".to_string());
         let prev_id = self.prev.insert_dep(e);
         e.add_edge((prev_id, my_id));

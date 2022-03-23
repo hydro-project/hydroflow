@@ -1,4 +1,4 @@
-use super::{BaseSurface, PullSurface, StoreDataflowGraph};
+use super::{BaseSurface, PullSurface, AssembleFlowGraph};
 
 use crate::builder::build::pull_iter::IterPullBuild;
 
@@ -17,11 +17,11 @@ where
         Self { it }
     }
 }
-impl<I> StoreDataflowGraph for IterPullSurface<I>
+impl<I> AssembleFlowGraph for IterPullSurface<I>
 where
     I: Iterator,
 {
-    fn insert_dep(&self, e: &mut super::DataflowGraphStorage) -> usize {
+    fn insert_dep(&self, e: &mut super::FlowGraph) -> usize {
         e.add_node("Iter".to_string())
     }
 }

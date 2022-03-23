@@ -263,7 +263,7 @@ impl Hydroflow {
             subgraph,
             subgraph_preds,
             subgraph_succs,
-            DataflowGraphStorage::default(),
+            FlowGraph::default(),
             true,
         ));
         self.init_stratum(stratum);
@@ -355,7 +355,7 @@ impl Hydroflow {
             subgraph,
             subgraph_preds,
             subgraph_succs,
-            DataflowGraphStorage::default(),
+            FlowGraph::default(),
             true,
         ));
         self.init_stratum(stratum);
@@ -413,7 +413,7 @@ impl Hydroflow {
         }
     }
 
-    pub fn add_dependencies(&mut self, sg_id: SubgraphId, deps: DataflowGraphStorage) {
+    pub fn add_dependencies(&mut self, sg_id: SubgraphId, deps: FlowGraph) {
         self.subgraphs[sg_id].dependencies.append(deps);
     }
 
@@ -458,12 +458,12 @@ impl Hydroflow {
 }
 
 #[derive(Debug, Default)]
-pub struct DataflowGraphStorage {
+pub struct FlowGraph {
     pub node_names: Vec<Cow<'static, str>>,
     pub edges: HashSet<(usize, usize)>,
     pub handoff_ids: HashMap<usize, usize>,
 }
-impl DataflowGraphStorage {
+impl FlowGraph {
     pub fn new() -> Self {
         let (node_names, edges, handoff_ids) = Default::default();
         Self {
@@ -483,7 +483,7 @@ impl DataflowGraphStorage {
     pub fn add_handoff_id(&mut self, node_id: usize, handoff_id: usize) {
         self.handoff_ids.insert(node_id, handoff_id);
     }
-    pub fn append(&mut self, mut other: DataflowGraphStorage) {
+    pub fn append(&mut self, mut other: FlowGraph) {
         let base = self.node_names.len();
         self.node_names.append(&mut other.node_names);
         self.edges.extend(
@@ -549,7 +549,7 @@ struct SubgraphData {
     #[allow(dead_code)]
     preds: Vec<HandoffId>,
     succs: Vec<HandoffId>,
-    dependencies: DataflowGraphStorage,
+    dependencies: FlowGraph,
     /// If this subgraph is scheduled in [`Hydroflow::stratum_queues`].
     /// [`Cell`] allows modifying this field when iterating `Self::preds` or
     /// `Self::succs`, as all `SubgraphData` are owned by the same vec
@@ -563,7 +563,7 @@ impl SubgraphData {
         subgraph: impl 'static + Subgraph,
         preds: Vec<HandoffId>,
         succs: Vec<HandoffId>,
-        dependencies: DataflowGraphStorage,
+        dependencies: FlowGraph,
         is_scheduled: bool,
     ) -> Self {
         Self {

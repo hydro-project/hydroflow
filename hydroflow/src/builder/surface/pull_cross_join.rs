@@ -1,4 +1,4 @@
-use super::{BaseSurface, PullSurface, StoreDataflowGraph};
+use super::{BaseSurface, PullSurface, AssembleFlowGraph};
 
 use crate::builder::build::pull_cross_join::CrossJoinPullBuild;
 use crate::scheduled::handoff::handoff_list::{PortList, PortListSplit};
@@ -34,10 +34,10 @@ where
         Self { prev_a, prev_b }
     }
 }
-impl<PrevA, PrevB> StoreDataflowGraph for CrossJoinPullSurface<PrevA, PrevB>
+impl<PrevA, PrevB> AssembleFlowGraph for CrossJoinPullSurface<PrevA, PrevB>
 where
-    PrevA: PullSurface + StoreDataflowGraph,
-    PrevB: PullSurface + StoreDataflowGraph,
+    PrevA: PullSurface + AssembleFlowGraph,
+    PrevB: PullSurface + AssembleFlowGraph,
     PrevA::ItemOut: 'static + Eq + Clone,
     PrevB::ItemOut: 'static + Eq + Clone,
 
@@ -45,7 +45,7 @@ where
     <PrevA::InputHandoffs as Extend<PrevB::InputHandoffs>>::Extended:
         PortList<RECV> + PortListSplit<RECV, PrevA::InputHandoffs, Suffix = PrevB::InputHandoffs>,
 {
-    fn insert_dep(&self, e: &mut super::DataflowGraphStorage) -> usize {
+    fn insert_dep(&self, e: &mut super::FlowGraph) -> usize {
         let my_id = e.add_node("CrossJoin".to_string());
         let prev_a_id = self.prev_a.insert_dep(e);
         let prev_b_id = self.prev_b.insert_dep(e);

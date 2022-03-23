@@ -1,4 +1,4 @@
-use super::{PushSurfaceReversed, StoreDataflowGraph};
+use super::{AssembleFlowGraph, PushSurfaceReversed};
 
 use std::marker::PhantomData;
 
@@ -22,11 +22,11 @@ where
         }
     }
 }
-impl<Func, In> StoreDataflowGraph for ForEachPushSurfaceReversed<Func, In>
+impl<Func, In> AssembleFlowGraph for ForEachPushSurfaceReversed<Func, In>
 where
     Func: FnMut(&Context<'_>, In),
 {
-    fn insert_dep(&self, e: &mut super::DataflowGraphStorage) -> usize {
+    fn insert_dep(&self, e: &mut super::FlowGraph) -> usize {
         let my_id = e.add_node("ForEach".to_string());
         my_id
     }

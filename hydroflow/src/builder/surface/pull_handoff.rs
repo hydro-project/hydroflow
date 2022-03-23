@@ -1,4 +1,4 @@
-use super::{BaseSurface, PullSurface, StoreDataflowGraph};
+use super::{BaseSurface, PullSurface, AssembleFlowGraph};
 
 use crate::builder::build::pull_handoff::HandoffPullBuild;
 use crate::scheduled::handoff::Handoff;
@@ -20,11 +20,11 @@ where
         Self { port }
     }
 }
-impl<Hof> StoreDataflowGraph for HandoffPullSurface<Hof>
+impl<Hof> AssembleFlowGraph for HandoffPullSurface<Hof>
 where
     Hof: Handoff,
 {
-    fn insert_dep(&self, e: &mut super::DataflowGraphStorage) -> usize {
+    fn insert_dep(&self, e: &mut super::FlowGraph) -> usize {
         let my_id = e.add_node("Handoff");
         e.add_handoff_id(my_id, self.port.handoff_id);
         my_id

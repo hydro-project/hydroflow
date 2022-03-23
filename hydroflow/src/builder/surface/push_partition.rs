@@ -1,4 +1,4 @@
-use super::{PushSurfaceReversed, StoreDataflowGraph};
+use super::{AssembleFlowGraph, PushSurfaceReversed};
 
 use crate::builder::build::push_partition::PartitionPushBuild;
 use crate::scheduled::context::Context;
@@ -38,17 +38,17 @@ where
         }
     }
 }
-impl<NextA, NextB, Func> StoreDataflowGraph for PartitionPushSurfaceReversed<NextA, NextB, Func>
+impl<NextA, NextB, Func> AssembleFlowGraph for PartitionPushSurfaceReversed<NextA, NextB, Func>
 where
     Func: FnMut(&Context<'_>, &NextA::ItemIn) -> bool,
-    NextA: PushSurfaceReversed + StoreDataflowGraph,
-    NextB: PushSurfaceReversed<ItemIn = NextA::ItemIn> + StoreDataflowGraph,
+    NextA: PushSurfaceReversed + AssembleFlowGraph,
+    NextB: PushSurfaceReversed<ItemIn = NextA::ItemIn> + AssembleFlowGraph,
 
     NextA::OutputHandoffs: Extend<NextB::OutputHandoffs>,
     <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended:
         PortList<SEND> + PortListSplit<SEND, NextA::OutputHandoffs, Suffix = NextB::OutputHandoffs>,
 {
-    fn insert_dep(&self, e: &mut super::DataflowGraphStorage) -> usize {
+    fn insert_dep(&self, e: &mut super::FlowGraph) -> usize {
         let my_id = e.add_node("Partition".to_string());
         let next_a_id = self.next_a.insert_dep(e);
         let next_b_id = self.next_b.insert_dep(e);
