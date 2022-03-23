@@ -1,6 +1,6 @@
 use super::{AssembleFlowGraph, BaseSurface, PullSurface};
 
-use crate::builder::build::pull_iter::IterPullBuild;
+use crate::{builder::build::pull_iter::IterPullBuild, scheduled::graph::NodeId};
 
 pub struct IterPullSurface<I>
 where
@@ -21,7 +21,7 @@ impl<I> AssembleFlowGraph for IterPullSurface<I>
 where
     I: Iterator,
 {
-    fn insert_dep(&self, e: &mut super::FlowGraph) -> usize {
+    fn insert_dep(&self, e: &mut super::FlowGraph) -> NodeId {
         e.add_node("Iter")
     }
 }

@@ -5,6 +5,7 @@ use std::marker::PhantomData;
 use crate::builder::build::pull_filter_map::FilterMapPullBuild;
 use crate::builder::build::push_filter_map::FilterMapPushBuild;
 use crate::scheduled::context::Context;
+use crate::scheduled::graph::NodeId;
 
 pub struct FilterMapSurface<Prev, Func>
 where
@@ -50,7 +51,7 @@ where
     Prev: PullSurface + AssembleFlowGraph,
     Func: FnMut(&Context<'_>, Prev::ItemOut) -> Option<Out>,
 {
-    fn insert_dep(&self, e: &mut super::FlowGraph) -> usize {
+    fn insert_dep(&self, e: &mut super::FlowGraph) -> NodeId {
         let my_id = e.add_node("FilterMap");
         let prev_id = self.prev.insert_dep(e);
         e.add_edge((prev_id, my_id));

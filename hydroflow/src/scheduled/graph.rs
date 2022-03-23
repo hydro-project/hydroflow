@@ -1,7 +1,7 @@
 use std::any::Any;
 use std::borrow::Cow;
 use std::cell::Cell;
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{HashSet, VecDeque};
 use std::fmt::Write;
 use std::marker::PhantomData;
 use std::num::NonZeroUsize;
@@ -432,20 +432,16 @@ impl Hydroflow {
             if !d.edges.is_empty() {
                 writeln!(write, "  subgraph stratum{}", subgraph.stratum)?;
                 writeln!(write, "    subgraph {}{}", subgraph.name, sg_id.0)?;
-                for (node_id, name) in d.node_names.iter().enumerate() {
-                    if name.starts_with("Handoff") {
-                        let handoff_id = d.handoff_ids[&node_id];
-                        let handoff = &self.handoffs[handoff_id.0];
-                        writeln!(write, "      Handoff_{}[\\{}/]", handoff_id.0, handoff.name)?;
-                    } else if &*name == "PullToPush" {
-                        writeln!(write, "      {}.{}[{}]", sg_id.0, node_id, name)?;
-                    } else {
-                        writeln!(write, "      {}.{}[{}]", sg_id.0, node_id, name)?;
-                    }
+                for node_id in 0..d.nodes.len() {
+                    let node_id = NodeId(node_id);
+                    let node_declaration = d.node_mermaid_declaration(sg_id, node_id);
+                    writeln!(write, "      {}", node_declaration)?;
                 }
                 writeln!(write)?;
-                for (from, to) in d.edges.iter() {
-                    writeln!(write, "      {0}.{1} --> {0}.{2}", sg_id.0, from, to)?;
+                for &(src, dst) in d.edges.iter() {
+                    let src = d.node_mermaid_id(sg_id, src);
+                    let dst = d.node_mermaid_id(sg_id, dst);
+                    writeln!(write, "      {} --> {}", src, dst)?;
                 }
                 writeln!(write, "    end")?;
                 writeln!(write, "  end")?;
@@ -472,52 +468,72 @@ pub enum NodeInfo {
     },
     PullToPush,
 }
-impl NodeInfo {
 
+impl From<&'static str> for NodeInfo {
+    fn from(item: &'static str) -> Self {
+        Self::Operator { name: item.into() }
+    }
 }
 
+impl From<String> for NodeInfo {
+    fn from(item: String) -> Self {
+        Self::Operator { name: item.into() }
+    }
+}
+
+/// A graph representation of a Hydroflow instance's graph structure.
 #[derive(Debug, Default)]
 pub struct FlowGraph {
     nodes: Vec<NodeInfo>,
-    edges: HashSet<(usize, usize)>,
-    handoff_ids: HashMap<usize, HandoffId>,
+    edges: HashSet<(NodeId, NodeId)>,
 }
+
 impl FlowGraph {
     pub fn new() -> Self {
-        let (nodes, edges, handoff_ids) = Default::default();
-        Self {
-            nodes,
-            edges,
-            handoff_ids,
+        let (nodes, edges) = Default::default();
+        Self { nodes, edges }
+    }
+
+    pub fn add_node(&mut self, node_info: impl Into<NodeInfo>) -> NodeId {
+        let current_index = self.nodes.len();
+        self.nodes.insert(current_index, node_info.into());
+        NodeId(current_index)
+    }
+
+    pub fn add_edge(&mut self, edge: (NodeId, NodeId)) {
+        self.edges.insert(edge);
+    }
+
+    pub fn node_mermaid_id(&self, sg_id: SubgraphId, node_id: NodeId) -> String {
+        if let NodeInfo::Handoff { name: _, id } = &self.nodes[node_id.0] {
+            format!("Handoff_{}", id.0)
+        } else {
+            format!("{}.{}", sg_id.0, node_id.0)
         }
     }
 
-    pub fn add_node(&mut self, node_info: NodeInfo) -> usize {
-        let current_index = self.nodes.len();
-        self.nodes.insert(current_index, node_info);
-        current_index
+    pub fn node_mermaid_declaration(&self, sg_id: SubgraphId, node_id: NodeId) -> String {
+        match &self.nodes[node_id.0] {
+            NodeInfo::Handoff { name, id } => {
+                format!("Handoff_{}[\\{}/]", id.0, name)
+            }
+            NodeInfo::Operator { name } => {
+                format!("{}.{}[{}]", sg_id.0, node_id.0, name)
+            }
+            NodeInfo::PullToPush => {
+                format!("{}.{}[PullToPush]", sg_id.0, node_id.0)
+            }
+        }
     }
 
-    pub fn add_edge(&mut self, edge: (usize, usize)) {
-        self.edges.insert(edge);
-    }
-    pub fn add_handoff_id(&mut self, node_id: usize, handoff_id: HandoffId) {
-        self.handoff_ids.insert(node_id, handoff_id);
-    }
     pub fn append(&mut self, mut other: FlowGraph) {
-        let base = self.node_names.len();
-        self.node_names.append(&mut other.node_names);
+        let base = self.nodes.len();
+        self.nodes.append(&mut other.nodes);
         self.edges.extend(
             other
                 .edges
                 .into_iter()
-                .map(|(from, to)| (from + base, to + base)),
-        );
-        self.handoff_ids.extend(
-            other
-                .handoff_ids
-                .into_iter()
-                .map(|(key, val)| (key + base, val)),
+                .map(|(from, to)| (NodeId(from.0 + base), NodeId(to.0 + base))),
         );
     }
 }

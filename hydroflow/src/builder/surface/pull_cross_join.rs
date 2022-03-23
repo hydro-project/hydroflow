@@ -1,6 +1,7 @@
 use super::{AssembleFlowGraph, BaseSurface, PullSurface};
 
 use crate::builder::build::pull_cross_join::CrossJoinPullBuild;
+use crate::scheduled::graph::NodeId;
 use crate::scheduled::handoff::handoff_list::{PortList, PortListSplit};
 use crate::scheduled::port::RECV;
 use crate::scheduled::type_list::Extend;
@@ -45,7 +46,7 @@ where
     <PrevA::InputHandoffs as Extend<PrevB::InputHandoffs>>::Extended:
         PortList<RECV> + PortListSplit<RECV, PrevA::InputHandoffs, Suffix = PrevB::InputHandoffs>,
 {
-    fn insert_dep(&self, e: &mut super::FlowGraph) -> usize {
+    fn insert_dep(&self, e: &mut super::FlowGraph) -> NodeId {
         let my_id = e.add_node("CrossJoin");
         let prev_a_id = self.prev_a.insert_dep(e);
         let prev_b_id = self.prev_b.insert_dep(e);
