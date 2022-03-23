@@ -4,6 +4,7 @@ use std::marker::PhantomData;
 
 use crate::builder::build::pull_batch::BatchPullBuild;
 use crate::lang::lattice::{LatticeRepr, Merge};
+use crate::scheduled::graph::NodeId;
 use crate::scheduled::handoff::handoff_list::{PortList, PortListSplit};
 use crate::scheduled::port::RECV;
 use crate::scheduled::type_list::Extend;
@@ -54,7 +55,7 @@ where
     <PrevBuf::InputHandoffs as Extend<PrevStream::InputHandoffs>>::Extended: PortList<RECV>
         + PortListSplit<RECV, PrevBuf::InputHandoffs, Suffix = PrevStream::InputHandoffs>,
 {
-    fn insert_dep(&self, e: &mut super::FlowGraph) -> usize {
+    fn insert_dep(&self, e: &mut super::FlowGraph) -> NodeId {
         let my_id = e.add_node("Batch");
         let prev_a_id = self.prev_a.insert_dep(e);
         let prev_b_id = self.prev_b.insert_dep(e);

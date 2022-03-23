@@ -3,6 +3,7 @@ use super::{AssembleFlowGraph, BaseSurface, PullSurface};
 use crate::builder::build::pull_fold_epoch::FoldEpochPullBuild;
 
 use crate::scheduled::context::Context;
+use crate::scheduled::graph::NodeId;
 
 pub struct FoldEpochPullSurface<Prev, Init, Func>
 where
@@ -28,7 +29,7 @@ where
     Init: FnMut(&Context<'_>) -> Out,
     Func: FnMut(&Context<'_>, Out, Prev::ItemOut) -> Out,
 {
-    fn insert_dep(&self, e: &mut super::FlowGraph) -> usize {
+    fn insert_dep(&self, e: &mut super::FlowGraph) -> NodeId {
         let my_id = e.add_node("FoldEpoch");
         let prev_id = self.prev.insert_dep(e);
         e.add_edge((prev_id, my_id));

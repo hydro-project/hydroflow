@@ -2,7 +2,9 @@ use super::{AssembleFlowGraph, PushSurfaceReversed};
 
 use std::marker::PhantomData;
 
-use crate::{builder::build::push_for_each::ForEachPushBuild, scheduled::context::Context};
+use crate::builder::build::push_for_each::ForEachPushBuild;
+use crate::scheduled::context::Context;
+use crate::scheduled::graph::NodeId;
 
 pub struct ForEachPushSurfaceReversed<Func, In>
 where
@@ -26,7 +28,7 @@ impl<Func, In> AssembleFlowGraph for ForEachPushSurfaceReversed<Func, In>
 where
     Func: FnMut(&Context<'_>, In),
 {
-    fn insert_dep(&self, e: &mut super::FlowGraph) -> usize {
+    fn insert_dep(&self, e: &mut super::FlowGraph) -> NodeId {
         let my_id = e.add_node("ForEach");
         my_id
     }
