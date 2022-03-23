@@ -47,7 +47,7 @@ pub(crate) async fn run_client(opts: Opts) {
         },
     );
     df.add_subgraph(
-        "my_info 2",
+        "my_info",
         std::iter::once(Some(init_info))
             .into_hydroflow()
             .pull_to_push()
@@ -98,5 +98,8 @@ pub(crate) async fn run_client(opts: Opts) {
     );
 
     let mut df = df.build();
+    if opts.mermaid {
+        println!("{}", df.render_mermaid());
+    }
     df.run_async().await.unwrap();
 }
