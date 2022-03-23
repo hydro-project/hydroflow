@@ -1,7 +1,8 @@
 use std::any::Any;
 use std::borrow::Cow;
 use std::cell::Cell;
-use std::collections::VecDeque;
+use std::collections::{HashMap, HashSet, VecDeque};
+use std::fmt::Write;
 use std::marker::PhantomData;
 use std::num::NonZeroUsize;
 
@@ -262,6 +263,7 @@ impl Hydroflow {
             subgraph,
             subgraph_preds,
             subgraph_succs,
+            FlowGraph::default(),
             true,
         ));
         self.init_stratum(stratum);
@@ -353,6 +355,7 @@ impl Hydroflow {
             subgraph,
             subgraph_preds,
             subgraph_succs,
+            FlowGraph::default(),
             true,
         ));
         self.init_stratum(stratum);
@@ -409,8 +412,94 @@ impl Hydroflow {
             _phantom: PhantomData,
         }
     }
+
+    pub fn add_dependencies(&mut self, sg_id: SubgraphId, deps: FlowGraph) {
+        self.subgraphs[sg_id].dependencies.append(deps);
+    }
+
+    fn mermaid_mangle(&self, name: Cow<'static, str>, subg: usize, node: usize) -> String {
+        if name.starts_with("Handoff") {
+            let handoff_id = self.subgraphs[subg].dependencies.handoff_ids[&node];
+            let handoff = &self.handoffs[handoff_id];
+            format!("Handoff_{}[\\{}/]", handoff_id, handoff.name)
+        } else if &*name == "PullToPush" {
+            format!("{}.{}[/{}\\]", subg, node, name)
+        } else {
+            format!("{}.{}[{}]", subg, node, name)
+        }
+    }
+
+    pub fn render_mermaid(&self) -> String {
+        let mut output = String::new();
+        self.write_mermaid(&mut output);
+        output
+    }
+
+    pub fn write_mermaid(&self, write: &mut impl Write) {
+        let _err = writeln!(write, "graph TD");
+        for i in 0..self.subgraphs.len() {
+            let d = &self.subgraphs[i].dependencies;
+            let name = &self.subgraphs[i].name;
+            let stratum = self.subgraphs[i].stratum;
+
+            if !d.edges.is_empty() {
+                writeln!(write, "subgraph stratum{}", stratum).unwrap();
+                writeln!(write, "subgraph {}{}", name, i).unwrap();
+                for e in &d.edges {
+                    let from = self.mermaid_mangle(d.node_names[e.0].clone(), i, e.0);
+                    let to = self.mermaid_mangle(d.node_names[e.1].clone(), i, e.1);
+                    writeln!(write, "{} --> {}", from, to,).unwrap();
+                }
+                writeln!(write, "end").unwrap();
+                writeln!(write, "end").unwrap();
+            }
+        }
+    }
 }
 
+#[derive(Debug, Default)]
+pub struct FlowGraph {
+    pub node_names: Vec<Cow<'static, str>>,
+    pub edges: HashSet<(usize, usize)>,
+    pub handoff_ids: HashMap<usize, usize>,
+}
+impl FlowGraph {
+    pub fn new() -> Self {
+        let (node_names, edges, handoff_ids) = Default::default();
+        Self {
+            node_names,
+            edges,
+            handoff_ids,
+        }
+    }
+    pub fn add_node(&mut self, name: impl Into<Cow<'static, str>>) -> usize {
+        let current_index = self.node_names.len();
+        self.node_names.insert(current_index, name.into());
+        current_index
+    }
+    pub fn add_edge(&mut self, edge: (usize, usize)) {
+        self.edges.insert(edge);
+    }
+    pub fn add_handoff_id(&mut self, node_id: usize, handoff_id: usize) {
+        self.handoff_ids.insert(node_id, handoff_id);
+    }
+    pub fn append(&mut self, mut other: FlowGraph) {
+        let base = self.node_names.len();
+        self.node_names.append(&mut other.node_names);
+        self.edges.extend(
+            other
+                .edges
+                .into_iter()
+                .map(|(from, to)| (from + base, to + base)),
+        );
+        self.handoff_ids.extend(
+            other
+                .handoff_ids
+                .into_iter()
+                .map(|(key, val)| (key + base, val)),
+        );
+    }
+}
 /// A handoff and its input and output [SubgraphId]s.
 ///
 /// Internal use: used to track the hydroflow graph structure.
@@ -460,6 +549,7 @@ struct SubgraphData {
     #[allow(dead_code)]
     preds: Vec<HandoffId>,
     succs: Vec<HandoffId>,
+    dependencies: FlowGraph,
     /// If this subgraph is scheduled in [`Hydroflow::stratum_queues`].
     /// [`Cell`] allows modifying this field when iterating `Self::preds` or
     /// `Self::succs`, as all `SubgraphData` are owned by the same vec
@@ -473,6 +563,7 @@ impl SubgraphData {
         subgraph: impl 'static + Subgraph,
         preds: Vec<HandoffId>,
         succs: Vec<HandoffId>,
+        dependencies: FlowGraph,
         is_scheduled: bool,
     ) -> Self {
         Self {
@@ -481,6 +572,7 @@ impl SubgraphData {
             subgraph: Box::new(subgraph),
             preds,
             succs,
+            dependencies,
             is_scheduled: Cell::new(is_scheduled),
         }
     }
