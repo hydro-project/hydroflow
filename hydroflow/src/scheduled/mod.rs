@@ -14,19 +14,19 @@ pub mod util;
 
 /// A subgraph's ID. Invalid if used in a different [`graph::Hydroflow`]
 /// instance than the original that created it.
-#[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[repr(transparent)]
 pub struct SubgraphId(pub(crate) usize);
 
 /// A handoff's ID. Invalid if used in a different [`graph::Hydroflow`]
 /// instance than the original that created it.
-#[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[repr(transparent)]
 pub struct HandoffId(pub(crate) usize);
 
 /// A staten handle's ID. Invalid if used in a different [`graph::Hydroflow`]
 /// instance than the original that created it.
-#[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[repr(transparent)]
 pub struct StateId(pub(crate) usize);
 
