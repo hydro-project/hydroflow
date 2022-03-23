@@ -49,7 +49,7 @@ where
         PortList<SEND> + PortListSplit<SEND, NextA::OutputHandoffs, Suffix = NextB::OutputHandoffs>,
 {
     fn insert_dep(&self, e: &mut super::FlowGraph) -> usize {
-        let my_id = e.add_node("Partition".to_string());
+        let my_id = e.add_node("Partition");
         let next_a_id = self.next_a.insert_dep(e);
         let next_b_id = self.next_b.insert_dep(e);
         e.add_edge((my_id, next_a_id));

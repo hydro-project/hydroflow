@@ -50,7 +50,7 @@ where
     Prev::ItemOut: IntoIterator,
 {
     fn insert_dep(&self, e: &mut super::FlowGraph) -> usize {
-        let my_id = e.add_node("Flatten".to_string());
+        let my_id = e.add_node("Flatten");
         let prev_id = self.prev.insert_dep(e);
         e.add_edge((prev_id, my_id));
         my_id
@@ -100,7 +100,7 @@ where
     In: IntoIterator<Item = Next::ItemIn>,
 {
     fn insert_dep(&self, e: &mut super::FlowGraph) -> usize {
-        let my_id = e.add_node("Flatten".to_string());
+        let my_id = e.add_node("Flatten");
         let next_id = self.next.insert_dep(e);
         e.add_edge((my_id, next_id));
         my_id

@@ -49,7 +49,7 @@ where
     Func: FnMut(&Context<'_>, &Prev::ItemOut) -> bool,
 {
     fn insert_dep(&self, e: &mut super::FlowGraph) -> usize {
-        let my_id = e.add_node("Filter".to_string());
+        let my_id = e.add_node("Filter");
         let prev_id = self.prev.insert_dep(e);
         e.add_edge((prev_id, my_id));
         my_id
@@ -96,7 +96,7 @@ where
     Func: FnMut(&Context<'_>, &Next::ItemIn) -> bool,
 {
     fn insert_dep(&self, e: &mut super::FlowGraph) -> usize {
-        let my_id = e.add_node("Filter".to_string());
+        let my_id = e.add_node("Filter");
         let next_id = self.next.insert_dep(e);
         e.add_edge((my_id, next_id));
         my_id

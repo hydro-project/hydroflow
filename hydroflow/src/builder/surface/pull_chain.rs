@@ -41,7 +41,7 @@ where
         PortList<RECV> + PortListSplit<RECV, PrevA::InputHandoffs, Suffix = PrevB::InputHandoffs>,
 {
     fn insert_dep(&self, e: &mut FlowGraph) -> usize {
-        let my_id = e.add_node("Chain".to_string());
+        let my_id = e.add_node("Chain");
         let prev_a_id = self.prev_a.insert_dep(e);
         let prev_b_id = self.prev_b.insert_dep(e);
         e.add_edge((prev_a_id, my_id));

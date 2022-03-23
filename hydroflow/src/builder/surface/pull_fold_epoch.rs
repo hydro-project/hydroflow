@@ -29,7 +29,7 @@ where
     Func: FnMut(&Context<'_>, Out, Prev::ItemOut) -> Out,
 {
     fn insert_dep(&self, e: &mut super::FlowGraph) -> usize {
-        let my_id = e.add_node("FoldEpoch".to_string());
+        let my_id = e.add_node("FoldEpoch");
         let prev_id = self.prev.insert_dep(e);
         e.add_edge((prev_id, my_id));
         my_id

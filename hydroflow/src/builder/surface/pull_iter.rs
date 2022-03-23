@@ -22,7 +22,7 @@ where
     I: Iterator,
 {
     fn insert_dep(&self, e: &mut super::FlowGraph) -> usize {
-        e.add_node("Iter".to_string())
+        e.add_node("Iter")
     }
 }
 

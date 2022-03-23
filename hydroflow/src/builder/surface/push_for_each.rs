@@ -27,7 +27,7 @@ where
     Func: FnMut(&Context<'_>, In),
 {
     fn insert_dep(&self, e: &mut super::FlowGraph) -> usize {
-        let my_id = e.add_node("ForEach".to_string());
+        let my_id = e.add_node("ForEach");
         my_id
     }
 }

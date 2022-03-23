@@ -22,7 +22,7 @@ impl<Out> StartPushSurface<Out> {
 
 impl<Out> AssembleFlowGraph for StartPushSurface<Out> {
     fn insert_dep(&self, e: &mut super::FlowGraph) -> usize {
-        let my_id = e.add_node("Start".to_string());
+        let my_id = e.add_node("Start");
         my_id
     }
 }

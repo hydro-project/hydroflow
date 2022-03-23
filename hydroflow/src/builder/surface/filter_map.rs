@@ -51,7 +51,7 @@ where
     Func: FnMut(&Context<'_>, Prev::ItemOut) -> Option<Out>,
 {
     fn insert_dep(&self, e: &mut super::FlowGraph) -> usize {
-        let my_id = e.add_node("FilterMap".to_string());
+        let my_id = e.add_node("FilterMap");
         let prev_id = self.prev.insert_dep(e);
         e.add_edge((prev_id, my_id));
         my_id
