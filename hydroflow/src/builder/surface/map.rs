@@ -5,6 +5,7 @@ use std::marker::PhantomData;
 use crate::builder::build::pull_map::MapPullBuild;
 use crate::builder::build::push_map::MapPushBuild;
 use crate::scheduled::context::Context;
+use crate::scheduled::graph::NodeId;
 
 pub struct MapSurface<Prev, Func>
 where
@@ -50,7 +51,7 @@ where
     Prev: PullSurface + AssembleFlowGraph,
     Func: FnMut(&Context<'_>, Prev::ItemOut) -> Out,
 {
-    fn insert_dep(&self, e: &mut super::FlowGraph) -> usize {
+    fn insert_dep(&self, e: &mut super::FlowGraph) -> NodeId {
         let my_id = e.add_node("Map");
         let prev_id = self.prev.insert_dep(e);
         e.add_edge((prev_id, my_id));
@@ -102,7 +103,7 @@ where
     Next: PushSurfaceReversed + AssembleFlowGraph,
     Func: FnMut(&Context<'_>, In) -> Next::ItemIn,
 {
-    fn insert_dep(&self, e: &mut super::FlowGraph) -> usize {
+    fn insert_dep(&self, e: &mut super::FlowGraph) -> NodeId {
         let my_id = e.add_node("Map");
         let next_id = self.next.insert_dep(e);
         e.add_edge((my_id, next_id));
