@@ -3,6 +3,7 @@ use super::{AssembleFlowGraph, PushSurfaceReversed};
 use std::marker::PhantomData;
 
 use crate::builder::build::push_handoff::HandoffPushBuild;
+use crate::scheduled::graph::NodeId;
 use crate::scheduled::handoff::{CanReceive, Handoff};
 use crate::scheduled::port::SendPort;
 use crate::{tl, tt};
@@ -30,7 +31,7 @@ impl<Hof, In> AssembleFlowGraph for HandoffPushSurfaceReversed<Hof, In>
 where
     Hof: Handoff + CanReceive<In>,
 {
-    fn insert_dep(&self, e: &mut super::FlowGraph) -> usize {
+    fn insert_dep(&self, e: &mut super::FlowGraph) -> NodeId {
         let my_id = e.add_node("Handoff");
         e.add_handoff_id(my_id, self.port.handoff_id);
         my_id
