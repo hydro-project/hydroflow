@@ -51,7 +51,7 @@
 <span id="46">46</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">AssembleFlowGraph</span>, <span class="ident">BaseSurface</span>, <span class="ident">PullSurface</span>};
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::builder::build::pull_iter::IterPullBuild</span>;
+<span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">builder::build::pull_iter::IterPullBuild</span>, <span class="ident">scheduled::graph::NodeId</span>};
 
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">IterPullSurface</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>
 <span class="kw">where</span>
@@ -72,7 +72,7 @@
 <span class="kw">where</span>
     <span class="ident">I</span>: <span class="ident">Iterator</span>,
 {
-    <span class="kw">fn</span> <span class="ident">insert_dep</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">e</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="kw">super</span>::FlowGraph</span>) -&gt; <span class="ident">usize</span> {
+    <span class="kw">fn</span> <span class="ident">insert_dep</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">e</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="kw">super</span>::FlowGraph</span>) -&gt; <span class="ident">NodeId</span> {
         <span class="ident">e</span>.<span class="ident">add_node</span>(<span class="string">&quot;Iter&quot;</span>)
     }
 }

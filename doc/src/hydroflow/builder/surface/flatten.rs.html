@@ -128,12 +128,14 @@
 <span id="123">123</span>
 <span id="124">124</span>
 <span id="125">125</span>
+<span id="126">126</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">AssembleFlowGraph</span>, <span class="ident">BaseSurface</span>, <span class="ident">PullSurface</span>, <span class="ident">PushSurface</span>, <span class="ident">PushSurfaceReversed</span>};
 
 <span class="kw">use</span> <span class="ident">std::marker::PhantomData</span>;
 
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::builder::build::pull_flatten::FlattenPullBuild</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::builder::build::push_flatten::FlattenPushBuild</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::graph::NodeId</span>;
 
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">FlattenSurface</span><span class="op">&lt;</span><span class="ident">Prev</span><span class="op">&gt;</span>
 <span class="kw">where</span>
@@ -179,7 +181,7 @@
     <span class="ident">Prev</span>: <span class="ident">PullSurface</span> <span class="op">+</span> <span class="ident">AssembleFlowGraph</span>,
     <span class="ident">Prev::ItemOut</span>: <span class="ident">IntoIterator</span>,
 {
-    <span class="kw">fn</span> <span class="ident">insert_dep</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">e</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="kw">super</span>::FlowGraph</span>) -&gt; <span class="ident">usize</span> {
+    <span class="kw">fn</span> <span class="ident">insert_dep</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">e</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="kw">super</span>::FlowGraph</span>) -&gt; <span class="ident">NodeId</span> {
         <span class="kw">let</span> <span class="ident">my_id</span> <span class="op">=</span> <span class="ident">e</span>.<span class="ident">add_node</span>(<span class="string">&quot;Flatten&quot;</span>);
         <span class="kw">let</span> <span class="ident">prev_id</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">prev</span>.<span class="ident">insert_dep</span>(<span class="ident">e</span>);
         <span class="ident">e</span>.<span class="ident">add_edge</span>((<span class="ident">prev_id</span>, <span class="ident">my_id</span>));
@@ -229,7 +231,7 @@
     <span class="ident">Next</span>: <span class="ident">PushSurfaceReversed</span> <span class="op">+</span> <span class="ident">AssembleFlowGraph</span>,
     <span class="ident">In</span>: <span class="ident">IntoIterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="ident">Next::ItemIn</span><span class="op">&gt;</span>,
 {
-    <span class="kw">fn</span> <span class="ident">insert_dep</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">e</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="kw">super</span>::FlowGraph</span>) -&gt; <span class="ident">usize</span> {
+    <span class="kw">fn</span> <span class="ident">insert_dep</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">e</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="kw">super</span>::FlowGraph</span>) -&gt; <span class="ident">NodeId</span> {
         <span class="kw">let</span> <span class="ident">my_id</span> <span class="op">=</span> <span class="ident">e</span>.<span class="ident">add_node</span>(<span class="string">&quot;Flatten&quot;</span>);
         <span class="kw">let</span> <span class="ident">next_id</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">next</span>.<span class="ident">insert_dep</span>(<span class="ident">e</span>);
         <span class="ident">e</span>.<span class="ident">add_edge</span>((<span class="ident">my_id</span>, <span class="ident">next_id</span>));

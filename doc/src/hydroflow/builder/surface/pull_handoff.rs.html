@@ -54,9 +54,11 @@
 <span id="49">49</span>
 <span id="50">50</span>
 <span id="51">51</span>
+<span id="52">52</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">AssembleFlowGraph</span>, <span class="ident">BaseSurface</span>, <span class="ident">PullSurface</span>};
 
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::builder::build::pull_handoff::HandoffPullBuild</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::graph::NodeId</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::handoff::Handoff</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::port::RecvPort</span>;
 <span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">tl</span>, <span class="ident">tt</span>};
@@ -80,7 +82,7 @@
 <span class="kw">where</span>
     <span class="ident">Hof</span>: <span class="ident">Handoff</span>,
 {
-    <span class="kw">fn</span> <span class="ident">insert_dep</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">e</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="kw">super</span>::FlowGraph</span>) -&gt; <span class="ident">usize</span> {
+    <span class="kw">fn</span> <span class="ident">insert_dep</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">e</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="kw">super</span>::FlowGraph</span>) -&gt; <span class="ident">NodeId</span> {
         <span class="kw">let</span> <span class="ident">my_id</span> <span class="op">=</span> <span class="ident">e</span>.<span class="ident">add_node</span>(<span class="string">&quot;Handoff&quot;</span>);
         <span class="ident">e</span>.<span class="ident">add_handoff_id</span>(<span class="ident">my_id</span>, <span class="self">self</span>.<span class="ident">port</span>.<span class="ident">handoff_id</span>);
         <span class="ident">my_id</span>

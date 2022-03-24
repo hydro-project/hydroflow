@@ -118,6 +118,7 @@
 <span id="113">113</span>
 <span id="114">114</span>
 <span id="115">115</span>
+<span id="116">116</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">AssembleFlowGraph</span>, <span class="ident">BaseSurface</span>, <span class="ident">PullSurface</span>};
 
 <span class="kw">use</span> <span class="ident">std::hash::Hash</span>;
@@ -125,6 +126,7 @@
 
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::builder::build::pull_half_hash_join::HalfHashJoinPullBuild</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::lang::lattice</span>::{<span class="ident">LatticeRepr</span>, <span class="ident">Merge</span>};
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::graph::NodeId</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::handoff::handoff_list</span>::{<span class="ident">PortList</span>, <span class="ident">PortListSplit</span>};
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::port::RECV</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::type_list::Extend</span>;
@@ -179,7 +181,7 @@
     <span class="op">&lt;</span><span class="ident">PrevBuf::InputHandoffs</span> <span class="kw">as</span> <span class="ident">Extend</span><span class="op">&lt;</span><span class="ident">PrevStream::InputHandoffs</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::Extended</span>: <span class="ident">PortList</span><span class="op">&lt;</span><span class="ident">RECV</span><span class="op">&gt;</span>
         <span class="op">+</span> <span class="ident">PortListSplit</span><span class="op">&lt;</span><span class="ident">RECV</span>, <span class="ident">PrevBuf::InputHandoffs</span>, <span class="ident">Suffix</span> <span class="op">=</span> <span class="ident">PrevStream::InputHandoffs</span><span class="op">&gt;</span>,
 {
-    <span class="kw">fn</span> <span class="ident">insert_dep</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">e</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="kw">super</span>::FlowGraph</span>) -&gt; <span class="ident">usize</span> {
+    <span class="kw">fn</span> <span class="ident">insert_dep</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">e</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="kw">super</span>::FlowGraph</span>) -&gt; <span class="ident">NodeId</span> {
         <span class="kw">let</span> <span class="ident">my_id</span> <span class="op">=</span> <span class="ident">e</span>.<span class="ident">add_node</span>(<span class="string">&quot;HalfHashJoin&quot;</span>);
         <span class="kw">let</span> <span class="ident">prev_a_id</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">prev_buf</span>.<span class="ident">insert_dep</span>(<span class="ident">e</span>);
         <span class="kw">let</span> <span class="ident">prev_b_id</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">prev_stream</span>.<span class="ident">insert_dep</span>(<span class="ident">e</span>);
