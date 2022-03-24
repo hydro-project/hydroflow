@@ -1,0 +1,233 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>The Hydroflow Book</title>
+        <meta name="robots" content="noindex" />
+        <!-- Custom HTML head -->
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">User Guide</li><li class="chapter-item expanded "><a href="setup.html"><strong aria-hidden="true">1.</strong> Setup</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">The Hydroflow Book</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
+<p><a href="https://github.com/hydro-project/hydroflow">Hydroflow</a> is a dataflow runtime
+written in Rust, serving as the execution layer of the <a href="https://hydro-project.github.io/">Hydro stack</a>.
+This book teaches how to set up and get started with Hydroflow.</p>
+<p>Keep in mind that Hydroflow is under active development and is constantly
+changing. However this book is tested in CI so should always be up-to-date
+(though incomplete, for now).</p>
+<p>If you have any questions, feel free to <a href="https://github.com/hydro-project/hydroflow/issues/new">create an issue on Github</a>.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="setup"><a class="header" href="#setup">Setup</a></h1>
+<p>This section explains how to get Hydroflow running, either for development or
+usage, even if you are not familiar with Rust development.</p>
+<h2 id="installing-rust"><a class="header" href="#installing-rust">Installing Rust</a></h2>
+<p>First you will need to install Rust. We recommend the conventional installation
+method, <code>rustup</code>, which allows you to easily manage and update Rust versions.</p>
+<p><a href="https://www.rust-lang.org/tools/install"><strong>Install Rust</strong></a></p>
+<p>This will install <code>rustup</code> and the Rust package manager <code>cargo</code> (and the
+internally-used <code>rustc</code> compiler). <code>cargo</code> is Rust's main development tool,
+used for building, running, and testing Rust code.</p>
+<p>The following <code>cargo</code> commands will come in handy:</p>
+<ul>
+<li><code>cargo check --all-targets</code> - Checks the workspace for any compile-time
+errors.</li>
+<li><code>cargo build --all-targets</code> - Builds all projects/tests/benchmarks/examples
+in the workspace.</li>
+<li><code>cargo clean</code> - Cleans the build cache, sometimes needed if the build is
+acting up.</li>
+<li><code>cargo test</code> - Runs tests in the workspace.</li>
+<li><code>cargo run -p hydroflow --example &lt;example name&gt;</code> - Run an example program in
+<code>hydroflow/examples</code>.</li>
+</ul>
+<p>To learn Rust see the official <a href="https://www.rust-lang.org/learn">Learn Rust page</a>.
+Here are some good resources:</p>
+<ul>
+<li><a href="https://doc.rust-lang.org/book/"><em>The Rust Programming Language</em>, AKA &quot;The Book&quot;</a></li>
+<li><a href="https://rust-unofficial.github.io/too-many-lists/">Learn Rust With Entirely Too Many Linked Lists</a>
+is a good way to learn Rust's ownership system and its
+implications.</li>
+</ul>
+<h2 id="vs-code-setup"><a class="header" href="#vs-code-setup">VS Code Setup</a></h2>
+<p>We recommend using VS Code with the <code>rust-anaylzer</code> extension (and NOT the
+<code>Rust</code> extension). To enable the pre-release version of <code>rust-analyzer</code>
+(required by some new nightly syntax we use, at least until 2022-03-14), click
+the &quot;Switch to Pre-Release Version&quot; button next to the uninstall button.</p>
+<h2 id="hydroflow-setup"><a class="header" href="#hydroflow-setup">Hydroflow Setup</a></h2>
+<p>The easiest way to get started with Hydroflow is to clone and work in the
+repository directly. You should fork the repository if you want to push your
+changes.</p>
+<pre><code class="language-bash">git clone git@github.com:hydro-project/hydroflow.git
+</code></pre>
+<p>Hydroflow requires nightly Rust, but the repo is already configured for it via
+<code>rust-toolchain.toml</code>.</p>
+<p>We can then open the repo in VS Code or IDE of your choice. <code>rust-anaylzer</code>
+will provide inline type and error messages, code completion, etc.</p>
+<h2 id="development"><a class="header" href="#development">Development</a></h2>
+<p>The easiest way to try Hydroflow is with an &quot;example&quot;, found in the
+<a href="https://github.com/hydro-project/hydroflow/tree/main/hydroflow/examples"><code>hydroflow/examples</code> folder</a>.
+These examples are include via the <a href="https://github.com/hydro-project/hydroflow/blob/main/hydroflow/Cargo.toml"><code>hydroflow/Cargo.toml</code> file</a>,
+so make sure to add your example there if you create a new one. The simplest
+example is <a href="https://github.com/hydro-project/hydroflow/blob/main/hydroflow/examples/graph_reachability/main.rs"><code>graph_reachability</code></a>.</p>
+<p>The Hydroflow repository is set up as a <a href="https://doc.rust-lang.org/book/ch14-03-cargo-workspaces.html">workspace</a>,
+i.e. a repo containing a bunch of separate packages, <code>hydroflow</code> is just the
+main one. So if you want to work in a proper separate cargo package, you can
+create one and add it into the <a href="https://github.com/hydro-project/hydroflow/blob/main/Cargo.toml">root <code>Cargo.toml</code></a>.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+            </nav>
+
+        </div>
+
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        <script type="text/javascript">
+        window.addEventListener('load', function() {
+            window.setTimeout(window.print, 100);
+        });
+        </script>
+    </body>
+</html>
