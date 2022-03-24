@@ -1,7 +1,7 @@
-use std::{collections::HashMap, time::Duration};
+use std::time::Duration;
 
 use futures::{
-    channel::mpsc::{channel, Receiver, Sender},
+    channel::mpsc::{Receiver, Sender},
     SinkExt, StreamExt,
 };
 use hydroflow::{
@@ -12,39 +12,13 @@ use hydroflow::{
     },
     lang::{
         collections::Single,
-        lattice::{
-            dom_pair::DomPairRepr, map_union::MapUnionRepr, ord::MaxRepr, set_union::SetUnionRepr,
-        },
+        lattice::{map_union::MapUnionRepr, ord::MaxRepr, set_union::SetUnionRepr},
         tag,
     },
     scheduled::handoff::VecHandoff,
 };
 
-#[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
-struct ActorId(u64);
-
-type Clock = HashMap<usize, u64>;
-
-#[derive(Debug)]
-enum Message<K, V>
-where
-    K: Send + Clone,
-    V: Send + Clone,
-{
-    // A KV set request from a client.
-    Set(K, V),
-    // A KV get request from a client.
-    Get(K, futures::channel::oneshot::Sender<(Clock, V)>),
-    // A set of data that I am responsible for, sent to me by another worker.
-    Batch((usize, u64), Vec<(K, V)>),
-}
-
-unsafe impl<K, V> Send for Message<K, V>
-where
-    K: Send + Clone,
-    V: Send + Clone,
-{
-}
+use crate::common::{spawn, Clock, ClockedDataRepr, ClockedUpdateRepr, Message};
 
 #[derive(Clone)]
 pub struct Kvs<K, V>
@@ -94,47 +68,6 @@ where
     }
 }
 
-type Matrix<K, V> = Vec<(Receiver<Message<K, V>>, Vec<Sender<Message<K, V>>>)>;
-type MessageSender<K, V> = Sender<Message<K, V>>;
-
-fn make_communication_matrix<K, V>(n: u64) -> (Matrix<K, V>, Vec<MessageSender<K, V>>)
-where
-    K: Send + Clone,
-    V: Ord + Send + Clone,
-{
-    let mut receivers = Vec::new();
-    let mut senders: Vec<_> = (0..n).map(|_| Vec::new()).collect();
-    let mut extra_senders = Vec::new();
-    for _ in 0..n {
-        let (sender, receiver) = channel(8192);
-        receivers.push(receiver);
-        for s in senders.iter_mut() {
-            s.push(sender.clone())
-        }
-        extra_senders.push(sender);
-    }
-
-    (
-        receivers.into_iter().zip(senders.into_iter()).collect(),
-        extra_senders,
-    )
-}
-
-fn spawn<F, K, V>(n: u64, f: F) -> Vec<Sender<Message<K, V>>>
-where
-    F: 'static + Fn(usize, Receiver<Message<K, V>>, Vec<Sender<Message<K, V>>>) + Send + Clone,
-    K: 'static + Send + Clone,
-    V: 'static + Ord + Send + Clone,
-{
-    let (matrix, senders) = make_communication_matrix(n);
-    for (i, (receiver, senders)) in matrix.into_iter().enumerate() {
-        let f = f.clone();
-        std::thread::spawn(move || f(i, receiver, senders));
-    }
-
-    senders
-}
-
 // TODO(justin): this thing is hacky.
 #[derive(Debug, Copy, Clone)]
 struct PerQuantumPulser {
@@ -158,12 +91,6 @@ impl Iterator for PerQuantumPulser {
         }
     }
 }
-
-type ClockRepr = MapUnionRepr<tag::HASH_MAP, usize, MaxRepr<u64>>;
-type ClockUpdateRepr = MapUnionRepr<tag::SINGLE, usize, MaxRepr<u64>>;
-
-type ClockedDataRepr<V> = DomPairRepr<ClockRepr, MaxRepr<V>>;
-type ClockedUpdateRepr<V> = DomPairRepr<ClockUpdateRepr, MaxRepr<V>>;
 
 fn spawn_threads<K, V>(workers: u64) -> Vec<Sender<Message<K, V>>>
 where
