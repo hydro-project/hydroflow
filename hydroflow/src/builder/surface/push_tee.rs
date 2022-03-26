@@ -1,6 +1,7 @@
-use super::PushSurfaceReversed;
+use super::{AssembleFlowGraph, PushSurfaceReversed};
 
 use crate::builder::build::push_tee::TeePushBuild;
+use crate::scheduled::graph::NodeId;
 use crate::scheduled::handoff::handoff_list::{PortList, PortListSplit};
 use crate::scheduled::port::SEND;
 use crate::scheduled::type_list::Extend;
@@ -30,6 +31,25 @@ where
 {
     pub fn new(next_a: NextA, next_b: NextB) -> Self {
         Self { next_a, next_b }
+    }
+}
+impl<NextA, NextB> AssembleFlowGraph for TeePushSurfaceReversed<NextA, NextB>
+where
+    NextA: PushSurfaceReversed + AssembleFlowGraph,
+    NextB: PushSurfaceReversed<ItemIn = NextA::ItemIn> + AssembleFlowGraph,
+    NextA::ItemIn: Clone,
+
+    NextA::OutputHandoffs: Extend<NextB::OutputHandoffs>,
+    <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended:
+        PortList<SEND> + PortListSplit<SEND, NextA::OutputHandoffs, Suffix = NextB::OutputHandoffs>,
+{
+    fn insert_dep(&self, e: &mut super::FlowGraph) -> NodeId {
+        let my_id = e.add_node("Tee");
+        let next_a_id = self.next_a.insert_dep(e);
+        let next_b_id = self.next_b.insert_dep(e);
+        e.add_edge((my_id, next_a_id));
+        e.add_edge((my_id, next_b_id));
+        my_id
     }
 }
 

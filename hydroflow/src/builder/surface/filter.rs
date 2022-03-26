@@ -1,8 +1,9 @@
-use super::{BaseSurface, PullSurface, PushSurface, PushSurfaceReversed};
+use super::{AssembleFlowGraph, BaseSurface, PullSurface, PushSurface, PushSurfaceReversed};
 
 use crate::builder::build::pull_filter::FilterPullBuild;
 use crate::builder::build::push_filter::FilterPushBuild;
 use crate::scheduled::context::Context;
+use crate::scheduled::graph::NodeId;
 
 pub struct FilterSurface<Prev, Func>
 where
@@ -43,6 +44,18 @@ where
         (connect, build)
     }
 }
+impl<Prev, Func> AssembleFlowGraph for FilterSurface<Prev, Func>
+where
+    Prev: PullSurface + AssembleFlowGraph,
+    Func: FnMut(&Context<'_>, &Prev::ItemOut) -> bool,
+{
+    fn insert_dep(&self, e: &mut super::FlowGraph) -> NodeId {
+        let my_id = e.add_node("Filter");
+        let prev_id = self.prev.insert_dep(e);
+        e.add_edge((prev_id, my_id));
+        my_id
+    }
+}
 
 impl<Prev, Func> PushSurface for FilterSurface<Prev, Func>
 where
@@ -76,6 +89,18 @@ where
 {
     pub fn new(next: Next, func: Func) -> Self {
         Self { next, func }
+    }
+}
+impl<Next, Func> AssembleFlowGraph for FilterPushSurfaceReversed<Next, Func>
+where
+    Next: PushSurfaceReversed + AssembleFlowGraph,
+    Func: FnMut(&Context<'_>, &Next::ItemIn) -> bool,
+{
+    fn insert_dep(&self, e: &mut super::FlowGraph) -> NodeId {
+        let my_id = e.add_node("Filter");
+        let next_id = self.next.insert_dep(e);
+        e.add_edge((my_id, next_id));
+        my_id
     }
 }
 

@@ -2,6 +2,7 @@ use crate::protocol::{CoordMsg, MsgType, SubordResponse};
 use crate::Opts;
 use hydroflow::builder::prelude::*;
 use hydroflow::scheduled::handoff::VecHandoff;
+use std::{thread, time::Duration};
 
 use rand::Rng;
 fn decide(odds: u8) -> bool {
@@ -71,6 +72,10 @@ pub(crate) async fn run_subordinate(opts: Opts, coordinator: String) {
         p1_recv_pull
             .flatten()
             .map(move |msg| {
+                if opts.port == 12349 {
+                    println!("Delay Addr: {:?}", opts.addr);
+                    thread::sleep(Duration::from_millis(4000));
+                }
                 println!("Xid {:?}: got a {:?}", msg.xid, msg.mtype);
                 let ret = SubordResponse {
                     xid: msg.xid,
@@ -96,6 +101,7 @@ pub(crate) async fn run_subordinate(opts: Opts, coordinator: String) {
         p2_recv_pull
             .flatten()
             .map(move |msg| {
+                // check if opts.addr is equal localhost 12349 
                 println!("Xid {:?}: got a {:?}", msg.xid, msg.mtype);
                 let ret = SubordResponse {
                     xid: msg.xid,
@@ -139,5 +145,8 @@ pub(crate) async fn run_subordinate(opts: Opts, coordinator: String) {
 
     let mut hf = hf.build();
     println!("Opening on port {}", opts.port);
+    if opts.mermaid {
+        println!("{}", hf.render_mermaid());
+    }
     hf.run_async().await.unwrap();
 }

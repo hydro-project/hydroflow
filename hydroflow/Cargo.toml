@@ -28,6 +28,9 @@ name = "two_pc"
 [[example]]
 name = "kvs"
 
+[[example]]
+name = "multi_paxos"
+
 [dependencies]
 bincode = "1.3"
 byteorder = "1.4.3"

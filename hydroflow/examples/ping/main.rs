@@ -27,8 +27,6 @@ struct Opts {
     port: u16,
     #[clap(long)]
     addr: String,
-    #[clap(long)]
-    mermaid: bool,
 }
 
 #[tokio::main]

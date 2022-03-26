@@ -12,9 +12,23 @@ pub(crate) mod subgraph;
 pub mod type_list;
 pub mod util;
 
-pub type SubgraphId = usize;
-pub type HandoffId = usize;
-pub type StateId = usize;
+/// A subgraph's ID. Invalid if used in a different [`graph::Hydroflow`]
+/// instance than the original that created it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[repr(transparent)]
+pub struct SubgraphId(pub(crate) usize);
+
+/// A handoff's ID. Invalid if used in a different [`graph::Hydroflow`]
+/// instance than the original that created it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[repr(transparent)]
+pub struct HandoffId(pub(crate) usize);
+
+/// A staten handle's ID. Invalid if used in a different [`graph::Hydroflow`]
+/// instance than the original that created it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[repr(transparent)]
+pub struct StateId(pub(crate) usize);
 
 #[cfg(test)]
 mod tests {

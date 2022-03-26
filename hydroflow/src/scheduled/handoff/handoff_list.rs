@@ -43,7 +43,7 @@ where
 
         out_handoff_ids.push(this.handoff_id);
 
-        let handoff = handoffs.get_mut(this.handoff_id).unwrap();
+        let handoff = handoffs.get_mut(this.handoff_id.0).unwrap();
         if let Some(pred) = pred {
             handoff.preds.push(pred);
         }
@@ -57,7 +57,7 @@ where
     fn make_ctx<'a>(&self, handoffs: &'a [HandoffData]) -> Self::Ctx<'a> {
         let (this, rest) = self;
         let handoff = handoffs
-            .get(this.handoff_id)
+            .get(this.handoff_id.0)
             .unwrap()
             .handoff
             .any_ref()

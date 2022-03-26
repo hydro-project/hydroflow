@@ -1,7 +1,8 @@
 use std::any::Any;
 use std::borrow::Cow;
 use std::cell::Cell;
-use std::collections::VecDeque;
+use std::collections::{HashMap, HashSet, VecDeque};
+use std::fmt::Write;
 use std::marker::PhantomData;
 use std::num::NonZeroUsize;
 
@@ -86,7 +87,7 @@ impl Hydroflow {
 
         while let Some(sg_id) = self.stratum_queues[self.current_stratum].pop_front() {
             {
-                let sg_data = &mut self.subgraphs[sg_id];
+                let sg_data = &mut self.subgraphs[sg_id.0];
                 // This must be true for the subgraph to be enqueued.
                 assert!(sg_data.is_scheduled.take());
 
@@ -101,11 +102,11 @@ impl Hydroflow {
                 sg_data.subgraph.run(context);
             }
 
-            for &handoff_id in self.subgraphs[sg_id].succs.iter() {
-                let handoff = &self.handoffs[handoff_id];
+            for &handoff_id in self.subgraphs[sg_id.0].succs.iter() {
+                let handoff = &self.handoffs[handoff_id.0];
                 if !handoff.handoff.is_bottom() {
                     for &succ_id in handoff.succs.iter() {
-                        let succ_sg_data = &self.subgraphs[succ_id];
+                        let succ_sg_data = &self.subgraphs[succ_id.0];
                         if succ_sg_data.is_scheduled.get() {
                             // Skip if task is already scheduled.
                             continue;
@@ -162,6 +163,7 @@ impl Hydroflow {
     pub async fn run_async(&mut self) -> Option<!> {
         loop {
             self.tick();
+            println!("TICKCKCCK");
             self.recv_events_async().await?;
             tokio::task::yield_now().await;
         }
@@ -173,7 +175,7 @@ impl Hydroflow {
     pub fn try_recv_events(&mut self) -> usize {
         let mut enqueued_count = 0;
         while let Ok(sg_id) = self.event_queue_recv.try_recv() {
-            let sg_data = &self.subgraphs[sg_id];
+            let sg_data = &self.subgraphs[sg_id.0];
             if !sg_data.is_scheduled.replace(true) {
                 self.stratum_queues[sg_data.stratum].push_back(sg_id);
                 enqueued_count += 1;
@@ -187,7 +189,7 @@ impl Hydroflow {
     pub fn recv_events(&mut self) -> Option<NonZeroUsize> {
         loop {
             let sg_id = self.event_queue_recv.blocking_recv()?;
-            let sg_data = &self.subgraphs[sg_id];
+            let sg_data = &self.subgraphs[sg_id.0];
             if !sg_data.is_scheduled.replace(true) {
                 self.stratum_queues[sg_data.stratum].push_back(sg_id);
 
@@ -202,7 +204,7 @@ impl Hydroflow {
     pub async fn recv_events_async(&mut self) -> Option<NonZeroUsize> {
         loop {
             let sg_id = self.event_queue_recv.recv().await?;
-            let sg_data = &self.subgraphs[sg_id];
+            let sg_data = &self.subgraphs[sg_id.0];
             if !sg_data.is_scheduled.replace(true) {
                 self.stratum_queues[sg_data.stratum].push_back(sg_id);
 
@@ -245,7 +247,7 @@ impl Hydroflow {
         W: 'static + PortList<SEND>,
         F: 'static + for<'ctx> FnMut(&'ctx Context<'ctx>, R::Ctx<'ctx>, W::Ctx<'ctx>),
     {
-        let sg_id = self.subgraphs.len();
+        let sg_id = SubgraphId(self.subgraphs.len());
 
         let (mut subgraph_preds, mut subgraph_succs) = Default::default();
         recv_ports.set_graph_meta(&mut *self.handoffs, None, Some(sg_id), &mut subgraph_preds);
@@ -262,6 +264,7 @@ impl Hydroflow {
             subgraph,
             subgraph_preds,
             subgraph_succs,
+            FlowGraph::default(),
             true,
         ));
         self.init_stratum(stratum);
@@ -304,23 +307,23 @@ impl Hydroflow {
         F: 'static
             + for<'ctx> FnMut(&'ctx Context<'ctx>, &'ctx [&'ctx RecvCtx<R>], &'ctx [&'ctx SendCtx<W>]),
     {
-        let sg_id = self.subgraphs.len();
+        let sg_id = SubgraphId(self.subgraphs.len());
 
         let subgraph_preds = recv_ports.iter().map(|port| port.handoff_id).collect();
         let subgraph_succs = send_ports.iter().map(|port| port.handoff_id).collect();
 
         for recv_port in recv_ports.iter() {
-            self.handoffs[recv_port.handoff_id].succs.push(sg_id);
+            self.handoffs[recv_port.handoff_id.0].succs.push(sg_id);
         }
         for send_port in send_ports.iter() {
-            self.handoffs[send_port.handoff_id].preds.push(sg_id);
+            self.handoffs[send_port.handoff_id.0].preds.push(sg_id);
         }
 
         let subgraph = move |context: Context<'_>| {
             let recvs: Vec<&RecvCtx<R>> = recv_ports
                 .iter()
                 .map(|hid| hid.handoff_id)
-                .map(|hid| context.handoffs.get(hid).unwrap())
+                .map(|hid| context.handoffs.get(hid.0).unwrap())
                 .map(|h_data| {
                     h_data
                         .handoff
@@ -334,7 +337,7 @@ impl Hydroflow {
             let sends: Vec<&SendCtx<W>> = send_ports
                 .iter()
                 .map(|hid| hid.handoff_id)
-                .map(|hid| context.handoffs.get(hid).unwrap())
+                .map(|hid| context.handoffs.get(hid.0).unwrap())
                 .map(|h_data| {
                     h_data
                         .handoff
@@ -353,6 +356,7 @@ impl Hydroflow {
             subgraph,
             subgraph_preds,
             subgraph_succs,
+            FlowGraph::default(),
             true,
         ));
         self.init_stratum(stratum);
@@ -375,7 +379,7 @@ impl Hydroflow {
         Name: Into<Cow<'static, str>>,
         H: 'static + Handoff,
     {
-        let handoff_id: HandoffId = self.handoffs.len();
+        let handoff_id = HandoffId(self.handoffs.len());
 
         // Create and insert handoff.
         let handoff = H::default();
@@ -397,7 +401,7 @@ impl Hydroflow {
     where
         T: Any,
     {
-        let state_id: StateId = self.states.len();
+        let state_id = StateId(self.states.len());
 
         let state_data = StateData {
             state: Box::new(state),
@@ -408,6 +412,109 @@ impl Hydroflow {
             state_id,
             _phantom: PhantomData,
         }
+    }
+
+    pub fn add_dependencies(&mut self, sg_id: SubgraphId, deps: FlowGraph) {
+        self.subgraphs[sg_id.0].dependencies.append(deps);
+    }
+
+    fn mermaid_mangle(
+        &self,
+        name: Cow<'static, str>,
+        sg_id: SubgraphId,
+        node_id: NodeId,
+    ) -> String {
+        if name.starts_with("Handoff") {
+            let handoff_id = self.subgraphs[sg_id.0].dependencies.handoff_ids[&node_id];
+            let handoff = &self.handoffs[handoff_id.0];
+            format!("Handoff_{}[\\{}/]", handoff_id.0, handoff.name)
+        } else if &*name == "PullToPush" {
+            format!("{}.{}[/{}\\]", sg_id.0, node_id.0, name)
+        } else {
+            format!("{}.{}[{}]", sg_id.0, node_id.0, name)
+        }
+    }
+
+    pub fn render_mermaid(&self) -> String {
+        let mut output = String::new();
+        self.write_mermaid(&mut output).unwrap();
+        output
+    }
+
+    pub fn write_mermaid(&self, write: &mut impl Write) -> std::fmt::Result {
+        writeln!(write, "graph TD")?;
+        for (sg_id, subgraph) in self.subgraphs.iter().enumerate() {
+            let sg_id = SubgraphId(sg_id);
+            let d = &subgraph.dependencies;
+
+            if !d.edges.is_empty() {
+                writeln!(write, "subgraph stratum{}", subgraph.stratum)?;
+                writeln!(write, "subgraph {}{}", subgraph.name, sg_id.0)?;
+                for &(src, dst) in d.edges.iter() {
+                    let src = self.mermaid_mangle(d.node_names[src.0].clone(), sg_id, src);
+                    let dst = self.mermaid_mangle(d.node_names[dst.0].clone(), sg_id, dst);
+                    writeln!(write, "{} --> {}", src, dst)?;
+                }
+                writeln!(write, "end")?;
+                writeln!(write, "end")?;
+            }
+        }
+        Ok(())
+    }
+}
+
+/// A FlowGraph nodes's ID.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[repr(transparent)]
+pub struct NodeId(pub(crate) usize);
+
+/// A graph representation of a Hydroflow instance's graph structure.
+#[derive(Debug, Default)]
+pub struct FlowGraph {
+    node_names: Vec<Cow<'static, str>>,
+    edges: HashSet<(NodeId, NodeId)>,
+    handoff_ids: HashMap<NodeId, HandoffId>,
+}
+
+impl FlowGraph {
+    pub fn new() -> Self {
+        let (node_names, edges, handoff_ids) = Default::default();
+        Self {
+            node_names,
+            edges,
+            handoff_ids,
+        }
+    }
+
+    pub fn add_node(&mut self, node_info: impl Into<Cow<'static, str>>) -> NodeId {
+        let current_index = self.node_names.len();
+        self.node_names.insert(current_index, node_info.into());
+        NodeId(current_index)
+    }
+
+    pub fn add_edge(&mut self, edge: (NodeId, NodeId)) {
+        self.edges.insert(edge);
+    }
+
+    pub fn add_handoff_id(&mut self, node_id: NodeId, handoff_id: HandoffId) {
+        self.handoff_ids.insert(node_id, handoff_id);
+    }
+
+    pub fn append(&mut self, mut other: FlowGraph) {
+        let base = self.node_names.len();
+        self.node_names.append(&mut other.node_names);
+        self.edges.extend(
+            other
+                .edges
+                .into_iter()
+                .map(|(from, to)| (NodeId(from.0 + base), NodeId(to.0 + base))),
+        );
+        self.handoff_ids.extend(
+            other
+                .handoff_ids
+                .into_iter()
+                .map(|(key, val)| (NodeId(key.0 + base), val)),
+        );
     }
 }
 
@@ -460,6 +567,7 @@ struct SubgraphData {
     #[allow(dead_code)]
     preds: Vec<HandoffId>,
     succs: Vec<HandoffId>,
+    dependencies: FlowGraph,
     /// If this subgraph is scheduled in [`Hydroflow::stratum_queues`].
     /// [`Cell`] allows modifying this field when iterating `Self::preds` or
     /// `Self::succs`, as all `SubgraphData` are owned by the same vec
@@ -473,6 +581,7 @@ impl SubgraphData {
         subgraph: impl 'static + Subgraph,
         preds: Vec<HandoffId>,
         succs: Vec<HandoffId>,
+        dependencies: FlowGraph,
         is_scheduled: bool,
     ) -> Self {
         Self {
@@ -481,6 +590,7 @@ impl SubgraphData {
             subgraph: Box::new(subgraph),
             preds,
             succs,
+            dependencies,
             is_scheduled: Cell::new(is_scheduled),
         }
     }

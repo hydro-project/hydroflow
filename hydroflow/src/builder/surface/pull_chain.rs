@@ -1,6 +1,7 @@
-use super::{BaseSurface, PullSurface};
+use super::{AssembleFlowGraph, BaseSurface, PullSurface};
 
 use crate::builder::build::pull_chain::ChainPullBuild;
+use crate::scheduled::graph::{FlowGraph, NodeId};
 use crate::scheduled::handoff::handoff_list::{PortList, PortListSplit};
 use crate::scheduled::port::RECV;
 use crate::scheduled::type_list::Extend;
@@ -28,6 +29,24 @@ where
 {
     pub fn new(prev_a: PrevA, prev_b: PrevB) -> Self {
         Self { prev_a, prev_b }
+    }
+}
+impl<PrevA, PrevB> AssembleFlowGraph for ChainPullSurface<PrevA, PrevB>
+where
+    PrevA: PullSurface + AssembleFlowGraph,
+    PrevB: PullSurface<ItemOut = PrevA::ItemOut> + AssembleFlowGraph,
+
+    PrevA::InputHandoffs: Extend<PrevB::InputHandoffs>,
+    <PrevA::InputHandoffs as Extend<PrevB::InputHandoffs>>::Extended:
+        PortList<RECV> + PortListSplit<RECV, PrevA::InputHandoffs, Suffix = PrevB::InputHandoffs>,
+{
+    fn insert_dep(&self, e: &mut FlowGraph) -> NodeId {
+        let my_id = e.add_node("Chain");
+        let prev_a_id = self.prev_a.insert_dep(e);
+        let prev_b_id = self.prev_b.insert_dep(e);
+        e.add_edge((prev_a_id, my_id));
+        e.add_edge((prev_b_id, my_id));
+        my_id
     }
 }
 

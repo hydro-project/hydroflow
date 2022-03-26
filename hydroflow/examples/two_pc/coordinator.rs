@@ -190,7 +190,9 @@ pub(crate) async fn run_coordinator(opts: Opts, subordinates: Vec<String>) {
                     // Count up the ballots for transactions, partitioned by transaction id.
                     // Also check for aborts.
                     let commit = msg.mtype == MsgType::Commit;
+                    println!("Message: {:?}", msg);
                     let v = ballot_counts.entry(msg.xid).or_insert((0, msg, commit));
+                    println!("v.0: {:?}", v.0);
                     v.0 += 1;
                     v.2 = v.2 && commit;
                     v.clone()
@@ -198,7 +200,9 @@ pub(crate) async fn run_coordinator(opts: Opts, subordinates: Vec<String>) {
             )
             .cross_join(subordinate_max_count_tee_2_pull.flatten())
             .filter_map(move |((recv_count, msg, commit), count)| {
+                println!("Counts: {:?}, Message: {:?}", recv_count, msg);
                 if recv_count == count {
+                    println!("one equalled count\n\n\n");
                     // Abort if any subordinate voted to Abort
                     Some(CoordMsg {
                         xid: msg.xid,
@@ -281,5 +285,8 @@ pub(crate) async fn run_coordinator(opts: Opts, subordinates: Vec<String>) {
         .map(Some)
         .for_each(|x| subordinates_in.give(x));
     subordinates_in.flush();
+    if opts.mermaid {
+        println!("{}", hf.render_mermaid());
+    }
     hf.run_async().await.unwrap();
 }

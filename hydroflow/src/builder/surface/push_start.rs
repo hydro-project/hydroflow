@@ -1,4 +1,6 @@
-use super::{BaseSurface, PushSurface, PushSurfaceReversed};
+use crate::scheduled::graph::NodeId;
+
+use super::{AssembleFlowGraph, BaseSurface, PushSurface, PushSurfaceReversed};
 
 use std::marker::PhantomData;
 
@@ -17,6 +19,13 @@ impl<Out> Default for StartPushSurface<Out> {
 impl<Out> StartPushSurface<Out> {
     pub fn new() -> Self {
         Default::default()
+    }
+}
+
+impl<Out> AssembleFlowGraph for StartPushSurface<Out> {
+    fn insert_dep(&self, e: &mut super::FlowGraph) -> NodeId {
+        let my_id = e.add_node("Start");
+        my_id
     }
 }
 
