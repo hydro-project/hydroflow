@@ -14,7 +14,7 @@ pub struct ProposerMsg {
     pub slot: u16,
     pub ballot: u16,
     pub pid: u16,
-    pub val: u16,
+    pub val: i32,
     pub mtype: MsgType,
 }
 
@@ -23,9 +23,10 @@ pub struct AcceptorResponse {
     pub slot: u16,
     pub ballot: u16,
     pub pid: u16,
-    pub accepted_val: u16, 
-    pub accepted_ballot: u16,
+    pub accepted_val: Option<i32>,
+    pub accepted_ballot: Option<u16>,
     // pub accepted_pid: u16,
-    pub val: u16,
+    pub win: bool, // whether the acceptor has chosen the given proposer as a leader
+    pub val: Option<i32>,
     pub mtype: MsgType,
 }
