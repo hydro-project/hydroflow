@@ -1,5 +1,5 @@
 use serde::Serialize;
-use std::fmt;
+use std::fmt::{Display, Formatter, Result};
 
 pub mod context;
 pub mod graph;
@@ -20,8 +20,8 @@ pub mod util;
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize)]
 #[repr(transparent)]
 pub struct SubgraphId(pub(crate) usize);
-impl fmt::Display for SubgraphId {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl Display for SubgraphId {
+    fn fmt(&self, f: &mut Formatter) -> Result {
         write!(f, "{}", self.0)
     }
 }
@@ -31,8 +31,8 @@ impl fmt::Display for SubgraphId {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize)]
 #[repr(transparent)]
 pub struct HandoffId(pub(crate) usize);
-impl fmt::Display for HandoffId {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl Display for HandoffId {
+    fn fmt(&self, f: &mut Formatter) -> Result {
         write!(f, "{}", self.0)
     }
 }
