@@ -19,4 +19,4 @@ cargo run -p hydroflow --example chat -- --name "bob" --role client --port 12347
 
 If you type in the client terminals the messages should appear everywhere.
 
-Adding the `--mermaid` flag to the end of the command lines above will print out a [mermaid](https://mermaid-js.github.io/) graph of the program.
+Adding the `--graph <graph_type>` flag to the end of the command lines above will print out a node-and-edge diagram of the program. Supported values for `<graph_type>` include [mermaid](https://mermaid-js.github.io/) and [dot](https://graphviz.org/doc/info/lang.html).

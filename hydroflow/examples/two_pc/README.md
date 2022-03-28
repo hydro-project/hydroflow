@@ -129,3 +129,5 @@ Now, in the coordinator process you can type an integer at `stdin`. Each integer
 and a two-phase commit process is run for that transaction. Votes to commit or abort are randomized.
 
 You should see logging information on screen at both the coordinator and the subordinates.
+
+Adding the `--graph <graph_type>` flag to the end of the command lines above will print out a node-and-edge diagram of the program. Supported values for `<graph_type>` include [mermaid](https://mermaid-js.github.io/) and [dot](https://graphviz.org/doc/info/lang.html).

@@ -1,4 +1,4 @@
-use crate::Opts;
+use crate::{GraphType, Opts};
 
 use crate::protocol::{ChatMessage, MemberRequest, MemberResponse};
 use chrono::prelude::*;
@@ -80,8 +80,16 @@ pub(crate) async fn run_server(opts: Opts) {
 
     let mut hf = hf.build();
 
-    if opts.mermaid {
-        println!("{}", hf.render_mermaid());
+    match opts.graph {
+        GraphType::Mermaid => {
+            println!("{}", hf.generate_mermaid())
+        }
+        GraphType::Dot => {
+            println!("{}", hf.generate_dot())
+        }
+        GraphType::JSON => {
+            println!("{}", hf.generate_json())
+        }
     }
 
     hf.run_async().await.unwrap();

@@ -2,25 +2,25 @@ use chrono::prelude::*;
 use colored::Colorize;
 
 use crate::protocol::{ChatMessage, MemberRequest, MemberResponse};
-use crate::Opts;
+use crate::{GraphType, Opts};
 use hydroflow::builder::prelude::*;
 use hydroflow::scheduled::handoff::VecHandoff;
 
 pub(crate) async fn run_client(opts: Opts) {
-    let mut df = HydroflowBuilder::default();
+    let mut hf = HydroflowBuilder::default();
 
     // setup connection req/resp ports
-    let connect_req = df.hydroflow.outbound_tcp_vertex::<MemberRequest>().await;
-    let connect_req = df.wrap_output(connect_req);
+    let connect_req = hf.hydroflow.outbound_tcp_vertex::<MemberRequest>().await;
+    let connect_req = hf.wrap_output(connect_req);
     let (connect_response_port, connect_resp) =
-        df.hydroflow.inbound_tcp_vertex::<MemberResponse>().await;
-    let connect_resp = df.wrap_input(connect_resp);
+        hf.hydroflow.inbound_tcp_vertex::<MemberResponse>().await;
+    let connect_resp = hf.wrap_input(connect_resp);
 
     // setup message send/recv ports
-    let (messages_port, messages_recv) = df.hydroflow.inbound_tcp_vertex::<ChatMessage>().await;
-    let messages_recv = df.wrap_input(messages_recv);
-    let messages_send = df.hydroflow.outbound_tcp_vertex().await;
-    let messages_send = df.wrap_output(messages_send);
+    let (messages_port, messages_recv) = hf.hydroflow.inbound_tcp_vertex::<ChatMessage>().await;
+    let messages_recv = hf.wrap_input(messages_recv);
+    let messages_send = hf.hydroflow.outbound_tcp_vertex().await;
+    let messages_send = hf.wrap_output(messages_send);
 
     // setup stdio input handler
     let text_out = {
@@ -29,7 +29,7 @@ pub(crate) async fn run_client(opts: Opts) {
         let reader = tokio::io::BufReader::new(tokio::io::stdin());
         let lines = tokio_stream::wrappers::LinesStream::new(reader.lines())
             .map(|result| Some(result.expect("Failed to read stdin as UTF-8.")));
-        df.add_input_from_stream::<_, _, VecHandoff<String>, _>("stdin", lines)
+        hf.add_input_from_stream::<_, _, VecHandoff<String>, _>("stdin", lines)
     };
 
     // format addresses
@@ -46,7 +46,7 @@ pub(crate) async fn run_client(opts: Opts) {
             messages_addr,
         },
     );
-    df.add_subgraph(
+    hf.add_subgraph(
         "my_info",
         std::iter::once(Some(init_info))
             .into_hydroflow()
@@ -73,10 +73,10 @@ pub(crate) async fn run_client(opts: Opts) {
         })
         .map(Some)
         .push_to(messages_send);
-    df.add_subgraph("sending messages", sg);
+    hf.add_subgraph("sending messages", sg);
 
     // set up the flow for receiving messages
-    df.add_subgraph(
+    hf.add_subgraph(
         "receiving messages",
         messages_recv
             .flatten()
@@ -97,9 +97,17 @@ pub(crate) async fn run_client(opts: Opts) {
             }),
     );
 
-    let mut df = df.build();
-    if opts.mermaid {
-        println!("{}", df.render_mermaid());
+    let mut hf = hf.build();
+    match opts.graph {
+        GraphType::Mermaid => {
+            println!("{}", hf.generate_mermaid())
+        }
+        GraphType::Dot => {
+            println!("{}", hf.generate_dot())
+        }
+        GraphType::JSON => {
+            println!("{}", hf.generate_json())
+        }
     }
-    df.run_async().await.unwrap();
+    hf.run_async().await.unwrap();
 }

@@ -21,6 +21,13 @@ enum Role {
     Subordinate,
 }
 
+#[derive(Clone, ArgEnum, Debug)]
+enum GraphType {
+    Mermaid,
+    Dot,
+    JSON,
+}
+
 #[derive(Parser, Debug)]
 struct Opts {
     #[clap(long)]
@@ -31,8 +38,8 @@ struct Opts {
     port: u16,
     #[clap(long)]
     addr: String,
-    #[clap(long)]
-    mermaid: bool,
+    #[clap(arg_enum, long)]
+    graph: GraphType,
 }
 
 #[derive(Deserialize, Debug)]

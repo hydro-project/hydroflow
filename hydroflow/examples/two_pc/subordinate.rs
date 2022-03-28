@@ -1,5 +1,5 @@
 use crate::protocol::{CoordMsg, MsgType, SubordResponse};
-use crate::Opts;
+use crate::{GraphType, Opts};
 use hydroflow::builder::prelude::*;
 use hydroflow::scheduled::handoff::VecHandoff;
 
@@ -139,8 +139,16 @@ pub(crate) async fn run_subordinate(opts: Opts, coordinator: String) {
 
     let mut hf = hf.build();
     println!("Opening on port {}", opts.port);
-    if opts.mermaid {
-        println!("{}", hf.render_mermaid());
+    match opts.graph {
+        GraphType::Mermaid => {
+            println!("{}", hf.generate_mermaid())
+        }
+        GraphType::Dot => {
+            println!("{}", hf.generate_dot())
+        }
+        GraphType::JSON => {
+            println!("{}", hf.generate_json())
+        }
     }
     hf.run_async().await.unwrap();
 }
