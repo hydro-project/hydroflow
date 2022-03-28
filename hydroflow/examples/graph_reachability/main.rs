@@ -1,11 +1,17 @@
-use clap::Parser;
+use clap::{ArgEnum, Parser};
 use hydroflow::builder::prelude::*;
 use hydroflow::scheduled::handoff::VecHandoff;
 
+#[derive(Clone, ArgEnum, Debug)]
+enum GraphType {
+    Mermaid,
+    Dot,
+    JSON,
+}
 #[derive(Parser, Debug)]
 struct Opts {
-    #[clap(long)]
-    mermaid: bool,
+    #[clap(arg_enum, long)]
+    graph: GraphType,
 }
 pub fn main() {
     let opts = Opts::parse();
@@ -28,10 +34,18 @@ pub fn main() {
             .push_to(send_loop),
     );
 
-    let mut hydroflow = builder.build();
-    if opts.mermaid {
-        println!("{}", hydroflow.render_mermaid())
-    };
+    let mut hf = builder.build();
+    match opts.graph {
+        GraphType::Mermaid => {
+            println!("{}", hf.generate_mermaid())
+        }
+        GraphType::Dot => {
+            println!("{}", hf.generate_dot())
+        }
+        GraphType::JSON => {
+            println!("{}", hf.generate_json())
+        }
+    }
 
     println!("A");
 
@@ -39,11 +53,11 @@ pub fn main() {
     send_edges.give(Some((0, 3)));
     send_edges.give(Some((3, 6)));
     send_edges.flush();
-    hydroflow.tick();
+    hf.tick();
 
     println!("B");
 
     send_edges.give(Some((6, 5)));
     send_edges.flush();
-    hydroflow.tick();
+    hf.tick();
 }

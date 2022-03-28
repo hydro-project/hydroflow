@@ -1,13 +1,19 @@
-use clap::Parser;
+use clap::{ArgEnum, Parser};
 use hydroflow::builder::prelude::*;
 use hydroflow::scheduled::handoff::VecHandoff;
 
 //This example detects size three cliques in a graph. Size three cliques are also known as triangles.
 //The equivalent datalog program would be Triangle(x,y,z) := Edge(x,y), Edge(y,z), Edge(z,x)
+#[derive(Parser, Debug, Clone, ArgEnum)]
+enum GraphType {
+    Mermaid,
+    Dot,
+    JSON,
+}
 #[derive(Parser, Debug)]
 struct Opts {
-    #[clap(long)]
-    mermaid: bool,
+    #[clap(arg_enum, long)]
+    graph: GraphType,
 }
 pub fn main() {
     let opts = Opts::parse();
@@ -43,10 +49,18 @@ pub fn main() {
             .for_each(|_| {}),
     );
 
-    let mut hydroflow = builder.build();
-    if opts.mermaid {
-        println!("{}", hydroflow.render_mermaid())
-    };
+    let mut hf = builder.build();
+    match opts.graph {
+        GraphType::Mermaid => {
+            println!("{}", hf.generate_mermaid())
+        }
+        GraphType::Dot => {
+            println!("{}", hf.generate_dot())
+        }
+        GraphType::JSON => {
+            println!("{}", hf.generate_json())
+        }
+    }
 
     println!("A");
 
@@ -54,7 +68,7 @@ pub fn main() {
     send_edges.give(Some((0, 3)));
     send_edges.give(Some((3, 6)));
     send_edges.flush();
-    hydroflow.tick();
+    hf.tick();
 
     println!("B");
 
@@ -62,5 +76,5 @@ pub fn main() {
     send_edges.give(Some((6, 0))); //Creates a size three clique (triangle)
     send_edges.give(Some((10, 6))); //Creates a size three clique (triangle)
     send_edges.flush();
-    hydroflow.tick();
+    hf.tick();
 }

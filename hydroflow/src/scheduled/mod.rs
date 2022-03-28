@@ -1,3 +1,6 @@
+use serde::Serialize;
+use std::fmt::{Display, Formatter, Result};
+
 pub mod context;
 pub mod graph;
 pub mod graph_ext;
@@ -14,15 +17,25 @@ pub mod util;
 
 /// A subgraph's ID. Invalid if used in a different [`graph::Hydroflow`]
 /// instance than the original that created it.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize)]
 #[repr(transparent)]
 pub struct SubgraphId(pub(crate) usize);
+impl Display for SubgraphId {
+    fn fmt(&self, f: &mut Formatter) -> Result {
+        write!(f, "{}", self.0)
+    }
+}
 
 /// A handoff's ID. Invalid if used in a different [`graph::Hydroflow`]
 /// instance than the original that created it.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize)]
 #[repr(transparent)]
 pub struct HandoffId(pub(crate) usize);
+impl Display for HandoffId {
+    fn fmt(&self, f: &mut Formatter) -> Result {
+        write!(f, "{}", self.0)
+    }
+}
 
 /// A staten handle's ID. Invalid if used in a different [`graph::Hydroflow`]
 /// instance than the original that created it.
