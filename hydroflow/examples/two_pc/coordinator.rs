@@ -282,7 +282,10 @@ pub(crate) async fn run_coordinator(opts: Opts, subordinates: Vec<String>) {
         .for_each(|x| subordinates_in.give(x));
     subordinates_in.flush();
     if opts.mermaid {
-        println!("{}", hf.render_mermaid());
+        println!("{}", hf.generate_mermaid());
+    }
+    if opts.dot {
+        println!("{}", hf.generate_dot());
     }
     hf.run_async().await.unwrap();
 }

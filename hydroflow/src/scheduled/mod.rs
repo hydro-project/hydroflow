@@ -1,3 +1,5 @@
+use std::fmt;
+
 pub mod context;
 pub mod graph;
 pub mod graph_ext;
@@ -17,6 +19,15 @@ pub mod util;
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[repr(transparent)]
 pub struct SubgraphId(pub(crate) usize);
+impl fmt::Display for SubgraphId {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // Write strictly the first element into the supplied output
+        // stream: `f`. Returns `fmt::Result` which indicates whether the
+        // operation succeeded or failed. Note that `write!` uses syntax which
+        // is very similar to `println!`.
+        write!(f, "{}", self.0)
+    }
+}
 
 /// A handoff's ID. Invalid if used in a different [`graph::Hydroflow`]
 /// instance than the original that created it.

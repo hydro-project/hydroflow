@@ -434,7 +434,7 @@ impl Hydroflow {
         }
     }
 
-    pub fn render_mermaid(&self) -> String {
+    pub fn generate_mermaid(&self) -> String {
         let mut output = String::new();
         self.write_mermaid(&mut output).unwrap();
         output
@@ -442,22 +442,144 @@ impl Hydroflow {
 
     pub fn write_mermaid(&self, write: &mut impl Write) -> std::fmt::Result {
         writeln!(write, "graph TD")?;
+        let mut indent: usize = 2;
         for (sg_id, subgraph) in self.subgraphs.iter().enumerate() {
             let sg_id = SubgraphId(sg_id);
             let d = &subgraph.dependencies;
 
             if !d.edges.is_empty() {
-                writeln!(write, "subgraph stratum{}", subgraph.stratum)?;
-                writeln!(write, "subgraph {}{}", subgraph.name, sg_id.0)?;
+                writeln!(
+                    write,
+                    "{:tab$}subgraph stratum{}",
+                    "",
+                    subgraph.stratum,
+                    tab = indent
+                )?;
+                indent += 2;
+                writeln!(
+                    write,
+                    "{:tab$}subgraph {}{}",
+                    "",
+                    subgraph.name,
+                    sg_id.0,
+                    tab = indent
+                )?;
+                indent += 2;
                 for &(src, dst) in d.edges.iter() {
                     let src = self.mermaid_mangle(d.node_names[src.0].clone(), sg_id, src);
                     let dst = self.mermaid_mangle(d.node_names[dst.0].clone(), sg_id, dst);
-                    writeln!(write, "{} --> {}", src, dst)?;
+                    writeln!(write, "{:tab$}{} --> {}", "", src, dst, tab = indent)?;
                 }
-                writeln!(write, "end")?;
-                writeln!(write, "end")?;
+                indent -= 2;
+                writeln!(write, "{:tab$}end", "", tab = indent)?;
+                indent -= 2;
+                writeln!(write, "{:tab$}end", "", tab = indent)?;
             }
         }
+        Ok(())
+    }
+
+    fn dot_mangle(&self, name: Cow<'static, str>, sg_id: SubgraphId, node_id: NodeId) -> String {
+        if name.starts_with("Handoff") {
+            let handoff_id = self.subgraphs[sg_id.0].dependencies.handoff_ids[&node_id];
+            format!("Handoff_{}", handoff_id.0)
+        } else {
+            format!("{}.{}", sg_id.0, node_id.0)
+        }
+    }
+
+    pub fn generate_dot(&self) -> String {
+        let mut output = String::new();
+        self.write_dot(&mut output).unwrap();
+        output
+    }
+
+    pub fn write_dot(&self, write: &mut impl Write) -> std::fmt::Result {
+        writeln!(write, "digraph {{")?;
+        let mut indent: usize = 2;
+        for (sg_id, subgraph) in self.subgraphs.iter().enumerate() {
+            let sg_id = SubgraphId(sg_id);
+            let d = &subgraph.dependencies;
+            if !d.edges.is_empty() {
+                // write out nodes
+                writeln!(write, "{:tab$}{{", "", tab = indent)?;
+                indent += 2;
+                writeln!(write, "{:tab$}node [shape=box]", "", tab = indent)?;
+                for (i, name) in d.node_names.iter().enumerate() {
+                    let label = if name.starts_with("Handoff") {
+                        let handoff_id = subgraph.dependencies.handoff_ids[&NodeId(i)];
+                        let handoff = &self.handoffs[handoff_id.0];
+                        handoff.name.clone()
+                    } else {
+                        name.clone()
+                    };
+                    write!(
+                        write,
+                        "{:tab$}\"{}\" [label=\"{}\"",
+                        "",
+                        self.dot_mangle(name.clone(), sg_id, NodeId(i)),
+                        label,
+                        tab = indent
+                    )?;
+                    if name.starts_with("Handoff") {
+                        write!(write, ", shape=invtrapezium")?;
+                    } else if name == "PullToPush" {
+                        write!(write, ", shape=trapezium")?;
+                    }
+                    writeln!(write, "]")?;
+                }
+                indent -= 2;
+                writeln!(write, "{:tab$}}}", "", tab = indent)?;
+
+                // write out edges
+                writeln!(
+                    write,
+                    "{:tab$}subgraph \"cluster stratum {}\" {{",
+                    "",
+                    subgraph.stratum,
+                    tab = indent,
+                )?;
+                indent += 2;
+                writeln!(
+                    write,
+                    "{:tab$}label = \"Stratum {}\"",
+                    "",
+                    subgraph.stratum,
+                    tab = indent,
+                )?;
+                writeln!(
+                    write,
+                    "{:tab$}subgraph \"cluster {}\" {{",
+                    "",
+                    sg_id.0,
+                    tab = indent,
+                )?;
+                indent += 2;
+                writeln!(
+                    write,
+                    "{:tab$}label = \"{}\"",
+                    "",
+                    subgraph.name,
+                    tab = indent
+                )?;
+                for &(src, dst) in d.edges.iter() {
+                    writeln!(
+                        write,
+                        "{:tab$}\"{}\" -> \"{}\"",
+                        "",
+                        self.dot_mangle(d.node_names[src.0].clone(), sg_id, src),
+                        self.dot_mangle(d.node_names[dst.0].clone(), sg_id, dst),
+                        tab = indent,
+                    )?;
+                }
+                indent -= 2;
+                writeln!(write, "{:tab$}}}", "", tab = indent)?;
+                indent -= 2;
+                writeln!(write, "{:tab$}}}", "", tab = indent)?;
+            }
+        }
+        indent -= 2;
+        writeln!(write, "{:tab$}}}", "", tab = indent)?;
         Ok(())
     }
 }

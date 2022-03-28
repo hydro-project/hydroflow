@@ -99,7 +99,10 @@ pub(crate) async fn run_client(opts: Opts) {
 
     let mut df = df.build();
     if opts.mermaid {
-        println!("{}", df.render_mermaid());
+        println!("{}", df.generate_mermaid());
+    }
+    if opts.dot {
+        println!("{}", df.generate_dot());
     }
     df.run_async().await.unwrap();
 }

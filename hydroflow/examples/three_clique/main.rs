@@ -8,6 +8,8 @@ use hydroflow::scheduled::handoff::VecHandoff;
 struct Opts {
     #[clap(long)]
     mermaid: bool,
+    #[clap(long)]
+    dot: bool,
 }
 pub fn main() {
     let opts = Opts::parse();
@@ -45,7 +47,10 @@ pub fn main() {
 
     let mut hydroflow = builder.build();
     if opts.mermaid {
-        println!("{}", hydroflow.render_mermaid())
+        println!("{}", hydroflow.generate_mermaid())
+    };
+    if opts.dot {
+        println!("{}", hydroflow.generate_dot())
     };
 
     println!("A");

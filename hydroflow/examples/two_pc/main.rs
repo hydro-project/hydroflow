@@ -33,6 +33,8 @@ struct Opts {
     addr: String,
     #[clap(long)]
     mermaid: bool,
+    #[clap(long)]
+    dot: bool,
 }
 
 #[derive(Deserialize, Debug)]
