@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::collections::HashSet;
 
+use crate::GraphType;
 use crate::Opts;
 
 use crate::protocol::{CoordMsg, MsgType, SubordResponse};
@@ -281,11 +282,16 @@ pub(crate) async fn run_coordinator(opts: Opts, subordinates: Vec<String>) {
         .map(Some)
         .for_each(|x| subordinates_in.give(x));
     subordinates_in.flush();
-    if opts.mermaid {
-        println!("{}", hf.generate_mermaid());
-    }
-    if opts.dot {
-        println!("{}", hf.generate_dot());
+    match opts.graph {
+        GraphType::Mermaid => {
+            println!("{}", hf.generate_mermaid())
+        }
+        GraphType::Dot => {
+            println!("{}", hf.generate_dot())
+        }
+        GraphType::JSON => {
+            println!("{}", hf.generate_json())
+        }
     }
     hf.run_async().await.unwrap();
 }

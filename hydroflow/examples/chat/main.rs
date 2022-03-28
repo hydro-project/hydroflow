@@ -16,6 +16,12 @@ enum Role {
     Client,
     Server,
 }
+#[derive(Clone, ArgEnum, Debug)]
+enum GraphType {
+    Mermaid,
+    Dot,
+    JSON,
+}
 
 #[derive(Parser, Debug)]
 struct Opts {
@@ -27,10 +33,8 @@ struct Opts {
     port: u16,
     #[clap(long)]
     addr: String,
-    #[clap(long)]
-    mermaid: bool,
-    #[clap(long)]
-    dot: bool,
+    #[clap(arg_enum, long)]
+    graph: GraphType,
 }
 
 #[tokio::main]

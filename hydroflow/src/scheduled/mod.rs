@@ -1,3 +1,4 @@
+use serde::Serialize;
 use std::fmt;
 
 pub mod context;
@@ -16,7 +17,7 @@ pub mod util;
 
 /// A subgraph's ID. Invalid if used in a different [`graph::Hydroflow`]
 /// instance than the original that created it.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize)]
 #[repr(transparent)]
 pub struct SubgraphId(pub(crate) usize);
 impl fmt::Display for SubgraphId {
@@ -27,9 +28,14 @@ impl fmt::Display for SubgraphId {
 
 /// A handoff's ID. Invalid if used in a different [`graph::Hydroflow`]
 /// instance than the original that created it.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize)]
 #[repr(transparent)]
 pub struct HandoffId(pub(crate) usize);
+impl fmt::Display for HandoffId {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
 
 /// A staten handle's ID. Invalid if used in a different [`graph::Hydroflow`]
 /// instance than the original that created it.

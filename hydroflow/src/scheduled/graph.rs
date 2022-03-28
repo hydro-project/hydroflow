@@ -17,6 +17,7 @@ use super::reactor::Reactor;
 use super::state::StateHandle;
 use super::subgraph::Subgraph;
 use super::{HandoffId, StateId, SubgraphId};
+use serde::Serialize;
 
 /// A Hydroflow graph. Owns, schedules, and runs the compiled subgraphs.
 pub struct Hydroflow {
@@ -423,8 +424,12 @@ impl Hydroflow {
         sg_id: SubgraphId,
         node_id: NodeId,
     ) -> String {
-        if name.starts_with("Handoff") {
-            let handoff_id = self.subgraphs[sg_id.0].dependencies.handoff_ids[&node_id];
+        // if name.starts_with("Handoff") {
+        if let Some(handoff_id) = self.subgraphs[sg_id.0]
+            .dependencies
+            .handoff_ids
+            .get(&node_id)
+        {
             let handoff = &self.handoffs[handoff_id.0];
             format!("Handoff_{}[\\{}/]", handoff_id.0, handoff.name)
         } else if &*name == "PullToPush" {
@@ -442,50 +447,28 @@ impl Hydroflow {
 
     pub fn write_mermaid(&self, write: &mut impl Write) -> std::fmt::Result {
         writeln!(write, "graph TD")?;
-        let mut indent: usize = 2;
-        for (sg_id, subgraph) in self.subgraphs.iter().enumerate() {
+        let mut tab: usize = 2;
+        for (sg_id, sg) in self.subgraphs.iter().enumerate() {
             let sg_id = SubgraphId(sg_id);
-            let d = &subgraph.dependencies;
+            let d = &sg.dependencies;
 
             if !d.edges.is_empty() {
-                writeln!(
-                    write,
-                    "{:tab$}subgraph stratum{}",
-                    "",
-                    subgraph.stratum,
-                    tab = indent
-                )?;
-                indent += 2;
-                writeln!(
-                    write,
-                    "{:tab$}subgraph {}{}",
-                    "",
-                    subgraph.name,
-                    sg_id.0,
-                    tab = indent
-                )?;
-                indent += 2;
+                writeln!(write, "{:t$}subgraph stratum{}", "", sg.stratum, t = tab)?;
+                tab += 2;
+                writeln!(write, "{:t$}subgraph {}{}", "", sg.name, sg_id.0, t = tab)?;
+                tab += 2;
                 for &(src, dst) in d.edges.iter() {
                     let src = self.mermaid_mangle(d.node_names[src.0].clone(), sg_id, src);
                     let dst = self.mermaid_mangle(d.node_names[dst.0].clone(), sg_id, dst);
-                    writeln!(write, "{:tab$}{} --> {}", "", src, dst, tab = indent)?;
+                    writeln!(write, "{:t$}{} --> {}", "", src, dst, t = tab)?;
                 }
-                indent -= 2;
-                writeln!(write, "{:tab$}end", "", tab = indent)?;
-                indent -= 2;
-                writeln!(write, "{:tab$}end", "", tab = indent)?;
+                tab -= 2;
+                writeln!(write, "{:t$}end", "", t = tab)?;
+                tab -= 2;
+                writeln!(write, "{:t$}end", "", t = tab)?;
             }
         }
         Ok(())
-    }
-
-    fn dot_mangle(&self, name: Cow<'static, str>, sg_id: SubgraphId, node_id: NodeId) -> String {
-        if name.starts_with("Handoff") {
-            let handoff_id = self.subgraphs[sg_id.0].dependencies.handoff_ids[&node_id];
-            format!("Handoff_{}", handoff_id.0)
-        } else {
-            format!("{}.{}", sg_id.0, node_id.0)
-        }
     }
 
     pub fn generate_dot(&self) -> String {
@@ -494,103 +477,200 @@ impl Hydroflow {
         output
     }
 
-    pub fn write_dot(&self, write: &mut impl Write) -> std::fmt::Result {
-        writeln!(write, "digraph {{")?;
-        let mut indent: usize = 2;
-        for (sg_id, subgraph) in self.subgraphs.iter().enumerate() {
-            let sg_id = SubgraphId(sg_id);
-            let d = &subgraph.dependencies;
-            if !d.edges.is_empty() {
-                // write out nodes
-                writeln!(write, "{:tab$}{{", "", tab = indent)?;
-                indent += 2;
-                writeln!(write, "{:tab$}node [shape=box]", "", tab = indent)?;
-                for (i, name) in d.node_names.iter().enumerate() {
-                    let label = if name.starts_with("Handoff") {
-                        let handoff_id = subgraph.dependencies.handoff_ids[&NodeId(i)];
-                        let handoff = &self.handoffs[handoff_id.0];
-                        handoff.name.clone()
-                    } else {
-                        name.clone()
-                    };
-                    write!(
-                        write,
-                        "{:tab$}\"{}\" [label=\"{}\"",
-                        "",
-                        self.dot_mangle(name.clone(), sg_id, NodeId(i)),
-                        label,
-                        tab = indent
-                    )?;
-                    if name.starts_with("Handoff") {
-                        write!(write, ", shape=invtrapezium")?;
-                    } else if name == "PullToPush" {
-                        write!(write, ", shape=trapezium")?;
-                    }
-                    writeln!(write, "]")?;
+    pub fn write_dot(&self, w: &mut impl Write) -> std::fmt::Result {
+        let gg = self.global_graph();
+        writeln!(w, "digraph {{")?;
+        let mut tab: usize = 2;
+        // write out nodes
+        writeln!(w, "{:t$}{{", "", t = tab)?;
+        tab += 2;
+        writeln!(w, "{:t$}node [shape=box]", "", t = tab)?;
+        for (i, name) in gg.node_names.iter().enumerate() {
+            if name.is_some() {
+                let nm = name.clone().unwrap_or_else(|| "".into());
+                let label = format!("{}", i);
+                write!(w, "{:t$}{} [label=\"{}\"", "", label, nm.clone(), t = tab)?;
+                if nm.starts_with("Handoff") {
+                    write!(w, ", shape=invtrapezium")?;
+                } else if nm == "PullToPush" {
+                    write!(w, ", shape=trapezium")?;
                 }
-                indent -= 2;
-                writeln!(write, "{:tab$}}}", "", tab = indent)?;
-
-                // write out edges
-                writeln!(
-                    write,
-                    "{:tab$}subgraph \"cluster stratum {}\" {{",
-                    "",
-                    subgraph.stratum,
-                    tab = indent,
-                )?;
-                indent += 2;
-                writeln!(
-                    write,
-                    "{:tab$}label = \"Stratum {}\"",
-                    "",
-                    subgraph.stratum,
-                    tab = indent,
-                )?;
-                writeln!(
-                    write,
-                    "{:tab$}subgraph \"cluster {}\" {{",
-                    "",
-                    sg_id.0,
-                    tab = indent,
-                )?;
-                indent += 2;
-                writeln!(
-                    write,
-                    "{:tab$}label = \"{}\"",
-                    "",
-                    subgraph.name,
-                    tab = indent
-                )?;
-                for &(src, dst) in d.edges.iter() {
-                    writeln!(
-                        write,
-                        "{:tab$}\"{}\" -> \"{}\"",
-                        "",
-                        self.dot_mangle(d.node_names[src.0].clone(), sg_id, src),
-                        self.dot_mangle(d.node_names[dst.0].clone(), sg_id, dst),
-                        tab = indent,
-                    )?;
-                }
-                indent -= 2;
-                writeln!(write, "{:tab$}}}", "", tab = indent)?;
-                indent -= 2;
-                writeln!(write, "{:tab$}}}", "", tab = indent)?;
+                writeln!(w, "]")?;
             }
         }
-        indent -= 2;
-        writeln!(write, "{:tab$}}}", "", tab = indent)?;
+        tab -= 2;
+        writeln!(w, "{:t$}}}", "", t = tab)?;
+
+        // write out edges
+        for (sg_id, es) in gg.edge_sets.iter().enumerate() {
+            let strt = es.stratum;
+            writeln!(
+                w,
+                "{:t$}subgraph \"cluster stratum {}\" {{",
+                "",
+                strt,
+                t = tab,
+            )?;
+            tab += 2;
+            writeln!(w, "{:t$}label = \"Stratum {}\"", "", strt, t = tab,)?;
+            writeln!(w, "{:t$}subgraph \"cluster {}\" {{", "", sg_id, t = tab,)?;
+            tab += 2;
+            writeln!(w, "{:t$}label = \"{}\"", "", es.name, t = tab)?;
+            for &(src, dst) in es.edges.iter() {
+                writeln!(w, "{:t$}{} -> {}", "", src.0, dst.0, t = tab,)?;
+            }
+            tab -= 2;
+            writeln!(w, "{:t$}}}", "", t = tab)?;
+            tab -= 2;
+            writeln!(w, "{:t$}}}", "", t = tab)?;
+        }
+        tab -= 2;
+        writeln!(w, "{:t$}}}", "", t = tab)?;
         Ok(())
     }
-}
 
+    pub fn generate_json(&self) -> String {
+        let mut output = String::new();
+        self.write_json(&mut output).unwrap();
+        output
+    }
+
+    pub fn write_json(&self, write: &mut impl Write) -> std::fmt::Result {
+        writeln!(
+            write,
+            "{}",
+            serde_json::to_string(&self.global_graph()).unwrap()
+        )?;
+        Ok(())
+    }
+
+    pub fn global_graph(&self) -> GlobalGraph {
+        let mut graph = GlobalGraph::new();
+        for subgraph in self.subgraphs.iter() {
+            if !subgraph.dependencies.edges.is_empty() {
+                graph.add_flow_graph(
+                    subgraph.name.clone(),
+                    subgraph.stratum,
+                    subgraph.dependencies.clone(),
+                    &self.handoffs,
+                );
+            }
+        }
+        graph.canonicalize_handoffs();
+        graph
+    }
+}
 /// A FlowGraph nodes's ID.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize)]
 #[repr(transparent)]
 pub struct NodeId(pub(crate) usize);
 
-/// A graph representation of a Hydroflow instance's graph structure.
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize)]
+pub struct EdgeSet {
+    name: Cow<'static, str>,
+    stratum: usize,
+    edges: HashSet<(NodeId, NodeId)>,
+}
+impl EdgeSet {
+    pub fn new(name: Cow<'static, str>, stratum: usize, edges: HashSet<(NodeId, NodeId)>) -> Self {
+        Self {
+            name,
+            stratum,
+            edges,
+        }
+    }
+}
+// A graph connecting up multiple compiled components
+#[derive(Clone, Debug, Default, Serialize)]
+pub struct GlobalGraph {
+    node_names: Vec<Option<Cow<'static, str>>>,
+    edge_sets: Vec<EdgeSet>,
+    handoff_ids: HashMap<NodeId, HandoffId>,
+}
+impl GlobalGraph {
+    pub fn new() -> Self {
+        let (node_names, edge_sets, handoff_ids) = Default::default();
+        Self {
+            node_names,
+            edge_sets,
+            handoff_ids,
+        }
+    }
+    // handoff names are repeated across compiled components
+    // make sure all edges reference the first occurrence of a handoff
+    // and then None out the repeated occurrences.
+    // Preferably to be called only once after all FlowGraphs are added.
+    fn canonicalize_handoffs(&mut self) {
+        // invert self.handoff_ids
+        let mut handoff_ids_inv: HashMap<HandoffId, Vec<NodeId>> = HashMap::new();
+        for (k, v) in &self.handoff_ids {
+            handoff_ids_inv.entry(*v).or_insert_with(Vec::new).push(*k);
+        }
+
+        // find repeated handoffs
+        let mut repeated_handoffs: Vec<NodeId> = Vec::new();
+        for w in handoff_ids_inv.values() {
+            repeated_handoffs.extend(w.clone().split_off(1));
+        }
+
+        // walk edges and replace every handoff ref with the one canonical ref
+        // taken from handoff_ids_inv[id].first()
+        let mut new_edge_sets = Vec::new();
+        for es in self.edge_sets.iter() {
+            let mut new_edges = HashSet::new();
+            for (from, to) in es.edges.iter() {
+                let mut new_edge = (*from, *to);
+                let hoff_id = self.handoff_ids.get(from);
+                if let Some(id) = hoff_id {
+                    new_edge.0 = *handoff_ids_inv[id].first().unwrap();
+                }
+                let hoff_id = self.handoff_ids.get(to);
+                if let Some(id) = hoff_id {
+                    new_edge.1 = *handoff_ids_inv[id].first().unwrap();
+                }
+                new_edges.insert(new_edge);
+            }
+            let new_es = EdgeSet::new(es.name.clone(), es.stratum, new_edges);
+            new_edge_sets.push(new_es);
+        }
+        self.edge_sets = new_edge_sets;
+
+        // None out the repeated_handoffs in node_names
+        for n in repeated_handoffs {
+            self.node_names[n.0] = None;
+        }
+    }
+
+    pub fn add_flow_graph(
+        &mut self,
+        name: Cow<'static, str>,
+        stratum: usize,
+        fg: FlowGraph,
+        handoffs: &[HandoffData],
+    ) {
+        let base = self.node_names.len();
+        for node_name in fg.node_names {
+            self.node_names.push(Some(node_name));
+        }
+        let edges: HashSet<(NodeId, NodeId)> = fg
+            .edges
+            .into_iter()
+            .map(|(from, to)| (NodeId(from.0 + base), NodeId(to.0 + base)))
+            .collect();
+        self.edge_sets
+            .push(EdgeSet::new(name.clone(), stratum, edges));
+        for (node_id, hoff_id) in fg.handoff_ids.iter() {
+            self.node_names[node_id.0 + base] =
+                Some(format!("{}", handoffs[hoff_id.0].name).into());
+            self.handoff_ids
+                .entry(NodeId(node_id.0 + base))
+                .or_insert(*hoff_id);
+        }
+    }
+}
+
+/// A graph representation of a compiled component's graph structure.
+#[derive(Clone, Debug, Default, Serialize)]
 pub struct FlowGraph {
     node_names: Vec<Cow<'static, str>>,
     edges: HashSet<(NodeId, NodeId)>,
@@ -630,12 +710,11 @@ impl FlowGraph {
                 .into_iter()
                 .map(|(from, to)| (NodeId(from.0 + base), NodeId(to.0 + base))),
         );
-        self.handoff_ids.extend(
-            other
-                .handoff_ids
-                .into_iter()
-                .map(|(key, val)| (NodeId(key.0 + base), val)),
-        );
+        for (node_id, hoff_id) in other.handoff_ids.iter() {
+            self.handoff_ids
+                .entry(NodeId(node_id.0 + base))
+                .or_insert(*hoff_id);
+        }
     }
 }
 
