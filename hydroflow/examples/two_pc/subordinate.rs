@@ -1,5 +1,5 @@
 use crate::protocol::{CoordMsg, MsgType, SubordResponse};
-use crate::{Opts, GraphType};
+use crate::{GraphType, Opts};
 use hydroflow::builder::prelude::*;
 use hydroflow::scheduled::handoff::VecHandoff;
 
