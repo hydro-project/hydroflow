@@ -424,7 +424,6 @@ impl Hydroflow {
         sg_id: SubgraphId,
         node_id: NodeId,
     ) -> String {
-        // if name.starts_with("Handoff") {
         if let Some(handoff_id) = self.subgraphs[sg_id.0]
             .dependencies
             .handoff_ids
