@@ -69,11 +69,6 @@ jobs:
         with:
           command: test
 
-      - name: Install mdBook
-        run: curl -sSL https://github.com/rust-lang/mdBook/releases/download/v0.4.15/mdbook-v0.4.15-x86_64-unknown-linux-gnu.tar.gz | tar -xz
-      - name: Run mdBook tests
-        run: ./mdbook test
-
   lints:
     name: Lints
     needs: pre_job

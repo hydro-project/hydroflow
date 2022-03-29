@@ -22,4 +22,5 @@ sockets.
 
 ## Lattices
 
+## Strata
 
