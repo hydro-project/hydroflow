@@ -1,5 +1,96 @@
 # Simplest Example
 
+Lets start out with the simplest possible Hydroflow program, which prints out
+the numbers in `0..10`.
+
 ```rust
-println!("Hello World");
+use hydroflow::builder::prelude::*;
+
+pub fn main() {
+    let mut builder = HydroflowBuilder::new();
+    builder.add_subgraph(
+        "main",
+        (0..10)
+            .into_hydroflow()
+            .pull_to_push()
+            .for_each(|n| println!("Hello {}", n)),
+    );
+
+    let mut hydroflow = builder.build();
+    hydroflow.tick();
+}
 ```
+
+And the output:
+```txt
+% cargo run -p hydroflow --example simplest
+   Compiling hydroflow v0.1.0
+    Finished dev [unoptimized + debuginfo] target(s) in 0.90s
+     Running `target/debug/examples/simplest`
+Hello 0
+Hello 1
+Hello 2
+Hello 3
+Hello 4
+Hello 5
+Hello 6
+Hello 7
+Hello 8
+Hello 9
+```
+
+Although this is a trivial program, there's quite a bit going on that might
+phase you. Let's go line by line.
+
+```rust,ignore
+use hydroflow::builder::prelude::*;
+```
+This is a prelude import: a convention where all the important dependencies are
+re-exported in a single `prelude` module for convenience. In this case it's
+everything you need for using Hydroflow via the [Surface API](./architecture.md#apis).
+You can check [Hydroflow's rustdocs](https://hydro-project.github.io/hydroflow/doc/hydroflow/builder/prelude/index.html)
+to see what exactly is imported.
+
+Next, inside the main method we create a new `HydroflowBuilder`:
+```rust,ignore
+pub main() {
+    let mut builder = HydroflowBuilder::new();
+    builder.add_subgraph(
+        "main",
+        // <code for creating the subgraph>
+    );
+    // ...
+}
+```
+And add a subgraph. We are required to give the subgraph a name, in this case
+`"main"`. The "code for creating the subgraph" is:
+```rust,ignore
+        (0..10)
+```
+This creates a Rust [`Range` iterator](https://doc.rust-lang.org/std/ops/struct.Range.html).
+
+
+```rust,ignore
+            .into_hydroflow()
+```
+Converts a Rust [`Iterator`](https://doc.rust-lang.org/std/iter/trait.Iterator.html)
+for use in Hydroflow via the [`IntoHydroflow`](https://hydro-project.github.io/hydroflow/doc/hydroflow/builder/trait.IntoHydroflow.html)
+trait.
+
+
+```rust,ignore
+            .pull_to_push()
+```
+This line is specific to Hydroflow and a bit technical. It converts the chain
+from _pull_ into _push_ which allows us to use push-based methods:
+
+
+```rust,ignore
+            .for_each(|n| println!("Hello {}", n)),
+```
+Which consumes each element, printing it out as they arrive.
+
+The reason behind having separate pull and push-based operators is explained
+in the [Architecture](./architecture.html#compiled-layer) section. For now,
+all we need to know is that every Hydroflow subgraph must have a call to
+`.pull_to_push()`.
