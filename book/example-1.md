@@ -94,3 +94,20 @@ The reason behind having separate pull and push-based operators is explained
 in the [Architecture](./architecture.html#compiled-layer) section. For now,
 all we need to know is that every Hydroflow subgraph must have a call to
 `.pull_to_push()`.
+
+Note that these chained method operators do not run any immediate
+computations. Instead they provide a blueprint of what the Hydroflow graph
+should look like.
+
+```rust,ignore
+    let mut hydroflow = builder.build();
+    hydroflow.tick();
+```
+Finally we build the `Hydroflow` instance and run it via the [`tick()` method](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.tick).
+Note that `tick()` runs the Hydroflow graph until no more work is immediately
+available. In this case running the graph drains the iterator completely, so no
+more work will ever be available. But once we add in external inputs such as
+network ingress then more work might appear later. The [`tick_stratum()`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.tick_stratum),
+[`run()`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run)
+and [`run_async()`] https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_async
+methods provide other ways to execute the graph.

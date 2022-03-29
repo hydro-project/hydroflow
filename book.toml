@@ -7,3 +7,19 @@ title = "The Hydroflow Book"
 
 [build]
 build-dir = "target/book"
+
+[preprocessor]
+
+[preprocessor.mermaid]
+# https://github.com/badboy/mdbook-mermaid
+# To update:
+# cargo install mdbook-mermaid && mdbook-mermaid install
+command = "mdbook-mermaid"
+
+[output]
+
+[output.html]
+additional-css = []
+additional-js = ["mermaid.min.js", "mermaid-init.js"]
+
+
