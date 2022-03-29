@@ -1,8 +1,7 @@
 use hydroflow::builder::prelude::*;
 
 pub fn main() {
-    let mut builder = HydroflowBuilder::default();
-
+    let mut builder = HydroflowBuilder::new();
     builder.add_subgraph(
         "main",
         (0..10)
