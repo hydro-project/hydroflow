@@ -46,7 +46,7 @@ where
 
     fn build<'slf, 'ctx>(
         &'slf mut self,
-        context: &'ctx Context<'ctx>,
+        context: &'ctx Context,
         handoffs: <Self::OutputHandoffs as PortList<SEND>>::Ctx<'ctx>,
     ) -> Self::Build<'slf, 'ctx> {
         Flatten::new(self.next.build(context, handoffs))

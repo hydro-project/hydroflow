@@ -37,7 +37,7 @@ pub trait PullBuild: PullBuildBase {
     /// Builds the iterator for a single run of the subgraph.
     fn build<'slf, 'ctx>(
         &'slf mut self,
-        context: &'ctx Context<'ctx>,
+        context: &'ctx Context,
         handoffs: <Self::InputHandoffs as PortList<RECV>>::Ctx<'ctx>,
     ) -> Self::Build<'slf, 'ctx>;
 }
@@ -52,7 +52,7 @@ pub trait PushBuild: PushBuildBase {
     /// Builds the pusherator for a single run of the subgraph.
     fn build<'slf, 'ctx>(
         &'slf mut self,
-        context: &'ctx Context<'ctx>,
+        context: &'ctx Context,
         handoffs: <Self::OutputHandoffs as PortList<SEND>>::Ctx<'ctx>,
     ) -> Self::Build<'slf, 'ctx>;
 }

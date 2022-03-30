@@ -8,7 +8,7 @@ use crate::scheduled::port::SEND;
 pub struct FilterPushBuild<Next, Func>
 where
     Next: PushBuild,
-    Func: FnMut(&Context<'_>, &Next::ItemIn) -> bool,
+    Func: FnMut(&Context, &Next::ItemIn) -> bool,
 {
     next: Next,
     func: Func,
@@ -16,7 +16,7 @@ where
 impl<Next, Func> FilterPushBuild<Next, Func>
 where
     Next: PushBuild,
-    Func: FnMut(&Context<'_>, &Next::ItemIn) -> bool,
+    Func: FnMut(&Context, &Next::ItemIn) -> bool,
 {
     pub fn new(next: Next, func: Func) -> Self {
         Self { next, func }
@@ -32,7 +32,7 @@ where
 impl<Next, Func> PushBuildBase for FilterPushBuild<Next, Func>
 where
     Next: PushBuild,
-    Func: FnMut(&Context<'_>, &Next::ItemIn) -> bool,
+    Func: FnMut(&Context, &Next::ItemIn) -> bool,
 {
     type ItemIn = Next::ItemIn;
     type Build<'slf, 'ctx> = PushBuildImpl<'slf, 'ctx, Next, Func>;
@@ -41,13 +41,13 @@ where
 impl<Next, Func> PushBuild for FilterPushBuild<Next, Func>
 where
     Next: PushBuild,
-    Func: FnMut(&Context<'_>, &Next::ItemIn) -> bool,
+    Func: FnMut(&Context, &Next::ItemIn) -> bool,
 {
     type OutputHandoffs = Next::OutputHandoffs;
 
     fn build<'slf, 'ctx>(
         &'slf mut self,
-        context: &'ctx Context<'ctx>,
+        context: &'ctx Context,
         handoffs: <Self::OutputHandoffs as PortList<SEND>>::Ctx<'ctx>,
     ) -> Self::Build<'slf, 'ctx> {
         Filter::new(

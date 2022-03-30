@@ -6,7 +6,7 @@ use std::marker::PhantomData;
 use std::num::NonZeroUsize;
 
 use ref_cast::RefCast;
-use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
+use tokio::sync::mpsc::{self, UnboundedReceiver};
 
 use super::context::Context;
 use super::flow_graph::FlowGraph;
@@ -21,17 +21,11 @@ use super::{HandoffId, StateId, SubgraphId};
 /// A Hydroflow graph. Owns, schedules, and runs the compiled subgraphs.
 pub struct Hydroflow {
     pub(super) subgraphs: Vec<SubgraphData>,
-    pub(super) handoffs: Vec<HandoffData>,
-
-    states: Vec<StateData>,
+    pub(super) context: Context,
 
     // TODO(mingwei): separate scheduler into its own struct/trait?
     // Index is stratum, value is FIFO queue for that stratum.
     stratum_queues: Vec<VecDeque<SubgraphId>>,
-    current_stratum: usize,
-    current_epoch: usize,
-
-    event_queue_send: UnboundedSender<SubgraphId>, // TODO(mingwei) remove this, to prevent hanging.
     event_queue_recv: UnboundedReceiver<SubgraphId>,
 }
 impl Default for Hydroflow {
@@ -39,16 +33,23 @@ impl Default for Hydroflow {
         let (subgraphs, handoffs, states) = Default::default();
         let stratum_queues = vec![Default::default()]; // Always initialize stratum #0.
         let (event_queue_send, event_queue_recv) = mpsc::unbounded_channel();
-        Self {
-            subgraphs,
+        let context = Context {
             handoffs,
             states,
 
-            stratum_queues,
+            event_queue_send,
+
             current_stratum: 0,
             current_epoch: 0,
 
-            event_queue_send,
+            subgraph_id: SubgraphId(0),
+        };
+        Self {
+            subgraphs,
+            context,
+
+            stratum_queues,
+
             event_queue_recv,
         }
     }
@@ -61,17 +62,17 @@ impl Hydroflow {
 
     /// Returns a reactor for externally scheduling subgraphs, possibly from another thread.
     pub fn reactor(&self) -> Reactor {
-        Reactor::new(self.event_queue_send.clone())
+        Reactor::new(self.context.event_queue_send.clone())
     }
 
     // Gets the current epoch (local time) count.
     pub fn current_epoch(&self) -> usize {
-        self.current_epoch
+        self.context.current_epoch
     }
 
     // Gets the current stratum nubmer.
     pub fn current_stratum(&self) -> usize {
-        self.current_stratum
+        self.context.current_stratum
     }
 
     /// Runs the dataflow until no more work is immediately available.
@@ -86,25 +87,19 @@ impl Hydroflow {
         // Add any external jobs to ready queue.
         self.try_recv_events();
 
-        while let Some(sg_id) = self.stratum_queues[self.current_stratum].pop_front() {
+        while let Some(sg_id) = self.stratum_queues[self.context.current_stratum].pop_front() {
             {
                 let sg_data = &mut self.subgraphs[sg_id.0];
                 // This must be true for the subgraph to be enqueued.
                 assert!(sg_data.is_scheduled.take());
 
-                let context = Context {
-                    subgraph_id: sg_id,
-                    handoffs: &mut self.handoffs,
-                    states: &mut self.states,
-                    event_queue_send: &self.event_queue_send,
-                    current_epoch: self.current_epoch,
-                    current_stratum: self.current_stratum,
-                };
+                self.context.subgraph_id = sg_id;
+                let context = &self.context;
                 sg_data.subgraph.run(context);
             }
 
             for &handoff_id in self.subgraphs[sg_id.0].succs.iter() {
-                let handoff = &self.handoffs[handoff_id.0];
+                let handoff = &self.context.handoffs[handoff_id.0];
                 if !handoff.handoff.is_bottom() {
                     for &succ_id in handoff.succs.iter() {
                         let succ_sg_data = &self.subgraphs[succ_id.0];
@@ -127,20 +122,20 @@ impl Hydroflow {
     pub fn next_stratum(&mut self) -> bool {
         self.try_recv_events();
 
-        let old_stratum = self.current_stratum;
+        let old_stratum = self.context.current_stratum;
         loop {
             // If current stratum has work, return true.
-            if !self.stratum_queues[self.current_stratum].is_empty() {
+            if !self.stratum_queues[self.context.current_stratum].is_empty() {
                 return true;
             }
             // Increment stratum counter.
-            self.current_stratum += 1;
-            if self.current_stratum >= self.stratum_queues.len() {
-                self.current_stratum = 0;
-                self.current_epoch += 1;
+            self.context.current_stratum += 1;
+            if self.context.current_stratum >= self.stratum_queues.len() {
+                self.context.current_stratum = 0;
+                self.context.current_epoch += 1;
             }
             // After incrementing, exit if we made a full loop around the strata.
-            if old_stratum == self.current_stratum {
+            if old_stratum == self.context.current_stratum {
                 // Note: if current stratum had work, the very first loop iteration would've
                 // returned true. Therefore we can return false without checking.
                 return false;
@@ -225,7 +220,7 @@ impl Hydroflow {
         Name: Into<Cow<'static, str>>,
         R: 'static + PortList<RECV>,
         W: 'static + PortList<SEND>,
-        F: 'static + for<'ctx> FnMut(&'ctx Context<'ctx>, R::Ctx<'ctx>, W::Ctx<'ctx>),
+        F: 'static + for<'ctx> FnMut(&'ctx Context, R::Ctx<'ctx>, W::Ctx<'ctx>),
     {
         self.add_subgraph_stratified(name, 0, recv_ports, send_ports, subgraph)
     }
@@ -245,18 +240,28 @@ impl Hydroflow {
         Name: Into<Cow<'static, str>>,
         R: 'static + PortList<RECV>,
         W: 'static + PortList<SEND>,
-        F: 'static + for<'ctx> FnMut(&'ctx Context<'ctx>, R::Ctx<'ctx>, W::Ctx<'ctx>),
+        F: 'static + for<'ctx> FnMut(&'ctx Context, R::Ctx<'ctx>, W::Ctx<'ctx>),
     {
         let sg_id = SubgraphId(self.subgraphs.len());
 
         let (mut subgraph_preds, mut subgraph_succs) = Default::default();
-        recv_ports.set_graph_meta(&mut *self.handoffs, None, Some(sg_id), &mut subgraph_preds);
-        send_ports.set_graph_meta(&mut *self.handoffs, Some(sg_id), None, &mut subgraph_succs);
+        recv_ports.set_graph_meta(
+            &mut *self.context.handoffs,
+            None,
+            Some(sg_id),
+            &mut subgraph_preds,
+        );
+        send_ports.set_graph_meta(
+            &mut *self.context.handoffs,
+            Some(sg_id),
+            None,
+            &mut subgraph_succs,
+        );
 
-        let subgraph = move |context: Context<'_>| {
-            let recv = recv_ports.make_ctx(context.handoffs);
-            let send = send_ports.make_ctx(context.handoffs);
-            (subgraph)(&context, recv, send);
+        let subgraph = move |context: &Context| {
+            let recv = recv_ports.make_ctx(&*context.handoffs);
+            let send = send_ports.make_ctx(&*context.handoffs);
+            (subgraph)(context, recv, send);
         };
         self.subgraphs.push(SubgraphData::new(
             name.into(),
@@ -286,7 +291,7 @@ impl Hydroflow {
         R: 'static + Handoff,
         W: 'static + Handoff,
         F: 'static
-            + for<'ctx> FnMut(&'ctx Context<'ctx>, &'ctx [&'ctx RecvCtx<R>], &'ctx [&'ctx SendCtx<W>]),
+            + for<'ctx> FnMut(&'ctx Context, &'ctx [&'ctx RecvCtx<R>], &'ctx [&'ctx SendCtx<W>]),
     {
         self.add_subgraph_stratified_n_m(name, 0, recv_ports, send_ports, subgraph)
     }
@@ -305,7 +310,7 @@ impl Hydroflow {
         R: 'static + Handoff,
         W: 'static + Handoff,
         F: 'static
-            + for<'ctx> FnMut(&'ctx Context<'ctx>, &'ctx [&'ctx RecvCtx<R>], &'ctx [&'ctx SendCtx<W>]),
+            + for<'ctx> FnMut(&'ctx Context, &'ctx [&'ctx RecvCtx<R>], &'ctx [&'ctx SendCtx<W>]),
     {
         let sg_id = SubgraphId(self.subgraphs.len());
 
@@ -313,13 +318,17 @@ impl Hydroflow {
         let subgraph_succs = send_ports.iter().map(|port| port.handoff_id).collect();
 
         for recv_port in recv_ports.iter() {
-            self.handoffs[recv_port.handoff_id.0].succs.push(sg_id);
+            self.context.handoffs[recv_port.handoff_id.0]
+                .succs
+                .push(sg_id);
         }
         for send_port in send_ports.iter() {
-            self.handoffs[send_port.handoff_id.0].preds.push(sg_id);
+            self.context.handoffs[send_port.handoff_id.0]
+                .preds
+                .push(sg_id);
         }
 
-        let subgraph = move |context: Context<'_>| {
+        let subgraph = move |context: &Context| {
             let recvs: Vec<&RecvCtx<R>> = recv_ports
                 .iter()
                 .map(|hid| hid.handoff_id)
@@ -348,7 +357,7 @@ impl Hydroflow {
                 .map(RefCast::ref_cast)
                 .collect();
 
-            (subgraph)(&context, &recvs, &sends)
+            (subgraph)(context, &recvs, &sends)
         };
         self.subgraphs.push(SubgraphData::new(
             name.into(),
@@ -379,11 +388,13 @@ impl Hydroflow {
         Name: Into<Cow<'static, str>>,
         H: 'static + Handoff,
     {
-        let handoff_id = HandoffId(self.handoffs.len());
+        let handoff_id = HandoffId(self.context.handoffs.len());
 
         // Create and insert handoff.
         let handoff = H::default();
-        self.handoffs.push(HandoffData::new(name.into(), handoff));
+        self.context
+            .handoffs
+            .push(HandoffData::new(name.into(), handoff));
 
         // Make ports.
         let input_port = SendPort {
@@ -401,12 +412,12 @@ impl Hydroflow {
     where
         T: Any,
     {
-        let state_id = StateId(self.states.len());
+        let state_id = StateId(self.context.states.len());
 
         let state_data = StateData {
             state: Box::new(state),
         };
-        self.states.push(state_data);
+        self.context.states.push(state_data);
 
         StateHandle {
             state_id,
