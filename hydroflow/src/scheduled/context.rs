@@ -8,17 +8,28 @@ use super::{
     SubgraphId,
 };
 
-// A handle onto the dataflow from within an individual operator.
+/// The main state of the Hydroflow instance, which is provided as a reference
+/// to each operator as it is run.
+///
+/// As an optimization, each Hydroflow instances stores eactly one Context
+/// inline, which allows us to avoid any construction/deconstruction costs.
+/// Before the `Context` is provided to a running operator, the `subgraph_id`
+/// field must be updated.
+pub struct Context {
+    pub(crate) handoffs: Vec<HandoffData>,
+    pub(crate) states: Vec<StateData>,
 
-pub struct Context<'a> {
-    pub(crate) subgraph_id: SubgraphId,
-    pub(crate) handoffs: &'a mut [HandoffData],
-    pub(crate) states: &'a mut [StateData],
-    pub(crate) event_queue_send: &'a UnboundedSender<SubgraphId>,
+    pub(crate) event_queue_send: UnboundedSender<SubgraphId>, // TODO(mingwei) remove this, to prevent hanging.
+
     pub(crate) current_epoch: usize,
     pub(crate) current_stratum: usize,
+
+    /// The SubgraphId of the currently running operator. When this context is
+    /// not being forwarded to a running operator, this field is (mostly)
+    /// meaningless.
+    pub(crate) subgraph_id: SubgraphId,
 }
-impl<'a> Context<'a> {
+impl Context {
     // Gets the current epoch (local time) count.
     pub fn current_epoch(&self) -> usize {
         self.current_epoch

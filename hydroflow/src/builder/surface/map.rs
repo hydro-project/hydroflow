@@ -17,7 +17,7 @@ where
 impl<Prev, Func, Out> MapSurface<Prev, Func>
 where
     Prev: BaseSurface,
-    Func: FnMut(&Context<'_>, Prev::ItemOut) -> Out,
+    Func: FnMut(&Context, Prev::ItemOut) -> Out,
 {
     pub fn new(prev: Prev, func: Func) -> Self {
         Self { prev, func }
@@ -27,7 +27,7 @@ where
 impl<Prev, Func, Out> BaseSurface for MapSurface<Prev, Func>
 where
     Prev: BaseSurface,
-    Func: FnMut(&Context<'_>, Prev::ItemOut) -> Out,
+    Func: FnMut(&Context, Prev::ItemOut) -> Out,
 {
     type ItemOut = Out;
 }
@@ -35,7 +35,7 @@ where
 impl<Prev, Func, Out> PullSurface for MapSurface<Prev, Func>
 where
     Prev: PullSurface,
-    Func: FnMut(&Context<'_>, Prev::ItemOut) -> Out,
+    Func: FnMut(&Context, Prev::ItemOut) -> Out,
 {
     type InputHandoffs = Prev::InputHandoffs;
     type Build = MapPullBuild<Prev::Build, Func>;
@@ -49,7 +49,7 @@ where
 impl<Prev, Func, Out> AssembleFlowGraph for MapSurface<Prev, Func>
 where
     Prev: PullSurface + AssembleFlowGraph,
-    Func: FnMut(&Context<'_>, Prev::ItemOut) -> Out,
+    Func: FnMut(&Context, Prev::ItemOut) -> Out,
 {
     fn insert_dep(&self, e: &mut super::FlowGraph) -> NodeId {
         let my_id = e.add_node("Map");
@@ -62,7 +62,7 @@ where
 impl<Prev, Func, Out> PushSurface for MapSurface<Prev, Func>
 where
     Prev: PushSurface,
-    Func: FnMut(&Context<'_>, Prev::ItemOut) -> Out,
+    Func: FnMut(&Context, Prev::ItemOut) -> Out,
 {
     type Output<Next> = Prev::Output<MapPushSurfaceReversed<Next, Func, Prev::ItemOut>>
     where
@@ -88,7 +88,7 @@ where
 impl<Next, Func, In> MapPushSurfaceReversed<Next, Func, In>
 where
     Next: PushSurfaceReversed,
-    Func: FnMut(&Context<'_>, In) -> Next::ItemIn,
+    Func: FnMut(&Context, In) -> Next::ItemIn,
 {
     pub fn new(next: Next, func: Func) -> Self {
         Self {
@@ -101,7 +101,7 @@ where
 impl<Next, Func, In> AssembleFlowGraph for MapPushSurfaceReversed<Next, Func, In>
 where
     Next: PushSurfaceReversed + AssembleFlowGraph,
-    Func: FnMut(&Context<'_>, In) -> Next::ItemIn,
+    Func: FnMut(&Context, In) -> Next::ItemIn,
 {
     fn insert_dep(&self, e: &mut super::FlowGraph) -> NodeId {
         let my_id = e.add_node("Map");
@@ -114,7 +114,7 @@ where
 impl<Next, Func, In> PushSurfaceReversed for MapPushSurfaceReversed<Next, Func, In>
 where
     Next: PushSurfaceReversed,
-    Func: FnMut(&Context<'_>, In) -> Next::ItemIn,
+    Func: FnMut(&Context, In) -> Next::ItemIn,
 {
     type ItemIn = In;
 

@@ -8,14 +8,14 @@ use crate::scheduled::flow_graph::NodeId;
 
 pub struct ForEachPushSurfaceReversed<Func, In>
 where
-    Func: FnMut(&Context<'_>, In),
+    Func: FnMut(&Context, In),
 {
     func: Func,
     _phantom: PhantomData<fn(In)>,
 }
 impl<Func, In> ForEachPushSurfaceReversed<Func, In>
 where
-    Func: FnMut(&Context<'_>, In),
+    Func: FnMut(&Context, In),
 {
     pub fn new(func: Func) -> Self {
         Self {
@@ -26,7 +26,7 @@ where
 }
 impl<Func, In> AssembleFlowGraph for ForEachPushSurfaceReversed<Func, In>
 where
-    Func: FnMut(&Context<'_>, In),
+    Func: FnMut(&Context, In),
 {
     fn insert_dep(&self, e: &mut super::FlowGraph) -> NodeId {
         let my_id = e.add_node("ForEach");
@@ -36,7 +36,7 @@ where
 
 impl<Func, In> PushSurfaceReversed for ForEachPushSurfaceReversed<Func, In>
 where
-    Func: FnMut(&Context<'_>, In),
+    Func: FnMut(&Context, In),
 {
     type ItemIn = In;
 

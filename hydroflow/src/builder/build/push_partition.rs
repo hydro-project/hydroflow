@@ -8,7 +8,7 @@ use crate::scheduled::type_list::Extend;
 
 pub struct PartitionPushBuild<NextA, NextB, Func>
 where
-    Func: FnMut(&Context<'_>, &NextA::ItemIn) -> bool,
+    Func: FnMut(&Context, &NextA::ItemIn) -> bool,
     NextA: PushBuild,
     NextB: PushBuild<ItemIn = NextA::ItemIn>,
 
@@ -22,7 +22,7 @@ where
 }
 impl<Func, NextA, NextB> PartitionPushBuild<NextA, NextB, Func>
 where
-    Func: FnMut(&Context<'_>, &NextA::ItemIn) -> bool,
+    Func: FnMut(&Context, &NextA::ItemIn) -> bool,
     NextA: PushBuild,
     NextB: PushBuild<ItemIn = NextA::ItemIn>,
 
@@ -53,7 +53,7 @@ where
 
 impl<NextA, NextB, Func> PushBuildBase for PartitionPushBuild<NextA, NextB, Func>
 where
-    Func: FnMut(&Context<'_>, &NextA::ItemIn) -> bool,
+    Func: FnMut(&Context, &NextA::ItemIn) -> bool,
     NextA: PushBuild,
     NextB: PushBuild<ItemIn = NextA::ItemIn>,
 
@@ -67,7 +67,7 @@ where
 
 impl<NextA, NextB, Func> PushBuild for PartitionPushBuild<NextA, NextB, Func>
 where
-    Func: FnMut(&Context<'_>, &NextA::ItemIn) -> bool,
+    Func: FnMut(&Context, &NextA::ItemIn) -> bool,
     NextA: PushBuild,
     NextB: PushBuild<ItemIn = NextA::ItemIn>,
 
@@ -79,7 +79,7 @@ where
 
     fn build<'slf, 'ctx>(
         &'slf mut self,
-        context: &'ctx Context<'ctx>,
+        context: &'ctx Context,
         input: <Self::OutputHandoffs as PortList<SEND>>::Ctx<'ctx>,
     ) -> Self::Build<'slf, 'ctx> {
         let (input_a, input_b) = <Self::OutputHandoffs as PortListSplit<_, _>>::split_ctx(input);

@@ -24,7 +24,7 @@ impl Query {
     pub fn source<F, T>(&mut self, f: F) -> Operator<T>
     where
         T: 'static,
-        F: 'static + FnMut(&Context<'_>, &SendCtx<VecHandoff<T>>),
+        F: 'static + FnMut(&Context, &SendCtx<VecHandoff<T>>),
     {
         let mut df = self.df.borrow_mut();
 

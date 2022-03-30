@@ -9,7 +9,7 @@ use crate::scheduled::type_list::Extend;
 
 pub struct PartitionPushSurfaceReversed<NextA, NextB, Func>
 where
-    Func: FnMut(&Context<'_>, &NextA::ItemIn) -> bool,
+    Func: FnMut(&Context, &NextA::ItemIn) -> bool,
     NextA: PushSurfaceReversed,
     NextB: PushSurfaceReversed<ItemIn = NextA::ItemIn>,
 
@@ -23,7 +23,7 @@ where
 }
 impl<NextA, NextB, Func> PartitionPushSurfaceReversed<NextA, NextB, Func>
 where
-    Func: FnMut(&Context<'_>, &NextA::ItemIn) -> bool,
+    Func: FnMut(&Context, &NextA::ItemIn) -> bool,
     NextA: PushSurfaceReversed,
     NextB: PushSurfaceReversed<ItemIn = NextA::ItemIn>,
 
@@ -41,7 +41,7 @@ where
 }
 impl<NextA, NextB, Func> AssembleFlowGraph for PartitionPushSurfaceReversed<NextA, NextB, Func>
 where
-    Func: FnMut(&Context<'_>, &NextA::ItemIn) -> bool,
+    Func: FnMut(&Context, &NextA::ItemIn) -> bool,
     NextA: PushSurfaceReversed + AssembleFlowGraph,
     NextB: PushSurfaceReversed<ItemIn = NextA::ItemIn> + AssembleFlowGraph,
 
@@ -61,7 +61,7 @@ where
 
 impl<NextA, NextB, Func> PushSurfaceReversed for PartitionPushSurfaceReversed<NextA, NextB, Func>
 where
-    Func: FnMut(&Context<'_>, &NextA::ItemIn) -> bool,
+    Func: FnMut(&Context, &NextA::ItemIn) -> bool,
     NextA: PushSurfaceReversed,
     NextB: PushSurfaceReversed<ItemIn = NextA::ItemIn>,
 

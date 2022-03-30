@@ -13,8 +13,8 @@ where
 impl<Prev, Init, Func, Out> FoldEpochPullBuild<Prev, Init, Func>
 where
     Prev: PullBuild,
-    Init: FnMut(&Context<'_>) -> Out,
-    Func: FnMut(&Context<'_>, Out, Prev::ItemOut) -> Out,
+    Init: FnMut(&Context) -> Out,
+    Func: FnMut(&Context, Out, Prev::ItemOut) -> Out,
 {
     pub fn new(prev: Prev, init: Init, func: Func) -> Self {
         Self { prev, init, func }
@@ -30,8 +30,8 @@ where
 impl<Prev, Init, Func, Out> PullBuildBase for FoldEpochPullBuild<Prev, Init, Func>
 where
     Prev: PullBuild,
-    Init: FnMut(&Context<'_>) -> Out,
-    Func: FnMut(&Context<'_>, Out, Prev::ItemOut) -> Out,
+    Init: FnMut(&Context) -> Out,
+    Func: FnMut(&Context, Out, Prev::ItemOut) -> Out,
 {
     type ItemOut = Out;
     type Build<'slf, 'ctx> = PullBuildImpl<'slf, 'ctx, Prev, Init, Func, Out>;
@@ -40,14 +40,14 @@ where
 impl<Prev, Init, Func, Out> PullBuild for FoldEpochPullBuild<Prev, Init, Func>
 where
     Prev: PullBuild,
-    Init: FnMut(&Context<'_>) -> Out,
-    Func: FnMut(&Context<'_>, Out, Prev::ItemOut) -> Out,
+    Init: FnMut(&Context) -> Out,
+    Func: FnMut(&Context, Out, Prev::ItemOut) -> Out,
 {
     type InputHandoffs = Prev::InputHandoffs;
 
     fn build<'slf, 'ctx>(
         &'slf mut self,
-        context: &'ctx Context<'ctx>,
+        context: &'ctx Context,
         handoffs: <Self::InputHandoffs as PortList<RECV>>::Ctx<'ctx>,
     ) -> Self::Build<'slf, 'ctx> {
         std::iter::once_with(move || {
