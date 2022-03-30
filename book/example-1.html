@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Introduction - The Hydroflow Book</title>
+        <title>Simplest Example - The Hydroflow Book</title>
         <!-- Custom HTML head -->
         <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
         <meta name="description" content="">
@@ -75,7 +75,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html" class="active">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">User Guide</li><li class="chapter-item expanded "><a href="quickstart.html"><strong aria-hidden="true">1.</strong> Quickstart</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="setup.html"><strong aria-hidden="true">1.1.</strong> Setup</a></li><li class="chapter-item expanded "><a href="example-1.html"><strong aria-hidden="true">1.2.</strong> Simplest Example</a></li></ol></li><li class="chapter-item expanded "><a href="concepts.html"><strong aria-hidden="true">2.</strong> Concepts</a></li><li class="chapter-item expanded "><a href="architecture.html"><strong aria-hidden="true">3.</strong> Architecture</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="in-out_trees.html"><strong aria-hidden="true">3.1.</strong> Subgraph In-Out Trees</a></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">User Guide</li><li class="chapter-item expanded "><a href="quickstart.html"><strong aria-hidden="true">1.</strong> Quickstart</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="setup.html"><strong aria-hidden="true">1.1.</strong> Setup</a></li><li class="chapter-item expanded "><a href="example-1.html" class="active"><strong aria-hidden="true">1.2.</strong> Simplest Example</a></li></ol></li><li class="chapter-item expanded "><a href="concepts.html"><strong aria-hidden="true">2.</strong> Concepts</a></li><li class="chapter-item expanded "><a href="architecture.html"><strong aria-hidden="true">3.</strong> Architecture</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="in-out_trees.html"><strong aria-hidden="true">3.1.</strong> Subgraph In-Out Trees</a></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -134,20 +134,104 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
-<p><a href="https://github.com/hydro-project/hydroflow">Hydroflow</a> is a dataflow runtime
-written in Rust, serving as the execution layer of the <a href="https://hydro-project.github.io/">Hydro stack</a>.
-This book teaches how to set up and get started with Hydroflow.</p>
-<p>Keep in mind that Hydroflow is under active development and is constantly
-changing. However this book is tested in CI so should always be up-to-date
-(though incomplete, for now).</p>
-<p>If you have any questions, feel free to <a href="https://github.com/hydro-project/hydroflow/issues/new">create an issue on Github</a>.</p>
+                        <h1 id="simplest-example"><a class="header" href="#simplest-example">Simplest Example</a></h1>
+<p>Lets start out with the simplest possible Hydroflow program, which prints out
+the numbers in <code>0..10</code>.</p>
+<pre><pre class="playground"><code class="language-rust">use hydroflow::builder::prelude::*;
+
+pub fn main() {
+    let mut builder = HydroflowBuilder::new();
+    builder.add_subgraph(
+        &quot;main&quot;,
+        (0..10)
+            .into_hydroflow()
+            .pull_to_push()
+            .for_each(|n| println!(&quot;Hello {}&quot;, n)),
+    );
+
+    let mut hydroflow = builder.build();
+    hydroflow.tick();
+}
+</code></pre></pre>
+<p>And the output:</p>
+<pre><code class="language-txt">% cargo run -p hydroflow --example simplest
+   Compiling hydroflow v0.1.0
+    Finished dev [unoptimized + debuginfo] target(s) in 0.90s
+     Running `target/debug/examples/simplest`
+Hello 0
+Hello 1
+Hello 2
+Hello 3
+Hello 4
+Hello 5
+Hello 6
+Hello 7
+Hello 8
+Hello 9
+</code></pre>
+<p>Although this is a trivial program, there's quite a bit going on that might
+phase you. Let's go line by line.</p>
+<pre><code class="language-rust ignore">use hydroflow::builder::prelude::*;
+</code></pre>
+<p>This is a prelude import: a convention where all the important dependencies are
+re-exported in a single <code>prelude</code> module for convenience. In this case it's
+everything you need for using Hydroflow via the <a href="./architecture.html#apis">Surface API</a>.
+You can check <a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/builder/prelude/index.html">Hydroflow's rustdocs</a>
+to see what exactly is imported.</p>
+<p>Next, inside the main method we create a new <code>HydroflowBuilder</code>:</p>
+<pre><code class="language-rust ignore">pub main() {
+    let mut builder = HydroflowBuilder::new();
+    builder.add_subgraph(
+        &quot;main&quot;,
+        // &lt;code for creating the subgraph&gt;
+    );
+    // ...
+}
+</code></pre>
+<p>And add a subgraph. We are required to give the subgraph a name, in this case
+<code>&quot;main&quot;</code>. The &quot;code for creating the subgraph&quot; is:</p>
+<pre><code class="language-rust ignore">        (0..10)
+</code></pre>
+<p>This creates a Rust <a href="https://doc.rust-lang.org/std/ops/struct.Range.html"><code>Range</code> iterator</a>.</p>
+<pre><code class="language-rust ignore">            .into_hydroflow()
+</code></pre>
+<p>Converts a Rust <a href="https://doc.rust-lang.org/std/iter/trait.Iterator.html"><code>Iterator</code></a>
+for use in Hydroflow via the <a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/builder/trait.IntoHydroflow.html"><code>IntoHydroflow</code></a>
+trait.</p>
+<pre><code class="language-rust ignore">            .pull_to_push()
+</code></pre>
+<p>This line is specific to Hydroflow and a bit technical. It converts the chain
+from <em>pull</em> into <em>push</em> which allows us to use push-based methods:</p>
+<pre><code class="language-rust ignore">            .for_each(|n| println!(&quot;Hello {}&quot;, n)),
+</code></pre>
+<p>Which consumes each element, printing it out as they arrive.</p>
+<p>The reason behind having separate pull and push-based operators is explained
+in the <a href="./architecture.html#compiled-layer">Architecture</a> section. For now,
+all we need to know is that every Hydroflow subgraph must have a call to
+<code>.pull_to_push()</code>.</p>
+<p>Note that these chained method operators do not run any immediate
+computations. Instead they provide a blueprint of what the Hydroflow graph
+should look like.</p>
+<pre><code class="language-rust ignore">    let mut hydroflow = builder.build();
+    hydroflow.tick();
+</code></pre>
+<p>Finally we build the <code>Hydroflow</code> instance and run it via the <a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.tick"><code>tick()</code> method</a>.
+Note that <code>tick()</code> runs the Hydroflow graph until no more work is immediately
+available. In this case running the graph drains the iterator completely, so no
+more work will ever be available. But once we add in external inputs such as
+network ingress then more work might appear later. The <a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.tick_stratum"><code>tick_stratum()</code></a>,
+<a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run"><code>run()</code></a>
+and [<code>run_async()</code>] https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_async
+methods provide other ways to execute the graph.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="next" href="quickstart.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="prev" href="setup.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                            <a rel="next" href="concepts.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
                         <div style="clear: both"></div>
@@ -156,7 +240,10 @@ changing. However this book is tested in CI so should always be up-to-date
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="next" href="quickstart.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="prev" href="setup.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                    <a rel="next" href="concepts.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>
