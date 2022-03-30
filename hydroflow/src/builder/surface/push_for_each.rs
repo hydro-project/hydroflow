@@ -4,7 +4,7 @@ use std::marker::PhantomData;
 
 use crate::builder::build::push_for_each::ForEachPushBuild;
 use crate::scheduled::context::Context;
-use crate::scheduled::graph::NodeId;
+use crate::scheduled::flow_graph::NodeId;
 
 pub struct ForEachPushSurfaceReversed<Func, In>
 where

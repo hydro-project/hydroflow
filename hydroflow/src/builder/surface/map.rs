@@ -5,7 +5,7 @@ use std::marker::PhantomData;
 use crate::builder::build::pull_map::MapPullBuild;
 use crate::builder::build::push_map::MapPushBuild;
 use crate::scheduled::context::Context;
-use crate::scheduled::graph::NodeId;
+use crate::scheduled::flow_graph::NodeId;
 
 pub struct MapSurface<Prev, Func>
 where

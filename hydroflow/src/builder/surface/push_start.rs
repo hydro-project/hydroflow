@@ -1,4 +1,4 @@
-use crate::scheduled::graph::NodeId;
+use crate::scheduled::flow_graph::NodeId;
 
 use super::{AssembleFlowGraph, BaseSurface, PushSurface, PushSurfaceReversed};
 

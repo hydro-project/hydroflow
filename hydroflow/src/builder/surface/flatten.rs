@@ -4,7 +4,7 @@ use std::marker::PhantomData;
 
 use crate::builder::build::pull_flatten::FlattenPullBuild;
 use crate::builder::build::push_flatten::FlattenPushBuild;
-use crate::scheduled::graph::NodeId;
+use crate::scheduled::flow_graph::NodeId;
 
 pub struct FlattenSurface<Prev>
 where

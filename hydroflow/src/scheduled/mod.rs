@@ -2,6 +2,7 @@ use serde::Serialize;
 use std::fmt::{Display, Formatter, Result};
 
 pub mod context;
+pub mod flow_graph;
 pub mod graph;
 pub mod graph_ext;
 pub mod handoff;

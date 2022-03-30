@@ -3,7 +3,7 @@ use super::{AssembleFlowGraph, PushSurfaceReversed};
 use std::marker::PhantomData;
 
 use crate::builder::build::push_handoff::HandoffPushBuild;
-use crate::scheduled::graph::NodeId;
+use crate::scheduled::flow_graph::NodeId;
 use crate::scheduled::handoff::{CanReceive, Handoff};
 use crate::scheduled::port::SendPort;
 use crate::{tl, tt};

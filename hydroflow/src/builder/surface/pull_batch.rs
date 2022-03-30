@@ -4,7 +4,7 @@ use std::marker::PhantomData;
 
 use crate::builder::build::pull_batch::BatchPullBuild;
 use crate::lang::lattice::{LatticeRepr, Merge};
-use crate::scheduled::graph::NodeId;
+use crate::scheduled::flow_graph::NodeId;
 use crate::scheduled::handoff::handoff_list::{PortList, PortListSplit};
 use crate::scheduled::port::RECV;
 use crate::scheduled::type_list::Extend;
