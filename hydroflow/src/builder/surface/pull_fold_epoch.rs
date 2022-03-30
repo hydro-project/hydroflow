@@ -3,7 +3,7 @@ use super::{AssembleFlowGraph, BaseSurface, PullSurface};
 use crate::builder::build::pull_fold_epoch::FoldEpochPullBuild;
 
 use crate::scheduled::context::Context;
-use crate::scheduled::graph::NodeId;
+use crate::scheduled::flow_graph::NodeId;
 
 pub struct FoldEpochPullSurface<Prev, Init, Func>
 where

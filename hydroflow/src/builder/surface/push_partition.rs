@@ -2,7 +2,7 @@ use super::{AssembleFlowGraph, PushSurfaceReversed};
 
 use crate::builder::build::push_partition::PartitionPushBuild;
 use crate::scheduled::context::Context;
-use crate::scheduled::graph::NodeId;
+use crate::scheduled::flow_graph::NodeId;
 use crate::scheduled::handoff::handoff_list::{PortList, PortListSplit};
 use crate::scheduled::port::SEND;
 use crate::scheduled::type_list::Extend;
