@@ -5,7 +5,7 @@ use std::marker::PhantomData;
 use crate::builder::build::pull_filter_map::FilterMapPullBuild;
 use crate::builder::build::push_filter_map::FilterMapPushBuild;
 use crate::scheduled::context::Context;
-use crate::scheduled::graph::NodeId;
+use crate::scheduled::flow_graph::NodeId;
 
 pub struct FilterMapSurface<Prev, Func>
 where

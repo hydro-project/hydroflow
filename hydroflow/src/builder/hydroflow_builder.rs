@@ -8,7 +8,8 @@ use std::borrow::Cow;
 use std::sync::mpsc::SyncSender;
 
 use crate::compiled::pivot::Pivot;
-use crate::scheduled::graph::{FlowGraph, Hydroflow};
+use crate::scheduled::flow_graph::FlowGraph;
+use crate::scheduled::graph::Hydroflow;
 use crate::scheduled::graph_ext::GraphExt;
 use crate::scheduled::handoff::{CanReceive, Handoff, VecHandoff};
 use crate::scheduled::input::Input;

@@ -1,7 +1,7 @@
 use super::{AssembleFlowGraph, BaseSurface, PullSurface};
 
 use crate::builder::build::pull_chain::ChainPullBuild;
-use crate::scheduled::graph::{FlowGraph, NodeId};
+use crate::scheduled::flow_graph::{FlowGraph, NodeId};
 use crate::scheduled::handoff::handoff_list::{PortList, PortListSplit};
 use crate::scheduled::port::RECV;
 use crate::scheduled::type_list::Extend;

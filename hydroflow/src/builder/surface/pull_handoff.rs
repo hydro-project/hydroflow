@@ -1,7 +1,7 @@
 use super::{AssembleFlowGraph, BaseSurface, PullSurface};
 
 use crate::builder::build::pull_handoff::HandoffPullBuild;
-use crate::scheduled::graph::NodeId;
+use crate::scheduled::flow_graph::NodeId;
 use crate::scheduled::handoff::Handoff;
 use crate::scheduled::port::RecvPort;
 use crate::{tl, tt};

@@ -3,7 +3,7 @@ use super::{AssembleFlowGraph, BaseSurface, PullSurface, PushSurface, PushSurfac
 use crate::builder::build::pull_filter::FilterPullBuild;
 use crate::builder::build::push_filter::FilterPushBuild;
 use crate::scheduled::context::Context;
-use crate::scheduled::graph::NodeId;
+use crate::scheduled::flow_graph::NodeId;
 
 pub struct FilterSurface<Prev, Func>
 where

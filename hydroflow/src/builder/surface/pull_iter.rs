@@ -1,6 +1,7 @@
 use super::{AssembleFlowGraph, BaseSurface, PullSurface};
 
-use crate::{builder::build::pull_iter::IterPullBuild, scheduled::graph::NodeId};
+use crate::builder::build::pull_iter::IterPullBuild;
+use crate::scheduled::flow_graph::NodeId;
 
 pub struct IterPullSurface<I>
 where
