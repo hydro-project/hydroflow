@@ -16,8 +16,8 @@ where
 impl<Prev, Init, Func, Out> FoldEpochPullSurface<Prev, Init, Func>
 where
     Prev: BaseSurface,
-    Init: FnMut(&Context<'_>) -> Out,
-    Func: FnMut(&Context<'_>, Out, Prev::ItemOut) -> Out,
+    Init: FnMut(&Context) -> Out,
+    Func: FnMut(&Context, Out, Prev::ItemOut) -> Out,
 {
     pub fn new(prev: Prev, init: Init, func: Func) -> Self {
         Self { prev, init, func }
@@ -26,8 +26,8 @@ where
 impl<Prev, Init, Func, Out> AssembleFlowGraph for FoldEpochPullSurface<Prev, Init, Func>
 where
     Prev: BaseSurface + AssembleFlowGraph,
-    Init: FnMut(&Context<'_>) -> Out,
-    Func: FnMut(&Context<'_>, Out, Prev::ItemOut) -> Out,
+    Init: FnMut(&Context) -> Out,
+    Func: FnMut(&Context, Out, Prev::ItemOut) -> Out,
 {
     fn insert_dep(&self, e: &mut super::FlowGraph) -> NodeId {
         let my_id = e.add_node("FoldEpoch");
@@ -40,8 +40,8 @@ where
 impl<Prev, Init, Func, Out> BaseSurface for FoldEpochPullSurface<Prev, Init, Func>
 where
     Prev: BaseSurface,
-    Init: FnMut(&Context<'_>) -> Out,
-    Func: FnMut(&Context<'_>, Out, Prev::ItemOut) -> Out,
+    Init: FnMut(&Context) -> Out,
+    Func: FnMut(&Context, Out, Prev::ItemOut) -> Out,
 {
     type ItemOut = Out;
 }
@@ -49,8 +49,8 @@ where
 impl<Prev, Init, Func, Out> PullSurface for FoldEpochPullSurface<Prev, Init, Func>
 where
     Prev: PullSurface,
-    Init: FnMut(&Context<'_>) -> Out,
-    Func: FnMut(&Context<'_>, Out, Prev::ItemOut) -> Out,
+    Init: FnMut(&Context) -> Out,
+    Func: FnMut(&Context, Out, Prev::ItemOut) -> Out,
 {
     type InputHandoffs = Prev::InputHandoffs;
     type Build = FoldEpochPullBuild<Prev::Build, Init, Func>;

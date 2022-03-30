@@ -15,7 +15,7 @@ where
 impl<Prev, Func> FilterSurface<Prev, Func>
 where
     Prev: BaseSurface,
-    Func: FnMut(&Context<'_>, &Prev::ItemOut) -> bool,
+    Func: FnMut(&Context, &Prev::ItemOut) -> bool,
 {
     pub fn new(prev: Prev, func: Func) -> Self {
         Self { prev, func }
@@ -25,7 +25,7 @@ where
 impl<Prev, Func> BaseSurface for FilterSurface<Prev, Func>
 where
     Prev: BaseSurface,
-    Func: FnMut(&Context<'_>, &Prev::ItemOut) -> bool,
+    Func: FnMut(&Context, &Prev::ItemOut) -> bool,
 {
     type ItemOut = Prev::ItemOut;
 }
@@ -33,7 +33,7 @@ where
 impl<Prev, Func> PullSurface for FilterSurface<Prev, Func>
 where
     Prev: PullSurface,
-    Func: FnMut(&Context<'_>, &Prev::ItemOut) -> bool,
+    Func: FnMut(&Context, &Prev::ItemOut) -> bool,
 {
     type InputHandoffs = Prev::InputHandoffs;
     type Build = FilterPullBuild<Prev::Build, Func>;
@@ -47,7 +47,7 @@ where
 impl<Prev, Func> AssembleFlowGraph for FilterSurface<Prev, Func>
 where
     Prev: PullSurface + AssembleFlowGraph,
-    Func: FnMut(&Context<'_>, &Prev::ItemOut) -> bool,
+    Func: FnMut(&Context, &Prev::ItemOut) -> bool,
 {
     fn insert_dep(&self, e: &mut super::FlowGraph) -> NodeId {
         let my_id = e.add_node("Filter");
@@ -60,7 +60,7 @@ where
 impl<Prev, Func> PushSurface for FilterSurface<Prev, Func>
 where
     Prev: PushSurface,
-    Func: FnMut(&Context<'_>, &Prev::ItemOut) -> bool,
+    Func: FnMut(&Context, &Prev::ItemOut) -> bool,
 {
     type Output<Next> = Prev::Output<FilterPushSurfaceReversed<Next, Func>>
     where
@@ -85,7 +85,7 @@ where
 impl<Next, Func> FilterPushSurfaceReversed<Next, Func>
 where
     Next: PushSurfaceReversed,
-    Func: FnMut(&Context<'_>, &Next::ItemIn) -> bool,
+    Func: FnMut(&Context, &Next::ItemIn) -> bool,
 {
     pub fn new(next: Next, func: Func) -> Self {
         Self { next, func }
@@ -94,7 +94,7 @@ where
 impl<Next, Func> AssembleFlowGraph for FilterPushSurfaceReversed<Next, Func>
 where
     Next: PushSurfaceReversed + AssembleFlowGraph,
-    Func: FnMut(&Context<'_>, &Next::ItemIn) -> bool,
+    Func: FnMut(&Context, &Next::ItemIn) -> bool,
 {
     fn insert_dep(&self, e: &mut super::FlowGraph) -> NodeId {
         let my_id = e.add_node("Filter");
@@ -107,7 +107,7 @@ where
 impl<Next, Func> PushSurfaceReversed for FilterPushSurfaceReversed<Next, Func>
 where
     Next: PushSurfaceReversed,
-    Func: FnMut(&Context<'_>, &Next::ItemIn) -> bool,
+    Func: FnMut(&Context, &Next::ItemIn) -> bool,
 {
     type ItemIn = Next::ItemIn;
 

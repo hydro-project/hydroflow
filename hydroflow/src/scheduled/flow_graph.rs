@@ -19,7 +19,7 @@ impl Hydroflow {
             .handoff_ids
             .get(&node_id)
         {
-            let handoff = &self.handoffs[handoff_id.0];
+            let handoff = &self.context.handoffs[handoff_id.0];
             format!("Handoff_{}[\\{}/]", handoff_id.0, handoff.name)
         } else if &*name == "PullToPush" {
             format!("{}.{}[/{}\\]", sg_id.0, node_id.0, name)
@@ -141,7 +141,7 @@ impl Hydroflow {
                     subgraph.name.clone(),
                     subgraph.stratum,
                     subgraph.dependencies.clone(),
-                    &*self.handoffs,
+                    &*self.context.handoffs,
                 );
             }
         }

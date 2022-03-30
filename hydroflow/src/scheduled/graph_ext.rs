@@ -26,7 +26,7 @@ macro_rules! subgraph_ext {
         ) -> SubgraphId
         where
             Name: Into<Cow<'static, str>>,
-            F: 'static + FnMut(&Context<'_>, $(&RecvCtx< $recv_generic >,)* $(&SendCtx< $send_generic >),*),
+            F: 'static + FnMut(&Context, $(&RecvCtx< $recv_generic >,)* $(&SendCtx< $send_generic >),*),
             $($recv_generic : 'static + Handoff,)*
             $($send_generic : 'static + Handoff,)*;
     };
@@ -44,7 +44,7 @@ macro_rules! subgraph_ext {
         ) -> SubgraphId
         where
             Name: Into<Cow<'static, str>>,
-            F: 'static + FnMut(&Context<'_>, $(&RecvCtx< $recv_generic >,)* $(&SendCtx< $send_generic >),*),
+            F: 'static + FnMut(&Context, $(&RecvCtx< $recv_generic >,)* $(&SendCtx< $send_generic >),*),
             $($recv_generic : 'static + Handoff,)*
             $($send_generic : 'static + Handoff,)*
         {
