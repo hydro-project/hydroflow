@@ -81,7 +81,7 @@ trait.
 ```rust,ignore
             .pull_to_push()
 ```
-This line is specific to Hydroflow and a bit technical. It converts the chain
+This line is specific to Hydroflow and a bit unusual. It converts the chain
 from _pull_ into _push_ which allows us to use push-based methods:
 
 
@@ -90,10 +90,11 @@ from _pull_ into _push_ which allows us to use push-based methods:
 ```
 Which consumes each element, printing it out as they arrive.
 
-The reason behind having separate pull and push-based operators is explained
-in the [Architecture](./architecture.html#compiled-layer) section. For now,
-all we need to know is that every Hydroflow subgraph must have a call to
-`.pull_to_push()`.
+For now, all we need to know is that every Hydroflow subgraph starts as _pull_,
+then becomes _push_ after we call `.pull_to_push()`. Some operators can only be
+used in the pull side, some can only be used in the push side, and some can be
+used in either. The reason behind having separate pull and push-based operators
+is explained in the [Architecture](./architecture.html#compiled-layer) section.
 
 Note that these chained method operators do not run any immediate
 computations. Instead they provide a blueprint of what the Hydroflow graph
