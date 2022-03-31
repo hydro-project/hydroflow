@@ -13,3 +13,15 @@ pub mod scheduled;
 pub use tokio;
 pub use tuple_list::tuple_list as tl;
 pub use tuple_list::tuple_list_type as tt;
+
+#[cfg(doctest)]
+mod booktest {
+    macro_rules! booktest {
+        ($i:ident) => {
+            #[doc = include_str!(concat!("../../book/", stringify!($i), ".md"))]
+            mod $i {}
+        };
+    }
+    booktest!(example_1);
+    booktest!(example_2);
+}
