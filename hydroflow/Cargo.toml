@@ -20,9 +20,6 @@ name = "covid_tracing_dist"
 name = "graph_reachability"
 
 [[example]]
-name = "simplest"
-
-[[example]]
 name = "three_clique"
 
 [[example]]
@@ -30,6 +27,11 @@ name = "two_pc"
 
 [[example]]
 name = "kvs"
+
+[[example]]
+name = "example-1"
+[[example]]
+name = "example-2"
 
 [dependencies]
 bincode = "1.3"
