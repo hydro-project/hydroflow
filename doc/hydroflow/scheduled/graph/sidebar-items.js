@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["EdgeSet",""],["FlowGraph","A graph representation of a compiled component’s graph structure."],["GlobalGraph",""],["HandoffData","A handoff and its input and output [SubgraphId]s."],["Hydroflow","A Hydroflow graph. Owns, schedules, and runs the compiled subgraphs."],["NodeId","A FlowGraph nodes’s ID."]]});
+initSidebarItems({"struct":[["HandoffData","A handoff and its input and output [SubgraphId]s."],["Hydroflow","A Hydroflow graph. Owns, schedules, and runs the compiled subgraphs."]]});

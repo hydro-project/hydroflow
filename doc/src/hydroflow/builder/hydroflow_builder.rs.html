@@ -216,6 +216,7 @@
 <span id="211">211</span>
 <span id="212">212</span>
 <span id="213">213</span>
+<span id="214">214</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">futures::Stream</span>;
 
 <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::build</span>::{<span class="ident">PullBuild</span>, <span class="ident">PushBuild</span>};
@@ -226,7 +227,8 @@
 <span class="kw">use</span> <span class="ident">std::sync::mpsc::SyncSender</span>;
 
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::compiled::pivot::Pivot</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::graph</span>::{<span class="ident">FlowGraph</span>, <span class="ident">Hydroflow</span>};
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::flow_graph::FlowGraph</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::graph::Hydroflow</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::graph_ext::GraphExt</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::handoff</span>::{<span class="ident">CanReceive</span>, <span class="ident">Handoff</span>, <span class="ident">VecHandoff</span>};
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::input::Input</span>;
@@ -430,5 +432,5 @@
     }
 }
 </code></pre></div>
-</section><section id="search" class="content hidden"></section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.61.0-nightly (c5cf08d37 2022-03-30)" ></div>
+</section><section id="search" class="content hidden"></section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.61.0-nightly (0677edc86 2022-03-31)" ></div>
 </body></html>
