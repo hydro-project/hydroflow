@@ -36,7 +36,8 @@ pub struct Hydroflow {
 }
 impl Default for Hydroflow {
     fn default() -> Self {
-        let (subgraphs, handoffs, states, stratum_queues) = Default::default();
+        let (subgraphs, handoffs, states) = Default::default();
+        let stratum_queues = vec![Default::default()]; // Always initialize stratum #0.
         let (event_queue_send, event_queue_recv) = mpsc::unbounded_channel();
         Self {
             subgraphs,
