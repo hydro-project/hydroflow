@@ -507,6 +507,7 @@
 <span id="502">502</span>
 <span id="503">503</span>
 <span id="504">504</span>
+<span id="505">505</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::any::Any</span>;
 <span class="kw">use</span> <span class="ident">std::borrow::Cow</span>;
 <span class="kw">use</span> <span class="ident">std::cell::Cell</span>;
@@ -545,7 +546,8 @@
 }
 <span class="kw">impl</span> <span class="ident">Default</span> <span class="kw">for</span> <span class="ident">Hydroflow</span> {
     <span class="kw">fn</span> <span class="ident">default</span>() -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> (<span class="ident">subgraphs</span>, <span class="ident">handoffs</span>, <span class="ident">states</span>, <span class="ident">stratum_queues</span>) <span class="op">=</span> <span class="ident">Default::default</span>();
+        <span class="kw">let</span> (<span class="ident">subgraphs</span>, <span class="ident">handoffs</span>, <span class="ident">states</span>) <span class="op">=</span> <span class="ident">Default::default</span>();
+        <span class="kw">let</span> <span class="ident">stratum_queues</span> <span class="op">=</span> <span class="macro">vec!</span>[<span class="ident">Default::default</span>()]; <span class="comment">// Always initialize stratum #0.</span>
         <span class="kw">let</span> (<span class="ident">event_queue_send</span>, <span class="ident">event_queue_recv</span>) <span class="op">=</span> <span class="ident">mpsc::unbounded_channel</span>();
         <span class="self">Self</span> {
             <span class="ident">subgraphs</span>,
