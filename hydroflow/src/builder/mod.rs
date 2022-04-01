@@ -94,6 +94,7 @@ pub use into_hydroflow::IntoHydroflow;
 pub mod prelude {
     pub use super::surface::{BaseSurface, PullSurface, PushSurface};
     pub use super::{HydroflowBuilder, IntoHydroflow};
+    pub use crate::scheduled::handoff::VecHandoff;
 }
 
 #[test]
