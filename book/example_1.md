@@ -23,10 +23,6 @@ pub fn main() {
 
 And the output:
 ```txt
-% cargo run -p hydroflow --example simplest
-   Compiling hydroflow v0.1.0
-    Finished dev [unoptimized + debuginfo] target(s) in 0.90s
-     Running `target/debug/examples/simplest`
 Hello 0
 Hello 1
 Hello 2
