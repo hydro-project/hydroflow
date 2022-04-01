@@ -76,7 +76,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">User Guide</li><li class="chapter-item expanded "><a href="quickstart.html"><strong aria-hidden="true">1.</strong> Quickstart</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="setup.html"><strong aria-hidden="true">1.1.</strong> Setup</a></li><li class="chapter-item expanded "><a href="example-1.html"><strong aria-hidden="true">1.2.</strong> Simplest Example</a></li></ol></li><li class="chapter-item expanded "><a href="concepts.html"><strong aria-hidden="true">2.</strong> Concepts</a></li><li class="chapter-item expanded "><a href="architecture.html"><strong aria-hidden="true">3.</strong> Architecture</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="in-out_trees.html"><strong aria-hidden="true">3.1.</strong> Subgraph In-Out Trees</a></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">User Guide</li><li class="chapter-item expanded "><a href="quickstart.html"><strong aria-hidden="true">1.</strong> Quickstart</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="setup.html"><strong aria-hidden="true">1.1.</strong> Setup</a></li><li class="chapter-item expanded "><a href="example_1.html"><strong aria-hidden="true">1.2.</strong> Simplest Example</a></li><li class="chapter-item expanded "><a href="example_2.html"><strong aria-hidden="true">1.3.</strong> Simple Example</a></li><li class="chapter-item expanded "><a href="example_3.html"><strong aria-hidden="true">1.4.</strong> A Branching Example</a></li></ol></li><li class="chapter-item expanded "><a href="concepts.html"><strong aria-hidden="true">2.</strong> Concepts</a></li><li class="chapter-item expanded "><a href="architecture.html"><strong aria-hidden="true">3.</strong> Architecture</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="in-out_trees.html"><strong aria-hidden="true">3.1.</strong> Subgraph In-Out Trees</a></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -267,15 +267,16 @@ for use in Hydroflow via the <a href="https://hydro-project.github.io/hydroflow/
 trait.</p>
 <pre><code class="language-rust ignore">            .pull_to_push()
 </code></pre>
-<p>This line is specific to Hydroflow and a bit technical. It converts the chain
+<p>This line is specific to Hydroflow and a bit unusual. It converts the chain
 from <em>pull</em> into <em>push</em> which allows us to use push-based methods:</p>
 <pre><code class="language-rust ignore">            .for_each(|n| println!(&quot;Hello {}&quot;, n)),
 </code></pre>
 <p>Which consumes each element, printing it out as they arrive.</p>
-<p>The reason behind having separate pull and push-based operators is explained
-in the <a href="./architecture.html#compiled-layer">Architecture</a> section. For now,
-all we need to know is that every Hydroflow subgraph must have a call to
-<code>.pull_to_push()</code>.</p>
+<p>For now, all we need to know is that every Hydroflow subgraph starts as <em>pull</em>,
+then becomes <em>push</em> after we call <code>.pull_to_push()</code>. Some operators can only be
+used in the pull side, some can only be used in the push side, and some can be
+used in either. The reason behind having separate pull and push-based operators
+is explained in the <a href="./architecture.html#compiled-layer">Architecture</a> section.</p>
 <p>Note that these chained method operators do not run any immediate
 computations. Instead they provide a blueprint of what the Hydroflow graph
 should look like.</p>
@@ -290,6 +291,81 @@ network ingress then more work might appear later. The <a href="https://hydro-pr
 <a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run"><code>run()</code></a>
 and [<code>run_async()</code>] https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_async
 methods provide other ways to execute the graph.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="simple-example"><a class="header" href="#simple-example">Simple Example</a></h1>
+<p>Lets build on the simplest example to explore some of the operators available
+in Hydroflow. You may be familiar with operators such as <a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/builder/surface/trait.BaseSurface.html#method.map"><code>.map(...)</code></a>,
+<a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/builder/surface/trait.BaseSurface.html#method.filter"><code>.filter(...)</code></a>,
+<a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/builder/surface/trait.BaseSurface.html#method.flatten"><code>.flatten(...)</code></a>,
+etc. from Rust iterators or from other programming languages, and these are
+also available in Hydroflow.</p>
+<pre><pre class="playground"><code class="language-rust">use hydroflow::builder::prelude::*;
+
+pub fn main() {
+    let mut builder = HydroflowBuilder::new();
+    builder.add_subgraph(
+        &quot;main&quot;,
+        (0..10)
+            .into_hydroflow()
+
+            .map(|n| n * n)
+            .filter(|&amp;n| n &gt; 10)
+
+            .pull_to_push()
+
+            .map(|n| (n..=n+1))
+            .flatten()
+
+            .for_each(|n| println!(&quot;Howdy {}&quot;, n)),
+    );
+
+    let mut hydroflow = builder.build();
+    hydroflow.tick();
+}
+</code></pre></pre>
+<p><code>.map()</code> transforms each element one-to-one as it flows through the subgraph.
+In this case, we square each number. Then <code>.filter()</code> only keeps any squared
+numbers which are greater than 10.</p>
+<p>After the pull to push. <code>.map()</code> converts each number into a
+<a href="https://doc.rust-lang.org/std/ops/struct.RangeInclusive.html"><code>RangeInclusive</code></a>
+of it and the next number. We then call <code>.flatten()</code> to conver the range
+iterators into the numbers which they contains.</p>
+<p>We can also express the same program with the combination operators
+<a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/builder/surface/trait.BaseSurface.html#method.filter_map"><code>.filter_map()</code></a>
+and <a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/builder/surface/trait.BaseSurface.html#method.flat_map"><code>.flat_map()</code></a>.</p>
+<pre><pre class="playground"><code class="language-rust">use hydroflow::builder::prelude::*;
+
+pub fn main() {
+    let mut builder = HydroflowBuilder::new();
+    builder.add_subgraph(
+        &quot;main&quot;,
+        (0..10)
+            .into_hydroflow()
+            .filter_map(|n| {
+                let n2 = n * n;
+                if n2 &gt; 10 {
+                    Some(n2)
+                }
+                else {
+                    None
+                }
+            })
+            .pull_to_push()
+            .flat_map(|n| (n..=n+1))
+            .for_each(|n| println!(&quot;G'day {}&quot;, n)),
+    );
+
+    let mut hydroflow = builder.build();
+    hydroflow.tick();
+}
+</code></pre></pre>
+<p>Note all of these operators work on both pull and push sides of a subgraph.
+<a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/builder/surface/trait.BaseSurface.html#"><code>BaseSurface</code></a>
+contains the full list of such operators.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="a-branching-example"><a class="header" href="#a-branching-example">A Branching Example</a></h1>
+<p>So far all the operators we've used have one input and one output and therefore
+create a linear graph. Let's now take a look at a subgraph which has multiple
+merging together, and branches out to multiple outputs. We'll also introduce
+a simple way to accept external inputs into the Hydroflow graph.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="concepts"><a class="header" href="#concepts">Concepts</a></h1>
 <h2 id="dataflow-and-networking"><a class="header" href="#dataflow-and-networking">Dataflow and Networking</a></h2>
 <p>Conventionally, dataflow systems provide a way to analyze and process data by

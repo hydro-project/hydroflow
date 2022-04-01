@@ -18,6 +18,19 @@
 <span id="13">13</span>
 <span id="14">14</span>
 <span id="15">15</span>
+<span id="16">16</span>
+<span id="17">17</span>
+<span id="18">18</span>
+<span id="19">19</span>
+<span id="20">20</span>
+<span id="21">21</span>
+<span id="22">22</span>
+<span id="23">23</span>
+<span id="24">24</span>
+<span id="25">25</span>
+<span id="26">26</span>
+<span id="27">27</span>
+<span id="28">28</span>
 </pre><pre class="rust"><code><span class="attribute">#![<span class="ident">feature</span>(<span class="ident">never_type</span>)]</span>
 <span class="attribute">#![<span class="ident">feature</span>(<span class="ident">type_alias_impl_trait</span>)]</span>
 <span class="attribute">#![<span class="ident">feature</span>(<span class="ident">generic_associated_types</span>)]</span>
@@ -33,6 +46,19 @@
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">tokio</span>;
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">tuple_list::tuple_list</span> <span class="kw">as</span> <span class="ident">tl</span>;
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">tuple_list::tuple_list_type</span> <span class="kw">as</span> <span class="ident">tt</span>;
+
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">doctest</span>)]</span>
+<span class="kw">mod</span> <span class="ident">booktest</span> {
+    <span class="macro">macro_rules!</span> <span class="ident">booktest</span> {
+        (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">i</span>:<span class="ident">ident</span>) =&gt; {
+            <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="macro">include_str!</span>(<span class="macro">concat!</span>(<span class="string">&quot;../../book/&quot;</span>, <span class="macro">stringify!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">i</span>), <span class="string">&quot;.md&quot;</span>))]</span>
+            <span class="kw">mod</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">i</span> {}
+        };
+    }
+    <span class="macro">booktest!</span>(<span class="ident">example_1</span>);
+    <span class="macro">booktest!</span>(<span class="ident">example_2</span>);
+    <span class="macro">booktest!</span>(<span class="ident">example_3</span>);
+}
 </code></pre></div>
 </section><section id="search" class="content hidden"></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.61.0-nightly (0677edc86 2022-03-31)" ></div>
 </body></html>
