@@ -25,4 +25,6 @@ mod booktest {
     booktest!(example_1);
     booktest!(example_2);
     booktest!(example_3);
+    booktest!(example_4);
+    booktest!(example_5);
 }

@@ -23,15 +23,17 @@ pub fn main() {
 
     builder.add_subgraph(
         "main",
-        [0].into_hydroflow()
+        std::iter::once(0)
+            .into_hydroflow()
             .chain(recv_loop.flatten())
             .map(|v| (v, ()))
             .join(recv_edges.flatten())
             .pull_to_push()
             .map(|(_old_v, (), new_v)| new_v)
-            .inspect(|&v| println!("Reached: {}", v))
-            .map(Some)
-            .push_to(send_loop),
+            .tee(
+                builder.start_tee().for_each(|v| println!("Reached: {}", v)),
+                builder.start_tee().map(Some).push_to(send_loop),
+            ),
     );
 
     let mut hf = builder.build();
