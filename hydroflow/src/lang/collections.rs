@@ -371,10 +371,10 @@ impl<K: 'static + Eq, V: 'static> Collection<K, V> for Single<(K, V)> {
 pub struct Single<T>(pub T);
 impl<T> IntoIterator for Single<T> {
     type Item = T;
-    type IntoIter = <Option<T> as IntoIterator>::IntoIter;
+    type IntoIter = std::iter::Once<T>;
 
     fn into_iter(self) -> Self::IntoIter {
-        Some(self.0).into_iter()
+        std::iter::once(self.0)
     }
 }
 
