@@ -126,8 +126,10 @@ jobs:
 
       - name: Install mdBook
         run: curl -sSL https://github.com/rust-lang/mdBook/releases/download/v0.4.15/mdbook-v0.4.15-x86_64-unknown-linux-gnu.tar.gz | tar -xz
+      - name: Install mdbook-mermaid
+        run: curl -sSL https://github.com/badboy/mdbook-mermaid/releases/download/v0.10.0/mdbook-mermaid-v0.10.0-x86_64-unknown-linux-musl.tar.gz | tar -xz
       - name: Run mdBook build
-        run: ./mdbook build
+        run: PATH=$PATH:$(pwd) mdbook build
 
       - name: Include design docs
         shell: bash
@@ -212,7 +214,7 @@ jobs:
       - name: Write benchmark JSON
         run: echo 'window.BENCHMARK_DATA = ' | cat - "$WWW_DIR/bench/data.json" > "$WWW_DIR/bench/data.js"
 
-      - name: Write benhmark HTML
+      - name: Write benchmark HTML
         shell: bash
         run: node --input-type=module -e "$(curl -sSL https://raw.githubusercontent.com/benchmark-action/github-action-benchmark/master/src/default_index_html.ts) console.log(DEFAULT_INDEX_HTML)" > "$WWW_DIR/bench/index.html"
 
