@@ -79,6 +79,17 @@
 <span id="74">74</span>
 <span id="75">75</span>
 <span id="76">76</span>
+<span id="77">77</span>
+<span id="78">78</span>
+<span id="79">79</span>
+<span id="80">80</span>
+<span id="81">81</span>
+<span id="82">82</span>
+<span id="83">83</span>
+<span id="84">84</span>
+<span id="85">85</span>
+<span id="86">86</span>
+<span id="87">87</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::any::Any</span>;
 
 <span class="kw">use</span> <span class="ident">tokio::sync::mpsc::UnboundedSender</span>;
@@ -89,17 +100,28 @@
     <span class="ident">SubgraphId</span>,
 };
 
-<span class="comment">// A handle onto the dataflow from within an individual operator.</span>
+<span class="doccomment">/// The main state of the Hydroflow instance, which is provided as a reference</span>
+<span class="doccomment">/// to each operator as it is run.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// As an optimization, each Hydroflow instances stores eactly one Context</span>
+<span class="doccomment">/// inline, which allows us to avoid any construction/deconstruction costs.</span>
+<span class="doccomment">/// Before the `Context` is provided to a running operator, the `subgraph_id`</span>
+<span class="doccomment">/// field must be updated.</span>
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Context</span> {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">handoffs</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">HandoffData</span><span class="op">&gt;</span>,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">states</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">StateData</span><span class="op">&gt;</span>,
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">subgraph_id</span>: <span class="ident">SubgraphId</span>,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">handoffs</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> [<span class="ident">HandoffData</span>],
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">states</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> [<span class="ident">StateData</span>],
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">event_queue_send</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">UnboundedSender</span><span class="op">&lt;</span><span class="ident">SubgraphId</span><span class="op">&gt;</span>,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">event_queue_send</span>: <span class="ident">UnboundedSender</span><span class="op">&lt;</span><span class="ident">SubgraphId</span><span class="op">&gt;</span>, <span class="comment">// TODO(mingwei) remove this, to prevent hanging.</span>
+
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">current_epoch</span>: <span class="ident">usize</span>,
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">current_stratum</span>: <span class="ident">usize</span>,
+
+    <span class="doccomment">/// The SubgraphId of the currently running operator. When this context is</span>
+    <span class="doccomment">/// not being forwarded to a running operator, this field is (mostly)</span>
+    <span class="doccomment">/// meaningless.</span>
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">subgraph_id</span>: <span class="ident">SubgraphId</span>,
 }
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
+<span class="kw">impl</span> <span class="ident">Context</span> {
     <span class="comment">// Gets the current epoch (local time) count.</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">current_epoch</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
         <span class="self">self</span>.<span class="ident">current_epoch</span>
@@ -156,5 +178,5 @@
     }
 }
 </code></pre></div>
-</section><section id="search" class="content hidden"></section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.61.0-nightly (6af09d250 2022-04-03)" ></div>
+</section><section id="search" class="content hidden"></section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.0-nightly (60e50fc1c 2022-04-04)" ></div>
 </body></html>

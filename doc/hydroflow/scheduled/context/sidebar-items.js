@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["Context",""]]});
+initSidebarItems({"struct":[["Context","The main state of the Hydroflow instance, which is provided as a reference to each operator as it is run."]]});

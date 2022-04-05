@@ -333,7 +333,7 @@
             .<span class="ident">handoff_ids</span>
             .<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">node_id</span>)
         {
-            <span class="kw">let</span> <span class="ident">handoff</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">handoffs</span>[<span class="ident">handoff_id</span>.<span class="number">0</span>];
+            <span class="kw">let</span> <span class="ident">handoff</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">context</span>.<span class="ident">handoffs</span>[<span class="ident">handoff_id</span>.<span class="number">0</span>];
             <span class="macro">format!</span>(<span class="string">&quot;Handoff_{}[\\{}/]&quot;</span>, <span class="ident">handoff_id</span>.<span class="number">0</span>, <span class="ident">handoff</span>.<span class="ident">name</span>)
         } <span class="kw">else</span> <span class="kw">if</span> <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">name</span> <span class="op">==</span> <span class="string">&quot;PullToPush&quot;</span> {
             <span class="macro">format!</span>(<span class="string">&quot;{}.{}[/{}\\]&quot;</span>, <span class="ident">sg_id</span>.<span class="number">0</span>, <span class="ident">node_id</span>.<span class="number">0</span>, <span class="ident">name</span>)
@@ -455,7 +455,7 @@
                     <span class="ident">subgraph</span>.<span class="ident">name</span>.<span class="ident">clone</span>(),
                     <span class="ident">subgraph</span>.<span class="ident">stratum</span>,
                     <span class="ident">subgraph</span>.<span class="ident">dependencies</span>.<span class="ident">clone</span>(),
-                    <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="self">self</span>.<span class="ident">handoffs</span>,
+                    <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="self">self</span>.<span class="ident">context</span>.<span class="ident">handoffs</span>,
                 );
             }
         }
@@ -622,5 +622,5 @@
     }
 }
 </code></pre></div>
-</section><section id="search" class="content hidden"></section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.61.0-nightly (6af09d250 2022-04-03)" ></div>
+</section><section id="search" class="content hidden"></section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.0-nightly (60e50fc1c 2022-04-04)" ></div>
 </body></html>
