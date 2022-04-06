@@ -16,6 +16,7 @@ use zipf::ZipfDistribution;
 
 mod common;
 mod kvs_compiled;
+mod kvs_raw;
 mod kvs_scheduled;
 
 // This would ideally be a trait, but trait methods can't be async.
@@ -25,6 +26,7 @@ where
     K: 'static + Clone + Eq + std::hash::Hash + Send + std::fmt::Debug,
     V: 'static + Clone + Send + std::fmt::Debug + Ord + Default,
 {
+    Raw(kvs_raw::Kvs<K, V>),
     Scheduled(kvs_scheduled::Kvs<K, V>),
     Compiled(kvs_compiled::Kvs<K, V>),
 }
@@ -36,6 +38,7 @@ where
 {
     async fn set(&mut self, k: K, v: V) {
         match self {
+            Self::Raw(kvs) => kvs.set(k, v).await,
             Self::Scheduled(kvs) => kvs.set(k, v).await,
             Self::Compiled(kvs) => kvs.set(k, v).await,
         }
@@ -43,6 +46,7 @@ where
 
     async fn get(&mut self, k: K) -> Option<(Clock, V)> {
         match self {
+            Self::Raw(kvs) => kvs.get(k).await,
             Self::Scheduled(kvs) => kvs.get(k).await,
             Self::Compiled(kvs) => kvs.get(k).await,
         }
@@ -62,6 +66,7 @@ where
             .ok_or("need to specify number of workers")?;
         let workers = workers.parse().map_err(|e| format!("{}", e))?;
         match kind {
+            "raw" => Ok(KvsImplementation::Raw(kvs_raw::Kvs::new(workers))),
             "scheduled" => Ok(KvsImplementation::Scheduled(kvs_scheduled::Kvs::new(
                 workers,
             ))),
@@ -136,8 +141,6 @@ impl FromStr for Dist {
 struct Args {
     #[clap(long)]
     read_percentage: f64,
-    #[clap(long)]
-    num_kvs_workers: u64,
     #[clap(long)]
     num_benchmark_workers: u64,
     #[clap(long)]

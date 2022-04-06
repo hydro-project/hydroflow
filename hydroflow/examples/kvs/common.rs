@@ -23,6 +23,7 @@ where
     senders
 }
 
+#[derive(Debug)]
 pub(crate) enum Message<K, V>
 where
     K: Send + Clone,
