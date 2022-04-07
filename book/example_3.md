@@ -1,4 +1,4 @@
-# A Branching Example
+# An Example With Streaming Input
 
 In this example we'll introduce the concept of handoffs and external inputs.
 
