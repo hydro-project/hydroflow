@@ -3,6 +3,7 @@ use super::{AssembleFlowGraph, PushSurfaceReversed};
 use std::marker::PhantomData;
 
 use crate::builder::build::push_handoff::HandoffPushBuild;
+use crate::scheduled::context::Context;
 use crate::scheduled::flow_graph::NodeId;
 use crate::scheduled::handoff::{CanReceive, Handoff};
 use crate::scheduled::port::SendPort;
@@ -47,7 +48,7 @@ where
     type OutputHandoffs = tt!(SendPort<Hof>);
     type Build = HandoffPushBuild<Hof, In>;
 
-    fn into_parts(self) -> (Self::OutputHandoffs, Self::Build) {
+    fn into_parts(self, _ctx: &mut Context) -> (Self::OutputHandoffs, Self::Build) {
         (tl!(self.port), HandoffPushBuild::new())
     }
 }

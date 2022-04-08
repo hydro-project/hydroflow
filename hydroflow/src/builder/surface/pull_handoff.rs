@@ -1,6 +1,7 @@
 use super::{AssembleFlowGraph, BaseSurface, PullSurface};
 
 use crate::builder::build::pull_handoff::HandoffPullBuild;
+use crate::scheduled::context::Context;
 use crate::scheduled::flow_graph::NodeId;
 use crate::scheduled::handoff::Handoff;
 use crate::scheduled::port::RecvPort;
@@ -46,7 +47,7 @@ where
     type InputHandoffs = tt!(RecvPort<Hof>);
     type Build = HandoffPullBuild<Hof>;
 
-    fn into_parts(self) -> (Self::InputHandoffs, Self::Build) {
+    fn into_parts(self, _ctx: &mut Context) -> (Self::InputHandoffs, Self::Build) {
         (tl!(self.port), HandoffPullBuild::new())
     }
 }

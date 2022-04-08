@@ -55,8 +55,8 @@ where
     type InputHandoffs = Prev::InputHandoffs;
     type Build = FoldEpochPullBuild<Prev::Build, Init, Func>;
 
-    fn into_parts(self) -> (Self::InputHandoffs, Self::Build) {
-        let (connect, build) = self.prev.into_parts();
+    fn into_parts(self, ctx: &mut Context) -> (Self::InputHandoffs, Self::Build) {
+        let (connect, build) = self.prev.into_parts(ctx);
         let build = FoldEpochPullBuild::new(build, self.init, self.func);
         (connect, build)
     }
