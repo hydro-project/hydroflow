@@ -1,6 +1,7 @@
 use super::{AssembleFlowGraph, PushSurfaceReversed};
 
 use crate::builder::build::push_tee::TeePushBuild;
+use crate::scheduled::context::Context;
 use crate::scheduled::flow_graph::NodeId;
 use crate::scheduled::handoff::handoff_list::{PortList, PortListSplit};
 use crate::scheduled::port::SEND;
@@ -68,9 +69,9 @@ where
     type OutputHandoffs = <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended;
     type Build = TeePushBuild<NextA::Build, NextB::Build>;
 
-    fn into_parts(self) -> (Self::OutputHandoffs, Self::Build) {
-        let (connect_a, build_a) = self.next_a.into_parts();
-        let (connect_b, build_b) = self.next_b.into_parts();
+    fn into_parts(self, ctx: &mut Context) -> (Self::OutputHandoffs, Self::Build) {
+        let (connect_a, build_a) = self.next_a.into_parts(ctx);
+        let (connect_b, build_b) = self.next_b.into_parts(ctx);
         let connect = connect_a.extend(connect_b);
         let build = TeePushBuild::new(build_a, build_b);
         (connect, build)

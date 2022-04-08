@@ -4,6 +4,7 @@ use std::marker::PhantomData;
 
 use crate::builder::build::pull_batch::BatchPullBuild;
 use crate::lang::lattice::{LatticeRepr, Merge};
+use crate::scheduled::context::Context;
 use crate::scheduled::flow_graph::NodeId;
 use crate::scheduled::handoff::handoff_list::{PortList, PortListSplit};
 use crate::scheduled::port::RECV;
@@ -96,9 +97,9 @@ where
     type InputHandoffs = <PrevBuf::InputHandoffs as Extend<PrevStream::InputHandoffs>>::Extended;
     type Build = BatchPullBuild<PrevBuf::Build, PrevStream::Build, L, Update, Tick>;
 
-    fn into_parts(self) -> (Self::InputHandoffs, Self::Build) {
-        let (connect_a, build_a) = self.prev_a.into_parts();
-        let (connect_b, build_b) = self.prev_b.into_parts();
+    fn into_parts(self, ctx: &mut Context) -> (Self::InputHandoffs, Self::Build) {
+        let (connect_a, build_a) = self.prev_a.into_parts(ctx);
+        let (connect_b, build_b) = self.prev_b.into_parts(ctx);
         let connect = connect_a.extend(connect_b);
         let build = BatchPullBuild::new(build_a, build_b);
         (connect, build)

@@ -5,6 +5,7 @@ use std::marker::PhantomData;
 
 use crate::builder::build::pull_half_hash_join::HalfHashJoinPullBuild;
 use crate::lang::lattice::{LatticeRepr, Merge};
+use crate::scheduled::context::Context;
 use crate::scheduled::flow_graph::NodeId;
 use crate::scheduled::handoff::handoff_list::{PortList, PortListSplit};
 use crate::scheduled::port::RECV;
@@ -106,9 +107,9 @@ where
     type Build =
         HalfHashJoinPullBuild<PrevBuf::Build, PrevStream::Build, Key, L, Update, StreamVal>;
 
-    fn into_parts(self) -> (Self::InputHandoffs, Self::Build) {
-        let (connect_a, build_a) = self.prev_buf.into_parts();
-        let (connect_b, build_b) = self.prev_stream.into_parts();
+    fn into_parts(self, ctx: &mut Context) -> (Self::InputHandoffs, Self::Build) {
+        let (connect_a, build_a) = self.prev_buf.into_parts(ctx);
+        let (connect_b, build_b) = self.prev_stream.into_parts(ctx);
         let connect = connect_a.extend(connect_b);
         let build = HalfHashJoinPullBuild::new(build_a, build_b);
         (connect, build)
