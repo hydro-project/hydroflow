@@ -94,8 +94,7 @@ impl Hydroflow {
                 assert!(sg_data.is_scheduled.take());
 
                 self.context.subgraph_id = sg_id;
-                let context = &self.context;
-                sg_data.subgraph.run(context);
+                sg_data.subgraph.run(&self.context);
             }
 
             for &handoff_id in self.subgraphs[sg_id.0].succs.iter() {
@@ -423,6 +422,16 @@ impl Hydroflow {
             state_id,
             _phantom: PhantomData,
         }
+    }
+
+    /// Gets a exclusive (mut) ref to the internal context, setting the subgraph ID.
+    pub fn context_mut(&mut self, sg_id: SubgraphId) -> &mut Context {
+        self.context.subgraph_id = sg_id;
+        &mut self.context
+    }
+
+    pub(crate) fn next_subgraph_id(&self) -> SubgraphId {
+        SubgraphId(self.subgraphs.len())
     }
 
     pub fn add_dependencies(&mut self, sg_id: SubgraphId, deps: FlowGraph) {

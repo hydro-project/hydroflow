@@ -4,6 +4,7 @@ use std::marker::PhantomData;
 
 use crate::builder::build::pull_flatten::FlattenPullBuild;
 use crate::builder::build::push_flatten::FlattenPushBuild;
+use crate::scheduled::context::Context;
 use crate::scheduled::flow_graph::NodeId;
 
 pub struct FlattenSurface<Prev>
@@ -39,8 +40,8 @@ where
     type InputHandoffs = Prev::InputHandoffs;
     type Build = FlattenPullBuild<Prev::Build>;
 
-    fn into_parts(self) -> (Self::InputHandoffs, Self::Build) {
-        let (connect, build) = self.prev.into_parts();
+    fn into_parts(self, ctx: &mut Context) -> (Self::InputHandoffs, Self::Build) {
+        let (connect, build) = self.prev.into_parts(ctx);
         let build = FlattenPullBuild::new(build);
         (connect, build)
     }
@@ -118,8 +119,8 @@ where
     type OutputHandoffs = Next::OutputHandoffs;
     type Build = FlattenPushBuild<Next::Build, In>;
 
-    fn into_parts(self) -> (Self::OutputHandoffs, Self::Build) {
-        let (connect, build) = self.next.into_parts();
+    fn into_parts(self, ctx: &mut Context) -> (Self::OutputHandoffs, Self::Build) {
+        let (connect, build) = self.next.into_parts(ctx);
         let build = FlattenPushBuild::new(build);
         (connect, build)
     }

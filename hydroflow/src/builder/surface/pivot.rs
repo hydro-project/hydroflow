@@ -1,3 +1,5 @@
+use crate::scheduled::context::Context;
+
 use super::{PullSurface, PushSurfaceReversed};
 
 #[allow(type_alias_bounds)]
@@ -28,9 +30,9 @@ where
         Self { pull, push }
     }
 
-    pub fn into_parts(self) -> Parts<Pull, Push> {
-        let (pull_connect, pull_build) = self.pull.into_parts();
-        let (push_connect, push_build) = self.push.into_parts();
+    pub fn into_parts(self, context: &mut Context) -> Parts<Pull, Push> {
+        let (pull_connect, pull_build) = self.pull.into_parts(context);
+        let (push_connect, push_build) = self.push.into_parts(context);
         ((pull_connect, push_connect), (pull_build, push_build))
     }
 }

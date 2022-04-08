@@ -40,8 +40,8 @@ where
     type InputHandoffs = Prev::InputHandoffs;
     type Build = FilterMapPullBuild<Prev::Build, Func>;
 
-    fn into_parts(self) -> (Self::InputHandoffs, Self::Build) {
-        let (connect, build) = self.prev.into_parts();
+    fn into_parts(self, ctx: &mut Context) -> (Self::InputHandoffs, Self::Build) {
+        let (connect, build) = self.prev.into_parts(ctx);
         let build = FilterMapPullBuild::new(build, self.func);
         (connect, build)
     }
@@ -109,8 +109,8 @@ where
     type OutputHandoffs = Next::OutputHandoffs;
     type Build = FilterMapPushBuild<Next::Build, Func, In>;
 
-    fn into_parts(self) -> (Self::OutputHandoffs, Self::Build) {
-        let (connect, build) = self.next.into_parts();
+    fn into_parts(self, ctx: &mut Context) -> (Self::OutputHandoffs, Self::Build) {
+        let (connect, build) = self.next.into_parts(ctx);
         let build = FilterMapPushBuild::new(build, self.func);
         (connect, build)
     }

@@ -95,9 +95,12 @@ impl HydroflowBuilder {
         let my_id = deps.add_node("PullToPush");
         deps.add_edge((pull_root, my_id));
         deps.add_edge((my_id, push_root));
-        let ((recv_ports, send_ports), (mut pull_build, mut push_build)) = pivot.into_parts();
 
-        let sg_id = self.hydroflow.add_subgraph_stratified(
+        let sg_id = self.hydroflow.next_subgraph_id();
+        let ((recv_ports, send_ports), (mut pull_build, mut push_build)) =
+            pivot.into_parts(self.hydroflow.context_mut(sg_id));
+
+        let sg_id_actual = self.hydroflow.add_subgraph_stratified(
             name,
             stratum,
             recv_ports,
@@ -109,6 +112,8 @@ impl HydroflowBuilder {
                 pivot.run();
             },
         );
+        assert_eq!(sg_id, sg_id_actual);
+
         self.hydroflow.add_dependencies(sg_id, deps);
         sg_id
     }
