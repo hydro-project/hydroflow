@@ -11,11 +11,17 @@ pub enum MsgType {
 // Proposer
 #[derive(PartialEq, Eq, Clone, Serialize, Deserialize, Debug)]
 pub struct ProposerMsg {
+    pub addr: String,
     pub slot: u16,
     pub ballot: u16,
     pub pid: u16,
     pub val: i32,
     pub mtype: MsgType,
+}
+
+#[derive(PartialEq, Eq, Clone, Serialize, Deserialize, Debug)]
+pub struct ClientReq {
+    pub val: i32,
 }
 
 #[derive(PartialEq, Eq, Clone, Serialize, Deserialize, Debug)]
@@ -29,4 +35,10 @@ pub struct AcceptorResponse {
     pub win: bool, // whether the acceptor has chosen the given proposer as a leader
     pub val: Option<i32>,
     pub mtype: MsgType,
+}
+
+#[derive(PartialEq, Eq, Clone, Serialize, Deserialize, Debug)]
+pub enum Msg {
+    AcceptorRes(AcceptorResponse),
+    ClientReq(ClientReq),
 }

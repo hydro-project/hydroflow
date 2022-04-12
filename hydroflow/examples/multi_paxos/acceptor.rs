@@ -1,9 +1,9 @@
-use std::collections::HashMap;
-use crate::protocol::{ProposerMsg, MsgType, AcceptorResponse};
+use crate::protocol::{AcceptorResponse, Msg, MsgType, ProposerMsg};
+use crate::Opts;
 use hydroflow::builder::prelude::*;
 use hydroflow::scheduled::handoff::VecHandoff;
-use crate::Opts;
 use std::cmp::Ordering;
+use std::collections::HashMap;
 
 // use hydroflow::surface::pull_handoff::{HandoffPullSurface, HandoffPushSurfaceReversed};
 
@@ -47,17 +47,18 @@ impl PartialOrd for SlotData {
 // }
 
 pub(crate) async fn run_acceptor(opts: Opts) {
-    println!("Acceptor starting on port {}", opts.port);
+    // println!("Acceptor starting on port {}", opts.port);
     let mut hf = HydroflowBuilder::default();
 
-    // Setup message send/recv ports
+    // // Setup message send/recv ports
     let msg_recv = hf
         .hydroflow
         .inbound_tcp_vertex_port::<ProposerMsg>(opts.port)
         .await;
     let msg_recv = hf.wrap_input(msg_recv);
-    // let msg_send = hf.hydroflow.outbound_tcp_vertex::<AcceptorResponse>().await;
-    // let msg_send = hf.wrap_output(msg_send);
+
+    let msg_send = hf.hydroflow.outbound_tcp_vertex::<Msg>().await;
+    let msg_send = hf.wrap_output(msg_send);
 
     // let (p1a_push, p1a_pull) = hf.make_edge::<_, VecHandoff<ProposerMsg>, _>("p1a_tee");
     // let (p2a_push, p2a_pull) = hf.make_edge::<_, VecHandoff<ProposerMsg>, _>("p2a_tee");
@@ -73,12 +74,13 @@ pub(crate) async fn run_acceptor(opts: Opts) {
     // );
 
     // let (send_edges, recv_edges) = hf.add_channel_input::<_, _, VecHandoff<usize>>("edge input");
-    let (send_edges, recv_edges) =
-        hf.add_channel_input::<_, _, VecHandoff<ProposerMsg>>("start input");
+    // let (send_edges, recv_edges) =
+    //     hf.add_channel_input::<_, _, VecHandoff<ProposerMsg>>("start input");
 
-
-    hf.add_subgraph_stratified("Main processing", 0,
-        recv_edges 
+    hf.add_subgraph_stratified(
+        "Main processing",
+        0,
+        msg_recv
             .flatten()
             // .map(|msg| {
             //     ProposerMsg {
@@ -90,143 +92,146 @@ pub(crate) async fn run_acceptor(opts: Opts) {
             //         mtype: msg.4,
             //     }
             // })
-            .map_scan(
-                HashMap::<u16, SlotData>::new(),
-                |slots, msg| {
-                    let mut win = false;
-                    let mut s = SlotData {
-                        slot: msg.slot,
-                        ballot: msg.ballot,
-                        pid: msg.pid,
-                        val: None,
-                    };
-                    let v = slots.entry(msg.slot).or_insert(s);
+            .map_scan(HashMap::<u16, SlotData>::new(), |slots, msg| {
+                let mut win = false;
+                let mut s = SlotData {
+                    slot: msg.slot,
+                    ballot: msg.ballot,
+                    pid: msg.pid,
+                    val: None,
+                };
+                let v = slots.entry(msg.slot).or_insert(s);
 
-                    // Phase 1
-                    let resp = match msg.mtype {
-                        MsgType::P1A => {
-                            if &s > v {
-                                s.val = v.val;
-                                slots.insert(msg.slot, s);
-                                Some(AcceptorResponse {
-                                    slot: s.slot,
-                                    ballot: s.ballot,
-                                    pid: s.pid,
-                                    accepted_val: s.val,
-                                    accepted_ballot: if s.val.is_none() {None} else { Some(s.ballot)},
-                                    win: true,
-                                    val: None,
-                                    mtype: MsgType::P1B,
-                                })
-                            }
-                            else {
-                                // don't send anything for now
-                                None
-                            }
-                        },
-
-                        MsgType::P2A => {
-                            s.val = Some(msg.val);
-                            if &s >= v {
-                                if v.val.is_some() {
-                                    assert!(s.val == v.val);
-                                }
-                                v.val = s.val;
-                                println!("P2A Accept");
-                                slots.insert(msg.slot, s);
-                                Some(AcceptorResponse {
-                                    slot: s.slot,
-                                    ballot: s.ballot,
-                                    pid: s.pid,
-                                    accepted_val: s.val,
-                                    accepted_ballot: Some(s.ballot),
-                                    win: true,
-                                    val: s.val,
-                                    mtype: MsgType::P2B,
-                                })
-                            }
-                            else {
-                                // don't send anything for now
-                                None
-                            }
-                        },
-                        _ => {
-                            println!("Acceptors only receive P1A and P2A messages");
+                // Phase 1
+                let resp = match msg.mtype {
+                    MsgType::P1A => {
+                        if &s > v {
+                            s.val = v.val;
+                            slots.insert(msg.slot, s);
+                            Some(Msg::AcceptorRes(AcceptorResponse {
+                                slot: s.slot,
+                                ballot: s.ballot,
+                                pid: s.pid,
+                                accepted_val: s.val,
+                                accepted_ballot: if s.val.is_none() {
+                                    None
+                                } else {
+                                    Some(s.ballot)
+                                },
+                                win: true,
+                                val: None,
+                                mtype: MsgType::P1B,
+                            }))
+                        } else {
+                            // don't send anything for now
                             None
-                        },
-                    };
+                        }
+                    }
 
-                    println!("{:?}", slots);
-                    // print!("Map: {:?} --> {:?}", msg, v);
-                    resp.clone()
-                },
-            ).filter_map(|v| {
-                v
+                    MsgType::P2A => {
+                        s.val = Some(msg.val);
+                        if &s >= v {
+                            if v.val.is_some() {
+                                assert!(s.val == v.val);
+                            }
+                            v.val = s.val;
+                            println!("P2A Accept");
+                            slots.insert(msg.slot, s);
+                            Some(Msg::AcceptorRes(AcceptorResponse {
+                                slot: s.slot,
+                                ballot: s.ballot,
+                                pid: s.pid,
+                                accepted_val: s.val,
+                                accepted_ballot: Some(s.ballot),
+                                win: true,
+                                val: s.val,
+                                mtype: MsgType::P2B,
+                            }))
+                        } else {
+                            // don't send anything for now
+                            None
+                        }
+                    }
+                    _ => {
+                        println!("Acceptors only receive P1A and P2A messages");
+                        None
+                    }
+                };
+
+                println!("{:?}", slots);
+                // print!("Map: {:?} --> {:?}", msg, v);
+                if resp.is_some() {
+                    Some((msg.addr.clone(), resp.unwrap().clone()))
+                } else {
+                    None
+                }
             })
+            .filter_map(|v| v)
             .map(|msg| {
                 println!("Logging {:?}", msg);
                 msg
             })
             .pull_to_push()
-            .for_each(|_| {})
+            .push_to(msg_send);
+            // .for_each(|_| {}), // .push_to(msg_send),
     );
-    
+
     let mut hf = hf.build();
     println!("Opening on port {}", opts.port);
     // println!("{}", hf.render_mermaid());
 
-    send_edges.give(Some(ProposerMsg{
-        slot: 0,
-        ballot: 0,
-        pid: 0,
-        val: 4,
-        mtype: MsgType::P1A,
-    }));
+    // send_edges.give(Some(ProposerMsg {
+    //     slot: 0,
+    //     ballot: 0,
+    //     pid: 0,
+    //     val: 4,
+    //     mtype: MsgType::P1A,
+    // }));
 
-    send_edges.flush();
-    hf.tick();
+    // send_edges.flush();
+    // hf.tick();
 
-    send_edges.give(Some(ProposerMsg{
-        slot: 0,
-        ballot: 1,
-        pid: 0,
-        val: 7,
-        mtype: MsgType::P1A,
-    }));
+    // send_edges.give(Some(ProposerMsg {
+    //     slot: 0,
+    //     ballot: 1,
+    //     pid: 0,
+    //     val: 7,
+    //     mtype: MsgType::P1A,
+    // }));
 
-    send_edges.give(Some(ProposerMsg{
-        slot: 0,
-        ballot: 1,
-        pid: 1,
-        val: 20,
-        mtype: MsgType::P1A,
-    }));
+    // send_edges.give(Some(ProposerMsg {
+    //     slot: 0,
+    //     ballot: 1,
+    //     pid: 1,
+    //     val: 20,
+    //     mtype: MsgType::P1A,
+    // }));
 
-    send_edges.give(Some(ProposerMsg{
-        slot: 0,
-        ballot: 0,
-        pid: 0,
-        val: 4,
-        mtype: MsgType::P2A,
-    }));
-    send_edges.flush();
-    hf.tick();
+    // send_edges.give(Some(ProposerMsg {
+    //     slot: 0,
+    //     ballot: 0,
+    //     pid: 0,
+    //     val: 4,
+    //     mtype: MsgType::P2A,
+    // }));
+    // send_edges.flush();
+    // hf.tick();
 
-    send_edges.give(Some(ProposerMsg{
-        slot: 0,
-        ballot: 1,
-        pid: 1,
-        val: 20,
-        mtype: MsgType::P2A,
-    }));
+    // send_edges.give(Some(ProposerMsg {
+    //     slot: 0,
+    //     ballot: 1,
+    //     pid: 1,
+    //     val: 20,
+    //     mtype: MsgType::P2A,
+    // }));
 
-    send_edges.give(Some(ProposerMsg{
-        slot: 0,
-        ballot: 1,
-        pid: 0,
-        val: 16,
-        mtype: MsgType::P2A,
-    }));
+    // send_edges.give(Some(ProposerMsg {
+    //     slot: 0,
+    //     ballot: 1,
+    //     pid: 0,
+    //     val: 16,
+    //     mtype: MsgType::P2A,
+    // }));
 
     // send_edges.give(Some(ProposerMsg{
     //     slot: 0,
@@ -252,7 +257,7 @@ pub(crate) async fn run_acceptor(opts: Opts) {
     //     mtype: MsgType::P1A,
     // }));
 
-    send_edges.flush();
+    // send_edges.flush();
 
     // println!("Opening on port {}", opts.port);
     hf.run_async().await.unwrap();
