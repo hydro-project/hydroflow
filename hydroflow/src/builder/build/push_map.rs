@@ -34,6 +34,7 @@ where
 type PushBuildImpl<'slf, 'ctx, Next, Func, In>
 where
     Next: PushBuild,
+    Func: 'slf,
 = Map<In, Next::ItemIn, impl FnMut(In) -> Next::ItemIn, Next::Build<'slf, 'ctx>>;
 
 impl<Next, Func, In> PushBuildBase for MapPushBuild<Next, Func, In>
@@ -42,7 +43,9 @@ where
     Func: FnMut(&Context, In) -> Next::ItemIn,
 {
     type ItemIn = In;
-    type Build<'slf, 'ctx> = PushBuildImpl<'slf, 'ctx, Next, Func, In>;
+    type Build<'slf, 'ctx> = PushBuildImpl<'slf, 'ctx, Next, Func, In>
+    where
+        Self: 'slf;
 }
 
 impl<Next, Func, In> PushBuild for MapPushBuild<Next, Func, In>

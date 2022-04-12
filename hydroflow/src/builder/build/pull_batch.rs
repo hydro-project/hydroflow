@@ -63,7 +63,9 @@ where
 {
     type ItemOut = (Tick, L::Repr);
     type Build<'slf, 'ctx> =
-        BatchJoin<'slf, PrevBuf::Build<'slf, 'ctx>, PrevStream::Build<'slf, 'ctx>, L, Update, Tick>;
+        BatchJoin<'slf, PrevBuf::Build<'slf, 'ctx>, PrevStream::Build<'slf, 'ctx>, L, Update, Tick>
+    where
+        Self: 'slf;
 }
 
 impl<PrevBuf, PrevStream, L, Update, Tick> PullBuild

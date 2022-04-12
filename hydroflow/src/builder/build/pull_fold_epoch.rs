@@ -24,7 +24,9 @@ where
 #[allow(type_alias_bounds)]
 type PullBuildImpl<'slf, 'ctx, Prev, Init, Func, Out>
 where
-    Prev: PullBuild,
+    Prev: 'slf + PullBuild,
+    Init: 'slf,
+    Func: 'slf,
 = std::iter::OnceWith<impl FnOnce() -> Out>;
 
 impl<Prev, Init, Func, Out> PullBuildBase for FoldEpochPullBuild<Prev, Init, Func>
@@ -34,7 +36,9 @@ where
     Func: FnMut(&Context, Out, Prev::ItemOut) -> Out,
 {
     type ItemOut = Out;
-    type Build<'slf, 'ctx> = PullBuildImpl<'slf, 'ctx, Prev, Init, Func, Out>;
+    type Build<'slf, 'ctx> = PullBuildImpl<'slf, 'ctx, Prev, Init, Func, Out>
+    where
+        Self: 'slf;
 }
 
 impl<Prev, Init, Func, Out> PullBuild for FoldEpochPullBuild<Prev, Init, Func>

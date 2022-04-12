@@ -34,7 +34,9 @@ where
     In: IntoIterator<Item = Next::ItemIn>,
 {
     type ItemIn = In;
-    type Build<'slf, 'ctx> = Flatten<Next::Build<'slf, 'ctx>, In>;
+    type Build<'slf, 'ctx> = Flatten<Next::Build<'slf, 'ctx>, In>
+    where
+        Self: 'slf;
 }
 
 impl<Next, In> PushBuild for FlattenPushBuild<Next, In>

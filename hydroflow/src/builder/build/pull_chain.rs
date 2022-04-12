@@ -42,7 +42,9 @@ where
         PortList<RECV> + PortListSplit<RECV, PrevA::InputHandoffs, Suffix = PrevB::InputHandoffs>,
 {
     type ItemOut = PrevA::ItemOut;
-    type Build<'slf, 'ctx> = std::iter::Chain<PrevA::Build<'slf, 'ctx>, PrevB::Build<'slf, 'ctx>>;
+    type Build<'slf, 'ctx> = std::iter::Chain<PrevA::Build<'slf, 'ctx>, PrevB::Build<'slf, 'ctx>>
+    where
+        Self: 'slf;
 }
 
 impl<PrevA, PrevB> PullBuild for ChainPullBuild<PrevA, PrevB>
