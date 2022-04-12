@@ -41,7 +41,9 @@ where
     Hof: Handoff + CanReceive<In>,
 {
     type ItemIn = In;
-    type Build<'slf, 'ctx> = PushHandoff<'ctx, Hof, In>;
+    type Build<'slf, 'ctx> = PushHandoff<'ctx, Hof, In>
+    where
+        Self: 'slf;
 }
 
 impl<Hof, In> PushBuild for HandoffPushBuild<Hof, In>

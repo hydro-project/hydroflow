@@ -76,7 +76,9 @@ where
         Update,
         PrevStream::Build<'slf, 'ctx>,
         StreamVal,
-    >;
+    >
+    where
+        Self: 'slf;
 }
 
 impl<PrevBuf, PrevStream, Key, L, Update, StreamVal> PullBuild

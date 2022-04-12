@@ -24,7 +24,9 @@ where
     Prev::ItemOut: IntoIterator,
 {
     type ItemOut = <Prev::ItemOut as IntoIterator>::Item;
-    type Build<'slf, 'ctx> = std::iter::Flatten<Prev::Build<'slf, 'ctx>>;
+    type Build<'slf, 'ctx> = std::iter::Flatten<Prev::Build<'slf, 'ctx>>
+    where
+        Self: 'slf;
 }
 
 impl<Prev> PullBuild for FlattenPullBuild<Prev>

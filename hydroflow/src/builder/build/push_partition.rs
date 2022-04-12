@@ -44,6 +44,7 @@ type PushBuildImpl<'slf, 'ctx, NextA, NextB, Func>
 where
     NextA: PushBuild,
     NextB: PushBuild<ItemIn = NextA::ItemIn>,
+    Func: 'slf,
 = Partition<
     NextA::ItemIn,
     impl FnMut(&NextA::ItemIn) -> bool,
@@ -62,7 +63,9 @@ where
         PortList<SEND> + PortListSplit<SEND, NextA::OutputHandoffs, Suffix = NextB::OutputHandoffs>,
 {
     type ItemIn = NextA::ItemIn;
-    type Build<'slf, 'ctx> = PushBuildImpl<'slf, 'ctx, NextA, NextB, Func>;
+    type Build<'slf, 'ctx> = PushBuildImpl<'slf, 'ctx, NextA, NextB, Func>
+    where
+        Self: 'slf;
 }
 
 impl<NextA, NextB, Func> PushBuild for PartitionPushBuild<NextA, NextB, Func>

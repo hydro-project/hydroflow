@@ -59,7 +59,9 @@ where
         PrevA::ItemOut,
         PrevB::Build<'slf, 'ctx>,
         PrevB::ItemOut,
-    >;
+    >
+    where
+        Self: 'slf;
 }
 
 impl<PrevA, PrevB> PullBuild for CrossJoinPullBuild<PrevA, PrevB>
