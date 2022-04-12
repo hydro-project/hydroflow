@@ -1,4 +1,4 @@
-use super::{PullBuild, PullBuildBase};
+use super::PullBuild;
 
 use crate::scheduled::{context::Context, handoff::handoff_list::PortList, port::RECV};
 
@@ -26,7 +26,7 @@ where
     Func: 'slf,
 = std::iter::Filter<Prev::Build<'slf, 'ctx>, impl FnMut(&Prev::ItemOut) -> bool>;
 
-impl<Prev, Func> PullBuildBase for FilterPullBuild<Prev, Func>
+impl<Prev, Func> PullBuild for FilterPullBuild<Prev, Func>
 where
     Prev: PullBuild,
     Func: FnMut(&Context, &Prev::ItemOut) -> bool,
@@ -35,13 +35,7 @@ where
     type Build<'slf, 'ctx> = PullBuildImpl<'slf, 'ctx, Prev, Func>
     where
         Self: 'slf;
-}
 
-impl<Prev, Func> PullBuild for FilterPullBuild<Prev, Func>
-where
-    Prev: PullBuild,
-    Func: FnMut(&Context, &Prev::ItemOut) -> bool,
-{
     type InputHandoffs = Prev::InputHandoffs;
 
     fn build<'slf, 'ctx>(

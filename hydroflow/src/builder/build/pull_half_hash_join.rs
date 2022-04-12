@@ -1,4 +1,4 @@
-use super::{PullBuild, PullBuildBase};
+use super::PullBuild;
 
 use std::hash::Hash;
 use std::marker::PhantomData;
@@ -52,7 +52,7 @@ where
     }
 }
 
-impl<PrevBuf, PrevStream, Key, L, Update, StreamVal> PullBuildBase
+impl<PrevBuf, PrevStream, Key, L, Update, StreamVal> PullBuild
     for HalfHashJoinPullBuild<PrevBuf, PrevStream, Key, L, Update, StreamVal>
 where
     PrevBuf: PullBuild<ItemOut = (Key, Update::Repr)>,
@@ -79,23 +79,7 @@ where
     >
     where
         Self: 'slf;
-}
 
-impl<PrevBuf, PrevStream, Key, L, Update, StreamVal> PullBuild
-    for HalfHashJoinPullBuild<PrevBuf, PrevStream, Key, L, Update, StreamVal>
-where
-    PrevBuf: PullBuild<ItemOut = (Key, Update::Repr)>,
-    PrevStream: PullBuild<ItemOut = (Key, StreamVal)>,
-    Key: 'static + Eq + Hash,
-    L: 'static + LatticeRepr + Merge<Update>,
-    L::Repr: Default,
-    Update: 'static + LatticeRepr,
-    StreamVal: 'static,
-
-    PrevBuf::InputHandoffs: Extend<PrevStream::InputHandoffs>,
-    <PrevBuf::InputHandoffs as Extend<PrevStream::InputHandoffs>>::Extended: PortList<RECV>
-        + PortListSplit<RECV, PrevBuf::InputHandoffs, Suffix = PrevStream::InputHandoffs>,
-{
     type InputHandoffs = <PrevBuf::InputHandoffs as Extend<PrevStream::InputHandoffs>>::Extended;
 
     fn build<'slf, 'ctx>(

@@ -1,4 +1,4 @@
-use super::{PullBuild, PullBuildBase};
+use super::PullBuild;
 
 use std::hash::Hash;
 
@@ -45,7 +45,7 @@ where
     }
 }
 
-impl<PrevA, PrevB, Key, ValA, ValB> PullBuildBase for JoinPullBuild<PrevA, PrevB, Key, ValA, ValB>
+impl<PrevA, PrevB, Key, ValA, ValB> PullBuild for JoinPullBuild<PrevA, PrevB, Key, ValA, ValB>
 where
     PrevA: PullBuild<ItemOut = (Key, ValA)>,
     PrevB: PullBuild<ItemOut = (Key, ValB)>,
@@ -68,20 +68,7 @@ where
     >
     where
         Self: 'slf;
-}
 
-impl<PrevA, PrevB, Key, ValA, ValB> PullBuild for JoinPullBuild<PrevA, PrevB, Key, ValA, ValB>
-where
-    PrevA: PullBuild<ItemOut = (Key, ValA)>,
-    PrevB: PullBuild<ItemOut = (Key, ValB)>,
-    Key: 'static + Eq + Hash + Clone,
-    ValA: 'static + Eq + Clone,
-    ValB: 'static + Eq + Clone,
-
-    PrevA::InputHandoffs: Extend<PrevB::InputHandoffs>,
-    <PrevA::InputHandoffs as Extend<PrevB::InputHandoffs>>::Extended:
-        PortList<RECV> + PortListSplit<RECV, PrevA::InputHandoffs, Suffix = PrevB::InputHandoffs>,
-{
     type InputHandoffs = <PrevA::InputHandoffs as Extend<PrevB::InputHandoffs>>::Extended;
 
     fn build<'slf, 'ctx>(

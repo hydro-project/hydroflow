@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use super::{PullBuild, PullBuildBase};
+use super::PullBuild;
 
 use crate::compiled::pull::{BatchJoin, BatchJoinState};
 use crate::lang::lattice::{LatticeRepr, Merge};
@@ -48,7 +48,7 @@ where
     }
 }
 
-impl<PrevBuf, PrevStream, L, Update, Tick> PullBuildBase
+impl<PrevBuf, PrevStream, L, Update, Tick> PullBuild
     for BatchPullBuild<PrevBuf, PrevStream, L, Update, Tick>
 where
     PrevBuf: PullBuild<ItemOut = Update::Repr>,
@@ -66,21 +66,7 @@ where
         BatchJoin<'slf, PrevBuf::Build<'slf, 'ctx>, PrevStream::Build<'slf, 'ctx>, L, Update, Tick>
     where
         Self: 'slf;
-}
 
-impl<PrevBuf, PrevStream, L, Update, Tick> PullBuild
-    for BatchPullBuild<PrevBuf, PrevStream, L, Update, Tick>
-where
-    PrevBuf: PullBuild<ItemOut = Update::Repr>,
-    PrevStream: PullBuild<ItemOut = Tick>,
-    Update: 'static + LatticeRepr,
-    L: 'static + LatticeRepr + Merge<Update>,
-    L::Repr: Default,
-
-    PrevBuf::InputHandoffs: Extend<PrevStream::InputHandoffs>,
-    <PrevBuf::InputHandoffs as Extend<PrevStream::InputHandoffs>>::Extended: PortList<RECV>
-        + PortListSplit<RECV, PrevBuf::InputHandoffs, Suffix = PrevStream::InputHandoffs>,
-{
     type InputHandoffs = <PrevBuf::InputHandoffs as Extend<PrevStream::InputHandoffs>>::Extended;
 
     fn build<'slf, 'ctx>(

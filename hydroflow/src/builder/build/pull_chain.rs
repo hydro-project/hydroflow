@@ -1,4 +1,4 @@
-use super::{PullBuild, PullBuildBase};
+use super::PullBuild;
 
 use crate::scheduled::context::Context;
 use crate::scheduled::handoff::handoff_list::{PortList, PortListSplit};
@@ -32,7 +32,7 @@ where
     }
 }
 
-impl<PrevA, PrevB> PullBuildBase for ChainPullBuild<PrevA, PrevB>
+impl<PrevA, PrevB> PullBuild for ChainPullBuild<PrevA, PrevB>
 where
     PrevA: PullBuild,
     PrevB: PullBuild<ItemOut = PrevA::ItemOut>,
@@ -45,17 +45,7 @@ where
     type Build<'slf, 'ctx> = std::iter::Chain<PrevA::Build<'slf, 'ctx>, PrevB::Build<'slf, 'ctx>>
     where
         Self: 'slf;
-}
 
-impl<PrevA, PrevB> PullBuild for ChainPullBuild<PrevA, PrevB>
-where
-    PrevA: PullBuild,
-    PrevB: PullBuild<ItemOut = PrevA::ItemOut>,
-
-    PrevA::InputHandoffs: Extend<PrevB::InputHandoffs>,
-    <PrevA::InputHandoffs as Extend<PrevB::InputHandoffs>>::Extended:
-        PortList<RECV> + PortListSplit<RECV, PrevA::InputHandoffs, Suffix = PrevB::InputHandoffs>,
-{
     type InputHandoffs = <PrevA::InputHandoffs as Extend<PrevB::InputHandoffs>>::Extended;
 
     fn build<'slf, 'ctx>(

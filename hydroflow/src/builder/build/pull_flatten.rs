@@ -1,4 +1,4 @@
-use super::{PullBuild, PullBuildBase};
+use super::PullBuild;
 
 use crate::scheduled::{context::Context, handoff::handoff_list::PortList, port::RECV};
 
@@ -18,7 +18,7 @@ where
     }
 }
 
-impl<Prev> PullBuildBase for FlattenPullBuild<Prev>
+impl<Prev> PullBuild for FlattenPullBuild<Prev>
 where
     Prev: PullBuild,
     Prev::ItemOut: IntoIterator,
@@ -27,13 +27,7 @@ where
     type Build<'slf, 'ctx> = std::iter::Flatten<Prev::Build<'slf, 'ctx>>
     where
         Self: 'slf;
-}
 
-impl<Prev> PullBuild for FlattenPullBuild<Prev>
-where
-    Prev: PullBuild,
-    Prev::ItemOut: IntoIterator,
-{
     type InputHandoffs = Prev::InputHandoffs;
 
     fn build<'slf, 'ctx>(
