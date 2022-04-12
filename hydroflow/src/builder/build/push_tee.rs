@@ -45,7 +45,9 @@ where
         PortList<SEND> + PortListSplit<SEND, NextA::OutputHandoffs, Suffix = NextB::OutputHandoffs>,
 {
     type ItemIn = NextA::ItemIn;
-    type Build<'slf, 'ctx> = Tee<Self::ItemIn, NextA::Build<'slf, 'ctx>, NextB::Build<'slf, 'ctx>>;
+    type Build<'slf, 'ctx> = Tee<Self::ItemIn, NextA::Build<'slf, 'ctx>, NextB::Build<'slf, 'ctx>>
+    where
+        Self: 'slf;
 }
 
 impl<NextA, NextB> PushBuild for TeePushBuild<NextA, NextB>

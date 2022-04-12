@@ -28,14 +28,19 @@ where
 }
 
 #[allow(type_alias_bounds)]
-type PushBuildImpl<'slf, 'ctx, Func, In> = ForEach<In, impl FnMut(In)>;
+type PushBuildImpl<'slf, 'ctx, Func, In>
+where
+    Func: 'slf,
+= ForEach<In, impl FnMut(In)>;
 
 impl<Func, In> PushBuildBase for ForEachPushBuild<Func, In>
 where
     Func: FnMut(&Context, In),
 {
     type ItemIn = In;
-    type Build<'slf, 'ctx> = PushBuildImpl<'slf, 'ctx, Func, In>;
+    type Build<'slf, 'ctx> = PushBuildImpl<'slf, 'ctx, Func, In>
+    where
+        Self: 'slf;
 }
 
 impl<Func, In> PushBuild for ForEachPushBuild<Func, In>

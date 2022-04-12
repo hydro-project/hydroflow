@@ -65,7 +65,9 @@ where
         ValA,
         PrevB::Build<'slf, 'ctx>,
         ValB,
-    >;
+    >
+    where
+        Self: 'slf;
 }
 
 impl<PrevA, PrevB, Key, ValA, ValB> PullBuild for JoinPullBuild<PrevA, PrevB, Key, ValA, ValB>

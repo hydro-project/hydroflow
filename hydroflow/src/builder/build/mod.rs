@@ -29,7 +29,9 @@ use crate::scheduled::port::{RECV, SEND};
 
 pub trait PullBuildBase {
     type ItemOut;
-    type Build<'slf, 'inp>: Iterator<Item = Self::ItemOut>;
+    type Build<'slf, 'inp>: Iterator<Item = Self::ItemOut>
+    where
+        Self: 'slf;
 }
 pub trait PullBuild: PullBuildBase {
     type InputHandoffs: PortList<RECV>;
@@ -44,7 +46,9 @@ pub trait PullBuild: PullBuildBase {
 
 pub trait PushBuildBase {
     type ItemIn;
-    type Build<'slf, 'ctx>: Pusherator<Item = Self::ItemIn>;
+    type Build<'slf, 'ctx>: Pusherator<Item = Self::ItemIn>
+    where
+        Self: 'slf;
 }
 pub trait PushBuild: PushBuildBase {
     type OutputHandoffs: PortList<SEND>;

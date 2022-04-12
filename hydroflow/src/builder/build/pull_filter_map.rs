@@ -23,6 +23,7 @@ where
 type PullBuildImpl<'slf, 'ctx, Prev, Func, Out>
 where
     Prev: PullBuild,
+    Func: 'slf,
 = std::iter::FilterMap<Prev::Build<'slf, 'ctx>, impl FnMut(Prev::ItemOut) -> Option<Out>>;
 
 impl<Prev, Func, Out> PullBuildBase for FilterMapPullBuild<Prev, Func>
@@ -31,7 +32,9 @@ where
     Func: FnMut(&Context, Prev::ItemOut) -> Option<Out>,
 {
     type ItemOut = Out;
-    type Build<'slf, 'ctx> = PullBuildImpl<'slf, 'ctx, Prev, Func, Out>;
+    type Build<'slf, 'ctx> = PullBuildImpl<'slf, 'ctx, Prev, Func, Out>
+    where
+        Self: 'slf;
 }
 
 impl<Prev, Func, Out> PullBuild for FilterMapPullBuild<Prev, Func>
