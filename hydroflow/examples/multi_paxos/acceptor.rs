@@ -172,8 +172,8 @@ pub(crate) async fn run_acceptor(opts: Opts) {
                 msg
             })
             .pull_to_push()
-            .push_to(msg_send);
-            // .for_each(|_| {}), // .push_to(msg_send),
+            .push_to(msg_send),
+        // .for_each(|_| {}), // .push_to(msg_send),
     );
 
     let mut hf = hf.build();

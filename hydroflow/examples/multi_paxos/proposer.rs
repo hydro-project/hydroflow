@@ -135,7 +135,7 @@ pub(crate) async fn run_proposer(opts: Opts) {
                 msg
             })
             .pull_to_push()
-            .for_each(|_| {}),
+            .push_to(msg_send),
     );
 
     let mut hf = hf.build();
