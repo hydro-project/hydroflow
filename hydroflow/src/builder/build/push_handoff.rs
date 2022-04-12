@@ -1,4 +1,4 @@
-use super::{PushBuild, PushBuildBase};
+use super::PushBuild;
 
 use std::marker::PhantomData;
 
@@ -36,7 +36,7 @@ where
     }
 }
 
-impl<Hof, In> PushBuildBase for HandoffPushBuild<Hof, In>
+impl<Hof, In> PushBuild for HandoffPushBuild<Hof, In>
 where
     Hof: Handoff + CanReceive<In>,
 {
@@ -44,12 +44,7 @@ where
     type Build<'slf, 'ctx> = PushHandoff<'ctx, Hof, In>
     where
         Self: 'slf;
-}
 
-impl<Hof, In> PushBuild for HandoffPushBuild<Hof, In>
-where
-    Hof: Handoff + CanReceive<In>,
-{
     type OutputHandoffs = tt!(SendPort<Hof>);
 
     fn build<'slf, 'ctx>(

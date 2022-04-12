@@ -1,4 +1,4 @@
-use super::{PullBuild, PullBuildBase};
+use super::PullBuild;
 
 use crate::compiled::pull::{CrossJoin, CrossJoinState};
 use crate::scheduled::context::Context;
@@ -41,7 +41,7 @@ where
     }
 }
 
-impl<PrevA, PrevB> PullBuildBase for CrossJoinPullBuild<PrevA, PrevB>
+impl<PrevA, PrevB> PullBuild for CrossJoinPullBuild<PrevA, PrevB>
 where
     PrevA: PullBuild,
     PrevB: PullBuild,
@@ -62,19 +62,7 @@ where
     >
     where
         Self: 'slf;
-}
 
-impl<PrevA, PrevB> PullBuild for CrossJoinPullBuild<PrevA, PrevB>
-where
-    PrevA: PullBuild,
-    PrevB: PullBuild,
-    PrevA::ItemOut: 'static + Eq + Clone,
-    PrevB::ItemOut: 'static + Eq + Clone,
-
-    PrevA::InputHandoffs: Extend<PrevB::InputHandoffs>,
-    <PrevA::InputHandoffs as Extend<PrevB::InputHandoffs>>::Extended:
-        PortList<RECV> + PortListSplit<RECV, PrevA::InputHandoffs, Suffix = PrevB::InputHandoffs>,
-{
     type InputHandoffs = <PrevA::InputHandoffs as Extend<PrevB::InputHandoffs>>::Extended;
 
     fn build<'slf, 'ctx>(

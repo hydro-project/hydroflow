@@ -1,4 +1,4 @@
-use super::{PullBuild, PullBuildBase};
+use super::PullBuild;
 
 use crate::scheduled::{context::Context, handoff::handoff_list::PortList, port::RECV};
 
@@ -26,7 +26,7 @@ where
     Func: 'slf,
 = std::iter::Map<Prev::Build<'slf, 'ctx>, impl FnMut(Prev::ItemOut) -> Out>;
 
-impl<Prev, Func, Out> PullBuildBase for MapPullBuild<Prev, Func>
+impl<Prev, Func, Out> PullBuild for MapPullBuild<Prev, Func>
 where
     Prev: PullBuild,
     Func: FnMut(&Context, Prev::ItemOut) -> Out,
@@ -35,13 +35,7 @@ where
     type Build<'slf, 'ctx> = PullBuildImpl<'slf, 'ctx, Prev, Func, Out>
     where
         Self: 'slf;
-}
 
-impl<Prev, Func, Out> PullBuild for MapPullBuild<Prev, Func>
-where
-    Prev: PullBuild,
-    Func: FnMut(&Context, Prev::ItemOut) -> Out,
-{
     type InputHandoffs = Prev::InputHandoffs;
 
     fn build<'slf, 'ctx>(

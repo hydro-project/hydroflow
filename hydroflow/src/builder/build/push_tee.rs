@@ -1,4 +1,4 @@
-use super::{PushBuild, PushBuildBase};
+use super::PushBuild;
 
 use crate::compiled::tee::Tee;
 use crate::scheduled::context::Context;
@@ -34,7 +34,7 @@ where
     }
 }
 
-impl<NextA, NextB> PushBuildBase for TeePushBuild<NextA, NextB>
+impl<NextA, NextB> PushBuild for TeePushBuild<NextA, NextB>
 where
     NextA: PushBuild,
     NextB: PushBuild<ItemIn = NextA::ItemIn>,
@@ -48,18 +48,7 @@ where
     type Build<'slf, 'ctx> = Tee<Self::ItemIn, NextA::Build<'slf, 'ctx>, NextB::Build<'slf, 'ctx>>
     where
         Self: 'slf;
-}
 
-impl<NextA, NextB> PushBuild for TeePushBuild<NextA, NextB>
-where
-    NextA: PushBuild,
-    NextB: PushBuild<ItemIn = NextA::ItemIn>,
-    NextA::ItemIn: Clone,
-
-    NextA::OutputHandoffs: Extend<NextB::OutputHandoffs>,
-    <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended:
-        PortList<SEND> + PortListSplit<SEND, NextA::OutputHandoffs, Suffix = NextB::OutputHandoffs>,
-{
     type OutputHandoffs = <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended;
 
     fn build<'slf, 'ctx>(

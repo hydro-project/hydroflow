@@ -1,4 +1,4 @@
-use super::{PushBuild, PushBuildBase};
+use super::PushBuild;
 
 use crate::compiled::partition::Partition;
 use crate::scheduled::context::Context;
@@ -52,7 +52,7 @@ where
     NextB::Build<'slf, 'ctx>,
 >;
 
-impl<NextA, NextB, Func> PushBuildBase for PartitionPushBuild<NextA, NextB, Func>
+impl<NextA, NextB, Func> PushBuild for PartitionPushBuild<NextA, NextB, Func>
 where
     Func: FnMut(&Context, &NextA::ItemIn) -> bool,
     NextA: PushBuild,
@@ -66,18 +66,7 @@ where
     type Build<'slf, 'ctx> = PushBuildImpl<'slf, 'ctx, NextA, NextB, Func>
     where
         Self: 'slf;
-}
 
-impl<NextA, NextB, Func> PushBuild for PartitionPushBuild<NextA, NextB, Func>
-where
-    Func: FnMut(&Context, &NextA::ItemIn) -> bool,
-    NextA: PushBuild,
-    NextB: PushBuild<ItemIn = NextA::ItemIn>,
-
-    NextA::OutputHandoffs: Extend<NextB::OutputHandoffs>,
-    <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended:
-        PortList<SEND> + PortListSplit<SEND, NextA::OutputHandoffs, Suffix = NextB::OutputHandoffs>,
-{
     type OutputHandoffs = <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended;
 
     fn build<'slf, 'ctx>(
