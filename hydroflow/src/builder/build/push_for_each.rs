@@ -1,4 +1,4 @@
-use super::{PushBuild, PushBuildBase};
+use super::PushBuild;
 
 use std::marker::PhantomData;
 
@@ -33,7 +33,7 @@ where
     Func: 'slf,
 = ForEach<In, impl FnMut(In)>;
 
-impl<Func, In> PushBuildBase for ForEachPushBuild<Func, In>
+impl<Func, In> PushBuild for ForEachPushBuild<Func, In>
 where
     Func: FnMut(&Context, In),
 {
@@ -41,12 +41,7 @@ where
     type Build<'slf, 'ctx> = PushBuildImpl<'slf, 'ctx, Func, In>
     where
         Self: 'slf;
-}
 
-impl<Func, In> PushBuild for ForEachPushBuild<Func, In>
-where
-    Func: FnMut(&Context, In),
-{
     type OutputHandoffs = tt!();
 
     fn build<'slf, 'ctx>(

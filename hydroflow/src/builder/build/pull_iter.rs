@@ -1,4 +1,4 @@
-use super::{PullBuild, PullBuildBase};
+use super::PullBuild;
 
 use crate::scheduled::{context::Context, handoff::handoff_list::PortList, port::RECV};
 
@@ -17,18 +17,13 @@ where
     }
 }
 
-impl<I> PullBuildBase for IterPullBuild<I>
+impl<I> PullBuild for IterPullBuild<I>
 where
     I: 'static + Iterator,
 {
     type ItemOut = I::Item;
     type Build<'slf, 'ctx> = &'slf mut I;
-}
 
-impl<I> PullBuild for IterPullBuild<I>
-where
-    I: 'static + Iterator,
-{
     type InputHandoffs = ();
 
     fn build<'slf, 'ctx>(

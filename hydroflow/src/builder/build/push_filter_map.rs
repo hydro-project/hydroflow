@@ -1,4 +1,4 @@
-use super::{PushBuild, PushBuildBase};
+use super::PushBuild;
 
 use std::marker::PhantomData;
 
@@ -37,7 +37,7 @@ where
     Func: 'slf,
 = FilterMap<Next::Build<'slf, 'ctx>, impl FnMut(In) -> Option<Next::ItemIn>, In>;
 
-impl<Next, Func, In> PushBuildBase for FilterMapPushBuild<Next, Func, In>
+impl<Next, Func, In> PushBuild for FilterMapPushBuild<Next, Func, In>
 where
     Next: PushBuild,
     Func: FnMut(&Context, In) -> Option<Next::ItemIn>,
@@ -46,13 +46,7 @@ where
     type Build<'slf, 'ctx> = PushBuildImpl<'slf, 'ctx, Next, Func, In>
     where
         Self: 'slf;
-}
 
-impl<Next, Func, In> PushBuild for FilterMapPushBuild<Next, Func, In>
-where
-    Next: PushBuild,
-    Func: FnMut(&Context, In) -> Option<Next::ItemIn>,
-{
     type OutputHandoffs = Next::OutputHandoffs;
 
     fn build<'slf, 'ctx>(

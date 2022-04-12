@@ -1,4 +1,4 @@
-use super::{PullBuild, PullBuildBase};
+use super::PullBuild;
 
 use crate::scheduled::{context::Context, handoff::handoff_list::PortList, port::RECV};
 
@@ -29,7 +29,7 @@ where
     Func: 'slf,
 = std::iter::OnceWith<impl FnOnce() -> Out>;
 
-impl<Prev, Init, Func, Out> PullBuildBase for FoldEpochPullBuild<Prev, Init, Func>
+impl<Prev, Init, Func, Out> PullBuild for FoldEpochPullBuild<Prev, Init, Func>
 where
     Prev: PullBuild,
     Init: FnMut(&Context) -> Out,
@@ -39,14 +39,7 @@ where
     type Build<'slf, 'ctx> = PullBuildImpl<'slf, 'ctx, Prev, Init, Func, Out>
     where
         Self: 'slf;
-}
 
-impl<Prev, Init, Func, Out> PullBuild for FoldEpochPullBuild<Prev, Init, Func>
-where
-    Prev: PullBuild,
-    Init: FnMut(&Context) -> Out,
-    Func: FnMut(&Context, Out, Prev::ItemOut) -> Out,
-{
     type InputHandoffs = Prev::InputHandoffs;
 
     fn build<'slf, 'ctx>(

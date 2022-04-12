@@ -1,4 +1,4 @@
-use super::{PushBuild, PushBuildBase};
+use super::PushBuild;
 
 use std::marker::PhantomData;
 
@@ -28,7 +28,7 @@ where
     }
 }
 
-impl<Next, In> PushBuildBase for FlattenPushBuild<Next, In>
+impl<Next, In> PushBuild for FlattenPushBuild<Next, In>
 where
     Next: PushBuild,
     In: IntoIterator<Item = Next::ItemIn>,
@@ -37,13 +37,7 @@ where
     type Build<'slf, 'ctx> = Flatten<Next::Build<'slf, 'ctx>, In>
     where
         Self: 'slf;
-}
 
-impl<Next, In> PushBuild for FlattenPushBuild<Next, In>
-where
-    Next: PushBuild,
-    In: IntoIterator<Item = Next::ItemIn>,
-{
     type OutputHandoffs = Next::OutputHandoffs;
 
     fn build<'slf, 'ctx>(

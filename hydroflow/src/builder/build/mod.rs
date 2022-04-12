@@ -27,13 +27,12 @@ use crate::scheduled::context::Context;
 use crate::scheduled::handoff::handoff_list::PortList;
 use crate::scheduled::port::{RECV, SEND};
 
-pub trait PullBuildBase {
+pub trait PullBuild {
     type ItemOut;
     type Build<'slf, 'inp>: Iterator<Item = Self::ItemOut>
     where
         Self: 'slf;
-}
-pub trait PullBuild: PullBuildBase {
+
     type InputHandoffs: PortList<RECV>;
 
     /// Builds the iterator for a single run of the subgraph.
@@ -44,13 +43,12 @@ pub trait PullBuild: PullBuildBase {
     ) -> Self::Build<'slf, 'ctx>;
 }
 
-pub trait PushBuildBase {
+pub trait PushBuild {
     type ItemIn;
     type Build<'slf, 'ctx>: Pusherator<Item = Self::ItemIn>
     where
         Self: 'slf;
-}
-pub trait PushBuild: PushBuildBase {
+
     type OutputHandoffs: PortList<SEND>;
 
     /// Builds the pusherator for a single run of the subgraph.

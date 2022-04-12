@@ -1,4 +1,4 @@
-use super::{PullBuild, PullBuildBase};
+use super::PullBuild;
 
 use std::marker::PhantomData;
 
@@ -35,18 +35,13 @@ where
     }
 }
 
-impl<Hof> PullBuildBase for HandoffPullBuild<Hof>
+impl<Hof> PullBuild for HandoffPullBuild<Hof>
 where
     Hof: Handoff,
 {
     type ItemOut = Hof::Inner;
     type Build<'slf, 'ctx> = std::array::IntoIter<Hof::Inner, 1>;
-}
 
-impl<Hof> PullBuild for HandoffPullBuild<Hof>
-where
-    Hof: Handoff,
-{
     type InputHandoffs = tt!(RecvPort<Hof>);
 
     fn build<'slf, 'ctx>(

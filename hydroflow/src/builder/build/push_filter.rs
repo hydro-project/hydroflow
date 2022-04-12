@@ -1,4 +1,4 @@
-use super::{PushBuild, PushBuildBase};
+use super::PushBuild;
 
 use crate::compiled::filter::Filter;
 use crate::scheduled::context::Context;
@@ -30,7 +30,7 @@ where
     Func: 'slf,
 = Filter<Next::ItemIn, impl FnMut(&Next::ItemIn) -> bool, Next::Build<'slf, 'ctx>>;
 
-impl<Next, Func> PushBuildBase for FilterPushBuild<Next, Func>
+impl<Next, Func> PushBuild for FilterPushBuild<Next, Func>
 where
     Next: PushBuild,
     Func: FnMut(&Context, &Next::ItemIn) -> bool,
@@ -39,13 +39,7 @@ where
     type Build<'slf, 'ctx> = PushBuildImpl<'slf, 'ctx, Next, Func>
     where
         Self: 'slf;
-}
 
-impl<Next, Func> PushBuild for FilterPushBuild<Next, Func>
-where
-    Next: PushBuild,
-    Func: FnMut(&Context, &Next::ItemIn) -> bool,
-{
     type OutputHandoffs = Next::OutputHandoffs;
 
     fn build<'slf, 'ctx>(
