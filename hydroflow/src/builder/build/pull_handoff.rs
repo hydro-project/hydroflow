@@ -40,7 +40,7 @@ where
     Hof: Handoff,
 {
     type ItemOut = Hof::Inner;
-    type Build<'slf, 'ctx> = std::array::IntoIter<Hof::Inner, 1>;
+    type Build<'slf, 'ctx> = std::iter::Once<Hof::Inner>;
 
     type InputHandoffs = tt!(RecvPort<Hof>);
 
@@ -50,6 +50,6 @@ where
         handoffs: <Self::InputHandoffs as PortList<RECV>>::Ctx<'ctx>,
     ) -> Self::Build<'slf, 'ctx> {
         let tl!(handoff) = handoffs;
-        [handoff.take_inner()].into_iter()
+        std::iter::once(handoff.take_inner())
     }
 }
