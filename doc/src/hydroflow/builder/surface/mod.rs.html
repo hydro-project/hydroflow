@@ -698,7 +698,7 @@
     <span class="kw">type</span> <span class="ident">InputHandoffs</span>: <span class="ident">PortList</span><span class="op">&lt;</span><span class="ident">RECV</span><span class="op">&gt;</span>;
     <span class="kw">type</span> <span class="ident">Build</span>: <span class="ident">PullBuild</span><span class="op">&lt;</span><span class="ident">InputHandoffs</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::InputHandoffs</span>, <span class="ident">ItemOut</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::ItemOut</span><span class="op">&gt;</span>;
 
-    <span class="kw">fn</span> <span class="ident">into_parts</span>(<span class="self">self</span>) -&gt; (<span class="ident"><span class="self">Self</span>::InputHandoffs</span>, <span class="ident"><span class="self">Self</span>::Build</span>);
+    <span class="kw">fn</span> <span class="ident">into_parts</span>(<span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span>) -&gt; (<span class="ident"><span class="self">Self</span>::InputHandoffs</span>, <span class="ident"><span class="self">Self</span>::Build</span>);
 
     <span class="kw">fn</span> <span class="ident">chain</span><span class="op">&lt;</span><span class="ident">Other</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">other</span>: <span class="ident">Other</span>) -&gt; <span class="ident">pull_chain::ChainPullSurface</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">Other</span><span class="op">&gt;</span>
     <span class="kw">where</span>
@@ -949,7 +949,7 @@
     <span class="kw">type</span> <span class="ident">OutputHandoffs</span>: <span class="ident">PortList</span><span class="op">&lt;</span><span class="ident">SEND</span><span class="op">&gt;</span>;
     <span class="kw">type</span> <span class="ident">Build</span>: <span class="ident">PushBuild</span><span class="op">&lt;</span><span class="ident">OutputHandoffs</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::OutputHandoffs</span>, <span class="ident">ItemIn</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::ItemIn</span><span class="op">&gt;</span>;
 
-    <span class="kw">fn</span> <span class="ident">into_parts</span>(<span class="self">self</span>) -&gt; (<span class="ident"><span class="self">Self</span>::OutputHandoffs</span>, <span class="ident"><span class="self">Self</span>::Build</span>);
+    <span class="kw">fn</span> <span class="ident">into_parts</span>(<span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span>) -&gt; (<span class="ident"><span class="self">Self</span>::OutputHandoffs</span>, <span class="ident"><span class="self">Self</span>::Build</span>);
 }
 </code></pre></div>
 </section><section id="search" class="content hidden"></section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.0-nightly (52ca603da 2022-04-12)" ></div>

@@ -50,9 +50,11 @@
 <span id="45">45</span>
 <span id="46">46</span>
 <span id="47">47</span>
+<span id="48">48</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">AssembleFlowGraph</span>, <span class="ident">BaseSurface</span>, <span class="ident">PullSurface</span>};
 
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::builder::build::pull_iter::IterPullBuild</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::context::Context</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::flow_graph::NodeId</span>;
 
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">IterPullSurface</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>
@@ -93,7 +95,7 @@
     <span class="kw">type</span> <span class="ident">InputHandoffs</span> <span class="op">=</span> ();
     <span class="kw">type</span> <span class="ident">Build</span> <span class="op">=</span> <span class="ident">IterPullBuild</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>;
 
-    <span class="kw">fn</span> <span class="ident">into_parts</span>(<span class="self">self</span>) -&gt; (<span class="ident"><span class="self">Self</span>::InputHandoffs</span>, <span class="ident"><span class="self">Self</span>::Build</span>) {
+    <span class="kw">fn</span> <span class="ident">into_parts</span>(<span class="self">self</span>, <span class="ident">_ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span>) -&gt; (<span class="ident"><span class="self">Self</span>::InputHandoffs</span>, <span class="ident"><span class="self">Self</span>::Build</span>) {
         ((), <span class="ident">IterPullBuild::new</span>(<span class="self">self</span>.<span class="ident">it</span>))
     }
 }

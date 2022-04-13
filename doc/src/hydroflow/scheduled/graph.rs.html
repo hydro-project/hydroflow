@@ -519,6 +519,15 @@
 <span id="514">514</span>
 <span id="515">515</span>
 <span id="516">516</span>
+<span id="517">517</span>
+<span id="518">518</span>
+<span id="519">519</span>
+<span id="520">520</span>
+<span id="521">521</span>
+<span id="522">522</span>
+<span id="523">523</span>
+<span id="524">524</span>
+<span id="525">525</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::any::Any</span>;
 <span class="kw">use</span> <span class="ident">std::borrow::Cow</span>;
 <span class="kw">use</span> <span class="ident">std::cell::Cell</span>;
@@ -615,8 +624,7 @@
                 <span class="macro">assert!</span>(<span class="ident">sg_data</span>.<span class="ident">is_scheduled</span>.<span class="ident">take</span>());
 
                 <span class="self">self</span>.<span class="ident">context</span>.<span class="ident">subgraph_id</span> <span class="op">=</span> <span class="ident">sg_id</span>;
-                <span class="kw">let</span> <span class="ident">context</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">context</span>;
-                <span class="ident">sg_data</span>.<span class="ident">subgraph</span>.<span class="ident">run</span>(<span class="ident">context</span>);
+                <span class="ident">sg_data</span>.<span class="ident">subgraph</span>.<span class="ident">run</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">context</span>);
             }
 
             <span class="kw">for</span> <span class="kw-2">&amp;</span><span class="ident">handoff_id</span> <span class="kw">in</span> <span class="self">self</span>.<span class="ident">subgraphs</span>[<span class="ident">sg_id</span>.<span class="number">0</span>].<span class="ident">succs</span>.<span class="ident">iter</span>() {
@@ -944,6 +952,16 @@
             <span class="ident">state_id</span>,
             <span class="ident">_phantom</span>: <span class="ident">PhantomData</span>,
         }
+    }
+
+    <span class="doccomment">/// Gets a exclusive (mut) ref to the internal context, setting the subgraph ID.</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">context_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">sg_id</span>: <span class="ident">SubgraphId</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="ident">Context</span> {
+        <span class="self">self</span>.<span class="ident">context</span>.<span class="ident">subgraph_id</span> <span class="op">=</span> <span class="ident">sg_id</span>;
+        <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">context</span>
+    }
+
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">next_subgraph_id</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">SubgraphId</span> {
+        <span class="ident">SubgraphId</span>(<span class="self">self</span>.<span class="ident">subgraphs</span>.<span class="ident">len</span>())
     }
 
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">add_dependencies</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">sg_id</span>: <span class="ident">SubgraphId</span>, <span class="ident">deps</span>: <span class="ident">FlowGraph</span>) {

@@ -119,6 +119,7 @@
 <span id="114">114</span>
 <span id="115">115</span>
 <span id="116">116</span>
+<span id="117">117</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">AssembleFlowGraph</span>, <span class="ident">BaseSurface</span>, <span class="ident">PullSurface</span>};
 
 <span class="kw">use</span> <span class="ident">std::hash::Hash</span>;
@@ -126,6 +127,7 @@
 
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::builder::build::pull_half_hash_join::HalfHashJoinPullBuild</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::lang::lattice</span>::{<span class="ident">LatticeRepr</span>, <span class="ident">Merge</span>};
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::context::Context</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::flow_graph::NodeId</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::handoff::handoff_list</span>::{<span class="ident">PortList</span>, <span class="ident">PortListSplit</span>};
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::port::RECV</span>;
@@ -227,9 +229,9 @@
     <span class="kw">type</span> <span class="ident">Build</span> <span class="op">=</span>
         <span class="ident">HalfHashJoinPullBuild</span><span class="op">&lt;</span><span class="ident">PrevBuf::Build</span>, <span class="ident">PrevStream::Build</span>, <span class="ident">Key</span>, <span class="ident">L</span>, <span class="ident">Update</span>, <span class="ident">StreamVal</span><span class="op">&gt;</span>;
 
-    <span class="kw">fn</span> <span class="ident">into_parts</span>(<span class="self">self</span>) -&gt; (<span class="ident"><span class="self">Self</span>::InputHandoffs</span>, <span class="ident"><span class="self">Self</span>::Build</span>) {
-        <span class="kw">let</span> (<span class="ident">connect_a</span>, <span class="ident">build_a</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">prev_buf</span>.<span class="ident">into_parts</span>();
-        <span class="kw">let</span> (<span class="ident">connect_b</span>, <span class="ident">build_b</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">prev_stream</span>.<span class="ident">into_parts</span>();
+    <span class="kw">fn</span> <span class="ident">into_parts</span>(<span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span>) -&gt; (<span class="ident"><span class="self">Self</span>::InputHandoffs</span>, <span class="ident"><span class="self">Self</span>::Build</span>) {
+        <span class="kw">let</span> (<span class="ident">connect_a</span>, <span class="ident">build_a</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">prev_buf</span>.<span class="ident">into_parts</span>(<span class="ident">ctx</span>);
+        <span class="kw">let</span> (<span class="ident">connect_b</span>, <span class="ident">build_b</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">prev_stream</span>.<span class="ident">into_parts</span>(<span class="ident">ctx</span>);
         <span class="kw">let</span> <span class="ident">connect</span> <span class="op">=</span> <span class="ident">connect_a</span>.<span class="ident">extend</span>(<span class="ident">connect_b</span>);
         <span class="kw">let</span> <span class="ident">build</span> <span class="op">=</span> <span class="ident">HalfHashJoinPullBuild::new</span>(<span class="ident">build_a</span>, <span class="ident">build_b</span>);
         (<span class="ident">connect</span>, <span class="ident">build</span>)

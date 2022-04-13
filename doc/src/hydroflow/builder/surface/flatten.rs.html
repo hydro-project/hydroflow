@@ -129,12 +129,14 @@
 <span id="124">124</span>
 <span id="125">125</span>
 <span id="126">126</span>
+<span id="127">127</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">AssembleFlowGraph</span>, <span class="ident">BaseSurface</span>, <span class="ident">PullSurface</span>, <span class="ident">PushSurface</span>, <span class="ident">PushSurfaceReversed</span>};
 
 <span class="kw">use</span> <span class="ident">std::marker::PhantomData</span>;
 
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::builder::build::pull_flatten::FlattenPullBuild</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::builder::build::push_flatten::FlattenPushBuild</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::context::Context</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::flow_graph::NodeId</span>;
 
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">FlattenSurface</span><span class="op">&lt;</span><span class="ident">Prev</span><span class="op">&gt;</span>
@@ -170,8 +172,8 @@
     <span class="kw">type</span> <span class="ident">InputHandoffs</span> <span class="op">=</span> <span class="ident">Prev::InputHandoffs</span>;
     <span class="kw">type</span> <span class="ident">Build</span> <span class="op">=</span> <span class="ident">FlattenPullBuild</span><span class="op">&lt;</span><span class="ident">Prev::Build</span><span class="op">&gt;</span>;
 
-    <span class="kw">fn</span> <span class="ident">into_parts</span>(<span class="self">self</span>) -&gt; (<span class="ident"><span class="self">Self</span>::InputHandoffs</span>, <span class="ident"><span class="self">Self</span>::Build</span>) {
-        <span class="kw">let</span> (<span class="ident">connect</span>, <span class="ident">build</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">prev</span>.<span class="ident">into_parts</span>();
+    <span class="kw">fn</span> <span class="ident">into_parts</span>(<span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span>) -&gt; (<span class="ident"><span class="self">Self</span>::InputHandoffs</span>, <span class="ident"><span class="self">Self</span>::Build</span>) {
+        <span class="kw">let</span> (<span class="ident">connect</span>, <span class="ident">build</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">prev</span>.<span class="ident">into_parts</span>(<span class="ident">ctx</span>);
         <span class="kw">let</span> <span class="ident">build</span> <span class="op">=</span> <span class="ident">FlattenPullBuild::new</span>(<span class="ident">build</span>);
         (<span class="ident">connect</span>, <span class="ident">build</span>)
     }
@@ -249,8 +251,8 @@
     <span class="kw">type</span> <span class="ident">OutputHandoffs</span> <span class="op">=</span> <span class="ident">Next::OutputHandoffs</span>;
     <span class="kw">type</span> <span class="ident">Build</span> <span class="op">=</span> <span class="ident">FlattenPushBuild</span><span class="op">&lt;</span><span class="ident">Next::Build</span>, <span class="ident">In</span><span class="op">&gt;</span>;
 
-    <span class="kw">fn</span> <span class="ident">into_parts</span>(<span class="self">self</span>) -&gt; (<span class="ident"><span class="self">Self</span>::OutputHandoffs</span>, <span class="ident"><span class="self">Self</span>::Build</span>) {
-        <span class="kw">let</span> (<span class="ident">connect</span>, <span class="ident">build</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">next</span>.<span class="ident">into_parts</span>();
+    <span class="kw">fn</span> <span class="ident">into_parts</span>(<span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span>) -&gt; (<span class="ident"><span class="self">Self</span>::OutputHandoffs</span>, <span class="ident"><span class="self">Self</span>::Build</span>) {
+        <span class="kw">let</span> (<span class="ident">connect</span>, <span class="ident">build</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">next</span>.<span class="ident">into_parts</span>(<span class="ident">ctx</span>);
         <span class="kw">let</span> <span class="ident">build</span> <span class="op">=</span> <span class="ident">FlattenPushBuild::new</span>(<span class="ident">build</span>);
         (<span class="ident">connect</span>, <span class="ident">build</span>)
     }
