@@ -88,7 +88,7 @@ pub(crate) async fn run_proposer(opts: Opts) {
                             // Put requested value into hash map
                             slots.insert(next_slot, new_slot_entry);
                             Some(ProposerMsg {
-                                addr: opts.addr,
+                                addr: opts.addr.clone(),
                                 slot: new_slot_entry.slot,
                                 ballot: new_slot_entry.ballot,
                                 pid: proposer_id,
@@ -106,7 +106,7 @@ pub(crate) async fn run_proposer(opts: Opts) {
 
                                     if slot_entry.p1b_count == target {
                                         Some(ProposerMsg {
-                                            addr: opts.addr,
+                                            addr: opts.addr.clone(),
                                             slot: slot_entry.slot,
                                             ballot: slot_entry.ballot,
                                             pid: proposer_id,
@@ -143,6 +143,7 @@ pub(crate) async fn run_proposer(opts: Opts) {
                 msg
             })
             .pull_to_push()
+            .map(Some)
             .push_to(msg_send),
     );
 
