@@ -80,6 +80,7 @@ where
 pub struct MapPushSurfaceReversed<Next, Func, In>
 where
     Next: PushSurfaceReversed,
+    Func: FnMut(&Context, In) -> Next::ItemIn,
 {
     next: Next,
     func: Func,
