@@ -21,6 +21,7 @@ pub mod filter;
 pub mod filter_map;
 pub mod flatten;
 pub mod map;
+pub mod map_scan;
 pub mod pivot;
 
 pub mod pull_batch;
@@ -41,6 +42,7 @@ pub mod push_tee;
 
 pub mod exchange;
 
+use std::any::Any;
 use std::hash::Hash;
 
 use crate::lang::lattice::{LatticeRepr, Merge};
@@ -148,15 +150,15 @@ pub trait BaseSurface {
 
     fn map_scan<State, Func, Out>(
         self,
-        mut initial_state: State,
-        mut func: Func,
-    ) -> map::MapSurface<Self, MapScanMapFunc<Self, State, Func, Out>>
+        initial_state: State,
+        func: Func,
+    ) -> map_scan::MapScanSurface<Self, Func, State>
     where
         Self: Sized,
         Func: FnMut(&mut State, Self::ItemOut) -> Out,
+        State: Any,
     {
-        // TODO(mingwei): use state API.
-        self.map_with_context(move |_ctx, item| func(&mut initial_state, item))
+        map_scan::MapScanSurface::new(self, func, initial_state)
     }
 
     fn inspect_with_context<Func>(
@@ -199,11 +201,6 @@ pub type FilterMapNoCtxFn<Prev, Func, Out>
 where
     Prev: BaseSurface,
 = impl FnMut(&Context, Prev::ItemOut) -> Option<Out>;
-
-pub type MapScanMapFunc<Prev, State, Func, Out>
-where
-    Prev: BaseSurface,
-= impl FnMut(&Context, Prev::ItemOut) -> Out;
 
 pub type InspectMapFunc<Prev, Func>
 where
