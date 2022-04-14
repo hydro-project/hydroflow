@@ -16,7 +16,7 @@ use super::port::{RecvCtx, RecvPort, SendCtx, SendPort, RECV, SEND};
 use super::reactor::Reactor;
 use super::state::StateHandle;
 use super::subgraph::Subgraph;
-use super::{HandoffId, StateId, SubgraphId};
+use super::{HandoffId, SubgraphId};
 
 /// A Hydroflow graph. Owns, schedules, and runs the compiled subgraphs.
 pub struct Hydroflow {
@@ -411,17 +411,7 @@ impl Hydroflow {
     where
         T: Any,
     {
-        let state_id = StateId(self.context.states.len());
-
-        let state_data = StateData {
-            state: Box::new(state),
-        };
-        self.context.states.push(state_data);
-
-        StateHandle {
-            state_id,
-            _phantom: PhantomData,
-        }
+        self.context.add_state(state)
     }
 
     /// Gets a exclusive (mut) ref to the internal context, setting the subgraph ID.

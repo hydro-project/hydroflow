@@ -1,11 +1,11 @@
-use std::any::Any;
+use std::{any::Any, marker::PhantomData};
 
 use tokio::sync::mpsc::UnboundedSender;
 
 use super::{
     graph::{HandoffData, StateData},
     state::StateHandle,
-    SubgraphId,
+    StateId, SubgraphId,
 };
 
 /// The main state of the Hydroflow instance, which is provided as a reference
@@ -83,5 +83,22 @@ impl Context {
             .state
             .downcast_mut()
             .expect("StateHandle wrong type T for casting.")
+    }
+
+    pub fn add_state<T>(&mut self, state: T) -> StateHandle<T>
+    where
+        T: Any,
+    {
+        let state_id = StateId(self.states.len());
+
+        let state_data = StateData {
+            state: Box::new(state),
+        };
+        self.states.push(state_data);
+
+        StateHandle {
+            state_id,
+            _phantom: PhantomData,
+        }
     }
 }
