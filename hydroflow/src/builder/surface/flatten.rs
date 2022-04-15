@@ -40,8 +40,8 @@ where
     type InputHandoffs = Prev::InputHandoffs;
     type Build = FlattenPullBuild<Prev::Build>;
 
-    fn into_parts(self, ctx: &mut Context) -> (Self::InputHandoffs, Self::Build) {
-        let (connect, build) = self.prev.into_parts(ctx);
+    fn make_parts(self, ctx: &mut Context) -> (Self::InputHandoffs, Self::Build) {
+        let (connect, build) = self.prev.make_parts(ctx);
         let build = FlattenPullBuild::new(build);
         (connect, build)
     }
@@ -119,8 +119,8 @@ where
     type OutputHandoffs = Next::OutputHandoffs;
     type Build = FlattenPushBuild<Next::Build, In>;
 
-    fn into_parts(self, ctx: &mut Context) -> (Self::OutputHandoffs, Self::Build) {
-        let (connect, build) = self.next.into_parts(ctx);
+    fn make_parts(self, ctx: &mut Context) -> (Self::OutputHandoffs, Self::Build) {
+        let (connect, build) = self.next.make_parts(ctx);
         let build = FlattenPushBuild::new(build);
         (connect, build)
     }

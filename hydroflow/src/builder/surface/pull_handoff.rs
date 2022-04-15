@@ -47,7 +47,7 @@ where
     type InputHandoffs = tt!(RecvPort<Hof>);
     type Build = HandoffPullBuild<Hof>;
 
-    fn into_parts(self, _ctx: &mut Context) -> (Self::InputHandoffs, Self::Build) {
+    fn make_parts(self, _ctx: &mut Context) -> (Self::InputHandoffs, Self::Build) {
         (tl!(self.port), HandoffPullBuild::new())
     }
 }
