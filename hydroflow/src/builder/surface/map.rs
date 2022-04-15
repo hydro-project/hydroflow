@@ -40,8 +40,8 @@ where
     type InputHandoffs = Prev::InputHandoffs;
     type Build = MapPullBuild<Prev::Build, Func>;
 
-    fn into_parts(self, ctx: &mut Context) -> (Self::InputHandoffs, Self::Build) {
-        let (connect, build) = self.prev.into_parts(ctx);
+    fn make_parts(self, ctx: &mut Context) -> (Self::InputHandoffs, Self::Build) {
+        let (connect, build) = self.prev.make_parts(ctx);
         let build = MapPullBuild::new(build, self.func);
         (connect, build)
     }
@@ -122,8 +122,8 @@ where
     type OutputHandoffs = Next::OutputHandoffs;
     type Build = MapPushBuild<Next::Build, Func, In>;
 
-    fn into_parts(self, ctx: &mut Context) -> (Self::OutputHandoffs, Self::Build) {
-        let (connect, build) = self.next.into_parts(ctx);
+    fn make_parts(self, ctx: &mut Context) -> (Self::OutputHandoffs, Self::Build) {
+        let (connect, build) = self.next.make_parts(ctx);
         let build = MapPushBuild::new(build, self.func);
         (connect, build)
     }

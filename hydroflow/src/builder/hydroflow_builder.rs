@@ -98,7 +98,7 @@ impl HydroflowBuilder {
 
         let sg_id = self.hydroflow.next_subgraph_id();
         let ((recv_ports, send_ports), (mut pull_build, mut push_build)) =
-            pivot.into_parts(self.hydroflow.context_mut(sg_id));
+            pivot.make_parts(self.hydroflow.context_mut(sg_id));
 
         let sg_id_actual = self.hydroflow.add_subgraph_stratified(
             name,

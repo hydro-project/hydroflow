@@ -69,9 +69,9 @@ where
     type OutputHandoffs = <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended;
     type Build = TeePushBuild<NextA::Build, NextB::Build>;
 
-    fn into_parts(self, ctx: &mut Context) -> (Self::OutputHandoffs, Self::Build) {
-        let (connect_a, build_a) = self.next_a.into_parts(ctx);
-        let (connect_b, build_b) = self.next_b.into_parts(ctx);
+    fn make_parts(self, ctx: &mut Context) -> (Self::OutputHandoffs, Self::Build) {
+        let (connect_a, build_a) = self.next_a.make_parts(ctx);
+        let (connect_b, build_b) = self.next_b.make_parts(ctx);
         let connect = connect_a.extend(connect_b);
         let build = TeePushBuild::new(build_a, build_b);
         (connect, build)

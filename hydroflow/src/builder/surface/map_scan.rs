@@ -64,10 +64,10 @@ where
     type InputHandoffs = Prev::InputHandoffs;
     type Build = MapPullBuild<Prev::Build, MapScanFunc<Func, State, Prev::ItemOut, Out>>;
 
-    fn into_parts(self, ctx: &mut Context) -> (Self::InputHandoffs, Self::Build) {
+    fn make_parts(self, ctx: &mut Context) -> (Self::InputHandoffs, Self::Build) {
         let state_handle = ctx.add_state(RefCell::new(self.state));
 
-        let (connect, build) = self.prev.into_parts(ctx);
+        let (connect, build) = self.prev.make_parts(ctx);
         let build = MapPullBuild::new(build, wrap_func(self.func, state_handle));
         (connect, build)
     }
@@ -157,10 +157,10 @@ where
     type OutputHandoffs = Next::OutputHandoffs;
     type Build = MapPushBuild<Next::Build, MapScanFunc<Func, State, In, Next::ItemIn>, In>;
 
-    fn into_parts(self, ctx: &mut Context) -> (Self::OutputHandoffs, Self::Build) {
+    fn make_parts(self, ctx: &mut Context) -> (Self::OutputHandoffs, Self::Build) {
         let state_handle = ctx.add_state(RefCell::new(self.state));
 
-        let (connect, build) = self.next.into_parts(ctx);
+        let (connect, build) = self.next.make_parts(ctx);
         let build = MapPushBuild::new(build, wrap_func(self.func, state_handle));
         (connect, build)
     }

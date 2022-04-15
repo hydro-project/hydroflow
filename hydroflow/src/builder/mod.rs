@@ -72,7 +72,7 @@
 //!
 //! The layers are used in [HydroflowBuilder::add_subgraph]. The method
 //! receives a pivot with `PullSurface` and `PushSurfaceReversed` halves. Then
-//! `into_parts()` splits them into the ports half and the build half. Those
+//! `make_parts()` splits them into the ports half and the build half. Those
 //! are then both sent to [Hydroflow::add_subgraph()](crate::scheduled::graph::Hydroflow::add_subgraph)
 //! to create a subgraph.
 
