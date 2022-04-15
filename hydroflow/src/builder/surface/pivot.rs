@@ -30,9 +30,9 @@ where
         Self { pull, push }
     }
 
-    pub fn into_parts(self, context: &mut Context) -> Parts<Pull, Push> {
-        let (pull_connect, pull_build) = self.pull.into_parts(context);
-        let (push_connect, push_build) = self.push.into_parts(context);
+    pub fn make_parts(self, context: &mut Context) -> Parts<Pull, Push> {
+        let (pull_connect, pull_build) = self.pull.make_parts(context);
+        let (push_connect, push_build) = self.push.make_parts(context);
         ((pull_connect, push_connect), (pull_build, push_build))
     }
 }

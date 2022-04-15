@@ -42,7 +42,7 @@ where
     type InputHandoffs = ();
     type Build = IterPullBuild<I>;
 
-    fn into_parts(self, _ctx: &mut Context) -> (Self::InputHandoffs, Self::Build) {
+    fn make_parts(self, _ctx: &mut Context) -> (Self::InputHandoffs, Self::Build) {
         ((), IterPullBuild::new(self.it))
     }
 }

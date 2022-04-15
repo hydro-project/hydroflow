@@ -48,7 +48,7 @@ where
     type OutputHandoffs = tt!(SendPort<Hof>);
     type Build = HandoffPushBuild<Hof, In>;
 
-    fn into_parts(self, _ctx: &mut Context) -> (Self::OutputHandoffs, Self::Build) {
+    fn make_parts(self, _ctx: &mut Context) -> (Self::OutputHandoffs, Self::Build) {
         (tl!(self.port), HandoffPushBuild::new())
     }
 }

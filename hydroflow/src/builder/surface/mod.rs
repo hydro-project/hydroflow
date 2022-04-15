@@ -216,7 +216,7 @@ pub trait PullSurface: BaseSurface {
     type InputHandoffs: PortList<RECV>;
     type Build: PullBuild<InputHandoffs = Self::InputHandoffs, ItemOut = Self::ItemOut>;
 
-    fn into_parts(self, ctx: &mut Context) -> (Self::InputHandoffs, Self::Build);
+    fn make_parts(self, ctx: &mut Context) -> (Self::InputHandoffs, Self::Build);
 
     fn chain<Other>(self, other: Other) -> pull_chain::ChainPullSurface<Self, Other>
     where
@@ -467,5 +467,5 @@ pub trait PushSurfaceReversed {
     type OutputHandoffs: PortList<SEND>;
     type Build: PushBuild<OutputHandoffs = Self::OutputHandoffs, ItemIn = Self::ItemIn>;
 
-    fn into_parts(self, ctx: &mut Context) -> (Self::OutputHandoffs, Self::Build);
+    fn make_parts(self, ctx: &mut Context) -> (Self::OutputHandoffs, Self::Build);
 }

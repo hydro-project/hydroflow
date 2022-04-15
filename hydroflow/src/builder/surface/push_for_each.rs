@@ -43,7 +43,7 @@ where
     type OutputHandoffs = ();
     type Build = ForEachPushBuild<Func, In>;
 
-    fn into_parts(self, _ctx: &mut Context) -> (Self::OutputHandoffs, Self::Build) {
+    fn make_parts(self, _ctx: &mut Context) -> (Self::OutputHandoffs, Self::Build) {
         ((), ForEachPushBuild::new(self.func))
     }
 }
