@@ -322,7 +322,7 @@
 
         <span class="kw">let</span> <span class="ident">sg_id</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">hydroflow</span>.<span class="ident">next_subgraph_id</span>();
         <span class="kw">let</span> ((<span class="ident">recv_ports</span>, <span class="ident">send_ports</span>), (<span class="kw-2">mut</span> <span class="ident">pull_build</span>, <span class="kw-2">mut</span> <span class="ident">push_build</span>)) <span class="op">=</span>
-            <span class="ident">pivot</span>.<span class="ident">into_parts</span>(<span class="self">self</span>.<span class="ident">hydroflow</span>.<span class="ident">context_mut</span>(<span class="ident">sg_id</span>));
+            <span class="ident">pivot</span>.<span class="ident">make_parts</span>(<span class="self">self</span>.<span class="ident">hydroflow</span>.<span class="ident">context_mut</span>(<span class="ident">sg_id</span>));
 
         <span class="kw">let</span> <span class="ident">sg_id_actual</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">hydroflow</span>.<span class="ident">add_subgraph_stratified</span>(
             <span class="ident">name</span>,

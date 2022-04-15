@@ -67,7 +67,7 @@ does and is named. Layers are listed starting from the highest
 <h4 id="how-the-code-actually-runs"><a href="#how-the-code-actually-runs">How the code actually runs</a></h4>
 <p>The layers are used in <a href="prelude/struct.HydroflowBuilder.html#method.add_subgraph" title="HydroflowBuilder::add_subgraph">HydroflowBuilder::add_subgraph</a>. The method
 receives a pivot with <code>PullSurface</code> and <code>PushSurfaceReversed</code> halves. Then
-<code>into_parts()</code> splits them into the ports half and the build half. Those
+<code>make_parts()</code> splits them into the ports half and the build half. Those
 are then both sent to <a href="../scheduled/graph/struct.Hydroflow.html#method.add_subgraph">Hydroflow::add_subgraph()</a>
 to create a subgraph.</p>
 </div></details><h2 id="modules" class="small-section-header"><a href="#modules">Modules</a></h2>

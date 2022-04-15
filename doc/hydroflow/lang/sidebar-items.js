@@ -1,1 +1,1 @@
-initSidebarItems({"mod":[["collections",""],["lattice",""],["tag",""]]});
+initSidebarItems({"mod":[["clear",""],["collections",""],["lattice",""],["monotonic_map",""],["tag",""]]});

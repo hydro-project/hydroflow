@@ -73,9 +73,9 @@
         <span class="self">Self</span> { <span class="ident">pull</span>, <span class="ident">push</span> }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">into_parts</span>(<span class="self">self</span>, <span class="ident">context</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span>) -&gt; <span class="ident">Parts</span><span class="op">&lt;</span><span class="ident">Pull</span>, <span class="ident">Push</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> (<span class="ident">pull_connect</span>, <span class="ident">pull_build</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">pull</span>.<span class="ident">into_parts</span>(<span class="ident">context</span>);
-        <span class="kw">let</span> (<span class="ident">push_connect</span>, <span class="ident">push_build</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">push</span>.<span class="ident">into_parts</span>(<span class="ident">context</span>);
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">make_parts</span>(<span class="self">self</span>, <span class="ident">context</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span>) -&gt; <span class="ident">Parts</span><span class="op">&lt;</span><span class="ident">Pull</span>, <span class="ident">Push</span><span class="op">&gt;</span> {
+        <span class="kw">let</span> (<span class="ident">pull_connect</span>, <span class="ident">pull_build</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">pull</span>.<span class="ident">make_parts</span>(<span class="ident">context</span>);
+        <span class="kw">let</span> (<span class="ident">push_connect</span>, <span class="ident">push_build</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">push</span>.<span class="ident">make_parts</span>(<span class="ident">context</span>);
         ((<span class="ident">pull_connect</span>, <span class="ident">push_connect</span>), (<span class="ident">pull_build</span>, <span class="ident">push_build</span>))
     }
 }

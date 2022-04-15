@@ -518,16 +518,6 @@
 <span id="513">513</span>
 <span id="514">514</span>
 <span id="515">515</span>
-<span id="516">516</span>
-<span id="517">517</span>
-<span id="518">518</span>
-<span id="519">519</span>
-<span id="520">520</span>
-<span id="521">521</span>
-<span id="522">522</span>
-<span id="523">523</span>
-<span id="524">524</span>
-<span id="525">525</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::any::Any</span>;
 <span class="kw">use</span> <span class="ident">std::borrow::Cow</span>;
 <span class="kw">use</span> <span class="ident">std::cell::Cell</span>;
@@ -546,7 +536,7 @@
 <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::reactor::Reactor</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::state::StateHandle</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::subgraph::Subgraph</span>;
-<span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">HandoffId</span>, <span class="ident">StateId</span>, <span class="ident">SubgraphId</span>};
+<span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">HandoffId</span>, <span class="ident">SubgraphId</span>};
 
 <span class="doccomment">/// A Hydroflow graph. Owns, schedules, and runs the compiled subgraphs.</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Hydroflow</span> {
@@ -941,17 +931,7 @@
     <span class="kw">where</span>
         <span class="ident">T</span>: <span class="ident">Any</span>,
     {
-        <span class="kw">let</span> <span class="ident">state_id</span> <span class="op">=</span> <span class="ident">StateId</span>(<span class="self">self</span>.<span class="ident">context</span>.<span class="ident">states</span>.<span class="ident">len</span>());
-
-        <span class="kw">let</span> <span class="ident">state_data</span> <span class="op">=</span> <span class="ident">StateData</span> {
-            <span class="ident">state</span>: <span class="ident">Box::new</span>(<span class="ident">state</span>),
-        };
-        <span class="self">self</span>.<span class="ident">context</span>.<span class="ident">states</span>.<span class="ident">push</span>(<span class="ident">state_data</span>);
-
-        <span class="ident">StateHandle</span> {
-            <span class="ident">state_id</span>,
-            <span class="ident">_phantom</span>: <span class="ident">PhantomData</span>,
-        }
+        <span class="self">self</span>.<span class="ident">context</span>.<span class="ident">add_state</span>(<span class="ident">state</span>)
     }
 
     <span class="doccomment">/// Gets a exclusive (mut) ref to the internal context, setting the subgraph ID.</span>
