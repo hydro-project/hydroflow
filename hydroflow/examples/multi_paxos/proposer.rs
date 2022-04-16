@@ -121,7 +121,7 @@ pub(crate) async fn run_proposer(opts: Opts) {
                                     slot_entry.p2b_count += 1;
 
                                     if slot_entry.p2b_count == target {
-                                        println!("yeehaw: {:?}", slot_entry.slot);
+                                        println!("A value was accepted: {:?}", slot_entry.slot);
                                     }
                                     None
                                 }
@@ -131,7 +131,7 @@ pub(crate) async fn run_proposer(opts: Opts) {
                     };
 
                     if resp.is_some() {
-                        Some((opts.addr.clone(), resp.unwrap().clone())) // FIXME
+                        Some((opts.addr.clone(), resp.unwrap().clone())) // FIXME: This address is incorrect.
                     } else {
                         None
                     }
