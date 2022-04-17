@@ -1,4 +1,4 @@
-!/bin/bash
+#!/bin/bash
 
 declare -a bgpids
 
@@ -10,13 +10,16 @@ cleanup() {
 }
 trap cleanup EXIT SIGINT SIGTERM
 
-cargo run --example proposer_eval --  --role acceptor --port 1400 --addr localhost --id 14 &
+echo "This should be running in the root of the repo"
+cargo build --release --example proposer_eval
+
+./target/release/examples/proposer_eval  --role acceptor --port 1400 --addr localhost --id 14 &
 bgpids+=($!)
-cargo run --example proposer_eval --  --role acceptor --port 1401 --addr localhost --id 15 &
+./target/release/examples/proposer_eval  --role acceptor --port 1401 --addr localhost --id 15 &
 bgpids+=($!)
-cargo run --example proposer_eval --  --role acceptor --port 1402 --addr localhost --id 16 &
+./target/release/examples/proposer_eval  --role acceptor --port 1402 --addr localhost --id 16 &
 bgpids+=($!)
 
 sleep 2
 
-cargo run --example proposer_eval --  --role proposer --port 12222 --addr localhost --id 10
+./target/release/examples/proposer_eval  --role proposer --port 12222 --addr localhost --id 10

@@ -70,18 +70,18 @@ pub(crate) async fn run_proposer(opts: Opts) {
                         Msg::ClientReq(msg) => {
                             let max_slot = slots.keys().max().unwrap_or(&0);
                             let hashed = waste_time(hash_u16(*max_slot));
-                            // let hashed = hash_u16(*max_slot);
-                            // slots.insert(
-                            //     max_slot + 1,
-                            //     ProposerSlotData {
-                            //         val: 0,
-                            //         slot: 0,
-                            //         ballot: 0,
-                            //         p1b_count: 0,
-                            //         p2b_count: 0,
-                            //         hash: hashed,
-                            //     },
-                            // );
+                            //let hashed = hash_u16(*max_slot);
+                            //slots.insert(
+                            //max_slot + 1,
+                            //ProposerSlotData {
+                            //val: 0,
+                            //slot: 0,
+                            //ballot: 0,
+                            //p1b_count: 0,
+                            //p2b_count: 0,
+                            //hash: hashed,
+                            //},
+                            //);
 
                             Some(Msg::ProposerReq(ProposerReq {
                                 addr: opts.addr.clone(),
