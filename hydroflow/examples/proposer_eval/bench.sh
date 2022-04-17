@@ -1,10 +1,11 @@
-declare -a bgpids
+#!/bin/bash
 
+declare -a bgpids
 
 # when this script ends or is terminated, cleanup will be called
 cleanup() {
     for pid in ${bgpids[@]}; do
-        kill -9 $pid
+        sudo kill -9 $pid
     done
 }
 trap cleanup EXIT SIGINT SIGTERM
