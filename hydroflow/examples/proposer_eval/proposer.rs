@@ -69,8 +69,8 @@ pub(crate) async fn run_proposer(opts: Opts) {
                     let resp = match msg {
                         Msg::ClientReq(msg) => {
                             let max_slot = slots.keys().max().unwrap_or(&0);
-                            // let hashed = waste_time(hash_u16(*max_slot));
-                            let hashed = hash_u16(*max_slot);
+                            let hashed = waste_time(hash_u16(*max_slot));
+                            // let hashed = hash_u16(*max_slot);
                             // slots.insert(
                             //     max_slot + 1,
                             //     ProposerSlotData {
@@ -116,7 +116,7 @@ pub(crate) async fn run_proposer(opts: Opts) {
     let mut rng = rand::thread_rng();
     let start = SystemTime::now();
 
-    while counter < 10000 {
+    while counter < 100000 {
         send_edges.give(Some(Msg::ClientReq(ClientReq { val: rng.gen() })));
         send_edges.flush();
         hf.tick();
@@ -131,8 +131,6 @@ pub(crate) async fn run_proposer(opts: Opts) {
                 counter as f64 / elapsed_ms as f64 * 1000.0
             );
         }
-        // add sleep of 1 second
-        std::thread::sleep(Duration::from_millis(5));
     }
 
     // println!("Opening on port {}", opts.port);
