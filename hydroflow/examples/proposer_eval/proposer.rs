@@ -69,18 +69,19 @@ pub(crate) async fn run_proposer(opts: Opts) {
                     let resp = match msg {
                         Msg::ClientReq(msg) => {
                             let max_slot = slots.keys().max().unwrap_or(&0);
-                            let hashed = waste_time(hash_u16(*max_slot));
-                            slots.insert(
-                                max_slot + 1,
-                                ProposerSlotData {
-                                    val: 0,
-                                    slot: 0,
-                                    ballot: 0,
-                                    p1b_count: 0,
-                                    p2b_count: 0,
-                                    hash: hashed,
-                                },
-                            );
+                            // let hashed = waste_time(hash_u16(*max_slot));
+                            let hashed = hash_u16(*max_slot);
+                            // slots.insert(
+                            //     max_slot + 1,
+                            //     ProposerSlotData {
+                            //         val: 0,
+                            //         slot: 0,
+                            //         ballot: 0,
+                            //         p1b_count: 0,
+                            //         p2b_count: 0,
+                            //         hash: hashed,
+                            //     },
+                            // );
 
                             Some(Msg::ProposerReq(ProposerReq {
                                 addr: opts.addr.clone(),
@@ -115,12 +116,12 @@ pub(crate) async fn run_proposer(opts: Opts) {
     let mut rng = rand::thread_rng();
     let start = SystemTime::now();
 
-    while counter < 1000 {
+    while counter < 10000 {
         send_edges.give(Some(Msg::ClientReq(ClientReq { val: rng.gen() })));
         send_edges.flush();
         hf.tick();
         counter += 1;
-        if counter % 100 == 0 {
+        if counter % 1000 == 0 {
             let elapsed = start.elapsed().unwrap();
             let elapsed_ms = elapsed.as_secs() * 1000 + elapsed.subsec_nanos() as u64 / 1_000_000;
             println!(
@@ -130,6 +131,8 @@ pub(crate) async fn run_proposer(opts: Opts) {
                 counter as f64 / elapsed_ms as f64 * 1000.0
             );
         }
+        // add sleep of 1 second
+        std::thread::sleep(Duration::from_millis(5));
     }
 
     // println!("Opening on port {}", opts.port);

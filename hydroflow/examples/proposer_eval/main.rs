@@ -46,8 +46,8 @@ enum Role {
 struct Opts {
     // #[clap(long)]
     // path: String,
-    // #[clap(arg_enum, long)]
-    // role: Role,
+    #[clap(arg_enum, long)]
+    role: Role,
     #[clap(long)]
     port: u16,
     #[clap(long)]
@@ -61,20 +61,17 @@ struct Opts {
 #[tokio::main]
 async fn main() {
     let mut opts = Opts::parse();
-    opts.acceptor_addrs.push(String::from("localhost:1400"));
-    opts.acceptor_addrs.push(String::from("localhost:1401"));
-    opts.acceptor_addrs.push(String::from("localhost:1402"));
-    // let path = Path::new(&opts.path);
-    // let subordinates = read_addresses_from_file(path).unwrap().subordinates;
-    // let coordinator = read_addresses_from_file(path).unwrap().coordinator;
-    // run_acceptor(opts).await;f
 
-    for addr in opts.acceptor_addrs.iter() {
-        let port = addr.split(":").last().unwrap().parse::<u16>().unwrap();
-        thread::spawn(move || {
-            block_on(run_acceptor(port));
-        });
+    match opts.role {
+        Role::Proposer => {
+            opts.acceptor_addrs.push(String::from("localhost:1400"));
+            opts.acceptor_addrs.push(String::from("localhost:1401"));
+            opts.acceptor_addrs.push(String::from("localhost:1402"));
+            
+            run_proposer(opts).await;
+        }
+        Role::Acceptor => {
+            run_acceptor(opts.port).await;
+        }
     }
-
-    run_proposer(opts).await;
 }

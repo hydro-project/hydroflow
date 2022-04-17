@@ -1,9 +1,5 @@
 use crate::protocol::{AcceptorResponse, Msg, MsgType};
-use crate::Opts;
 use hydroflow::builder::prelude::*;
-use hydroflow::scheduled::handoff::VecHandoff;
-use std::cmp::Ordering;
-use std::collections::HashMap;
 
 pub(crate) async fn run_acceptor(port: u16) {
     println!("here");
