@@ -1,5 +1,7 @@
 declare -a bgpids
 
+
+# when this script ends or is terminated, cleanup will be called
 cleanup() {
     for pid in ${bgpids[@]}; do
         kill -9 $pid
