@@ -54,6 +54,8 @@ pub(crate) async fn run_proposer(opts: Opts) {
     let msg_send = hf.hydroflow.outbound_tcp_vertex::<Msg>().await;
     let msg_send = hf.wrap_output(msg_send);
 
+    let use_proxy = opts.use_proxy;
+
     // let (send_edges, recv_edges) = hf.add_channel_input::<_, _, VecHandoff<usize>>("edge input");
     let (send_edges, recv_edges) = hf.add_channel_input::<_, _, VecHandoff<Msg>>("start input");
 
@@ -64,12 +66,11 @@ pub(crate) async fn run_proposer(opts: Opts) {
             .chain(recv_edges) // TODO: temporary, for testing
             .flatten()
             .map_scan(
-                HashMap::<u16, ProposerSlotData>::new(),
-                move |slots, msg| {
+                0 as u16,
+                move |slot_counter, msg| {
                     let resp = match msg {
                         Msg::ClientReq(msg) => {
-                            let max_slot = slots.keys().max().unwrap_or(&0);
-                            let hashed = waste_time(hash_u16(*max_slot));
+                            let hashed = waste_time(hash_u16(*slot_counter));
                             //let hashed = hash_u16(*max_slot);
                             //slots.insert(
                             //max_slot + 1,
@@ -85,7 +86,7 @@ pub(crate) async fn run_proposer(opts: Opts) {
 
                             Some(Msg::ProposerReq(ProposerReq {
                                 addr: opts.addr.clone(),
-                                slot: 0,
+                                slot: *slot_counter,
                                 ballot: 0,
                                 pid: 0,
                                 val: msg.val,
@@ -95,9 +96,16 @@ pub(crate) async fn run_proposer(opts: Opts) {
                         default => None,
                     };
 
+                    // if using proxy leaders, send to proxy leader
                     let mut vec = VecDeque::<(String, Msg)>::new();
-                    for addr in opts.acceptor_addrs.clone().into_iter() {
-                        vec.push_back((addr, resp.clone().unwrap()));
+                    if use_proxy {
+                        let addr = opts.proxy_addrs[((*slot_counter) as usize) % opts.proxy_addrs.len()].clone();
+                        vec.push_back(((*addr).to_string(), resp.clone().unwrap()));
+                    }
+                    else {
+                        for addr in opts.acceptor_addrs.clone().into_iter() {
+                            vec.push_back((addr, resp.clone().unwrap()));
+                        }
                     }
                     vec
                 },

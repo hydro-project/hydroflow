@@ -2,7 +2,6 @@ use crate::protocol::{AcceptorResponse, Msg, MsgType};
 use hydroflow::builder::prelude::*;
 
 pub(crate) async fn run_acceptor(port: u16) {
-    println!("here");
     let mut hf = HydroflowBuilder::default();
 
     // // Setup message send/recv ports
