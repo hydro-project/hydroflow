@@ -94,7 +94,7 @@ impl Hydroflow {
                 assert!(sg_data.is_scheduled.take());
 
                 self.context.subgraph_id = sg_id;
-                sg_data.subgraph.run(&self.context);
+                sg_data.subgraph.run(&mut self.context);
             }
 
             for &handoff_id in self.subgraphs[sg_id.0].succs.iter() {
@@ -257,7 +257,7 @@ impl Hydroflow {
             &mut subgraph_succs,
         );
 
-        let subgraph = move |context: &Context| {
+        let subgraph = move |context: &mut Context| {
             let recv = recv_ports.make_ctx(&*context.handoffs);
             let send = send_ports.make_ctx(&*context.handoffs);
             (subgraph)(context, recv, send);
@@ -327,7 +327,7 @@ impl Hydroflow {
                 .push(sg_id);
         }
 
-        let subgraph = move |context: &Context| {
+        let subgraph = move |context: &mut Context| {
             let recvs: Vec<&RecvCtx<R>> = recv_ports
                 .iter()
                 .map(|hid| hid.handoff_id)
