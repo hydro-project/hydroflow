@@ -5,13 +5,13 @@ use super::context::Context;
  */
 pub(crate) trait Subgraph {
     // TODO: pass in some scheduling info?
-    fn run(&mut self, context: &Context);
+    fn run(&mut self, context: &mut Context);
 }
 impl<F> Subgraph for F
 where
-    F: FnMut(&Context),
+    F: FnMut(&mut Context),
 {
-    fn run(&mut self, context: &Context) {
+    fn run(&mut self, context: &mut Context) {
         (self)(context);
     }
 }
