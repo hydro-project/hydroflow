@@ -27,17 +27,21 @@ done
 
 sleep 2
 
+NUM_ACCEPTORS2=50
+
 if [ "$1" = "control" ]; then
-    ./target/release/examples/proposer_eval --role proposer --port 20000 --addr localhost --id 10 --acceptors $NUM_ACCEPTORS
+    ./target/release/examples/proposer_eval --role proposer --port 20000 --addr localhost --id 10 --acceptors $NUM_ACCEPTORS2
 elif [ "$1" = "proxy" ]; then
-    ./target/release/examples/proposer_eval --role proxy-leader  --port 1200 --addr localhost --id 14 --acceptors $NUM_ACCEPTORS &
+    ./target/release/examples/proposer_eval --role proxy-leader  --port 1200 --addr localhost --id 14 --acceptors $NUM_ACCEPTORS2 &
     bgpids+=($!)
-    ./target/release/examples/proposer_eval --role proxy-leader  --port 1201  --addr localhost --id 15 --acceptors $NUM_ACCEPTORS &
+    ./target/release/examples/proposer_eval --role proxy-leader  --port 1201  --addr localhost --id 15 --acceptors $NUM_ACCEPTORS2 &
     bgpids+=($!) 
-    ./target/release/examples/proposer_eval --role proxy-leader --port 1202 --addr localhost --id 16 --acceptors $NUM_ACCEPTORS &
+    ./target/release/examples/proposer_eval --role proxy-leader --port 1202 --addr localhost --id 16 --acceptors $NUM_ACCEPTORS2 &
     bgpids+=($!)
 
     sleep 2
 
-    ./target/release/examples/proposer_eval --role proposer --port 20000 --addr localhost --id 10 --use-proxy --acceptors $NUM_ACCEPTORS
+    ./target/release/examples/proposer_eval --role proposer --port 20000 --addr localhost --id 10 --use-proxy --acceptors $NUM_ACCEPTORS2
+    #pid=$!
+    #dtrace -x ustackframes=100 -n "profile-97 /pid == $pid/ { @[ustack()] = count(); } tick-60s { exit(0); }"  -o out.user_stacks
 fi

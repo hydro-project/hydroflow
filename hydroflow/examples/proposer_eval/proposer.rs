@@ -65,51 +65,49 @@ pub(crate) async fn run_proposer(opts: Opts) {
         all_recv
             .chain(recv_edges) // TODO: temporary, for testing
             .flatten()
-            .map_scan(
-                0 as u16,
-                move |slot_counter, msg| {
-                    let resp = match msg {
-                        Msg::ClientReq(msg) => {
-                            let hashed = waste_time(hash_u16(*slot_counter));
-                            //let hashed = hash_u16(*max_slot);
-                            //slots.insert(
-                            //max_slot + 1,
-                            //ProposerSlotData {
-                            //val: 0,
-                            //slot: 0,
-                            //ballot: 0,
-                            //p1b_count: 0,
-                            //p2b_count: 0,
-                            //hash: hashed,
-                            //},
-                            //);
+            .map_scan(0 as u16, move |slot_counter, msg| {
+                let resp = match msg {
+                    Msg::ClientReq(msg) => {
+                        let hashed = waste_time(hash_u16(*slot_counter));
+                        //let hashed = hash_u16(*max_slot);
+                        //slots.insert(
+                        //max_slot + 1,
+                        //ProposerSlotData {
+                        //val: 0,
+                        //slot: 0,
+                        //ballot: 0,
+                        //p1b_count: 0,
+                        //p2b_count: 0,
+                        //hash: hashed,
+                        //},
+                        //);
 
-                            Some(Msg::ProposerReq(ProposerReq {
-                                addr: opts.addr.clone(),
-                                slot: *slot_counter,
-                                ballot: 0,
-                                pid: 0,
-                                val: msg.val,
-                                mtype: MsgType::P1A,
-                            }))
-                        }
-                        default => None,
-                    };
+                        Some(Msg::ProposerReq(ProposerReq {
+                            addr: opts.addr.clone(),
+                            slot: *slot_counter,
+                            ballot: 0,
+                            pid: 0,
+                            val: msg.val,
+                            mtype: MsgType::P1A,
+                        }))
+                    }
+                    default => None,
+                };
 
-                    // if using proxy leaders, send to proxy leader
-                    let mut vec = VecDeque::<(String, Msg)>::new();
-                    if use_proxy {
-                        let addr = opts.proxy_addrs[((*slot_counter) as usize) % opts.proxy_addrs.len()].clone();
-                        vec.push_back(((*addr).to_string(), resp.clone().unwrap()));
+                // if using proxy leaders, send to proxy leader
+                let mut vec = VecDeque::<(String, Msg)>::new();
+                if use_proxy {
+                    let addr = opts.proxy_addrs
+                        [((*slot_counter) as usize) % opts.proxy_addrs.len()]
+                    .clone();
+                    vec.push_back(((*addr).to_string(), resp.clone().unwrap()));
+                } else {
+                    for addr in opts.acceptor_addrs.clone().into_iter() {
+                        vec.push_back((addr, resp.clone().unwrap()));
                     }
-                    else {
-                        for addr in opts.acceptor_addrs.clone().into_iter() {
-                            vec.push_back((addr, resp.clone().unwrap()));
-                        }
-                    }
-                    vec
-                },
-            )
+                }
+                vec
+            })
             // .filter_map(|v| v)
             .pull_to_push()
             // .map(Some)
@@ -124,7 +122,7 @@ pub(crate) async fn run_proposer(opts: Opts) {
     let mut rng = rand::thread_rng();
     let start = SystemTime::now();
 
-    while counter < 100000 {
+    while counter < 300000 {
         send_edges.give(Some(Msg::ClientReq(ClientReq { val: rng.gen() })));
         send_edges.flush();
         hf.tick();

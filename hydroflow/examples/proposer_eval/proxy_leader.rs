@@ -24,6 +24,7 @@ pub(crate) async fn run_proxy_leader(opts: Opts) {
         "Broadcast",
         0,
         all_recv
+            .inspect(|v| println!("{}", v.len()))
             .flatten()
             .map(move |msg| {
                 let mut vec = VecDeque::<(String, Msg)>::new();
@@ -40,3 +41,4 @@ pub(crate) async fn run_proxy_leader(opts: Opts) {
     println!("Proxy leader starting on port {}", opts.port);
     hf.run_async().await.unwrap();
 }
+
