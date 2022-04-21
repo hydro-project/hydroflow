@@ -118,24 +118,39 @@ pub(crate) async fn run_proposer(opts: Opts) {
     println!("Opening on port {}", opts.port);
     // println!("{}", hf.render_mermaid());
 
+    let mut total_counter = 0;
     let mut counter = 0;
     let mut rng = rand::thread_rng();
-    let start = SystemTime::now();
+    let message_interval = Duration::from_millis(1);
+    let mut start = SystemTime::now();
+    let mut prev_iter_time = start;
 
-    while counter < 300000 {
+    while total_counter < 100000 {
+        // wait until message_interval has passed
+        // let now = SystemTime::now();
+        // let elapsed = now.duration_since(prev_iter_time).unwrap();
+        // if elapsed < message_interval {
+        //     std::thread::sleep(message_interval - elapsed);
+        // }
+        // prev_iter_time = SystemTime::now();
+
+        // send a message through the channel
         send_edges.give(Some(Msg::ClientReq(ClientReq { val: rng.gen() })));
         send_edges.flush();
         hf.tick();
         counter += 1;
-        if counter % 1000 == 0 {
+        total_counter += 1;
+        if counter % 10000 == 0 {
             let elapsed = start.elapsed().unwrap();
             let elapsed_ms = elapsed.as_secs() * 1000 + elapsed.subsec_nanos() as u64 / 1_000_000;
             println!(
                 "Counter {}, Elapsed {}, Throughput {}",
-                counter,
+                total_counter,
                 elapsed_ms,
                 counter as f64 / elapsed_ms as f64 * 1000.0
             );
+            start = SystemTime::now();
+            counter = 0;
         }
     }
 

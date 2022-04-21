@@ -24,7 +24,7 @@ pub(crate) async fn run_proxy_leader(opts: Opts) {
         "Broadcast",
         0,
         all_recv
-            .inspect(|v| println!("{}", v.len()))
+            //.inspect(|v| println!("{}", v.len()))
             .flatten()
             .map(move |msg| {
                 let mut vec = VecDeque::<(String, Msg)>::new();
@@ -35,6 +35,7 @@ pub(crate) async fn run_proxy_leader(opts: Opts) {
             })
             .pull_to_push()
             .push_to(msg_send),
+            // .for_each(|v| {})
     );
 
     let mut hf = hf.build();
