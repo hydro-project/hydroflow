@@ -2,11 +2,9 @@ use std::{any::Any, marker::PhantomData};
 
 use tokio::sync::mpsc::UnboundedSender;
 
-use super::{
-    graph::{HandoffData, StateData},
-    state::StateHandle,
-    StateId, SubgraphId,
-};
+use super::graph::{HandoffData, StateData};
+use super::state::StateHandle;
+use super::{StateId, SubgraphId};
 
 /// The main state of the Hydroflow instance, which is provided as a reference
 /// to each operator as it is run.
@@ -19,7 +17,8 @@ pub struct Context {
     pub(crate) handoffs: Vec<HandoffData>,
     pub(crate) states: Vec<StateData>,
 
-    pub(crate) event_queue_send: UnboundedSender<SubgraphId>, // TODO(mingwei) remove this, to prevent hanging.
+    // TODO(mingwei): as long as this is here, it's impossible to know when all work is done.
+    pub(crate) event_queue_send: UnboundedSender<SubgraphId>,
 
     pub(crate) current_epoch: usize,
     pub(crate) current_stratum: usize,
@@ -30,16 +29,22 @@ pub struct Context {
     pub(crate) subgraph_id: SubgraphId,
 }
 impl Context {
-    // Gets the current epoch (local time) count.
+    /// Gets the current epoch (local time) count.
     pub fn current_epoch(&self) -> usize {
         self.current_epoch
     }
 
-    // Gets the current stratum nubmer.
+    /// Gets the current stratum nubmer.
     pub fn current_stratum(&self) -> usize {
         self.current_stratum
     }
 
+    /// Schedules a subgraph.
+    pub fn schedule_subgraph(&self, sg_id: SubgraphId) {
+        self.event_queue_send.send(sg_id).unwrap()
+    }
+
+    /// Returns a `Waker` for interacting with async Rust.
     pub fn waker(&self) -> std::task::Waker {
         use futures::task::ArcWake;
         use std::sync::Arc;
@@ -50,7 +55,10 @@ impl Context {
         }
         impl ArcWake for ContextWaker {
             fn wake_by_ref(arc_self: &Arc<Self>) {
-                arc_self.event_queue_send.send(arc_self.subgraph_id).unwrap(/* TODO(mingwei) */);
+                arc_self
+                    .event_queue_send
+                    .send(arc_self.subgraph_id)
+                    .unwrap();
             }
         }
 
@@ -61,6 +69,7 @@ impl Context {
         futures::task::waker(Arc::new(context_waker))
     }
 
+    /// Returns a shared reference to the state.
     pub fn state_ref<T>(&self, handle: StateHandle<T>) -> &T
     where
         T: Any,
@@ -73,6 +82,7 @@ impl Context {
             .expect("StateHandle wrong type T for casting.")
     }
 
+    /// Returns an exclusive reference to the state.
     pub fn state_mut<T>(&mut self, handle: StateHandle<T>) -> &mut T
     where
         T: Any,
@@ -85,6 +95,7 @@ impl Context {
             .expect("StateHandle wrong type T for casting.")
     }
 
+    /// Adds state to the context and returns the handle.
     pub fn add_state<T>(&mut self, state: T) -> StateHandle<T>
     where
         T: Any,
