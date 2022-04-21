@@ -614,7 +614,7 @@
                 <span class="macro">assert!</span>(<span class="ident">sg_data</span>.<span class="ident">is_scheduled</span>.<span class="ident">take</span>());
 
                 <span class="self">self</span>.<span class="ident">context</span>.<span class="ident">subgraph_id</span> <span class="op">=</span> <span class="ident">sg_id</span>;
-                <span class="ident">sg_data</span>.<span class="ident">subgraph</span>.<span class="ident">run</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">context</span>);
+                <span class="ident">sg_data</span>.<span class="ident">subgraph</span>.<span class="ident">run</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">context</span>);
             }
 
             <span class="kw">for</span> <span class="kw-2">&amp;</span><span class="ident">handoff_id</span> <span class="kw">in</span> <span class="self">self</span>.<span class="ident">subgraphs</span>[<span class="ident">sg_id</span>.<span class="number">0</span>].<span class="ident">succs</span>.<span class="ident">iter</span>() {
@@ -777,7 +777,7 @@
             <span class="kw-2">&amp;mut</span> <span class="ident">subgraph_succs</span>,
         );
 
-        <span class="kw">let</span> <span class="ident">subgraph</span> <span class="op">=</span> <span class="kw">move</span> <span class="op">|</span><span class="ident">context</span>: <span class="kw-2">&amp;</span><span class="ident">Context</span><span class="op">|</span> {
+        <span class="kw">let</span> <span class="ident">subgraph</span> <span class="op">=</span> <span class="kw">move</span> <span class="op">|</span><span class="ident">context</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span><span class="op">|</span> {
             <span class="kw">let</span> <span class="ident">recv</span> <span class="op">=</span> <span class="ident">recv_ports</span>.<span class="ident">make_ctx</span>(<span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">context</span>.<span class="ident">handoffs</span>);
             <span class="kw">let</span> <span class="ident">send</span> <span class="op">=</span> <span class="ident">send_ports</span>.<span class="ident">make_ctx</span>(<span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">context</span>.<span class="ident">handoffs</span>);
             (<span class="ident">subgraph</span>)(<span class="ident">context</span>, <span class="ident">recv</span>, <span class="ident">send</span>);
@@ -847,7 +847,7 @@
                 .<span class="ident">push</span>(<span class="ident">sg_id</span>);
         }
 
-        <span class="kw">let</span> <span class="ident">subgraph</span> <span class="op">=</span> <span class="kw">move</span> <span class="op">|</span><span class="ident">context</span>: <span class="kw-2">&amp;</span><span class="ident">Context</span><span class="op">|</span> {
+        <span class="kw">let</span> <span class="ident">subgraph</span> <span class="op">=</span> <span class="kw">move</span> <span class="op">|</span><span class="ident">context</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span><span class="op">|</span> {
             <span class="kw">let</span> <span class="ident">recvs</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">RecvCtx</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">recv_ports</span>
                 .<span class="ident">iter</span>()
                 .<span class="ident">map</span>(<span class="op">|</span><span class="ident">hid</span><span class="op">|</span> <span class="ident">hid</span>.<span class="ident">handoff_id</span>)
@@ -1034,5 +1034,5 @@
     <span class="kw">pub</span> <span class="ident">state</span>: <span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">Any</span><span class="op">&gt;</span>,
 }
 </code></pre></div>
-</section><section id="search" class="content hidden"></section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.0-nightly (4ca19e09d 2022-04-19)" ></div>
+</section><section id="search" class="content hidden"></section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.0-nightly (879aff385 2022-04-20)" ></div>
 </body></html>
