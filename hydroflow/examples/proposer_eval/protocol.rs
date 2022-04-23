@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::time::Duration;
 
 #[derive(PartialEq, Eq, Clone, Serialize, Deserialize, Debug, Hash, Copy)]
 pub enum MsgType {
@@ -6,6 +7,12 @@ pub enum MsgType {
     P1B,
     P2A,
     P2B,
+}
+
+#[derive(PartialEq, Eq, Clone, Serialize, Deserialize, Debug, Hash, Copy)]
+pub struct ThroughputMeasurement {
+    pub elapsed_time: Duration,
+    pub total_count: i32,
 }
 
 // Proposer

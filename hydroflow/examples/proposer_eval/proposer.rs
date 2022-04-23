@@ -68,6 +68,7 @@ pub(crate) async fn run_proposer(opts: Opts) {
             .map_scan(0 as u16, move |slot_counter, msg| {
                 let resp = match msg {
                     Msg::ClientReq(msg) => {
+                        *slot_counter += 1;
                         let hashed = waste_time(hash_u16(*slot_counter));
                         //let hashed = hash_u16(*max_slot);
                         //slots.insert(
@@ -125,7 +126,7 @@ pub(crate) async fn run_proposer(opts: Opts) {
     let mut start = SystemTime::now();
     let mut prev_iter_time = start;
 
-    while total_counter < 100000 {
+    while total_counter < 300000 {
         // wait until message_interval has passed
         // let now = SystemTime::now();
         // let elapsed = now.duration_since(prev_iter_time).unwrap();
@@ -156,4 +157,9 @@ pub(crate) async fn run_proposer(opts: Opts) {
 
     // println!("Opening on port {}", opts.port);
     hf.run_async().await.unwrap();
+
+    // // wait for 5 seconds
+    // std::thread::sleep(Duration::from_secs(5));
+
+    println!("Closing proposer on port {}", opts.port);
 }

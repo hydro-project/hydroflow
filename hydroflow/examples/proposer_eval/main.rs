@@ -60,6 +60,8 @@ struct CLIOpts {
     use_proxy: bool,
     #[clap(long, default_value_t=3)]
     acceptors: u32,
+    // #[clap(long)]
+    // output_dir: String,
 }
 
 struct Opts {
@@ -86,6 +88,7 @@ async fn main() {
         use_proxy: cli_opts.use_proxy,
         acceptor_addrs: vec![],
         proxy_addrs: vec![],
+        // output_dir: cli_opts.output_dir,
     };
 
     for port in 1400..1400+cli_opts.acceptors {

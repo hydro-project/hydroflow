@@ -25,10 +25,14 @@ ACCEPTOR_MAX_PORT=$(($ACCEPTOR_MIN_PORT+$NUM_ACCEPTORS-1))
 PROXY_MIN_PORT=1200
 PROXY_MAX_PORT=$(($PROXY_MIN_PORT+$NUM_PROXY-1))
 
+# get unix time
+UNIX_TIME=$(date +%s)
+# OUTPUT_DIR = "run_data/$1_$2_$UNIX_TIME"
+
 for PORT in $(seq $ACCEPTOR_MIN_PORT $ACCEPTOR_MAX_PORT);
 do
     ./target/release/examples/proposer_eval --role acceptor --port $PORT --addr localhost --id 14 &
-    bgpids+=($!)
+    bgpids+=($!) #--output_dir $OUTPUT_DIR
 done
 
 sleep 2
