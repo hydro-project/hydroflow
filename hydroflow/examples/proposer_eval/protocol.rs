@@ -19,7 +19,7 @@ pub struct ThroughputMeasurement {
 #[derive(PartialEq, Eq, Clone, Serialize, Deserialize, Debug)]
 pub struct ProposerReq {
     pub addr: String,
-    pub slot: u16,
+    pub slot: i32,
     pub ballot: u16,
     pub pid: u16,
     pub val: i32,

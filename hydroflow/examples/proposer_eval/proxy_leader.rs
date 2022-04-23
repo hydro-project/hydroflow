@@ -1,10 +1,6 @@
-use crate::protocol::{ClientReq, Msg, MsgType, ProposerReq};
+use crate::protocol::{Msg};
 use crate::Opts;
-use rand::Rng;
-use std::collections::hash_map::DefaultHasher;
-use std::collections::HashMap;
 use std::collections::VecDeque;
-use std::hash::{Hash, Hasher};
 use std::time::{Duration, SystemTime};
 
 use hydroflow::builder::prelude::*;

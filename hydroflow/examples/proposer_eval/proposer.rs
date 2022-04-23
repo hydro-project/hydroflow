@@ -2,7 +2,6 @@ use crate::protocol::{ClientReq, Msg, MsgType, ProposerReq};
 use crate::Opts;
 use rand::Rng;
 use std::collections::hash_map::DefaultHasher;
-use std::collections::HashMap;
 use std::collections::VecDeque;
 use std::hash::{Hash, Hasher};
 use std::time::{Duration, SystemTime};
@@ -65,11 +64,11 @@ pub(crate) async fn run_proposer(opts: Opts) {
         all_recv
             .chain(recv_edges) // TODO: temporary, for testing
             .flatten()
-            .map_scan(0 as u16, move |slot_counter, msg| {
+            .map_scan(0 as i32, move |slot_counter, msg| {
                 let resp = match msg {
                     Msg::ClientReq(msg) => {
                         *slot_counter += 1;
-                        let hashed = waste_time(hash_u16(*slot_counter));
+                        let hashed = waste_time(hash_u16((*slot_counter) as u16));
                         //let hashed = hash_u16(*max_slot);
                         //slots.insert(
                         //max_slot + 1,
@@ -125,6 +124,7 @@ pub(crate) async fn run_proposer(opts: Opts) {
     let message_interval = Duration::from_millis(1);
     let mut start = SystemTime::now();
     let mut prev_iter_time = start;
+    let mut warmup = true;
 
     while total_counter < 300000 {
         // wait until message_interval has passed
@@ -150,8 +150,11 @@ pub(crate) async fn run_proposer(opts: Opts) {
                 elapsed_ms,
                 counter as f64 / elapsed_ms as f64 * 1000.0
             );
-            start = SystemTime::now();
-            counter = 0;
+            if warmup {
+                start = SystemTime::now();
+                counter = 0;
+                warmup = false;
+            }
         }
     }
 
