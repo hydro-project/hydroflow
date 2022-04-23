@@ -49,6 +49,8 @@ struct CLIOpts {
     use_proxy: bool,
     #[clap(long, default_value_t=3)]
     acceptors: u32,
+    #[clap(long, default_value_t=3)]
+    proxies: u32,
     // #[clap(long)]
     // output_dir: String,
 }
@@ -84,9 +86,9 @@ async fn main() {
         opts.acceptor_addrs.push(String::from(format!("localhost:{}", port)));
     }
 
-    opts.proxy_addrs.push(String::from("localhost:1200"));
-    opts.proxy_addrs.push(String::from("localhost:1201"));
-    opts.proxy_addrs.push(String::from("localhost:1202"));
+    for port in 1200..1200+cli_opts.proxies {
+        opts.proxy_addrs.push(String::from(format!("localhost:{}", port)));
+    }
 
     // opts.use_proxy = false;
     // println!("{:?}", opts.use_proxy);
