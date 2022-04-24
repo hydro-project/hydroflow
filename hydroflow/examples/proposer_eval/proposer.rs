@@ -68,7 +68,7 @@ pub(crate) async fn run_proposer(opts: Opts) {
                 let resp = match msg {
                     Msg::ClientReq(msg) => {
                         *slot_counter += 1;
-                        // let hashed = waste_time(hash_u16((*slot_counter) as u16));
+                        let hashed = waste_time(hash_u16((*slot_counter) as u16));
                         //let hashed = hash_u16(*max_slot);
                         //slots.insert(
                         //max_slot + 1,
@@ -106,8 +106,7 @@ pub(crate) async fn run_proposer(opts: Opts) {
                         vec.push_back((addr, resp.clone().unwrap()));
                     }
                 }
-                // vec
-                VecDeque::<(String, Msg)>::new()
+                vec
             })
             // .filter_map(|v| v)
             .pull_to_push()
