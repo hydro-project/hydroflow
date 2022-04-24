@@ -142,7 +142,7 @@ pub(crate) async fn run_proposer(opts: Opts) {
         send_edges.give(Some(Msg::ClientReq(ClientReq { val: rng.gen() })));
         send_edges.flush();
         let after_flush = SystemTime::now();
-        total_flush_time += after_flush.duration_since(now).unwrap();
+        total_flush_time += after_flush.duration_since(now).unwrap().as_micros();
         hf.tick();
         counter += 1;
         total_counter += 1;
