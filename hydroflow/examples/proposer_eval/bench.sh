@@ -15,9 +15,9 @@ trap cleanup EXIT SIGINT SIGTERM
 echo "This should be running in the root of the repo"
 cargo build --release --example proposer_eval
 
-NUM_ACCEPTORS=40
+NUM_ACCEPTORS=11
 NUM_ACCEPTORS_USE=$NUM_ACCEPTORS
-NUM_PROXY=5
+NUM_PROXY=6
 
 ACCEPTOR_MIN_PORT=1400
 ACCEPTOR_MAX_PORT=$(($ACCEPTOR_MIN_PORT+$NUM_ACCEPTORS-1))
