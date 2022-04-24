@@ -154,7 +154,7 @@ pub(crate) async fn run_proposer(opts: Opts) {
                 total_counter,
                 elapsed_ms,
                 counter as f64 / elapsed_ms as f64 * 1000.0,
-                total_flush_time.as_secs() * 1000 + total_flush_time.subsec_nanos() as u64 / 1_000_000
+                total_flush_time
             );
             if warmup {
                 start = SystemTime::now();
