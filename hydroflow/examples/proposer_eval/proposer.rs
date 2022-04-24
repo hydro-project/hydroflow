@@ -150,11 +150,12 @@ pub(crate) async fn run_proposer(opts: Opts) {
             let elapsed = start.elapsed().unwrap();
             let elapsed_ms = elapsed.as_secs() * 1000 + elapsed.subsec_nanos() as u64 / 1_000_000;
             println!(
-                "Counter {}, Elapsed {}, Throughput {}, Total flush time {}",
+                "Counter {}, Elapsed {}, Throughput {}, Avg flush time {}, Avg time per iter {}",
                 total_counter,
                 elapsed_ms,
                 counter as f64 / elapsed_ms as f64 * 1000.0,
-                total_flush_time
+                total_flush_time as f64 / counter as f64,
+                elapsed_ms as f64 / counter as f64
             );
             if warmup {
                 start = SystemTime::now();
