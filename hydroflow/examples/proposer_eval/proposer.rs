@@ -126,7 +126,7 @@ pub(crate) async fn run_proposer(opts: Opts) {
     let mut prev_iter_time = start;
     let mut warmup = true;
 
-    while total_counter < 300000 {
+    while total_counter < 300000 + 100 {
         // wait until message_interval has passed
         // let now = SystemTime::now();
         // let elapsed = now.duration_since(prev_iter_time).unwrap();
