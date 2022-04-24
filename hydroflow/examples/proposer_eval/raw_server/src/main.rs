@@ -38,6 +38,7 @@ struct CLIOpts {
     // output_dir: String,
 }
 
+#[derive(Clone)]
 pub struct Opts {
     // #[clap(long)]
     // path: String,
@@ -77,6 +78,8 @@ fn main() {
     match cli_opts.role {
         Role::Proposer => proposer::run(opts),
         Role::Acceptor => acceptor_blank::run(String::from(format!("localhost:{}", opts.port))),
-        Role::ProxyLeader => proxy_leader::run(opts),
+        Role::ProxyLeader => {
+            proxy_leader::run(String::from(format!("localhost:{}", opts.port)), opts)
+        }
     }
 }
