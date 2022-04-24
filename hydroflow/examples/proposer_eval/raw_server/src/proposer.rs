@@ -91,7 +91,6 @@ pub fn run(opts: Opts) {
             }
         }
 
-        thread::sleep(Duration::from_millis(100));
         counter += 1;
         total_counter += 1;
         if counter % 10000 == 0 {
