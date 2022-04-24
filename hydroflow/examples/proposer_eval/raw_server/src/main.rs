@@ -71,13 +71,16 @@ fn main() {
         opts.proxy_addrs
             .push(String::from(format!("localhost:{}", port)));
     }
+    //println!("{:?} {:?}", opts.proxy_addrs, cli_opts.role);
 
     // opts.use_proxy = false;
     // println!("{:?}", opts.use_proxy);
 
     match cli_opts.role {
         Role::Proposer => proposer::run(opts),
-        Role::Acceptor => acceptor_blank::run(String::from(format!("localhost:{}", opts.port))),
+        Role::Acceptor => {
+            acceptor_blank::run(String::from(format!("localhost:{}", opts.port)), opts.port)
+        }
         Role::ProxyLeader => {
             proxy_leader::run(String::from(format!("localhost:{}", opts.port)), opts)
         }

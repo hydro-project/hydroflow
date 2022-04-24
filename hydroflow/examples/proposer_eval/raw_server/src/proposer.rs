@@ -68,10 +68,12 @@ pub fn run(opts: Opts) {
 
         if opts.use_proxy {
             let stream_index = total_counter % streams.len();
+            //println!("before send {}, {}", total_counter, stream_index);
             match streams[stream_index].write(msg.as_bytes()) {
                 Ok(_) => (),
                 Err(e) => println!("Unable to send a request: {}", e),
             }
+            //println!("after send");
         } else {
             for (i, mut stream) in streams.iter().enumerate() {
                 //let msg = Msg::ProposerReq(ProposerReq {
@@ -94,20 +96,23 @@ pub fn run(opts: Opts) {
         counter += 1;
         total_counter += 1;
         if counter % 10000 == 0 {
+            if warmup {
+                start = SystemTime::now();
+                counter = 0;
+                warmup = false;
+                continue;
+            }
+
             let elapsed = start.elapsed().unwrap();
             let elapsed_ms =
                 elapsed.as_secs() as f64 * 1000.0 + elapsed.subsec_nanos() as f64 / 1_000_000.0;
+
             println!(
                 "Counter {}, Elapsed {}, Throughput {}",
                 total_counter,
                 elapsed_ms,
                 counter as f64 / elapsed_ms as f64 * 1000.0
             );
-            if warmup {
-                start = SystemTime::now();
-                counter = 0;
-                warmup = false;
-            }
         }
     }
 }

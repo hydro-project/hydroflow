@@ -25,12 +25,16 @@ fn handle_conn(mut stream: TcpStream, opts: Opts) {
         }
     }
 
+    let mut i = 0;
     loop {
         // TODO: KEEP THIS IN SYNC with the proposer.rs msg.
         // TODO: refactor
+        //println!("pre read");
         let mut buf = [0 as u8; 75];
         stream.read(&mut buf).unwrap();
+        i += 1;
         let received = String::from_utf8_lossy(&buf);
+        //println!("proxy! {}", i);
 
         for (i, mut stream) in streams.iter().enumerate() {
             match stream.write(received.as_bytes()) {
