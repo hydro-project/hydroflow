@@ -144,13 +144,13 @@ pub(crate) async fn run_proposer(opts: Opts) {
         send_edges.flush();
         hf.tick();
         let tick_time = now.elapsed().unwrap();
-        total_flush_time += tick_time.as_secs() * 1000.0 + tick_time.subsec_nanos() as f64 / 1_000_000.0;
+        total_flush_time += tick_time.as_secs() as f64 * 1000.0 + tick_time.subsec_nanos() as f64 / 1_000_000.0;
 
         counter += 1;
         total_counter += 1;
         if counter % 10000 == 0 {
             let elapsed = start.elapsed().unwrap();
-            let elapsed_ms = elapsed.as_secs() * 1000.0 + elapsed.subsec_nanos() as f64 / 1_000_000.0;
+            let elapsed_ms = elapsed.as_secs() as f64 * 1000.0 + elapsed.subsec_nanos() as f64 / 1_000_000.0;
             println!(
                 "Counter {}, Elapsed {}, Throughput {}, Avg flush time {}, Avg time per iter {}",
                 total_counter,
