@@ -127,7 +127,7 @@ pub(crate) async fn run_proposer(opts: Opts) {
     let mut prev_iter_time = start;
     let mut warmup = true;
 
-    let mut total_flush_time = 0;
+    let mut total_flush_time = 0.0;
 
     while total_counter < 300000 + 100 {
         // wait until message_interval has passed
@@ -156,7 +156,7 @@ pub(crate) async fn run_proposer(opts: Opts) {
                 total_counter,
                 elapsed_ms,
                 counter as f64 / elapsed_ms as f64 * 1000.0,
-                total_flush_time, //as f64 / total_counter as f64,
+                total_flush_time as f64 / total_counter as f64,
                 elapsed_ms as f64 / counter as f64,
             );
             if warmup {
