@@ -9,7 +9,7 @@ use hydroflow::scheduled::handoff::VecHandoff;
 pub(crate) async fn run_proxy_leader(opts: Opts) {
     let mut hf = HydroflowBuilder::default();
 
-    // Setup message send/recv ports
+    // Setup message send/recv ports 
     let all_recv = hf.hydroflow.inbound_tcp_vertex_port::<Msg>(opts.port).await;
     let all_recv = hf.wrap_input(all_recv);
 

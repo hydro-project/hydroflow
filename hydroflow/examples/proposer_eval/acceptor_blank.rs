@@ -44,7 +44,7 @@ pub(crate) async fn run_acceptor(port: u16) {
                         }
                         *recv_counter = 0;
                     }
-                    if total_counter % 10000 == 0 { //== 290000 {
+                    if total_counter == 290000 {
                         println!("Acceptor on port {}, Num messages {}, Overall throughput: {}", port, total_counter, total_counter as f64 / (actual_start_time.elapsed().unwrap().as_secs() * 1000 + actual_start_time.elapsed().unwrap().subsec_nanos() as u64 / 1_000_000) as f64 * 1000.0);
                     }
                     // if *recv_counter % 40000 == 0{

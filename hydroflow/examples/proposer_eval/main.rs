@@ -51,6 +51,8 @@ struct CLIOpts {
     acceptors: u32,
     #[clap(long, default_value_t=3)]
     proxies: u32,
+    #[clap(long, default_value_t=3)]
+    num_messages: u32,
     // #[clap(long)]
     // output_dir: String,
 }

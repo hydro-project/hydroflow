@@ -25,31 +25,33 @@ ACCEPTOR_MAX_PORT=$(($ACCEPTOR_MIN_PORT+$NUM_ACCEPTORS-1))
 PROXY_MIN_PORT=1200
 PROXY_MAX_PORT=$(($PROXY_MIN_PORT+$NUM_PROXY-1))
 
+NUM_MESSAGES=30000
+
 # get unix time
 UNIX_TIME=$(date +%s)
 # OUTPUT_DIR = "run_data/$1_$2_$UNIX_TIME"
 
 for PORT in $(seq $ACCEPTOR_MIN_PORT $ACCEPTOR_MAX_PORT);
 do
-    ./target/release/examples/proposer_eval --role acceptor --port $PORT --addr localhost --id 14 &
+    ./target/release/examples/proposer_eval --role acceptor --port $PORT --addr localhost --id 14 --num-messages $NUM_MESSAGES &
     bgpids+=($!) #--output_dir $OUTPUT_DIR
 done
 
 sleep 2
 
 if [ "$1" = "control" ]; then
-    ./target/release/examples/proposer_eval --role proposer --port 20000 --addr localhost --id 10 --acceptors $NUM_ACCEPTORS_USE --proxies $NUM_PROXY
+    ./target/release/examples/proposer_eval --role proposer --port 20000 --addr localhost --id 10 --acceptors $NUM_ACCEPTORS_USE --proxies $NUM_PROXY --num-messages $NUM_MESSAGES &
 elif [ "$1" = "proxy" ]; then
 
     for PORT in $(seq $PROXY_MIN_PORT $PROXY_MAX_PORT);
     do
-        ./target/release/examples/proposer_eval --role proxy-leader  --port $PORT --addr localhost --id 14 --acceptors $NUM_ACCEPTORS_USE --proxies $NUM_PROXY &
+        ./target/release/examples/proposer_eval --role proxy-leader  --port $PORT --addr localhost --id 14 --acceptors $NUM_ACCEPTORS_USE --proxies $NUM_PROXY --num-messages $NUM_MESSAGES &
         bgpids+=($!)
     done
 
     sleep 2
 
-    ./target/release/examples/proposer_eval --role proposer --port 20000 --addr localhost --id 10 --use-proxy --acceptors $NUM_ACCEPTORS_USE --proxies $NUM_PROXY
+    ./target/release/examples/proposer_eval --role proposer --port 20000 --addr localhost --id 10 --use-proxy --acceptors $NUM_ACCEPTORS_USE --proxies $NUM_PROXY --num-messages $NUM_MESSAGES &
     #pid=$!
     #dtrace -x ustackframes=100 -n "profile-97 /pid == $pid/ { @[ustack()] = count(); } tick-60s { exit(0); }"  -o out.user_stacks
 fi
