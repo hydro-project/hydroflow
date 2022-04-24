@@ -12,17 +12,17 @@ pub fn run(addr: String) {
 }
 
 fn handle_conn(mut stream: TcpStream) {
-    let mut data = [0 as u8; 1000];
+    let mut i = 0;
     loop {
-        match stream.read(&mut data) {
-            Ok(_) => {
-                //println!("received");
-            }
-            Err(e) => {
-                println!("Unable to process request: {}", e);
-                stream.shutdown(Shutdown::Both).unwrap();
-                break;
-            }
-        }
+        let mut buf = [0 as u8; 75];
+        // TODO: KEEP THIS IN SYNC with the proposer.rs msg.
+        // TODO: refactor
+        stream.read(&mut buf).unwrap();
+        let received = String::from_utf8_lossy(&buf);
+        i += 1;
+
+        //if i % 10000 == 0 {
+        println!("Acceptor received msgs {}", i);
+        //}
     }
 }
