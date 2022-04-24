@@ -22,7 +22,7 @@ fn handle_conn(mut stream: TcpStream) {
         i += 1;
 
         //if i % 10000 == 0 {
-        println!("Acceptor received msgs {}", i);
+        //println!("Acceptor received msgs {}", i);
         //}
     }
 }
