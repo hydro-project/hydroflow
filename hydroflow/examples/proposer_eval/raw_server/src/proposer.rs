@@ -28,7 +28,7 @@ fn waste_time(val: u64) -> u64 {
     current_val
 }
 
-pub async fn run(opts: Opts) {
+pub fn run(opts: Opts) {
     let mut streams = Vec::new();
     for addr in opts.acceptor_addrs.iter() {
         match TcpStream::connect(addr.clone()) {

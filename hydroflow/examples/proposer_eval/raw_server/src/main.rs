@@ -1,15 +1,13 @@
 use clap::{ArgEnum, Parser};
-// use coordinator::run_coordinator;
-use acceptor_blank::run_acceptor;
-use hydroflow::tokio;
-use proposer::run_proposer;
-use proxy_leader::run_proxy_leader;
 
 mod acceptor_blank;
 mod proposer;
 mod protocol;
 mod proxy_leader;
-mod raw;
+
+//use acceptor_blank;
+//use proposer;
+//use proxy_leader;
 
 #[derive(Clone, ArgEnum, Debug)]
 enum Role {
@@ -30,8 +28,6 @@ struct CLIOpts {
     id: u16,
     #[clap(long)]
     use_proxy: bool,
-    #[clap(long)]
-    raw: bool,
     #[clap(long, default_value_t = 3)]
     acceptors: u32,
     #[clap(long, default_value_t = 3)]
@@ -54,19 +50,15 @@ pub struct Opts {
     proxy_addrs: Vec<String>,
 }
 
-#[tokio::main]
-async fn main() {
+fn main() {
     let cli_opts = CLIOpts::parse();
-    // create new Opts
     let mut opts = Opts {
-        // path: cli_opts.path,
         port: cli_opts.port,
         addr: cli_opts.addr,
         id: cli_opts.id,
         use_proxy: cli_opts.use_proxy,
         acceptor_addrs: vec![],
         proxy_addrs: vec![],
-        // output_dir: cli_opts.output_dir,
     };
 
     for port in 1400..1400 + cli_opts.acceptors {
@@ -82,19 +74,9 @@ async fn main() {
     // opts.use_proxy = false;
     // println!("{:?}", opts.use_proxy);
 
-    if !cli_opts.raw {
-        match cli_opts.role {
-            Role::Proposer => run_proposer(opts).await,
-            Role::Acceptor => run_acceptor(opts.port).await,
-            Role::ProxyLeader => run_proxy_leader(opts).await,
-        }
-    } else {
-        match cli_opts.role {
-            Role::Proposer => raw::proposer::run(opts).await,
-            Role::Acceptor => {
-                raw::acceptor_blank::run(String::from(format!("localhost:{}", opts.port))).await
-            }
-            Role::ProxyLeader => raw::proxy_leader::run(opts).await,
-        }
+    match cli_opts.role {
+        Role::Proposer => proposer::run(opts),
+        Role::Acceptor => acceptor_blank::run(String::from(format!("localhost:{}", opts.port))),
+        Role::ProxyLeader => proxy_leader::run(opts),
     }
 }

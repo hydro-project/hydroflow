@@ -1,7 +1,7 @@
 use std::io::prelude::*;
 use std::net::{Shutdown, TcpListener, TcpStream};
 
-pub async fn run(addr: String) {
+pub fn run(addr: String) {
     let listener = TcpListener::bind(addr).unwrap();
 
     for stream in listener.incoming() {
