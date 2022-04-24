@@ -126,6 +126,8 @@ pub(crate) async fn run_proposer(opts: Opts) {
     let mut prev_iter_time = start;
     let mut warmup = true;
 
+    let mut total_flush_time = 0;
+
     while total_counter < 300000 + 100 {
         // wait until message_interval has passed
         // let now = SystemTime::now();
@@ -136,8 +138,11 @@ pub(crate) async fn run_proposer(opts: Opts) {
         // prev_iter_time = now; //SystemTime::now();
 
         // send a message through the channel
+        let now = SystemTime::now();
         send_edges.give(Some(Msg::ClientReq(ClientReq { val: rng.gen() })));
         send_edges.flush();
+        let after_flush = SystemTime::now();
+        total_flush_time += after_flush.duration_since(now).unwrap();
         hf.tick();
         counter += 1;
         total_counter += 1;
@@ -145,10 +150,11 @@ pub(crate) async fn run_proposer(opts: Opts) {
             let elapsed = start.elapsed().unwrap();
             let elapsed_ms = elapsed.as_secs() * 1000 + elapsed.subsec_nanos() as u64 / 1_000_000;
             println!(
-                "Counter {}, Elapsed {}, Throughput {}",
+                "Counter {}, Elapsed {}, Throughput {}, Total flush time {}",
                 total_counter,
                 elapsed_ms,
-                counter as f64 / elapsed_ms as f64 * 1000.0
+                counter as f64 / elapsed_ms as f64 * 1000.0,
+                total_flush_time.as_secs() * 1000 + total_flush_time.subsec_nanos() as u64 / 1_000_000
             );
             if warmup {
                 start = SystemTime::now();
