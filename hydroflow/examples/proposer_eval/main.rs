@@ -9,23 +9,7 @@ mod acceptor_blank;
 mod proposer;
 mod protocol;
 mod proxy_leader;
-
-struct Addresses {
-    coordinator: String,
-    subordinates: Vec<String>,
-}
-
-// fn read_addresses_from_file<P: AsRef<Path>>(path: P) -> Result<Addresses, Box<dyn Error>> {
-//     // Open the file in read-only mode with buffer.
-//     let file = File::open(path)?;
-//     let reader = BufReader::new(file);
-
-//     // Read the JSON contents of the file as an instance of `addresses`.
-//     let u = serde_json::from_reader(reader)?;
-
-//     // Return the addresses.
-//     Ok(u)
-// }
+mod raw;
 
 #[derive(Clone, ArgEnum, Debug)]
 enum Role {
@@ -33,7 +17,6 @@ enum Role {
     Acceptor,
     ProxyLeader,
 }
-
 
 #[derive(Parser, Debug)]
 struct CLIOpts {
@@ -47,7 +30,9 @@ struct CLIOpts {
     id: u16,
     #[clap(long)]
     use_proxy: bool,
-    #[clap(long, default_value_t=3)]
+    #[clap(long)]
+    raw: bool,
+    #[clap(long, default_value_t = 3)]
     acceptors: u32,
     #[clap(long, default_value_t=3)]
     proxies: u32,
@@ -57,7 +42,7 @@ struct CLIOpts {
     // output_dir: String,
 }
 
-struct Opts {
+pub struct Opts {
     // #[clap(long)]
     // path: String,
     // contain CLIOpts instance
@@ -71,7 +56,7 @@ struct Opts {
 
 #[tokio::main]
 async fn main() {
-    let mut cli_opts = CLIOpts::parse();
+    let cli_opts = CLIOpts::parse();
     // create new Opts
     let mut opts = Opts {
         // path: cli_opts.path,
@@ -84,8 +69,9 @@ async fn main() {
         // output_dir: cli_opts.output_dir,
     };
 
-    for port in 1400..1400+cli_opts.acceptors {
-        opts.acceptor_addrs.push(String::from(format!("localhost:{}", port)));
+    for port in 1400..1400 + cli_opts.acceptors {
+        opts.acceptor_addrs
+            .push(String::from(format!("localhost:{}", port)));
     }
 
     for port in 1200..1200+cli_opts.proxies {
@@ -95,9 +81,17 @@ async fn main() {
     // opts.use_proxy = false;
     // println!("{:?}", opts.use_proxy);
 
-    match cli_opts.role {
-        Role::Proposer => run_proposer(opts).await,
-        Role::Acceptor => run_acceptor(opts.port).await,
-        Role::ProxyLeader => run_proxy_leader(opts).await,
+    if !cli_opts.raw {
+        match cli_opts.role {
+            Role::Proposer => run_proposer(opts).await,
+            Role::Acceptor => run_acceptor(opts.port).await,
+            Role::ProxyLeader => run_proxy_leader(opts).await,
+        }
+    } else {
+        match cli_opts.role {
+            Role::Proposer => raw::proposer::run(opts).await,
+            Role::Acceptor => raw::acceptor_blank::run(opts).await,
+            Role::ProxyLeader => raw::proxy_leader::run(opts).await,
+        }
     }
 }
