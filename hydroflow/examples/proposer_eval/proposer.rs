@@ -121,7 +121,7 @@ pub(crate) async fn run_proposer(opts: Opts) {
     let mut total_counter = 0;
     let mut counter = 0;
     let mut rng = rand::thread_rng();
-    let message_interval = Duration::from_millis(1);
+    let message_interval = Duration::from_micros(0); //40);
     let mut start = SystemTime::now();
     let mut prev_iter_time = start;
     let mut warmup = true;
@@ -133,7 +133,7 @@ pub(crate) async fn run_proposer(opts: Opts) {
         // if elapsed < message_interval {
         //     std::thread::sleep(message_interval - elapsed);
         // }
-        // prev_iter_time = SystemTime::now();
+        // prev_iter_time = now; //SystemTime::now();
 
         // send a message through the channel
         send_edges.give(Some(Msg::ClientReq(ClientReq { val: rng.gen() })));
