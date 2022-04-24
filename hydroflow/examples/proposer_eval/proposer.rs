@@ -106,8 +106,8 @@ pub(crate) async fn run_proposer(opts: Opts) {
                         vec.push_back((addr, resp.clone().unwrap()));
                     }
                 }
-                // vec
-                VecDeque::<(String, Msg)>::new();
+                vec
+                // VecDeque::<(String, Msg)>::new();
             })
             // .filter_map(|v| v)
             .pull_to_push()
@@ -145,7 +145,7 @@ pub(crate) async fn run_proposer(opts: Opts) {
         hf.tick();
 
         let tick_time = now.elapsed().unwrap();
-        total_flush_time += elapsed.as_secs() * 1000 + elapsed.subsec_nanos() as u64 / 1_000_000;;
+        total_flush_time += tick_time.as_secs() * 1000 + tick_time.subsec_nanos() as u64 / 1_000_000;;
 
         counter += 1;
         total_counter += 1;
