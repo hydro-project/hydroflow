@@ -106,7 +106,8 @@ pub(crate) async fn run_proposer(opts: Opts) {
                         vec.push_back((addr, resp.clone().unwrap()));
                     }
                 }
-                vec
+                // vec
+                VecDeque::<(String, Msg)>::new();
             })
             // .filter_map(|v| v)
             .pull_to_push()
