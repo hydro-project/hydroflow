@@ -139,9 +139,9 @@ pub(crate) async fn run_proposer(opts: Opts) {
         // prev_iter_time = now; //SystemTime::now();
 
         // send a message through the channel
-        let now = SystemTime::now();
         send_edges.give(Some(Msg::ClientReq(ClientReq { val: rng.gen() })));
         send_edges.flush();
+        let now = SystemTime::now();
         hf.tick();
         let tick_time = now.elapsed().unwrap();
         total_flush_time += tick_time.as_secs() as f64 * 1000.0 + tick_time.subsec_nanos() as f64 / 1_000_000.0;
