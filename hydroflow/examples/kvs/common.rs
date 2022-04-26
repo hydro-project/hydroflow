@@ -1,27 +1,13 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, str::FromStr};
 
-use futures::channel::mpsc::{channel, Receiver, Sender};
 use hydroflow::lang::{
     lattice::{dom_pair::DomPairRepr, map_union::MapUnionRepr, ord::MaxRepr},
     tag,
 };
+use rand::prelude::Distribution;
+use zipf::ZipfDistribution;
 
 pub(crate) type Clock = HashMap<usize, u64>;
-
-pub(crate) fn spawn<F, K, V>(n: u64, f: F) -> Vec<Sender<Message<K, V>>>
-where
-    F: 'static + Fn(usize, Receiver<Message<K, V>>, Vec<Sender<Message<K, V>>>) + Send + Clone,
-    K: 'static + Send + Clone,
-    V: 'static + Ord + Send + Clone,
-{
-    let (matrix, senders) = make_communication_matrix(n);
-    for (i, (receiver, senders)) in matrix.into_iter().enumerate() {
-        let f = f.clone();
-        std::thread::spawn(move || f(i, receiver, senders));
-    }
-
-    senders
-}
 
 #[derive(Debug)]
 pub(crate) enum Message<K, V>
@@ -32,35 +18,10 @@ where
     // A KV set request from a client.
     Set(K, V),
     // A KV get request from a client.
+    #[allow(unused)]
     Get(K, futures::channel::oneshot::Sender<(Clock, V)>),
     // A set of data that I am responsible for, sent to me by another worker.
     Batch((usize, u64), Vec<(K, V)>),
-}
-
-type Matrix<K, V> = Vec<(Receiver<Message<K, V>>, Vec<Sender<Message<K, V>>>)>;
-type MessageSender<K, V> = Sender<Message<K, V>>;
-
-fn make_communication_matrix<K, V>(n: u64) -> (Matrix<K, V>, Vec<MessageSender<K, V>>)
-where
-    K: Send + Clone,
-    V: Ord + Send + Clone,
-{
-    let mut receivers = Vec::new();
-    let mut senders: Vec<_> = (0..n).map(|_| Vec::new()).collect();
-    let mut extra_senders = Vec::new();
-    for _ in 0..n {
-        let (sender, receiver) = channel(8192);
-        receivers.push(receiver);
-        for s in senders.iter_mut() {
-            s.push(sender.clone())
-        }
-        extra_senders.push(sender);
-    }
-
-    (
-        receivers.into_iter().zip(senders.into_iter()).collect(),
-        extra_senders,
-    )
 }
 
 pub(crate) type ClockRepr = MapUnionRepr<tag::HASH_MAP, usize, MaxRepr<u64>>;
@@ -68,3 +29,82 @@ pub(crate) type ClockUpdateRepr = MapUnionRepr<tag::SINGLE, usize, MaxRepr<u64>>
 
 pub(crate) type ClockedDataRepr<V> = DomPairRepr<ClockRepr, MaxRepr<V>>;
 pub(crate) type ClockedUpdateRepr<V> = DomPairRepr<ClockUpdateRepr, MaxRepr<V>>;
+
+#[derive(Clone)]
+pub enum Dist {
+    Uniform(usize),
+    Zipf(ZipfDistribution),
+}
+
+pub trait Sample<T> {
+    fn sample<R: rand::Rng>(&mut self, rng: &mut R) -> T;
+}
+
+impl Sample<u64> for Dist {
+    fn sample<R: rand::Rng>(&mut self, rng: &mut R) -> u64 {
+        match self {
+            Self::Uniform(n) => rng.gen_range(0..*n).try_into().unwrap(),
+            Self::Zipf(d) => d.sample(rng).try_into().unwrap(),
+        }
+    }
+}
+
+impl Sample<String> for Dist {
+    fn sample<R: rand::Rng>(&mut self, rng: &mut R) -> String {
+        format!(
+            "key{}",
+            match self {
+                Self::Uniform(n) => rng.gen_range(0..*n),
+                Self::Zipf(d) => d.sample(rng),
+            }
+        )
+    }
+}
+
+impl Dist {
+    pub(crate) fn uniform(n: usize) -> Self {
+        Self::Uniform(n)
+    }
+
+    pub(crate) fn zipf(n: usize, theta: f64) -> Self {
+        Self::Zipf(ZipfDistribution::new(n, theta).unwrap())
+    }
+}
+
+impl FromStr for Dist {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut contents = s.split(',');
+        match contents
+            .next()
+            .ok_or("type of distribution is required (uniform, zipf)")?
+        {
+            "uniform" => {
+                let n: usize = contents
+                    .next()
+                    .ok_or("require a number of keys parameter")?
+                    .parse()
+                    .map_err(|e| format!("{}", e))?;
+
+                Ok(Dist::uniform(n))
+            }
+            "zipf" => {
+                let n: usize = contents
+                    .next()
+                    .ok_or("require a number of keys parameter")?
+                    .parse()
+                    .map_err(|e| format!("{}", e))?;
+
+                let theta: f64 = contents
+                    .next()
+                    .ok_or("require a theta parameter")?
+                    .parse()
+                    .map_err(|e| format!("{}", e))?;
+
+                Ok(Dist::zipf(n, theta))
+            }
+            _ => Err("invalid distribution".into()),
+        }
+    }
+}
