@@ -1,5 +1,5 @@
 {
-  "lastUpdate": 1650945560120,
+  "lastUpdate": 1651032287136,
   "repoUrl": "https://github.com/hydro-project/hydroflow",
   "entries": {
     "Benchmark": [
@@ -14323,6 +14323,82 @@
             "name": "reachability/hydroflow",
             "value": 2686286,
             "range": "± 16012",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Justin Jaffray",
+            "username": "justinj",
+            "email": "justin.jaffray@gmail.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "c55745dcc9fb838fd0bebcfb11a5a181918d19b8",
+          "message": "Make KVS benchmark more Anna-like (#146)\n\nI decided it made the most sense to remove the other implementations here,\r\nsince there were a lot of structural changes going on, they made it annoying to\r\nupdate this. They live on in the repo history if they ever need to be revived.\r\n\r\nThis commit moves the workload generation into the workers themselves, since\r\notherwise I was unable to fully saturate the workers.",
+          "timestamp": "2022-04-26T17:44:11Z",
+          "url": "https://github.com/hydro-project/hydroflow/commit/c55745dcc9fb838fd0bebcfb11a5a181918d19b8"
+        },
+        "date": 1651032287126,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "arithmetic/hydroflow/compiled",
+            "value": 383456,
+            "range": "± 20791",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fan_in/hydroflow",
+            "value": 234028200,
+            "range": "± 8369251",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fan_out/hydroflow/scheduled",
+            "value": 116668833,
+            "range": "± 4321664",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fork_join/hydroflow",
+            "value": 12984377,
+            "range": "± 735674",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fork_join/hydroflow_builder",
+            "value": 40618452,
+            "range": "± 1720109",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "identity/hydroflow",
+            "value": 56886512,
+            "range": "± 4342930",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "identity/hydroflow/compiled",
+            "value": 16943452,
+            "range": "± 988482",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "reachability/hydroflow/scheduled",
+            "value": 3439759,
+            "range": "± 175875",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "reachability/hydroflow",
+            "value": 3310761,
+            "range": "± 150442",
             "unit": "ns/iter"
           }
         ]
