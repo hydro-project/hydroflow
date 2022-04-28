@@ -107,15 +107,24 @@
 <span id="102">102</span>
 <span id="103">103</span>
 <span id="104">104</span>
+<span id="105">105</span>
+<span id="106">106</span>
+<span id="107">107</span>
+<span id="108">108</span>
+<span id="109">109</span>
+<span id="110">110</span>
+<span id="111">111</span>
+<span id="112">112</span>
+<span id="113">113</span>
+<span id="114">114</span>
+<span id="115">115</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">any::Any</span>, <span class="ident">marker::PhantomData</span>};
 
 <span class="kw">use</span> <span class="ident">tokio::sync::mpsc::UnboundedSender</span>;
 
-<span class="kw">use</span> <span class="kw">super</span>::{
-    <span class="ident">graph</span>::{<span class="ident">HandoffData</span>, <span class="ident">StateData</span>},
-    <span class="ident">state::StateHandle</span>,
-    <span class="ident">StateId</span>, <span class="ident">SubgraphId</span>,
-};
+<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::graph</span>::{<span class="ident">HandoffData</span>, <span class="ident">StateData</span>};
+<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::state::StateHandle</span>;
+<span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">StateId</span>, <span class="ident">SubgraphId</span>};
 
 <span class="doccomment">/// The main state of the Hydroflow instance, which is provided as a reference</span>
 <span class="doccomment">/// to each operator as it is run.</span>
@@ -128,7 +137,8 @@
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">handoffs</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">HandoffData</span><span class="op">&gt;</span>,
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">states</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">StateData</span><span class="op">&gt;</span>,
 
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">event_queue_send</span>: <span class="ident">UnboundedSender</span><span class="op">&lt;</span><span class="ident">SubgraphId</span><span class="op">&gt;</span>, <span class="comment">// TODO(mingwei) remove this, to prevent hanging.</span>
+    <span class="comment">// TODO(mingwei): as long as this is here, it&#39;s impossible to know when all work is done.</span>
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">event_queue_send</span>: <span class="ident">UnboundedSender</span><span class="op">&lt;</span><span class="ident">SubgraphId</span><span class="op">&gt;</span>,
 
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">current_epoch</span>: <span class="ident">usize</span>,
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">current_stratum</span>: <span class="ident">usize</span>,
@@ -139,16 +149,22 @@
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">subgraph_id</span>: <span class="ident">SubgraphId</span>,
 }
 <span class="kw">impl</span> <span class="ident">Context</span> {
-    <span class="comment">// Gets the current epoch (local time) count.</span>
+    <span class="doccomment">/// Gets the current epoch (local time) count.</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">current_epoch</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
         <span class="self">self</span>.<span class="ident">current_epoch</span>
     }
 
-    <span class="comment">// Gets the current stratum nubmer.</span>
+    <span class="doccomment">/// Gets the current stratum nubmer.</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">current_stratum</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
         <span class="self">self</span>.<span class="ident">current_stratum</span>
     }
 
+    <span class="doccomment">/// Schedules a subgraph.</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">schedule_subgraph</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">sg_id</span>: <span class="ident">SubgraphId</span>) {
+        <span class="self">self</span>.<span class="ident">event_queue_send</span>.<span class="ident">send</span>(<span class="ident">sg_id</span>).<span class="ident">unwrap</span>()
+    }
+
+    <span class="doccomment">/// Returns a `Waker` for interacting with async Rust.</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">waker</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">std::task::Waker</span> {
         <span class="kw">use</span> <span class="ident">futures::task::ArcWake</span>;
         <span class="kw">use</span> <span class="ident">std::sync::Arc</span>;
@@ -159,7 +175,10 @@
         }
         <span class="kw">impl</span> <span class="ident">ArcWake</span> <span class="kw">for</span> <span class="ident">ContextWaker</span> {
             <span class="kw">fn</span> <span class="ident">wake_by_ref</span>(<span class="ident">arc_self</span>: <span class="kw-2">&amp;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>) {
-                <span class="ident">arc_self</span>.<span class="ident">event_queue_send</span>.<span class="ident">send</span>(<span class="ident">arc_self</span>.<span class="ident">subgraph_id</span>).<span class="ident">unwrap</span>(<span class="comment">/* TODO(mingwei) */</span>);
+                <span class="ident">arc_self</span>
+                    .<span class="ident">event_queue_send</span>
+                    .<span class="ident">send</span>(<span class="ident">arc_self</span>.<span class="ident">subgraph_id</span>)
+                    .<span class="ident">unwrap</span>();
             }
         }
 
@@ -170,6 +189,7 @@
         <span class="ident">futures::task::waker</span>(<span class="ident">Arc::new</span>(<span class="ident">context_waker</span>))
     }
 
+    <span class="doccomment">/// Returns a shared reference to the state.</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">state_ref</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">handle</span>: <span class="ident">StateHandle</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">T</span>
     <span class="kw">where</span>
         <span class="ident">T</span>: <span class="ident">Any</span>,
@@ -182,6 +202,7 @@
             .<span class="ident">expect</span>(<span class="string">&quot;StateHandle wrong type T for casting.&quot;</span>)
     }
 
+    <span class="doccomment">/// Returns an exclusive reference to the state.</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">state_mut</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">handle</span>: <span class="ident">StateHandle</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="ident">T</span>
     <span class="kw">where</span>
         <span class="ident">T</span>: <span class="ident">Any</span>,
@@ -194,6 +215,7 @@
             .<span class="ident">expect</span>(<span class="string">&quot;StateHandle wrong type T for casting.&quot;</span>)
     }
 
+    <span class="doccomment">/// Adds state to the context and returns the handle.</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">add_state</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">state</span>: <span class="ident">T</span>) -&gt; <span class="ident">StateHandle</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>
     <span class="kw">where</span>
         <span class="ident">T</span>: <span class="ident">Any</span>,
@@ -212,5 +234,5 @@
     }
 }
 </code></pre></div>
-</section><section id="search" class="content hidden"></section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.0-nightly (082e4ca49 2022-04-26)" ></div>
+</section><section id="search" class="content hidden"></section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.0-nightly (69a5d2481 2022-04-27)" ></div>
 </body></html>
