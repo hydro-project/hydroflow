@@ -154,6 +154,8 @@ where
     let core_ids = core_affinity::get_core_ids().unwrap();
     let mut core_idx = 1;
 
+    // This channel is used to send back information about how many operations have
+    // been processed.
     let (monitor_send, monitor_recv) = channel(1024);
 
     let (matrix, senders) = make_communication_matrix(n);
@@ -202,15 +204,15 @@ where
             rt.block_on(async move {
                 let mut hf = HydroflowBuilder::default();
 
-                let (z_send, z_recv) = hf.add_channel_input::<_, Option<u64>, VecHandoff<u64>>("ticks");
+                let (epoch_flush_send, epoch_flush_recv) = hf.add_channel_input::<_, Option<u64>, VecHandoff<u64>>("ticks");
 
                 // Construct the ticker.
                 tokio::spawn(async move {
                     let mut tick = 0;
                     loop {
                         tokio::time::sleep(config.epoch).await;
-                        z_send.give(Some(tick));
-                        z_send.flush();
+                        epoch_flush_send.give(Some(tick));
+                        epoch_flush_send.flush();
                         tick += 1;
                     }
                 });
@@ -219,7 +221,6 @@ where
 
                 let mut rng = rand::thread_rng();
 
-                // Once per epoch, generate a batch of data.
                 hf.add_subgraph(
                     "workload_generator",
                     IterPullSurface::new(PerQuantumPulser::new()).map_with_context(|ctx, _| {
@@ -236,23 +237,24 @@ where
                 );
 
                 // Make the ownership table. Everyone owns everything.
-                let ownership = (0..0).map(|i| ((), Single(i)));
+                // let ownership = (0..0).map(|i| ((), Single(i)));
                 // TODO(justin): this should be configurable.
-                // let ownership = (0..senders.len()).map(|i| ((), Single(i)));
+                let ownership = (0..senders.len()).map(|i| ((), Single(i)));
 
                 let (reads_send, reads_recv) =
                     hf.make_edge::<_, VecHandoff<(K, futures::channel::oneshot::Sender<(Clock, V)>)>, Option<(K, futures::channel::oneshot::Sender<(Clock, V)>)>>("reads");
-                let (x_send, x_recv) =
+                let (batches_send, batches_recv) =
                     hf.make_edge::<_, VecHandoff<(usize, u64, Vec<(K, V)>)>, Option<(usize, u64, Vec<(K, V)>)>>("received_batches");
-                let (y_send, y_recv) = hf.make_edge::<_, VecHandoff<(K, V)>, Option<(K, V)>>("write_requests");
+                let (writes_send, writes_recv) = hf.make_edge::<_, VecHandoff<(K, V)>, Option<(K, V)>>("write_requests");
 
                 let processed = hf.hydroflow.add_state(RefCell::new(0_usize));
 
                 hf.add_subgraph(
                     "write_handler",
-                    y_recv
+                    writes_recv
                         .inspect_with_context(move |ctx, msg| {
                             *ctx.state_ref(processed).borrow_mut() += msg.len();
+                            // Send out monitoring data back to the coordinator thread.
                             let _ = monitor.try_send(MonitorInfo {
                                 from: id,
                                 data: *ctx.state_ref(processed).borrow(),
@@ -260,7 +262,7 @@ where
                         })
                         .flatten()
                         .map(|(k, v)| Single((k, v)))
-                        .batch_with::<_, MapUnionRepr<tag::HASH_MAP, K, MaxRepr<V>>, MapUnionRepr<tag::SINGLE, K, MaxRepr<V>>, _>(z_recv.flatten())
+                        .batch_with::<_, MapUnionRepr<tag::HASH_MAP, K, MaxRepr<V>>, MapUnionRepr<tag::SINGLE, K, MaxRepr<V>>, _>(epoch_flush_recv.flatten())
                         .flat_map(move |(epoch, batch)| {
                             batch.into_iter().map(move |x| (epoch, x))
                         })
@@ -275,6 +277,9 @@ where
                                 Single(((i, epoch), Single((k.clone(), v.clone()))))
                             )
                         })
+                        // TODO(justin): this is morally a non-monotonic
+                        // aggregation. We probably want a stratum boundary
+                        // here.
                         .batch_with::<
                             _,
                             MapUnionRepr<tag::HASH_MAP, (usize, u64), SetUnionRepr<tag::VEC, (K, V)>>,
@@ -286,7 +291,6 @@ where
                         .flatten()
                         .pull_to_push()
                         .for_each(move |((receiver, epoch), batch)| {
-                            // TODO(justin): do we need to tag this with our current vector clock as well?
                             senders[receiver].try_send(Message::Batch((id, epoch), batch)).unwrap();
                         }),
                 );
@@ -305,7 +309,7 @@ where
                                     unreachable!()
                                 }
                             })
-                            .push_to(y_send),
+                            .push_to(writes_send),
                         hf.start_tee()
                         .partition(
                         |x| matches!(x, Message::Batch(_, _)),
@@ -316,7 +320,7 @@ where
                                     unreachable!()
                                 }
                             })
-                            .push_to(x_send),
+                            .push_to(batches_send),
                             hf.start_tee().map(|msg| {
                                 if let Message::Get(k, sender) = msg {
                                     Some((k, sender))
@@ -334,7 +338,7 @@ where
                     reads_recv.flatten().map(
                         |(k, ch)| (k, ch)
                         ).half_hash_join::<_, _, _, ClockedDataRepr<V>, ClockedUpdateRepr<V>>(
-                    x_recv
+                    batches_recv
                         .flatten()
                         .flat_map(move |(id, epoch, batch)| {
                             batch.into_iter().map(
