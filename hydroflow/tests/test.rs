@@ -70,7 +70,7 @@ fn map_filter() {
         }
     });
 
-    df.tick();
+    df.run_available();
 
     assert_eq!((*outputs).borrow().clone(), vec![4, 10]);
 }
@@ -93,7 +93,7 @@ fn test_basic_variadic() {
         }
     });
 
-    df.tick();
+    df.run_available();
 
     assert_eq!(Some(5), val.get());
 }
@@ -128,7 +128,7 @@ fn test_basic_n_m() {
         },
     );
 
-    df.tick();
+    df.run_available();
 
     assert_eq!(Some(5), val.get());
 }
@@ -234,7 +234,7 @@ fn test_cycle() {
         }
     });
 
-    df.tick();
+    df.run_available();
 
     assert_eq!(&*reachable_verts.borrow(), &[1, 2, 3, 4, 5]);
 }
@@ -273,7 +273,7 @@ fn test_cycle() {
 //     df.add_edge(source.clone(), sink1);
 //     df.add_edge(source, sink2);
 
-//     df.tick();
+//     df.run_available();
 
 //     assert_eq!((*out1).borrow().clone(), vec![1, 2, 3, 4]);
 //     assert_eq!((*out2).borrow().clone(), vec![1, 2, 3, 4]);
@@ -303,7 +303,7 @@ fn test_input_handle() {
     input.give(Some(3));
     input.flush();
 
-    df.tick();
+    df.run_available();
 
     assert_eq!((*vec).borrow().clone(), vec![1, 2, 3]);
 
@@ -312,7 +312,7 @@ fn test_input_handle() {
     input.give(Some(6));
     input.flush();
 
-    df.tick();
+    df.run_available();
 
     assert_eq!((*vec).borrow().clone(), vec![1, 2, 3, 4, 5, 6]);
 }
@@ -348,7 +348,7 @@ fn test_input_handle_thread() {
 
     wait.recv().unwrap();
 
-    df.tick();
+    df.run_available();
 
     assert_eq!((*vec).borrow().clone(), vec![1, 2, 3]);
 }
@@ -396,7 +396,7 @@ fn test_input_channel() {
             });
 
             while !done.get() {
-                df.tick();
+                df.run_available();
             }
         });
     }

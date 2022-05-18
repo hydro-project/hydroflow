@@ -138,7 +138,7 @@ fn test_teeing() {
         }
         ingress_send.flush();
 
-        hydroflow.tick();
+        hydroflow.run_available();
 
         assert_eq!(&[22, 2, 44, 4, 66, 6, 88, 8], &**output_evn.borrow());
         assert_eq!(&[11, 1, 33, 3, 55, 5, 77, 7], &**output_odd.borrow());
@@ -179,7 +179,7 @@ fn test_partition() {
     data_send.give(Some(4));
     data_send.give(Some(5));
 
-    builder.build().tick();
+    builder.build().run_available();
 
     let mut out = (*out).take();
     out.sort_unstable();
@@ -271,16 +271,16 @@ fn test_covid() {
         )));
         diagnosed_send.flush();
 
-        hydroflow.tick();
+        hydroflow.run_available();
 
         contacts_send.give(Some((101, 103, mae_diag_datetime + 6))); // Mingwei + Mae
         contacts_send.flush();
 
-        hydroflow.tick();
+        hydroflow.run_available();
 
         peoples_send.give(Some((103, ("Joe H", "+1 510 555 9999"))));
         peoples_send.flush();
 
-        hydroflow.tick();
+        hydroflow.run_available();
     }
 }

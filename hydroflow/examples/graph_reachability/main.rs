@@ -55,11 +55,11 @@ pub fn main() {
     send_edges.give(Some((0, 3)));
     send_edges.give(Some((3, 6)));
     send_edges.flush();
-    hf.tick();
+    hf.run_available();
 
     println!("B");
 
     send_edges.give(Some((6, 5)));
     send_edges.flush();
-    hf.tick();
+    hf.run_available();
 }

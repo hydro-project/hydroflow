@@ -88,13 +88,13 @@ mod tests {
         ticks_input.give(Some(1));
         ticks_input.flush();
 
-        df.tick();
+        df.run_available();
         assert_eq!(vec![(1, [1, 2, 3].into())], *outputs.borrow());
 
         ticks_input.give(Some(2));
         ticks_input.flush();
 
-        df.tick();
+        df.run_available();
         assert_eq!(
             vec![(1, [1, 2, 3].into()), (2, [].into())],
             *outputs.borrow()
@@ -104,7 +104,7 @@ mod tests {
         stream_input.give(Some(5));
         stream_input.flush();
 
-        df.tick();
+        df.run_available();
         assert_eq!(
             vec![(1, [1, 2, 3].into()), (2, [].into())],
             *outputs.borrow()
@@ -113,7 +113,7 @@ mod tests {
         ticks_input.give(Some(3));
         ticks_input.flush();
 
-        df.tick();
+        df.run_available();
         assert_eq!(
             vec![(1, [1, 2, 3].into()), (2, [].into()), (3, [4, 5].into())],
             *outputs.borrow()

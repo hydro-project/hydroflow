@@ -75,15 +75,24 @@ impl Hydroflow {
         self.context.current_stratum
     }
 
+    /// Runs the dataflow until the next epoch begins.
+    pub fn run_epoch(&mut self) {
+        let epoch = self.current_epoch();
+        while self.next_stratum() && epoch == self.current_epoch() {
+            self.run_stratum();
+        }
+    }
+
     /// Runs the dataflow until no more work is immediately available.
-    pub fn tick(&mut self) {
+    /// If the dataflow contains loops this method may run forever.
+    pub fn run_available(&mut self) {
         while self.next_stratum() {
-            self.tick_stratum();
+            self.run_stratum();
         }
     }
 
     /// Runs the current stratum of the dataflow until no more work is immediately available.
-    pub fn tick_stratum(&mut self) {
+    pub fn run_stratum(&mut self) {
         // Add any external jobs to ready queue.
         self.try_recv_events();
 
@@ -142,22 +151,22 @@ impl Hydroflow {
         }
     }
 
-    /// Run the dataflow graph to completion.
+    /// Runs the dataflow graph forever.
     ///
     /// TODO(mingwei): Currently blockes forever, no notion of "completion."
     pub fn run(&mut self) -> Option<!> {
         loop {
-            self.tick();
+            self.run_epoch();
             self.recv_events()?;
         }
     }
 
-    /// Run the dataflow graph to completion asynchronously
+    /// Runs the dataflow graph forever.
     ///
     /// TODO(mingwei): Currently blockes forever, no notion of "completion."
     pub async fn run_async(&mut self) -> Option<!> {
         loop {
-            self.tick();
+            self.run_epoch();
             self.recv_events_async().await?;
             tokio::task::yield_now().await;
         }

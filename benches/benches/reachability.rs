@@ -203,7 +203,7 @@ fn benchmark_hydroflow_scheduled(c: &mut Criterion) {
                 (*reachable_inner).borrow_mut().extend(recv.take_inner());
             });
 
-            df.tick();
+            df.run_available();
 
             assert_eq!(&*reachable_verts.borrow(), reachable);
         });
@@ -277,7 +277,7 @@ fn benchmark_hydroflow(c: &mut Criterion) {
                 (*reachable_inner).borrow_mut().extend(recv.take_inner());
             });
 
-            df.tick();
+            df.run_available();
 
             assert_eq!(&*reachable_verts.borrow(), reachable);
         });

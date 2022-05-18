@@ -17,7 +17,7 @@ pub fn main() {
     );
 
     let mut hydroflow = builder.build();
-    hydroflow.tick();
+    hydroflow.run_available();
 }
 ```
 
@@ -98,13 +98,14 @@ should look like.
 
 ```rust,ignore
     let mut hydroflow = builder.build();
-    hydroflow.tick();
+    hydroflow.run_available();
 ```
-Finally we build the `Hydroflow` instance and run it via the [`tick()` method](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.tick).
-Note that `tick()` runs the Hydroflow graph until no more work is immediately
+Finally we build the `Hydroflow` instance and run it via the [`run_available()` method](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_available).
+Note that `run_available()` runs the Hydroflow graph until no more work is immediately
 available. In this case running the graph drains the iterator completely, so no
 more work will ever be available. But once we add in external inputs such as
-network ingress then more work might appear later. The [`tick_stratum()`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.tick_stratum),
-[`run()`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run)
+network ingress then more work might appear later. The [`run_epoch()`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_epoch),
+[`run_stratum()`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_stratum),
+[`run()`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run),
 and [`run_async()`] https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_async
 methods provide other ways to execute the graph.
