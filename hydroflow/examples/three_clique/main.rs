@@ -68,7 +68,7 @@ pub fn main() {
     send_edges.give(Some((0, 3)));
     send_edges.give(Some((3, 6)));
     send_edges.flush();
-    hf.tick();
+    hf.run_available();
 
     println!("B");
 
@@ -76,5 +76,5 @@ pub fn main() {
     send_edges.give(Some((6, 0))); //Creates a size three clique (triangle)
     send_edges.give(Some((10, 6))); //Creates a size three clique (triangle)
     send_edges.flush();
-    hf.tick();
+    hf.run_available();
 }

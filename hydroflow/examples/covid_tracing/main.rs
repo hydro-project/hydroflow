@@ -157,6 +157,6 @@ fn main() {
     });
 
     loop {
-        df.tick();
+        df.run_available();
     }
 }

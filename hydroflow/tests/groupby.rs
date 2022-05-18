@@ -128,17 +128,17 @@ fn groupby_monotonic_core() {
 
     input.give(Iter(BATCH_A.iter().cloned()));
     input.flush();
-    hf.tick();
+    hf.run_available();
     assert_eq!(0, output.borrow().len());
 
     input.give(Iter(BATCH_B.iter().cloned()));
     input.flush();
-    hf.tick();
+    hf.run_available();
     assert_eq!(&["sales", "accounting"], &**output.borrow());
 
     input.give(Iter(BATCH_C.iter().cloned()));
     input.flush();
-    hf.tick();
+    hf.run_available();
     assert_eq!(&["sales", "accounting", "engineering"], &**output.borrow());
 }
 
@@ -180,17 +180,17 @@ fn groupby_monotonic_surface() {
 
     input.give(Iter(BATCH_A.iter().cloned()));
     input.flush();
-    hf.tick();
+    hf.run_available();
     assert_eq!(0, output.borrow().len());
 
     input.give(Iter(BATCH_B.iter().cloned()));
     input.flush();
-    hf.tick();
+    hf.run_available();
     assert_eq!(&["sales", "accounting"], &**output.borrow());
 
     input.give(Iter(BATCH_C.iter().cloned()));
     input.flush();
-    hf.tick();
+    hf.run_available();
     assert_eq!(&["sales", "accounting", "engineering"], &**output.borrow());
 }
 
@@ -255,12 +255,12 @@ fn groupby_nonmon_surface() {
     // Give BATCH_A and cross barrier to run next stratum.
     input.give(Iter(BATCH_A.iter().cloned()));
     input.flush();
-    hf.tick_stratum();
+    hf.run_stratum();
     assert_eq!((0, 0), (hf.current_epoch(), hf.current_stratum()));
 
     assert_eq!(0, output.borrow().len());
 
-    hf.tick();
+    hf.run_available();
     assert_eq!((1, 1), (hf.current_epoch(), hf.current_stratum()));
 
     assert_eq!(
@@ -276,14 +276,14 @@ fn groupby_nonmon_surface() {
     input.give(Iter(BATCH_B.iter().cloned()));
     input.flush();
 
-    hf.tick_stratum();
+    hf.run_stratum();
     assert_eq!((1, 1), (hf.current_epoch(), hf.current_stratum()));
 
     // Give BATCH_C and run all to completion.
     input.give(Iter(BATCH_C.iter().cloned()));
     input.flush();
 
-    hf.tick();
+    hf.run_available();
     assert_eq!((3, 1), (hf.current_epoch(), hf.current_stratum()));
 
     // Second batch has 7+3 = 10 items.

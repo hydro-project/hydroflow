@@ -82,7 +82,7 @@ fn benchmark_hydroflow(c: &mut Criterion) {
                 }
             });
 
-            df.tick()
+            df.run_available()
         })
     });
 }
@@ -109,7 +109,7 @@ fn benchmark_hydroflow_builder(c: &mut Criterion) {
                 black_box(v);
             });
 
-            q.tick();
+            q.run_available();
         })
     });
 }

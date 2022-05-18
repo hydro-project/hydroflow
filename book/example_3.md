@@ -11,7 +11,7 @@ pub fn main() {
     // code will go here
 
     let mut hydroflow = builder.build();
-    hydroflow.tick();
+    hydroflow.run_available();
 }
 ```
 
@@ -91,7 +91,7 @@ pub fn main() {
     input_example.give(Some(5));
     input_example.flush();
 
-    hydroflow.tick();
+    hydroflow.run_available();
 
     println!("B");
     input_example.give(Some(6));
@@ -100,7 +100,7 @@ pub fn main() {
     input_example.give(Some(9));
     input_example.flush();
 
-    hydroflow.tick();
+    hydroflow.run_available();
 }
 ```
 ```txt
