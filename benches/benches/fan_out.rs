@@ -24,7 +24,7 @@ fn benchmark_hydroflow_scheduled(c: &mut Criterion) {
                 });
             }
 
-            q.tick();
+            q.run_available();
         })
     });
 }

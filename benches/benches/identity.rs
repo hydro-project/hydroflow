@@ -179,7 +179,7 @@ fn benchmark_hydroflow(c: &mut Criterion) {
                 }
             });
 
-            df.tick();
+            df.run_available();
         });
     });
 }

@@ -328,7 +328,7 @@ pub trait PullSurface: BaseSurface {
     ///         .for_each(|val| assert_eq!(500, val))
     /// );
     ///
-    /// builder.build().tick();
+    /// builder.build().run_available();
     /// ```
     fn fold_epoch<Init, Func, Out>(
         self,

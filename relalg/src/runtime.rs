@@ -24,7 +24,7 @@ pub(crate) fn run_dataflow(r: RelExpr) -> Vec<Vec<Datum>> {
         }
     });
 
-    df.tick();
+    df.run_available();
 
     let v = (*output).borrow();
     v.clone()

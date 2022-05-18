@@ -29,7 +29,7 @@ pub fn main() {
     );
 
     let mut hydroflow = builder.build();
-    hydroflow.tick();
+    hydroflow.run_available();
 }
 ```
 `.map()` transforms each element one-to-one as it flows through the subgraph.
@@ -68,7 +68,7 @@ pub fn main() {
     );
 
     let mut hydroflow = builder.build();
-    hydroflow.tick();
+    hydroflow.run_available();
 }
 ```
 

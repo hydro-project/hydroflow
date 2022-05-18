@@ -61,8 +61,8 @@ impl Query {
         }
     }
 
-    pub fn tick(&mut self) {
-        (*self.df).borrow_mut().tick()
+    pub fn run_available(&mut self) {
+        (*self.df).borrow_mut().run_available()
     }
 }
 
