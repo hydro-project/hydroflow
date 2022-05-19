@@ -7,7 +7,7 @@ pub struct CrossJoinState<V1, V2> {
     opposite_ix: Range<usize>,
 }
 
-impl<'a, V1, V2> Default for CrossJoinState<V1, V2> {
+impl<V1, V2> Default for CrossJoinState<V1, V2> {
     fn default() -> Self {
         Self {
             ltab: Vec::new(),
