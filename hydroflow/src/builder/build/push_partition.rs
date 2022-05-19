@@ -42,9 +42,13 @@ where
 #[allow(type_alias_bounds)]
 type PushBuildImpl<'slf, 'ctx, NextA, NextB, Func>
 where
+    Func: 'slf + FnMut(&Context, &NextA::ItemIn) -> bool,
     NextA: PushBuild,
     NextB: PushBuild<ItemIn = NextA::ItemIn>,
-    Func: 'slf,
+
+    NextA::OutputHandoffs: Extend<NextB::OutputHandoffs>,
+    <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended:
+        PortList<SEND> + PortListSplit<SEND, NextA::OutputHandoffs, Suffix = NextB::OutputHandoffs>,
 = Partition<
     NextA::ItemIn,
     impl FnMut(&NextA::ItemIn) -> bool,

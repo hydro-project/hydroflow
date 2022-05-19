@@ -34,7 +34,7 @@ where
 type PushBuildImpl<'slf, 'ctx, Next, Func, In>
 where
     Next: PushBuild,
-    Func: 'slf,
+    Func: 'slf + FnMut(&Context, In) -> Option<Next::ItemIn>,
 = FilterMap<Next::Build<'slf, 'ctx>, impl FnMut(In) -> Option<Next::ItemIn>, In>;
 
 impl<Next, Func, In> PushBuild for FilterMapPushBuild<Next, Func, In>

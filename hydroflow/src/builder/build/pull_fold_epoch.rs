@@ -25,8 +25,8 @@ where
 type PullBuildImpl<'slf, 'ctx, Prev, Init, Func, Out>
 where
     Prev: 'slf + PullBuild,
-    Init: 'slf,
-    Func: 'slf,
+    Init: 'slf + FnMut(&Context) -> Out,
+    Func: 'slf + FnMut(&Context, Out, Prev::ItemOut) -> Out,
 = std::iter::OnceWith<impl FnOnce() -> Out>;
 
 impl<Prev, Init, Func, Out> PullBuild for FoldEpochPullBuild<Prev, Init, Func>

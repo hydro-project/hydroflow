@@ -10,7 +10,11 @@ use crate::scheduled::context::Context;
 use crate::scheduled::flow_graph::NodeId;
 use crate::scheduled::state::StateHandle;
 
-type MapScanFunc<Func, State, In, Out> = impl FnMut(&Context, In) -> Out;
+type MapScanFunc<Func, State, In, Out>
+where
+    Func: FnMut(&mut State, In) -> Out,
+    State: Any,
+= impl FnMut(&Context, In) -> Out;
 
 fn wrap_func<Func, State, In, Out>(
     mut func: Func,
