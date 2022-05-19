@@ -139,7 +139,7 @@ pub(crate) async fn run_database(opts: Opts) {
                 people.take_inner().into_iter(),
                 &mut join_state,
             )
-            .map(|(_id, t, (name, phone))| (name, phone, t))
+            .map(|(_id, (t, (name, phone)))| (name, phone, t))
             .pull_to_push()
             .for_each(|(name, phone, t)| println!("notifying {}, {}@{}", name, phone, t));
 

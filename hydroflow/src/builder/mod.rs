@@ -226,10 +226,10 @@ fn test_covid() {
             .flatten()
             .flat_map(|(pid_a, pid_b, t)| [(pid_a, (pid_b, t)), (pid_b, (pid_a, t))])
             .join(exposed)
-            .filter(|(_pid_a, (_pid_b, t_contact), (t_from, t_to))| {
+            .filter(|(_pid_a, ((_pid_b, t_contact), (t_from, t_to)))| {
                 (t_from..=t_to).contains(&t_contact)
             })
-            .map(|(_pid_a, pid_b_t_contact, _t_from_to)| pid_b_t_contact)
+            .map(|(_pid_a, (pid_b_t_contact, _t_from_to))| pid_b_t_contact)
             .pull_to_push()
             .map(Some) // For handoff CanReceive.
             .tee(notifs_send, loop_send),
@@ -241,7 +241,7 @@ fn test_covid() {
             .flatten()
             .join(peoples.flatten())
             .pull_to_push()
-            .for_each(|(_pid, exposure_time, (name, phone))| {
+            .for_each(|(_pid, (exposure_time, (name, phone)))| {
                 println!(
                     "[{}] To {}: Possible Exposure at t = {}",
                     name, phone, exposure_time

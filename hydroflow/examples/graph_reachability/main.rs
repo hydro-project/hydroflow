@@ -29,7 +29,7 @@ pub fn main() {
             .map(|v| (v, ()))
             .join(recv_edges.flatten())
             .pull_to_push()
-            .map(|(_old_v, (), new_v)| new_v)
+            .map(|(_old_v, ((), new_v))| new_v)
             .tee(
                 builder.start_tee().for_each(|v| println!("Reached: {}", v)),
                 builder.start_tee().map(Some).push_to(send_loop),

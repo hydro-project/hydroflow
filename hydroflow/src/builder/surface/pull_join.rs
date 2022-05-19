@@ -71,7 +71,7 @@ where
     <PrevA::InputHandoffs as Extend<PrevB::InputHandoffs>>::Extended:
         PortList<RECV> + PortListSplit<RECV, PrevA::InputHandoffs, Suffix = PrevB::InputHandoffs>,
 {
-    type ItemOut = (Key, ValA, ValB);
+    type ItemOut = (Key, (ValA, ValB));
 }
 
 impl<PrevA, PrevB, Key, ValA, ValB> PullSurface for JoinPullSurface<PrevA, PrevB>
