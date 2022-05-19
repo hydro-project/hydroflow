@@ -23,7 +23,7 @@ where
 type PullBuildImpl<'slf, 'ctx, Prev, Func, Out>
 where
     Prev: PullBuild,
-    Func: 'slf,
+    Func: 'slf + FnMut(&Context, Prev::ItemOut) -> Option<Out>,
 = std::iter::FilterMap<Prev::Build<'slf, 'ctx>, impl FnMut(Prev::ItemOut) -> Option<Out>>;
 
 impl<Prev, Func, Out> PullBuild for FilterMapPullBuild<Prev, Func>

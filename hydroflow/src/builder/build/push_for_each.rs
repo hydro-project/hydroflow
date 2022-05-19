@@ -30,7 +30,7 @@ where
 #[allow(type_alias_bounds)]
 type PushBuildImpl<'slf, 'ctx, Func, In>
 where
-    Func: 'slf,
+    Func: 'slf + FnMut(&Context, In),
 = ForEach<In, impl FnMut(In)>;
 
 impl<Func, In> PushBuild for ForEachPushBuild<Func, In>
