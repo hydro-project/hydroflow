@@ -40,20 +40,20 @@ where
     I1: Iterator<Item = (K, V1)>,
     I2: Iterator<Item = (K, V2)>,
 {
-    type Item = (K, V1, V2);
+    type Item = (K, (V1, V2));
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             if let Some((k, v, vs)) = &mut self.state.lbuffer {
                 // TODO(justin): unnecessary clone (sometimes).
-                let result = (k.clone(), v.clone(), vs.pop().unwrap());
+                let result = (k.clone(), (v.clone(), vs.pop().unwrap()));
                 if vs.is_empty() {
                     self.state.lbuffer = None;
                 }
                 return Some(result);
             } else if let Some((k, v, vs)) = &mut self.state.rbuffer {
                 // TODO(justin): unnecessary clone (sometimes).
-                let result = (k.clone(), vs.pop().unwrap(), v.clone());
+                let result = (k.clone(), (vs.pop().unwrap(), v.clone()));
                 if vs.is_empty() {
                     self.state.rbuffer = None;
                 }
@@ -113,15 +113,15 @@ mod tests {
         assert_eq!(
             join.collect::<Vec<_>>(),
             vec![
-                (3, "left 3".into(), "right 6 / 2".into()),
-                (3, "left 3".into(), "right 7 / 2".into()),
-                (4, "left 4".into(), "right 8 / 2".into()),
-                (4, "left 4".into(), "right 9 / 2".into()),
-                (5, "left 5".into(), "right 10 / 2".into()),
-                (5, "left 5".into(), "right 11 / 2".into()),
-                (6, "left 6".into(), "right 12 / 2".into()),
-                (6, "left 6".into(), "right 13 / 2".into()),
-                (7, "left 7".into(), "right 14 / 2".into())
+                (3, ("left 3".into(), "right 6 / 2".into())),
+                (3, ("left 3".into(), "right 7 / 2".into())),
+                (4, ("left 4".into(), "right 8 / 2".into())),
+                (4, ("left 4".into(), "right 9 / 2".into())),
+                (5, ("left 5".into(), "right 10 / 2".into())),
+                (5, ("left 5".into(), "right 11 / 2".into())),
+                (6, ("left 6".into(), "right 12 / 2".into())),
+                (6, ("left 6".into(), "right 13 / 2".into())),
+                (7, ("left 7".into(), "right 14 / 2".into()))
             ]
         );
     }

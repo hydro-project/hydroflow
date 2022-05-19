@@ -65,14 +65,15 @@ fn main() {
 
             let mut join_state = context.state_ref(state_handle).borrow_mut();
             let join_exposed_contacts = SymmetricHashJoin::new(exposed, contacts, &mut *join_state);
-            let new_exposed =
-                join_exposed_contacts.filter_map(|(_pid_a, (t_from, t_to), (pid_b, t_contact))| {
+            let new_exposed = join_exposed_contacts.filter_map(
+                |(_pid_a, ((t_from, t_to), (pid_b, t_contact)))| {
                     if t_from < t_contact && t_contact <= t_to {
                         Some((pid_b, t_contact))
                     } else {
                         None
                     }
-                });
+                },
+            );
 
             let pivot = new_exposed
                 .pull_to_push()
@@ -105,7 +106,7 @@ fn main() {
 
             let pivot = joined
                 .pull_to_push()
-                .for_each(|(_pid, (name, phone), exposure)| {
+                .for_each(|(_pid, ((name, phone), exposure))| {
                     println!(
                         "[{}] To {}: Possible Exposure at t = {}",
                         name, phone, exposure

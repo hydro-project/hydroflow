@@ -436,7 +436,7 @@ fn test_exchange() {
                 // Join them.
                 builder.add_subgraph(
                     "sink",
-                    join.pull_to_push().for_each(move |(v, english, french)| {
+                    join.pull_to_push().for_each(move |(v, (english, french))| {
                         receipts_tx.send((v, english, french)).unwrap();
                     }),
                 );

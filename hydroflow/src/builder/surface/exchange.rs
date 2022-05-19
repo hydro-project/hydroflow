@@ -104,12 +104,12 @@ where
                 }))
                 .pull_to_push()
                 .partition_with_context(
-                    move |_ctx, &(id, _, _)| id == my_id,
+                    move |_ctx, &(id, (_, _))| id == my_id,
                     StartPushSurface::new()
-                        .map(|(_, _, v)| Some(v))
+                        .map(|(_, (_, v))| Some(v))
                         .push_to(local_inputs_send),
                     StartPushSurface::new()
-                        .map(|(_id, address, data)| Some((address, data)))
+                        .map(|(_id, (address, data))| Some((address, data)))
                         .push_to(outbound_messages),
                 ),
         );
