@@ -190,26 +190,31 @@ pub trait BaseSurface {
 pub type MapNoCtxFn<Prev, Func, Out>
 where
     Prev: BaseSurface,
+    Func: FnMut(Prev::ItemOut) -> Out,
 = impl FnMut(&Context, Prev::ItemOut) -> Out;
 
 pub type FilterNoCtxFn<Prev, Func>
 where
     Prev: BaseSurface,
+    Func: FnMut(&Prev::ItemOut) -> bool,
 = impl FnMut(&Context, &Prev::ItemOut) -> bool;
 
 pub type FilterMapNoCtxFn<Prev, Func, Out>
 where
     Prev: BaseSurface,
+    Func: FnMut(Prev::ItemOut) -> Option<Out>,
 = impl FnMut(&Context, Prev::ItemOut) -> Option<Out>;
 
 pub type InspectMapFunc<Prev, Func>
 where
     Prev: BaseSurface,
+    Func: FnMut(&Context, &Prev::ItemOut),
 = impl FnMut(&Context, Prev::ItemOut) -> Prev::ItemOut;
 
 pub type InspectMapNoCtxFunc<Prev, Func>
 where
     Prev: BaseSurface,
+    Func: FnMut(&Prev::ItemOut),
 = impl FnMut(&Context, Prev::ItemOut) -> Prev::ItemOut;
 
 pub trait PullSurface: BaseSurface {
@@ -443,12 +448,20 @@ pub trait PushSurface: BaseSurface {
 
 pub type ForEachNoCtxFunc<Prev, Func>
 where
-    Prev: BaseSurface,
+    Prev: PushSurface,
+    Func: FnMut(Prev::ItemOut),
 = impl FnMut(&Context, Prev::ItemOut);
 
 pub type PartitionNoCtxOutput<Prev, Func, NextA, NextB>
 where
-    Prev: BaseSurface,
+    Prev: PushSurface,
+    Func: Fn(&Prev::ItemOut) -> bool,
+    NextA: PushSurfaceReversed<ItemIn = Prev::ItemOut>,
+    NextB: PushSurfaceReversed<ItemIn = Prev::ItemOut>,
+
+    NextA::OutputHandoffs: Extend<NextB::OutputHandoffs>,
+    <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended:
+        PortList<SEND> + PortListSplit<SEND, NextA::OutputHandoffs, Suffix = NextB::OutputHandoffs>,
 = push_partition::PartitionPushSurfaceReversed<
     NextA,
     NextB,
