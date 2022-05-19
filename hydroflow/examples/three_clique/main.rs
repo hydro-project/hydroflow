@@ -42,7 +42,7 @@ pub fn main() {
             .flatten()
             .map(|(x, y)| (y, x))
             .join(recv_b.flatten())
-            .map(|(y, x, z)| ((z, x), y)) //Here we have found all paths from x to z that go through y. Now we need to find edges that connect z back to x.
+            .map(|(y, (x, z))| ((z, x), y)) //Here we have found all paths from x to z that go through y. Now we need to find edges that connect z back to x.
             .join(recv_c.flatten().map(|(z, x)| ((z, x), ())))
             .inspect(|&v| println!("three_clique found: {:?}", v))
             .pull_to_push()

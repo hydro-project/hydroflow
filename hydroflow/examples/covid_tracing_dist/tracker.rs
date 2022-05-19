@@ -71,14 +71,15 @@ pub(crate) async fn run_tracker(opts: Opts) {
 
             let join_exposed_contacts =
                 SymmetricHashJoin::new(exposed, contacts, &mut exposed_contacts);
-            let new_exposed =
-                join_exposed_contacts.filter_map(|(_pid_a, (t_from, t_to), (pid_b, t_contact))| {
+            let new_exposed = join_exposed_contacts.filter_map(
+                |(_pid_a, ((t_from, t_to), (pid_b, t_contact)))| {
                     if t_from < t_contact && t_contact <= t_to {
                         Some((pid_b, t_contact))
                     } else {
                         None
                     }
-                });
+                },
+            );
 
             let pivot = new_exposed
                 .pull_to_push()
