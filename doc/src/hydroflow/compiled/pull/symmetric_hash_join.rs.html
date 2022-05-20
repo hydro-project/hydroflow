@@ -3,7 +3,9 @@
         </a><h2 class="location"></h2>
     </nav>
     <nav class="sidebar"><a class="sidebar-logo" href="../../../../hydroflow/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../hydroflow/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../hydroflow/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><div id="settings-menu" tabindex="-1">
+                                <a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div>
+                        </div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -173,20 +175,20 @@
     <span class="ident">I1</span>: <span class="ident">Iterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> (<span class="ident">K</span>, <span class="ident">V1</span>)<span class="op">&gt;</span>,
     <span class="ident">I2</span>: <span class="ident">Iterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> (<span class="ident">K</span>, <span class="ident">V2</span>)<span class="op">&gt;</span>,
 {
-    <span class="kw">type</span> <span class="ident">Item</span> <span class="op">=</span> (<span class="ident">K</span>, <span class="ident">V1</span>, <span class="ident">V2</span>);
+    <span class="kw">type</span> <span class="ident">Item</span> <span class="op">=</span> (<span class="ident">K</span>, (<span class="ident">V1</span>, <span class="ident">V2</span>));
 
     <span class="kw">fn</span> <span class="ident">next</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::Item</span><span class="op">&gt;</span> {
         <span class="kw">loop</span> {
             <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>((<span class="ident">k</span>, <span class="ident">v</span>, <span class="ident">vs</span>)) <span class="op">=</span> <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">lbuffer</span> {
                 <span class="comment">// TODO(justin): unnecessary clone (sometimes).</span>
-                <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> (<span class="ident">k</span>.<span class="ident">clone</span>(), <span class="ident">v</span>.<span class="ident">clone</span>(), <span class="ident">vs</span>.<span class="ident">pop</span>().<span class="ident">unwrap</span>());
+                <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> (<span class="ident">k</span>.<span class="ident">clone</span>(), (<span class="ident">v</span>.<span class="ident">clone</span>(), <span class="ident">vs</span>.<span class="ident">pop</span>().<span class="ident">unwrap</span>()));
                 <span class="kw">if</span> <span class="ident">vs</span>.<span class="ident">is_empty</span>() {
                     <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">lbuffer</span> <span class="op">=</span> <span class="prelude-val">None</span>;
                 }
                 <span class="kw">return</span> <span class="prelude-val">Some</span>(<span class="ident">result</span>);
             } <span class="kw">else</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>((<span class="ident">k</span>, <span class="ident">v</span>, <span class="ident">vs</span>)) <span class="op">=</span> <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">rbuffer</span> {
                 <span class="comment">// TODO(justin): unnecessary clone (sometimes).</span>
-                <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> (<span class="ident">k</span>.<span class="ident">clone</span>(), <span class="ident">vs</span>.<span class="ident">pop</span>().<span class="ident">unwrap</span>(), <span class="ident">v</span>.<span class="ident">clone</span>());
+                <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> (<span class="ident">k</span>.<span class="ident">clone</span>(), (<span class="ident">vs</span>.<span class="ident">pop</span>().<span class="ident">unwrap</span>(), <span class="ident">v</span>.<span class="ident">clone</span>()));
                 <span class="kw">if</span> <span class="ident">vs</span>.<span class="ident">is_empty</span>() {
                     <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">rbuffer</span> <span class="op">=</span> <span class="prelude-val">None</span>;
                 }
@@ -246,19 +248,19 @@
         <span class="macro">assert_eq!</span>(
             <span class="ident">join</span>.<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>(),
             <span class="macro">vec!</span>[
-                (<span class="number">3</span>, <span class="string">&quot;left 3&quot;</span>.<span class="ident">into</span>(), <span class="string">&quot;right 6 / 2&quot;</span>.<span class="ident">into</span>()),
-                (<span class="number">3</span>, <span class="string">&quot;left 3&quot;</span>.<span class="ident">into</span>(), <span class="string">&quot;right 7 / 2&quot;</span>.<span class="ident">into</span>()),
-                (<span class="number">4</span>, <span class="string">&quot;left 4&quot;</span>.<span class="ident">into</span>(), <span class="string">&quot;right 8 / 2&quot;</span>.<span class="ident">into</span>()),
-                (<span class="number">4</span>, <span class="string">&quot;left 4&quot;</span>.<span class="ident">into</span>(), <span class="string">&quot;right 9 / 2&quot;</span>.<span class="ident">into</span>()),
-                (<span class="number">5</span>, <span class="string">&quot;left 5&quot;</span>.<span class="ident">into</span>(), <span class="string">&quot;right 10 / 2&quot;</span>.<span class="ident">into</span>()),
-                (<span class="number">5</span>, <span class="string">&quot;left 5&quot;</span>.<span class="ident">into</span>(), <span class="string">&quot;right 11 / 2&quot;</span>.<span class="ident">into</span>()),
-                (<span class="number">6</span>, <span class="string">&quot;left 6&quot;</span>.<span class="ident">into</span>(), <span class="string">&quot;right 12 / 2&quot;</span>.<span class="ident">into</span>()),
-                (<span class="number">6</span>, <span class="string">&quot;left 6&quot;</span>.<span class="ident">into</span>(), <span class="string">&quot;right 13 / 2&quot;</span>.<span class="ident">into</span>()),
-                (<span class="number">7</span>, <span class="string">&quot;left 7&quot;</span>.<span class="ident">into</span>(), <span class="string">&quot;right 14 / 2&quot;</span>.<span class="ident">into</span>())
+                (<span class="number">3</span>, (<span class="string">&quot;left 3&quot;</span>.<span class="ident">into</span>(), <span class="string">&quot;right 6 / 2&quot;</span>.<span class="ident">into</span>())),
+                (<span class="number">3</span>, (<span class="string">&quot;left 3&quot;</span>.<span class="ident">into</span>(), <span class="string">&quot;right 7 / 2&quot;</span>.<span class="ident">into</span>())),
+                (<span class="number">4</span>, (<span class="string">&quot;left 4&quot;</span>.<span class="ident">into</span>(), <span class="string">&quot;right 8 / 2&quot;</span>.<span class="ident">into</span>())),
+                (<span class="number">4</span>, (<span class="string">&quot;left 4&quot;</span>.<span class="ident">into</span>(), <span class="string">&quot;right 9 / 2&quot;</span>.<span class="ident">into</span>())),
+                (<span class="number">5</span>, (<span class="string">&quot;left 5&quot;</span>.<span class="ident">into</span>(), <span class="string">&quot;right 10 / 2&quot;</span>.<span class="ident">into</span>())),
+                (<span class="number">5</span>, (<span class="string">&quot;left 5&quot;</span>.<span class="ident">into</span>(), <span class="string">&quot;right 11 / 2&quot;</span>.<span class="ident">into</span>())),
+                (<span class="number">6</span>, (<span class="string">&quot;left 6&quot;</span>.<span class="ident">into</span>(), <span class="string">&quot;right 12 / 2&quot;</span>.<span class="ident">into</span>())),
+                (<span class="number">6</span>, (<span class="string">&quot;left 6&quot;</span>.<span class="ident">into</span>(), <span class="string">&quot;right 13 / 2&quot;</span>.<span class="ident">into</span>())),
+                (<span class="number">7</span>, (<span class="string">&quot;left 7&quot;</span>.<span class="ident">into</span>(), <span class="string">&quot;right 14 / 2&quot;</span>.<span class="ident">into</span>()))
             ]
         );
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.0-nightly (a5ad0d29a 2022-05-12)" ></div>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.63.0-nightly (c06728704 2022-05-19)" ></div>
 </body></html>

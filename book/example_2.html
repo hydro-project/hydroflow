@@ -162,7 +162,7 @@ pub fn main() {
     );
 
     let mut hydroflow = builder.build();
-    hydroflow.tick();
+    hydroflow.run_available();
 }
 </code></pre></pre>
 <p><code>.map()</code> transforms each element one-to-one as it flows through the subgraph.
@@ -198,7 +198,7 @@ pub fn main() {
     );
 
     let mut hydroflow = builder.build();
-    hydroflow.tick();
+    hydroflow.run_available();
 }
 </code></pre></pre>
 <p>Note all of these operators work on both pull and push sides of a subgraph.

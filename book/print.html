@@ -217,7 +217,7 @@ pub fn main() {
     );
 
     let mut hydroflow = builder.build();
-    hydroflow.tick();
+    hydroflow.run_available();
 }
 </code></pre></pre>
 <p>And the output:</p>
@@ -277,14 +277,15 @@ is explained in the <a href="./architecture.html#compiled-layer">Architecture</a
 computations. Instead they provide a blueprint of what the Hydroflow graph
 should look like.</p>
 <pre><code class="language-rust ignore">    let mut hydroflow = builder.build();
-    hydroflow.tick();
+    hydroflow.run_available();
 </code></pre>
-<p>Finally we build the <code>Hydroflow</code> instance and run it via the <a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.tick"><code>tick()</code> method</a>.
-Note that <code>tick()</code> runs the Hydroflow graph until no more work is immediately
+<p>Finally we build the <code>Hydroflow</code> instance and run it via the <a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_available"><code>run_available()</code> method</a>.
+Note that <code>run_available()</code> runs the Hydroflow graph until no more work is immediately
 available. In this case running the graph drains the iterator completely, so no
 more work will ever be available. But once we add in external inputs such as
-network ingress then more work might appear later. The <a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.tick_stratum"><code>tick_stratum()</code></a>,
-<a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run"><code>run()</code></a>
+network ingress then more work might appear later. The <a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_epoch"><code>run_epoch()</code></a>,
+<a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_stratum"><code>run_stratum()</code></a>,
+<a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run"><code>run()</code></a>,
 and [<code>run_async()</code>] https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_async
 methods provide other ways to execute the graph.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="simple-example"><a class="header" href="#simple-example">Simple Example</a></h1>
@@ -315,7 +316,7 @@ pub fn main() {
     );
 
     let mut hydroflow = builder.build();
-    hydroflow.tick();
+    hydroflow.run_available();
 }
 </code></pre></pre>
 <p><code>.map()</code> transforms each element one-to-one as it flows through the subgraph.
@@ -351,7 +352,7 @@ pub fn main() {
     );
 
     let mut hydroflow = builder.build();
-    hydroflow.tick();
+    hydroflow.run_available();
 }
 </code></pre></pre>
 <p>Note all of these operators work on both pull and push sides of a subgraph.
@@ -367,7 +368,7 @@ pub fn main() {
     // code will go here
 
     let mut hydroflow = builder.build();
-    hydroflow.tick();
+    hydroflow.run_available();
 }
 </code></pre></pre>
 <p>We'll start out with the above boilerplate. To add a new external input
@@ -437,7 +438,7 @@ pub fn main() {
     input_example.give(Some(5));
     input_example.flush();
 
-    hydroflow.tick();
+    hydroflow.run_available();
 
     println!(&quot;B&quot;);
     input_example.give(Some(6));
@@ -446,7 +447,7 @@ pub fn main() {
     input_example.give(Some(9));
     input_example.flush();
 
-    hydroflow.tick();
+    hydroflow.run_available();
 }
 </code></pre></pre>
 <pre><code class="language-txt">A
@@ -540,7 +541,7 @@ pub fn main() {
             .chain(recv_loop.flatten())
             .map(|v| (v, ()))
             .join(recv_edges.flatten())
-            .map(|(_old_v, (), new_v)| new_v)
+            .map(|(_old_v, ((), new_v))| new_v)
             .pull_to_push()
             .tee(
                 builder.start_tee().for_each(|v| println!(&quot;Reached: {}&quot;, v)),
@@ -556,12 +557,12 @@ pub fn main() {
     send_edges.give(Some((0, 3)));
     send_edges.give(Some((3, 6)));
     send_edges.flush();
-    hf.tick();
+    hf.run_available();
 
     println!(&quot;B&quot;);
     send_edges.give(Some((6, 5)));
     send_edges.flush();
-    hf.tick();
+    hf.run_available();
 }
 </code></pre></pre>
 <pre><code class="language-txt">A
