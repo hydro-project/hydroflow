@@ -2,6 +2,7 @@
 
 members = [
     "hydroflow",
+    "hydroflow_macro",
     "benches",
     "relalg",
 ]
