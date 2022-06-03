@@ -574,6 +574,7 @@ dependencies = [
  "proc-macro-crate",
  "proc-macro2",
  "quote",
+ "slotmap",
  "syn",
 ]
 

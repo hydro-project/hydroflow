@@ -10,6 +10,8 @@ pub mod compiled;
 pub mod lang;
 pub mod scheduled;
 
+pub use hydroflow_macro::hydroflow_parser;
+
 pub use tokio;
 pub use tuple_list::tuple_list as tl;
 pub use tuple_list::tuple_list_type as tt;
