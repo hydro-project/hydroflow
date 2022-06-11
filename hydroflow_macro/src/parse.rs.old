@@ -1,9 +1,10 @@
 use proc_macro2::TokenStream;
 use quote::ToTokens;
+use syn::parse::discouraged::Speculative;
 use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
 use syn::token::{Bracket, Paren};
-use syn::{bracketed, parenthesized, Expr, ExprPath, Ident, LitInt, Token};
+use syn::{bracketed, parenthesized, Expr, ExprPath, Ident, Token};
 
 pub struct HfCode {
     pub statements: Punctuated<HfStatement, Token![;]>,
@@ -20,46 +21,29 @@ impl ToTokens for HfCode {
     }
 }
 
-pub enum HfStatement {
-    Named(NamedHfStatement),
-    Pipeline(Pipeline),
+pub struct HfStatement {
+    pub name: Option<Ident>,
+    pub equals: Option<Token![=]>,
+    pub pipeline: Pipeline,
 }
 impl Parse for HfStatement {
     fn parse(input: ParseStream) -> syn::Result<Self> {
+        let mut name = None;
+        let mut equals = None;
         if input.peek2(Token![=]) {
-            Ok(Self::Named(NamedHfStatement::parse(input)?))
-        } else {
-            Ok(Self::Pipeline(Pipeline::parse(input)?))
+            name = Some(input.parse()?);
+            equals = Some(input.parse()?);
         }
-    }
-}
-impl ToTokens for HfStatement {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        match self {
-            HfStatement::Named(x) => x.to_tokens(tokens),
-            HfStatement::Pipeline(x) => x.to_tokens(tokens),
-        }
-    }
-}
+        let value = input.parse()?;
 
-pub struct NamedHfStatement {
-    pub name: Ident,
-    pub equals: Token![=],
-    pub pipeline: Pipeline,
-}
-impl Parse for NamedHfStatement {
-    fn parse(input: ParseStream) -> syn::Result<Self> {
-        let name = input.parse()?;
-        let equals = input.parse()?;
-        let pipeline = input.parse()?;
-        Ok(Self {
+        Ok(HfStatement {
             name,
             equals,
-            pipeline,
+            pipeline: value,
         })
     }
 }
-impl ToTokens for NamedHfStatement {
+impl ToTokens for HfStatement {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         self.name.to_tokens(tokens);
         self.equals.to_tokens(tokens);
@@ -69,17 +53,26 @@ impl ToTokens for NamedHfStatement {
 
 pub enum Pipeline {
     Chain(ChainPipeline),
-    Name(NamePipeline),
+    Multiple(MultiplePipeline),
+    Ident(Ident),
     Operator(Operator),
 }
 impl Parse for Pipeline {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         if input.peek(Paren) {
             Ok(Self::Chain(input.parse()?))
-        } else if input.peek2(Paren) {
-            Ok(Self::Operator(input.parse()?))
+            // Ok(Self::Paren(expr_paren))
+        } else if input.peek2(Bracket) {
+            Ok(Self::Multiple(input.parse()?))
         } else {
-            Ok(Self::Name(input.parse()?))
+            let fork = input.fork();
+            let expr_path = fork.parse()?;
+            if fork.peek(Paren) {
+                Ok(Self::Operator(input.parse()?))
+            } else {
+                input.advance_to(&fork);
+                Ok(Self::Ident(expr_path))
+            }
         }
     }
 }
@@ -87,7 +80,8 @@ impl ToTokens for Pipeline {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         match self {
             Pipeline::Chain(x) => x.to_tokens(tokens),
-            Pipeline::Name(x) => x.to_tokens(tokens),
+            Pipeline::Multiple(x) => x.to_tokens(tokens),
+            Pipeline::Ident(x) => x.to_tokens(tokens),
             Pipeline::Operator(x) => x.to_tokens(tokens),
         }
     }
@@ -128,58 +122,6 @@ impl ToTokens for ChainPipeline {
         self.paren_token.surround(tokens, |tokens| {
             self.leading_arrow.to_tokens(tokens);
             self.elems.to_tokens(tokens);
-        });
-    }
-}
-
-pub struct NamePipeline {
-    pub prefix: Option<Indexing>,
-    pub name: Ident,
-    pub suffix: Option<Indexing>,
-}
-impl Parse for NamePipeline {
-    fn parse(input: ParseStream) -> syn::Result<Self> {
-        let mut prefix = None;
-        if input.peek(Bracket) {
-            prefix = Some(input.parse()?);
-        }
-        let name = input.parse()?;
-        let mut suffix = None;
-        if input.peek(Bracket) {
-            suffix = Some(input.parse()?);
-        }
-        Ok(Self {
-            prefix,
-            name,
-            suffix,
-        })
-    }
-}
-impl ToTokens for NamePipeline {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        todo!()
-    }
-}
-
-pub struct Indexing {
-    pub bracket_token: Bracket,
-    pub index: LitInt,
-}
-impl Parse for Indexing {
-    fn parse(input: ParseStream) -> syn::Result<Self> {
-        let content;
-        let bracket_token = bracketed!(content in input);
-        let index = content.parse()?;
-        Ok(Self {
-            bracket_token,
-            index,
-        })
-    }
-}
-impl ToTokens for Indexing {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        self.bracket_token.surround(tokens, |tokens| {
-            self.index.to_tokens(tokens);
         });
     }
 }
