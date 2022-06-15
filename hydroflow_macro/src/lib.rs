@@ -2,10 +2,10 @@
 
 use std::collections::HashMap;
 
-use proc_macro2::Literal;
+use proc_macro2::{Literal, Span};
 use quote::{quote, ToTokens};
 use slotmap::{DefaultKey, SlotMap};
-use syn::{parse_macro_input, spanned::Spanned, Ident};
+use syn::{parse_macro_input, spanned::Spanned, Ident, LitInt};
 
 mod parse;
 use parse::{HfCode, HfStatement, NamePipeline, NamedHfStatement, Operator, Pipeline};
@@ -30,6 +30,13 @@ pub fn hydroflow_parser(input: proc_macro::TokenStream) -> proc_macro::TokenStre
 struct PipelinePtrPair {
     inn: Option<DefaultKey>,
     out: Option<DefaultKey>,
+}
+
+#[derive(Clone, Debug, Default)]
+struct PipelinePtrPairIndexed {
+    pair: PipelinePtrPair,
+    inn_idx: Option<LitInt>,
+    out_idx: Option<LitInt>,
 }
 
 #[derive(Debug, Default)]
@@ -61,7 +68,7 @@ impl Graph {
                 pipeline,
             }) => {
                 if let Some(pipe_ptr) = self.add_pipeline(pipeline) {
-                    self.names.insert(name, pipe_ptr);
+                    self.names.insert(name, pipe_ptr.pair);
                 }
             }
             parse::HfStatement::Pipeline(pipeline) => {
@@ -70,10 +77,10 @@ impl Graph {
         }
     }
 
-    pub fn add_pipeline(&mut self, pipeline: Pipeline) -> Option<PipelinePtrPair> {
+    pub fn add_pipeline(&mut self, pipeline: Pipeline) -> Option<PipelinePtrPairIndexed> {
         match pipeline {
             Pipeline::Chain(chain_pipeline) => {
-                let mut pipe_ptr: Option<PipelinePtrPair> = None;
+                let mut pipe_ptr: Option<PipelinePtrPairIndexed> = None;
 
                 if chain_pipeline.leading_arrow.is_some() {
                     // TODO(mingwei). this should do something
@@ -83,17 +90,41 @@ impl Graph {
                     if let Some(sub_ptr) = sub_ptr {
                         let pipe_ptr = pipe_ptr.get_or_insert_with(Default::default);
 
-                        if let (Some(out), Some(inn)) = (pipe_ptr.out, sub_ptr.inn) {
-                            self.operators[out].succs.push(inn);
-                            self.operators[inn].preds.push(out);
+                        if let (Some(out), Some(inn)) = (pipe_ptr.pair.out, sub_ptr.pair.inn) {
+                            let succs = &mut self.operators[out].succs;
+                            if let Some(old_inn) = succs.insert(
+                                sub_ptr.inn_idx.unwrap_or(LitInt::new(
+                                    &*succs.len().to_string(),
+                                    Span::call_site(/* TODO(mingwei): actual span info */),
+                                )),
+                                inn,
+                            ) {
+                                panic!("TODO(mingwei): error message on span A {:?}", old_inn);
+                            }
+
+                            let preds = &mut self.operators[inn].preds;
+                            if let Some(old_out) = preds.insert(
+                                pipe_ptr.out_idx.clone().unwrap_or(LitInt::new(
+                                    &*preds.len().to_string(),
+                                    Span::call_site(/* TODO(mingwei): actual span info */),
+                                )),
+                                out,
+                            ) {
+                                panic!("TODO(mingwei): error message on span B {:?}", old_out);
+                            }
                         }
 
-                        pipe_ptr.inn = pipe_ptr.inn.or(sub_ptr.inn);
-                        pipe_ptr.out = sub_ptr.out;
+                        pipe_ptr.pair.inn = pipe_ptr.pair.inn.or(sub_ptr.pair.inn);
+                        pipe_ptr.pair.out = sub_ptr.pair.out;
                     }
                 }
 
                 pipe_ptr
+                // pipe_ptr.map(|pair| PipelinePtrPairIndexed {
+                //     pair,
+                //     inn_idx: None,
+                //     out_idx: None,
+                // })
             }
             // Pipeline::Multiple(multiple) => {
             //     // TODO: match on name.
@@ -121,14 +152,20 @@ impl Graph {
                 suffix,
             }) => {
                 // TODO(mingwei): PREFIX AND SUFFIX
-                let out = self.names.get(&name).copied();
-                if out.is_none() {
+                let opt_pair = self.names.get(&name).copied();
+                if let Some(pair) = opt_pair {
+                    Some(PipelinePtrPairIndexed {
+                        pair,
+                        inn_idx: prefix.map(|x| x.index),
+                        out_idx: suffix.map(|x| x.index),
+                    })
+                } else {
                     name.span()
                         .unwrap()
                         .error(format!("Cannot find name `{}`.", name))
                         .emit();
+                    None
                 }
-                out
             }
             Pipeline::Operator(operator) => {
                 let (preds, succs) = Default::default();
@@ -137,9 +174,13 @@ impl Graph {
                     preds,
                     succs,
                 });
-                Some(PipelinePtrPair {
-                    inn: Some(key),
-                    out: Some(key),
+                Some(PipelinePtrPairIndexed {
+                    pair: PipelinePtrPair {
+                        inn: Some(key),
+                        out: Some(key),
+                    },
+                    inn_idx: None,
+                    out_idx: None,
                 })
             }
         }
@@ -148,8 +189,8 @@ impl Graph {
 
 struct OpInfo {
     operator: Option<Operator>, // TODO(handle n-ary as operators)
-    preds: Vec<DefaultKey>,
-    succs: Vec<DefaultKey>,
+    preds: HashMap<LitInt, DefaultKey>,
+    succs: HashMap<LitInt, DefaultKey>,
 }
 impl std::fmt::Debug for OpInfo {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
