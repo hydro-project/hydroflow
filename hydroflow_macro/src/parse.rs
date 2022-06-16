@@ -1,7 +1,8 @@
 use proc_macro2::TokenStream;
 use quote::ToTokens;
 use syn::parse::{Parse, ParseStream};
-use syn::punctuated::Punctuated;
+use syn::punctuated::{Pair, Punctuated};
+use syn::spanned::Spanned;
 use syn::token::{Bracket, Paren};
 use syn::{bracketed, parenthesized, Expr, ExprPath, Ident, LitInt, Token};
 
@@ -69,7 +70,7 @@ impl ToTokens for NamedHfStatement {
 
 pub enum Pipeline {
     Chain(ChainPipeline),
-    Name(NamePipeline),
+    Name(Ident),
     Operator(Operator),
 }
 impl Parse for Pipeline {
@@ -95,69 +96,62 @@ impl ToTokens for Pipeline {
 
 pub struct ChainPipeline {
     pub paren_token: Paren,
-    pub leading_arrow: Option<Token![->]>,
-    pub elems: Punctuated<Pipeline, Token![->]>,
+    pub elems: Punctuated<Pipeline, ArrowConnector>,
 }
 impl Parse for ChainPipeline {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let content;
         let paren_token = parenthesized!(content in input);
-        let mut elems = Punctuated::new();
+        let elems: Punctuated<Pipeline, ArrowConnector> = Punctuated::parse_terminated(&content)?;
 
-        let leading_arrow = content.parse().ok();
-
-        while !content.is_empty() {
-            let first = content.parse()?;
-            elems.push_value(first);
-            if content.is_empty() {
-                break;
+        match elems.pairs().next_back() {
+            None => {
+                elems.span().unwrap().error("Cannot have empty pipeline");
             }
-            let punct = content.parse()?;
-            elems.push_punct(punct);
+            Some(Pair::Punctuated(_, trailing)) => {
+                trailing.span().unwrap().error("Cannot have trailing arrow");
+            }
+            Some(Pair::End(_)) => {}
+        }
+        if elems.trailing_punct() {
+            elems.span().unwrap().error("Cannot have empty pipeline");
         }
 
-        Ok(Self {
-            leading_arrow,
-            paren_token,
-            elems,
-        })
+        Ok(Self { paren_token, elems })
     }
 }
 impl ToTokens for ChainPipeline {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         self.paren_token.surround(tokens, |tokens| {
-            self.leading_arrow.to_tokens(tokens);
             self.elems.to_tokens(tokens);
         });
     }
 }
 
-pub struct NamePipeline {
-    pub prefix: Option<Indexing>,
-    pub name: Ident,
-    pub suffix: Option<Indexing>,
+pub struct ArrowConnector {
+    pub src: Option<Indexing>,
+    pub arrow: Token![->],
+    pub dst: Option<Indexing>,
 }
-impl Parse for NamePipeline {
+impl Parse for ArrowConnector {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        let mut prefix = None;
+        let mut src = None;
         if input.peek(Bracket) {
-            prefix = Some(input.parse()?);
+            src = Some(input.parse()?);
         }
-        let name = input.parse()?;
-        let mut suffix = None;
+        let arrow = input.parse()?;
+        let mut dst = None;
         if input.peek(Bracket) {
-            suffix = Some(input.parse()?);
+            dst = Some(input.parse()?);
         }
-        Ok(Self {
-            prefix,
-            name,
-            suffix,
-        })
+        Ok(Self { src, arrow, dst })
     }
 }
-impl ToTokens for NamePipeline {
+impl ToTokens for ArrowConnector {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        todo!()
+        self.src.to_tokens(tokens);
+        self.arrow.to_tokens(tokens);
+        self.dst.to_tokens(tokens);
     }
 }
 

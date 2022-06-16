@@ -34,17 +34,14 @@ pub fn test_parser_basic() {
         (reached_vertices -> [0]my_join);
         (edges_input -> [1]my_join);
 
-
-        // my_join -> loop_vertices
-        // my_join -> out_vertices
-        // my_join -> asdf
-
         my_join_tee = (my_join -> tee());
         (my_join_tee[0] -> [1]reached_vertices);
         (my_join_tee[1] -> out_vertices);
 
-        // shuffle = (merge() -> tee());
+        shuffle = (merge() -> tee());
+        (shuffle[0] -> [0]shuffle);
+        (shuffle[1] -> [1]shuffle);
         // (a -> [0]shuffle[0] -> b);
-        // (c -> [1]shuffle[1] -> d);
+        // (c -> [0]shuffle[0] -> d);
     }
 }

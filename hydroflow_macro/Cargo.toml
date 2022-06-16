@@ -11,4 +11,4 @@ proc-macro2 = "1.0.0"
 proc-macro-crate = "1.0.0"
 quote = "1.0.0"
 slotmap = "1.0.6"
-syn = { version = "1.0.0", features = [ "parsing" ] }
+syn = { version = "1.0.0", features = [ "parsing", "extra-traits" ] }
