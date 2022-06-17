@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use proc_macro2::{Literal, Span};
 use quote::{quote, ToTokens};
-use slotmap::{DefaultKey, SlotMap};
+use slotmap::{DefaultKey, Key, SlotMap};
 use syn::punctuated::Pair;
 use syn::spanned::Spanned;
 use syn::{parse_macro_input, Ident, LitInt};
@@ -20,8 +20,9 @@ pub fn hydroflow_parser(input: proc_macro::TokenStream) -> proc_macro::TokenStre
     let graph = Graph::from_hfcode(input).unwrap(/* TODO(mingwei) */);
 
     // let debug = format!("{:#?}", graph);
-    let mut debug = String::new();
-    graph.write_graph(&mut debug).unwrap();
+    // let mut debug = String::new();
+    // graph.write_graph(&mut debug).unwrap();
+    let debug = graph.mermaid_string();
 
     let lit = Literal::string(&*debug);
 
@@ -162,17 +163,53 @@ impl Graph {
         }
     }
 
-    pub fn write_graph(&self, mut write: impl std::fmt::Write) -> std::fmt::Result {
+    // pub fn write_graph(&self, mut write: impl std::fmt::Write) -> std::fmt::Result {
+    //     for (key, op) in self.operators.iter() {
+    //         writeln!(
+    //             write,
+    //             "{:?}: {}",
+    //             key,
+    //             op.operator.to_token_stream().to_string()
+    //         )?;
+    //         writeln!(write, "    preds: {:?}", op.preds)?;
+    //         writeln!(write, "    succs: {:?}", op.succs)?;
+    //         writeln!(write)?;
+    //     }
+    //     Ok(())
+    // }
+
+    pub fn mermaid_string(&self) -> String {
+        let mut string = String::new();
+        self.write_mermaid(&mut string).unwrap();
+        string
+    }
+
+    pub fn write_mermaid(&self, write: &mut impl std::fmt::Write) -> std::fmt::Result {
+        writeln!(write, "flowchart TB")?;
         for (key, op) in self.operators.iter() {
             writeln!(
                 write,
-                "{:?}: {}",
-                key,
-                op.operator.to_token_stream().to_string()
+                r#"    {}["{}"]"#,
+                key.data().as_ffi(),
+                op.operator
+                    .to_token_stream()
+                    .to_string()
+                    .replace('&', "&amp;")
+                    .replace('<', "&lt;")
+                    .replace('>', "&gt;")
+                    .replace('"', "&quot;")
             )?;
-            writeln!(write, "    preds: {:?}", op.preds)?;
-            writeln!(write, "    succs: {:?}", op.succs)?;
-            writeln!(write)?;
+        }
+        writeln!(write)?;
+        for (src_key, op) in self.operators.iter() {
+            for (_src_port, (dst_key, _dst_port)) in op.succs.iter() {
+                writeln!(
+                    write,
+                    "    {}-->{}",
+                    src_key.data().as_ffi(),
+                    dst_key.data().as_ffi()
+                )?;
+            }
         }
         Ok(())
     }
