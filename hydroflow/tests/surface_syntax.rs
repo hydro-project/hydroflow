@@ -20,23 +20,17 @@ pub fn test_parser_basic() {
     // }
 
     hydroflow_parser! {
-        edges_input = input();
-        init_vertex = seed([0]);
-        out_vertices = for_each(|x| println!("Reached: {}", x));
-
-        // reached_vertices = (merge[init_vertex, loop_vertices] -> map(|v| (v, ())));
         reached_vertices = (merge() -> map(|v| (v, ())));
-        (init_vertex -> [0]reached_vertices);
+        (seed([0]) -> [0]reached_vertices);
 
 
-        map_dedup = (map(|(_src, ((), dst))| dst) -> dedup());
-        my_join = (join() -> map_dedup);
+        my_join = (join() -> map(|(_src, ((), dst))| dst) -> dedup());
         (reached_vertices -> [0]my_join);
-        (edges_input -> [1]my_join);
+        (input() -> [1]my_join);
 
         my_join_tee = (my_join -> tee());
         (my_join_tee[0] -> [1]reached_vertices);
-        (my_join_tee[1] -> out_vertices);
+        (my_join_tee[1] -> for_each(|x| println!("Reached: {}", x)));
 
         shuffle = (merge() -> tee());
         (shuffle[0] -> [0]shuffle);
