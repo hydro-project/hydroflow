@@ -4,36 +4,46 @@ use std::collections::HashMap;
 
 use proc_macro2::{Literal, Span};
 use quote::{quote, ToTokens};
-use slotmap::{DefaultKey, Key, SlotMap};
+use slotmap::{new_key_type, Key, SecondaryMap, SlotMap};
 use syn::punctuated::Pair;
 use syn::spanned::Spanned;
 use syn::{parse_macro_input, Ident, LitInt};
 
 mod parse;
 use parse::{HfCode, HfStatement, Operator, Pipeline};
+use union_find::UnionFind;
+
+mod union_find;
 
 #[proc_macro]
 pub fn hydroflow_parser(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = parse_macro_input!(input as HfCode);
     // // input.into_token_stream().into()
 
-    let graph = Graph::from_hfcode(input).unwrap(/* TODO(mingwei) */);
+    let mut graph = Graph::from_hfcode(input).unwrap(/* TODO(mingwei) */);
     graph.validate_operators();
+    graph.identify_subgraphs();
 
     // let debug = format!("{:#?}", graph);
     // let mut debug = String::new();
     // graph.write_graph(&mut debug).unwrap();
-    let debug = graph.mermaid_string();
+    let mut debug = String::new();
+    graph.write_mermaid_subgraphs(&mut debug).unwrap();
 
     let lit = Literal::string(&*debug);
 
     quote! { println!("{}", #lit); }.into()
 }
 
+new_key_type! { struct NodeId; }
+new_key_type! { struct SubgraphId; }
+
 #[derive(Debug, Default)]
 struct Graph {
-    operators: SlotMap<DefaultKey, OpInfo>,
+    operators: SlotMap<NodeId, NodeInfo>,
     names: HashMap<Ident, Ports>,
+    /// Equivalent to SparseSecondaryMap<...>.
+    subgraphs: HashMap<NodeId, Vec<NodeId>>,
 }
 impl Graph {
     pub fn from_hfcode(input: HfCode) -> Result<Self, ()> {
@@ -160,12 +170,12 @@ impl Graph {
             }),
             Pipeline::Operator(operator) => {
                 let (preds, succs) = Default::default();
-                let op_info = OpInfo {
-                    operator,
+                let port = self.operators.insert(NodeInfo {
+                    node: Node::Operator(operator),
                     preds,
                     succs,
-                };
-                let port = self.operators.insert(op_info);
+                    subgraph_id: None,
+                });
                 Ports {
                     inn: Some(port),
                     out: Some(port),
@@ -209,57 +219,183 @@ impl Graph {
             }
         }
 
-        for opinfo in self.operators.values() {
-            let op_name = &*opinfo.operator.path.to_token_stream().to_string();
-            let (inn_allowed, out_allowed): (&dyn RangeTrait<usize>, &dyn RangeTrait<usize>) =
-                match op_name {
-                    "merge" => (&(2..), &(1..=1)),
-                    "join" => (&(2..=2), &(1..=1)),
-                    "tee" => (&(1..=1), &(2..)),
-                    "map" | "dedup" => (&(1..=1), &(1..=1)),
-                    "input" | "seed" => (&(0..=0), &(1..=1)),
-                    "for_each" => (&(1..=1), &(0..=0)),
-                    unknown => {
-                        opinfo
-                            .operator
-                            .path
+        for node_info in self.operators.values() {
+            match &node_info.node {
+                Node::Operator(operator) => {
+                    let op_name = &*operator.path.to_token_stream().to_string();
+                    let (inn_allowed, out_allowed): (
+                        &dyn RangeTrait<usize>,
+                        &dyn RangeTrait<usize>,
+                    ) = match op_name {
+                        "merge" => (&(2..), &(1..=1)),
+                        "join" => (&(2..=2), &(1..=1)),
+                        "tee" => (&(1..=1), &(2..)),
+                        "map" | "dedup" => (&(1..=1), &(1..=1)),
+                        "input" | "seed" => (&(0..=0), &(1..=1)),
+                        "for_each" => (&(1..=1), &(0..=0)),
+                        unknown => {
+                            operator
+                                .path
+                                .span()
+                                .unwrap()
+                                .error(format!("Unknown operator `{}`", unknown))
+                                .emit();
+                            (&(..), &(..))
+                        }
+                    };
+
+                    if !inn_allowed.contains(&node_info.preds.len()) {
+                        operator
                             .span()
                             .unwrap()
-                            .error(format!("Unknown operator `{}`", unknown))
-                            .emit();
-                        (&(..), &(..))
-                    }
-                };
-
-            if !inn_allowed.contains(&opinfo.preds.len()) {
-                opinfo
-                    .operator
-                    .span()
-                    .unwrap()
-                    .error(format!(
+                            .error(format!(
                         "`{}` has invalid number of inputs: {}. Allowed is between {:?} and {:?}.",
                         op_name,
-                        &opinfo.preds.len(),
+                        &node_info.preds.len(),
                         inn_allowed.start_bound(),
                         inn_allowed.end_bound()
                     ))
-                    .emit();
-            }
-            if !out_allowed.contains(&opinfo.succs.len()) {
-                opinfo
-                    .operator
-                    .span()
-                    .unwrap()
-                    .error(format!(
+                            .emit();
+                    }
+                    if !out_allowed.contains(&node_info.succs.len()) {
+                        operator
+                            .span()
+                            .unwrap()
+                            .error(format!(
                         "`{}` has invalid number of outputs: {}. Allowed is between {:?} and {:?}.",
                         op_name,
-                        &opinfo.succs.len(),
+                        &node_info.succs.len(),
                         out_allowed.start_bound(),
                         out_allowed.end_bound()
                     ))
-                    .emit();
+                            .emit();
+                    }
+                }
+                Node::Handoff => todo!("Node::Handoff"),
             }
         }
+    }
+
+    pub fn edges(&self) -> impl '_ + Iterator<Item = (NodeId, NodeId)> {
+        self.operators
+            .iter()
+            .flat_map(|(src, node_info)| node_info.succs.values().map(move |&(dst, _)| (src, dst)))
+    }
+
+    pub fn identify_subgraphs(&mut self) {
+        // Pull (green)
+        // Push (blue)
+        // Handoff (red) -- not a color for operators, inserted between subgraphs.
+        // Computation (yellow)
+        #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+        enum Color {
+            Pull,
+            Push,
+            Comp,
+            Hoff,
+        }
+        fn op_color(node_info: &NodeInfo) -> Option<Color> {
+            match &node_info.node {
+                Node::Operator(_) => match (1 < node_info.preds.len(), 1 < node_info.succs.len()) {
+                    (true, true) => Some(Color::Comp),
+                    (true, false) => Some(Color::Pull),
+                    (false, true) => Some(Color::Push),
+                    (false, false) => match (node_info.preds.is_empty(), node_info.succs.is_empty()) {
+                        (true, false) => Some(Color::Pull),
+                        (false, true) => Some(Color::Push),
+                        _same => None,
+                    },
+                },
+                Node::Handoff => Some(Color::Hoff),
+            }
+        }
+
+        // Algorithm:
+        // 1. Each node begins as its own subgraph.
+        // 2. Collect edges. Sort so edges which should not be split across a handoff come first.
+        // 3. For each edge, try to join `(to, from)` into the same subgraph.
+
+        let mut node_color: SecondaryMap<NodeId, Option<Color>> = self
+            .operators
+            .iter()
+            .map(|(id, node_info)| (id, op_color(node_info)))
+            .collect();
+        let mut node_union: UnionFind<NodeId> = self.operators.keys().collect();
+
+        // Sort edges here (for now, no sort/priority).
+        loop {
+            let mut updated = false;
+            for (src, dst) in self.edges() {
+                if node_union.same_set(src, dst) {
+                    // Note this might be triggered even if the edge (src, dst) is not in the subgraph.
+                    // This prevents self-loops. Handoffs needed to break self loops.
+                    continue;
+                }
+
+                // Set `src` or `dst` color if `None` based on the other (if possible):
+                // Pull -> Pull
+                // Push -> Push
+                // Pull -> [Comp] -> Push
+                // Push -> [Hoff] -> Pull
+                match (node_color[src], node_color[dst]) {
+                    (Some(_), Some(_)) => (),
+                    (None, None) => (),
+                    (None, Some(dst_color)) => {
+                        node_color[src] = Some(match dst_color {
+                            Color::Comp => Color::Pull,
+                            Color::Hoff => Color::Push,
+                            pull_or_push => pull_or_push,
+                        });
+                        updated = true;
+                    }
+                    (Some(src_color), None) => {
+                        node_color[dst] = Some(match src_color {
+                            Color::Comp => Color::Push,
+                            Color::Hoff => Color::Pull,
+                            pull_or_push => pull_or_push,
+                        });
+                        updated = true;
+                    }
+                }
+
+                // If SRC and DST can be in the same subgraph.
+                let can_connect = match (node_color[src], node_color[dst]) {
+                    (Some(Color::Pull), Some(Color::Pull)) => true,
+                    (Some(Color::Pull), Some(Color::Comp)) => true,
+                    (Some(Color::Pull), Some(Color::Push)) => true,
+
+                    (Some(Color::Comp | Color::Push), Some(Color::Pull)) => false,
+                    (Some(Color::Comp | Color::Push), Some(Color::Comp)) => false,
+                    (Some(Color::Comp | Color::Push), Some(Color::Push)) => true,
+
+                    // Handoffs are not part of subgraphs.
+                    (Some(Color::Hoff), Some(_)) => false,
+                    (Some(_), Some(Color::Hoff)) => false,
+
+                    // Linear chain.
+                    (None, None) => true,
+
+                    _some_none => unreachable!(),
+                };
+                if can_connect {
+                    node_union.union(src, dst);
+                    updated = true;
+                }
+            }
+            if !updated {
+                break;
+            }
+        }
+
+        for (key, node_info) in self.operators.iter_mut() {
+            let subgraph_key = node_union.find(key);
+            node_info.subgraph_id = Some(subgraph_key);
+            self.subgraphs.entry(subgraph_key).or_default().push(key);
+        }
+    }
+
+    pub fn subgraphs(&self) -> std::collections::hash_map::Iter<'_, NodeId, Vec<NodeId>> {
+        self.subgraphs.iter()
     }
 
     pub fn mermaid_string(&self) -> String {
@@ -270,20 +406,63 @@ impl Graph {
 
     pub fn write_mermaid(&self, write: &mut impl std::fmt::Write) -> std::fmt::Result {
         writeln!(write, "flowchart TB")?;
-        for (key, opinfo) in self.operators.iter() {
-            writeln!(
-                write,
-                r#"    {}["{}"]"#,
-                key.data().as_ffi(),
-                opinfo
-                    .operator
-                    .to_token_stream()
-                    .to_string()
-                    .replace('&', "&amp;")
-                    .replace('<', "&lt;")
-                    .replace('>', "&gt;")
-                    .replace('"', "&quot;")
-            )?;
+        for (key, node_info) in self.operators.iter() {
+            match &node_info.node {
+                Node::Operator(operator) => writeln!(
+                    write,
+                    r#"    {}["{} {:?}"]"#,
+                    key.data().as_ffi(),
+                    operator
+                        .to_token_stream()
+                        .to_string()
+                        .replace('&', "&amp;")
+                        .replace('<', "&lt;")
+                        .replace('>', "&gt;")
+                        .replace('"', "&quot;"),
+                    node_info.subgraph_id.map(|id| id.data().as_ffi()),
+                ),
+                Node::Handoff => writeln!(write, r#"    {}{{"handoff"}}"#, key.data().as_ffi()),
+            }?;
+        }
+        writeln!(write)?;
+        for (src_key, op) in self.operators.iter() {
+            for (_src_port, (dst_key, _dst_port)) in op.succs.iter() {
+                writeln!(
+                    write,
+                    "    {}-->{}",
+                    src_key.data().as_ffi(),
+                    dst_key.data().as_ffi()
+                )?;
+            }
+        }
+        Ok(())
+    }
+
+    pub fn write_mermaid_subgraphs(&self, write: &mut impl std::fmt::Write) -> std::fmt::Result {
+        writeln!(write, "flowchart TB")?;
+        for (subgraph_id, node_ids) in self.subgraphs() {
+            writeln!(write, "    subgraph sg_{}", subgraph_id.data().as_ffi())?;
+            for &node_id in node_ids.iter() {
+                let node_info = &self.operators[node_id];
+                match &node_info.node {
+                    Node::Operator(operator) => writeln!(
+                        write,
+                        r#"        {}["{}"]"#,
+                        node_id.data().as_ffi(),
+                        operator
+                            .to_token_stream()
+                            .to_string()
+                            .replace('&', "&amp;")
+                            .replace('<', "&lt;")
+                            .replace('>', "&gt;")
+                            .replace('"', "&quot;"),
+                    ),
+                    Node::Handoff => {
+                        writeln!(write, r#"    {}{{"handoff"}}"#, node_id.data().as_ffi())
+                    }
+                }?;
+            }
+            writeln!(write, "    end")?;
         }
         writeln!(write)?;
         for (src_key, op) in self.operators.iter() {
@@ -302,19 +481,38 @@ impl Graph {
 
 #[derive(Clone, Copy, Debug)]
 struct Ports {
-    inn: Option<DefaultKey>,
-    out: Option<DefaultKey>,
+    inn: Option<NodeId>,
+    out: Option<NodeId>,
 }
 
-struct OpInfo {
-    operator: Operator,
-    preds: HashMap<LitInt, (DefaultKey, LitInt)>,
-    succs: HashMap<LitInt, (DefaultKey, LitInt)>,
+enum Node {
+    Operator(Operator),
+    Handoff,
 }
-impl std::fmt::Debug for OpInfo {
+impl std::fmt::Debug for Node {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("OpInfo")
-            .field("operator (span)", &self.operator.span())
+        match self {
+            Self::Operator(operator) => {
+                write!(f, "Node::Operator({} span)", PrettySpan(operator.span()))
+            }
+            Self::Handoff => write!(f, "Node::Handoff"),
+        }
+    }
+}
+
+struct NodeInfo {
+    node: Node,
+    preds: HashMap<LitInt, (NodeId, LitInt)>,
+    succs: HashMap<LitInt, (NodeId, LitInt)>,
+
+    /// Which subgraph this operator belongs to (if determined).
+    subgraph_id: Option<NodeId>,
+    // color: Option<Color>,
+}
+impl std::fmt::Debug for NodeInfo {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("NodeInfo")
+            .field("operator", &self.node)
             .field("preds", &self.preds)
             .field("succs", &self.succs)
             .finish()
