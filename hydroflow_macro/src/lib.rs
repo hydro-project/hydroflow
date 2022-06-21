@@ -18,6 +18,7 @@ pub fn hydroflow_parser(input: proc_macro::TokenStream) -> proc_macro::TokenStre
     // // input.into_token_stream().into()
 
     let graph = Graph::from_hfcode(input).unwrap(/* TODO(mingwei) */);
+    graph.validate_operators();
 
     // let debug = format!("{:#?}", graph);
     // let mut debug = String::new();
@@ -173,6 +174,94 @@ impl Graph {
         }
     }
 
+    /// Validates that operators have valid number of inputs and outputs.
+    /// (Emits error messages on span).
+    /// TODO(mingwei): Clean this up, make it do more than just arity.
+    pub fn validate_operators(&self) {
+        use std::ops::{Bound, RangeBounds};
+        trait RangeTrait<T>
+        where
+            T: ?Sized,
+        {
+            fn start_bound(&self) -> Bound<&T>;
+            fn end_bound(&self) -> Bound<&T>;
+            fn contains(&self, item: &T) -> bool
+            where
+                T: PartialOrd<T>;
+        }
+        impl<R, T> RangeTrait<T> for R
+        where
+            R: RangeBounds<T>,
+        {
+            fn start_bound(&self) -> Bound<&T> {
+                self.start_bound()
+            }
+
+            fn end_bound(&self) -> Bound<&T> {
+                self.end_bound()
+            }
+
+            fn contains(&self, item: &T) -> bool
+            where
+                T: PartialOrd<T>,
+            {
+                self.contains(item)
+            }
+        }
+
+        for opinfo in self.operators.values() {
+            let op_name = &*opinfo.operator.path.to_token_stream().to_string();
+            let (inn_allowed, out_allowed): (&dyn RangeTrait<usize>, &dyn RangeTrait<usize>) =
+                match op_name {
+                    "merge" => (&(2..), &(1..=1)),
+                    "join" => (&(2..=2), &(1..=1)),
+                    "tee" => (&(1..=1), &(2..)),
+                    "map" | "dedup" => (&(1..=1), &(1..=1)),
+                    "input" | "seed" => (&(0..=0), &(1..=1)),
+                    "for_each" => (&(1..=1), &(0..=0)),
+                    unknown => {
+                        opinfo
+                            .operator
+                            .path
+                            .span()
+                            .unwrap()
+                            .error(format!("Unknown operator `{}`", unknown))
+                            .emit();
+                        (&(..), &(..))
+                    }
+                };
+
+            if !inn_allowed.contains(&opinfo.preds.len()) {
+                opinfo
+                    .operator
+                    .span()
+                    .unwrap()
+                    .error(format!(
+                        "`{}` has invalid number of inputs: {}. Allowed is between {:?} and {:?}.",
+                        op_name,
+                        &opinfo.preds.len(),
+                        inn_allowed.start_bound(),
+                        inn_allowed.end_bound()
+                    ))
+                    .emit();
+            }
+            if !out_allowed.contains(&opinfo.succs.len()) {
+                opinfo
+                    .operator
+                    .span()
+                    .unwrap()
+                    .error(format!(
+                        "`{}` has invalid number of outputs: {}. Allowed is between {:?} and {:?}.",
+                        op_name,
+                        &opinfo.succs.len(),
+                        out_allowed.start_bound(),
+                        out_allowed.end_bound()
+                    ))
+                    .emit();
+            }
+        }
+    }
+
     pub fn mermaid_string(&self) -> String {
         let mut string = String::new();
         self.write_mermaid(&mut string).unwrap();
@@ -181,12 +270,13 @@ impl Graph {
 
     pub fn write_mermaid(&self, write: &mut impl std::fmt::Write) -> std::fmt::Result {
         writeln!(write, "flowchart TB")?;
-        for (key, op) in self.operators.iter() {
+        for (key, opinfo) in self.operators.iter() {
             writeln!(
                 write,
                 r#"    {}["{}"]"#,
                 key.data().as_ffi(),
-                op.operator
+                opinfo
+                    .operator
                     .to_token_stream()
                     .to_string()
                     .replace('&', "&amp;")
