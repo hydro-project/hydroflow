@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["IterPullSurface",""]]});
+window.SIDEBAR_ITEMS = {"struct":[["IterPullSurface",""]]};

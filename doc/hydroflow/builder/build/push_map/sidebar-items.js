@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["MapPushBuild",""]]});
+window.SIDEBAR_ITEMS = {"struct":[["MapPushBuild",""]]};

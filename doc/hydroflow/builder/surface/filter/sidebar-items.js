@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["FilterPushSurfaceReversed",""],["FilterSurface",""]]});
+window.SIDEBAR_ITEMS = {"struct":[["FilterPushSurfaceReversed",""],["FilterSurface",""]]};

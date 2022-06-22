@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["ChainPullBuild",""]]});
+window.SIDEBAR_ITEMS = {"struct":[["ChainPullBuild",""]]};

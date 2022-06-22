@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["StateHandle",""]]});
+window.SIDEBAR_ITEMS = {"struct":[["StateHandle",""]]};

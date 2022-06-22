@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["Partition",""],["PartitionBuild",""]]});
+window.SIDEBAR_ITEMS = {"struct":[["Partition",""],["PartitionBuild",""]]};

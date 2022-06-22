@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["PivotPushSurface",""]]});
+window.SIDEBAR_ITEMS = {"struct":[["PivotPushSurface",""]]};

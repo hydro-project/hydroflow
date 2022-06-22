@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["BatchPullBuild",""]]});
+window.SIDEBAR_ITEMS = {"struct":[["BatchPullBuild",""]]};

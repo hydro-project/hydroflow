@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["HalfHashJoinPullBuild",""]]});
+window.SIDEBAR_ITEMS = {"struct":[["HalfHashJoinPullBuild",""]]};

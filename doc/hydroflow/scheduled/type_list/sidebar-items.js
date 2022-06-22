@@ -1,1 +1,1 @@
-initSidebarItems({"trait":[["Extend",""],["Split",""],["SplitPrefix",""],["TypeList",""]]});
+window.SIDEBAR_ITEMS = {"trait":[["Extend",""],["Split",""],["SplitPrefix",""],["TypeList",""]]};

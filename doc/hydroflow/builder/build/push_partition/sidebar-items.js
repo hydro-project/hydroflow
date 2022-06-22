@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["PartitionPushBuild",""]]});
+window.SIDEBAR_ITEMS = {"struct":[["PartitionPushBuild",""]]};

@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["Filter",""],["FilterBuild",""]]});
+window.SIDEBAR_ITEMS = {"struct":[["Filter",""],["FilterBuild",""]]};

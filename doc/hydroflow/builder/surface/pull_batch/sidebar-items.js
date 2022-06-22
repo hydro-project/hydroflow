@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["BatchPullSurface",""]]});
+window.SIDEBAR_ITEMS = {"struct":[["BatchPullSurface",""]]};

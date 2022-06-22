@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["HandoffPushSurfaceReversed",""]]});
+window.SIDEBAR_ITEMS = {"struct":[["HandoffPushSurfaceReversed",""]]};

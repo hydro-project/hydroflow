@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["TeePushBuild",""]]});
+window.SIDEBAR_ITEMS = {"struct":[["TeePushBuild",""]]};

@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["MapPullBuild",""]]});
+window.SIDEBAR_ITEMS = {"struct":[["MapPullBuild",""]]};

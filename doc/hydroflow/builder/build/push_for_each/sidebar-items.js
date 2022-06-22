@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["ForEachPushBuild",""]]});
+window.SIDEBAR_ITEMS = {"struct":[["ForEachPushBuild",""]]};

@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["ForEachPushSurfaceReversed",""]]});
+window.SIDEBAR_ITEMS = {"struct":[["ForEachPushSurfaceReversed",""]]};

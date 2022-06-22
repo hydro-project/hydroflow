@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["Array",""],["Iter",""],["MaskedArray",""],["Single",""]],"trait":[["Collection",""]]});
+window.SIDEBAR_ITEMS = {"struct":[["Array",""],["Iter",""],["MaskedArray",""],["Single",""]],"trait":[["Collection",""]]};

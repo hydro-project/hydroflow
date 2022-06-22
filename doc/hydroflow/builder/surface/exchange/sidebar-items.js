@@ -1,1 +1,1 @@
-initSidebarItems({"trait":[["Exchange",""]],"type":[["BroadcastSurface",""],["ExchangeSurface",""],["NetworkOut",""]]});
+window.SIDEBAR_ITEMS = {"trait":[["Exchange",""]],"type":[["BroadcastSurface",""],["ExchangeSurface",""],["NetworkOut",""]]};

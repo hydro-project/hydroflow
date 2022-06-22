@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["FlattenPushSurfaceReversed",""],["FlattenSurface",""]]});
+window.SIDEBAR_ITEMS = {"struct":[["FlattenPushSurfaceReversed",""],["FlattenSurface",""]]};

@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["FilterMapPullBuild",""]]});
+window.SIDEBAR_ITEMS = {"struct":[["FilterMapPullBuild",""]]};

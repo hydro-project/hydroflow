@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["TeePushSurfaceReversed",""]]});
+window.SIDEBAR_ITEMS = {"struct":[["TeePushSurfaceReversed",""]]};

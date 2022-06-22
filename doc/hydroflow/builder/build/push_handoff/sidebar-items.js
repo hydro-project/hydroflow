@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["HandoffPushBuild",""]]});
+window.SIDEBAR_ITEMS = {"struct":[["HandoffPushBuild",""]]};

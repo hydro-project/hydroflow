@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["FlattenPullBuild",""]]});
+window.SIDEBAR_ITEMS = {"struct":[["FlattenPullBuild",""]]};

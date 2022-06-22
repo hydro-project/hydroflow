@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["PartitionPushSurfaceReversed",""]]});
+window.SIDEBAR_ITEMS = {"struct":[["PartitionPushSurfaceReversed",""]]};

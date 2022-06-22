@@ -1,1 +1,1 @@
-initSidebarItems({"macro":[["tl","Macro creating tuple list values from list of expressions."],["tt","Macro creating tuple list types from list of element types."]],"mod":[["builder","Hydroflow’s Surface API."],["compiled",""],["lang",""],["scheduled",""]]});
+window.SIDEBAR_ITEMS = {"macro":[["tl","Macro creating tuple list values from list of expressions."],["tt","Macro creating tuple list types from list of element types."]],"mod":[["builder","Hydroflow’s Surface API."],["compiled",""],["lang",""],["scheduled",""]]};

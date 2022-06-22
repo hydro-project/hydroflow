@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["GroupBy",""]]});
+window.SIDEBAR_ITEMS = {"struct":[["GroupBy",""]]};

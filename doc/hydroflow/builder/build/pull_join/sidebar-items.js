@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["JoinPullBuild",""]]});
+window.SIDEBAR_ITEMS = {"struct":[["JoinPullBuild",""]]};

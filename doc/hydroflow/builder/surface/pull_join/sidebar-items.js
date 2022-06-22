@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["JoinPullSurface",""]]});
+window.SIDEBAR_ITEMS = {"struct":[["JoinPullSurface",""]]};

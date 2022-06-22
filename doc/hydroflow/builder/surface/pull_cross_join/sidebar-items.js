@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["CrossJoinPullSurface",""]]});
+window.SIDEBAR_ITEMS = {"struct":[["CrossJoinPullSurface",""]]};

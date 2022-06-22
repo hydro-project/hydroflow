@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["FilterMapPushBuild",""]]});
+window.SIDEBAR_ITEMS = {"struct":[["FilterMapPushBuild",""]]};

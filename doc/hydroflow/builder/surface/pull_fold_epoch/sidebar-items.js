@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["FoldEpochPullSurface",""]]});
+window.SIDEBAR_ITEMS = {"struct":[["FoldEpochPullSurface",""]]};

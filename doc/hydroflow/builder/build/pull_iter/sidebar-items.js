@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["IterPullBuild",""]]});
+window.SIDEBAR_ITEMS = {"struct":[["IterPullBuild",""]]};

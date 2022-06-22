@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["ForEach",""]]});
+window.SIDEBAR_ITEMS = {"struct":[["ForEach",""]]};

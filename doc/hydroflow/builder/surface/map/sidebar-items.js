@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["MapPushSurfaceReversed",""],["MapSurface",""]]});
+window.SIDEBAR_ITEMS = {"struct":[["MapPushSurfaceReversed",""],["MapSurface",""]]};

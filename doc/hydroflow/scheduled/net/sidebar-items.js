@@ -1,1 +1,1 @@
-initSidebarItems({"mod":[["network_vertex",""]],"struct":[["Message",""]]});
+window.SIDEBAR_ITEMS = {"mod":[["network_vertex",""]],"struct":[["Message",""]]};

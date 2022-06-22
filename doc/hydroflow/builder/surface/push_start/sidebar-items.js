@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["StartPushSurface",""]]});
+window.SIDEBAR_ITEMS = {"struct":[["StartPushSurface",""]]};

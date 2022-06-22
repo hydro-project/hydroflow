@@ -1,1 +1,1 @@
-initSidebarItems({"fn":[["once","Creates a once channel where the [SendOnce] end can set a value which the [Once] end will receive and store."]],"struct":[["Once","The receiving half of a once channel."],["SendOnce","The sending half of a once channel."]]});
+window.SIDEBAR_ITEMS = {"fn":[["once","Creates a once channel where the [SendOnce] end can set a value which the [Once] end will receive and store."]],"struct":[["Once","The receiving half of a once channel."],["SendOnce","The sending half of a once channel."]]};
