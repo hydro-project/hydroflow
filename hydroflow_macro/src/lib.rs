@@ -1,6 +1,6 @@
 #![feature(proc_macro_diagnostic, proc_macro_span)]
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use proc_macro2::{Literal, Span};
 use quote::{quote, ToTokens};
@@ -276,10 +276,13 @@ impl Graph {
         }
     }
 
-    pub fn edges(&self) -> impl '_ + Iterator<Item = (NodeId, NodeId)> {
-        self.operators
-            .iter()
-            .flat_map(|(src, node_info)| node_info.succs.values().map(move |&(dst, _)| (src, dst)))
+    pub fn edges(&self) -> impl '_ + Iterator<Item = ((NodeId, &LitInt), (NodeId, &LitInt))> {
+        self.operators.iter().flat_map(|(src, node_info)| {
+            node_info
+                .succs
+                .iter()
+                .map(move |(src_idx, (dst, dst_idx))| ((src, src_idx), (*dst, dst_idx)))
+        })
     }
 
     pub fn identify_subgraphs(&mut self) {
@@ -300,11 +303,13 @@ impl Graph {
                     (true, true) => Some(Color::Comp),
                     (true, false) => Some(Color::Pull),
                     (false, true) => Some(Color::Push),
-                    (false, false) => match (node_info.preds.is_empty(), node_info.succs.is_empty()) {
-                        (true, false) => Some(Color::Pull),
-                        (false, true) => Some(Color::Push),
-                        _same => None,
-                    },
+                    (false, false) => {
+                        match (node_info.preds.is_empty(), node_info.succs.is_empty()) {
+                            (true, false) => Some(Color::Pull),
+                            (false, true) => Some(Color::Push),
+                            _same => None,
+                        }
+                    }
                 },
                 Node::Handoff => Some(Color::Hoff),
             }
@@ -321,11 +326,14 @@ impl Graph {
             .map(|(id, node_info)| (id, op_color(node_info)))
             .collect();
         let mut node_union: UnionFind<NodeId> = self.operators.keys().collect();
+        // All edges which belong to a single subgraph. Other & self-edges become handoffs.
+        let mut subgraph_edges: HashSet<((NodeId, &LitInt), (NodeId, &LitInt))> =
+            Default::default();
 
         // Sort edges here (for now, no sort/priority).
         loop {
             let mut updated = false;
-            for (src, dst) in self.edges() {
+            for ((src, src_idx), (dst, dst_idx)) in self.edges() {
                 if node_union.same_set(src, dst) {
                     // Note this might be triggered even if the edge (src, dst) is not in the subgraph.
                     // This prevents self-loops. Handoffs needed to break self loops.
@@ -379,6 +387,7 @@ impl Graph {
                 };
                 if can_connect {
                     node_union.union(src, dst);
+                    subgraph_edges.insert(((src, src_idx), (dst, dst_idx)));
                     updated = true;
                 }
             }
@@ -387,6 +396,54 @@ impl Graph {
             }
         }
 
+        // Insert handoffs between subgraphs (or on subgraph self-edges).
+        let handoff_edges: Vec<_> = self
+            .edges()
+            .filter(|edge| !subgraph_edges.contains(&edge)) // Subgraph edges are not handoffs.
+            .filter(|&((src, _src_idx), (dst, _dst_idx))| {
+                !matches!(self.operators[src].node, Node::Handoff)
+                    && !matches!(self.operators[dst].node, Node::Handoff)
+            }) // Already has a handoff.
+            .map(|((src, src_idx), (dst, dst_idx))| {
+                ((src, src_idx.clone()), (dst, dst_idx.clone()))
+            })
+            .collect();
+
+        for ((src, src_idx), (dst, dst_idx)) in handoff_edges {
+            let handoff_nodeid = self.operators.insert(NodeInfo {
+                node: Node::Handoff,
+                preds: Default::default(),
+                succs: Default::default(),
+                subgraph_id: None,
+            });
+
+            // Insert forward edge.
+            let (dst2, dst_idx2) = self.operators[src]
+                .succs
+                .insert(
+                    src_idx,
+                    (handoff_nodeid, LitInt::new("0", Span::call_site())),
+                )
+                .expect("Forward edge disappeared!");
+
+            // Insert back edge.
+            let (src2, src_idx2) = self.operators[dst]
+                .preds
+                .insert(
+                    dst_idx,
+                    (handoff_nodeid, LitInt::new("0", Span::call_site())),
+                )
+                .expect("Back edge disappeared!");
+
+            self.operators[handoff_nodeid]
+                .preds
+                .insert(LitInt::new("0", Span::call_site()), (src2, src_idx2));
+            self.operators[handoff_nodeid]
+                .succs
+                .insert(LitInt::new("0", Span::call_site()), (dst2, dst_idx2));
+        }
+
+        // Set `subgraph_id`s inside node infos.
         for (key, node_info) in self.operators.iter_mut() {
             let subgraph_key = node_union.find(key);
             node_info.subgraph_id = Some(subgraph_key);
@@ -458,22 +515,26 @@ impl Graph {
                             .replace('"', "&quot;"),
                     ),
                     Node::Handoff => {
-                        writeln!(write, r#"    {}{{"handoff"}}"#, node_id.data().as_ffi())
+                        writeln!(write, r#"        {}{{"handoff"}}"#, node_id.data().as_ffi())
                     }
                 }?;
             }
             writeln!(write, "    end")?;
         }
+        // writeln!(write)?;
+        // for (node_id, node_info) in self.operators.iter() {
+        //     if matches!(node_info.node, Node::Handoff) {
+        //         writeln!(write, r#"    {}{{"handoff"}}"#, node_id.data().as_ffi())?;
+        //     }
+        // }
         writeln!(write)?;
-        for (src_key, op) in self.operators.iter() {
-            for (_src_port, (dst_key, _dst_port)) in op.succs.iter() {
-                writeln!(
-                    write,
-                    "    {}-->{}",
-                    src_key.data().as_ffi(),
-                    dst_key.data().as_ffi()
-                )?;
-            }
+        for ((src, _src_idx), (dst, _dst_idx)) in self.edges() {
+            writeln!(
+                write,
+                "    {}-->{}",
+                src.data().as_ffi(),
+                dst.data().as_ffi()
+            )?;
         }
         Ok(())
     }
