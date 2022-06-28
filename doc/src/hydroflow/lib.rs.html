@@ -34,6 +34,8 @@
 <span id="28">28</span>
 <span id="29">29</span>
 <span id="30">30</span>
+<span id="31">31</span>
+<span id="32">32</span>
 </pre><pre class="rust"><code><span class="attribute">#![<span class="ident">feature</span>(<span class="ident">never_type</span>)]</span>
 <span class="attribute">#![<span class="ident">feature</span>(<span class="ident">type_alias_impl_trait</span>)]</span>
 <span class="attribute">#![<span class="ident">feature</span>(<span class="ident">generic_associated_types</span>)]</span>
@@ -45,6 +47,8 @@
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">compiled</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">lang</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">scheduled</span>;
+
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">hydroflow_macro::hydroflow_parser</span>;
 
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">tokio</span>;
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">tuple_list::tuple_list</span> <span class="kw">as</span> <span class="ident">tl</span>;
@@ -65,5 +69,5 @@
     <span class="macro">booktest!</span>(<span class="ident">example_5</span>);
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (c80c4b8fd 2022-06-26)" ></div>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (2f3ddd9f5 2022-06-27)" ></div>
 </body></html>
