@@ -1,13 +1,10 @@
 [package]
-name = "hydroflow_macro"
+name = "hydroflow_core"
 version = "0.1.0"
 edition = "2021"
 
-[lib]
-proc-macro = true
-
 [dependencies]
-hydroflow_core = { path = "../hydroflow_core" }
 proc-macro2 = "1.0.0"
 quote = "1.0.0"
+slotmap = "1.0.6"
 syn = { version = "1.0.0", features = [ "parsing", "extra-traits" ] }
