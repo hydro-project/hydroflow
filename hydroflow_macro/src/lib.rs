@@ -38,6 +38,9 @@ pub fn hydroflow_parser(input: proc_macro::TokenStream) -> proc_macro::TokenStre
 new_key_type! { struct NodeId; }
 new_key_type! { struct SubgraphId; }
 
+type EdgePort = (NodeId, LitInt);
+type EdgePortRef<'a> = (NodeId, &'a LitInt);
+
 #[derive(Debug, Default)]
 struct Graph {
     operators: SlotMap<NodeId, NodeInfo>,
@@ -276,7 +279,7 @@ impl Graph {
         }
     }
 
-    pub fn edges(&self) -> impl '_ + Iterator<Item = ((NodeId, &LitInt), (NodeId, &LitInt))> {
+    pub fn edges(&self) -> impl '_ + Iterator<Item = (EdgePortRef, EdgePortRef)> {
         self.operators.iter().flat_map(|(src, node_info)| {
             node_info
                 .succs
@@ -327,8 +330,7 @@ impl Graph {
             .collect();
         let mut node_union: UnionFind<NodeId> = self.operators.keys().collect();
         // All edges which belong to a single subgraph. Other & self-edges become handoffs.
-        let mut subgraph_edges: HashSet<((NodeId, &LitInt), (NodeId, &LitInt))> =
-            Default::default();
+        let mut subgraph_edges: HashSet<(EdgePortRef, EdgePortRef)> = Default::default();
 
         // Sort edges here (for now, no sort/priority).
         loop {
@@ -399,7 +401,7 @@ impl Graph {
         // Insert handoffs between subgraphs (or on subgraph self-edges).
         let handoff_edges: Vec<_> = self
             .edges()
-            .filter(|edge| !subgraph_edges.contains(&edge)) // Subgraph edges are not handoffs.
+            .filter(|edge| !subgraph_edges.contains(edge)) // Subgraph edges are not handoffs.
             .filter(|&((src, _src_idx), (dst, _dst_idx))| {
                 !matches!(self.operators[src].node, Node::Handoff)
                     && !matches!(self.operators[dst].node, Node::Handoff)
@@ -455,12 +457,14 @@ impl Graph {
         self.subgraphs.iter()
     }
 
+    #[allow(dead_code)]
     pub fn mermaid_string(&self) -> String {
         let mut string = String::new();
         self.write_mermaid(&mut string).unwrap();
         string
     }
 
+    #[allow(dead_code)]
     pub fn write_mermaid(&self, write: &mut impl std::fmt::Write) -> std::fmt::Result {
         writeln!(write, "flowchart TB")?;
         for (key, node_info) in self.operators.iter() {
@@ -565,8 +569,8 @@ impl std::fmt::Debug for Node {
 
 struct NodeInfo {
     node: Node,
-    preds: HashMap<LitInt, (NodeId, LitInt)>,
-    succs: HashMap<LitInt, (NodeId, LitInt)>,
+    preds: HashMap<LitInt, EdgePort>,
+    succs: HashMap<LitInt, EdgePort>,
 
     /// Which subgraph this operator belongs to (if determined).
     subgraph_id: Option<NodeId>,
