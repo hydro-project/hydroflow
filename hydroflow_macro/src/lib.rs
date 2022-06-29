@@ -502,31 +502,33 @@ impl Graph {
             for &node_id in node_ids.iter() {
                 let node_info = &self.operators[node_id];
                 match &node_info.node {
-                    Node::Operator(operator) => writeln!(
-                        write,
-                        r#"        {}["{}"]"#,
-                        node_id.data().as_ffi(),
-                        operator
-                            .to_token_stream()
-                            .to_string()
-                            .replace('&', "&amp;")
-                            .replace('<', "&lt;")
-                            .replace('>', "&gt;")
-                            .replace('"', "&quot;"),
-                    ),
-                    Node::Handoff => {
-                        writeln!(write, r#"        {}{{"handoff"}}"#, node_id.data().as_ffi())
+                    Node::Operator(operator) => {
+                        writeln!(
+                            write,
+                            r#"        {}["{}"]"#,
+                            node_id.data().as_ffi(),
+                            operator
+                                .to_token_stream()
+                                .to_string()
+                                .replace('&', "&amp;")
+                                .replace('<', "&lt;")
+                                .replace('>', "&gt;")
+                                .replace('"', "&quot;"),
+                        )?;
                     }
-                }?;
+                    Node::Handoff => {
+                        // writeln!(write, r#"        {}{{"handoff"}}"#, node_id.data().as_ffi())
+                    }
+                }
             }
             writeln!(write, "    end")?;
         }
-        // writeln!(write)?;
-        // for (node_id, node_info) in self.operators.iter() {
-        //     if matches!(node_info.node, Node::Handoff) {
-        //         writeln!(write, r#"    {}{{"handoff"}}"#, node_id.data().as_ffi())?;
-        //     }
-        // }
+        writeln!(write)?;
+        for (node_id, node_info) in self.operators.iter() {
+            if matches!(node_info.node, Node::Handoff) {
+                writeln!(write, r#"    {}{{"handoff"}}"#, node_id.data().as_ffi())?;
+            }
+        }
         writeln!(write)?;
         for ((src, _src_idx), (dst, _dst_idx)) in self.edges() {
             writeln!(
