@@ -42,25 +42,6 @@ where
         self.find(a) == self.find(b)
     }
 }
-impl<K> FromIterator<K> for UnionFind<K>
-where
-    K: Key,
-{
-    fn from_iter<T: IntoIterator<Item = K>>(iter: T) -> Self {
-        let iter = iter.into_iter();
-        let mut uf = iter
-            .size_hint()
-            .1
-            .map(Self::with_capacity)
-            .unwrap_or_default();
-
-        for k in iter {
-            uf.union(k, k)
-        }
-
-        uf
-    }
-}
 
 #[cfg(test)]
 mod test {

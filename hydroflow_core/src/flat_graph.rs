@@ -7,22 +7,23 @@ use syn::punctuated::Pair;
 use syn::spanned::Spanned;
 use syn::{Ident, LitInt};
 
+use crate::partitioned_graph::{PartitionedGraph, SubgraphId};
+
 use super::parse::{HfCode, HfStatement, Operator, Pipeline};
 use super::union_find::UnionFind;
 use super::PrettySpan;
 
 new_key_type! { pub struct NodeId; }
-new_key_type! { pub struct SubgraphId; }
 
 pub type EdgePort = (NodeId, LitInt);
 pub type EdgePortRef<'a> = (NodeId, &'a LitInt);
 
 #[derive(Debug, Default)]
 pub struct FlatGraph {
-    operators: SlotMap<NodeId, NodeInfo>,
+    nodes: SlotMap<NodeId, Node>,
+    preds: SecondaryMap<NodeId, HashMap<LitInt, EdgePort>>,
+    succs: SecondaryMap<NodeId, HashMap<LitInt, EdgePort>>,
     names: HashMap<Ident, Ports>,
-    /// Equivalent to SparseSecondaryMap<...>.
-    subgraphs: HashMap<NodeId, Vec<NodeId>>,
 }
 impl FlatGraph {
     // TODO(mingwei): better error/diagnostic handling.
@@ -73,13 +74,13 @@ impl FlatGraph {
                         if let (Some(out), Some(inn)) = (curr_ports.out, next_ports.inn) {
                             let src_port = curr_arrow.src.map(|x| x.index).unwrap_or_else(|| {
                                 LitInt::new(
-                                    &*self.operators[out].succs.len().to_string(),
+                                    &*self.succs[out].len().to_string(),
                                     curr_arrow.arrow.span(),
                                 )
                             });
                             let dst_port = curr_arrow.dst.map(|x| x.index).unwrap_or_else(|| {
                                 LitInt::new(
-                                    &*self.operators[inn].preds.len().to_string(),
+                                    &*self.preds[inn].len().to_string(),
                                     curr_arrow.arrow.span(),
                                 )
                             });
@@ -109,19 +110,15 @@ impl FlatGraph {
                                 let (src_a, src_b) = (src_port.clone(), src_port);
                                 let (dst_a, dst_b) = (dst_port.clone(), dst_port);
 
-                                if let Some((old_a, _)) =
-                                    self.operators[out].succs.remove_entry(&src_a)
-                                {
+                                if let Some((old_a, _)) = self.succs[out].remove_entry(&src_a) {
                                     emit_conflict("Output", &old_a, &src_a);
                                 }
-                                self.operators[out].succs.insert(src_a, (inn, dst_a));
+                                self.succs[out].insert(src_a, (inn, dst_a));
 
-                                if let Some((old_b, _)) =
-                                    self.operators[inn].preds.remove_entry(&dst_b)
-                                {
+                                if let Some((old_b, _)) = self.preds[inn].remove_entry(&dst_b) {
                                     emit_conflict("Input", &old_b, &dst_b);
                                 }
-                                self.operators[inn].preds.insert(dst_b, (out, src_b));
+                                self.preds[inn].insert(dst_b, (out, src_b));
                             }
                         }
 
@@ -149,16 +146,12 @@ impl FlatGraph {
                 }
             }),
             Pipeline::Operator(operator) => {
-                let (preds, succs) = Default::default();
-                let port = self.operators.insert(NodeInfo {
-                    node: Node::Operator(operator),
-                    preds,
-                    succs,
-                    subgraph_id: None,
-                });
+                let key = self.nodes.insert(Node::Operator(operator));
+                self.preds.insert(key, Default::default());
+                self.succs.insert(key, Default::default());
                 Ports {
-                    inn: Some(port),
-                    out: Some(port),
+                    inn: Some(key),
+                    out: Some(key),
                 }
             }
         }
@@ -199,8 +192,8 @@ impl FlatGraph {
             }
         }
 
-        for node_info in self.operators.values() {
-            match &node_info.node {
+        for (node_key, node) in self.nodes.iter() {
+            match node {
                 Node::Operator(operator) => {
                     let op_name = &*operator.path.to_token_stream().to_string();
                     let (inn_allowed, out_allowed): (
@@ -224,27 +217,30 @@ impl FlatGraph {
                         }
                     };
 
-                    if !inn_allowed.contains(&node_info.preds.len()) {
+                    let inn_degree = self.preds[node_key].len();
+                    if !inn_allowed.contains(&inn_degree) {
                         operator
                             .span()
                             .unwrap()
                             .error(format!(
                         "`{}` has invalid number of inputs: {}. Allowed is between {:?} and {:?}.",
                         op_name,
-                        &node_info.preds.len(),
+                        inn_degree,
                         inn_allowed.start_bound(),
                         inn_allowed.end_bound()
                     ))
                             .emit();
                     }
-                    if !out_allowed.contains(&node_info.succs.len()) {
+
+                    let out_degree = self.succs[node_key].len();
+                    if !out_allowed.contains(&out_degree) {
                         operator
                             .span()
                             .unwrap()
                             .error(format!(
                         "`{}` has invalid number of outputs: {}. Allowed is between {:?} and {:?}.",
                         op_name,
-                        &node_info.succs.len(),
+                        out_degree,
                         out_allowed.start_bound(),
                         out_allowed.end_bound()
                     ))
@@ -257,62 +253,55 @@ impl FlatGraph {
     }
 
     pub fn edges(&self) -> impl '_ + Iterator<Item = (EdgePortRef, EdgePortRef)> {
-        self.operators.iter().flat_map(|(src, node_info)| {
-            node_info
-                .succs
+        Self::edges_helper(&self.succs)
+    }
+    fn edges_helper(
+        succs: &SecondaryMap<NodeId, HashMap<LitInt, (NodeId, LitInt)>>,
+    ) -> impl '_ + Iterator<Item = (EdgePortRef, EdgePortRef)> {
+        succs.iter().flat_map(|(src, succs)| {
+            succs
                 .iter()
                 .map(move |(src_idx, (dst, dst_idx))| ((src, src_idx), (*dst, dst_idx)))
         })
     }
 
-    pub fn identify_subgraphs(&mut self) {
-        // Pull (green)
-        // Push (blue)
-        // Handoff (red) -- not a color for operators, inserted between subgraphs.
-        // Computation (yellow)
-        #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
-        enum Color {
-            Pull,
-            Push,
-            Comp,
-            Hoff,
-        }
-        fn op_color(node_info: &NodeInfo) -> Option<Color> {
-            match &node_info.node {
-                Node::Operator(_) => match (1 < node_info.preds.len(), 1 < node_info.succs.len()) {
-                    (true, true) => Some(Color::Comp),
-                    (true, false) => Some(Color::Pull),
-                    (false, true) => Some(Color::Push),
-                    (false, false) => {
-                        match (node_info.preds.is_empty(), node_info.succs.is_empty()) {
-                            (true, false) => Some(Color::Pull),
-                            (false, true) => Some(Color::Push),
-                            _same => None,
-                        }
-                    }
+    fn op_color(&self, node_key: NodeId) -> Option<Color> {
+        let inn_degree = self.preds[node_key].len();
+        let out_degree = self.succs[node_key].len();
+        match &self.nodes[node_key] {
+            Node::Operator(_) => match (1 < inn_degree, 1 < out_degree) {
+                (true, true) => Some(Color::Comp),
+                (true, false) => Some(Color::Pull),
+                (false, true) => Some(Color::Push),
+                (false, false) => match (inn_degree, out_degree) {
+                    (0, _) => Some(Color::Pull),
+                    (_, 0) => Some(Color::Push),
+                    _same => None,
                 },
-                Node::Handoff => Some(Color::Hoff),
-            }
+            },
+            Node::Handoff => Some(Color::Hoff),
         }
+    }
 
+    pub fn into_partitioned_graph(mut self) -> PartitionedGraph {
         // Algorithm:
         // 1. Each node begins as its own subgraph.
         // 2. Collect edges. Sort so edges which should not be split across a handoff come first.
         // 3. For each edge, try to join `(to, from)` into the same subgraph.
 
         let mut node_color: SecondaryMap<NodeId, Option<Color>> = self
-            .operators
-            .iter()
-            .map(|(id, node_info)| (id, op_color(node_info)))
+            .nodes
+            .keys()
+            .map(|id| (id, self.op_color(id)))
             .collect();
-        let mut node_union: UnionFind<NodeId> = self.operators.keys().collect();
+        let mut node_union: UnionFind<NodeId> = UnionFind::with_capacity(self.nodes.len());
         // All edges which belong to a single subgraph. Other & self-edges become handoffs.
         let mut subgraph_edges: HashSet<(EdgePortRef, EdgePortRef)> = Default::default();
 
         // Sort edges here (for now, no sort/priority).
         loop {
             let mut updated = false;
-            for ((src, src_idx), (dst, dst_idx)) in self.edges() {
+            for ((src, src_idx), (dst, dst_idx)) in Self::edges_helper(&self.succs) {
                 if node_union.same_set(src, dst) {
                     // Note this might be triggered even if the edge (src, dst) is not in the subgraph.
                     // This prevents self-loops. Handoffs needed to break self loops.
@@ -375,66 +364,80 @@ impl FlatGraph {
             }
         }
 
-        // Insert handoffs between subgraphs (or on subgraph self-edges).
-        let handoff_edges: Vec<_> = self
-            .edges()
-            .filter(|edge| !subgraph_edges.contains(edge)) // Subgraph edges are not handoffs.
-            .filter(|&((src, _src_idx), (dst, _dst_idx))| {
-                !matches!(self.operators[src].node, Node::Handoff)
-                    && !matches!(self.operators[dst].node, Node::Handoff)
-            }) // Already has a handoff.
-            .map(|((src, src_idx), (dst, dst_idx))| {
-                ((src, src_idx.clone()), (dst, dst_idx.clone()))
+        let mut new_preds: SecondaryMap<NodeId, HashMap<LitInt, EdgePort>> =
+            self.nodes.keys().map(|k| (k, Default::default())).collect();
+        let mut new_succs: SecondaryMap<NodeId, HashMap<LitInt, EdgePort>> =
+            self.nodes.keys().map(|k| (k, Default::default())).collect();
+
+        // Copy over edges, inserting handoffs between subgraphs (or on subgraph self-edges) when needed.
+        for edge in Self::edges_helper(&self.succs) {
+            let is_subgraph_edge = subgraph_edges.contains(&edge); // Internal subgraph edges are not handoffs.
+            let ((src, src_idx), (dst, dst_idx)) = edge;
+
+            // Already has a handoff, no need to insert one.
+            if is_subgraph_edge
+                || matches!(self.nodes[src], Node::Handoff)
+                || matches!(self.nodes[dst], Node::Handoff)
+            {
+                new_preds[dst].insert(dst_idx.clone(), (src, src_idx.clone()));
+                new_succs[src].insert(src_idx.clone(), (dst, dst_idx.clone()));
+            } else {
+                // Needs handoff inserted.
+                // A -> H -> Z
+                let hoff_id = self.nodes.insert(Node::Handoff);
+                new_preds.insert(hoff_id, Default::default());
+                new_succs.insert(hoff_id, Default::default());
+
+                // A -> H.
+                new_succs[src].insert(
+                    src_idx.clone(),
+                    (hoff_id, LitInt::new("0", Span::call_site())),
+                );
+                // A <- H.
+                new_preds[hoff_id]
+                    .insert(LitInt::new("0", Span::call_site()), (src, src_idx.clone()));
+                // H <- Z.
+                new_preds[dst].insert(
+                    dst_idx.clone(),
+                    (hoff_id, LitInt::new("0", Span::call_site())),
+                );
+                // H -> Z.
+                new_succs[hoff_id]
+                    .insert(LitInt::new("0", Span::call_site()), (dst, dst_idx.clone()));
+            }
+        }
+
+        // Mapping from representative `NodeId` to the `SubgraphId`.
+        let mut node_to_subgraph = HashMap::new();
+        // List of nodes in each `SubgraphId`.
+        let mut subgraph_nodes: SlotMap<SubgraphId, Vec<NodeId>> =
+            SlotMap::with_capacity_and_key(self.nodes.len());
+        // `SubgraphId` for each `NodeId`.
+        let node_subgraph = self
+            .nodes
+            .iter()
+            .filter_map(|(node_id, node)| match node {
+                Node::Operator(_op) => {
+                    let repr_id = node_union.find(node_id);
+                    let subgraph_id = *node_to_subgraph
+                        .entry(repr_id)
+                        .or_insert_with(|| subgraph_nodes.insert(Default::default()));
+                    subgraph_nodes[subgraph_id].push(node_id);
+                    Some((node_id, subgraph_id))
+                }
+                Node::Handoff => None,
             })
             .collect();
 
-        for ((src, src_idx), (dst, dst_idx)) in handoff_edges {
-            let handoff_nodeid = self.operators.insert(NodeInfo {
-                node: Node::Handoff,
-                preds: Default::default(),
-                succs: Default::default(),
-                subgraph_id: None,
-            });
-
-            // Insert forward edge.
-            let (dst2, dst_idx2) = self.operators[src]
-                .succs
-                .insert(
-                    src_idx,
-                    (handoff_nodeid, LitInt::new("0", Span::call_site())),
-                )
-                .expect("Forward edge disappeared!");
-
-            // Insert back edge.
-            let (src2, src_idx2) = self.operators[dst]
-                .preds
-                .insert(
-                    dst_idx,
-                    (handoff_nodeid, LitInt::new("0", Span::call_site())),
-                )
-                .expect("Back edge disappeared!");
-
-            self.operators[handoff_nodeid]
-                .preds
-                .insert(LitInt::new("0", Span::call_site()), (src2, src_idx2));
-            self.operators[handoff_nodeid]
-                .succs
-                .insert(LitInt::new("0", Span::call_site()), (dst2, dst_idx2));
-        }
-
-        // Set `subgraph_id`s inside node infos.
-        for (key, node_info) in self.operators.iter_mut() {
-            let subgraph_key = node_union.find(key);
-            node_info.subgraph_id = Some(subgraph_key);
-            self.subgraphs.entry(subgraph_key).or_default().push(key);
+        PartitionedGraph {
+            nodes: self.nodes,
+            preds: new_preds,
+            succs: new_succs,
+            node_subgraph,
+            subgraph_nodes,
         }
     }
 
-    pub fn subgraphs(&self) -> std::collections::hash_map::Iter<'_, NodeId, Vec<NodeId>> {
-        self.subgraphs.iter()
-    }
-
-    #[allow(dead_code)]
     pub fn mermaid_string(&self) -> String {
         let mut string = String::new();
         self.write_mermaid(&mut string).unwrap();
@@ -444,11 +447,11 @@ impl FlatGraph {
     #[allow(dead_code)]
     pub fn write_mermaid(&self, write: &mut impl std::fmt::Write) -> std::fmt::Result {
         writeln!(write, "flowchart TB")?;
-        for (key, node_info) in self.operators.iter() {
-            match &node_info.node {
+        for (key, node) in self.nodes.iter() {
+            match node {
                 Node::Operator(operator) => writeln!(
                     write,
-                    r#"    {}["{} {:?}"]"#,
+                    r#"    {}["{}"]"#,
                     key.data().as_ffi(),
                     operator
                         .to_token_stream()
@@ -457,14 +460,13 @@ impl FlatGraph {
                         .replace('<', "&lt;")
                         .replace('>', "&gt;")
                         .replace('"', "&quot;"),
-                    node_info.subgraph_id.map(|id| id.data().as_ffi()),
                 ),
                 Node::Handoff => writeln!(write, r#"    {}{{"handoff"}}"#, key.data().as_ffi()),
             }?;
         }
         writeln!(write)?;
-        for (src_key, op) in self.operators.iter() {
-            for (_src_port, (dst_key, _dst_port)) in op.succs.iter() {
+        for (src_key, _op) in self.nodes.iter() {
+            for (_src_port, (dst_key, _dst_port)) in self.succs[src_key].iter() {
                 writeln!(
                     write,
                     "    {}-->{}",
@@ -472,52 +474,6 @@ impl FlatGraph {
                     dst_key.data().as_ffi()
                 )?;
             }
-        }
-        Ok(())
-    }
-
-    pub fn write_mermaid_subgraphs(&self, write: &mut impl std::fmt::Write) -> std::fmt::Result {
-        writeln!(write, "flowchart TB")?;
-        for (subgraph_id, node_ids) in self.subgraphs() {
-            writeln!(write, "    subgraph sg_{}", subgraph_id.data().as_ffi())?;
-            for &node_id in node_ids.iter() {
-                let node_info = &self.operators[node_id];
-                match &node_info.node {
-                    Node::Operator(operator) => {
-                        writeln!(
-                            write,
-                            r#"        {}["{}"]"#,
-                            node_id.data().as_ffi(),
-                            operator
-                                .to_token_stream()
-                                .to_string()
-                                .replace('&', "&amp;")
-                                .replace('<', "&lt;")
-                                .replace('>', "&gt;")
-                                .replace('"', "&quot;"),
-                        )?;
-                    }
-                    Node::Handoff => {
-                        // writeln!(write, r#"        {}{{"handoff"}}"#, node_id.data().as_ffi())
-                    }
-                }
-            }
-            writeln!(write, "    end")?;
-        }
-        writeln!(write)?;
-        for (node_id, node_info) in self.operators.iter() {
-            if matches!(node_info.node, Node::Handoff) {
-                writeln!(write, r#"    {}{{"handoff"}}"#, node_id.data().as_ffi())?;
-            }
-        }
-        writeln!(write)?;
-        for ((src, _src_idx), (dst, _dst_idx)) in self.edges() {
-            writeln!(
-                write,
-                "    {}-->{}",
-                src.data().as_ffi(),
-                dst.data().as_ffi()
-            )?;
         }
         Ok(())
     }
@@ -529,7 +485,7 @@ struct Ports {
     out: Option<NodeId>,
 }
 
-enum Node {
+pub enum Node {
     Operator(Operator),
     Handoff,
 }
@@ -544,21 +500,14 @@ impl std::fmt::Debug for Node {
     }
 }
 
-struct NodeInfo {
-    node: Node,
-    preds: HashMap<LitInt, EdgePort>,
-    succs: HashMap<LitInt, EdgePort>,
-
-    /// Which subgraph this operator belongs to (if determined).
-    subgraph_id: Option<NodeId>,
-    // color: Option<Color>,
-}
-impl std::fmt::Debug for NodeInfo {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("NodeInfo")
-            .field("operator", &self.node)
-            .field("preds", &self.preds)
-            .field("succs", &self.succs)
-            .finish()
-    }
+/// Pull (green)
+/// Push (blue)
+/// Handoff (red) -- not a color for operators, inserted between subgraphs.
+/// Computation (yellow)
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+enum Color {
+    Pull,
+    Push,
+    Comp,
+    Hoff,
 }
