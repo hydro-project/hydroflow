@@ -2,6 +2,7 @@
 
 pub mod flat_graph;
 pub mod parse;
+pub mod partitioned_graph;
 pub mod union_find;
 
 /// Helper struct which displays the span as `path:row:col` for human reading/IDE linking.
