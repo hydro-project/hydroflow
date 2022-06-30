@@ -12,19 +12,23 @@ pub fn hydroflow_parser(input: proc_macro::TokenStream) -> proc_macro::TokenStre
     let input = parse_macro_input!(input as HfCode);
     // // input.into_token_stream().into()
 
-    let mut graph = FlatGraph::from_hfcode(input);
+    let graph = FlatGraph::from_hfcode(input);
     graph.validate_operators();
-    graph.identify_subgraphs();
+
+    let mermaid1 = graph.mermaid_string();
+
+    let graph = graph.into_partitioned_graph();
 
     // let debug = format!("{:#?}", graph);
     // let mut debug = String::new();
     // graph.write_graph(&mut debug).unwrap();
-    let mut debug = String::new();
-    graph.write_mermaid_subgraphs(&mut debug).unwrap();
 
-    let lit = Literal::string(&*debug);
+    let debug = graph.mermaid_string();
 
-    quote! { println!("{}", #lit); }.into()
+    let lit0 = Literal::string(&*mermaid1);
+    let lit1 = Literal::string(&*debug);
+
+    quote! { println!("{}\n{}", #lit0, #lit1); }.into()
 }
 
 /// Helper struct which displays the span as `path:row:col` for human reading/IDE linking.
