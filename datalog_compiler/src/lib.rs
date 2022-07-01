@@ -12,14 +12,14 @@ mod datalog_grammar {
 
     #[derive(Debug)]
     pub enum Declaration {
-        Input(#[rust_sitter::leaf(text = ".input")] (), Box<Ident>),
-        Output(#[rust_sitter::leaf(text = ".output")] (), Box<Ident>),
-        Rule(Box<Rule>),
+        Input(#[rust_sitter::leaf(text = ".input")] (), Ident),
+        Output(#[rust_sitter::leaf(text = ".output")] (), Ident),
+        Rule(Rule),
     }
 
     #[derive(Debug)]
     pub struct Rule {
-        target: Box<Target>,
+        target: Target,
         #[rust_sitter::leaf(text = ":-")]
         _from: (),
         #[rust_sitter::repeat(non_empty = true)]
@@ -32,7 +32,7 @@ mod datalog_grammar {
 
     #[derive(Debug)]
     pub struct Target {
-        name: Box<Ident>,
+        name: Ident,
         #[rust_sitter::leaf(text = "(")]
         _l_paren: (),
         #[rust_sitter::delimited(
@@ -57,12 +57,12 @@ mod datalog_grammar {
     }
 }
 
-fn gen_datalog_program(literal: proc_macro2::Literal) -> syn::Lit {
+fn gen_datalog_program(literal: proc_macro2::Literal) -> syn::Stmt {
     let str_node: syn::LitStr = parse_quote!(#literal);
     let actual_str = str_node.value();
     let program = datalog_grammar::parse(&actual_str).unwrap();
     let program_tree = format!("{:?}", program);
-    syn::parse_quote!(#program_tree)
+    syn::parse_quote!(let tree = #program_tree;)
 }
 
 #[proc_macro]
@@ -111,18 +111,22 @@ mod tests {
 
     #[test]
     fn minimal_program() {
-        insta::assert_display_snapshot!(rustfmt_code(
-            &gen_datalog_program(parse_quote!(
-                r#"
-                .input edge
-                .output path
+        let out = &gen_datalog_program(parse_quote!(
+            r#"
+            .input edge
+            .output path
 
-                path(x, y) :- edge(x, y)
-                path(x, y) :- path(x, z), edge(z, y)
-            "#
-            ))
-            .to_token_stream()
-            .to_string()
+            path(x, y) :- edge(x, y)
+            path(x, y) :- path(x, z), edge(z, y)
+        "#
         ));
+
+        let wrapped: syn::Item = parse_quote! {
+            fn main() {
+                #out
+            }
+        };
+
+        insta::assert_display_snapshot!(rustfmt_code(&wrapped.to_token_stream().to_string()));
     }
 }

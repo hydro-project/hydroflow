@@ -1,6 +1,8 @@
 ---
 source: datalog_compiler/src/lib.rs
-expression: "rustfmt_code(&gen_datalog_program(parse_quote!(r#\"\n                .input edge\n                .output path\n\n                path(x, y) :- edge(x, y)\n                path(x, y) :- path(x, z), edge(z, y)\n            \"#)).to_token_stream().to_string())"
+expression: rustfmt_code(&wrapped.to_token_stream().to_string())
 ---
-"Program { rules: [Input((), Ident { name: \"edge\" }), Output((), Ident { name: \"path\" }), Rule(Rule { target: Target { name: Ident { name: \"path\" }, _l_paren: (), fields: [Ident { name: \"x\" }, Ident { name: \"y\" }], _r_paren: () }, _from: (), sources: [Target { name: Ident { name: \"edge\" }, _l_paren: (), fields: [Ident { name: \"x\" }, Ident { name: \"y\" }], _r_paren: () }] }), Rule(Rule { target: Target { name: Ident { name: \"path\" }, _l_paren: (), fields: [Ident { name: \"x\" }, Ident { name: \"y\" }], _r_paren: () }, _from: (), sources: [Target { name: Ident { name: \"path\" }, _l_paren: (), fields: [Ident { name: \"x\" }, Ident { name: \"z\" }], _r_paren: () }, Target { name: Ident { name: \"edge\" }, _l_paren: (), fields: [Ident { name: \"z\" }, Ident { name: \"y\" }], _r_paren: () }] })] }"
+fn main() {
+    let tree = "Program { rules: [Input((), Ident { name: \"edge\" }), Output((), Ident { name: \"path\" }), Rule(Rule { target: Target { name: Ident { name: \"path\" }, _l_paren: (), fields: [Ident { name: \"x\" }, Ident { name: \"y\" }], _r_paren: () }, _from: (), sources: [Target { name: Ident { name: \"edge\" }, _l_paren: (), fields: [Ident { name: \"x\" }, Ident { name: \"y\" }], _r_paren: () }] }), Rule(Rule { target: Target { name: Ident { name: \"path\" }, _l_paren: (), fields: [Ident { name: \"x\" }, Ident { name: \"y\" }], _r_paren: () }, _from: (), sources: [Target { name: Ident { name: \"path\" }, _l_paren: (), fields: [Ident { name: \"x\" }, Ident { name: \"z\" }], _r_paren: () }, Target { name: Ident { name: \"edge\" }, _l_paren: (), fields: [Ident { name: \"z\" }, Ident { name: \"y\" }], _r_paren: () }] })] }" ;
+}
 
