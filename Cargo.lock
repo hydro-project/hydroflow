@@ -1303,27 +1303,38 @@ dependencies = [
 [[package]]
 name = "rust_sitter"
 version = "0.1.0"
-source = "git+https://github.com/hydro-project/rust-sitter#945998a66df92cc4aaaf48b793f5c4416d3c77e0"
+source = "git+https://github.com/hydro-project/rust-sitter#6222008af8d6bbdd65b1a468358f7f5cc248971b"
 dependencies = [
  "rust_sitter_macro",
  "tree-sitter",
 ]
 
 [[package]]
+name = "rust_sitter_common"
+version = "0.1.0"
+source = "git+https://github.com/hydro-project/rust-sitter#6222008af8d6bbdd65b1a468358f7f5cc248971b"
+dependencies = [
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "rust_sitter_macro"
 version = "0.1.0"
-source = "git+https://github.com/hydro-project/rust-sitter#945998a66df92cc4aaaf48b793f5c4416d3c77e0"
+source = "git+https://github.com/hydro-project/rust-sitter#6222008af8d6bbdd65b1a468358f7f5cc248971b"
 dependencies = [
  "proc-macro2",
  "quote",
+ "rust_sitter_common",
  "syn",
 ]
 
 [[package]]
 name = "rust_sitter_tool"
 version = "0.1.0"
-source = "git+https://github.com/hydro-project/rust-sitter#945998a66df92cc4aaaf48b793f5c4416d3c77e0"
+source = "git+https://github.com/hydro-project/rust-sitter#6222008af8d6bbdd65b1a468358f7f5cc248971b"
 dependencies = [
+ "rust_sitter_common",
  "serde",
  "serde_json",
  "syn",

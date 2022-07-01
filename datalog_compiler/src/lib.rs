@@ -28,6 +28,8 @@ mod datalog_grammar {
             ()
         )]
         sources: Vec<Target>,
+        #[rust_sitter::leaf(text = ".")]
+        _dot: Option<()>,
     }
 
     #[derive(Debug)]
@@ -117,7 +119,7 @@ mod tests {
             .output path
 
             path(x, y) :- edge(x, y)
-            path(x, y) :- path(x, z), edge(z, y)
+            path(x, y) :- path(x, z), edge(z, y).
         "#
         ));
 
