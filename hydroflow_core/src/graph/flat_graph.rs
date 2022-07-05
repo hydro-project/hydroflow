@@ -2,21 +2,17 @@ use std::collections::{HashMap, HashSet};
 
 use proc_macro2::Span;
 use quote::ToTokens;
-use slotmap::{new_key_type, Key, SecondaryMap, SlotMap};
+use slotmap::{Key, SecondaryMap, SlotMap};
 use syn::punctuated::Pair;
 use syn::spanned::Spanned;
 use syn::{Ident, LitInt};
 
-use crate::partitioned_graph::{PartitionedGraph, SubgraphId};
+use crate::parse::{HfCode, HfStatement, Pipeline};
+use crate::pretty_span::PrettySpan;
+use crate::union_find::UnionFind;
 
-use super::parse::{HfCode, HfStatement, Operator, Pipeline};
-use super::union_find::UnionFind;
-use super::PrettySpan;
-
-new_key_type! { pub struct NodeId; }
-
-pub type EdgePort = (NodeId, LitInt);
-pub type EdgePortRef<'a> = (NodeId, &'a LitInt);
+use super::partitioned_graph::PartitionedGraph;
+use super::{EdgePort, EdgePortRef, Node, NodeId, SubgraphId};
 
 #[derive(Debug, Default)]
 pub struct FlatGraph {
@@ -483,21 +479,6 @@ impl FlatGraph {
 struct Ports {
     inn: Option<NodeId>,
     out: Option<NodeId>,
-}
-
-pub enum Node {
-    Operator(Operator),
-    Handoff,
-}
-impl std::fmt::Debug for Node {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Operator(operator) => {
-                write!(f, "Node::Operator({} span)", PrettySpan(operator.span()))
-            }
-            Self::Handoff => write!(f, "Node::Handoff"),
-        }
-    }
 }
 
 /// Pull (green)

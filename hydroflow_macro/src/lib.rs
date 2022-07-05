@@ -4,7 +4,7 @@ use proc_macro2::{Literal, Span};
 use quote::quote;
 use syn::parse_macro_input;
 
-use hydroflow_core::flat_graph::FlatGraph;
+use hydroflow_core::graph::flat_graph::FlatGraph;
 use hydroflow_core::parse::HfCode;
 
 #[proc_macro]
@@ -12,21 +12,17 @@ pub fn hydroflow_parser(input: proc_macro::TokenStream) -> proc_macro::TokenStre
     let input = parse_macro_input!(input as HfCode);
     // // input.into_token_stream().into()
 
-    let graph = FlatGraph::from_hfcode(input);
-    graph.validate_operators();
+    let flat_graph = FlatGraph::from_hfcode(input);
+    flat_graph.validate_operators();
 
-    let mermaid1 = graph.mermaid_string();
+    let flat_mermaid = flat_graph.mermaid_string();
 
-    let graph = graph.into_partitioned_graph();
+    let part_graph = flat_graph.into_partitioned_graph();
 
-    // let debug = format!("{:#?}", graph);
-    // let mut debug = String::new();
-    // graph.write_graph(&mut debug).unwrap();
+    let part_mermaid = part_graph.mermaid_string();
 
-    let debug = graph.mermaid_string();
-
-    let lit0 = Literal::string(&*mermaid1);
-    let lit1 = Literal::string(&*debug);
+    let lit0 = Literal::string(&*flat_mermaid);
+    let lit1 = Literal::string(&*part_mermaid);
 
     quote! { println!("{}\n{}", #lit0, #lit1); }.into()
 }

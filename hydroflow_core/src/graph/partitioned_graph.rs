@@ -1,15 +1,13 @@
 use std::collections::HashMap;
 
 use quote::ToTokens;
-use slotmap::{new_key_type, Key, SecondaryMap, SlotMap};
+use slotmap::{Key, SecondaryMap, SlotMap};
 use syn::LitInt;
 
-use crate::flat_graph::{EdgePort, EdgePortRef, Node, NodeId};
-
-new_key_type! { pub struct SubgraphId; }
+use super::{EdgePort, EdgePortRef, Node, NodeId, SubgraphId};
 
 #[derive(Default)]
-#[allow(dead_code)]
+#[allow(dead_code)] // TODO(mingwei): remove when no longer needed.
 pub struct PartitionedGraph {
     pub(crate) nodes: SlotMap<NodeId, Node>,
     pub(crate) preds: SecondaryMap<NodeId, HashMap<LitInt, EdgePort>>,
