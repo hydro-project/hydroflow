@@ -2,5 +2,5 @@
 
 pub mod graph;
 pub mod parse;
-pub mod union_find;
 pub mod pretty_span;
+pub mod union_find;
