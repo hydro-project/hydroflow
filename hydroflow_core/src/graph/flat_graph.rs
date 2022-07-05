@@ -1,6 +1,5 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
-use proc_macro2::Span;
 use quote::ToTokens;
 use slotmap::{Key, SecondaryMap, SlotMap};
 use syn::punctuated::Pair;
@@ -9,16 +8,15 @@ use syn::{Ident, LitInt};
 
 use crate::parse::{HfCode, HfStatement, Pipeline};
 use crate::pretty_span::PrettySpan;
-use crate::union_find::UnionFind;
 
 use super::partitioned_graph::PartitionedGraph;
-use super::{EdgePort, EdgePortRef, Node, NodeId, SubgraphId};
+use super::{EdgePort, EdgePortRef, Node, NodeId};
 
 #[derive(Debug, Default)]
 pub struct FlatGraph {
-    nodes: SlotMap<NodeId, Node>,
-    preds: SecondaryMap<NodeId, HashMap<LitInt, EdgePort>>,
-    succs: SecondaryMap<NodeId, HashMap<LitInt, EdgePort>>,
+    pub(crate) nodes: SlotMap<NodeId, Node>,
+    pub(crate) preds: SecondaryMap<NodeId, HashMap<LitInt, EdgePort>>,
+    pub(crate) succs: SecondaryMap<NodeId, HashMap<LitInt, EdgePort>>,
     names: HashMap<Ident, Ports>,
 }
 impl FlatGraph {
@@ -249,189 +247,7 @@ impl FlatGraph {
     }
 
     pub fn edges(&self) -> impl '_ + Iterator<Item = (EdgePortRef, EdgePortRef)> {
-        Self::edges_helper(&self.succs)
-    }
-    fn edges_helper(
-        succs: &SecondaryMap<NodeId, HashMap<LitInt, (NodeId, LitInt)>>,
-    ) -> impl '_ + Iterator<Item = (EdgePortRef, EdgePortRef)> {
-        succs.iter().flat_map(|(src, succs)| {
-            succs
-                .iter()
-                .map(move |(src_idx, (dst, dst_idx))| ((src, src_idx), (*dst, dst_idx)))
-        })
-    }
-
-    fn op_color(&self, node_key: NodeId) -> Option<Color> {
-        let inn_degree = self.preds[node_key].len();
-        let out_degree = self.succs[node_key].len();
-        match &self.nodes[node_key] {
-            Node::Operator(_) => match (1 < inn_degree, 1 < out_degree) {
-                (true, true) => Some(Color::Comp),
-                (true, false) => Some(Color::Pull),
-                (false, true) => Some(Color::Push),
-                (false, false) => match (inn_degree, out_degree) {
-                    (0, _) => Some(Color::Pull),
-                    (_, 0) => Some(Color::Push),
-                    _same => None,
-                },
-            },
-            Node::Handoff => Some(Color::Hoff),
-        }
-    }
-
-    pub fn into_partitioned_graph(mut self) -> PartitionedGraph {
-        // Algorithm:
-        // 1. Each node begins as its own subgraph.
-        // 2. Collect edges. Sort so edges which should not be split across a handoff come first.
-        // 3. For each edge, try to join `(to, from)` into the same subgraph.
-
-        let mut node_color: SecondaryMap<NodeId, Option<Color>> = self
-            .nodes
-            .keys()
-            .map(|id| (id, self.op_color(id)))
-            .collect();
-        let mut node_union: UnionFind<NodeId> = UnionFind::with_capacity(self.nodes.len());
-        // All edges which belong to a single subgraph. Other & self-edges become handoffs.
-        let mut subgraph_edges: HashSet<(EdgePortRef, EdgePortRef)> = Default::default();
-
-        // Sort edges here (for now, no sort/priority).
-        loop {
-            let mut updated = false;
-            for ((src, src_idx), (dst, dst_idx)) in Self::edges_helper(&self.succs) {
-                if node_union.same_set(src, dst) {
-                    // Note this might be triggered even if the edge (src, dst) is not in the subgraph.
-                    // This prevents self-loops. Handoffs needed to break self loops.
-                    continue;
-                }
-
-                // Set `src` or `dst` color if `None` based on the other (if possible):
-                // Pull -> Pull
-                // Push -> Push
-                // Pull -> [Comp] -> Push
-                // Push -> [Hoff] -> Pull
-                match (node_color[src], node_color[dst]) {
-                    (Some(_), Some(_)) => (),
-                    (None, None) => (),
-                    (None, Some(dst_color)) => {
-                        node_color[src] = Some(match dst_color {
-                            Color::Comp => Color::Pull,
-                            Color::Hoff => Color::Push,
-                            pull_or_push => pull_or_push,
-                        });
-                        updated = true;
-                    }
-                    (Some(src_color), None) => {
-                        node_color[dst] = Some(match src_color {
-                            Color::Comp => Color::Push,
-                            Color::Hoff => Color::Pull,
-                            pull_or_push => pull_or_push,
-                        });
-                        updated = true;
-                    }
-                }
-
-                // If SRC and DST can be in the same subgraph.
-                let can_connect = match (node_color[src], node_color[dst]) {
-                    (Some(Color::Pull), Some(Color::Pull)) => true,
-                    (Some(Color::Pull), Some(Color::Comp)) => true,
-                    (Some(Color::Pull), Some(Color::Push)) => true,
-
-                    (Some(Color::Comp | Color::Push), Some(Color::Pull)) => false,
-                    (Some(Color::Comp | Color::Push), Some(Color::Comp)) => false,
-                    (Some(Color::Comp | Color::Push), Some(Color::Push)) => true,
-
-                    // Handoffs are not part of subgraphs.
-                    (Some(Color::Hoff), Some(_)) => false,
-                    (Some(_), Some(Color::Hoff)) => false,
-
-                    // Linear chain.
-                    (None, None) => true,
-
-                    _some_none => unreachable!(),
-                };
-                if can_connect {
-                    node_union.union(src, dst);
-                    subgraph_edges.insert(((src, src_idx), (dst, dst_idx)));
-                    updated = true;
-                }
-            }
-            if !updated {
-                break;
-            }
-        }
-
-        let mut new_preds: SecondaryMap<NodeId, HashMap<LitInt, EdgePort>> =
-            self.nodes.keys().map(|k| (k, Default::default())).collect();
-        let mut new_succs: SecondaryMap<NodeId, HashMap<LitInt, EdgePort>> =
-            self.nodes.keys().map(|k| (k, Default::default())).collect();
-
-        // Copy over edges, inserting handoffs between subgraphs (or on subgraph self-edges) when needed.
-        for edge in Self::edges_helper(&self.succs) {
-            let is_subgraph_edge = subgraph_edges.contains(&edge); // Internal subgraph edges are not handoffs.
-            let ((src, src_idx), (dst, dst_idx)) = edge;
-
-            // Already has a handoff, no need to insert one.
-            if is_subgraph_edge
-                || matches!(self.nodes[src], Node::Handoff)
-                || matches!(self.nodes[dst], Node::Handoff)
-            {
-                new_preds[dst].insert(dst_idx.clone(), (src, src_idx.clone()));
-                new_succs[src].insert(src_idx.clone(), (dst, dst_idx.clone()));
-            } else {
-                // Needs handoff inserted.
-                // A -> H -> Z
-                let hoff_id = self.nodes.insert(Node::Handoff);
-                new_preds.insert(hoff_id, Default::default());
-                new_succs.insert(hoff_id, Default::default());
-
-                // A -> H.
-                new_succs[src].insert(
-                    src_idx.clone(),
-                    (hoff_id, LitInt::new("0", Span::call_site())),
-                );
-                // A <- H.
-                new_preds[hoff_id]
-                    .insert(LitInt::new("0", Span::call_site()), (src, src_idx.clone()));
-                // H <- Z.
-                new_preds[dst].insert(
-                    dst_idx.clone(),
-                    (hoff_id, LitInt::new("0", Span::call_site())),
-                );
-                // H -> Z.
-                new_succs[hoff_id]
-                    .insert(LitInt::new("0", Span::call_site()), (dst, dst_idx.clone()));
-            }
-        }
-
-        // Mapping from representative `NodeId` to the `SubgraphId`.
-        let mut node_to_subgraph = HashMap::new();
-        // List of nodes in each `SubgraphId`.
-        let mut subgraph_nodes: SlotMap<SubgraphId, Vec<NodeId>> =
-            SlotMap::with_capacity_and_key(self.nodes.len());
-        // `SubgraphId` for each `NodeId`.
-        let node_subgraph = self
-            .nodes
-            .iter()
-            .filter_map(|(node_id, node)| match node {
-                Node::Operator(_op) => {
-                    let repr_id = node_union.find(node_id);
-                    let subgraph_id = *node_to_subgraph
-                        .entry(repr_id)
-                        .or_insert_with(|| subgraph_nodes.insert(Default::default()));
-                    subgraph_nodes[subgraph_id].push(node_id);
-                    Some((node_id, subgraph_id))
-                }
-                Node::Handoff => None,
-            })
-            .collect();
-
-        PartitionedGraph {
-            nodes: self.nodes,
-            preds: new_preds,
-            succs: new_succs,
-            node_subgraph,
-            subgraph_nodes,
-        }
+        super::iter_edges(&self.succs)
     }
 
     pub fn mermaid_string(&self) -> String {
@@ -473,22 +289,14 @@ impl FlatGraph {
         }
         Ok(())
     }
+
+    pub fn into_partitioned_graph(self) -> PartitionedGraph {
+        self.into()
+    }
 }
 
 #[derive(Clone, Copy, Debug)]
 struct Ports {
     inn: Option<NodeId>,
     out: Option<NodeId>,
-}
-
-/// Pull (green)
-/// Push (blue)
-/// Handoff (red) -- not a color for operators, inserted between subgraphs.
-/// Computation (yellow)
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
-enum Color {
-    Pull,
-    Push,
-    Comp,
-    Hoff,
 }

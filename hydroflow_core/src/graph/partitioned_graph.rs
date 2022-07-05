@@ -4,7 +4,7 @@ use quote::ToTokens;
 use slotmap::{Key, SecondaryMap, SlotMap};
 use syn::LitInt;
 
-use super::{EdgePort, EdgePortRef, Node, NodeId, SubgraphId};
+use super::{flat_graph::FlatGraph, EdgePort, EdgePortRef, Node, NodeId, SubgraphId};
 
 #[derive(Default)]
 #[allow(dead_code)] // TODO(mingwei): remove when no longer needed.
@@ -21,17 +21,12 @@ impl PartitionedGraph {
         Default::default()
     }
 
-    pub fn edges(&self) -> impl '_ + Iterator<Item = (EdgePortRef, EdgePortRef)> {
-        Self::edges_helper(&self.succs)
+    pub fn from_flat_graph(flat_graph: FlatGraph) -> Self {
+        flat_graph.into()
     }
-    fn edges_helper(
-        succs: &SecondaryMap<NodeId, HashMap<LitInt, (NodeId, LitInt)>>,
-    ) -> impl '_ + Iterator<Item = (EdgePortRef, EdgePortRef)> {
-        succs.iter().flat_map(|(src, succs)| {
-            succs
-                .iter()
-                .map(move |(src_idx, (dst, dst_idx))| ((src, src_idx), (*dst, dst_idx)))
-        })
+
+    pub fn edges(&self) -> impl '_ + Iterator<Item = (EdgePortRef, EdgePortRef)> {
+        super::iter_edges(&self.succs)
     }
 
     pub fn subgraphs(&self) -> slotmap::basic::Iter<'_, SubgraphId, Vec<NodeId>> {
