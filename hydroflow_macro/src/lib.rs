@@ -1,4 +1,5 @@
 #![feature(proc_macro_diagnostic, proc_macro_span)]
+#![allow(clippy::explicit_auto_deref)]
 
 use proc_macro2::{Literal, Span};
 use quote::quote;
