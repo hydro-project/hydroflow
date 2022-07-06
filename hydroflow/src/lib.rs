@@ -4,6 +4,7 @@
 #![allow(type_alias_bounds)]
 #![allow(clippy::let_and_return)]
 #![allow(clippy::iter_with_drain)]
+#![allow(clippy::explicit_auto_deref)]
 
 pub mod builder;
 pub mod compiled;
