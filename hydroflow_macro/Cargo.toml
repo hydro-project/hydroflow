@@ -9,5 +9,6 @@ proc-macro = true
 [dependencies]
 hydroflow_core = { path = "../hydroflow_core" }
 proc-macro2 = "1.0.0"
+proc-macro-crate = "1.1.0"
 quote = "1.0.0"
 syn = { version = "1.0.0", features = [ "parsing", "extra-traits" ] }

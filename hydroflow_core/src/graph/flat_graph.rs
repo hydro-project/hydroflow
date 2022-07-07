@@ -263,8 +263,8 @@ impl FlatGraph {
             match node {
                 Node::Operator(operator) => writeln!(
                     write,
-                    r#"    {}["{}"]"#,
-                    key.data().as_ffi(),
+                    r#"    {:?}["{}"]"#,
+                    key.data(),
                     operator
                         .to_token_stream()
                         .to_string()
@@ -273,18 +273,13 @@ impl FlatGraph {
                         .replace('>', "&gt;")
                         .replace('"', "&quot;"),
                 ),
-                Node::Handoff => writeln!(write, r#"    {}{{"handoff"}}"#, key.data().as_ffi()),
+                Node::Handoff => writeln!(write, r#"    {:?}{{"handoff"}}"#, key.data()),
             }?;
         }
         writeln!(write)?;
         for (src_key, _op) in self.nodes.iter() {
             for (_src_port, (dst_key, _dst_port)) in self.succs[src_key].iter() {
-                writeln!(
-                    write,
-                    "    {}-->{}",
-                    src_key.data().as_ffi(),
-                    dst_key.data().as_ffi()
-                )?;
+                writeln!(write, "    {:?}-->{:?}", src_key.data(), dst_key.data())?;
             }
         }
         Ok(())

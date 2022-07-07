@@ -1,12 +1,32 @@
 #![feature(proc_macro_diagnostic, proc_macro_span)]
 #![allow(clippy::explicit_auto_deref)]
 
-use proc_macro2::{Literal, Span};
+use proc_macro2::{Ident, Literal, Span};
 use quote::quote;
 use syn::parse_macro_input;
 
 use hydroflow_core::graph::flat_graph::FlatGraph;
 use hydroflow_core::parse::HfCode;
+
+#[proc_macro]
+pub fn hydroflow_syntax(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let hydroflow_crate = proc_macro_crate::crate_name("hydroflow")
+        .expect("hydroflow should be present in `Cargo.toml`");
+    let hydroflow_crate = match hydroflow_crate {
+        proc_macro_crate::FoundCrate::Itself => quote! { crate },
+        proc_macro_crate::FoundCrate::Name(name) => {
+            let ident = Ident::new(&name, Span::call_site());
+            quote! { #ident }
+        }
+    };
+
+    let input = parse_macro_input!(input as HfCode);
+
+    let flat_graph = FlatGraph::from_hfcode(input);
+    flat_graph.validate_operators();
+    let part_graph = flat_graph.into_partitioned_graph();
+    part_graph.as_code(hydroflow_crate).into()
+}
 
 #[proc_macro]
 pub fn hydroflow_parser(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
