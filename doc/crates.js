@@ -1,1 +1,1 @@
-window.ALL_CRATES = ["hydroflow","hydroflow_macro","relalg"];
+window.ALL_CRATES = ["hydroflow","hydroflow_core","hydroflow_macro","relalg"];

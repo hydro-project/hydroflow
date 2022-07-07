@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":[["Node",""]],"mod":[["flat_graph",""],["partitioned_graph",""]],"struct":[["NodeId","ID to identify a node (operator or handoff) in both [`flat_graph::FlatGraph`] and [`partitioned_graph::PartitionedGraph`]."],["SubgraphId","ID to identify a subgraph in [`partitioned_graph::PartitionedGraph`]."]],"type":[["EdgePort",""],["EdgePortRef",""]]};
