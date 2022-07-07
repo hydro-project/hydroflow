@@ -45,6 +45,35 @@ impl std::fmt::Debug for Node {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Color {
+    /// Pull (green)
+    Pull,
+    /// Push (blue)
+    Push,
+    /// Computation (yellow)
+    Comp,
+    /// Handoff (red) -- not a color for operators, inserted between subgraphs.
+    Hoff,
+}
+
+pub fn node_color(node: &Node, inn_degree: usize, out_degree: usize) -> Option<Color> {
+    // Determine op color based on in and out degree. If linear (1 in 1 out), color is None.
+    match node {
+        Node::Operator(_) => match (1 < inn_degree, 1 < out_degree) {
+            (true, true) => Some(Color::Comp),
+            (true, false) => Some(Color::Pull),
+            (false, true) => Some(Color::Push),
+            (false, false) => match (inn_degree, out_degree) {
+                (0, _) => Some(Color::Pull),
+                (_, 0) => Some(Color::Push),
+                _same => None,
+            },
+        },
+        Node::Handoff => Some(Color::Hoff),
+    }
+}
+
 impl From<FlatGraph> for PartitionedGraph {
     fn from(mut flat_graph: FlatGraph) -> Self {
         // Algorithm:
@@ -52,40 +81,13 @@ impl From<FlatGraph> for PartitionedGraph {
         // 2. Collect edges. Sort so edges which should not be split across a handoff come first.
         // 3. For each edge, try to join `(to, from)` into the same subgraph.
 
-        /// Pull (green)
-        /// Push (blue)
-        /// Handoff (red) -- not a color for operators, inserted between subgraphs.
-        /// Computation (yellow)
-        #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
-        enum Color {
-            Pull,
-            Push,
-            Comp,
-            Hoff,
-        }
-
         let mut node_color: SecondaryMap<NodeId, Option<Color>> = flat_graph
             .nodes
             .keys()
             .map(|node_id| {
-                // Determine op color based on in and out degree. If linear (1 in 1 out), color is None.
-                let op_color = {
-                    let inn_degree = flat_graph.preds[node_id].len();
-                    let out_degree = flat_graph.succs[node_id].len();
-                    match &flat_graph.nodes[node_id] {
-                        Node::Operator(_) => match (1 < inn_degree, 1 < out_degree) {
-                            (true, true) => Some(Color::Comp),
-                            (true, false) => Some(Color::Pull),
-                            (false, true) => Some(Color::Push),
-                            (false, false) => match (inn_degree, out_degree) {
-                                (0, _) => Some(Color::Pull),
-                                (_, 0) => Some(Color::Push),
-                                _same => None,
-                            },
-                        },
-                        Node::Handoff => Some(Color::Hoff),
-                    }
-                };
+                let inn_degree = flat_graph.preds[node_id].len();
+                let out_degree = flat_graph.succs[node_id].len();
+                let op_color = node_color(&flat_graph.nodes[node_id], inn_degree, out_degree);
                 (node_id, op_color)
             })
             .collect();
@@ -208,27 +210,88 @@ impl From<FlatGraph> for PartitionedGraph {
             }
         }
 
-        // Mapping from representative `NodeId` to the `SubgraphId`.
-        let mut node_to_subgraph = HashMap::new();
-        // List of nodes in each `SubgraphId`.
-        let mut subgraph_nodes: SlotMap<SubgraphId, Vec<NodeId>> =
-            SlotMap::with_capacity_and_key(flat_graph.nodes.len());
-        // `SubgraphId` for each `NodeId`.
-        let node_subgraph = flat_graph
-            .nodes
-            .iter()
-            .filter_map(|(node_id, node)| match node {
-                Node::Operator(_op) => {
-                    let repr_id = node_union.find(node_id);
-                    let subgraph_id = *node_to_subgraph
-                        .entry(repr_id)
-                        .or_insert_with(|| subgraph_nodes.insert(Default::default()));
-                    subgraph_nodes[subgraph_id].push(node_id);
-                    Some((node_id, subgraph_id))
+        // // Mapping from representative `NodeId` to the `SubgraphId`.
+        // let mut node_to_subgraph = HashMap::new();
+        // // List of nodes in each `SubgraphId`.
+        // let mut subgraph_nodes: SlotMap<SubgraphId, Vec<NodeId>> =
+        //     SlotMap::with_capacity_and_key(flat_graph.nodes.len());
+        // // `SubgraphId` for each `NodeId`.
+        // let node_subgraph = flat_graph
+        //     .nodes
+        //     .iter()
+        //     .filter_map(|(node_id, node)| match node {
+        //         Node::Operator(_op) => {
+        //             let repr_id = node_union.find(node_id);
+        //             let subgraph_id = *node_to_subgraph
+        //                 .entry(repr_id)
+        //                 .or_insert_with(|| subgraph_nodes.insert(Default::default()));
+        //             subgraph_nodes[subgraph_id].push(node_id);
+        //             Some((node_id, subgraph_id))
+        //         }
+        //         Node::Handoff => None,
+        //     })
+        //     .collect();
+
+        // Determine node's subgraph and subgraph's nodes in topological sort order.
+        let (node_subgraph, subgraph_nodes) = {
+            struct SubgraphTopoSort<'a> {
+                nodes: &'a SlotMap<NodeId, Node>,
+                preds: &'a SecondaryMap<NodeId, HashMap<LitInt, (NodeId, LitInt)>>,
+                node_union: &'a mut UnionFind<NodeId>,
+                marked: HashSet<NodeId>,
+                subgraph_nodes: SecondaryMap<NodeId, Vec<NodeId>>,
+            }
+            impl<'a> SubgraphTopoSort<'a> {
+                pub fn visit(&mut self, node_id: NodeId) {
+                    // Already marked.
+                    if self.marked.contains(&node_id) {
+                        return;
+                    }
+                    // Ignore handoff nodes.
+                    if matches!(self.nodes[node_id], Node::Handoff) {
+                        return;
+                    }
+
+                    for &(next_back, _) in self.preds[node_id].values() {
+                        if self.node_union.same_set(node_id, next_back) {
+                            self.visit(next_back);
+                        }
+                    }
+
+                    let repr_node = self.node_union.find(node_id);
+                    if !self.subgraph_nodes.contains_key(repr_node) {
+                        self.subgraph_nodes.insert(repr_node, Default::default());
+                    }
+                    self.subgraph_nodes[repr_node].push(node_id);
+                    self.marked.insert(node_id);
                 }
-                Node::Handoff => None,
-            })
-            .collect();
+            }
+
+            let (marked, subgraph_nodes) = Default::default();
+            let mut sg_topo_sort = SubgraphTopoSort {
+                nodes: &flat_graph.nodes,
+                preds: &new_preds,
+                node_union: &mut node_union,
+                marked,
+                subgraph_nodes,
+            };
+            for node_id in flat_graph.nodes.keys() {
+                sg_topo_sort.visit(node_id);
+            }
+
+            let mut node_subgraph: SecondaryMap<NodeId, SubgraphId> = Default::default();
+            let mut subgraph_nodes: SlotMap<SubgraphId, Vec<NodeId>> = Default::default();
+            for (_repr_node, member_nodes) in sg_topo_sort.subgraph_nodes {
+                subgraph_nodes.insert_with_key(|subgraph_id| {
+                    for &node_id in member_nodes.iter() {
+                        node_subgraph.insert(node_id, subgraph_id);
+                    }
+                    member_nodes
+                });
+            }
+
+            (node_subgraph, subgraph_nodes)
+        };
 
         PartitionedGraph {
             nodes: flat_graph.nodes,
