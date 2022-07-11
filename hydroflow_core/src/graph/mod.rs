@@ -15,6 +15,7 @@ use self::flat_graph::FlatGraph;
 use self::partitioned_graph::PartitionedGraph;
 
 pub mod flat_graph;
+pub mod ops;
 pub mod partitioned_graph;
 
 new_key_type! {
