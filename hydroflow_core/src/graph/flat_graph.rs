@@ -6,7 +6,8 @@ use syn::punctuated::Pair;
 use syn::spanned::Spanned;
 use syn::{Ident, LitInt};
 
-use crate::parse::{HfCode, HfStatement, Pipeline};
+use crate::graph::ops::{RangeTrait, OPERATORS};
+use crate::parse::{HfCode, HfStatement, Operator, Pipeline};
 use crate::pretty_span::PrettySpan;
 
 use super::partitioned_graph::PartitionedGraph;
@@ -155,90 +156,77 @@ impl FlatGraph {
     /// (Emits error messages on span).
     /// TODO(mingwei): Clean this up, make it do more than just arity.
     pub fn validate_operators(&self) {
-        use std::ops::{Bound, RangeBounds};
-        trait RangeTrait<T>
-        where
-            T: ?Sized,
-        {
-            fn start_bound(&self) -> Bound<&T>;
-            fn end_bound(&self) -> Bound<&T>;
-            fn contains(&self, item: &T) -> bool
-            where
-                T: PartialOrd<T>;
-        }
-        impl<R, T> RangeTrait<T> for R
-        where
-            R: RangeBounds<T>,
-        {
-            fn start_bound(&self) -> Bound<&T> {
-                self.start_bound()
-            }
-
-            fn end_bound(&self) -> Bound<&T> {
-                self.end_bound()
-            }
-
-            fn contains(&self, item: &T) -> bool
-            where
-                T: PartialOrd<T>,
-            {
-                self.contains(item)
-            }
-        }
-
         for (node_key, node) in self.nodes.iter() {
             match node {
                 Node::Operator(operator) => {
                     let op_name = &*operator.path.to_token_stream().to_string();
-                    let (inn_allowed, out_allowed): (
-                        &dyn RangeTrait<usize>,
-                        &dyn RangeTrait<usize>,
-                    ) = match op_name {
-                        "merge" => (&(2..), &(1..=1)),
-                        "join" => (&(2..=2), &(1..=1)),
-                        "tee" => (&(1..=1), &(2..)),
-                        "map" | "dedup" => (&(1..=1), &(1..=1)),
-                        "input" | "seed" => (&(0..=0), &(1..=1)),
-                        "for_each" => (&(1..=1), &(0..=0)),
-                        unknown => {
+                    match OPERATORS.iter().find(|&op| op_name == op.name) {
+                        Some(op_constraints) => {
+                            fn emit_arity_error(
+                                operator: &Operator,
+                                is_in: bool,
+                                is_hard: bool,
+                                degree: usize,
+                                range: &dyn RangeTrait<usize>,
+                            ) {
+                                let op_name = &*operator.path.to_token_stream().to_string();
+                                let message = format!(
+                                    "`{}` {} have {} {}, actually has {}.",
+                                    op_name,
+                                    if is_hard { "must" } else { "should" },
+                                    range.human_string(),
+                                    if is_in { "inputs" } else { "outputs" },
+                                    degree,
+                                );
+                                if !range.contains(&degree) {
+                                    if is_hard {
+                                        operator.span().unwrap().error(message).emit();
+                                    } else {
+                                        operator.span().unwrap().warning(message).emit();
+                                    }
+                                }
+                            }
+
+                            let inn_degree = self.preds[node_key].len();
+                            emit_arity_error(
+                                operator,
+                                true,
+                                true,
+                                inn_degree,
+                                op_constraints.hard_range_inn,
+                            );
+                            emit_arity_error(
+                                operator,
+                                true,
+                                false,
+                                inn_degree,
+                                op_constraints.soft_range_inn,
+                            );
+
+                            let out_degree = self.succs[node_key].len();
+                            emit_arity_error(
+                                operator,
+                                false,
+                                true,
+                                out_degree,
+                                op_constraints.hard_range_out,
+                            );
+                            emit_arity_error(
+                                operator,
+                                false,
+                                false,
+                                out_degree,
+                                op_constraints.soft_range_out,
+                            );
+                        }
+                        None => {
                             operator
                                 .path
                                 .span()
                                 .unwrap()
-                                .error(format!("Unknown operator `{}`", unknown))
+                                .error(format!("Unknown operator `{}`", op_name))
                                 .emit();
-                            (&(..), &(..))
                         }
-                    };
-
-                    let inn_degree = self.preds[node_key].len();
-                    if !inn_allowed.contains(&inn_degree) {
-                        operator
-                            .span()
-                            .unwrap()
-                            .error(format!(
-                        "`{}` has invalid number of inputs: {}. Allowed is between {:?} and {:?}.",
-                        op_name,
-                        inn_degree,
-                        inn_allowed.start_bound(),
-                        inn_allowed.end_bound()
-                    ))
-                            .emit();
-                    }
-
-                    let out_degree = self.succs[node_key].len();
-                    if !out_allowed.contains(&out_degree) {
-                        operator
-                            .span()
-                            .unwrap()
-                            .error(format!(
-                        "`{}` has invalid number of outputs: {}. Allowed is between {:?} and {:?}.",
-                        op_name,
-                        out_degree,
-                        out_allowed.start_bound(),
-                        out_allowed.end_bound()
-                    ))
-                            .emit();
                     }
                 }
                 Node::Handoff => todo!("Node::Handoff"),

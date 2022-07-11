@@ -75,7 +75,7 @@ impl PartitionedGraph {
                     .map(|(pred_id, _)| pred_id)
                     .fold(String::new(), |mut str, pred_id| {
                         use std::fmt::Write;
-                        write!(&mut str, "{:?}", pred_id).unwrap();
+                        write!(&mut str, "{:?},", pred_id).unwrap();
                         str
                     });
                 let lit = Literal::string(&*format!("{} [{}]", op.to_token_stream(), preds));
