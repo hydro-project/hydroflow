@@ -1,7 +1,10 @@
-use std::{
-    fmt::Display,
-    ops::{Bound, RangeBounds},
-};
+use std::fmt::Display;
+use std::ops::{Bound, RangeBounds};
+
+use proc_macro2::{Ident, Literal, TokenStream};
+use quote::quote;
+use syn::punctuated::Punctuated;
+use syn::{Expr, Token};
 
 pub const RANGE_0: &'static dyn RangeTrait<usize> = &(0..=0);
 pub const RANGE_1: &'static dyn RangeTrait<usize> = &(1..=1);
@@ -13,7 +16,12 @@ pub const OPERATORS: [OperatorConstraints; 8] = [
         soft_range_inn: &(2..),
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
-        write_fn: &(|| {}),
+        write_fn: &(|_, inputs, _, _| {
+            let mut inputs = inputs.iter();
+            let first = inputs.next();
+            let rest = inputs.map(|ident| quote! { .chain(#ident) });
+            quote! { #first #( #rest )* }
+        }),
     },
     OperatorConstraints {
         name: "join",
@@ -21,7 +29,16 @@ pub const OPERATORS: [OperatorConstraints; 8] = [
         soft_range_inn: &(2..=2),
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
-        write_fn: &(|| {}),
+        write_fn: &(|root, inputs, _, _| {
+            let lhs = &inputs[0];
+            let rhs = &inputs[1];
+            quote! {
+                {
+                    let mut todo = Default::default();
+                    #root::compiled::pull::SymmetricHashJoin::new(#lhs, #rhs, &mut todo)
+                }
+            }
+        }),
     },
     OperatorConstraints {
         name: "tee",
@@ -29,7 +46,14 @@ pub const OPERATORS: [OperatorConstraints; 8] = [
         soft_range_inn: RANGE_1,
         hard_range_out: &(0..),
         soft_range_out: &(2..),
-        write_fn: &(|| {}),
+        write_fn: &(|root, _, outputs, _| {
+            outputs
+                .iter()
+                .rev()
+                .map(|i| quote! { #i })
+                .reduce(|b, a| quote! { #root::compiled::tee::Tee::new(#a, #b) })
+                .unwrap_or_default()
+        }),
     },
     OperatorConstraints {
         name: "map",
@@ -37,7 +61,10 @@ pub const OPERATORS: [OperatorConstraints; 8] = [
         soft_range_inn: RANGE_1,
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
-        write_fn: &(|| {}),
+        write_fn: &(|_, inputs, _, args| {
+            let input = &inputs[0];
+            quote! { #input.map(#args) }
+        }),
     },
     OperatorConstraints {
         name: "dedup",
@@ -45,7 +72,11 @@ pub const OPERATORS: [OperatorConstraints; 8] = [
         soft_range_inn: RANGE_1,
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
-        write_fn: &(|| {}),
+        write_fn: &(|_, inputs, outputs, args| {
+            let ts = quote! { dedup #( #inputs ),* #( #outputs ),* #args };
+            let lit = Literal::string(&*format!("{}", ts));
+            quote! { #lit }
+        }),
     },
     OperatorConstraints {
         name: "input",
@@ -53,7 +84,19 @@ pub const OPERATORS: [OperatorConstraints; 8] = [
         soft_range_inn: RANGE_0,
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
-        write_fn: &(|| {}),
+        write_fn: &(|root, _, _, _| {
+            quote! {
+                {
+                    let (send, recv) = #root::tokio::sync::mpsc::unbounded_channel();
+                    std::iter::from_fn(move || {
+                        match recv.poll_recv(&mut std::task::Context::from_waker(&mut context.waker())) {
+                            std::task::Poll::Ready(maybe) => maybe,
+                            std::task::Poll::Pending => None,
+                        }
+                    })
+                }
+            }
+        }),
     },
     OperatorConstraints {
         name: "seed",
@@ -61,7 +104,9 @@ pub const OPERATORS: [OperatorConstraints; 8] = [
         soft_range_inn: RANGE_0,
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
-        write_fn: &(|| {}),
+        write_fn: &(|_, _, _, args| {
+            quote! { std::iter::IntoIterator::into_iter(#args) }
+        }),
     },
     OperatorConstraints {
         name: "for_each",
@@ -69,7 +114,9 @@ pub const OPERATORS: [OperatorConstraints; 8] = [
         soft_range_inn: RANGE_1,
         hard_range_out: RANGE_0,
         soft_range_out: RANGE_0,
-        write_fn: &(|| {}),
+        write_fn: &(|root, _inputs, _, args| {
+            quote! { #root::compiled::for_each::ForEach::new(#args) }
+        }),
     },
 ];
 
@@ -79,7 +126,17 @@ pub struct OperatorConstraints {
     pub soft_range_inn: &'static dyn RangeTrait<usize>,
     pub hard_range_out: &'static dyn RangeTrait<usize>,
     pub soft_range_out: &'static dyn RangeTrait<usize>,
-    pub write_fn: &'static dyn Fn(),
+    /// # Args
+    /// 1. Root (`crate` or `hydroflow`)
+    /// 2. Input identifiers.
+    /// 3. Output identifiers.
+    /// 4. Arguments.
+    pub write_fn: &'static dyn Fn(
+        &TokenStream,
+        &[Ident],
+        &[Ident],
+        &Punctuated<Expr, Token![,]>,
+    ) -> TokenStream,
 }
 
 pub trait RangeTrait<T>
