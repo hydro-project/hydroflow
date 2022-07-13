@@ -3,7 +3,7 @@
 use std::collections::{HashMap, HashSet};
 
 use proc_macro2::Span;
-use slotmap::{new_key_type, SecondaryMap, SlotMap};
+use slotmap::{new_key_type, Key, SecondaryMap, SlotMap};
 use syn::spanned::Spanned;
 use syn::LitInt;
 
@@ -34,6 +34,14 @@ pub type EdgePortRef<'a> = (NodeId, &'a LitInt);
 pub enum Node {
     Operator(Operator),
     Handoff,
+}
+impl Spanned for Node {
+    fn span(&self) -> Span {
+        match self {
+            Node::Operator(op) => op.span(),
+            Node::Handoff => Span::call_site(),
+        }
+    }
 }
 impl std::fmt::Debug for Node {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -162,11 +170,13 @@ impl From<FlatGraph> for PartitionedGraph {
             }
         }
 
+        // Copy of `self.preds` for the output.
         let mut new_preds: SecondaryMap<NodeId, HashMap<LitInt, EdgePort>> = flat_graph
             .nodes
             .keys()
             .map(|k| (k, Default::default()))
             .collect();
+        // Copy of `self.succs` for the output.
         let mut new_succs: SecondaryMap<NodeId, HashMap<LitInt, EdgePort>> = flat_graph
             .nodes
             .keys()
@@ -210,28 +220,6 @@ impl From<FlatGraph> for PartitionedGraph {
                     .insert(LitInt::new("0", Span::call_site()), (dst, dst_idx.clone()));
             }
         }
-
-        // // Mapping from representative `NodeId` to the `SubgraphId`.
-        // let mut node_to_subgraph = HashMap::new();
-        // // List of nodes in each `SubgraphId`.
-        // let mut subgraph_nodes: SlotMap<SubgraphId, Vec<NodeId>> =
-        //     SlotMap::with_capacity_and_key(flat_graph.nodes.len());
-        // // `SubgraphId` for each `NodeId`.
-        // let node_subgraph = flat_graph
-        //     .nodes
-        //     .iter()
-        //     .filter_map(|(node_id, node)| match node {
-        //         Node::Operator(_op) => {
-        //             let repr_id = node_union.find(node_id);
-        //             let subgraph_id = *node_to_subgraph
-        //                 .entry(repr_id)
-        //                 .or_insert_with(|| subgraph_nodes.insert(Default::default()));
-        //             subgraph_nodes[subgraph_id].push(node_id);
-        //             Some((node_id, subgraph_id))
-        //         }
-        //         Node::Handoff => None,
-        //     })
-        //     .collect();
 
         // Determine node's subgraph and subgraph's nodes in topological sort order.
         let (node_subgraph, subgraph_nodes) = {
@@ -280,8 +268,11 @@ impl From<FlatGraph> for PartitionedGraph {
                 sg_topo_sort.visit(node_id);
             }
 
+            // For a `NodeId`, what `SubgraphId` does it belong to.
             let mut node_subgraph: SecondaryMap<NodeId, SubgraphId> = Default::default();
+            // For a `SubgraphId`, what `NodeId`s belong to it.
             let mut subgraph_nodes: SlotMap<SubgraphId, Vec<NodeId>> = Default::default();
+            // Populate above.
             for (_repr_node, member_nodes) in sg_topo_sort.subgraph_nodes {
                 subgraph_nodes.insert_with_key(|subgraph_id| {
                     for &node_id in member_nodes.iter() {
@@ -294,12 +285,43 @@ impl From<FlatGraph> for PartitionedGraph {
             (node_subgraph, subgraph_nodes)
         };
 
+        // Get data on handoff src and dst subgraphs.
+        let mut subgraph_recv_handoffs: SecondaryMap<SubgraphId, Vec<NodeId>> = subgraph_nodes
+            .keys()
+            .map(|k| (k, Default::default()))
+            .collect();
+        let mut subgraph_send_handoffs = subgraph_recv_handoffs.clone();
+        for edge in iter_edges(&new_succs) {
+            let ((src, _), (dst, _)) = edge;
+            let (src_node, dst_node) = (&flat_graph.nodes[src], &flat_graph.nodes[dst]);
+            match (src_node, dst_node) {
+                (Node::Operator(_), Node::Operator(_)) => {}
+                (Node::Operator(_), Node::Handoff) => {
+                    subgraph_send_handoffs[node_subgraph[src]].push(dst);
+                }
+                (Node::Handoff, Node::Operator(_)) => {
+                    subgraph_recv_handoffs[node_subgraph[dst]].push(src);
+                }
+                (Node::Handoff, Node::Handoff) => {
+                    Span::call_site().unwrap().error(format!(
+                        "Internal Error: Consecutive handoffs {:?} -> {:?}",
+                        src.data(),
+                        dst.data()
+                    ));
+                }
+            }
+        }
+        println!("XXX {:?}\n{:?}", subgraph_recv_handoffs, subgraph_send_handoffs);
+
         PartitionedGraph {
             nodes: flat_graph.nodes,
             preds: new_preds,
             succs: new_succs,
             node_subgraph,
+
             subgraph_nodes,
+            subgraph_recv_handoffs,
+            subgraph_send_handoffs,
         }
     }
 }
