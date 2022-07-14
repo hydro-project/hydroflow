@@ -108,7 +108,7 @@ pub fn test_surface_syntax_reachability_modified() {
                 let op_1v1 = hoff_10v1_recv.chain(op_3v1);
                 let op_2v1 = op_1v1.map(|v| (v, ()));
                 let op_8v1 = {
-                    let (send, recv) = hydroflow::tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
+                    let (mut send, mut recv) = hydroflow::tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
                     std::iter::from_fn(move || {
                         match recv
                             .poll_recv(&mut std::task::Context::from_waker(&mut context.waker()))

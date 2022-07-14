@@ -1,13 +1,12 @@
 //! Graph representation stages for Hydroflow graphs.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashSet};
 
 use proc_macro2::Span;
 use slotmap::{new_key_type, Key, SecondaryMap, SlotMap};
 use syn::spanned::Spanned;
-use syn::LitInt;
 
-use crate::parse::Operator;
+use crate::parse::{IndexInt, Operator};
 use crate::pretty_span::PrettySpan;
 use crate::union_find::UnionFind;
 
@@ -28,8 +27,10 @@ new_key_type! {
     pub struct SubgraphId;
 }
 
-pub type EdgePort = (NodeId, LitInt);
-pub type EdgePortRef<'a> = (NodeId, &'a LitInt);
+pub type EdgePort = (NodeId, IndexInt);
+pub type EdgePortRef<'a> = (NodeId, &'a IndexInt);
+/// BTreeMap is used to ensure iteration order matches `IndexInt` order.
+pub type OutboundEdges = BTreeMap<IndexInt, EdgePort>;
 
 pub enum Node {
     Operator(Operator),
@@ -171,13 +172,13 @@ impl From<FlatGraph> for PartitionedGraph {
         }
 
         // Copy of `self.preds` for the output.
-        let mut new_preds: SecondaryMap<NodeId, HashMap<LitInt, EdgePort>> = flat_graph
+        let mut new_preds: SecondaryMap<NodeId, OutboundEdges> = flat_graph
             .nodes
             .keys()
             .map(|k| (k, Default::default()))
             .collect();
         // Copy of `self.succs` for the output.
-        let mut new_succs: SecondaryMap<NodeId, HashMap<LitInt, EdgePort>> = flat_graph
+        let mut new_succs: SecondaryMap<NodeId, OutboundEdges> = flat_graph
             .nodes
             .keys()
             .map(|k| (k, Default::default()))
@@ -202,22 +203,18 @@ impl From<FlatGraph> for PartitionedGraph {
                 new_preds.insert(hoff_id, Default::default());
                 new_succs.insert(hoff_id, Default::default());
 
+                let zero_index = IndexInt {
+                    value: 0,
+                    span: Span::call_site(),
+                };
                 // A -> H.
-                new_succs[src].insert(
-                    src_idx.clone(),
-                    (hoff_id, LitInt::new("0", Span::call_site())),
-                );
+                new_succs[src].insert(src_idx.clone(), (hoff_id, zero_index));
                 // A <- H.
-                new_preds[hoff_id]
-                    .insert(LitInt::new("0", Span::call_site()), (src, src_idx.clone()));
+                new_preds[hoff_id].insert(zero_index, (src, src_idx.clone()));
                 // H <- Z.
-                new_preds[dst].insert(
-                    dst_idx.clone(),
-                    (hoff_id, LitInt::new("0", Span::call_site())),
-                );
+                new_preds[dst].insert(dst_idx.clone(), (hoff_id, zero_index));
                 // H -> Z.
-                new_succs[hoff_id]
-                    .insert(LitInt::new("0", Span::call_site()), (dst, dst_idx.clone()));
+                new_succs[hoff_id].insert(zero_index, (dst, dst_idx.clone()));
             }
         }
 
@@ -225,7 +222,7 @@ impl From<FlatGraph> for PartitionedGraph {
         let (node_subgraph, subgraph_nodes) = {
             struct SubgraphTopoSort<'a> {
                 nodes: &'a SlotMap<NodeId, Node>,
-                preds: &'a SecondaryMap<NodeId, HashMap<LitInt, (NodeId, LitInt)>>,
+                preds: &'a SecondaryMap<NodeId, OutboundEdges>,
                 node_union: &'a mut UnionFind<NodeId>,
                 marked: HashSet<NodeId>,
                 subgraph_nodes: SecondaryMap<NodeId, Vec<NodeId>>,
@@ -311,7 +308,10 @@ impl From<FlatGraph> for PartitionedGraph {
                 }
             }
         }
-        println!("XXX {:?}\n{:?}", subgraph_recv_handoffs, subgraph_send_handoffs);
+        println!(
+            "XXX {:?}\n{:?}",
+            subgraph_recv_handoffs, subgraph_send_handoffs
+        );
 
         PartitionedGraph {
             nodes: flat_graph.nodes,
@@ -327,7 +327,7 @@ impl From<FlatGraph> for PartitionedGraph {
 }
 
 pub(crate) fn iter_edges(
-    succs: &SecondaryMap<NodeId, HashMap<LitInt, (NodeId, LitInt)>>,
+    succs: &SecondaryMap<NodeId, OutboundEdges>,
 ) -> impl '_ + Iterator<Item = (EdgePortRef, EdgePortRef)> {
     succs.iter().flat_map(|(src, succs)| {
         succs

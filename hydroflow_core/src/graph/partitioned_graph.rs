@@ -1,21 +1,18 @@
-use std::collections::HashMap;
-
 use proc_macro2::{Ident, Literal, Span, TokenStream};
 use quote::{quote, ToTokens};
 use slotmap::{Key, SecondaryMap, SlotMap};
 use syn::spanned::Spanned;
-use syn::LitInt;
 
 use super::flat_graph::FlatGraph;
 use super::ops::OPERATORS;
-use super::{node_color, Color, EdgePort, EdgePortRef, Node, NodeId, SubgraphId};
+use super::{node_color, Color, EdgePortRef, Node, NodeId, OutboundEdges, SubgraphId};
 
 #[derive(Default)]
 #[allow(dead_code)] // TODO(mingwei): remove when no longer needed.
 pub struct PartitionedGraph {
     pub(crate) nodes: SlotMap<NodeId, Node>,
-    pub(crate) preds: SecondaryMap<NodeId, HashMap<LitInt, EdgePort>>,
-    pub(crate) succs: SecondaryMap<NodeId, HashMap<LitInt, EdgePort>>,
+    pub(crate) preds: SecondaryMap<NodeId, OutboundEdges>,
+    pub(crate) succs: SecondaryMap<NodeId, OutboundEdges>,
     pub(crate) node_subgraph: SecondaryMap<NodeId, SubgraphId>,
 
     pub(crate) subgraph_nodes: SlotMap<SubgraphId, Vec<NodeId>>,
@@ -135,6 +132,7 @@ impl PartitionedGraph {
                             .unwrap_or_else(|| panic!("Failed to find op: {}", op_name));
 
                         let ident = self.node_id_as_ident(node_id, false);
+                        // Note: `IndexInt` order is guaranteed by `BTreeMap` iteration order.
                         let inputs: Vec<_> = self.preds[node_id]
                             .values()
                             .map(|&(pred_id, _)| self.node_id_as_ident(pred_id, true))
