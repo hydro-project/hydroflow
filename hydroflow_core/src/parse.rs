@@ -1,4 +1,6 @@
-use proc_macro2::TokenStream;
+use std::hash::Hash;
+
+use proc_macro2::{Span, TokenStream};
 use quote::ToTokens;
 use syn::parse::{Parse, ParseStream};
 use syn::punctuated::{Pair, Punctuated};
@@ -160,7 +162,7 @@ impl ToTokens for ArrowConnector {
 
 pub struct Indexing {
     pub bracket_token: Bracket,
-    pub index: LitInt,
+    pub index: IndexInt,
 }
 impl Parse for Indexing {
     fn parse(input: ParseStream) -> syn::Result<Self> {
@@ -288,5 +290,48 @@ impl ToTokens for Operator {
         self.paren_token.surround(tokens, |tokens| {
             self.args.to_tokens(tokens);
         });
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct IndexInt {
+    pub value: usize,
+    pub span: Span,
+}
+impl Parse for IndexInt {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let lit_int: LitInt = input.parse()?;
+        let value = lit_int.base10_parse()?;
+        Ok(Self {
+            value,
+            span: lit_int.span(),
+        })
+    }
+}
+impl ToTokens for IndexInt {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let lit_int = LitInt::new(&*self.value.to_string(), self.span);
+        lit_int.to_tokens(tokens)
+    }
+}
+impl Hash for IndexInt {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.value.hash(state);
+    }
+}
+impl PartialOrd for IndexInt {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.value.partial_cmp(&other.value)
+    }
+}
+impl PartialEq for IndexInt {
+    fn eq(&self, other: &Self) -> bool {
+        self.value == other.value
+    }
+}
+impl Eq for IndexInt {}
+impl Ord for IndexInt {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.value.cmp(&other.value)
     }
 }

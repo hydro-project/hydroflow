@@ -87,7 +87,7 @@ pub const OPERATORS: [OperatorConstraints; 7] = [
         write_fn: &(|root, _, _, type_args, _| {
             quote! {
                 {
-                    let (send, recv) = #root::tokio::sync::mpsc::unbounded_channel::<#type_args>();
+                    let (mut send, mut recv) = #root::tokio::sync::mpsc::unbounded_channel::<#type_args>();
                     std::iter::from_fn(move || {
                         match recv.poll_recv(&mut std::task::Context::from_waker(&mut context.waker())) {
                             std::task::Poll::Ready(maybe) => maybe,
