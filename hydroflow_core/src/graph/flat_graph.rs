@@ -4,20 +4,20 @@ use quote::ToTokens;
 use slotmap::{Key, SecondaryMap, SlotMap};
 use syn::punctuated::Pair;
 use syn::spanned::Spanned;
-use syn::{Ident, LitInt};
+use syn::Ident;
 
 use crate::graph::ops::{RangeTrait, OPERATORS};
-use crate::parse::{HfCode, HfStatement, Operator, Pipeline};
+use crate::parse::{HfCode, HfStatement, IndexInt, Operator, Pipeline};
 use crate::pretty_span::PrettySpan;
 
 use super::partitioned_graph::PartitionedGraph;
-use super::{EdgePort, EdgePortRef, Node, NodeId};
+use super::{EdgePortRef, Node, NodeId, OutboundEdges};
 
 #[derive(Debug, Default)]
 pub struct FlatGraph {
     pub(crate) nodes: SlotMap<NodeId, Node>,
-    pub(crate) preds: SecondaryMap<NodeId, HashMap<LitInt, EdgePort>>,
-    pub(crate) succs: SecondaryMap<NodeId, HashMap<LitInt, EdgePort>>,
+    pub(crate) preds: SecondaryMap<NodeId, OutboundEdges>,
+    pub(crate) succs: SecondaryMap<NodeId, OutboundEdges>,
     names: HashMap<Ident, Ports>,
 }
 impl FlatGraph {
@@ -67,22 +67,20 @@ impl FlatGraph {
                             curr_arrow.expect("Cannot have missing intermediate arrow");
 
                         if let (Some(out), Some(inn)) = (curr_ports.out, next_ports.inn) {
-                            let src_port = curr_arrow.src.map(|x| x.index).unwrap_or_else(|| {
-                                LitInt::new(
-                                    &*self.succs[out].len().to_string(),
-                                    curr_arrow.arrow.span(),
-                                )
-                            });
-                            let dst_port = curr_arrow.dst.map(|x| x.index).unwrap_or_else(|| {
-                                LitInt::new(
-                                    &*self.preds[inn].len().to_string(),
-                                    curr_arrow.arrow.span(),
-                                )
-                            });
+                            let src_port =
+                                curr_arrow.src.map(|x| x.index).unwrap_or_else(|| IndexInt {
+                                    value: self.succs[out].len(),
+                                    span: curr_arrow.arrow.span(),
+                                });
+                            let dst_port =
+                                curr_arrow.dst.map(|x| x.index).unwrap_or_else(|| IndexInt {
+                                    value: self.preds[inn].len(),
+                                    span: curr_arrow.arrow.span(),
+                                });
 
                             {
                                 /// Helper to emit conflicts when a port is overwritten.
-                                fn emit_conflict(inout: &str, old: &LitInt, new: &LitInt) {
+                                fn emit_conflict(inout: &str, old: &IndexInt, new: &IndexInt) {
                                     old.span()
                                         .unwrap()
                                         .error(format!(
