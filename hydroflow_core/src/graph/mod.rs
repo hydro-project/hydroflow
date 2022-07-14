@@ -308,10 +308,6 @@ impl From<FlatGraph> for PartitionedGraph {
                 }
             }
         }
-        println!(
-            "XXX {:?}\n{:?}",
-            subgraph_recv_handoffs, subgraph_send_handoffs
-        );
 
         PartitionedGraph {
             nodes: flat_graph.nodes,

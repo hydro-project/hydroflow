@@ -1,10 +1,13 @@
 use std::fmt::Display;
 use std::ops::{Bound, RangeBounds};
 
-use proc_macro2::{Ident, TokenStream};
+use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote;
+use slotmap::Key;
 use syn::punctuated::Punctuated;
 use syn::{Expr, GenericArgument, Token};
+
+use super::{NodeId, SubgraphId};
 
 pub const RANGE_0: &'static dyn RangeTrait<usize> = &(0..=0);
 pub const RANGE_1: &'static dyn RangeTrait<usize> = &(1..=1);
@@ -16,11 +19,14 @@ pub const OPERATORS: [OperatorConstraints; 7] = [
         soft_range_inn: &(2..),
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
-        write_fn: &(|_, inputs, _, _, _| {
+        write_prologue_fn: &(|_, _| quote! {}),
+        write_iterator_fn: &(|_, &WriteIteratorArgs { inputs, .. }| {
             let mut inputs = inputs.iter();
             let first = inputs.next();
             let rest = inputs.map(|ident| quote! { .chain(#ident) });
-            quote! { #first #( #rest )* }
+            quote! {
+                #first #( #rest )*
+            }
         }),
     },
     OperatorConstraints {
@@ -29,14 +35,44 @@ pub const OPERATORS: [OperatorConstraints; 7] = [
         soft_range_inn: &(2..=2),
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
-        write_fn: &(|root, inputs, _, _, _| {
+        write_prologue_fn: &(|&WriteContextArgs {
+                                  subgraph_id,
+                                  node_id,
+                                  ..
+                              },
+                              _| {
+            // TODO(mingwei): use state api.
+            let joindata_ident = Ident::new(
+                &*format!(
+                    "sg_{:?}_node_{:?}_joindata",
+                    subgraph_id.data(),
+                    node_id.data()
+                ),
+                Span::call_site(),
+            );
+            quote! {
+                let mut #joindata_ident = Default::default();
+            }
+        }),
+        write_iterator_fn: &(|&WriteContextArgs {
+                                  root,
+                                  subgraph_id,
+                                  node_id,
+                                  ..
+                              },
+                              &WriteIteratorArgs { inputs, .. }| {
+            let joindata_ident = Ident::new(
+                &*format!(
+                    "sg_{:?}_node_{:?}_joindata",
+                    subgraph_id.data(),
+                    node_id.data()
+                ),
+                Span::call_site(),
+            );
             let lhs = &inputs[0];
             let rhs = &inputs[1];
             quote! {
-                {
-                    let mut todo = Default::default();
-                    #root::compiled::pull::SymmetricHashJoin::new(#lhs, #rhs, &mut todo)
-                }
+                #root::compiled::pull::SymmetricHashJoin::new(#lhs, #rhs, &mut #joindata_ident)
             }
         }),
     },
@@ -46,7 +82,9 @@ pub const OPERATORS: [OperatorConstraints; 7] = [
         soft_range_inn: RANGE_1,
         hard_range_out: &(0..),
         soft_range_out: &(2..),
-        write_fn: &(|root, _, outputs, _, _| {
+        write_prologue_fn: &(|_, _| quote! {}),
+        write_iterator_fn: &(|&WriteContextArgs { root, .. },
+                              &WriteIteratorArgs { outputs, .. }| {
             outputs
                 .iter()
                 .rev()
@@ -61,9 +99,13 @@ pub const OPERATORS: [OperatorConstraints; 7] = [
         soft_range_inn: RANGE_1,
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
-        write_fn: &(|_, inputs, _, _, args| {
+        write_prologue_fn: &(|_, _| quote! {}),
+        write_iterator_fn: &(|_,
+                              &WriteIteratorArgs {
+                                  inputs, arguments, ..
+                              }| {
             let input = &inputs[0];
-            quote! { #input.map(#args) }
+            quote! { #input.map(#arguments) }
         }),
     },
     // OperatorConstraints {
@@ -72,6 +114,7 @@ pub const OPERATORS: [OperatorConstraints; 7] = [
     //     soft_range_inn: RANGE_1,
     //     hard_range_out: RANGE_1,
     //     soft_range_out: RANGE_1,
+    //    write_prologue_fn: &(|_| quote! {}),
     //     write_fn: &(|_, inputs, outputs, args| {
     //         let ts = quote! { dedup #( #inputs ),* #( #outputs ),* #args };
     //         let lit = Literal::string(&*format!("{}", ts));
@@ -84,12 +127,41 @@ pub const OPERATORS: [OperatorConstraints; 7] = [
         soft_range_inn: RANGE_0,
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
-        write_fn: &(|root, _, _, type_args, _| {
+        write_prologue_fn:
+            &(|&WriteContextArgs {
+                   root,
+                   subgraph_id,
+                   node_id,
+                   ..
+               },
+               &WriteIteratorArgs { type_arguments, .. }| {
+                // TODO(mingwei): better span.
+                let send_ident = Ident::new(
+                    &*format!("sg_{:?}_node_{:?}_send", subgraph_id.data(), node_id.data()),
+                    Span::call_site(),
+                );
+                let recv_ident = Ident::new(
+                    &*format!("sg_{:?}_node_{:?}_recv", subgraph_id.data(), node_id.data()),
+                    Span::call_site(),
+                );
+                quote! {
+                    let (#send_ident, mut #recv_ident) = #root::tokio::sync::mpsc::unbounded_channel::<#type_arguments>();
+                }
+            }),
+        write_iterator_fn: &(|&WriteContextArgs {
+                                  subgraph_id,
+                                  node_id,
+                                  ..
+                              },
+                              _| {
+            let recv_ident = Ident::new(
+                &*format!("sg_{:?}_node_{:?}_recv", subgraph_id.data(), node_id.data()),
+                Span::call_site(),
+            );
             quote! {
                 {
-                    let (mut send, mut recv) = #root::tokio::sync::mpsc::unbounded_channel::<#type_args>();
-                    std::iter::from_fn(move || {
-                        match recv.poll_recv(&mut std::task::Context::from_waker(&mut context.waker())) {
+                    std::iter::from_fn(|| {
+                        match #recv_ident.poll_recv(&mut std::task::Context::from_waker(&mut context.waker())) {
                             std::task::Poll::Ready(maybe) => maybe,
                             std::task::Poll::Pending => None,
                         }
@@ -104,8 +176,9 @@ pub const OPERATORS: [OperatorConstraints; 7] = [
         soft_range_inn: RANGE_0,
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
-        write_fn: &(|_, _, _, _, args| {
-            quote! { std::iter::IntoIterator::into_iter(#args) }
+        write_prologue_fn: &(|_, _| quote! {}),
+        write_iterator_fn: &(|_, &WriteIteratorArgs { arguments, .. }| {
+            quote! { std::iter::IntoIterator::into_iter(#arguments) }
         }),
     },
     OperatorConstraints {
@@ -114,11 +187,27 @@ pub const OPERATORS: [OperatorConstraints; 7] = [
         soft_range_inn: RANGE_1,
         hard_range_out: RANGE_0,
         soft_range_out: RANGE_0,
-        write_fn: &(|root, _inputs, _, _, args| {
-            quote! { #root::compiled::for_each::ForEach::new(#args) }
+        write_prologue_fn: &(|_, _| quote! {}),
+        write_iterator_fn: &(|&WriteContextArgs { root, .. },
+                              &WriteIteratorArgs { arguments, .. }| {
+            quote! { #root::compiled::for_each::ForEach::new(#arguments) }
         }),
     },
 ];
+
+pub struct WriteContextArgs<'a> {
+    pub root: &'a TokenStream,
+    pub subgraph_id: SubgraphId,
+    pub node_id: NodeId,
+    pub ident: &'a Ident,
+}
+
+pub struct WriteIteratorArgs<'a> {
+    pub inputs: &'a [Ident],
+    pub outputs: &'a [Ident],
+    pub type_arguments: Option<&'a Punctuated<GenericArgument, Token![,]>>,
+    pub arguments: &'a Punctuated<Expr, Token![,]>,
+}
 
 pub struct OperatorConstraints {
     /// Operator's name.
@@ -132,20 +221,10 @@ pub struct OperatorConstraints {
     /// Output argument range required to not show an warning.
     pub soft_range_out: &'static dyn RangeTrait<usize>,
     // TODO: generic argument ranges.
-
-    /// # Args
-    /// 1. Root (`crate` or `hydroflow`)
-    /// 2. Input identifiers.
-    /// 3. Output identifiers.
-    /// 4. Type (generic) arguments.
-    /// 5. Arguments.
-    pub write_fn: &'static dyn Fn(
-        &TokenStream,
-        &[Ident],
-        &[Ident],
-        Option<&Punctuated<GenericArgument, Token![,]>>,
-        &Punctuated<Expr, Token![,]>,
-    ) -> TokenStream,
+    pub write_prologue_fn:
+        &'static dyn Fn(&WriteContextArgs<'_>, &WriteIteratorArgs<'_>) -> TokenStream,
+    pub write_iterator_fn:
+        &'static dyn Fn(&WriteContextArgs<'_>, &WriteIteratorArgs<'_>) -> TokenStream,
 }
 
 pub trait RangeTrait<T>

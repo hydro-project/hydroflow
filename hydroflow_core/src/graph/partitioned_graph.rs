@@ -4,7 +4,7 @@ use slotmap::{Key, SecondaryMap, SlotMap};
 use syn::spanned::Spanned;
 
 use super::flat_graph::FlatGraph;
-use super::ops::OPERATORS;
+use super::ops::{WriteContextArgs, WriteIteratorArgs, OPERATORS};
 use super::{node_color, Color, EdgePortRef, Node, NodeId, OutboundEdges, SubgraphId};
 
 #[derive(Default)]
@@ -99,26 +99,26 @@ impl PartitionedGraph {
                     }
                 });
 
-                let node_code = {
-                    let nodes_iter = {
-                        let pull_to_push_idx = subgraph_nodes
-                            .iter()
-                            .position(|&node_id| {
-                                node_color(
-                                    &self.nodes[node_id],
-                                    self.preds[node_id].len(),
-                                    self.succs[node_id].len(),
-                                )
-                                .map(|color| Color::Pull != color)
-                                .unwrap_or(false)
-                            })
-                            .unwrap_or(subgraph_nodes.len());
+                let mut op_prologue_code = Vec::new();
+                let mut subgraph_op_iter_code = Vec::new();
+                {
+                    let pull_to_push_idx = subgraph_nodes
+                        .iter()
+                        .position(|&node_id| {
+                            node_color(
+                                &self.nodes[node_id],
+                                self.preds[node_id].len(),
+                                self.succs[node_id].len(),
+                            )
+                            .map(|color| Color::Pull != color)
+                            .unwrap_or(false)
+                        })
+                        .unwrap_or(subgraph_nodes.len());
 
-                        let (pull_half, push_half) = subgraph_nodes.split_at(pull_to_push_idx);
-                        pull_half.iter().chain(push_half.iter().rev())
-                    };
+                    let (pull_half, push_half) = subgraph_nodes.split_at(pull_to_push_idx);
+                    let nodes_iter = pull_half.iter().chain(push_half.iter().rev());
 
-                    nodes_iter.map(|&node_id| {
+                    for &node_id in nodes_iter {
                         let node = &self.nodes[node_id];
                         let op = match node {
                             Node::Operator(op) => op,
@@ -132,31 +132,62 @@ impl PartitionedGraph {
                             .unwrap_or_else(|| panic!("Failed to find op: {}", op_name));
 
                         let ident = self.node_id_as_ident(node_id, false);
-                        // Note: `IndexInt` order is guaranteed by `BTreeMap` iteration order.
-                        let inputs: Vec<_> = self.preds[node_id]
-                            .values()
-                            .map(|&(pred_id, _)| self.node_id_as_ident(pred_id, true))
-                            .collect();
-                        let outputs: Vec<_> = self.succs[node_id]
-                            .values()
-                            .map(|&(succ_id, _)| self.node_id_as_ident(succ_id, false))
-                            .collect();
 
-                        let code = (op_constraints.write_fn)(
-                            &root,
-                            &*inputs,
-                            &*outputs,
-                            op.type_arguments(),
-                            &op.args,
-                        );
-                        quote! {
-                            let #ident = #code;
+                        {
+                            let context_args = WriteContextArgs {
+                                root: &root,
+                                subgraph_id,
+                                node_id,
+                                ident: &ident,
+                            };
+
+                            // Note: `IndexInt` order is guaranteed by `BTreeMap` iteration order.
+                            let inputs: Vec<_> = self.preds[node_id]
+                                .values()
+                                .map(|&(pred_id, _)| self.node_id_as_ident(pred_id, true))
+                                .collect();
+                            let outputs: Vec<_> = self.succs[node_id]
+                                .values()
+                                .map(|&(succ_id, _)| self.node_id_as_ident(succ_id, false))
+                                .collect();
+
+                            let iter_args = WriteIteratorArgs {
+                                inputs: &*inputs,
+                                outputs: &*outputs,
+                                type_arguments: op.type_arguments(),
+                                arguments: &op.args,
+                            };
+
+                            op_prologue_code.push((op_constraints.write_prologue_fn)(
+                                &context_args,
+                                &iter_args,
+                            ));
+
+                            let iter_code =
+                                (op_constraints.write_iterator_fn)(&context_args, &iter_args);
+
+                            subgraph_op_iter_code.push(quote! {
+                                let #ident = #iter_code;
+                            });
                         }
-                    })
+                    }
+
+                    {
+                        let pull_to_push_idx = pull_to_push_idx;
+                        let pull_ident =
+                            self.node_id_as_ident(subgraph_nodes[pull_to_push_idx - 1], false);
+                        let push_ident =
+                            self.node_id_as_ident(subgraph_nodes[pull_to_push_idx], false);
+                        subgraph_op_iter_code.push(quote! {
+                            #root::compiled::pivot::Pivot::new(#pull_ident, #push_ident).run();
+                        });
+                    }
                 };
 
                 let hoff_name = Literal::string(&*format!("Subgraph {:?}", subgraph_id));
                 quote! {
+                    #( #op_prologue_code )*
+
                     df.add_subgraph(
                         #hoff_name,
                         tl!( #( #recv_ports ),* ),
@@ -164,7 +195,7 @@ impl PartitionedGraph {
                         move |context, tl!( #( #recv_ports ),* ), tl!( #( #send_ports ),* )| {
                             #( #recv_port_code )*
                             #( #send_port_code )*
-                            #( #node_code )*
+                            #( #subgraph_op_iter_code )*
                         },
                     );
                 }
