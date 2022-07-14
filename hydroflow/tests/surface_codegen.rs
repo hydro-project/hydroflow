@@ -138,15 +138,40 @@ pub fn test_surface_syntax_reachability_modified() {
 
 #[test]
 pub fn test_surface_syntax_reachability_generated() {
-    hydroflow_syntax! {
+    let (edges_in, edges_out) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
+
+    let mut df = hydroflow_syntax! {
         reached_vertices = (merge() -> map(|v| (v, ())));
         (seed([0]) -> [0]reached_vertices);
 
         my_join = (join() -> map(|(_src, ((), dst))| dst) -> tee());
         (reached_vertices -> [0]my_join);
-        (input<(usize, usize)>() -> [1]my_join);
+        (input(edges_out) -> [1]my_join);
 
         (my_join[0] -> [1]reached_vertices);
         (my_join[1] -> for_each(|x| println!("Reached: {}", x)));
     };
+
+    df.run_available();
+
+    edges_in.send((0, 1)).unwrap();
+    df.run_available();
+
+    edges_in.send((2, 4)).unwrap();
+    edges_in.send((3, 4)).unwrap();
+    df.run_available();
+
+    edges_in.send((1, 2)).unwrap();
+    df.run_available();
+
+    edges_in.send((0, 3)).unwrap();
+    df.run_available();
+
+    edges_in.send((0, 3)).unwrap();
+    df.run_available();
 }
+// Reached: 1
+// Reached: 2
+// Reached: 4
+// Reached: 3
+// Reached: 4
