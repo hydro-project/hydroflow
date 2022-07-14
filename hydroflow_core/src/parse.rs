@@ -4,7 +4,10 @@ use syn::parse::{Parse, ParseStream};
 use syn::punctuated::{Pair, Punctuated};
 use syn::spanned::Spanned;
 use syn::token::{Bracket, Paren};
-use syn::{bracketed, parenthesized, Expr, ExprPath, Ident, LitInt, Token};
+use syn::{
+    bracketed, parenthesized, Expr, GenericArgument, Ident, LitInt, Path, PathArguments,
+    PathSegment, Token,
+};
 
 pub struct HfCode {
     pub statements: Punctuated<HfStatement, Token![;]>,
@@ -77,7 +80,7 @@ impl Parse for Pipeline {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         if input.peek(Paren) {
             Ok(Self::Chain(input.parse()?))
-        } else if input.peek2(Paren) {
+        } else if input.peek2(Paren) || input.peek2(Token![<]) || input.peek2(Token![::]) {
             Ok(Self::Operator(input.parse()?))
         } else {
             Ok(Self::Name(input.parse()?))
@@ -217,9 +220,42 @@ impl ToTokens for MultiplePipeline {
 }
 
 pub struct Operator {
-    pub path: ExprPath,
+    pub path: Path,
     pub paren_token: Paren,
     pub args: Punctuated<Expr, Token![,]>,
+}
+impl Operator {
+    pub fn name(&self) -> Path {
+        Path {
+            leading_colon: self.path.leading_colon,
+            segments: self
+                .path
+                .segments
+                .iter()
+                .map(|seg| PathSegment {
+                    ident: seg.ident.clone(),
+                    arguments: PathArguments::None,
+                })
+                .collect(),
+        }
+    }
+
+    pub fn name_string(&self) -> String {
+        self.name().to_token_stream().to_string()
+    }
+
+    pub fn type_arguments(&self) -> Option<&Punctuated<GenericArgument, Token![,]>> {
+        let end = self.path.segments.last()?;
+        if let PathArguments::AngleBracketed(type_args) = &end.arguments {
+            Some(&type_args.args)
+        } else {
+            None
+        }
+    }
+
+    pub fn args(&self) -> &Punctuated<Expr, Token![,]> {
+        &self.args
+    }
 }
 impl Parse for Operator {
     fn parse(input: ParseStream) -> syn::Result<Self> {

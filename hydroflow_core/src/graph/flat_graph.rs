@@ -159,7 +159,7 @@ impl FlatGraph {
         for (node_key, node) in self.nodes.iter() {
             match node {
                 Node::Operator(operator) => {
-                    let op_name = &*operator.path.to_token_stream().to_string();
+                    let op_name = &*operator.name_string();
                     match OPERATORS.iter().find(|&op| op_name == op.name) {
                         Some(op_constraints) => {
                             fn emit_arity_error(
@@ -169,7 +169,7 @@ impl FlatGraph {
                                 degree: usize,
                                 range: &dyn RangeTrait<usize>,
                             ) {
-                                let op_name = &*operator.path.to_token_stream().to_string();
+                                let op_name = &*operator.name_string();
                                 let message = format!(
                                     "`{}` {} have {} {}, actually has {}.",
                                     op_name,

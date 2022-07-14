@@ -94,13 +94,13 @@ impl PartitionedGraph {
                 let recv_port_code = recv_ports
                     .iter()
                     .map(|ident| quote! { let #ident = #ident.take_inner().into_iter(); });
-                let send_port_code = send_ports
-                    .iter()
-                    .map(|ident| quote! {
+                let send_port_code = send_ports.iter().map(|ident| {
+                    quote! {
                         let #ident = #root::compiled::for_each::ForEach::new(|v| {
                             #ident.give(Some(v));
                         });
-                    });
+                    }
+                });
 
                 let node_code = {
                     let nodes_iter = {
@@ -128,7 +128,7 @@ impl PartitionedGraph {
                             Node::Handoff => unreachable!("Handoffs are not part of subgraphs."),
                         };
 
-                        let op_name = &*op.path.to_token_stream().to_string();
+                        let op_name = &*op.name_string();
                         let op_constraints = OPERATORS
                             .iter()
                             .find(|op| op_name == op.name)
@@ -144,7 +144,13 @@ impl PartitionedGraph {
                             .map(|&(succ_id, _)| self.node_id_as_ident(succ_id, false))
                             .collect();
 
-                        let code = (op_constraints.write_fn)(&root, &*inputs, &*outputs, &op.args);
+                        let code = (op_constraints.write_fn)(
+                            &root,
+                            &*inputs,
+                            &*outputs,
+                            op.type_arguments(),
+                            &op.args,
+                        );
                         quote! {
                             let #ident = #code;
                         }

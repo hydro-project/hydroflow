@@ -108,7 +108,7 @@ pub fn test_surface_syntax_reachability_modified() {
                 let op_1v1 = hoff_10v1_recv.chain(op_3v1);
                 let op_2v1 = op_1v1.map(|v| (v, ()));
                 let op_8v1 = {
-                    let (send, recv) = hydroflow::tokio::sync::mpsc::unbounded_channel();
+                    let (send, recv) = hydroflow::tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
                     std::iter::from_fn(move || {
                         match recv
                             .poll_recv(&mut std::task::Context::from_waker(&mut context.waker()))
@@ -140,9 +140,9 @@ pub fn test_surface_syntax_reachability_generated() {
         reached_vertices = (merge() -> map(|v| (v, ())));
         (seed([0]) -> [0]reached_vertices);
 
-        my_join = (join() -> map(|(_src, ((), dst))| dst) -> dedup() -> tee());
+        my_join = (join() -> map(|(_src, ((), dst))| dst) -> tee());
         (reached_vertices -> [0]my_join);
-        (input(/*(v, v) edges*/) -> [1]my_join);
+        (input<(usize, usize)>() -> [1]my_join);
 
         (my_join[0] -> [1]reached_vertices);
         (my_join[1] -> for_each(|x| println!("Reached: {}", x)));
