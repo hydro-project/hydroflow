@@ -91,26 +91,27 @@ pub fn test_surface_syntax_reachability_target() {
 pub fn test_surface_syntax_reachability_modified() {
     {
         use hydroflow::tl;
-
         let mut df = hydroflow::scheduled::graph::Hydroflow::new();
-        let (hoff_10v1_send, hoff_10v1_recv) =
-            df.make_edge::<_, hydroflow::scheduled::handoff::VecHandoff<_>>("handoff NodeId(10v1)");
+        let (hoff_9v1_send, hoff_9v1_recv) =
+            df.make_edge::<_, hydroflow::scheduled::handoff::VecHandoff<_>>("handoff NodeId(9v1)");
+        let (sg_1v1_node_7v1_send, mut sg_1v1_node_7v1_recv) =
+            hydroflow::tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
+        let mut sg_1v1_node_4v1_joindata = Default::default();
         df.add_subgraph(
             "Subgraph SubgraphId(1v1)",
-            tl!(hoff_10v1_recv),
-            tl!(hoff_10v1_send),
-            move |context, tl!(hoff_10v1_recv), tl!(hoff_10v1_send)| {
-                let hoff_10v1_recv = hoff_10v1_recv.take_inner().into_iter();
-                let hoff_10v1_send = hydroflow::compiled::for_each::ForEach::new(|v| {
-                    hoff_10v1_send.give(Some(v));
+            tl!(hoff_9v1_recv),
+            tl!(hoff_9v1_send),
+            move |context, tl!(hoff_9v1_recv), tl!(hoff_9v1_send)| {
+                let hoff_9v1_recv = hoff_9v1_recv.take_inner().into_iter();
+                let hoff_9v1_send = hydroflow::compiled::for_each::ForEach::new(|v| {
+                    hoff_9v1_send.give(Some(v));
                 });
                 let op_3v1 = std::iter::IntoIterator::into_iter([0]);
-                let op_1v1 = hoff_10v1_recv.chain(op_3v1);
+                let op_1v1 = op_3v1.chain(hoff_9v1_recv);
                 let op_2v1 = op_1v1.map(|v| (v, ()));
-                let op_8v1 = {
-                    let (mut send, mut recv) = hydroflow::tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
-                    std::iter::from_fn(move || {
-                        match recv
+                let op_7v1 = {
+                    std::iter::from_fn(|| {
+                        match sg_1v1_node_7v1_recv
                             .poll_recv(&mut std::task::Context::from_waker(&mut context.waker()))
                         {
                             std::task::Poll::Ready(maybe) => maybe,
@@ -118,18 +119,19 @@ pub fn test_surface_syntax_reachability_modified() {
                         }
                     })
                 };
-                let op_4v1 = {
-                    let mut todo = Default::default();
-                    hydroflow::compiled::pull::SymmetricHashJoin::new(op_2v1, op_8v1, &mut todo)
-                };
+                let op_4v1 = hydroflow::compiled::pull::SymmetricHashJoin::new(
+                    op_2v1,
+                    op_7v1,
+                    &mut sg_1v1_node_4v1_joindata,
+                );
                 let op_5v1 = op_4v1.map(|(_src, ((), dst))| dst);
-                let op_6v1 = "op_5v1 op_7v1";
-                let op_9v1 =
-                    hydroflow::compiled::for_each::ForEach::new(|x| println!("Reached {}", x));
-                let op_7v1 = hydroflow::compiled::tee::Tee::new(op_9v1, hoff_10v1_send);
+                let op_8v1 = hydroflow::compiled::for_each::ForEach::new(|x| {
+                    println!("Reached: {}\n", x);
+                });
+                let op_6v1 = hydroflow::compiled::tee::Tee::new(hoff_9v1_send, op_8v1);
+                hydroflow::compiled::pivot::Pivot::new(op_5v1, op_6v1).run();
             },
         );
-
         df
     };
 }
