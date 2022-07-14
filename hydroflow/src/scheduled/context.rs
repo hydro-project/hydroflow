@@ -55,10 +55,7 @@ impl Context {
         }
         impl ArcWake for ContextWaker {
             fn wake_by_ref(arc_self: &Arc<Self>) {
-                arc_self
-                    .event_queue_send
-                    .send(arc_self.subgraph_id)
-                    .unwrap();
+                let _recv_closed_error = arc_self.event_queue_send.send(arc_self.subgraph_id);
             }
         }
 

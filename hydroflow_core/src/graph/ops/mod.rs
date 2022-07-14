@@ -127,41 +127,18 @@ pub const OPERATORS: [OperatorConstraints; 7] = [
         soft_range_inn: RANGE_0,
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
-        write_prologue_fn:
-            &(|&WriteContextArgs {
-                   root,
-                   subgraph_id,
-                   node_id,
-                   ..
-               },
-               &WriteIteratorArgs { type_arguments, .. }| {
-                // TODO(mingwei): better span.
-                let send_ident = Ident::new(
-                    &*format!("sg_{:?}_node_{:?}_send", subgraph_id.data(), node_id.data()),
-                    Span::call_site(),
-                );
-                let recv_ident = Ident::new(
-                    &*format!("sg_{:?}_node_{:?}_recv", subgraph_id.data(), node_id.data()),
-                    Span::call_site(),
-                );
-                quote! {
-                    let (#send_ident, mut #recv_ident) = #root::tokio::sync::mpsc::unbounded_channel::<#type_arguments>();
-                }
-            }),
-        write_iterator_fn: &(|&WriteContextArgs {
-                                  subgraph_id,
-                                  node_id,
-                                  ..
-                              },
-                              _| {
-            let recv_ident = Ident::new(
-                &*format!("sg_{:?}_node_{:?}_recv", subgraph_id.data(), node_id.data()),
-                Span::call_site(),
-            );
+        write_prologue_fn: &(|_, &WriteIteratorArgs { arguments, .. }| {
+            let receiver = &arguments[0];
+            quote! {
+                let mut #receiver = #receiver;
+            }
+        }),
+        write_iterator_fn: &(|_, &WriteIteratorArgs { arguments, .. }| {
+            let receiver = &arguments[0];
             quote! {
                 {
                     std::iter::from_fn(|| {
-                        match #recv_ident.poll_recv(&mut std::task::Context::from_waker(&mut context.waker())) {
+                        match #receiver.poll_recv(&mut std::task::Context::from_waker(&mut context.waker())) {
                             std::task::Poll::Ready(maybe) => maybe,
                             std::task::Poll::Pending => None,
                         }
