@@ -289,23 +289,6 @@
 <span id="283">283</span>
 <span id="284">284</span>
 <span id="285">285</span>
-<span id="286">286</span>
-<span id="287">287</span>
-<span id="288">288</span>
-<span id="289">289</span>
-<span id="290">290</span>
-<span id="291">291</span>
-<span id="292">292</span>
-<span id="293">293</span>
-<span id="294">294</span>
-<span id="295">295</span>
-<span id="296">296</span>
-<span id="297">297</span>
-<span id="298">298</span>
-<span id="299">299</span>
-<span id="300">300</span>
-<span id="301">301</span>
-<span id="302">302</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::collections::HashMap</span>;
 
 <span class="kw">use</span> <span class="ident">quote::ToTokens</span>;
@@ -314,7 +297,8 @@
 <span class="kw">use</span> <span class="ident">syn::spanned::Spanned</span>;
 <span class="kw">use</span> <span class="ident">syn</span>::{<span class="ident">Ident</span>, <span class="ident">LitInt</span>};
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::parse</span>::{<span class="ident">HfCode</span>, <span class="ident">HfStatement</span>, <span class="ident">Pipeline</span>};
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::graph::ops</span>::{<span class="ident">RangeTrait</span>, <span class="ident">OPERATORS</span>};
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::parse</span>::{<span class="ident">HfCode</span>, <span class="ident">HfStatement</span>, <span class="ident">Operator</span>, <span class="ident">Pipeline</span>};
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::pretty_span::PrettySpan</span>;
 
 <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::partitioned_graph::PartitionedGraph</span>;
@@ -463,90 +447,77 @@
     <span class="doccomment">/// (Emits error messages on span).</span>
     <span class="doccomment">/// TODO(mingwei): Clean this up, make it do more than just arity.</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">validate_operators</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) {
-        <span class="kw">use</span> <span class="ident">std::ops</span>::{<span class="ident">Bound</span>, <span class="ident">RangeBounds</span>};
-        <span class="kw">trait</span> <span class="ident">RangeTrait</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>
-        <span class="kw">where</span>
-            <span class="ident">T</span>: <span class="question-mark">?</span><span class="ident">Sized</span>,
-        {
-            <span class="kw">fn</span> <span class="ident">start_bound</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Bound</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">T</span><span class="op">&gt;</span>;
-            <span class="kw">fn</span> <span class="ident">end_bound</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Bound</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">T</span><span class="op">&gt;</span>;
-            <span class="kw">fn</span> <span class="ident">contains</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">item</span>: <span class="kw-2">&amp;</span><span class="ident">T</span>) -&gt; <span class="ident">bool</span>
-            <span class="kw">where</span>
-                <span class="ident">T</span>: <span class="ident">PartialOrd</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>;
-        }
-        <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">R</span>, <span class="ident">T</span><span class="op">&gt;</span> <span class="ident">RangeTrait</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">R</span>
-        <span class="kw">where</span>
-            <span class="ident">R</span>: <span class="ident">RangeBounds</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
-        {
-            <span class="kw">fn</span> <span class="ident">start_bound</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Bound</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">T</span><span class="op">&gt;</span> {
-                <span class="self">self</span>.<span class="ident">start_bound</span>()
-            }
-
-            <span class="kw">fn</span> <span class="ident">end_bound</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Bound</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">T</span><span class="op">&gt;</span> {
-                <span class="self">self</span>.<span class="ident">end_bound</span>()
-            }
-
-            <span class="kw">fn</span> <span class="ident">contains</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">item</span>: <span class="kw-2">&amp;</span><span class="ident">T</span>) -&gt; <span class="ident">bool</span>
-            <span class="kw">where</span>
-                <span class="ident">T</span>: <span class="ident">PartialOrd</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
-            {
-                <span class="self">self</span>.<span class="ident">contains</span>(<span class="ident">item</span>)
-            }
-        }
-
         <span class="kw">for</span> (<span class="ident">node_key</span>, <span class="ident">node</span>) <span class="kw">in</span> <span class="self">self</span>.<span class="ident">nodes</span>.<span class="ident">iter</span>() {
             <span class="kw">match</span> <span class="ident">node</span> {
                 <span class="ident">Node::Operator</span>(<span class="ident">operator</span>) =&gt; {
                     <span class="kw">let</span> <span class="ident">op_name</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">operator</span>.<span class="ident">path</span>.<span class="ident">to_token_stream</span>().<span class="ident">to_string</span>();
-                    <span class="kw">let</span> (<span class="ident">inn_allowed</span>, <span class="ident">out_allowed</span>): (
-                        <span class="kw-2">&amp;</span><span class="kw">dyn</span> <span class="ident">RangeTrait</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>,
-                        <span class="kw-2">&amp;</span><span class="kw">dyn</span> <span class="ident">RangeTrait</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>,
-                    ) <span class="op">=</span> <span class="kw">match</span> <span class="ident">op_name</span> {
-                        <span class="string">&quot;merge&quot;</span> =&gt; (<span class="kw-2">&amp;</span>(<span class="number">2</span>..), <span class="kw-2">&amp;</span>(<span class="number">1</span>..<span class="op">=</span><span class="number">1</span>)),
-                        <span class="string">&quot;join&quot;</span> =&gt; (<span class="kw-2">&amp;</span>(<span class="number">2</span>..<span class="op">=</span><span class="number">2</span>), <span class="kw-2">&amp;</span>(<span class="number">1</span>..<span class="op">=</span><span class="number">1</span>)),
-                        <span class="string">&quot;tee&quot;</span> =&gt; (<span class="kw-2">&amp;</span>(<span class="number">1</span>..<span class="op">=</span><span class="number">1</span>), <span class="kw-2">&amp;</span>(<span class="number">2</span>..)),
-                        <span class="string">&quot;map&quot;</span> <span class="op">|</span> <span class="string">&quot;dedup&quot;</span> =&gt; (<span class="kw-2">&amp;</span>(<span class="number">1</span>..<span class="op">=</span><span class="number">1</span>), <span class="kw-2">&amp;</span>(<span class="number">1</span>..<span class="op">=</span><span class="number">1</span>)),
-                        <span class="string">&quot;input&quot;</span> <span class="op">|</span> <span class="string">&quot;seed&quot;</span> =&gt; (<span class="kw-2">&amp;</span>(<span class="number">0</span>..<span class="op">=</span><span class="number">0</span>), <span class="kw-2">&amp;</span>(<span class="number">1</span>..<span class="op">=</span><span class="number">1</span>)),
-                        <span class="string">&quot;for_each&quot;</span> =&gt; (<span class="kw-2">&amp;</span>(<span class="number">1</span>..<span class="op">=</span><span class="number">1</span>), <span class="kw-2">&amp;</span>(<span class="number">0</span>..<span class="op">=</span><span class="number">0</span>)),
-                        <span class="ident">unknown</span> =&gt; {
+                    <span class="kw">match</span> <span class="ident">OPERATORS</span>.<span class="ident">iter</span>().<span class="ident">find</span>(<span class="op">|</span><span class="kw-2">&amp;</span><span class="ident">op</span><span class="op">|</span> <span class="ident">op_name</span> <span class="op">==</span> <span class="ident">op</span>.<span class="ident">name</span>) {
+                        <span class="prelude-val">Some</span>(<span class="ident">op_constraints</span>) =&gt; {
+                            <span class="kw">fn</span> <span class="ident">emit_arity_error</span>(
+                                <span class="ident">operator</span>: <span class="kw-2">&amp;</span><span class="ident">Operator</span>,
+                                <span class="ident">is_in</span>: <span class="ident">bool</span>,
+                                <span class="ident">is_hard</span>: <span class="ident">bool</span>,
+                                <span class="ident">degree</span>: <span class="ident">usize</span>,
+                                <span class="ident">range</span>: <span class="kw-2">&amp;</span><span class="kw">dyn</span> <span class="ident">RangeTrait</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>,
+                            ) {
+                                <span class="kw">let</span> <span class="ident">op_name</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">operator</span>.<span class="ident">path</span>.<span class="ident">to_token_stream</span>().<span class="ident">to_string</span>();
+                                <span class="kw">let</span> <span class="ident">message</span> <span class="op">=</span> <span class="macro">format!</span>(
+                                    <span class="string">&quot;`{}` {} have {} {}, actually has {}.&quot;</span>,
+                                    <span class="ident">op_name</span>,
+                                    <span class="kw">if</span> <span class="ident">is_hard</span> { <span class="string">&quot;must&quot;</span> } <span class="kw">else</span> { <span class="string">&quot;should&quot;</span> },
+                                    <span class="ident">range</span>.<span class="ident">human_string</span>(),
+                                    <span class="kw">if</span> <span class="ident">is_in</span> { <span class="string">&quot;inputs&quot;</span> } <span class="kw">else</span> { <span class="string">&quot;outputs&quot;</span> },
+                                    <span class="ident">degree</span>,
+                                );
+                                <span class="kw">if</span> <span class="op">!</span><span class="ident">range</span>.<span class="ident">contains</span>(<span class="kw-2">&amp;</span><span class="ident">degree</span>) {
+                                    <span class="kw">if</span> <span class="ident">is_hard</span> {
+                                        <span class="ident">operator</span>.<span class="ident">span</span>().<span class="ident">unwrap</span>().<span class="ident">error</span>(<span class="ident">message</span>).<span class="ident">emit</span>();
+                                    } <span class="kw">else</span> {
+                                        <span class="ident">operator</span>.<span class="ident">span</span>().<span class="ident">unwrap</span>().<span class="ident">warning</span>(<span class="ident">message</span>).<span class="ident">emit</span>();
+                                    }
+                                }
+                            }
+
+                            <span class="kw">let</span> <span class="ident">inn_degree</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">preds</span>[<span class="ident">node_key</span>].<span class="ident">len</span>();
+                            <span class="ident">emit_arity_error</span>(
+                                <span class="ident">operator</span>,
+                                <span class="bool-val">true</span>,
+                                <span class="bool-val">true</span>,
+                                <span class="ident">inn_degree</span>,
+                                <span class="ident">op_constraints</span>.<span class="ident">hard_range_inn</span>,
+                            );
+                            <span class="ident">emit_arity_error</span>(
+                                <span class="ident">operator</span>,
+                                <span class="bool-val">true</span>,
+                                <span class="bool-val">false</span>,
+                                <span class="ident">inn_degree</span>,
+                                <span class="ident">op_constraints</span>.<span class="ident">soft_range_inn</span>,
+                            );
+
+                            <span class="kw">let</span> <span class="ident">out_degree</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">succs</span>[<span class="ident">node_key</span>].<span class="ident">len</span>();
+                            <span class="ident">emit_arity_error</span>(
+                                <span class="ident">operator</span>,
+                                <span class="bool-val">false</span>,
+                                <span class="bool-val">true</span>,
+                                <span class="ident">out_degree</span>,
+                                <span class="ident">op_constraints</span>.<span class="ident">hard_range_out</span>,
+                            );
+                            <span class="ident">emit_arity_error</span>(
+                                <span class="ident">operator</span>,
+                                <span class="bool-val">false</span>,
+                                <span class="bool-val">false</span>,
+                                <span class="ident">out_degree</span>,
+                                <span class="ident">op_constraints</span>.<span class="ident">soft_range_out</span>,
+                            );
+                        }
+                        <span class="prelude-val">None</span> =&gt; {
                             <span class="ident">operator</span>
                                 .<span class="ident">path</span>
                                 .<span class="ident">span</span>()
                                 .<span class="ident">unwrap</span>()
-                                .<span class="ident">error</span>(<span class="macro">format!</span>(<span class="string">&quot;Unknown operator `{}`&quot;</span>, <span class="ident">unknown</span>))
+                                .<span class="ident">error</span>(<span class="macro">format!</span>(<span class="string">&quot;Unknown operator `{}`&quot;</span>, <span class="ident">op_name</span>))
                                 .<span class="ident">emit</span>();
-                            (<span class="kw-2">&amp;</span>(..), <span class="kw-2">&amp;</span>(..))
                         }
-                    };
-
-                    <span class="kw">let</span> <span class="ident">inn_degree</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">preds</span>[<span class="ident">node_key</span>].<span class="ident">len</span>();
-                    <span class="kw">if</span> <span class="op">!</span><span class="ident">inn_allowed</span>.<span class="ident">contains</span>(<span class="kw-2">&amp;</span><span class="ident">inn_degree</span>) {
-                        <span class="ident">operator</span>
-                            .<span class="ident">span</span>()
-                            .<span class="ident">unwrap</span>()
-                            .<span class="ident">error</span>(<span class="macro">format!</span>(
-                        <span class="string">&quot;`{}` has invalid number of inputs: {}. Allowed is between {:?} and {:?}.&quot;</span>,
-                        <span class="ident">op_name</span>,
-                        <span class="ident">inn_degree</span>,
-                        <span class="ident">inn_allowed</span>.<span class="ident">start_bound</span>(),
-                        <span class="ident">inn_allowed</span>.<span class="ident">end_bound</span>()
-                    ))
-                            .<span class="ident">emit</span>();
-                    }
-
-                    <span class="kw">let</span> <span class="ident">out_degree</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">succs</span>[<span class="ident">node_key</span>].<span class="ident">len</span>();
-                    <span class="kw">if</span> <span class="op">!</span><span class="ident">out_allowed</span>.<span class="ident">contains</span>(<span class="kw-2">&amp;</span><span class="ident">out_degree</span>) {
-                        <span class="ident">operator</span>
-                            .<span class="ident">span</span>()
-                            .<span class="ident">unwrap</span>()
-                            .<span class="ident">error</span>(<span class="macro">format!</span>(
-                        <span class="string">&quot;`{}` has invalid number of outputs: {}. Allowed is between {:?} and {:?}.&quot;</span>,
-                        <span class="ident">op_name</span>,
-                        <span class="ident">out_degree</span>,
-                        <span class="ident">out_allowed</span>.<span class="ident">start_bound</span>(),
-                        <span class="ident">out_allowed</span>.<span class="ident">end_bound</span>()
-                    ))
-                            .<span class="ident">emit</span>();
                     }
                 }
                 <span class="ident">Node::Handoff</span> =&gt; <span class="macro">todo!</span>(<span class="string">&quot;Node::Handoff&quot;</span>),
@@ -571,8 +542,8 @@
             <span class="kw">match</span> <span class="ident">node</span> {
                 <span class="ident">Node::Operator</span>(<span class="ident">operator</span>) =&gt; <span class="macro">writeln!</span>(
                     <span class="ident">write</span>,
-                    <span class="string">r#&quot;    {}[&quot;{}&quot;]&quot;#</span>,
-                    <span class="ident">key</span>.<span class="ident">data</span>().<span class="ident">as_ffi</span>(),
+                    <span class="string">r#&quot;    {:?}[&quot;{}&quot;]&quot;#</span>,
+                    <span class="ident">key</span>.<span class="ident">data</span>(),
                     <span class="ident">operator</span>
                         .<span class="ident">to_token_stream</span>()
                         .<span class="ident">to_string</span>()
@@ -581,18 +552,13 @@
                         .<span class="ident">replace</span>(<span class="string">&#39;&gt;&#39;</span>, <span class="string">&quot;&amp;gt;&quot;</span>)
                         .<span class="ident">replace</span>(<span class="string">&#39;&quot;&#39;</span>, <span class="string">&quot;&amp;quot;&quot;</span>),
                 ),
-                <span class="ident">Node::Handoff</span> =&gt; <span class="macro">writeln!</span>(<span class="ident">write</span>, <span class="string">r#&quot;    {}{{&quot;handoff&quot;}}&quot;#</span>, <span class="ident">key</span>.<span class="ident">data</span>().<span class="ident">as_ffi</span>()),
+                <span class="ident">Node::Handoff</span> =&gt; <span class="macro">writeln!</span>(<span class="ident">write</span>, <span class="string">r#&quot;    {:?}{{&quot;handoff&quot;}}&quot;#</span>, <span class="ident">key</span>.<span class="ident">data</span>()),
             }<span class="question-mark">?</span>;
         }
         <span class="macro">writeln!</span>(<span class="ident">write</span>)<span class="question-mark">?</span>;
         <span class="kw">for</span> (<span class="ident">src_key</span>, <span class="ident">_op</span>) <span class="kw">in</span> <span class="self">self</span>.<span class="ident">nodes</span>.<span class="ident">iter</span>() {
             <span class="kw">for</span> (<span class="ident">_src_port</span>, (<span class="ident">dst_key</span>, <span class="ident">_dst_port</span>)) <span class="kw">in</span> <span class="self">self</span>.<span class="ident">succs</span>[<span class="ident">src_key</span>].<span class="ident">iter</span>() {
-                <span class="macro">writeln!</span>(
-                    <span class="ident">write</span>,
-                    <span class="string">&quot;    {}--&gt;{}&quot;</span>,
-                    <span class="ident">src_key</span>.<span class="ident">data</span>().<span class="ident">as_ffi</span>(),
-                    <span class="ident">dst_key</span>.<span class="ident">data</span>().<span class="ident">as_ffi</span>()
-                )<span class="question-mark">?</span>;
+                <span class="macro">writeln!</span>(<span class="ident">write</span>, <span class="string">&quot;    {:?}--&gt;{:?}&quot;</span>, <span class="ident">src_key</span>.<span class="ident">data</span>(), <span class="ident">dst_key</span>.<span class="ident">data</span>())<span class="question-mark">?</span>;
             }
         }
         <span class="prelude-val">Ok</span>(())
@@ -609,5 +575,5 @@
     <span class="ident">out</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">NodeId</span><span class="op">&gt;</span>,
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow_core" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (c2f428d2f 2022-07-14)" ></div>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow_core" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (23e21bdd2 2022-07-15)" ></div>
 </body></html>
