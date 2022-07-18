@@ -191,7 +191,7 @@ fn test_partition() {
 }
 
 #[test]
-fn test_covid() {
+fn test_covid_tracing() {
     use crate::scheduled::handoff::VecHandoff;
     use prelude::*;
 
@@ -272,11 +272,13 @@ fn test_covid() {
         diagnosed_send.flush();
 
         hydroflow.run_available();
+        println!("A");
 
         contacts_send.give(Some((101, 103, mae_diag_datetime + 6))); // Mingwei + Mae
         contacts_send.flush();
 
         hydroflow.run_available();
+        println!("B");
 
         peoples_send.give(Some((103, ("Joe H", "+1 510 555 9999"))));
         peoples_send.flush();

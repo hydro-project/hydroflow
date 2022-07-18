@@ -12,7 +12,7 @@ use super::{NodeId, SubgraphId};
 pub const RANGE_0: &'static dyn RangeTrait<usize> = &(0..=0);
 pub const RANGE_1: &'static dyn RangeTrait<usize> = &(1..=1);
 
-pub const OPERATORS: [OperatorConstraints; 7] = [
+pub const OPERATORS: [OperatorConstraints; 10] = [
     OperatorConstraints {
         name: "merge",
         hard_range_inn: &(0..),
@@ -106,6 +106,51 @@ pub const OPERATORS: [OperatorConstraints; 7] = [
                               }| {
             let input = &inputs[0];
             quote! { #input.map(#arguments) }
+        }),
+    },
+    OperatorConstraints {
+        name: "flat_map",
+        hard_range_inn: RANGE_1,
+        soft_range_inn: RANGE_1,
+        hard_range_out: RANGE_1,
+        soft_range_out: RANGE_1,
+        write_prologue_fn: &(|_, _| quote! {}),
+        write_iterator_fn: &(|_,
+                              &WriteIteratorArgs {
+                                  inputs, arguments, ..
+                              }| {
+            let input = &inputs[0];
+            quote! { #input.flat_map(#arguments) }
+        }),
+    },
+    OperatorConstraints {
+        name: "filter_map",
+        hard_range_inn: RANGE_1,
+        soft_range_inn: RANGE_1,
+        hard_range_out: RANGE_1,
+        soft_range_out: RANGE_1,
+        write_prologue_fn: &(|_, _| quote! {}),
+        write_iterator_fn: &(|_,
+                              &WriteIteratorArgs {
+                                  inputs, arguments, ..
+                              }| {
+            let input = &inputs[0];
+            quote! { #input.filter_map(#arguments) }
+        }),
+    },
+    OperatorConstraints {
+        name: "filter",
+        hard_range_inn: RANGE_1,
+        soft_range_inn: RANGE_1,
+        hard_range_out: RANGE_1,
+        soft_range_out: RANGE_1,
+        write_prologue_fn: &(|_, _| quote! {}),
+        write_iterator_fn: &(|_,
+                              &WriteIteratorArgs {
+                                  inputs, arguments, ..
+                              }| {
+            let input = &inputs[0];
+            quote! { #input.filter(#arguments) }
         }),
     },
     // OperatorConstraints {
