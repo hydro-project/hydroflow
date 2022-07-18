@@ -100,12 +100,21 @@ pub const OPERATORS: [OperatorConstraints; 10] = [
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
         write_prologue_fn: &(|_, _| quote! {}),
-        write_iterator_fn: &(|_,
+        write_iterator_fn: &(|&WriteContextArgs { root, .. },
                               &WriteIteratorArgs {
-                                  inputs, arguments, ..
+                                  inputs,
+                                  outputs,
+                                  arguments,
+                                  is_pull,
+                                  ..
                               }| {
-            let input = &inputs[0];
-            quote! { #input.map(#arguments) }
+            if is_pull {
+                let input = &inputs[0];
+                quote! { #input.map(#arguments) }
+            } else {
+                let output = &outputs[0];
+                quote! { #root::compiled::map::Map::new(#arguments, #output) }
+            }
         }),
     },
     OperatorConstraints {
@@ -115,12 +124,21 @@ pub const OPERATORS: [OperatorConstraints; 10] = [
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
         write_prologue_fn: &(|_, _| quote! {}),
-        write_iterator_fn: &(|_,
+        write_iterator_fn: &(|&WriteContextArgs { root, .. },
                               &WriteIteratorArgs {
-                                  inputs, arguments, ..
+                                  inputs,
+                                  outputs,
+                                  arguments,
+                                  is_pull,
+                                  ..
                               }| {
-            let input = &inputs[0];
-            quote! { #input.flat_map(#arguments) }
+            if is_pull {
+                let input = &inputs[0];
+                quote! { #input.flat_map(#arguments) }
+            } else {
+                let output = &outputs[0];
+                quote! { #root::compiled::flat_map::FlatMap::new(#arguments, #output) }
+            }
         }),
     },
     OperatorConstraints {
@@ -130,12 +148,21 @@ pub const OPERATORS: [OperatorConstraints; 10] = [
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
         write_prologue_fn: &(|_, _| quote! {}),
-        write_iterator_fn: &(|_,
+        write_iterator_fn: &(|&WriteContextArgs { root, .. },
                               &WriteIteratorArgs {
-                                  inputs, arguments, ..
+                                  inputs,
+                                  outputs,
+                                  arguments,
+                                  is_pull,
+                                  ..
                               }| {
-            let input = &inputs[0];
-            quote! { #input.filter_map(#arguments) }
+            if is_pull {
+                let input = &inputs[0];
+                quote! { #input.filter_map(#arguments) }
+            } else {
+                let output = &outputs[0];
+                quote! { #root::compiled::filter_map::FilterMap::new(#arguments, #output) }
+            }
         }),
     },
     OperatorConstraints {
@@ -145,12 +172,21 @@ pub const OPERATORS: [OperatorConstraints; 10] = [
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
         write_prologue_fn: &(|_, _| quote! {}),
-        write_iterator_fn: &(|_,
+        write_iterator_fn: &(|&WriteContextArgs { root, .. },
                               &WriteIteratorArgs {
-                                  inputs, arguments, ..
+                                  inputs,
+                                  outputs,
+                                  arguments,
+                                  is_pull,
+                                  ..
                               }| {
-            let input = &inputs[0];
-            quote! { #input.filter(#arguments) }
+            if is_pull {
+                let input = &inputs[0];
+                quote! { #input.filter(#arguments) }
+            } else {
+                let output = &outputs[0];
+                quote! { #root::compiled::filter::Filter::new(#arguments, #output) }
+            }
         }),
     },
     // OperatorConstraints {
@@ -229,6 +265,7 @@ pub struct WriteIteratorArgs<'a> {
     pub outputs: &'a [Ident],
     pub type_arguments: Option<&'a Punctuated<GenericArgument, Token![,]>>,
     pub arguments: &'a Punctuated<Expr, Token![,]>,
+    pub is_pull: bool,
 }
 
 pub struct OperatorConstraints {

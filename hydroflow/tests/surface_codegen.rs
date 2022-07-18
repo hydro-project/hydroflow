@@ -1,4 +1,4 @@
-use hydroflow::hydroflow_syntax;
+use hydroflow::{hydroflow_parser, hydroflow_syntax};
 
 #[test]
 pub fn test_surface_syntax_reachability_target() {
@@ -193,12 +193,10 @@ pub fn test_covid_tracing() {
     let (people_send, people_recv) = unbounded_channel::<(Pid, (Name, Phone))>();
 
     let mut hydroflow = hydroflow_syntax! {
-        looped = map(|(pid, t)| (pid, (t, t + TRANSMISSIBLE_DURATION)));
         contacts = (input(contacts_recv) -> flat_map(|(pid_a, pid_b, time)| [(pid_a, (pid_b, time)), (pid_b, (pid_a, time))]));
 
         exposed = (merge());
         (input(diagnosed_recv) -> exposed);
-        (looped -> exposed);
 
         new_exposed = (
             join() ->
@@ -208,9 +206,9 @@ pub fn test_covid_tracing() {
             map(|(_pid_a, (pid_b_t_contact, _t_from_to))| pid_b_t_contact) ->
             tee()
         );
-        (exposed -> [1]new_exposed);
         (contacts -> [0]new_exposed);
-        (new_exposed -> looped);
+        (exposed -> [1]new_exposed);
+        (new_exposed -> map(|(pid, t)| (pid, (t, t + TRANSMISSIBLE_DURATION))) -> exposed);
 
         notifs = (
             join() ->
