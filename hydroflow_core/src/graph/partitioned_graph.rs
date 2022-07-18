@@ -118,7 +118,7 @@ impl PartitionedGraph {
                     let (pull_half, push_half) = subgraph_nodes.split_at(pull_to_push_idx);
                     let nodes_iter = pull_half.iter().chain(push_half.iter().rev());
 
-                    for &node_id in nodes_iter {
+                    for (idx, &node_id) in nodes_iter.enumerate() {
                         let node = &self.nodes[node_id];
                         let op = match node {
                             Node::Operator(op) => op,
@@ -156,6 +156,7 @@ impl PartitionedGraph {
                                 outputs: &*outputs,
                                 type_arguments: op.type_arguments(),
                                 arguments: &op.args,
+                                is_pull: idx < pull_to_push_idx,
                             };
 
                             op_prologue_code.push((op_constraints.write_prologue_fn)(
@@ -222,15 +223,16 @@ impl PartitionedGraph {
                     Node::Operator(operator) => {
                         writeln!(
                             write,
-                            r#"        {:?}["{}"]"#,
-                            node_id.data(),
-                            operator
+                            r#"        {id:?}["{id:?} <tt>{code}</tt>"]"#,
+                            id = node_id.data(),
+                            code = operator
                                 .to_token_stream()
                                 .to_string()
                                 .replace('&', "&amp;")
                                 .replace('<', "&lt;")
                                 .replace('>', "&gt;")
-                                .replace('"', "&quot;"),
+                                .replace('"', "&quot;")
+                                .replace('\n', "<br>"),
                         )?;
                     }
                     Node::Handoff => {

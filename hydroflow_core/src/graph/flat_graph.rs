@@ -245,9 +245,9 @@ impl FlatGraph {
             match node {
                 Node::Operator(operator) => writeln!(
                     write,
-                    r#"    {:?}["{}"]"#,
-                    key.data(),
-                    operator
+                    r#"    {id:?}["{id:?} <tt>{code}</tt>"]"#,
+                    id = key.data(),
+                    code = operator
                         .to_token_stream()
                         .to_string()
                         .replace('&', "&amp;")
