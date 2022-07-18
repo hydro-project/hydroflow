@@ -162,34 +162,35 @@ impl FlatGraph {
                                 is_hard: bool,
                                 degree: usize,
                                 range: &dyn RangeTrait<usize>,
-                            ) {
+                            ) -> bool {
                                 let op_name = &*operator.name_string();
                                 let message = format!(
                                     "`{}` {} have {} {}, actually has {}.",
                                     op_name,
                                     if is_hard { "must" } else { "should" },
                                     range.human_string(),
-                                    if is_in { "inputs" } else { "outputs" },
+                                    if is_in { "input(s)" } else { "output(s)" },
                                     degree,
                                 );
-                                if !range.contains(&degree) {
+                                let out_of_range = !range.contains(&degree);
+                                if out_of_range {
                                     if is_hard {
                                         operator.span().unwrap().error(message).emit();
                                     } else {
                                         operator.span().unwrap().warning(message).emit();
                                     }
                                 }
+                                out_of_range
                             }
 
                             let inn_degree = self.preds[node_key].len();
-                            emit_arity_error(
+                            let _ = emit_arity_error(
                                 operator,
                                 true,
                                 true,
                                 inn_degree,
                                 op_constraints.hard_range_inn,
-                            );
-                            emit_arity_error(
+                            ) || emit_arity_error(
                                 operator,
                                 true,
                                 false,
@@ -198,14 +199,13 @@ impl FlatGraph {
                             );
 
                             let out_degree = self.succs[node_key].len();
-                            emit_arity_error(
+                            let _ = emit_arity_error(
                                 operator,
                                 false,
                                 true,
                                 out_degree,
                                 op_constraints.hard_range_out,
-                            );
-                            emit_arity_error(
+                            ) || emit_arity_error(
                                 operator,
                                 false,
                                 false,
@@ -253,7 +253,8 @@ impl FlatGraph {
                         .replace('&', "&amp;")
                         .replace('<', "&lt;")
                         .replace('>', "&gt;")
-                        .replace('"', "&quot;"),
+                        .replace('"', "&quot;")
+                        .replace('\n', "<br>"),
                 ),
                 Node::Handoff => writeln!(write, r#"    {:?}{{"handoff"}}"#, key.data()),
             }?;

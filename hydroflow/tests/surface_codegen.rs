@@ -169,9 +169,102 @@ pub fn test_surface_syntax_reachability_generated() {
 
     edges_in.send((0, 3)).unwrap();
     df.run_available();
+
+    // Reached: 1
+    // Reached: 2
+    // Reached: 4
+    // Reached: 3
+    // Reached: 4
 }
-// Reached: 1
-// Reached: 2
-// Reached: 4
-// Reached: 3
-// Reached: 4
+
+#[test]
+pub fn test_covid_tracing() {
+    use tokio::sync::mpsc::unbounded_channel;
+
+    const TRANSMISSIBLE_DURATION: usize = 14; // Days.
+
+    type Pid = usize;
+    type Name = &'static str;
+    type Phone = &'static str;
+    type DateTime = usize; // Days.
+
+    let (contacts_send, contacts_recv) = unbounded_channel::<(Pid, Pid, DateTime)>();
+    let (diagnosed_send, diagnosed_recv) = unbounded_channel::<(Pid, (DateTime, DateTime))>();
+    let (people_send, people_recv) = unbounded_channel::<(Pid, (Name, Phone))>();
+
+    let mut hydroflow = hydroflow_syntax! {
+        looped = map(|(pid, t)| (pid, (t, t + TRANSMISSIBLE_DURATION)));
+        contacts = (input(contacts_recv) -> flat_map(|(pid_a, pid_b, time)| [(pid_a, (pid_b, time)), (pid_b, (pid_a, time))]));
+
+        exposed = (merge());
+        (input(diagnosed_recv) -> exposed);
+        (looped -> exposed);
+
+        new_exposed = (
+            join() ->
+            filter(|(_pid_a, ((_pid_b, t_contact), (t_from, t_to)))| {
+                (t_from..=t_to).contains(&t_contact)
+            }) ->
+            map(|(_pid_a, (pid_b_t_contact, _t_from_to))| pid_b_t_contact) ->
+            tee()
+        );
+        (exposed -> [1]new_exposed);
+        (contacts -> [0]new_exposed);
+        (new_exposed -> looped);
+
+        notifs = (
+            join() ->
+            for_each(|(_pid, ((name, phone), exposure))| {
+                println!(
+                    "[{}] To {}: Possible Exposure at t = {}",
+                    name, phone, exposure
+                );
+            })
+        );
+        (input(people_recv) -> [0]notifs);
+        (new_exposed -> [1]notifs);
+    };
+
+    {
+        people_send
+            .send((101, ("Mingwei S", "+1 650 555 7283")))
+            .unwrap();
+        people_send
+            .send((102, ("Justin J", "+1 519 555 3458")))
+            .unwrap();
+        people_send
+            .send((103, ("Mae M", "+1 912 555 9129")))
+            .unwrap();
+
+        contacts_send.send((101, 102, 1031)).unwrap(); // Mingwei + Justin
+        contacts_send.send((101, 201, 1027)).unwrap(); // Mingwei + Joe
+
+        let mae_diag_datetime = 1022;
+
+        diagnosed_send
+            .send((
+                103, // Mae
+                (
+                    mae_diag_datetime,
+                    mae_diag_datetime + TRANSMISSIBLE_DURATION,
+                ),
+            ))
+            .unwrap();
+
+        hydroflow.run_available();
+        println!("A");
+
+        contacts_send
+            .send((101, 103, mae_diag_datetime + 6))
+            .unwrap(); // Mingwei + Mae
+
+        hydroflow.run_available();
+        println!("B");
+
+        people_send
+            .send((103, ("Joe H", "+1 510 555 9999")))
+            .unwrap();
+
+        hydroflow.run_available();
+    }
+}
