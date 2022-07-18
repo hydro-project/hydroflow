@@ -83,7 +83,7 @@ impl PartitionedGraph {
                     .iter()
                     .map(|&hoff_id| self.node_id_as_ident(hoff_id, true))
                     .collect();
-                let send_ports: Vec<Ident> = self.subgraph_recv_handoffs[subgraph_id]
+                let send_ports: Vec<Ident> = self.subgraph_send_handoffs[subgraph_id]
                     .iter()
                     .map(|&hoff_id| self.node_id_as_ident(hoff_id, false))
                     .collect();
