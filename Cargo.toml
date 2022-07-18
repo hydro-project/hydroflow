@@ -4,6 +4,7 @@ members = [
     "hydroflow",
     "hydroflow_core",
     "hydroflow_macro",
+    "datalog_compiler",
     "benches",
     "relalg",
 ]
