@@ -80,7 +80,7 @@ impl FlatGraph {
 
                             {
                                 /// Helper to emit conflicts when a port is overwritten.
-                                fn emit_conflict(inout: &str, old: &IndexInt, new: &IndexInt) {
+                                fn emit_conflict(inout: &str, old: IndexInt, new: IndexInt) {
                                     old.span()
                                         .unwrap()
                                         .error(format!(
@@ -99,19 +99,15 @@ impl FlatGraph {
                                         .emit();
                                 }
 
-                                // Clone, one for `succs` and one for `preds`.
-                                let (src_a, src_b) = (src_port.clone(), src_port);
-                                let (dst_a, dst_b) = (dst_port.clone(), dst_port);
-
-                                if let Some((old_a, _)) = self.succs[out].remove_entry(&src_a) {
-                                    emit_conflict("Output", &old_a, &src_a);
+                                if let Some((old_a, _)) = self.succs[out].remove_entry(&src_port) {
+                                    emit_conflict("Output", old_a, src_port);
                                 }
-                                self.succs[out].insert(src_a, (inn, dst_a));
+                                self.succs[out].insert(src_port, (inn, dst_port));
 
-                                if let Some((old_b, _)) = self.preds[inn].remove_entry(&dst_b) {
-                                    emit_conflict("Input", &old_b, &dst_b);
+                                if let Some((old_b, _)) = self.preds[inn].remove_entry(&dst_port) {
+                                    emit_conflict("Input", old_b, dst_port);
                                 }
-                                self.preds[inn].insert(dst_b, (out, src_b));
+                                self.preds[inn].insert(dst_port, (out, src_port));
                             }
                         }
 
