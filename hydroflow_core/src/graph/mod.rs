@@ -194,8 +194,8 @@ impl From<FlatGraph> for PartitionedGraph {
                 || matches!(flat_graph.nodes[src], Node::Handoff)
                 || matches!(flat_graph.nodes[dst], Node::Handoff)
             {
-                new_preds[dst].insert(dst_idx.clone(), (src, src_idx.clone()));
-                new_succs[src].insert(src_idx.clone(), (dst, dst_idx.clone()));
+                new_preds[dst].insert(*dst_idx, (src, *src_idx));
+                new_succs[src].insert(*src_idx, (dst, *dst_idx));
             } else {
                 // Needs handoff inserted.
                 // A -> H -> Z
@@ -208,13 +208,13 @@ impl From<FlatGraph> for PartitionedGraph {
                     span: Span::call_site(),
                 };
                 // A -> H.
-                new_succs[src].insert(src_idx.clone(), (hoff_id, zero_index));
+                new_succs[src].insert(*src_idx, (hoff_id, zero_index));
                 // A <- H.
-                new_preds[hoff_id].insert(zero_index, (src, src_idx.clone()));
+                new_preds[hoff_id].insert(zero_index, (src, *src_idx));
                 // H <- Z.
-                new_preds[dst].insert(dst_idx.clone(), (hoff_id, zero_index));
+                new_preds[dst].insert(*dst_idx, (hoff_id, zero_index));
                 // H -> Z.
-                new_succs[hoff_id].insert(zero_index, (dst, dst_idx.clone()));
+                new_succs[hoff_id].insert(zero_index, (dst, *dst_idx));
             }
         }
 
