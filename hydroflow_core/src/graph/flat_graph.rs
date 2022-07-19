@@ -148,14 +148,17 @@ impl FlatGraph {
 
     /// Validates that operators have valid number of inputs and outputs.
     /// (Emits error messages on span).
-    /// TODO(mingwei): Clean this up, make it do more than just arity.
-    pub fn validate_operators(&self) {
+    /// TODO(mingwei): Clean this up, make it do more than just arity?
+    /// Returns `true` if errors were found.
+    pub fn emit_operator_errors(&self) -> bool {
+        let mut errored = false;
         for (node_key, node) in self.nodes.iter() {
             match node {
                 Node::Operator(operator) => {
                     let op_name = &*operator.name_string();
                     match OPERATORS.iter().find(|&op| op_name == op.name) {
                         Some(op_constraints) => {
+                            /// Returns true if an error was found.
                             fn emit_arity_error(
                                 operator: &Operator,
                                 is_in: bool,
@@ -184,7 +187,7 @@ impl FlatGraph {
                             }
 
                             let inn_degree = self.preds[node_key].len();
-                            let _ = emit_arity_error(
+                            errored |= emit_arity_error(
                                 operator,
                                 true,
                                 true,
@@ -199,7 +202,7 @@ impl FlatGraph {
                             );
 
                             let out_degree = self.succs[node_key].len();
-                            let _ = emit_arity_error(
+                            errored |= emit_arity_error(
                                 operator,
                                 false,
                                 true,
@@ -220,12 +223,14 @@ impl FlatGraph {
                                 .unwrap()
                                 .error(format!("Unknown operator `{}`", op_name))
                                 .emit();
+                            errored = true;
                         }
                     }
                 }
                 Node::Handoff => todo!("Node::Handoff"),
             }
         }
+        errored
     }
 
     pub fn edges(&self) -> impl '_ + Iterator<Item = (EdgePortRef, EdgePortRef)> {
