@@ -12,7 +12,7 @@ use hydroflow_core::parse::HfCode;
 pub fn hydroflow_syntax(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let hydroflow_crate = proc_macro_crate::crate_name("hydroflow")
         .expect("hydroflow should be present in `Cargo.toml`");
-    let hydroflow_crate = match hydroflow_crate {
+    let root = match hydroflow_crate {
         proc_macro_crate::FoundCrate::Itself => quote! { crate },
         proc_macro_crate::FoundCrate::Name(name) => {
             let ident = Ident::new(&name, Span::call_site());
@@ -23,9 +23,13 @@ pub fn hydroflow_syntax(input: proc_macro::TokenStream) -> proc_macro::TokenStre
     let input = parse_macro_input!(input as HfCode);
 
     let flat_graph = FlatGraph::from_hfcode(input);
-    flat_graph.validate_operators();
-    let part_graph = flat_graph.into_partitioned_graph();
-    part_graph.as_code(hydroflow_crate).into()
+    let tokens = if flat_graph.emit_operator_errors() {
+        quote! { #root::scheduled::graph::Hydroflow::new() }
+    } else {
+        let part_graph = flat_graph.into_partitioned_graph();
+        part_graph.as_code(root)
+    };
+    tokens.into()
 }
 
 #[proc_macro]
@@ -34,7 +38,7 @@ pub fn hydroflow_parser(input: proc_macro::TokenStream) -> proc_macro::TokenStre
     // // input.into_token_stream().into()
 
     let flat_graph = FlatGraph::from_hfcode(input);
-    flat_graph.validate_operators();
+    flat_graph.emit_operator_errors();
 
     let flat_mermaid = flat_graph.mermaid_string();
 
