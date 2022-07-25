@@ -7,7 +7,7 @@ edition = "2021"
 proc-macro = true
 
 [dependencies]
-hydroflow_core = { path = "../hydroflow_core" }
+hydroflow_lang = { path = "../hydroflow_lang" }
 proc-macro2 = "1.0.0"
 proc-macro-crate = "1.1.0"
 quote = "1.0.0"

@@ -1,91 +1,28 @@
 use hydroflow::hydroflow_syntax;
 
-#[test]
-pub fn test_surface_syntax_reachability_target() {
-    use hydroflow::compiled::{IteratorToPusherator, PusheratorBuild};
-    use hydroflow::scheduled::graph::Hydroflow;
-    use hydroflow::scheduled::graph_ext::GraphExt;
-    use hydroflow::scheduled::handoff::VecHandoff;
-    use hydroflow::tl;
+// TODO(mingwei): error message for ownership duplicate
+// (input(edges_out) -> [0]my_join_tee);
+// (input(edges_out) -> [1]my_join_tee);
 
-    use std::cell::RefCell;
-    use std::collections::{HashMap, HashSet};
-    use std::rc::Rc;
+// TODO(mingwei): remove automatic index counting
 
-    let edges: HashMap<usize, Vec<usize>> = [
-        (0, vec![1, 2, 3]),
-        (1, vec![4, 5]),
-        (2, vec![]),
-        (4, vec![2]),
-        (5, vec![1, 6, 7]),
-        (6, vec![2]),
-        (7, vec![10]),
-        (8, vec![10]),
-        (9, vec![10]),
-        (10, vec![10]),
-    ]
-    .into_iter()
-    .collect();
+// TODO(mingwei): custom operators? How to handle in syntax? How to handle state?
 
-    // A dataflow that represents graph reachability.
-    let mut df = Hydroflow::new();
+// TODO(mingwei): Better name for `input(...)`
 
-    let (reachable_out, origins_in) = df.make_edge::<_, VecHandoff<usize>>("reachable -> origins");
-    let (did_reach_out, possible_reach_in) =
-        df.make_edge::<_, VecHandoff<usize>>("did_reach -> possible_reach");
-    let (output_out, sink_in) = df.make_edge::<_, VecHandoff<usize>>("output -> sink");
+// TODO(mingwei): Still need to handle crossing stratum boundaries
 
-    df.add_subgraph_source(
-        "initially reachable source",
-        reachable_out,
-        move |_ctx, send| {
-            send.give(Some(1));
-        },
-    );
+// TODO(mingwei): Tiemo user test after Tuesday.
 
-    let seen_handle = df.add_state::<RefCell<HashSet<usize>>>(Default::default());
+// TODO(mingwei): Try to get more bad error messages to appear.
 
-    df.add_subgraph(
-        "main",
-        tl!(origins_in, possible_reach_in),
-        tl!(did_reach_out, output_out),
-        move |context, tl!(origins, did_reach_recv), tl!(did_reach_send, output)| {
-            let origins = origins.take_inner().into_iter();
-            let possible_reach = did_reach_recv
-                .take_inner()
-                .into_iter()
-                .filter_map(|v| edges.get(&v))
-                .flatten()
-                .copied();
+// TODO(mingwei): QOL: make a way to generate/print the mermaid graph.
 
-            let mut seen_state = context.state_ref(seen_handle).borrow_mut();
-            let pull = origins
-                .chain(possible_reach)
-                .filter(|v| seen_state.insert(*v));
+// TODO(mingwei): Implement non-monotonicity handling.
 
-            let pivot = pull
-                .pull_to_push()
-                .tee(hydroflow::compiled::for_each::ForEach::new(|v| {
-                    did_reach_send.give(Some(v));
-                }))
-                .for_each(|v| {
-                    output.give(Some(v));
-                });
-
-            pivot.run();
-        },
-    );
-
-    let reachable_verts = Rc::new(RefCell::new(HashSet::new()));
-    let reachable_inner = reachable_verts.clone();
-    df.add_subgraph_sink("output sink", sink_in, move |_ctx, recv| {
-        (*reachable_inner).borrow_mut().extend(recv.take_inner());
-    });
-
-    df.run_available();
-
-    println!("{:?}", *reachable_verts);
-}
+// Joe:
+// TODO(mingwei): Documentation articles.
+// TODO(mingwei): Rename `hydroflow_lang` -> `hydroflow_lang`
 
 #[test]
 pub fn test_surface_syntax_reachability_generated() {
@@ -93,14 +30,14 @@ pub fn test_surface_syntax_reachability_generated() {
 
     let mut df = hydroflow_syntax! {
         reached_vertices = (merge() -> map(|v| (v, ())));
-        (seed([0]) -> [0]reached_vertices);
+        (seed(vec![0]) -> [0]reached_vertices);
 
-        my_join = (join() -> map(|(_src, ((), dst))| dst) -> tee());
-        (reached_vertices -> [0]my_join);
-        (input(edges_out) -> [1]my_join);
+        my_join_tee = (join() -> map(|(_src, ((), dst))| dst) -> tee());
+        (reached_vertices -> [0]my_join_tee);
+        (input(edges_out) -> [1]my_join_tee);
 
-        (my_join[0] -> [1]reached_vertices);
-        (my_join[1] -> for_each(|x| println!("Reached: {}", x)));
+        (my_join_tee[0] -> [1]reached_vertices);
+        (my_join_tee[1] -> for_each(|x| println!("Reached: {}", x)));
     };
 
     df.run_available();
@@ -146,8 +83,8 @@ pub fn test_covid_tracing() {
     let mut hydroflow = hydroflow_syntax! {
         contacts = (input(contacts_recv) -> flat_map(|(pid_a, pid_b, time)| [(pid_a, (pid_b, time)), (pid_b, (pid_a, time))]));
 
-        exposed = (merge());
-        (input(diagnosed_recv) -> exposed);
+        exposed = merge();
+        (input(diagnosed_recv) -> [0]exposed);
 
         new_exposed = (
             join() ->
@@ -159,7 +96,7 @@ pub fn test_covid_tracing() {
         );
         (contacts -> [0]new_exposed);
         (exposed -> [1]new_exposed);
-        (new_exposed -> map(|(pid, t)| (pid, (t, t + TRANSMISSIBLE_DURATION))) -> exposed);
+        (new_exposed[0] -> map(|(pid, t)| (pid, (t, t + TRANSMISSIBLE_DURATION))) -> [1]exposed);
 
         notifs = (
             join() ->
@@ -171,7 +108,7 @@ pub fn test_covid_tracing() {
             })
         );
         (input(people_recv) -> [0]notifs);
-        (new_exposed -> [1]notifs);
+        (new_exposed[1] -> [1]notifs);
     };
 
     {

@@ -5,8 +5,8 @@ use proc_macro2::{Ident, Literal, Span};
 use quote::quote;
 use syn::parse_macro_input;
 
-use hydroflow_core::graph::flat_graph::FlatGraph;
-use hydroflow_core::parse::HfCode;
+use hydroflow_lang::graph::flat_graph::FlatGraph;
+use hydroflow_lang::parse::HfCode;
 
 #[proc_macro]
 pub fn hydroflow_syntax(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
@@ -50,20 +50,4 @@ pub fn hydroflow_parser(input: proc_macro::TokenStream) -> proc_macro::TokenStre
     let lit1 = Literal::string(&*part_mermaid);
 
     quote! { println!("{}\n{}", #lit0, #lit1); }.into()
-}
-
-/// Helper struct which displays the span as `path:row:col` for human reading/IDE linking.
-/// Example: `hydroflow\tests\surface_syntax.rs:42:18`.
-struct PrettySpan(Span);
-impl std::fmt::Display for PrettySpan {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let span = self.0.unwrap();
-        write!(
-            f,
-            "{}:{}:{}",
-            span.source_file().path().display(),
-            span.start().line,
-            span.start().column
-        )
-    }
 }

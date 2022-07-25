@@ -568,7 +568,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "hydroflow_core"
+name = "hydroflow_lang"
 version = "0.1.0"
 dependencies = [
  "proc-macro2",
@@ -581,7 +581,7 @@ dependencies = [
 name = "hydroflow_macro"
 version = "0.1.0"
 dependencies = [
- "hydroflow_core",
+ "hydroflow_lang",
  "proc-macro-crate",
  "proc-macro2",
  "quote",
