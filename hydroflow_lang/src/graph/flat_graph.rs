@@ -237,13 +237,34 @@ impl FlatGraph {
         super::iter_edges(&self.succs)
     }
 
+    pub fn surface_syntax_string(&self) -> String {
+        let mut string = String::new();
+        self.write_surface_syntax(&mut string).unwrap();
+        string
+    }
+
+    pub fn write_surface_syntax(&self, write: &mut impl std::fmt::Write) -> std::fmt::Result {
+        for (key, node) in self.nodes.iter() {
+            match node {
+                Node::Operator(op) => {
+                    writeln!(write, "{:?} = {};", key.data(), op.to_token_stream())?;
+                }
+                Node::Handoff => unimplemented!("HANDOFF IN FLAT GRAPH."),
+            }
+        }
+        writeln!(write)?;
+        for ((src_key, _src_port), (dst_key, _dst_port)) in super::iter_edges(&self.succs) {
+            writeln!(write, "({:?}-->{:?});", src_key.data(), dst_key.data())?;
+        }
+        Ok(())
+    }
+
     pub fn mermaid_string(&self) -> String {
         let mut string = String::new();
         self.write_mermaid(&mut string).unwrap();
         string
     }
 
-    #[allow(dead_code)]
     pub fn write_mermaid(&self, write: &mut impl std::fmt::Write) -> std::fmt::Result {
         writeln!(write, "flowchart TB")?;
         for (key, node) in self.nodes.iter() {
@@ -265,10 +286,8 @@ impl FlatGraph {
             }?;
         }
         writeln!(write)?;
-        for (src_key, _op) in self.nodes.iter() {
-            for (_src_port, (dst_key, _dst_port)) in self.succs[src_key].iter() {
-                writeln!(write, "    {:?}-->{:?}", src_key.data(), dst_key.data())?;
-            }
+        for ((src_key, _src_port), (dst_key, _dst_port)) in super::iter_edges(&self.succs) {
+            writeln!(write, "    {:?}-->{:?}", src_key.data(), dst_key.data())?;
         }
         Ok(())
     }
