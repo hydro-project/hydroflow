@@ -9,6 +9,27 @@ use syn::{Expr, GenericArgument, Token};
 
 use super::{NodeId, SubgraphId};
 
+pub struct OperatorConstraints {
+    /// Operator's name.
+    pub name: &'static str,
+    /// Input argument range required to not show an error.
+    pub hard_range_inn: &'static dyn RangeTrait<usize>,
+    /// Input argument range required to not show a warning.
+    pub soft_range_inn: &'static dyn RangeTrait<usize>,
+    /// Output argument range required to not show an error.
+    pub hard_range_out: &'static dyn RangeTrait<usize>,
+    /// Output argument range required to not show an warning.
+    pub soft_range_out: &'static dyn RangeTrait<usize>,
+    // TODO: generic argument ranges.
+    /// Generate code which runs once outside the subgraph to set up any
+    /// external stuff like state API stuff or external chanels, etc.
+    pub write_prologue_fn:
+        &'static dyn Fn(&WriteContextArgs<'_>, &WriteIteratorArgs<'_>) -> TokenStream,
+    /// Generate iterator or pusherator code inside the subgraphs.
+    pub write_iterator_fn:
+        &'static dyn Fn(&WriteContextArgs<'_>, &WriteIteratorArgs<'_>) -> TokenStream,
+}
+
 pub const RANGE_0: &'static dyn RangeTrait<usize> = &(0..=0);
 pub const RANGE_1: &'static dyn RangeTrait<usize> = &(1..=1);
 
@@ -266,24 +287,6 @@ pub struct WriteIteratorArgs<'a> {
     pub type_arguments: Option<&'a Punctuated<GenericArgument, Token![,]>>,
     pub arguments: &'a Punctuated<Expr, Token![,]>,
     pub is_pull: bool,
-}
-
-pub struct OperatorConstraints {
-    /// Operator's name.
-    pub name: &'static str,
-    /// Input argument range required to not show an error.
-    pub hard_range_inn: &'static dyn RangeTrait<usize>,
-    /// Input argument range required to not show a warning.
-    pub soft_range_inn: &'static dyn RangeTrait<usize>,
-    /// Output argument range required to not show an error.
-    pub hard_range_out: &'static dyn RangeTrait<usize>,
-    /// Output argument range required to not show an warning.
-    pub soft_range_out: &'static dyn RangeTrait<usize>,
-    // TODO: generic argument ranges.
-    pub write_prologue_fn:
-        &'static dyn Fn(&WriteContextArgs<'_>, &WriteIteratorArgs<'_>) -> TokenStream,
-    pub write_iterator_fn:
-        &'static dyn Fn(&WriteContextArgs<'_>, &WriteIteratorArgs<'_>) -> TokenStream,
 }
 
 pub trait RangeTrait<T>
