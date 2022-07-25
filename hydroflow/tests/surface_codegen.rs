@@ -1,4 +1,4 @@
-use hydroflow::hydroflow_syntax;
+use hydroflow::{hydroflow_parser, hydroflow_syntax};
 
 // TODO(mingwei): error message for ownership duplicate
 // (input(edges_out) -> [0]my_join_tee);
@@ -9,6 +9,7 @@ use hydroflow::hydroflow_syntax;
 // TODO(mingwei): custom operators? How to handle in syntax? How to handle state?
 
 // TODO(mingwei): Better name for `input(...)`
+// TODO(mingwei): Rename `seed`, really converts a Rust iterator to hydroflow pipeline.
 
 // TODO(mingwei): Still need to handle crossing stratum boundaries
 
@@ -20,13 +21,16 @@ use hydroflow::hydroflow_syntax;
 
 // TODO(mingwei): Implement non-monotonicity handling.
 
+// TODO(mingwei): Prevent unused variable warnings when hydroflow code is not generated.
+
 // Joe:
 // TODO(mingwei): Documentation articles.
 // TODO(mingwei): Rename `hydroflow_lang` -> `hydroflow_lang`
 
 #[test]
 pub fn test_surface_syntax_reachability_generated() {
-    let (edges_in, edges_out) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
+    // An edge in the input data = a pair of `usize` vertex IDs.
+    let (pairs_send, pairs_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
 
     let mut df = hydroflow_syntax! {
         reached_vertices = (merge() -> map(|v| (v, ())));
@@ -34,7 +38,7 @@ pub fn test_surface_syntax_reachability_generated() {
 
         my_join_tee = (join() -> map(|(_src, ((), dst))| dst) -> tee());
         (reached_vertices -> [0]my_join_tee);
-        (input(edges_out) -> [1]my_join_tee);
+        (input(pairs_recv) -> [1]my_join_tee);
 
         (my_join_tee[0] -> [1]reached_vertices);
         (my_join_tee[1] -> for_each(|x| println!("Reached: {}", x)));
@@ -42,20 +46,70 @@ pub fn test_surface_syntax_reachability_generated() {
 
     df.run_available();
 
-    edges_in.send((0, 1)).unwrap();
+    pairs_send.send((0, 1)).unwrap();
     df.run_available();
 
-    edges_in.send((2, 4)).unwrap();
-    edges_in.send((3, 4)).unwrap();
+    pairs_send.send((2, 4)).unwrap();
+    pairs_send.send((3, 4)).unwrap();
     df.run_available();
 
-    edges_in.send((1, 2)).unwrap();
+    pairs_send.send((1, 2)).unwrap();
     df.run_available();
 
-    edges_in.send((0, 3)).unwrap();
+    pairs_send.send((0, 3)).unwrap();
     df.run_available();
 
-    edges_in.send((0, 3)).unwrap();
+    pairs_send.send((0, 3)).unwrap();
+    df.run_available();
+
+    // Reached: 1
+    // Reached: 2
+    // Reached: 4
+    // Reached: 3
+    // Reached: 4
+}
+
+#[test]
+pub fn test_transitive_closure() {
+    // WIP
+
+    // An edge in the input data = a pair of `usize` vertex IDs.
+    let (pairs_send, pairs_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
+
+    let mut df = hydroflow_syntax! {
+        reached_vertices = (merge() -> map(|v| (v, ())));
+
+        input_tee = tee();
+        node_merge = merge();
+        (input(pairs_recv) -> input_tee);
+        (input_tee[0] -> map(|v: (usize, usize)| v.0) -> [0]node_merge);
+        (input_tee[1] -> map(|v: (usize, usize)| v.1) -> [1]node_merge);
+        (node_merge -> [0]reached_vertices);
+
+        my_join_tee = (join() -> map(|(_src, ((), dst))| dst) -> tee());
+        (reached_vertices -> [0]my_join_tee);
+        (input_tee[2] -> [1]my_join_tee);
+
+        (my_join_tee[0] -> [1]reached_vertices);
+        (my_join_tee[1] -> for_each(|x| println!("Reached: {}", x)));
+    };
+
+    df.run_available();
+
+    pairs_send.send((0, 1)).unwrap();
+    df.run_available();
+
+    pairs_send.send((2, 4)).unwrap();
+    pairs_send.send((3, 4)).unwrap();
+    df.run_available();
+
+    pairs_send.send((1, 2)).unwrap();
+    df.run_available();
+
+    pairs_send.send((0, 3)).unwrap();
+    df.run_available();
+
+    pairs_send.send((0, 3)).unwrap();
     df.run_available();
 
     // Reached: 1
