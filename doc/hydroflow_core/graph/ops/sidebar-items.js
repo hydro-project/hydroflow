@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"constant":[["OPERATORS",""],["RANGE_0",""],["RANGE_1",""]],"struct":[["OperatorConstraints",""]],"trait":[["RangeTrait",""]]};

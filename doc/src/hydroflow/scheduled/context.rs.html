@@ -116,9 +116,6 @@
 <span id="110">110</span>
 <span id="111">111</span>
 <span id="112">112</span>
-<span id="113">113</span>
-<span id="114">114</span>
-<span id="115">115</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">any::Any</span>, <span class="ident">marker::PhantomData</span>};
 
 <span class="kw">use</span> <span class="ident">tokio::sync::mpsc::UnboundedSender</span>;
@@ -176,10 +173,7 @@
         }
         <span class="kw">impl</span> <span class="ident">ArcWake</span> <span class="kw">for</span> <span class="ident">ContextWaker</span> {
             <span class="kw">fn</span> <span class="ident">wake_by_ref</span>(<span class="ident">arc_self</span>: <span class="kw-2">&amp;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>) {
-                <span class="ident">arc_self</span>
-                    .<span class="ident">event_queue_send</span>
-                    .<span class="ident">send</span>(<span class="ident">arc_self</span>.<span class="ident">subgraph_id</span>)
-                    .<span class="ident">unwrap</span>();
+                <span class="kw">let</span> <span class="ident">_recv_closed_error</span> <span class="op">=</span> <span class="ident">arc_self</span>.<span class="ident">event_queue_send</span>.<span class="ident">send</span>(<span class="ident">arc_self</span>.<span class="ident">subgraph_id</span>);
             }
         }
 

@@ -290,6 +290,8 @@
 <span id="284">284</span>
 <span id="285">285</span>
 <span id="286">286</span>
+<span id="287">287</span>
+<span id="288">288</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Hydroflow&#39;s Surface API.</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! ## Internal Documentation</span>
@@ -483,7 +485,7 @@
 }
 
 <span class="attribute">#[<span class="ident">test</span>]</span>
-<span class="kw">fn</span> <span class="ident">test_covid</span>() {
+<span class="kw">fn</span> <span class="ident">test_covid_tracing</span>() {
     <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::handoff::VecHandoff</span>;
     <span class="kw">use</span> <span class="ident">prelude</span>::<span class="kw-2">*</span>;
 
@@ -564,11 +566,13 @@
         <span class="ident">diagnosed_send</span>.<span class="ident">flush</span>();
 
         <span class="ident">hydroflow</span>.<span class="ident">run_available</span>();
+        <span class="macro">println!</span>(<span class="string">&quot;A&quot;</span>);
 
         <span class="ident">contacts_send</span>.<span class="ident">give</span>(<span class="prelude-val">Some</span>((<span class="number">101</span>, <span class="number">103</span>, <span class="ident">mae_diag_datetime</span> <span class="op">+</span> <span class="number">6</span>))); <span class="comment">// Mingwei + Mae</span>
         <span class="ident">contacts_send</span>.<span class="ident">flush</span>();
 
         <span class="ident">hydroflow</span>.<span class="ident">run_available</span>();
+        <span class="macro">println!</span>(<span class="string">&quot;B&quot;</span>);
 
         <span class="ident">peoples_send</span>.<span class="ident">give</span>(<span class="prelude-val">Some</span>((<span class="number">103</span>, (<span class="string">&quot;Joe H&quot;</span>, <span class="string">&quot;+1 510 555 9999&quot;</span>))));
         <span class="ident">peoples_send</span>.<span class="ident">flush</span>();
