@@ -1,31 +1,23 @@
 use hydroflow::hydroflow_syntax;
 
-// TODO(mingwei): error message for ownership duplicate
-// (input(edges_out) -> [0]my_join_tee);
-// (input(edges_out) -> [1]my_join_tee);
-
-// TODO(mingwei): remove automatic index counting
-
 // TODO(mingwei): custom operators? How to handle in syntax? How to handle state?
 
 // TODO(mingwei): Better name for `input(...)`
 // TODO(mingwei): Rename `seed`, really converts a Rust iterator to hydroflow pipeline.
 
 // TODO(mingwei): Still need to handle crossing stratum boundaries
+// TODO(mingwei): Implement non-monotonicity handling.
 
 // TODO(mingwei): Tiemo user test after Tuesday.
 
 // TODO(mingwei): Try to get more bad error messages to appear.
 
-// TODO(mingwei): QOL: make a way to generate/print the mermaid graph.
-
-// TODO(mingwei): Implement non-monotonicity handling.
+// TODO(joe): QOL: make a way to generate/print the mermaid graph.
 
 // TODO(mingwei): Prevent unused variable warnings when hydroflow code is not generated.
 
 // Joe:
 // TODO(mingwei): Documentation articles.
-// TODO(mingwei): Rename `hydroflow_lang` -> `hydroflow_lang`
 
 // TODO(mingwei): allow chains to not be surrounded in parenthesis.
 // TODO(mingwei): give warning for extraneous arguments.
