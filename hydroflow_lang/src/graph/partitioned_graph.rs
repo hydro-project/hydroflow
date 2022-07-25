@@ -3,6 +3,8 @@ use quote::{quote, ToTokens};
 use slotmap::{Key, SecondaryMap, SlotMap};
 use syn::spanned::Spanned;
 
+use crate::pretty_span::{PrettyRowCol, PrettySpan};
+
 use super::flat_graph::FlatGraph;
 use super::ops::{WriteContextArgs, WriteIteratorArgs, OPERATORS};
 use super::{node_color, Color, EdgePortRef, Node, NodeId, OutboundEdges, SubgraphId};
@@ -223,8 +225,10 @@ impl PartitionedGraph {
                     Node::Operator(operator) => {
                         writeln!(
                             write,
-                            r#"        {id:?}["{id:?} <tt>{code}</tt>"]"#,
+                            "        %% {span}\n        {id:?}[\"{row_col} <tt>{code}</tt>\"]",
+                            span = PrettySpan(operator.span()),
                             id = node_id.data(),
+                            row_col = PrettyRowCol(operator.span()),
                             code = operator
                                 .to_token_stream()
                                 .to_string()

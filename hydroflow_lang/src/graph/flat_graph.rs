@@ -8,7 +8,7 @@ use syn::Ident;
 
 use crate::graph::ops::{RangeTrait, OPERATORS};
 use crate::parse::{HfCode, HfStatement, IndexInt, Operator, Pipeline};
-use crate::pretty_span::PrettySpan;
+use crate::pretty_span::{PrettyRowCol, PrettySpan};
 
 use super::partitioned_graph::PartitionedGraph;
 use super::{EdgePortRef, Node, NodeId, OutboundEdges};
@@ -271,8 +271,10 @@ impl FlatGraph {
             match node {
                 Node::Operator(operator) => writeln!(
                     write,
-                    r#"    {id:?}["{id:?} <tt>{code}</tt>"]"#,
+                    "    %% {span}\n    {id:?}[\"{row_col} <tt>{code}</tt>\"]",
+                    span = PrettySpan(node.span()),
                     id = key.data(),
+                    row_col = PrettyRowCol(node.span()),
                     code = operator
                         .to_token_stream()
                         .to_string()

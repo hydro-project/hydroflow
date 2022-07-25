@@ -13,3 +13,12 @@ impl std::fmt::Display for PrettySpan {
         )
     }
 }
+
+/// Helper struct which displays the span as `row:col` for human reading.
+pub struct PrettyRowCol(pub proc_macro2::Span);
+impl std::fmt::Display for PrettyRowCol {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let span = self.0.unwrap();
+        write!(f, "{}:{}", span.start().line, span.start().column)
+    }
+}
