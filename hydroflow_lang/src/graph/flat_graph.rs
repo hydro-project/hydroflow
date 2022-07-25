@@ -69,12 +69,12 @@ impl FlatGraph {
                         if let (Some(out), Some(inn)) = (curr_ports.out, next_ports.inn) {
                             let src_port =
                                 curr_arrow.src.map(|x| x.index).unwrap_or_else(|| IndexInt {
-                                    value: self.succs[out].len(),
+                                    value: 0,
                                     span: curr_arrow.arrow.span(),
                                 });
                             let dst_port =
                                 curr_arrow.dst.map(|x| x.index).unwrap_or_else(|| IndexInt {
-                                    value: self.preds[inn].len(),
+                                    value: 0,
                                     span: curr_arrow.arrow.span(),
                                 });
 
