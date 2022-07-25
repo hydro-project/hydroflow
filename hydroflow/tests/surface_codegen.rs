@@ -1,4 +1,4 @@
-use hydroflow::{hydroflow_parser, hydroflow_syntax};
+use hydroflow::hydroflow_syntax;
 
 // TODO(mingwei): error message for ownership duplicate
 // (input(edges_out) -> [0]my_join_tee);
@@ -26,6 +26,11 @@ use hydroflow::{hydroflow_parser, hydroflow_syntax};
 // Joe:
 // TODO(mingwei): Documentation articles.
 // TODO(mingwei): Rename `hydroflow_lang` -> `hydroflow_lang`
+
+// TODO(mingwei): allow chains to not be surrounded in parenthesis.
+// TODO(mingwei): give warning for extraneous arguments.
+
+// TODO(mingwei): Find a way to display join keys
 
 #[test]
 pub fn test_surface_syntax_reachability_generated() {
