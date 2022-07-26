@@ -71,27 +71,22 @@ pub fn test_surface_syntax_reachability_generated() {
 
 #[test]
 pub fn test_transitive_closure() {
-    // WIP
-
     // An edge in the input data = a pair of `usize` vertex IDs.
     let (pairs_send, pairs_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
 
     let mut df = hydroflow_syntax! {
-        reached_vertices = (merge() -> map(|v| (v, ())));
+        // edge(x,y) :- link(x,y)
+        edge_merge_tee = (merge() -> tee());
+        link_tee = tee();
+        (input(pairs_recv) -> link_tee);
+        (link_tee[0] -> [0]edge_merge_tee);
 
-        input_tee = tee();
-        node_merge = merge();
-        (input(pairs_recv) -> input_tee);
-        (input_tee[0] -> map(|v: (usize, usize)| v.0) -> [0]node_merge);
-        (input_tee[1] -> map(|v: (usize, usize)| v.1) -> [1]node_merge);
-        (node_merge -> [0]reached_vertices);
-
-        my_join_tee = (join() -> map(|(_src, ((), dst))| dst) -> tee());
-        (reached_vertices -> [0]my_join_tee);
-        (input_tee[2] -> [1]my_join_tee);
-
-        (my_join_tee[0] -> [1]reached_vertices);
-        (my_join_tee[1] -> for_each(|x| println!("Reached: {}", x)));
+        // edge(a,b) :- edge(a,k), link(k,b)
+        the_join = join();
+        (edge_merge_tee[0] -> map(|(a, k)| (k, a)) -> [0]the_join);
+        (link_tee[1] -> [1]the_join);
+        (the_join -> map(|(_k, (a, b))| (a, b)) -> [1]edge_merge_tee);
+        (edge_merge_tee[1] -> for_each(|(a, b)| println!("transitive closure: ({},{})", a, b)));
     };
 
     df.run_available();
@@ -112,11 +107,16 @@ pub fn test_transitive_closure() {
     pairs_send.send((0, 3)).unwrap();
     df.run_available();
 
-    // Reached: 1
-    // Reached: 2
-    // Reached: 4
-    // Reached: 3
-    // Reached: 4
+    // transitive closure: (0,1)
+    // transitive closure: (2,4)
+    // transitive closure: (3,4)
+    // transitive closure: (1,2)
+    // transitive closure: (0,2)
+    // transitive closure: (1,4)
+    // transitive closure: (0,4)
+    // transitive closure: (0,3)
+    // transitive closure: (0,4)
+    // transitive closure: (0,3)
 }
 
 #[test]
