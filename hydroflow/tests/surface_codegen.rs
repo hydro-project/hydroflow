@@ -81,13 +81,12 @@ pub fn test_transitive_closure() {
         (input(pairs_recv) -> link_tee);
         (link_tee[0] -> [0]edge_merge_tee);
 
-        // edge(x,y) :- edge(x,y), link(y,z)
+        // edge(a,b) :- edge(a,k), link(k,b)
         the_join = join();
-        (edge_merge_tee[0] -> map(|x: (usize, usize)| (x.1, (x.0,x.1))) -> [0]the_join);
-        (link_tee[1] -> map(|x: (usize, usize)| (x.0, (x.0, x.1))) -> [1]the_join);
-        // the_join emits (x, ((x,y), (y,z)))
-        (the_join -> map(|t: (usize, ((usize, usize), (usize, usize)))| (t.1.0.0, t.1.1.1)) -> [1]edge_merge_tee);
-        (edge_merge_tee[1] -> for_each(|x: (usize, usize)| println!("transitive closure: ({},{})", x.0, x.1)));
+        (edge_merge_tee[0] -> map(|(a, k)| (k, a)) -> [0]the_join);
+        (link_tee[1] -> [1]the_join);
+        (the_join -> map(|(_k, (a, b))| (a, b)) -> [1]edge_merge_tee);
+        (edge_merge_tee[1] -> for_each(|(a, b)| println!("transitive closure: ({},{})", a, b)));
     };
 
     df.run_available();
