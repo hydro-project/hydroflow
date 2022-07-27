@@ -125,7 +125,7 @@ impl FlatGraph {
         }
     }
 
-    /// Validates that operators have valid number of inputs and outputs.
+    /// Validates that operators have valid number of inputs, outputs, and arguments.
     /// (Emits error messages on span).
     /// TODO(mingwei): Clean this up, make it do more than just arity?
     /// Returns `true` if errors were found.
@@ -137,6 +137,20 @@ impl FlatGraph {
                     let op_name = &*operator.name_string();
                     match OPERATORS.iter().find(|&op| op_name == op.name) {
                         Some(op_constraints) => {
+                            if op_constraints.num_args != operator.args.len() {
+                                errored = true;
+
+                                operator
+                                    .span()
+                                    .unwrap()
+                                    .error(format!(
+                                        "expected {} arguments, found {}",
+                                        op_constraints.num_args,
+                                        operator.args.len()
+                                    ))
+                                    .emit();
+                            }
+
                             /// Returns true if an error was found.
                             fn emit_arity_error(
                                 operator: &Operator,
