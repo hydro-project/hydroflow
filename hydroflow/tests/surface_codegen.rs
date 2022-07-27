@@ -19,7 +19,6 @@ use hydroflow::hydroflow_syntax;
 // Joe:
 // TODO(mingwei): Documentation articles.
 
-// TODO(mingwei): allow chains to not be surrounded in parenthesis.
 // TODO(mingwei): give warning for extraneous arguments.
 
 // TODO(mingwei): Find a way to display join keys
@@ -30,15 +29,15 @@ pub fn test_surface_syntax_reachability_generated() {
     let (pairs_send, pairs_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
 
     let mut df = hydroflow_syntax! {
-        reached_vertices = (merge() -> map(|v| (v, ())));
-        (seed(vec![0]) -> [0]reached_vertices);
+        reached_vertices = merge() -> map(|v| (v, ()));
+        seed(vec![0]) -> [0]reached_vertices;
 
-        my_join_tee = (join() -> map(|(_src, ((), dst))| dst) -> tee());
-        (reached_vertices -> [0]my_join_tee);
-        (input(pairs_recv) -> [1]my_join_tee);
+        my_join_tee = join() -> map(|(_src, ((), dst))| dst) -> tee();
+        reached_vertices -> [0]my_join_tee;
+        input(pairs_recv) -> [1]my_join_tee;
 
-        (my_join_tee[0] -> [1]reached_vertices);
-        (my_join_tee[1] -> for_each(|x| println!("Reached: {}", x)));
+        my_join_tee[0] -> [1]reached_vertices;
+        my_join_tee[1] -> for_each(|x| println!("Reached: {}", x));
     };
 
     df.run_available();
@@ -73,17 +72,17 @@ pub fn test_transitive_closure() {
 
     let mut df = hydroflow_syntax! {
         // edge(x,y) :- link(x,y)
-        edge_merge_tee = (merge() -> tee());
+        edge_merge_tee = merge() -> tee();
         link_tee = tee();
-        (input(pairs_recv) -> link_tee);
-        (link_tee[0] -> [0]edge_merge_tee);
+        input(pairs_recv) -> link_tee;
+        link_tee[0] -> [0]edge_merge_tee;
 
         // edge(a,b) :- edge(a,k), link(k,b)
         the_join = join();
-        (edge_merge_tee[0] -> map(|(a, k)| (k, a)) -> [0]the_join);
-        (link_tee[1] -> [1]the_join);
-        (the_join -> map(|(_k, (a, b))| (a, b)) -> [1]edge_merge_tee);
-        (edge_merge_tee[1] -> for_each(|(a, b)| println!("transitive closure: ({},{})", a, b)));
+        edge_merge_tee[0] -> map(|(a, k)| (k, a)) -> [0]the_join;
+        link_tee[1] -> [1]the_join;
+        the_join -> map(|(_k, (a, b))| (a, b)) -> [1]edge_merge_tee;
+        edge_merge_tee[1] -> for_each(|(a, b)| println!("transitive closure: ({},{})", a, b));
     };
 
     df.run_available();
@@ -132,10 +131,10 @@ pub fn test_covid_tracing() {
     let (people_send, people_recv) = unbounded_channel::<(Pid, (Name, Phone))>();
 
     let mut hydroflow = hydroflow_syntax! {
-        contacts = (input(contacts_recv) -> flat_map(|(pid_a, pid_b, time)| [(pid_a, (pid_b, time)), (pid_b, (pid_a, time))]));
+        contacts = input(contacts_recv) -> flat_map(|(pid_a, pid_b, time)| [(pid_a, (pid_b, time)), (pid_b, (pid_a, time))]);
 
         exposed = merge();
-        (input(diagnosed_recv) -> [0]exposed);
+        input(diagnosed_recv) -> [0]exposed;
 
         new_exposed = (
             join() ->
@@ -145,9 +144,9 @@ pub fn test_covid_tracing() {
             map(|(_pid_a, (pid_b_t_contact, _t_from_to))| pid_b_t_contact) ->
             tee()
         );
-        (contacts -> [0]new_exposed);
-        (exposed -> [1]new_exposed);
-        (new_exposed[0] -> map(|(pid, t)| (pid, (t, t + TRANSMISSIBLE_DURATION))) -> [1]exposed);
+        contacts -> [0]new_exposed;
+        exposed -> [1]new_exposed;
+        new_exposed[0] -> map(|(pid, t)| (pid, (t, t + TRANSMISSIBLE_DURATION))) -> [1]exposed;
 
         notifs = (
             join() ->
@@ -158,8 +157,8 @@ pub fn test_covid_tracing() {
                 );
             })
         );
-        (input(people_recv) -> [0]notifs);
-        (new_exposed[1] -> [1]notifs);
+        input(people_recv) -> [0]notifs;
+        new_exposed[1] -> [1]notifs;
     };
 
     {
