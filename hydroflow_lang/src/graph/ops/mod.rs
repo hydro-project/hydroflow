@@ -224,7 +224,7 @@ pub const OPERATORS: [OperatorConstraints; 10] = [
     //     }),
     // },
     OperatorConstraints {
-        name: "input",
+        name: "recv_stream",
         hard_range_inn: RANGE_0,
         soft_range_inn: RANGE_0,
         hard_range_out: RANGE_1,
@@ -250,7 +250,7 @@ pub const OPERATORS: [OperatorConstraints; 10] = [
         }),
     },
     OperatorConstraints {
-        name: "seed",
+        name: "recv_iter",
         hard_range_inn: RANGE_0,
         soft_range_inn: RANGE_0,
         hard_range_out: RANGE_1,
