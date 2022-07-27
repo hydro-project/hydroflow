@@ -2,9 +2,6 @@ use hydroflow::hydroflow_syntax;
 
 // TODO(mingwei): custom operators? How to handle in syntax? How to handle state?
 
-// TODO(mingwei): Better name for `input(...)`
-// TODO(mingwei): Rename `seed`, really converts a Rust iterator to hydroflow pipeline.
-
 // TODO(mingwei): Still need to handle crossing stratum boundaries
 // TODO(mingwei): Implement non-monotonicity handling.
 
@@ -30,11 +27,11 @@ pub fn test_surface_syntax_reachability_generated() {
 
     let mut df = hydroflow_syntax! {
         reached_vertices = merge() -> map(|v| (v, ()));
-        seed(vec![0]) -> [0]reached_vertices;
+        recv_iter(vec![0]) -> [0]reached_vertices;
 
         my_join_tee = join() -> map(|(_src, ((), dst))| dst) -> tee();
         reached_vertices -> [0]my_join_tee;
-        input(pairs_recv) -> [1]my_join_tee;
+        recv_stream(pairs_recv) -> [1]my_join_tee;
 
         my_join_tee[0] -> [1]reached_vertices;
         my_join_tee[1] -> for_each(|x| println!("Reached: {}", x));
@@ -74,7 +71,7 @@ pub fn test_transitive_closure() {
         // edge(x,y) :- link(x,y)
         edge_merge_tee = merge() -> tee();
         link_tee = tee();
-        input(pairs_recv) -> link_tee;
+        recv_stream(pairs_recv) -> link_tee;
         link_tee[0] -> [0]edge_merge_tee;
 
         // edge(a,b) :- edge(a,k), link(k,b)
@@ -131,10 +128,10 @@ pub fn test_covid_tracing() {
     let (people_send, people_recv) = unbounded_channel::<(Pid, (Name, Phone))>();
 
     let mut hydroflow = hydroflow_syntax! {
-        contacts = input(contacts_recv) -> flat_map(|(pid_a, pid_b, time)| [(pid_a, (pid_b, time)), (pid_b, (pid_a, time))]);
+        contacts = recv_stream(contacts_recv) -> flat_map(|(pid_a, pid_b, time)| [(pid_a, (pid_b, time)), (pid_b, (pid_a, time))]);
 
         exposed = merge();
-        input(diagnosed_recv) -> [0]exposed;
+        recv_stream(diagnosed_recv) -> [0]exposed;
 
         new_exposed = (
             join() ->
@@ -157,7 +154,7 @@ pub fn test_covid_tracing() {
                 );
             })
         );
-        input(people_recv) -> [0]notifs;
+        recv_stream(people_recv) -> [0]notifs;
         new_exposed[1] -> [1]notifs;
     };
 
