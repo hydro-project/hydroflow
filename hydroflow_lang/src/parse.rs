@@ -3,8 +3,7 @@ use std::hash::Hash;
 use proc_macro2::{Span, TokenStream};
 use quote::ToTokens;
 use syn::parse::{Parse, ParseStream};
-use syn::punctuated::{Pair, Punctuated};
-use syn::spanned::Spanned;
+use syn::punctuated::Punctuated;
 use syn::token::{Bracket, Paren};
 use syn::{
     bracketed, parenthesized, Expr, GenericArgument, Ident, LitInt, Path, PathArguments,
@@ -74,14 +73,30 @@ impl ToTokens for NamedHfStatement {
 }
 
 pub enum Pipeline {
-    Chain(ChainPipeline),
+    Paren(PipelineParen),
+    Link(PipelineLink),
     Name(Ident),
     Operator(Operator),
 }
-impl Parse for Pipeline {
-    fn parse(input: ParseStream) -> syn::Result<Self> {
+impl Pipeline {
+    fn parse_helper(input: ParseStream) -> syn::Result<Self> {
+        let lhs = Self::parse_one(input)?;
+        if input.is_empty() || input.peek(Token![;]) {
+            Ok(lhs)
+        } else {
+            let connector = input.parse()?;
+            let rhs = input.parse()?;
+            Ok(Self::Link(PipelineLink {
+                lhs: Box::new(lhs),
+                connector,
+                rhs,
+            }))
+        }
+    }
+
+    fn parse_one(input: ParseStream) -> syn::Result<Self> {
         if input.peek(Paren) {
-            Ok(Self::Chain(input.parse()?))
+            Ok(Self::Paren(input.parse()?))
         } else if input.peek2(Paren) || input.peek2(Token![<]) || input.peek2(Token![::]) {
             Ok(Self::Operator(input.parse()?))
         } else {
@@ -89,47 +104,68 @@ impl Parse for Pipeline {
         }
     }
 }
+impl Parse for Pipeline {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        Self::parse_helper(input)
+    }
+}
 impl ToTokens for Pipeline {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         match self {
-            Pipeline::Chain(x) => x.to_tokens(tokens),
+            Pipeline::Paren(x) => x.to_tokens(tokens),
+            Pipeline::Link(x) => x.to_tokens(tokens),
             Pipeline::Name(x) => x.to_tokens(tokens),
             Pipeline::Operator(x) => x.to_tokens(tokens),
         }
     }
 }
 
-pub struct ChainPipeline {
+pub struct PipelineParen {
     pub paren_token: Paren,
-    pub elems: Punctuated<Pipeline, ArrowConnector>,
+    pub pipeline: Box<Pipeline>,
 }
-impl Parse for ChainPipeline {
+impl Parse for PipelineParen {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let content;
         let paren_token = parenthesized!(content in input);
-        let elems: Punctuated<Pipeline, ArrowConnector> = Punctuated::parse_terminated(&content)?;
-
-        match elems.pairs().next_back() {
-            None => {
-                elems.span().unwrap().error("Cannot have empty pipeline");
-            }
-            Some(Pair::Punctuated(_, trailing)) => {
-                trailing.span().unwrap().error("Cannot have trailing arrow");
-            }
-            Some(Pair::End(_)) => {}
-        }
-        if elems.trailing_punct() {
-            elems.span().unwrap().error("Cannot have empty pipeline");
-        }
-
-        Ok(Self { paren_token, elems })
+        let pipeline = content.parse()?;
+        Ok(Self {
+            paren_token,
+            pipeline,
+        })
     }
 }
-impl ToTokens for ChainPipeline {
+impl ToTokens for PipelineParen {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         self.paren_token.surround(tokens, |tokens| {
-            self.elems.to_tokens(tokens);
+            self.pipeline.to_tokens(tokens);
         });
+    }
+}
+
+pub struct PipelineLink {
+    pub lhs: Box<Pipeline>,
+    pub connector: ArrowConnector,
+    pub rhs: Box<Pipeline>,
+}
+impl Parse for PipelineLink {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let lhs = input.parse()?;
+        let connector = input.parse()?;
+        let rhs = input.parse()?;
+
+        Ok(Self {
+            lhs,
+            connector,
+            rhs,
+        })
+    }
+}
+impl ToTokens for PipelineLink {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        self.lhs.to_tokens(tokens);
+        self.connector.to_tokens(tokens);
+        self.rhs.to_tokens(tokens);
     }
 }
 
@@ -179,44 +215,6 @@ impl ToTokens for Indexing {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         self.bracket_token.surround(tokens, |tokens| {
             self.index.to_tokens(tokens);
-        });
-    }
-}
-
-pub struct MultiplePipeline {
-    pub name: Ident,
-    pub bracket_token: Bracket,
-    pub elems: Punctuated<Pipeline, Token![,]>,
-}
-impl Parse for MultiplePipeline {
-    fn parse(input: ParseStream) -> syn::Result<Self> {
-        let name = input.parse()?;
-
-        let content;
-        let bracket_token = bracketed!(content in input);
-        let mut elems = Punctuated::new();
-
-        while !content.is_empty() {
-            let first = content.parse()?;
-            elems.push_value(first);
-            if content.is_empty() {
-                break;
-            }
-            let punct = content.parse()?;
-            elems.push_punct(punct);
-        }
-
-        Ok(Self {
-            name,
-            bracket_token,
-            elems,
-        })
-    }
-}
-impl ToTokens for MultiplePipeline {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        self.bracket_token.surround(tokens, |tokens| {
-            self.elems.to_tokens(tokens);
         });
     }
 }
