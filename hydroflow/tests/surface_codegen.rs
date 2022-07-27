@@ -15,9 +15,6 @@ use hydroflow::hydroflow_syntax;
 
 // Joe:
 // TODO(mingwei): Documentation articles.
-
-// TODO(mingwei): give warning for extraneous arguments.
-
 // TODO(mingwei): Find a way to display join keys
 
 #[test]
