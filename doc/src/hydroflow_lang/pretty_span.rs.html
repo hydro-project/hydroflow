@@ -19,6 +19,15 @@
 <span id="13">13</span>
 <span id="14">14</span>
 <span id="15">15</span>
+<span id="16">16</span>
+<span id="17">17</span>
+<span id="18">18</span>
+<span id="19">19</span>
+<span id="20">20</span>
+<span id="21">21</span>
+<span id="22">22</span>
+<span id="23">23</span>
+<span id="24">24</span>
 </pre><pre class="rust"><code><span class="doccomment">/// Helper struct which displays the span as `path:row:col` for human reading/IDE linking.</span>
 <span class="doccomment">/// Example: `hydroflow\tests\surface_syntax.rs:42:18`.</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">PrettySpan</span>(<span class="kw">pub</span> <span class="ident">proc_macro2::Span</span>);
@@ -34,6 +43,15 @@
         )
     }
 }
+
+<span class="doccomment">/// Helper struct which displays the span as `row:col` for human reading.</span>
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">PrettyRowCol</span>(<span class="kw">pub</span> <span class="ident">proc_macro2::Span</span>);
+<span class="kw">impl</span> <span class="ident">std::fmt::Display</span> <span class="kw">for</span> <span class="ident">PrettyRowCol</span> {
+    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">std::fmt::Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">std::fmt::Result</span> {
+        <span class="kw">let</span> <span class="ident">span</span> <span class="op">=</span> <span class="self">self</span>.<span class="number">0</span>.<span class="ident">unwrap</span>();
+        <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;{}:{}&quot;</span>, <span class="ident">span</span>.<span class="ident">start</span>().<span class="ident">line</span>, <span class="ident">span</span>.<span class="ident">start</span>().<span class="ident">column</span>)
+    }
+}
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (4d6d601c8 2022-07-26)" ></div>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (2643b1646 2022-07-27)" ></div>
 </body></html>

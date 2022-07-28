@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":[["HfStatement",""],["Pipeline",""]],"struct":[["ArrowConnector",""],["ChainPipeline",""],["HfCode",""],["IndexInt",""],["Indexing",""],["MultiplePipeline",""],["NamedHfStatement",""],["Operator",""]]};
+window.SIDEBAR_ITEMS = {"enum":[["HfStatement",""],["Pipeline",""]],"struct":[["ArrowConnector",""],["HfCode",""],["IndexInt",""],["Indexing",""],["NamedHfStatement",""],["Operator",""],["PipelineLink",""],["PipelineParen",""]]};

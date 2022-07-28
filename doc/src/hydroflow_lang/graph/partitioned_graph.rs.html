@@ -261,10 +261,16 @@
 <span id="255">255</span>
 <span id="256">256</span>
 <span id="257">257</span>
+<span id="258">258</span>
+<span id="259">259</span>
+<span id="260">260</span>
+<span id="261">261</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">proc_macro2</span>::{<span class="ident">Ident</span>, <span class="ident">Literal</span>, <span class="ident">Span</span>, <span class="ident">TokenStream</span>};
 <span class="kw">use</span> <span class="ident">quote</span>::{<span class="ident">quote</span>, <span class="ident">ToTokens</span>};
 <span class="kw">use</span> <span class="ident">slotmap</span>::{<span class="ident">Key</span>, <span class="ident">SecondaryMap</span>, <span class="ident">SlotMap</span>};
 <span class="kw">use</span> <span class="ident">syn::spanned::Spanned</span>;
+
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::pretty_span</span>::{<span class="ident">PrettyRowCol</span>, <span class="ident">PrettySpan</span>};
 
 <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::flat_graph::FlatGraph</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::ops</span>::{<span class="ident">WriteContextArgs</span>, <span class="ident">WriteIteratorArgs</span>, <span class="ident">OPERATORS</span>};
@@ -486,8 +492,10 @@
                     <span class="ident">Node::Operator</span>(<span class="ident">operator</span>) =&gt; {
                         <span class="macro">writeln!</span>(
                             <span class="ident">write</span>,
-                            <span class="string">r#&quot;        {id:?}[&quot;{id:?} &lt;tt&gt;{code}&lt;/tt&gt;&quot;]&quot;#</span>,
+                            <span class="string">&quot;        %% {span}\n        {id:?}[\&quot;{row_col} &lt;tt&gt;{code}&lt;/tt&gt;\&quot;]&quot;</span>,
+                            <span class="ident">span</span> <span class="op">=</span> <span class="ident">PrettySpan</span>(<span class="ident">operator</span>.<span class="ident">span</span>()),
                             <span class="ident">id</span> <span class="op">=</span> <span class="ident">node_id</span>.<span class="ident">data</span>(),
+                            <span class="ident">row_col</span> <span class="op">=</span> <span class="ident">PrettyRowCol</span>(<span class="ident">operator</span>.<span class="ident">span</span>()),
                             <span class="ident">code</span> <span class="op">=</span> <span class="ident">operator</span>
                                 .<span class="ident">to_token_stream</span>()
                                 .<span class="ident">to_string</span>()
@@ -519,5 +527,5 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (4d6d601c8 2022-07-26)" ></div>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (2643b1646 2022-07-27)" ></div>
 </body></html>

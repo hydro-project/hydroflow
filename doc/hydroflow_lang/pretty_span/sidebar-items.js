@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["PrettySpan","Helper struct which displays the span as `path:row:col` for human reading/IDE linking. Example: `hydroflow\\tests\\surface_syntax.rs:42:18`."]]};
+window.SIDEBAR_ITEMS = {"struct":[["PrettyRowCol","Helper struct which displays the span as `row:col` for human reading."],["PrettySpan","Helper struct which displays the span as `path:row:col` for human reading/IDE linking. Example: `hydroflow\\tests\\surface_syntax.rs:42:18`."]]};
