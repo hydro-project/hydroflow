@@ -2,7 +2,7 @@ use super::{AssembleFlowGraph, BaseSurface, PullSurface};
 
 use crate::builder::build::pull_iter::IterPullBuild;
 use crate::scheduled::context::Context;
-use crate::scheduled::flow_graph::NodeId;
+use crate::scheduled::flow_graph::FlowNodeId;
 
 pub struct IterPullSurface<I>
 where
@@ -23,7 +23,7 @@ impl<I> AssembleFlowGraph for IterPullSurface<I>
 where
     I: Iterator,
 {
-    fn insert_dep(&self, e: &mut super::FlowGraph) -> NodeId {
+    fn insert_dep(&self, e: &mut super::FlowGraph) -> FlowNodeId {
         e.add_node("Iter")
     }
 }

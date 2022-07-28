@@ -2,7 +2,7 @@ use super::{AssembleFlowGraph, BaseSurface, PullSurface};
 
 use crate::builder::build::pull_handoff::HandoffPullBuild;
 use crate::scheduled::context::Context;
-use crate::scheduled::flow_graph::NodeId;
+use crate::scheduled::flow_graph::FlowNodeId;
 use crate::scheduled::handoff::Handoff;
 use crate::scheduled::port::RecvPort;
 use crate::{tl, tt};
@@ -26,7 +26,7 @@ impl<Hof> AssembleFlowGraph for HandoffPullSurface<Hof>
 where
     Hof: Handoff,
 {
-    fn insert_dep(&self, e: &mut super::FlowGraph) -> NodeId {
+    fn insert_dep(&self, e: &mut super::FlowGraph) -> FlowNodeId {
         let my_id = e.add_node("Handoff");
         e.add_handoff_id(my_id, self.port.handoff_id);
         my_id

@@ -1,4 +1,4 @@
-use crate::scheduled::flow_graph::NodeId;
+use crate::scheduled::flow_graph::FlowNodeId;
 
 use super::{AssembleFlowGraph, BaseSurface, PushSurface, PushSurfaceReversed};
 
@@ -23,7 +23,7 @@ impl<Out> StartPushSurface<Out> {
 }
 
 impl<Out> AssembleFlowGraph for StartPushSurface<Out> {
-    fn insert_dep(&self, e: &mut super::FlowGraph) -> NodeId {
+    fn insert_dep(&self, e: &mut super::FlowGraph) -> FlowNodeId {
         let my_id = e.add_node("Start");
         my_id
     }

@@ -4,7 +4,7 @@ use std::hash::Hash;
 
 use crate::builder::build::pull_join::JoinPullBuild;
 use crate::scheduled::context::Context;
-use crate::scheduled::flow_graph::NodeId;
+use crate::scheduled::flow_graph::FlowNodeId;
 use crate::scheduled::handoff::handoff_list::{PortList, PortListSplit};
 use crate::scheduled::port::RECV;
 use crate::scheduled::type_list::Extend;
@@ -49,7 +49,7 @@ where
     <PrevA::InputHandoffs as Extend<PrevB::InputHandoffs>>::Extended:
         PortList<RECV> + PortListSplit<RECV, PrevA::InputHandoffs, Suffix = PrevB::InputHandoffs>,
 {
-    fn insert_dep(&self, e: &mut super::FlowGraph) -> NodeId {
+    fn insert_dep(&self, e: &mut super::FlowGraph) -> FlowNodeId {
         let my_id = e.add_node("Join");
         let prev_a_id = self.prev_a.insert_dep(e);
         let prev_b_id = self.prev_b.insert_dep(e);

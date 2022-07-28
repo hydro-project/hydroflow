@@ -5,19 +5,20 @@ use syn::spanned::Spanned;
 
 use super::flat_graph::FlatGraph;
 use super::ops::{WriteContextArgs, WriteIteratorArgs, OPERATORS};
-use super::{node_color, Color, EdgePortRef, Node, NodeId, OutboundEdges, SubgraphId};
+use super::serde_graph::SerdeGraph;
+use super::{node_color, Color, EdgePortRef, GraphNodeId, GraphSubgraphId, Node, OutboundEdges};
 
 #[derive(Default)]
 #[allow(dead_code)] // TODO(mingwei): remove when no longer needed.
 pub struct PartitionedGraph {
-    pub(crate) nodes: SlotMap<NodeId, Node>,
-    pub(crate) preds: SecondaryMap<NodeId, OutboundEdges>,
-    pub(crate) succs: SecondaryMap<NodeId, OutboundEdges>,
-    pub(crate) node_subgraph: SecondaryMap<NodeId, SubgraphId>,
+    pub(crate) nodes: SlotMap<GraphNodeId, Node>,
+    pub(crate) preds: SecondaryMap<GraphNodeId, OutboundEdges>,
+    pub(crate) succs: SecondaryMap<GraphNodeId, OutboundEdges>,
+    pub(crate) node_subgraph: SecondaryMap<GraphNodeId, GraphSubgraphId>,
 
-    pub(crate) subgraph_nodes: SlotMap<SubgraphId, Vec<NodeId>>,
-    pub(crate) subgraph_recv_handoffs: SecondaryMap<SubgraphId, Vec<NodeId>>,
-    pub(crate) subgraph_send_handoffs: SecondaryMap<SubgraphId, Vec<NodeId>>,
+    pub(crate) subgraph_nodes: SlotMap<GraphSubgraphId, Vec<GraphNodeId>>,
+    pub(crate) subgraph_recv_handoffs: SecondaryMap<GraphSubgraphId, Vec<GraphNodeId>>,
+    pub(crate) subgraph_send_handoffs: SecondaryMap<GraphSubgraphId, Vec<GraphNodeId>>,
 }
 impl PartitionedGraph {
     pub fn new() -> Self {
@@ -32,26 +33,45 @@ impl PartitionedGraph {
         super::iter_edges(&self.succs)
     }
 
-    pub fn mermaid_string(&self) -> String {
+    pub fn serde_string(&self) -> String {
         let mut string = String::new();
-        self.write_mermaid(&mut string).unwrap();
+        self.write_serde_graph(&mut string).unwrap();
         string
     }
 
-    pub fn node_id_as_ident(&self, node_id: NodeId, is_pred: bool) -> Ident {
-        let name = match self.nodes[node_id] {
-            Node::Operator(_) => {
-                format!("op_{:?}", node_id.data())
-            }
-            Node::Handoff => {
-                format!(
-                    "hoff_{:?}_{}",
-                    node_id.data(),
-                    if is_pred { "recv" } else { "send" }
-                )
-            }
-        };
+    pub fn node_id_as_string(&self, node_id: GraphNodeId, is_pred: bool) -> String {
+        match &self.nodes[node_id] {
+            Node::Operator(_) => format!("op_{:?}", node_id.data()).into(),
+            Node::Handoff => format!(
+                "hoff_{:?}_{}",
+                node_id.data(),
+                if is_pred { "recv" } else { "send" }
+            ),
+        }
+    }
+
+    pub fn node_id_as_ident(&self, node_id: GraphNodeId, is_pred: bool) -> Ident {
+        let name = self.node_id_as_string(node_id, is_pred);
         Ident::new(&*name, self.nodes[node_id].span())
+    }
+
+    pub fn tokenize(&self, _root: TokenStream) -> TokenStream {
+        let t = self
+            .nodes
+            .values()
+            .filter_map(|node| match node {
+                Node::Operator(operator) => Some(operator),
+                Node::Handoff => None,
+            })
+            .map(|operator| {
+                let op_tokens = operator.to_token_stream();
+                quote! { #op_tokens }
+            });
+        quote! {
+            {
+                #( quote::quote!{ #t } );*
+            }
+        }
     }
 
     pub fn as_code(&self, root: TokenStream) -> TokenStream {
@@ -202,56 +222,69 @@ impl PartitionedGraph {
                 }
             });
 
+        let serde_string = Literal::string(&*self.serde_string());
         quote! {
             {
                 use #root::tl;
 
-                let mut df = #root::scheduled::graph::Hydroflow::new();
+                let mut df = #root::scheduled::graph::Hydroflow::new_with_graph(#serde_string);
+
                 #( #handoffs )*
                 #( #subgraphs )*
+
                 df
             }
         }
     }
 
-    pub fn write_mermaid(&self, write: &mut impl std::fmt::Write) -> std::fmt::Result {
-        writeln!(write, "flowchart TB")?;
-        for (subgraph_id, node_ids) in self.subgraph_nodes.iter() {
-            writeln!(write, "    subgraph sg_{}", subgraph_id.data().as_ffi())?;
-            for &node_id in node_ids.iter() {
-                match &self.nodes[node_id] {
-                    Node::Operator(operator) => {
-                        writeln!(
-                            write,
-                            r#"        {id:?}["{id:?} <tt>{code}</tt>"]"#,
-                            id = node_id.data(),
-                            code = operator
-                                .to_token_stream()
-                                .to_string()
-                                .replace('&', "&amp;")
-                                .replace('<', "&lt;")
-                                .replace('>', "&gt;")
-                                .replace('"', "&quot;")
-                                .replace('\n', "<br>"),
-                        )?;
-                    }
-                    Node::Handoff => {
-                        // writeln!(write, r#"        {:?}{{"handoff"}}"#, node_id.data())
-                    }
+    pub fn node_to_txt(&self, node_id: GraphNodeId) -> String {
+        format!(
+            "{}: {}",
+            self.node_id_as_string(node_id, false),
+            match &self.nodes[node_id] {
+                Node::Operator(operator) => {
+                    operator.to_token_stream().to_string()
+                }
+                Node::Handoff => {
+                    "handoff".to_string()
                 }
             }
-            writeln!(write, "    end")?;
-        }
-        writeln!(write)?;
-        for (node_id, node) in self.nodes.iter() {
-            if matches!(node, Node::Handoff) {
-                writeln!(write, r#"    {:?}{{"handoff"}}"#, node_id.data())?;
-            }
-        }
-        writeln!(write)?;
+        )
+    }
+    pub fn to_serde_graph(&self) -> SerdeGraph {
+        let mut g = SerdeGraph::new();
         for ((src, _src_idx), (dst, _dst_idx)) in self.edges() {
-            writeln!(write, "    {:?}-->{:?}", src.data(), dst.data())?;
+            // add nodes
+            g.nodes.insert(src, self.node_to_txt(src));
+            g.nodes.insert(dst, self.node_to_txt(dst));
+
+            // add handoffs
+            if let Node::Handoff = &self.nodes[src] {
+                g.handoffs.insert(src, true);
+            }
+            if let Node::Handoff = &self.nodes[dst] {
+                g.handoffs.insert(dst, true);
+            }
+
+            // add edges
+            match g.edges.get_mut(src) {
+                Some(e) => {
+                    e.push(dst);
+                }
+                None => {
+                    g.edges.insert(src, vec![dst]);
+                }
+            }
+
+            // add subgraphs
+            g.subgraph_nodes = self.subgraph_nodes.clone();
         }
+        g
+    }
+
+    pub fn write_serde_graph(&self, write: &mut impl std::fmt::Write) -> std::fmt::Result {
+        let sg = self.to_serde_graph();
+        writeln!(write, "{}", serde_json::to_string(&sg).unwrap())?;
         Ok(())
     }
 }

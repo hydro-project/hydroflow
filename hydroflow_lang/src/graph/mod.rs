@@ -16,19 +16,20 @@ use self::partitioned_graph::PartitionedGraph;
 pub mod flat_graph;
 pub mod ops;
 pub mod partitioned_graph;
+pub mod serde_graph;
 
 new_key_type! {
     /// ID to identify a node (operator or handoff) in both [`flat_graph::FlatGraph`]
     /// and [`partitioned_graph::PartitionedGraph`].
-    pub struct NodeId;
+    pub struct GraphNodeId;
 }
 new_key_type! {
     /// ID to identify a subgraph in [`partitioned_graph::PartitionedGraph`].
-    pub struct SubgraphId;
+    pub struct GraphSubgraphId;
 }
 
-pub type EdgePort = (NodeId, IndexInt);
-pub type EdgePortRef<'a> = (NodeId, &'a IndexInt);
+pub type EdgePort = (GraphNodeId, IndexInt);
+pub type EdgePortRef<'a> = (GraphNodeId, &'a IndexInt);
 /// BTreeMap is used to ensure iteration order matches `IndexInt` order.
 pub type OutboundEdges = BTreeMap<IndexInt, EdgePort>;
 
@@ -91,7 +92,7 @@ impl From<FlatGraph> for PartitionedGraph {
         // 2. Collect edges. Sort so edges which should not be split across a handoff come first.
         // 3. For each edge, try to join `(to, from)` into the same subgraph.
 
-        let mut node_color: SecondaryMap<NodeId, Option<Color>> = flat_graph
+        let mut node_color: SecondaryMap<GraphNodeId, Option<Color>> = flat_graph
             .nodes
             .keys()
             .map(|node_id| {
@@ -101,7 +102,8 @@ impl From<FlatGraph> for PartitionedGraph {
                 (node_id, op_color)
             })
             .collect();
-        let mut node_union: UnionFind<NodeId> = UnionFind::with_capacity(flat_graph.nodes.len());
+        let mut node_union: UnionFind<GraphNodeId> =
+            UnionFind::with_capacity(flat_graph.nodes.len());
         // All edges which belong to a single subgraph. Other & self-edges become handoffs.
         let mut subgraph_edges: HashSet<(EdgePortRef, EdgePortRef)> = Default::default();
 
@@ -172,13 +174,13 @@ impl From<FlatGraph> for PartitionedGraph {
         }
 
         // Copy of `self.preds` for the output.
-        let mut new_preds: SecondaryMap<NodeId, OutboundEdges> = flat_graph
+        let mut new_preds: SecondaryMap<GraphNodeId, OutboundEdges> = flat_graph
             .nodes
             .keys()
             .map(|k| (k, Default::default()))
             .collect();
         // Copy of `self.succs` for the output.
-        let mut new_succs: SecondaryMap<NodeId, OutboundEdges> = flat_graph
+        let mut new_succs: SecondaryMap<GraphNodeId, OutboundEdges> = flat_graph
             .nodes
             .keys()
             .map(|k| (k, Default::default()))
@@ -221,14 +223,14 @@ impl From<FlatGraph> for PartitionedGraph {
         // Determine node's subgraph and subgraph's nodes in topological sort order.
         let (node_subgraph, subgraph_nodes) = {
             struct SubgraphTopoSort<'a> {
-                nodes: &'a SlotMap<NodeId, Node>,
-                preds: &'a SecondaryMap<NodeId, OutboundEdges>,
-                node_union: &'a mut UnionFind<NodeId>,
-                marked: HashSet<NodeId>,
-                subgraph_nodes: SecondaryMap<NodeId, Vec<NodeId>>,
+                nodes: &'a SlotMap<GraphNodeId, Node>,
+                preds: &'a SecondaryMap<GraphNodeId, OutboundEdges>,
+                node_union: &'a mut UnionFind<GraphNodeId>,
+                marked: HashSet<GraphNodeId>,
+                subgraph_nodes: SecondaryMap<GraphNodeId, Vec<GraphNodeId>>,
             }
             impl<'a> SubgraphTopoSort<'a> {
-                pub fn visit(&mut self, node_id: NodeId) {
+                pub fn visit(&mut self, node_id: GraphNodeId) {
                     // Already marked.
                     if self.marked.contains(&node_id) {
                         return;
@@ -266,9 +268,9 @@ impl From<FlatGraph> for PartitionedGraph {
             }
 
             // For a `NodeId`, what `SubgraphId` does it belong to.
-            let mut node_subgraph: SecondaryMap<NodeId, SubgraphId> = Default::default();
+            let mut node_subgraph: SecondaryMap<GraphNodeId, GraphSubgraphId> = Default::default();
             // For a `SubgraphId`, what `NodeId`s belong to it.
-            let mut subgraph_nodes: SlotMap<SubgraphId, Vec<NodeId>> = Default::default();
+            let mut subgraph_nodes: SlotMap<GraphSubgraphId, Vec<GraphNodeId>> = Default::default();
             // Populate above.
             for (_repr_node, member_nodes) in sg_topo_sort.subgraph_nodes {
                 subgraph_nodes.insert_with_key(|subgraph_id| {
@@ -283,10 +285,11 @@ impl From<FlatGraph> for PartitionedGraph {
         };
 
         // Get data on handoff src and dst subgraphs.
-        let mut subgraph_recv_handoffs: SecondaryMap<SubgraphId, Vec<NodeId>> = subgraph_nodes
-            .keys()
-            .map(|k| (k, Default::default()))
-            .collect();
+        let mut subgraph_recv_handoffs: SecondaryMap<GraphSubgraphId, Vec<GraphNodeId>> =
+            subgraph_nodes
+                .keys()
+                .map(|k| (k, Default::default()))
+                .collect();
         let mut subgraph_send_handoffs = subgraph_recv_handoffs.clone();
         for edge in iter_edges(&new_succs) {
             let ((src, _), (dst, _)) = edge;
@@ -323,7 +326,7 @@ impl From<FlatGraph> for PartitionedGraph {
 }
 
 pub(crate) fn iter_edges(
-    succs: &SecondaryMap<NodeId, OutboundEdges>,
+    succs: &SecondaryMap<GraphNodeId, OutboundEdges>,
 ) -> impl '_ + Iterator<Item = (EdgePortRef, EdgePortRef)> {
     succs.iter().flat_map(|(src, succs)| {
         succs

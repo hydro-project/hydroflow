@@ -3,7 +3,7 @@ use super::{AssembleFlowGraph, BaseSurface, PullSurface, PushSurface, PushSurfac
 use crate::builder::build::pull_filter::FilterPullBuild;
 use crate::builder::build::push_filter::FilterPushBuild;
 use crate::scheduled::context::Context;
-use crate::scheduled::flow_graph::NodeId;
+use crate::scheduled::flow_graph::FlowNodeId;
 
 pub struct FilterSurface<Prev, Func>
 where
@@ -49,7 +49,7 @@ where
     Prev: PullSurface + AssembleFlowGraph,
     Func: FnMut(&Context, &Prev::ItemOut) -> bool,
 {
-    fn insert_dep(&self, e: &mut super::FlowGraph) -> NodeId {
+    fn insert_dep(&self, e: &mut super::FlowGraph) -> FlowNodeId {
         let my_id = e.add_node("Filter");
         let prev_id = self.prev.insert_dep(e);
         e.add_edge((prev_id, my_id));
@@ -96,7 +96,7 @@ where
     Next: PushSurfaceReversed + AssembleFlowGraph,
     Func: FnMut(&Context, &Next::ItemIn) -> bool,
 {
-    fn insert_dep(&self, e: &mut super::FlowGraph) -> NodeId {
+    fn insert_dep(&self, e: &mut super::FlowGraph) -> FlowNodeId {
         let my_id = e.add_node("Filter");
         let next_id = self.next.insert_dep(e);
         e.add_edge((my_id, next_id));

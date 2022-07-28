@@ -1,4 +1,4 @@
-use hydroflow::{hydroflow_parser, hydroflow_syntax};
+use hydroflow::hydroflow_syntax;
 
 // TODO(mingwei): error message for ownership duplicate
 // (input(edges_out) -> [0]my_join_tee);

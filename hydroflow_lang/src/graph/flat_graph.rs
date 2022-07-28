@@ -11,13 +11,13 @@ use crate::parse::{HfCode, HfStatement, IndexInt, Operator, Pipeline};
 use crate::pretty_span::PrettySpan;
 
 use super::partitioned_graph::PartitionedGraph;
-use super::{EdgePortRef, Node, NodeId, OutboundEdges};
+use super::{EdgePortRef, GraphNodeId, Node, OutboundEdges};
 
 #[derive(Debug, Default)]
 pub struct FlatGraph {
-    pub(crate) nodes: SlotMap<NodeId, Node>,
-    pub(crate) preds: SecondaryMap<NodeId, OutboundEdges>,
-    pub(crate) succs: SecondaryMap<NodeId, OutboundEdges>,
+    pub(crate) nodes: SlotMap<GraphNodeId, Node>,
+    pub(crate) preds: SecondaryMap<GraphNodeId, OutboundEdges>,
+    pub(crate) succs: SecondaryMap<GraphNodeId, OutboundEdges>,
     names: HashMap<Ident, Ports>,
 }
 impl FlatGraph {
@@ -299,6 +299,6 @@ impl FlatGraph {
 
 #[derive(Clone, Copy, Debug)]
 struct Ports {
-    inn: Option<NodeId>,
-    out: Option<NodeId>,
+    inn: Option<GraphNodeId>,
+    out: Option<GraphNodeId>,
 }
