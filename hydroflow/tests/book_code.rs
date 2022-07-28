@@ -9,7 +9,7 @@ pub fn test_hello_world() {
         "{}",
         flow.serde_graph()
             .expect("No graph found, maybe failed to parse.")
-            .serde_to_mermaid()
+            .to_mermaid()
     );
     flow.run_available();
 }
@@ -26,7 +26,7 @@ pub fn test_hello_world_twice() {
         "{}",
         flow.serde_graph()
             .expect("No graph found, maybe failed to parse.")
-            .serde_to_mermaid()
+            .to_mermaid()
     );
     flow.run_available();
 }
@@ -43,7 +43,7 @@ pub fn test_hello_world_stream() {
         "{}",
         flow.serde_graph()
             .expect("No graph found, maybe failed to parse.")
-            .serde_to_mermaid()
+            .to_mermaid()
     );
     flow.run_available();
 }
