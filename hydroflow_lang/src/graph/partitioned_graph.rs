@@ -96,7 +96,7 @@ impl PartitionedGraph {
                     .map(|ident| quote! { let #ident = #ident.take_inner().into_iter(); });
                 let send_port_code = send_ports.iter().map(|ident| {
                     quote! {
-                        let #ident = #root::compiled::for_each::ForEach::new(|v| {
+                        let #ident = #root::pusherator::for_each::ForEach::new(|v| {
                             #ident.give(Some(v));
                         });
                     }
@@ -193,7 +193,7 @@ impl PartitionedGraph {
                             };
 
                         subgraph_op_iter_code.push(quote! {
-                            #root::compiled::pivot::Pivot::new(#pull_ident, #push_ident).run();
+                            #root::pusherator::pivot::Pivot::new(#pull_ident, #push_ident).run();
                         });
                     }
                 };

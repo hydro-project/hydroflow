@@ -1,10 +1,10 @@
 use super::PushBuild;
 
-use crate::compiled::tee::Tee;
 use crate::scheduled::context::Context;
 use crate::scheduled::handoff::handoff_list::{PortList, PortListSplit};
 use crate::scheduled::port::SEND;
 use crate::scheduled::type_list::Extend;
+use pusherator::tee::Tee;
 
 pub struct TeePushBuild<NextA, NextB>
 where

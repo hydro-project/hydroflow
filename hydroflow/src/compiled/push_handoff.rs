@@ -1,6 +1,6 @@
-use super::Pusherator;
-
 use std::marker::PhantomData;
+
+use pusherator::Pusherator;
 
 use crate::scheduled::handoff::{CanReceive, Handoff};
 use crate::scheduled::port::SendCtx;

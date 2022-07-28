@@ -2,8 +2,9 @@ use crate::{people, Decode, Encode, Opts, CONTACTS_ADDR, DIAGNOSES_ADDR};
 
 use std::time::Duration;
 
-use hydroflow::compiled::{pull::SymmetricHashJoin, IteratorToPusherator, PusheratorBuild};
+use hydroflow::compiled::pull::SymmetricHashJoin;
 use hydroflow::lang::collections::Iter;
+use hydroflow::pusherator::{IteratorToPusherator, PusheratorBuild};
 use hydroflow::scheduled::{handoff::VecHandoff, net::Message};
 use hydroflow::tokio::net::TcpListener;
 use hydroflow::{

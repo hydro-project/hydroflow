@@ -37,9 +37,10 @@ bincode = "1.3"
 byteorder = "1.4.3"
 bytes = "1.1.0"
 futures = { version = "0.3", optional = true }
+hydroflow_datalog = { optional = true, path = "../hydroflow_datalog" }
 hydroflow_lang = { path = "../hydroflow_lang" }
 hydroflow_macro = { optional = true, path = "../hydroflow_macro" }
-hydroflow_datalog = { optional = true, path = "../hydroflow_datalog" }
+pusherator = { path = "../pusherator" }
 ref-cast = "1.0"
 sealed = "0.4"
 serde = { version = "1", features = [ "derive" ] }
