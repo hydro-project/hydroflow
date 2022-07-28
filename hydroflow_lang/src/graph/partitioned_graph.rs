@@ -3,6 +3,8 @@ use quote::{quote, ToTokens};
 use slotmap::{Key, SecondaryMap, SlotMap};
 use syn::spanned::Spanned;
 
+use crate::pretty_span::{PrettyRowCol, PrettySpan};
+
 use super::flat_graph::FlatGraph;
 use super::ops::{WriteContextArgs, WriteIteratorArgs, OPERATORS};
 use super::serde_graph::SerdeGraph;

@@ -2,15 +2,13 @@ use hydroflow::hydroflow_parser;
 
 #[test]
 pub fn test_parser_basic() {
-    println!("DONE");
-
     hydroflow_parser! {
         reached_vertices = (merge() -> map(|v| (v, ())));
-        (seed([0]) -> [0]reached_vertices);
+        (recv_iter([0]) -> [0]reached_vertices);
 
         my_join = (join() -> map(|(_src, ((), dst))| dst) -> tee());
         (reached_vertices -> [0]my_join);
-        (input(/*(v, v) edges*/) -> [1]my_join);
+        (recv_stream(/*(v, v) edges*/ _) -> [1]my_join);
 
         (my_join[0] -> [1]reached_vertices);
         (my_join[1] -> for_each(|x| println!("Reached: {}", x)));
@@ -39,26 +37,26 @@ pub fn test_parser_basic() {
         g = merge(); // 6
         h = tee(); // 7
 
-        (a -> b);
+        (a[0] -> [0]b);
 
-        (b -> e);
-        (b -> g);
+        (b[0] -> [0]e);
+        (b[1] -> [0]g);
 
-        (c -> b);
+        (c[0] -> [1]b);
 
-        (d -> a);
-        (d -> b);
-        (d -> e);
+        (d[0] -> [0]a);
+        (d[1] -> [2]b);
+        (d[2] -> [1]e);
 
-        (e -> c);
-        (e -> h);
+        (e[0] -> [0]c);
+        (e[1] -> [0]h);
 
-        (f -> c);
+        (f[0] -> [1]c);
 
-        (g -> e);
+        (g[0] -> [2]e);
 
-        (h -> d);
-        (h -> f);
-        (h -> g);
+        (h[0] -> [0]d);
+        (h[1] -> [0]f);
+        (h[2] -> [1]g);
     }
 }

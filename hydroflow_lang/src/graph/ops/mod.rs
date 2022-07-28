@@ -20,6 +20,8 @@ pub struct OperatorConstraints {
     pub hard_range_out: &'static dyn RangeTrait<usize>,
     /// Output argument range required to not show an warning.
     pub soft_range_out: &'static dyn RangeTrait<usize>,
+    /// Number of arguments i.e. `operator(a, b, c)` has `num_args = 3`.
+    pub num_args: usize,
     // TODO: generic argument ranges.
     /// Generate code which runs once outside the subgraph to set up any
     /// external stuff like state API stuff or external chanels, etc.
@@ -40,6 +42,7 @@ pub const OPERATORS: [OperatorConstraints; 10] = [
         soft_range_inn: &(2..),
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
+        num_args: 0,
         write_prologue_fn: &(|_, _| quote! {}),
         write_iterator_fn: &(|_, &WriteIteratorArgs { inputs, .. }| {
             let mut inputs = inputs.iter();
@@ -56,6 +59,7 @@ pub const OPERATORS: [OperatorConstraints; 10] = [
         soft_range_inn: &(2..=2),
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
+        num_args: 0,
         write_prologue_fn: &(|&WriteContextArgs {
                                   subgraph_id,
                                   node_id,
@@ -103,6 +107,7 @@ pub const OPERATORS: [OperatorConstraints; 10] = [
         soft_range_inn: RANGE_1,
         hard_range_out: &(0..),
         soft_range_out: &(2..),
+        num_args: 0,
         write_prologue_fn: &(|_, _| quote! {}),
         write_iterator_fn: &(|&WriteContextArgs { root, .. },
                               &WriteIteratorArgs { outputs, .. }| {
@@ -120,6 +125,7 @@ pub const OPERATORS: [OperatorConstraints; 10] = [
         soft_range_inn: RANGE_1,
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
+        num_args: 1,
         write_prologue_fn: &(|_, _| quote! {}),
         write_iterator_fn: &(|&WriteContextArgs { root, .. },
                               &WriteIteratorArgs {
@@ -144,6 +150,7 @@ pub const OPERATORS: [OperatorConstraints; 10] = [
         soft_range_inn: RANGE_1,
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
+        num_args: 1,
         write_prologue_fn: &(|_, _| quote! {}),
         write_iterator_fn: &(|&WriteContextArgs { root, .. },
                               &WriteIteratorArgs {
@@ -168,6 +175,7 @@ pub const OPERATORS: [OperatorConstraints; 10] = [
         soft_range_inn: RANGE_1,
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
+        num_args: 1,
         write_prologue_fn: &(|_, _| quote! {}),
         write_iterator_fn: &(|&WriteContextArgs { root, .. },
                               &WriteIteratorArgs {
@@ -192,6 +200,7 @@ pub const OPERATORS: [OperatorConstraints; 10] = [
         soft_range_inn: RANGE_1,
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
+        num_args: 1,
         write_prologue_fn: &(|_, _| quote! {}),
         write_iterator_fn: &(|&WriteContextArgs { root, .. },
                               &WriteIteratorArgs {
@@ -216,7 +225,8 @@ pub const OPERATORS: [OperatorConstraints; 10] = [
     //     soft_range_inn: RANGE_1,
     //     hard_range_out: RANGE_1,
     //     soft_range_out: RANGE_1,
-    //    write_prologue_fn: &(|_| quote! {}),
+    //     num_args: 1,
+    //     write_prologue_fn: &(|_| quote! {}),
     //     write_fn: &(|_, inputs, outputs, args| {
     //         let ts = quote! { dedup #( #inputs ),* #( #outputs ),* #args };
     //         let lit = Literal::string(&*format!("{}", ts));
@@ -224,11 +234,12 @@ pub const OPERATORS: [OperatorConstraints; 10] = [
     //     }),
     // },
     OperatorConstraints {
-        name: "input",
+        name: "recv_stream",
         hard_range_inn: RANGE_0,
         soft_range_inn: RANGE_0,
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
+        num_args: 1,
         write_prologue_fn: &(|_, &WriteIteratorArgs { arguments, .. }| {
             let receiver = &arguments[0];
             quote! {
@@ -250,11 +261,12 @@ pub const OPERATORS: [OperatorConstraints; 10] = [
         }),
     },
     OperatorConstraints {
-        name: "seed",
+        name: "recv_iter",
         hard_range_inn: RANGE_0,
         soft_range_inn: RANGE_0,
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
+        num_args: 1,
         write_prologue_fn: &(|_, _| quote! {}),
         write_iterator_fn: &(|_, &WriteIteratorArgs { arguments, .. }| {
             quote! { std::iter::IntoIterator::into_iter(#arguments) }
@@ -266,6 +278,7 @@ pub const OPERATORS: [OperatorConstraints; 10] = [
         soft_range_inn: RANGE_1,
         hard_range_out: RANGE_0,
         soft_range_out: RANGE_0,
+        num_args: 1,
         write_prologue_fn: &(|_, _| quote! {}),
         write_iterator_fn: &(|&WriteContextArgs { root, .. },
                               &WriteIteratorArgs { arguments, .. }| {

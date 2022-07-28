@@ -2,13 +2,12 @@ use std::collections::HashMap;
 
 use quote::ToTokens;
 use slotmap::{Key, SecondaryMap, SlotMap};
-use syn::punctuated::Pair;
 use syn::spanned::Spanned;
 use syn::Ident;
 
 use crate::graph::ops::{RangeTrait, OPERATORS};
 use crate::parse::{HfCode, HfStatement, IndexInt, Operator, Pipeline};
-use crate::pretty_span::PrettySpan;
+use crate::pretty_span::{PrettyRowCol, PrettySpan};
 
 use super::partitioned_graph::PartitionedGraph;
 use super::{EdgePortRef, GraphNodeId, Node, OutboundEdges};
@@ -49,79 +48,59 @@ impl FlatGraph {
 
     fn add_pipeline(&mut self, pipeline: Pipeline) -> Ports {
         match pipeline {
-            Pipeline::Chain(chain_pipeline) => {
-                // Handle chain pipelines as follows:
-                let output = chain_pipeline
-                    .elems
-                    .into_pairs()
-                    .map(Pair::into_tuple)
-                    // 1. Resolve all the nested pipelines in first stage (collect into Vec before continuing, for ownership).
-                    .map(|(pipeline, arrow)| (self.add_pipeline(pipeline), arrow))
-                    .collect::<Vec<_>>()
-                    .into_iter()
-                    // 2. Iterate each element in pairs via `.reduce()` and combine them into the next pipeline.
-                    // Essentially, treats the arrows as a left-associative binary operation (not that the direction really matters).
-                    // `curr_ports: Ports` tracks the current input/output operators/ports in the graph.
-                    .reduce(|(curr_ports, curr_arrow), (next_ports, next_arrow)| {
-                        let curr_arrow =
-                            curr_arrow.expect("Cannot have missing intermediate arrow");
+            Pipeline::Paren(pipeline_paren) => self.add_pipeline(*pipeline_paren.pipeline),
+            Pipeline::Link(pipeline_link) => {
+                let lhs_ports = self.add_pipeline(*pipeline_link.lhs);
+                let connector = pipeline_link.connector;
+                let rhs_ports = self.add_pipeline(*pipeline_link.rhs);
 
-                        if let (Some(out), Some(inn)) = (curr_ports.out, next_ports.inn) {
-                            let src_port =
-                                curr_arrow.src.map(|x| x.index).unwrap_or_else(|| IndexInt {
-                                    value: self.succs[out].len(),
-                                    span: curr_arrow.arrow.span(),
-                                });
-                            let dst_port =
-                                curr_arrow.dst.map(|x| x.index).unwrap_or_else(|| IndexInt {
-                                    value: self.preds[inn].len(),
-                                    span: curr_arrow.arrow.span(),
-                                });
-
-                            {
-                                /// Helper to emit conflicts when a port is overwritten.
-                                fn emit_conflict(inout: &str, old: IndexInt, new: IndexInt) {
-                                    old.span()
-                                        .unwrap()
-                                        .error(format!(
-                                            "{} connection conflicts with below ({})",
-                                            inout,
-                                            PrettySpan(new.span()),
-                                        ))
-                                        .emit();
-                                    new.span()
-                                        .unwrap()
-                                        .error(format!(
-                                            "{} connection conflicts with above ({})",
-                                            inout,
-                                            PrettySpan(old.span()),
-                                        ))
-                                        .emit();
-                                }
-
-                                if let Some((old_a, _)) = self.succs[out].remove_entry(&src_port) {
-                                    emit_conflict("Output", old_a, src_port);
-                                }
-                                self.succs[out].insert(src_port, (inn, dst_port));
-
-                                if let Some((old_b, _)) = self.preds[inn].remove_entry(&dst_port) {
-                                    emit_conflict("Input", old_b, dst_port);
-                                }
-                                self.preds[inn].insert(dst_port, (out, src_port));
-                            }
-                        }
-
-                        let ports = Ports {
-                            inn: curr_ports.inn,
-                            out: next_ports.out,
-                        };
-                        (ports, next_arrow)
+                if let (Some(out), Some(inn)) = (lhs_ports.out, rhs_ports.inn) {
+                    let src_port = connector.src.map(|x| x.index).unwrap_or_else(|| IndexInt {
+                        value: 0,
+                        span: connector.arrow.span(),
+                    });
+                    let dst_port = connector.dst.map(|x| x.index).unwrap_or_else(|| IndexInt {
+                        value: 0,
+                        span: connector.arrow.span(),
                     });
 
-                output.map(|(ports, _arrow)| ports).unwrap_or(Ports {
-                    inn: None,
-                    out: None,
-                })
+                    {
+                        /// Helper to emit conflicts when a port is overwritten.
+                        fn emit_conflict(inout: &str, old: IndexInt, new: IndexInt) {
+                            old.span()
+                                .unwrap()
+                                .error(format!(
+                                    "{} connection conflicts with below ({})",
+                                    inout,
+                                    PrettySpan(new.span()),
+                                ))
+                                .emit();
+                            new.span()
+                                .unwrap()
+                                .error(format!(
+                                    "{} connection conflicts with above ({})",
+                                    inout,
+                                    PrettySpan(old.span()),
+                                ))
+                                .emit();
+                        }
+
+                        if let Some((old_a, _)) = self.succs[out].remove_entry(&src_port) {
+                            emit_conflict("Output", old_a, src_port);
+                        }
+                        self.succs[out].insert(src_port, (inn, dst_port));
+
+                        if let Some((old_b, _)) = self.preds[inn].remove_entry(&dst_port) {
+                            emit_conflict("Input", old_b, dst_port);
+                        }
+                        self.preds[inn].insert(dst_port, (out, src_port));
+                    }
+                }
+
+                Ports {
+                    inn: lhs_ports.inn,
+                    out: rhs_ports.out,
+                }
             }
             Pipeline::Name(ident) => self.names.get(&ident).copied().unwrap_or_else(|| {
                 ident
@@ -146,7 +125,7 @@ impl FlatGraph {
         }
     }
 
-    /// Validates that operators have valid number of inputs and outputs.
+    /// Validates that operators have valid number of inputs, outputs, and arguments.
     /// (Emits error messages on span).
     /// TODO(mingwei): Clean this up, make it do more than just arity?
     /// Returns `true` if errors were found.
@@ -158,6 +137,20 @@ impl FlatGraph {
                     let op_name = &*operator.name_string();
                     match OPERATORS.iter().find(|&op| op_name == op.name) {
                         Some(op_constraints) => {
+                            if op_constraints.num_args != operator.args.len() {
+                                errored = true;
+
+                                operator
+                                    .span()
+                                    .unwrap()
+                                    .error(format!(
+                                        "expected {} arguments, found {}",
+                                        op_constraints.num_args,
+                                        operator.args.len()
+                                    ))
+                                    .emit();
+                            }
+
                             /// Returns true if an error was found.
                             fn emit_arity_error(
                                 operator: &Operator,
@@ -271,8 +264,10 @@ impl FlatGraph {
             match node {
                 Node::Operator(operator) => writeln!(
                     write,
-                    r#"    {id:?}["{id:?} <tt>{code}</tt>"]"#,
+                    "    %% {span}\n    {id:?}[\"{row_col} <tt>{code}</tt>\"]",
+                    span = PrettySpan(node.span()),
                     id = key.data(),
+                    row_col = PrettyRowCol(node.span()),
                     code = operator
                         .to_token_stream()
                         .to_string()
