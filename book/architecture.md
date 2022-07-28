@@ -61,25 +61,25 @@ We refer to this structure as an _in-out tree_.
 See [Subgraph In-Out Trees](./in-out_trees.md) for more, including how to
 convert a graph into in-out trees.
 
-## APIs
+## Surface Syntax and APIs
 
-The two architectural layers can be interacted with through two corresponding
-APIs. The _Surface API_ provides a natural `Iterator`-like chaining syntax for
-building compiled subgraphs and using them as scheduled operators.
+You can interact with Hydroflow at a high level with a _Surface Syntax_ that hides
+the distinction between these two layers. It offers a natural `Iterator`-like chaining syntax for building 
+graphs that get parsed and compiled into a scheduled graph of one or more compiled subgraphs. Please see the [Surface Syntax](./surface_syntax.md) docs for more information.
 
-Alternatively, the _Core API_ requires interacting with handoffs directly and
-doesn't provide any notion of chainable operators. You can use Rust `Iterator`s
+Alternatively, the _Core API_ allows you to interact with handoffs directly at a low
+level. It doesn't provide any notion of chainable operators. You can use Rust `Iterator`s
 or any other arbitrary Rust code to implement the operators.
 
-We intend users to use the Surface API as it is much more friendly, but as
+We intend users to use the Surface Syntax as it is much more friendly, but as
 Hydroflow is in active development some operators might not be available in
-the Surface API, in which case the Core API can be used instead. If you find
+the Surface Syntax, in which case the Core API can be used instead. If you find
 yourself in this sitation be sure to [submit an issue](https://github.com/hydro-project/hydroflow/issues/new)!
 
-Surface API code lives in [`hydroflow::builder`](https://hydro-project.github.io/hydroflow/doc/hydroflow/builder/index.html)
-while compiled push-based iterators live in [`hydroflow::compiled`](https://hydro-project.github.io/hydroflow/doc/hydroflow/compiled/index.html).
+> **Deprecated**:  There is a _Surface API_ that provides an `Iterator`-like chaining syntax in Rust. The Surface API code lives in [`hydroflow::builder`](https://hydro-project.github.io/hydroflow/doc/hydroflow/builder/index.html).
+
 The Core API lives in [`hydroflow::scheduled`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/index.html),
-mainly in methods on the [`Hydroflow` struct](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html).
+mainly in methods on the [`Hydroflow` struct](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html).  Compiled push-based iterators live in [`hydroflow::compiled`](https://hydro-project.github.io/hydroflow/doc/hydroflow/compiled/index.html).
 ## Scheduling
 
 ## Handoffs
