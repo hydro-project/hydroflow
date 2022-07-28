@@ -64,7 +64,7 @@
 //!         &bull; In the future, will correspond to semilattice morphisms alternatively.
 //!     </td>
 //!     <td><code>std::iter::Iterator</code></td>
-//!     <td><code>crate::compiled::Pusherator</code></td>
+//!     <td><code>pusherator::Pusherator</code></td>
 //! </tr>
 //! </table>
 //!

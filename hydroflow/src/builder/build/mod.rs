@@ -22,7 +22,8 @@ pub mod push_map;
 pub mod push_partition;
 pub mod push_tee;
 
-use crate::compiled::Pusherator;
+use pusherator::Pusherator;
+
 use crate::scheduled::context::Context;
 use crate::scheduled::handoff::handoff_list::PortList;
 use crate::scheduled::port::{RECV, SEND};

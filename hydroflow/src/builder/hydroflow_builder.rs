@@ -7,7 +7,6 @@ use super::surface::pull_iter::IterPullSurface;
 use std::borrow::Cow;
 use std::sync::mpsc::SyncSender;
 
-use crate::compiled::pivot::Pivot;
 use crate::scheduled::flow_graph::FlowGraph;
 use crate::scheduled::graph::Hydroflow;
 use crate::scheduled::graph_ext::GraphExt;
@@ -16,6 +15,7 @@ use crate::scheduled::input::Input;
 use crate::scheduled::net::Message;
 use crate::scheduled::port::{RecvPort, SendPort};
 use crate::scheduled::SubgraphId;
+use pusherator::pivot::Pivot;
 
 use super::surface::pull_handoff::HandoffPullSurface;
 use super::surface::push_handoff::HandoffPushSurfaceReversed;

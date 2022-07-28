@@ -2,11 +2,11 @@ use super::PushBuild;
 
 use std::marker::PhantomData;
 
-use crate::compiled::for_each::ForEach;
 use crate::scheduled::context::Context;
 use crate::scheduled::handoff::handoff_list::PortList;
 use crate::scheduled::port::SEND;
 use crate::tt;
+use pusherator::for_each::ForEach;
 
 pub struct ForEachPushBuild<Func, In>
 where

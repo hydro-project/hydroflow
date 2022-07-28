@@ -2,10 +2,10 @@ use super::PushBuild;
 
 use std::marker::PhantomData;
 
-use crate::compiled::map::Map;
 use crate::scheduled::context::Context;
 use crate::scheduled::handoff::handoff_list::PortList;
 use crate::scheduled::port::SEND;
+use pusherator::map::Map;
 
 pub struct MapPushBuild<Next, Func, In>
 where

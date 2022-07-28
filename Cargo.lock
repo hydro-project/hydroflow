@@ -679,6 +679,7 @@ dependencies = [
  "hydroflow_lang",
  "hydroflow_macro",
  "itertools",
+ "pusherator",
  "rand 0.8.5",
  "ref-cast",
  "sealed",
@@ -1115,6 +1116,10 @@ checksum = "ec757218438d5fda206afc041538b2f6d889286160d649a86a24d37e1235afd1"
 dependencies = [
  "unicode-xid",
 ]
+
+[[package]]
+name = "pusherator"
+version = "0.1.0"
 
 [[package]]
 name = "quote"

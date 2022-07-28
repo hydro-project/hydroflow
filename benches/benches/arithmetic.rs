@@ -91,7 +91,7 @@ fn benchmark_iter_collect(c: &mut Criterion) {
 }
 
 fn benchmark_hydroflow_compiled(c: &mut Criterion) {
-    use hydroflow::compiled::{InputBuild, Pusherator, PusheratorBuild};
+    use hydroflow::pusherator::{InputBuild, Pusherator, PusheratorBuild};
 
     c.bench_function("arithmetic/hydroflow/compiled", |b| {
         b.iter(|| {

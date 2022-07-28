@@ -147,7 +147,7 @@ pub const OPERATORS: [OperatorConstraints; 19] = [
                     .iter()
                     .rev()
                     .map(|i| quote! { #i })
-                    .reduce(|b, a| quote! { #root::compiled::tee::Tee::new(#a, #b) })
+                    .reduce(|b, a| quote! { #root::pusherator::tee::Tee::new(#a, #b) })
                     .unwrap_or_else(|| quote! { std::iter::empty() });
                 quote! {
                     let #ident = #tees;
@@ -197,7 +197,7 @@ pub const OPERATORS: [OperatorConstraints; 19] = [
             } else {
                 let output = &outputs[0];
                 quote! {
-                    let #ident = #root::compiled::map::Map::new(#arguments, #output);
+                    let #ident = #root::pusherator::map::Map::new(#arguments, #output);
                 }
             }
         }),
@@ -227,9 +227,9 @@ pub const OPERATORS: [OperatorConstraints; 19] = [
             } else {
                 let output = &outputs[0];
                 quote! {
-                    let #ident = #root::compiled::map::Map::new(
+                    let #ident = #root::pusherator::map::Map::new(
                         #arguments,
-                        #root::compiled::flatten::Flatten::new(#output)
+                        #root::pusherator::flatten::Flatten::new(#output)
                     );
                 }
             }
@@ -260,7 +260,7 @@ pub const OPERATORS: [OperatorConstraints; 19] = [
             } else {
                 let output = &outputs[0];
                 quote! {
-                    let #ident = #root::compiled::filter_map::FilterMap::new(#arguments, #output);
+                    let #ident = #root::pusherator::filter_map::FilterMap::new(#arguments, #output);
                 }
             }
         }),
@@ -290,7 +290,7 @@ pub const OPERATORS: [OperatorConstraints; 19] = [
             } else {
                 let output = &outputs[0];
                 quote! {
-                    let #ident = #root::compiled::filter::Filter::new(#arguments, #output);
+                    let #ident = #root::pusherator::filter::Filter::new(#arguments, #output);
                 }
             }
         }),
@@ -500,7 +500,7 @@ pub const OPERATORS: [OperatorConstraints; 19] = [
         write_iterator_fn: &(|&WriteContextArgs { root, ident, .. },
                               &WriteIteratorArgs { arguments, .. }| {
             quote! {
-                let #ident = #root::compiled::for_each::ForEach::new(#arguments);
+                let #ident = #root::pusherator::for_each::ForEach::new(#arguments);
             }
         }),
     },
@@ -536,7 +536,7 @@ pub const OPERATORS: [OperatorConstraints; 19] = [
         write_iterator_fn: &(|wc @ &WriteContextArgs { root, ident, .. }, _| {
             let send_ident = wc.make_ident("item_send");
             quote! {
-                let #ident = #root::compiled::for_each::ForEach::new(|item| {
+                let #ident = #root::pusherator::for_each::ForEach::new(|item| {
                     #send_ident.send(item).expect("Failed to send async write item for processing.");
                 });
             }

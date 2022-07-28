@@ -1,9 +1,9 @@
 use super::PushBuild;
 
-use crate::compiled::filter::Filter;
 use crate::scheduled::context::Context;
 use crate::scheduled::handoff::handoff_list::PortList;
 use crate::scheduled::port::SEND;
+use pusherator::filter::Filter;
 
 pub struct FilterPushBuild<Next, Func>
 where

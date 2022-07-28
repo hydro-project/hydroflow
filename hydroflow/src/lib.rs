@@ -9,10 +9,12 @@
 pub mod builder;
 pub mod compiled;
 pub mod lang;
+pub mod props;
 pub mod scheduled;
 
 pub use hydroflow_macro::*;
 
+pub use pusherator;
 pub use tokio;
 pub use tuple_list::tuple_list as tl;
 pub use tuple_list::tuple_list_type as tt;
