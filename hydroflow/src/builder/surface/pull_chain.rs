@@ -2,7 +2,7 @@ use super::{AssembleFlowGraph, BaseSurface, PullSurface};
 
 use crate::builder::build::pull_chain::ChainPullBuild;
 use crate::scheduled::context::Context;
-use crate::scheduled::flow_graph::{FlowGraph, NodeId};
+use crate::scheduled::flow_graph::{FlowGraph, FlowNodeId};
 use crate::scheduled::handoff::handoff_list::{PortList, PortListSplit};
 use crate::scheduled::port::RECV;
 use crate::scheduled::type_list::Extend;
@@ -41,7 +41,7 @@ where
     <PrevA::InputHandoffs as Extend<PrevB::InputHandoffs>>::Extended:
         PortList<RECV> + PortListSplit<RECV, PrevA::InputHandoffs, Suffix = PrevB::InputHandoffs>,
 {
-    fn insert_dep(&self, e: &mut FlowGraph) -> NodeId {
+    fn insert_dep(&self, e: &mut FlowGraph) -> FlowNodeId {
         let my_id = e.add_node("Chain");
         let prev_a_id = self.prev_a.insert_dep(e);
         let prev_b_id = self.prev_b.insert_dep(e);

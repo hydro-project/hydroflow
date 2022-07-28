@@ -2,7 +2,7 @@ use super::{AssembleFlowGraph, PushSurfaceReversed};
 
 use crate::builder::build::push_tee::TeePushBuild;
 use crate::scheduled::context::Context;
-use crate::scheduled::flow_graph::NodeId;
+use crate::scheduled::flow_graph::FlowNodeId;
 use crate::scheduled::handoff::handoff_list::{PortList, PortListSplit};
 use crate::scheduled::port::SEND;
 use crate::scheduled::type_list::Extend;
@@ -44,7 +44,7 @@ where
     <NextA::OutputHandoffs as Extend<NextB::OutputHandoffs>>::Extended:
         PortList<SEND> + PortListSplit<SEND, NextA::OutputHandoffs, Suffix = NextB::OutputHandoffs>,
 {
-    fn insert_dep(&self, e: &mut super::FlowGraph) -> NodeId {
+    fn insert_dep(&self, e: &mut super::FlowGraph) -> FlowNodeId {
         let my_id = e.add_node("Tee");
         let next_a_id = self.next_a.insert_dep(e);
         let next_b_id = self.next_b.insert_dep(e);

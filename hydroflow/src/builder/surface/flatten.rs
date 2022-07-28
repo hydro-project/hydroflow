@@ -5,7 +5,7 @@ use std::marker::PhantomData;
 use crate::builder::build::pull_flatten::FlattenPullBuild;
 use crate::builder::build::push_flatten::FlattenPushBuild;
 use crate::scheduled::context::Context;
-use crate::scheduled::flow_graph::NodeId;
+use crate::scheduled::flow_graph::FlowNodeId;
 
 pub struct FlattenSurface<Prev>
 where
@@ -51,7 +51,7 @@ where
     Prev: PullSurface + AssembleFlowGraph,
     Prev::ItemOut: IntoIterator,
 {
-    fn insert_dep(&self, e: &mut super::FlowGraph) -> NodeId {
+    fn insert_dep(&self, e: &mut super::FlowGraph) -> FlowNodeId {
         let my_id = e.add_node("Flatten");
         let prev_id = self.prev.insert_dep(e);
         e.add_edge((prev_id, my_id));
@@ -101,7 +101,7 @@ where
     Next: PushSurfaceReversed + AssembleFlowGraph,
     In: IntoIterator<Item = Next::ItemIn>,
 {
-    fn insert_dep(&self, e: &mut super::FlowGraph) -> NodeId {
+    fn insert_dep(&self, e: &mut super::FlowGraph) -> FlowNodeId {
         let my_id = e.add_node("Flatten");
         let next_id = self.next.insert_dep(e);
         e.add_edge((my_id, next_id));
