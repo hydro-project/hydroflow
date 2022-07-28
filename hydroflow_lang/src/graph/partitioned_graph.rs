@@ -55,25 +55,6 @@ impl PartitionedGraph {
         Ident::new(&*name, self.nodes[node_id].span())
     }
 
-    pub fn tokenize(&self, _root: TokenStream) -> TokenStream {
-        let t = self
-            .nodes
-            .values()
-            .filter_map(|node| match node {
-                Node::Operator(operator) => Some(operator),
-                Node::Handoff => None,
-            })
-            .map(|operator| {
-                let op_tokens = operator.to_token_stream();
-                quote! { #op_tokens }
-            });
-        quote! {
-            {
-                #( quote::quote!{ #t } );*
-            }
-        }
-    }
-
     pub fn as_code(&self, root: TokenStream) -> TokenStream {
         let handoffs = self
             .nodes

@@ -38,7 +38,7 @@ pub fn test_surface_syntax_reachability_generated() {
         "{}",
         df.serde_graph()
             .expect("No graph found, maybe failed to parse.")
-            .serde_to_mermaid()
+            .to_mermaid()
     );
     df.run_available();
 
@@ -89,7 +89,7 @@ pub fn test_transitive_closure() {
         "{}",
         df.serde_graph()
             .expect("No graph found, maybe failed to parse.")
-            .serde_to_dot()
+            .to_dot()
     );
 
     df.run_available();
@@ -173,7 +173,7 @@ pub fn test_covid_tracing() {
         hydroflow
             .serde_graph()
             .expect("No graph found, maybe failed to parse.")
-            .serde_to_dot()
+            .to_dot()
     );
 
     {

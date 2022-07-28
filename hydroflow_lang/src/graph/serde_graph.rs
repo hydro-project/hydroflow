@@ -7,6 +7,7 @@ use super::{GraphNodeId, GraphSubgraphId};
 #[derive(Default, Serialize, Deserialize)]
 #[allow(dead_code)] // TODO(mingwei): remove when no longer needed.
 pub struct SerdeGraph {
+    // TODO(jmh): this structure has no way to maintain the index/order of incoming edges
     pub nodes: SecondaryMap<GraphNodeId, String>,
     pub edges: SecondaryMap<GraphNodeId, Vec<GraphNodeId>>,
     pub handoffs: SparseSecondaryMap<GraphNodeId, bool>,
@@ -16,13 +17,13 @@ impl SerdeGraph {
     pub fn new() -> Self {
         Default::default()
     }
-    pub fn serde_to_mermaid(&self) -> String {
+    pub fn to_mermaid(&self) -> String {
         let mut output = String::new();
-        self.serde_write_mermaid(&mut output).unwrap();
+        self.write_mermaid(&mut output).unwrap();
         output
     }
 
-    pub fn serde_write_mermaid(&self, write: &mut impl std::fmt::Write) -> std::fmt::Result {
+    pub fn write_mermaid(&self, write: &mut impl std::fmt::Write) -> std::fmt::Result {
         writeln!(write, "flowchart TB")?;
         for (subgraph_id, node_ids) in self.subgraph_nodes.iter() {
             writeln!(write, "    subgraph sg_{}", subgraph_id.data().as_ffi())?;
@@ -48,7 +49,7 @@ impl SerdeGraph {
             writeln!(write, "    end")?;
         }
         writeln!(write)?;
-        for (node_id, _) in self.nodes.iter() {
+        for node_id in self.nodes.keys() {
             if self.handoffs.contains_key(node_id) {
                 writeln!(write, r#"    {:?}{{"handoff"}}"#, node_id.data())?;
             }
@@ -62,32 +63,32 @@ impl SerdeGraph {
         Ok(())
     }
 
-    pub fn serde_to_dot(&self) -> String {
+    pub fn to_dot(&self) -> String {
         let mut output = String::new();
-        self.serde_write_dot(&mut output).unwrap();
+        self.write_dot(&mut output).unwrap();
         output
     }
 
-    pub fn serde_write_dot_edge(
-        &self,
-        src: GraphNodeId,
-        dst: GraphNodeId,
-        tab: usize,
-        w: &mut impl std::fmt::Write,
-    ) -> std::fmt::Result {
-        writeln!(
-            w,
-            "{:t$}{} -> {}",
-            "",
-            src.data().as_ffi(),
-            dst.data().as_ffi(),
-            t = tab,
-        )?;
-        Ok(())
-    }
-    pub fn serde_write_dot(&self, w: &mut impl std::fmt::Write) -> std::fmt::Result {
+    pub fn write_dot(&self, w: &mut impl std::fmt::Write) -> std::fmt::Result {
         writeln!(w, "digraph {{")?;
         let mut tab: usize = 2;
+
+        fn write_dot_edge(
+            src: GraphNodeId,
+            dst: GraphNodeId,
+            tab: usize,
+            w: &mut impl std::fmt::Write,
+        ) -> std::fmt::Result {
+            writeln!(
+                w,
+                "{:t$}{} -> {}",
+                "",
+                src.data().as_ffi(),
+                dst.data().as_ffi(),
+                t = tab,
+            )?;
+            Ok(())
+        }
 
         // write out nodes
         writeln!(w, "{:t$}{{", "", t = tab)?;
@@ -101,12 +102,9 @@ impl SerdeGraph {
                 "{:t$}{} [label=\"{}{}\"",
                 "",
                 label,
-                nm.clone(),
-                match nm.contains("\\l") {
-                    // if contains linebreak left-justify by appending another "\\l"
-                    true => "\\l",
-                    false => "",
-                },
+                nm,
+                // if contains linebreak left-justify by appending another "\\l"
+                if nm.contains("\\l") { "\\l" } else { "" },
                 t = tab
             )?;
             if self.handoffs.contains_key(node_id) {
@@ -118,7 +116,7 @@ impl SerdeGraph {
         writeln!(w, "{:t$}}}", "", t = tab)?;
 
         // write out edges per subgraph
-        for (sg_id, nodes) in &self.subgraph_nodes {
+        for (sg_id, nodes) in self.subgraph_nodes.iter() {
             // let strt = es.stratum;
             writeln!(
                 w,
@@ -144,11 +142,11 @@ impl SerdeGraph {
                 t = tab
             )?;
             let empty = vec![];
-            for src in nodes {
-                let dests = self.edges.get(*src).unwrap_or(&empty);
-                for dst in dests {
-                    if !self.handoffs.contains_key(*src) && !self.handoffs.contains_key(*dst) {
-                        self.serde_write_dot_edge(*src, *dst, tab, w)?;
+            for &src in nodes {
+                let dests = self.edges.get(src).unwrap_or(&empty);
+                for &dst in dests {
+                    if !self.handoffs.contains_key(src) && !self.handoffs.contains_key(dst) {
+                        write_dot_edge(src, dst, tab, w)?;
                     }
                 }
             }
@@ -162,7 +160,7 @@ impl SerdeGraph {
         for (src, dests) in self.edges.iter() {
             for &dst in dests {
                 if self.handoffs.contains_key(src) || self.handoffs.contains_key(dst) {
-                    self.serde_write_dot_edge(src, dst, tab, w)?;
+                    write_dot_edge(src, dst, tab, w)?;
                 }
             }
         }
