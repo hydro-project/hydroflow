@@ -64,7 +64,7 @@
 
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::builder::build::push_handoff::HandoffPushBuild</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::context::Context</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::flow_graph::NodeId</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::flow_graph::FlowNodeId</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::handoff</span>::{<span class="ident">CanReceive</span>, <span class="ident">Handoff</span>};
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::port::SendPort</span>;
 <span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">tl</span>, <span class="ident">tt</span>};
@@ -92,7 +92,7 @@
 <span class="kw">where</span>
     <span class="ident">Hof</span>: <span class="ident">Handoff</span> <span class="op">+</span> <span class="ident">CanReceive</span><span class="op">&lt;</span><span class="ident">In</span><span class="op">&gt;</span>,
 {
-    <span class="kw">fn</span> <span class="ident">insert_dep</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">e</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="kw">super</span>::FlowGraph</span>) -&gt; <span class="ident">NodeId</span> {
+    <span class="kw">fn</span> <span class="ident">insert_dep</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">e</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="kw">super</span>::FlowGraph</span>) -&gt; <span class="ident">FlowNodeId</span> {
         <span class="kw">let</span> <span class="ident">my_id</span> <span class="op">=</span> <span class="ident">e</span>.<span class="ident">add_node</span>(<span class="string">&quot;Handoff&quot;</span>);
         <span class="ident">e</span>.<span class="ident">add_handoff_id</span>(<span class="ident">my_id</span>, <span class="self">self</span>.<span class="ident">port</span>.<span class="ident">handoff_id</span>);
         <span class="ident">my_id</span>

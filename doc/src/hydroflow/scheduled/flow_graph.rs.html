@@ -313,6 +313,10 @@
 <span id="307">307</span>
 <span id="308">308</span>
 <span id="309">309</span>
+<span id="310">310</span>
+<span id="311">311</span>
+<span id="312">312</span>
+<span id="313">313</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::borrow::Cow</span>;
 <span class="kw">use</span> <span class="ident">std::collections</span>::{<span class="ident">HashMap</span>, <span class="ident">HashSet</span>};
 <span class="kw">use</span> <span class="ident">std::fmt::Write</span>;
@@ -327,7 +331,7 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         <span class="ident">name</span>: <span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span>, <span class="ident">str</span><span class="op">&gt;</span>,
         <span class="ident">sg_id</span>: <span class="ident">SubgraphId</span>,
-        <span class="ident">node_id</span>: <span class="ident">NodeId</span>,
+        <span class="ident">node_id</span>: <span class="ident">FlowNodeId</span>,
     ) -&gt; <span class="ident">String</span> {
         <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">handoff_id</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">subgraphs</span>[<span class="ident">sg_id</span>.<span class="number">0</span>]
             .<span class="ident">dependencies</span>
@@ -448,8 +452,8 @@
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">global_graph</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">GlobalGraph</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">graph</span> <span class="op">=</span> <span class="ident">GlobalGraph::new</span>();
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">global_graph</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">FlowPartitionedGraph</span> {
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">graph</span> <span class="op">=</span> <span class="ident">FlowPartitionedGraph::new</span>();
         <span class="kw">for</span> <span class="ident">subgraph</span> <span class="kw">in</span> <span class="self">self</span>.<span class="ident">subgraphs</span>.<span class="ident">iter</span>() {
             <span class="kw">if</span> <span class="op">!</span><span class="ident">subgraph</span>.<span class="ident">dependencies</span>.<span class="ident">edges</span>.<span class="ident">is_empty</span>() {
                 <span class="ident">graph</span>.<span class="ident">add_flow_graph</span>(
@@ -468,16 +472,20 @@
 <span class="doccomment">/// A FlowGraph nodes&#39;s ID.</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Copy</span>, <span class="ident">Debug</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">Hash</span>, <span class="ident">Serialize</span>)]</span>
 <span class="attribute">#[<span class="ident">repr</span>(<span class="ident">transparent</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">NodeId</span>(<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">usize</span>);
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">FlowNodeId</span>(<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">usize</span>);
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Debug</span>, <span class="ident">Default</span>, <span class="ident">Serialize</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">EdgeSet</span> {
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">FlowEdgeSet</span> {
     <span class="ident">name</span>: <span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span>, <span class="ident">str</span><span class="op">&gt;</span>,
     <span class="ident">stratum</span>: <span class="ident">usize</span>,
-    <span class="ident">edges</span>: <span class="ident">HashSet</span><span class="op">&lt;</span>(<span class="ident">NodeId</span>, <span class="ident">NodeId</span>)<span class="op">&gt;</span>,
+    <span class="ident">edges</span>: <span class="ident">HashSet</span><span class="op">&lt;</span>(<span class="ident">FlowNodeId</span>, <span class="ident">FlowNodeId</span>)<span class="op">&gt;</span>,
 }
-<span class="kw">impl</span> <span class="ident">EdgeSet</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">name</span>: <span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span>, <span class="ident">str</span><span class="op">&gt;</span>, <span class="ident">stratum</span>: <span class="ident">usize</span>, <span class="ident">edges</span>: <span class="ident">HashSet</span><span class="op">&lt;</span>(<span class="ident">NodeId</span>, <span class="ident">NodeId</span>)<span class="op">&gt;</span>) -&gt; <span class="self">Self</span> {
+<span class="kw">impl</span> <span class="ident">FlowEdgeSet</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(
+        <span class="ident">name</span>: <span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span>, <span class="ident">str</span><span class="op">&gt;</span>,
+        <span class="ident">stratum</span>: <span class="ident">usize</span>,
+        <span class="ident">edges</span>: <span class="ident">HashSet</span><span class="op">&lt;</span>(<span class="ident">FlowNodeId</span>, <span class="ident">FlowNodeId</span>)<span class="op">&gt;</span>,
+    ) -&gt; <span class="self">Self</span> {
         <span class="self">Self</span> {
             <span class="ident">name</span>,
             <span class="ident">stratum</span>,
@@ -487,12 +495,12 @@
 }
 <span class="comment">// A graph connecting up multiple compiled components</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Debug</span>, <span class="ident">Default</span>, <span class="ident">Serialize</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">GlobalGraph</span> {
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">FlowPartitionedGraph</span> {
     <span class="ident">node_names</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span>, <span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="ident">edge_sets</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">EdgeSet</span><span class="op">&gt;</span>,
-    <span class="ident">handoff_ids</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">NodeId</span>, <span class="ident">HandoffId</span><span class="op">&gt;</span>,
+    <span class="ident">edge_sets</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">FlowEdgeSet</span><span class="op">&gt;</span>,
+    <span class="ident">handoff_ids</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">FlowNodeId</span>, <span class="ident">HandoffId</span><span class="op">&gt;</span>,
 }
-<span class="kw">impl</span> <span class="ident">GlobalGraph</span> {
+<span class="kw">impl</span> <span class="ident">FlowPartitionedGraph</span> {
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="self">Self</span> {
         <span class="kw">let</span> (<span class="ident">node_names</span>, <span class="ident">edge_sets</span>, <span class="ident">handoff_ids</span>) <span class="op">=</span> <span class="ident">Default::default</span>();
         <span class="self">Self</span> {
@@ -507,13 +515,13 @@
     <span class="comment">// Preferably to be called only once after all FlowGraphs are added.</span>
     <span class="kw">fn</span> <span class="ident">canonicalize_handoffs</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
         <span class="comment">// invert self.handoff_ids</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">handoff_ids_inv</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">HandoffId</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">NodeId</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">HashMap::new</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">handoff_ids_inv</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">HandoffId</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">FlowNodeId</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">HashMap::new</span>();
         <span class="kw">for</span> (<span class="ident">k</span>, <span class="ident">v</span>) <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">handoff_ids</span> {
             <span class="ident">handoff_ids_inv</span>.<span class="ident">entry</span>(<span class="kw-2">*</span><span class="ident">v</span>).<span class="ident">or_insert_with</span>(<span class="ident">Vec::new</span>).<span class="ident">push</span>(<span class="kw-2">*</span><span class="ident">k</span>);
         }
 
         <span class="comment">// find repeated handoffs</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">repeated_handoffs</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">NodeId</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">repeated_handoffs</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">FlowNodeId</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
         <span class="kw">for</span> <span class="ident">w</span> <span class="kw">in</span> <span class="ident">handoff_ids_inv</span>.<span class="ident">values</span>() {
             <span class="ident">repeated_handoffs</span>.<span class="ident">extend</span>(<span class="ident">w</span>.<span class="ident">clone</span>().<span class="ident">split_off</span>(<span class="number">1</span>));
         }
@@ -535,7 +543,7 @@
                 }
                 <span class="ident">new_edges</span>.<span class="ident">insert</span>(<span class="ident">new_edge</span>);
             }
-            <span class="kw">let</span> <span class="ident">new_es</span> <span class="op">=</span> <span class="ident">EdgeSet::new</span>(<span class="ident">es</span>.<span class="ident">name</span>.<span class="ident">clone</span>(), <span class="ident">es</span>.<span class="ident">stratum</span>, <span class="ident">new_edges</span>);
+            <span class="kw">let</span> <span class="ident">new_es</span> <span class="op">=</span> <span class="ident">FlowEdgeSet::new</span>(<span class="ident">es</span>.<span class="ident">name</span>.<span class="ident">clone</span>(), <span class="ident">es</span>.<span class="ident">stratum</span>, <span class="ident">new_edges</span>);
             <span class="ident">new_edge_sets</span>.<span class="ident">push</span>(<span class="ident">new_es</span>);
         }
         <span class="self">self</span>.<span class="ident">edge_sets</span> <span class="op">=</span> <span class="ident">new_edge_sets</span>;
@@ -557,18 +565,18 @@
         <span class="kw">for</span> <span class="ident">node_name</span> <span class="kw">in</span> <span class="ident">fg</span>.<span class="ident">node_names</span> {
             <span class="self">self</span>.<span class="ident">node_names</span>.<span class="ident">push</span>(<span class="prelude-val">Some</span>(<span class="ident">node_name</span>));
         }
-        <span class="kw">let</span> <span class="ident">edges</span>: <span class="ident">HashSet</span><span class="op">&lt;</span>(<span class="ident">NodeId</span>, <span class="ident">NodeId</span>)<span class="op">&gt;</span> <span class="op">=</span> <span class="ident">fg</span>
+        <span class="kw">let</span> <span class="ident">edges</span>: <span class="ident">HashSet</span><span class="op">&lt;</span>(<span class="ident">FlowNodeId</span>, <span class="ident">FlowNodeId</span>)<span class="op">&gt;</span> <span class="op">=</span> <span class="ident">fg</span>
             .<span class="ident">edges</span>
             .<span class="ident">into_iter</span>()
-            .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">from</span>, <span class="ident">to</span>)<span class="op">|</span> (<span class="ident">NodeId</span>(<span class="ident">from</span>.<span class="number">0</span> <span class="op">+</span> <span class="ident">base</span>), <span class="ident">NodeId</span>(<span class="ident">to</span>.<span class="number">0</span> <span class="op">+</span> <span class="ident">base</span>)))
+            .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">from</span>, <span class="ident">to</span>)<span class="op">|</span> (<span class="ident">FlowNodeId</span>(<span class="ident">from</span>.<span class="number">0</span> <span class="op">+</span> <span class="ident">base</span>), <span class="ident">FlowNodeId</span>(<span class="ident">to</span>.<span class="number">0</span> <span class="op">+</span> <span class="ident">base</span>)))
             .<span class="ident">collect</span>();
         <span class="self">self</span>.<span class="ident">edge_sets</span>
-            .<span class="ident">push</span>(<span class="ident">EdgeSet::new</span>(<span class="ident">name</span>.<span class="ident">clone</span>(), <span class="ident">stratum</span>, <span class="ident">edges</span>));
+            .<span class="ident">push</span>(<span class="ident">FlowEdgeSet::new</span>(<span class="ident">name</span>.<span class="ident">clone</span>(), <span class="ident">stratum</span>, <span class="ident">edges</span>));
         <span class="kw">for</span> (<span class="ident">node_id</span>, <span class="ident">hoff_id</span>) <span class="kw">in</span> <span class="ident">fg</span>.<span class="ident">handoff_ids</span>.<span class="ident">iter</span>() {
             <span class="self">self</span>.<span class="ident">node_names</span>[<span class="ident">node_id</span>.<span class="number">0</span> <span class="op">+</span> <span class="ident">base</span>] <span class="op">=</span>
                 <span class="prelude-val">Some</span>(<span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, <span class="ident">handoffs</span>[<span class="ident">hoff_id</span>.<span class="number">0</span>].<span class="ident">name</span>).<span class="ident">into</span>());
             <span class="self">self</span>.<span class="ident">handoff_ids</span>
-                .<span class="ident">entry</span>(<span class="ident">NodeId</span>(<span class="ident">node_id</span>.<span class="number">0</span> <span class="op">+</span> <span class="ident">base</span>))
+                .<span class="ident">entry</span>(<span class="ident">FlowNodeId</span>(<span class="ident">node_id</span>.<span class="number">0</span> <span class="op">+</span> <span class="ident">base</span>))
                 .<span class="ident">or_insert</span>(<span class="kw-2">*</span><span class="ident">hoff_id</span>);
         }
     }
@@ -578,8 +586,8 @@
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Debug</span>, <span class="ident">Default</span>, <span class="ident">Serialize</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">FlowGraph</span> {
     <span class="ident">node_names</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span>, <span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="ident">edges</span>: <span class="ident">HashSet</span><span class="op">&lt;</span>(<span class="ident">NodeId</span>, <span class="ident">NodeId</span>)<span class="op">&gt;</span>,
-    <span class="ident">handoff_ids</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">NodeId</span>, <span class="ident">HandoffId</span><span class="op">&gt;</span>,
+    <span class="ident">edges</span>: <span class="ident">HashSet</span><span class="op">&lt;</span>(<span class="ident">FlowNodeId</span>, <span class="ident">FlowNodeId</span>)<span class="op">&gt;</span>,
+    <span class="ident">handoff_ids</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">FlowNodeId</span>, <span class="ident">HandoffId</span><span class="op">&gt;</span>,
 }
 
 <span class="kw">impl</span> <span class="ident">FlowGraph</span> {
@@ -592,17 +600,17 @@
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">add_node</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">node_info</span>: <span class="kw">impl</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span>, <span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span>) -&gt; <span class="ident">NodeId</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">add_node</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">node_info</span>: <span class="kw">impl</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span>, <span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span>) -&gt; <span class="ident">FlowNodeId</span> {
         <span class="kw">let</span> <span class="ident">current_index</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">node_names</span>.<span class="ident">len</span>();
         <span class="self">self</span>.<span class="ident">node_names</span>.<span class="ident">insert</span>(<span class="ident">current_index</span>, <span class="ident">node_info</span>.<span class="ident">into</span>());
-        <span class="ident">NodeId</span>(<span class="ident">current_index</span>)
+        <span class="ident">FlowNodeId</span>(<span class="ident">current_index</span>)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">add_edge</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">edge</span>: (<span class="ident">NodeId</span>, <span class="ident">NodeId</span>)) {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">add_edge</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">edge</span>: (<span class="ident">FlowNodeId</span>, <span class="ident">FlowNodeId</span>)) {
         <span class="self">self</span>.<span class="ident">edges</span>.<span class="ident">insert</span>(<span class="ident">edge</span>);
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">add_handoff_id</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">node_id</span>: <span class="ident">NodeId</span>, <span class="ident">handoff_id</span>: <span class="ident">HandoffId</span>) {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">add_handoff_id</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">node_id</span>: <span class="ident">FlowNodeId</span>, <span class="ident">handoff_id</span>: <span class="ident">HandoffId</span>) {
         <span class="self">self</span>.<span class="ident">handoff_ids</span>.<span class="ident">insert</span>(<span class="ident">node_id</span>, <span class="ident">handoff_id</span>);
     }
 
@@ -613,11 +621,11 @@
             <span class="ident">other</span>
                 .<span class="ident">edges</span>
                 .<span class="ident">into_iter</span>()
-                .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">from</span>, <span class="ident">to</span>)<span class="op">|</span> (<span class="ident">NodeId</span>(<span class="ident">from</span>.<span class="number">0</span> <span class="op">+</span> <span class="ident">base</span>), <span class="ident">NodeId</span>(<span class="ident">to</span>.<span class="number">0</span> <span class="op">+</span> <span class="ident">base</span>))),
+                .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">from</span>, <span class="ident">to</span>)<span class="op">|</span> (<span class="ident">FlowNodeId</span>(<span class="ident">from</span>.<span class="number">0</span> <span class="op">+</span> <span class="ident">base</span>), <span class="ident">FlowNodeId</span>(<span class="ident">to</span>.<span class="number">0</span> <span class="op">+</span> <span class="ident">base</span>))),
         );
         <span class="kw">for</span> (<span class="ident">node_id</span>, <span class="ident">hoff_id</span>) <span class="kw">in</span> <span class="ident">other</span>.<span class="ident">handoff_ids</span>.<span class="ident">iter</span>() {
             <span class="self">self</span>.<span class="ident">handoff_ids</span>
-                .<span class="ident">entry</span>(<span class="ident">NodeId</span>(<span class="ident">node_id</span>.<span class="number">0</span> <span class="op">+</span> <span class="ident">base</span>))
+                .<span class="ident">entry</span>(<span class="ident">FlowNodeId</span>(<span class="ident">node_id</span>.<span class="number">0</span> <span class="op">+</span> <span class="ident">base</span>))
                 .<span class="ident">or_insert</span>(<span class="kw-2">*</span><span class="ident">hoff_id</span>);
         }
     }

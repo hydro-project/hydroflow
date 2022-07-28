@@ -87,7 +87,7 @@
 
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::builder::build::push_tee::TeePushBuild</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::context::Context</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::flow_graph::NodeId</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::flow_graph::FlowNodeId</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::handoff::handoff_list</span>::{<span class="ident">PortList</span>, <span class="ident">PortListSplit</span>};
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::port::SEND</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::type_list::Extend</span>;
@@ -129,7 +129,7 @@
     <span class="op">&lt;</span><span class="ident">NextA::OutputHandoffs</span> <span class="kw">as</span> <span class="ident">Extend</span><span class="op">&lt;</span><span class="ident">NextB::OutputHandoffs</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::Extended</span>:
         <span class="ident">PortList</span><span class="op">&lt;</span><span class="ident">SEND</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">PortListSplit</span><span class="op">&lt;</span><span class="ident">SEND</span>, <span class="ident">NextA::OutputHandoffs</span>, <span class="ident">Suffix</span> <span class="op">=</span> <span class="ident">NextB::OutputHandoffs</span><span class="op">&gt;</span>,
 {
-    <span class="kw">fn</span> <span class="ident">insert_dep</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">e</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="kw">super</span>::FlowGraph</span>) -&gt; <span class="ident">NodeId</span> {
+    <span class="kw">fn</span> <span class="ident">insert_dep</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">e</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="kw">super</span>::FlowGraph</span>) -&gt; <span class="ident">FlowNodeId</span> {
         <span class="kw">let</span> <span class="ident">my_id</span> <span class="op">=</span> <span class="ident">e</span>.<span class="ident">add_node</span>(<span class="string">&quot;Tee&quot;</span>);
         <span class="kw">let</span> <span class="ident">next_a_id</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">next_a</span>.<span class="ident">insert_dep</span>(<span class="ident">e</span>);
         <span class="kw">let</span> <span class="ident">next_b_id</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">next_b</span>.<span class="ident">insert_dep</span>(<span class="ident">e</span>);

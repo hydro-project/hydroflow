@@ -315,13 +315,13 @@
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::pretty_span</span>::{<span class="ident">PrettyRowCol</span>, <span class="ident">PrettySpan</span>};
 
 <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::partitioned_graph::PartitionedGraph</span>;
-<span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">EdgePortRef</span>, <span class="ident">Node</span>, <span class="ident">NodeId</span>, <span class="ident">OutboundEdges</span>};
+<span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">EdgePortRef</span>, <span class="ident">GraphNodeId</span>, <span class="ident">Node</span>, <span class="ident">OutboundEdges</span>};
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Default</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">FlatGraph</span> {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">nodes</span>: <span class="ident">SlotMap</span><span class="op">&lt;</span><span class="ident">NodeId</span>, <span class="ident">Node</span><span class="op">&gt;</span>,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">preds</span>: <span class="ident">SecondaryMap</span><span class="op">&lt;</span><span class="ident">NodeId</span>, <span class="ident">OutboundEdges</span><span class="op">&gt;</span>,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">succs</span>: <span class="ident">SecondaryMap</span><span class="op">&lt;</span><span class="ident">NodeId</span>, <span class="ident">OutboundEdges</span><span class="op">&gt;</span>,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">nodes</span>: <span class="ident">SlotMap</span><span class="op">&lt;</span><span class="ident">GraphNodeId</span>, <span class="ident">Node</span><span class="op">&gt;</span>,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">preds</span>: <span class="ident">SecondaryMap</span><span class="op">&lt;</span><span class="ident">GraphNodeId</span>, <span class="ident">OutboundEdges</span><span class="op">&gt;</span>,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">succs</span>: <span class="ident">SecondaryMap</span><span class="op">&lt;</span><span class="ident">GraphNodeId</span>, <span class="ident">OutboundEdges</span><span class="op">&gt;</span>,
     <span class="ident">names</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">Ident</span>, <span class="ident">Ports</span><span class="op">&gt;</span>,
 }
 <span class="kw">impl</span> <span class="ident">FlatGraph</span> {
@@ -599,8 +599,8 @@
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Copy</span>, <span class="ident">Debug</span>)]</span>
 <span class="kw">struct</span> <span class="ident">Ports</span> {
-    <span class="ident">inn</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">NodeId</span><span class="op">&gt;</span>,
-    <span class="ident">out</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">NodeId</span><span class="op">&gt;</span>,
+    <span class="ident">inn</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">GraphNodeId</span><span class="op">&gt;</span>,
+    <span class="ident">out</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">GraphNodeId</span><span class="op">&gt;</span>,
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (2643b1646 2022-07-27)" ></div>

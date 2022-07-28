@@ -376,7 +376,7 @@
 <span class="kw">use</span> <span class="ident">syn::punctuated::Punctuated</span>;
 <span class="kw">use</span> <span class="ident">syn</span>::{<span class="ident">Expr</span>, <span class="ident">GenericArgument</span>, <span class="ident">Token</span>};
 
-<span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">NodeId</span>, <span class="ident">SubgraphId</span>};
+<span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">GraphNodeId</span>, <span class="ident">GraphSubgraphId</span>};
 
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">OperatorConstraints</span> {
     <span class="doccomment">/// Operator&#39;s name.</span>
@@ -658,8 +658,8 @@
 
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">WriteContextArgs</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
     <span class="kw">pub</span> <span class="ident">root</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">TokenStream</span>,
-    <span class="kw">pub</span> <span class="ident">subgraph_id</span>: <span class="ident">SubgraphId</span>,
-    <span class="kw">pub</span> <span class="ident">node_id</span>: <span class="ident">NodeId</span>,
+    <span class="kw">pub</span> <span class="ident">subgraph_id</span>: <span class="ident">GraphSubgraphId</span>,
+    <span class="kw">pub</span> <span class="ident">node_id</span>: <span class="ident">GraphNodeId</span>,
     <span class="kw">pub</span> <span class="ident">ident</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Ident</span>,
 }
 

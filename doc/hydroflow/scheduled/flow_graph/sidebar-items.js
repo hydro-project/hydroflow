@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["EdgeSet",""],["FlowGraph","A graph representation of a compiled component’s graph structure."],["GlobalGraph",""],["NodeId","A FlowGraph nodes’s ID."]]};
+window.SIDEBAR_ITEMS = {"struct":[["FlowEdgeSet",""],["FlowGraph","A graph representation of a compiled component’s graph structure."],["FlowNodeId","A FlowGraph nodes’s ID."],["FlowPartitionedGraph",""]]};

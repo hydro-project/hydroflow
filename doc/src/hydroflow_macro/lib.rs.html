@@ -56,7 +56,6 @@
 <span id="50">50</span>
 <span id="51">51</span>
 <span id="52">52</span>
-<span id="53">53</span>
 </pre><pre class="rust"><code><span class="attribute">#![<span class="ident">feature</span>(<span class="ident">proc_macro_diagnostic</span>, <span class="ident">proc_macro_span</span>)]</span>
 <span class="attribute">#![<span class="ident">allow</span>(<span class="ident">clippy::explicit_auto_deref</span>)]</span>
 
@@ -101,14 +100,13 @@
 
     <span class="kw">let</span> <span class="ident">flat_mermaid</span> <span class="op">=</span> <span class="ident">flat_graph</span>.<span class="ident">mermaid_string</span>();
 
-    <span class="kw">let</span> <span class="ident">part_graph</span> <span class="op">=</span> <span class="ident">flat_graph</span>.<span class="ident">into_partitioned_graph</span>();
-
-    <span class="kw">let</span> <span class="ident">part_mermaid</span> <span class="op">=</span> <span class="ident">part_graph</span>.<span class="ident">mermaid_string</span>();
+    <span class="comment">// let part_graph = flat_graph.into_partitioned_graph();</span>
+    <span class="comment">// let part_mermaid = part_graph.to_serde_graph();</span>
 
     <span class="kw">let</span> <span class="ident">lit0</span> <span class="op">=</span> <span class="ident">Literal::string</span>(<span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">flat_mermaid</span>);
-    <span class="kw">let</span> <span class="ident">lit1</span> <span class="op">=</span> <span class="ident">Literal::string</span>(<span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">part_mermaid</span>);
+    <span class="comment">// let lit1 = Literal::string(&amp;*part_mermaid);</span>
 
-    <span class="macro">quote!</span> { <span class="macro">println!</span>(<span class="string">&quot;{}\n{}&quot;</span>, #<span class="ident">lit0</span>, #<span class="ident">lit1</span>); }.<span class="ident">into</span>()
+    <span class="macro">quote!</span> { <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, #<span class="ident">lit0</span>); }.<span class="ident">into</span>()
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="hydroflow_macro" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (2643b1646 2022-07-27)" ></div>
