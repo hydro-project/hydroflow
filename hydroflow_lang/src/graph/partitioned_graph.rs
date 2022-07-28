@@ -3,8 +3,6 @@ use quote::{quote, ToTokens};
 use slotmap::{Key, SecondaryMap, SlotMap};
 use syn::spanned::Spanned;
 
-use crate::pretty_span::{PrettyRowCol, PrettySpan};
-
 use super::flat_graph::FlatGraph;
 use super::ops::{WriteContextArgs, WriteIteratorArgs, OPERATORS};
 use super::serde_graph::SerdeGraph;
@@ -43,7 +41,7 @@ impl PartitionedGraph {
 
     pub fn node_id_as_string(&self, node_id: GraphNodeId, is_pred: bool) -> String {
         match &self.nodes[node_id] {
-            Node::Operator(_) => format!("op_{:?}", node_id.data()).into(),
+            Node::Operator(_) => format!("op_{:?}", node_id.data()),
             Node::Handoff => format!(
                 "hoff_{:?}_{}",
                 node_id.data(),

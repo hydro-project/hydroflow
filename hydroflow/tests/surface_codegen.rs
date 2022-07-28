@@ -34,6 +34,12 @@ pub fn test_surface_syntax_reachability_generated() {
         my_join_tee[1] -> for_each(|x| println!("Reached: {}", x));
     };
 
+    println!(
+        "{}",
+        df.serde_graph()
+            .expect("No graph found, maybe failed to parse.")
+            .serde_to_mermaid()
+    );
     df.run_available();
 
     pairs_send.send((0, 1)).unwrap();
@@ -78,6 +84,13 @@ pub fn test_transitive_closure() {
         the_join -> map(|(_k, (a, b))| (a, b)) -> [1]edge_merge_tee;
         edge_merge_tee[1] -> for_each(|(a, b)| println!("transitive closure: ({},{})", a, b));
     };
+
+    println!(
+        "{}",
+        df.serde_graph()
+            .expect("No graph found, maybe failed to parse.")
+            .serde_to_dot()
+    );
 
     df.run_available();
 
@@ -154,6 +167,14 @@ pub fn test_covid_tracing() {
         recv_stream(people_recv) -> [0]notifs;
         new_exposed[1] -> [1]notifs;
     };
+
+    println!(
+        "{}",
+        hydroflow
+            .serde_graph()
+            .expect("No graph found, maybe failed to parse.")
+            .serde_to_dot()
+    );
 
     {
         people_send

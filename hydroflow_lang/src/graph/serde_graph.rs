@@ -122,13 +122,12 @@ impl SerdeGraph {
             // let strt = es.stratum;
             writeln!(
                 w,
-                "{:t$}subgraph \"cluster stratum {}\" {{",
+                "{:t$}subgraph \"cluster stratum NUMBER UNKNOWN\" {{",
                 "",
-                "tbd",
                 t = tab,
             )?;
             tab += 2;
-            writeln!(w, "{:t$}label = \"Stratum {}\"", "", "tbd", t = tab,)?;
+            writeln!(w, "{:t$}label = \"Stratum NUMBER UNKNOWN\"", "", t = tab,)?;
             writeln!(
                 w,
                 "{:t$}subgraph \"cluster {}\" {{",
@@ -137,7 +136,13 @@ impl SerdeGraph {
                 t = tab
             )?;
             tab += 2;
-            writeln!(w, "{:t$}label = \"{}\"", "", "tbd", t = tab)?;
+            writeln!(
+                w,
+                "{:t$}label = \"sg_{}\"",
+                "",
+                sg_id.data().as_ffi(),
+                t = tab
+            )?;
             let empty = vec![];
             for src in nodes {
                 let dests = self.edges.get(*src).unwrap_or(&empty);
