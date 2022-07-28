@@ -7,4 +7,5 @@ members = [
     "hydroflow_datalog",
     "benches",
     "relalg",
+    "pusherator",
 ]

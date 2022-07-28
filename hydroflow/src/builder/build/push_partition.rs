@@ -1,10 +1,10 @@
 use super::PushBuild;
 
-use crate::compiled::partition::Partition;
 use crate::scheduled::context::Context;
 use crate::scheduled::handoff::handoff_list::{PortList, PortListSplit};
 use crate::scheduled::port::SEND;
 use crate::scheduled::type_list::Extend;
+use pusherator::partition::Partition;
 
 pub struct PartitionPushBuild<NextA, NextB, Func>
 where
