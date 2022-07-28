@@ -1,0 +1,15 @@
+# Embedding a Flow in Rust
+Hydroflow's surface syntax is typically used within a Rust program. (An interactive client and/or external language bindings are TBD.)
+
+The surface syntax is embedded into Rust via a macro as follows
+```rust
+use hydroflow::hydroflow_syntax;
+
+pub fn example() {
+    let mut flow = hydroflow_syntax! {
+        // Hydroflow Surface Syntax goes here
+    };
+}
+```
+The resulting `flow` object is of type `Hydroflow`; see the documentation on the 
+[Hydroflow Object](./hydroflow_object.md) for details on how to use the result.
