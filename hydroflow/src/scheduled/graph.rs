@@ -5,6 +5,7 @@ use std::collections::VecDeque;
 use std::marker::PhantomData;
 use std::num::NonZeroUsize;
 
+use hydroflow_lang::graph::serde_graph::SerdeGraph;
 use ref_cast::RefCast;
 use tokio::sync::mpsc::{self, UnboundedReceiver};
 
@@ -27,6 +28,8 @@ pub struct Hydroflow {
     // Index is stratum, value is FIFO queue for that stratum.
     stratum_queues: Vec<VecDeque<SubgraphId>>,
     event_queue_recv: UnboundedReceiver<SubgraphId>,
+
+    serde_graph: Option<SerdeGraph>,
 }
 impl Default for Hydroflow {
     fn default() -> Self {
@@ -51,6 +54,8 @@ impl Default for Hydroflow {
             stratum_queues,
 
             event_queue_recv,
+
+            serde_graph: None,
         }
     }
 }
@@ -58,6 +63,24 @@ impl Hydroflow {
     /// Create a new empty Hydroflow graph.
     pub fn new() -> Self {
         Default::default()
+    }
+
+    /// Create a new empty Hydroflow graph with the given serde_graph JSON string.
+    pub fn new_with_graph(serde_graph: &'static str) -> Self {
+        let mut graph = Self::new();
+        graph.serde_graph = serde_json::from_str(serde_graph)
+            .map_err(|e| {
+                // TODO: use .inspect_err() when stable.
+                eprintln!("Failed to deserialize serde_graph {}", e);
+                e
+            })
+            .ok();
+
+        graph
+    }
+
+    pub fn serde_graph(&self) -> Option<&SerdeGraph> {
+        self.serde_graph.as_ref()
     }
 
     /// Returns a reactor for externally scheduling subgraphs, possibly from another thread.

@@ -7,7 +7,7 @@ use slotmap::Key;
 use syn::punctuated::Punctuated;
 use syn::{Expr, GenericArgument, Token};
 
-use super::{NodeId, SubgraphId};
+use super::{GraphNodeId, GraphSubgraphId};
 
 pub struct OperatorConstraints {
     /// Operator's name.
@@ -289,8 +289,8 @@ pub const OPERATORS: [OperatorConstraints; 10] = [
 
 pub struct WriteContextArgs<'a> {
     pub root: &'a TokenStream,
-    pub subgraph_id: SubgraphId,
-    pub node_id: NodeId,
+    pub subgraph_id: GraphSubgraphId,
+    pub node_id: GraphNodeId,
     pub ident: &'a Ident,
 }
 

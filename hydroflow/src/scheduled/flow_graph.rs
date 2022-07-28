@@ -12,7 +12,7 @@ impl Hydroflow {
         &self,
         name: Cow<'static, str>,
         sg_id: SubgraphId,
-        node_id: NodeId,
+        node_id: FlowNodeId,
     ) -> String {
         if let Some(handoff_id) = self.subgraphs[sg_id.0]
             .dependencies
@@ -133,8 +133,8 @@ impl Hydroflow {
         Ok(())
     }
 
-    pub fn global_graph(&self) -> GlobalGraph {
-        let mut graph = GlobalGraph::new();
+    pub fn global_graph(&self) -> FlowPartitionedGraph {
+        let mut graph = FlowPartitionedGraph::new();
         for subgraph in self.subgraphs.iter() {
             if !subgraph.dependencies.edges.is_empty() {
                 graph.add_flow_graph(
@@ -153,16 +153,20 @@ impl Hydroflow {
 /// A FlowGraph nodes's ID.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize)]
 #[repr(transparent)]
-pub struct NodeId(pub(crate) usize);
+pub struct FlowNodeId(pub(crate) usize);
 
 #[derive(Clone, Debug, Default, Serialize)]
-pub struct EdgeSet {
+pub struct FlowEdgeSet {
     name: Cow<'static, str>,
     stratum: usize,
-    edges: HashSet<(NodeId, NodeId)>,
+    edges: HashSet<(FlowNodeId, FlowNodeId)>,
 }
-impl EdgeSet {
-    pub fn new(name: Cow<'static, str>, stratum: usize, edges: HashSet<(NodeId, NodeId)>) -> Self {
+impl FlowEdgeSet {
+    pub fn new(
+        name: Cow<'static, str>,
+        stratum: usize,
+        edges: HashSet<(FlowNodeId, FlowNodeId)>,
+    ) -> Self {
         Self {
             name,
             stratum,
@@ -172,12 +176,12 @@ impl EdgeSet {
 }
 // A graph connecting up multiple compiled components
 #[derive(Clone, Debug, Default, Serialize)]
-pub struct GlobalGraph {
+pub struct FlowPartitionedGraph {
     node_names: Vec<Option<Cow<'static, str>>>,
-    edge_sets: Vec<EdgeSet>,
-    handoff_ids: HashMap<NodeId, HandoffId>,
+    edge_sets: Vec<FlowEdgeSet>,
+    handoff_ids: HashMap<FlowNodeId, HandoffId>,
 }
-impl GlobalGraph {
+impl FlowPartitionedGraph {
     pub fn new() -> Self {
         let (node_names, edge_sets, handoff_ids) = Default::default();
         Self {
@@ -192,13 +196,13 @@ impl GlobalGraph {
     // Preferably to be called only once after all FlowGraphs are added.
     fn canonicalize_handoffs(&mut self) {
         // invert self.handoff_ids
-        let mut handoff_ids_inv: HashMap<HandoffId, Vec<NodeId>> = HashMap::new();
+        let mut handoff_ids_inv: HashMap<HandoffId, Vec<FlowNodeId>> = HashMap::new();
         for (k, v) in &self.handoff_ids {
             handoff_ids_inv.entry(*v).or_insert_with(Vec::new).push(*k);
         }
 
         // find repeated handoffs
-        let mut repeated_handoffs: Vec<NodeId> = Vec::new();
+        let mut repeated_handoffs: Vec<FlowNodeId> = Vec::new();
         for w in handoff_ids_inv.values() {
             repeated_handoffs.extend(w.clone().split_off(1));
         }
@@ -220,7 +224,7 @@ impl GlobalGraph {
                 }
                 new_edges.insert(new_edge);
             }
-            let new_es = EdgeSet::new(es.name.clone(), es.stratum, new_edges);
+            let new_es = FlowEdgeSet::new(es.name.clone(), es.stratum, new_edges);
             new_edge_sets.push(new_es);
         }
         self.edge_sets = new_edge_sets;
@@ -242,18 +246,18 @@ impl GlobalGraph {
         for node_name in fg.node_names {
             self.node_names.push(Some(node_name));
         }
-        let edges: HashSet<(NodeId, NodeId)> = fg
+        let edges: HashSet<(FlowNodeId, FlowNodeId)> = fg
             .edges
             .into_iter()
-            .map(|(from, to)| (NodeId(from.0 + base), NodeId(to.0 + base)))
+            .map(|(from, to)| (FlowNodeId(from.0 + base), FlowNodeId(to.0 + base)))
             .collect();
         self.edge_sets
-            .push(EdgeSet::new(name.clone(), stratum, edges));
+            .push(FlowEdgeSet::new(name.clone(), stratum, edges));
         for (node_id, hoff_id) in fg.handoff_ids.iter() {
             self.node_names[node_id.0 + base] =
                 Some(format!("{}", handoffs[hoff_id.0].name).into());
             self.handoff_ids
-                .entry(NodeId(node_id.0 + base))
+                .entry(FlowNodeId(node_id.0 + base))
                 .or_insert(*hoff_id);
         }
     }
@@ -263,8 +267,8 @@ impl GlobalGraph {
 #[derive(Clone, Debug, Default, Serialize)]
 pub struct FlowGraph {
     node_names: Vec<Cow<'static, str>>,
-    edges: HashSet<(NodeId, NodeId)>,
-    handoff_ids: HashMap<NodeId, HandoffId>,
+    edges: HashSet<(FlowNodeId, FlowNodeId)>,
+    handoff_ids: HashMap<FlowNodeId, HandoffId>,
 }
 
 impl FlowGraph {
@@ -277,17 +281,17 @@ impl FlowGraph {
         }
     }
 
-    pub fn add_node(&mut self, node_info: impl Into<Cow<'static, str>>) -> NodeId {
+    pub fn add_node(&mut self, node_info: impl Into<Cow<'static, str>>) -> FlowNodeId {
         let current_index = self.node_names.len();
         self.node_names.insert(current_index, node_info.into());
-        NodeId(current_index)
+        FlowNodeId(current_index)
     }
 
-    pub fn add_edge(&mut self, edge: (NodeId, NodeId)) {
+    pub fn add_edge(&mut self, edge: (FlowNodeId, FlowNodeId)) {
         self.edges.insert(edge);
     }
 
-    pub fn add_handoff_id(&mut self, node_id: NodeId, handoff_id: HandoffId) {
+    pub fn add_handoff_id(&mut self, node_id: FlowNodeId, handoff_id: HandoffId) {
         self.handoff_ids.insert(node_id, handoff_id);
     }
 
@@ -298,11 +302,11 @@ impl FlowGraph {
             other
                 .edges
                 .into_iter()
-                .map(|(from, to)| (NodeId(from.0 + base), NodeId(to.0 + base))),
+                .map(|(from, to)| (FlowNodeId(from.0 + base), FlowNodeId(to.0 + base))),
         );
         for (node_id, hoff_id) in other.handoff_ids.iter() {
             self.handoff_ids
-                .entry(NodeId(node_id.0 + base))
+                .entry(FlowNodeId(node_id.0 + base))
                 .or_insert(*hoff_id);
         }
     }
