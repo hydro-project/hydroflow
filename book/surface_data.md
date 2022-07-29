@@ -1,4 +1,4 @@
-# Data Sources in Rust
+# Data Sources and Sinks in Rust
 Any useful flow requires us to define sources of data, either generated computationally or received from 
 and outside environment via I/O.
 
