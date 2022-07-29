@@ -1,7 +1,7 @@
 # Flow Syntax
 Flows consist of named _operators_ that are connected via flow _edges_ denoted by `->`. The example below
-uses the [`recv_iter`](./operators.md#recv_iter) operator to generate two strings from a Rust `vec`, the 
-[`map`](./operators.md#map) operator to apply some Rust code to uppercase each string, and the [`for_each`](./operators.md#for_each) 
+uses the [`recv_iter`](./surface_ops.md#recv_iter) operator to generate two strings from a Rust `vec`, the 
+[`map`](./surface_ops.md#map) operator to apply some Rust code to uppercase each string, and the [`for_each`](./surface_ops.md#for_each) 
 operator to print each string to stdout.
 ```rust
 recv_iter(vec!["Hello", "world"]) 
@@ -14,12 +14,12 @@ upper_print = map(|x| x.to_uppercase()) -> for_each(|x| println!("{}", x));
 recv_iter(vec!["Hello", "world"]) -> upper_print;
 ```
 ## Operators with Multiple Ports
-Some operators have more than one input _port_ that can be referenced by `->`. For example [`merge`](./operators.md#join) 
-merges the contents of many flows, so it can have an abitrary number of input ports. Some operators have multiple outputs, notably [`tee`](./operators.md#tee),
-which has as many outputs as desired. 
+Some operators have more than one input _port_ that can be referenced by `->`. For example [`merge`](./surface_ops.md#merge) 
+merges the contents of many flows, so it can have an abitrary number of input ports. Some operators have multiple outputs, notably [`tee`](./surface_ops.md#tee),
+which has an arbitrary number of outputs. 
 
 In the syntax, we distinguish input ports via an _indexing prefix_ number
-in square brackets before the operator name (e.g. `[0]join(...)` and `[1]join(...)`). We 
+in square brackets before the operator name (e.g. `[0]merge(...)` and `[1]merge(...)`). We 
 distinguish output ports by an _indexing suffix_ (e.g. `tee[0]`). 
 
 Here is an example that tees one flow into two, handles each separately, and then merges them to print out the contents in both lowercase and uppercase:
