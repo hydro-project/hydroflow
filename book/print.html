@@ -662,7 +662,7 @@ sockets.</p>
 <p>The natural way to write a Hydroflow program is using the <em>Surface Syntax</em> documented here. 
 It is a chained <code>Iterator</code>-style syntax of operators built into Hydroflow that should be sufficient
 for most uses. If you want lower-level access you can work with the <code>Core API</code> documented in the <a href="./architecture.html">Architecture</a> section.</p>
-<p>In this chapter we go over the syntax piece by piece: how to <a href="./surface_embedding.html">embed surface syntax in Rust</a>, how to specify <a href="./surface_flows.html"><em>flows</em></a>, which consist of <a href="./surface_data.html"><em>data sources</em></a> flowing through <a href="./surface_ops.html"><em>operators</em></a>. In the <a href="surface_types.html">Hydroflow Types</a> chapter we dive into the details of the data types that pass through flows.</p>
+<p>In this chapter we go over the syntax piece by piece: how to <a href="./surface_embedding.html">embed surface syntax in Rust</a> and how to specify <a href="./surface_flows.html"><em>flows</em></a>, which consist of <a href="./surface_data.html"><em>data sources</em></a> flowing through <a href="./surface_ops.html"><em>operators</em></a>. In the <a href="surface_types.html">Hydroflow Types</a> chapter we dive into the details of the data types that pass through flows.</p>
 <p>As a teaser, here is a Rust/Hydroflow &quot;HELLO WORLD&quot; program:</p>
 <pre><pre class="playground"><code class="language-rust">
 <span class="boring">#![allow(unused)]
@@ -697,8 +697,8 @@ pub fn example() {
 <a href="./hydroflow_object.html">Hydroflow Object</a> for details on how to use the result.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="flow-syntax"><a class="header" href="#flow-syntax">Flow Syntax</a></h1>
 <p>Flows consist of named <em>operators</em> that are connected via flow <em>edges</em> denoted by <code>-&gt;</code>. The example below
-uses the <a href="./operators.html#recv_iter"><code>recv_iter</code></a> operator to generate two strings from a Rust <code>vec</code>, the 
-<a href="./operators.html#map"><code>map</code></a> operator to apply some Rust code to uppercase each string, and the <a href="./operators.html#for_each"><code>for_each</code></a> 
+uses the <a href="./surface_ops.html#recv_iter"><code>recv_iter</code></a> operator to generate two strings from a Rust <code>vec</code>, the 
+<a href="./surface_ops.html#map"><code>map</code></a> operator to apply some Rust code to uppercase each string, and the <a href="./surface_ops.html#for_each"><code>for_each</code></a> 
 operator to print each string to stdout.</p>
 <pre><pre class="playground"><code class="language-rust">
 <span class="boring">#![allow(unused)]
@@ -716,11 +716,11 @@ recv_iter(vec![&quot;Hello&quot;, &quot;world&quot;]) -&gt; upper_print;
 <span class="boring">}
 </span></code></pre></pre>
 <h2 id="operators-with-multiple-ports"><a class="header" href="#operators-with-multiple-ports">Operators with Multiple Ports</a></h2>
-<p>Some operators have more than one input <em>port</em> that can be referenced by <code>-&gt;</code>. For example <a href="./operators.html#join"><code>merge</code></a> 
-merges the contents of many flows, so it can have an abitrary number of input ports. Some operators have multiple outputs, notably <a href="./operators.html#tee"><code>tee</code></a>,
-which has as many outputs as desired. </p>
+<p>Some operators have more than one input <em>port</em> that can be referenced by <code>-&gt;</code>. For example <a href="./surface_ops.html#merge"><code>merge</code></a> 
+merges the contents of many flows, so it can have an abitrary number of input ports. Some operators have multiple outputs, notably <a href="./surface_ops.html#tee"><code>tee</code></a>,
+which has an arbitrary number of outputs. </p>
 <p>In the syntax, we distinguish input ports via an <em>indexing prefix</em> number
-in square brackets before the operator name (e.g. <code>[0]join(...)</code> and <code>[1]join(...)</code>). We 
+in square brackets before the operator name (e.g. <code>[0]merge(...)</code> and <code>[1]merge(...)</code>). We 
 distinguish output ports by an <em>indexing suffix</em> (e.g. <code>tee[0]</code>). </p>
 <p>Here is an example that tees one flow into two, handles each separately, and then merges them to print out the contents in both lowercase and uppercase:</p>
 <pre><pre class="playground"><code class="language-rust">
@@ -765,7 +765,7 @@ of <a href="./in-out_trees.html">in-out trees</a>. </p>
 <blockquote>
 <p><em>WARNING</em>: <em>Need to document the port numbers for variables assigned to tree- or dag-shaped flows</em></p>
 </blockquote>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="data-sources-in-rust"><a class="header" href="#data-sources-in-rust">Data Sources in Rust</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="data-sources-and-sinks-in-rust"><a class="header" href="#data-sources-and-sinks-in-rust">Data Sources and Sinks in Rust</a></h1>
 <p>Any useful flow requires us to define sources of data, either generated computationally or received from 
 and outside environment via I/O.</p>
 <h2 id="recv_iter"><a class="header" href="#recv_iter"><code>recv_iter</code></a></h2>
@@ -822,7 +822,8 @@ flow.run_available();
 </span></code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="hydroflows-built-in-operators"><a class="header" href="#hydroflows-built-in-operators">Hydroflow's Built-in Operators</a></h1>
 <p>In our previous examples we made use of some of Hydroflow's built-in operators.
-Here we document each operators in more detail.</p>
+Here we document each operators in more detail. Most of these operators
+are based on the Rust equivalents for iterators; see the <a href="https://doc.rust-lang.org/std/iter/trait.Iterator.html">Rust documentation</a>.</p>
 <blockquote>
 <p><em>NOTE</em> Would be nice to format more like Rust docs, but I couldn't find that source as a template.</p>
 </blockquote>
@@ -831,45 +832,165 @@ Here we document each operators in more detail.</p>
 <p>1 input stream, 1 output stream</p>
 </blockquote>
 <blockquote>
-<p>Arguments:
-Filter outputs a subset of the items it receives at its input, according to a filter expression.</p>
+<p>Arguments: A Rust closure that returns a boolean</p>
 </blockquote>
+<p>Filter outputs a subsequence of the items it receives at its input, according to a
+Rust boolean closure passed in as an argument</p>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>recv_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; filter(|x| x == &amp;&quot;hello&quot;)
+    -&gt; for_each(|x| println!(&quot;{}&quot;, x));
+<span class="boring">}
+</span></code></pre></pre>
 <h2 id="map"><a class="header" href="#map">map</a></h2>
 <blockquote>
 <p>1 input stream, 1 output stream</p>
 </blockquote>
+<blockquote>
+<p>Arguments: A Rust closure
+For each item passed in, apply the closure to generate an item to emit.</p>
+</blockquote>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>recv_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; map(|x| x.to_uppercase())
+    -&gt; for_each(|x| println!(&quot;{}&quot;, x));
+<span class="boring">}
+</span></code></pre></pre>
 <h2 id="flat_map"><a class="header" href="#flat_map">flat_map</a></h2>
 <blockquote>
 <p>1 input stream, 1 output stream</p>
 </blockquote>
+<blockquote>
+<p>Arguments: A Rust closure that handles an iterator</p>
+</blockquote>
+<p>For each item <code>i</code> passed in, treat <code>i</code> as an iterator and map the closure to that
+iterator to produce items one by one. the type of the input items must be iterable.</p>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>recv_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; flat_map(|x| x.chars())
+    -&gt; for_each(|x| println!(&quot;{}&quot;, x));
+<span class="boring">}
+</span></code></pre></pre>
 <h2 id="filter_map"><a class="header" href="#filter_map">filter_map</a></h2>
 <blockquote>
 <p>1 input stream, 1 output stream</p>
 </blockquote>
+<p>An operator that both filters and maps. It yields only the items for which the supplied closure returns <code>Some(value)</code>.</p>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>recv_iter(vec![&quot;1&quot;, &quot;hello&quot;, &quot;world&quot;, &quot;2&quot;]) -&gt; filter_map(|s| s.parse().ok())
+    -&gt; for_each(|x| println!(&quot;{}&quot;, x));
+<span class="boring">}
+</span></code></pre></pre>
 <h2 id="merge"><a class="header" href="#merge">merge</a></h2>
 <blockquote>
 <p><em>n</em> input streams of the same type, 1 output stream of the same type</p>
 </blockquote>
+<p>Merges an arbitrary number of input streams into a single stream. Each input sequence is a subsequence of the output, but no guarantee is given on how the inputs are interleaved.</p>
+<p>Since <code>merge</code> has multiple input streams, it needs to be assigned to
+a variable to reference its multiple input ports across statements.</p>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>my_merge = merge();
+recv_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; [0]my_merge;
+recv_iter(vec![&quot;stay&quot;, &quot;gold&quot;]) -&gt; [1]my_merge;
+recv_iter(vec![&quot;don\'t&quot;, &quot;give&quot;, &quot;up&quot;]) -&gt; [2]my_merge;
+my_merge -&gt; map(|x| x.to_uppercase()) 
+    -&gt; for_each(|x| println!(&quot;{}&quot;, x));
+<span class="boring">}
+</span></code></pre></pre>
 <h2 id="join"><a class="header" href="#join">join</a></h2>
 <blockquote>
-<p>2 input streams of type ..., 1 output stream of type ...</p>
+<p>2 input streams of type &lt;(K, V1)&gt; and &lt;(K, V2)&gt;, 1 output stream of type &lt;(K, (V1, V2))&gt;</p>
 </blockquote>
+<p>Forms the equijoin of the tuples in the input streams by their first (key) attribute. Note that the result nests the 2nd input field (values) into a tuple in the 2nd output field.</p>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>recv_iter(vec![(&quot;hello&quot;, &quot;world&quot;), (&quot;stay&quot;, &quot;gold&quot;)]) -&gt; [0]my_join;
+recv_iter(vec![(&quot;hello&quot;, &quot;cleveland&quot;)]) -&gt; [1]my_join;
+my_join -&gt; for_each(|(k, (v1, v2))| println!(&quot;({}, ({}, {})&quot;, k, v1, v2));
+<span class="boring">}
+</span></code></pre></pre>
 <h2 id="tee"><a class="header" href="#tee">tee</a></h2>
 <blockquote>
 <p>1 input stream, <em>n</em> output streams</p>
 </blockquote>
+<p>Takes the input stream and delivers a copy of each item to each output.</p>
+<blockquote>
+<p>Note: Downstream operators may need explicit type annotations.</p>
+</blockquote>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>my_tee = recv_iter(vec![&quot;Hello&quot;, &quot;World&quot;]) -&gt; tee();
+my_tee[0] -&gt; map(|x: &amp;str| x.to_uppercase())
+    -&gt; for_each(|x| println!(&quot;{}&quot;, x));
+my_tee[1] -&gt; map(|x: &amp;str| x.to_lowercase())
+    -&gt; for_each(|x| println!(&quot;{}&quot;, x));
+my_tee[2] -&gt; for_each(|x: &amp;str| println!(&quot;{}&quot;, x));
+<span class="boring">}
+</span></code></pre></pre>
 <h2 id="recv_stream-1"><a class="header" href="#recv_stream-1">recv_stream</a></h2>
 <blockquote>
 <p>0 input streams, 1 output stream</p>
 </blockquote>
+<blockquote>
+<p>Arguments: The receive end of a tokio channel</p>
+</blockquote>
+<p>Given a tokio channel created in Rust code, <code>recv_stream</code> 
+is passed the receive endpoint of the channel and emits each of the
+elements it receives downstream.</p>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let (input_send, input_recv) = tokio::sync::mpsc::unbounded_channel::&lt;&amp;str&gt;();
+let mut flow = hydroflow_syntax! {
+    recv_stream(input_recv) -&gt; map(|x| x.to_uppercase()) 
+        -&gt; for_each(|x| println!(&quot;{}&quot;, x));
+};
+input_send.send(&quot;Hello&quot;).unwrap();
+input_send.send(&quot;World&quot;).unwrap();
+flow.run_available();
+<span class="boring">}
+</span></code></pre></pre>
 <h2 id="recv_iter-1"><a class="header" href="#recv_iter-1">recv_iter</a></h2>
 <blockquote>
 <p>0 input streams, 1 output stream</p>
 </blockquote>
+<blockquote>
+<p>Arguments: An iterable Rust object.
+Takes the iterable object and delivers its elements downstream
+one by one.</p>
+</blockquote>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>    recv_iter(vec![&quot;Hello&quot;, &quot;World&quot;])
+        -&gt; for_each(|x| println!(&quot;{}&quot;, x));
+<span class="boring">}
+</span></code></pre></pre>
 <h2 id="for_each"><a class="header" href="#for_each">for_each</a></h2>
 <blockquote>
 <p>1 input stream, 0 output streams</p>
 </blockquote>
+<blockquote>
+<p>Arguments: a Rust closure</p>
+</blockquote>
+<p>Iterates through a stream passing each element to the closure in the
+argument.</p>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>    recv_iter(vec![&quot;Hello&quot;, &quot;World&quot;])
+        -&gt; for_each(|x| println!(&quot;{}&quot;, x));
+<span class="boring">}
+</span></code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="architecture"><a class="header" href="#architecture">Architecture</a></h1>
 <p>Hydroflow graphs are divided into two layers: the outer <em>scheduled layer</em> and
 inner <em>compiled layer</em>.</p>
