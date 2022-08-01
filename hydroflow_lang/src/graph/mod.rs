@@ -1,11 +1,14 @@
 //! Graph representation stages for Hydroflow graphs.
 
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
+use std::hash::Hash;
 
+use itertools::Itertools;
 use proc_macro2::Span;
 use slotmap::{new_key_type, Key, SecondaryMap, SlotMap};
 use syn::spanned::Spanned;
 
+use crate::graph::ops::OPERATORS;
 use crate::parse::{IndexInt, Operator};
 use crate::pretty_span::PrettySpan;
 use crate::union_find::UnionFind;
@@ -68,6 +71,34 @@ pub enum Color {
     Hoff,
 }
 
+struct TopoSort<Id, PredsFn>
+where
+    Id: Hash + Eq,
+{
+    preds_fn: PredsFn,
+    marked: HashSet<Id>,
+    order: Vec<Id>,
+}
+impl<Id, PredsFn, PredsIter> TopoSort<Id, PredsFn>
+where
+    Id: Copy + Hash + Eq,
+    PredsFn: FnMut(Id) -> PredsIter,
+    PredsIter: IntoIterator<Item = Id>,
+{
+    pub fn visit(&mut self, node_id: Id) {
+        // Already marked (cycle).
+        if self.marked.contains(&node_id) {
+            return;
+        }
+
+        self.marked.insert(node_id);
+        for next_back in (self.preds_fn)(node_id) {
+            self.visit(next_back);
+        }
+        self.order.push(node_id);
+    }
+}
+
 pub fn node_color(node: &Node, inn_degree: usize, out_degree: usize) -> Option<Color> {
     // Determine op color based on in and out degree. If linear (1 in 1 out), color is None.
     match node {
@@ -89,9 +120,10 @@ impl From<FlatGraph> for PartitionedGraph {
     fn from(mut flat_graph: FlatGraph) -> Self {
         // Algorithm:
         // 1. Each node begins as its own subgraph.
-        // 2. Collect edges. Sort so edges which should not be split across a handoff come first.
+        // 2. Collect edges. (Future optimization: sort so edges which should not be split across a handoff come first).
         // 3. For each edge, try to join `(to, from)` into the same subgraph.
 
+        // Pre-calculate node colors.
         let mut node_color: SecondaryMap<GraphNodeId, Option<Color>> = flat_graph
             .nodes
             .keys()
@@ -107,13 +139,39 @@ impl From<FlatGraph> for PartitionedGraph {
         // All edges which belong to a single subgraph. Other & self-edges become handoffs.
         let mut subgraph_edges: HashSet<(EdgePortRef, EdgePortRef)> = Default::default();
 
+        // Pairs of node IDs which cross stratums and therefore cannot be in the same subgraph.
+        let stratum_crossers = iter_edges(&flat_graph.succs)
+            .filter(|&((_src, _src_idx), (dst, dst_idx))| {
+                if let Node::Operator(dst_operator) = &flat_graph.nodes[dst] {
+                    let dst_name = &*dst_operator.name_string();
+                    OPERATORS
+                        .iter()
+                        .find(|&op| dst_name == op.name)
+                        .map(|op_constraints| (op_constraints.crosses_stratum_fn)(dst_idx.value))
+                        .unwrap_or(false)
+                } else {
+                    false
+                }
+            })
+            .map(|((src, _src_idx), (dst, _dst_idx))| (src, dst))
+            .collect::<Vec<_>>();
+
         // Sort edges here (for now, no sort/priority).
         loop {
             let mut updated = false;
             for ((src, src_idx), (dst, dst_idx)) in iter_edges(&flat_graph.succs) {
+                // Ignore new self-loops.
                 if node_union.same_set(src, dst) {
                     // Note this might be triggered even if the edge (src, dst) is not in the subgraph.
                     // This prevents self-loops. Handoffs needed to break self loops.
+                    continue;
+                }
+
+                // Ignore if would join stratum crossers.
+                if stratum_crossers.iter().any(|&(x_src, x_dst)| {
+                    (node_union.same_set(x_src, src) && node_union.same_set(x_dst, dst))
+                        || (node_union.same_set(x_src, dst) && node_union.same_set(x_dst, src))
+                }) {
                     continue;
                 }
 
@@ -240,6 +298,8 @@ impl From<FlatGraph> for PartitionedGraph {
                         return;
                     }
 
+                    self.marked.insert(node_id);
+
                     for &(next_back, _) in self.preds[node_id].values() {
                         if self.node_union.same_set(node_id, next_back) {
                             self.visit(next_back);
@@ -251,7 +311,6 @@ impl From<FlatGraph> for PartitionedGraph {
                         self.subgraph_nodes.insert(repr_node, Default::default());
                     }
                     self.subgraph_nodes[repr_node].push(node_id);
-                    self.marked.insert(node_id);
                 }
             }
 
@@ -282,6 +341,53 @@ impl From<FlatGraph> for PartitionedGraph {
             }
 
             (node_subgraph, subgraph_nodes)
+        };
+
+        // Determine subgraphs's stratum number.
+        let subgraph_stratum = {
+            const EMPTY: &[GraphSubgraphId] = &[];
+
+            // stratum_crossers
+            // SecondaryMap<GraphNodeId, BTreeMap<IndexInt, (GraphNodeId, IndexInt)>>
+            let mut stratum_pred_edges: HashMap<GraphSubgraphId, Vec<GraphSubgraphId>> =
+                Default::default();
+            for (src, dst) in stratum_crossers {
+                let src_sg = node_subgraph[src];
+                let dst_sg = node_subgraph[dst];
+                stratum_pred_edges.entry(dst_sg).or_default().push(src_sg);
+            }
+
+            let (marked, order) = Default::default();
+            let mut topo_sort = TopoSort {
+                preds_fn: |dst_sg| {
+                    stratum_pred_edges
+                        .get(&dst_sg)
+                        .map(|preds| preds.iter())
+                        .unwrap_or(EMPTY.iter())
+                        .cloned()
+                },
+                marked,
+                order,
+            };
+
+            for subgraph_id in subgraph_nodes.keys() {
+                topo_sort.visit(subgraph_id);
+            }
+
+            let mut subgraph_stratum = SecondaryMap::with_capacity(topo_sort.order.len());
+            let mut stratum = 0;
+            for (a, b) in topo_sort.order.into_iter().tuple_windows() {
+                subgraph_stratum.insert(a, stratum);
+                if stratum_pred_edges
+                    .get(&b)
+                    .map(|preds| preds.contains(&a))
+                    .unwrap_or(false)
+                {
+                    stratum += 1;
+                }
+                subgraph_stratum.insert(b, stratum);
+            }
+            subgraph_stratum
         };
 
         // Get data on handoff src and dst subgraphs.
@@ -319,6 +425,7 @@ impl From<FlatGraph> for PartitionedGraph {
             node_subgraph,
 
             subgraph_nodes,
+            subgraph_stratum,
             subgraph_recv_handoffs,
             subgraph_send_handoffs,
         }
