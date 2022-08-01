@@ -17,6 +17,7 @@ pub struct PartitionedGraph {
     pub(crate) node_subgraph: SecondaryMap<GraphNodeId, GraphSubgraphId>,
 
     pub(crate) subgraph_nodes: SlotMap<GraphSubgraphId, Vec<GraphNodeId>>,
+    pub(crate) subgraph_stratum: SecondaryMap<GraphSubgraphId, usize>,
     pub(crate) subgraph_recv_handoffs: SecondaryMap<GraphSubgraphId, Vec<GraphNodeId>>,
     pub(crate) subgraph_send_handoffs: SecondaryMap<GraphSubgraphId, Vec<GraphNodeId>>,
 }
@@ -178,8 +179,20 @@ impl PartitionedGraph {
                         let pull_to_push_idx = pull_to_push_idx;
                         let pull_ident =
                             self.node_id_as_ident(subgraph_nodes[pull_to_push_idx - 1], false);
+
                         let push_ident =
-                            self.node_id_as_ident(subgraph_nodes[pull_to_push_idx], false);
+                            if let Some(&node_id) = subgraph_nodes.get(pull_to_push_idx) {
+                                self.node_id_as_ident(node_id, false)
+                            } else {
+                                // Entire subgraph is pull.
+                                assert_eq!(
+                                    1,
+                                    send_ports.len(),
+                                    "If entire subgraph is pull, should have only one output."
+                                );
+                                send_ports[0].clone()
+                            };
+
                         subgraph_op_iter_code.push(quote! {
                             #root::compiled::pivot::Pivot::new(#pull_ident, #push_ident).run();
                         });
