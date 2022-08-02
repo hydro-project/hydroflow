@@ -13,10 +13,12 @@ are based on the Rust equivalents for iterators; see the [Rust documentation](ht
 > Arguments: A Rust closure that returns a boolean
 
 Filter outputs a subsequence of the items it receives at its input, according to a
-Rust boolean closure passed in as an argument
+Rust boolean closure passed in as an argument.
+
+> TODO: Why does filter's closure expect a reference and other ops like map do not?
 
 ```rust
-recv_iter(vec!["hello", "world"]) -> filter(|x| x == &"hello")
+recv_iter(vec!["hello", "world"]) -> filter(|&x| x == "hello")
     -> for_each(|x| println!("{}", x));
 ```
 
