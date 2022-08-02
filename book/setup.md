@@ -50,7 +50,7 @@ git clone git@github.com:hydro-project/hydroflow.git
 Hydroflow requires nightly Rust, but the repo is already configured for it via
 `rust-toolchain.toml`.
 
-We can then open the repo in VS Code or IDE of your choice. `rust-anaylzer`
+We can then open the repo in VS Code or IDE of your choice. `rust-analyzer`
 will provide inline type and error messages, code completion, etc.
 
 ## Development
