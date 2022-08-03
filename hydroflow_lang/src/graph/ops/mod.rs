@@ -39,7 +39,7 @@ pub struct OperatorConstraints {
 pub const RANGE_0: &'static dyn RangeTrait<usize> = &(0..=0);
 pub const RANGE_1: &'static dyn RangeTrait<usize> = &(1..=1);
 
-pub const OPERATORS: [OperatorConstraints; 13] = [
+pub const OPERATORS: [OperatorConstraints; 15] = [
     OperatorConstraints {
         name: "merge",
         hard_range_inn: &(0..),
@@ -266,6 +266,48 @@ pub const OPERATORS: [OperatorConstraints; 13] = [
     //         quote! { #lit }
     //     }),
     // },
+    OperatorConstraints {
+        name: "fold",
+        hard_range_inn: RANGE_1,
+        soft_range_inn: RANGE_1,
+        hard_range_out: RANGE_1,
+        soft_range_out: RANGE_1,
+        num_args: 2,
+        crosses_stratum_fn: &|_| true,
+        write_prologue_fn: &(|_, _| quote! {}),
+        write_iterator_fn: &(|_,
+                              &WriteIteratorArgs {
+                                  inputs,
+                                  arguments,
+                                  is_pull,
+                                  ..
+                              }| {
+            assert!(is_pull);
+            let input = &inputs[0];
+            quote! { std::iter::once(#input.fold(#arguments)) }
+        }),
+    },
+    OperatorConstraints {
+        name: "reduce",
+        hard_range_inn: RANGE_1,
+        soft_range_inn: RANGE_1,
+        hard_range_out: RANGE_1,
+        soft_range_out: RANGE_1,
+        num_args: 1,
+        crosses_stratum_fn: &|_| true,
+        write_prologue_fn: &(|_, _| quote! {}),
+        write_iterator_fn: &(|_,
+                              &WriteIteratorArgs {
+                                  inputs,
+                                  arguments,
+                                  is_pull,
+                                  ..
+                              }| {
+            assert!(is_pull);
+            let input = &inputs[0];
+            quote! { #input.reduce(#arguments).into_iter() }
+        }),
+    },
     OperatorConstraints {
         name: "recv_stream",
         hard_range_inn: RANGE_0,
