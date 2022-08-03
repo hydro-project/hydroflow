@@ -232,3 +232,32 @@ pub fn test_example4() {
     // Reached: 3
     // Reached: 4
 }
+
+async fn echo_test() {
+    let (stimulus_in, stimulus_out) = tokio::sync::mpsc::unbounded_channel::<usize>();
+    let (response_in, response_out) = tokio::sync::mpsc::unbounded_channel::<usize>();
+
+    let local = tokio::task::LocalSet::new();
+
+    // echo server
+    local.spawn_local(async move {
+        let mut server = hydroflow_syntax! {
+            outs = tee();
+            recv_stream(stimulus_out) -> outs;
+            outs[0] -> for_each(|x| println!("Server got {}", x));
+            outs[1] -> for_each(|x| { response_in.send(x).unwrap(); });
+        };
+        server.run_async().await.unwrap();
+    });
+
+    // client
+    local.spawn_local(async move {
+        let mut client = hydroflow_syntax! {
+            recv_iter(1..4) -> for_each(|x| { stimulus_in.send(x).unwrap();} );
+            recv_stream(response_out) -> for_each(|x| println!("Client got echo {}", x));
+        };
+        client.run_async().await.unwrap();
+    });
+
+    local.await;
+}
