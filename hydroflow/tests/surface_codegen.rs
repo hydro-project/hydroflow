@@ -238,3 +238,45 @@ pub fn test_covid_tracing() {
         hydroflow.run_available();
     }
 }
+
+/// This tests graph reachability along with an accumulation (in this case sum of vertex ids).
+/// This is to test fixed-point being reched before the accumulation running.
+#[test]
+pub fn test_reduce() {
+    // An edge in the input data = a pair of `usize` vertex IDs.
+    let (pairs_send, pairs_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
+
+    let mut df = hydroflow_syntax! {
+        reached_vertices = merge() -> map(|v| (v, ()));
+        recv_iter(vec![0]) -> [0]reached_vertices;
+
+        my_join_tee = join() -> map(|(_src, ((), dst))| dst) -> tee();
+        reached_vertices -> [0]my_join_tee;
+        recv_stream(pairs_recv) -> [1]my_join_tee;
+
+        my_join_tee[0] -> [1]reached_vertices;
+        my_join_tee[1] -> reduce(|a, b| a + b) -> for_each(|sum| println!("{}", sum));
+    };
+
+    println!(
+        "{}",
+        df.serde_graph()
+            .expect("No graph found, maybe failed to parse.")
+            .to_mermaid()
+    );
+    df.run_available();
+
+    println!("A");
+
+    pairs_send.send((0, 1)).unwrap();
+    pairs_send.send((2, 4)).unwrap();
+    pairs_send.send((3, 4)).unwrap();
+    pairs_send.send((1, 2)).unwrap();
+    df.run_available();
+
+    println!("B");
+
+    pairs_send.send((0, 3)).unwrap();
+    pairs_send.send((0, 3)).unwrap();
+    df.run_available();
+}
