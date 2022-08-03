@@ -49,12 +49,13 @@ pub const OPERATORS: [OperatorConstraints; 15] = [
         num_args: 0,
         crosses_stratum_fn: &|_| false,
         write_prologue_fn: &(|_, _| quote! {}),
-        write_iterator_fn: &(|_, &WriteIteratorArgs { inputs, .. }| {
+        write_iterator_fn: &(|&WriteContextArgs { ident, .. },
+                              &WriteIteratorArgs { inputs, .. }| {
             let mut inputs = inputs.iter();
             let first = inputs.next();
             let rest = inputs.map(|ident| quote! { .chain(#ident) });
             quote! {
-                #first #( #rest )*
+                let #ident = #first #( #rest )*;
             }
         }),
     },
@@ -89,6 +90,7 @@ pub const OPERATORS: [OperatorConstraints; 15] = [
                                   root,
                                   subgraph_id,
                                   node_id,
+                                  ident,
                                   ..
                               },
                               &WriteIteratorArgs { inputs, .. }| {
@@ -103,7 +105,7 @@ pub const OPERATORS: [OperatorConstraints; 15] = [
             let lhs = &inputs[0];
             let rhs = &inputs[1];
             quote! {
-                #root::compiled::pull::SymmetricHashJoin::new(#lhs, #rhs, &mut #joindata_ident)
+                let #ident = #root::compiled::pull::SymmetricHashJoin::new(#lhs, #rhs, &mut #joindata_ident);
             }
         }),
     },
@@ -116,14 +118,17 @@ pub const OPERATORS: [OperatorConstraints; 15] = [
         num_args: 0,
         crosses_stratum_fn: &|_| false,
         write_prologue_fn: &(|_, _| quote! {}),
-        write_iterator_fn: &(|&WriteContextArgs { root, .. },
+        write_iterator_fn: &(|&WriteContextArgs { root, ident, .. },
                               &WriteIteratorArgs { outputs, .. }| {
-            outputs
+            let tees = outputs
                 .iter()
                 .rev()
                 .map(|i| quote! { #i })
                 .reduce(|b, a| quote! { #root::compiled::tee::Tee::new(#a, #b) })
-                .unwrap_or_default()
+                .unwrap_or_else(|| quote! { () }); // TODO(mingwei): this seems like it would cause an error?
+            quote! {
+                let #ident = #tees;
+            }
         }),
     },
     OperatorConstraints {
@@ -135,10 +140,11 @@ pub const OPERATORS: [OperatorConstraints; 15] = [
         num_args: 1,
         crosses_stratum_fn: &|_| false,
         write_prologue_fn: &(|_, _| quote! {}),
-        write_iterator_fn: &(|_, &WriteIteratorArgs { inputs, .. }| {
+        write_iterator_fn: &(|&WriteContextArgs { ident, .. },
+                              &WriteIteratorArgs { inputs, .. }| {
             let input = &inputs[0];
             quote! {
-                #input
+                let #ident = #input;
             }
         }),
     },
@@ -151,7 +157,7 @@ pub const OPERATORS: [OperatorConstraints; 15] = [
         num_args: 1,
         crosses_stratum_fn: &|_| false,
         write_prologue_fn: &(|_, _| quote! {}),
-        write_iterator_fn: &(|&WriteContextArgs { root, .. },
+        write_iterator_fn: &(|&WriteContextArgs { root, ident, .. },
                               &WriteIteratorArgs {
                                   inputs,
                                   outputs,
@@ -161,10 +167,14 @@ pub const OPERATORS: [OperatorConstraints; 15] = [
                               }| {
             if is_pull {
                 let input = &inputs[0];
-                quote! { #input.map(#arguments) }
+                quote! {
+                    let #ident = #input.map(#arguments);
+                }
             } else {
                 let output = &outputs[0];
-                quote! { #root::compiled::map::Map::new(#arguments, #output) }
+                quote! {
+                    let #ident = #root::compiled::map::Map::new(#arguments, #output);
+                }
             }
         }),
     },
@@ -177,7 +187,7 @@ pub const OPERATORS: [OperatorConstraints; 15] = [
         num_args: 1,
         crosses_stratum_fn: &|_| false,
         write_prologue_fn: &(|_, _| quote! {}),
-        write_iterator_fn: &(|&WriteContextArgs { root, .. },
+        write_iterator_fn: &(|&WriteContextArgs { root, ident, .. },
                               &WriteIteratorArgs {
                                   inputs,
                                   outputs,
@@ -187,14 +197,16 @@ pub const OPERATORS: [OperatorConstraints; 15] = [
                               }| {
             if is_pull {
                 let input = &inputs[0];
-                quote! { #input.flat_map(#arguments) }
+                quote! {
+                    let #ident = #input.flat_map(#arguments);
+                }
             } else {
                 let output = &outputs[0];
                 quote! {
-                    #root::compiled::map::Map::new(
+                    let #ident = #root::compiled::map::Map::new(
                         #arguments,
                         #root::compiled::flatten::Flatten::new(#output)
-                    )
+                    );
                 }
             }
         }),
@@ -208,7 +220,7 @@ pub const OPERATORS: [OperatorConstraints; 15] = [
         num_args: 1,
         crosses_stratum_fn: &|_| false,
         write_prologue_fn: &(|_, _| quote! {}),
-        write_iterator_fn: &(|&WriteContextArgs { root, .. },
+        write_iterator_fn: &(|&WriteContextArgs { root, ident, .. },
                               &WriteIteratorArgs {
                                   inputs,
                                   outputs,
@@ -218,10 +230,14 @@ pub const OPERATORS: [OperatorConstraints; 15] = [
                               }| {
             if is_pull {
                 let input = &inputs[0];
-                quote! { #input.filter_map(#arguments) }
+                quote! {
+                    let #ident = #input.filter_map(#arguments);
+                }
             } else {
                 let output = &outputs[0];
-                quote! { #root::compiled::filter_map::FilterMap::new(#arguments, #output) }
+                quote! {
+                    let #ident = #root::compiled::filter_map::FilterMap::new(#arguments, #output);
+                }
             }
         }),
     },
@@ -234,7 +250,7 @@ pub const OPERATORS: [OperatorConstraints; 15] = [
         num_args: 1,
         crosses_stratum_fn: &|_| false,
         write_prologue_fn: &(|_, _| quote! {}),
-        write_iterator_fn: &(|&WriteContextArgs { root, .. },
+        write_iterator_fn: &(|&WriteContextArgs { root, ident, .. },
                               &WriteIteratorArgs {
                                   inputs,
                                   outputs,
@@ -244,10 +260,14 @@ pub const OPERATORS: [OperatorConstraints; 15] = [
                               }| {
             if is_pull {
                 let input = &inputs[0];
-                quote! { #input.filter(#arguments) }
+                quote! {
+                    let #ident = #input.filter(#arguments);
+                }
             } else {
                 let output = &outputs[0];
-                quote! { #root::compiled::filter::Filter::new(#arguments, #output) }
+                quote! {
+                    let #ident = #root::compiled::filter::Filter::new(#arguments, #output);
+                }
             }
         }),
     },
@@ -275,7 +295,7 @@ pub const OPERATORS: [OperatorConstraints; 15] = [
         num_args: 2,
         crosses_stratum_fn: &|_| true,
         write_prologue_fn: &(|_, _| quote! {}),
-        write_iterator_fn: &(|_,
+        write_iterator_fn: &(|&WriteContextArgs { ident, .. },
                               &WriteIteratorArgs {
                                   inputs,
                                   arguments,
@@ -284,7 +304,9 @@ pub const OPERATORS: [OperatorConstraints; 15] = [
                               }| {
             assert!(is_pull);
             let input = &inputs[0];
-            quote! { std::iter::once(#input.fold(#arguments)) }
+            quote! {
+                let #ident = std::iter::once(#input.fold(#arguments));
+            }
         }),
     },
     OperatorConstraints {
@@ -296,7 +318,7 @@ pub const OPERATORS: [OperatorConstraints; 15] = [
         num_args: 1,
         crosses_stratum_fn: &|_| true,
         write_prologue_fn: &(|_, _| quote! {}),
-        write_iterator_fn: &(|_,
+        write_iterator_fn: &(|&WriteContextArgs { ident, .. },
                               &WriteIteratorArgs {
                                   inputs,
                                   arguments,
@@ -305,7 +327,9 @@ pub const OPERATORS: [OperatorConstraints; 15] = [
                               }| {
             assert!(is_pull);
             let input = &inputs[0];
-            quote! { #input.reduce(#arguments).into_iter() }
+            quote! {
+                let #ident = #input.reduce(#arguments).into_iter();
+            }
         }),
     },
     OperatorConstraints {
@@ -322,17 +346,16 @@ pub const OPERATORS: [OperatorConstraints; 15] = [
                 let mut #receiver = #receiver;
             }
         }),
-        write_iterator_fn: &(|_, &WriteIteratorArgs { arguments, .. }| {
+        write_iterator_fn: &(|&WriteContextArgs { ident, .. },
+                              &WriteIteratorArgs { arguments, .. }| {
             let receiver = &arguments[0];
             quote! {
-                {
-                    std::iter::from_fn(|| {
-                        match #receiver.poll_recv(&mut std::task::Context::from_waker(&mut context.waker())) {
-                            std::task::Poll::Ready(maybe) => maybe,
-                            std::task::Poll::Pending => None,
-                        }
-                    })
-                }
+                let #ident = std::iter::from_fn(|| {
+                    match #receiver.poll_recv(&mut std::task::Context::from_waker(&mut context.waker())) {
+                        std::task::Poll::Ready(maybe) => maybe,
+                        std::task::Poll::Pending => None,
+                    }
+                });
             }
         }),
     },
@@ -345,8 +368,11 @@ pub const OPERATORS: [OperatorConstraints; 15] = [
         num_args: 1,
         crosses_stratum_fn: &|_| false,
         write_prologue_fn: &(|_, _| quote! {}),
-        write_iterator_fn: &(|_, &WriteIteratorArgs { arguments, .. }| {
-            quote! { std::iter::IntoIterator::into_iter(#arguments) }
+        write_iterator_fn: &(|&WriteContextArgs { ident, .. },
+                              &WriteIteratorArgs { arguments, .. }| {
+            quote! {
+                let #ident = std::iter::IntoIterator::into_iter(#arguments);
+            }
         }),
     },
     OperatorConstraints {
@@ -358,9 +384,11 @@ pub const OPERATORS: [OperatorConstraints; 15] = [
         num_args: 1,
         crosses_stratum_fn: &|_| false,
         write_prologue_fn: &(|_, _| quote! {}),
-        write_iterator_fn: &(|&WriteContextArgs { root, .. },
+        write_iterator_fn: &(|&WriteContextArgs { root, ident, .. },
                               &WriteIteratorArgs { arguments, .. }| {
-            quote! { #root::compiled::for_each::ForEach::new(#arguments) }
+            quote! {
+                let #ident = #root::compiled::for_each::ForEach::new(#arguments);
+            }
         }),
     },
     OperatorConstraints {
@@ -371,19 +399,92 @@ pub const OPERATORS: [OperatorConstraints; 15] = [
         soft_range_out: RANGE_1,
         num_args: 0,
         crosses_stratum_fn: &|idx| 1 == idx,
-        write_prologue_fn: &(|_, _| quote! {}),
-        write_iterator_fn: &(|_, &WriteIteratorArgs { inputs, .. }| {
-            let input_pos = &inputs[0];
-            let input_neg = &inputs[1];
-            // TODO(mingwei): Re-building negative set is inefficient.
-            // TODO(mingwei): neg_set needs to be persisted each run_stratum()?
+        write_prologue_fn: &(|&WriteContextArgs {
+                                  root,
+                                  subgraph_id,
+                                  node_id,
+                                  ..
+                              },
+                              _| {
+            let handle_ident = Ident::new(
+                &*format!(
+                    "sg_{:?}_node_{:?}_diffdata_handle",
+                    subgraph_id.data(),
+                    node_id.data()
+                ),
+                Span::call_site(),
+            );
             quote! {
-                {
-                    let neg_set: std::collections::HashSet<_> = #input_neg.collect();
-                    #input_pos.filter(move |x| !neg_set.contains(x))
-                }
+                let #handle_ident = df.add_state(std::cell::RefCell::new(
+                    #root::lang::monotonic_map::MonotonicMap::<_, std::collections::HashSet<_>>::default(),
+                ));
             }
         }),
+        write_iterator_fn: &(|&WriteContextArgs {
+                                  subgraph_id,
+                                  node_id,
+                                  ident,
+                                  ..
+                              },
+                              &WriteIteratorArgs { inputs, .. }| {
+            let handle_ident = Ident::new(
+                &*format!(
+                    "sg_{:?}_node_{:?}_diffdata_handle",
+                    subgraph_id.data(),
+                    node_id.data()
+                ),
+                Span::call_site(),
+            );
+
+            let borrow_ident = Ident::new(
+                &*format!("node_{:?}_borrow", node_id.data()),
+                Span::call_site(),
+            );
+            let negset_ident = Ident::new(
+                &*format!("node_{:?}_negset", node_id.data()),
+                Span::call_site(),
+            );
+
+            let input_pos = &inputs[0];
+            let input_neg = &inputs[1];
+            quote! {
+                let mut #borrow_ident = context.state_ref(#handle_ident).borrow_mut();
+                let #negset_ident = #borrow_ident
+                    .try_insert_with((context.current_epoch(), context.current_stratum()), || {
+                        #input_neg.collect()
+                    });
+                let #ident = #input_pos.filter(move |x| !#negset_ident.contains(x));
+            }
+        }),
+        // write_iterator_fn: &(
+        //     |&WriteContextArgs {
+        //          root,
+        //          subgraph_id,
+        //          node_id,
+        //          ..
+        //      },
+        //      &WriteIteratorArgs { inputs, .. }| {
+        //         // let handle_ident = Ident::new(
+        //         //     &*format!(
+        //         //         "sg_{:?}_node_{:?}_diffdata_handle",
+        //         //         subgraph_id.data(),
+        //         //         node_id.data()
+        //         //     ),
+        //         //     Span::call_site(),
+        //         // );
+
+        //         let input_pos = &inputs[0];
+        //         let input_neg = &inputs[1];
+        //         // TODO(mingwei): Re-building negative set is inefficient.
+        //         // TODO(mingwei): neg_set needs to be persisted each run_stratum()?
+        //         quote! {
+        //             {
+        //                 let neg_set: std::collections::HashSet<_> = #input_neg.collect();
+        //                 #input_pos.filter(move |x| !neg_set.contains(x))
+        //             }
+        //         }
+        //     },
+        // ),
     },
     OperatorConstraints {
         name: "stratum",
@@ -394,10 +495,11 @@ pub const OPERATORS: [OperatorConstraints; 15] = [
         num_args: 0,
         crosses_stratum_fn: &|_| true,
         write_prologue_fn: &(|_, _| quote! {}),
-        write_iterator_fn: &(|_, &WriteIteratorArgs { inputs, .. }| {
+        write_iterator_fn: &(|&WriteContextArgs { ident, .. },
+                              &WriteIteratorArgs { inputs, .. }| {
             let input = &inputs[0];
             quote! {
-                #input
+                let #ident = #input;
             }
         }),
     },
