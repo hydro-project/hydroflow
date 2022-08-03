@@ -101,7 +101,7 @@ impl Hydroflow {
     /// Runs the dataflow until the next epoch begins.
     pub fn run_epoch(&mut self) {
         let epoch = self.current_epoch();
-        while self.next_stratum() && epoch == self.current_epoch() {
+        while self.stratum() && epoch == self.current_epoch() {
             self.run_stratum();
         }
     }
@@ -109,7 +109,7 @@ impl Hydroflow {
     /// Runs the dataflow until no more work is immediately available.
     /// If the dataflow contains loops this method may run forever.
     pub fn run_available(&mut self) {
-        while self.next_stratum() {
+        while self.stratum() {
             self.run_stratum();
         }
     }
@@ -150,7 +150,7 @@ impl Hydroflow {
 
     /// Go to the next stratum which has work available, possibly the current stratum.
     /// Return true if more work is available, otherwise false if no work is immediately available on any strata.
-    pub fn next_stratum(&mut self) -> bool {
+    pub fn stratum(&mut self) -> bool {
         self.try_recv_events();
 
         let old_stratum = self.context.current_stratum;
