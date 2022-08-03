@@ -1,14 +1,11 @@
 //! Graph representation stages for Hydroflow graphs.
 
-use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::hash::Hash;
 
-use itertools::Itertools;
 use proc_macro2::Span;
 use slotmap::{new_key_type, Key, SecondaryMap, SlotMap};
-use syn::parse_quote;
 use syn::spanned::Spanned;
-use syn::token::Paren;
 
 use crate::graph::ops::OPERATORS;
 use crate::parse::{IndexInt, Operator};
@@ -281,7 +278,7 @@ impl From<FlatGraph> for PartitionedGraph {
         }
 
         // Determine node's subgraph and subgraph's nodes in topological sort order.
-        let (mut node_subgraph, mut subgraph_nodes) = {
+        let (node_subgraph, subgraph_nodes) = {
             struct SubgraphTopoSort<'a> {
                 nodes: &'a SlotMap<GraphNodeId, Node>,
                 preds: &'a SecondaryMap<GraphNodeId, OutboundEdges>,
@@ -348,35 +345,29 @@ impl From<FlatGraph> for PartitionedGraph {
         // Determine subgraphs's stratum number.
         // Find SCCs ignoring negative edges, then do TopoSort on the resulting DAG.
         let subgraph_stratum = {
-            // Generate subgraph graph excluding negative edges.
-            let mut subgraph_nonneg_preds: HashMap<GraphSubgraphId, Vec<GraphSubgraphId>> =
+            // Generate subgraph graph.
+            let mut subgraph_preds: HashMap<GraphSubgraphId, Vec<GraphSubgraphId>> =
                 Default::default();
-            let mut subgraph_nonneg_succs: HashMap<GraphSubgraphId, Vec<GraphSubgraphId>> =
+            let mut subgraph_succs: HashMap<GraphSubgraphId, Vec<GraphSubgraphId>> =
                 Default::default();
 
             for (node_id, node) in flat_graph.nodes.iter() {
                 if matches!(node, Node::Handoff) {
                     for &(pred, _) in new_preds[node_id].values() {
                         let pred_sg = node_subgraph[pred];
-                        for &(succ, succ_idx) in new_succs[node_id].values() {
-                            if stratum_crossers.contains(&(pred, succ, &succ_idx)) {
-                                continue;
-                            }
+                        for &(succ, _succ_idx) in new_succs[node_id].values() {
+                            // if stratum_crossers.contains(&(pred, succ, &succ_idx)) {
+                            //     continue;
+                            // }
                             let succ_sg = node_subgraph[succ];
-                            subgraph_nonneg_preds
-                                .entry(succ_sg)
-                                .or_default()
-                                .push(pred_sg);
-                            subgraph_nonneg_succs
-                                .entry(pred_sg)
-                                .or_default()
-                                .push(succ_sg);
+                            subgraph_preds.entry(succ_sg).or_default().push(pred_sg);
+                            subgraph_succs.entry(pred_sg).or_default().push(succ_sg);
                         }
                     }
                 }
             }
 
-            let nonneg_scc = {
+            let scc = {
                 // https://en.wikipedia.org/wiki/Kosaraju%27s_algorithm
                 fn visit(
                     succs: &HashMap<GraphSubgraphId, Vec<GraphSubgraphId>>,
@@ -394,7 +385,7 @@ impl From<FlatGraph> for PartitionedGraph {
 
                 let (mut seen, mut stack) = Default::default();
                 for sg in subgraph_nodes.keys() {
-                    visit(&subgraph_nonneg_succs, sg, &mut seen, &mut stack);
+                    visit(&subgraph_succs, sg, &mut seen, &mut stack);
                 }
                 std::mem::drop(seen);
 
@@ -416,7 +407,7 @@ impl From<FlatGraph> for PartitionedGraph {
 
                 let mut components = Default::default();
                 for sg in stack.into_iter().rev() {
-                    assign(&subgraph_nonneg_preds, sg, sg, &mut components);
+                    assign(&subgraph_preds, sg, sg, &mut components);
                 }
 
                 components
@@ -425,11 +416,9 @@ impl From<FlatGraph> for PartitionedGraph {
             let topo_sort_order = {
                 // Condensed each SCC into a single node for toposort.
                 let condensed_preds: HashMap<GraphSubgraphId, Vec<GraphSubgraphId>> =
-                    subgraph_nonneg_preds
+                    subgraph_preds
                         .iter()
-                        .map(|(u, preds)| {
-                            (nonneg_scc[u], preds.iter().map(|v| nonneg_scc[v]).collect())
-                        })
+                        .map(|(u, preds)| (scc[u], preds.iter().map(|v| scc[v]).collect()))
                         .collect();
 
                 let (marked, order) = Default::default();
@@ -451,63 +440,63 @@ impl From<FlatGraph> for PartitionedGraph {
                 .map(|(n, sg_id)| (sg_id, n))
                 .collect();
 
-            // Any negative edges which go onto the same stratum are bad, need to have an extra buffering SG with higher stratum.
-            let mut subgraph_stratum = subgraph_stratum;
-            let max_stratum = subgraph_stratum.values().cloned().max().unwrap_or(0) + 1;
+            // // Any negative edges which go onto the same or previous stratum are bad.
+            // // Indicates an unbroken negative cycle.
+            // let mut subgraph_stratum = subgraph_stratum;
+            // let max_stratum = subgraph_stratum.values().cloned().max().unwrap_or(0) + 1;
             for (src, dst, dst_idx) in stratum_crossers {
                 let src_sg = node_subgraph[src];
                 let dst_sg = node_subgraph[dst];
                 let src_stratum = subgraph_stratum[src_sg];
                 let dst_stratum = subgraph_stratum[dst_sg];
-                if src_stratum == dst_stratum {
-                    // Need to inject.
-                    let new_node_id = flat_graph
-                        .nodes
-                        .insert(Node::Operator(parse_quote! { identity() }));
-                    let new_subgraph_id = subgraph_nodes.insert(vec![new_node_id]);
-                    subgraph_stratum.insert(new_subgraph_id, max_stratum);
-                    node_subgraph.insert(new_node_id, new_subgraph_id);
+                if src_stratum >= dst_stratum {
+                    dst_idx
+                        .span()
+                        .unwrap()
+                        .error("Connection creates an unbroken negative cycle.")
+                        .emit();
+                    // // Need to inject.
+                    // let new_node_id = flat_graph
+                    //     .nodes
+                    //     .insert(Node::Operator(parse_quote! { identity() }));
+                    // let new_subgraph_id = subgraph_nodes.insert(vec![new_node_id]);
+                    // subgraph_stratum.insert(new_subgraph_id, max_stratum);
+                    // node_subgraph.insert(new_node_id, new_subgraph_id);
 
-                    let new_hoff_id = flat_graph.nodes.insert(Node::Handoff);
+                    // let new_hoff_id = flat_graph.nodes.insert(Node::Handoff);
 
-                    {
-                        new_preds.insert(new_node_id, Default::default());
-                        new_succs.insert(new_node_id, Default::default());
-                        new_preds.insert(new_hoff_id, Default::default());
-                        new_succs.insert(new_hoff_id, Default::default());
-                    }
+                    // {
+                    //     new_preds.insert(new_node_id, Default::default());
+                    //     new_succs.insert(new_node_id, Default::default());
+                    //     new_preds.insert(new_hoff_id, Default::default());
+                    //     new_succs.insert(new_hoff_id, Default::default());
+                    // }
 
-                    // Before: A (src) -> H -> B (dst)
-                    // After: A -> H' -> X -> H -> B
-                    {
-                        let ii0 = IndexInt {
-                            value: 0,
-                            span: Span::call_site(),
-                        };
+                    // // Before: A (src) -> H -> B (dst)
+                    // // After: A -> H' -> X -> H -> B
+                    // {
+                    //     let ii0 = IndexInt {
+                    //         value: 0,
+                    //         span: Span::call_site(),
+                    //     };
 
-                        let (old_hoff_id, _) = new_preds[dst][dst_idx];
-                        // X <- H
-                        let (a_id, a_idx) = new_preds[old_hoff_id]
-                            .insert(ii0, (new_node_id, ii0))
-                            .expect("Handoff should be connected");
+                    //     let (old_hoff_id, _) = new_preds[dst][dst_idx];
+                    //     // X <- H
+                    //     let (a_id, a_idx) = new_preds[old_hoff_id]
+                    //         .insert(ii0, (new_node_id, ii0))
+                    //         .expect("Handoff should be connected");
 
-                        // A <-> H'
-                        new_succs[a_id]
-                            .insert(a_idx, (new_hoff_id, ii0))
-                            .expect("A should be connected to old handoff");
-                        new_preds[new_hoff_id].insert(ii0, (a_id, ii0));
+                    //     // A <-> H'
+                    //     new_succs[a_id]
+                    //         .insert(a_idx, (new_hoff_id, ii0))
+                    //         .expect("A should be connected to old handoff");
+                    //     new_preds[new_hoff_id].insert(ii0, (a_id, ii0));
 
-                        //  H' <-> X -> H
-                        new_succs[new_hoff_id].insert(ii0, (new_node_id, ii0));
-                        new_preds[new_node_id].insert(ii0, (new_hoff_id, ii0));
-                        new_succs[new_node_id].insert(ii0, (old_hoff_id, ii0));
-                    }
-
-                    // subgraph_nodes.insert_with_key(|new_sg_id| {
-                    //     Node::Operator(Operator {
-
-                    //     })
-                    // })
+                    //     //  H' <-> X -> H
+                    //     new_succs[new_hoff_id].insert(ii0, (new_node_id, ii0));
+                    //     new_preds[new_node_id].insert(ii0, (new_hoff_id, ii0));
+                    //     new_succs[new_node_id].insert(ii0, (old_hoff_id, ii0));
+                    // }
                 }
             }
 
