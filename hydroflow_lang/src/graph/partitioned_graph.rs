@@ -169,9 +169,7 @@ impl PartitionedGraph {
                             let iter_code =
                                 (op_constraints.write_iterator_fn)(&context_args, &iter_args);
 
-                            subgraph_op_iter_code.push(quote! {
-                                let #ident = #iter_code;
-                            });
+                            subgraph_op_iter_code.push(iter_code);
                         }
                     }
 

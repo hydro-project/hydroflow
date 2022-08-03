@@ -39,6 +39,15 @@ where
         Self { key: None, val }
     }
 
+    /// Inserts the value using the function if new `key` is strictly later than the current key.
+    pub fn try_insert_with(&mut self, key: K, init: impl FnOnce() -> V) -> &mut V {
+        if self.key.as_ref().map(|old_key| old_key <= &key).unwrap_or(true) {
+            self.key = Some(key);
+            self.val = (init)();
+        }
+        &mut self.val
+    }
+
     /// Returns the value for the monotonically increasing key, or `None` if
     /// the key has already passed.
     pub fn get_mut(&mut self, key: K) -> Option<&mut V> {
