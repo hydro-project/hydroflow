@@ -304,6 +304,8 @@ pub const OPERATORS: [OperatorConstraints; 15] = [
                               }| {
             assert!(is_pull);
             let input = &inputs[0];
+            // TODO(mingwei): Issues if initial value is not copy.
+            // TODO(mingwei): Might introduce the initial value multiple times on scheduling.
             quote! {
                 let #ident = std::iter::once(#input.fold(#arguments));
             }
