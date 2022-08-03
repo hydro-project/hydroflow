@@ -12,6 +12,7 @@ pub struct SerdeGraph {
     pub edges: SecondaryMap<GraphNodeId, Vec<GraphNodeId>>,
     pub handoffs: SparseSecondaryMap<GraphNodeId, bool>,
     pub subgraph_nodes: SlotMap<GraphSubgraphId, Vec<GraphNodeId>>,
+    pub subgraph_stratum: SecondaryMap<GraphSubgraphId, usize>,
 }
 impl SerdeGraph {
     pub fn new() -> Self {
@@ -26,7 +27,13 @@ impl SerdeGraph {
     pub fn write_mermaid(&self, write: &mut impl std::fmt::Write) -> std::fmt::Result {
         writeln!(write, "flowchart TB")?;
         for (subgraph_id, node_ids) in self.subgraph_nodes.iter() {
-            writeln!(write, "    subgraph sg_{}", subgraph_id.data().as_ffi())?;
+            let stratum = self.subgraph_stratum.get(subgraph_id);
+            writeln!(
+                write,
+                "    subgraph \"sg_{:?} stratum {:?}\"",
+                subgraph_id.data(),
+                stratum
+            )?;
             for &node_id in node_ids.iter() {
                 if !self.handoffs.contains_key(node_id) {
                     writeln!(

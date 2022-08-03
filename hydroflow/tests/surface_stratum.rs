@@ -1,5 +1,7 @@
 use hydroflow::hydroflow_syntax;
 
+pub fn test_surface_syntax_strata_expand() {}
+
 // RUSTFLAGS="$RUSTFLAGS -Z proc-macro-backtrace" cargo test --package hydroflow --test surface_stratum -- test_surface_syntax_strata --exact --nocapture
 #[test]
 pub fn test_surface_syntax_strata() {
@@ -10,23 +12,39 @@ pub fn test_surface_syntax_strata() {
     //     reached_vertices = merge() -> map(|v| (v, ()));
     //     recv_iter(vec![0]) -> [0]reached_vertices;
 
-    //     my_join_tee = join() -> map(|(_src, ((), dst))| dst) -> map(|x| x) -> next_stratum() -> map(|x| x) -> tee();
+    //     edges = merge() -> tee();
+    //     recv_stream(pairs_recv) -> [0]edges;
+
+    //     my_join_tee = join() -> map(|(_src, ((), dst))| dst) -> map(|x| x) -> map(|x| x) -> tee();
     //     reached_vertices -> [0]my_join_tee;
-    //     recv_stream(pairs_recv) -> [1]my_join_tee;
+    //     edges[0] -> [1]my_join_tee;
 
     //     my_join_tee[0] -> [1]reached_vertices;
-    //     my_join_tee[1] -> next_stratum() -> for_each(|x| println!("Reached: {}", x));
+
+    //     diff_out = difference() -> tee();
+
+    //     edges[1] -> flat_map(|(a, b)| [a, b]) -> [0]diff_out;
+    //     my_join_tee[1] -> [1]diff_out;
+
+    //     diff_out[0] -> for_each(|x| println!("Not reached: {}", x));
+    //     diff_out[1] -> map(|x| (0, x)) -> [1]edges;
     // };
     let mut df = hydroflow_syntax! {
         reached_vertices = merge() -> map(|v| (v, ()));
         recv_iter(vec![0]) -> [0]reached_vertices;
 
+        edges = recv_stream(pairs_recv) -> tee();
+
         my_join_tee = join() -> map(|(_src, ((), dst))| dst) -> map(|x| x) -> map(|x| x) -> tee();
         reached_vertices -> [0]my_join_tee;
-        recv_stream(pairs_recv) -> [1]my_join_tee;
+        edges[0] -> [1]my_join_tee;
 
         my_join_tee[0] -> [1]reached_vertices;
-        my_join_tee[1] -> for_each(|x| println!("Reached: {}", x));
+
+        diff = difference() -> for_each(|x| println!("Not reached: {}", x));
+
+        edges[1] -> flat_map(|(a, b)| [a, b]) -> [0]diff;
+        my_join_tee[1] -> [1]diff;
     };
 
     println!(
@@ -37,25 +55,17 @@ pub fn test_surface_syntax_strata() {
     );
     df.run_available();
 
-    pairs_send.send((0, 1)).unwrap();
-    df.run_available();
+    println!("A");
 
+    pairs_send.send((0, 1)).unwrap();
     pairs_send.send((2, 4)).unwrap();
     pairs_send.send((3, 4)).unwrap();
-    df.run_available();
-
     pairs_send.send((1, 2)).unwrap();
-    df.run_available();
-
     pairs_send.send((0, 3)).unwrap();
     df.run_available();
 
-    pairs_send.send((0, 3)).unwrap();
-    df.run_available();
+    // println!("B");
 
-    // Reached: 1
-    // Reached: 2
-    // Reached: 4
-    // Reached: 3
-    // Reached: 4
+    // pairs_send.send((0, 3)).unwrap();
+    // df.run_available();
 }

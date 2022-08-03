@@ -39,7 +39,7 @@ pub struct OperatorConstraints {
 pub const RANGE_0: &'static dyn RangeTrait<usize> = &(0..=0);
 pub const RANGE_1: &'static dyn RangeTrait<usize> = &(1..=1);
 
-pub const OPERATORS: [OperatorConstraints; 11] = [
+pub const OPERATORS: [OperatorConstraints; 12] = [
     OperatorConstraints {
         name: "merge",
         hard_range_inn: &(0..),
@@ -174,7 +174,12 @@ pub const OPERATORS: [OperatorConstraints; 11] = [
                 quote! { #input.flat_map(#arguments) }
             } else {
                 let output = &outputs[0];
-                quote! { #root::compiled::flat_map::FlatMap::new(#arguments, #output) }
+                quote! {
+                    #root::compiled::map::Map::new(
+                        #arguments,
+                        #root::compiled::flatten::Flatten::new(#output)
+                    )
+                }
             }
         }),
     },
@@ -301,7 +306,29 @@ pub const OPERATORS: [OperatorConstraints; 11] = [
         }),
     },
     OperatorConstraints {
-        name: "next_stratum",
+        name: "difference",
+        hard_range_inn: &(2..=2),
+        soft_range_inn: &(2..=2),
+        hard_range_out: RANGE_1,
+        soft_range_out: RANGE_1,
+        num_args: 0,
+        crosses_stratum_fn: &|idx| 1 == idx,
+        write_prologue_fn: &(|_, _| quote! {}),
+        write_iterator_fn: &(|_, &WriteIteratorArgs { inputs, .. }| {
+            let input_pos = &inputs[0];
+            let input_neg = &inputs[1];
+            // TODO(mingwei): Re-building negative set is inefficient.
+            // TODO(mingwei): neg_set needs to be persisted each run_stratum()?
+            quote! {
+                {
+                    let neg_set: std::collections::HashSet<_> = #input_neg.collect();
+                    #input_pos.filter(move |x| !neg_set.contains(x))
+                }
+            }
+        }),
+    },
+    OperatorConstraints {
+        name: "stratum",
         hard_range_inn: RANGE_1,
         soft_range_inn: RANGE_1,
         hard_range_out: RANGE_1,
