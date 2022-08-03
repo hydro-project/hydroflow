@@ -200,11 +200,15 @@ impl PartitionedGraph {
                 };
 
                 let hoff_name = Literal::string(&*format!("Subgraph {:?}", subgraph_id));
+                let stratum = Literal::usize_unsuffixed(
+                    self.subgraph_stratum.get(subgraph_id).cloned().unwrap_or(0),
+                );
                 quote! {
                     #( #op_prologue_code )*
 
-                    df.add_subgraph(
+                    df.add_subgraph_stratified(
                         #hoff_name,
+                        #stratum,
                         tl!( #( #recv_ports ),* ),
                         tl!( #( #send_ports ),* ),
                         move |context, tl!( #( #recv_ports ),* ), tl!( #( #send_ports ),* )| {
