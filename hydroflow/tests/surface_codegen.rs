@@ -18,6 +18,25 @@ use hydroflow::hydroflow_syntax;
 // TODO(mingwei): Find a way to display join keys
 
 #[test]
+pub fn test_channel_minimal() {
+    let (send, recv) = tokio::sync::mpsc::unbounded_channel::<usize>();
+
+    let mut df1 = hydroflow_syntax! {
+        recv_iter([1, 2, 3]) -> for_each(|x| { send.send(x).unwrap(); })
+    };
+
+    let mut df2 = hydroflow_syntax! {
+        recv_stream(recv) -> for_each(|x| println!("{}", x))
+    };
+
+    df2.run_available();
+    println!("A");
+    df1.run_available();
+    println!("B");
+    df2.run_available();
+}
+
+#[test]
 pub fn test_surface_syntax_reachability_generated() {
     // An edge in the input data = a pair of `usize` vertex IDs.
     let (pairs_send, pairs_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
