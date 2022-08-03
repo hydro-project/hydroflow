@@ -246,6 +246,7 @@ impl PartitionedGraph {
         )
     }
     pub fn to_serde_graph(&self) -> SerdeGraph {
+        // TODO(mingwei): Double initialization of SerdeGraph fields.
         let mut g = SerdeGraph::new();
         for ((src, _src_idx), (dst, _dst_idx)) in self.edges() {
             // add nodes
@@ -272,6 +273,7 @@ impl PartitionedGraph {
 
             // add subgraphs
             g.subgraph_nodes = self.subgraph_nodes.clone();
+            g.subgraph_stratum = self.subgraph_stratum.clone();
         }
         g
     }
