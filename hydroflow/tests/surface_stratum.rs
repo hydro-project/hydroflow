@@ -37,13 +37,13 @@ pub fn test_surface_syntax_strata() {
 
         my_join_tee = join() -> map(|(_src, ((), dst))| dst) -> map(|x| x) -> map(|x| x) -> tee();
         reached_vertices -> [0]my_join_tee;
-        edges[0] -> [1]my_join_tee;
+        edges[1] -> [1]my_join_tee;
 
         my_join_tee[0] -> [1]reached_vertices;
 
         diff = difference() -> for_each(|x| println!("Not reached: {}", x));
 
-        edges[1] -> flat_map(|(a, b)| [a, b]) -> [0]diff;
+        edges[0] -> flat_map(|(a, b)| [a, b]) -> [0]diff;
         my_join_tee[1] -> [1]diff;
     };
 
