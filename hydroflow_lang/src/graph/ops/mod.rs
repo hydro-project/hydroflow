@@ -39,7 +39,7 @@ pub struct OperatorConstraints {
 pub const RANGE_0: &'static dyn RangeTrait<usize> = &(0..=0);
 pub const RANGE_1: &'static dyn RangeTrait<usize> = &(1..=1);
 
-pub const OPERATORS: [OperatorConstraints; 12] = [
+pub const OPERATORS: [OperatorConstraints; 13] = [
     OperatorConstraints {
         name: "merge",
         hard_range_inn: &(0..),
@@ -124,6 +124,22 @@ pub const OPERATORS: [OperatorConstraints; 12] = [
                 .map(|i| quote! { #i })
                 .reduce(|b, a| quote! { #root::compiled::tee::Tee::new(#a, #b) })
                 .unwrap_or_default()
+        }),
+    },
+    OperatorConstraints {
+        name: "identity",
+        hard_range_inn: RANGE_1,
+        soft_range_inn: RANGE_1,
+        hard_range_out: RANGE_1,
+        soft_range_out: RANGE_1,
+        num_args: 1,
+        crosses_stratum_fn: &|_| false,
+        write_prologue_fn: &(|_, _| quote! {}),
+        write_iterator_fn: &(|_, &WriteIteratorArgs { inputs, .. }| {
+            let input = &inputs[0];
+            quote! {
+                #input
+            }
         }),
     },
     OperatorConstraints {
