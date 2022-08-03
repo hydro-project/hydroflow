@@ -6,7 +6,9 @@ use std::hash::Hash;
 use itertools::Itertools;
 use proc_macro2::Span;
 use slotmap::{new_key_type, Key, SecondaryMap, SlotMap};
+use syn::parse_quote;
 use syn::spanned::Spanned;
+use syn::token::Paren;
 
 use crate::graph::ops::OPERATORS;
 use crate::parse::{IndexInt, Operator};
@@ -279,7 +281,7 @@ impl From<FlatGraph> for PartitionedGraph {
         }
 
         // Determine node's subgraph and subgraph's nodes in topological sort order.
-        let (node_subgraph, subgraph_nodes) = {
+        let (mut node_subgraph, mut subgraph_nodes) = {
             struct SubgraphTopoSort<'a> {
                 nodes: &'a SlotMap<GraphNodeId, Node>,
                 preds: &'a SecondaryMap<GraphNodeId, OutboundEdges>,
@@ -344,6 +346,7 @@ impl From<FlatGraph> for PartitionedGraph {
         };
 
         // Determine subgraphs's stratum number.
+        // Find SCCs ignoring negative edges, then do TopoSort on the resulting DAG.
         let subgraph_stratum = {
             // Generate subgraph graph excluding negative edges.
             let mut subgraph_nonneg_preds: HashMap<GraphSubgraphId, Vec<GraphSubgraphId>> =
@@ -442,175 +445,73 @@ impl From<FlatGraph> for PartitionedGraph {
                 topo_sort.order
             };
 
-            topo_sort_order
+            let subgraph_stratum: SecondaryMap<GraphSubgraphId, usize> = topo_sort_order
                 .into_iter()
                 .enumerate()
                 .map(|(n, sg_id)| (sg_id, n))
-                .collect()
+                .collect();
 
-            // let mut subgraph_preds: HashMap<GraphSubgraphId, Vec<GraphSubgraphId>> =
-            //     Default::default();
-            // let mut subgraph_succs: HashMap<GraphSubgraphId, HashMap<GraphSubgraphId, bool>> =
-            //     Default::default();
+            // Any negative edges which go onto the same stratum are bad, need to have an extra buffering SG with higher stratum.
+            let mut subgraph_stratum = subgraph_stratum;
+            let max_stratum = subgraph_stratum.values().cloned().max().unwrap_or(0) + 1;
+            for (src, dst, dst_idx) in stratum_crossers {
+                let src_sg = node_subgraph[src];
+                let dst_sg = node_subgraph[dst];
+                let src_stratum = subgraph_stratum[src_sg];
+                let dst_stratum = subgraph_stratum[dst_sg];
+                if src_stratum == dst_stratum {
+                    // Need to inject.
+                    let new_node_id = flat_graph
+                        .nodes
+                        .insert(Node::Operator(parse_quote! { identity() }));
+                    let new_subgraph_id = subgraph_nodes.insert(vec![new_node_id]);
+                    subgraph_stratum.insert(new_subgraph_id, max_stratum);
+                    node_subgraph.insert(new_node_id, new_subgraph_id);
 
-            // for (src, dst) in stratum_crossers {
-            //     let src_sg = node_subgraph[src];
-            //     let dst_sg = node_subgraph[dst];
-            //     subgraph_succs
-            //         .entry(dst_sg)
-            //         .or_default()
-            //         .insert(src_sg, true);
-            //     subgraph_preds.entry(src_sg).or_default().push(src_sg);
-            // }
-            // for (node_id, node) in flat_graph.nodes.iter() {
-            //     if matches!(node, Node::Handoff) {
-            //         for &(pred, _) in new_preds[node_id].values() {
-            //             let pred_sg = node_subgraph[pred];
-            //             for &(succ, _) in new_succs[node_id].values() {
-            //                 let succ_sg = node_subgraph[succ];
-            //                 subgraph_succs
-            //                     .entry(pred_sg)
-            //                     .or_default()
-            //                     .entry(succ_sg)
-            //                     .or_insert(false);
-            //                 subgraph_preds.entry(succ_sg).or_default().push(pred_sg);
-            //             }
-            //         }
-            //     }
-            // }
+                    let new_hoff_id = flat_graph.nodes.insert(Node::Handoff);
 
-            // let seed_opt = {
-            //     let (marked, order) = Default::default();
-            //     let mut topo_sort = TopoSort {
-            //         preds_fn: |sg_id| {
-            //             subgraph_preds
-            //                 .get(&sg_id)
-            //                 .map(|v| v.iter())
-            //                 .unwrap_or(EMPTY.iter())
-            //                 .cloned()
-            //         },
-            //         marked,
-            //         order,
-            //     };
+                    {
+                        new_preds.insert(new_node_id, Default::default());
+                        new_succs.insert(new_node_id, Default::default());
+                        new_preds.insert(new_hoff_id, Default::default());
+                        new_succs.insert(new_hoff_id, Default::default());
+                    }
 
-            //     for sg_id in subgraph_nodes.keys() {
-            //         topo_sort.visit(sg_id);
-            //     }
+                    // Before: A (src) -> H -> B (dst)
+                    // After: A -> H' -> X -> H -> B
+                    {
+                        let ii0 = IndexInt {
+                            value: 0,
+                            span: Span::call_site(),
+                        };
 
-            //     topo_sort.order.get(0).cloned()
-            // };
+                        let (old_hoff_id, _) = new_preds[dst][dst_idx];
+                        // X <- H
+                        let (a_id, a_idx) = new_preds[old_hoff_id]
+                            .insert(ii0, (new_node_id, ii0))
+                            .expect("Handoff should be connected");
 
-            // let mut subgraph_stratum = SecondaryMap::with_capacity(subgraph_nodes.len());
-            // if let Some(seed) = seed_opt {
-            //     let mut queue_prios = VecDeque::new();
-            //     let mut queue_other = VecDeque::new();
-            //     let mut visited = HashSet::new();
+                        // A <-> H'
+                        new_succs[a_id]
+                            .insert(a_idx, (new_hoff_id, ii0))
+                            .expect("A should be connected to old handoff");
+                        new_preds[new_hoff_id].insert(ii0, (a_id, ii0));
 
-            //     queue_other.push_back(seed);
-            //     subgraph_stratum.insert(seed, 0);
-            //     while let Some(curr) = queue_prios.pop_front().or_else(|| queue_other.pop_front()) {
-            //         if visited.contains(&curr) {
-            //             continue;
-            //         }
-            //         visited.insert(curr);
+                        //  H' <-> X -> H
+                        new_succs[new_hoff_id].insert(ii0, (new_node_id, ii0));
+                        new_preds[new_node_id].insert(ii0, (new_hoff_id, ii0));
+                        new_succs[new_node_id].insert(ii0, (old_hoff_id, ii0));
+                    }
 
-            //         let curr_stratum = subgraph_stratum[curr];
-            //         println!("{:?} {}", curr.data(), curr_stratum);
+                    // subgraph_nodes.insert_with_key(|new_sg_id| {
+                    //     Node::Operator(Operator {
 
-            //         for (&next, &is_stratum_crosser) in subgraph_succs[&curr].iter() {
-            //             let next_stratum = curr_stratum + (is_stratum_crosser as usize);
-            //             println!("NEXT {:?} {} {}", next.data(), next_stratum, is_stratum_crosser);
-            //             if subgraph_stratum
-            //                 .get(next)
-            //                 .map(|&old| old < next_stratum)
-            //                 .unwrap_or(true)
-            //             {
-            //                 subgraph_stratum.insert(next, next_stratum);
-            //                 if is_stratum_crosser {
-            //                     &mut queue_prios
-            //                 } else {
-            //                     &mut queue_other
-            //                 }
-            //                 .push_back(next);
-            //             }
-            //         }
-            //     }
-            // }
+                    //     })
+                    // })
+                }
+            }
 
-            // subgraph_stratum
-            // // // const EMPTY: &[GraphSubgraphId] = &[];
-
-            // // // // stratum_crossers
-            // // // // SecondaryMap<GraphNodeId, BTreeMap<IndexInt, (GraphNodeId, IndexInt)>>
-            // // // let mut sg_pred_edges: HashMap<GraphSubgraphId, Vec<GraphSubgraphId>> =
-            // // //     Default::default();
-            // // // for (src, dst) in stratum_crossers {
-            // // //     let src_sg = node_subgraph[src];
-            // // //     let dst_sg = node_subgraph[dst];
-            // // //     sg_pred_edges.entry(dst_sg).or_default().push(src_sg);
-            // // // }
-
-            // // // let (marked, order) = Default::default();
-            // // // let mut topo_sort = TopoSort {
-            // // //     preds_fn: |dst_sg| {
-            // // //         sg_pred_edges
-            // // //             .get(&dst_sg)
-            // // //             .map(|preds| preds.iter())
-            // // //             .unwrap_or(EMPTY.iter())
-            // // //             .cloned()
-            // // //     },
-            // // //     marked,
-            // // //     order,
-            // // // };
-
-            // // // for subgraph_id in subgraph_nodes.keys() {
-            // // //     topo_sort.visit(subgraph_id);
-            // // // }
-
-            // // let (marked, order) = Default::default();
-            // // let mut topo_sort = TopoSort {
-            // //     preds_fn: |id| new_preds[id].values().map(|(pred, _idx)| *pred),
-            // //     marked,
-            // //     order,
-            // // };
-            // // for node_id in flat_graph.nodes.keys() {
-            // //     topo_sort.visit(node_id);
-            // // }
-
-            // // println!("{:#?}", topo_sort.order);
-
-            // // let sg_stratum_crossers: HashSet<_> = stratum_crossers
-            // //     .iter()
-            // //     .map(|&(a, b)| (node_subgraph[a], node_subgraph[b]))
-            // //     .collect();
-
-            // // let mut subgraph_stratum = SecondaryMap::with_capacity(topo_sort.order.len());
-            // // let mut stratum = 0;
-            // // let mut prev_sg_id = None;
-            // // for node_id in topo_sort.order {
-            // //     prev_sg_id = prev_sg_id.or(node_subgraph.get(node_id).cloned());
-            // //     let curr_sg_id = node_subgraph.get(node_id);
-            // //     if let (Some(&curr), Some(prev)) = (curr_sg_id, prev_sg_id) {
-            // //         if sg_stratum_crossers.contains(&(prev, curr)) {
-            // //             stratum += 1;
-            // //         }
-            // //         subgraph_stratum.insert(curr, stratum);
-            // //         prev_sg_id = Some(curr);
-            // //     }
-            // // }
-            // // subgraph_stratum
-
-            // // // for (a, b) in topo_sort.order.into_iter().tuple_windows() {
-            // // //     subgraph_stratum.insert(a, stratum);
-            // // //     if sg_pred_edges
-            // // //         .get(&b)
-            // // //         .map(|preds| preds.contains(&a))
-            // // //         .unwrap_or(false)
-            // // //     {
-            // // //         stratum += 1;
-            // // //     }
-            // // //     subgraph_stratum.insert(b, stratum);
-            // // // }
+            subgraph_stratum
         };
 
         // Get data on handoff src and dst subgraphs.
