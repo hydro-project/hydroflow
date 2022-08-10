@@ -46,7 +46,30 @@ pub struct OperatorConstraints {
 pub const RANGE_0: &'static dyn RangeTrait<usize> = &(0..=0);
 pub const RANGE_1: &'static dyn RangeTrait<usize> = &(1..=1);
 
-pub const OPERATORS: [OperatorConstraints; 16] = [
+const IDENTITY_WRITE_ITERATOR_FN: &'static dyn Fn(
+    &WriteContextArgs<'_>,
+    &WriteIteratorArgs<'_>,
+) -> TokenStream = &(|&WriteContextArgs { ident, .. },
+                      &WriteIteratorArgs {
+                          inputs,
+                          outputs,
+                          is_pull,
+                          ..
+                      }| {
+    if is_pull {
+        let input = &inputs[0];
+        quote! {
+            let #ident = #input;
+        }
+    } else {
+        let output = &outputs[0];
+        quote! {
+            let #ident = #output;
+        }
+    }
+});
+
+pub const OPERATORS: [OperatorConstraints; 17] = [
     OperatorConstraints {
         name: "merge",
         hard_range_inn: &(0..),
@@ -144,16 +167,10 @@ pub const OPERATORS: [OperatorConstraints; 16] = [
         soft_range_inn: RANGE_1,
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
-        num_args: 1,
+        num_args: 0,
         input_barrier_fn: &|_| InputBarrier::None,
         write_prologue_fn: &(|_, _| quote! {}),
-        write_iterator_fn: &(|&WriteContextArgs { ident, .. },
-                              &WriteIteratorArgs { inputs, .. }| {
-            let input = &inputs[0];
-            quote! {
-                let #ident = #input;
-            }
-        }),
+        write_iterator_fn: IDENTITY_WRITE_ITERATOR_FN,
     },
     OperatorConstraints {
         name: "map",
@@ -376,6 +393,44 @@ pub const OPERATORS: [OperatorConstraints; 16] = [
         soft_range_out: RANGE_1,
         num_args: 1,
         input_barrier_fn: &|_| InputBarrier::None,
+        write_prologue_fn: &(|&WriteContextArgs {
+                                  subgraph_id,
+                                  node_id,
+                                  ..
+                              },
+                              &WriteIteratorArgs { arguments, .. }| {
+            let iter_ident = Ident::new(
+                &*format!("sg_{:?}_node_{:?}_iter", subgraph_id.data(), node_id.data()),
+                Span::call_site(),
+            );
+            quote! {
+            let mut #iter_ident = Some(std::iter::IntoIterator::into_iter(#arguments));
+            }
+        }),
+        write_iterator_fn: &(|&WriteContextArgs {
+                                  ident,
+                                  subgraph_id,
+                                  node_id,
+                                  ..
+                              },
+                              _| {
+            let iter_ident = Ident::new(
+                &*format!("sg_{:?}_node_{:?}_iter", subgraph_id.data(), node_id.data()),
+                Span::call_site(),
+            );
+            quote! {
+                let #ident = #iter_ident.take().into_iter().flatten();
+            }
+        }),
+    },
+    OperatorConstraints {
+        name: "repeat_iter",
+        hard_range_inn: RANGE_0,
+        soft_range_inn: RANGE_0,
+        hard_range_out: RANGE_1,
+        soft_range_out: RANGE_1,
+        num_args: 1,
+        input_barrier_fn: &|_| InputBarrier::None,
         write_prologue_fn: &(|_, _| quote! {}),
         write_iterator_fn: &(|&WriteContextArgs { ident, .. },
                               &WriteIteratorArgs { arguments, .. }| {
@@ -479,15 +534,9 @@ pub const OPERATORS: [OperatorConstraints; 16] = [
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
         num_args: 0,
-        input_barrier_fn: &|_| InputBarrier::None,
+        input_barrier_fn: &|_| InputBarrier::Stratum,
         write_prologue_fn: &(|_, _| quote! {}),
-        write_iterator_fn: &(|&WriteContextArgs { ident, .. },
-                              &WriteIteratorArgs { inputs, .. }| {
-            let input = &inputs[0];
-            quote! {
-                let #ident = #input;
-            }
-        }),
+        write_iterator_fn: IDENTITY_WRITE_ITERATOR_FN,
     },
     OperatorConstraints {
         name: "next_epoch",
@@ -498,13 +547,7 @@ pub const OPERATORS: [OperatorConstraints; 16] = [
         num_args: 0,
         input_barrier_fn: &|_| InputBarrier::Epoch,
         write_prologue_fn: &(|_, _| quote! {}),
-        write_iterator_fn: &(|&WriteContextArgs { ident, .. },
-                              &WriteIteratorArgs { inputs, .. }| {
-            let input = &inputs[0];
-            quote! {
-                let #ident = #input;
-            }
-        }),
+        write_iterator_fn: IDENTITY_WRITE_ITERATOR_FN,
     },
 ];
 
