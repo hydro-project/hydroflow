@@ -9,6 +9,13 @@ use syn::{Expr, GenericArgument, Token};
 
 use super::{GraphNodeId, GraphSubgraphId};
 
+#[derive(Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Debug)]
+pub enum InputBarrier {
+    None,
+    Stratum,
+    Epoch,
+}
+
 pub struct OperatorConstraints {
     /// Operator's name.
     pub name: &'static str,
@@ -26,7 +33,7 @@ pub struct OperatorConstraints {
     pub num_args: usize,
 
     /// Determines if this input must be preceeded by a stratum barrier.
-    pub crosses_stratum_fn: &'static dyn Fn(usize) -> bool,
+    pub input_barrier_fn: &'static dyn Fn(usize) -> InputBarrier,
     /// Generate code which runs once outside the subgraph to set up any
     /// external stuff like state API stuff or external chanels, etc.
     pub write_prologue_fn:
@@ -39,7 +46,7 @@ pub struct OperatorConstraints {
 pub const RANGE_0: &'static dyn RangeTrait<usize> = &(0..=0);
 pub const RANGE_1: &'static dyn RangeTrait<usize> = &(1..=1);
 
-pub const OPERATORS: [OperatorConstraints; 15] = [
+pub const OPERATORS: [OperatorConstraints; 16] = [
     OperatorConstraints {
         name: "merge",
         hard_range_inn: &(0..),
@@ -47,7 +54,7 @@ pub const OPERATORS: [OperatorConstraints; 15] = [
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
         num_args: 0,
-        crosses_stratum_fn: &|_| false,
+        input_barrier_fn: &|_| InputBarrier::None,
         write_prologue_fn: &(|_, _| quote! {}),
         write_iterator_fn: &(|&WriteContextArgs { ident, .. },
                               &WriteIteratorArgs { inputs, .. }| {
@@ -66,7 +73,7 @@ pub const OPERATORS: [OperatorConstraints; 15] = [
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
         num_args: 0,
-        crosses_stratum_fn: &|_| false,
+        input_barrier_fn: &|_| InputBarrier::None,
         write_prologue_fn: &(|&WriteContextArgs {
                                   subgraph_id,
                                   node_id,
@@ -116,7 +123,7 @@ pub const OPERATORS: [OperatorConstraints; 15] = [
         hard_range_out: &(0..),
         soft_range_out: &(2..),
         num_args: 0,
-        crosses_stratum_fn: &|_| false,
+        input_barrier_fn: &|_| InputBarrier::None,
         write_prologue_fn: &(|_, _| quote! {}),
         write_iterator_fn: &(|&WriteContextArgs { root, ident, .. },
                               &WriteIteratorArgs { outputs, .. }| {
@@ -138,7 +145,7 @@ pub const OPERATORS: [OperatorConstraints; 15] = [
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
         num_args: 1,
-        crosses_stratum_fn: &|_| false,
+        input_barrier_fn: &|_| InputBarrier::None,
         write_prologue_fn: &(|_, _| quote! {}),
         write_iterator_fn: &(|&WriteContextArgs { ident, .. },
                               &WriteIteratorArgs { inputs, .. }| {
@@ -155,7 +162,7 @@ pub const OPERATORS: [OperatorConstraints; 15] = [
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
         num_args: 1,
-        crosses_stratum_fn: &|_| false,
+        input_barrier_fn: &|_| InputBarrier::None,
         write_prologue_fn: &(|_, _| quote! {}),
         write_iterator_fn: &(|&WriteContextArgs { root, ident, .. },
                               &WriteIteratorArgs {
@@ -185,7 +192,7 @@ pub const OPERATORS: [OperatorConstraints; 15] = [
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
         num_args: 1,
-        crosses_stratum_fn: &|_| false,
+        input_barrier_fn: &|_| InputBarrier::None,
         write_prologue_fn: &(|_, _| quote! {}),
         write_iterator_fn: &(|&WriteContextArgs { root, ident, .. },
                               &WriteIteratorArgs {
@@ -218,7 +225,7 @@ pub const OPERATORS: [OperatorConstraints; 15] = [
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
         num_args: 1,
-        crosses_stratum_fn: &|_| false,
+        input_barrier_fn: &|_| InputBarrier::None,
         write_prologue_fn: &(|_, _| quote! {}),
         write_iterator_fn: &(|&WriteContextArgs { root, ident, .. },
                               &WriteIteratorArgs {
@@ -248,7 +255,7 @@ pub const OPERATORS: [OperatorConstraints; 15] = [
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
         num_args: 1,
-        crosses_stratum_fn: &|_| false,
+        input_barrier_fn: &|_| InputBarrier::None,
         write_prologue_fn: &(|_, _| quote! {}),
         write_iterator_fn: &(|&WriteContextArgs { root, ident, .. },
                               &WriteIteratorArgs {
@@ -293,7 +300,7 @@ pub const OPERATORS: [OperatorConstraints; 15] = [
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
         num_args: 2,
-        crosses_stratum_fn: &|_| true,
+        input_barrier_fn: &|_| InputBarrier::Stratum,
         write_prologue_fn: &(|_, _| quote! {}),
         write_iterator_fn: &(|&WriteContextArgs { ident, .. },
                               &WriteIteratorArgs {
@@ -318,7 +325,7 @@ pub const OPERATORS: [OperatorConstraints; 15] = [
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
         num_args: 1,
-        crosses_stratum_fn: &|_| true,
+        input_barrier_fn: &|_| InputBarrier::Stratum,
         write_prologue_fn: &(|_, _| quote! {}),
         write_iterator_fn: &(|&WriteContextArgs { ident, .. },
                               &WriteIteratorArgs {
@@ -341,7 +348,7 @@ pub const OPERATORS: [OperatorConstraints; 15] = [
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
         num_args: 1,
-        crosses_stratum_fn: &|_| false,
+        input_barrier_fn: &|_| InputBarrier::None,
         write_prologue_fn: &(|_, &WriteIteratorArgs { arguments, .. }| {
             let receiver = &arguments[0];
             quote! {
@@ -368,7 +375,7 @@ pub const OPERATORS: [OperatorConstraints; 15] = [
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
         num_args: 1,
-        crosses_stratum_fn: &|_| false,
+        input_barrier_fn: &|_| InputBarrier::None,
         write_prologue_fn: &(|_, _| quote! {}),
         write_iterator_fn: &(|&WriteContextArgs { ident, .. },
                               &WriteIteratorArgs { arguments, .. }| {
@@ -384,7 +391,7 @@ pub const OPERATORS: [OperatorConstraints; 15] = [
         hard_range_out: RANGE_0,
         soft_range_out: RANGE_0,
         num_args: 1,
-        crosses_stratum_fn: &|_| false,
+        input_barrier_fn: &|_| InputBarrier::None,
         write_prologue_fn: &(|_, _| quote! {}),
         write_iterator_fn: &(|&WriteContextArgs { root, ident, .. },
                               &WriteIteratorArgs { arguments, .. }| {
@@ -400,7 +407,13 @@ pub const OPERATORS: [OperatorConstraints; 15] = [
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
         num_args: 0,
-        crosses_stratum_fn: &|idx| 1 == idx,
+        input_barrier_fn: &|idx| {
+            if 1 == idx {
+                InputBarrier::Stratum
+            } else {
+                InputBarrier::None
+            }
+        },
         write_prologue_fn: &(|&WriteContextArgs {
                                   root,
                                   subgraph_id,
@@ -458,44 +471,32 @@ pub const OPERATORS: [OperatorConstraints; 15] = [
                 let #ident = #input_pos.filter(move |x| !#negset_ident.contains(x));
             }
         }),
-        // write_iterator_fn: &(
-        //     |&WriteContextArgs {
-        //          root,
-        //          subgraph_id,
-        //          node_id,
-        //          ..
-        //      },
-        //      &WriteIteratorArgs { inputs, .. }| {
-        //         // let handle_ident = Ident::new(
-        //         //     &*format!(
-        //         //         "sg_{:?}_node_{:?}_diffdata_handle",
-        //         //         subgraph_id.data(),
-        //         //         node_id.data()
-        //         //     ),
-        //         //     Span::call_site(),
-        //         // );
-
-        //         let input_pos = &inputs[0];
-        //         let input_neg = &inputs[1];
-        //         // TODO(mingwei): Re-building negative set is inefficient.
-        //         // TODO(mingwei): neg_set needs to be persisted each run_stratum()?
-        //         quote! {
-        //             {
-        //                 let neg_set: std::collections::HashSet<_> = #input_neg.collect();
-        //                 #input_pos.filter(move |x| !neg_set.contains(x))
-        //             }
-        //         }
-        //     },
-        // ),
     },
     OperatorConstraints {
-        name: "stratum",
+        name: "next_stratum",
         hard_range_inn: RANGE_1,
         soft_range_inn: RANGE_1,
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
         num_args: 0,
-        crosses_stratum_fn: &|_| true,
+        input_barrier_fn: &|_| InputBarrier::None,
+        write_prologue_fn: &(|_, _| quote! {}),
+        write_iterator_fn: &(|&WriteContextArgs { ident, .. },
+                              &WriteIteratorArgs { inputs, .. }| {
+            let input = &inputs[0];
+            quote! {
+                let #ident = #input;
+            }
+        }),
+    },
+    OperatorConstraints {
+        name: "next_epoch",
+        hard_range_inn: RANGE_1,
+        soft_range_inn: RANGE_1,
+        hard_range_out: RANGE_1,
+        soft_range_out: RANGE_1,
+        num_args: 0,
+        input_barrier_fn: &|_| InputBarrier::Epoch,
         write_prologue_fn: &(|_, _| quote! {}),
         write_iterator_fn: &(|&WriteContextArgs { ident, .. },
                               &WriteIteratorArgs { inputs, .. }| {
