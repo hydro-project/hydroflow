@@ -3,13 +3,13 @@ Flows consist of named _operators_ that are connected via flow _edges_ denoted b
 uses the [`recv_iter`](./surface_ops.md#recv_iter) operator to generate two strings from a Rust `vec`, the 
 [`map`](./surface_ops.md#map) operator to apply some Rust code to uppercase each string, and the [`for_each`](./surface_ops.md#for_each) 
 operator to print each string to stdout.
-```rust
+```rust,ignore
 recv_iter(vec!["Hello", "world"]) 
     -> map(|x| x.to_uppercase()) -> for_each(|x| println!("{}", x));
 ```
 
 Flows can be assigned to variable names for convenience. E.g, the above can be rewritten as follows:
-```rust
+```rust,ignore
 upper_print = map(|x| x.to_uppercase()) -> for_each(|x| println!("{}", x));
 recv_iter(vec!["Hello", "world"]) -> upper_print;
 ```
@@ -23,7 +23,7 @@ in square brackets before the operator name (e.g. `[0]merge(...)` and `[1]merge(
 distinguish output ports by an _indexing suffix_ (e.g. `tee[0]`). 
 
 Here is an example that tees one flow into two, handles each separately, and then merges them to print out the contents in both lowercase and uppercase:
-```rust
+```rust,ignore
 source = recv_iter(vec!["Hello", "world"]) -> tee();
 print = merge() -> for_each(|x| println!("{}", x));
 source[0] -> map(|x: &str| x.to_uppercase()) -> [0]print;

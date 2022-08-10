@@ -17,7 +17,7 @@ Rust boolean closure passed in as an argument.
 
 > TODO: Why does filter's closure expect a reference and other ops like map do not?
 
-```rust
+```rust,ignore
 recv_iter(vec!["hello", "world"]) -> filter(|&x| x == "hello")
     -> for_each(|x| println!("{}", x));
 ```
@@ -29,7 +29,7 @@ recv_iter(vec!["hello", "world"]) -> filter(|&x| x == "hello")
 > Arguments: A Rust closure
 For each item passed in, apply the closure to generate an item to emit.
 
-```rust
+```rust,ignore
 recv_iter(vec!["hello", "world"]) -> map(|x| x.to_uppercase())
     -> for_each(|x| println!("{}", x));
 ```
@@ -43,7 +43,7 @@ recv_iter(vec!["hello", "world"]) -> map(|x| x.to_uppercase())
 For each item `i` passed in, treat `i` as an iterator and map the closure to that
 iterator to produce items one by one. the type of the input items must be iterable.
 
-```rust
+```rust,ignore
 recv_iter(vec!["hello", "world"]) -> flat_map(|x| x.chars())
     -> for_each(|x| println!("{}", x));
 ```
@@ -54,7 +54,7 @@ recv_iter(vec!["hello", "world"]) -> flat_map(|x| x.chars())
 
 An operator that both filters and maps. It yields only the items for which the supplied closure returns `Some(value)`.
 
-```rust
+```rust,ignore
 recv_iter(vec!["1", "hello", "world", "2"]) -> filter_map(|s| s.parse().ok())
     -> for_each(|x| println!("{}", x));
 ```
@@ -68,7 +68,7 @@ Merges an arbitrary number of input streams into a single stream. Each input seq
 Since `merge` has multiple input streams, it needs to be assigned to
 a variable to reference its multiple input ports across statements.
 
-```rust
+```rust,ignore
 my_merge = merge();
 recv_iter(vec!["hello", "world"]) -> [0]my_merge;
 recv_iter(vec!["stay", "gold"]) -> [1]my_merge;
@@ -83,7 +83,7 @@ my_merge -> map(|x| x.to_uppercase())
 
 Forms the equijoin of the tuples in the input streams by their first (key) attribute. Note that the result nests the 2nd input field (values) into a tuple in the 2nd output field.
 
-```rust
+```rust,ignore
 recv_iter(vec![("hello", "world"), ("stay", "gold")]) -> [0]my_join;
 recv_iter(vec![("hello", "cleveland")]) -> [1]my_join;
 my_join -> for_each(|(k, (v1, v2))| println!("({}, ({}, {})", k, v1, v2));
@@ -96,7 +96,7 @@ my_join -> for_each(|(k, (v1, v2))| println!("({}, ({}, {})", k, v1, v2));
 Takes the input stream and delivers a copy of each item to each output.
 > Note: Downstream operators may need explicit type annotations.
 
-```rust
+```rust,ignore
 my_tee = recv_iter(vec!["Hello", "World"]) -> tee();
 my_tee[0] -> map(|x: &str| x.to_uppercase())
     -> for_each(|x| println!("{}", x));
@@ -115,7 +115,8 @@ Given a tokio channel created in Rust code, `recv_stream`
 is passed the receive endpoint of the channel and emits each of the
 elements it receives downstream.
 
-```rust
+```rust,ignore
+# use hydroflow::hydroflow_syntax;
 let (input_send, input_recv) = tokio::sync::mpsc::unbounded_channel::<&str>();
 let mut flow = hydroflow_syntax! {
     recv_stream(input_recv) -> map(|x| x.to_uppercase()) 
@@ -134,7 +135,7 @@ flow.run_available();
 Takes the iterable object and delivers its elements downstream
 one by one.
 
-```rust
+```rust,ignore
     recv_iter(vec!["Hello", "World"])
         -> for_each(|x| println!("{}", x));
 ```
@@ -148,7 +149,7 @@ one by one.
 Iterates through a stream passing each element to the closure in the
 argument.
 
-```rust
+```rust,ignore
     recv_iter(vec!["Hello", "World"])
         -> for_each(|x| println!("{}", x));
 ```

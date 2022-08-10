@@ -41,6 +41,7 @@ Next, inside the main method we specify a flow by calling the
 `hydroflow_syntax!` macro. We assign the resulting `Hydroflow` instance to
 a mutable variable---we will be changing its status when we run it.
 ```rust,ignore
+# use hydroflow::hydroflow_syntax;
 pub fn main() {
     let mut flow = hydroflow_syntax! {
         recv_iter(0..10) -> for_each(|n| println!("Hello {}", n));
@@ -53,7 +54,7 @@ item passed in.
 
 
 Finally we run this flow via the [`run_available()` method](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_available).
-```rust, ignore
+```rust,ignore
     flow.run_available();
 }
 ```
