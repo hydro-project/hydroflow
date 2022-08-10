@@ -35,7 +35,7 @@ in from outside the flow:
 # use hydroflow::hydroflow_syntax;
 let (input_send, input_recv) = tokio::sync::mpsc::unbounded_channel::<&str>();
 let mut flow = hydroflow_syntax! {
-    recv_stream(input_recv) -> map(|x| x.to_uppercase()) 
+    recv_stream(input_recv) -> map(|x| x.to_uppercase())
         -> for_each(|x| println!("{}", x));
 };
 input_send.send("Hello").unwrap();
