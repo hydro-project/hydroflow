@@ -404,7 +404,7 @@ pub const OPERATORS: [OperatorConstraints; 17] = [
                 Span::call_site(),
             );
             quote! {
-            let mut #iter_ident = Some(std::iter::IntoIterator::into_iter(#arguments));
+            let mut #iter_ident = std::iter::IntoIterator::into_iter(#arguments);
             }
         }),
         write_iterator_fn: &(|&WriteContextArgs {
@@ -419,7 +419,7 @@ pub const OPERATORS: [OperatorConstraints; 17] = [
                 Span::call_site(),
             );
             quote! {
-                let #ident = #iter_ident.take().into_iter().flatten();
+                let #ident = #iter_ident.by_ref();
             }
         }),
     },

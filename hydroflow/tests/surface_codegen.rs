@@ -20,8 +20,6 @@ use tokio::task::LocalSet;
 
 #[test]
 pub fn test_reduce_sum() {
-    use std::collections::BinaryHeap;
-
     // An edge in the input data = a pair of `usize` vertex IDs.
     let (items_send, items_recv) = tokio::sync::mpsc::unbounded_channel::<usize>();
 
@@ -60,7 +58,7 @@ pub fn test_reduce_sum() {
 
 #[test]
 pub fn test_fold_sort() {
-    use std::collections::BinaryHeap;
+    // use std::collections::BinaryHeap;
 
     // An edge in the input data = a pair of `usize` vertex IDs.
     let (items_send, items_recv) = tokio::sync::mpsc::unbounded_channel::<usize>();

@@ -287,8 +287,8 @@ impl FlatGraph {
         Ok(())
     }
 
-    pub fn into_partitioned_graph(self) -> PartitionedGraph {
-        self.into()
+    pub fn into_partitioned_graph(self) -> Result<PartitionedGraph, ()> {
+        self.try_into()
     }
 }
 
