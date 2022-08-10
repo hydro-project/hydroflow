@@ -6,9 +6,9 @@ In this example we'll introduce the concept of handoffs and external inputs.
 use hydroflow::hydroflow_syntax;
 
 pub fn main() {
-    let hydroflow = hydroflow_syntax! {
-    // code will go here
-    }
+    let mut hydroflow = hydroflow_syntax! {
+        // code will go here
+    };
 
     hydroflow.run_available();
 }
@@ -67,7 +67,6 @@ input_example.send(9).unwrap();
 
 hydroflow.run_available();
 }
-
 ```
 ```txt
 A

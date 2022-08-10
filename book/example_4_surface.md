@@ -42,6 +42,7 @@ two paths.
 Lets take a look at some hydroflow code that implements the program, including the `merge` and `tee`:
 
 ```rust
+# use hydroflow::hydroflow_syntax;
 pub fn main() {
     // An edge in the input data = a pair of `usize` vertex IDs.
     let (pairs_send, pairs_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
