@@ -30,4 +30,16 @@ mod booktest {
     booktest!(example_3);
     booktest!(example_4);
     booktest!(example_5);
+
+    booktest!(example_1_surface);
+    booktest!(example_2_surface);
+    booktest!(example_3_surface);
+    booktest!(example_4_surface);
+    booktest!(example_5_surface);
+
+    booktest!(surface_syntax);
+    booktest!(surface_embedding);
+    booktest!(surface_flows);
+    booktest!(surface_data);
+    booktest!(surface_ops);
 }

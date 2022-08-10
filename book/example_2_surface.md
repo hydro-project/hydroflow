@@ -34,6 +34,7 @@ into the numbers which they contain.
 We can also express the same program with more aggressive use of combination operators like
 [`filter_map()`](./surface_ops.md#filtermap) and [`flat_map()`](./surface_ops.md#flatmap):
 ```rust
+# use hydroflow::hydroflow_syntax;
  pub fn main() {
     let mut flow = hydroflow_syntax! {
         recv_iter(0..10)
