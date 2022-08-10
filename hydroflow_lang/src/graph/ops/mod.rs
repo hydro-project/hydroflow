@@ -69,7 +69,7 @@ const IDENTITY_WRITE_ITERATOR_FN: &'static dyn Fn(
     }
 });
 
-pub const OPERATORS: [OperatorConstraints; 17] = [
+pub const OPERATORS: [OperatorConstraints; 18] = [
     OperatorConstraints {
         name: "merge",
         hard_range_inn: &(0..),
@@ -355,6 +355,30 @@ pub const OPERATORS: [OperatorConstraints; 17] = [
             let input = &inputs[0];
             quote! {
                 let #ident = #input.reduce(#arguments).into_iter();
+            }
+        }),
+    },
+    OperatorConstraints {
+        name: "sort",
+        hard_range_inn: RANGE_1,
+        soft_range_inn: RANGE_1,
+        hard_range_out: RANGE_1,
+        soft_range_out: RANGE_1,
+        num_args: 0,
+        input_barrier_fn: &|_| InputBarrier::Stratum,
+        write_prologue_fn: &(|_, _| quote! {}),
+        write_iterator_fn: &(|&WriteContextArgs { ident, .. },
+                              &WriteIteratorArgs {
+                                  inputs,
+                                  arguments,
+                                  is_pull,
+                                  ..
+                              }| {
+            assert!(is_pull);
+            let input = &inputs[0];
+            quote! {
+                // TODO(mingwei): unneccesary extra into_iter() then collect()
+                let #ident = #input.collect::<std::collections::BinaryHeap<_>>(#arguments).into_sorted_vec().into_iter();
             }
         }),
     },

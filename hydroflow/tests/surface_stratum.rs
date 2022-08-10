@@ -74,7 +74,7 @@ pub fn test_difference_b() -> Result<(), SendError<&'static str>> {
 }
 
 #[test]
-pub fn test_epoch_loop() {
+pub fn test_epoch_loop_1() {
     let output = <Rc<RefCell<Vec<usize>>>>::default();
     let output_inner = output.clone();
 
@@ -87,6 +87,8 @@ pub fn test_epoch_loop() {
         a[1] -> for_each(|x| output_inner.borrow_mut().push(x));
     };
 
+    println!("{}", df.serde_graph().unwrap().to_mermaid());
+
     df.run_epoch();
     assert_eq!(&[1, 3], &*output.take());
 
@@ -98,6 +100,66 @@ pub fn test_epoch_loop() {
 
     df.run_epoch();
     assert_eq!(&[8, 24], &*output.take());
+}
+
+#[test]
+pub fn test_epoch_loop_2() {
+    let output = <Rc<RefCell<Vec<usize>>>>::default();
+    let output_inner = output.clone();
+
+    let mut df: Hydroflow = hydroflow_syntax! {
+        a = merge() -> tee();
+        recv_iter([1, 3]) -> [0]a;
+        a[0] -> next_epoch() -> next_epoch() -> map(|x| 2 * x) -> [1]a;
+        a[1] -> for_each(|x| output_inner.borrow_mut().push(x));
+    };
+
+    println!("{}", df.serde_graph().unwrap().to_mermaid());
+
+    df.run_epoch();
+    assert_eq!(&[1, 3], &*output.take());
+
+    df.run_epoch();
+    assert_eq!(&[] as &[usize], &*output.take());
+
+    df.run_epoch();
+    assert_eq!(&[2, 6], &*output.take());
+
+    df.run_epoch();
+    assert_eq!(&[] as &[usize], &*output.take());
+
+    df.run_epoch();
+    assert_eq!(&[4, 12], &*output.take());
+}
+
+#[test]
+pub fn test_epoch_loop_3() {
+    let output = <Rc<RefCell<Vec<usize>>>>::default();
+    let output_inner = output.clone();
+
+    let mut df: Hydroflow = hydroflow_syntax! {
+        a = merge() -> tee();
+        recv_iter([1, 3]) -> [0]a;
+        a[0] -> next_epoch() -> next_epoch() -> next_epoch() -> map(|x| 2 * x) -> [1]a;
+        a[1] -> for_each(|x| output_inner.borrow_mut().push(x));
+    };
+
+    println!("{}", df.serde_graph().unwrap().to_mermaid());
+
+    df.run_epoch();
+    assert_eq!(&[1, 3], &*output.take());
+
+    df.run_epoch();
+    assert_eq!(&[] as &[usize], &*output.take());
+
+    df.run_epoch();
+    assert_eq!(&[] as &[usize], &*output.take());
+
+    df.run_epoch();
+    assert_eq!(&[2, 6], &*output.take());
+
+    df.run_epoch();
+    assert_eq!(&[] as &[usize], &*output.take());
 }
 
 // RUSTFLAGS="$RUSTFLAGS -Z proc-macro-backtrace" cargo test --package hydroflow --test surface_stratum -- test_surface_syntax_strata --exact --nocapture

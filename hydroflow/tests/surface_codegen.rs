@@ -57,9 +57,47 @@ pub fn test_reduce_sum() {
 }
 
 #[test]
-pub fn test_fold_sort() {
+pub fn test_sort() {
     // use std::collections::BinaryHeap;
 
+    // An edge in the input data = a pair of `usize` vertex IDs.
+    let (items_send, items_recv) = tokio::sync::mpsc::unbounded_channel::<usize>();
+
+    let mut df = hydroflow_syntax! {
+        recv_stream(items_recv)
+            -> sort()
+            -> for_each(|v| print!("{:?}, ", v));
+    };
+
+    println!(
+        "{}",
+        df.serde_graph()
+            .expect("No graph found, maybe failed to parse.")
+            .to_mermaid()
+    );
+    df.run_available();
+
+    print!("\nA: ");
+
+    items_send.send(9).unwrap();
+    items_send.send(2).unwrap();
+    items_send.send(5).unwrap();
+    df.run_available();
+
+    print!("\nB: ");
+
+    items_send.send(9).unwrap();
+    items_send.send(5).unwrap();
+    items_send.send(2).unwrap();
+    items_send.send(0).unwrap();
+    items_send.send(3).unwrap();
+    df.run_available();
+
+    println!();
+}
+
+#[test]
+pub fn test_fold_sort() {
     // An edge in the input data = a pair of `usize` vertex IDs.
     let (items_send, items_recv) = tokio::sync::mpsc::unbounded_channel::<usize>();
 
