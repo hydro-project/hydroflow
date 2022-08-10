@@ -26,8 +26,8 @@ impl PartitionedGraph {
         Default::default()
     }
 
-    pub fn from_flat_graph(flat_graph: FlatGraph) -> Self {
-        flat_graph.into()
+    pub fn from_flat_graph(flat_graph: FlatGraph) -> Result<Self, ()> {
+        flat_graph.try_into()
     }
 
     pub fn edges(&self) -> impl '_ + Iterator<Item = (EdgePortRef, EdgePortRef)> {
