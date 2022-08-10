@@ -1,3 +1,3 @@
-(function() {var implementors = {};
-implementors["hydroflow"] = [{"text":"impl&lt;S:&nbsp;<a class=\"trait\" href=\"hydroflow/scheduled/port/trait.Polarity.html\" title=\"trait hydroflow::scheduled::port::Polarity\">Polarity</a>, H&gt; <a class=\"trait\" href=\"https://docs.rs/ref-cast/1.0.7/ref_cast/trait.RefCast.html\" title=\"trait ref_cast::RefCast\">RefCast</a> for <a class=\"struct\" href=\"hydroflow/scheduled/port/struct.PortCtx.html\" title=\"struct hydroflow::scheduled::port::PortCtx\">PortCtx</a>&lt;S, H&gt;","synthetic":false,"types":["hydroflow::scheduled::port::PortCtx"]}];
-if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
+(function() {var implementors = {
+"hydroflow":[["impl&lt;S:&nbsp;<a class=\"trait\" href=\"hydroflow/scheduled/port/trait.Polarity.html\" title=\"trait hydroflow::scheduled::port::Polarity\">Polarity</a>, H&gt; <a class=\"trait\" href=\"https://docs.rs/ref-cast/1.0.7/ref_cast/trait.RefCast.html\" title=\"trait ref_cast::RefCast\">RefCast</a> for <a class=\"struct\" href=\"hydroflow/scheduled/port/struct.PortCtx.html\" title=\"struct hydroflow::scheduled::port::PortCtx\">PortCtx</a>&lt;S, H&gt;"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
