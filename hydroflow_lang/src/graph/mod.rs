@@ -345,7 +345,7 @@ fn find_subgraph_strata(
     node_subgraph: &mut SecondaryMap<GraphNodeId, GraphSubgraphId>,
     subgraph_nodes: &mut SlotMap<GraphSubgraphId, Vec<GraphNodeId>>,
     barrier_crossers: &Vec<(GraphNodeId, GraphNodeId, IndexInt, InputBarrier)>,
-) -> SecondaryMap<GraphSubgraphId, usize> {
+) -> Result<SecondaryMap<GraphSubgraphId, usize>, ()> {
     // Determine subgraphs's stratum number.
     // Find SCCs ignoring negative edges, then do TopoSort on the resulting DAG.
 
@@ -454,8 +454,9 @@ fn find_subgraph_strata(
                     dst_idx
                         .span()
                         .unwrap()
-                        .error("Connection creates an unbroken negative cycle.")
+                        .error("Connection creates a negative cycle which must be broken with a `next_epoch()` operator.")
                         .emit();
+                    return Err(());
                 }
             }
             InputBarrier::Epoch => {
@@ -506,7 +507,7 @@ fn find_subgraph_strata(
         }
     }
 
-    subgraph_stratum
+    Ok(subgraph_stratum)
 }
 
 fn find_subgraph_handoffs(
@@ -549,8 +550,10 @@ fn find_subgraph_handoffs(
     (subgraph_recv_handoffs, subgraph_send_handoffs)
 }
 
-impl From<FlatGraph> for PartitionedGraph {
-    fn from(mut flat_graph: FlatGraph) -> Self {
+impl TryFrom<FlatGraph> for PartitionedGraph {
+    type Error = (); // TODO(mingwei).
+
+    fn try_from(mut flat_graph: FlatGraph) -> Result<Self, Self::Error> {
         // Pairs of node IDs which cross stratums or epochs and therefore cannot be in the same subgraph.
         let barrier_crossers = iter_edges(&flat_graph.succs)
             .filter_map(|((src, _src_idx), (dst, dst_idx))| {
@@ -584,7 +587,7 @@ impl From<FlatGraph> for PartitionedGraph {
             &mut node_subgraph,
             &mut subgraph_nodes,
             &barrier_crossers,
-        );
+        )?;
 
         let (subgraph_recv_handoffs, subgraph_send_handoffs) = find_subgraph_handoffs(
             &flat_graph.nodes,
@@ -593,7 +596,7 @@ impl From<FlatGraph> for PartitionedGraph {
             &subgraph_nodes,
         );
 
-        PartitionedGraph {
+        Ok(PartitionedGraph {
             nodes: flat_graph.nodes,
             preds: new_preds,
             succs: new_succs,
@@ -603,7 +606,7 @@ impl From<FlatGraph> for PartitionedGraph {
             subgraph_stratum,
             subgraph_recv_handoffs,
             subgraph_send_handoffs,
-        }
+        })
     }
 }
 

@@ -23,13 +23,12 @@ pub fn hydroflow_syntax(input: proc_macro::TokenStream) -> proc_macro::TokenStre
     let input = parse_macro_input!(input as HfCode);
 
     let flat_graph = FlatGraph::from_hfcode(input);
-    let tokens = if flat_graph.emit_operator_errors() {
-        quote! { #root::scheduled::graph::Hydroflow::new() }
-    } else {
-        let part_graph = flat_graph.into_partitioned_graph();
-        part_graph.as_code(root)
-    };
-    tokens.into()
+    if !flat_graph.emit_operator_errors() {
+        if let Ok(part_graph) = flat_graph.into_partitioned_graph() {
+            return part_graph.as_code(root).into();
+        }
+    }
+    quote! { #root::scheduled::graph::Hydroflow::new() }.into()
 }
 
 #[proc_macro]
