@@ -144,7 +144,7 @@ impl FlatGraph {
                                     .span()
                                     .unwrap()
                                     .error(format!(
-                                        "expected {} arguments, found {}",
+                                        "expected {} argument(s), found {}",
                                         op_constraints.num_args,
                                         operator.args.len()
                                     ))
