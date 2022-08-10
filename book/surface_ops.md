@@ -115,7 +115,7 @@ Given a tokio channel created in Rust code, `recv_stream`
 is passed the receive endpoint of the channel and emits each of the
 elements it receives downstream.
 
-```rust,ignore
+```rust
 # use hydroflow::hydroflow_syntax;
 let (input_send, input_recv) = tokio::sync::mpsc::unbounded_channel::<&str>();
 let mut flow = hydroflow_syntax! {
