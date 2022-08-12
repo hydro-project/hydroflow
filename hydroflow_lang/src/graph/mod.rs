@@ -19,6 +19,7 @@ use self::ops::InputBarrier;
 use self::partitioned_graph::PartitionedGraph;
 
 pub mod flat_graph;
+pub mod graph_algorithms;
 pub mod ops;
 pub mod partitioned_graph;
 pub mod serde_graph;
@@ -71,34 +72,6 @@ pub enum Color {
     Comp,
     /// Handoff (red) -- not a color for operators, inserted between subgraphs.
     Hoff,
-}
-
-struct TopoSort<Id, PredsFn>
-where
-    Id: Hash + Eq,
-{
-    preds_fn: PredsFn,
-    marked: HashSet<Id>,
-    order: Vec<Id>,
-}
-impl<Id, PredsFn, PredsIter> TopoSort<Id, PredsFn>
-where
-    Id: Copy + Hash + Eq,
-    PredsFn: FnMut(Id) -> PredsIter,
-    PredsIter: IntoIterator<Item = Id>,
-{
-    pub fn visit(&mut self, node_id: Id) {
-        // Already marked (cycle).
-        if self.marked.contains(&node_id) {
-            return;
-        }
-
-        self.marked.insert(node_id);
-        for next_back in (self.preds_fn)(node_id) {
-            self.visit(next_back);
-        }
-        self.order.push(node_id);
-    }
 }
 
 pub fn node_color(node: &Node, inn_degree: usize, out_degree: usize) -> Option<Color> {
@@ -272,58 +245,36 @@ fn find_subgraphs(
     // Determine node's subgraph and subgraph's nodes.
     // This list of nodes in each subgraph are to be in topological sort order.
     let (node_subgraph, subgraph_nodes) = {
-        struct SubgraphTopoSort<'a> {
-            nodes: &'a SlotMap<GraphNodeId, Node>,
-            preds: &'a SecondaryMap<GraphNodeId, OutboundEdges>,
-            node_union: &'a mut UnionFind<GraphNodeId>,
-            marked: HashSet<GraphNodeId>,
-            subgraph_nodes: SecondaryMap<GraphNodeId, Vec<GraphNodeId>>,
-        }
-        impl<'a> SubgraphTopoSort<'a> {
-            pub fn visit(&mut self, node_id: GraphNodeId) {
-                // Already marked.
-                if self.marked.contains(&node_id) {
-                    return;
-                }
-                // Ignore handoff nodes.
-                if matches!(self.nodes[node_id], Node::Handoff) {
-                    return;
-                }
-
-                self.marked.insert(node_id);
-
-                for &(next_back, _) in self.preds[node_id].values() {
-                    if self.node_union.same_set(node_id, next_back) {
-                        self.visit(next_back);
-                    }
-                }
-
-                let repr_node = self.node_union.find(node_id);
-                if !self.subgraph_nodes.contains_key(repr_node) {
-                    self.subgraph_nodes.insert(repr_node, Default::default());
-                }
-                self.subgraph_nodes[repr_node].push(node_id);
-            }
-        }
-
-        let (marked, subgraph_nodes) = Default::default();
-        let mut sg_topo_sort = SubgraphTopoSort {
-            nodes: &nodes,
-            preds: &new_preds,
-            node_union: &mut node_union,
-            marked,
-            subgraph_nodes,
-        };
-        for node_id in nodes.keys() {
-            sg_topo_sort.visit(node_id);
-        }
+        // Ignore handoffs. Esentially each subgraph has it's own topo sort.
+        let topo_sort = graph_algorithms::topo_sort(
+            nodes
+                .iter()
+                .filter(|&(_, node)| !matches!(node, Node::Handoff))
+                .map(|(node_id, _)| node_id),
+            |v| {
+                new_preds
+                    .get(v)
+                    .into_iter()
+                    .flatten()
+                    .map(|(_src_idx, &(dst, _dst_idx))| dst)
+                    .filter(|&dst| !matches!(nodes[dst], Node::Handoff))
+            },
+        );
 
         // For a `NodeId`, what `SubgraphId` does it belong to.
         let mut node_subgraph: SecondaryMap<GraphNodeId, GraphSubgraphId> = Default::default();
         // For a `SubgraphId`, what `NodeId`s belong to it.
         let mut subgraph_nodes: SlotMap<GraphSubgraphId, Vec<GraphNodeId>> = Default::default();
         // Populate above.
-        for (_repr_node, member_nodes) in sg_topo_sort.subgraph_nodes {
+        let mut grouped_nodes: SecondaryMap<GraphNodeId, Vec<GraphNodeId>> = Default::default();
+        for node_id in topo_sort {
+            let repr_node = node_union.find(node_id);
+            if !grouped_nodes.contains_key(repr_node) {
+                grouped_nodes.insert(repr_node, Default::default());
+            }
+            grouped_nodes[repr_node].push(node_id);
+        }
+        for (_repr_node, member_nodes) in grouped_nodes {
             subgraph_nodes.insert_with_key(|subgraph_id| {
                 for &node_id in member_nodes.iter() {
                     node_subgraph.insert(node_id, subgraph_id);
@@ -420,17 +371,9 @@ fn find_subgraph_strata(
             .map(|(u, preds)| (scc[u], preds.iter().map(|v| scc[v]).collect()))
             .collect();
 
-        let (marked, order) = Default::default();
-        let mut topo_sort = TopoSort {
-            preds_fn: |v| condensed_preds.get(&v).into_iter().flatten().cloned(),
-            marked,
-            order,
-        };
-        for sg in subgraph_nodes.keys() {
-            topo_sort.visit(sg);
-        }
-
-        topo_sort.order
+        graph_algorithms::topo_sort(subgraph_nodes.keys(), |v| {
+            condensed_preds.get(&v).into_iter().flatten().cloned()
+        })
     };
 
     let mut subgraph_stratum: SecondaryMap<GraphSubgraphId, usize> = topo_sort_order
