@@ -1,4 +1,5 @@
 use hydroflow::hydroflow_syntax;
+use hydroflow::scheduled::graph::Hydroflow;
 use tokio::task::LocalSet;
 
 // TODO(mingwei): custom operators? How to handle in syntax? How to handle state?
@@ -162,7 +163,7 @@ pub fn test_surface_syntax_reachability_generated() {
     // An edge in the input data = a pair of `usize` vertex IDs.
     let (pairs_send, pairs_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
 
-    let mut df = hydroflow_syntax! {
+    let mut df: Hydroflow = hydroflow_syntax! {
         reached_vertices = merge() -> map(|v| (v, ()));
         recv_iter(vec![0]) -> [0]reached_vertices;
 

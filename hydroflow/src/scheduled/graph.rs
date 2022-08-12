@@ -4,9 +4,11 @@ use std::cell::Cell;
 use std::collections::VecDeque;
 use std::marker::PhantomData;
 use std::num::NonZeroUsize;
+use std::time::Duration;
 
 use hydroflow_lang::graph::serde_graph::SerdeGraph;
 use ref_cast::RefCast;
+use tokio::runtime::{Builder, Runtime};
 use tokio::sync::mpsc::{self, UnboundedReceiver};
 
 use super::context::Context;
@@ -24,10 +26,16 @@ pub struct Hydroflow {
     pub(super) subgraphs: Vec<SubgraphData>,
     pub(super) context: Context,
 
-    // TODO(mingwei): separate scheduler into its own struct/trait?
-    // Index is stratum, value is FIFO queue for that stratum.
+    /// TODO(mingwei): separate scheduler into its own struct/trait?
+    /// Index is stratum, value is FIFO queue for that stratum.
     stratum_queues: Vec<VecDeque<SubgraphId>>,
     event_queue_recv: UnboundedReceiver<SubgraphId>,
+
+    /// Tokio async runtime worker for running async tasks to completion.
+    /// A `Hydroflow` instance's scheduler acts like a async runtime but
+    /// the tasks are only subgraphs, not in general any future. This runtime
+    /// handles general futures.
+    tokio_worker: Runtime,
 
     serde_graph: Option<SerdeGraph>,
 }
@@ -47,6 +55,11 @@ impl Default for Hydroflow {
 
             subgraph_id: SubgraphId(0),
         };
+        let tokio_worker = Builder::new_multi_thread()
+            .worker_threads(1)
+            .enable_all()
+            .build()
+            .expect("Failed to construction Tokio Runtime worker.");
         Self {
             subgraphs,
             context,
@@ -54,6 +67,7 @@ impl Default for Hydroflow {
             stratum_queues,
 
             event_queue_recv,
+            tokio_worker,
 
             serde_graph: None,
         }
@@ -458,6 +472,17 @@ impl Hydroflow {
 
     pub fn add_dependencies(&mut self, sg_id: SubgraphId, deps: FlowGraph) {
         self.subgraphs[sg_id.0].dependencies.append(deps);
+    }
+}
+
+impl Hydroflow {
+    /// Retrieve handle to internal tokio worker.
+    pub fn tokio_worker(&self) -> &Runtime {
+        &self.tokio_worker
+    }
+
+    pub fn shutdown(self, duration: Duration) {
+        self.tokio_worker.shutdown_timeout(duration)
     }
 }
 
