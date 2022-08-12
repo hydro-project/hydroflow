@@ -41,7 +41,12 @@ where
 
     /// Inserts the value using the function if new `key` is strictly later than the current key.
     pub fn try_insert_with(&mut self, key: K, init: impl FnOnce() -> V) -> &mut V {
-        if self.key.as_ref().map(|old_key| old_key <= &key).unwrap_or(true) {
+        if self
+            .key
+            .as_ref()
+            .map(|old_key| old_key <= &key)
+            .unwrap_or(true)
+        {
             self.key = Some(key);
             self.val = (init)();
         }
