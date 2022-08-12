@@ -64,7 +64,11 @@ fn gen_datalog_program(literal: proc_macro2::Literal) -> syn::Stmt {
     let actual_str = str_node.value();
     let program = datalog_grammar::parse(&actual_str).unwrap();
     let program_tree = format!("{:?}", program);
-    syn::parse_quote!(let tree = #program_tree;)
+
+    syn::parse_quote!({
+        let tree = #program_tree;
+        tree
+    })
 }
 
 #[proc_macro]

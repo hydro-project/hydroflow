@@ -12,15 +12,11 @@ quote = "1.0.0"
 slotmap = "1.0.6"
 syn = { version = "1.0.0", features = [ "parsing", "extra-traits" ] }
 proc-macro2 = "1.0.27"
-rust_sitter = { git = "https://github.com/hydro-project/rust-sitter" }
-tree-sitter = "0.20.6"
+rust-sitter = { git = "https://github.com/hydro-project/rust-sitter" }
+hydroflow_lang = { path = "../hydroflow_lang" }
 
 [build-dependencies]
-cc = "*"
-tempdir = "0.3.7"
-tree-sitter-cli = "0.20.6"
-tree-sitter = "0.20.6"
-rust_sitter_tool = { git = "https://github.com/hydro-project/rust-sitter" }
+rust-sitter-tool = { git = "https://github.com/hydro-project/rust-sitter" }
 
 [dev-dependencies]
 insta = "1.7.1"

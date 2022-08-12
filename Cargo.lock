@@ -396,18 +396,15 @@ dependencies = [
 name = "datalog_compiler"
 version = "0.1.0"
 dependencies = [
- "cc",
+ "hydroflow_lang",
  "insta",
  "proc-macro2",
  "quote",
- "rust_sitter",
- "rust_sitter_tool",
+ "rust-sitter",
+ "rust-sitter-tool",
  "slotmap",
  "syn",
- "tempdir",
  "tempfile",
- "tree-sitter",
- "tree-sitter-cli",
 ]
 
 [[package]]
@@ -691,6 +688,7 @@ dependencies = [
  "colored",
  "core_affinity",
  "criterion",
+ "datalog_compiler",
  "futures",
  "hdrhistogram",
  "hydroflow_lang",
@@ -1301,44 +1299,48 @@ dependencies = [
 ]
 
 [[package]]
-name = "rust_sitter"
-version = "0.1.0"
-source = "git+https://github.com/hydro-project/rust-sitter#6222008af8d6bbdd65b1a468358f7f5cc248971b"
+name = "rust-sitter"
+version = "0.1.1"
+source = "git+https://github.com/hydro-project/rust-sitter#4f603c6f58493e0e741db10f3e408913520ea50e"
 dependencies = [
- "rust_sitter_macro",
+ "rust-sitter-macro",
  "tree-sitter",
 ]
 
 [[package]]
-name = "rust_sitter_common"
-version = "0.1.0"
-source = "git+https://github.com/hydro-project/rust-sitter#6222008af8d6bbdd65b1a468358f7f5cc248971b"
+name = "rust-sitter-common"
+version = "0.1.1"
+source = "git+https://github.com/hydro-project/rust-sitter#4f603c6f58493e0e741db10f3e408913520ea50e"
 dependencies = [
  "quote",
  "syn",
 ]
 
 [[package]]
-name = "rust_sitter_macro"
-version = "0.1.0"
-source = "git+https://github.com/hydro-project/rust-sitter#6222008af8d6bbdd65b1a468358f7f5cc248971b"
+name = "rust-sitter-macro"
+version = "0.1.1"
+source = "git+https://github.com/hydro-project/rust-sitter#4f603c6f58493e0e741db10f3e408913520ea50e"
 dependencies = [
  "proc-macro2",
  "quote",
- "rust_sitter_common",
+ "rust-sitter-common",
  "syn",
 ]
 
 [[package]]
-name = "rust_sitter_tool"
-version = "0.1.0"
-source = "git+https://github.com/hydro-project/rust-sitter#6222008af8d6bbdd65b1a468358f7f5cc248971b"
+name = "rust-sitter-tool"
+version = "0.1.1"
+source = "git+https://github.com/hydro-project/rust-sitter#4f603c6f58493e0e741db10f3e408913520ea50e"
 dependencies = [
- "rust_sitter_common",
+ "cc",
+ "rust-sitter-common",
  "serde",
  "serde_json",
  "syn",
  "syn-inline-mod",
+ "tempdir",
+ "tree-sitter",
+ "tree-sitter-cli",
 ]
 
 [[package]]
