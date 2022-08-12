@@ -164,7 +164,8 @@ from <code>n</code> to <code>n+1</code>. We then call <code>-&gt; flat_map()</co
 into the numbers which they contain.</p>
 <p>We can also express the same program with more aggressive use of combination operators like
 <a href="./surface_ops.html#filtermap"><code>filter_map()</code></a> and <a href="./surface_ops.html#flatmap"><code>flat_map()</code></a>:</p>
-<pre><pre class="playground"><code class="language-rust"> pub fn main() {
+<pre><pre class="playground"><code class="language-rust"><span class="boring">use hydroflow::hydroflow_syntax;
+</span> pub fn main() {
     let mut flow = hydroflow_syntax! {
         recv_iter(0..10)
         -&gt; filter_map(|n| {

@@ -139,9 +139,9 @@
 <pre><pre class="playground"><code class="language-rust">use hydroflow::hydroflow_syntax;
 
 pub fn main() {
-    let hydroflow = hydroflow_syntax! {
-    // code will go here
-    }
+    let mut hydroflow = hydroflow_syntax! {
+        // code will go here
+    };
 
     hydroflow.run_available();
 }
@@ -196,7 +196,6 @@ input_example.send(9).unwrap();
 
 hydroflow.run_available();
 }
-
 </code></pre></pre>
 <pre><code class="language-txt">A
 Ahoj 16

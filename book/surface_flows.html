@@ -139,21 +139,13 @@
 uses the <a href="./surface_ops.html#recv_iter"><code>recv_iter</code></a> operator to generate two strings from a Rust <code>vec</code>, the 
 <a href="./surface_ops.html#map"><code>map</code></a> operator to apply some Rust code to uppercase each string, and the <a href="./surface_ops.html#for_each"><code>for_each</code></a> 
 operator to print each string to stdout.</p>
-<pre><pre class="playground"><code class="language-rust">
-<span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>recv_iter(vec![&quot;Hello&quot;, &quot;world&quot;]) 
+<pre><code class="language-rust ignore">recv_iter(vec![&quot;Hello&quot;, &quot;world&quot;]) 
     -&gt; map(|x| x.to_uppercase()) -&gt; for_each(|x| println!(&quot;{}&quot;, x));
-<span class="boring">}
-</span></code></pre></pre>
+</code></pre>
 <p>Flows can be assigned to variable names for convenience. E.g, the above can be rewritten as follows:</p>
-<pre><pre class="playground"><code class="language-rust">
-<span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>upper_print = map(|x| x.to_uppercase()) -&gt; for_each(|x| println!(&quot;{}&quot;, x));
+<pre><code class="language-rust ignore">upper_print = map(|x| x.to_uppercase()) -&gt; for_each(|x| println!(&quot;{}&quot;, x));
 recv_iter(vec![&quot;Hello&quot;, &quot;world&quot;]) -&gt; upper_print;
-<span class="boring">}
-</span></code></pre></pre>
+</code></pre>
 <h2 id="operators-with-multiple-ports"><a class="header" href="#operators-with-multiple-ports">Operators with Multiple Ports</a></h2>
 <p>Some operators have more than one input <em>port</em> that can be referenced by <code>-&gt;</code>. For example <a href="./surface_ops.html#merge"><code>merge</code></a> 
 merges the contents of many flows, so it can have an abitrary number of input ports. Some operators have multiple outputs, notably <a href="./surface_ops.html#tee"><code>tee</code></a>,
@@ -162,15 +154,11 @@ which has an arbitrary number of outputs. </p>
 in square brackets before the operator name (e.g. <code>[0]merge(...)</code> and <code>[1]merge(...)</code>). We 
 distinguish output ports by an <em>indexing suffix</em> (e.g. <code>tee[0]</code>). </p>
 <p>Here is an example that tees one flow into two, handles each separately, and then merges them to print out the contents in both lowercase and uppercase:</p>
-<pre><pre class="playground"><code class="language-rust">
-<span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>source = recv_iter(vec![&quot;Hello&quot;, &quot;world&quot;]) -&gt; tee();
+<pre><code class="language-rust ignore">source = recv_iter(vec![&quot;Hello&quot;, &quot;world&quot;]) -&gt; tee();
 print = merge() -&gt; for_each(|x| println!(&quot;{}&quot;, x));
 source[0] -&gt; map(|x: &amp;str| x.to_uppercase()) -&gt; [0]print;
 source[1] -&gt; map(|x: &amp;str| x.to_lowercase()) -&gt; [1]print;
-<span class="boring">}
-</span></code></pre></pre>
+</code></pre>
 <p>(Note that the Rust code inside map needed a little help with type inference after the <code>tee</code>.)</p>
 <p>Here is a visualization of the flow that was generated:</p>
 <pre class="mermaid">flowchart TB

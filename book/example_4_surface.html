@@ -170,7 +170,8 @@ two inbound edges. Similarly note that the join node <code>V ⨝ E</code> not on
 normal for a join), it also has two <em>outbound</em> edges; the sketch omits the operator to <code>tee</code> the output along 
 two paths.</p>
 <p>Lets take a look at some hydroflow code that implements the program, including the <code>merge</code> and <code>tee</code>:</p>
-<pre><pre class="playground"><code class="language-rust">pub fn main() {
+<pre><pre class="playground"><code class="language-rust"><span class="boring">use hydroflow::hydroflow_syntax;
+</span>pub fn main() {
     // An edge in the input data = a pair of `usize` vertex IDs.
     let (pairs_send, pairs_recv) = tokio::sync::mpsc::unbounded_channel::&lt;(usize, usize)&gt;();
 

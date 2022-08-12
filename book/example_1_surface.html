@@ -168,7 +168,8 @@ with Hydroflow.</p>
 <p>Next, inside the main method we specify a flow by calling the 
 <code>hydroflow_syntax!</code> macro. We assign the resulting <code>Hydroflow</code> instance to
 a mutable variable---we will be changing its status when we run it.</p>
-<pre><code class="language-rust ignore">pub fn main() {
+<pre><code class="language-rust ignore"><span class="boring">use hydroflow::hydroflow_syntax;
+</span>pub fn main() {
     let mut flow = hydroflow_syntax! {
         recv_iter(0..10) -&gt; for_each(|n| println!(&quot;Hello {}&quot;, n));
     };
@@ -178,7 +179,7 @@ numbers 1 through 10, and passes them along the arrow <code>-&gt;</code> operato
 <a href="./surface_ops.html#for_each"><code>for_each</code></a> operator that invokes its closure argument to print each
 item passed in.</p>
 <p>Finally we run this flow via the <a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_available"><code>run_available()</code> method</a>.</p>
-<pre><code class="language-rust  ignore">    flow.run_available();
+<pre><code class="language-rust ignore">    flow.run_available();
 }
 </code></pre>
 <p>Note that <code>run_available()</code> runs the Hydroflow graph until no more work is immediately
