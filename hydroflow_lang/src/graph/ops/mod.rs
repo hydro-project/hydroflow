@@ -68,7 +68,7 @@ const IDENTITY_WRITE_ITERATOR_FN: &'static dyn Fn(
     }
 });
 
-pub const OPERATORS: [OperatorConstraints; 18] = [
+pub const OPERATORS: [OperatorConstraints; 19] = [
     OperatorConstraints {
         name: "merge",
         hard_range_inn: &(0..),
@@ -96,41 +96,16 @@ pub const OPERATORS: [OperatorConstraints; 18] = [
         soft_range_out: RANGE_1,
         num_args: 0,
         input_delaytype_fn: &|_| None,
-        write_prologue_fn: &(|&WriteContextArgs {
-                                  subgraph_id,
-                                  node_id,
-                                  ..
-                              },
-                              _| {
+        write_prologue_fn: &(|wc, _| {
             // TODO(mingwei): use state api.
-            let joindata_ident = Ident::new(
-                &*format!(
-                    "sg_{:?}_node_{:?}_joindata",
-                    subgraph_id.data(),
-                    node_id.data()
-                ),
-                Span::call_site(),
-            );
+            let joindata_ident = wc.make_ident("joindata");
             quote! {
                 let mut #joindata_ident = Default::default();
             }
         }),
-        write_iterator_fn: &(|&WriteContextArgs {
-                                  root,
-                                  subgraph_id,
-                                  node_id,
-                                  ident,
-                                  ..
-                              },
+        write_iterator_fn: &(|wc @ &WriteContextArgs { root, ident, .. },
                               &WriteIteratorArgs { inputs, .. }| {
-            let joindata_ident = Ident::new(
-                &*format!(
-                    "sg_{:?}_node_{:?}_joindata",
-                    subgraph_id.data(),
-                    node_id.data()
-                ),
-                Span::call_site(),
-            );
+            let joindata_ident = wc.make_ident("joindata");
             let lhs = &inputs[0];
             let rhs = &inputs[1];
             quote! {
@@ -401,31 +376,14 @@ pub const OPERATORS: [OperatorConstraints; 18] = [
         soft_range_out: RANGE_1,
         num_args: 1,
         input_delaytype_fn: &|_| None,
-        write_prologue_fn: &(|&WriteContextArgs {
-                                  subgraph_id,
-                                  node_id,
-                                  ..
-                              },
-                              &WriteIteratorArgs { arguments, .. }| {
-            let iter_ident = Ident::new(
-                &*format!("sg_{:?}_node_{:?}_iter", subgraph_id.data(), node_id.data()),
-                Span::call_site(),
-            );
+        write_prologue_fn: &(|wc, &WriteIteratorArgs { arguments, .. }| {
+            let iter_ident = wc.make_ident("iter");
             quote! {
-            let mut #iter_ident = std::iter::IntoIterator::into_iter(#arguments);
+                let mut #iter_ident = std::iter::IntoIterator::into_iter(#arguments);
             }
         }),
-        write_iterator_fn: &(|&WriteContextArgs {
-                                  ident,
-                                  subgraph_id,
-                                  node_id,
-                                  ..
-                              },
-                              _| {
-            let iter_ident = Ident::new(
-                &*format!("sg_{:?}_node_{:?}_iter", subgraph_id.data(), node_id.data()),
-                Span::call_site(),
-            );
+        write_iterator_fn: &(|wc @ &WriteContextArgs { ident, .. }, _| {
+            let iter_ident = wc.make_ident("iter");
             quote! {
                 let #ident = #iter_ident.by_ref();
             }
@@ -448,22 +406,6 @@ pub const OPERATORS: [OperatorConstraints; 18] = [
         }),
     },
     OperatorConstraints {
-        name: "for_each",
-        hard_range_inn: RANGE_1,
-        soft_range_inn: RANGE_1,
-        hard_range_out: RANGE_0,
-        soft_range_out: RANGE_0,
-        num_args: 1,
-        input_delaytype_fn: &|_| None,
-        write_prologue_fn: &(|_, _| quote! {}),
-        write_iterator_fn: &(|&WriteContextArgs { root, ident, .. },
-                              &WriteIteratorArgs { arguments, .. }| {
-            quote! {
-                let #ident = #root::compiled::for_each::ForEach::new(#arguments);
-            }
-        }),
-    },
-    OperatorConstraints {
         name: "difference",
         hard_range_inn: &(2..=2),
         soft_range_inn: &(2..=2),
@@ -471,51 +413,20 @@ pub const OPERATORS: [OperatorConstraints; 18] = [
         soft_range_out: RANGE_1,
         num_args: 0,
         input_delaytype_fn: &|idx| (1 == idx).then_some(DelayType::Stratum),
-        write_prologue_fn: &(|&WriteContextArgs {
-                                  root,
-                                  subgraph_id,
-                                  node_id,
-                                  ..
-                              },
-                              _| {
-            let handle_ident = Ident::new(
-                &*format!(
-                    "sg_{:?}_node_{:?}_diffdata_handle",
-                    subgraph_id.data(),
-                    node_id.data()
-                ),
-                Span::call_site(),
-            );
+        write_prologue_fn: &(|wc @ &WriteContextArgs { root, .. }, _| {
+            let handle_ident = wc.make_ident("diffdata_handle");
             quote! {
                 let #handle_ident = df.add_state(std::cell::RefCell::new(
                     #root::lang::monotonic_map::MonotonicMap::<_, std::collections::HashSet<_>>::default(),
                 ));
             }
         }),
-        write_iterator_fn: &(|&WriteContextArgs {
-                                  subgraph_id,
-                                  node_id,
-                                  ident,
-                                  ..
-                              },
+        write_iterator_fn: &(|wc @ &WriteContextArgs { ident, .. },
                               &WriteIteratorArgs { inputs, .. }| {
-            let handle_ident = Ident::new(
-                &*format!(
-                    "sg_{:?}_node_{:?}_diffdata_handle",
-                    subgraph_id.data(),
-                    node_id.data()
-                ),
-                Span::call_site(),
-            );
+            let handle_ident = wc.make_ident("diffdata_handle");
 
-            let borrow_ident = Ident::new(
-                &*format!("node_{:?}_borrow", node_id.data()),
-                Span::call_site(),
-            );
-            let negset_ident = Ident::new(
-                &*format!("node_{:?}_negset", node_id.data()),
-                Span::call_site(),
-            );
+            let borrow_ident = wc.make_ident("borrow");
+            let negset_ident = wc.make_ident("negset");
 
             let input_pos = &inputs[0];
             let input_neg = &inputs[1];
@@ -551,6 +462,60 @@ pub const OPERATORS: [OperatorConstraints; 18] = [
         write_prologue_fn: &(|_, _| quote! {}),
         write_iterator_fn: IDENTITY_WRITE_ITERATOR_FN,
     },
+    OperatorConstraints {
+        name: "for_each",
+        hard_range_inn: RANGE_1,
+        soft_range_inn: RANGE_1,
+        hard_range_out: RANGE_0,
+        soft_range_out: RANGE_0,
+        num_args: 1,
+        input_delaytype_fn: &|_| None,
+        write_prologue_fn: &(|_, _| quote! {}),
+        write_iterator_fn: &(|&WriteContextArgs { root, ident, .. },
+                              &WriteIteratorArgs { arguments, .. }| {
+            quote! {
+                let #ident = #root::compiled::for_each::ForEach::new(#arguments);
+            }
+        }),
+    },
+    OperatorConstraints {
+        name: "send_async",
+        hard_range_inn: RANGE_1,
+        soft_range_inn: RANGE_1,
+        hard_range_out: RANGE_0,
+        soft_range_out: RANGE_0,
+        num_args: 1,
+        input_delaytype_fn: &|_| None,
+        write_prologue_fn: &(|wc @ &WriteContextArgs { root, .. },
+                              &WriteIteratorArgs { arguments, .. }| {
+            let async_write_arg = &arguments[0];
+
+            let send_ident = wc.make_ident("item_send");
+            let recv_ident = wc.make_ident("item_recv");
+
+            quote! {
+                let (#send_ident, #recv_ident) = #root::tokio::sync::mpsc::unbounded_channel();
+                df.tokio_worker().spawn(async move {
+                    use #root::tokio::io::AsyncWriteExt;
+
+                    let mut recv = #recv_ident;
+                    let mut write = #async_write_arg;
+                    while let Some(item) = recv.recv().await {
+                        let bytes = std::convert::AsRef::<[u8]>::as_ref(&item);
+                        write.write(bytes).await.expect("Error processing async write item.");
+                    }
+                });
+            }
+        }),
+        write_iterator_fn: &(|wc @ &WriteContextArgs { root, ident, .. }, _| {
+            let send_ident = wc.make_ident("item_send");
+            quote! {
+                let #ident = #root::compiled::for_each::ForEach::new(|item| {
+                    #send_ident.send(item).expect("Failed to send async write item for processing.");
+                });
+            }
+        }),
+    },
 ];
 
 pub struct WriteContextArgs<'a> {
@@ -558,6 +523,19 @@ pub struct WriteContextArgs<'a> {
     pub subgraph_id: GraphSubgraphId,
     pub node_id: GraphNodeId,
     pub ident: &'a Ident,
+}
+impl WriteContextArgs<'_> {
+    pub fn make_ident(&self, suffix: &'static str) -> Ident {
+        Ident::new(
+            &*format!(
+                "sg_{:?}_node_{:?}_{}",
+                self.subgraph_id.data(),
+                self.node_id.data(),
+                suffix
+            ),
+            Span::call_site(),
+        )
+    }
 }
 
 pub struct WriteIteratorArgs<'a> {
