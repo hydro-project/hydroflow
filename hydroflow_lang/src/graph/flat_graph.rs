@@ -287,6 +287,7 @@ impl FlatGraph {
         Ok(())
     }
 
+    #[allow(clippy::result_unit_err)]
     pub fn into_partitioned_graph(self) -> Result<PartitionedGraph, ()> {
         self.try_into()
     }

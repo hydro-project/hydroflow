@@ -26,6 +26,7 @@ impl PartitionedGraph {
         Default::default()
     }
 
+    #[allow(clippy::result_unit_err)]
     pub fn from_flat_graph(flat_graph: FlatGraph) -> Result<Self, ()> {
         flat_graph.try_into()
     }

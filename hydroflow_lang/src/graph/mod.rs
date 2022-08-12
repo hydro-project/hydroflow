@@ -97,7 +97,7 @@ fn find_subgraphs(
     nodes: &mut SlotMap<GraphNodeId, Node>,
     preds: &mut AdjList,
     succs: &mut AdjList,
-    barrier_crossers: &Vec<(GraphNodeId, GraphNodeId, IndexInt, InputBarrier)>,
+    barrier_crossers: &[(GraphNodeId, GraphNodeId, IndexInt, InputBarrier)],
 ) -> (
     AdjList,
     AdjList,
@@ -126,7 +126,7 @@ fn find_subgraphs(
     // Sort edges here (for now, no sort/priority).
     loop {
         let mut updated = false;
-        for ((src, src_idx), (dst, dst_idx)) in iter_edges(&succs) {
+        for ((src, src_idx), (dst, dst_idx)) in iter_edges(succs) {
             // Ignore new self-loops.
             if node_union.same_set(src, dst) {
                 // Note this might be triggered even if the edge (src, dst) is not in the subgraph.
@@ -209,7 +209,7 @@ fn find_subgraphs(
         nodes.keys().map(|k| (k, Default::default())).collect();
 
     // Copy over edges, inserting handoffs between subgraphs (or on subgraph self-edges) when needed.
-    for edge in iter_edges(&succs) {
+    for edge in iter_edges(succs) {
         let is_subgraph_edge = subgraph_edges.contains(&edge); // Internal subgraph edges are not handoffs.
         let ((src, src_idx), (dst, dst_idx)) = edge;
 
@@ -295,7 +295,7 @@ fn find_subgraph_strata(
     new_succs: &mut AdjList,
     node_subgraph: &mut SecondaryMap<GraphNodeId, GraphSubgraphId>,
     subgraph_nodes: &mut SlotMap<GraphSubgraphId, Vec<GraphNodeId>>,
-    barrier_crossers: &Vec<(GraphNodeId, GraphNodeId, IndexInt, InputBarrier)>,
+    barrier_crossers: &[(GraphNodeId, GraphNodeId, IndexInt, InputBarrier)],
 ) -> Result<SecondaryMap<GraphSubgraphId, usize>, ()> {
     // Determine subgraphs's stratum number.
     // Find SCCs ignoring negative edges, then do TopoSort on the resulting DAG.
@@ -469,7 +469,7 @@ fn find_subgraph_handoffs(
             .map(|k| (k, Default::default()))
             .collect();
     let mut subgraph_send_handoffs = subgraph_recv_handoffs.clone();
-    for edge in iter_edges(&new_succs) {
+    for edge in iter_edges(new_succs) {
         let ((src, _), (dst, _)) = edge;
         let (src_node, dst_node) = (&nodes[src], &nodes[dst]);
         match (src_node, dst_node) {
