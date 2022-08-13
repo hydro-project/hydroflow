@@ -53,18 +53,18 @@
  */</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Reactor</span> {
-    <span class="ident">event_queue_send</span>: <span class="ident">UnboundedSender</span><span class="op">&lt;</span><span class="ident">SubgraphId</span><span class="op">&gt;</span>,
+    <span class="ident">event_queue_send</span>: <span class="ident">UnboundedSender</span>&lt;<span class="ident">SubgraphId</span>&gt;,
 }
 <span class="kw">impl</span> <span class="ident">Reactor</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">event_queue_send</span>: <span class="ident">UnboundedSender</span><span class="op">&lt;</span><span class="ident">SubgraphId</span><span class="op">&gt;</span>) -&gt; <span class="self">Self</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">event_queue_send</span>: <span class="ident">UnboundedSender</span>&lt;<span class="ident">SubgraphId</span>&gt;) -&gt; <span class="self">Self</span> {
         <span class="self">Self</span> { <span class="ident">event_queue_send</span> }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">trigger</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">sg_id</span>: <span class="ident">SubgraphId</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">SendError</span><span class="op">&lt;</span><span class="ident">SubgraphId</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">trigger</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">sg_id</span>: <span class="ident">SubgraphId</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="ident">SendError</span>&lt;<span class="ident">SubgraphId</span>&gt;&gt; {
         <span class="self">self</span>.<span class="ident">event_queue_send</span>.<span class="ident">send</span>(<span class="ident">sg_id</span>)
     }
 
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;async&quot;</span>)]</span>
+    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;async&quot;</span>)]</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">into_waker</span>(<span class="self">self</span>, <span class="ident">sg_id</span>: <span class="ident">SubgraphId</span>) -&gt; <span class="ident">std::task::Waker</span> {
         <span class="kw">use</span> <span class="ident">futures::task::ArcWake</span>;
         <span class="kw">use</span> <span class="ident">std::sync::Arc</span>;
@@ -74,12 +74,12 @@
             <span class="ident">sg_id</span>: <span class="ident">SubgraphId</span>,
         }
         <span class="kw">impl</span> <span class="ident">ArcWake</span> <span class="kw">for</span> <span class="ident">ReactorWaker</span> {
-            <span class="kw">fn</span> <span class="ident">wake_by_ref</span>(<span class="ident">arc_self</span>: <span class="kw-2">&amp;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>) {
+            <span class="kw">fn</span> <span class="ident">wake_by_ref</span>(<span class="ident">arc_self</span>: <span class="kw-2">&amp;</span><span class="ident">Arc</span>&lt;<span class="self">Self</span>&gt;) {
                 <span class="ident">arc_self</span>.<span class="ident">reactor</span>.<span class="ident">trigger</span>(<span class="ident">arc_self</span>.<span class="ident">sg_id</span>).<span class="ident">unwrap</span>(<span class="comment">/* TODO(mingwei) */</span>);
             }
         }
 
-        <span class="kw">let</span> <span class="ident">reactor_waker</span> <span class="op">=</span> <span class="ident">ReactorWaker</span> {
+        <span class="kw">let</span> <span class="ident">reactor_waker</span> = <span class="ident">ReactorWaker</span> {
             <span class="ident">reactor</span>: <span class="self">self</span>,
             <span class="ident">sg_id</span>,
         };
@@ -87,4 +87,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (20ffea693 2022-08-11)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

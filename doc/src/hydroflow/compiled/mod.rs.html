@@ -323,24 +323,24 @@
 }
 
 <span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">IteratorToPusherator</span>: <span class="ident">Iterator</span> {
-    <span class="kw">fn</span> <span class="ident">pull_to_push</span>(<span class="self">self</span>) -&gt; <span class="ident">pivot::PivotBuild</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>
+    <span class="kw">fn</span> <span class="ident">pull_to_push</span>(<span class="self">self</span>) -&gt; <span class="ident">pivot::PivotBuild</span>&lt;<span class="self">Self</span>&gt;
     <span class="kw">where</span>
         <span class="self">Self</span>: <span class="ident">Sized</span>,
     {
         <span class="ident">pivot::PivotBuild::new</span>(<span class="self">self</span>)
     }
 }
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span> <span class="ident">IteratorToPusherator</span> <span class="kw">for</span> <span class="ident">I</span> <span class="kw">where</span> <span class="ident">I</span>: <span class="ident">Sized</span> <span class="op">+</span> <span class="ident">Iterator</span> {}
+<span class="kw">impl</span>&lt;<span class="ident">I</span>&gt; <span class="ident">IteratorToPusherator</span> <span class="kw">for</span> <span class="ident">I</span> <span class="kw">where</span> <span class="ident">I</span>: <span class="ident">Sized</span> + <span class="ident">Iterator</span> {}
 
 <span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">PusheratorBuild</span> {
     <span class="kw">type</span> <span class="ident">Item</span>;
 
-    <span class="kw">type</span> <span class="ident">Output</span><span class="op">&lt;</span><span class="ident">O</span>: <span class="ident">Pusherator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::Item</span><span class="op">&gt;</span><span class="op">&gt;</span>;
-    <span class="kw">fn</span> <span class="ident">build</span><span class="op">&lt;</span><span class="ident">O</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">input</span>: <span class="ident">O</span>) -&gt; <span class="ident"><span class="self">Self</span>::Output</span><span class="op">&lt;</span><span class="ident">O</span><span class="op">&gt;</span>
+    <span class="kw">type</span> <span class="ident">Output</span>&lt;<span class="ident">O</span>: <span class="ident">Pusherator</span>&lt;<span class="ident">Item</span> = <span class="ident"><span class="self">Self</span>::Item</span>&gt;&gt;;
+    <span class="kw">fn</span> <span class="ident">build</span>&lt;<span class="ident">O</span>&gt;(<span class="self">self</span>, <span class="ident">input</span>: <span class="ident">O</span>) -&gt; <span class="ident"><span class="self">Self</span>::Output</span>&lt;<span class="ident">O</span>&gt;
     <span class="kw">where</span>
-        <span class="ident">O</span>: <span class="ident">Pusherator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::Item</span><span class="op">&gt;</span>;
+        <span class="ident">O</span>: <span class="ident">Pusherator</span>&lt;<span class="ident">Item</span> = <span class="ident"><span class="self">Self</span>::Item</span>&gt;;
 
-    <span class="kw">fn</span> <span class="ident">map</span><span class="op">&lt;</span><span class="ident">U</span>, <span class="ident">F</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">map::MapBuild</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::Item</span>, <span class="ident">U</span>, <span class="ident">F</span>, <span class="self">Self</span><span class="op">&gt;</span>
+    <span class="kw">fn</span> <span class="ident">map</span>&lt;<span class="ident">U</span>, <span class="ident">F</span>&gt;(<span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">map::MapBuild</span>&lt;<span class="ident"><span class="self">Self</span>::Item</span>, <span class="ident">U</span>, <span class="ident">F</span>, <span class="self">Self</span>&gt;
     <span class="kw">where</span>
         <span class="self">Self</span>: <span class="ident">Sized</span>,
         <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="ident"><span class="self">Self</span>::Item</span>) -&gt; <span class="ident">U</span>,
@@ -348,7 +348,7 @@
         <span class="ident">map::MapBuild::new</span>(<span class="self">self</span>, <span class="ident">f</span>)
     }
 
-    <span class="kw">fn</span> <span class="ident">filter</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">filter::FilterBuild</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::Item</span>, <span class="ident">F</span>, <span class="self">Self</span><span class="op">&gt;</span>
+    <span class="kw">fn</span> <span class="ident">filter</span>&lt;<span class="ident">F</span>&gt;(<span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">filter::FilterBuild</span>&lt;<span class="ident"><span class="self">Self</span>::Item</span>, <span class="ident">F</span>, <span class="self">Self</span>&gt;
     <span class="kw">where</span>
         <span class="self">Self</span>: <span class="ident">Sized</span>,
         <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident"><span class="self">Self</span>::Item</span>) -&gt; <span class="ident">bool</span>,
@@ -356,16 +356,16 @@
         <span class="ident">filter::FilterBuild::new</span>(<span class="self">self</span>, <span class="ident">f</span>)
     }
 
-    <span class="kw">fn</span> <span class="ident">tee</span><span class="op">&lt;</span><span class="ident">O1</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">first_out</span>: <span class="ident">O1</span>) -&gt; <span class="ident">tee::TeeBuild</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::Item</span>, <span class="ident">O1</span>, <span class="self">Self</span><span class="op">&gt;</span>
+    <span class="kw">fn</span> <span class="ident">tee</span>&lt;<span class="ident">O1</span>&gt;(<span class="self">self</span>, <span class="ident">first_out</span>: <span class="ident">O1</span>) -&gt; <span class="ident">tee::TeeBuild</span>&lt;<span class="ident"><span class="self">Self</span>::Item</span>, <span class="ident">O1</span>, <span class="self">Self</span>&gt;
     <span class="kw">where</span>
         <span class="self">Self</span>: <span class="ident">Sized</span>,
         <span class="ident"><span class="self">Self</span>::Item</span>: <span class="ident">Clone</span>,
-        <span class="ident">O1</span>: <span class="ident">Pusherator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::Item</span><span class="op">&gt;</span>,
+        <span class="ident">O1</span>: <span class="ident">Pusherator</span>&lt;<span class="ident">Item</span> = <span class="ident"><span class="self">Self</span>::Item</span>&gt;,
     {
         <span class="ident">tee::TeeBuild::new</span>(<span class="self">self</span>, <span class="ident">first_out</span>)
     }
 
-    <span class="kw">fn</span> <span class="ident">for_each</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident"><span class="self">Self</span>::Output</span><span class="op">&lt;</span><span class="ident">for_each::ForEach</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::Item</span>, <span class="ident">F</span><span class="op">&gt;</span><span class="op">&gt;</span>
+    <span class="kw">fn</span> <span class="ident">for_each</span>&lt;<span class="ident">F</span>&gt;(<span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident"><span class="self">Self</span>::Output</span>&lt;<span class="ident">for_each::ForEach</span>&lt;<span class="ident"><span class="self">Self</span>::Item</span>, <span class="ident">F</span>&gt;&gt;
     <span class="kw">where</span>
         <span class="self">Self</span>: <span class="ident">Sized</span>,
         <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="ident"><span class="self">Self</span>::Item</span>),
@@ -373,36 +373,36 @@
         <span class="self">self</span>.<span class="ident">build</span>(<span class="ident">for_each::ForEach::new</span>(<span class="ident">f</span>))
     }
 
-    <span class="kw">fn</span> <span class="ident">handoff</span><span class="op">&lt;</span><span class="ident">H</span><span class="op">&gt;</span>(
+    <span class="kw">fn</span> <span class="ident">handoff</span>&lt;<span class="ident">H</span>&gt;(
         <span class="self">self</span>,
-        <span class="ident">handoff</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="kw">crate</span>::scheduled::port::SendCtx</span><span class="op">&lt;</span><span class="ident">H</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident"><span class="self">Self</span>::Output</span><span class="op">&lt;</span><span class="ident">push_handoff::PushHandoff</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span>, <span class="ident">H</span>, <span class="ident"><span class="self">Self</span>::Item</span><span class="op">&gt;</span><span class="op">&gt;</span>
+        <span class="ident">handoff</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="kw">crate</span>::scheduled::port::SendCtx</span>&lt;<span class="ident">H</span>&gt;,
+    ) -&gt; <span class="ident"><span class="self">Self</span>::Output</span>&lt;<span class="ident">push_handoff::PushHandoff</span>&lt;<span class="lifetime">&#39;_</span>, <span class="ident">H</span>, <span class="ident"><span class="self">Self</span>::Item</span>&gt;&gt;
     <span class="kw">where</span>
         <span class="self">Self</span>: <span class="ident">Sized</span>,
-        <span class="ident">H</span>: <span class="ident"><span class="kw">crate</span>::scheduled::handoff::Handoff</span> <span class="op">+</span> <span class="ident"><span class="kw">crate</span>::scheduled::handoff::CanReceive</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::Item</span><span class="op">&gt;</span>,
+        <span class="ident">H</span>: <span class="ident"><span class="kw">crate</span>::scheduled::handoff::Handoff</span> + <span class="ident"><span class="kw">crate</span>::scheduled::handoff::CanReceive</span>&lt;<span class="ident"><span class="self">Self</span>::Item</span>&gt;,
     {
         <span class="self">self</span>.<span class="ident">build</span>(<span class="ident">push_handoff::PushHandoff::new</span>(<span class="ident">handoff</span>))
     }
 }
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">InputBuild</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="ident">PhantomData</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>);
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">Default</span> <span class="kw">for</span> <span class="ident">InputBuild</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">InputBuild</span>&lt;<span class="ident">T</span>&gt;(<span class="ident">PhantomData</span>&lt;<span class="ident">T</span>&gt;);
+<span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">Default</span> <span class="kw">for</span> <span class="ident">InputBuild</span>&lt;<span class="ident">T</span>&gt; {
     <span class="kw">fn</span> <span class="ident">default</span>() -&gt; <span class="self">Self</span> {
         <span class="self">Self</span>(<span class="ident">PhantomData</span>)
     }
 }
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">InputBuild</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
+<span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">InputBuild</span>&lt;<span class="ident">T</span>&gt; {
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="self">Self</span> {
         <span class="ident">Default::default</span>()
     }
 }
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">PusheratorBuild</span> <span class="kw">for</span> <span class="ident">InputBuild</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="kw">type</span> <span class="ident">Item</span> <span class="op">=</span> <span class="ident">T</span>;
+<span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">PusheratorBuild</span> <span class="kw">for</span> <span class="ident">InputBuild</span>&lt;<span class="ident">T</span>&gt; {
+    <span class="kw">type</span> <span class="ident">Item</span> = <span class="ident">T</span>;
 
-    <span class="kw">type</span> <span class="ident">Output</span><span class="op">&lt;</span><span class="ident">O</span>: <span class="ident">Pusherator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::Item</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">O</span>;
-    <span class="kw">fn</span> <span class="ident">build</span><span class="op">&lt;</span><span class="ident">O</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">input</span>: <span class="ident">O</span>) -&gt; <span class="ident"><span class="self">Self</span>::Output</span><span class="op">&lt;</span><span class="ident">O</span><span class="op">&gt;</span>
+    <span class="kw">type</span> <span class="ident">Output</span>&lt;<span class="ident">O</span>: <span class="ident">Pusherator</span>&lt;<span class="ident">Item</span> = <span class="ident"><span class="self">Self</span>::Item</span>&gt;&gt; = <span class="ident">O</span>;
+    <span class="kw">fn</span> <span class="ident">build</span>&lt;<span class="ident">O</span>&gt;(<span class="self">self</span>, <span class="ident">input</span>: <span class="ident">O</span>) -&gt; <span class="ident"><span class="self">Self</span>::Output</span>&lt;<span class="ident">O</span>&gt;
     <span class="kw">where</span>
-        <span class="ident">O</span>: <span class="ident">Pusherator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::Item</span><span class="op">&gt;</span>,
+        <span class="ident">O</span>: <span class="ident">Pusherator</span>&lt;<span class="ident">Item</span> = <span class="ident"><span class="self">Self</span>::Item</span>&gt;,
     {
         <span class="ident">input</span>
     }
@@ -420,10 +420,10 @@
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">linear_chains</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">v</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pusher</span> <span class="op">=</span> <span class="ident">Map::new</span>(
-            <span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span> <span class="op">*</span> <span class="number">2</span>,
-            <span class="ident">Filter::new</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="kw-2">*</span><span class="ident">x</span> <span class="op">&gt;</span> <span class="number">5</span>, <span class="ident">ForEach::new</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">v</span>.<span class="ident">push</span>(<span class="ident">x</span>))),
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">v</span> = <span class="ident">Vec::new</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pusher</span> = <span class="ident">Map::new</span>(
+            |<span class="ident">x</span>| <span class="ident">x</span> * <span class="number">2</span>,
+            <span class="ident">Filter::new</span>(|<span class="ident">x</span>| <span class="kw-2">*</span><span class="ident">x</span> &gt; <span class="number">5</span>, <span class="ident">ForEach::new</span>(|<span class="ident">x</span>| <span class="ident">v</span>.<span class="ident">push</span>(<span class="ident">x</span>))),
         );
 
         <span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="number">0</span>..<span class="number">5</span> {
@@ -435,12 +435,12 @@
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">partition</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">evens</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">odds</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pusher</span> <span class="op">=</span> <span class="ident">Partition::new</span>(
-            <span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span> <span class="op">%</span> <span class="number">2</span> <span class="op">==</span> <span class="number">0</span>,
-            <span class="ident">ForEach::new</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">evens</span>.<span class="ident">push</span>(<span class="ident">x</span>)),
-            <span class="ident">ForEach::new</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">odds</span>.<span class="ident">push</span>(<span class="ident">x</span>)),
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">evens</span> = <span class="ident">Vec::new</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">odds</span> = <span class="ident">Vec::new</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pusher</span> = <span class="ident">Partition::new</span>(
+            |<span class="ident">x</span>| <span class="ident">x</span> % <span class="number">2</span> == <span class="number">0</span>,
+            <span class="ident">ForEach::new</span>(|<span class="ident">x</span>| <span class="ident">evens</span>.<span class="ident">push</span>(<span class="ident">x</span>)),
+            <span class="ident">ForEach::new</span>(|<span class="ident">x</span>| <span class="ident">odds</span>.<span class="ident">push</span>(<span class="ident">x</span>)),
         );
 
         <span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="number">0</span>..<span class="number">5</span> {
@@ -453,11 +453,11 @@
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">tee</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">left</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">right</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pusher</span> <span class="op">=</span> <span class="ident">Tee::new</span>(
-            <span class="ident">ForEach::new</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">left</span>.<span class="ident">push</span>(<span class="ident">x</span>)),
-            <span class="ident">ForEach::new</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">right</span>.<span class="ident">push</span>(<span class="ident">x</span>)),
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">left</span> = <span class="ident">Vec::new</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">right</span> = <span class="ident">Vec::new</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pusher</span> = <span class="ident">Tee::new</span>(
+            <span class="ident">ForEach::new</span>(|<span class="ident">x</span>| <span class="ident">left</span>.<span class="ident">push</span>(<span class="ident">x</span>)),
+            <span class="ident">ForEach::new</span>(|<span class="ident">x</span>| <span class="ident">right</span>.<span class="ident">push</span>(<span class="ident">x</span>)),
         );
 
         <span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="number">0</span>..<span class="number">5</span> {
@@ -470,13 +470,13 @@
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">tee_rcs</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">left</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">right</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pusher</span> <span class="op">=</span> <span class="ident">Map::new</span>(
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">left</span> = <span class="ident">Vec::new</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">right</span> = <span class="ident">Vec::new</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pusher</span> = <span class="ident">Map::new</span>(
             <span class="ident">Rc::new</span>,
             <span class="ident">Tee::new</span>(
-                <span class="ident">ForEach::new</span>(<span class="op">|</span><span class="ident">x</span>: <span class="ident">Rc</span><span class="op">&lt;</span><span class="ident">i32</span><span class="op">&gt;</span><span class="op">|</span> <span class="ident">left</span>.<span class="ident">push</span>(<span class="kw-2">*</span><span class="ident">x</span>)),
-                <span class="ident">ForEach::new</span>(<span class="op">|</span><span class="ident">x</span>: <span class="ident">Rc</span><span class="op">&lt;</span><span class="ident">i32</span><span class="op">&gt;</span><span class="op">|</span> <span class="ident">right</span>.<span class="ident">push</span>(<span class="kw-2">*</span><span class="ident">x</span>)),
+                <span class="ident">ForEach::new</span>(|<span class="ident">x</span>: <span class="ident">Rc</span>&lt;<span class="ident">i32</span>&gt;| <span class="ident">left</span>.<span class="ident">push</span>(<span class="kw-2">*</span><span class="ident">x</span>)),
+                <span class="ident">ForEach::new</span>(|<span class="ident">x</span>: <span class="ident">Rc</span>&lt;<span class="ident">i32</span>&gt;| <span class="ident">right</span>.<span class="ident">push</span>(<span class="kw-2">*</span><span class="ident">x</span>)),
             ),
         );
 
@@ -490,18 +490,18 @@
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">pivot</span>() {
-        <span class="kw">let</span> <span class="ident">a</span> <span class="op">=</span> <span class="number">0</span>..<span class="number">10</span>;
-        <span class="kw">let</span> <span class="ident">b</span> <span class="op">=</span> <span class="number">10</span>..<span class="number">20</span>;
+        <span class="kw">let</span> <span class="ident">a</span> = <span class="number">0</span>..<span class="number">10</span>;
+        <span class="kw">let</span> <span class="ident">b</span> = <span class="number">10</span>..<span class="number">20</span>;
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">left</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">right</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">left</span> = <span class="ident">Vec::new</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">right</span> = <span class="ident">Vec::new</span>();
 
-        <span class="kw">let</span> <span class="ident">pivot</span> <span class="op">=</span> <span class="ident">Pivot::new</span>(
+        <span class="kw">let</span> <span class="ident">pivot</span> = <span class="ident">Pivot::new</span>(
             <span class="ident">a</span>.<span class="ident">into_iter</span>().<span class="ident">chain</span>(<span class="ident">b</span>.<span class="ident">into_iter</span>()),
             <span class="ident">Partition::new</span>(
-                <span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span> <span class="op">%</span> <span class="number">2</span> <span class="op">==</span> <span class="number">0</span>,
-                <span class="ident">ForEach::new</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">left</span>.<span class="ident">push</span>(<span class="ident">x</span>)),
-                <span class="ident">ForEach::new</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">right</span>.<span class="ident">push</span>(<span class="ident">x</span>)),
+                |<span class="ident">x</span>| <span class="ident">x</span> % <span class="number">2</span> == <span class="number">0</span>,
+                <span class="ident">ForEach::new</span>(|<span class="ident">x</span>| <span class="ident">left</span>.<span class="ident">push</span>(<span class="ident">x</span>)),
+                <span class="ident">ForEach::new</span>(|<span class="ident">x</span>| <span class="ident">right</span>.<span class="ident">push</span>(<span class="ident">x</span>)),
             ),
         );
 
@@ -513,9 +513,9 @@
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">map_union</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">v</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pusher</span> <span class="op">=</span>
-            <span class="op">&lt;</span><span class="ident">GroupBy</span><span class="op">&lt;</span><span class="kw">_</span>, <span class="ident">MaxRepr</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>, <span class="ident">MaxRepr</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>, <span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::new</span>(<span class="ident">ForEach::new</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">v</span>.<span class="ident">push</span>(<span class="ident">x</span>)));
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">v</span> = <span class="ident">Vec::new</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pusher</span> =
+            &lt;<span class="ident">GroupBy</span>&lt;<span class="kw">_</span>, <span class="ident">MaxRepr</span>&lt;<span class="ident">usize</span>&gt;, <span class="ident">MaxRepr</span>&lt;<span class="ident">usize</span>&gt;, <span class="kw">_</span>&gt;&gt;<span class="ident">::new</span>(<span class="ident">ForEach::new</span>(|<span class="ident">x</span>| <span class="ident">v</span>.<span class="ident">push</span>(<span class="ident">x</span>)));
 
         <span class="ident">pusher</span>.<span class="ident">give</span>((<span class="number">1</span>, <span class="number">1</span>));
         <span class="ident">pusher</span>.<span class="ident">give</span>((<span class="number">1</span>, <span class="number">2</span>));
@@ -531,12 +531,12 @@
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">test_builder_constructed</span>() {
-        <span class="kw">let</span> <span class="ident">pb</span> <span class="op">=</span> <span class="ident">InputBuild</span>::<span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>(<span class="ident">PhantomData</span>);
-        <span class="kw">let</span> <span class="ident">pb</span> <span class="op">=</span> <span class="ident">filter::FilterBuild::new</span>(<span class="ident">pb</span>, <span class="op">|</span><span class="kw-2">&amp;</span><span class="ident">x</span><span class="op">|</span> <span class="number">0</span> <span class="op">==</span> <span class="ident">x</span> <span class="op">%</span> <span class="number">2</span>);
-        <span class="kw">let</span> <span class="ident">pb</span> <span class="op">=</span> <span class="ident">map::MapBuild::new</span>(<span class="ident">pb</span>, <span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span> <span class="op">*</span> <span class="ident">x</span>);
+        <span class="kw">let</span> <span class="ident">pb</span> = <span class="ident">InputBuild</span>::&lt;<span class="ident">usize</span>&gt;(<span class="ident">PhantomData</span>);
+        <span class="kw">let</span> <span class="ident">pb</span> = <span class="ident">filter::FilterBuild::new</span>(<span class="ident">pb</span>, |<span class="kw-2">&amp;</span><span class="ident">x</span>| <span class="number">0</span> == <span class="ident">x</span> % <span class="number">2</span>);
+        <span class="kw">let</span> <span class="ident">pb</span> = <span class="ident">map::MapBuild::new</span>(<span class="ident">pb</span>, |<span class="ident">x</span>| <span class="ident">x</span> * <span class="ident">x</span>);
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">output</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pusherator</span> <span class="op">=</span> <span class="ident">pb</span>.<span class="ident">build</span>(<span class="ident">for_each::ForEach::new</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">output</span>.<span class="ident">push</span>(<span class="ident">x</span>)));
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">output</span> = <span class="ident">Vec::new</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pusherator</span> = <span class="ident">pb</span>.<span class="ident">build</span>(<span class="ident">for_each::ForEach::new</span>(|<span class="ident">x</span>| <span class="ident">output</span>.<span class="ident">push</span>(<span class="ident">x</span>)));
 
         <span class="kw">for</span> <span class="ident">x</span> <span class="kw">in</span> <span class="number">0</span>..<span class="number">10</span> {
             <span class="ident">pusherator</span>.<span class="ident">give</span>(<span class="ident">x</span>);
@@ -547,12 +547,12 @@
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">test_builder</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">output</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">output</span> = <span class="ident">Vec::new</span>();
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pusherator</span> <span class="op">=</span> <span class="op">&lt;</span><span class="ident">InputBuild</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::new</span>()
-            .<span class="ident">filter</span>(<span class="op">|</span><span class="kw-2">&amp;</span><span class="ident">x</span><span class="op">|</span> <span class="number">0</span> <span class="op">==</span> <span class="ident">x</span> <span class="op">%</span> <span class="number">2</span>)
-            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span> <span class="op">*</span> <span class="ident">x</span>)
-            .<span class="ident">for_each</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">output</span>.<span class="ident">push</span>(<span class="ident">x</span>));
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pusherator</span> = &lt;<span class="ident">InputBuild</span>&lt;<span class="ident">usize</span>&gt;&gt;<span class="ident">::new</span>()
+            .<span class="ident">filter</span>(|<span class="kw-2">&amp;</span><span class="ident">x</span>| <span class="number">0</span> == <span class="ident">x</span> % <span class="number">2</span>)
+            .<span class="ident">map</span>(|<span class="ident">x</span>| <span class="ident">x</span> * <span class="ident">x</span>)
+            .<span class="ident">for_each</span>(|<span class="ident">x</span>| <span class="ident">output</span>.<span class="ident">push</span>(<span class="ident">x</span>));
 
         <span class="kw">for</span> <span class="ident">x</span> <span class="kw">in</span> <span class="number">0</span>..<span class="number">10</span> {
             <span class="ident">pusherator</span>.<span class="ident">give</span>(<span class="ident">x</span>);
@@ -563,17 +563,17 @@
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">test_builder_tee</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">output_evn</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">output_odd</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">output_evn</span> = <span class="ident">Vec::new</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">output_odd</span> = <span class="ident">Vec::new</span>();
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pusherator</span> <span class="op">=</span> <span class="op">&lt;</span><span class="ident">InputBuild</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::new</span>()
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pusherator</span> = &lt;<span class="ident">InputBuild</span>&lt;<span class="ident">usize</span>&gt;&gt;<span class="ident">::new</span>()
             .<span class="ident">tee</span>(
-                <span class="op">&lt;</span><span class="ident">InputBuild</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::new</span>()
-                    .<span class="ident">filter</span>(<span class="op">|</span><span class="kw-2">&amp;</span><span class="ident">x</span><span class="op">|</span> <span class="number">0</span> <span class="op">==</span> <span class="ident">x</span> <span class="op">%</span> <span class="number">2</span>)
-                    .<span class="ident">for_each</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">output_evn</span>.<span class="ident">push</span>(<span class="ident">x</span>)),
+                &lt;<span class="ident">InputBuild</span>&lt;<span class="ident">usize</span>&gt;&gt;<span class="ident">::new</span>()
+                    .<span class="ident">filter</span>(|<span class="kw-2">&amp;</span><span class="ident">x</span>| <span class="number">0</span> == <span class="ident">x</span> % <span class="number">2</span>)
+                    .<span class="ident">for_each</span>(|<span class="ident">x</span>| <span class="ident">output_evn</span>.<span class="ident">push</span>(<span class="ident">x</span>)),
             )
-            .<span class="ident">filter</span>(<span class="op">|</span><span class="kw-2">&amp;</span><span class="ident">x</span><span class="op">|</span> <span class="number">1</span> <span class="op">==</span> <span class="ident">x</span> <span class="op">%</span> <span class="number">2</span>)
-            .<span class="ident">for_each</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">output_odd</span>.<span class="ident">push</span>(<span class="ident">x</span>));
+            .<span class="ident">filter</span>(|<span class="kw-2">&amp;</span><span class="ident">x</span>| <span class="number">1</span> == <span class="ident">x</span> % <span class="number">2</span>)
+            .<span class="ident">for_each</span>(|<span class="ident">x</span>| <span class="ident">output_odd</span>.<span class="ident">push</span>(<span class="ident">x</span>));
 
         <span class="kw">for</span> <span class="ident">x</span> <span class="kw">in</span> <span class="number">0</span>..<span class="number">10</span> {
             <span class="ident">pusherator</span>.<span class="ident">give</span>(<span class="ident">x</span>);
@@ -585,22 +585,22 @@
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">test_built_subgraph</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">output_evn</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">output_odd</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">output_evn</span> = <span class="ident">Vec::new</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">output_odd</span> = <span class="ident">Vec::new</span>();
 
-        <span class="kw">let</span> <span class="ident">pivot</span> <span class="op">=</span> [<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>]
+        <span class="kw">let</span> <span class="ident">pivot</span> = [<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>]
             .<span class="ident">into_iter</span>()
             .<span class="ident">chain</span>([<span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>, <span class="number">6</span>, <span class="number">7</span>])
-            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span> <span class="op">*</span> <span class="number">9</span>)
+            .<span class="ident">map</span>(|<span class="ident">x</span>| <span class="ident">x</span> * <span class="number">9</span>)
             .<span class="ident">pull_to_push</span>()
-            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="kw">if</span> <span class="number">0</span> <span class="op">==</span> <span class="ident">x</span> <span class="op">%</span> <span class="number">2</span> { <span class="ident">x</span> <span class="op">/</span> <span class="number">2</span> } <span class="kw">else</span> { <span class="number">3</span> <span class="op">*</span> <span class="ident">x</span> <span class="op">+</span> <span class="number">1</span> })
+            .<span class="ident">map</span>(|<span class="ident">x</span>| <span class="kw">if</span> <span class="number">0</span> == <span class="ident">x</span> % <span class="number">2</span> { <span class="ident">x</span> / <span class="number">2</span> } <span class="kw">else</span> { <span class="number">3</span> * <span class="ident">x</span> + <span class="number">1</span> })
             .<span class="ident">tee</span>(
-                <span class="op">&lt;</span><span class="ident">InputBuild</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::new</span>()
-                    .<span class="ident">filter</span>(<span class="op">|</span><span class="kw-2">&amp;</span><span class="ident">x</span><span class="op">|</span> <span class="number">0</span> <span class="op">==</span> <span class="ident">x</span> <span class="op">%</span> <span class="number">2</span>)
-                    .<span class="ident">for_each</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">output_evn</span>.<span class="ident">push</span>(<span class="ident">x</span>)),
+                &lt;<span class="ident">InputBuild</span>&lt;<span class="ident">usize</span>&gt;&gt;<span class="ident">::new</span>()
+                    .<span class="ident">filter</span>(|<span class="kw-2">&amp;</span><span class="ident">x</span>| <span class="number">0</span> == <span class="ident">x</span> % <span class="number">2</span>)
+                    .<span class="ident">for_each</span>(|<span class="ident">x</span>| <span class="ident">output_evn</span>.<span class="ident">push</span>(<span class="ident">x</span>)),
             )
-            .<span class="ident">filter</span>(<span class="op">|</span><span class="kw-2">&amp;</span><span class="ident">x</span><span class="op">|</span> <span class="number">1</span> <span class="op">==</span> <span class="ident">x</span> <span class="op">%</span> <span class="number">2</span>)
-            .<span class="ident">for_each</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">output_odd</span>.<span class="ident">push</span>(<span class="ident">x</span>));
+            .<span class="ident">filter</span>(|<span class="kw-2">&amp;</span><span class="ident">x</span>| <span class="number">1</span> == <span class="ident">x</span> % <span class="number">2</span>)
+            .<span class="ident">for_each</span>(|<span class="ident">x</span>| <span class="ident">output_odd</span>.<span class="ident">push</span>(<span class="ident">x</span>));
 
         <span class="ident">pivot</span>.<span class="ident">run</span>();
 
@@ -609,4 +609,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (20ffea693 2022-08-11)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

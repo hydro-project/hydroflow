@@ -92,81 +92,81 @@
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::port::RECV</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::type_list::Extend</span>;
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ChainPullSurface</span><span class="op">&lt;</span><span class="ident">PrevA</span>, <span class="ident">PrevB</span><span class="op">&gt;</span>
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ChainPullSurface</span>&lt;<span class="ident">PrevA</span>, <span class="ident">PrevB</span>&gt;
 <span class="kw">where</span>
     <span class="ident">PrevA</span>: <span class="ident">PullSurface</span>,
-    <span class="ident">PrevB</span>: <span class="ident">PullSurface</span><span class="op">&lt;</span><span class="ident">ItemOut</span> <span class="op">=</span> <span class="ident">PrevA::ItemOut</span><span class="op">&gt;</span>,
+    <span class="ident">PrevB</span>: <span class="ident">PullSurface</span>&lt;<span class="ident">ItemOut</span> = <span class="ident">PrevA::ItemOut</span>&gt;,
 
-    <span class="ident">PrevA::InputHandoffs</span>: <span class="ident">Extend</span><span class="op">&lt;</span><span class="ident">PrevB::InputHandoffs</span><span class="op">&gt;</span>,
-    <span class="op">&lt;</span><span class="ident">PrevA::InputHandoffs</span> <span class="kw">as</span> <span class="ident">Extend</span><span class="op">&lt;</span><span class="ident">PrevB::InputHandoffs</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::Extended</span>:
-        <span class="ident">PortList</span><span class="op">&lt;</span><span class="ident">RECV</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">PortListSplit</span><span class="op">&lt;</span><span class="ident">RECV</span>, <span class="ident">PrevA::InputHandoffs</span>, <span class="ident">Suffix</span> <span class="op">=</span> <span class="ident">PrevB::InputHandoffs</span><span class="op">&gt;</span>,
+    <span class="ident">PrevA::InputHandoffs</span>: <span class="ident">Extend</span>&lt;<span class="ident">PrevB::InputHandoffs</span>&gt;,
+    &lt;<span class="ident">PrevA::InputHandoffs</span> <span class="kw">as</span> <span class="ident">Extend</span>&lt;<span class="ident">PrevB::InputHandoffs</span>&gt;&gt;<span class="ident">::Extended</span>:
+        <span class="ident">PortList</span>&lt;<span class="ident">RECV</span>&gt; + <span class="ident">PortListSplit</span>&lt;<span class="ident">RECV</span>, <span class="ident">PrevA::InputHandoffs</span>, <span class="ident">Suffix</span> = <span class="ident">PrevB::InputHandoffs</span>&gt;,
 {
     <span class="ident">prev_a</span>: <span class="ident">PrevA</span>,
     <span class="ident">prev_b</span>: <span class="ident">PrevB</span>,
 }
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">PrevA</span>, <span class="ident">PrevB</span><span class="op">&gt;</span> <span class="ident">ChainPullSurface</span><span class="op">&lt;</span><span class="ident">PrevA</span>, <span class="ident">PrevB</span><span class="op">&gt;</span>
+<span class="kw">impl</span>&lt;<span class="ident">PrevA</span>, <span class="ident">PrevB</span>&gt; <span class="ident">ChainPullSurface</span>&lt;<span class="ident">PrevA</span>, <span class="ident">PrevB</span>&gt;
 <span class="kw">where</span>
     <span class="ident">PrevA</span>: <span class="ident">PullSurface</span>,
-    <span class="ident">PrevB</span>: <span class="ident">PullSurface</span><span class="op">&lt;</span><span class="ident">ItemOut</span> <span class="op">=</span> <span class="ident">PrevA::ItemOut</span><span class="op">&gt;</span>,
+    <span class="ident">PrevB</span>: <span class="ident">PullSurface</span>&lt;<span class="ident">ItemOut</span> = <span class="ident">PrevA::ItemOut</span>&gt;,
 
-    <span class="ident">PrevA::InputHandoffs</span>: <span class="ident">Extend</span><span class="op">&lt;</span><span class="ident">PrevB::InputHandoffs</span><span class="op">&gt;</span>,
-    <span class="op">&lt;</span><span class="ident">PrevA::InputHandoffs</span> <span class="kw">as</span> <span class="ident">Extend</span><span class="op">&lt;</span><span class="ident">PrevB::InputHandoffs</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::Extended</span>:
-        <span class="ident">PortList</span><span class="op">&lt;</span><span class="ident">RECV</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">PortListSplit</span><span class="op">&lt;</span><span class="ident">RECV</span>, <span class="ident">PrevA::InputHandoffs</span>, <span class="ident">Suffix</span> <span class="op">=</span> <span class="ident">PrevB::InputHandoffs</span><span class="op">&gt;</span>,
+    <span class="ident">PrevA::InputHandoffs</span>: <span class="ident">Extend</span>&lt;<span class="ident">PrevB::InputHandoffs</span>&gt;,
+    &lt;<span class="ident">PrevA::InputHandoffs</span> <span class="kw">as</span> <span class="ident">Extend</span>&lt;<span class="ident">PrevB::InputHandoffs</span>&gt;&gt;<span class="ident">::Extended</span>:
+        <span class="ident">PortList</span>&lt;<span class="ident">RECV</span>&gt; + <span class="ident">PortListSplit</span>&lt;<span class="ident">RECV</span>, <span class="ident">PrevA::InputHandoffs</span>, <span class="ident">Suffix</span> = <span class="ident">PrevB::InputHandoffs</span>&gt;,
 {
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">prev_a</span>: <span class="ident">PrevA</span>, <span class="ident">prev_b</span>: <span class="ident">PrevB</span>) -&gt; <span class="self">Self</span> {
         <span class="self">Self</span> { <span class="ident">prev_a</span>, <span class="ident">prev_b</span> }
     }
 }
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">PrevA</span>, <span class="ident">PrevB</span><span class="op">&gt;</span> <span class="ident">AssembleFlowGraph</span> <span class="kw">for</span> <span class="ident">ChainPullSurface</span><span class="op">&lt;</span><span class="ident">PrevA</span>, <span class="ident">PrevB</span><span class="op">&gt;</span>
+<span class="kw">impl</span>&lt;<span class="ident">PrevA</span>, <span class="ident">PrevB</span>&gt; <span class="ident">AssembleFlowGraph</span> <span class="kw">for</span> <span class="ident">ChainPullSurface</span>&lt;<span class="ident">PrevA</span>, <span class="ident">PrevB</span>&gt;
 <span class="kw">where</span>
-    <span class="ident">PrevA</span>: <span class="ident">PullSurface</span> <span class="op">+</span> <span class="ident">AssembleFlowGraph</span>,
-    <span class="ident">PrevB</span>: <span class="ident">PullSurface</span><span class="op">&lt;</span><span class="ident">ItemOut</span> <span class="op">=</span> <span class="ident">PrevA::ItemOut</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">AssembleFlowGraph</span>,
+    <span class="ident">PrevA</span>: <span class="ident">PullSurface</span> + <span class="ident">AssembleFlowGraph</span>,
+    <span class="ident">PrevB</span>: <span class="ident">PullSurface</span>&lt;<span class="ident">ItemOut</span> = <span class="ident">PrevA::ItemOut</span>&gt; + <span class="ident">AssembleFlowGraph</span>,
 
-    <span class="ident">PrevA::InputHandoffs</span>: <span class="ident">Extend</span><span class="op">&lt;</span><span class="ident">PrevB::InputHandoffs</span><span class="op">&gt;</span>,
-    <span class="op">&lt;</span><span class="ident">PrevA::InputHandoffs</span> <span class="kw">as</span> <span class="ident">Extend</span><span class="op">&lt;</span><span class="ident">PrevB::InputHandoffs</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::Extended</span>:
-        <span class="ident">PortList</span><span class="op">&lt;</span><span class="ident">RECV</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">PortListSplit</span><span class="op">&lt;</span><span class="ident">RECV</span>, <span class="ident">PrevA::InputHandoffs</span>, <span class="ident">Suffix</span> <span class="op">=</span> <span class="ident">PrevB::InputHandoffs</span><span class="op">&gt;</span>,
+    <span class="ident">PrevA::InputHandoffs</span>: <span class="ident">Extend</span>&lt;<span class="ident">PrevB::InputHandoffs</span>&gt;,
+    &lt;<span class="ident">PrevA::InputHandoffs</span> <span class="kw">as</span> <span class="ident">Extend</span>&lt;<span class="ident">PrevB::InputHandoffs</span>&gt;&gt;<span class="ident">::Extended</span>:
+        <span class="ident">PortList</span>&lt;<span class="ident">RECV</span>&gt; + <span class="ident">PortListSplit</span>&lt;<span class="ident">RECV</span>, <span class="ident">PrevA::InputHandoffs</span>, <span class="ident">Suffix</span> = <span class="ident">PrevB::InputHandoffs</span>&gt;,
 {
     <span class="kw">fn</span> <span class="ident">insert_dep</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">e</span>: <span class="kw-2">&amp;mut</span> <span class="ident">FlowGraph</span>) -&gt; <span class="ident">FlowNodeId</span> {
-        <span class="kw">let</span> <span class="ident">my_id</span> <span class="op">=</span> <span class="ident">e</span>.<span class="ident">add_node</span>(<span class="string">&quot;Chain&quot;</span>);
-        <span class="kw">let</span> <span class="ident">prev_a_id</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">prev_a</span>.<span class="ident">insert_dep</span>(<span class="ident">e</span>);
-        <span class="kw">let</span> <span class="ident">prev_b_id</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">prev_b</span>.<span class="ident">insert_dep</span>(<span class="ident">e</span>);
+        <span class="kw">let</span> <span class="ident">my_id</span> = <span class="ident">e</span>.<span class="ident">add_node</span>(<span class="string">&quot;Chain&quot;</span>);
+        <span class="kw">let</span> <span class="ident">prev_a_id</span> = <span class="self">self</span>.<span class="ident">prev_a</span>.<span class="ident">insert_dep</span>(<span class="ident">e</span>);
+        <span class="kw">let</span> <span class="ident">prev_b_id</span> = <span class="self">self</span>.<span class="ident">prev_b</span>.<span class="ident">insert_dep</span>(<span class="ident">e</span>);
         <span class="ident">e</span>.<span class="ident">add_edge</span>((<span class="ident">prev_a_id</span>, <span class="ident">my_id</span>));
         <span class="ident">e</span>.<span class="ident">add_edge</span>((<span class="ident">prev_b_id</span>, <span class="ident">my_id</span>));
         <span class="ident">my_id</span>
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">PrevA</span>, <span class="ident">PrevB</span><span class="op">&gt;</span> <span class="ident">BaseSurface</span> <span class="kw">for</span> <span class="ident">ChainPullSurface</span><span class="op">&lt;</span><span class="ident">PrevA</span>, <span class="ident">PrevB</span><span class="op">&gt;</span>
+<span class="kw">impl</span>&lt;<span class="ident">PrevA</span>, <span class="ident">PrevB</span>&gt; <span class="ident">BaseSurface</span> <span class="kw">for</span> <span class="ident">ChainPullSurface</span>&lt;<span class="ident">PrevA</span>, <span class="ident">PrevB</span>&gt;
 <span class="kw">where</span>
     <span class="ident">PrevA</span>: <span class="ident">PullSurface</span>,
-    <span class="ident">PrevB</span>: <span class="ident">PullSurface</span><span class="op">&lt;</span><span class="ident">ItemOut</span> <span class="op">=</span> <span class="ident">PrevA::ItemOut</span><span class="op">&gt;</span>,
+    <span class="ident">PrevB</span>: <span class="ident">PullSurface</span>&lt;<span class="ident">ItemOut</span> = <span class="ident">PrevA::ItemOut</span>&gt;,
 
-    <span class="ident">PrevA::InputHandoffs</span>: <span class="ident">Extend</span><span class="op">&lt;</span><span class="ident">PrevB::InputHandoffs</span><span class="op">&gt;</span>,
-    <span class="op">&lt;</span><span class="ident">PrevA::InputHandoffs</span> <span class="kw">as</span> <span class="ident">Extend</span><span class="op">&lt;</span><span class="ident">PrevB::InputHandoffs</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::Extended</span>:
-        <span class="ident">PortList</span><span class="op">&lt;</span><span class="ident">RECV</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">PortListSplit</span><span class="op">&lt;</span><span class="ident">RECV</span>, <span class="ident">PrevA::InputHandoffs</span>, <span class="ident">Suffix</span> <span class="op">=</span> <span class="ident">PrevB::InputHandoffs</span><span class="op">&gt;</span>,
+    <span class="ident">PrevA::InputHandoffs</span>: <span class="ident">Extend</span>&lt;<span class="ident">PrevB::InputHandoffs</span>&gt;,
+    &lt;<span class="ident">PrevA::InputHandoffs</span> <span class="kw">as</span> <span class="ident">Extend</span>&lt;<span class="ident">PrevB::InputHandoffs</span>&gt;&gt;<span class="ident">::Extended</span>:
+        <span class="ident">PortList</span>&lt;<span class="ident">RECV</span>&gt; + <span class="ident">PortListSplit</span>&lt;<span class="ident">RECV</span>, <span class="ident">PrevA::InputHandoffs</span>, <span class="ident">Suffix</span> = <span class="ident">PrevB::InputHandoffs</span>&gt;,
 {
-    <span class="kw">type</span> <span class="ident">ItemOut</span> <span class="op">=</span> <span class="ident">PrevA::ItemOut</span>;
+    <span class="kw">type</span> <span class="ident">ItemOut</span> = <span class="ident">PrevA::ItemOut</span>;
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">PrevA</span>, <span class="ident">PrevB</span><span class="op">&gt;</span> <span class="ident">PullSurface</span> <span class="kw">for</span> <span class="ident">ChainPullSurface</span><span class="op">&lt;</span><span class="ident">PrevA</span>, <span class="ident">PrevB</span><span class="op">&gt;</span>
+<span class="kw">impl</span>&lt;<span class="ident">PrevA</span>, <span class="ident">PrevB</span>&gt; <span class="ident">PullSurface</span> <span class="kw">for</span> <span class="ident">ChainPullSurface</span>&lt;<span class="ident">PrevA</span>, <span class="ident">PrevB</span>&gt;
 <span class="kw">where</span>
     <span class="ident">PrevA</span>: <span class="ident">PullSurface</span>,
-    <span class="ident">PrevB</span>: <span class="ident">PullSurface</span><span class="op">&lt;</span><span class="ident">ItemOut</span> <span class="op">=</span> <span class="ident">PrevA::ItemOut</span><span class="op">&gt;</span>,
+    <span class="ident">PrevB</span>: <span class="ident">PullSurface</span>&lt;<span class="ident">ItemOut</span> = <span class="ident">PrevA::ItemOut</span>&gt;,
 
-    <span class="ident">PrevA::InputHandoffs</span>: <span class="ident">Extend</span><span class="op">&lt;</span><span class="ident">PrevB::InputHandoffs</span><span class="op">&gt;</span>,
-    <span class="op">&lt;</span><span class="ident">PrevA::InputHandoffs</span> <span class="kw">as</span> <span class="ident">Extend</span><span class="op">&lt;</span><span class="ident">PrevB::InputHandoffs</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::Extended</span>:
-        <span class="ident">PortList</span><span class="op">&lt;</span><span class="ident">RECV</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">PortListSplit</span><span class="op">&lt;</span><span class="ident">RECV</span>, <span class="ident">PrevA::InputHandoffs</span>, <span class="ident">Suffix</span> <span class="op">=</span> <span class="ident">PrevB::InputHandoffs</span><span class="op">&gt;</span>,
+    <span class="ident">PrevA::InputHandoffs</span>: <span class="ident">Extend</span>&lt;<span class="ident">PrevB::InputHandoffs</span>&gt;,
+    &lt;<span class="ident">PrevA::InputHandoffs</span> <span class="kw">as</span> <span class="ident">Extend</span>&lt;<span class="ident">PrevB::InputHandoffs</span>&gt;&gt;<span class="ident">::Extended</span>:
+        <span class="ident">PortList</span>&lt;<span class="ident">RECV</span>&gt; + <span class="ident">PortListSplit</span>&lt;<span class="ident">RECV</span>, <span class="ident">PrevA::InputHandoffs</span>, <span class="ident">Suffix</span> = <span class="ident">PrevB::InputHandoffs</span>&gt;,
 {
-    <span class="kw">type</span> <span class="ident">InputHandoffs</span> <span class="op">=</span> <span class="op">&lt;</span><span class="ident">PrevA::InputHandoffs</span> <span class="kw">as</span> <span class="ident">Extend</span><span class="op">&lt;</span><span class="ident">PrevB::InputHandoffs</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::Extended</span>;
-    <span class="kw">type</span> <span class="ident">Build</span> <span class="op">=</span> <span class="ident">ChainPullBuild</span><span class="op">&lt;</span><span class="ident">PrevA::Build</span>, <span class="ident">PrevB::Build</span><span class="op">&gt;</span>;
+    <span class="kw">type</span> <span class="ident">InputHandoffs</span> = &lt;<span class="ident">PrevA::InputHandoffs</span> <span class="kw">as</span> <span class="ident">Extend</span>&lt;<span class="ident">PrevB::InputHandoffs</span>&gt;&gt;<span class="ident">::Extended</span>;
+    <span class="kw">type</span> <span class="ident">Build</span> = <span class="ident">ChainPullBuild</span>&lt;<span class="ident">PrevA::Build</span>, <span class="ident">PrevB::Build</span>&gt;;
 
     <span class="kw">fn</span> <span class="ident">make_parts</span>(<span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span>) -&gt; (<span class="ident"><span class="self">Self</span>::InputHandoffs</span>, <span class="ident"><span class="self">Self</span>::Build</span>) {
-        <span class="kw">let</span> (<span class="ident">connect_a</span>, <span class="ident">build_a</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">prev_a</span>.<span class="ident">make_parts</span>(<span class="ident">ctx</span>);
-        <span class="kw">let</span> (<span class="ident">connect_b</span>, <span class="ident">build_b</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">prev_b</span>.<span class="ident">make_parts</span>(<span class="ident">ctx</span>);
-        <span class="kw">let</span> <span class="ident">connect</span> <span class="op">=</span> <span class="ident">connect_a</span>.<span class="ident">extend</span>(<span class="ident">connect_b</span>);
-        <span class="kw">let</span> <span class="ident">build</span> <span class="op">=</span> <span class="ident">ChainPullBuild::new</span>(<span class="ident">build_a</span>, <span class="ident">build_b</span>);
+        <span class="kw">let</span> (<span class="ident">connect_a</span>, <span class="ident">build_a</span>) = <span class="self">self</span>.<span class="ident">prev_a</span>.<span class="ident">make_parts</span>(<span class="ident">ctx</span>);
+        <span class="kw">let</span> (<span class="ident">connect_b</span>, <span class="ident">build_b</span>) = <span class="self">self</span>.<span class="ident">prev_b</span>.<span class="ident">make_parts</span>(<span class="ident">ctx</span>);
+        <span class="kw">let</span> <span class="ident">connect</span> = <span class="ident">connect_a</span>.<span class="ident">extend</span>(<span class="ident">connect_b</span>);
+        <span class="kw">let</span> <span class="ident">build</span> = <span class="ident">ChainPullBuild::new</span>(<span class="ident">build_a</span>, <span class="ident">build_b</span>);
         (<span class="ident">connect</span>, <span class="ident">build</span>)
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (20ffea693 2022-08-11)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

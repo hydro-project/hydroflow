@@ -92,33 +92,33 @@
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::port::RECV</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::type_list::Extend</span>;
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">JoinPullBuild</span><span class="op">&lt;</span><span class="ident">PrevA</span>, <span class="ident">PrevB</span>, <span class="ident">Key</span>, <span class="ident">ValA</span>, <span class="ident">ValB</span><span class="op">&gt;</span>
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">JoinPullBuild</span>&lt;<span class="ident">PrevA</span>, <span class="ident">PrevB</span>, <span class="ident">Key</span>, <span class="ident">ValA</span>, <span class="ident">ValB</span>&gt;
 <span class="kw">where</span>
-    <span class="ident">PrevA</span>: <span class="ident">PullBuild</span><span class="op">&lt;</span><span class="ident">ItemOut</span> <span class="op">=</span> (<span class="ident">Key</span>, <span class="ident">ValA</span>)<span class="op">&gt;</span>,
-    <span class="ident">PrevB</span>: <span class="ident">PullBuild</span><span class="op">&lt;</span><span class="ident">ItemOut</span> <span class="op">=</span> (<span class="ident">Key</span>, <span class="ident">ValB</span>)<span class="op">&gt;</span>,
-    <span class="ident">Key</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">Eq</span> <span class="op">+</span> <span class="ident">Hash</span> <span class="op">+</span> <span class="ident">Clone</span>,
-    <span class="ident">ValA</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">Eq</span> <span class="op">+</span> <span class="ident">Clone</span>,
-    <span class="ident">ValB</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">Eq</span> <span class="op">+</span> <span class="ident">Clone</span>,
+    <span class="ident">PrevA</span>: <span class="ident">PullBuild</span>&lt;<span class="ident">ItemOut</span> = (<span class="ident">Key</span>, <span class="ident">ValA</span>)&gt;,
+    <span class="ident">PrevB</span>: <span class="ident">PullBuild</span>&lt;<span class="ident">ItemOut</span> = (<span class="ident">Key</span>, <span class="ident">ValB</span>)&gt;,
+    <span class="ident">Key</span>: <span class="lifetime">&#39;static</span> + <span class="ident">Eq</span> + <span class="ident">Hash</span> + <span class="ident">Clone</span>,
+    <span class="ident">ValA</span>: <span class="lifetime">&#39;static</span> + <span class="ident">Eq</span> + <span class="ident">Clone</span>,
+    <span class="ident">ValB</span>: <span class="lifetime">&#39;static</span> + <span class="ident">Eq</span> + <span class="ident">Clone</span>,
 
-    <span class="ident">PrevA::InputHandoffs</span>: <span class="ident">Extend</span><span class="op">&lt;</span><span class="ident">PrevB::InputHandoffs</span><span class="op">&gt;</span>,
-    <span class="op">&lt;</span><span class="ident">PrevA::InputHandoffs</span> <span class="kw">as</span> <span class="ident">Extend</span><span class="op">&lt;</span><span class="ident">PrevB::InputHandoffs</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::Extended</span>:
-        <span class="ident">PortList</span><span class="op">&lt;</span><span class="ident">RECV</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">PortListSplit</span><span class="op">&lt;</span><span class="ident">RECV</span>, <span class="ident">PrevA::InputHandoffs</span>, <span class="ident">Suffix</span> <span class="op">=</span> <span class="ident">PrevB::InputHandoffs</span><span class="op">&gt;</span>,
+    <span class="ident">PrevA::InputHandoffs</span>: <span class="ident">Extend</span>&lt;<span class="ident">PrevB::InputHandoffs</span>&gt;,
+    &lt;<span class="ident">PrevA::InputHandoffs</span> <span class="kw">as</span> <span class="ident">Extend</span>&lt;<span class="ident">PrevB::InputHandoffs</span>&gt;&gt;<span class="ident">::Extended</span>:
+        <span class="ident">PortList</span>&lt;<span class="ident">RECV</span>&gt; + <span class="ident">PortListSplit</span>&lt;<span class="ident">RECV</span>, <span class="ident">PrevA::InputHandoffs</span>, <span class="ident">Suffix</span> = <span class="ident">PrevB::InputHandoffs</span>&gt;,
 {
     <span class="ident">prev_a</span>: <span class="ident">PrevA</span>,
     <span class="ident">prev_b</span>: <span class="ident">PrevB</span>,
-    <span class="ident">state</span>: <span class="ident">JoinState</span><span class="op">&lt;</span><span class="ident">Key</span>, <span class="ident">ValA</span>, <span class="ident">ValB</span><span class="op">&gt;</span>,
+    <span class="ident">state</span>: <span class="ident">JoinState</span>&lt;<span class="ident">Key</span>, <span class="ident">ValA</span>, <span class="ident">ValB</span>&gt;,
 }
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">PrevA</span>, <span class="ident">PrevB</span>, <span class="ident">Key</span>, <span class="ident">ValA</span>, <span class="ident">ValB</span><span class="op">&gt;</span> <span class="ident">JoinPullBuild</span><span class="op">&lt;</span><span class="ident">PrevA</span>, <span class="ident">PrevB</span>, <span class="ident">Key</span>, <span class="ident">ValA</span>, <span class="ident">ValB</span><span class="op">&gt;</span>
+<span class="kw">impl</span>&lt;<span class="ident">PrevA</span>, <span class="ident">PrevB</span>, <span class="ident">Key</span>, <span class="ident">ValA</span>, <span class="ident">ValB</span>&gt; <span class="ident">JoinPullBuild</span>&lt;<span class="ident">PrevA</span>, <span class="ident">PrevB</span>, <span class="ident">Key</span>, <span class="ident">ValA</span>, <span class="ident">ValB</span>&gt;
 <span class="kw">where</span>
-    <span class="ident">PrevA</span>: <span class="ident">PullBuild</span><span class="op">&lt;</span><span class="ident">ItemOut</span> <span class="op">=</span> (<span class="ident">Key</span>, <span class="ident">ValA</span>)<span class="op">&gt;</span>,
-    <span class="ident">PrevB</span>: <span class="ident">PullBuild</span><span class="op">&lt;</span><span class="ident">ItemOut</span> <span class="op">=</span> (<span class="ident">Key</span>, <span class="ident">ValB</span>)<span class="op">&gt;</span>,
-    <span class="ident">Key</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">Eq</span> <span class="op">+</span> <span class="ident">Hash</span> <span class="op">+</span> <span class="ident">Clone</span>,
-    <span class="ident">ValA</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">Eq</span> <span class="op">+</span> <span class="ident">Clone</span>,
-    <span class="ident">ValB</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">Eq</span> <span class="op">+</span> <span class="ident">Clone</span>,
+    <span class="ident">PrevA</span>: <span class="ident">PullBuild</span>&lt;<span class="ident">ItemOut</span> = (<span class="ident">Key</span>, <span class="ident">ValA</span>)&gt;,
+    <span class="ident">PrevB</span>: <span class="ident">PullBuild</span>&lt;<span class="ident">ItemOut</span> = (<span class="ident">Key</span>, <span class="ident">ValB</span>)&gt;,
+    <span class="ident">Key</span>: <span class="lifetime">&#39;static</span> + <span class="ident">Eq</span> + <span class="ident">Hash</span> + <span class="ident">Clone</span>,
+    <span class="ident">ValA</span>: <span class="lifetime">&#39;static</span> + <span class="ident">Eq</span> + <span class="ident">Clone</span>,
+    <span class="ident">ValB</span>: <span class="lifetime">&#39;static</span> + <span class="ident">Eq</span> + <span class="ident">Clone</span>,
 
-    <span class="ident">PrevA::InputHandoffs</span>: <span class="ident">Extend</span><span class="op">&lt;</span><span class="ident">PrevB::InputHandoffs</span><span class="op">&gt;</span>,
-    <span class="op">&lt;</span><span class="ident">PrevA::InputHandoffs</span> <span class="kw">as</span> <span class="ident">Extend</span><span class="op">&lt;</span><span class="ident">PrevB::InputHandoffs</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::Extended</span>:
-        <span class="ident">PortList</span><span class="op">&lt;</span><span class="ident">RECV</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">PortListSplit</span><span class="op">&lt;</span><span class="ident">RECV</span>, <span class="ident">PrevA::InputHandoffs</span>, <span class="ident">Suffix</span> <span class="op">=</span> <span class="ident">PrevB::InputHandoffs</span><span class="op">&gt;</span>,
+    <span class="ident">PrevA::InputHandoffs</span>: <span class="ident">Extend</span>&lt;<span class="ident">PrevB::InputHandoffs</span>&gt;,
+    &lt;<span class="ident">PrevA::InputHandoffs</span> <span class="kw">as</span> <span class="ident">Extend</span>&lt;<span class="ident">PrevB::InputHandoffs</span>&gt;&gt;<span class="ident">::Extended</span>:
+        <span class="ident">PortList</span>&lt;<span class="ident">RECV</span>&gt; + <span class="ident">PortListSplit</span>&lt;<span class="ident">RECV</span>, <span class="ident">PrevA::InputHandoffs</span>, <span class="ident">Suffix</span> = <span class="ident">PrevB::InputHandoffs</span>&gt;,
 {
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">prev_a</span>: <span class="ident">PrevA</span>, <span class="ident">prev_b</span>: <span class="ident">PrevB</span>) -&gt; <span class="self">Self</span> {
         <span class="self">Self</span> {
@@ -129,42 +129,42 @@
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">PrevA</span>, <span class="ident">PrevB</span>, <span class="ident">Key</span>, <span class="ident">ValA</span>, <span class="ident">ValB</span><span class="op">&gt;</span> <span class="ident">PullBuild</span> <span class="kw">for</span> <span class="ident">JoinPullBuild</span><span class="op">&lt;</span><span class="ident">PrevA</span>, <span class="ident">PrevB</span>, <span class="ident">Key</span>, <span class="ident">ValA</span>, <span class="ident">ValB</span><span class="op">&gt;</span>
+<span class="kw">impl</span>&lt;<span class="ident">PrevA</span>, <span class="ident">PrevB</span>, <span class="ident">Key</span>, <span class="ident">ValA</span>, <span class="ident">ValB</span>&gt; <span class="ident">PullBuild</span> <span class="kw">for</span> <span class="ident">JoinPullBuild</span>&lt;<span class="ident">PrevA</span>, <span class="ident">PrevB</span>, <span class="ident">Key</span>, <span class="ident">ValA</span>, <span class="ident">ValB</span>&gt;
 <span class="kw">where</span>
-    <span class="ident">PrevA</span>: <span class="ident">PullBuild</span><span class="op">&lt;</span><span class="ident">ItemOut</span> <span class="op">=</span> (<span class="ident">Key</span>, <span class="ident">ValA</span>)<span class="op">&gt;</span>,
-    <span class="ident">PrevB</span>: <span class="ident">PullBuild</span><span class="op">&lt;</span><span class="ident">ItemOut</span> <span class="op">=</span> (<span class="ident">Key</span>, <span class="ident">ValB</span>)<span class="op">&gt;</span>,
-    <span class="ident">Key</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">Eq</span> <span class="op">+</span> <span class="ident">Hash</span> <span class="op">+</span> <span class="ident">Clone</span>,
-    <span class="ident">ValA</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">Eq</span> <span class="op">+</span> <span class="ident">Clone</span>,
-    <span class="ident">ValB</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">Eq</span> <span class="op">+</span> <span class="ident">Clone</span>,
+    <span class="ident">PrevA</span>: <span class="ident">PullBuild</span>&lt;<span class="ident">ItemOut</span> = (<span class="ident">Key</span>, <span class="ident">ValA</span>)&gt;,
+    <span class="ident">PrevB</span>: <span class="ident">PullBuild</span>&lt;<span class="ident">ItemOut</span> = (<span class="ident">Key</span>, <span class="ident">ValB</span>)&gt;,
+    <span class="ident">Key</span>: <span class="lifetime">&#39;static</span> + <span class="ident">Eq</span> + <span class="ident">Hash</span> + <span class="ident">Clone</span>,
+    <span class="ident">ValA</span>: <span class="lifetime">&#39;static</span> + <span class="ident">Eq</span> + <span class="ident">Clone</span>,
+    <span class="ident">ValB</span>: <span class="lifetime">&#39;static</span> + <span class="ident">Eq</span> + <span class="ident">Clone</span>,
 
-    <span class="ident">PrevA::InputHandoffs</span>: <span class="ident">Extend</span><span class="op">&lt;</span><span class="ident">PrevB::InputHandoffs</span><span class="op">&gt;</span>,
-    <span class="op">&lt;</span><span class="ident">PrevA::InputHandoffs</span> <span class="kw">as</span> <span class="ident">Extend</span><span class="op">&lt;</span><span class="ident">PrevB::InputHandoffs</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::Extended</span>:
-        <span class="ident">PortList</span><span class="op">&lt;</span><span class="ident">RECV</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">PortListSplit</span><span class="op">&lt;</span><span class="ident">RECV</span>, <span class="ident">PrevA::InputHandoffs</span>, <span class="ident">Suffix</span> <span class="op">=</span> <span class="ident">PrevB::InputHandoffs</span><span class="op">&gt;</span>,
+    <span class="ident">PrevA::InputHandoffs</span>: <span class="ident">Extend</span>&lt;<span class="ident">PrevB::InputHandoffs</span>&gt;,
+    &lt;<span class="ident">PrevA::InputHandoffs</span> <span class="kw">as</span> <span class="ident">Extend</span>&lt;<span class="ident">PrevB::InputHandoffs</span>&gt;&gt;<span class="ident">::Extended</span>:
+        <span class="ident">PortList</span>&lt;<span class="ident">RECV</span>&gt; + <span class="ident">PortListSplit</span>&lt;<span class="ident">RECV</span>, <span class="ident">PrevA::InputHandoffs</span>, <span class="ident">Suffix</span> = <span class="ident">PrevB::InputHandoffs</span>&gt;,
 {
-    <span class="kw">type</span> <span class="ident">ItemOut</span> <span class="op">=</span> (<span class="ident">Key</span>, (<span class="ident">ValA</span>, <span class="ident">ValB</span>));
-    <span class="kw">type</span> <span class="ident">Build</span><span class="op">&lt;</span><span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">SymmetricHashJoin</span><span class="op">&lt;</span>
+    <span class="kw">type</span> <span class="ident">ItemOut</span> = (<span class="ident">Key</span>, (<span class="ident">ValA</span>, <span class="ident">ValB</span>));
+    <span class="kw">type</span> <span class="ident">Build</span>&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt; = <span class="ident">SymmetricHashJoin</span>&lt;
         <span class="lifetime">&#39;slf</span>,
         <span class="ident">Key</span>,
-        <span class="ident">PrevA::Build</span><span class="op">&lt;</span><span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span><span class="op">&gt;</span>,
+        <span class="ident">PrevA::Build</span>&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt;,
         <span class="ident">ValA</span>,
-        <span class="ident">PrevB::Build</span><span class="op">&lt;</span><span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span><span class="op">&gt;</span>,
+        <span class="ident">PrevB::Build</span>&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt;,
         <span class="ident">ValB</span>,
-    <span class="op">&gt;</span>
+    &gt;
     <span class="kw">where</span>
         <span class="self">Self</span>: <span class="lifetime">&#39;slf</span>;
 
-    <span class="kw">type</span> <span class="ident">InputHandoffs</span> <span class="op">=</span> <span class="op">&lt;</span><span class="ident">PrevA::InputHandoffs</span> <span class="kw">as</span> <span class="ident">Extend</span><span class="op">&lt;</span><span class="ident">PrevB::InputHandoffs</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::Extended</span>;
+    <span class="kw">type</span> <span class="ident">InputHandoffs</span> = &lt;<span class="ident">PrevA::InputHandoffs</span> <span class="kw">as</span> <span class="ident">Extend</span>&lt;<span class="ident">PrevB::InputHandoffs</span>&gt;&gt;<span class="ident">::Extended</span>;
 
-    <span class="kw">fn</span> <span class="ident">build</span><span class="op">&lt;</span><span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span><span class="op">&gt;</span>(
+    <span class="kw">fn</span> <span class="ident">build</span>&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt;(
         <span class="kw-2">&amp;</span><span class="lifetime">&#39;slf</span> <span class="kw-2">mut</span> <span class="self">self</span>,
         <span class="ident">context</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx</span> <span class="ident">Context</span>,
-        <span class="ident">input</span>: <span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::InputHandoffs</span> <span class="kw">as</span> <span class="ident">PortList</span><span class="op">&lt;</span><span class="ident">RECV</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::Ctx</span><span class="op">&lt;</span><span class="lifetime">&#39;ctx</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident"><span class="self">Self</span>::Build</span><span class="op">&lt;</span><span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> (<span class="ident">input_a</span>, <span class="ident">input_b</span>) <span class="op">=</span> <span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::InputHandoffs</span> <span class="kw">as</span> <span class="ident">PortListSplit</span><span class="op">&lt;</span><span class="kw">_</span>, <span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::split_ctx</span>(<span class="ident">input</span>);
-        <span class="kw">let</span> <span class="ident">iter_a</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">prev_a</span>.<span class="ident">build</span>(<span class="ident">context</span>, <span class="ident">input_a</span>);
-        <span class="kw">let</span> <span class="ident">iter_b</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">prev_b</span>.<span class="ident">build</span>(<span class="ident">context</span>, <span class="ident">input_b</span>);
+        <span class="ident">input</span>: &lt;<span class="ident"><span class="self">Self</span>::InputHandoffs</span> <span class="kw">as</span> <span class="ident">PortList</span>&lt;<span class="ident">RECV</span>&gt;&gt;<span class="ident">::Ctx</span>&lt;<span class="lifetime">&#39;ctx</span>&gt;,
+    ) -&gt; <span class="ident"><span class="self">Self</span>::Build</span>&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt; {
+        <span class="kw">let</span> (<span class="ident">input_a</span>, <span class="ident">input_b</span>) = &lt;<span class="ident"><span class="self">Self</span>::InputHandoffs</span> <span class="kw">as</span> <span class="ident">PortListSplit</span>&lt;<span class="kw">_</span>, <span class="kw">_</span>&gt;&gt;<span class="ident">::split_ctx</span>(<span class="ident">input</span>);
+        <span class="kw">let</span> <span class="ident">iter_a</span> = <span class="self">self</span>.<span class="ident">prev_a</span>.<span class="ident">build</span>(<span class="ident">context</span>, <span class="ident">input_a</span>);
+        <span class="kw">let</span> <span class="ident">iter_b</span> = <span class="self">self</span>.<span class="ident">prev_b</span>.<span class="ident">build</span>(<span class="ident">context</span>, <span class="ident">input_b</span>);
         <span class="ident">SymmetricHashJoin::new</span>(<span class="ident">iter_a</span>, <span class="ident">iter_b</span>, <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">state</span>)
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (20ffea693 2022-08-11)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

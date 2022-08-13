@@ -60,49 +60,49 @@
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::port::RecvPort</span>;
 <span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">tl</span>, <span class="ident">tt</span>};
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">HandoffPullSurface</span><span class="op">&lt;</span><span class="ident">Hof</span><span class="op">&gt;</span>
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">HandoffPullSurface</span>&lt;<span class="ident">Hof</span>&gt;
 <span class="kw">where</span>
     <span class="ident">Hof</span>: <span class="ident">Handoff</span>,
 {
-    <span class="ident">port</span>: <span class="ident">RecvPort</span><span class="op">&lt;</span><span class="ident">Hof</span><span class="op">&gt;</span>,
+    <span class="ident">port</span>: <span class="ident">RecvPort</span>&lt;<span class="ident">Hof</span>&gt;,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">Hof</span><span class="op">&gt;</span> <span class="ident">HandoffPullSurface</span><span class="op">&lt;</span><span class="ident">Hof</span><span class="op">&gt;</span>
+<span class="kw">impl</span>&lt;<span class="ident">Hof</span>&gt; <span class="ident">HandoffPullSurface</span>&lt;<span class="ident">Hof</span>&gt;
 <span class="kw">where</span>
     <span class="ident">Hof</span>: <span class="ident">Handoff</span>,
 {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">port</span>: <span class="ident">RecvPort</span><span class="op">&lt;</span><span class="ident">Hof</span><span class="op">&gt;</span>) -&gt; <span class="self">Self</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">port</span>: <span class="ident">RecvPort</span>&lt;<span class="ident">Hof</span>&gt;) -&gt; <span class="self">Self</span> {
         <span class="self">Self</span> { <span class="ident">port</span> }
     }
 }
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">Hof</span><span class="op">&gt;</span> <span class="ident">AssembleFlowGraph</span> <span class="kw">for</span> <span class="ident">HandoffPullSurface</span><span class="op">&lt;</span><span class="ident">Hof</span><span class="op">&gt;</span>
+<span class="kw">impl</span>&lt;<span class="ident">Hof</span>&gt; <span class="ident">AssembleFlowGraph</span> <span class="kw">for</span> <span class="ident">HandoffPullSurface</span>&lt;<span class="ident">Hof</span>&gt;
 <span class="kw">where</span>
     <span class="ident">Hof</span>: <span class="ident">Handoff</span>,
 {
     <span class="kw">fn</span> <span class="ident">insert_dep</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">e</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="kw">super</span>::FlowGraph</span>) -&gt; <span class="ident">FlowNodeId</span> {
-        <span class="kw">let</span> <span class="ident">my_id</span> <span class="op">=</span> <span class="ident">e</span>.<span class="ident">add_node</span>(<span class="string">&quot;Handoff&quot;</span>);
+        <span class="kw">let</span> <span class="ident">my_id</span> = <span class="ident">e</span>.<span class="ident">add_node</span>(<span class="string">&quot;Handoff&quot;</span>);
         <span class="ident">e</span>.<span class="ident">add_handoff_id</span>(<span class="ident">my_id</span>, <span class="self">self</span>.<span class="ident">port</span>.<span class="ident">handoff_id</span>);
         <span class="ident">my_id</span>
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">Hof</span><span class="op">&gt;</span> <span class="ident">BaseSurface</span> <span class="kw">for</span> <span class="ident">HandoffPullSurface</span><span class="op">&lt;</span><span class="ident">Hof</span><span class="op">&gt;</span>
+<span class="kw">impl</span>&lt;<span class="ident">Hof</span>&gt; <span class="ident">BaseSurface</span> <span class="kw">for</span> <span class="ident">HandoffPullSurface</span>&lt;<span class="ident">Hof</span>&gt;
 <span class="kw">where</span>
     <span class="ident">Hof</span>: <span class="ident">Handoff</span>,
 {
-    <span class="kw">type</span> <span class="ident">ItemOut</span> <span class="op">=</span> <span class="ident">Hof::Inner</span>;
+    <span class="kw">type</span> <span class="ident">ItemOut</span> = <span class="ident">Hof::Inner</span>;
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">Hof</span><span class="op">&gt;</span> <span class="ident">PullSurface</span> <span class="kw">for</span> <span class="ident">HandoffPullSurface</span><span class="op">&lt;</span><span class="ident">Hof</span><span class="op">&gt;</span>
+<span class="kw">impl</span>&lt;<span class="ident">Hof</span>&gt; <span class="ident">PullSurface</span> <span class="kw">for</span> <span class="ident">HandoffPullSurface</span>&lt;<span class="ident">Hof</span>&gt;
 <span class="kw">where</span>
     <span class="ident">Hof</span>: <span class="ident">Handoff</span>,
 {
-    <span class="kw">type</span> <span class="ident">InputHandoffs</span> <span class="op">=</span> <span class="macro">tt!</span>(<span class="ident">RecvPort</span><span class="op">&lt;</span><span class="ident">Hof</span><span class="op">&gt;</span>);
-    <span class="kw">type</span> <span class="ident">Build</span> <span class="op">=</span> <span class="ident">HandoffPullBuild</span><span class="op">&lt;</span><span class="ident">Hof</span><span class="op">&gt;</span>;
+    <span class="kw">type</span> <span class="ident">InputHandoffs</span> = <span class="macro">tt!</span>(<span class="ident">RecvPort</span>&lt;<span class="ident">Hof</span>&gt;);
+    <span class="kw">type</span> <span class="ident">Build</span> = <span class="ident">HandoffPullBuild</span>&lt;<span class="ident">Hof</span>&gt;;
 
     <span class="kw">fn</span> <span class="ident">make_parts</span>(<span class="self">self</span>, <span class="ident">_ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span>) -&gt; (<span class="ident"><span class="self">Self</span>::InputHandoffs</span>, <span class="ident"><span class="self">Self</span>::Build</span>) {
         (<span class="macro">tl!</span>(<span class="self">self</span>.<span class="ident">port</span>), <span class="ident">HandoffPullBuild::new</span>())
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (20ffea693 2022-08-11)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

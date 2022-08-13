@@ -126,11 +126,11 @@
 <span class="doccomment">/// Before the `Context` is provided to a running operator, the `subgraph_id`</span>
 <span class="doccomment">/// field must be updated.</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Context</span> {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">handoffs</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">HandoffData</span><span class="op">&gt;</span>,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">states</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">StateData</span><span class="op">&gt;</span>,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">handoffs</span>: <span class="ident">Vec</span>&lt;<span class="ident">HandoffData</span>&gt;,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">states</span>: <span class="ident">Vec</span>&lt;<span class="ident">StateData</span>&gt;,
 
     <span class="comment">// TODO(mingwei): as long as this is here, it&#39;s impossible to know when all work is done.</span>
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">event_queue_send</span>: <span class="ident">UnboundedSender</span><span class="op">&lt;</span><span class="ident">SubgraphId</span><span class="op">&gt;</span>,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">event_queue_send</span>: <span class="ident">UnboundedSender</span>&lt;<span class="ident">SubgraphId</span>&gt;,
 
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">current_epoch</span>: <span class="ident">usize</span>,
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">current_stratum</span>: <span class="ident">usize</span>,
@@ -163,15 +163,15 @@
 
         <span class="kw">struct</span> <span class="ident">ContextWaker</span> {
             <span class="ident">subgraph_id</span>: <span class="ident">SubgraphId</span>,
-            <span class="ident">event_queue_send</span>: <span class="ident">UnboundedSender</span><span class="op">&lt;</span><span class="ident">SubgraphId</span><span class="op">&gt;</span>,
+            <span class="ident">event_queue_send</span>: <span class="ident">UnboundedSender</span>&lt;<span class="ident">SubgraphId</span>&gt;,
         }
         <span class="kw">impl</span> <span class="ident">ArcWake</span> <span class="kw">for</span> <span class="ident">ContextWaker</span> {
-            <span class="kw">fn</span> <span class="ident">wake_by_ref</span>(<span class="ident">arc_self</span>: <span class="kw-2">&amp;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>) {
-                <span class="kw">let</span> <span class="ident">_recv_closed_error</span> <span class="op">=</span> <span class="ident">arc_self</span>.<span class="ident">event_queue_send</span>.<span class="ident">send</span>(<span class="ident">arc_self</span>.<span class="ident">subgraph_id</span>);
+            <span class="kw">fn</span> <span class="ident">wake_by_ref</span>(<span class="ident">arc_self</span>: <span class="kw-2">&amp;</span><span class="ident">Arc</span>&lt;<span class="self">Self</span>&gt;) {
+                <span class="kw">let</span> <span class="ident">_recv_closed_error</span> = <span class="ident">arc_self</span>.<span class="ident">event_queue_send</span>.<span class="ident">send</span>(<span class="ident">arc_self</span>.<span class="ident">subgraph_id</span>);
             }
         }
 
-        <span class="kw">let</span> <span class="ident">context_waker</span> <span class="op">=</span> <span class="ident">ContextWaker</span> {
+        <span class="kw">let</span> <span class="ident">context_waker</span> = <span class="ident">ContextWaker</span> {
             <span class="ident">subgraph_id</span>: <span class="self">self</span>.<span class="ident">subgraph_id</span>,
             <span class="ident">event_queue_send</span>: <span class="self">self</span>.<span class="ident">event_queue_send</span>.<span class="ident">clone</span>(),
         };
@@ -179,7 +179,7 @@
     }
 
     <span class="doccomment">/// Returns a shared reference to the state.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">state_ref</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">handle</span>: <span class="ident">StateHandle</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">T</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">state_ref</span>&lt;<span class="ident">T</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">handle</span>: <span class="ident">StateHandle</span>&lt;<span class="ident">T</span>&gt;) -&gt; <span class="kw-2">&amp;</span><span class="ident">T</span>
     <span class="kw">where</span>
         <span class="ident">T</span>: <span class="ident">Any</span>,
     {
@@ -192,7 +192,7 @@
     }
 
     <span class="doccomment">/// Returns an exclusive reference to the state.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">state_mut</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">handle</span>: <span class="ident">StateHandle</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="ident">T</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">state_mut</span>&lt;<span class="ident">T</span>&gt;(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">handle</span>: <span class="ident">StateHandle</span>&lt;<span class="ident">T</span>&gt;) -&gt; <span class="kw-2">&amp;mut</span> <span class="ident">T</span>
     <span class="kw">where</span>
         <span class="ident">T</span>: <span class="ident">Any</span>,
     {
@@ -205,13 +205,13 @@
     }
 
     <span class="doccomment">/// Adds state to the context and returns the handle.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">add_state</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">state</span>: <span class="ident">T</span>) -&gt; <span class="ident">StateHandle</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">add_state</span>&lt;<span class="ident">T</span>&gt;(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">state</span>: <span class="ident">T</span>) -&gt; <span class="ident">StateHandle</span>&lt;<span class="ident">T</span>&gt;
     <span class="kw">where</span>
         <span class="ident">T</span>: <span class="ident">Any</span>,
     {
-        <span class="kw">let</span> <span class="ident">state_id</span> <span class="op">=</span> <span class="ident">StateId</span>(<span class="self">self</span>.<span class="ident">states</span>.<span class="ident">len</span>());
+        <span class="kw">let</span> <span class="ident">state_id</span> = <span class="ident">StateId</span>(<span class="self">self</span>.<span class="ident">states</span>.<span class="ident">len</span>());
 
-        <span class="kw">let</span> <span class="ident">state_data</span> <span class="op">=</span> <span class="ident">StateData</span> {
+        <span class="kw">let</span> <span class="ident">state_data</span> = <span class="ident">StateData</span> {
             <span class="ident">state</span>: <span class="ident">Box::new</span>(<span class="ident">state</span>),
         };
         <span class="self">self</span>.<span class="ident">states</span>.<span class="ident">push</span>(<span class="ident">state_data</span>);
@@ -223,4 +223,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (20ffea693 2022-08-11)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

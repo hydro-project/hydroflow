@@ -364,10 +364,10 @@
     <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">GraphSubgraphId</span>;
 }
 
-<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">EdgePort</span> <span class="op">=</span> (<span class="ident">GraphNodeId</span>, <span class="ident">IndexInt</span>);
-<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">EdgePortRef</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="op">=</span> (<span class="ident">GraphNodeId</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">IndexInt</span>);
+<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">EdgePort</span> = (<span class="ident">GraphNodeId</span>, <span class="ident">IndexInt</span>);
+<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">EdgePortRef</span>&lt;<span class="lifetime">&#39;a</span>&gt; = (<span class="ident">GraphNodeId</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">IndexInt</span>);
 <span class="doccomment">/// BTreeMap is used to ensure iteration order matches `IndexInt` order.</span>
-<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">OutboundEdges</span> <span class="op">=</span> <span class="ident">BTreeMap</span><span class="op">&lt;</span><span class="ident">IndexInt</span>, <span class="ident">EdgePort</span><span class="op">&gt;</span>;
+<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">OutboundEdges</span> = <span class="ident">BTreeMap</span>&lt;<span class="ident">IndexInt</span>, <span class="ident">EdgePort</span>&gt;;
 
 <span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">Node</span> {
     <span class="ident">Operator</span>(<span class="ident">Operator</span>),
@@ -382,7 +382,7 @@
     }
 }
 <span class="kw">impl</span> <span class="ident">std::fmt::Debug</span> <span class="kw">for</span> <span class="ident">Node</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">std::fmt::Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">std::fmt::Result</span> {
+    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">std::fmt::Formatter</span>&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="ident">std::fmt::Result</span> {
         <span class="kw">match</span> <span class="self">self</span> {
             <span class="ident"><span class="self">Self</span>::Operator</span>(<span class="ident">operator</span>) =&gt; {
                 <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;Node::Operator({} span)&quot;</span>, <span class="ident">PrettySpan</span>(<span class="ident">operator</span>.<span class="ident">span</span>()))
@@ -404,10 +404,10 @@
     <span class="ident">Hoff</span>,
 }
 
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">node_color</span>(<span class="ident">node</span>: <span class="kw-2">&amp;</span><span class="ident">Node</span>, <span class="ident">inn_degree</span>: <span class="ident">usize</span>, <span class="ident">out_degree</span>: <span class="ident">usize</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Color</span><span class="op">&gt;</span> {
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">node_color</span>(<span class="ident">node</span>: <span class="kw-2">&amp;</span><span class="ident">Node</span>, <span class="ident">inn_degree</span>: <span class="ident">usize</span>, <span class="ident">out_degree</span>: <span class="ident">usize</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">Color</span>&gt; {
     <span class="comment">// Determine op color based on in and out degree. If linear (1 in 1 out), color is None.</span>
     <span class="kw">match</span> <span class="ident">node</span> {
-        <span class="ident">Node::Operator</span>(<span class="kw">_</span>) =&gt; <span class="kw">match</span> (<span class="number">1</span> <span class="op">&lt;</span> <span class="ident">inn_degree</span>, <span class="number">1</span> <span class="op">&lt;</span> <span class="ident">out_degree</span>) {
+        <span class="ident">Node::Operator</span>(<span class="kw">_</span>) =&gt; <span class="kw">match</span> (<span class="number">1</span> &lt; <span class="ident">inn_degree</span>, <span class="number">1</span> &lt; <span class="ident">out_degree</span>) {
             (<span class="bool-val">true</span>, <span class="bool-val">true</span>) =&gt; <span class="prelude-val">Some</span>(<span class="ident">Color::Comp</span>),
             (<span class="bool-val">true</span>, <span class="bool-val">false</span>) =&gt; <span class="prelude-val">Some</span>(<span class="ident">Color::Pull</span>),
             (<span class="bool-val">false</span>, <span class="bool-val">true</span>) =&gt; <span class="prelude-val">Some</span>(<span class="ident">Color::Push</span>),
@@ -421,31 +421,31 @@
     }
 }
 
-<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">FlatGraph</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">PartitionedGraph</span> {
+<span class="kw">impl</span> <span class="ident">From</span>&lt;<span class="ident">FlatGraph</span>&gt; <span class="kw">for</span> <span class="ident">PartitionedGraph</span> {
     <span class="kw">fn</span> <span class="ident">from</span>(<span class="kw-2">mut</span> <span class="ident">flat_graph</span>: <span class="ident">FlatGraph</span>) -&gt; <span class="self">Self</span> {
         <span class="comment">// Algorithm:</span>
         <span class="comment">// 1. Each node begins as its own subgraph.</span>
         <span class="comment">// 2. Collect edges. Sort so edges which should not be split across a handoff come first.</span>
         <span class="comment">// 3. For each edge, try to join `(to, from)` into the same subgraph.</span>
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">node_color</span>: <span class="ident">SecondaryMap</span><span class="op">&lt;</span><span class="ident">GraphNodeId</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Color</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">flat_graph</span>
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">node_color</span>: <span class="ident">SecondaryMap</span>&lt;<span class="ident">GraphNodeId</span>, <span class="prelude-ty">Option</span>&lt;<span class="ident">Color</span>&gt;&gt; = <span class="ident">flat_graph</span>
             .<span class="ident">nodes</span>
             .<span class="ident">keys</span>()
-            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">node_id</span><span class="op">|</span> {
-                <span class="kw">let</span> <span class="ident">inn_degree</span> <span class="op">=</span> <span class="ident">flat_graph</span>.<span class="ident">preds</span>[<span class="ident">node_id</span>].<span class="ident">len</span>();
-                <span class="kw">let</span> <span class="ident">out_degree</span> <span class="op">=</span> <span class="ident">flat_graph</span>.<span class="ident">succs</span>[<span class="ident">node_id</span>].<span class="ident">len</span>();
-                <span class="kw">let</span> <span class="ident">op_color</span> <span class="op">=</span> <span class="ident">node_color</span>(<span class="kw-2">&amp;</span><span class="ident">flat_graph</span>.<span class="ident">nodes</span>[<span class="ident">node_id</span>], <span class="ident">inn_degree</span>, <span class="ident">out_degree</span>);
+            .<span class="ident">map</span>(|<span class="ident">node_id</span>| {
+                <span class="kw">let</span> <span class="ident">inn_degree</span> = <span class="ident">flat_graph</span>.<span class="ident">preds</span>[<span class="ident">node_id</span>].<span class="ident">len</span>();
+                <span class="kw">let</span> <span class="ident">out_degree</span> = <span class="ident">flat_graph</span>.<span class="ident">succs</span>[<span class="ident">node_id</span>].<span class="ident">len</span>();
+                <span class="kw">let</span> <span class="ident">op_color</span> = <span class="ident">node_color</span>(<span class="kw-2">&amp;</span><span class="ident">flat_graph</span>.<span class="ident">nodes</span>[<span class="ident">node_id</span>], <span class="ident">inn_degree</span>, <span class="ident">out_degree</span>);
                 (<span class="ident">node_id</span>, <span class="ident">op_color</span>)
             })
             .<span class="ident">collect</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">node_union</span>: <span class="ident">UnionFind</span><span class="op">&lt;</span><span class="ident">GraphNodeId</span><span class="op">&gt;</span> <span class="op">=</span>
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">node_union</span>: <span class="ident">UnionFind</span>&lt;<span class="ident">GraphNodeId</span>&gt; =
             <span class="ident">UnionFind::with_capacity</span>(<span class="ident">flat_graph</span>.<span class="ident">nodes</span>.<span class="ident">len</span>());
         <span class="comment">// All edges which belong to a single subgraph. Other &amp; self-edges become handoffs.</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">subgraph_edges</span>: <span class="ident">HashSet</span><span class="op">&lt;</span>(<span class="ident">EdgePortRef</span>, <span class="ident">EdgePortRef</span>)<span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Default::default</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">subgraph_edges</span>: <span class="ident">HashSet</span>&lt;(<span class="ident">EdgePortRef</span>, <span class="ident">EdgePortRef</span>)&gt; = <span class="ident">Default::default</span>();
 
         <span class="comment">// Sort edges here (for now, no sort/priority).</span>
         <span class="kw">loop</span> {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">updated</span> <span class="op">=</span> <span class="bool-val">false</span>;
+            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">updated</span> = <span class="bool-val">false</span>;
             <span class="kw">for</span> ((<span class="ident">src</span>, <span class="ident">src_idx</span>), (<span class="ident">dst</span>, <span class="ident">dst_idx</span>)) <span class="kw">in</span> <span class="ident">iter_edges</span>(<span class="kw-2">&amp;</span><span class="ident">flat_graph</span>.<span class="ident">succs</span>) {
                 <span class="kw">if</span> <span class="ident">node_union</span>.<span class="ident">same_set</span>(<span class="ident">src</span>, <span class="ident">dst</span>) {
                     <span class="comment">// Note this might be triggered even if the edge (src, dst) is not in the subgraph.</span>
@@ -462,32 +462,32 @@
                     (<span class="prelude-val">Some</span>(<span class="kw">_</span>), <span class="prelude-val">Some</span>(<span class="kw">_</span>)) =&gt; (),
                     (<span class="prelude-val">None</span>, <span class="prelude-val">None</span>) =&gt; (),
                     (<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(<span class="ident">dst_color</span>)) =&gt; {
-                        <span class="ident">node_color</span>[<span class="ident">src</span>] <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="kw">match</span> <span class="ident">dst_color</span> {
+                        <span class="ident">node_color</span>[<span class="ident">src</span>] = <span class="prelude-val">Some</span>(<span class="kw">match</span> <span class="ident">dst_color</span> {
                             <span class="ident">Color::Comp</span> =&gt; <span class="ident">Color::Pull</span>,
                             <span class="ident">Color::Hoff</span> =&gt; <span class="ident">Color::Push</span>,
                             <span class="ident">pull_or_push</span> =&gt; <span class="ident">pull_or_push</span>,
                         });
-                        <span class="ident">updated</span> <span class="op">=</span> <span class="bool-val">true</span>;
+                        <span class="ident">updated</span> = <span class="bool-val">true</span>;
                     }
                     (<span class="prelude-val">Some</span>(<span class="ident">src_color</span>), <span class="prelude-val">None</span>) =&gt; {
-                        <span class="ident">node_color</span>[<span class="ident">dst</span>] <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="kw">match</span> <span class="ident">src_color</span> {
+                        <span class="ident">node_color</span>[<span class="ident">dst</span>] = <span class="prelude-val">Some</span>(<span class="kw">match</span> <span class="ident">src_color</span> {
                             <span class="ident">Color::Comp</span> =&gt; <span class="ident">Color::Push</span>,
                             <span class="ident">Color::Hoff</span> =&gt; <span class="ident">Color::Pull</span>,
                             <span class="ident">pull_or_push</span> =&gt; <span class="ident">pull_or_push</span>,
                         });
-                        <span class="ident">updated</span> <span class="op">=</span> <span class="bool-val">true</span>;
+                        <span class="ident">updated</span> = <span class="bool-val">true</span>;
                     }
                 }
 
                 <span class="comment">// If SRC and DST can be in the same subgraph.</span>
-                <span class="kw">let</span> <span class="ident">can_connect</span> <span class="op">=</span> <span class="kw">match</span> (<span class="ident">node_color</span>[<span class="ident">src</span>], <span class="ident">node_color</span>[<span class="ident">dst</span>]) {
+                <span class="kw">let</span> <span class="ident">can_connect</span> = <span class="kw">match</span> (<span class="ident">node_color</span>[<span class="ident">src</span>], <span class="ident">node_color</span>[<span class="ident">dst</span>]) {
                     (<span class="prelude-val">Some</span>(<span class="ident">Color::Pull</span>), <span class="prelude-val">Some</span>(<span class="ident">Color::Pull</span>)) =&gt; <span class="bool-val">true</span>,
                     (<span class="prelude-val">Some</span>(<span class="ident">Color::Pull</span>), <span class="prelude-val">Some</span>(<span class="ident">Color::Comp</span>)) =&gt; <span class="bool-val">true</span>,
                     (<span class="prelude-val">Some</span>(<span class="ident">Color::Pull</span>), <span class="prelude-val">Some</span>(<span class="ident">Color::Push</span>)) =&gt; <span class="bool-val">true</span>,
 
-                    (<span class="prelude-val">Some</span>(<span class="ident">Color::Comp</span> <span class="op">|</span> <span class="ident">Color::Push</span>), <span class="prelude-val">Some</span>(<span class="ident">Color::Pull</span>)) =&gt; <span class="bool-val">false</span>,
-                    (<span class="prelude-val">Some</span>(<span class="ident">Color::Comp</span> <span class="op">|</span> <span class="ident">Color::Push</span>), <span class="prelude-val">Some</span>(<span class="ident">Color::Comp</span>)) =&gt; <span class="bool-val">false</span>,
-                    (<span class="prelude-val">Some</span>(<span class="ident">Color::Comp</span> <span class="op">|</span> <span class="ident">Color::Push</span>), <span class="prelude-val">Some</span>(<span class="ident">Color::Push</span>)) =&gt; <span class="bool-val">true</span>,
+                    (<span class="prelude-val">Some</span>(<span class="ident">Color::Comp</span> | <span class="ident">Color::Push</span>), <span class="prelude-val">Some</span>(<span class="ident">Color::Pull</span>)) =&gt; <span class="bool-val">false</span>,
+                    (<span class="prelude-val">Some</span>(<span class="ident">Color::Comp</span> | <span class="ident">Color::Push</span>), <span class="prelude-val">Some</span>(<span class="ident">Color::Comp</span>)) =&gt; <span class="bool-val">false</span>,
+                    (<span class="prelude-val">Some</span>(<span class="ident">Color::Comp</span> | <span class="ident">Color::Push</span>), <span class="prelude-val">Some</span>(<span class="ident">Color::Push</span>)) =&gt; <span class="bool-val">true</span>,
 
                     <span class="comment">// Handoffs are not part of subgraphs.</span>
                     (<span class="prelude-val">Some</span>(<span class="ident">Color::Hoff</span>), <span class="prelude-val">Some</span>(<span class="kw">_</span>)) =&gt; <span class="bool-val">false</span>,
@@ -501,47 +501,47 @@
                 <span class="kw">if</span> <span class="ident">can_connect</span> {
                     <span class="ident">node_union</span>.<span class="ident">union</span>(<span class="ident">src</span>, <span class="ident">dst</span>);
                     <span class="ident">subgraph_edges</span>.<span class="ident">insert</span>(((<span class="ident">src</span>, <span class="ident">src_idx</span>), (<span class="ident">dst</span>, <span class="ident">dst_idx</span>)));
-                    <span class="ident">updated</span> <span class="op">=</span> <span class="bool-val">true</span>;
+                    <span class="ident">updated</span> = <span class="bool-val">true</span>;
                 }
             }
-            <span class="kw">if</span> <span class="op">!</span><span class="ident">updated</span> {
+            <span class="kw">if</span> !<span class="ident">updated</span> {
                 <span class="kw">break</span>;
             }
         }
 
         <span class="comment">// Copy of `self.preds` for the output.</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">new_preds</span>: <span class="ident">SecondaryMap</span><span class="op">&lt;</span><span class="ident">GraphNodeId</span>, <span class="ident">OutboundEdges</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">flat_graph</span>
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">new_preds</span>: <span class="ident">SecondaryMap</span>&lt;<span class="ident">GraphNodeId</span>, <span class="ident">OutboundEdges</span>&gt; = <span class="ident">flat_graph</span>
             .<span class="ident">nodes</span>
             .<span class="ident">keys</span>()
-            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">k</span><span class="op">|</span> (<span class="ident">k</span>, <span class="ident">Default::default</span>()))
+            .<span class="ident">map</span>(|<span class="ident">k</span>| (<span class="ident">k</span>, <span class="ident">Default::default</span>()))
             .<span class="ident">collect</span>();
         <span class="comment">// Copy of `self.succs` for the output.</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">new_succs</span>: <span class="ident">SecondaryMap</span><span class="op">&lt;</span><span class="ident">GraphNodeId</span>, <span class="ident">OutboundEdges</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">flat_graph</span>
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">new_succs</span>: <span class="ident">SecondaryMap</span>&lt;<span class="ident">GraphNodeId</span>, <span class="ident">OutboundEdges</span>&gt; = <span class="ident">flat_graph</span>
             .<span class="ident">nodes</span>
             .<span class="ident">keys</span>()
-            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">k</span><span class="op">|</span> (<span class="ident">k</span>, <span class="ident">Default::default</span>()))
+            .<span class="ident">map</span>(|<span class="ident">k</span>| (<span class="ident">k</span>, <span class="ident">Default::default</span>()))
             .<span class="ident">collect</span>();
 
         <span class="comment">// Copy over edges, inserting handoffs between subgraphs (or on subgraph self-edges) when needed.</span>
         <span class="kw">for</span> <span class="ident">edge</span> <span class="kw">in</span> <span class="ident">iter_edges</span>(<span class="kw-2">&amp;</span><span class="ident">flat_graph</span>.<span class="ident">succs</span>) {
-            <span class="kw">let</span> <span class="ident">is_subgraph_edge</span> <span class="op">=</span> <span class="ident">subgraph_edges</span>.<span class="ident">contains</span>(<span class="kw-2">&amp;</span><span class="ident">edge</span>); <span class="comment">// Internal subgraph edges are not handoffs.</span>
-            <span class="kw">let</span> ((<span class="ident">src</span>, <span class="ident">src_idx</span>), (<span class="ident">dst</span>, <span class="ident">dst_idx</span>)) <span class="op">=</span> <span class="ident">edge</span>;
+            <span class="kw">let</span> <span class="ident">is_subgraph_edge</span> = <span class="ident">subgraph_edges</span>.<span class="ident">contains</span>(<span class="kw-2">&amp;</span><span class="ident">edge</span>); <span class="comment">// Internal subgraph edges are not handoffs.</span>
+            <span class="kw">let</span> ((<span class="ident">src</span>, <span class="ident">src_idx</span>), (<span class="ident">dst</span>, <span class="ident">dst_idx</span>)) = <span class="ident">edge</span>;
 
             <span class="comment">// Already has a handoff, no need to insert one.</span>
             <span class="kw">if</span> <span class="ident">is_subgraph_edge</span>
-                <span class="op">|</span><span class="op">|</span> <span class="macro">matches!</span>(<span class="ident">flat_graph</span>.<span class="ident">nodes</span>[<span class="ident">src</span>], <span class="ident">Node::Handoff</span>)
-                <span class="op">|</span><span class="op">|</span> <span class="macro">matches!</span>(<span class="ident">flat_graph</span>.<span class="ident">nodes</span>[<span class="ident">dst</span>], <span class="ident">Node::Handoff</span>)
+                || <span class="macro">matches!</span>(<span class="ident">flat_graph</span>.<span class="ident">nodes</span>[<span class="ident">src</span>], <span class="ident">Node::Handoff</span>)
+                || <span class="macro">matches!</span>(<span class="ident">flat_graph</span>.<span class="ident">nodes</span>[<span class="ident">dst</span>], <span class="ident">Node::Handoff</span>)
             {
                 <span class="ident">new_preds</span>[<span class="ident">dst</span>].<span class="ident">insert</span>(<span class="kw-2">*</span><span class="ident">dst_idx</span>, (<span class="ident">src</span>, <span class="kw-2">*</span><span class="ident">src_idx</span>));
                 <span class="ident">new_succs</span>[<span class="ident">src</span>].<span class="ident">insert</span>(<span class="kw-2">*</span><span class="ident">src_idx</span>, (<span class="ident">dst</span>, <span class="kw-2">*</span><span class="ident">dst_idx</span>));
             } <span class="kw">else</span> {
                 <span class="comment">// Needs handoff inserted.</span>
                 <span class="comment">// A -&gt; H -&gt; Z</span>
-                <span class="kw">let</span> <span class="ident">hoff_id</span> <span class="op">=</span> <span class="ident">flat_graph</span>.<span class="ident">nodes</span>.<span class="ident">insert</span>(<span class="ident">Node::Handoff</span>);
+                <span class="kw">let</span> <span class="ident">hoff_id</span> = <span class="ident">flat_graph</span>.<span class="ident">nodes</span>.<span class="ident">insert</span>(<span class="ident">Node::Handoff</span>);
                 <span class="ident">new_preds</span>.<span class="ident">insert</span>(<span class="ident">hoff_id</span>, <span class="ident">Default::default</span>());
                 <span class="ident">new_succs</span>.<span class="ident">insert</span>(<span class="ident">hoff_id</span>, <span class="ident">Default::default</span>());
 
-                <span class="kw">let</span> <span class="ident">zero_index</span> <span class="op">=</span> <span class="ident">IndexInt</span> {
+                <span class="kw">let</span> <span class="ident">zero_index</span> = <span class="ident">IndexInt</span> {
                     <span class="ident">value</span>: <span class="number">0</span>,
                     <span class="ident">span</span>: <span class="ident">Span::call_site</span>(),
                 };
@@ -557,15 +557,15 @@
         }
 
         <span class="comment">// Determine node&#39;s subgraph and subgraph&#39;s nodes in topological sort order.</span>
-        <span class="kw">let</span> (<span class="ident">node_subgraph</span>, <span class="ident">subgraph_nodes</span>) <span class="op">=</span> {
-            <span class="kw">struct</span> <span class="ident">SubgraphTopoSort</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
-                <span class="ident">nodes</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">SlotMap</span><span class="op">&lt;</span><span class="ident">GraphNodeId</span>, <span class="ident">Node</span><span class="op">&gt;</span>,
-                <span class="ident">preds</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">SecondaryMap</span><span class="op">&lt;</span><span class="ident">GraphNodeId</span>, <span class="ident">OutboundEdges</span><span class="op">&gt;</span>,
-                <span class="ident">node_union</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">UnionFind</span><span class="op">&lt;</span><span class="ident">GraphNodeId</span><span class="op">&gt;</span>,
-                <span class="ident">marked</span>: <span class="ident">HashSet</span><span class="op">&lt;</span><span class="ident">GraphNodeId</span><span class="op">&gt;</span>,
-                <span class="ident">subgraph_nodes</span>: <span class="ident">SecondaryMap</span><span class="op">&lt;</span><span class="ident">GraphNodeId</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">GraphNodeId</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+        <span class="kw">let</span> (<span class="ident">node_subgraph</span>, <span class="ident">subgraph_nodes</span>) = {
+            <span class="kw">struct</span> <span class="ident">SubgraphTopoSort</span>&lt;<span class="lifetime">&#39;a</span>&gt; {
+                <span class="ident">nodes</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">SlotMap</span>&lt;<span class="ident">GraphNodeId</span>, <span class="ident">Node</span>&gt;,
+                <span class="ident">preds</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">SecondaryMap</span>&lt;<span class="ident">GraphNodeId</span>, <span class="ident">OutboundEdges</span>&gt;,
+                <span class="ident">node_union</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">UnionFind</span>&lt;<span class="ident">GraphNodeId</span>&gt;,
+                <span class="ident">marked</span>: <span class="ident">HashSet</span>&lt;<span class="ident">GraphNodeId</span>&gt;,
+                <span class="ident">subgraph_nodes</span>: <span class="ident">SecondaryMap</span>&lt;<span class="ident">GraphNodeId</span>, <span class="ident">Vec</span>&lt;<span class="ident">GraphNodeId</span>&gt;&gt;,
             }
-            <span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">SubgraphTopoSort</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
+            <span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; <span class="ident">SubgraphTopoSort</span>&lt;<span class="lifetime">&#39;a</span>&gt; {
                 <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">visit</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">node_id</span>: <span class="ident">GraphNodeId</span>) {
                     <span class="comment">// Already marked.</span>
                     <span class="kw">if</span> <span class="self">self</span>.<span class="ident">marked</span>.<span class="ident">contains</span>(<span class="kw-2">&amp;</span><span class="ident">node_id</span>) {
@@ -582,8 +582,8 @@
                         }
                     }
 
-                    <span class="kw">let</span> <span class="ident">repr_node</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">node_union</span>.<span class="ident">find</span>(<span class="ident">node_id</span>);
-                    <span class="kw">if</span> <span class="op">!</span><span class="self">self</span>.<span class="ident">subgraph_nodes</span>.<span class="ident">contains_key</span>(<span class="ident">repr_node</span>) {
+                    <span class="kw">let</span> <span class="ident">repr_node</span> = <span class="self">self</span>.<span class="ident">node_union</span>.<span class="ident">find</span>(<span class="ident">node_id</span>);
+                    <span class="kw">if</span> !<span class="self">self</span>.<span class="ident">subgraph_nodes</span>.<span class="ident">contains_key</span>(<span class="ident">repr_node</span>) {
                         <span class="self">self</span>.<span class="ident">subgraph_nodes</span>.<span class="ident">insert</span>(<span class="ident">repr_node</span>, <span class="ident">Default::default</span>());
                     }
                     <span class="self">self</span>.<span class="ident">subgraph_nodes</span>[<span class="ident">repr_node</span>].<span class="ident">push</span>(<span class="ident">node_id</span>);
@@ -591,8 +591,8 @@
                 }
             }
 
-            <span class="kw">let</span> (<span class="ident">marked</span>, <span class="ident">subgraph_nodes</span>) <span class="op">=</span> <span class="ident">Default::default</span>();
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">sg_topo_sort</span> <span class="op">=</span> <span class="ident">SubgraphTopoSort</span> {
+            <span class="kw">let</span> (<span class="ident">marked</span>, <span class="ident">subgraph_nodes</span>) = <span class="ident">Default::default</span>();
+            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">sg_topo_sort</span> = <span class="ident">SubgraphTopoSort</span> {
                 <span class="ident">nodes</span>: <span class="kw-2">&amp;</span><span class="ident">flat_graph</span>.<span class="ident">nodes</span>,
                 <span class="ident">preds</span>: <span class="kw-2">&amp;</span><span class="ident">new_preds</span>,
                 <span class="ident">node_union</span>: <span class="kw-2">&amp;mut</span> <span class="ident">node_union</span>,
@@ -604,12 +604,12 @@
             }
 
             <span class="comment">// For a `NodeId`, what `SubgraphId` does it belong to.</span>
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">node_subgraph</span>: <span class="ident">SecondaryMap</span><span class="op">&lt;</span><span class="ident">GraphNodeId</span>, <span class="ident">GraphSubgraphId</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Default::default</span>();
+            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">node_subgraph</span>: <span class="ident">SecondaryMap</span>&lt;<span class="ident">GraphNodeId</span>, <span class="ident">GraphSubgraphId</span>&gt; = <span class="ident">Default::default</span>();
             <span class="comment">// For a `SubgraphId`, what `NodeId`s belong to it.</span>
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">subgraph_nodes</span>: <span class="ident">SlotMap</span><span class="op">&lt;</span><span class="ident">GraphSubgraphId</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">GraphNodeId</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Default::default</span>();
+            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">subgraph_nodes</span>: <span class="ident">SlotMap</span>&lt;<span class="ident">GraphSubgraphId</span>, <span class="ident">Vec</span>&lt;<span class="ident">GraphNodeId</span>&gt;&gt; = <span class="ident">Default::default</span>();
             <span class="comment">// Populate above.</span>
             <span class="kw">for</span> (<span class="ident">_repr_node</span>, <span class="ident">member_nodes</span>) <span class="kw">in</span> <span class="ident">sg_topo_sort</span>.<span class="ident">subgraph_nodes</span> {
-                <span class="ident">subgraph_nodes</span>.<span class="ident">insert_with_key</span>(<span class="op">|</span><span class="ident">subgraph_id</span><span class="op">|</span> {
+                <span class="ident">subgraph_nodes</span>.<span class="ident">insert_with_key</span>(|<span class="ident">subgraph_id</span>| {
                     <span class="kw">for</span> <span class="kw-2">&amp;</span><span class="ident">node_id</span> <span class="kw">in</span> <span class="ident">member_nodes</span>.<span class="ident">iter</span>() {
                         <span class="ident">node_subgraph</span>.<span class="ident">insert</span>(<span class="ident">node_id</span>, <span class="ident">subgraph_id</span>);
                     }
@@ -621,15 +621,15 @@
         };
 
         <span class="comment">// Get data on handoff src and dst subgraphs.</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">subgraph_recv_handoffs</span>: <span class="ident">SecondaryMap</span><span class="op">&lt;</span><span class="ident">GraphSubgraphId</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">GraphNodeId</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">=</span>
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">subgraph_recv_handoffs</span>: <span class="ident">SecondaryMap</span>&lt;<span class="ident">GraphSubgraphId</span>, <span class="ident">Vec</span>&lt;<span class="ident">GraphNodeId</span>&gt;&gt; =
             <span class="ident">subgraph_nodes</span>
                 .<span class="ident">keys</span>()
-                .<span class="ident">map</span>(<span class="op">|</span><span class="ident">k</span><span class="op">|</span> (<span class="ident">k</span>, <span class="ident">Default::default</span>()))
+                .<span class="ident">map</span>(|<span class="ident">k</span>| (<span class="ident">k</span>, <span class="ident">Default::default</span>()))
                 .<span class="ident">collect</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">subgraph_send_handoffs</span> <span class="op">=</span> <span class="ident">subgraph_recv_handoffs</span>.<span class="ident">clone</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">subgraph_send_handoffs</span> = <span class="ident">subgraph_recv_handoffs</span>.<span class="ident">clone</span>();
         <span class="kw">for</span> <span class="ident">edge</span> <span class="kw">in</span> <span class="ident">iter_edges</span>(<span class="kw-2">&amp;</span><span class="ident">new_succs</span>) {
-            <span class="kw">let</span> ((<span class="ident">src</span>, <span class="kw">_</span>), (<span class="ident">dst</span>, <span class="kw">_</span>)) <span class="op">=</span> <span class="ident">edge</span>;
-            <span class="kw">let</span> (<span class="ident">src_node</span>, <span class="ident">dst_node</span>) <span class="op">=</span> (<span class="kw-2">&amp;</span><span class="ident">flat_graph</span>.<span class="ident">nodes</span>[<span class="ident">src</span>], <span class="kw-2">&amp;</span><span class="ident">flat_graph</span>.<span class="ident">nodes</span>[<span class="ident">dst</span>]);
+            <span class="kw">let</span> ((<span class="ident">src</span>, <span class="kw">_</span>), (<span class="ident">dst</span>, <span class="kw">_</span>)) = <span class="ident">edge</span>;
+            <span class="kw">let</span> (<span class="ident">src_node</span>, <span class="ident">dst_node</span>) = (<span class="kw-2">&amp;</span><span class="ident">flat_graph</span>.<span class="ident">nodes</span>[<span class="ident">src</span>], <span class="kw-2">&amp;</span><span class="ident">flat_graph</span>.<span class="ident">nodes</span>[<span class="ident">dst</span>]);
             <span class="kw">match</span> (<span class="ident">src_node</span>, <span class="ident">dst_node</span>) {
                 (<span class="ident">Node::Operator</span>(<span class="kw">_</span>), <span class="ident">Node::Operator</span>(<span class="kw">_</span>)) =&gt; {}
                 (<span class="ident">Node::Operator</span>(<span class="kw">_</span>), <span class="ident">Node::Handoff</span>) =&gt; {
@@ -662,13 +662,13 @@
 }
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">iter_edges</span>(
-    <span class="ident">succs</span>: <span class="kw-2">&amp;</span><span class="ident">SecondaryMap</span><span class="op">&lt;</span><span class="ident">GraphNodeId</span>, <span class="ident">OutboundEdges</span><span class="op">&gt;</span>,
-) -&gt; <span class="kw">impl</span> <span class="lifetime">&#39;_</span> <span class="op">+</span> <span class="ident">Iterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> (<span class="ident">EdgePortRef</span>, <span class="ident">EdgePortRef</span>)<span class="op">&gt;</span> {
-    <span class="ident">succs</span>.<span class="ident">iter</span>().<span class="ident">flat_map</span>(<span class="op">|</span>(<span class="ident">src</span>, <span class="ident">succs</span>)<span class="op">|</span> {
+    <span class="ident">succs</span>: <span class="kw-2">&amp;</span><span class="ident">SecondaryMap</span>&lt;<span class="ident">GraphNodeId</span>, <span class="ident">OutboundEdges</span>&gt;,
+) -&gt; <span class="kw">impl</span> <span class="lifetime">&#39;_</span> + <span class="ident">Iterator</span>&lt;<span class="ident">Item</span> = (<span class="ident">EdgePortRef</span>, <span class="ident">EdgePortRef</span>)&gt; {
+    <span class="ident">succs</span>.<span class="ident">iter</span>().<span class="ident">flat_map</span>(|(<span class="ident">src</span>, <span class="ident">succs</span>)| {
         <span class="ident">succs</span>
             .<span class="ident">iter</span>()
-            .<span class="ident">map</span>(<span class="kw">move</span> <span class="op">|</span>(<span class="ident">src_idx</span>, (<span class="ident">dst</span>, <span class="ident">dst_idx</span>))<span class="op">|</span> ((<span class="ident">src</span>, <span class="ident">src_idx</span>), (<span class="kw-2">*</span><span class="ident">dst</span>, <span class="ident">dst_idx</span>)))
+            .<span class="ident">map</span>(<span class="kw">move</span> |(<span class="ident">src_idx</span>, (<span class="ident">dst</span>, <span class="ident">dst_idx</span>))| ((<span class="ident">src</span>, <span class="ident">src_idx</span>), (<span class="kw-2">*</span><span class="ident">dst</span>, <span class="ident">dst_idx</span>)))
     })
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (20ffea693 2022-08-11)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

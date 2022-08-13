@@ -26,8 +26,8 @@
 <span class="doccomment">/// Example: `hydroflow\tests\surface_syntax.rs:42:18`.</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">PrettySpan</span>(<span class="kw">pub</span> <span class="ident">proc_macro2::Span</span>);
 <span class="kw">impl</span> <span class="ident">std::fmt::Display</span> <span class="kw">for</span> <span class="ident">PrettySpan</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">std::fmt::Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">std::fmt::Result</span> {
-        <span class="kw">let</span> <span class="ident">span</span> <span class="op">=</span> <span class="self">self</span>.<span class="number">0</span>.<span class="ident">unwrap</span>();
+    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">std::fmt::Formatter</span>&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="ident">std::fmt::Result</span> {
+        <span class="kw">let</span> <span class="ident">span</span> = <span class="self">self</span>.<span class="number">0</span>.<span class="ident">unwrap</span>();
         <span class="macro">write!</span>(
             <span class="ident">f</span>,
             <span class="string">&quot;{}:{}:{}&quot;</span>,
@@ -41,10 +41,10 @@
 <span class="doccomment">/// Helper struct which displays the span as `row:col` for human reading.</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">PrettyRowCol</span>(<span class="kw">pub</span> <span class="ident">proc_macro2::Span</span>);
 <span class="kw">impl</span> <span class="ident">std::fmt::Display</span> <span class="kw">for</span> <span class="ident">PrettyRowCol</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">std::fmt::Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">std::fmt::Result</span> {
-        <span class="kw">let</span> <span class="ident">span</span> <span class="op">=</span> <span class="self">self</span>.<span class="number">0</span>.<span class="ident">unwrap</span>();
+    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">std::fmt::Formatter</span>&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="ident">std::fmt::Result</span> {
+        <span class="kw">let</span> <span class="ident">span</span> = <span class="self">self</span>.<span class="number">0</span>.<span class="ident">unwrap</span>();
         <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;{}:{}&quot;</span>, <span class="ident">span</span>.<span class="ident">start</span>().<span class="ident">line</span>, <span class="ident">span</span>.<span class="ident">start</span>().<span class="ident">column</span>)
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (20ffea693 2022-08-11)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

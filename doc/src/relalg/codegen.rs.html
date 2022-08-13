@@ -132,14 +132,14 @@
 <span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">Datum</span>, <span class="ident">RelExpr</span>, <span class="ident">ScalarExpr</span>};
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">generate_dataflow</span>(<span class="ident">r</span>: <span class="ident">RelExpr</span>) -&gt; <span class="ident">String</span> {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">builder</span> <span class="op">=</span> <span class="ident">SubgraphBuilder::new</span>();
-    <span class="kw">let</span> <span class="ident">id</span> <span class="op">=</span> <span class="ident">builder</span>.<span class="ident">compile_op</span>(<span class="kw-2">&amp;</span><span class="ident">r</span>);
-    <span class="kw">let</span> <span class="ident">code</span> <span class="op">=</span> <span class="ident">builder</span>.<span class="ident">code</span>;
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">builder</span> = <span class="ident">SubgraphBuilder::new</span>();
+    <span class="kw">let</span> <span class="ident">id</span> = <span class="ident">builder</span>.<span class="ident">compile_op</span>(<span class="kw-2">&amp;</span><span class="ident">r</span>);
+    <span class="kw">let</span> <span class="ident">code</span> = <span class="ident">builder</span>.<span class="ident">code</span>;
     <span class="ident">run_rustfmt</span>(<span class="macro">format!</span>(
         <span class="string">&quot;{}&quot;</span>,
         <span class="macro">quote!</span> {
             <span class="kw">fn</span> <span class="ident">main</span>() {
-                #(#<span class="ident">code</span>)<span class="op">*</span>
+                #(#<span class="ident">code</span>)*
 
                 <span class="kw">for</span> <span class="ident">row</span> <span class="kw">in</span> #<span class="ident">id</span> {
                     <span class="macro">println!</span>(<span class="string">&quot;{:?}&quot;</span>, <span class="ident">row</span>);
@@ -151,7 +151,7 @@
 }
 
 <span class="comment">// TODO(justin): How do we make this portable/run on CI?</span>
-<span class="kw">fn</span> <span class="ident">run_rustfmt</span>(<span class="ident">s</span>: <span class="ident">String</span>) -&gt; <span class="ident">anyhow::Result</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span> {
+<span class="kw">fn</span> <span class="ident">run_rustfmt</span>(<span class="ident">s</span>: <span class="ident">String</span>) -&gt; <span class="ident">anyhow::Result</span>&lt;<span class="ident">String</span>&gt; {
     <span class="prelude-val">Ok</span>(<span class="macro">cmd!</span>(<span class="string">&quot;rustfmt --config newline_style=Unix&quot;</span>)
         .<span class="ident">stdin</span>(<span class="ident">s</span>)
         .<span class="ident">read</span>()<span class="question-mark">?</span>)
@@ -159,7 +159,7 @@
 
 <span class="kw">struct</span> <span class="ident">SubgraphBuilder</span> {
     <span class="ident">sym_id</span>: <span class="ident">usize</span>,
-    <span class="ident">code</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">TokenStream</span><span class="op">&gt;</span>,
+    <span class="ident">code</span>: <span class="ident">Vec</span>&lt;<span class="ident">TokenStream</span>&gt;,
 }
 
 <span class="comment">// TODO(justin): we can manually inline all this to just get raw rust code, but should check</span>
@@ -182,7 +182,7 @@
 
 <span class="kw">impl</span> <span class="ident">SubgraphBuilder</span> {
     <span class="kw">fn</span> <span class="ident">gensym</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">prefix</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="ident">Ident</span> {
-        <span class="self">self</span>.<span class="ident">sym_id</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+        <span class="self">self</span>.<span class="ident">sym_id</span> += <span class="number">1</span>;
         <span class="macro">format_ident!</span>(<span class="string">&quot;__{}_{}&quot;</span>, <span class="ident">prefix</span>, <span class="self">self</span>.<span class="ident">sym_id</span>)
     }
 
@@ -196,51 +196,51 @@
     <span class="kw">fn</span> <span class="ident">compile_op</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">r</span>: <span class="kw-2">&amp;</span><span class="ident">RelExpr</span>) -&gt; <span class="ident">Ident</span> {
         <span class="kw">match</span> <span class="ident">r</span> {
             <span class="ident">RelExpr::Values</span>(<span class="ident">v</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">op_name</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">gensym</span>(<span class="string">&quot;values&quot;</span>);
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">payload</span> <span class="op">=</span> <span class="ident">TokenStream::default</span>();
-                <span class="kw">let</span> <span class="ident">iter</span> <span class="op">=</span> <span class="ident">v</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">row</span><span class="op">|</span> {
+                <span class="kw">let</span> <span class="ident">op_name</span> = <span class="self">self</span>.<span class="ident">gensym</span>(<span class="string">&quot;values&quot;</span>);
+                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">payload</span> = <span class="ident">TokenStream::default</span>();
+                <span class="kw">let</span> <span class="ident">iter</span> = <span class="ident">v</span>.<span class="ident">iter</span>().<span class="ident">map</span>(|<span class="ident">row</span>| {
                     <span class="macro">quote!</span> {
-                        <span class="macro">vec!</span>[ #(#<span class="ident">row</span>.<span class="ident">eval</span>(<span class="kw-2">&amp;</span><span class="ident">Vec::new</span>())),<span class="op">*</span> ]
+                        <span class="macro">vec!</span>[ #(#<span class="ident">row</span>.<span class="ident">eval</span>(<span class="kw-2">&amp;</span><span class="ident">Vec::new</span>())),* ]
                     }
                 });
                 <span class="ident">payload</span>.<span class="ident">extend</span>(<span class="macro">quote!</span> {
                     <span class="macro">vec!</span>[
                         #(
                             #<span class="ident">iter</span>
-                        ),<span class="op">*</span>
+                        ),*
                     ]
                 });
 
                 <span class="self">self</span>.<span class="ident">code</span>.<span class="ident">push</span>(<span class="macro">quote!</span> {
-                    <span class="kw">let</span> #<span class="ident">op_name</span> <span class="op">=</span> #<span class="ident">payload</span>.<span class="ident">into_iter</span>();
+                    <span class="kw">let</span> #<span class="ident">op_name</span> = #<span class="ident">payload</span>.<span class="ident">into_iter</span>();
                 });
 
                 <span class="ident">op_name</span>
             }
             <span class="ident">RelExpr::Filter</span>(<span class="ident">preds</span>, <span class="ident">input</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">op_name</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">gensym</span>(<span class="string">&quot;filter&quot;</span>);
-                <span class="kw">let</span> <span class="ident">input_name</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">compile_op</span>(<span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="kw-2">*</span><span class="ident">input</span>);
+                <span class="kw">let</span> <span class="ident">op_name</span> = <span class="self">self</span>.<span class="ident">gensym</span>(<span class="string">&quot;filter&quot;</span>);
+                <span class="kw">let</span> <span class="ident">input_name</span> = <span class="self">self</span>.<span class="ident">compile_op</span>(<span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="kw-2">*</span><span class="ident">input</span>);
 
-                <span class="kw">let</span> <span class="ident">pred</span> <span class="op">=</span> <span class="macro">quote!</span> {
-                    #(#<span class="ident">preds</span>.<span class="ident">eval</span>(<span class="ident">row</span>).<span class="ident">is_true</span>())<span class="op">&amp;&amp;</span><span class="op">*</span>
+                <span class="kw">let</span> <span class="ident">pred</span> = <span class="macro">quote!</span> {
+                    #(#<span class="ident">preds</span>.<span class="ident">eval</span>(<span class="ident">row</span>).<span class="ident">is_true</span>())&amp;&amp;*
                 };
 
                 <span class="self">self</span>.<span class="ident">code</span>.<span class="ident">push</span>(<span class="macro">quote!</span> {
-                    <span class="kw">let</span> #<span class="ident">op_name</span> <span class="op">=</span> #<span class="ident">input_name</span>.<span class="ident">filter</span>(<span class="op">|</span><span class="ident">row</span><span class="op">|</span> #<span class="ident">pred</span>);
+                    <span class="kw">let</span> #<span class="ident">op_name</span> = #<span class="ident">input_name</span>.<span class="ident">filter</span>(|<span class="ident">row</span>| #<span class="ident">pred</span>);
                 });
 
                 <span class="ident">op_name</span>
             }
             <span class="ident">RelExpr::Project</span>(<span class="ident">exprs</span>, <span class="ident">input</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">op_name</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">gensym</span>(<span class="string">&quot;project&quot;</span>);
-                <span class="kw">let</span> <span class="ident">input_name</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">compile_op</span>(<span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="kw-2">*</span><span class="ident">input</span>);
+                <span class="kw">let</span> <span class="ident">op_name</span> = <span class="self">self</span>.<span class="ident">gensym</span>(<span class="string">&quot;project&quot;</span>);
+                <span class="kw">let</span> <span class="ident">input_name</span> = <span class="self">self</span>.<span class="ident">compile_op</span>(<span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="kw-2">*</span><span class="ident">input</span>);
 
-                <span class="kw">let</span> <span class="ident">pred</span> <span class="op">=</span> <span class="macro">quote!</span> {
-                    <span class="macro">vec!</span>[ #(#<span class="ident">exprs</span>.<span class="ident">eval</span>(<span class="kw-2">&amp;</span><span class="ident">row</span>)),<span class="op">*</span> ]
+                <span class="kw">let</span> <span class="ident">pred</span> = <span class="macro">quote!</span> {
+                    <span class="macro">vec!</span>[ #(#<span class="ident">exprs</span>.<span class="ident">eval</span>(<span class="kw-2">&amp;</span><span class="ident">row</span>)),* ]
                 };
 
                 <span class="self">self</span>.<span class="ident">code</span>.<span class="ident">push</span>(<span class="macro">quote!</span> {
-                    <span class="kw">let</span> #<span class="ident">op_name</span> <span class="op">=</span> #<span class="ident">input_name</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">row</span><span class="op">|</span> #<span class="ident">pred</span>);
+                    <span class="kw">let</span> #<span class="ident">op_name</span> = #<span class="ident">input_name</span>.<span class="ident">map</span>(|<span class="ident">row</span>| #<span class="ident">pred</span>);
                 });
 
                 <span class="ident">op_name</span>
@@ -249,4 +249,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="relalg" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (20ffea693 2022-08-11)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="relalg" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

@@ -138,61 +138,61 @@
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::lang::lattice</span>::{<span class="ident">Compare</span>, <span class="ident">Convert</span>, <span class="ident">Debottom</span>, <span class="ident">Lattice</span>, <span class="ident">LatticeRepr</span>, <span class="ident">Merge</span>, <span class="ident">Top</span>};
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::lang::tag</span>;
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Pair</span><span class="op">&lt;</span><span class="ident">La</span>: <span class="ident">Lattice</span>, <span class="ident">Lb</span>: <span class="ident">Lattice</span><span class="op">&gt;</span> {
-    <span class="ident">_phantom</span>: <span class="ident">std::marker::PhantomData</span><span class="op">&lt;</span>(<span class="ident">La</span>, <span class="ident">Lb</span>)<span class="op">&gt;</span>,
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Pair</span>&lt;<span class="ident">La</span>: <span class="ident">Lattice</span>, <span class="ident">Lb</span>: <span class="ident">Lattice</span>&gt; {
+    <span class="ident">_phantom</span>: <span class="ident">std::marker::PhantomData</span>&lt;(<span class="ident">La</span>, <span class="ident">Lb</span>)&gt;,
 }
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">La</span>: <span class="ident">Lattice</span>, <span class="ident">Lb</span>: <span class="ident">Lattice</span><span class="op">&gt;</span> <span class="ident">Lattice</span> <span class="kw">for</span> <span class="ident">Pair</span><span class="op">&lt;</span><span class="ident">La</span>, <span class="ident">Lb</span><span class="op">&gt;</span> {}
+<span class="kw">impl</span>&lt;<span class="ident">La</span>: <span class="ident">Lattice</span>, <span class="ident">Lb</span>: <span class="ident">Lattice</span>&gt; <span class="ident">Lattice</span> <span class="kw">for</span> <span class="ident">Pair</span>&lt;<span class="ident">La</span>, <span class="ident">Lb</span>&gt; {}
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">PairRepr</span><span class="op">&lt;</span><span class="ident">Ra</span>: <span class="ident">LatticeRepr</span>, <span class="ident">Rb</span>: <span class="ident">LatticeRepr</span><span class="op">&gt;</span> {
-    <span class="ident">_phantom</span>: <span class="ident">std::marker::PhantomData</span><span class="op">&lt;</span>(<span class="ident">Ra</span>, <span class="ident">Rb</span>)<span class="op">&gt;</span>,
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">PairRepr</span>&lt;<span class="ident">Ra</span>: <span class="ident">LatticeRepr</span>, <span class="ident">Rb</span>: <span class="ident">LatticeRepr</span>&gt; {
+    <span class="ident">_phantom</span>: <span class="ident">std::marker::PhantomData</span>&lt;(<span class="ident">Ra</span>, <span class="ident">Rb</span>)&gt;,
 }
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">Ra</span>: <span class="ident">LatticeRepr</span>, <span class="ident">Rb</span>: <span class="ident">LatticeRepr</span><span class="op">&gt;</span> <span class="ident">LatticeRepr</span> <span class="kw">for</span> <span class="ident">PairRepr</span><span class="op">&lt;</span><span class="ident">Ra</span>, <span class="ident">Rb</span><span class="op">&gt;</span> {
-    <span class="kw">type</span> <span class="ident">Lattice</span> <span class="op">=</span> <span class="ident">Pair</span><span class="op">&lt;</span><span class="ident">Ra::Lattice</span>, <span class="ident">Rb::Lattice</span><span class="op">&gt;</span>;
-    <span class="kw">type</span> <span class="ident">Repr</span> <span class="op">=</span> (<span class="ident">Ra::Repr</span>, <span class="ident">Rb::Repr</span>);
+<span class="kw">impl</span>&lt;<span class="ident">Ra</span>: <span class="ident">LatticeRepr</span>, <span class="ident">Rb</span>: <span class="ident">LatticeRepr</span>&gt; <span class="ident">LatticeRepr</span> <span class="kw">for</span> <span class="ident">PairRepr</span>&lt;<span class="ident">Ra</span>, <span class="ident">Rb</span>&gt; {
+    <span class="kw">type</span> <span class="ident">Lattice</span> = <span class="ident">Pair</span>&lt;<span class="ident">Ra::Lattice</span>, <span class="ident">Rb::Lattice</span>&gt;;
+    <span class="kw">type</span> <span class="ident">Repr</span> = (<span class="ident">Ra::Repr</span>, <span class="ident">Rb::Repr</span>);
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">SelfRA</span>, <span class="ident">SelfRB</span>, <span class="ident">DeltaRA</span>, <span class="ident">DeltaRB</span>, <span class="ident">La</span>, <span class="ident">Lb</span><span class="op">&gt;</span> <span class="ident">Merge</span><span class="op">&lt;</span><span class="ident">PairRepr</span><span class="op">&lt;</span><span class="ident">DeltaRA</span>, <span class="ident">DeltaRB</span><span class="op">&gt;</span><span class="op">&gt;</span>
-    <span class="kw">for</span> <span class="ident">PairRepr</span><span class="op">&lt;</span><span class="ident">SelfRA</span>, <span class="ident">SelfRB</span><span class="op">&gt;</span>
+<span class="kw">impl</span>&lt;<span class="ident">SelfRA</span>, <span class="ident">SelfRB</span>, <span class="ident">DeltaRA</span>, <span class="ident">DeltaRB</span>, <span class="ident">La</span>, <span class="ident">Lb</span>&gt; <span class="ident">Merge</span>&lt;<span class="ident">PairRepr</span>&lt;<span class="ident">DeltaRA</span>, <span class="ident">DeltaRB</span>&gt;&gt;
+    <span class="kw">for</span> <span class="ident">PairRepr</span>&lt;<span class="ident">SelfRA</span>, <span class="ident">SelfRB</span>&gt;
 <span class="kw">where</span>
     <span class="ident">La</span>: <span class="ident">Lattice</span>,
     <span class="ident">Lb</span>: <span class="ident">Lattice</span>,
-    <span class="ident">SelfRA</span>: <span class="ident">LatticeRepr</span><span class="op">&lt;</span><span class="ident">Lattice</span> <span class="op">=</span> <span class="ident">La</span><span class="op">&gt;</span>,
-    <span class="ident">SelfRB</span>: <span class="ident">LatticeRepr</span><span class="op">&lt;</span><span class="ident">Lattice</span> <span class="op">=</span> <span class="ident">Lb</span><span class="op">&gt;</span>,
-    <span class="ident">DeltaRA</span>: <span class="ident">LatticeRepr</span><span class="op">&lt;</span><span class="ident">Lattice</span> <span class="op">=</span> <span class="ident">La</span><span class="op">&gt;</span>,
-    <span class="ident">DeltaRB</span>: <span class="ident">LatticeRepr</span><span class="op">&lt;</span><span class="ident">Lattice</span> <span class="op">=</span> <span class="ident">Lb</span><span class="op">&gt;</span>,
-    <span class="ident">SelfRA</span>: <span class="ident">Merge</span><span class="op">&lt;</span><span class="ident">DeltaRA</span><span class="op">&gt;</span>,
-    <span class="ident">SelfRB</span>: <span class="ident">Merge</span><span class="op">&lt;</span><span class="ident">DeltaRB</span><span class="op">&gt;</span>,
-    <span class="ident">DeltaRA</span>: <span class="ident">Convert</span><span class="op">&lt;</span><span class="ident">SelfRA</span><span class="op">&gt;</span>,
-    <span class="ident">DeltaRB</span>: <span class="ident">Convert</span><span class="op">&lt;</span><span class="ident">SelfRB</span><span class="op">&gt;</span>,
+    <span class="ident">SelfRA</span>: <span class="ident">LatticeRepr</span>&lt;<span class="ident">Lattice</span> = <span class="ident">La</span>&gt;,
+    <span class="ident">SelfRB</span>: <span class="ident">LatticeRepr</span>&lt;<span class="ident">Lattice</span> = <span class="ident">Lb</span>&gt;,
+    <span class="ident">DeltaRA</span>: <span class="ident">LatticeRepr</span>&lt;<span class="ident">Lattice</span> = <span class="ident">La</span>&gt;,
+    <span class="ident">DeltaRB</span>: <span class="ident">LatticeRepr</span>&lt;<span class="ident">Lattice</span> = <span class="ident">Lb</span>&gt;,
+    <span class="ident">SelfRA</span>: <span class="ident">Merge</span>&lt;<span class="ident">DeltaRA</span>&gt;,
+    <span class="ident">SelfRB</span>: <span class="ident">Merge</span>&lt;<span class="ident">DeltaRB</span>&gt;,
+    <span class="ident">DeltaRA</span>: <span class="ident">Convert</span>&lt;<span class="ident">SelfRA</span>&gt;,
+    <span class="ident">DeltaRB</span>: <span class="ident">Convert</span>&lt;<span class="ident">SelfRB</span>&gt;,
 {
     <span class="kw">fn</span> <span class="ident">merge</span>(
-        <span class="ident">this</span>: <span class="kw-2">&amp;mut</span> <span class="op">&lt;</span><span class="ident">PairRepr</span><span class="op">&lt;</span><span class="ident">SelfRA</span>, <span class="ident">SelfRB</span><span class="op">&gt;</span> <span class="kw">as</span> <span class="ident">LatticeRepr</span><span class="op">&gt;</span><span class="ident">::Repr</span>,
-        <span class="ident">delta</span>: <span class="op">&lt;</span><span class="ident">PairRepr</span><span class="op">&lt;</span><span class="ident">DeltaRA</span>, <span class="ident">DeltaRB</span><span class="op">&gt;</span> <span class="kw">as</span> <span class="ident">LatticeRepr</span><span class="op">&gt;</span><span class="ident">::Repr</span>,
+        <span class="ident">this</span>: <span class="kw-2">&amp;mut</span> &lt;<span class="ident">PairRepr</span>&lt;<span class="ident">SelfRA</span>, <span class="ident">SelfRB</span>&gt; <span class="kw">as</span> <span class="ident">LatticeRepr</span>&gt;<span class="ident">::Repr</span>,
+        <span class="ident">delta</span>: &lt;<span class="ident">PairRepr</span>&lt;<span class="ident">DeltaRA</span>, <span class="ident">DeltaRB</span>&gt; <span class="kw">as</span> <span class="ident">LatticeRepr</span>&gt;<span class="ident">::Repr</span>,
     ) -&gt; <span class="ident">bool</span> {
         <span class="comment">// Do NOT use short-circuiting `&amp;&amp;`.</span>
-        <span class="ident">SelfRA::merge</span>(<span class="kw-2">&amp;mut</span> <span class="ident">this</span>.<span class="number">0</span>, <span class="ident">delta</span>.<span class="number">0</span>) <span class="op">&amp;</span> <span class="ident">SelfRB::merge</span>(<span class="kw-2">&amp;mut</span> <span class="ident">this</span>.<span class="number">1</span>, <span class="ident">delta</span>.<span class="number">1</span>)
+        <span class="ident">SelfRA::merge</span>(<span class="kw-2">&amp;mut</span> <span class="ident">this</span>.<span class="number">0</span>, <span class="ident">delta</span>.<span class="number">0</span>) &amp; <span class="ident">SelfRB::merge</span>(<span class="kw-2">&amp;mut</span> <span class="ident">this</span>.<span class="number">1</span>, <span class="ident">delta</span>.<span class="number">1</span>)
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">SelfRA</span>, <span class="ident">SelfRB</span>, <span class="ident">DeltaRA</span>, <span class="ident">DeltaRB</span>, <span class="ident">La</span>, <span class="ident">Lb</span><span class="op">&gt;</span> <span class="ident">Compare</span><span class="op">&lt;</span><span class="ident">PairRepr</span><span class="op">&lt;</span><span class="ident">DeltaRA</span>, <span class="ident">DeltaRB</span><span class="op">&gt;</span><span class="op">&gt;</span>
-    <span class="kw">for</span> <span class="ident">PairRepr</span><span class="op">&lt;</span><span class="ident">SelfRA</span>, <span class="ident">SelfRB</span><span class="op">&gt;</span>
+<span class="kw">impl</span>&lt;<span class="ident">SelfRA</span>, <span class="ident">SelfRB</span>, <span class="ident">DeltaRA</span>, <span class="ident">DeltaRB</span>, <span class="ident">La</span>, <span class="ident">Lb</span>&gt; <span class="ident">Compare</span>&lt;<span class="ident">PairRepr</span>&lt;<span class="ident">DeltaRA</span>, <span class="ident">DeltaRB</span>&gt;&gt;
+    <span class="kw">for</span> <span class="ident">PairRepr</span>&lt;<span class="ident">SelfRA</span>, <span class="ident">SelfRB</span>&gt;
 <span class="kw">where</span>
     <span class="ident">La</span>: <span class="ident">Lattice</span>,
     <span class="ident">Lb</span>: <span class="ident">Lattice</span>,
-    <span class="ident">SelfRA</span>: <span class="ident">LatticeRepr</span><span class="op">&lt;</span><span class="ident">Lattice</span> <span class="op">=</span> <span class="ident">La</span><span class="op">&gt;</span>,
-    <span class="ident">SelfRB</span>: <span class="ident">LatticeRepr</span><span class="op">&lt;</span><span class="ident">Lattice</span> <span class="op">=</span> <span class="ident">Lb</span><span class="op">&gt;</span>,
-    <span class="ident">DeltaRA</span>: <span class="ident">LatticeRepr</span><span class="op">&lt;</span><span class="ident">Lattice</span> <span class="op">=</span> <span class="ident">La</span><span class="op">&gt;</span>,
-    <span class="ident">DeltaRB</span>: <span class="ident">LatticeRepr</span><span class="op">&lt;</span><span class="ident">Lattice</span> <span class="op">=</span> <span class="ident">Lb</span><span class="op">&gt;</span>,
-    <span class="ident">SelfRA</span>: <span class="ident">Compare</span><span class="op">&lt;</span><span class="ident">DeltaRA</span><span class="op">&gt;</span>,
-    <span class="ident">SelfRB</span>: <span class="ident">Compare</span><span class="op">&lt;</span><span class="ident">DeltaRB</span><span class="op">&gt;</span>,
+    <span class="ident">SelfRA</span>: <span class="ident">LatticeRepr</span>&lt;<span class="ident">Lattice</span> = <span class="ident">La</span>&gt;,
+    <span class="ident">SelfRB</span>: <span class="ident">LatticeRepr</span>&lt;<span class="ident">Lattice</span> = <span class="ident">Lb</span>&gt;,
+    <span class="ident">DeltaRA</span>: <span class="ident">LatticeRepr</span>&lt;<span class="ident">Lattice</span> = <span class="ident">La</span>&gt;,
+    <span class="ident">DeltaRB</span>: <span class="ident">LatticeRepr</span>&lt;<span class="ident">Lattice</span> = <span class="ident">Lb</span>&gt;,
+    <span class="ident">SelfRA</span>: <span class="ident">Compare</span>&lt;<span class="ident">DeltaRA</span>&gt;,
+    <span class="ident">SelfRB</span>: <span class="ident">Compare</span>&lt;<span class="ident">DeltaRB</span>&gt;,
 {
     <span class="kw">fn</span> <span class="ident">compare</span>(
-        <span class="ident">this</span>: <span class="kw-2">&amp;</span><span class="op">&lt;</span><span class="ident">PairRepr</span><span class="op">&lt;</span><span class="ident">SelfRA</span>, <span class="ident">SelfRB</span><span class="op">&gt;</span> <span class="kw">as</span> <span class="ident">LatticeRepr</span><span class="op">&gt;</span><span class="ident">::Repr</span>,
-        <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="op">&lt;</span><span class="ident">PairRepr</span><span class="op">&lt;</span><span class="ident">DeltaRA</span>, <span class="ident">DeltaRB</span><span class="op">&gt;</span> <span class="kw">as</span> <span class="ident">LatticeRepr</span><span class="op">&gt;</span><span class="ident">::Repr</span>,
-    ) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Ordering</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">ord_a</span> <span class="op">=</span> <span class="ident">SelfRA::compare</span>(<span class="kw-2">&amp;</span><span class="ident">this</span>.<span class="number">0</span>, <span class="kw-2">&amp;</span><span class="ident">other</span>.<span class="number">0</span>);
-        <span class="kw">let</span> <span class="ident">ord_b</span> <span class="op">=</span> <span class="ident">SelfRB::compare</span>(<span class="kw-2">&amp;</span><span class="ident">this</span>.<span class="number">1</span>, <span class="kw-2">&amp;</span><span class="ident">other</span>.<span class="number">1</span>);
-        <span class="kw">if</span> <span class="ident">ord_a</span> <span class="op">==</span> <span class="ident">ord_b</span> {
+        <span class="ident">this</span>: <span class="kw-2">&amp;</span>&lt;<span class="ident">PairRepr</span>&lt;<span class="ident">SelfRA</span>, <span class="ident">SelfRB</span>&gt; <span class="kw">as</span> <span class="ident">LatticeRepr</span>&gt;<span class="ident">::Repr</span>,
+        <span class="ident">other</span>: <span class="kw-2">&amp;</span>&lt;<span class="ident">PairRepr</span>&lt;<span class="ident">DeltaRA</span>, <span class="ident">DeltaRB</span>&gt; <span class="kw">as</span> <span class="ident">LatticeRepr</span>&gt;<span class="ident">::Repr</span>,
+    ) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">Ordering</span>&gt; {
+        <span class="kw">let</span> <span class="ident">ord_a</span> = <span class="ident">SelfRA::compare</span>(<span class="kw-2">&amp;</span><span class="ident">this</span>.<span class="number">0</span>, <span class="kw-2">&amp;</span><span class="ident">other</span>.<span class="number">0</span>);
+        <span class="kw">let</span> <span class="ident">ord_b</span> = <span class="ident">SelfRB::compare</span>(<span class="kw-2">&amp;</span><span class="ident">this</span>.<span class="number">1</span>, <span class="kw-2">&amp;</span><span class="ident">other</span>.<span class="number">1</span>);
+        <span class="kw">if</span> <span class="ident">ord_a</span> == <span class="ident">ord_b</span> {
             <span class="ident">ord_a</span>
         } <span class="kw">else</span> {
             <span class="prelude-val">None</span>
@@ -200,13 +200,13 @@
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">Ra</span>: <span class="ident">Debottom</span>, <span class="ident">Rb</span>: <span class="ident">Debottom</span><span class="op">&gt;</span> <span class="ident">Debottom</span> <span class="kw">for</span> <span class="ident">PairRepr</span><span class="op">&lt;</span><span class="ident">Ra</span>, <span class="ident">Rb</span><span class="op">&gt;</span> {
+<span class="kw">impl</span>&lt;<span class="ident">Ra</span>: <span class="ident">Debottom</span>, <span class="ident">Rb</span>: <span class="ident">Debottom</span>&gt; <span class="ident">Debottom</span> <span class="kw">for</span> <span class="ident">PairRepr</span>&lt;<span class="ident">Ra</span>, <span class="ident">Rb</span>&gt; {
     <span class="kw">fn</span> <span class="ident">is_bottom</span>(<span class="ident">this</span>: <span class="kw-2">&amp;</span><span class="ident"><span class="self">Self</span>::Repr</span>) -&gt; <span class="ident">bool</span> {
-        <span class="ident">Ra::is_bottom</span>(<span class="kw-2">&amp;</span><span class="ident">this</span>.<span class="number">0</span>) <span class="op">&amp;&amp;</span> <span class="ident">Rb::is_bottom</span>(<span class="kw-2">&amp;</span><span class="ident">this</span>.<span class="number">1</span>)
+        <span class="ident">Ra::is_bottom</span>(<span class="kw-2">&amp;</span><span class="ident">this</span>.<span class="number">0</span>) &amp;&amp; <span class="ident">Rb::is_bottom</span>(<span class="kw-2">&amp;</span><span class="ident">this</span>.<span class="number">1</span>)
     }
 
-    <span class="kw">type</span> <span class="ident">DebottomLr</span> <span class="op">=</span> <span class="ident">PairRepr</span><span class="op">&lt;</span><span class="ident">BottomRepr</span><span class="op">&lt;</span><span class="ident">Ra::DebottomLr</span><span class="op">&gt;</span>, <span class="ident">BottomRepr</span><span class="op">&lt;</span><span class="ident">Rb::DebottomLr</span><span class="op">&gt;</span><span class="op">&gt;</span>;
-    <span class="kw">fn</span> <span class="ident">debottom</span>(<span class="ident">this</span>: <span class="ident"><span class="self">Self</span>::Repr</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::DebottomLr</span> <span class="kw">as</span> <span class="ident">LatticeRepr</span><span class="op">&gt;</span><span class="ident">::Repr</span><span class="op">&gt;</span> {
+    <span class="kw">type</span> <span class="ident">DebottomLr</span> = <span class="ident">PairRepr</span>&lt;<span class="ident">BottomRepr</span>&lt;<span class="ident">Ra::DebottomLr</span>&gt;, <span class="ident">BottomRepr</span>&lt;<span class="ident">Rb::DebottomLr</span>&gt;&gt;;
+    <span class="kw">fn</span> <span class="ident">debottom</span>(<span class="ident">this</span>: <span class="ident"><span class="self">Self</span>::Repr</span>) -&gt; <span class="prelude-ty">Option</span>&lt;&lt;<span class="ident"><span class="self">Self</span>::DebottomLr</span> <span class="kw">as</span> <span class="ident">LatticeRepr</span>&gt;<span class="ident">::Repr</span>&gt; {
         <span class="kw">match</span> (<span class="ident">Ra::debottom</span>(<span class="ident">this</span>.<span class="number">0</span>), <span class="ident">Rb::debottom</span>(<span class="ident">this</span>.<span class="number">1</span>)) {
             (<span class="prelude-val">None</span>, <span class="prelude-val">None</span>) =&gt; <span class="prelude-val">None</span>,
             <span class="ident">somes</span> =&gt; <span class="prelude-val">Some</span>(<span class="ident">somes</span>),
@@ -214,9 +214,9 @@
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">Ra</span>: <span class="ident">Top</span>, <span class="ident">Rb</span>: <span class="ident">Top</span><span class="op">&gt;</span> <span class="ident">Top</span> <span class="kw">for</span> <span class="ident">PairRepr</span><span class="op">&lt;</span><span class="ident">Ra</span>, <span class="ident">Rb</span><span class="op">&gt;</span> {
+<span class="kw">impl</span>&lt;<span class="ident">Ra</span>: <span class="ident">Top</span>, <span class="ident">Rb</span>: <span class="ident">Top</span>&gt; <span class="ident">Top</span> <span class="kw">for</span> <span class="ident">PairRepr</span>&lt;<span class="ident">Ra</span>, <span class="ident">Rb</span>&gt; {
     <span class="kw">fn</span> <span class="ident">is_top</span>(<span class="ident">this</span>: <span class="kw-2">&amp;</span><span class="ident"><span class="self">Self</span>::Repr</span>) -&gt; <span class="ident">bool</span> {
-        <span class="ident">Ra::is_top</span>(<span class="kw-2">&amp;</span><span class="ident">this</span>.<span class="number">0</span>) <span class="op">&amp;&amp;</span> <span class="ident">Rb::is_top</span>(<span class="kw-2">&amp;</span><span class="ident">this</span>.<span class="number">1</span>)
+        <span class="ident">Ra::is_top</span>(<span class="kw-2">&amp;</span><span class="ident">this</span>.<span class="number">0</span>) &amp;&amp; <span class="ident">Rb::is_top</span>(<span class="kw-2">&amp;</span><span class="ident">this</span>.<span class="number">1</span>)
     }
 
     <span class="kw">fn</span> <span class="ident">top</span>() -&gt; <span class="ident"><span class="self">Self</span>::Repr</span> {
@@ -229,42 +229,42 @@
 
     <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::set_union::SetUnionRepr</span>;
 
-    <span class="kw">type</span> <span class="ident">HashSetHashSet</span> <span class="op">=</span>
-        <span class="ident">PairRepr</span><span class="op">&lt;</span><span class="ident">SetUnionRepr</span><span class="op">&lt;</span><span class="ident">tag::HASH_SET</span>, <span class="ident">u32</span><span class="op">&gt;</span>, <span class="ident">SetUnionRepr</span><span class="op">&lt;</span><span class="ident">tag::HASH_SET</span>, <span class="ident">u32</span><span class="op">&gt;</span><span class="op">&gt;</span>;
-    <span class="kw">type</span> <span class="ident">HashSetArraySet</span> <span class="op">=</span>
-        <span class="ident">PairRepr</span><span class="op">&lt;</span><span class="ident">SetUnionRepr</span><span class="op">&lt;</span><span class="ident">tag::HASH_SET</span>, <span class="ident">u32</span><span class="op">&gt;</span>, <span class="ident">SetUnionRepr</span><span class="op">&lt;</span><span class="ident">tag::ARRAY</span><span class="op">&lt;</span><span class="number">8</span><span class="op">&gt;</span>, <span class="ident">u32</span><span class="op">&gt;</span><span class="op">&gt;</span>;
-    <span class="kw">type</span> <span class="ident">ArraySetHashSet</span> <span class="op">=</span>
-        <span class="ident">PairRepr</span><span class="op">&lt;</span><span class="ident">SetUnionRepr</span><span class="op">&lt;</span><span class="ident">tag::ARRAY</span><span class="op">&lt;</span><span class="number">8</span><span class="op">&gt;</span>, <span class="ident">u32</span><span class="op">&gt;</span>, <span class="ident">SetUnionRepr</span><span class="op">&lt;</span><span class="ident">tag::HASH_SET</span>, <span class="ident">u32</span><span class="op">&gt;</span><span class="op">&gt;</span>;
-    <span class="kw">type</span> <span class="ident">ArraySetArraySet</span> <span class="op">=</span>
-        <span class="ident">PairRepr</span><span class="op">&lt;</span><span class="ident">SetUnionRepr</span><span class="op">&lt;</span><span class="ident">tag::ARRAY</span><span class="op">&lt;</span><span class="number">8</span><span class="op">&gt;</span>, <span class="ident">u32</span><span class="op">&gt;</span>, <span class="ident">SetUnionRepr</span><span class="op">&lt;</span><span class="ident">tag::ARRAY</span><span class="op">&lt;</span><span class="number">8</span><span class="op">&gt;</span>, <span class="ident">u32</span><span class="op">&gt;</span><span class="op">&gt;</span>;
+    <span class="kw">type</span> <span class="ident">HashSetHashSet</span> =
+        <span class="ident">PairRepr</span>&lt;<span class="ident">SetUnionRepr</span>&lt;<span class="ident">tag::HASH_SET</span>, <span class="ident">u32</span>&gt;, <span class="ident">SetUnionRepr</span>&lt;<span class="ident">tag::HASH_SET</span>, <span class="ident">u32</span>&gt;&gt;;
+    <span class="kw">type</span> <span class="ident">HashSetArraySet</span> =
+        <span class="ident">PairRepr</span>&lt;<span class="ident">SetUnionRepr</span>&lt;<span class="ident">tag::HASH_SET</span>, <span class="ident">u32</span>&gt;, <span class="ident">SetUnionRepr</span>&lt;<span class="ident">tag::ARRAY</span>&lt;<span class="number">8</span>&gt;, <span class="ident">u32</span>&gt;&gt;;
+    <span class="kw">type</span> <span class="ident">ArraySetHashSet</span> =
+        <span class="ident">PairRepr</span>&lt;<span class="ident">SetUnionRepr</span>&lt;<span class="ident">tag::ARRAY</span>&lt;<span class="number">8</span>&gt;, <span class="ident">u32</span>&gt;, <span class="ident">SetUnionRepr</span>&lt;<span class="ident">tag::HASH_SET</span>, <span class="ident">u32</span>&gt;&gt;;
+    <span class="kw">type</span> <span class="ident">ArraySetArraySet</span> =
+        <span class="ident">PairRepr</span>&lt;<span class="ident">SetUnionRepr</span>&lt;<span class="ident">tag::ARRAY</span>&lt;<span class="number">8</span>&gt;, <span class="ident">u32</span>&gt;, <span class="ident">SetUnionRepr</span>&lt;<span class="ident">tag::ARRAY</span>&lt;<span class="number">8</span>&gt;, <span class="ident">u32</span>&gt;&gt;;
 
     <span class="macro">assert_impl_all!</span>(
-        <span class="ident">HashSetHashSet</span>: <span class="ident">Merge</span><span class="op">&lt;</span><span class="ident">HashSetHashSet</span><span class="op">&gt;</span>,
-        <span class="ident">Merge</span><span class="op">&lt;</span><span class="ident">HashSetArraySet</span><span class="op">&gt;</span>,
-        <span class="ident">Merge</span><span class="op">&lt;</span><span class="ident">ArraySetHashSet</span><span class="op">&gt;</span>,
-        <span class="ident">Merge</span><span class="op">&lt;</span><span class="ident">ArraySetArraySet</span><span class="op">&gt;</span>,
+        <span class="ident">HashSetHashSet</span>: <span class="ident">Merge</span>&lt;<span class="ident">HashSetHashSet</span>&gt;,
+        <span class="ident">Merge</span>&lt;<span class="ident">HashSetArraySet</span>&gt;,
+        <span class="ident">Merge</span>&lt;<span class="ident">ArraySetHashSet</span>&gt;,
+        <span class="ident">Merge</span>&lt;<span class="ident">ArraySetArraySet</span>&gt;,
     );
 
     <span class="macro">assert_not_impl_any!</span>(
-        <span class="ident">HashSetArraySet</span>: <span class="ident">Merge</span><span class="op">&lt;</span><span class="ident">HashSetHashSet</span><span class="op">&gt;</span>,
-        <span class="ident">Merge</span><span class="op">&lt;</span><span class="ident">HashSetArraySet</span><span class="op">&gt;</span>,
-        <span class="ident">Merge</span><span class="op">&lt;</span><span class="ident">ArraySetHashSet</span><span class="op">&gt;</span>,
-        <span class="ident">Merge</span><span class="op">&lt;</span><span class="ident">ArraySetArraySet</span><span class="op">&gt;</span>,
+        <span class="ident">HashSetArraySet</span>: <span class="ident">Merge</span>&lt;<span class="ident">HashSetHashSet</span>&gt;,
+        <span class="ident">Merge</span>&lt;<span class="ident">HashSetArraySet</span>&gt;,
+        <span class="ident">Merge</span>&lt;<span class="ident">ArraySetHashSet</span>&gt;,
+        <span class="ident">Merge</span>&lt;<span class="ident">ArraySetArraySet</span>&gt;,
     );
 
     <span class="macro">assert_not_impl_any!</span>(
-        <span class="ident">ArraySetHashSet</span>: <span class="ident">Merge</span><span class="op">&lt;</span><span class="ident">HashSetHashSet</span><span class="op">&gt;</span>,
-        <span class="ident">Merge</span><span class="op">&lt;</span><span class="ident">HashSetArraySet</span><span class="op">&gt;</span>,
-        <span class="ident">Merge</span><span class="op">&lt;</span><span class="ident">ArraySetHashSet</span><span class="op">&gt;</span>,
-        <span class="ident">Merge</span><span class="op">&lt;</span><span class="ident">ArraySetArraySet</span><span class="op">&gt;</span>,
+        <span class="ident">ArraySetHashSet</span>: <span class="ident">Merge</span>&lt;<span class="ident">HashSetHashSet</span>&gt;,
+        <span class="ident">Merge</span>&lt;<span class="ident">HashSetArraySet</span>&gt;,
+        <span class="ident">Merge</span>&lt;<span class="ident">ArraySetHashSet</span>&gt;,
+        <span class="ident">Merge</span>&lt;<span class="ident">ArraySetArraySet</span>&gt;,
     );
 
     <span class="macro">assert_not_impl_any!</span>(
-        <span class="ident">ArraySetArraySet</span>: <span class="ident">Merge</span><span class="op">&lt;</span><span class="ident">HashSetHashSet</span><span class="op">&gt;</span>,
-        <span class="ident">Merge</span><span class="op">&lt;</span><span class="ident">HashSetArraySet</span><span class="op">&gt;</span>,
-        <span class="ident">Merge</span><span class="op">&lt;</span><span class="ident">ArraySetHashSet</span><span class="op">&gt;</span>,
-        <span class="ident">Merge</span><span class="op">&lt;</span><span class="ident">ArraySetArraySet</span><span class="op">&gt;</span>,
+        <span class="ident">ArraySetArraySet</span>: <span class="ident">Merge</span>&lt;<span class="ident">HashSetHashSet</span>&gt;,
+        <span class="ident">Merge</span>&lt;<span class="ident">HashSetArraySet</span>&gt;,
+        <span class="ident">Merge</span>&lt;<span class="ident">ArraySetHashSet</span>&gt;,
+        <span class="ident">Merge</span>&lt;<span class="ident">ArraySetArraySet</span>&gt;,
     );
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (20ffea693 2022-08-11)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

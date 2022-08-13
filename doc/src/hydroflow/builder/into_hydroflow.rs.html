@@ -16,13 +16,13 @@
 <span class="doccomment">/// A trait to convert [`IntoIterator`]s for use with Hydroflow&#39;s surface (build) API.</span>
 <span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">IntoHydroflow</span>: <span class="ident">IntoIterator</span> {
     <span class="doccomment">/// Convert this [`IntoIterator`] into a hydroflow subgraph builder.</span>
-    <span class="kw">fn</span> <span class="ident">into_hydroflow</span>(<span class="self">self</span>) -&gt; <span class="ident">IterPullSurface</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::IntoIter</span><span class="op">&gt;</span>
+    <span class="kw">fn</span> <span class="ident">into_hydroflow</span>(<span class="self">self</span>) -&gt; <span class="ident">IterPullSurface</span>&lt;<span class="ident"><span class="self">Self</span>::IntoIter</span>&gt;
     <span class="kw">where</span>
         <span class="self">Self</span>: <span class="ident">Sized</span>,
     {
         <span class="ident">IterPullSurface::new</span>(<span class="self">self</span>.<span class="ident">into_iter</span>())
     }
 }
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span> <span class="ident">IntoHydroflow</span> <span class="kw">for</span> <span class="ident">I</span> <span class="kw">where</span> <span class="ident">I</span>: <span class="ident">IntoIterator</span> {}
+<span class="kw">impl</span>&lt;<span class="ident">I</span>&gt; <span class="ident">IntoHydroflow</span> <span class="kw">for</span> <span class="ident">I</span> <span class="kw">where</span> <span class="ident">I</span>: <span class="ident">IntoIterator</span> {}
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (20ffea693 2022-08-11)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

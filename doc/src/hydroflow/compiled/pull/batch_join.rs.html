@@ -79,7 +79,7 @@
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::lang::lattice</span>::{<span class="ident">LatticeRepr</span>, <span class="ident">Merge</span>};
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">BatchJoinState</span><span class="op">&lt;</span><span class="ident">L</span><span class="op">&gt;</span>
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">BatchJoinState</span>&lt;<span class="ident">L</span>&gt;
 <span class="kw">where</span>
     <span class="ident">L</span>: <span class="ident">LatticeRepr</span>,
     <span class="ident">L::Repr</span>: <span class="ident">Default</span>,
@@ -87,7 +87,7 @@
     <span class="ident">state</span>: <span class="ident">L::Repr</span>,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">L</span><span class="op">&gt;</span> <span class="ident">Default</span> <span class="kw">for</span> <span class="ident">BatchJoinState</span><span class="op">&lt;</span><span class="ident">L</span><span class="op">&gt;</span>
+<span class="kw">impl</span>&lt;<span class="ident">L</span>&gt; <span class="ident">Default</span> <span class="kw">for</span> <span class="ident">BatchJoinState</span>&lt;<span class="ident">L</span>&gt;
 <span class="kw">where</span>
     <span class="ident">L</span>: <span class="ident">LatticeRepr</span>,
     <span class="ident">L::Repr</span>: <span class="ident">Default</span>,
@@ -99,49 +99,49 @@
     }
 }
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">BatchJoin</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">Buf</span>, <span class="ident">Stream</span>, <span class="ident">L</span>, <span class="ident">Update</span>, <span class="ident">Tick</span><span class="op">&gt;</span>
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">BatchJoin</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">Buf</span>, <span class="ident">Stream</span>, <span class="ident">L</span>, <span class="ident">Update</span>, <span class="ident">Tick</span>&gt;
 <span class="kw">where</span>
-    <span class="ident">Buf</span>: <span class="ident">Iterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="ident">Update::Repr</span><span class="op">&gt;</span>,
-    <span class="ident">Stream</span>: <span class="ident">Iterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="ident">Tick</span><span class="op">&gt;</span>,
+    <span class="ident">Buf</span>: <span class="ident">Iterator</span>&lt;<span class="ident">Item</span> = <span class="ident">Update::Repr</span>&gt;,
+    <span class="ident">Stream</span>: <span class="ident">Iterator</span>&lt;<span class="ident">Item</span> = <span class="ident">Tick</span>&gt;,
     <span class="ident">Update</span>: <span class="ident">LatticeRepr</span>,
-    <span class="ident">L</span>: <span class="ident">LatticeRepr</span> <span class="op">+</span> <span class="ident">Merge</span><span class="op">&lt;</span><span class="ident">Update</span><span class="op">&gt;</span>,
+    <span class="ident">L</span>: <span class="ident">LatticeRepr</span> + <span class="ident">Merge</span>&lt;<span class="ident">Update</span>&gt;,
     <span class="ident">L::Repr</span>: <span class="ident">Default</span>,
 {
     <span class="ident">buf</span>: <span class="ident">Buf</span>,
     <span class="ident">stream</span>: <span class="ident">Stream</span>,
-    <span class="ident">state</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">BatchJoinState</span><span class="op">&lt;</span><span class="ident">L</span><span class="op">&gt;</span>,
-    <span class="ident">_marker</span>: <span class="ident">PhantomData</span><span class="op">&lt;</span>(<span class="ident">Update</span>, <span class="ident">Tick</span>)<span class="op">&gt;</span>,
+    <span class="ident">state</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">BatchJoinState</span>&lt;<span class="ident">L</span>&gt;,
+    <span class="ident">_marker</span>: <span class="ident">PhantomData</span>&lt;(<span class="ident">Update</span>, <span class="ident">Tick</span>)&gt;,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">Buf</span>, <span class="ident">Stream</span>, <span class="ident">L</span>, <span class="ident">Update</span>, <span class="ident">Tick</span><span class="op">&gt;</span> <span class="ident">Iterator</span> <span class="kw">for</span> <span class="ident">BatchJoin</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">Buf</span>, <span class="ident">Stream</span>, <span class="ident">L</span>, <span class="ident">Update</span>, <span class="ident">Tick</span><span class="op">&gt;</span>
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">Buf</span>, <span class="ident">Stream</span>, <span class="ident">L</span>, <span class="ident">Update</span>, <span class="ident">Tick</span>&gt; <span class="ident">Iterator</span> <span class="kw">for</span> <span class="ident">BatchJoin</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">Buf</span>, <span class="ident">Stream</span>, <span class="ident">L</span>, <span class="ident">Update</span>, <span class="ident">Tick</span>&gt;
 <span class="kw">where</span>
-    <span class="ident">Buf</span>: <span class="ident">Iterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="ident">Update::Repr</span><span class="op">&gt;</span>,
-    <span class="ident">Stream</span>: <span class="ident">Iterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="ident">Tick</span><span class="op">&gt;</span>,
+    <span class="ident">Buf</span>: <span class="ident">Iterator</span>&lt;<span class="ident">Item</span> = <span class="ident">Update::Repr</span>&gt;,
+    <span class="ident">Stream</span>: <span class="ident">Iterator</span>&lt;<span class="ident">Item</span> = <span class="ident">Tick</span>&gt;,
     <span class="ident">Update</span>: <span class="ident">LatticeRepr</span>,
-    <span class="ident">L</span>: <span class="ident">LatticeRepr</span> <span class="op">+</span> <span class="ident">Merge</span><span class="op">&lt;</span><span class="ident">Update</span><span class="op">&gt;</span>,
+    <span class="ident">L</span>: <span class="ident">LatticeRepr</span> + <span class="ident">Merge</span>&lt;<span class="ident">Update</span>&gt;,
     <span class="ident">L::Repr</span>: <span class="ident">Default</span>,
 {
-    <span class="kw">type</span> <span class="ident">Item</span> <span class="op">=</span> (<span class="ident">Tick</span>, <span class="ident">L::Repr</span>);
+    <span class="kw">type</span> <span class="ident">Item</span> = (<span class="ident">Tick</span>, <span class="ident">L::Repr</span>);
 
-    <span class="kw">fn</span> <span class="ident">next</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::Item</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">next</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident"><span class="self">Self</span>::Item</span>&gt; {
         <span class="kw">for</span> <span class="ident">p</span> <span class="kw">in</span> <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">buf</span> {
-            <span class="op">&lt;</span><span class="ident">L</span> <span class="kw">as</span> <span class="ident">Merge</span><span class="op">&lt;</span><span class="ident">Update</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::merge</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">state</span>, <span class="ident">p</span>);
+            &lt;<span class="ident">L</span> <span class="kw">as</span> <span class="ident">Merge</span>&lt;<span class="ident">Update</span>&gt;&gt;<span class="ident">::merge</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">state</span>, <span class="ident">p</span>);
         }
 
         <span class="self">self</span>.<span class="ident">stream</span>
             .<span class="ident">next</span>()
-            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">t</span><span class="op">|</span> (<span class="ident">t</span>, <span class="ident">std::mem::take</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">state</span>)))
+            .<span class="ident">map</span>(|<span class="ident">t</span>| (<span class="ident">t</span>, <span class="ident">std::mem::take</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">state</span>)))
     }
 }
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">Buf</span>, <span class="ident">Stream</span>, <span class="ident">L</span>, <span class="ident">Update</span>, <span class="ident">Tick</span><span class="op">&gt;</span> <span class="ident">BatchJoin</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">Buf</span>, <span class="ident">Stream</span>, <span class="ident">L</span>, <span class="ident">Update</span>, <span class="ident">Tick</span><span class="op">&gt;</span>
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">Buf</span>, <span class="ident">Stream</span>, <span class="ident">L</span>, <span class="ident">Update</span>, <span class="ident">Tick</span>&gt; <span class="ident">BatchJoin</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">Buf</span>, <span class="ident">Stream</span>, <span class="ident">L</span>, <span class="ident">Update</span>, <span class="ident">Tick</span>&gt;
 <span class="kw">where</span>
-    <span class="ident">Buf</span>: <span class="ident">Iterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="ident">Update::Repr</span><span class="op">&gt;</span>,
-    <span class="ident">Stream</span>: <span class="ident">Iterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="ident">Tick</span><span class="op">&gt;</span>,
+    <span class="ident">Buf</span>: <span class="ident">Iterator</span>&lt;<span class="ident">Item</span> = <span class="ident">Update::Repr</span>&gt;,
+    <span class="ident">Stream</span>: <span class="ident">Iterator</span>&lt;<span class="ident">Item</span> = <span class="ident">Tick</span>&gt;,
     <span class="ident">Update</span>: <span class="ident">LatticeRepr</span>,
-    <span class="ident">L</span>: <span class="ident">LatticeRepr</span> <span class="op">+</span> <span class="ident">Merge</span><span class="op">&lt;</span><span class="ident">Update</span><span class="op">&gt;</span>,
+    <span class="ident">L</span>: <span class="ident">LatticeRepr</span> + <span class="ident">Merge</span>&lt;<span class="ident">Update</span>&gt;,
     <span class="ident">L::Repr</span>: <span class="ident">Default</span>,
 {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">buf</span>: <span class="ident">Buf</span>, <span class="ident">stream</span>: <span class="ident">Stream</span>, <span class="ident">state</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">BatchJoinState</span><span class="op">&lt;</span><span class="ident">L</span><span class="op">&gt;</span>) -&gt; <span class="self">Self</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">buf</span>: <span class="ident">Buf</span>, <span class="ident">stream</span>: <span class="ident">Stream</span>, <span class="ident">state</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">BatchJoinState</span>&lt;<span class="ident">L</span>&gt;) -&gt; <span class="self">Self</span> {
         <span class="self">Self</span> {
             <span class="ident">buf</span>,
             <span class="ident">stream</span>,
@@ -151,4 +151,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (20ffea693 2022-08-11)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

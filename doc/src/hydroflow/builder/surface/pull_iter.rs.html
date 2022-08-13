@@ -52,14 +52,14 @@
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::context::Context</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::flow_graph::FlowNodeId</span>;
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">IterPullSurface</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">IterPullSurface</span>&lt;<span class="ident">I</span>&gt;
 <span class="kw">where</span>
     <span class="ident">I</span>: <span class="ident">Iterator</span>,
 {
     <span class="ident">it</span>: <span class="ident">I</span>,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span> <span class="ident">IterPullSurface</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>
+<span class="kw">impl</span>&lt;<span class="ident">I</span>&gt; <span class="ident">IterPullSurface</span>&lt;<span class="ident">I</span>&gt;
 <span class="kw">where</span>
     <span class="ident">I</span>: <span class="ident">Iterator</span>,
 {
@@ -67,7 +67,7 @@
         <span class="self">Self</span> { <span class="ident">it</span> }
     }
 }
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span> <span class="ident">AssembleFlowGraph</span> <span class="kw">for</span> <span class="ident">IterPullSurface</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>
+<span class="kw">impl</span>&lt;<span class="ident">I</span>&gt; <span class="ident">AssembleFlowGraph</span> <span class="kw">for</span> <span class="ident">IterPullSurface</span>&lt;<span class="ident">I</span>&gt;
 <span class="kw">where</span>
     <span class="ident">I</span>: <span class="ident">Iterator</span>,
 {
@@ -76,23 +76,23 @@
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span> <span class="ident">BaseSurface</span> <span class="kw">for</span> <span class="ident">IterPullSurface</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>
+<span class="kw">impl</span>&lt;<span class="ident">I</span>&gt; <span class="ident">BaseSurface</span> <span class="kw">for</span> <span class="ident">IterPullSurface</span>&lt;<span class="ident">I</span>&gt;
 <span class="kw">where</span>
-    <span class="ident">I</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">Iterator</span>,
+    <span class="ident">I</span>: <span class="lifetime">&#39;static</span> + <span class="ident">Iterator</span>,
 {
-    <span class="kw">type</span> <span class="ident">ItemOut</span> <span class="op">=</span> <span class="ident">I::Item</span>;
+    <span class="kw">type</span> <span class="ident">ItemOut</span> = <span class="ident">I::Item</span>;
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span> <span class="ident">PullSurface</span> <span class="kw">for</span> <span class="ident">IterPullSurface</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>
+<span class="kw">impl</span>&lt;<span class="ident">I</span>&gt; <span class="ident">PullSurface</span> <span class="kw">for</span> <span class="ident">IterPullSurface</span>&lt;<span class="ident">I</span>&gt;
 <span class="kw">where</span>
-    <span class="ident">I</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">Iterator</span>,
+    <span class="ident">I</span>: <span class="lifetime">&#39;static</span> + <span class="ident">Iterator</span>,
 {
-    <span class="kw">type</span> <span class="ident">InputHandoffs</span> <span class="op">=</span> ();
-    <span class="kw">type</span> <span class="ident">Build</span> <span class="op">=</span> <span class="ident">IterPullBuild</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>;
+    <span class="kw">type</span> <span class="ident">InputHandoffs</span> = ();
+    <span class="kw">type</span> <span class="ident">Build</span> = <span class="ident">IterPullBuild</span>&lt;<span class="ident">I</span>&gt;;
 
     <span class="kw">fn</span> <span class="ident">make_parts</span>(<span class="self">self</span>, <span class="ident">_ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span>) -&gt; (<span class="ident"><span class="self">Self</span>::InputHandoffs</span>, <span class="ident"><span class="self">Self</span>::Build</span>) {
         ((), <span class="ident">IterPullBuild::new</span>(<span class="self">self</span>.<span class="ident">it</span>))
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (20ffea693 2022-08-11)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

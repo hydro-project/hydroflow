@@ -393,33 +393,33 @@
     <span class="kw">use</span> <span class="ident">std::cell::RefCell</span>;
     <span class="kw">use</span> <span class="ident">std::rc::Rc</span>;
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">builder</span> <span class="op">=</span> <span class="ident">HydroflowBuilder::default</span>();
-    <span class="kw">let</span> (<span class="ident">ingress_send</span>, <span class="ident">ingress</span>) <span class="op">=</span>
-        <span class="ident">builder</span>.<span class="ident">add_channel_input</span>::<span class="op">&lt;</span><span class="kw">_</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>, <span class="ident">VecHandoff</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="string">&quot;ingress&quot;</span>);
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">builder</span> = <span class="ident">HydroflowBuilder::default</span>();
+    <span class="kw">let</span> (<span class="ident">ingress_send</span>, <span class="ident">ingress</span>) =
+        <span class="ident">builder</span>.<span class="ident">add_channel_input</span>::&lt;<span class="kw">_</span>, <span class="prelude-ty">Option</span>&lt;<span class="ident">usize</span>&gt;, <span class="ident">VecHandoff</span>&lt;<span class="kw">_</span>&gt;&gt;(<span class="string">&quot;ingress&quot;</span>);
 
-    <span class="kw">let</span> <span class="ident">output_evn</span>: <span class="ident">Rc</span><span class="op">&lt;</span><span class="ident">RefCell</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Default::default</span>();
-    <span class="kw">let</span> <span class="ident">output_odd</span>: <span class="ident">Rc</span><span class="op">&lt;</span><span class="ident">RefCell</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Default::default</span>();
+    <span class="kw">let</span> <span class="ident">output_evn</span>: <span class="ident">Rc</span>&lt;<span class="ident">RefCell</span>&lt;<span class="ident">Vec</span>&lt;<span class="ident">usize</span>&gt;&gt;&gt; = <span class="ident">Default::default</span>();
+    <span class="kw">let</span> <span class="ident">output_odd</span>: <span class="ident">Rc</span>&lt;<span class="ident">RefCell</span>&lt;<span class="ident">Vec</span>&lt;<span class="ident">usize</span>&gt;&gt;&gt; = <span class="ident">Default::default</span>();
 
-    <span class="kw">let</span> <span class="ident">output_evn_take</span> <span class="op">=</span> <span class="ident">Rc::clone</span>(<span class="kw-2">&amp;</span><span class="ident">output_evn</span>);
-    <span class="kw">let</span> <span class="ident">output_odd_take</span> <span class="op">=</span> <span class="ident">Rc::clone</span>(<span class="kw-2">&amp;</span><span class="ident">output_odd</span>);
+    <span class="kw">let</span> <span class="ident">output_evn_take</span> = <span class="ident">Rc::clone</span>(<span class="kw-2">&amp;</span><span class="ident">output_evn</span>);
+    <span class="kw">let</span> <span class="ident">output_odd_take</span> = <span class="ident">Rc::clone</span>(<span class="kw-2">&amp;</span><span class="ident">output_odd</span>);
 
-    <span class="kw">let</span> <span class="ident">sg</span> <span class="op">=</span> <span class="ident">ingress</span>
+    <span class="kw">let</span> <span class="ident">sg</span> = <span class="ident">ingress</span>
         .<span class="ident">flatten</span>()
-        .<span class="ident">flat_map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> [<span class="number">11</span> <span class="op">*</span> <span class="ident">x</span>, <span class="ident">x</span>])
+        .<span class="ident">flat_map</span>(|<span class="ident">x</span>| [<span class="number">11</span> * <span class="ident">x</span>, <span class="ident">x</span>])
         .<span class="ident">pull_to_push</span>()
         .<span class="ident">tee</span>(
             <span class="ident">builder</span>
                 .<span class="ident">start_tee</span>()
-                .<span class="ident">filter</span>(<span class="op">|</span><span class="kw-2">&amp;</span><span class="ident">x</span><span class="op">|</span> <span class="number">0</span> <span class="op">==</span> <span class="ident">x</span> <span class="op">%</span> <span class="number">2</span>)
-                .<span class="ident">for_each</span>(<span class="kw">move</span> <span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">output_evn_take</span>.<span class="ident">borrow_mut</span>().<span class="ident">push</span>(<span class="ident">x</span>)),
+                .<span class="ident">filter</span>(|<span class="kw-2">&amp;</span><span class="ident">x</span>| <span class="number">0</span> == <span class="ident">x</span> % <span class="number">2</span>)
+                .<span class="ident">for_each</span>(<span class="kw">move</span> |<span class="ident">x</span>| <span class="ident">output_evn_take</span>.<span class="ident">borrow_mut</span>().<span class="ident">push</span>(<span class="ident">x</span>)),
             <span class="ident">builder</span>
                 .<span class="ident">start_tee</span>()
-                .<span class="ident">filter</span>(<span class="op">|</span><span class="kw-2">&amp;</span><span class="ident">x</span><span class="op">|</span> <span class="number">1</span> <span class="op">==</span> <span class="ident">x</span> <span class="op">%</span> <span class="number">2</span>)
-                .<span class="ident">for_each</span>(<span class="kw">move</span> <span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">output_odd_take</span>.<span class="ident">borrow_mut</span>().<span class="ident">push</span>(<span class="ident">x</span>)),
+                .<span class="ident">filter</span>(|<span class="kw-2">&amp;</span><span class="ident">x</span>| <span class="number">1</span> == <span class="ident">x</span> % <span class="number">2</span>)
+                .<span class="ident">for_each</span>(<span class="kw">move</span> |<span class="ident">x</span>| <span class="ident">output_odd_take</span>.<span class="ident">borrow_mut</span>().<span class="ident">push</span>(<span class="ident">x</span>)),
         );
     <span class="ident">builder</span>.<span class="ident">add_subgraph</span>(<span class="string">&quot;main&quot;</span>, <span class="ident">sg</span>);
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">hydroflow</span> <span class="op">=</span> <span class="ident">builder</span>.<span class="ident">build</span>();
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">hydroflow</span> = <span class="ident">builder</span>.<span class="ident">build</span>();
     {
         <span class="kw">for</span> <span class="ident">x</span> <span class="kw">in</span> <span class="number">1</span>..<span class="number">9</span> {
             <span class="ident">ingress_send</span>.<span class="ident">give</span>(<span class="prelude-val">Some</span>(<span class="ident">x</span>));
@@ -440,24 +440,24 @@
     <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::handoff::VecHandoff</span>;
     <span class="kw">use</span> <span class="ident">prelude</span>::<span class="kw-2">*</span>;
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">builder</span> <span class="op">=</span> <span class="ident">HydroflowBuilder::default</span>();
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">builder</span> = <span class="ident">HydroflowBuilder::default</span>();
 
-    <span class="kw">let</span> (<span class="ident">data_send</span>, <span class="ident">data</span>) <span class="op">=</span> <span class="ident">builder</span>.<span class="ident">add_channel_input</span>::<span class="op">&lt;</span><span class="kw">_</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u64</span><span class="op">&gt;</span>, <span class="ident">VecHandoff</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="string">&quot;data&quot;</span>);
+    <span class="kw">let</span> (<span class="ident">data_send</span>, <span class="ident">data</span>) = <span class="ident">builder</span>.<span class="ident">add_channel_input</span>::&lt;<span class="kw">_</span>, <span class="prelude-ty">Option</span>&lt;<span class="ident">u64</span>&gt;, <span class="ident">VecHandoff</span>&lt;<span class="kw">_</span>&gt;&gt;(<span class="string">&quot;data&quot;</span>);
 
-    <span class="kw">let</span> <span class="ident">out</span> <span class="op">=</span> <span class="ident">Rc::new</span>(<span class="ident">RefCell::new</span>(<span class="ident">Vec::new</span>()));
-    <span class="kw">let</span> <span class="ident">even_out</span> <span class="op">=</span> <span class="ident">out</span>.<span class="ident">clone</span>();
-    <span class="kw">let</span> <span class="ident">odd_out</span> <span class="op">=</span> <span class="ident">out</span>.<span class="ident">clone</span>();
+    <span class="kw">let</span> <span class="ident">out</span> = <span class="ident">Rc::new</span>(<span class="ident">RefCell::new</span>(<span class="ident">Vec::new</span>()));
+    <span class="kw">let</span> <span class="ident">even_out</span> = <span class="ident">out</span>.<span class="ident">clone</span>();
+    <span class="kw">let</span> <span class="ident">odd_out</span> = <span class="ident">out</span>.<span class="ident">clone</span>();
 
     <span class="ident">builder</span>.<span class="ident">add_subgraph</span>(
         <span class="string">&quot;main&quot;</span>,
         <span class="ident">data</span>.<span class="ident">flatten</span>().<span class="ident">pull_to_push</span>().<span class="ident">partition_with_context</span>(
-            <span class="op">|</span><span class="ident">_ctx</span>, <span class="ident">x</span><span class="op">|</span> <span class="kw-2">*</span><span class="ident">x</span> <span class="op">%</span> <span class="number">2</span> <span class="op">==</span> <span class="number">0</span>,
+            |<span class="ident">_ctx</span>, <span class="ident">x</span>| <span class="kw-2">*</span><span class="ident">x</span> % <span class="number">2</span> == <span class="number">0</span>,
             <span class="ident">builder</span>
                 .<span class="ident">start_tee</span>()
-                .<span class="ident">for_each</span>(<span class="kw">move</span> <span class="op">|</span><span class="ident">x</span><span class="op">|</span> (<span class="kw-2">*</span><span class="ident">even_out</span>).<span class="ident">borrow_mut</span>().<span class="ident">push</span>((<span class="string">&quot;even&quot;</span>, <span class="ident">x</span>))),
+                .<span class="ident">for_each</span>(<span class="kw">move</span> |<span class="ident">x</span>| (<span class="kw-2">*</span><span class="ident">even_out</span>).<span class="ident">borrow_mut</span>().<span class="ident">push</span>((<span class="string">&quot;even&quot;</span>, <span class="ident">x</span>))),
             <span class="ident">builder</span>
                 .<span class="ident">start_tee</span>()
-                .<span class="ident">for_each</span>(<span class="kw">move</span> <span class="op">|</span><span class="ident">x</span><span class="op">|</span> (<span class="kw-2">*</span><span class="ident">odd_out</span>).<span class="ident">borrow_mut</span>().<span class="ident">push</span>((<span class="string">&quot;odd&quot;</span>, <span class="ident">x</span>))),
+                .<span class="ident">for_each</span>(<span class="kw">move</span> |<span class="ident">x</span>| (<span class="kw-2">*</span><span class="ident">odd_out</span>).<span class="ident">borrow_mut</span>().<span class="ident">push</span>((<span class="string">&quot;odd&quot;</span>, <span class="ident">x</span>))),
         ),
     );
 
@@ -469,7 +469,7 @@
 
     <span class="ident">builder</span>.<span class="ident">build</span>().<span class="ident">run_available</span>();
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">out</span> <span class="op">=</span> (<span class="kw-2">*</span><span class="ident">out</span>).<span class="ident">take</span>();
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">out</span> = (<span class="kw-2">*</span><span class="ident">out</span>).<span class="ident">take</span>();
     <span class="ident">out</span>.<span class="ident">sort_unstable</span>();
 
     <span class="macro">assert_eq!</span>(
@@ -483,41 +483,41 @@
     <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::handoff::VecHandoff</span>;
     <span class="kw">use</span> <span class="ident">prelude</span>::<span class="kw-2">*</span>;
 
-    <span class="kw">type</span> <span class="ident">Pid</span> <span class="op">=</span> <span class="ident">usize</span>;
-    <span class="kw">type</span> <span class="ident">Name</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span>;
-    <span class="kw">type</span> <span class="ident">Phone</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span>;
-    <span class="kw">type</span> <span class="ident">DateTime</span> <span class="op">=</span> <span class="ident">usize</span>;
+    <span class="kw">type</span> <span class="ident">Pid</span> = <span class="ident">usize</span>;
+    <span class="kw">type</span> <span class="ident">Name</span> = <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span>;
+    <span class="kw">type</span> <span class="ident">Phone</span> = <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span>;
+    <span class="kw">type</span> <span class="ident">DateTime</span> = <span class="ident">usize</span>;
 
-    <span class="kw">const</span> <span class="ident">TRANSMISSIBLE_DURATION</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="number">14</span>;
+    <span class="kw">const</span> <span class="ident">TRANSMISSIBLE_DURATION</span>: <span class="ident">usize</span> = <span class="number">14</span>;
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">builder</span> <span class="op">=</span> <span class="ident">HydroflowBuilder::default</span>();
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">builder</span> = <span class="ident">HydroflowBuilder::default</span>();
 
-    <span class="kw">let</span> (<span class="ident">loop_send</span>, <span class="ident">loop_recv</span>) <span class="op">=</span> <span class="ident">builder</span>.<span class="ident">make_edge</span>::<span class="op">&lt;</span><span class="kw">_</span>, <span class="ident">VecHandoff</span><span class="op">&lt;</span>(<span class="ident">Pid</span>, <span class="ident">DateTime</span>)<span class="op">&gt;</span>, <span class="kw">_</span><span class="op">&gt;</span>(<span class="string">&quot;loopback&quot;</span>);
-    <span class="kw">let</span> (<span class="ident">notifs_send</span>, <span class="ident">notifs_recv</span>) <span class="op">=</span>
-        <span class="ident">builder</span>.<span class="ident">make_edge</span>::<span class="op">&lt;</span><span class="kw">_</span>, <span class="ident">VecHandoff</span><span class="op">&lt;</span>(<span class="ident">Pid</span>, <span class="ident">DateTime</span>)<span class="op">&gt;</span>, <span class="kw">_</span><span class="op">&gt;</span>(<span class="string">&quot;notifs&quot;</span>);
+    <span class="kw">let</span> (<span class="ident">loop_send</span>, <span class="ident">loop_recv</span>) = <span class="ident">builder</span>.<span class="ident">make_edge</span>::&lt;<span class="kw">_</span>, <span class="ident">VecHandoff</span>&lt;(<span class="ident">Pid</span>, <span class="ident">DateTime</span>)&gt;, <span class="kw">_</span>&gt;(<span class="string">&quot;loopback&quot;</span>);
+    <span class="kw">let</span> (<span class="ident">notifs_send</span>, <span class="ident">notifs_recv</span>) =
+        <span class="ident">builder</span>.<span class="ident">make_edge</span>::&lt;<span class="kw">_</span>, <span class="ident">VecHandoff</span>&lt;(<span class="ident">Pid</span>, <span class="ident">DateTime</span>)&gt;, <span class="kw">_</span>&gt;(<span class="string">&quot;notifs&quot;</span>);
 
-    <span class="kw">let</span> (<span class="ident">diagnosed_send</span>, <span class="ident">diagnosed</span>) <span class="op">=</span> <span class="ident">builder</span>
-        .<span class="ident">add_channel_input</span>::<span class="op">&lt;</span><span class="kw">_</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span>(<span class="ident">Pid</span>, (<span class="ident">DateTime</span>, <span class="ident">DateTime</span>))<span class="op">&gt;</span>, <span class="ident">VecHandoff</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="string">&quot;diagnosed&quot;</span>);
-    <span class="kw">let</span> (<span class="ident">contacts_send</span>, <span class="ident">contacts</span>) <span class="op">=</span>
-        <span class="ident">builder</span>.<span class="ident">add_channel_input</span>::<span class="op">&lt;</span><span class="kw">_</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span>(<span class="ident">Pid</span>, <span class="ident">Pid</span>, <span class="ident">DateTime</span>)<span class="op">&gt;</span>, <span class="ident">VecHandoff</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="string">&quot;contacts&quot;</span>);
-    <span class="kw">let</span> (<span class="ident">peoples_send</span>, <span class="ident">peoples</span>) <span class="op">=</span>
-        <span class="ident">builder</span>.<span class="ident">add_channel_input</span>::<span class="op">&lt;</span><span class="kw">_</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span>(<span class="ident">Pid</span>, (<span class="ident">Name</span>, <span class="ident">Phone</span>))<span class="op">&gt;</span>, <span class="ident">VecHandoff</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="string">&quot;peoples&quot;</span>);
+    <span class="kw">let</span> (<span class="ident">diagnosed_send</span>, <span class="ident">diagnosed</span>) = <span class="ident">builder</span>
+        .<span class="ident">add_channel_input</span>::&lt;<span class="kw">_</span>, <span class="prelude-ty">Option</span>&lt;(<span class="ident">Pid</span>, (<span class="ident">DateTime</span>, <span class="ident">DateTime</span>))&gt;, <span class="ident">VecHandoff</span>&lt;<span class="kw">_</span>&gt;&gt;(<span class="string">&quot;diagnosed&quot;</span>);
+    <span class="kw">let</span> (<span class="ident">contacts_send</span>, <span class="ident">contacts</span>) =
+        <span class="ident">builder</span>.<span class="ident">add_channel_input</span>::&lt;<span class="kw">_</span>, <span class="prelude-ty">Option</span>&lt;(<span class="ident">Pid</span>, <span class="ident">Pid</span>, <span class="ident">DateTime</span>)&gt;, <span class="ident">VecHandoff</span>&lt;<span class="kw">_</span>&gt;&gt;(<span class="string">&quot;contacts&quot;</span>);
+    <span class="kw">let</span> (<span class="ident">peoples_send</span>, <span class="ident">peoples</span>) =
+        <span class="ident">builder</span>.<span class="ident">add_channel_input</span>::&lt;<span class="kw">_</span>, <span class="prelude-ty">Option</span>&lt;(<span class="ident">Pid</span>, (<span class="ident">Name</span>, <span class="ident">Phone</span>))&gt;, <span class="ident">VecHandoff</span>&lt;<span class="kw">_</span>&gt;&gt;(<span class="string">&quot;peoples&quot;</span>);
 
-    <span class="kw">let</span> <span class="ident">exposed</span> <span class="op">=</span> <span class="ident">loop_recv</span>
+    <span class="kw">let</span> <span class="ident">exposed</span> = <span class="ident">loop_recv</span>
         .<span class="ident">flatten</span>()
-        .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">pid</span>, <span class="ident">t</span>)<span class="op">|</span> (<span class="ident">pid</span>, (<span class="ident">t</span>, <span class="ident">t</span> <span class="op">+</span> <span class="ident">TRANSMISSIBLE_DURATION</span>)))
+        .<span class="ident">map</span>(|(<span class="ident">pid</span>, <span class="ident">t</span>)| (<span class="ident">pid</span>, (<span class="ident">t</span>, <span class="ident">t</span> + <span class="ident">TRANSMISSIBLE_DURATION</span>)))
         .<span class="ident">chain</span>(<span class="ident">diagnosed</span>.<span class="ident">flatten</span>());
 
     <span class="ident">builder</span>.<span class="ident">add_subgraph</span>(
         <span class="string">&quot;main loop&quot;</span>,
         <span class="ident">contacts</span>
             .<span class="ident">flatten</span>()
-            .<span class="ident">flat_map</span>(<span class="op">|</span>(<span class="ident">pid_a</span>, <span class="ident">pid_b</span>, <span class="ident">t</span>)<span class="op">|</span> [(<span class="ident">pid_a</span>, (<span class="ident">pid_b</span>, <span class="ident">t</span>)), (<span class="ident">pid_b</span>, (<span class="ident">pid_a</span>, <span class="ident">t</span>))])
+            .<span class="ident">flat_map</span>(|(<span class="ident">pid_a</span>, <span class="ident">pid_b</span>, <span class="ident">t</span>)| [(<span class="ident">pid_a</span>, (<span class="ident">pid_b</span>, <span class="ident">t</span>)), (<span class="ident">pid_b</span>, (<span class="ident">pid_a</span>, <span class="ident">t</span>))])
             .<span class="ident">join</span>(<span class="ident">exposed</span>)
-            .<span class="ident">filter</span>(<span class="op">|</span>(<span class="ident">_pid_a</span>, ((<span class="ident">_pid_b</span>, <span class="ident">t_contact</span>), (<span class="ident">t_from</span>, <span class="ident">t_to</span>)))<span class="op">|</span> {
-                (<span class="ident">t_from</span>..<span class="op">=</span><span class="ident">t_to</span>).<span class="ident">contains</span>(<span class="kw-2">&amp;</span><span class="ident">t_contact</span>)
+            .<span class="ident">filter</span>(|(<span class="ident">_pid_a</span>, ((<span class="ident">_pid_b</span>, <span class="ident">t_contact</span>), (<span class="ident">t_from</span>, <span class="ident">t_to</span>)))| {
+                (<span class="ident">t_from</span>..=<span class="ident">t_to</span>).<span class="ident">contains</span>(<span class="kw-2">&amp;</span><span class="ident">t_contact</span>)
             })
-            .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">_pid_a</span>, (<span class="ident">pid_b_t_contact</span>, <span class="ident">_t_from_to</span>))<span class="op">|</span> <span class="ident">pid_b_t_contact</span>)
+            .<span class="ident">map</span>(|(<span class="ident">_pid_a</span>, (<span class="ident">pid_b_t_contact</span>, <span class="ident">_t_from_to</span>))| <span class="ident">pid_b_t_contact</span>)
             .<span class="ident">pull_to_push</span>()
             .<span class="ident">map</span>(<span class="prelude-val">Some</span>) <span class="comment">// For handoff CanReceive.</span>
             .<span class="ident">tee</span>(<span class="ident">notifs_send</span>, <span class="ident">loop_send</span>),
@@ -529,7 +529,7 @@
             .<span class="ident">flatten</span>()
             .<span class="ident">join</span>(<span class="ident">peoples</span>.<span class="ident">flatten</span>())
             .<span class="ident">pull_to_push</span>()
-            .<span class="ident">for_each</span>(<span class="op">|</span>(<span class="ident">_pid</span>, (<span class="ident">exposure_time</span>, (<span class="ident">name</span>, <span class="ident">phone</span>)))<span class="op">|</span> {
+            .<span class="ident">for_each</span>(|(<span class="ident">_pid</span>, (<span class="ident">exposure_time</span>, (<span class="ident">name</span>, <span class="ident">phone</span>)))| {
                 <span class="macro">println!</span>(
                     <span class="string">&quot;[{}] To {}: Possible Exposure at t = {}&quot;</span>,
                     <span class="ident">name</span>, <span class="ident">phone</span>, <span class="ident">exposure_time</span>
@@ -537,7 +537,7 @@
             }),
     );
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">hydroflow</span> <span class="op">=</span> <span class="ident">builder</span>.<span class="ident">build</span>();
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">hydroflow</span> = <span class="ident">builder</span>.<span class="ident">build</span>();
     {
         <span class="ident">peoples_send</span>.<span class="ident">give</span>(<span class="prelude-val">Some</span>((<span class="number">101</span>, (<span class="string">&quot;Mingwei S&quot;</span>, <span class="string">&quot;+1 650 555 7283&quot;</span>))));
         <span class="ident">peoples_send</span>.<span class="ident">give</span>(<span class="prelude-val">Some</span>((<span class="number">102</span>, (<span class="string">&quot;Justin J&quot;</span>, <span class="string">&quot;+1 519 555 3458&quot;</span>))));
@@ -548,13 +548,13 @@
         <span class="ident">contacts_send</span>.<span class="ident">give</span>(<span class="prelude-val">Some</span>((<span class="number">101</span>, <span class="number">201</span>, <span class="number">1027</span>))); <span class="comment">// Mingwei + Joe</span>
         <span class="ident">contacts_send</span>.<span class="ident">flush</span>();
 
-        <span class="kw">let</span> <span class="ident">mae_diag_datetime</span> <span class="op">=</span> <span class="number">1022</span>;
+        <span class="kw">let</span> <span class="ident">mae_diag_datetime</span> = <span class="number">1022</span>;
 
         <span class="ident">diagnosed_send</span>.<span class="ident">give</span>(<span class="prelude-val">Some</span>((
             <span class="number">103</span>, <span class="comment">// Mae</span>
             (
                 <span class="ident">mae_diag_datetime</span>,
-                <span class="ident">mae_diag_datetime</span> <span class="op">+</span> <span class="ident">TRANSMISSIBLE_DURATION</span>,
+                <span class="ident">mae_diag_datetime</span> + <span class="ident">TRANSMISSIBLE_DURATION</span>,
             ),
         )));
         <span class="ident">diagnosed_send</span>.<span class="ident">flush</span>();
@@ -562,7 +562,7 @@
         <span class="ident">hydroflow</span>.<span class="ident">run_available</span>();
         <span class="macro">println!</span>(<span class="string">&quot;A&quot;</span>);
 
-        <span class="ident">contacts_send</span>.<span class="ident">give</span>(<span class="prelude-val">Some</span>((<span class="number">101</span>, <span class="number">103</span>, <span class="ident">mae_diag_datetime</span> <span class="op">+</span> <span class="number">6</span>))); <span class="comment">// Mingwei + Mae</span>
+        <span class="ident">contacts_send</span>.<span class="ident">give</span>(<span class="prelude-val">Some</span>((<span class="number">101</span>, <span class="number">103</span>, <span class="ident">mae_diag_datetime</span> + <span class="number">6</span>))); <span class="comment">// Mingwei + Mae</span>
         <span class="ident">contacts_send</span>.<span class="ident">flush</span>();
 
         <span class="ident">hydroflow</span>.<span class="ident">run_available</span>();
@@ -575,4 +575,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (20ffea693 2022-08-11)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

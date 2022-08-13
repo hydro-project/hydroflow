@@ -239,23 +239,23 @@
     <span class="ident">port</span>::{<span class="ident">RecvPort</span>, <span class="ident">SendPort</span>},
 };
 
-<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">Address</span> <span class="op">=</span> <span class="ident">String</span>;
+<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">Address</span> = <span class="ident">String</span>;
 
 <span class="comment">// These methods can&#39;t be wrapped up in a trait because async methods are not</span>
 <span class="comment">// allowed in traits (yet).</span>
 
 <span class="kw">impl</span> <span class="ident">Hydroflow</span> {
     <span class="comment">// TODO(justin): document these, but they&#39;re derivatives of inbound_tcp_vertex_internal.</span>
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">inbound_tcp_vertex_port</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">port</span>: <span class="ident">u16</span>) -&gt; <span class="ident">RecvPort</span><span class="op">&lt;</span><span class="ident">VecHandoff</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>
+    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">inbound_tcp_vertex_port</span>&lt;<span class="ident">T</span>&gt;(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">port</span>: <span class="ident">u16</span>) -&gt; <span class="ident">RecvPort</span>&lt;<span class="ident">VecHandoff</span>&lt;<span class="ident">T</span>&gt;&gt;
     <span class="kw">where</span>
-        <span class="ident">T</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">DeserializeOwned</span> <span class="op">+</span> <span class="ident">Send</span>,
+        <span class="ident">T</span>: <span class="lifetime">&#39;static</span> + <span class="ident">DeserializeOwned</span> + <span class="ident">Send</span>,
     {
         <span class="self">self</span>.<span class="ident">inbound_tcp_vertex_internal</span>(<span class="prelude-val">Some</span>(<span class="ident">port</span>)).<span class="kw">await</span>.<span class="number">1</span>
     }
 
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">inbound_tcp_vertex</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; (<span class="ident">u16</span>, <span class="ident">RecvPort</span><span class="op">&lt;</span><span class="ident">VecHandoff</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>)
+    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">inbound_tcp_vertex</span>&lt;<span class="ident">T</span>&gt;(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; (<span class="ident">u16</span>, <span class="ident">RecvPort</span>&lt;<span class="ident">VecHandoff</span>&lt;<span class="ident">T</span>&gt;&gt;)
     <span class="kw">where</span>
-        <span class="ident">T</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">DeserializeOwned</span> <span class="op">+</span> <span class="ident">Send</span>,
+        <span class="ident">T</span>: <span class="lifetime">&#39;static</span> + <span class="ident">DeserializeOwned</span> + <span class="ident">Send</span>,
     {
         <span class="self">self</span>.<span class="ident">inbound_tcp_vertex_internal</span>(<span class="prelude-val">None</span>).<span class="kw">await</span>
     }
@@ -269,35 +269,35 @@
     <span class="doccomment">///</span>
     <span class="doccomment">/// The messages will be interpreted to be bincode-encoded, length-delimited</span>
     <span class="doccomment">/// messages, as produced by [Self::outbound_tcp_vertex].</span>
-    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">inbound_tcp_vertex_internal</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(
+    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">inbound_tcp_vertex_internal</span>&lt;<span class="ident">T</span>&gt;(
         <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">port</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u16</span><span class="op">&gt;</span>,
-    ) -&gt; (<span class="ident">u16</span>, <span class="ident">RecvPort</span><span class="op">&lt;</span><span class="ident">VecHandoff</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>)
+        <span class="ident">port</span>: <span class="prelude-ty">Option</span>&lt;<span class="ident">u16</span>&gt;,
+    ) -&gt; (<span class="ident">u16</span>, <span class="ident">RecvPort</span>&lt;<span class="ident">VecHandoff</span>&lt;<span class="ident">T</span>&gt;&gt;)
     <span class="kw">where</span>
-        <span class="ident">T</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">DeserializeOwned</span> <span class="op">+</span> <span class="ident">Send</span>,
+        <span class="ident">T</span>: <span class="lifetime">&#39;static</span> + <span class="ident">DeserializeOwned</span> + <span class="ident">Send</span>,
     {
-        <span class="kw">let</span> <span class="ident">listener</span> <span class="op">=</span> <span class="ident">TcpListener::bind</span>(<span class="macro">format!</span>(<span class="string">&quot;localhost:{}&quot;</span>, <span class="ident">port</span>.<span class="ident">unwrap_or</span>(<span class="number">0</span>)))
+        <span class="kw">let</span> <span class="ident">listener</span> = <span class="ident">TcpListener::bind</span>(<span class="macro">format!</span>(<span class="string">&quot;localhost:{}&quot;</span>, <span class="ident">port</span>.<span class="ident">unwrap_or</span>(<span class="number">0</span>)))
             .<span class="kw">await</span>
             .<span class="ident">unwrap</span>();
-        <span class="kw">let</span> <span class="ident">port</span> <span class="op">=</span> <span class="ident">listener</span>.<span class="ident">local_addr</span>().<span class="ident">unwrap</span>().<span class="ident">port</span>();
+        <span class="kw">let</span> <span class="ident">port</span> = <span class="ident">listener</span>.<span class="ident">local_addr</span>().<span class="ident">unwrap</span>().<span class="ident">port</span>();
 
         <span class="comment">// TODO(justin): figure out an appropriate buffer here.</span>
-        <span class="kw">let</span> (<span class="ident">incoming_send</span>, <span class="ident">incoming_messages</span>) <span class="op">=</span> <span class="ident">futures::channel::mpsc::channel</span>(<span class="number">1024</span>);
+        <span class="kw">let</span> (<span class="ident">incoming_send</span>, <span class="ident">incoming_messages</span>) = <span class="ident">futures::channel::mpsc::channel</span>(<span class="number">1024</span>);
 
         <span class="comment">// Listen to incoming connections and spawn a tokio task for each one,</span>
         <span class="comment">// which feeds into the channel.</span>
         <span class="comment">// TODO(justin): give some way to get a handle into this thing.</span>
         <span class="ident">tokio::spawn</span>(<span class="kw">async</span> <span class="kw">move</span> {
             <span class="kw">loop</span> {
-                <span class="kw">let</span> (<span class="ident">socket</span>, <span class="kw">_</span>) <span class="op">=</span> <span class="ident">listener</span>.<span class="ident">accept</span>().<span class="kw">await</span>.<span class="ident">unwrap</span>();
-                <span class="kw">let</span> (<span class="ident">reader</span>, <span class="kw">_</span>) <span class="op">=</span> <span class="ident">socket</span>.<span class="ident">into_split</span>();
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">reader</span> <span class="op">=</span> <span class="ident">FramedRead::new</span>(<span class="ident">reader</span>, <span class="ident">LengthDelimitedCodec::new</span>());
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">incoming_send</span> <span class="op">=</span> <span class="ident">incoming_send</span>.<span class="ident">clone</span>();
+                <span class="kw">let</span> (<span class="ident">socket</span>, <span class="kw">_</span>) = <span class="ident">listener</span>.<span class="ident">accept</span>().<span class="kw">await</span>.<span class="ident">unwrap</span>();
+                <span class="kw">let</span> (<span class="ident">reader</span>, <span class="kw">_</span>) = <span class="ident">socket</span>.<span class="ident">into_split</span>();
+                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">reader</span> = <span class="ident">FramedRead::new</span>(<span class="ident">reader</span>, <span class="ident">LengthDelimitedCodec::new</span>());
+                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">incoming_send</span> = <span class="ident">incoming_send</span>.<span class="ident">clone</span>();
                 <span class="ident">tokio::spawn</span>(<span class="kw">async</span> <span class="kw">move</span> {
-                    <span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">msg</span>) <span class="op">=</span> <span class="ident">reader</span>.<span class="ident">next</span>().<span class="kw">await</span> {
+                    <span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">msg</span>) = <span class="ident">reader</span>.<span class="ident">next</span>().<span class="kw">await</span> {
                         <span class="comment">// TODO(justin): figure out error handling here.</span>
-                        <span class="kw">let</span> <span class="ident">msg</span> <span class="op">=</span> <span class="ident">msg</span>.<span class="ident">unwrap</span>();
-                        <span class="kw">let</span> <span class="ident">out</span> <span class="op">=</span> <span class="ident">bincode::deserialize</span>(<span class="kw-2">&amp;</span><span class="ident">msg</span>).<span class="ident">unwrap</span>();
+                        <span class="kw">let</span> <span class="ident">msg</span> = <span class="ident">msg</span>.<span class="ident">unwrap</span>();
+                        <span class="kw">let</span> <span class="ident">out</span> = <span class="ident">bincode::deserialize</span>(<span class="kw-2">&amp;</span><span class="ident">msg</span>).<span class="ident">unwrap</span>();
                         <span class="ident">incoming_send</span>.<span class="ident">send</span>(<span class="ident">out</span>).<span class="kw">await</span>.<span class="ident">unwrap</span>();
                     }
                     <span class="comment">// TODO(justin): The connection is closed, so we should</span>
@@ -306,25 +306,25 @@
             }
         });
 
-        <span class="kw">let</span> (<span class="ident">send_port</span>, <span class="ident">recv_port</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">make_edge</span>(<span class="string">&quot;tcp ingress handoff&quot;</span>);
+        <span class="kw">let</span> (<span class="ident">send_port</span>, <span class="ident">recv_port</span>) = <span class="self">self</span>.<span class="ident">make_edge</span>(<span class="string">&quot;tcp ingress handoff&quot;</span>);
         <span class="self">self</span>.<span class="ident">add_input_from_stream</span>(<span class="string">&quot;tcp ingress stream&quot;</span>, <span class="ident">send_port</span>, <span class="ident">incoming_messages</span>.<span class="ident">map</span>(<span class="prelude-val">Some</span>));
 
         (<span class="ident">port</span>, <span class="ident">recv_port</span>)
     }
 
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">outbound_tcp_vertex</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="ident">SendPort</span><span class="op">&lt;</span><span class="ident">VecHandoff</span><span class="op">&lt;</span>(<span class="ident">Address</span>, <span class="ident">T</span>)<span class="op">&gt;</span><span class="op">&gt;</span>
+    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">outbound_tcp_vertex</span>&lt;<span class="ident">T</span>&gt;(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="ident">SendPort</span>&lt;<span class="ident">VecHandoff</span>&lt;(<span class="ident">Address</span>, <span class="ident">T</span>)&gt;&gt;
     <span class="kw">where</span>
-        <span class="ident">T</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">Serialize</span> <span class="op">+</span> <span class="ident">Send</span>,
+        <span class="ident">T</span>: <span class="lifetime">&#39;static</span> + <span class="ident">Serialize</span> + <span class="ident">Send</span>,
     {
-        <span class="kw">let</span> (<span class="kw-2">mut</span> <span class="ident">connection_reqs_send</span>, <span class="kw-2">mut</span> <span class="ident">connection_reqs_recv</span>) <span class="op">=</span>
+        <span class="kw">let</span> (<span class="kw-2">mut</span> <span class="ident">connection_reqs_send</span>, <span class="kw-2">mut</span> <span class="ident">connection_reqs_recv</span>) =
             <span class="ident">futures::channel::mpsc::channel</span>(<span class="number">1024</span>);
-        <span class="kw">let</span> (<span class="kw-2">mut</span> <span class="ident">connections_send</span>, <span class="kw-2">mut</span> <span class="ident">connections_recv</span>) <span class="op">=</span> <span class="ident">futures::channel::mpsc::channel</span>(<span class="number">1024</span>);
+        <span class="kw">let</span> (<span class="kw-2">mut</span> <span class="ident">connections_send</span>, <span class="kw-2">mut</span> <span class="ident">connections_recv</span>) = <span class="ident">futures::channel::mpsc::channel</span>(<span class="number">1024</span>);
 
         <span class="comment">// TODO(justin): handle errors here.</span>
         <span class="comment">// Spawn an actor which establishes connections.</span>
         <span class="ident">tokio::spawn</span>(<span class="kw">async</span> <span class="kw">move</span> {
-            <span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">addr</span>) <span class="op">=</span> <span class="ident">connection_reqs_recv</span>.<span class="ident">next</span>().<span class="kw">await</span> {
-                <span class="kw">let</span> <span class="ident">addr</span>: <span class="ident">Address</span> <span class="op">=</span> <span class="ident">addr</span>;
+            <span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">addr</span>) = <span class="ident">connection_reqs_recv</span>.<span class="ident">next</span>().<span class="kw">await</span> {
+                <span class="kw">let</span> <span class="ident">addr</span>: <span class="ident">Address</span> = <span class="ident">addr</span>;
                 <span class="ident">connections_send</span>
                     .<span class="ident">send</span>((<span class="ident">addr</span>.<span class="ident">clone</span>(), <span class="ident">TcpStream::connect</span>(<span class="ident">addr</span>.<span class="ident">clone</span>()).<span class="kw">await</span>))
                     .<span class="kw">await</span>
@@ -332,23 +332,23 @@
             }
         });
 
-        <span class="kw">enum</span> <span class="ident">ConnStatus</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-            <span class="ident">Pending</span>(<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>),
-            <span class="ident">Connected</span>(<span class="ident">FramedWrite</span><span class="op">&lt;</span><span class="ident">TcpStream</span>, <span class="ident">LengthDelimitedCodec</span><span class="op">&gt;</span>),
+        <span class="kw">enum</span> <span class="ident">ConnStatus</span>&lt;<span class="ident">T</span>&gt; {
+            <span class="ident">Pending</span>(<span class="ident">Vec</span>&lt;<span class="ident">T</span>&gt;),
+            <span class="ident">Connected</span>(<span class="ident">FramedWrite</span>&lt;<span class="ident">TcpStream</span>, <span class="ident">LengthDelimitedCodec</span>&gt;),
         }
 
-        <span class="kw">let</span> (<span class="kw-2">mut</span> <span class="ident">outbound_messages_send</span>, <span class="kw-2">mut</span> <span class="ident">outbound_messages_recv</span>) <span class="op">=</span>
+        <span class="kw">let</span> (<span class="kw-2">mut</span> <span class="ident">outbound_messages_send</span>, <span class="kw-2">mut</span> <span class="ident">outbound_messages_recv</span>) =
             <span class="ident">futures::channel::mpsc::channel</span>(<span class="number">1024</span>);
         <span class="ident">tokio::spawn</span>(<span class="kw">async</span> <span class="kw">move</span> {
             <span class="comment">// TODO(justin): this cache should be global to the entire Hydroflow</span>
             <span class="comment">// instance so we can reuse connections from inbound connections.</span>
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">connections</span> <span class="op">=</span> <span class="ident">HashMap</span>::<span class="op">&lt;</span><span class="ident">Address</span>, <span class="ident">ConnStatus</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::new</span>();
+            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">connections</span> = <span class="ident">HashMap</span>::&lt;<span class="ident">Address</span>, <span class="ident">ConnStatus</span>&lt;<span class="ident">T</span>&gt;&gt;<span class="ident">::new</span>();
 
             <span class="kw">loop</span> {
                 <span class="macro">tokio::select!</span> {
-                    <span class="prelude-val">Some</span>((<span class="ident">addr</span>, <span class="ident">msg</span>)) <span class="op">=</span> <span class="ident">outbound_messages_recv</span>.<span class="ident">next</span>() =&gt; {
-                        <span class="kw">let</span> <span class="ident">addr</span>: <span class="ident">Address</span> <span class="op">=</span> <span class="ident">addr</span>;
-                        <span class="kw">let</span> <span class="ident">msg</span>: <span class="ident">T</span> <span class="op">=</span> <span class="ident">msg</span>;
+                    <span class="prelude-val">Some</span>((<span class="ident">addr</span>, <span class="ident">msg</span>)) = <span class="ident">outbound_messages_recv</span>.<span class="ident">next</span>() =&gt; {
+                        <span class="kw">let</span> <span class="ident">addr</span>: <span class="ident">Address</span> = <span class="ident">addr</span>;
+                        <span class="kw">let</span> <span class="ident">msg</span>: <span class="ident">T</span> = <span class="ident">msg</span>;
                         <span class="kw">match</span> <span class="ident">connections</span>.<span class="ident">get_mut</span>(<span class="kw-2">&amp;</span><span class="ident">addr</span>) {
                             <span class="prelude-val">None</span> =&gt; {
                                 <span class="comment">// We have not seen this address before, open a</span>
@@ -370,23 +370,23 @@
                                 <span class="comment">// TODO(justin): move the actual sending here</span>
                                 <span class="comment">// into a different task so we don&#39;t have to</span>
                                 <span class="comment">// wait for the send.</span>
-                                <span class="kw">let</span> <span class="ident">msg</span> <span class="op">=</span> <span class="ident">bincode::serialize</span>(<span class="kw-2">&amp;</span><span class="ident">msg</span>).<span class="ident">unwrap</span>();
+                                <span class="kw">let</span> <span class="ident">msg</span> = <span class="ident">bincode::serialize</span>(<span class="kw-2">&amp;</span><span class="ident">msg</span>).<span class="ident">unwrap</span>();
                                 <span class="ident">conn</span>.<span class="ident">send</span>(<span class="ident">msg</span>.<span class="ident">into</span>()).<span class="kw">await</span>.<span class="ident">unwrap</span>();
                             }
                         }
                     },
 
-                    <span class="prelude-val">Some</span>((<span class="ident">addr</span>, <span class="ident">conn</span>)) <span class="op">=</span> <span class="ident">connections_recv</span>.<span class="ident">next</span>() =&gt; {
+                    <span class="prelude-val">Some</span>((<span class="ident">addr</span>, <span class="ident">conn</span>)) = <span class="ident">connections_recv</span>.<span class="ident">next</span>() =&gt; {
                         <span class="kw">match</span> <span class="ident">conn</span> {
                             <span class="prelude-val">Ok</span>(<span class="ident">conn</span>) =&gt; {
                                 <span class="kw">match</span> <span class="ident">connections</span>.<span class="ident">get_mut</span>(<span class="kw-2">&amp;</span><span class="ident">addr</span>) {
                                     <span class="prelude-val">Some</span>(<span class="ident">ConnStatus::Pending</span>(<span class="ident">msgs</span>)) =&gt; {
-                                        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">conn</span> <span class="op">=</span> <span class="ident">FramedWrite::new</span>(<span class="ident">conn</span>, <span class="ident">LengthDelimitedCodec::new</span>());
+                                        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">conn</span> = <span class="ident">FramedWrite::new</span>(<span class="ident">conn</span>, <span class="ident">LengthDelimitedCodec::new</span>());
                                         <span class="kw">for</span> <span class="ident">msg</span> <span class="kw">in</span> <span class="ident">msgs</span>.<span class="ident">drain</span>(..) {
                                             <span class="comment">// TODO(justin): move the actual sending here</span>
                                             <span class="comment">// into a different task so we don&#39;t have to</span>
                                             <span class="comment">// wait for the send.</span>
-                                            <span class="kw">let</span> <span class="ident">msg</span> <span class="op">=</span> <span class="ident">bincode::serialize</span>(<span class="kw-2">&amp;</span><span class="ident">msg</span>).<span class="ident">unwrap</span>();
+                                            <span class="kw">let</span> <span class="ident">msg</span> = <span class="ident">bincode::serialize</span>(<span class="kw-2">&amp;</span><span class="ident">msg</span>).<span class="ident">unwrap</span>();
                                             <span class="ident">conn</span>.<span class="ident">send</span>(<span class="ident">msg</span>.<span class="ident">into</span>()).<span class="kw">await</span>.<span class="ident">unwrap</span>();
                                         }
                                         <span class="ident">connections</span>.<span class="ident">insert</span>(<span class="ident">addr</span>, <span class="ident">ConnStatus::Connected</span>(<span class="ident">conn</span>));
@@ -424,13 +424,13 @@
             }
         });
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buffered_messages</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">next_messages</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
-        <span class="kw">let</span> (<span class="ident">input_port</span>, <span class="ident">output_port</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">make_edge</span>(<span class="string">&quot;tcp egress handoff&quot;</span>);
-        <span class="self">self</span>.<span class="ident">add_subgraph_sink</span>(<span class="string">&quot;tcp egress stream&quot;</span>, <span class="ident">output_port</span>, <span class="kw">move</span> <span class="op">|</span><span class="ident">_ctx</span>, <span class="ident">recv</span><span class="op">|</span> {
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buffered_messages</span> = <span class="ident">Vec::new</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">next_messages</span> = <span class="ident">Vec::new</span>();
+        <span class="kw">let</span> (<span class="ident">input_port</span>, <span class="ident">output_port</span>) = <span class="self">self</span>.<span class="ident">make_edge</span>(<span class="string">&quot;tcp egress handoff&quot;</span>);
+        <span class="self">self</span>.<span class="ident">add_subgraph_sink</span>(<span class="string">&quot;tcp egress stream&quot;</span>, <span class="ident">output_port</span>, <span class="kw">move</span> |<span class="ident">_ctx</span>, <span class="ident">recv</span>| {
             <span class="ident">buffered_messages</span>.<span class="ident">extend</span>(<span class="ident">recv</span>.<span class="ident">take_inner</span>());
             <span class="kw">for</span> <span class="ident">msg</span> <span class="kw">in</span> <span class="ident">buffered_messages</span>.<span class="ident">drain</span>(..) {
-                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>) <span class="op">=</span> <span class="ident">outbound_messages_send</span>.<span class="ident">try_send</span>(<span class="ident">msg</span>) {
+                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>) = <span class="ident">outbound_messages_send</span>.<span class="ident">try_send</span>(<span class="ident">msg</span>) {
                     <span class="comment">// If we weren&#39;t able to send a message (say, because the</span>
                     <span class="comment">// buffer is full), we get handed it back in the error. If</span>
                     <span class="comment">// this happens we hang onto the message to try sending it</span>
@@ -453,4 +453,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (20ffea693 2022-08-11)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

@@ -224,46 +224,46 @@
 <span class="macro">macro_rules!</span> <span class="ident">subgraph_ext</span> {
     (
         <span class="macro-nonterminal">$</span><span class="macro-nonterminal">fn_name</span>:<span class="ident">ident</span>,
-        ( $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">recv_param</span>:<span class="ident">ident</span> : <span class="macro-nonterminal">$</span><span class="macro-nonterminal">recv_generic</span>:<span class="ident">ident</span>),<span class="op">*</span> ),
-        ( $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">send_param</span>:<span class="ident">ident</span> : <span class="macro-nonterminal">$</span><span class="macro-nonterminal">send_generic</span>:<span class="ident">ident</span>),<span class="op">*</span> )
+        ( $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">recv_param</span>:<span class="ident">ident</span> : <span class="macro-nonterminal">$</span><span class="macro-nonterminal">recv_generic</span>:<span class="ident">ident</span>),* ),
+        ( $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">send_param</span>:<span class="ident">ident</span> : <span class="macro-nonterminal">$</span><span class="macro-nonterminal">send_generic</span>:<span class="ident">ident</span>),* )
     ) =&gt; {
-        <span class="kw">fn</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">fn_name</span> <span class="op">&lt;</span><span class="ident">Name</span>, <span class="ident">F</span>, $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">recv_generic</span>,)<span class="op">*</span> $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">send_generic</span>),<span class="kw-2">*</span><span class="op">&gt;</span> (
+        <span class="kw">fn</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">fn_name</span> &lt;<span class="ident">Name</span>, <span class="ident">F</span>, $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">recv_generic</span>,)* $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">send_generic</span>),<span class="kw-2">*</span>&gt; (
             <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
             <span class="ident">name</span>: <span class="ident">Name</span>,
-            $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">recv_param</span> : <span class="ident">RecvPort</span><span class="op">&lt;</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">recv_generic</span> <span class="op">&gt;</span>,)<span class="op">*</span>
-            $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">send_param</span> : <span class="ident">SendPort</span><span class="op">&lt;</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">send_generic</span> <span class="op">&gt;</span>,)<span class="op">*</span> <span class="ident">subgraph</span>: <span class="ident">F</span>
+            $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">recv_param</span> : <span class="ident">RecvPort</span>&lt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">recv_generic</span> &gt;,)*
+            $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">send_param</span> : <span class="ident">SendPort</span>&lt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">send_generic</span> &gt;,)* <span class="ident">subgraph</span>: <span class="ident">F</span>
         ) -&gt; <span class="ident">SubgraphId</span>
         <span class="kw">where</span>
-            <span class="ident">Name</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span>, <span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-            <span class="ident">F</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident">Context</span>, $(<span class="kw-2">&amp;</span><span class="ident">RecvCtx</span><span class="op">&lt;</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">recv_generic</span> <span class="op">&gt;</span>,)<span class="op">*</span> $(<span class="kw-2">&amp;</span><span class="ident">SendCtx</span><span class="op">&lt;</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">send_generic</span> <span class="op">&gt;</span>),<span class="kw-2">*</span>),
-            $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">recv_generic</span> : <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">Handoff</span>,)<span class="op">*</span>
-            $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">send_generic</span> : <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">Handoff</span>,)<span class="kw-2">*</span>;
+            <span class="ident">Name</span>: <span class="ident">Into</span>&lt;<span class="ident">Cow</span>&lt;<span class="lifetime">&#39;static</span>, <span class="ident">str</span>&gt;&gt;,
+            <span class="ident">F</span>: <span class="lifetime">&#39;static</span> + <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident">Context</span>, $(<span class="kw-2">&amp;</span><span class="ident">RecvCtx</span>&lt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">recv_generic</span> &gt;,)* $(<span class="kw-2">&amp;</span><span class="ident">SendCtx</span>&lt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">send_generic</span> &gt;),<span class="kw-2">*</span>),
+            $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">recv_generic</span> : <span class="lifetime">&#39;static</span> + <span class="ident">Handoff</span>,)*
+            $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">send_generic</span> : <span class="lifetime">&#39;static</span> + <span class="ident">Handoff</span>,)<span class="kw-2">*</span>;
     };
     (
         <span class="kw">impl</span>
         <span class="macro-nonterminal">$</span><span class="macro-nonterminal">fn_name</span>:<span class="ident">ident</span>,
-        ( $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">recv_param</span>:<span class="ident">ident</span> : <span class="macro-nonterminal">$</span><span class="macro-nonterminal">recv_generic</span>:<span class="ident">ident</span>),<span class="op">*</span> ),
-        ( $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">send_param</span>:<span class="ident">ident</span> : <span class="macro-nonterminal">$</span><span class="macro-nonterminal">send_generic</span>:<span class="ident">ident</span>),<span class="op">*</span> )
+        ( $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">recv_param</span>:<span class="ident">ident</span> : <span class="macro-nonterminal">$</span><span class="macro-nonterminal">recv_generic</span>:<span class="ident">ident</span>),* ),
+        ( $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">send_param</span>:<span class="ident">ident</span> : <span class="macro-nonterminal">$</span><span class="macro-nonterminal">send_generic</span>:<span class="ident">ident</span>),* )
     ) =&gt; {
-        <span class="kw">fn</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">fn_name</span> <span class="op">&lt;</span><span class="ident">Name</span>, <span class="ident">F</span>, $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">recv_generic</span>,)<span class="op">*</span> $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">send_generic</span>),<span class="kw-2">*</span><span class="op">&gt;</span> (
+        <span class="kw">fn</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">fn_name</span> &lt;<span class="ident">Name</span>, <span class="ident">F</span>, $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">recv_generic</span>,)* $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">send_generic</span>),<span class="kw-2">*</span>&gt; (
             <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
             <span class="ident">name</span>: <span class="ident">Name</span>,
-            $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">recv_param</span> : <span class="ident">RecvPort</span><span class="op">&lt;</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">recv_generic</span> <span class="op">&gt;</span>,)<span class="op">*</span>
-            $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">send_param</span> : <span class="ident">SendPort</span><span class="op">&lt;</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">send_generic</span> <span class="op">&gt;</span>,)<span class="op">*</span> <span class="ident">subgraph</span>: <span class="ident">F</span>
+            $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">recv_param</span> : <span class="ident">RecvPort</span>&lt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">recv_generic</span> &gt;,)*
+            $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">send_param</span> : <span class="ident">SendPort</span>&lt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">send_generic</span> &gt;,)* <span class="ident">subgraph</span>: <span class="ident">F</span>
         ) -&gt; <span class="ident">SubgraphId</span>
         <span class="kw">where</span>
-            <span class="ident">Name</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span>, <span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-            <span class="ident">F</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident">Context</span>, $(<span class="kw-2">&amp;</span><span class="ident">RecvCtx</span><span class="op">&lt;</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">recv_generic</span> <span class="op">&gt;</span>,)<span class="op">*</span> $(<span class="kw-2">&amp;</span><span class="ident">SendCtx</span><span class="op">&lt;</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">send_generic</span> <span class="op">&gt;</span>),<span class="kw-2">*</span>),
-            $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">recv_generic</span> : <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">Handoff</span>,)<span class="op">*</span>
-            $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">send_generic</span> : <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">Handoff</span>,)<span class="op">*</span>
+            <span class="ident">Name</span>: <span class="ident">Into</span>&lt;<span class="ident">Cow</span>&lt;<span class="lifetime">&#39;static</span>, <span class="ident">str</span>&gt;&gt;,
+            <span class="ident">F</span>: <span class="lifetime">&#39;static</span> + <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident">Context</span>, $(<span class="kw-2">&amp;</span><span class="ident">RecvCtx</span>&lt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">recv_generic</span> &gt;,)* $(<span class="kw-2">&amp;</span><span class="ident">SendCtx</span>&lt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">send_generic</span> &gt;),<span class="kw-2">*</span>),
+            $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">recv_generic</span> : <span class="lifetime">&#39;static</span> + <span class="ident">Handoff</span>,)*
+            $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">send_generic</span> : <span class="lifetime">&#39;static</span> + <span class="ident">Handoff</span>,)*
         {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">subgraph</span> <span class="op">=</span> <span class="ident">subgraph</span>;
+            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">subgraph</span> = <span class="ident">subgraph</span>;
             <span class="self">self</span>.<span class="ident">add_subgraph</span>(
                 <span class="ident">name</span>,
                 <span class="macro">crate::tl!</span>($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">recv_param</span>),<span class="kw-2">*</span>),
                 <span class="macro">crate::tl!</span>($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">send_param</span>),<span class="kw-2">*</span>),
-                <span class="kw">move</span> <span class="op">|</span><span class="ident">ctx</span>, <span class="macro">crate::tl!</span>($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">recv_param</span>),<span class="kw-2">*</span>), <span class="macro">crate::tl!</span>($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">send_param</span>),<span class="kw-2">*</span>)<span class="op">|</span>
-                    (<span class="ident">subgraph</span>)(<span class="ident">ctx</span>, $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">recv_param</span>,)<span class="op">*</span> $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">send_param</span>),<span class="kw-2">*</span>),
+                <span class="kw">move</span> |<span class="ident">ctx</span>, <span class="macro">crate::tl!</span>($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">recv_param</span>),<span class="kw-2">*</span>), <span class="macro">crate::tl!</span>($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">send_param</span>),<span class="kw-2">*</span>)|
+                    (<span class="ident">subgraph</span>)(<span class="ident">ctx</span>, $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">recv_param</span>,)* $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">send_param</span>),<span class="kw-2">*</span>),
             )
         }
     };
@@ -294,37 +294,37 @@
         (<span class="ident">send_port_1</span>: <span class="ident">W1</span>, <span class="ident">send_port_2</span>: <span class="ident">W2</span>)
     );
 
-    <span class="kw">fn</span> <span class="ident">add_channel_input</span><span class="op">&lt;</span><span class="ident">Name</span>, <span class="ident">T</span>, <span class="ident">W</span><span class="op">&gt;</span>(
+    <span class="kw">fn</span> <span class="ident">add_channel_input</span>&lt;<span class="ident">Name</span>, <span class="ident">T</span>, <span class="ident">W</span>&gt;(
         <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
         <span class="ident">name</span>: <span class="ident">Name</span>,
-        <span class="ident">send_port</span>: <span class="ident">SendPort</span><span class="op">&lt;</span><span class="ident">W</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">Input</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">SyncSender</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>
+        <span class="ident">send_port</span>: <span class="ident">SendPort</span>&lt;<span class="ident">W</span>&gt;,
+    ) -&gt; <span class="ident">Input</span>&lt;<span class="ident">T</span>, <span class="ident">SyncSender</span>&lt;<span class="ident">T</span>&gt;&gt;
     <span class="kw">where</span>
-        <span class="ident">Name</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span>, <span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+        <span class="ident">Name</span>: <span class="ident">Into</span>&lt;<span class="ident">Cow</span>&lt;<span class="lifetime">&#39;static</span>, <span class="ident">str</span>&gt;&gt;,
         <span class="ident">T</span>: <span class="lifetime">&#39;static</span>,
-        <span class="ident">W</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">Handoff</span> <span class="op">+</span> <span class="ident">CanReceive</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>;
+        <span class="ident">W</span>: <span class="lifetime">&#39;static</span> + <span class="ident">Handoff</span> + <span class="ident">CanReceive</span>&lt;<span class="ident">T</span>&gt;;
 
     <span class="doccomment">/// Adds an &quot;input&quot; operator, returning a handle to insert data into it.</span>
     <span class="doccomment">/// TODO(justin): make this thing work better</span>
-    <span class="kw">fn</span> <span class="ident">add_input</span><span class="op">&lt;</span><span class="ident">Name</span>, <span class="ident">T</span>, <span class="ident">W</span><span class="op">&gt;</span>(
+    <span class="kw">fn</span> <span class="ident">add_input</span>&lt;<span class="ident">Name</span>, <span class="ident">T</span>, <span class="ident">W</span>&gt;(
         <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
         <span class="ident">name</span>: <span class="ident">Name</span>,
-        <span class="ident">send_port</span>: <span class="ident">SendPort</span><span class="op">&lt;</span><span class="ident">W</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">Input</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident"><span class="kw">super</span>::input::Buffer</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>
+        <span class="ident">send_port</span>: <span class="ident">SendPort</span>&lt;<span class="ident">W</span>&gt;,
+    ) -&gt; <span class="ident">Input</span>&lt;<span class="ident">T</span>, <span class="ident"><span class="kw">super</span>::input::Buffer</span>&lt;<span class="ident">T</span>&gt;&gt;
     <span class="kw">where</span>
-        <span class="ident">Name</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span>, <span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+        <span class="ident">Name</span>: <span class="ident">Into</span>&lt;<span class="ident">Cow</span>&lt;<span class="lifetime">&#39;static</span>, <span class="ident">str</span>&gt;&gt;,
         <span class="ident">T</span>: <span class="lifetime">&#39;static</span>,
-        <span class="ident">W</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">Handoff</span> <span class="op">+</span> <span class="ident">CanReceive</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>;
+        <span class="ident">W</span>: <span class="lifetime">&#39;static</span> + <span class="ident">Handoff</span> + <span class="ident">CanReceive</span>&lt;<span class="ident">T</span>&gt;;
 
-    <span class="kw">fn</span> <span class="ident">add_input_from_stream</span><span class="op">&lt;</span><span class="ident">Name</span>, <span class="ident">T</span>, <span class="ident">W</span>, <span class="ident">S</span><span class="op">&gt;</span>(
+    <span class="kw">fn</span> <span class="ident">add_input_from_stream</span>&lt;<span class="ident">Name</span>, <span class="ident">T</span>, <span class="ident">W</span>, <span class="ident">S</span>&gt;(
         <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
         <span class="ident">name</span>: <span class="ident">Name</span>,
-        <span class="ident">send_port</span>: <span class="ident">SendPort</span><span class="op">&lt;</span><span class="ident">W</span><span class="op">&gt;</span>,
+        <span class="ident">send_port</span>: <span class="ident">SendPort</span>&lt;<span class="ident">W</span>&gt;,
         <span class="ident">stream</span>: <span class="ident">S</span>,
     ) <span class="kw">where</span>
-        <span class="ident">Name</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span>, <span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-        <span class="ident">S</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">Stream</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="ident">T</span><span class="op">&gt;</span>,
-        <span class="ident">W</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">Handoff</span> <span class="op">+</span> <span class="ident">CanReceive</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>;
+        <span class="ident">Name</span>: <span class="ident">Into</span>&lt;<span class="ident">Cow</span>&lt;<span class="lifetime">&#39;static</span>, <span class="ident">str</span>&gt;&gt;,
+        <span class="ident">S</span>: <span class="lifetime">&#39;static</span> + <span class="ident">Stream</span>&lt;<span class="ident">Item</span> = <span class="ident">T</span>&gt;,
+        <span class="ident">W</span>: <span class="lifetime">&#39;static</span> + <span class="ident">Handoff</span> + <span class="ident">CanReceive</span>&lt;<span class="ident">T</span>&gt;;
 }
 
 <span class="kw">impl</span> <span class="ident">GraphExt</span> <span class="kw">for</span> <span class="ident">Hydroflow</span> {
@@ -355,20 +355,20 @@
         (<span class="ident">send_port_1</span>: <span class="ident">W1</span>, <span class="ident">send_port_2</span>: <span class="ident">W2</span>)
     );
 
-    <span class="kw">fn</span> <span class="ident">add_channel_input</span><span class="op">&lt;</span><span class="ident">Name</span>, <span class="ident">T</span>, <span class="ident">W</span><span class="op">&gt;</span>(
+    <span class="kw">fn</span> <span class="ident">add_channel_input</span>&lt;<span class="ident">Name</span>, <span class="ident">T</span>, <span class="ident">W</span>&gt;(
         <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
         <span class="ident">name</span>: <span class="ident">Name</span>,
-        <span class="ident">send_port</span>: <span class="ident">SendPort</span><span class="op">&lt;</span><span class="ident">W</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">Input</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">SyncSender</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>
+        <span class="ident">send_port</span>: <span class="ident">SendPort</span>&lt;<span class="ident">W</span>&gt;,
+    ) -&gt; <span class="ident">Input</span>&lt;<span class="ident">T</span>, <span class="ident">SyncSender</span>&lt;<span class="ident">T</span>&gt;&gt;
     <span class="kw">where</span>
-        <span class="ident">Name</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span>, <span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+        <span class="ident">Name</span>: <span class="ident">Into</span>&lt;<span class="ident">Cow</span>&lt;<span class="lifetime">&#39;static</span>, <span class="ident">str</span>&gt;&gt;,
         <span class="ident">T</span>: <span class="lifetime">&#39;static</span>,
-        <span class="ident">W</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">Handoff</span> <span class="op">+</span> <span class="ident">CanReceive</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
+        <span class="ident">W</span>: <span class="lifetime">&#39;static</span> + <span class="ident">Handoff</span> + <span class="ident">CanReceive</span>&lt;<span class="ident">T</span>&gt;,
     {
         <span class="kw">use</span> <span class="ident">std::sync::mpsc</span>;
 
-        <span class="kw">let</span> (<span class="ident">sender</span>, <span class="ident">receiver</span>) <span class="op">=</span> <span class="ident">mpsc::sync_channel</span>(<span class="number">8000</span>);
-        <span class="kw">let</span> <span class="ident">sg_id</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">add_subgraph_source</span>::<span class="op">&lt;</span><span class="kw">_</span>, <span class="kw">_</span>, <span class="ident">W</span><span class="op">&gt;</span>(<span class="ident">name</span>, <span class="ident">send_port</span>, <span class="kw">move</span> <span class="op">|</span><span class="ident">_ctx</span>, <span class="ident">send</span><span class="op">|</span> {
+        <span class="kw">let</span> (<span class="ident">sender</span>, <span class="ident">receiver</span>) = <span class="ident">mpsc::sync_channel</span>(<span class="number">8000</span>);
+        <span class="kw">let</span> <span class="ident">sg_id</span> = <span class="self">self</span>.<span class="ident">add_subgraph_source</span>::&lt;<span class="kw">_</span>, <span class="kw">_</span>, <span class="ident">W</span>&gt;(<span class="ident">name</span>, <span class="ident">send_port</span>, <span class="kw">move</span> |<span class="ident">_ctx</span>, <span class="ident">send</span>| {
             <span class="kw">for</span> <span class="ident">x</span> <span class="kw">in</span> <span class="ident">receiver</span>.<span class="ident">try_iter</span>() {
                 <span class="ident">send</span>.<span class="ident">give</span>(<span class="ident">x</span>);
             }
@@ -376,19 +376,19 @@
         <span class="ident">Input::new</span>(<span class="self">self</span>.<span class="ident">reactor</span>(), <span class="ident">sg_id</span>, <span class="ident">sender</span>)
     }
 
-    <span class="kw">fn</span> <span class="ident">add_input</span><span class="op">&lt;</span><span class="ident">Name</span>, <span class="ident">T</span>, <span class="ident">W</span><span class="op">&gt;</span>(
+    <span class="kw">fn</span> <span class="ident">add_input</span>&lt;<span class="ident">Name</span>, <span class="ident">T</span>, <span class="ident">W</span>&gt;(
         <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
         <span class="ident">name</span>: <span class="ident">Name</span>,
-        <span class="ident">send_port</span>: <span class="ident">SendPort</span><span class="op">&lt;</span><span class="ident">W</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">Input</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident"><span class="kw">super</span>::input::Buffer</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>
+        <span class="ident">send_port</span>: <span class="ident">SendPort</span>&lt;<span class="ident">W</span>&gt;,
+    ) -&gt; <span class="ident">Input</span>&lt;<span class="ident">T</span>, <span class="ident"><span class="kw">super</span>::input::Buffer</span>&lt;<span class="ident">T</span>&gt;&gt;
     <span class="kw">where</span>
-        <span class="ident">Name</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span>, <span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+        <span class="ident">Name</span>: <span class="ident">Into</span>&lt;<span class="ident">Cow</span>&lt;<span class="lifetime">&#39;static</span>, <span class="ident">str</span>&gt;&gt;,
         <span class="ident">T</span>: <span class="lifetime">&#39;static</span>,
-        <span class="ident">W</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">Handoff</span> <span class="op">+</span> <span class="ident">CanReceive</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
+        <span class="ident">W</span>: <span class="lifetime">&#39;static</span> + <span class="ident">Handoff</span> + <span class="ident">CanReceive</span>&lt;<span class="ident">T</span>&gt;,
     {
-        <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident"><span class="kw">super</span>::input::Buffer::default</span>();
-        <span class="kw">let</span> <span class="ident">inner_input</span> <span class="op">=</span> <span class="ident">input</span>.<span class="ident">clone</span>();
-        <span class="kw">let</span> <span class="ident">sg_id</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">add_subgraph_source</span>::<span class="op">&lt;</span><span class="kw">_</span>, <span class="kw">_</span>, <span class="ident">W</span><span class="op">&gt;</span>(<span class="ident">name</span>, <span class="ident">send_port</span>, <span class="kw">move</span> <span class="op">|</span><span class="ident">_ctx</span>, <span class="ident">send</span><span class="op">|</span> {
+        <span class="kw">let</span> <span class="ident">input</span> = <span class="ident"><span class="kw">super</span>::input::Buffer::default</span>();
+        <span class="kw">let</span> <span class="ident">inner_input</span> = <span class="ident">input</span>.<span class="ident">clone</span>();
+        <span class="kw">let</span> <span class="ident">sg_id</span> = <span class="self">self</span>.<span class="ident">add_subgraph_source</span>::&lt;<span class="kw">_</span>, <span class="kw">_</span>, <span class="ident">W</span>&gt;(<span class="ident">name</span>, <span class="ident">send_port</span>, <span class="kw">move</span> |<span class="ident">_ctx</span>, <span class="ident">send</span>| {
             <span class="kw">for</span> <span class="ident">x</span> <span class="kw">in</span> (<span class="kw-2">*</span><span class="ident">inner_input</span>.<span class="number">0</span>).<span class="ident">borrow_mut</span>().<span class="ident">drain</span>(..) {
                 <span class="ident">send</span>.<span class="ident">give</span>(<span class="ident">x</span>);
             }
@@ -396,25 +396,25 @@
         <span class="ident">Input::new</span>(<span class="self">self</span>.<span class="ident">reactor</span>(), <span class="ident">sg_id</span>, <span class="ident">input</span>)
     }
 
-    <span class="kw">fn</span> <span class="ident">add_input_from_stream</span><span class="op">&lt;</span><span class="ident">Name</span>, <span class="ident">T</span>, <span class="ident">W</span>, <span class="ident">S</span><span class="op">&gt;</span>(
+    <span class="kw">fn</span> <span class="ident">add_input_from_stream</span>&lt;<span class="ident">Name</span>, <span class="ident">T</span>, <span class="ident">W</span>, <span class="ident">S</span>&gt;(
         <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
         <span class="ident">name</span>: <span class="ident">Name</span>,
-        <span class="ident">send_port</span>: <span class="ident">SendPort</span><span class="op">&lt;</span><span class="ident">W</span><span class="op">&gt;</span>,
+        <span class="ident">send_port</span>: <span class="ident">SendPort</span>&lt;<span class="ident">W</span>&gt;,
         <span class="ident">stream</span>: <span class="ident">S</span>,
     ) <span class="kw">where</span>
-        <span class="ident">Name</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span>, <span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-        <span class="ident">S</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">Stream</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="ident">T</span><span class="op">&gt;</span>,
-        <span class="ident">W</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">Handoff</span> <span class="op">+</span> <span class="ident">CanReceive</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
+        <span class="ident">Name</span>: <span class="ident">Into</span>&lt;<span class="ident">Cow</span>&lt;<span class="lifetime">&#39;static</span>, <span class="ident">str</span>&gt;&gt;,
+        <span class="ident">S</span>: <span class="lifetime">&#39;static</span> + <span class="ident">Stream</span>&lt;<span class="ident">Item</span> = <span class="ident">T</span>&gt;,
+        <span class="ident">W</span>: <span class="lifetime">&#39;static</span> + <span class="ident">Handoff</span> + <span class="ident">CanReceive</span>&lt;<span class="ident">T</span>&gt;,
     {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">stream</span> <span class="op">=</span> <span class="ident">Box::pin</span>(<span class="ident">stream</span>);
-        <span class="self">self</span>.<span class="ident">add_subgraph_source</span>::<span class="op">&lt;</span><span class="kw">_</span>, <span class="kw">_</span>, <span class="ident">W</span><span class="op">&gt;</span>(<span class="ident">name</span>, <span class="ident">send_port</span>, <span class="kw">move</span> <span class="op">|</span><span class="ident">ctx</span>, <span class="ident">send</span><span class="op">|</span> {
-            <span class="kw">let</span> <span class="ident">waker</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">waker</span>();
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">cx</span> <span class="op">=</span> <span class="ident">task::Context::from_waker</span>(<span class="kw-2">&amp;</span><span class="ident">waker</span>);
-            <span class="kw">while</span> <span class="kw">let</span> <span class="ident">Poll::Ready</span>(<span class="prelude-val">Some</span>(<span class="ident">v</span>)) <span class="op">=</span> <span class="ident">stream</span>.<span class="ident">as_mut</span>().<span class="ident">poll_next</span>(<span class="kw-2">&amp;mut</span> <span class="ident">cx</span>) {
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">stream</span> = <span class="ident">Box::pin</span>(<span class="ident">stream</span>);
+        <span class="self">self</span>.<span class="ident">add_subgraph_source</span>::&lt;<span class="kw">_</span>, <span class="kw">_</span>, <span class="ident">W</span>&gt;(<span class="ident">name</span>, <span class="ident">send_port</span>, <span class="kw">move</span> |<span class="ident">ctx</span>, <span class="ident">send</span>| {
+            <span class="kw">let</span> <span class="ident">waker</span> = <span class="ident">ctx</span>.<span class="ident">waker</span>();
+            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">cx</span> = <span class="ident">task::Context::from_waker</span>(<span class="kw-2">&amp;</span><span class="ident">waker</span>);
+            <span class="kw">while</span> <span class="kw">let</span> <span class="ident">Poll::Ready</span>(<span class="prelude-val">Some</span>(<span class="ident">v</span>)) = <span class="ident">stream</span>.<span class="ident">as_mut</span>().<span class="ident">poll_next</span>(<span class="kw-2">&amp;mut</span> <span class="ident">cx</span>) {
                 <span class="ident">send</span>.<span class="ident">give</span>(<span class="ident">v</span>);
             }
         });
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (20ffea693 2022-08-11)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

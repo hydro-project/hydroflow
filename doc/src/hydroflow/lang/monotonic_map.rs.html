@@ -63,19 +63,19 @@
 <span class="doccomment">/// epoch counter as the key. In the generic `Map` case it can be swapped out</span>
 <span class="doccomment">/// for a true map to allow processing of multiple epochs of data at once.</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Copy</span>, <span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">MonotonicMap</span><span class="op">&lt;</span><span class="ident">K</span>, <span class="ident">V</span><span class="op">&gt;</span>
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">MonotonicMap</span>&lt;<span class="ident">K</span>, <span class="ident">V</span>&gt;
 <span class="kw">where</span>
     <span class="ident">K</span>: <span class="ident">PartialOrd</span>,
     <span class="ident">V</span>: <span class="ident">Clear</span>,
 {
-    <span class="ident">key</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">K</span><span class="op">&gt;</span>,
+    <span class="ident">key</span>: <span class="prelude-ty">Option</span>&lt;<span class="ident">K</span>&gt;,
     <span class="ident">val</span>: <span class="ident">V</span>,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">K</span>, <span class="ident">V</span><span class="op">&gt;</span> <span class="ident">Default</span> <span class="kw">for</span> <span class="ident">MonotonicMap</span><span class="op">&lt;</span><span class="ident">K</span>, <span class="ident">V</span><span class="op">&gt;</span>
+<span class="kw">impl</span>&lt;<span class="ident">K</span>, <span class="ident">V</span>&gt; <span class="ident">Default</span> <span class="kw">for</span> <span class="ident">MonotonicMap</span>&lt;<span class="ident">K</span>, <span class="ident">V</span>&gt;
 <span class="kw">where</span>
     <span class="ident">K</span>: <span class="ident">PartialOrd</span>,
-    <span class="ident">V</span>: <span class="ident">Clear</span> <span class="op">+</span> <span class="ident">Default</span>,
+    <span class="ident">V</span>: <span class="ident">Clear</span> + <span class="ident">Default</span>,
 {
     <span class="kw">fn</span> <span class="ident">default</span>() -&gt; <span class="self">Self</span> {
         <span class="self">Self</span> {
@@ -85,7 +85,7 @@
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">K</span>, <span class="ident">V</span><span class="op">&gt;</span> <span class="ident">MonotonicMap</span><span class="op">&lt;</span><span class="ident">K</span>, <span class="ident">V</span><span class="op">&gt;</span>
+<span class="kw">impl</span>&lt;<span class="ident">K</span>, <span class="ident">V</span>&gt; <span class="ident">MonotonicMap</span>&lt;<span class="ident">K</span>, <span class="ident">V</span>&gt;
 <span class="kw">where</span>
     <span class="ident">K</span>: <span class="ident">PartialOrd</span>,
     <span class="ident">V</span>: <span class="ident">Clear</span>,
@@ -98,14 +98,14 @@
 
     <span class="doccomment">/// Returns the value for the monotonically increasing key, or `None` if</span>
     <span class="doccomment">/// the key has already passed.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">key</span>: <span class="ident">K</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;mut</span> <span class="ident">V</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">key</span>: <span class="ident">K</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut</span> <span class="ident">V</span>&gt; {
         <span class="kw">if</span> <span class="self">self</span>
             .<span class="ident">key</span>
             .<span class="ident">as_ref</span>()
-            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">old_key</span><span class="op">|</span> <span class="ident">old_key</span> <span class="op">&lt;</span><span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">key</span>)
+            .<span class="ident">map</span>(|<span class="ident">old_key</span>| <span class="ident">old_key</span> &lt;= <span class="kw-2">&amp;</span><span class="ident">key</span>)
             .<span class="ident">unwrap_or</span>(<span class="bool-val">true</span>)
         {
-            <span class="self">self</span>.<span class="ident">key</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">key</span>);
+            <span class="self">self</span>.<span class="ident">key</span> = <span class="prelude-val">Some</span>(<span class="ident">key</span>);
             <span class="prelude-val">Some</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">val</span>)
         } <span class="kw">else</span> {
             <span class="prelude-val">None</span>
@@ -113,4 +113,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (20ffea693 2022-08-11)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

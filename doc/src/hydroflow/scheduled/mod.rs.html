@@ -181,27 +181,27 @@
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">test_batcher</span>() {
-        <span class="kw">let</span> <span class="ident">outputs</span> <span class="op">=</span> <span class="ident">Rc::new</span>(<span class="ident">RefCell::new</span>(<span class="ident">Vec::new</span>()));
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">HydroflowBuilder::default</span>();
+        <span class="kw">let</span> <span class="ident">outputs</span> = <span class="ident">Rc::new</span>(<span class="ident">RefCell::new</span>(<span class="ident">Vec::new</span>()));
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">df</span> = <span class="ident">HydroflowBuilder::default</span>();
 
-        <span class="kw">let</span> (<span class="ident">stream_input</span>, <span class="ident">stream_hoff</span>) <span class="op">=</span>
-            <span class="ident">df</span>.<span class="ident">add_channel_input</span>::<span class="op">&lt;</span><span class="kw">_</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u64</span><span class="op">&gt;</span>, <span class="ident">VecHandoff</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="string">&quot;stream input&quot;</span>);
-        <span class="kw">let</span> (<span class="ident">ticks_input</span>, <span class="ident">ticks_hoff</span>) <span class="op">=</span>
-            <span class="ident">df</span>.<span class="ident">add_channel_input</span>::<span class="op">&lt;</span><span class="kw">_</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u64</span><span class="op">&gt;</span>, <span class="ident">VecHandoff</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="string">&quot;ticks input&quot;</span>);
+        <span class="kw">let</span> (<span class="ident">stream_input</span>, <span class="ident">stream_hoff</span>) =
+            <span class="ident">df</span>.<span class="ident">add_channel_input</span>::&lt;<span class="kw">_</span>, <span class="prelude-ty">Option</span>&lt;<span class="ident">u64</span>&gt;, <span class="ident">VecHandoff</span>&lt;<span class="kw">_</span>&gt;&gt;(<span class="string">&quot;stream input&quot;</span>);
+        <span class="kw">let</span> (<span class="ident">ticks_input</span>, <span class="ident">ticks_hoff</span>) =
+            <span class="ident">df</span>.<span class="ident">add_channel_input</span>::&lt;<span class="kw">_</span>, <span class="prelude-ty">Option</span>&lt;<span class="ident">u64</span>&gt;, <span class="ident">VecHandoff</span>&lt;<span class="kw">_</span>&gt;&gt;(<span class="string">&quot;ticks input&quot;</span>);
 
-        <span class="kw">let</span> <span class="ident">outputs_inner</span> <span class="op">=</span> <span class="ident">outputs</span>.<span class="ident">clone</span>();
+        <span class="kw">let</span> <span class="ident">outputs_inner</span> = <span class="ident">outputs</span>.<span class="ident">clone</span>();
         <span class="ident">df</span>.<span class="ident">add_subgraph</span>(
             <span class="string">&quot;main&quot;</span>,
             <span class="ident">stream_hoff</span>
                 .<span class="ident">flatten</span>()
                 .<span class="ident">map</span>(<span class="ident">Single</span>)
-                .<span class="ident">batch_with</span>::<span class="op">&lt;</span><span class="kw">_</span>, <span class="ident">SetUnionRepr</span><span class="op">&lt;</span><span class="ident">tag::HASH_SET</span>, <span class="ident">u64</span><span class="op">&gt;</span>, <span class="ident">SetUnionRepr</span><span class="op">&lt;</span><span class="ident">tag::SINGLE</span>, <span class="ident">u64</span><span class="op">&gt;</span>, <span class="kw">_</span><span class="op">&gt;</span>(<span class="ident">ticks_hoff</span>.<span class="ident">flatten</span>())
-                .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">x</span>, <span class="ident">v</span>)<span class="op">|</span> (<span class="ident">x</span>, <span class="ident">v</span>))
+                .<span class="ident">batch_with</span>::&lt;<span class="kw">_</span>, <span class="ident">SetUnionRepr</span>&lt;<span class="ident">tag::HASH_SET</span>, <span class="ident">u64</span>&gt;, <span class="ident">SetUnionRepr</span>&lt;<span class="ident">tag::SINGLE</span>, <span class="ident">u64</span>&gt;, <span class="kw">_</span>&gt;(<span class="ident">ticks_hoff</span>.<span class="ident">flatten</span>())
+                .<span class="ident">map</span>(|(<span class="ident">x</span>, <span class="ident">v</span>)| (<span class="ident">x</span>, <span class="ident">v</span>))
                 .<span class="ident">pull_to_push</span>()
-                .<span class="ident">for_each</span>(<span class="kw">move</span> <span class="op">|</span><span class="ident">x</span><span class="op">|</span> (<span class="kw-2">*</span><span class="ident">outputs_inner</span>).<span class="ident">borrow_mut</span>().<span class="ident">push</span>(<span class="ident">x</span>)),
+                .<span class="ident">for_each</span>(<span class="kw">move</span> |<span class="ident">x</span>| (<span class="kw-2">*</span><span class="ident">outputs_inner</span>).<span class="ident">borrow_mut</span>().<span class="ident">push</span>(<span class="ident">x</span>)),
         );
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">df</span>.<span class="ident">build</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">df</span> = <span class="ident">df</span>.<span class="ident">build</span>();
 
         <span class="ident">stream_input</span>.<span class="ident">give</span>(<span class="prelude-val">Some</span>(<span class="number">1</span>));
         <span class="ident">stream_input</span>.<span class="ident">give</span>(<span class="prelude-val">Some</span>(<span class="number">2</span>));
@@ -243,4 +243,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (20ffea693 2022-08-11)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

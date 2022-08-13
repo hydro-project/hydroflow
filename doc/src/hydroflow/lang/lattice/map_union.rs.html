@@ -199,70 +199,70 @@
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::lang::lattice</span>::{<span class="ident">Compare</span>, <span class="ident">Convert</span>, <span class="ident">Lattice</span>, <span class="ident">LatticeRepr</span>, <span class="ident">Merge</span>};
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::lang::tag</span>;
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">MapUnion</span><span class="op">&lt;</span><span class="ident">K</span>, <span class="ident">L</span>: <span class="ident">Lattice</span><span class="op">&gt;</span> {
-    <span class="ident">_phantom</span>: <span class="ident">std::marker::PhantomData</span><span class="op">&lt;</span>(<span class="ident">K</span>, <span class="ident">L</span>)<span class="op">&gt;</span>,
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">MapUnion</span>&lt;<span class="ident">K</span>, <span class="ident">L</span>: <span class="ident">Lattice</span>&gt; {
+    <span class="ident">_phantom</span>: <span class="ident">std::marker::PhantomData</span>&lt;(<span class="ident">K</span>, <span class="ident">L</span>)&gt;,
 }
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">K</span>, <span class="ident">L</span>: <span class="ident">Lattice</span><span class="op">&gt;</span> <span class="ident">Lattice</span> <span class="kw">for</span> <span class="ident">MapUnion</span><span class="op">&lt;</span><span class="ident">K</span>, <span class="ident">L</span><span class="op">&gt;</span> {}
+<span class="kw">impl</span>&lt;<span class="ident">K</span>, <span class="ident">L</span>: <span class="ident">Lattice</span>&gt; <span class="ident">Lattice</span> <span class="kw">for</span> <span class="ident">MapUnion</span>&lt;<span class="ident">K</span>, <span class="ident">L</span>&gt; {}
 
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">MapTag</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">U</span><span class="op">&gt;</span>: <span class="ident">tag::Tag2</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">U</span><span class="op">&gt;</span> {}
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">U</span><span class="op">&gt;</span> <span class="ident">MapTag</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">U</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">tag::HASH_MAP</span> {}
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">U</span><span class="op">&gt;</span> <span class="ident">MapTag</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">U</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">tag::BTREE_MAP</span> {}
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">U</span><span class="op">&gt;</span> <span class="ident">MapTag</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">U</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">tag::VEC</span> {}
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">U</span><span class="op">&gt;</span> <span class="ident">MapTag</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">U</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">tag::SINGLE</span> {}
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">U</span><span class="op">&gt;</span> <span class="ident">MapTag</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">U</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">tag::OPTION</span> {}
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">U</span>, <span class="kw">const</span> <span class="ident">N</span>: <span class="ident">usize</span><span class="op">&gt;</span> <span class="ident">MapTag</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">U</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">tag::ARRAY</span><span class="op">&lt;</span><span class="ident">N</span><span class="op">&gt;</span> {}
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">U</span>, <span class="kw">const</span> <span class="ident">N</span>: <span class="ident">usize</span><span class="op">&gt;</span> <span class="ident">MapTag</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">U</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">tag::MASKED_ARRAY</span><span class="op">&lt;</span><span class="ident">N</span><span class="op">&gt;</span> {}
+<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">MapTag</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>&gt;: <span class="ident">tag::Tag2</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>&gt; {}
+<span class="kw">impl</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>&gt; <span class="ident">MapTag</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>&gt; <span class="kw">for</span> <span class="ident">tag::HASH_MAP</span> {}
+<span class="kw">impl</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>&gt; <span class="ident">MapTag</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>&gt; <span class="kw">for</span> <span class="ident">tag::BTREE_MAP</span> {}
+<span class="kw">impl</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>&gt; <span class="ident">MapTag</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>&gt; <span class="kw">for</span> <span class="ident">tag::VEC</span> {}
+<span class="kw">impl</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>&gt; <span class="ident">MapTag</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>&gt; <span class="kw">for</span> <span class="ident">tag::SINGLE</span> {}
+<span class="kw">impl</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>&gt; <span class="ident">MapTag</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>&gt; <span class="kw">for</span> <span class="ident">tag::OPTION</span> {}
+<span class="kw">impl</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>, <span class="kw">const</span> <span class="ident">N</span>: <span class="ident">usize</span>&gt; <span class="ident">MapTag</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>&gt; <span class="kw">for</span> <span class="ident">tag::ARRAY</span>&lt;<span class="ident">N</span>&gt; {}
+<span class="kw">impl</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>, <span class="kw">const</span> <span class="ident">N</span>: <span class="ident">usize</span>&gt; <span class="ident">MapTag</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>&gt; <span class="kw">for</span> <span class="ident">tag::MASKED_ARRAY</span>&lt;<span class="ident">N</span>&gt; {}
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">MapUnionRepr</span><span class="op">&lt;</span><span class="ident">Tag</span>: <span class="ident">MapTag</span><span class="op">&lt;</span><span class="ident">K</span>, <span class="ident">B::Repr</span><span class="op">&gt;</span>, <span class="ident">K</span>, <span class="ident">B</span>: <span class="ident">LatticeRepr</span><span class="op">&gt;</span> {
-    <span class="ident">_phantom</span>: <span class="ident">std::marker::PhantomData</span><span class="op">&lt;</span>(<span class="ident">Tag</span>, <span class="ident">K</span>, <span class="ident">B</span>)<span class="op">&gt;</span>,
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">MapUnionRepr</span>&lt;<span class="ident">Tag</span>: <span class="ident">MapTag</span>&lt;<span class="ident">K</span>, <span class="ident">B::Repr</span>&gt;, <span class="ident">K</span>, <span class="ident">B</span>: <span class="ident">LatticeRepr</span>&gt; {
+    <span class="ident">_phantom</span>: <span class="ident">std::marker::PhantomData</span>&lt;(<span class="ident">Tag</span>, <span class="ident">K</span>, <span class="ident">B</span>)&gt;,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">Tag</span>: <span class="ident">MapTag</span><span class="op">&lt;</span><span class="ident">K</span>, <span class="ident">B::Repr</span><span class="op">&gt;</span>, <span class="ident">K</span>, <span class="ident">B</span>: <span class="ident">LatticeRepr</span><span class="op">&gt;</span> <span class="ident">LatticeRepr</span> <span class="kw">for</span> <span class="ident">MapUnionRepr</span><span class="op">&lt;</span><span class="ident">Tag</span>, <span class="ident">K</span>, <span class="ident">B</span><span class="op">&gt;</span>
+<span class="kw">impl</span>&lt;<span class="ident">Tag</span>: <span class="ident">MapTag</span>&lt;<span class="ident">K</span>, <span class="ident">B::Repr</span>&gt;, <span class="ident">K</span>, <span class="ident">B</span>: <span class="ident">LatticeRepr</span>&gt; <span class="ident">LatticeRepr</span> <span class="kw">for</span> <span class="ident">MapUnionRepr</span>&lt;<span class="ident">Tag</span>, <span class="ident">K</span>, <span class="ident">B</span>&gt;
 <span class="kw">where</span>
     <span class="ident">Tag::Bind</span>: <span class="ident">Clone</span>,
 {
-    <span class="kw">type</span> <span class="ident">Lattice</span> <span class="op">=</span> <span class="ident">MapUnion</span><span class="op">&lt;</span><span class="ident">K</span>, <span class="ident">B::Lattice</span><span class="op">&gt;</span>;
-    <span class="kw">type</span> <span class="ident">Repr</span> <span class="op">=</span> <span class="ident">Tag::Bind</span>;
+    <span class="kw">type</span> <span class="ident">Lattice</span> = <span class="ident">MapUnion</span>&lt;<span class="ident">K</span>, <span class="ident">B::Lattice</span>&gt;;
+    <span class="kw">type</span> <span class="ident">Repr</span> = <span class="ident">Tag::Bind</span>;
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span>
+<span class="kw">impl</span>&lt;
         <span class="ident">K</span>: <span class="lifetime">&#39;static</span>,
         <span class="ident">SelfTag</span>,
         <span class="ident">DeltaTag</span>,
-        <span class="ident">SelfLr</span>: <span class="ident">LatticeRepr</span><span class="op">&lt;</span><span class="ident">Lattice</span> <span class="op">=</span> <span class="ident">L</span><span class="op">&gt;</span>,
-        <span class="ident">DeltaLr</span>: <span class="ident">LatticeRepr</span><span class="op">&lt;</span><span class="ident">Lattice</span> <span class="op">=</span> <span class="ident">L</span><span class="op">&gt;</span>,
+        <span class="ident">SelfLr</span>: <span class="ident">LatticeRepr</span>&lt;<span class="ident">Lattice</span> = <span class="ident">L</span>&gt;,
+        <span class="ident">DeltaLr</span>: <span class="ident">LatticeRepr</span>&lt;<span class="ident">Lattice</span> = <span class="ident">L</span>&gt;,
         <span class="ident">L</span>: <span class="ident">Lattice</span>,
-    <span class="op">&gt;</span> <span class="ident">Merge</span><span class="op">&lt;</span><span class="ident">MapUnionRepr</span><span class="op">&lt;</span><span class="ident">DeltaTag</span>, <span class="ident">K</span>, <span class="ident">DeltaLr</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">MapUnionRepr</span><span class="op">&lt;</span><span class="ident">SelfTag</span>, <span class="ident">K</span>, <span class="ident">SelfLr</span><span class="op">&gt;</span>
+    &gt; <span class="ident">Merge</span>&lt;<span class="ident">MapUnionRepr</span>&lt;<span class="ident">DeltaTag</span>, <span class="ident">K</span>, <span class="ident">DeltaLr</span>&gt;&gt; <span class="kw">for</span> <span class="ident">MapUnionRepr</span>&lt;<span class="ident">SelfTag</span>, <span class="ident">K</span>, <span class="ident">SelfLr</span>&gt;
 <span class="kw">where</span>
-    <span class="ident">SelfTag</span>: <span class="ident">MapTag</span><span class="op">&lt;</span><span class="ident">K</span>, <span class="ident">SelfLr::Repr</span><span class="op">&gt;</span>,
-    <span class="ident">DeltaTag</span>: <span class="ident">MapTag</span><span class="op">&lt;</span><span class="ident">K</span>, <span class="ident">DeltaLr::Repr</span><span class="op">&gt;</span>,
-    <span class="ident">MapUnionRepr</span><span class="op">&lt;</span><span class="ident">SelfTag</span>, <span class="ident">K</span>, <span class="ident">SelfLr</span><span class="op">&gt;</span>: <span class="ident">LatticeRepr</span><span class="op">&lt;</span><span class="ident">Lattice</span> <span class="op">=</span> <span class="ident">MapUnion</span><span class="op">&lt;</span><span class="ident">K</span>, <span class="ident">L</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="ident">MapUnionRepr</span><span class="op">&lt;</span><span class="ident">DeltaTag</span>, <span class="ident">K</span>, <span class="ident">DeltaLr</span><span class="op">&gt;</span>: <span class="ident">LatticeRepr</span><span class="op">&lt;</span><span class="ident">Lattice</span> <span class="op">=</span> <span class="ident">MapUnion</span><span class="op">&lt;</span><span class="ident">K</span>, <span class="ident">L</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="op">&lt;</span><span class="ident">MapUnionRepr</span><span class="op">&lt;</span><span class="ident">SelfTag</span>, <span class="ident">K</span>, <span class="ident">SelfLr</span><span class="op">&gt;</span> <span class="kw">as</span> <span class="ident">LatticeRepr</span><span class="op">&gt;</span><span class="ident">::Repr</span>:
-        <span class="ident">Extend</span><span class="op">&lt;</span>(<span class="ident">K</span>, <span class="ident">SelfLr::Repr</span>)<span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Collection</span><span class="op">&lt;</span><span class="ident">K</span>, <span class="ident">SelfLr::Repr</span><span class="op">&gt;</span>,
-    <span class="op">&lt;</span><span class="ident">MapUnionRepr</span><span class="op">&lt;</span><span class="ident">DeltaTag</span>, <span class="ident">K</span>, <span class="ident">DeltaLr</span><span class="op">&gt;</span> <span class="kw">as</span> <span class="ident">LatticeRepr</span><span class="op">&gt;</span><span class="ident">::Repr</span>:
-        <span class="ident">IntoIterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> (<span class="ident">K</span>, <span class="ident">DeltaLr::Repr</span>)<span class="op">&gt;</span>,
-    <span class="ident">SelfLr</span>: <span class="ident">Merge</span><span class="op">&lt;</span><span class="ident">DeltaLr</span><span class="op">&gt;</span>,
-    <span class="ident">DeltaLr</span>: <span class="ident">Convert</span><span class="op">&lt;</span><span class="ident">SelfLr</span><span class="op">&gt;</span>,
+    <span class="ident">SelfTag</span>: <span class="ident">MapTag</span>&lt;<span class="ident">K</span>, <span class="ident">SelfLr::Repr</span>&gt;,
+    <span class="ident">DeltaTag</span>: <span class="ident">MapTag</span>&lt;<span class="ident">K</span>, <span class="ident">DeltaLr::Repr</span>&gt;,
+    <span class="ident">MapUnionRepr</span>&lt;<span class="ident">SelfTag</span>, <span class="ident">K</span>, <span class="ident">SelfLr</span>&gt;: <span class="ident">LatticeRepr</span>&lt;<span class="ident">Lattice</span> = <span class="ident">MapUnion</span>&lt;<span class="ident">K</span>, <span class="ident">L</span>&gt;&gt;,
+    <span class="ident">MapUnionRepr</span>&lt;<span class="ident">DeltaTag</span>, <span class="ident">K</span>, <span class="ident">DeltaLr</span>&gt;: <span class="ident">LatticeRepr</span>&lt;<span class="ident">Lattice</span> = <span class="ident">MapUnion</span>&lt;<span class="ident">K</span>, <span class="ident">L</span>&gt;&gt;,
+    &lt;<span class="ident">MapUnionRepr</span>&lt;<span class="ident">SelfTag</span>, <span class="ident">K</span>, <span class="ident">SelfLr</span>&gt; <span class="kw">as</span> <span class="ident">LatticeRepr</span>&gt;<span class="ident">::Repr</span>:
+        <span class="ident">Extend</span>&lt;(<span class="ident">K</span>, <span class="ident">SelfLr::Repr</span>)&gt; + <span class="ident">Collection</span>&lt;<span class="ident">K</span>, <span class="ident">SelfLr::Repr</span>&gt;,
+    &lt;<span class="ident">MapUnionRepr</span>&lt;<span class="ident">DeltaTag</span>, <span class="ident">K</span>, <span class="ident">DeltaLr</span>&gt; <span class="kw">as</span> <span class="ident">LatticeRepr</span>&gt;<span class="ident">::Repr</span>:
+        <span class="ident">IntoIterator</span>&lt;<span class="ident">Item</span> = (<span class="ident">K</span>, <span class="ident">DeltaLr::Repr</span>)&gt;,
+    <span class="ident">SelfLr</span>: <span class="ident">Merge</span>&lt;<span class="ident">DeltaLr</span>&gt;,
+    <span class="ident">DeltaLr</span>: <span class="ident">Convert</span>&lt;<span class="ident">SelfLr</span>&gt;,
 {
     <span class="kw">fn</span> <span class="ident">merge</span>(
-        <span class="ident">this</span>: <span class="kw-2">&amp;mut</span> <span class="op">&lt;</span><span class="ident">MapUnionRepr</span><span class="op">&lt;</span><span class="ident">SelfTag</span>, <span class="ident">K</span>, <span class="ident">SelfLr</span><span class="op">&gt;</span> <span class="kw">as</span> <span class="ident">LatticeRepr</span><span class="op">&gt;</span><span class="ident">::Repr</span>,
-        <span class="ident">delta</span>: <span class="op">&lt;</span><span class="ident">MapUnionRepr</span><span class="op">&lt;</span><span class="ident">DeltaTag</span>, <span class="ident">K</span>, <span class="ident">DeltaLr</span><span class="op">&gt;</span> <span class="kw">as</span> <span class="ident">LatticeRepr</span><span class="op">&gt;</span><span class="ident">::Repr</span>,
+        <span class="ident">this</span>: <span class="kw-2">&amp;mut</span> &lt;<span class="ident">MapUnionRepr</span>&lt;<span class="ident">SelfTag</span>, <span class="ident">K</span>, <span class="ident">SelfLr</span>&gt; <span class="kw">as</span> <span class="ident">LatticeRepr</span>&gt;<span class="ident">::Repr</span>,
+        <span class="ident">delta</span>: &lt;<span class="ident">MapUnionRepr</span>&lt;<span class="ident">DeltaTag</span>, <span class="ident">K</span>, <span class="ident">DeltaLr</span>&gt; <span class="kw">as</span> <span class="ident">LatticeRepr</span>&gt;<span class="ident">::Repr</span>,
     ) -&gt; <span class="ident">bool</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">changed</span> <span class="op">=</span> <span class="bool-val">false</span>;
-        <span class="kw">let</span> <span class="ident">iter</span>: <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">K</span>, <span class="ident">SelfLr::Repr</span>)<span class="op">&gt;</span> <span class="op">=</span> <span class="ident">delta</span>
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">changed</span> = <span class="bool-val">false</span>;
+        <span class="kw">let</span> <span class="ident">iter</span>: <span class="ident">Vec</span>&lt;(<span class="ident">K</span>, <span class="ident">SelfLr::Repr</span>)&gt; = <span class="ident">delta</span>
             .<span class="ident">into_iter</span>()
-            .<span class="ident">filter_map</span>(<span class="op">|</span>(<span class="ident">k</span>, <span class="ident">v</span>)<span class="op">|</span> {
+            .<span class="ident">filter_map</span>(|(<span class="ident">k</span>, <span class="ident">v</span>)| {
                 <span class="kw">match</span> <span class="ident">this</span>.<span class="ident">get_mut</span>(<span class="kw-2">&amp;</span><span class="ident">k</span>) {
                     <span class="comment">// Key collision, merge into THIS.</span>
                     <span class="prelude-val">Some</span>(<span class="ident">target_val</span>) =&gt; {
-                        <span class="ident">changed</span> <span class="op">|</span><span class="op">=</span> <span class="op">&lt;</span><span class="ident">SelfLr</span> <span class="kw">as</span> <span class="ident">Merge</span><span class="op">&lt;</span><span class="ident">DeltaLr</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::merge</span>(<span class="ident">target_val</span>, <span class="ident">v</span>);
+                        <span class="ident">changed</span> |= &lt;<span class="ident">SelfLr</span> <span class="kw">as</span> <span class="ident">Merge</span>&lt;<span class="ident">DeltaLr</span>&gt;&gt;<span class="ident">::merge</span>(<span class="ident">target_val</span>, <span class="ident">v</span>);
                         <span class="prelude-val">None</span>
                     }
                     <span class="comment">// New value, convert for extending.</span>
                     <span class="prelude-val">None</span> =&gt; {
-                        <span class="ident">changed</span> <span class="op">=</span> <span class="bool-val">true</span>;
-                        <span class="kw">let</span> <span class="ident">val</span>: <span class="ident">SelfLr::Repr</span> <span class="op">=</span> <span class="op">&lt;</span><span class="ident">DeltaLr</span> <span class="kw">as</span> <span class="ident">Convert</span><span class="op">&lt;</span><span class="ident">SelfLr</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::convert</span>(<span class="ident">v</span>);
+                        <span class="ident">changed</span> = <span class="bool-val">true</span>;
+                        <span class="kw">let</span> <span class="ident">val</span>: <span class="ident">SelfLr::Repr</span> = &lt;<span class="ident">DeltaLr</span> <span class="kw">as</span> <span class="ident">Convert</span>&lt;<span class="ident">SelfLr</span>&gt;&gt;<span class="ident">::convert</span>(<span class="ident">v</span>);
                         <span class="prelude-val">Some</span>((<span class="ident">k</span>, <span class="ident">val</span>))
                     }
                 }
@@ -273,53 +273,53 @@
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">K</span>, <span class="ident">SelfInner</span>: <span class="ident">LatticeRepr</span>, <span class="ident">SelfTag</span>, <span class="ident">TargetInner</span>: <span class="ident">LatticeRepr</span>, <span class="ident">TargetTag</span><span class="op">&gt;</span>
-    <span class="ident">Convert</span><span class="op">&lt;</span><span class="ident">MapUnionRepr</span><span class="op">&lt;</span><span class="ident">TargetTag</span>, <span class="ident">K</span>, <span class="ident">TargetInner</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">MapUnionRepr</span><span class="op">&lt;</span><span class="ident">SelfTag</span>, <span class="ident">K</span>, <span class="ident">SelfInner</span><span class="op">&gt;</span>
+<span class="kw">impl</span>&lt;<span class="ident">K</span>, <span class="ident">SelfInner</span>: <span class="ident">LatticeRepr</span>, <span class="ident">SelfTag</span>, <span class="ident">TargetInner</span>: <span class="ident">LatticeRepr</span>, <span class="ident">TargetTag</span>&gt;
+    <span class="ident">Convert</span>&lt;<span class="ident">MapUnionRepr</span>&lt;<span class="ident">TargetTag</span>, <span class="ident">K</span>, <span class="ident">TargetInner</span>&gt;&gt; <span class="kw">for</span> <span class="ident">MapUnionRepr</span>&lt;<span class="ident">SelfTag</span>, <span class="ident">K</span>, <span class="ident">SelfInner</span>&gt;
 <span class="kw">where</span>
-    <span class="ident">SelfTag</span>: <span class="ident">MapTag</span><span class="op">&lt;</span><span class="ident">K</span>, <span class="ident">SelfInner::Repr</span><span class="op">&gt;</span>,
-    <span class="ident">TargetTag</span>: <span class="ident">MapTag</span><span class="op">&lt;</span><span class="ident">K</span>, <span class="ident">TargetInner::Repr</span><span class="op">&gt;</span>,
-    <span class="ident">SelfInner</span>: <span class="ident">LatticeRepr</span><span class="op">&lt;</span><span class="ident">Lattice</span> <span class="op">=</span> <span class="ident">TargetInner::Lattice</span><span class="op">&gt;</span>,
-    <span class="ident">SelfInner</span>: <span class="ident">Convert</span><span class="op">&lt;</span><span class="ident">TargetInner</span><span class="op">&gt;</span>,
-    <span class="ident">MapUnionRepr</span><span class="op">&lt;</span><span class="ident">SelfTag</span>, <span class="ident">K</span>, <span class="ident">SelfInner</span><span class="op">&gt;</span>: <span class="ident">LatticeRepr</span><span class="op">&lt;</span><span class="ident">Lattice</span> <span class="op">=</span> <span class="ident">MapUnion</span><span class="op">&lt;</span><span class="ident">K</span>, <span class="ident">SelfInner::Lattice</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="ident">MapUnionRepr</span><span class="op">&lt;</span><span class="ident">TargetTag</span>, <span class="ident">K</span>, <span class="ident">TargetInner</span><span class="op">&gt;</span>:
-        <span class="ident">LatticeRepr</span><span class="op">&lt;</span><span class="ident">Lattice</span> <span class="op">=</span> <span class="ident">MapUnion</span><span class="op">&lt;</span><span class="ident">K</span>, <span class="ident">TargetInner::Lattice</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="op">&lt;</span><span class="ident">MapUnionRepr</span><span class="op">&lt;</span><span class="ident">SelfTag</span>, <span class="ident">K</span>, <span class="ident">SelfInner</span><span class="op">&gt;</span> <span class="kw">as</span> <span class="ident">LatticeRepr</span><span class="op">&gt;</span><span class="ident">::Repr</span>:
-        <span class="ident">IntoIterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> (<span class="ident">K</span>, <span class="ident">SelfInner::Repr</span>)<span class="op">&gt;</span>,
-    <span class="op">&lt;</span><span class="ident">MapUnionRepr</span><span class="op">&lt;</span><span class="ident">TargetTag</span>, <span class="ident">K</span>, <span class="ident">TargetInner</span><span class="op">&gt;</span> <span class="kw">as</span> <span class="ident">LatticeRepr</span><span class="op">&gt;</span><span class="ident">::Repr</span>:
-        <span class="ident">FromIterator</span><span class="op">&lt;</span>(<span class="ident">K</span>, <span class="ident">TargetInner::Repr</span>)<span class="op">&gt;</span>,
+    <span class="ident">SelfTag</span>: <span class="ident">MapTag</span>&lt;<span class="ident">K</span>, <span class="ident">SelfInner::Repr</span>&gt;,
+    <span class="ident">TargetTag</span>: <span class="ident">MapTag</span>&lt;<span class="ident">K</span>, <span class="ident">TargetInner::Repr</span>&gt;,
+    <span class="ident">SelfInner</span>: <span class="ident">LatticeRepr</span>&lt;<span class="ident">Lattice</span> = <span class="ident">TargetInner::Lattice</span>&gt;,
+    <span class="ident">SelfInner</span>: <span class="ident">Convert</span>&lt;<span class="ident">TargetInner</span>&gt;,
+    <span class="ident">MapUnionRepr</span>&lt;<span class="ident">SelfTag</span>, <span class="ident">K</span>, <span class="ident">SelfInner</span>&gt;: <span class="ident">LatticeRepr</span>&lt;<span class="ident">Lattice</span> = <span class="ident">MapUnion</span>&lt;<span class="ident">K</span>, <span class="ident">SelfInner::Lattice</span>&gt;&gt;,
+    <span class="ident">MapUnionRepr</span>&lt;<span class="ident">TargetTag</span>, <span class="ident">K</span>, <span class="ident">TargetInner</span>&gt;:
+        <span class="ident">LatticeRepr</span>&lt;<span class="ident">Lattice</span> = <span class="ident">MapUnion</span>&lt;<span class="ident">K</span>, <span class="ident">TargetInner::Lattice</span>&gt;&gt;,
+    &lt;<span class="ident">MapUnionRepr</span>&lt;<span class="ident">SelfTag</span>, <span class="ident">K</span>, <span class="ident">SelfInner</span>&gt; <span class="kw">as</span> <span class="ident">LatticeRepr</span>&gt;<span class="ident">::Repr</span>:
+        <span class="ident">IntoIterator</span>&lt;<span class="ident">Item</span> = (<span class="ident">K</span>, <span class="ident">SelfInner::Repr</span>)&gt;,
+    &lt;<span class="ident">MapUnionRepr</span>&lt;<span class="ident">TargetTag</span>, <span class="ident">K</span>, <span class="ident">TargetInner</span>&gt; <span class="kw">as</span> <span class="ident">LatticeRepr</span>&gt;<span class="ident">::Repr</span>:
+        <span class="ident">FromIterator</span>&lt;(<span class="ident">K</span>, <span class="ident">TargetInner::Repr</span>)&gt;,
 {
     <span class="kw">fn</span> <span class="ident">convert</span>(
-        <span class="ident">this</span>: <span class="op">&lt;</span><span class="ident">MapUnionRepr</span><span class="op">&lt;</span><span class="ident">SelfTag</span>, <span class="ident">K</span>, <span class="ident">SelfInner</span><span class="op">&gt;</span> <span class="kw">as</span> <span class="ident">LatticeRepr</span><span class="op">&gt;</span><span class="ident">::Repr</span>,
-    ) -&gt; <span class="op">&lt;</span><span class="ident">MapUnionRepr</span><span class="op">&lt;</span><span class="ident">TargetTag</span>, <span class="ident">K</span>, <span class="ident">TargetInner</span><span class="op">&gt;</span> <span class="kw">as</span> <span class="ident">LatticeRepr</span><span class="op">&gt;</span><span class="ident">::Repr</span> {
+        <span class="ident">this</span>: &lt;<span class="ident">MapUnionRepr</span>&lt;<span class="ident">SelfTag</span>, <span class="ident">K</span>, <span class="ident">SelfInner</span>&gt; <span class="kw">as</span> <span class="ident">LatticeRepr</span>&gt;<span class="ident">::Repr</span>,
+    ) -&gt; &lt;<span class="ident">MapUnionRepr</span>&lt;<span class="ident">TargetTag</span>, <span class="ident">K</span>, <span class="ident">TargetInner</span>&gt; <span class="kw">as</span> <span class="ident">LatticeRepr</span>&gt;<span class="ident">::Repr</span> {
         <span class="ident">this</span>.<span class="ident">into_iter</span>()
-            .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">k</span>, <span class="ident">val</span>)<span class="op">|</span> (<span class="ident">k</span>, <span class="op">&lt;</span><span class="ident">SelfInner</span> <span class="kw">as</span> <span class="ident">Convert</span><span class="op">&lt;</span><span class="ident">TargetInner</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::convert</span>(<span class="ident">val</span>)))
+            .<span class="ident">map</span>(|(<span class="ident">k</span>, <span class="ident">val</span>)| (<span class="ident">k</span>, &lt;<span class="ident">SelfInner</span> <span class="kw">as</span> <span class="ident">Convert</span>&lt;<span class="ident">TargetInner</span>&gt;&gt;<span class="ident">::convert</span>(<span class="ident">val</span>)))
             .<span class="ident">collect</span>()
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span>
+<span class="kw">impl</span>&lt;
         <span class="ident">K</span>: <span class="lifetime">&#39;static</span>,
         <span class="ident">SelfTag</span>,
         <span class="ident">DeltaTag</span>,
-        <span class="ident">SelfLr</span>: <span class="ident">LatticeRepr</span><span class="op">&lt;</span><span class="ident">Lattice</span> <span class="op">=</span> <span class="ident">L</span><span class="op">&gt;</span>,
-        <span class="ident">DeltaLr</span>: <span class="ident">LatticeRepr</span><span class="op">&lt;</span><span class="ident">Lattice</span> <span class="op">=</span> <span class="ident">L</span><span class="op">&gt;</span>,
+        <span class="ident">SelfLr</span>: <span class="ident">LatticeRepr</span>&lt;<span class="ident">Lattice</span> = <span class="ident">L</span>&gt;,
+        <span class="ident">DeltaLr</span>: <span class="ident">LatticeRepr</span>&lt;<span class="ident">Lattice</span> = <span class="ident">L</span>&gt;,
         <span class="ident">L</span>: <span class="ident">Lattice</span>,
-    <span class="op">&gt;</span> <span class="ident">Compare</span><span class="op">&lt;</span><span class="ident">MapUnionRepr</span><span class="op">&lt;</span><span class="ident">DeltaTag</span>, <span class="ident">K</span>, <span class="ident">DeltaLr</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">MapUnionRepr</span><span class="op">&lt;</span><span class="ident">SelfTag</span>, <span class="ident">K</span>, <span class="ident">SelfLr</span><span class="op">&gt;</span>
+    &gt; <span class="ident">Compare</span>&lt;<span class="ident">MapUnionRepr</span>&lt;<span class="ident">DeltaTag</span>, <span class="ident">K</span>, <span class="ident">DeltaLr</span>&gt;&gt; <span class="kw">for</span> <span class="ident">MapUnionRepr</span>&lt;<span class="ident">SelfTag</span>, <span class="ident">K</span>, <span class="ident">SelfLr</span>&gt;
 <span class="kw">where</span>
-    <span class="ident">SelfTag</span>: <span class="ident">MapTag</span><span class="op">&lt;</span><span class="ident">K</span>, <span class="ident">SelfLr::Repr</span><span class="op">&gt;</span>,
-    <span class="ident">DeltaTag</span>: <span class="ident">MapTag</span><span class="op">&lt;</span><span class="ident">K</span>, <span class="ident">DeltaLr::Repr</span><span class="op">&gt;</span>,
-    <span class="ident">MapUnionRepr</span><span class="op">&lt;</span><span class="ident">SelfTag</span>, <span class="ident">K</span>, <span class="ident">SelfLr</span><span class="op">&gt;</span>: <span class="ident">LatticeRepr</span><span class="op">&lt;</span><span class="ident">Lattice</span> <span class="op">=</span> <span class="ident">MapUnion</span><span class="op">&lt;</span><span class="ident">K</span>, <span class="ident">L</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="ident">MapUnionRepr</span><span class="op">&lt;</span><span class="ident">DeltaTag</span>, <span class="ident">K</span>, <span class="ident">DeltaLr</span><span class="op">&gt;</span>: <span class="ident">LatticeRepr</span><span class="op">&lt;</span><span class="ident">Lattice</span> <span class="op">=</span> <span class="ident">MapUnion</span><span class="op">&lt;</span><span class="ident">K</span>, <span class="ident">L</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="op">&lt;</span><span class="ident">MapUnionRepr</span><span class="op">&lt;</span><span class="ident">SelfTag</span>, <span class="ident">K</span>, <span class="ident">SelfLr</span><span class="op">&gt;</span> <span class="kw">as</span> <span class="ident">LatticeRepr</span><span class="op">&gt;</span><span class="ident">::Repr</span>: <span class="ident">Collection</span><span class="op">&lt;</span><span class="ident">K</span>, <span class="ident">SelfLr::Repr</span><span class="op">&gt;</span>,
-    <span class="op">&lt;</span><span class="ident">MapUnionRepr</span><span class="op">&lt;</span><span class="ident">DeltaTag</span>, <span class="ident">K</span>, <span class="ident">DeltaLr</span><span class="op">&gt;</span> <span class="kw">as</span> <span class="ident">LatticeRepr</span><span class="op">&gt;</span><span class="ident">::Repr</span>: <span class="ident">Collection</span><span class="op">&lt;</span><span class="ident">K</span>, <span class="ident">DeltaLr::Repr</span><span class="op">&gt;</span>,
-    <span class="ident">SelfLr</span>: <span class="ident">Compare</span><span class="op">&lt;</span><span class="ident">DeltaLr</span><span class="op">&gt;</span>,
+    <span class="ident">SelfTag</span>: <span class="ident">MapTag</span>&lt;<span class="ident">K</span>, <span class="ident">SelfLr::Repr</span>&gt;,
+    <span class="ident">DeltaTag</span>: <span class="ident">MapTag</span>&lt;<span class="ident">K</span>, <span class="ident">DeltaLr::Repr</span>&gt;,
+    <span class="ident">MapUnionRepr</span>&lt;<span class="ident">SelfTag</span>, <span class="ident">K</span>, <span class="ident">SelfLr</span>&gt;: <span class="ident">LatticeRepr</span>&lt;<span class="ident">Lattice</span> = <span class="ident">MapUnion</span>&lt;<span class="ident">K</span>, <span class="ident">L</span>&gt;&gt;,
+    <span class="ident">MapUnionRepr</span>&lt;<span class="ident">DeltaTag</span>, <span class="ident">K</span>, <span class="ident">DeltaLr</span>&gt;: <span class="ident">LatticeRepr</span>&lt;<span class="ident">Lattice</span> = <span class="ident">MapUnion</span>&lt;<span class="ident">K</span>, <span class="ident">L</span>&gt;&gt;,
+    &lt;<span class="ident">MapUnionRepr</span>&lt;<span class="ident">SelfTag</span>, <span class="ident">K</span>, <span class="ident">SelfLr</span>&gt; <span class="kw">as</span> <span class="ident">LatticeRepr</span>&gt;<span class="ident">::Repr</span>: <span class="ident">Collection</span>&lt;<span class="ident">K</span>, <span class="ident">SelfLr::Repr</span>&gt;,
+    &lt;<span class="ident">MapUnionRepr</span>&lt;<span class="ident">DeltaTag</span>, <span class="ident">K</span>, <span class="ident">DeltaLr</span>&gt; <span class="kw">as</span> <span class="ident">LatticeRepr</span>&gt;<span class="ident">::Repr</span>: <span class="ident">Collection</span>&lt;<span class="ident">K</span>, <span class="ident">DeltaLr::Repr</span>&gt;,
+    <span class="ident">SelfLr</span>: <span class="ident">Compare</span>&lt;<span class="ident">DeltaLr</span>&gt;,
 {
     <span class="kw">fn</span> <span class="ident">compare</span>(
-        <span class="ident">this</span>: <span class="kw-2">&amp;</span><span class="op">&lt;</span><span class="ident">MapUnionRepr</span><span class="op">&lt;</span><span class="ident">SelfTag</span>, <span class="ident">K</span>, <span class="ident">SelfLr</span><span class="op">&gt;</span> <span class="kw">as</span> <span class="ident">LatticeRepr</span><span class="op">&gt;</span><span class="ident">::Repr</span>,
-        <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="op">&lt;</span><span class="ident">MapUnionRepr</span><span class="op">&lt;</span><span class="ident">DeltaTag</span>, <span class="ident">K</span>, <span class="ident">DeltaLr</span><span class="op">&gt;</span> <span class="kw">as</span> <span class="ident">LatticeRepr</span><span class="op">&gt;</span><span class="ident">::Repr</span>,
-    ) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Ordering</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">this_any_greater</span> <span class="op">=</span> <span class="bool-val">false</span>;
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">other_any_greater</span> <span class="op">=</span> <span class="bool-val">false</span>;
+        <span class="ident">this</span>: <span class="kw-2">&amp;</span>&lt;<span class="ident">MapUnionRepr</span>&lt;<span class="ident">SelfTag</span>, <span class="ident">K</span>, <span class="ident">SelfLr</span>&gt; <span class="kw">as</span> <span class="ident">LatticeRepr</span>&gt;<span class="ident">::Repr</span>,
+        <span class="ident">other</span>: <span class="kw-2">&amp;</span>&lt;<span class="ident">MapUnionRepr</span>&lt;<span class="ident">DeltaTag</span>, <span class="ident">K</span>, <span class="ident">DeltaLr</span>&gt; <span class="kw">as</span> <span class="ident">LatticeRepr</span>&gt;<span class="ident">::Repr</span>,
+    ) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">Ordering</span>&gt; {
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">this_any_greater</span> = <span class="bool-val">false</span>;
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">other_any_greater</span> = <span class="bool-val">false</span>;
         <span class="kw">for</span> <span class="ident">k</span> <span class="kw">in</span> <span class="ident">this</span>.<span class="ident">keys</span>().<span class="ident">chain</span>(<span class="ident">other</span>.<span class="ident">keys</span>()) {
             <span class="kw">match</span> (<span class="ident">this</span>.<span class="ident">get</span>(<span class="ident">k</span>), <span class="ident">other</span>.<span class="ident">get</span>(<span class="ident">k</span>)) {
                 (<span class="prelude-val">Some</span>(<span class="ident">this_value</span>), <span class="prelude-val">Some</span>(<span class="ident">other_value</span>)) =&gt; {
@@ -328,23 +328,23 @@
                             <span class="kw">return</span> <span class="prelude-val">None</span>;
                         }
                         <span class="prelude-val">Some</span>(<span class="ident">Ordering::Less</span>) =&gt; {
-                            <span class="ident">other_any_greater</span> <span class="op">=</span> <span class="bool-val">true</span>;
+                            <span class="ident">other_any_greater</span> = <span class="bool-val">true</span>;
                         }
                         <span class="prelude-val">Some</span>(<span class="ident">Ordering::Greater</span>) =&gt; {
-                            <span class="ident">this_any_greater</span> <span class="op">=</span> <span class="bool-val">true</span>;
+                            <span class="ident">this_any_greater</span> = <span class="bool-val">true</span>;
                         }
                         <span class="prelude-val">Some</span>(<span class="ident">Ordering::Equal</span>) =&gt; {}
                     }
                 }
                 (<span class="prelude-val">Some</span>(<span class="kw">_</span>), <span class="prelude-val">None</span>) =&gt; {
-                    <span class="ident">this_any_greater</span> <span class="op">=</span> <span class="bool-val">true</span>;
+                    <span class="ident">this_any_greater</span> = <span class="bool-val">true</span>;
                 }
                 (<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(<span class="kw">_</span>)) =&gt; {
-                    <span class="ident">other_any_greater</span> <span class="op">=</span> <span class="bool-val">true</span>;
+                    <span class="ident">other_any_greater</span> = <span class="bool-val">true</span>;
                 }
                 (<span class="prelude-val">None</span>, <span class="prelude-val">None</span>) =&gt; <span class="macro">unreachable!</span>(),
             }
-            <span class="kw">if</span> <span class="ident">this_any_greater</span> <span class="op">&amp;&amp;</span> <span class="ident">other_any_greater</span> {
+            <span class="kw">if</span> <span class="ident">this_any_greater</span> &amp;&amp; <span class="ident">other_any_greater</span> {
                 <span class="kw">return</span> <span class="prelude-val">None</span>;
             }
         }
@@ -373,18 +373,18 @@
 
     <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::set_union::SetUnionRepr</span>;
 
-    <span class="kw">type</span> <span class="ident">HashMapHashSet</span> <span class="op">=</span> <span class="ident">MapUnionRepr</span><span class="op">&lt;</span><span class="ident">tag::HASH_MAP</span>, <span class="ident">String</span>, <span class="ident">SetUnionRepr</span><span class="op">&lt;</span><span class="ident">tag::HASH_SET</span>, <span class="ident">u32</span><span class="op">&gt;</span><span class="op">&gt;</span>;
-    <span class="kw">type</span> <span class="ident">HashMapArraySet</span> <span class="op">=</span> <span class="ident">MapUnionRepr</span><span class="op">&lt;</span><span class="ident">tag::HASH_MAP</span>, <span class="ident">String</span>, <span class="ident">SetUnionRepr</span><span class="op">&lt;</span><span class="ident">tag::ARRAY</span><span class="op">&lt;</span><span class="number">8</span><span class="op">&gt;</span>, <span class="ident">u32</span><span class="op">&gt;</span><span class="op">&gt;</span>;
-    <span class="kw">type</span> <span class="ident">OptionMapArraySet</span> <span class="op">=</span> <span class="ident">MapUnionRepr</span><span class="op">&lt;</span><span class="ident">tag::OPTION</span>, <span class="ident">String</span>, <span class="ident">SetUnionRepr</span><span class="op">&lt;</span><span class="ident">tag::HASH_SET</span>, <span class="ident">u32</span><span class="op">&gt;</span><span class="op">&gt;</span>;
+    <span class="kw">type</span> <span class="ident">HashMapHashSet</span> = <span class="ident">MapUnionRepr</span>&lt;<span class="ident">tag::HASH_MAP</span>, <span class="ident">String</span>, <span class="ident">SetUnionRepr</span>&lt;<span class="ident">tag::HASH_SET</span>, <span class="ident">u32</span>&gt;&gt;;
+    <span class="kw">type</span> <span class="ident">HashMapArraySet</span> = <span class="ident">MapUnionRepr</span>&lt;<span class="ident">tag::HASH_MAP</span>, <span class="ident">String</span>, <span class="ident">SetUnionRepr</span>&lt;<span class="ident">tag::ARRAY</span>&lt;<span class="number">8</span>&gt;, <span class="ident">u32</span>&gt;&gt;;
+    <span class="kw">type</span> <span class="ident">OptionMapArraySet</span> = <span class="ident">MapUnionRepr</span>&lt;<span class="ident">tag::OPTION</span>, <span class="ident">String</span>, <span class="ident">SetUnionRepr</span>&lt;<span class="ident">tag::HASH_SET</span>, <span class="ident">u32</span>&gt;&gt;;
 
-    <span class="macro">assert_impl_all!</span>(<span class="ident">HashMapHashSet</span>: <span class="ident">Merge</span><span class="op">&lt;</span><span class="ident">HashMapHashSet</span><span class="op">&gt;</span>);
-    <span class="macro">assert_impl_all!</span>(<span class="ident">HashMapHashSet</span>: <span class="ident">Merge</span><span class="op">&lt;</span><span class="ident">HashMapArraySet</span><span class="op">&gt;</span>);
+    <span class="macro">assert_impl_all!</span>(<span class="ident">HashMapHashSet</span>: <span class="ident">Merge</span>&lt;<span class="ident">HashMapHashSet</span>&gt;);
+    <span class="macro">assert_impl_all!</span>(<span class="ident">HashMapHashSet</span>: <span class="ident">Merge</span>&lt;<span class="ident">HashMapArraySet</span>&gt;);
 
-    <span class="macro">assert_not_impl_any!</span>(<span class="ident">HashMapArraySet</span>: <span class="ident">Merge</span><span class="op">&lt;</span><span class="ident">HashMapHashSet</span><span class="op">&gt;</span>);
-    <span class="macro">assert_not_impl_any!</span>(<span class="ident">HashMapArraySet</span>: <span class="ident">Merge</span><span class="op">&lt;</span><span class="ident">HashMapArraySet</span><span class="op">&gt;</span>);
+    <span class="macro">assert_not_impl_any!</span>(<span class="ident">HashMapArraySet</span>: <span class="ident">Merge</span>&lt;<span class="ident">HashMapHashSet</span>&gt;);
+    <span class="macro">assert_not_impl_any!</span>(<span class="ident">HashMapArraySet</span>: <span class="ident">Merge</span>&lt;<span class="ident">HashMapArraySet</span>&gt;);
 
-    <span class="macro">assert_not_impl_any!</span>(<span class="ident">OptionMapArraySet</span>: <span class="ident">Merge</span><span class="op">&lt;</span><span class="ident">HashMapHashSet</span><span class="op">&gt;</span>);
-    <span class="macro">assert_not_impl_any!</span>(<span class="ident">OptionMapArraySet</span>: <span class="ident">Merge</span><span class="op">&lt;</span><span class="ident">HashMapArraySet</span><span class="op">&gt;</span>);
+    <span class="macro">assert_not_impl_any!</span>(<span class="ident">OptionMapArraySet</span>: <span class="ident">Merge</span>&lt;<span class="ident">HashMapHashSet</span>&gt;);
+    <span class="macro">assert_not_impl_any!</span>(<span class="ident">OptionMapArraySet</span>: <span class="ident">Merge</span>&lt;<span class="ident">HashMapArraySet</span>&gt;);
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (20ffea693 2022-08-11)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

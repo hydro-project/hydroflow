@@ -43,24 +43,24 @@
 <span class="doccomment">/**
  * Creates a once channel where the [SendOnce] end can set a value which the [Once] end will receive and store.
  */</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">once</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>() -&gt; (<span class="ident">SendOnce</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>, <span class="ident">Once</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>) {
-    <span class="kw">let</span> <span class="ident">channel</span> <span class="op">=</span> <span class="ident">Rc::new</span>(<span class="ident">RefCell::new</span>(<span class="prelude-val">None</span>));
-    <span class="kw">let</span> <span class="ident">sender</span> <span class="op">=</span> <span class="ident">SendOnce</span> {
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">once</span>&lt;<span class="ident">T</span>&gt;() -&gt; (<span class="ident">SendOnce</span>&lt;<span class="ident">T</span>&gt;, <span class="ident">Once</span>&lt;<span class="ident">T</span>&gt;) {
+    <span class="kw">let</span> <span class="ident">channel</span> = <span class="ident">Rc::new</span>(<span class="ident">RefCell::new</span>(<span class="prelude-val">None</span>));
+    <span class="kw">let</span> <span class="ident">sender</span> = <span class="ident">SendOnce</span> {
         <span class="ident">channel</span>: <span class="ident">channel</span>.<span class="ident">clone</span>(),
     };
-    <span class="kw">let</span> <span class="ident">once</span> <span class="op">=</span> <span class="ident">Once</span> { <span class="ident">channel</span> };
+    <span class="kw">let</span> <span class="ident">once</span> = <span class="ident">Once</span> { <span class="ident">channel</span> };
     (<span class="ident">sender</span>, <span class="ident">once</span>)
 }
 
 <span class="doccomment">/**
  * The sending half of a once channel.
  */</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">SendOnce</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="ident">channel</span>: <span class="ident">Rc</span><span class="op">&lt;</span><span class="ident">RefCell</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">SendOnce</span>&lt;<span class="ident">T</span>&gt; {
+    <span class="ident">channel</span>: <span class="ident">Rc</span>&lt;<span class="ident">RefCell</span>&lt;<span class="prelude-ty">Option</span>&lt;<span class="ident">T</span>&gt;&gt;&gt;,
 }
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">SendOnce</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
+<span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">SendOnce</span>&lt;<span class="ident">T</span>&gt; {
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">send</span>(<span class="self">self</span>, <span class="ident">item</span>: <span class="ident">T</span>) {
-        <span class="kw">let</span> <span class="ident">old_item</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">channel</span>.<span class="ident">borrow_mut</span>().<span class="ident">replace</span>(<span class="ident">item</span>);
+        <span class="kw">let</span> <span class="ident">old_item</span> = <span class="self">self</span>.<span class="ident">channel</span>.<span class="ident">borrow_mut</span>().<span class="ident">replace</span>(<span class="ident">item</span>);
         <span class="macro">assert!</span>(<span class="ident">old_item</span>.<span class="ident">is_none</span>());
     }
 }
@@ -68,13 +68,13 @@
 <span class="doccomment">/**
  * The receiving half of a once channel.
  */</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Once</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="ident">channel</span>: <span class="ident">Rc</span><span class="op">&lt;</span><span class="ident">RefCell</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Once</span>&lt;<span class="ident">T</span>&gt; {
+    <span class="ident">channel</span>: <span class="ident">Rc</span>&lt;<span class="ident">RefCell</span>&lt;<span class="prelude-ty">Option</span>&lt;<span class="ident">T</span>&gt;&gt;&gt;,
 }
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">Once</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">std::cell::RefMut</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span>, <span class="ident">T</span><span class="op">&gt;</span> {
-        <span class="ident">std::cell::RefMut::map</span>(<span class="self">self</span>.<span class="ident">channel</span>.<span class="ident">borrow_mut</span>(), <span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span>.<span class="ident">as_mut</span>().<span class="ident">unwrap</span>())
+<span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">Once</span>&lt;<span class="ident">T</span>&gt; {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">std::cell::RefMut</span>&lt;<span class="lifetime">&#39;_</span>, <span class="ident">T</span>&gt; {
+        <span class="ident">std::cell::RefMut::map</span>(<span class="self">self</span>.<span class="ident">channel</span>.<span class="ident">borrow_mut</span>(), |<span class="ident">x</span>| <span class="ident">x</span>.<span class="ident">as_mut</span>().<span class="ident">unwrap</span>())
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (20ffea693 2022-08-11)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

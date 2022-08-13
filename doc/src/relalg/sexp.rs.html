@@ -293,7 +293,7 @@
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>)]</span>
 <span class="kw">struct</span> <span class="ident">Parser</span> {
-    <span class="ident">input</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">char</span><span class="op">&gt;</span>,
+    <span class="ident">input</span>: <span class="ident">Vec</span>&lt;<span class="ident">char</span>&gt;,
     <span class="ident">idx</span>: <span class="ident">usize</span>,
 }
 
@@ -308,13 +308,13 @@
 
 <span class="kw">impl</span> <span class="ident">Parser</span> {
     <span class="kw">fn</span> <span class="ident">atom_char</span>(<span class="ident">ch</span>: <span class="ident">char</span>) -&gt; <span class="ident">bool</span> {
-        <span class="ident">ch</span> <span class="op">!</span><span class="op">=</span> <span class="string">&#39;{&#39;</span>
-            <span class="op">&amp;&amp;</span> <span class="ident">ch</span> <span class="op">!</span><span class="op">=</span> <span class="string">&#39;}&#39;</span>
-            <span class="op">&amp;&amp;</span> <span class="ident">ch</span> <span class="op">!</span><span class="op">=</span> <span class="string">&#39;[&#39;</span>
-            <span class="op">&amp;&amp;</span> <span class="ident">ch</span> <span class="op">!</span><span class="op">=</span> <span class="string">&#39;]&#39;</span>
-            <span class="op">&amp;&amp;</span> <span class="ident">ch</span> <span class="op">!</span><span class="op">=</span> <span class="string">&#39;(&#39;</span>
-            <span class="op">&amp;&amp;</span> <span class="ident">ch</span> <span class="op">!</span><span class="op">=</span> <span class="string">&#39;)&#39;</span>
-            <span class="op">&amp;&amp;</span> <span class="op">!</span><span class="ident">ch</span>.<span class="ident">is_whitespace</span>()
+        <span class="ident">ch</span> != <span class="string">&#39;{&#39;</span>
+            &amp;&amp; <span class="ident">ch</span> != <span class="string">&#39;}&#39;</span>
+            &amp;&amp; <span class="ident">ch</span> != <span class="string">&#39;[&#39;</span>
+            &amp;&amp; <span class="ident">ch</span> != <span class="string">&#39;]&#39;</span>
+            &amp;&amp; <span class="ident">ch</span> != <span class="string">&#39;(&#39;</span>
+            &amp;&amp; <span class="ident">ch</span> != <span class="string">&#39;)&#39;</span>
+            &amp;&amp; !<span class="ident">ch</span>.<span class="ident">is_whitespace</span>()
     }
 
     <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">input</span>: <span class="ident">String</span>) -&gt; <span class="self">Self</span> {
@@ -325,20 +325,20 @@
     }
 
     <span class="kw">fn</span> <span class="ident">munch</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
-        <span class="kw">while</span> <span class="self">self</span>.<span class="ident">idx</span> <span class="op">&lt;</span> <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">len</span>() <span class="op">&amp;&amp;</span> <span class="self">self</span>.<span class="ident">input</span>[<span class="self">self</span>.<span class="ident">idx</span>].<span class="ident">is_whitespace</span>() {
-            <span class="self">self</span>.<span class="ident">idx</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+        <span class="kw">while</span> <span class="self">self</span>.<span class="ident">idx</span> &lt; <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">len</span>() &amp;&amp; <span class="self">self</span>.<span class="ident">input</span>[<span class="self">self</span>.<span class="ident">idx</span>].<span class="ident">is_whitespace</span>() {
+            <span class="self">self</span>.<span class="ident">idx</span> += <span class="number">1</span>;
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">parse_multiple</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Sexp</span><span class="op">&gt;</span>, <span class="ident">anyhow::Error</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">out</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">parse_multiple</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Vec</span>&lt;<span class="ident">Sexp</span>&gt;, <span class="ident">anyhow::Error</span>&gt; {
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">out</span> = <span class="ident">Vec::new</span>();
         <span class="kw">loop</span> {
             <span class="self">self</span>.<span class="ident">munch</span>();
-            <span class="kw">if</span> <span class="self">self</span>.<span class="ident">idx</span> <span class="op">&gt;</span><span class="op">=</span> <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">len</span>() {
+            <span class="kw">if</span> <span class="self">self</span>.<span class="ident">idx</span> &gt;= <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">len</span>() {
                 <span class="kw">break</span>;
             }
             <span class="kw">match</span> <span class="self">self</span>.<span class="ident">input</span>[<span class="self">self</span>.<span class="ident">idx</span>] {
-                <span class="string">&#39;)&#39;</span> <span class="op">|</span> <span class="string">&#39;]&#39;</span> <span class="op">|</span> <span class="string">&#39;}&#39;</span> =&gt; <span class="kw">break</span>,
+                <span class="string">&#39;)&#39;</span> | <span class="string">&#39;]&#39;</span> | <span class="string">&#39;}&#39;</span> =&gt; <span class="kw">break</span>,
                 <span class="kw">_</span> =&gt; <span class="ident">out</span>.<span class="ident">push</span>(<span class="self">self</span>.<span class="ident">parse_one</span>()<span class="question-mark">?</span>),
             }
         }
@@ -346,31 +346,31 @@
         <span class="prelude-val">Ok</span>(<span class="ident">out</span>)
     }
 
-    <span class="kw">fn</span> <span class="ident">parse_one</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Sexp</span>, <span class="ident">anyhow::Error</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">parse_one</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Sexp</span>, <span class="ident">anyhow::Error</span>&gt; {
         <span class="self">self</span>.<span class="ident">munch</span>();
         <span class="kw">match</span> <span class="self">self</span>.<span class="ident">input</span>[<span class="self">self</span>.<span class="ident">idx</span>] {
-            <span class="ident">ch</span> @ <span class="string">&#39;[&#39;</span> <span class="op">|</span> <span class="ident">ch</span> @ <span class="string">&#39;(&#39;</span> <span class="op">|</span> <span class="ident">ch</span> @ <span class="string">&#39;{&#39;</span> =&gt; {
-                <span class="self">self</span>.<span class="ident">idx</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
-                <span class="kw">let</span> <span class="ident">contents</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">parse_multiple</span>()<span class="question-mark">?</span>;
+            <span class="ident">ch</span> @ <span class="string">&#39;[&#39;</span> | <span class="ident">ch</span> @ <span class="string">&#39;(&#39;</span> | <span class="ident">ch</span> @ <span class="string">&#39;{&#39;</span> =&gt; {
+                <span class="self">self</span>.<span class="ident">idx</span> += <span class="number">1</span>;
+                <span class="kw">let</span> <span class="ident">contents</span> = <span class="self">self</span>.<span class="ident">parse_multiple</span>()<span class="question-mark">?</span>;
                 <span class="self">self</span>.<span class="ident">munch</span>();
-                <span class="kw">if</span> <span class="self">self</span>.<span class="ident">idx</span> <span class="op">&gt;</span><span class="op">=</span> <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">len</span>() <span class="op">|</span><span class="op">|</span> <span class="self">self</span>.<span class="ident">input</span>[<span class="self">self</span>.<span class="ident">idx</span>] <span class="op">!</span><span class="op">=</span> <span class="ident">closer</span>(<span class="ident">ch</span>) {
+                <span class="kw">if</span> <span class="self">self</span>.<span class="ident">idx</span> &gt;= <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">len</span>() || <span class="self">self</span>.<span class="ident">input</span>[<span class="self">self</span>.<span class="ident">idx</span>] != <span class="ident">closer</span>(<span class="ident">ch</span>) {
                     <span class="macro">bail!</span>(<span class="string">&quot;unclosed {}&quot;</span>, <span class="ident">ch</span>);
                 }
-                <span class="self">self</span>.<span class="ident">idx</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+                <span class="self">self</span>.<span class="ident">idx</span> += <span class="number">1</span>;
                 <span class="prelude-val">Ok</span>(<span class="ident">Sexp::List</span>(<span class="ident">contents</span>, <span class="ident">ch</span>))
             }
             <span class="string">&#39;&quot;&#39;</span> =&gt; {
-                <span class="self">self</span>.<span class="ident">idx</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">out</span> <span class="op">=</span> <span class="ident">String::new</span>();
-                <span class="kw">while</span> <span class="self">self</span>.<span class="ident">idx</span> <span class="op">&lt;</span> <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">len</span>() {
+                <span class="self">self</span>.<span class="ident">idx</span> += <span class="number">1</span>;
+                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">out</span> = <span class="ident">String::new</span>();
+                <span class="kw">while</span> <span class="self">self</span>.<span class="ident">idx</span> &lt; <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">len</span>() {
                     <span class="kw">match</span> <span class="self">self</span>.<span class="ident">input</span>[<span class="self">self</span>.<span class="ident">idx</span>] {
                         <span class="string">&#39;&quot;&#39;</span> =&gt; {
-                            <span class="self">self</span>.<span class="ident">idx</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+                            <span class="self">self</span>.<span class="ident">idx</span> += <span class="number">1</span>;
                             <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">Sexp::String</span>(<span class="ident">out</span>));
                         }
                         <span class="string">&#39;\\&#39;</span> =&gt; {
-                            <span class="self">self</span>.<span class="ident">idx</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
-                            <span class="kw">if</span> <span class="self">self</span>.<span class="ident">idx</span> <span class="op">&gt;</span><span class="op">=</span> <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">len</span>() {
+                            <span class="self">self</span>.<span class="ident">idx</span> += <span class="number">1</span>;
+                            <span class="kw">if</span> <span class="self">self</span>.<span class="ident">idx</span> &gt;= <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">len</span>() {
                                 <span class="macro">bail!</span>(<span class="string">&quot;unexpected EOF after \\&quot;</span>)
                             }
                             <span class="kw">match</span> <span class="self">self</span>.<span class="ident">input</span>[<span class="self">self</span>.<span class="ident">idx</span>] {
@@ -380,21 +380,21 @@
                                 <span class="string">&#39;\\&#39;</span> =&gt; <span class="ident">out</span>.<span class="ident">push</span>(<span class="string">&#39;\\&#39;</span>),
                                 <span class="kw">_</span> =&gt; <span class="macro">bail!</span>(<span class="string">&quot;unknown escape sequence&quot;</span>),
                             }
-                            <span class="self">self</span>.<span class="ident">idx</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+                            <span class="self">self</span>.<span class="ident">idx</span> += <span class="number">1</span>;
                         }
                         <span class="ident">ch</span> =&gt; {
                             <span class="ident">out</span>.<span class="ident">push</span>(<span class="ident">ch</span>);
                         }
                     }
-                    <span class="self">self</span>.<span class="ident">idx</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+                    <span class="self">self</span>.<span class="ident">idx</span> += <span class="number">1</span>;
                 }
                 <span class="macro">bail!</span>(<span class="string">&quot;unclosed &#39;\&quot;&#39;&quot;</span>);
             }
             <span class="ident">ch</span> <span class="kw">if</span> <span class="ident"><span class="self">Self</span>::atom_char</span>(<span class="ident">ch</span>) =&gt; {
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">s</span> <span class="op">=</span> <span class="ident">String::new</span>();
-                <span class="kw">while</span> <span class="self">self</span>.<span class="ident">idx</span> <span class="op">&lt;</span> <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">len</span>() <span class="op">&amp;&amp;</span> <span class="ident"><span class="self">Self</span>::atom_char</span>(<span class="self">self</span>.<span class="ident">input</span>[<span class="self">self</span>.<span class="ident">idx</span>]) {
+                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">s</span> = <span class="ident">String::new</span>();
+                <span class="kw">while</span> <span class="self">self</span>.<span class="ident">idx</span> &lt; <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">len</span>() &amp;&amp; <span class="ident"><span class="self">Self</span>::atom_char</span>(<span class="self">self</span>.<span class="ident">input</span>[<span class="self">self</span>.<span class="ident">idx</span>]) {
                     <span class="ident">s</span>.<span class="ident">push</span>(<span class="self">self</span>.<span class="ident">input</span>[<span class="self">self</span>.<span class="ident">idx</span>]);
-                    <span class="self">self</span>.<span class="ident">idx</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+                    <span class="self">self</span>.<span class="ident">idx</span> += <span class="number">1</span>;
                 }
                 <span class="prelude-val">Ok</span>(<span class="ident">Sexp::Atom</span>(<span class="ident">s</span>))
             }
@@ -406,39 +406,39 @@
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>)]</span>
 <span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">Sexp</span> {
     <span class="ident">Atom</span>(<span class="ident">String</span>),
-    <span class="ident">List</span>(<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Sexp</span><span class="op">&gt;</span>, <span class="ident">char</span>),
+    <span class="ident">List</span>(<span class="ident">Vec</span>&lt;<span class="ident">Sexp</span>&gt;, <span class="ident">char</span>),
     <span class="ident">String</span>(<span class="ident">String</span>),
 }
 
 <span class="kw">impl</span> <span class="ident">Sexp</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">expect_atom</span>(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">anyhow::Error</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">expect_atom</span>(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">String</span>, <span class="ident">anyhow::Error</span>&gt; {
         <span class="kw">match</span> <span class="self">self</span> {
             <span class="ident">Sexp::Atom</span>(<span class="ident">r</span>) =&gt; <span class="prelude-val">Ok</span>(<span class="ident">r</span>),
             <span class="kw">_</span> =&gt; <span class="macro">bail!</span>(<span class="string">&quot;expected atom&quot;</span>),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">expect_list</span>(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Sexp</span><span class="op">&gt;</span>, <span class="ident">char</span>), <span class="ident">anyhow::Error</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">expect_list</span>(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(<span class="ident">Vec</span>&lt;<span class="ident">Sexp</span>&gt;, <span class="ident">char</span>), <span class="ident">anyhow::Error</span>&gt; {
         <span class="kw">match</span> <span class="self">self</span> {
             <span class="ident">Sexp::List</span>(<span class="ident">v</span>, <span class="ident">ch</span>) =&gt; <span class="prelude-val">Ok</span>((<span class="ident">v</span>, <span class="ident">ch</span>)),
             <span class="kw">_</span> =&gt; <span class="macro">bail!</span>(<span class="string">&quot;expected list&quot;</span>),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">expect_string</span>(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">anyhow::Error</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">expect_string</span>(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">String</span>, <span class="ident">anyhow::Error</span>&gt; {
         <span class="kw">match</span> <span class="self">self</span> {
             <span class="ident">Sexp::String</span>(<span class="ident">r</span>) =&gt; <span class="prelude-val">Ok</span>(<span class="ident">r</span>),
             <span class="kw">_</span> =&gt; <span class="macro">bail!</span>(<span class="string">&quot;expected string&quot;</span>),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">parse</span>(<span class="ident">s</span>: <span class="ident">String</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Sexp</span><span class="op">&gt;</span>, <span class="ident">anyhow::Error</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">p</span> <span class="op">=</span> <span class="ident">Parser::new</span>(<span class="ident">s</span>);
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">parse</span>(<span class="ident">s</span>: <span class="ident">String</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Vec</span>&lt;<span class="ident">Sexp</span>&gt;, <span class="ident">anyhow::Error</span>&gt; {
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">p</span> = <span class="ident">Parser::new</span>(<span class="ident">s</span>);
         <span class="ident">p</span>.<span class="ident">parse_multiple</span>()
     }
 
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">format</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">String</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">out</span> <span class="op">=</span> <span class="ident">String::new</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">out</span> = <span class="ident">String::new</span>();
         <span class="self">self</span>.<span class="ident">write</span>(<span class="kw-2">&amp;mut</span> <span class="ident">out</span>);
         <span class="ident">out</span>
     }
@@ -461,10 +461,10 @@
             <span class="ident">Sexp::Atom</span>(<span class="ident">atom</span>) =&gt; <span class="ident">s</span>.<span class="ident">push_str</span>(<span class="ident">atom</span>),
             <span class="ident">Sexp::List</span>(<span class="ident">v</span>, <span class="ident">ch</span>) =&gt; {
                 <span class="ident">s</span>.<span class="ident">push</span>(<span class="kw-2">*</span><span class="ident">ch</span>);
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">space</span> <span class="op">=</span> <span class="string">&quot;&quot;</span>;
+                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">space</span> = <span class="string">&quot;&quot;</span>;
                 <span class="kw">for</span> <span class="ident">sexp</span> <span class="kw">in</span> <span class="ident">v</span> {
                     <span class="ident">s</span>.<span class="ident">push_str</span>(<span class="ident">space</span>);
-                    <span class="ident">space</span> <span class="op">=</span> <span class="string">&quot; &quot;</span>;
+                    <span class="ident">space</span> = <span class="string">&quot; &quot;</span>;
                     <span class="ident"><span class="self">Self</span>::write</span>(<span class="ident">sexp</span>, <span class="ident">s</span>);
                 }
                 <span class="ident">s</span>.<span class="ident">push</span>(<span class="ident">closer</span>(<span class="kw-2">*</span><span class="ident">ch</span>));
@@ -474,11 +474,11 @@
 }
 
 <span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">FromSexp</span>: <span class="ident">Sized</span> {
-    <span class="kw">fn</span> <span class="ident">from_sexp</span>(<span class="ident">s</span>: <span class="ident">Sexp</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">anyhow::Error</span><span class="op">&gt;</span>;
+    <span class="kw">fn</span> <span class="ident">from_sexp</span>(<span class="ident">s</span>: <span class="ident">Sexp</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="ident">anyhow::Error</span>&gt;;
 }
 
 <span class="kw">impl</span> <span class="ident">FromSexp</span> <span class="kw">for</span> <span class="ident">Sexp</span> {
-    <span class="kw">fn</span> <span class="ident">from_sexp</span>(<span class="ident">s</span>: <span class="ident">Sexp</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">anyhow::Error</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">from_sexp</span>(<span class="ident">s</span>: <span class="ident">Sexp</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="ident">anyhow::Error</span>&gt; {
         <span class="prelude-val">Ok</span>(<span class="ident">s</span>)
     }
 }
@@ -493,25 +493,25 @@
     <span class="kw">fn</span> <span class="ident">to_sexp</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Sexp</span>;
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">I</span>: <span class="ident">FromSexp</span><span class="op">&gt;</span> <span class="ident">FromSexp</span> <span class="kw">for</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">from_sexp</span>(<span class="ident">s</span>: <span class="ident">Sexp</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">anyhow::Error</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> (<span class="ident">v</span>, <span class="kw">_</span>) <span class="op">=</span> <span class="ident">s</span>.<span class="ident">expect_list</span>()<span class="question-mark">?</span>;
+<span class="kw">impl</span>&lt;<span class="ident">I</span>: <span class="ident">FromSexp</span>&gt; <span class="ident">FromSexp</span> <span class="kw">for</span> <span class="ident">Vec</span>&lt;<span class="ident">I</span>&gt; {
+    <span class="kw">fn</span> <span class="ident">from_sexp</span>(<span class="ident">s</span>: <span class="ident">Sexp</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="ident">anyhow::Error</span>&gt; {
+        <span class="kw">let</span> (<span class="ident">v</span>, <span class="kw">_</span>) = <span class="ident">s</span>.<span class="ident">expect_list</span>()<span class="question-mark">?</span>;
         <span class="ident">v</span>.<span class="ident">into_iter</span>()
-            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">s</span><span class="op">|</span> <span class="ident">I::from_sexp</span>(<span class="ident">s</span>))
-            .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>()
+            .<span class="ident">map</span>(|<span class="ident">s</span>| <span class="ident">I::from_sexp</span>(<span class="ident">s</span>))
+            .<span class="ident">collect</span>::&lt;<span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="kw">_</span>&gt;&gt;()
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">I</span>: <span class="ident">ToSexp</span><span class="op">&gt;</span> <span class="ident">ToSexp</span> <span class="kw">for</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span> {
+<span class="kw">impl</span>&lt;<span class="ident">I</span>: <span class="ident">ToSexp</span>&gt; <span class="ident">ToSexp</span> <span class="kw">for</span> <span class="ident">Vec</span>&lt;<span class="ident">I</span>&gt; {
     <span class="kw">fn</span> <span class="ident">to_sexp</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Sexp</span> {
-        <span class="ident">Sexp::List</span>(<span class="self">self</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">i</span><span class="op">|</span> <span class="ident">i</span>.<span class="ident">to_sexp</span>()).<span class="ident">collect</span>(), <span class="string">&#39;[&#39;</span>)
+        <span class="ident">Sexp::List</span>(<span class="self">self</span>.<span class="ident">iter</span>().<span class="ident">map</span>(|<span class="ident">i</span>| <span class="ident">i</span>.<span class="ident">to_sexp</span>()).<span class="ident">collect</span>(), <span class="string">&#39;[&#39;</span>)
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">FromSexp</span>, <span class="ident">B</span>: <span class="ident">FromSexp</span><span class="op">&gt;</span> <span class="ident">FromSexp</span> <span class="kw">for</span> (<span class="ident">A</span>, <span class="ident">B</span>) {
-    <span class="kw">fn</span> <span class="ident">from_sexp</span>(<span class="ident">s</span>: <span class="ident">Sexp</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">anyhow::Error</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> (<span class="ident">v</span>, <span class="kw">_</span>) <span class="op">=</span> <span class="ident">s</span>.<span class="ident">expect_list</span>()<span class="question-mark">?</span>;
-        <span class="kw">if</span> <span class="ident">v</span>.<span class="ident">len</span>() <span class="op">!</span><span class="op">=</span> <span class="number">2</span> {
+<span class="kw">impl</span>&lt;<span class="ident">A</span>: <span class="ident">FromSexp</span>, <span class="ident">B</span>: <span class="ident">FromSexp</span>&gt; <span class="ident">FromSexp</span> <span class="kw">for</span> (<span class="ident">A</span>, <span class="ident">B</span>) {
+    <span class="kw">fn</span> <span class="ident">from_sexp</span>(<span class="ident">s</span>: <span class="ident">Sexp</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="ident">anyhow::Error</span>&gt; {
+        <span class="kw">let</span> (<span class="ident">v</span>, <span class="kw">_</span>) = <span class="ident">s</span>.<span class="ident">expect_list</span>()<span class="question-mark">?</span>;
+        <span class="kw">if</span> <span class="ident">v</span>.<span class="ident">len</span>() != <span class="number">2</span> {
             <span class="macro">bail!</span>(<span class="string">&quot;expected pair&quot;</span>);
         }
         <span class="comment">// TODO: remove clone</span>
@@ -519,7 +519,7 @@
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">ToSexp</span>, <span class="ident">B</span>: <span class="ident">ToSexp</span><span class="op">&gt;</span> <span class="ident">ToSexp</span> <span class="kw">for</span> (<span class="ident">A</span>, <span class="ident">B</span>) {
+<span class="kw">impl</span>&lt;<span class="ident">A</span>: <span class="ident">ToSexp</span>, <span class="ident">B</span>: <span class="ident">ToSexp</span>&gt; <span class="ident">ToSexp</span> <span class="kw">for</span> (<span class="ident">A</span>, <span class="ident">B</span>) {
     <span class="kw">fn</span> <span class="ident">to_sexp</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Sexp</span> {
         <span class="ident">Sexp::List</span>(<span class="macro">vec!</span>[<span class="self">self</span>.<span class="number">0</span>.<span class="ident">to_sexp</span>(), <span class="self">self</span>.<span class="number">1</span>.<span class="ident">to_sexp</span>()], <span class="string">&#39;(&#39;</span>)
     }
@@ -528,8 +528,8 @@
 <span class="macro">macro_rules!</span> <span class="ident">impl_from_fromstr</span> {
     (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span>:<span class="ident">ident</span>) =&gt; {
         <span class="kw">impl</span> <span class="ident">FromSexp</span> <span class="kw">for</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span> {
-            <span class="kw">fn</span> <span class="ident">from_sexp</span>(<span class="ident">s</span>: <span class="ident">Sexp</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">anyhow::Error</span><span class="op">&gt;</span> {
-                <span class="prelude-val">Ok</span>(<span class="ident">s</span>.<span class="ident">expect_atom</span>()<span class="question-mark">?</span>.<span class="ident">parse</span>::<span class="op">&lt;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span><span class="op">&gt;</span>()<span class="question-mark">?</span>)
+            <span class="kw">fn</span> <span class="ident">from_sexp</span>(<span class="ident">s</span>: <span class="ident">Sexp</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="ident">anyhow::Error</span>&gt; {
+                <span class="prelude-val">Ok</span>(<span class="ident">s</span>.<span class="ident">expect_atom</span>()<span class="question-mark">?</span>.<span class="ident">parse</span>::&lt;<span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span>&gt;()<span class="question-mark">?</span>)
             }
         }
 
@@ -549,8 +549,8 @@
 <span class="kw">struct</span> <span class="ident">LitString</span>(<span class="ident">String</span>);
 
 <span class="kw">impl</span> <span class="ident">FromSexp</span> <span class="kw">for</span> <span class="ident">LitString</span> {
-    <span class="kw">fn</span> <span class="ident">from_sexp</span>(<span class="ident">s</span>: <span class="ident">Sexp</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">anyhow::Error</span><span class="op">&gt;</span> {
-        <span class="prelude-val">Ok</span>(<span class="ident">LitString</span>(<span class="ident">s</span>.<span class="ident">expect_string</span>()<span class="question-mark">?</span>.<span class="ident">parse</span>::<span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>()<span class="question-mark">?</span>))
+    <span class="kw">fn</span> <span class="ident">from_sexp</span>(<span class="ident">s</span>: <span class="ident">Sexp</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="ident">anyhow::Error</span>&gt; {
+        <span class="prelude-val">Ok</span>(<span class="ident">LitString</span>(<span class="ident">s</span>.<span class="ident">expect_string</span>()<span class="question-mark">?</span>.<span class="ident">parse</span>::&lt;<span class="ident">String</span>&gt;()<span class="question-mark">?</span>))
     }
 }
 
@@ -574,11 +574,11 @@
             <span class="ident">Sexp::parse</span>(<span class="ident">s</span>.<span class="ident">into</span>())
                 .<span class="ident">unwrap</span>()
                 .<span class="ident">into_iter</span>()
-                .<span class="ident">map</span>(<span class="op">|</span><span class="ident">s</span><span class="op">|</span> <span class="ident">s</span>.<span class="ident">format</span>())
-                .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span><span class="op">&gt;</span>()
+                .<span class="ident">map</span>(|<span class="ident">s</span>| <span class="ident">s</span>.<span class="ident">format</span>())
+                .<span class="ident">collect</span>::&lt;<span class="ident">Vec</span>&lt;<span class="ident">String</span>&gt;&gt;()
                 .<span class="ident">join</span>(<span class="string">&quot; &quot;</span>)
         );
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="relalg" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (20ffea693 2022-08-11)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="relalg" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

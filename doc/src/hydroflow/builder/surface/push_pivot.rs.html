@@ -44,14 +44,14 @@
 
 <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::pivot::PivotSurface</span>;
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">PivotPushSurface</span><span class="op">&lt;</span><span class="ident">Pull</span><span class="op">&gt;</span>
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">PivotPushSurface</span>&lt;<span class="ident">Pull</span>&gt;
 <span class="kw">where</span>
     <span class="ident">Pull</span>: <span class="ident">PullSurface</span>,
 {
     <span class="ident">pull</span>: <span class="ident">Pull</span>,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">Pull</span><span class="op">&gt;</span> <span class="ident">PivotPushSurface</span><span class="op">&lt;</span><span class="ident">Pull</span><span class="op">&gt;</span>
+<span class="kw">impl</span>&lt;<span class="ident">Pull</span>&gt; <span class="ident">PivotPushSurface</span>&lt;<span class="ident">Pull</span>&gt;
 <span class="kw">where</span>
     <span class="ident">Pull</span>: <span class="ident">PullSurface</span>,
 {
@@ -60,27 +60,27 @@
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">Pull</span><span class="op">&gt;</span> <span class="ident">BaseSurface</span> <span class="kw">for</span> <span class="ident">PivotPushSurface</span><span class="op">&lt;</span><span class="ident">Pull</span><span class="op">&gt;</span>
+<span class="kw">impl</span>&lt;<span class="ident">Pull</span>&gt; <span class="ident">BaseSurface</span> <span class="kw">for</span> <span class="ident">PivotPushSurface</span>&lt;<span class="ident">Pull</span>&gt;
 <span class="kw">where</span>
     <span class="ident">Pull</span>: <span class="ident">PullSurface</span>,
 {
-    <span class="kw">type</span> <span class="ident">ItemOut</span> <span class="op">=</span> <span class="ident">Pull::ItemOut</span>;
+    <span class="kw">type</span> <span class="ident">ItemOut</span> = <span class="ident">Pull::ItemOut</span>;
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">Pull</span><span class="op">&gt;</span> <span class="ident">PushSurface</span> <span class="kw">for</span> <span class="ident">PivotPushSurface</span><span class="op">&lt;</span><span class="ident">Pull</span><span class="op">&gt;</span>
+<span class="kw">impl</span>&lt;<span class="ident">Pull</span>&gt; <span class="ident">PushSurface</span> <span class="kw">for</span> <span class="ident">PivotPushSurface</span>&lt;<span class="ident">Pull</span>&gt;
 <span class="kw">where</span>
     <span class="ident">Pull</span>: <span class="ident">PullSurface</span>,
 {
-    <span class="kw">type</span> <span class="ident">Output</span><span class="op">&lt;</span><span class="ident">Next</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">PivotSurface</span><span class="op">&lt;</span><span class="ident">Pull</span>, <span class="ident">Next</span><span class="op">&gt;</span>
+    <span class="kw">type</span> <span class="ident">Output</span>&lt;<span class="ident">Next</span>&gt; = <span class="ident">PivotSurface</span>&lt;<span class="ident">Pull</span>, <span class="ident">Next</span>&gt;
     <span class="kw">where</span>
-        <span class="ident">Next</span>: <span class="ident">PushSurfaceReversed</span><span class="op">&lt;</span><span class="ident">ItemIn</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::ItemOut</span><span class="op">&gt;</span>;
+        <span class="ident">Next</span>: <span class="ident">PushSurfaceReversed</span>&lt;<span class="ident">ItemIn</span> = <span class="ident"><span class="self">Self</span>::ItemOut</span>&gt;;
 
-    <span class="kw">fn</span> <span class="ident">push_to</span><span class="op">&lt;</span><span class="ident">Next</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">next</span>: <span class="ident">Next</span>) -&gt; <span class="ident"><span class="self">Self</span>::Output</span><span class="op">&lt;</span><span class="ident">Next</span><span class="op">&gt;</span>
+    <span class="kw">fn</span> <span class="ident">push_to</span>&lt;<span class="ident">Next</span>&gt;(<span class="self">self</span>, <span class="ident">next</span>: <span class="ident">Next</span>) -&gt; <span class="ident"><span class="self">Self</span>::Output</span>&lt;<span class="ident">Next</span>&gt;
     <span class="kw">where</span>
-        <span class="ident">Next</span>: <span class="ident">PushSurfaceReversed</span><span class="op">&lt;</span><span class="ident">ItemIn</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::ItemOut</span><span class="op">&gt;</span>,
+        <span class="ident">Next</span>: <span class="ident">PushSurfaceReversed</span>&lt;<span class="ident">ItemIn</span> = <span class="ident"><span class="self">Self</span>::ItemOut</span>&gt;,
     {
         <span class="ident">PivotSurface::new</span>(<span class="self">self</span>.<span class="ident">pull</span>, <span class="ident">next</span>)
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (20ffea693 2022-08-11)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
