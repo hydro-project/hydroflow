@@ -65,72 +65,72 @@
 <span id="65">65</span>
 <span id="66">66</span>
 <span id="67">67</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">cell::RefCell</span>, <span class="ident">marker::PhantomData</span>, <span class="ident">rc::Rc</span>, <span class="ident">sync::mpsc::SyncSender</span>};
+</pre><pre class="rust"><code><span class="kw">use </span>std::{cell::RefCell, marker::PhantomData, rc::Rc, sync::mpsc::SyncSender};
 
-<span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">reactor::Reactor</span>, <span class="ident">SubgraphId</span>};
+<span class="kw">use super</span>::{reactor::Reactor, SubgraphId};
 
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">Give</span>&lt;<span class="ident">T</span>&gt; {
-    <span class="kw">fn</span> <span class="ident">give</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">t</span>: <span class="ident">T</span>) -&gt; <span class="ident">bool</span>;
+<span class="kw">pub trait </span>Give&lt;T&gt; {
+    <span class="kw">fn </span>give(<span class="kw-2">&amp;</span><span class="self">self</span>, t: T) -&gt; bool;
 }
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Buffer</span>&lt;<span class="ident">T</span>&gt;(<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">Rc</span>&lt;<span class="ident">RefCell</span>&lt;<span class="ident">Vec</span>&lt;<span class="ident">T</span>&gt;&gt;&gt;);
-<span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">Give</span>&lt;<span class="ident">T</span>&gt; <span class="kw">for</span> <span class="ident">Buffer</span>&lt;<span class="ident">T</span>&gt; {
-    <span class="kw">fn</span> <span class="ident">give</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">t</span>: <span class="ident">T</span>) -&gt; <span class="ident">bool</span> {
-        (<span class="kw-2">*</span><span class="self">self</span>.<span class="number">0</span>).<span class="ident">borrow_mut</span>().<span class="ident">push</span>(<span class="ident">t</span>);
-        <span class="bool-val">true</span>
+<span class="kw">pub struct </span>Buffer&lt;T&gt;(<span class="kw">pub</span>(<span class="kw">crate</span>) Rc&lt;RefCell&lt;Vec&lt;T&gt;&gt;&gt;);
+<span class="kw">impl</span>&lt;T&gt; Give&lt;T&gt; <span class="kw">for </span>Buffer&lt;T&gt; {
+    <span class="kw">fn </span>give(<span class="kw-2">&amp;</span><span class="self">self</span>, t: T) -&gt; bool {
+        (<span class="kw-2">*</span><span class="self">self</span>.<span class="number">0</span>).borrow_mut().push(t);
+        <span class="bool-val">true
+    </span>}
+}
+
+<span class="kw">impl</span>&lt;T&gt; Default <span class="kw">for </span>Buffer&lt;T&gt; {
+    <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
+        Buffer(Rc::new(RefCell::new(Vec::new())))
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">Default</span> <span class="kw">for</span> <span class="ident">Buffer</span>&lt;<span class="ident">T</span>&gt; {
-    <span class="kw">fn</span> <span class="ident">default</span>() -&gt; <span class="self">Self</span> {
-        <span class="ident">Buffer</span>(<span class="ident">Rc::new</span>(<span class="ident">RefCell::new</span>(<span class="ident">Vec::new</span>())))
+<span class="kw">impl</span>&lt;T&gt; Clone <span class="kw">for </span>Buffer&lt;T&gt; {
+    <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
+        Buffer(<span class="self">self</span>.<span class="number">0</span>.clone())
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">Clone</span> <span class="kw">for</span> <span class="ident">Buffer</span>&lt;<span class="ident">T</span>&gt; {
-    <span class="kw">fn</span> <span class="ident">clone</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident">Buffer</span>(<span class="self">self</span>.<span class="number">0</span>.<span class="ident">clone</span>())
+<span class="kw">impl</span>&lt;T&gt; Give&lt;T&gt; <span class="kw">for </span>SyncSender&lt;T&gt; {
+    <span class="kw">fn </span>give(<span class="kw-2">&amp;</span><span class="self">self</span>, t: T) -&gt; bool {
+        <span class="macro">matches!</span>(<span class="self">self</span>.send(t), <span class="prelude-val">Ok</span>(<span class="kw">_</span>))
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">Give</span>&lt;<span class="ident">T</span>&gt; <span class="kw">for</span> <span class="ident">SyncSender</span>&lt;<span class="ident">T</span>&gt; {
-    <span class="kw">fn</span> <span class="ident">give</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">t</span>: <span class="ident">T</span>) -&gt; <span class="ident">bool</span> {
-        <span class="macro">matches!</span>(<span class="self">self</span>.<span class="ident">send</span>(<span class="ident">t</span>), <span class="prelude-val">Ok</span>(<span class="kw">_</span>))
-    }
-}
-
-<span class="comment">// TODO(justin): this thing should probably give Vecs to the Givable, and buffer</span>
-<span class="comment">// stuff up and automatically flush, but postponing that until we have occasion</span>
-<span class="comment">// to benchmark it.</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Input</span>&lt;<span class="ident">T</span>, <span class="ident">G</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">G</span>: <span class="ident">Give</span>&lt;<span class="ident">T</span>&gt;,
+<span class="comment">// TODO(justin): this thing should probably give Vecs to the Givable, and buffer
+// stuff up and automatically flush, but postponing that until we have occasion
+// to benchmark it.
+</span><span class="kw">pub struct </span>Input&lt;T, G&gt;
+<span class="kw">where
+    </span>G: Give&lt;T&gt;,
 {
-    <span class="ident">reactor</span>: <span class="ident">Reactor</span>,
-    <span class="ident">sg_id</span>: <span class="ident">SubgraphId</span>,
-    <span class="ident">givable</span>: <span class="ident">G</span>,
-    <span class="ident">_marker</span>: <span class="ident">PhantomData</span>&lt;<span class="ident">T</span>&gt;,
+    reactor: Reactor,
+    sg_id: SubgraphId,
+    givable: G,
+    _marker: PhantomData&lt;T&gt;,
 }
-<span class="kw">impl</span>&lt;<span class="ident">T</span>, <span class="ident">G</span>&gt; <span class="ident">Input</span>&lt;<span class="ident">T</span>, <span class="ident">G</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">G</span>: <span class="ident">Give</span>&lt;<span class="ident">T</span>&gt;,
+<span class="kw">impl</span>&lt;T, G&gt; Input&lt;T, G&gt;
+<span class="kw">where
+    </span>G: Give&lt;T&gt;,
 {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">reactor</span>: <span class="ident">Reactor</span>, <span class="ident">sg_id</span>: <span class="ident">SubgraphId</span>, <span class="ident">givable</span>: <span class="ident">G</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident">Input</span> {
-            <span class="ident">reactor</span>,
-            <span class="ident">sg_id</span>,
-            <span class="ident">givable</span>,
-            <span class="ident">_marker</span>: <span class="ident">PhantomData</span>,
+    <span class="kw">pub fn </span>new(reactor: Reactor, sg_id: SubgraphId, givable: G) -&gt; <span class="self">Self </span>{
+        Input {
+            reactor,
+            sg_id,
+            givable,
+            _marker: PhantomData,
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">give</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">t</span>: <span class="ident">T</span>) {
-        <span class="self">self</span>.<span class="ident">givable</span>.<span class="ident">give</span>(<span class="ident">t</span>);
+    <span class="kw">pub fn </span>give(<span class="kw-2">&amp;</span><span class="self">self</span>, t: T) {
+        <span class="self">self</span>.givable.give(t);
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">flush</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) {
-        <span class="self">self</span>.<span class="ident">reactor</span>.<span class="ident">trigger</span>(<span class="self">self</span>.<span class="ident">sg_id</span>).<span class="ident">unwrap</span>(<span class="comment">/* TODO(justin) */</span>);
+    <span class="kw">pub fn </span>flush(<span class="kw-2">&amp;</span><span class="self">self</span>) {
+        <span class="self">self</span>.reactor.trigger(<span class="self">self</span>.sg_id).unwrap(<span class="comment">/* TODO(justin) */</span>);
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (75b7e52e9 2022-08-13)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

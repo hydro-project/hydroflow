@@ -86,93 +86,93 @@
 <span id="86">86</span>
 <span id="87">87</span>
 <span id="88">88</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">Pusherator</span>, <span class="ident">PusheratorBuild</span>};
+</pre><pre class="rust"><code><span class="kw">use super</span>::{Pusherator, PusheratorBuild};
 
-<span class="kw">use</span> <span class="ident">std::marker::PhantomData</span>;
+<span class="kw">use </span>std::marker::PhantomData;
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Partition</span>&lt;<span class="ident">T</span>, <span class="ident">F</span>, <span class="ident">O1</span>, <span class="ident">O2</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident">T</span>) -&gt; <span class="ident">bool</span>,
-    <span class="ident">O1</span>: <span class="ident">Pusherator</span>&lt;<span class="ident">Item</span> = <span class="ident">T</span>&gt;,
-    <span class="ident">O2</span>: <span class="ident">Pusherator</span>&lt;<span class="ident">Item</span> = <span class="ident">T</span>&gt;,
+<span class="kw">pub struct </span>Partition&lt;T, F, O1, O2&gt;
+<span class="kw">where
+    </span>F: FnMut(<span class="kw-2">&amp;</span>T) -&gt; bool,
+    O1: Pusherator&lt;Item = T&gt;,
+    O2: Pusherator&lt;Item = T&gt;,
 {
-    <span class="ident">out1</span>: <span class="ident">O1</span>,
-    <span class="ident">out2</span>: <span class="ident">O2</span>,
-    <span class="ident">f</span>: <span class="ident">F</span>,
-    <span class="ident">_marker</span>: <span class="ident">PhantomData</span>&lt;<span class="ident">T</span>&gt;,
+    out1: O1,
+    out2: O2,
+    f: F,
+    _marker: PhantomData&lt;T&gt;,
 }
-<span class="kw">impl</span>&lt;<span class="ident">T</span>, <span class="ident">F</span>, <span class="ident">O1</span>, <span class="ident">O2</span>&gt; <span class="ident">Pusherator</span> <span class="kw">for</span> <span class="ident">Partition</span>&lt;<span class="ident">T</span>, <span class="ident">F</span>, <span class="ident">O1</span>, <span class="ident">O2</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident">T</span>) -&gt; <span class="ident">bool</span>,
-    <span class="ident">O1</span>: <span class="ident">Pusherator</span>&lt;<span class="ident">Item</span> = <span class="ident">T</span>&gt;,
-    <span class="ident">O2</span>: <span class="ident">Pusherator</span>&lt;<span class="ident">Item</span> = <span class="ident">T</span>&gt;,
+<span class="kw">impl</span>&lt;T, F, O1, O2&gt; Pusherator <span class="kw">for </span>Partition&lt;T, F, O1, O2&gt;
+<span class="kw">where
+    </span>F: FnMut(<span class="kw-2">&amp;</span>T) -&gt; bool,
+    O1: Pusherator&lt;Item = T&gt;,
+    O2: Pusherator&lt;Item = T&gt;,
 {
-    <span class="kw">type</span> <span class="ident">Item</span> = <span class="ident">T</span>;
-    <span class="kw">fn</span> <span class="ident">give</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">item</span>: <span class="ident"><span class="self">Self</span>::Item</span>) {
-        <span class="kw">if</span> (<span class="self">self</span>.<span class="ident">f</span>)(<span class="kw-2">&amp;</span><span class="ident">item</span>) {
-            <span class="self">self</span>.<span class="ident">out1</span>.<span class="ident">give</span>(<span class="ident">item</span>);
-        } <span class="kw">else</span> {
-            <span class="self">self</span>.<span class="ident">out2</span>.<span class="ident">give</span>(<span class="ident">item</span>);
+    <span class="kw">type </span>Item = T;
+    <span class="kw">fn </span>give(<span class="kw-2">&amp;mut </span><span class="self">self</span>, item: <span class="self">Self</span>::Item) {
+        <span class="kw">if </span>(<span class="self">self</span>.f)(<span class="kw-2">&amp;</span>item) {
+            <span class="self">self</span>.out1.give(item);
+        } <span class="kw">else </span>{
+            <span class="self">self</span>.out2.give(item);
         }
     }
 }
-<span class="kw">impl</span>&lt;<span class="ident">T</span>, <span class="ident">F</span>, <span class="ident">O1</span>, <span class="ident">O2</span>&gt; <span class="ident">Partition</span>&lt;<span class="ident">T</span>, <span class="ident">F</span>, <span class="ident">O1</span>, <span class="ident">O2</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident">T</span>) -&gt; <span class="ident">bool</span>,
-    <span class="ident">O1</span>: <span class="ident">Pusherator</span>&lt;<span class="ident">Item</span> = <span class="ident">T</span>&gt;,
-    <span class="ident">O2</span>: <span class="ident">Pusherator</span>&lt;<span class="ident">Item</span> = <span class="ident">T</span>&gt;,
+<span class="kw">impl</span>&lt;T, F, O1, O2&gt; Partition&lt;T, F, O1, O2&gt;
+<span class="kw">where
+    </span>F: FnMut(<span class="kw-2">&amp;</span>T) -&gt; bool,
+    O1: Pusherator&lt;Item = T&gt;,
+    O2: Pusherator&lt;Item = T&gt;,
 {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">f</span>: <span class="ident">F</span>, <span class="ident">out1</span>: <span class="ident">O1</span>, <span class="ident">out2</span>: <span class="ident">O2</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">out1</span>,
-            <span class="ident">out2</span>,
-            <span class="ident">f</span>,
-            <span class="ident">_marker</span>: <span class="ident">PhantomData</span>,
+    <span class="kw">pub fn </span>new(f: F, out1: O1, out2: O2) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            out1,
+            out2,
+            f,
+            _marker: PhantomData,
         }
     }
 }
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">PartitionBuild</span>&lt;<span class="ident">T</span>, <span class="ident">F</span>, <span class="ident">O1</span>, <span class="ident">P</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident">T</span>) -&gt; <span class="ident">bool</span>,
-    <span class="ident">O1</span>: <span class="ident">Pusherator</span>&lt;<span class="ident">Item</span> = <span class="ident">T</span>&gt;,
-    <span class="ident">P</span>: <span class="ident">PusheratorBuild</span>&lt;<span class="ident">Item</span> = <span class="ident">T</span>&gt;,
+<span class="kw">pub struct </span>PartitionBuild&lt;T, F, O1, P&gt;
+<span class="kw">where
+    </span>F: FnMut(<span class="kw-2">&amp;</span>T) -&gt; bool,
+    O1: Pusherator&lt;Item = T&gt;,
+    P: PusheratorBuild&lt;Item = T&gt;,
 {
-    <span class="ident">prev</span>: <span class="ident">P</span>,
-    <span class="ident">out1</span>: <span class="ident">O1</span>,
-    <span class="ident">f</span>: <span class="ident">F</span>,
-    <span class="ident">_marker</span>: <span class="ident">PhantomData</span>&lt;<span class="ident">T</span>&gt;,
+    prev: P,
+    out1: O1,
+    f: F,
+    _marker: PhantomData&lt;T&gt;,
 }
-<span class="kw">impl</span>&lt;<span class="ident">T</span>, <span class="ident">F</span>, <span class="ident">O1</span>, <span class="ident">P</span>&gt; <span class="ident">PartitionBuild</span>&lt;<span class="ident">T</span>, <span class="ident">F</span>, <span class="ident">O1</span>, <span class="ident">P</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident">T</span>) -&gt; <span class="ident">bool</span>,
-    <span class="ident">O1</span>: <span class="ident">Pusherator</span>&lt;<span class="ident">Item</span> = <span class="ident">T</span>&gt;,
-    <span class="ident">P</span>: <span class="ident">PusheratorBuild</span>&lt;<span class="ident">Item</span> = <span class="ident">T</span>&gt;,
+<span class="kw">impl</span>&lt;T, F, O1, P&gt; PartitionBuild&lt;T, F, O1, P&gt;
+<span class="kw">where
+    </span>F: FnMut(<span class="kw-2">&amp;</span>T) -&gt; bool,
+    O1: Pusherator&lt;Item = T&gt;,
+    P: PusheratorBuild&lt;Item = T&gt;,
 {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">prev</span>: <span class="ident">P</span>, <span class="ident">out1</span>: <span class="ident">O1</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">prev</span>,
-            <span class="ident">out1</span>,
-            <span class="ident">f</span>,
-            <span class="ident">_marker</span>: <span class="ident">PhantomData</span>,
+    <span class="kw">pub fn </span>new(prev: P, out1: O1, f: F) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            prev,
+            out1,
+            f,
+            _marker: PhantomData,
         }
     }
 }
-<span class="kw">impl</span>&lt;<span class="ident">T</span>, <span class="ident">F</span>, <span class="ident">O1</span>, <span class="ident">P</span>&gt; <span class="ident">PusheratorBuild</span> <span class="kw">for</span> <span class="ident">PartitionBuild</span>&lt;<span class="ident">T</span>, <span class="ident">F</span>, <span class="ident">O1</span>, <span class="ident">P</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident">T</span>) -&gt; <span class="ident">bool</span>,
-    <span class="ident">O1</span>: <span class="ident">Pusherator</span>&lt;<span class="ident">Item</span> = <span class="ident">T</span>&gt;,
-    <span class="ident">P</span>: <span class="ident">PusheratorBuild</span>&lt;<span class="ident">Item</span> = <span class="ident">T</span>&gt;,
+<span class="kw">impl</span>&lt;T, F, O1, P&gt; PusheratorBuild <span class="kw">for </span>PartitionBuild&lt;T, F, O1, P&gt;
+<span class="kw">where
+    </span>F: FnMut(<span class="kw-2">&amp;</span>T) -&gt; bool,
+    O1: Pusherator&lt;Item = T&gt;,
+    P: PusheratorBuild&lt;Item = T&gt;,
 {
-    <span class="kw">type</span> <span class="ident">Item</span> = <span class="ident">T</span>;
+    <span class="kw">type </span>Item = T;
 
-    <span class="kw">type</span> <span class="ident">Output</span>&lt;<span class="ident">O</span>: <span class="ident">Pusherator</span>&lt;<span class="ident">Item</span> = <span class="ident"><span class="self">Self</span>::Item</span>&gt;&gt; = <span class="ident">P::Output</span>&lt;<span class="ident">Partition</span>&lt;<span class="ident">T</span>, <span class="ident">F</span>, <span class="ident">O1</span>, <span class="ident">O</span>&gt;&gt;;
-    <span class="kw">fn</span> <span class="ident">build</span>&lt;<span class="ident">O</span>&gt;(<span class="self">self</span>, <span class="ident">input</span>: <span class="ident">O</span>) -&gt; <span class="ident"><span class="self">Self</span>::Output</span>&lt;<span class="ident">O</span>&gt;
-    <span class="kw">where</span>
-        <span class="ident">O</span>: <span class="ident">Pusherator</span>&lt;<span class="ident">Item</span> = <span class="ident"><span class="self">Self</span>::Item</span>&gt;,
+    <span class="kw">type </span>Output&lt;O: Pusherator&lt;Item = <span class="self">Self</span>::Item&gt;&gt; = P::Output&lt;Partition&lt;T, F, O1, O&gt;&gt;;
+    <span class="kw">fn </span>build&lt;O&gt;(<span class="self">self</span>, input: O) -&gt; <span class="self">Self</span>::Output&lt;O&gt;
+    <span class="kw">where
+        </span>O: Pusherator&lt;Item = <span class="self">Self</span>::Item&gt;,
     {
-        <span class="self">self</span>.<span class="ident">prev</span>.<span class="ident">build</span>(<span class="ident">Partition::new</span>(<span class="self">self</span>.<span class="ident">f</span>, <span class="self">self</span>.<span class="ident">out1</span>, <span class="ident">input</span>))
+        <span class="self">self</span>.prev.build(Partition::new(<span class="self">self</span>.f, <span class="self">self</span>.out1, input))
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (75b7e52e9 2022-08-13)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

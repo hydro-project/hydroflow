@@ -80,87 +80,87 @@
 <span id="80">80</span>
 <span id="81">81</span>
 <span id="82">82</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::any::Any</span>;
-<span class="kw">use</span> <span class="ident">std::cell::RefCell</span>;
-<span class="kw">use</span> <span class="ident">std::collections::VecDeque</span>;
-<span class="kw">use</span> <span class="ident">std::rc::Rc</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>std::any::Any;
+<span class="kw">use </span>std::cell::RefCell;
+<span class="kw">use </span>std::collections::VecDeque;
+<span class="kw">use </span>std::rc::Rc;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::lang::collections::Iter</span>;
+<span class="kw">use </span><span class="kw">crate</span>::lang::collections::Iter;
 
-<span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">CanReceive</span>, <span class="ident">Handoff</span>, <span class="ident">HandoffMeta</span>};
+<span class="kw">use super</span>::{CanReceive, Handoff, HandoffMeta};
 
 <span class="doccomment">/**
  * A [VecDeque]-based FIFO handoff.
- */</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">VecHandoff</span>&lt;<span class="ident">T</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="lifetime">&#39;static</span>,
+ */
+</span><span class="kw">pub struct </span>VecHandoff&lt;T&gt;
+<span class="kw">where
+    </span>T: <span class="lifetime">&#39;static</span>,
 {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">deque</span>: <span class="ident">Rc</span>&lt;<span class="ident">RefCell</span>&lt;<span class="ident">VecDeque</span>&lt;<span class="ident">T</span>&gt;&gt;&gt;,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) deque: Rc&lt;RefCell&lt;VecDeque&lt;T&gt;&gt;&gt;,
 }
-<span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">Default</span> <span class="kw">for</span> <span class="ident">VecHandoff</span>&lt;<span class="ident">T</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="lifetime">&#39;static</span>,
+<span class="kw">impl</span>&lt;T&gt; Default <span class="kw">for </span>VecHandoff&lt;T&gt;
+<span class="kw">where
+    </span>T: <span class="lifetime">&#39;static</span>,
 {
-    <span class="kw">fn</span> <span class="ident">default</span>() -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">deque</span>: <span class="ident">Default::default</span>(),
+    <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            deque: Default::default(),
         }
     }
 }
-<span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">Handoff</span> <span class="kw">for</span> <span class="ident">VecHandoff</span>&lt;<span class="ident">T</span>&gt; {
-    <span class="kw">type</span> <span class="ident">Inner</span> = <span class="ident">VecDeque</span>&lt;<span class="ident">T</span>&gt;;
+<span class="kw">impl</span>&lt;T&gt; Handoff <span class="kw">for </span>VecHandoff&lt;T&gt; {
+    <span class="kw">type </span>Inner = VecDeque&lt;T&gt;;
 
-    <span class="kw">fn</span> <span class="ident">take_inner</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident"><span class="self">Self</span>::Inner</span> {
-        <span class="self">self</span>.<span class="ident">deque</span>.<span class="ident">take</span>()
+    <span class="kw">fn </span>take_inner(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Inner {
+        <span class="self">self</span>.deque.take()
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">CanReceive</span>&lt;<span class="prelude-ty">Option</span>&lt;<span class="ident">T</span>&gt;&gt; <span class="kw">for</span> <span class="ident">VecHandoff</span>&lt;<span class="ident">T</span>&gt; {
-    <span class="kw">fn</span> <span class="ident">give</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="kw-2">mut</span> <span class="ident">item</span>: <span class="prelude-ty">Option</span>&lt;<span class="ident">T</span>&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">T</span>&gt; {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">item</span>) = <span class="ident">item</span>.<span class="ident">take</span>() {
-            (<span class="kw-2">*</span><span class="self">self</span>.<span class="ident">deque</span>).<span class="ident">borrow_mut</span>().<span class="ident">push_back</span>(<span class="ident">item</span>)
+<span class="kw">impl</span>&lt;T&gt; CanReceive&lt;<span class="prelude-ty">Option</span>&lt;T&gt;&gt; <span class="kw">for </span>VecHandoff&lt;T&gt; {
+    <span class="kw">fn </span>give(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="kw-2">mut </span>item: <span class="prelude-ty">Option</span>&lt;T&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;T&gt; {
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(item) = item.take() {
+            (<span class="kw-2">*</span><span class="self">self</span>.deque).borrow_mut().push_back(item)
         }
-        <span class="prelude-val">None</span>
-    }
+        <span class="prelude-val">None
+    </span>}
 }
-<span class="kw">impl</span>&lt;<span class="ident">T</span>, <span class="ident">I</span>&gt; <span class="ident">CanReceive</span>&lt;<span class="ident">Iter</span>&lt;<span class="ident">I</span>&gt;&gt; <span class="kw">for</span> <span class="ident">VecHandoff</span>&lt;<span class="ident">T</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">Iterator</span>&lt;<span class="ident">Item</span> = <span class="ident">T</span>&gt;,
+<span class="kw">impl</span>&lt;T, I&gt; CanReceive&lt;Iter&lt;I&gt;&gt; <span class="kw">for </span>VecHandoff&lt;T&gt;
+<span class="kw">where
+    </span>I: Iterator&lt;Item = T&gt;,
 {
-    <span class="kw">fn</span> <span class="ident">give</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="kw-2">mut</span> <span class="ident">iter</span>: <span class="ident">Iter</span>&lt;<span class="ident">I</span>&gt;) -&gt; <span class="ident">Iter</span>&lt;<span class="ident">I</span>&gt; {
-        (<span class="kw-2">*</span><span class="self">self</span>.<span class="ident">deque</span>).<span class="ident">borrow_mut</span>().<span class="ident">extend</span>(<span class="kw-2">&amp;mut</span> <span class="ident">iter</span>.<span class="number">0</span>);
-        <span class="ident">iter</span>
+    <span class="kw">fn </span>give(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="kw-2">mut </span>iter: Iter&lt;I&gt;) -&gt; Iter&lt;I&gt; {
+        (<span class="kw-2">*</span><span class="self">self</span>.deque).borrow_mut().extend(<span class="kw-2">&amp;mut </span>iter.<span class="number">0</span>);
+        iter
     }
 }
-<span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">CanReceive</span>&lt;<span class="ident">VecDeque</span>&lt;<span class="ident">T</span>&gt;&gt; <span class="kw">for</span> <span class="ident">VecHandoff</span>&lt;<span class="ident">T</span>&gt; {
-    <span class="kw">fn</span> <span class="ident">give</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="kw-2">mut</span> <span class="ident">vec</span>: <span class="ident">VecDeque</span>&lt;<span class="ident">T</span>&gt;) -&gt; <span class="ident">VecDeque</span>&lt;<span class="ident">T</span>&gt; {
-        (<span class="kw-2">*</span><span class="self">self</span>.<span class="ident">deque</span>).<span class="ident">borrow_mut</span>().<span class="ident">extend</span>(<span class="ident">vec</span>.<span class="ident">drain</span>(..));
-        <span class="ident">vec</span>
-    }
-}
-
-<span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">HandoffMeta</span> <span class="kw">for</span> <span class="ident">VecHandoff</span>&lt;<span class="ident">T</span>&gt; {
-    <span class="kw">fn</span> <span class="ident">any_ref</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="kw">dyn</span> <span class="ident">Any</span> {
-        <span class="self">self</span>
-    }
-
-    <span class="kw">fn</span> <span class="ident">is_bottom</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        (<span class="kw-2">*</span><span class="self">self</span>.<span class="ident">deque</span>).<span class="ident">borrow_mut</span>().<span class="ident">is_empty</span>()
+<span class="kw">impl</span>&lt;T&gt; CanReceive&lt;VecDeque&lt;T&gt;&gt; <span class="kw">for </span>VecHandoff&lt;T&gt; {
+    <span class="kw">fn </span>give(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="kw-2">mut </span>vec: VecDeque&lt;T&gt;) -&gt; VecDeque&lt;T&gt; {
+        (<span class="kw-2">*</span><span class="self">self</span>.deque).borrow_mut().extend(vec.drain(..));
+        vec
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">H</span>&gt; <span class="ident">HandoffMeta</span> <span class="kw">for</span> <span class="ident">Rc</span>&lt;<span class="ident">RefCell</span>&lt;<span class="ident">H</span>&gt;&gt;
-<span class="kw">where</span>
-    <span class="ident">H</span>: <span class="ident">HandoffMeta</span>,
+<span class="kw">impl</span>&lt;T&gt; HandoffMeta <span class="kw">for </span>VecHandoff&lt;T&gt; {
+    <span class="kw">fn </span>any_ref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="kw">dyn </span>Any {
+        <span class="self">self
+    </span>}
+
+    <span class="kw">fn </span>is_bottom(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        (<span class="kw-2">*</span><span class="self">self</span>.deque).borrow_mut().is_empty()
+    }
+}
+
+<span class="kw">impl</span>&lt;H&gt; HandoffMeta <span class="kw">for </span>Rc&lt;RefCell&lt;H&gt;&gt;
+<span class="kw">where
+    </span>H: HandoffMeta,
 {
-    <span class="kw">fn</span> <span class="ident">any_ref</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="kw">dyn</span> <span class="ident">Any</span> {
-        <span class="self">self</span>
-    }
+    <span class="kw">fn </span>any_ref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="kw">dyn </span>Any {
+        <span class="self">self
+    </span>}
 
-    <span class="kw">fn</span> <span class="ident">is_bottom</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">borrow</span>().<span class="ident">is_bottom</span>()
+    <span class="kw">fn </span>is_bottom(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.borrow().is_bottom()
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (75b7e52e9 2022-08-13)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

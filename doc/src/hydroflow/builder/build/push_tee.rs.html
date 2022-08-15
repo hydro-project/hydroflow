@@ -62,69 +62,69 @@
 <span id="62">62</span>
 <span id="63">63</span>
 <span id="64">64</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">super</span>::PushBuild</span>;
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::PushBuild;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::compiled::tee::Tee</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::context::Context</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::handoff::handoff_list</span>::{<span class="ident">PortList</span>, <span class="ident">PortListSplit</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::port::SEND</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::type_list::Extend</span>;
+<span class="kw">use </span><span class="kw">crate</span>::compiled::tee::Tee;
+<span class="kw">use </span><span class="kw">crate</span>::scheduled::context::Context;
+<span class="kw">use </span><span class="kw">crate</span>::scheduled::handoff::handoff_list::{PortList, PortListSplit};
+<span class="kw">use </span><span class="kw">crate</span>::scheduled::port::SEND;
+<span class="kw">use </span><span class="kw">crate</span>::scheduled::type_list::Extend;
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">TeePushBuild</span>&lt;<span class="ident">NextA</span>, <span class="ident">NextB</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">NextA</span>: <span class="ident">PushBuild</span>,
-    <span class="ident">NextB</span>: <span class="ident">PushBuild</span>&lt;<span class="ident">ItemIn</span> = <span class="ident">NextA::ItemIn</span>&gt;,
-    <span class="ident">NextA::ItemIn</span>: <span class="ident">Clone</span>,
+<span class="kw">pub struct </span>TeePushBuild&lt;NextA, NextB&gt;
+<span class="kw">where
+    </span>NextA: PushBuild,
+    NextB: PushBuild&lt;ItemIn = NextA::ItemIn&gt;,
+    NextA::ItemIn: Clone,
 
-    <span class="ident">NextA::OutputHandoffs</span>: <span class="ident">Extend</span>&lt;<span class="ident">NextB::OutputHandoffs</span>&gt;,
-    &lt;<span class="ident">NextA::OutputHandoffs</span> <span class="kw">as</span> <span class="ident">Extend</span>&lt;<span class="ident">NextB::OutputHandoffs</span>&gt;&gt;<span class="ident">::Extended</span>:
-        <span class="ident">PortList</span>&lt;<span class="ident">SEND</span>&gt; + <span class="ident">PortListSplit</span>&lt;<span class="ident">SEND</span>, <span class="ident">NextA::OutputHandoffs</span>, <span class="ident">Suffix</span> = <span class="ident">NextB::OutputHandoffs</span>&gt;,
+    NextA::OutputHandoffs: Extend&lt;NextB::OutputHandoffs&gt;,
+    &lt;NextA::OutputHandoffs <span class="kw">as </span>Extend&lt;NextB::OutputHandoffs&gt;&gt;::Extended:
+        PortList&lt;SEND&gt; + PortListSplit&lt;SEND, NextA::OutputHandoffs, Suffix = NextB::OutputHandoffs&gt;,
 {
-    <span class="ident">next_a</span>: <span class="ident">NextA</span>,
-    <span class="ident">next_b</span>: <span class="ident">NextB</span>,
+    next_a: NextA,
+    next_b: NextB,
 }
-<span class="kw">impl</span>&lt;<span class="ident">NextA</span>, <span class="ident">NextB</span>&gt; <span class="ident">TeePushBuild</span>&lt;<span class="ident">NextA</span>, <span class="ident">NextB</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">NextA</span>: <span class="ident">PushBuild</span>,
-    <span class="ident">NextB</span>: <span class="ident">PushBuild</span>&lt;<span class="ident">ItemIn</span> = <span class="ident">NextA::ItemIn</span>&gt;,
-    <span class="ident">NextA::ItemIn</span>: <span class="ident">Clone</span>,
+<span class="kw">impl</span>&lt;NextA, NextB&gt; TeePushBuild&lt;NextA, NextB&gt;
+<span class="kw">where
+    </span>NextA: PushBuild,
+    NextB: PushBuild&lt;ItemIn = NextA::ItemIn&gt;,
+    NextA::ItemIn: Clone,
 
-    <span class="ident">NextA::OutputHandoffs</span>: <span class="ident">Extend</span>&lt;<span class="ident">NextB::OutputHandoffs</span>&gt;,
-    &lt;<span class="ident">NextA::OutputHandoffs</span> <span class="kw">as</span> <span class="ident">Extend</span>&lt;<span class="ident">NextB::OutputHandoffs</span>&gt;&gt;<span class="ident">::Extended</span>:
-        <span class="ident">PortList</span>&lt;<span class="ident">SEND</span>&gt; + <span class="ident">PortListSplit</span>&lt;<span class="ident">SEND</span>, <span class="ident">NextA::OutputHandoffs</span>, <span class="ident">Suffix</span> = <span class="ident">NextB::OutputHandoffs</span>&gt;,
+    NextA::OutputHandoffs: Extend&lt;NextB::OutputHandoffs&gt;,
+    &lt;NextA::OutputHandoffs <span class="kw">as </span>Extend&lt;NextB::OutputHandoffs&gt;&gt;::Extended:
+        PortList&lt;SEND&gt; + PortListSplit&lt;SEND, NextA::OutputHandoffs, Suffix = NextB::OutputHandoffs&gt;,
 {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">next_a</span>: <span class="ident">NextA</span>, <span class="ident">next_b</span>: <span class="ident">NextB</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> { <span class="ident">next_a</span>, <span class="ident">next_b</span> }
+    <span class="kw">pub fn </span>new(next_a: NextA, next_b: NextB) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{ next_a, next_b }
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">NextA</span>, <span class="ident">NextB</span>&gt; <span class="ident">PushBuild</span> <span class="kw">for</span> <span class="ident">TeePushBuild</span>&lt;<span class="ident">NextA</span>, <span class="ident">NextB</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">NextA</span>: <span class="ident">PushBuild</span>,
-    <span class="ident">NextB</span>: <span class="ident">PushBuild</span>&lt;<span class="ident">ItemIn</span> = <span class="ident">NextA::ItemIn</span>&gt;,
-    <span class="ident">NextA::ItemIn</span>: <span class="ident">Clone</span>,
+<span class="kw">impl</span>&lt;NextA, NextB&gt; PushBuild <span class="kw">for </span>TeePushBuild&lt;NextA, NextB&gt;
+<span class="kw">where
+    </span>NextA: PushBuild,
+    NextB: PushBuild&lt;ItemIn = NextA::ItemIn&gt;,
+    NextA::ItemIn: Clone,
 
-    <span class="ident">NextA::OutputHandoffs</span>: <span class="ident">Extend</span>&lt;<span class="ident">NextB::OutputHandoffs</span>&gt;,
-    &lt;<span class="ident">NextA::OutputHandoffs</span> <span class="kw">as</span> <span class="ident">Extend</span>&lt;<span class="ident">NextB::OutputHandoffs</span>&gt;&gt;<span class="ident">::Extended</span>:
-        <span class="ident">PortList</span>&lt;<span class="ident">SEND</span>&gt; + <span class="ident">PortListSplit</span>&lt;<span class="ident">SEND</span>, <span class="ident">NextA::OutputHandoffs</span>, <span class="ident">Suffix</span> = <span class="ident">NextB::OutputHandoffs</span>&gt;,
+    NextA::OutputHandoffs: Extend&lt;NextB::OutputHandoffs&gt;,
+    &lt;NextA::OutputHandoffs <span class="kw">as </span>Extend&lt;NextB::OutputHandoffs&gt;&gt;::Extended:
+        PortList&lt;SEND&gt; + PortListSplit&lt;SEND, NextA::OutputHandoffs, Suffix = NextB::OutputHandoffs&gt;,
 {
-    <span class="kw">type</span> <span class="ident">ItemIn</span> = <span class="ident">NextA::ItemIn</span>;
-    <span class="kw">type</span> <span class="ident">Build</span>&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt; = <span class="ident">Tee</span>&lt;<span class="ident"><span class="self">Self</span>::ItemIn</span>, <span class="ident">NextA::Build</span>&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt;, <span class="ident">NextB::Build</span>&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt;&gt;
-    <span class="kw">where</span>
-        <span class="self">Self</span>: <span class="lifetime">&#39;slf</span>;
+    <span class="kw">type </span>ItemIn = NextA::ItemIn;
+    <span class="kw">type </span>Build&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt; = Tee&lt;<span class="self">Self</span>::ItemIn, NextA::Build&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt;, NextB::Build&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt;&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: <span class="lifetime">&#39;slf</span>;
 
-    <span class="kw">type</span> <span class="ident">OutputHandoffs</span> = &lt;<span class="ident">NextA::OutputHandoffs</span> <span class="kw">as</span> <span class="ident">Extend</span>&lt;<span class="ident">NextB::OutputHandoffs</span>&gt;&gt;<span class="ident">::Extended</span>;
+    <span class="kw">type </span>OutputHandoffs = &lt;NextA::OutputHandoffs <span class="kw">as </span>Extend&lt;NextB::OutputHandoffs&gt;&gt;::Extended;
 
-    <span class="kw">fn</span> <span class="ident">build</span>&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt;(
-        <span class="kw-2">&amp;</span><span class="lifetime">&#39;slf</span> <span class="kw-2">mut</span> <span class="self">self</span>,
-        <span class="ident">context</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx</span> <span class="ident">Context</span>,
-        <span class="ident">input</span>: &lt;<span class="ident"><span class="self">Self</span>::OutputHandoffs</span> <span class="kw">as</span> <span class="ident">PortList</span>&lt;<span class="ident">SEND</span>&gt;&gt;<span class="ident">::Ctx</span>&lt;<span class="lifetime">&#39;ctx</span>&gt;,
-    ) -&gt; <span class="ident"><span class="self">Self</span>::Build</span>&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt; {
-        <span class="kw">let</span> (<span class="ident">input_a</span>, <span class="ident">input_b</span>) = &lt;<span class="ident"><span class="self">Self</span>::OutputHandoffs</span> <span class="kw">as</span> <span class="ident">PortListSplit</span>&lt;<span class="kw">_</span>, <span class="kw">_</span>&gt;&gt;<span class="ident">::split_ctx</span>(<span class="ident">input</span>);
-        <span class="kw">let</span> <span class="ident">build_a</span> = <span class="self">self</span>.<span class="ident">next_a</span>.<span class="ident">build</span>(<span class="ident">context</span>, <span class="ident">input_a</span>);
-        <span class="kw">let</span> <span class="ident">build_b</span> = <span class="self">self</span>.<span class="ident">next_b</span>.<span class="ident">build</span>(<span class="ident">context</span>, <span class="ident">input_b</span>);
-        <span class="ident">Tee::new</span>(<span class="ident">build_a</span>, <span class="ident">build_b</span>)
+    <span class="kw">fn </span>build&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt;(
+        <span class="kw-2">&amp;</span><span class="lifetime">&#39;slf </span><span class="kw-2">mut </span><span class="self">self</span>,
+        context: <span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span>Context,
+        input: &lt;<span class="self">Self</span>::OutputHandoffs <span class="kw">as </span>PortList&lt;SEND&gt;&gt;::Ctx&lt;<span class="lifetime">&#39;ctx</span>&gt;,
+    ) -&gt; <span class="self">Self</span>::Build&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt; {
+        <span class="kw">let </span>(input_a, input_b) = &lt;<span class="self">Self</span>::OutputHandoffs <span class="kw">as </span>PortListSplit&lt;<span class="kw">_</span>, <span class="kw">_</span>&gt;&gt;::split_ctx(input);
+        <span class="kw">let </span>build_a = <span class="self">self</span>.next_a.build(context, input_a);
+        <span class="kw">let </span>build_b = <span class="self">self</span>.next_b.build(context, input_b);
+        Tee::new(build_a, build_b)
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (75b7e52e9 2022-08-13)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

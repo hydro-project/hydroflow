@@ -15,22 +15,22 @@
 <span id="15">15</span>
 <span id="16">16</span>
 <span id="17">17</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">super</span>::context::Context</span>;
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::context::Context;
 
 <span class="doccomment">/**
  * Represents a compiled subgraph. Used internally by [Dataflow] to erase the input/output [Handoff] types.
- */</span>
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">trait</span> <span class="ident">Subgraph</span> {
-    <span class="comment">// TODO: pass in some scheduling info?</span>
-    <span class="kw">fn</span> <span class="ident">run</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">context</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span>);
+ */
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">trait </span>Subgraph {
+    <span class="comment">// TODO: pass in some scheduling info?
+    </span><span class="kw">fn </span>run(<span class="kw-2">&amp;mut </span><span class="self">self</span>, context: <span class="kw-2">&amp;mut </span>Context);
 }
-<span class="kw">impl</span>&lt;<span class="ident">F</span>&gt; <span class="ident">Subgraph</span> <span class="kw">for</span> <span class="ident">F</span>
-<span class="kw">where</span>
-    <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;mut</span> <span class="ident">Context</span>),
+<span class="kw">impl</span>&lt;F&gt; Subgraph <span class="kw">for </span>F
+<span class="kw">where
+    </span>F: FnMut(<span class="kw-2">&amp;mut </span>Context),
 {
-    <span class="kw">fn</span> <span class="ident">run</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">context</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span>) {
-        (<span class="self">self</span>)(<span class="ident">context</span>);
+    <span class="kw">fn </span>run(<span class="kw-2">&amp;mut </span><span class="self">self</span>, context: <span class="kw-2">&amp;mut </span>Context) {
+        (<span class="self">self</span>)(context);
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (75b7e52e9 2022-08-13)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

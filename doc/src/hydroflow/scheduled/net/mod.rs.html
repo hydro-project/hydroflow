@@ -164,171 +164,171 @@
 <span id="164">164</span>
 <span id="165">165</span>
 <span id="166">166</span>
-</pre><pre class="rust"><code><span class="doccomment">//! This module contiains networking code.</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! ## How Tokio interacts with Hydroflow (Mingwei 2021-12-07)</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! [Tokio](https://tokio.rs/) is a Rust async runtime. In Rust&#39;s async/await</span>
-<span class="doccomment">//! system, `Future`s must be spawned or sent to an async runtime in order to</span>
-<span class="doccomment">//! run. Tokio is the most popular provider of one of these runtimes, with</span>
-<span class="doccomment">//! [async-std](https://async.rs/) (mirrors std lib) and [smol](https://github.com/smol-rs/smol)</span>
-<span class="doccomment">//! (minimal runtime) as commonly used alternatives.</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! Fundamentally, an async runtime&#39;s job is to poll futures (read: run tasks)</span>
-<span class="doccomment">//! when they are ready to make progress. However async runtimes also provide a</span>
-<span class="doccomment">//! `Future`s abstraction for async events such as timers, network IO, and</span>
-<span class="doccomment">//! filesystem IO. To do this, [Tokio](https://tokio.rs/) uses [Mio](https://github.com/tokio-rs/mio)</span>
-<span class="doccomment">//! which is a low-level non-blocking API for IO event notification/polling.</span>
-<span class="doccomment">//! A user of Mio can write an event loop, i.e. something like: wait for</span>
-<span class="doccomment">//! events, run computations responding to those events, repeat. Tokio provides</span>
-<span class="doccomment">//! the higher-level async/await slash `Future` abstraction on top of Mio, as</span>
-<span class="doccomment">//! well as the runtime to execute those `Future`s. Essentially, the Tokio</span>
-<span class="doccomment">//! async runtime essentially replaces the low-level event loop a user might</span>
-<span class="doccomment">//! handwrite when using Mio.</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! For context, both Mio and Tokio provide socket/UDP/TCP-level network</span>
-<span class="doccomment">//! abstractions, which is probably the right layer for us. There are also</span>
-<span class="doccomment">//! libraries built on top of Tokio providing nice server/client HTTP APIs</span>
-<span class="doccomment">//! like [Hyper](https://hyper.rs/).</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! The Hydroflow scheduled layer scheduler is essentially the same as a simple</span>
-<span class="doccomment">//! event loop: it runs subgraphs when they have data. We have also let it</span>
-<span class="doccomment">//! respond to external asynchonous events by providing a threadsafe channel</span>
-<span class="doccomment">//! through which subgraphs can be externally scheduled.</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! In order to add networking to Hydroflow, in our current implementation we</span>
-<span class="doccomment">//! use Tokio and have a compatibility mechanism for working with `Future`s.</span>
-<span class="doccomment">//! A `Future` provides a `Waker` mechanism to notify when it had work to do,</span>
-<span class="doccomment">//! so we have hooked these Wakers up with Hydroflow&#39;s threadsafe external</span>
-<span class="doccomment">//! scheduling channel. This essentially turns Hydroflow into a simple async</span>
-<span class="doccomment">//! runtime.</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! However in some situations, we still need to run futures outside of</span>
-<span class="doccomment">//! Hydroflow&#39;s basic runtime. It&#39;s not a goal for Hydroflow to provide all</span>
-<span class="doccomment">//! the features of a full runtime like Tokio. Currently for this situation we</span>
-<span class="doccomment">//! run Hydroflow as a task (`Future`) within the Tokio runtime. In Hydroflow&#39;s</span>
-<span class="doccomment">//! event loop we do all available work, then rather than block and wait for</span>
-<span class="doccomment">//! external events to schedule more tasks, we temporarily yield back to the</span>
-<span class="doccomment">//! Tokio runtime. Tokio will then respond to any outstanding events it has</span>
-<span class="doccomment">//! before once again running the Hydroflow scheduler task.</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! This works perfectly well but maybe isn&#39;t the best solution long-term.</span>
-<span class="doccomment">//! In the future we may want to remove the extra Tokio runtime layer and</span>
-<span class="doccomment">//! interface with Mio directly. In this case we would have to do our own</span>
-<span class="doccomment">//! socket-style polling within the Hydroflow scheduler&#39;s event loop, which</span>
-<span class="doccomment">//! would require some extra work and thought. But for now interfacing with</span>
-<span class="doccomment">//! Tokio works and I don&#39;t think the overhead of the extra runtime loop is</span>
-<span class="doccomment">//! significant.</span>
+</pre><pre class="rust"><code><span class="doccomment">//! This module contiains networking code.
+//!
+//! ## How Tokio interacts with Hydroflow (Mingwei 2021-12-07)
+//!
+//! [Tokio](https://tokio.rs/) is a Rust async runtime. In Rust&#39;s async/await
+//! system, `Future`s must be spawned or sent to an async runtime in order to
+//! run. Tokio is the most popular provider of one of these runtimes, with
+//! [async-std](https://async.rs/) (mirrors std lib) and [smol](https://github.com/smol-rs/smol)
+//! (minimal runtime) as commonly used alternatives.
+//!
+//! Fundamentally, an async runtime&#39;s job is to poll futures (read: run tasks)
+//! when they are ready to make progress. However async runtimes also provide a
+//! `Future`s abstraction for async events such as timers, network IO, and
+//! filesystem IO. To do this, [Tokio](https://tokio.rs/) uses [Mio](https://github.com/tokio-rs/mio)
+//! which is a low-level non-blocking API for IO event notification/polling.
+//! A user of Mio can write an event loop, i.e. something like: wait for
+//! events, run computations responding to those events, repeat. Tokio provides
+//! the higher-level async/await slash `Future` abstraction on top of Mio, as
+//! well as the runtime to execute those `Future`s. Essentially, the Tokio
+//! async runtime essentially replaces the low-level event loop a user might
+//! handwrite when using Mio.
+//!
+//! For context, both Mio and Tokio provide socket/UDP/TCP-level network
+//! abstractions, which is probably the right layer for us. There are also
+//! libraries built on top of Tokio providing nice server/client HTTP APIs
+//! like [Hyper](https://hyper.rs/).
+//!
+//! The Hydroflow scheduled layer scheduler is essentially the same as a simple
+//! event loop: it runs subgraphs when they have data. We have also let it
+//! respond to external asynchonous events by providing a threadsafe channel
+//! through which subgraphs can be externally scheduled.
+//!
+//! In order to add networking to Hydroflow, in our current implementation we
+//! use Tokio and have a compatibility mechanism for working with `Future`s.
+//! A `Future` provides a `Waker` mechanism to notify when it had work to do,
+//! so we have hooked these Wakers up with Hydroflow&#39;s threadsafe external
+//! scheduling channel. This essentially turns Hydroflow into a simple async
+//! runtime.
+//!
+//! However in some situations, we still need to run futures outside of
+//! Hydroflow&#39;s basic runtime. It&#39;s not a goal for Hydroflow to provide all
+//! the features of a full runtime like Tokio. Currently for this situation we
+//! run Hydroflow as a task (`Future`) within the Tokio runtime. In Hydroflow&#39;s
+//! event loop we do all available work, then rather than block and wait for
+//! external events to schedule more tasks, we temporarily yield back to the
+//! Tokio runtime. Tokio will then respond to any outstanding events it has
+//! before once again running the Hydroflow scheduler task.
+//!
+//! This works perfectly well but maybe isn&#39;t the best solution long-term.
+//! In the future we may want to remove the extra Tokio runtime layer and
+//! interface with Mio directly. In this case we would have to do our own
+//! socket-style polling within the Hydroflow scheduler&#39;s event loop, which
+//! would require some extra work and thought. But for now interfacing with
+//! Tokio works and I don&#39;t think the overhead of the extra runtime loop is
+//! significant.
 
-<span class="kw">use</span> <span class="ident">std::collections::VecDeque</span>;
-<span class="kw">use</span> <span class="ident">std::pin::Pin</span>;
+</span><span class="kw">use </span>std::collections::VecDeque;
+<span class="kw">use </span>std::pin::Pin;
 
-<span class="kw">use</span> <span class="ident">byteorder</span>::{<span class="ident">NetworkEndian</span>, <span class="ident">WriteBytesExt</span>};
-<span class="kw">use</span> <span class="ident">futures</span>::{<span class="ident">Sink</span>, <span class="ident">StreamExt</span>};
-<span class="kw">use</span> <span class="ident">tokio::net</span>::{
-    <span class="ident">tcp</span>::{<span class="ident">OwnedReadHalf</span>, <span class="ident">OwnedWriteHalf</span>},
-    <span class="ident">TcpStream</span>,
+<span class="kw">use </span>byteorder::{NetworkEndian, WriteBytesExt};
+<span class="kw">use </span>futures::{Sink, StreamExt};
+<span class="kw">use </span>tokio::net::{
+    tcp::{OwnedReadHalf, OwnedWriteHalf},
+    TcpStream,
 };
-<span class="kw">use</span> <span class="ident">tokio_util::codec</span>::{<span class="ident">FramedRead</span>, <span class="ident">FramedWrite</span>, <span class="ident">LengthDelimitedCodec</span>};
+<span class="kw">use </span>tokio_util::codec::{FramedRead, FramedWrite, LengthDelimitedCodec};
 
-<span class="kw">use</span> <span class="kw">super</span>::{
-    <span class="ident">graph::Hydroflow</span>,
-    <span class="ident">graph_ext::GraphExt</span>,
-    <span class="ident">handoff::VecHandoff</span>,
-    <span class="ident">port</span>::{<span class="ident">RecvPort</span>, <span class="ident">SendPort</span>},
+<span class="kw">use super</span>::{
+    graph::Hydroflow,
+    graph_ext::GraphExt,
+    handoff::VecHandoff,
+    port::{RecvPort, SendPort},
 };
 
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">network_vertex</span>;
+<span class="kw">pub mod </span>network_vertex;
 
-<span class="kw">const</span> <span class="ident">ADDRESS_LEN</span>: <span class="ident">usize</span> = <span class="number">4</span>;
+<span class="kw">const </span>ADDRESS_LEN: usize = <span class="number">4</span>;
 
-<span class="comment">// TODO(justin): I don&#39;t think we should include the address here, that should</span>
-<span class="comment">// just be a part of the bytes being sent.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Debug</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Message</span> {
-    <span class="kw">pub</span> <span class="ident">address</span>: <span class="ident">u32</span>,
-    <span class="kw">pub</span> <span class="ident">batch</span>: <span class="ident">bytes::Bytes</span>,
+<span class="comment">// TODO(justin): I don&#39;t think we should include the address here, that should
+// just be a part of the bytes being sent.
+</span><span class="attribute">#[derive(Clone, Debug, PartialEq, Eq)]</span>
+<span class="kw">pub struct </span>Message {
+    <span class="kw">pub </span>address: u32,
+    <span class="kw">pub </span>batch: bytes::Bytes,
 }
 
-<span class="kw">impl</span> <span class="ident">Message</span> {
-    <span class="kw">fn</span> <span class="ident">encode</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">v</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Vec</span>&lt;<span class="ident">u8</span>&gt;) {
-        <span class="ident">v</span>.<span class="ident">write_u32</span>::&lt;<span class="ident">NetworkEndian</span>&gt;(<span class="self">self</span>.<span class="ident">address</span>).<span class="ident">unwrap</span>();
-        <span class="ident">v</span>.<span class="ident">extend</span>(<span class="self">self</span>.<span class="ident">batch</span>.<span class="ident">iter</span>());
+<span class="kw">impl </span>Message {
+    <span class="kw">fn </span>encode(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="kw-2">&amp;mut </span>Vec&lt;u8&gt;) {
+        v.write_u32::&lt;NetworkEndian&gt;(<span class="self">self</span>.address).unwrap();
+        v.extend(<span class="self">self</span>.batch.iter());
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">decode</span>(<span class="ident">v</span>: <span class="ident">bytes::Bytes</span>) -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="ident">address</span> = <span class="ident">u32::from_be_bytes</span>(<span class="ident">v</span>[<span class="number">0</span>..<span class="ident">ADDRESS_LEN</span>].<span class="ident">try_into</span>().<span class="ident">unwrap</span>());
-        <span class="kw">let</span> <span class="ident">batch</span> = <span class="ident">v</span>.<span class="ident">slice</span>(<span class="ident">ADDRESS_LEN</span>..);
-        <span class="ident">Message</span> { <span class="ident">address</span>, <span class="ident">batch</span> }
+    <span class="kw">pub fn </span>decode(v: bytes::Bytes) -&gt; <span class="self">Self </span>{
+        <span class="kw">let </span>address = u32::from_be_bytes(v[<span class="number">0</span>..ADDRESS_LEN].try_into().unwrap());
+        <span class="kw">let </span>batch = v.slice(ADDRESS_LEN..);
+        Message { address, batch }
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Hydroflow</span> {
-    <span class="kw">fn</span> <span class="ident">register_read_tcp_stream</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">reader</span>: <span class="ident">OwnedReadHalf</span>) -&gt; <span class="ident">RecvPort</span>&lt;<span class="ident">VecHandoff</span>&lt;<span class="ident">Message</span>&gt;&gt; {
-        <span class="kw">let</span> <span class="ident">reader</span> = <span class="ident">FramedRead::new</span>(<span class="ident">reader</span>, <span class="ident">LengthDelimitedCodec::new</span>());
-        <span class="kw">let</span> (<span class="ident">send_port</span>, <span class="ident">recv_port</span>) = <span class="self">self</span>.<span class="ident">make_edge</span>(<span class="string">&quot;tcp ingress handoff&quot;</span>);
-        <span class="self">self</span>.<span class="ident">add_input_from_stream</span>(
+<span class="kw">impl </span>Hydroflow {
+    <span class="kw">fn </span>register_read_tcp_stream(<span class="kw-2">&amp;mut </span><span class="self">self</span>, reader: OwnedReadHalf) -&gt; RecvPort&lt;VecHandoff&lt;Message&gt;&gt; {
+        <span class="kw">let </span>reader = FramedRead::new(reader, LengthDelimitedCodec::new());
+        <span class="kw">let </span>(send_port, recv_port) = <span class="self">self</span>.make_edge(<span class="string">&quot;tcp ingress handoff&quot;</span>);
+        <span class="self">self</span>.add_input_from_stream(
             <span class="string">&quot;tcp ingress&quot;</span>,
-            <span class="ident">send_port</span>,
-            <span class="ident">reader</span>.<span class="ident">map</span>(|<span class="ident">buf</span>| <span class="prelude-val">Some</span>(&lt;<span class="ident">Message</span>&gt;<span class="ident">::decode</span>(<span class="ident">buf</span>.<span class="ident">unwrap</span>().<span class="ident">into</span>()))),
+            send_port,
+            reader.map(|buf| <span class="prelude-val">Some</span>(&lt;Message&gt;::decode(buf.unwrap().into()))),
         );
-        <span class="ident">recv_port</span>
+        recv_port
     }
 
-    <span class="kw">fn</span> <span class="ident">register_write_tcp_stream</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">writer</span>: <span class="ident">OwnedWriteHalf</span>,
-    ) -&gt; <span class="ident">SendPort</span>&lt;<span class="ident">VecHandoff</span>&lt;<span class="ident">Message</span>&gt;&gt; {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">writer</span> = <span class="ident">FramedWrite::new</span>(<span class="ident">writer</span>, <span class="ident">LengthDelimitedCodec::new</span>());
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">message_queue</span> = <span class="ident">VecDeque::new</span>();
+    <span class="kw">fn </span>register_write_tcp_stream(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        writer: OwnedWriteHalf,
+    ) -&gt; SendPort&lt;VecHandoff&lt;Message&gt;&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>writer = FramedWrite::new(writer, LengthDelimitedCodec::new());
+        <span class="kw">let </span><span class="kw-2">mut </span>message_queue = VecDeque::new();
 
-        <span class="kw">let</span> (<span class="ident">input_port</span>, <span class="ident">output_port</span>) =
-            <span class="self">self</span>.<span class="ident">make_edge</span>::&lt;<span class="kw">_</span>, <span class="ident">VecHandoff</span>&lt;<span class="ident">Message</span>&gt;&gt;(<span class="string">&quot;tcp egress handoff&quot;</span>);
-        <span class="self">self</span>.<span class="ident">add_subgraph_sink</span>(<span class="string">&quot;tcp egress&quot;</span>, <span class="ident">output_port</span>, <span class="kw">move</span> |<span class="ident">ctx</span>, <span class="ident">recv</span>| {
-            <span class="kw">let</span> <span class="ident">waker</span> = <span class="ident">ctx</span>.<span class="ident">waker</span>();
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">cx</span> = <span class="ident">std::task::Context::from_waker</span>(<span class="kw-2">&amp;</span><span class="ident">waker</span>);
+        <span class="kw">let </span>(input_port, output_port) =
+            <span class="self">self</span>.make_edge::&lt;<span class="kw">_</span>, VecHandoff&lt;Message&gt;&gt;(<span class="string">&quot;tcp egress handoff&quot;</span>);
+        <span class="self">self</span>.add_subgraph_sink(<span class="string">&quot;tcp egress&quot;</span>, output_port, <span class="kw">move </span>|ctx, recv| {
+            <span class="kw">let </span>waker = ctx.waker();
+            <span class="kw">let </span><span class="kw-2">mut </span>cx = std::task::Context::from_waker(<span class="kw-2">&amp;</span>waker);
 
-            <span class="comment">// TODO(mingwei): queue may grow unbounded? Subtle rate matching concern.</span>
-            <span class="comment">// TODO(mingwei): put into state system.</span>
-            <span class="ident">message_queue</span>.<span class="ident">extend</span>(<span class="ident">recv</span>.<span class="ident">take_inner</span>().<span class="ident">into_iter</span>());
-            <span class="kw">while</span> !<span class="ident">message_queue</span>.<span class="ident">is_empty</span>() {
-                <span class="kw">if</span> <span class="kw">let</span> <span class="ident">std::task::Poll::Ready</span>(<span class="prelude-val">Ok</span>(())) = <span class="ident">Pin::new</span>(<span class="kw-2">&amp;mut</span> <span class="ident">writer</span>).<span class="ident">poll_ready</span>(<span class="kw-2">&amp;mut</span> <span class="ident">cx</span>) {
-                    <span class="kw">let</span> <span class="ident">v</span> = <span class="ident">message_queue</span>.<span class="ident">pop_front</span>().<span class="ident">unwrap</span>();
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> = <span class="ident">Vec::new</span>();
-                    <span class="ident">v</span>.<span class="ident">encode</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buf</span>);
+            <span class="comment">// TODO(mingwei): queue may grow unbounded? Subtle rate matching concern.
+            // TODO(mingwei): put into state system.
+            </span>message_queue.extend(recv.take_inner().into_iter());
+            <span class="kw">while </span>!message_queue.is_empty() {
+                <span class="kw">if let </span>std::task::Poll::Ready(<span class="prelude-val">Ok</span>(())) = Pin::new(<span class="kw-2">&amp;mut </span>writer).poll_ready(<span class="kw-2">&amp;mut </span>cx) {
+                    <span class="kw">let </span>v = message_queue.pop_front().unwrap();
+                    <span class="kw">let </span><span class="kw-2">mut </span>buf = Vec::new();
+                    v.encode(<span class="kw-2">&amp;mut </span>buf);
 
-                    <span class="ident">Pin::new</span>(<span class="kw-2">&amp;mut</span> <span class="ident">writer</span>).<span class="ident">start_send</span>(<span class="ident">buf</span>.<span class="ident">into</span>()).<span class="ident">unwrap</span>();
+                    Pin::new(<span class="kw-2">&amp;mut </span>writer).start_send(buf.into()).unwrap();
                 }
             }
-            <span class="kw">let</span> <span class="kw">_</span> = <span class="ident">Pin::new</span>(<span class="kw-2">&amp;mut</span> <span class="ident">writer</span>).<span class="ident">poll_flush</span>(<span class="kw-2">&amp;mut</span> <span class="ident">cx</span>);
+            <span class="kw">let _ </span>= Pin::new(<span class="kw-2">&amp;mut </span>writer).poll_flush(<span class="kw-2">&amp;mut </span>cx);
         });
 
-        <span class="ident">input_port</span>
+        input_port
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">add_write_tcp_stream</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">stream</span>: <span class="ident">TcpStream</span>) -&gt; <span class="ident">SendPort</span>&lt;<span class="ident">VecHandoff</span>&lt;<span class="ident">Message</span>&gt;&gt; {
-        <span class="kw">let</span> (<span class="kw">_</span>, <span class="ident">writer</span>) = <span class="ident">stream</span>.<span class="ident">into_split</span>();
+    <span class="kw">pub fn </span>add_write_tcp_stream(<span class="kw-2">&amp;mut </span><span class="self">self</span>, stream: TcpStream) -&gt; SendPort&lt;VecHandoff&lt;Message&gt;&gt; {
+        <span class="kw">let </span>(<span class="kw">_</span>, writer) = stream.into_split();
 
-        <span class="self">self</span>.<span class="ident">register_write_tcp_stream</span>(<span class="ident">writer</span>)
+        <span class="self">self</span>.register_write_tcp_stream(writer)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">add_read_tcp_stream</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">stream</span>: <span class="ident">TcpStream</span>) -&gt; <span class="ident">RecvPort</span>&lt;<span class="ident">VecHandoff</span>&lt;<span class="ident">Message</span>&gt;&gt; {
-        <span class="kw">let</span> (<span class="ident">reader</span>, <span class="kw">_</span>) = <span class="ident">stream</span>.<span class="ident">into_split</span>();
+    <span class="kw">pub fn </span>add_read_tcp_stream(<span class="kw-2">&amp;mut </span><span class="self">self</span>, stream: TcpStream) -&gt; RecvPort&lt;VecHandoff&lt;Message&gt;&gt; {
+        <span class="kw">let </span>(reader, <span class="kw">_</span>) = stream.into_split();
 
-        <span class="self">self</span>.<span class="ident">register_read_tcp_stream</span>(<span class="ident">reader</span>)
+        <span class="self">self</span>.register_read_tcp_stream(reader)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">add_tcp_stream</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">stream</span>: <span class="ident">TcpStream</span>,
-    ) -&gt; (<span class="ident">SendPort</span>&lt;<span class="ident">VecHandoff</span>&lt;<span class="ident">Message</span>&gt;&gt;, <span class="ident">RecvPort</span>&lt;<span class="ident">VecHandoff</span>&lt;<span class="ident">Message</span>&gt;&gt;) {
-        <span class="kw">let</span> (<span class="ident">reader</span>, <span class="ident">writer</span>) = <span class="ident">stream</span>.<span class="ident">into_split</span>();
+    <span class="kw">pub fn </span>add_tcp_stream(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        stream: TcpStream,
+    ) -&gt; (SendPort&lt;VecHandoff&lt;Message&gt;&gt;, RecvPort&lt;VecHandoff&lt;Message&gt;&gt;) {
+        <span class="kw">let </span>(reader, writer) = stream.into_split();
 
         (
-            <span class="self">self</span>.<span class="ident">register_write_tcp_stream</span>(<span class="ident">writer</span>),
-            <span class="self">self</span>.<span class="ident">register_read_tcp_stream</span>(<span class="ident">reader</span>),
+            <span class="self">self</span>.register_write_tcp_stream(writer),
+            <span class="self">self</span>.register_read_tcp_stream(reader),
         )
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (75b7e52e9 2022-08-13)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

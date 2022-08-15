@@ -43,50 +43,50 @@
 <span id="43">43</span>
 <span id="44">44</span>
 <span id="45">45</span>
-</pre><pre class="rust"><code><span class="attribute">#![<span class="ident">feature</span>(<span class="ident">never_type</span>)]</span>
-<span class="attribute">#![<span class="ident">feature</span>(<span class="ident">type_alias_impl_trait</span>)]</span>
-<span class="attribute">#![<span class="ident">feature</span>(<span class="ident">generic_associated_types</span>)]</span>
-<span class="attribute">#![<span class="ident">allow</span>(<span class="ident">type_alias_bounds</span>)]</span>
-<span class="attribute">#![<span class="ident">allow</span>(<span class="ident">clippy::let_and_return</span>)]</span>
-<span class="attribute">#![<span class="ident">allow</span>(<span class="ident">clippy::iter_with_drain</span>)]</span>
-<span class="attribute">#![<span class="ident">allow</span>(<span class="ident">clippy::explicit_auto_deref</span>)]</span>
+</pre><pre class="rust"><code><span class="attribute">#![feature(never_type)]</span>
+<span class="attribute">#![feature(type_alias_impl_trait)]</span>
+<span class="attribute">#![feature(generic_associated_types)]</span>
+<span class="attribute">#![allow(type_alias_bounds)]</span>
+<span class="attribute">#![allow(clippy::let_and_return)]</span>
+<span class="attribute">#![allow(clippy::iter_with_drain)]</span>
+<span class="attribute">#![allow(clippy::explicit_auto_deref)]</span>
 
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">builder</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">compiled</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">lang</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">scheduled</span>;
+<span class="kw">pub mod </span>builder;
+<span class="kw">pub mod </span>compiled;
+<span class="kw">pub mod </span>lang;
+<span class="kw">pub mod </span>scheduled;
 
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">hydroflow_macro</span>::<span class="kw-2">*</span>;
+<span class="kw">pub use </span>hydroflow_macro::<span class="kw-2">*</span>;
 
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">tokio</span>;
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">tuple_list::tuple_list</span> <span class="kw">as</span> <span class="ident">tl</span>;
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">tuple_list::tuple_list_type</span> <span class="kw">as</span> <span class="ident">tt</span>;
+<span class="kw">pub use </span>tokio;
+<span class="kw">pub use </span>tuple_list::tuple_list <span class="kw">as </span>tl;
+<span class="kw">pub use </span>tuple_list::tuple_list_type <span class="kw">as </span>tt;
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">doctest</span>)]</span>
-<span class="kw">mod</span> <span class="ident">booktest</span> {
-    <span class="macro">macro_rules!</span> <span class="ident">booktest</span> {
-        (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">i</span>:<span class="ident">ident</span>) =&gt; {
-            <span class="attribute">#[<span class="ident">doc</span> = <span class="macro">include_str!</span>(<span class="macro">concat!</span>(<span class="string">&quot;../../book/&quot;</span>, <span class="macro">stringify!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">i</span>), <span class="string">&quot;.md&quot;</span>))]</span>
-            <span class="kw">mod</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">i</span> {}
+<span class="attribute">#[cfg(doctest)]</span>
+<span class="kw">mod </span>booktest {
+    <span class="macro">macro_rules!</span> booktest {
+        (<span class="macro-nonterminal">$i</span>:ident) =&gt; {
+            <span class="attribute">#[doc = <span class="macro">include_str!</span>(<span class="macro">concat!</span>(<span class="string">&quot;../../book/&quot;</span>, <span class="macro">stringify!</span>(<span class="macro-nonterminal">$i</span>), <span class="string">&quot;.md&quot;</span>))]</span>
+            <span class="kw">mod </span><span class="macro-nonterminal">$i </span>{}
         };
     }
-    <span class="macro">booktest!</span>(<span class="ident">example_1</span>);
-    <span class="macro">booktest!</span>(<span class="ident">example_2</span>);
-    <span class="macro">booktest!</span>(<span class="ident">example_3</span>);
-    <span class="macro">booktest!</span>(<span class="ident">example_4</span>);
-    <span class="macro">booktest!</span>(<span class="ident">example_5</span>);
+    <span class="macro">booktest!</span>(example_1);
+    <span class="macro">booktest!</span>(example_2);
+    <span class="macro">booktest!</span>(example_3);
+    <span class="macro">booktest!</span>(example_4);
+    <span class="macro">booktest!</span>(example_5);
 
-    <span class="macro">booktest!</span>(<span class="ident">example_1_surface</span>);
-    <span class="macro">booktest!</span>(<span class="ident">example_2_surface</span>);
-    <span class="macro">booktest!</span>(<span class="ident">example_3_surface</span>);
-    <span class="macro">booktest!</span>(<span class="ident">example_4_surface</span>);
-    <span class="macro">booktest!</span>(<span class="ident">example_5_surface</span>);
+    <span class="macro">booktest!</span>(example_1_surface);
+    <span class="macro">booktest!</span>(example_2_surface);
+    <span class="macro">booktest!</span>(example_3_surface);
+    <span class="macro">booktest!</span>(example_4_surface);
+    <span class="macro">booktest!</span>(example_5_surface);
 
-    <span class="macro">booktest!</span>(<span class="ident">surface_syntax</span>);
-    <span class="macro">booktest!</span>(<span class="ident">surface_embedding</span>);
-    <span class="macro">booktest!</span>(<span class="ident">surface_flows</span>);
-    <span class="macro">booktest!</span>(<span class="ident">surface_data</span>);
-    <span class="macro">booktest!</span>(<span class="ident">surface_ops</span>);
+    <span class="macro">booktest!</span>(surface_syntax);
+    <span class="macro">booktest!</span>(surface_embedding);
+    <span class="macro">booktest!</span>(surface_flows);
+    <span class="macro">booktest!</span>(surface_data);
+    <span class="macro">booktest!</span>(surface_ops);
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (75b7e52e9 2022-08-13)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

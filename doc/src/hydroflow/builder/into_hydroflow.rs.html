@@ -11,18 +11,18 @@
 <span id="11">11</span>
 <span id="12">12</span>
 <span id="13">13</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">super</span>::surface::pull_iter::IterPullSurface</span>;
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::surface::pull_iter::IterPullSurface;
 
-<span class="doccomment">/// A trait to convert [`IntoIterator`]s for use with Hydroflow&#39;s surface (build) API.</span>
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">IntoHydroflow</span>: <span class="ident">IntoIterator</span> {
-    <span class="doccomment">/// Convert this [`IntoIterator`] into a hydroflow subgraph builder.</span>
-    <span class="kw">fn</span> <span class="ident">into_hydroflow</span>(<span class="self">self</span>) -&gt; <span class="ident">IterPullSurface</span>&lt;<span class="ident"><span class="self">Self</span>::IntoIter</span>&gt;
-    <span class="kw">where</span>
-        <span class="self">Self</span>: <span class="ident">Sized</span>,
+<span class="doccomment">/// A trait to convert [`IntoIterator`]s for use with Hydroflow&#39;s surface (build) API.
+</span><span class="kw">pub trait </span>IntoHydroflow: IntoIterator {
+    <span class="doccomment">/// Convert this [`IntoIterator`] into a hydroflow subgraph builder.
+    </span><span class="kw">fn </span>into_hydroflow(<span class="self">self</span>) -&gt; IterPullSurface&lt;<span class="self">Self</span>::IntoIter&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: Sized,
     {
-        <span class="ident">IterPullSurface::new</span>(<span class="self">self</span>.<span class="ident">into_iter</span>())
+        IterPullSurface::new(<span class="self">self</span>.into_iter())
     }
 }
-<span class="kw">impl</span>&lt;<span class="ident">I</span>&gt; <span class="ident">IntoHydroflow</span> <span class="kw">for</span> <span class="ident">I</span> <span class="kw">where</span> <span class="ident">I</span>: <span class="ident">IntoIterator</span> {}
+<span class="kw">impl</span>&lt;I&gt; IntoHydroflow <span class="kw">for </span>I <span class="kw">where </span>I: IntoIterator {}
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (75b7e52e9 2022-08-13)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

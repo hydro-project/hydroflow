@@ -71,78 +71,78 @@
 <span id="71">71</span>
 <span id="72">72</span>
 <span id="73">73</span>
-</pre><pre class="rust"><code><span class="attribute">#![<span class="ident">allow</span>(<span class="ident">non_camel_case_types</span>)]</span>
+</pre><pre class="rust"><code><span class="attribute">#![allow(non_camel_case_types)]</span>
 
-<span class="kw">use</span> <span class="ident">std::collections</span>::{<span class="ident">BTreeMap</span>, <span class="ident">BTreeSet</span>, <span class="ident">HashMap</span>, <span class="ident">HashSet</span>};
+<span class="kw">use </span>std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::lang::collections</span>::{<span class="ident">Array</span>, <span class="ident">MaskedArray</span>, <span class="ident">Single</span>};
+<span class="kw">use </span><span class="kw">crate</span>::lang::collections::{Array, MaskedArray, Single};
 
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">Tag1</span>&lt;<span class="ident">T</span>&gt; {
-    <span class="kw">type</span> <span class="ident">Bind</span>;
-}
-
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">Tag2</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>&gt; {
-    <span class="kw">type</span> <span class="ident">Bind</span>;
+<span class="kw">pub trait </span>Tag1&lt;T&gt; {
+    <span class="kw">type </span>Bind;
 }
 
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">HASH_SET</span> {}
-<span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">Tag1</span>&lt;<span class="ident">T</span>&gt; <span class="kw">for</span> <span class="ident">HASH_SET</span> {
-    <span class="kw">type</span> <span class="ident">Bind</span> = <span class="ident">HashSet</span>&lt;<span class="ident">T</span>&gt;;
+<span class="kw">pub trait </span>Tag2&lt;T, U&gt; {
+    <span class="kw">type </span>Bind;
 }
 
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">HASH_MAP</span> {}
-<span class="kw">impl</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>&gt; <span class="ident">Tag2</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>&gt; <span class="kw">for</span> <span class="ident">HASH_MAP</span> {
-    <span class="kw">type</span> <span class="ident">Bind</span> = <span class="ident">HashMap</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>&gt;;
+<span class="kw">pub enum </span>HASH_SET {}
+<span class="kw">impl</span>&lt;T&gt; Tag1&lt;T&gt; <span class="kw">for </span>HASH_SET {
+    <span class="kw">type </span>Bind = HashSet&lt;T&gt;;
 }
 
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">BTREE_SET</span> {}
-<span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">Tag1</span>&lt;<span class="ident">T</span>&gt; <span class="kw">for</span> <span class="ident">BTREE_SET</span> {
-    <span class="kw">type</span> <span class="ident">Bind</span> = <span class="ident">BTreeSet</span>&lt;<span class="ident">T</span>&gt;;
+<span class="kw">pub enum </span>HASH_MAP {}
+<span class="kw">impl</span>&lt;T, U&gt; Tag2&lt;T, U&gt; <span class="kw">for </span>HASH_MAP {
+    <span class="kw">type </span>Bind = HashMap&lt;T, U&gt;;
 }
 
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">BTREE_MAP</span> {}
-<span class="kw">impl</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>&gt; <span class="ident">Tag2</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>&gt; <span class="kw">for</span> <span class="ident">BTREE_MAP</span> {
-    <span class="kw">type</span> <span class="ident">Bind</span> = <span class="ident">BTreeMap</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>&gt;;
+<span class="kw">pub enum </span>BTREE_SET {}
+<span class="kw">impl</span>&lt;T&gt; Tag1&lt;T&gt; <span class="kw">for </span>BTREE_SET {
+    <span class="kw">type </span>Bind = BTreeSet&lt;T&gt;;
 }
 
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">VEC</span> {}
-<span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">Tag1</span>&lt;<span class="ident">T</span>&gt; <span class="kw">for</span> <span class="ident">VEC</span> {
-    <span class="kw">type</span> <span class="ident">Bind</span> = <span class="ident">Vec</span>&lt;<span class="ident">T</span>&gt;;
-}
-<span class="kw">impl</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>&gt; <span class="ident">Tag2</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>&gt; <span class="kw">for</span> <span class="ident">VEC</span> {
-    <span class="kw">type</span> <span class="ident">Bind</span> = <span class="ident">Vec</span>&lt;(<span class="ident">T</span>, <span class="ident">U</span>)&gt;;
+<span class="kw">pub enum </span>BTREE_MAP {}
+<span class="kw">impl</span>&lt;T, U&gt; Tag2&lt;T, U&gt; <span class="kw">for </span>BTREE_MAP {
+    <span class="kw">type </span>Bind = BTreeMap&lt;T, U&gt;;
 }
 
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">SINGLE</span> {}
-<span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">Tag1</span>&lt;<span class="ident">T</span>&gt; <span class="kw">for</span> <span class="ident">SINGLE</span> {
-    <span class="kw">type</span> <span class="ident">Bind</span> = <span class="ident">Single</span>&lt;<span class="ident">T</span>&gt;;
+<span class="kw">pub enum </span>VEC {}
+<span class="kw">impl</span>&lt;T&gt; Tag1&lt;T&gt; <span class="kw">for </span>VEC {
+    <span class="kw">type </span>Bind = Vec&lt;T&gt;;
 }
-<span class="kw">impl</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>&gt; <span class="ident">Tag2</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>&gt; <span class="kw">for</span> <span class="ident">SINGLE</span> {
-    <span class="kw">type</span> <span class="ident">Bind</span> = <span class="ident">Single</span>&lt;(<span class="ident">T</span>, <span class="ident">U</span>)&gt;;
-}
-
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">OPTION</span> {}
-<span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">Tag1</span>&lt;<span class="ident">T</span>&gt; <span class="kw">for</span> <span class="ident">OPTION</span> {
-    <span class="kw">type</span> <span class="ident">Bind</span> = <span class="prelude-ty">Option</span>&lt;<span class="ident">T</span>&gt;;
-}
-<span class="kw">impl</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>&gt; <span class="ident">Tag2</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>&gt; <span class="kw">for</span> <span class="ident">OPTION</span> {
-    <span class="kw">type</span> <span class="ident">Bind</span> = <span class="prelude-ty">Option</span>&lt;(<span class="ident">T</span>, <span class="ident">U</span>)&gt;;
+<span class="kw">impl</span>&lt;T, U&gt; Tag2&lt;T, U&gt; <span class="kw">for </span>VEC {
+    <span class="kw">type </span>Bind = Vec&lt;(T, U)&gt;;
 }
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ARRAY</span>&lt;<span class="kw">const</span> <span class="ident">N</span>: <span class="ident">usize</span>&gt;([(); <span class="ident">N</span>]);
-<span class="kw">impl</span>&lt;<span class="ident">T</span>, <span class="kw">const</span> <span class="ident">N</span>: <span class="ident">usize</span>&gt; <span class="ident">Tag1</span>&lt;<span class="ident">T</span>&gt; <span class="kw">for</span> <span class="ident">ARRAY</span>&lt;<span class="ident">N</span>&gt; {
-    <span class="kw">type</span> <span class="ident">Bind</span> = <span class="ident">Array</span>&lt;<span class="ident">T</span>, <span class="ident">N</span>&gt;;
+<span class="kw">pub enum </span>SINGLE {}
+<span class="kw">impl</span>&lt;T&gt; Tag1&lt;T&gt; <span class="kw">for </span>SINGLE {
+    <span class="kw">type </span>Bind = Single&lt;T&gt;;
 }
-<span class="kw">impl</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>, <span class="kw">const</span> <span class="ident">N</span>: <span class="ident">usize</span>&gt; <span class="ident">Tag2</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>&gt; <span class="kw">for</span> <span class="ident">ARRAY</span>&lt;<span class="ident">N</span>&gt; {
-    <span class="kw">type</span> <span class="ident">Bind</span> = <span class="ident">Array</span>&lt;(<span class="ident">T</span>, <span class="ident">U</span>), <span class="ident">N</span>&gt;;
+<span class="kw">impl</span>&lt;T, U&gt; Tag2&lt;T, U&gt; <span class="kw">for </span>SINGLE {
+    <span class="kw">type </span>Bind = Single&lt;(T, U)&gt;;
 }
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">MASKED_ARRAY</span>&lt;<span class="kw">const</span> <span class="ident">N</span>: <span class="ident">usize</span>&gt;([(); <span class="ident">N</span>]);
-<span class="kw">impl</span>&lt;<span class="ident">T</span>, <span class="kw">const</span> <span class="ident">N</span>: <span class="ident">usize</span>&gt; <span class="ident">Tag1</span>&lt;<span class="ident">T</span>&gt; <span class="kw">for</span> <span class="ident">MASKED_ARRAY</span>&lt;<span class="ident">N</span>&gt; {
-    <span class="kw">type</span> <span class="ident">Bind</span> = <span class="ident">MaskedArray</span>&lt;<span class="ident">T</span>, <span class="ident">N</span>&gt;;
+<span class="kw">pub enum </span>OPTION {}
+<span class="kw">impl</span>&lt;T&gt; Tag1&lt;T&gt; <span class="kw">for </span>OPTION {
+    <span class="kw">type </span>Bind = <span class="prelude-ty">Option</span>&lt;T&gt;;
 }
-<span class="kw">impl</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>, <span class="kw">const</span> <span class="ident">N</span>: <span class="ident">usize</span>&gt; <span class="ident">Tag2</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>&gt; <span class="kw">for</span> <span class="ident">MASKED_ARRAY</span>&lt;<span class="ident">N</span>&gt; {
-    <span class="kw">type</span> <span class="ident">Bind</span> = <span class="ident">MaskedArray</span>&lt;(<span class="ident">T</span>, <span class="ident">U</span>), <span class="ident">N</span>&gt;;
+<span class="kw">impl</span>&lt;T, U&gt; Tag2&lt;T, U&gt; <span class="kw">for </span>OPTION {
+    <span class="kw">type </span>Bind = <span class="prelude-ty">Option</span>&lt;(T, U)&gt;;
+}
+
+<span class="kw">pub struct </span>ARRAY&lt;<span class="kw">const </span>N: usize&gt;([(); N]);
+<span class="kw">impl</span>&lt;T, <span class="kw">const </span>N: usize&gt; Tag1&lt;T&gt; <span class="kw">for </span>ARRAY&lt;N&gt; {
+    <span class="kw">type </span>Bind = Array&lt;T, N&gt;;
+}
+<span class="kw">impl</span>&lt;T, U, <span class="kw">const </span>N: usize&gt; Tag2&lt;T, U&gt; <span class="kw">for </span>ARRAY&lt;N&gt; {
+    <span class="kw">type </span>Bind = Array&lt;(T, U), N&gt;;
+}
+
+<span class="kw">pub struct </span>MASKED_ARRAY&lt;<span class="kw">const </span>N: usize&gt;([(); N]);
+<span class="kw">impl</span>&lt;T, <span class="kw">const </span>N: usize&gt; Tag1&lt;T&gt; <span class="kw">for </span>MASKED_ARRAY&lt;N&gt; {
+    <span class="kw">type </span>Bind = MaskedArray&lt;T, N&gt;;
+}
+<span class="kw">impl</span>&lt;T, U, <span class="kw">const </span>N: usize&gt; Tag2&lt;T, U&gt; <span class="kw">for </span>MASKED_ARRAY&lt;N&gt; {
+    <span class="kw">type </span>Bind = MaskedArray&lt;(T, U), N&gt;;
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (75b7e52e9 2022-08-13)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

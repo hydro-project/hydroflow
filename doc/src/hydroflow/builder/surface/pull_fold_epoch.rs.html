@@ -61,68 +61,68 @@
 <span id="61">61</span>
 <span id="62">62</span>
 <span id="63">63</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">AssembleFlowGraph</span>, <span class="ident">BaseSurface</span>, <span class="ident">PullSurface</span>};
+</pre><pre class="rust"><code><span class="kw">use super</span>::{AssembleFlowGraph, BaseSurface, PullSurface};
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::builder::build::pull_fold_epoch::FoldEpochPullBuild</span>;
+<span class="kw">use </span><span class="kw">crate</span>::builder::build::pull_fold_epoch::FoldEpochPullBuild;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::context::Context</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::flow_graph::FlowNodeId</span>;
+<span class="kw">use </span><span class="kw">crate</span>::scheduled::context::Context;
+<span class="kw">use </span><span class="kw">crate</span>::scheduled::flow_graph::FlowNodeId;
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">FoldEpochPullSurface</span>&lt;<span class="ident">Prev</span>, <span class="ident">Init</span>, <span class="ident">Func</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">Prev</span>: <span class="ident">BaseSurface</span>,
+<span class="kw">pub struct </span>FoldEpochPullSurface&lt;Prev, Init, Func&gt;
+<span class="kw">where
+    </span>Prev: BaseSurface,
 {
-    <span class="ident">prev</span>: <span class="ident">Prev</span>,
-    <span class="ident">init</span>: <span class="ident">Init</span>,
-    <span class="ident">func</span>: <span class="ident">Func</span>,
+    prev: Prev,
+    init: Init,
+    func: Func,
 }
-<span class="kw">impl</span>&lt;<span class="ident">Prev</span>, <span class="ident">Init</span>, <span class="ident">Func</span>, <span class="ident">Out</span>&gt; <span class="ident">FoldEpochPullSurface</span>&lt;<span class="ident">Prev</span>, <span class="ident">Init</span>, <span class="ident">Func</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">Prev</span>: <span class="ident">BaseSurface</span>,
-    <span class="ident">Init</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident">Context</span>) -&gt; <span class="ident">Out</span>,
-    <span class="ident">Func</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident">Context</span>, <span class="ident">Out</span>, <span class="ident">Prev::ItemOut</span>) -&gt; <span class="ident">Out</span>,
+<span class="kw">impl</span>&lt;Prev, Init, Func, Out&gt; FoldEpochPullSurface&lt;Prev, Init, Func&gt;
+<span class="kw">where
+    </span>Prev: BaseSurface,
+    Init: FnMut(<span class="kw-2">&amp;</span>Context) -&gt; Out,
+    Func: FnMut(<span class="kw-2">&amp;</span>Context, Out, Prev::ItemOut) -&gt; Out,
 {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">prev</span>: <span class="ident">Prev</span>, <span class="ident">init</span>: <span class="ident">Init</span>, <span class="ident">func</span>: <span class="ident">Func</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> { <span class="ident">prev</span>, <span class="ident">init</span>, <span class="ident">func</span> }
+    <span class="kw">pub fn </span>new(prev: Prev, init: Init, func: Func) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{ prev, init, func }
     }
 }
-<span class="kw">impl</span>&lt;<span class="ident">Prev</span>, <span class="ident">Init</span>, <span class="ident">Func</span>, <span class="ident">Out</span>&gt; <span class="ident">AssembleFlowGraph</span> <span class="kw">for</span> <span class="ident">FoldEpochPullSurface</span>&lt;<span class="ident">Prev</span>, <span class="ident">Init</span>, <span class="ident">Func</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">Prev</span>: <span class="ident">BaseSurface</span> + <span class="ident">AssembleFlowGraph</span>,
-    <span class="ident">Init</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident">Context</span>) -&gt; <span class="ident">Out</span>,
-    <span class="ident">Func</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident">Context</span>, <span class="ident">Out</span>, <span class="ident">Prev::ItemOut</span>) -&gt; <span class="ident">Out</span>,
+<span class="kw">impl</span>&lt;Prev, Init, Func, Out&gt; AssembleFlowGraph <span class="kw">for </span>FoldEpochPullSurface&lt;Prev, Init, Func&gt;
+<span class="kw">where
+    </span>Prev: BaseSurface + AssembleFlowGraph,
+    Init: FnMut(<span class="kw-2">&amp;</span>Context) -&gt; Out,
+    Func: FnMut(<span class="kw-2">&amp;</span>Context, Out, Prev::ItemOut) -&gt; Out,
 {
-    <span class="kw">fn</span> <span class="ident">insert_dep</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">e</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="kw">super</span>::FlowGraph</span>) -&gt; <span class="ident">FlowNodeId</span> {
-        <span class="kw">let</span> <span class="ident">my_id</span> = <span class="ident">e</span>.<span class="ident">add_node</span>(<span class="string">&quot;FoldEpoch&quot;</span>);
-        <span class="kw">let</span> <span class="ident">prev_id</span> = <span class="self">self</span>.<span class="ident">prev</span>.<span class="ident">insert_dep</span>(<span class="ident">e</span>);
-        <span class="ident">e</span>.<span class="ident">add_edge</span>((<span class="ident">prev_id</span>, <span class="ident">my_id</span>));
-        <span class="ident">my_id</span>
+    <span class="kw">fn </span>insert_dep(<span class="kw-2">&amp;</span><span class="self">self</span>, e: <span class="kw-2">&amp;mut </span><span class="kw">super</span>::FlowGraph) -&gt; FlowNodeId {
+        <span class="kw">let </span>my_id = e.add_node(<span class="string">&quot;FoldEpoch&quot;</span>);
+        <span class="kw">let </span>prev_id = <span class="self">self</span>.prev.insert_dep(e);
+        e.add_edge((prev_id, my_id));
+        my_id
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">Prev</span>, <span class="ident">Init</span>, <span class="ident">Func</span>, <span class="ident">Out</span>&gt; <span class="ident">BaseSurface</span> <span class="kw">for</span> <span class="ident">FoldEpochPullSurface</span>&lt;<span class="ident">Prev</span>, <span class="ident">Init</span>, <span class="ident">Func</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">Prev</span>: <span class="ident">BaseSurface</span>,
-    <span class="ident">Init</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident">Context</span>) -&gt; <span class="ident">Out</span>,
-    <span class="ident">Func</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident">Context</span>, <span class="ident">Out</span>, <span class="ident">Prev::ItemOut</span>) -&gt; <span class="ident">Out</span>,
+<span class="kw">impl</span>&lt;Prev, Init, Func, Out&gt; BaseSurface <span class="kw">for </span>FoldEpochPullSurface&lt;Prev, Init, Func&gt;
+<span class="kw">where
+    </span>Prev: BaseSurface,
+    Init: FnMut(<span class="kw-2">&amp;</span>Context) -&gt; Out,
+    Func: FnMut(<span class="kw-2">&amp;</span>Context, Out, Prev::ItemOut) -&gt; Out,
 {
-    <span class="kw">type</span> <span class="ident">ItemOut</span> = <span class="ident">Out</span>;
+    <span class="kw">type </span>ItemOut = Out;
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">Prev</span>, <span class="ident">Init</span>, <span class="ident">Func</span>, <span class="ident">Out</span>&gt; <span class="ident">PullSurface</span> <span class="kw">for</span> <span class="ident">FoldEpochPullSurface</span>&lt;<span class="ident">Prev</span>, <span class="ident">Init</span>, <span class="ident">Func</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">Prev</span>: <span class="ident">PullSurface</span>,
-    <span class="ident">Init</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident">Context</span>) -&gt; <span class="ident">Out</span>,
-    <span class="ident">Func</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident">Context</span>, <span class="ident">Out</span>, <span class="ident">Prev::ItemOut</span>) -&gt; <span class="ident">Out</span>,
+<span class="kw">impl</span>&lt;Prev, Init, Func, Out&gt; PullSurface <span class="kw">for </span>FoldEpochPullSurface&lt;Prev, Init, Func&gt;
+<span class="kw">where
+    </span>Prev: PullSurface,
+    Init: FnMut(<span class="kw-2">&amp;</span>Context) -&gt; Out,
+    Func: FnMut(<span class="kw-2">&amp;</span>Context, Out, Prev::ItemOut) -&gt; Out,
 {
-    <span class="kw">type</span> <span class="ident">InputHandoffs</span> = <span class="ident">Prev::InputHandoffs</span>;
-    <span class="kw">type</span> <span class="ident">Build</span> = <span class="ident">FoldEpochPullBuild</span>&lt;<span class="ident">Prev::Build</span>, <span class="ident">Init</span>, <span class="ident">Func</span>&gt;;
+    <span class="kw">type </span>InputHandoffs = Prev::InputHandoffs;
+    <span class="kw">type </span>Build = FoldEpochPullBuild&lt;Prev::Build, Init, Func&gt;;
 
-    <span class="kw">fn</span> <span class="ident">make_parts</span>(<span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span>) -&gt; (<span class="ident"><span class="self">Self</span>::InputHandoffs</span>, <span class="ident"><span class="self">Self</span>::Build</span>) {
-        <span class="kw">let</span> (<span class="ident">connect</span>, <span class="ident">build</span>) = <span class="self">self</span>.<span class="ident">prev</span>.<span class="ident">make_parts</span>(<span class="ident">ctx</span>);
-        <span class="kw">let</span> <span class="ident">build</span> = <span class="ident">FoldEpochPullBuild::new</span>(<span class="ident">build</span>, <span class="self">self</span>.<span class="ident">init</span>, <span class="self">self</span>.<span class="ident">func</span>);
-        (<span class="ident">connect</span>, <span class="ident">build</span>)
+    <span class="kw">fn </span>make_parts(<span class="self">self</span>, ctx: <span class="kw-2">&amp;mut </span>Context) -&gt; (<span class="self">Self</span>::InputHandoffs, <span class="self">Self</span>::Build) {
+        <span class="kw">let </span>(connect, build) = <span class="self">self</span>.prev.make_parts(ctx);
+        <span class="kw">let </span>build = FoldEpochPullBuild::new(build, <span class="self">self</span>.init, <span class="self">self</span>.func);
+        (connect, build)
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (75b7e52e9 2022-08-13)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

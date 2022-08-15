@@ -72,79 +72,79 @@
 <span id="72">72</span>
 <span id="73">73</span>
 <span id="74">74</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">Pusherator</span>, <span class="ident">PusheratorBuild</span>};
+</pre><pre class="rust"><code><span class="kw">use super</span>::{Pusherator, PusheratorBuild};
 
-<span class="kw">use</span> <span class="ident">std::marker::PhantomData</span>;
+<span class="kw">use </span>std::marker::PhantomData;
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Map</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>, <span class="ident">F</span>, <span class="ident">O</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="ident">T</span>) -&gt; <span class="ident">U</span>,
-    <span class="ident">O</span>: <span class="ident">Pusherator</span>&lt;<span class="ident">Item</span> = <span class="ident">U</span>&gt;,
+<span class="kw">pub struct </span>Map&lt;T, U, F, O&gt;
+<span class="kw">where
+    </span>F: FnMut(T) -&gt; U,
+    O: Pusherator&lt;Item = U&gt;,
 {
-    <span class="ident">out</span>: <span class="ident">O</span>,
-    <span class="ident">f</span>: <span class="ident">F</span>,
-    <span class="ident">_marker</span>: <span class="ident">PhantomData</span>&lt;<span class="ident">T</span>&gt;,
+    out: O,
+    f: F,
+    _marker: PhantomData&lt;T&gt;,
 }
-<span class="kw">impl</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>, <span class="ident">F</span>, <span class="ident">O</span>&gt; <span class="ident">Pusherator</span> <span class="kw">for</span> <span class="ident">Map</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>, <span class="ident">F</span>, <span class="ident">O</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="ident">T</span>) -&gt; <span class="ident">U</span>,
-    <span class="ident">O</span>: <span class="ident">Pusherator</span>&lt;<span class="ident">Item</span> = <span class="ident">U</span>&gt;,
+<span class="kw">impl</span>&lt;T, U, F, O&gt; Pusherator <span class="kw">for </span>Map&lt;T, U, F, O&gt;
+<span class="kw">where
+    </span>F: FnMut(T) -&gt; U,
+    O: Pusherator&lt;Item = U&gt;,
 {
-    <span class="kw">type</span> <span class="ident">Item</span> = <span class="ident">T</span>;
-    <span class="kw">fn</span> <span class="ident">give</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">item</span>: <span class="ident"><span class="self">Self</span>::Item</span>) {
-        <span class="self">self</span>.<span class="ident">out</span>.<span class="ident">give</span>((<span class="self">self</span>.<span class="ident">f</span>)(<span class="ident">item</span>));
+    <span class="kw">type </span>Item = T;
+    <span class="kw">fn </span>give(<span class="kw-2">&amp;mut </span><span class="self">self</span>, item: <span class="self">Self</span>::Item) {
+        <span class="self">self</span>.out.give((<span class="self">self</span>.f)(item));
     }
 }
-<span class="kw">impl</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>, <span class="ident">F</span>, <span class="ident">O</span>&gt; <span class="ident">Map</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>, <span class="ident">F</span>, <span class="ident">O</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="ident">T</span>) -&gt; <span class="ident">U</span>,
-    <span class="ident">O</span>: <span class="ident">Pusherator</span>&lt;<span class="ident">Item</span> = <span class="ident">U</span>&gt;,
+<span class="kw">impl</span>&lt;T, U, F, O&gt; Map&lt;T, U, F, O&gt;
+<span class="kw">where
+    </span>F: FnMut(T) -&gt; U,
+    O: Pusherator&lt;Item = U&gt;,
 {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">f</span>: <span class="ident">F</span>, <span class="ident">out</span>: <span class="ident">O</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">out</span>,
-            <span class="ident">f</span>,
-            <span class="ident">_marker</span>: <span class="ident">PhantomData</span>,
+    <span class="kw">pub fn </span>new(f: F, out: O) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            out,
+            f,
+            _marker: PhantomData,
         }
     }
 }
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">MapBuild</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>, <span class="ident">F</span>, <span class="ident">P</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="ident">T</span>) -&gt; <span class="ident">U</span>,
-    <span class="ident">P</span>: <span class="ident">PusheratorBuild</span>&lt;<span class="ident">Item</span> = <span class="ident">T</span>&gt;,
+<span class="kw">pub struct </span>MapBuild&lt;T, U, F, P&gt;
+<span class="kw">where
+    </span>F: FnMut(T) -&gt; U,
+    P: PusheratorBuild&lt;Item = T&gt;,
 {
-    <span class="ident">prev</span>: <span class="ident">P</span>,
-    <span class="ident">f</span>: <span class="ident">F</span>,
-    <span class="ident">_marker</span>: <span class="ident">PhantomData</span>&lt;<span class="ident">T</span>&gt;,
+    prev: P,
+    f: F,
+    _marker: PhantomData&lt;T&gt;,
 }
-<span class="kw">impl</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>, <span class="ident">F</span>, <span class="ident">P</span>&gt; <span class="ident">MapBuild</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>, <span class="ident">F</span>, <span class="ident">P</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="ident">T</span>) -&gt; <span class="ident">U</span>,
-    <span class="ident">P</span>: <span class="ident">PusheratorBuild</span>&lt;<span class="ident">Item</span> = <span class="ident">T</span>&gt;,
+<span class="kw">impl</span>&lt;T, U, F, P&gt; MapBuild&lt;T, U, F, P&gt;
+<span class="kw">where
+    </span>F: FnMut(T) -&gt; U,
+    P: PusheratorBuild&lt;Item = T&gt;,
 {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">prev</span>: <span class="ident">P</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">prev</span>,
-            <span class="ident">f</span>,
-            <span class="ident">_marker</span>: <span class="ident">PhantomData</span>,
+    <span class="kw">pub fn </span>new(prev: P, f: F) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            prev,
+            f,
+            _marker: PhantomData,
         }
     }
 }
-<span class="kw">impl</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>, <span class="ident">F</span>, <span class="ident">P</span>&gt; <span class="ident">PusheratorBuild</span> <span class="kw">for</span> <span class="ident">MapBuild</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>, <span class="ident">F</span>, <span class="ident">P</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="ident">T</span>) -&gt; <span class="ident">U</span>,
-    <span class="ident">P</span>: <span class="ident">PusheratorBuild</span>&lt;<span class="ident">Item</span> = <span class="ident">T</span>&gt;,
+<span class="kw">impl</span>&lt;T, U, F, P&gt; PusheratorBuild <span class="kw">for </span>MapBuild&lt;T, U, F, P&gt;
+<span class="kw">where
+    </span>F: FnMut(T) -&gt; U,
+    P: PusheratorBuild&lt;Item = T&gt;,
 {
-    <span class="kw">type</span> <span class="ident">Item</span> = <span class="ident">U</span>;
+    <span class="kw">type </span>Item = U;
 
-    <span class="kw">type</span> <span class="ident">Output</span>&lt;<span class="ident">O</span>: <span class="ident">Pusherator</span>&lt;<span class="ident">Item</span> = <span class="ident"><span class="self">Self</span>::Item</span>&gt;&gt; = <span class="ident">P::Output</span>&lt;<span class="ident">Map</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>, <span class="ident">F</span>, <span class="ident">O</span>&gt;&gt;;
-    <span class="kw">fn</span> <span class="ident">build</span>&lt;<span class="ident">O</span>&gt;(<span class="self">self</span>, <span class="ident">input</span>: <span class="ident">O</span>) -&gt; <span class="ident"><span class="self">Self</span>::Output</span>&lt;<span class="ident">O</span>&gt;
-    <span class="kw">where</span>
-        <span class="ident">O</span>: <span class="ident">Pusherator</span>&lt;<span class="ident">Item</span> = <span class="ident"><span class="self">Self</span>::Item</span>&gt;,
+    <span class="kw">type </span>Output&lt;O: Pusherator&lt;Item = <span class="self">Self</span>::Item&gt;&gt; = P::Output&lt;Map&lt;T, U, F, O&gt;&gt;;
+    <span class="kw">fn </span>build&lt;O&gt;(<span class="self">self</span>, input: O) -&gt; <span class="self">Self</span>::Output&lt;O&gt;
+    <span class="kw">where
+        </span>O: Pusherator&lt;Item = <span class="self">Self</span>::Item&gt;,
     {
-        <span class="self">self</span>.<span class="ident">prev</span>.<span class="ident">build</span>(<span class="ident">Map::new</span>(<span class="self">self</span>.<span class="ident">f</span>, <span class="ident">input</span>))
+        <span class="self">self</span>.prev.build(Map::new(<span class="self">self</span>.f, input))
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (75b7e52e9 2022-08-13)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

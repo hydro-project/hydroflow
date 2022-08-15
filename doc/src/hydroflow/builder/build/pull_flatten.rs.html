@@ -38,45 +38,45 @@
 <span id="38">38</span>
 <span id="39">39</span>
 <span id="40">40</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">super</span>::PullBuild</span>;
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::PullBuild;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled</span>::{<span class="ident">context::Context</span>, <span class="ident">handoff::handoff_list::PortList</span>, <span class="ident">port::RECV</span>};
+<span class="kw">use </span><span class="kw">crate</span>::scheduled::{context::Context, handoff::handoff_list::PortList, port::RECV};
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">FlattenPullBuild</span>&lt;<span class="ident">Prev</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">Prev</span>: <span class="ident">PullBuild</span>,
+<span class="kw">pub struct </span>FlattenPullBuild&lt;Prev&gt;
+<span class="kw">where
+    </span>Prev: PullBuild,
 {
-    <span class="ident">prev</span>: <span class="ident">Prev</span>,
+    prev: Prev,
 }
-<span class="kw">impl</span>&lt;<span class="ident">Prev</span>&gt; <span class="ident">FlattenPullBuild</span>&lt;<span class="ident">Prev</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">Prev</span>: <span class="ident">PullBuild</span>,
-    <span class="ident">Prev::ItemOut</span>: <span class="ident">IntoIterator</span>,
+<span class="kw">impl</span>&lt;Prev&gt; FlattenPullBuild&lt;Prev&gt;
+<span class="kw">where
+    </span>Prev: PullBuild,
+    Prev::ItemOut: IntoIterator,
 {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">prev</span>: <span class="ident">Prev</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> { <span class="ident">prev</span> }
+    <span class="kw">pub fn </span>new(prev: Prev) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{ prev }
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">Prev</span>&gt; <span class="ident">PullBuild</span> <span class="kw">for</span> <span class="ident">FlattenPullBuild</span>&lt;<span class="ident">Prev</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">Prev</span>: <span class="ident">PullBuild</span>,
-    <span class="ident">Prev::ItemOut</span>: <span class="ident">IntoIterator</span>,
+<span class="kw">impl</span>&lt;Prev&gt; PullBuild <span class="kw">for </span>FlattenPullBuild&lt;Prev&gt;
+<span class="kw">where
+    </span>Prev: PullBuild,
+    Prev::ItemOut: IntoIterator,
 {
-    <span class="kw">type</span> <span class="ident">ItemOut</span> = &lt;<span class="ident">Prev::ItemOut</span> <span class="kw">as</span> <span class="ident">IntoIterator</span>&gt;<span class="ident">::Item</span>;
-    <span class="kw">type</span> <span class="ident">Build</span>&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt; = <span class="ident">std::iter::Flatten</span>&lt;<span class="ident">Prev::Build</span>&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt;&gt;
-    <span class="kw">where</span>
-        <span class="self">Self</span>: <span class="lifetime">&#39;slf</span>;
+    <span class="kw">type </span>ItemOut = &lt;Prev::ItemOut <span class="kw">as </span>IntoIterator&gt;::Item;
+    <span class="kw">type </span>Build&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt; = std::iter::Flatten&lt;Prev::Build&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt;&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: <span class="lifetime">&#39;slf</span>;
 
-    <span class="kw">type</span> <span class="ident">InputHandoffs</span> = <span class="ident">Prev::InputHandoffs</span>;
+    <span class="kw">type </span>InputHandoffs = Prev::InputHandoffs;
 
-    <span class="kw">fn</span> <span class="ident">build</span>&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt;(
-        <span class="kw-2">&amp;</span><span class="lifetime">&#39;slf</span> <span class="kw-2">mut</span> <span class="self">self</span>,
-        <span class="ident">context</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx</span> <span class="ident">Context</span>,
-        <span class="ident">handoffs</span>: &lt;<span class="ident"><span class="self">Self</span>::InputHandoffs</span> <span class="kw">as</span> <span class="ident">PortList</span>&lt;<span class="ident">RECV</span>&gt;&gt;<span class="ident">::Ctx</span>&lt;<span class="lifetime">&#39;ctx</span>&gt;,
-    ) -&gt; <span class="ident"><span class="self">Self</span>::Build</span>&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt; {
-        <span class="self">self</span>.<span class="ident">prev</span>.<span class="ident">build</span>(<span class="ident">context</span>, <span class="ident">handoffs</span>).<span class="ident">flatten</span>()
+    <span class="kw">fn </span>build&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt;(
+        <span class="kw-2">&amp;</span><span class="lifetime">&#39;slf </span><span class="kw-2">mut </span><span class="self">self</span>,
+        context: <span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span>Context,
+        handoffs: &lt;<span class="self">Self</span>::InputHandoffs <span class="kw">as </span>PortList&lt;RECV&gt;&gt;::Ctx&lt;<span class="lifetime">&#39;ctx</span>&gt;,
+    ) -&gt; <span class="self">Self</span>::Build&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt; {
+        <span class="self">self</span>.prev.build(context, handoffs).flatten()
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (75b7e52e9 2022-08-13)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

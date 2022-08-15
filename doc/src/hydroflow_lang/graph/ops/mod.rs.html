@@ -361,368 +361,368 @@
 <span id="361">361</span>
 <span id="362">362</span>
 <span id="363">363</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::fmt::Display</span>;
-<span class="kw">use</span> <span class="ident">std::ops</span>::{<span class="ident">Bound</span>, <span class="ident">RangeBounds</span>};
+</pre><pre class="rust"><code><span class="kw">use </span>std::fmt::Display;
+<span class="kw">use </span>std::ops::{Bound, RangeBounds};
 
-<span class="kw">use</span> <span class="ident">proc_macro2</span>::{<span class="ident">Ident</span>, <span class="ident">Span</span>, <span class="ident">TokenStream</span>};
-<span class="kw">use</span> <span class="ident">quote::quote</span>;
-<span class="kw">use</span> <span class="ident">slotmap::Key</span>;
-<span class="kw">use</span> <span class="ident">syn::punctuated::Punctuated</span>;
-<span class="kw">use</span> <span class="ident">syn</span>::{<span class="ident">Expr</span>, <span class="ident">GenericArgument</span>, <span class="ident">Token</span>};
+<span class="kw">use </span>proc_macro2::{Ident, Span, TokenStream};
+<span class="kw">use </span>quote::quote;
+<span class="kw">use </span>slotmap::Key;
+<span class="kw">use </span>syn::punctuated::Punctuated;
+<span class="kw">use </span>syn::{Expr, GenericArgument, Token};
 
-<span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">GraphNodeId</span>, <span class="ident">GraphSubgraphId</span>};
+<span class="kw">use super</span>::{GraphNodeId, GraphSubgraphId};
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">OperatorConstraints</span> {
-    <span class="doccomment">/// Operator&#39;s name.</span>
-    <span class="kw">pub</span> <span class="ident">name</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span>,
-    <span class="doccomment">/// Input argument range required to not show an error.</span>
-    <span class="kw">pub</span> <span class="ident">hard_range_inn</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="kw">dyn</span> <span class="ident">RangeTrait</span>&lt;<span class="ident">usize</span>&gt;,
-    <span class="doccomment">/// Input argument range required to not show a warning.</span>
-    <span class="kw">pub</span> <span class="ident">soft_range_inn</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="kw">dyn</span> <span class="ident">RangeTrait</span>&lt;<span class="ident">usize</span>&gt;,
-    <span class="doccomment">/// Output argument range required to not show an error.</span>
-    <span class="kw">pub</span> <span class="ident">hard_range_out</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="kw">dyn</span> <span class="ident">RangeTrait</span>&lt;<span class="ident">usize</span>&gt;,
-    <span class="doccomment">/// Output argument range required to not show an warning.</span>
-    <span class="kw">pub</span> <span class="ident">soft_range_out</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="kw">dyn</span> <span class="ident">RangeTrait</span>&lt;<span class="ident">usize</span>&gt;,
-    <span class="doccomment">/// Number of arguments i.e. `operator(a, b, c)` has `num_args = 3`.</span>
-    <span class="kw">pub</span> <span class="ident">num_args</span>: <span class="ident">usize</span>,
-    <span class="comment">// TODO: generic argument ranges.</span>
-    <span class="doccomment">/// Generate code which runs once outside the subgraph to set up any</span>
-    <span class="doccomment">/// external stuff like state API stuff or external chanels, etc.</span>
-    <span class="kw">pub</span> <span class="ident">write_prologue_fn</span>:
-        <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="kw">dyn</span> <span class="ident">Fn</span>(<span class="kw-2">&amp;</span><span class="ident">WriteContextArgs</span>&lt;<span class="lifetime">&#39;_</span>&gt;, <span class="kw-2">&amp;</span><span class="ident">WriteIteratorArgs</span>&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="ident">TokenStream</span>,
-    <span class="doccomment">/// Generate iterator or pusherator code inside the subgraphs.</span>
-    <span class="kw">pub</span> <span class="ident">write_iterator_fn</span>:
-        <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="kw">dyn</span> <span class="ident">Fn</span>(<span class="kw-2">&amp;</span><span class="ident">WriteContextArgs</span>&lt;<span class="lifetime">&#39;_</span>&gt;, <span class="kw-2">&amp;</span><span class="ident">WriteIteratorArgs</span>&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="ident">TokenStream</span>,
+<span class="kw">pub struct </span>OperatorConstraints {
+    <span class="doccomment">/// Operator&#39;s name.
+    </span><span class="kw">pub </span>name: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str,
+    <span class="doccomment">/// Input argument range required to not show an error.
+    </span><span class="kw">pub </span>hard_range_inn: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span><span class="kw">dyn </span>RangeTrait&lt;usize&gt;,
+    <span class="doccomment">/// Input argument range required to not show a warning.
+    </span><span class="kw">pub </span>soft_range_inn: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span><span class="kw">dyn </span>RangeTrait&lt;usize&gt;,
+    <span class="doccomment">/// Output argument range required to not show an error.
+    </span><span class="kw">pub </span>hard_range_out: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span><span class="kw">dyn </span>RangeTrait&lt;usize&gt;,
+    <span class="doccomment">/// Output argument range required to not show an warning.
+    </span><span class="kw">pub </span>soft_range_out: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span><span class="kw">dyn </span>RangeTrait&lt;usize&gt;,
+    <span class="doccomment">/// Number of arguments i.e. `operator(a, b, c)` has `num_args = 3`.
+    </span><span class="kw">pub </span>num_args: usize,
+    <span class="comment">// TODO: generic argument ranges.
+    </span><span class="doccomment">/// Generate code which runs once outside the subgraph to set up any
+    /// external stuff like state API stuff or external chanels, etc.
+    </span><span class="kw">pub </span>write_prologue_fn:
+        <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span><span class="kw">dyn </span>Fn(<span class="kw-2">&amp;</span>WriteContextArgs&lt;<span class="lifetime">&#39;_</span>&gt;, <span class="kw-2">&amp;</span>WriteIteratorArgs&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; TokenStream,
+    <span class="doccomment">/// Generate iterator or pusherator code inside the subgraphs.
+    </span><span class="kw">pub </span>write_iterator_fn:
+        <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span><span class="kw">dyn </span>Fn(<span class="kw-2">&amp;</span>WriteContextArgs&lt;<span class="lifetime">&#39;_</span>&gt;, <span class="kw-2">&amp;</span>WriteIteratorArgs&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; TokenStream,
 }
 
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">RANGE_0</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="kw">dyn</span> <span class="ident">RangeTrait</span>&lt;<span class="ident">usize</span>&gt; = <span class="kw-2">&amp;</span>(<span class="number">0</span>..=<span class="number">0</span>);
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">RANGE_1</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="kw">dyn</span> <span class="ident">RangeTrait</span>&lt;<span class="ident">usize</span>&gt; = <span class="kw-2">&amp;</span>(<span class="number">1</span>..=<span class="number">1</span>);
+<span class="kw">pub const </span>RANGE_0: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span><span class="kw">dyn </span>RangeTrait&lt;usize&gt; = <span class="kw-2">&amp;</span>(<span class="number">0</span>..=<span class="number">0</span>);
+<span class="kw">pub const </span>RANGE_1: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span><span class="kw">dyn </span>RangeTrait&lt;usize&gt; = <span class="kw-2">&amp;</span>(<span class="number">1</span>..=<span class="number">1</span>);
 
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">OPERATORS</span>: [<span class="ident">OperatorConstraints</span>; <span class="number">10</span>] = [
-    <span class="ident">OperatorConstraints</span> {
-        <span class="ident">name</span>: <span class="string">&quot;merge&quot;</span>,
-        <span class="ident">hard_range_inn</span>: <span class="kw-2">&amp;</span>(<span class="number">0</span>..),
-        <span class="ident">soft_range_inn</span>: <span class="kw-2">&amp;</span>(<span class="number">2</span>..),
-        <span class="ident">hard_range_out</span>: <span class="ident">RANGE_1</span>,
-        <span class="ident">soft_range_out</span>: <span class="ident">RANGE_1</span>,
-        <span class="ident">num_args</span>: <span class="number">0</span>,
-        <span class="ident">write_prologue_fn</span>: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="macro">quote!</span> {}),
-        <span class="ident">write_iterator_fn</span>: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw-2">&amp;</span><span class="ident">WriteIteratorArgs</span> { <span class="ident">inputs</span>, .. }| {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">inputs</span> = <span class="ident">inputs</span>.<span class="ident">iter</span>();
-            <span class="kw">let</span> <span class="ident">first</span> = <span class="ident">inputs</span>.<span class="ident">next</span>();
-            <span class="kw">let</span> <span class="ident">rest</span> = <span class="ident">inputs</span>.<span class="ident">map</span>(|<span class="ident">ident</span>| <span class="macro">quote!</span> { .<span class="ident">chain</span>(#<span class="ident">ident</span>) });
+<span class="kw">pub const </span>OPERATORS: [OperatorConstraints; <span class="number">10</span>] = [
+    OperatorConstraints {
+        name: <span class="string">&quot;merge&quot;</span>,
+        hard_range_inn: <span class="kw-2">&amp;</span>(<span class="number">0</span>..),
+        soft_range_inn: <span class="kw-2">&amp;</span>(<span class="number">2</span>..),
+        hard_range_out: RANGE_1,
+        soft_range_out: RANGE_1,
+        num_args: <span class="number">0</span>,
+        write_prologue_fn: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="macro">quote!</span> {}),
+        write_iterator_fn: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw-2">&amp;</span>WriteIteratorArgs { inputs, .. }| {
+            <span class="kw">let </span><span class="kw-2">mut </span>inputs = inputs.iter();
+            <span class="kw">let </span>first = inputs.next();
+            <span class="kw">let </span>rest = inputs.map(|ident| <span class="macro">quote!</span> { .chain(#ident) });
             <span class="macro">quote!</span> {
-                #<span class="ident">first</span> #( #<span class="ident">rest</span> )*
+                #first #( #rest )*
             }
         }),
     },
-    <span class="ident">OperatorConstraints</span> {
-        <span class="ident">name</span>: <span class="string">&quot;join&quot;</span>,
-        <span class="ident">hard_range_inn</span>: <span class="kw-2">&amp;</span>(<span class="number">2</span>..=<span class="number">2</span>),
-        <span class="ident">soft_range_inn</span>: <span class="kw-2">&amp;</span>(<span class="number">2</span>..=<span class="number">2</span>),
-        <span class="ident">hard_range_out</span>: <span class="ident">RANGE_1</span>,
-        <span class="ident">soft_range_out</span>: <span class="ident">RANGE_1</span>,
-        <span class="ident">num_args</span>: <span class="number">0</span>,
-        <span class="ident">write_prologue_fn</span>: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span><span class="ident">WriteContextArgs</span> {
-                                  <span class="ident">subgraph_id</span>,
-                                  <span class="ident">node_id</span>,
+    OperatorConstraints {
+        name: <span class="string">&quot;join&quot;</span>,
+        hard_range_inn: <span class="kw-2">&amp;</span>(<span class="number">2</span>..=<span class="number">2</span>),
+        soft_range_inn: <span class="kw-2">&amp;</span>(<span class="number">2</span>..=<span class="number">2</span>),
+        hard_range_out: RANGE_1,
+        soft_range_out: RANGE_1,
+        num_args: <span class="number">0</span>,
+        write_prologue_fn: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span>WriteContextArgs {
+                                  subgraph_id,
+                                  node_id,
                                   ..
                               },
                               <span class="kw">_</span>| {
-            <span class="comment">// TODO(mingwei): use state api.</span>
-            <span class="kw">let</span> <span class="ident">joindata_ident</span> = <span class="ident">Ident::new</span>(
-                <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="macro">format!</span>(
+            <span class="comment">// TODO(mingwei): use state api.
+            </span><span class="kw">let </span>joindata_ident = Ident::new(
+                <span class="kw-2">&amp;*</span><span class="macro">format!</span>(
                     <span class="string">&quot;sg_{:?}_node_{:?}_joindata&quot;</span>,
-                    <span class="ident">subgraph_id</span>.<span class="ident">data</span>(),
-                    <span class="ident">node_id</span>.<span class="ident">data</span>()
+                    subgraph_id.data(),
+                    node_id.data()
                 ),
-                <span class="ident">Span::call_site</span>(),
+                Span::call_site(),
             );
             <span class="macro">quote!</span> {
-                <span class="kw">let</span> <span class="kw-2">mut</span> #<span class="ident">joindata_ident</span> = <span class="ident">Default::default</span>();
+                <span class="kw">let </span><span class="kw-2">mut </span>#joindata_ident = Default::default();
             }
         }),
-        <span class="ident">write_iterator_fn</span>: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span><span class="ident">WriteContextArgs</span> {
-                                  <span class="ident">root</span>,
-                                  <span class="ident">subgraph_id</span>,
-                                  <span class="ident">node_id</span>,
+        write_iterator_fn: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span>WriteContextArgs {
+                                  root,
+                                  subgraph_id,
+                                  node_id,
                                   ..
                               },
-                              <span class="kw-2">&amp;</span><span class="ident">WriteIteratorArgs</span> { <span class="ident">inputs</span>, .. }| {
-            <span class="kw">let</span> <span class="ident">joindata_ident</span> = <span class="ident">Ident::new</span>(
-                <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="macro">format!</span>(
+                              <span class="kw-2">&amp;</span>WriteIteratorArgs { inputs, .. }| {
+            <span class="kw">let </span>joindata_ident = Ident::new(
+                <span class="kw-2">&amp;*</span><span class="macro">format!</span>(
                     <span class="string">&quot;sg_{:?}_node_{:?}_joindata&quot;</span>,
-                    <span class="ident">subgraph_id</span>.<span class="ident">data</span>(),
-                    <span class="ident">node_id</span>.<span class="ident">data</span>()
+                    subgraph_id.data(),
+                    node_id.data()
                 ),
-                <span class="ident">Span::call_site</span>(),
+                Span::call_site(),
             );
-            <span class="kw">let</span> <span class="ident">lhs</span> = <span class="kw-2">&amp;</span><span class="ident">inputs</span>[<span class="number">0</span>];
-            <span class="kw">let</span> <span class="ident">rhs</span> = <span class="kw-2">&amp;</span><span class="ident">inputs</span>[<span class="number">1</span>];
+            <span class="kw">let </span>lhs = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>];
+            <span class="kw">let </span>rhs = <span class="kw-2">&amp;</span>inputs[<span class="number">1</span>];
             <span class="macro">quote!</span> {
-                #<span class="ident">root::compiled::pull::SymmetricHashJoin::new</span>(#<span class="ident">lhs</span>, #<span class="ident">rhs</span>, <span class="kw-2">&amp;mut</span> #<span class="ident">joindata_ident</span>)
+                #root::compiled::pull::SymmetricHashJoin::new(#lhs, #rhs, <span class="kw-2">&amp;mut </span>#joindata_ident)
             }
         }),
     },
-    <span class="ident">OperatorConstraints</span> {
-        <span class="ident">name</span>: <span class="string">&quot;tee&quot;</span>,
-        <span class="ident">hard_range_inn</span>: <span class="ident">RANGE_1</span>,
-        <span class="ident">soft_range_inn</span>: <span class="ident">RANGE_1</span>,
-        <span class="ident">hard_range_out</span>: <span class="kw-2">&amp;</span>(<span class="number">0</span>..),
-        <span class="ident">soft_range_out</span>: <span class="kw-2">&amp;</span>(<span class="number">2</span>..),
-        <span class="ident">num_args</span>: <span class="number">0</span>,
-        <span class="ident">write_prologue_fn</span>: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="macro">quote!</span> {}),
-        <span class="ident">write_iterator_fn</span>: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span><span class="ident">WriteContextArgs</span> { <span class="ident">root</span>, .. },
-                              <span class="kw-2">&amp;</span><span class="ident">WriteIteratorArgs</span> { <span class="ident">outputs</span>, .. }| {
-            <span class="ident">outputs</span>
-                .<span class="ident">iter</span>()
-                .<span class="ident">rev</span>()
-                .<span class="ident">map</span>(|<span class="ident">i</span>| <span class="macro">quote!</span> { #<span class="ident">i</span> })
-                .<span class="ident">reduce</span>(|<span class="ident">b</span>, <span class="ident">a</span>| <span class="macro">quote!</span> { #<span class="ident">root::compiled::tee::Tee::new</span>(#<span class="ident">a</span>, #<span class="ident">b</span>) })
-                .<span class="ident">unwrap_or_default</span>()
+    OperatorConstraints {
+        name: <span class="string">&quot;tee&quot;</span>,
+        hard_range_inn: RANGE_1,
+        soft_range_inn: RANGE_1,
+        hard_range_out: <span class="kw-2">&amp;</span>(<span class="number">0</span>..),
+        soft_range_out: <span class="kw-2">&amp;</span>(<span class="number">2</span>..),
+        num_args: <span class="number">0</span>,
+        write_prologue_fn: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="macro">quote!</span> {}),
+        write_iterator_fn: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span>WriteContextArgs { root, .. },
+                              <span class="kw-2">&amp;</span>WriteIteratorArgs { outputs, .. }| {
+            outputs
+                .iter()
+                .rev()
+                .map(|i| <span class="macro">quote!</span> { #i })
+                .reduce(|b, a| <span class="macro">quote!</span> { #root::compiled::tee::Tee::new(#a, #b) })
+                .unwrap_or_default()
         }),
     },
-    <span class="ident">OperatorConstraints</span> {
-        <span class="ident">name</span>: <span class="string">&quot;map&quot;</span>,
-        <span class="ident">hard_range_inn</span>: <span class="ident">RANGE_1</span>,
-        <span class="ident">soft_range_inn</span>: <span class="ident">RANGE_1</span>,
-        <span class="ident">hard_range_out</span>: <span class="ident">RANGE_1</span>,
-        <span class="ident">soft_range_out</span>: <span class="ident">RANGE_1</span>,
-        <span class="ident">num_args</span>: <span class="number">1</span>,
-        <span class="ident">write_prologue_fn</span>: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="macro">quote!</span> {}),
-        <span class="ident">write_iterator_fn</span>: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span><span class="ident">WriteContextArgs</span> { <span class="ident">root</span>, .. },
-                              <span class="kw-2">&amp;</span><span class="ident">WriteIteratorArgs</span> {
-                                  <span class="ident">inputs</span>,
-                                  <span class="ident">outputs</span>,
-                                  <span class="ident">arguments</span>,
-                                  <span class="ident">is_pull</span>,
+    OperatorConstraints {
+        name: <span class="string">&quot;map&quot;</span>,
+        hard_range_inn: RANGE_1,
+        soft_range_inn: RANGE_1,
+        hard_range_out: RANGE_1,
+        soft_range_out: RANGE_1,
+        num_args: <span class="number">1</span>,
+        write_prologue_fn: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="macro">quote!</span> {}),
+        write_iterator_fn: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span>WriteContextArgs { root, .. },
+                              <span class="kw-2">&amp;</span>WriteIteratorArgs {
+                                  inputs,
+                                  outputs,
+                                  arguments,
+                                  is_pull,
                                   ..
                               }| {
-            <span class="kw">if</span> <span class="ident">is_pull</span> {
-                <span class="kw">let</span> <span class="ident">input</span> = <span class="kw-2">&amp;</span><span class="ident">inputs</span>[<span class="number">0</span>];
-                <span class="macro">quote!</span> { #<span class="ident">input</span>.<span class="ident">map</span>(#<span class="ident">arguments</span>) }
-            } <span class="kw">else</span> {
-                <span class="kw">let</span> <span class="ident">output</span> = <span class="kw-2">&amp;</span><span class="ident">outputs</span>[<span class="number">0</span>];
-                <span class="macro">quote!</span> { #<span class="ident">root::compiled::map::Map::new</span>(#<span class="ident">arguments</span>, #<span class="ident">output</span>) }
+            <span class="kw">if </span>is_pull {
+                <span class="kw">let </span>input = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>];
+                <span class="macro">quote!</span> { #input.map(#arguments) }
+            } <span class="kw">else </span>{
+                <span class="kw">let </span>output = <span class="kw-2">&amp;</span>outputs[<span class="number">0</span>];
+                <span class="macro">quote!</span> { #root::compiled::map::Map::new(#arguments, #output) }
             }
         }),
     },
-    <span class="ident">OperatorConstraints</span> {
-        <span class="ident">name</span>: <span class="string">&quot;flat_map&quot;</span>,
-        <span class="ident">hard_range_inn</span>: <span class="ident">RANGE_1</span>,
-        <span class="ident">soft_range_inn</span>: <span class="ident">RANGE_1</span>,
-        <span class="ident">hard_range_out</span>: <span class="ident">RANGE_1</span>,
-        <span class="ident">soft_range_out</span>: <span class="ident">RANGE_1</span>,
-        <span class="ident">num_args</span>: <span class="number">1</span>,
-        <span class="ident">write_prologue_fn</span>: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="macro">quote!</span> {}),
-        <span class="ident">write_iterator_fn</span>: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span><span class="ident">WriteContextArgs</span> { <span class="ident">root</span>, .. },
-                              <span class="kw-2">&amp;</span><span class="ident">WriteIteratorArgs</span> {
-                                  <span class="ident">inputs</span>,
-                                  <span class="ident">outputs</span>,
-                                  <span class="ident">arguments</span>,
-                                  <span class="ident">is_pull</span>,
+    OperatorConstraints {
+        name: <span class="string">&quot;flat_map&quot;</span>,
+        hard_range_inn: RANGE_1,
+        soft_range_inn: RANGE_1,
+        hard_range_out: RANGE_1,
+        soft_range_out: RANGE_1,
+        num_args: <span class="number">1</span>,
+        write_prologue_fn: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="macro">quote!</span> {}),
+        write_iterator_fn: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span>WriteContextArgs { root, .. },
+                              <span class="kw-2">&amp;</span>WriteIteratorArgs {
+                                  inputs,
+                                  outputs,
+                                  arguments,
+                                  is_pull,
                                   ..
                               }| {
-            <span class="kw">if</span> <span class="ident">is_pull</span> {
-                <span class="kw">let</span> <span class="ident">input</span> = <span class="kw-2">&amp;</span><span class="ident">inputs</span>[<span class="number">0</span>];
-                <span class="macro">quote!</span> { #<span class="ident">input</span>.<span class="ident">flat_map</span>(#<span class="ident">arguments</span>) }
-            } <span class="kw">else</span> {
-                <span class="kw">let</span> <span class="ident">output</span> = <span class="kw-2">&amp;</span><span class="ident">outputs</span>[<span class="number">0</span>];
-                <span class="macro">quote!</span> { #<span class="ident">root::compiled::flat_map::FlatMap::new</span>(#<span class="ident">arguments</span>, #<span class="ident">output</span>) }
+            <span class="kw">if </span>is_pull {
+                <span class="kw">let </span>input = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>];
+                <span class="macro">quote!</span> { #input.flat_map(#arguments) }
+            } <span class="kw">else </span>{
+                <span class="kw">let </span>output = <span class="kw-2">&amp;</span>outputs[<span class="number">0</span>];
+                <span class="macro">quote!</span> { #root::compiled::flat_map::FlatMap::new(#arguments, #output) }
             }
         }),
     },
-    <span class="ident">OperatorConstraints</span> {
-        <span class="ident">name</span>: <span class="string">&quot;filter_map&quot;</span>,
-        <span class="ident">hard_range_inn</span>: <span class="ident">RANGE_1</span>,
-        <span class="ident">soft_range_inn</span>: <span class="ident">RANGE_1</span>,
-        <span class="ident">hard_range_out</span>: <span class="ident">RANGE_1</span>,
-        <span class="ident">soft_range_out</span>: <span class="ident">RANGE_1</span>,
-        <span class="ident">num_args</span>: <span class="number">1</span>,
-        <span class="ident">write_prologue_fn</span>: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="macro">quote!</span> {}),
-        <span class="ident">write_iterator_fn</span>: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span><span class="ident">WriteContextArgs</span> { <span class="ident">root</span>, .. },
-                              <span class="kw-2">&amp;</span><span class="ident">WriteIteratorArgs</span> {
-                                  <span class="ident">inputs</span>,
-                                  <span class="ident">outputs</span>,
-                                  <span class="ident">arguments</span>,
-                                  <span class="ident">is_pull</span>,
+    OperatorConstraints {
+        name: <span class="string">&quot;filter_map&quot;</span>,
+        hard_range_inn: RANGE_1,
+        soft_range_inn: RANGE_1,
+        hard_range_out: RANGE_1,
+        soft_range_out: RANGE_1,
+        num_args: <span class="number">1</span>,
+        write_prologue_fn: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="macro">quote!</span> {}),
+        write_iterator_fn: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span>WriteContextArgs { root, .. },
+                              <span class="kw-2">&amp;</span>WriteIteratorArgs {
+                                  inputs,
+                                  outputs,
+                                  arguments,
+                                  is_pull,
                                   ..
                               }| {
-            <span class="kw">if</span> <span class="ident">is_pull</span> {
-                <span class="kw">let</span> <span class="ident">input</span> = <span class="kw-2">&amp;</span><span class="ident">inputs</span>[<span class="number">0</span>];
-                <span class="macro">quote!</span> { #<span class="ident">input</span>.<span class="ident">filter_map</span>(#<span class="ident">arguments</span>) }
-            } <span class="kw">else</span> {
-                <span class="kw">let</span> <span class="ident">output</span> = <span class="kw-2">&amp;</span><span class="ident">outputs</span>[<span class="number">0</span>];
-                <span class="macro">quote!</span> { #<span class="ident">root::compiled::filter_map::FilterMap::new</span>(#<span class="ident">arguments</span>, #<span class="ident">output</span>) }
+            <span class="kw">if </span>is_pull {
+                <span class="kw">let </span>input = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>];
+                <span class="macro">quote!</span> { #input.filter_map(#arguments) }
+            } <span class="kw">else </span>{
+                <span class="kw">let </span>output = <span class="kw-2">&amp;</span>outputs[<span class="number">0</span>];
+                <span class="macro">quote!</span> { #root::compiled::filter_map::FilterMap::new(#arguments, #output) }
             }
         }),
     },
-    <span class="ident">OperatorConstraints</span> {
-        <span class="ident">name</span>: <span class="string">&quot;filter&quot;</span>,
-        <span class="ident">hard_range_inn</span>: <span class="ident">RANGE_1</span>,
-        <span class="ident">soft_range_inn</span>: <span class="ident">RANGE_1</span>,
-        <span class="ident">hard_range_out</span>: <span class="ident">RANGE_1</span>,
-        <span class="ident">soft_range_out</span>: <span class="ident">RANGE_1</span>,
-        <span class="ident">num_args</span>: <span class="number">1</span>,
-        <span class="ident">write_prologue_fn</span>: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="macro">quote!</span> {}),
-        <span class="ident">write_iterator_fn</span>: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span><span class="ident">WriteContextArgs</span> { <span class="ident">root</span>, .. },
-                              <span class="kw-2">&amp;</span><span class="ident">WriteIteratorArgs</span> {
-                                  <span class="ident">inputs</span>,
-                                  <span class="ident">outputs</span>,
-                                  <span class="ident">arguments</span>,
-                                  <span class="ident">is_pull</span>,
+    OperatorConstraints {
+        name: <span class="string">&quot;filter&quot;</span>,
+        hard_range_inn: RANGE_1,
+        soft_range_inn: RANGE_1,
+        hard_range_out: RANGE_1,
+        soft_range_out: RANGE_1,
+        num_args: <span class="number">1</span>,
+        write_prologue_fn: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="macro">quote!</span> {}),
+        write_iterator_fn: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span>WriteContextArgs { root, .. },
+                              <span class="kw-2">&amp;</span>WriteIteratorArgs {
+                                  inputs,
+                                  outputs,
+                                  arguments,
+                                  is_pull,
                                   ..
                               }| {
-            <span class="kw">if</span> <span class="ident">is_pull</span> {
-                <span class="kw">let</span> <span class="ident">input</span> = <span class="kw-2">&amp;</span><span class="ident">inputs</span>[<span class="number">0</span>];
-                <span class="macro">quote!</span> { #<span class="ident">input</span>.<span class="ident">filter</span>(#<span class="ident">arguments</span>) }
-            } <span class="kw">else</span> {
-                <span class="kw">let</span> <span class="ident">output</span> = <span class="kw-2">&amp;</span><span class="ident">outputs</span>[<span class="number">0</span>];
-                <span class="macro">quote!</span> { #<span class="ident">root::compiled::filter::Filter::new</span>(#<span class="ident">arguments</span>, #<span class="ident">output</span>) }
+            <span class="kw">if </span>is_pull {
+                <span class="kw">let </span>input = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>];
+                <span class="macro">quote!</span> { #input.filter(#arguments) }
+            } <span class="kw">else </span>{
+                <span class="kw">let </span>output = <span class="kw-2">&amp;</span>outputs[<span class="number">0</span>];
+                <span class="macro">quote!</span> { #root::compiled::filter::Filter::new(#arguments, #output) }
             }
         }),
     },
-    <span class="comment">// OperatorConstraints {</span>
-    <span class="comment">//     name: &quot;dedup&quot;,</span>
-    <span class="comment">//     hard_range_inn: RANGE_1,</span>
-    <span class="comment">//     soft_range_inn: RANGE_1,</span>
-    <span class="comment">//     hard_range_out: RANGE_1,</span>
-    <span class="comment">//     soft_range_out: RANGE_1,</span>
-    <span class="comment">//     num_args: 1,</span>
-    <span class="comment">//     write_prologue_fn: &amp;(|_| quote! {}),</span>
-    <span class="comment">//     write_fn: &amp;(|_, inputs, outputs, args| {</span>
-    <span class="comment">//         let ts = quote! { dedup #( #inputs ),* #( #outputs ),* #args };</span>
-    <span class="comment">//         let lit = Literal::string(&amp;*format!(&quot;{}&quot;, ts));</span>
-    <span class="comment">//         quote! { #lit }</span>
-    <span class="comment">//     }),</span>
-    <span class="comment">// },</span>
-    <span class="ident">OperatorConstraints</span> {
-        <span class="ident">name</span>: <span class="string">&quot;recv_stream&quot;</span>,
-        <span class="ident">hard_range_inn</span>: <span class="ident">RANGE_0</span>,
-        <span class="ident">soft_range_inn</span>: <span class="ident">RANGE_0</span>,
-        <span class="ident">hard_range_out</span>: <span class="ident">RANGE_1</span>,
-        <span class="ident">soft_range_out</span>: <span class="ident">RANGE_1</span>,
-        <span class="ident">num_args</span>: <span class="number">1</span>,
-        <span class="ident">write_prologue_fn</span>: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw-2">&amp;</span><span class="ident">WriteIteratorArgs</span> { <span class="ident">arguments</span>, .. }| {
-            <span class="kw">let</span> <span class="ident">receiver</span> = <span class="kw-2">&amp;</span><span class="ident">arguments</span>[<span class="number">0</span>];
+    <span class="comment">// OperatorConstraints {
+    //     name: &quot;dedup&quot;,
+    //     hard_range_inn: RANGE_1,
+    //     soft_range_inn: RANGE_1,
+    //     hard_range_out: RANGE_1,
+    //     soft_range_out: RANGE_1,
+    //     num_args: 1,
+    //     write_prologue_fn: &amp;(|_| quote! {}),
+    //     write_fn: &amp;(|_, inputs, outputs, args| {
+    //         let ts = quote! { dedup #( #inputs ),* #( #outputs ),* #args };
+    //         let lit = Literal::string(&amp;*format!(&quot;{}&quot;, ts));
+    //         quote! { #lit }
+    //     }),
+    // },
+    </span>OperatorConstraints {
+        name: <span class="string">&quot;recv_stream&quot;</span>,
+        hard_range_inn: RANGE_0,
+        soft_range_inn: RANGE_0,
+        hard_range_out: RANGE_1,
+        soft_range_out: RANGE_1,
+        num_args: <span class="number">1</span>,
+        write_prologue_fn: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw-2">&amp;</span>WriteIteratorArgs { arguments, .. }| {
+            <span class="kw">let </span>receiver = <span class="kw-2">&amp;</span>arguments[<span class="number">0</span>];
             <span class="macro">quote!</span> {
-                <span class="kw">let</span> <span class="kw-2">mut</span> #<span class="ident">receiver</span> = #<span class="ident">receiver</span>;
+                <span class="kw">let </span><span class="kw-2">mut </span>#receiver = #receiver;
             }
         }),
-        <span class="ident">write_iterator_fn</span>: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw-2">&amp;</span><span class="ident">WriteIteratorArgs</span> { <span class="ident">arguments</span>, .. }| {
-            <span class="kw">let</span> <span class="ident">receiver</span> = <span class="kw-2">&amp;</span><span class="ident">arguments</span>[<span class="number">0</span>];
+        write_iterator_fn: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw-2">&amp;</span>WriteIteratorArgs { arguments, .. }| {
+            <span class="kw">let </span>receiver = <span class="kw-2">&amp;</span>arguments[<span class="number">0</span>];
             <span class="macro">quote!</span> {
                 {
-                    <span class="ident">std::iter::from_fn</span>(|| {
-                        <span class="kw">match</span> #<span class="ident">receiver</span>.<span class="ident">poll_recv</span>(<span class="kw-2">&amp;mut</span> <span class="ident">std::task::Context::from_waker</span>(<span class="kw-2">&amp;mut</span> <span class="ident">context</span>.<span class="ident">waker</span>())) {
-                            <span class="ident">std::task::Poll::Ready</span>(<span class="ident">maybe</span>) =&gt; <span class="ident">maybe</span>,
-                            <span class="ident">std::task::Poll::Pending</span> =&gt; <span class="prelude-val">None</span>,
+                    std::iter::from_fn(|| {
+                        <span class="kw">match </span>#receiver.poll_recv(<span class="kw-2">&amp;mut </span>std::task::Context::from_waker(<span class="kw-2">&amp;mut </span>context.waker())) {
+                            std::task::Poll::Ready(maybe) =&gt; maybe,
+                            std::task::Poll::Pending =&gt; <span class="prelude-val">None</span>,
                         }
                     })
                 }
             }
         }),
     },
-    <span class="ident">OperatorConstraints</span> {
-        <span class="ident">name</span>: <span class="string">&quot;recv_iter&quot;</span>,
-        <span class="ident">hard_range_inn</span>: <span class="ident">RANGE_0</span>,
-        <span class="ident">soft_range_inn</span>: <span class="ident">RANGE_0</span>,
-        <span class="ident">hard_range_out</span>: <span class="ident">RANGE_1</span>,
-        <span class="ident">soft_range_out</span>: <span class="ident">RANGE_1</span>,
-        <span class="ident">num_args</span>: <span class="number">1</span>,
-        <span class="ident">write_prologue_fn</span>: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="macro">quote!</span> {}),
-        <span class="ident">write_iterator_fn</span>: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw-2">&amp;</span><span class="ident">WriteIteratorArgs</span> { <span class="ident">arguments</span>, .. }| {
-            <span class="macro">quote!</span> { <span class="ident">std::iter::IntoIterator::into_iter</span>(#<span class="ident">arguments</span>) }
+    OperatorConstraints {
+        name: <span class="string">&quot;recv_iter&quot;</span>,
+        hard_range_inn: RANGE_0,
+        soft_range_inn: RANGE_0,
+        hard_range_out: RANGE_1,
+        soft_range_out: RANGE_1,
+        num_args: <span class="number">1</span>,
+        write_prologue_fn: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="macro">quote!</span> {}),
+        write_iterator_fn: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw-2">&amp;</span>WriteIteratorArgs { arguments, .. }| {
+            <span class="macro">quote!</span> { std::iter::IntoIterator::into_iter(#arguments) }
         }),
     },
-    <span class="ident">OperatorConstraints</span> {
-        <span class="ident">name</span>: <span class="string">&quot;for_each&quot;</span>,
-        <span class="ident">hard_range_inn</span>: <span class="ident">RANGE_1</span>,
-        <span class="ident">soft_range_inn</span>: <span class="ident">RANGE_1</span>,
-        <span class="ident">hard_range_out</span>: <span class="ident">RANGE_0</span>,
-        <span class="ident">soft_range_out</span>: <span class="ident">RANGE_0</span>,
-        <span class="ident">num_args</span>: <span class="number">1</span>,
-        <span class="ident">write_prologue_fn</span>: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="macro">quote!</span> {}),
-        <span class="ident">write_iterator_fn</span>: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span><span class="ident">WriteContextArgs</span> { <span class="ident">root</span>, .. },
-                              <span class="kw-2">&amp;</span><span class="ident">WriteIteratorArgs</span> { <span class="ident">arguments</span>, .. }| {
-            <span class="macro">quote!</span> { #<span class="ident">root::compiled::for_each::ForEach::new</span>(#<span class="ident">arguments</span>) }
+    OperatorConstraints {
+        name: <span class="string">&quot;for_each&quot;</span>,
+        hard_range_inn: RANGE_1,
+        soft_range_inn: RANGE_1,
+        hard_range_out: RANGE_0,
+        soft_range_out: RANGE_0,
+        num_args: <span class="number">1</span>,
+        write_prologue_fn: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="macro">quote!</span> {}),
+        write_iterator_fn: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span>WriteContextArgs { root, .. },
+                              <span class="kw-2">&amp;</span>WriteIteratorArgs { arguments, .. }| {
+            <span class="macro">quote!</span> { #root::compiled::for_each::ForEach::new(#arguments) }
         }),
     },
 ];
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">WriteContextArgs</span>&lt;<span class="lifetime">&#39;a</span>&gt; {
-    <span class="kw">pub</span> <span class="ident">root</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">TokenStream</span>,
-    <span class="kw">pub</span> <span class="ident">subgraph_id</span>: <span class="ident">GraphSubgraphId</span>,
-    <span class="kw">pub</span> <span class="ident">node_id</span>: <span class="ident">GraphNodeId</span>,
-    <span class="kw">pub</span> <span class="ident">ident</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Ident</span>,
+<span class="kw">pub struct </span>WriteContextArgs&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="kw">pub </span>root: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>TokenStream,
+    <span class="kw">pub </span>subgraph_id: GraphSubgraphId,
+    <span class="kw">pub </span>node_id: GraphNodeId,
+    <span class="kw">pub </span>ident: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Ident,
 }
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">WriteIteratorArgs</span>&lt;<span class="lifetime">&#39;a</span>&gt; {
-    <span class="kw">pub</span> <span class="ident">inputs</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">Ident</span>],
-    <span class="kw">pub</span> <span class="ident">outputs</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">Ident</span>],
-    <span class="kw">pub</span> <span class="ident">type_arguments</span>: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Punctuated</span>&lt;<span class="ident">GenericArgument</span>, <span class="macro">Token!</span>[,]&gt;&gt;,
-    <span class="kw">pub</span> <span class="ident">arguments</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Punctuated</span>&lt;<span class="ident">Expr</span>, <span class="macro">Token!</span>[,]&gt;,
-    <span class="kw">pub</span> <span class="ident">is_pull</span>: <span class="ident">bool</span>,
+<span class="kw">pub struct </span>WriteIteratorArgs&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="kw">pub </span>inputs: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[Ident],
+    <span class="kw">pub </span>outputs: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[Ident],
+    <span class="kw">pub </span>type_arguments: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Punctuated&lt;GenericArgument, <span class="macro">Token!</span>[,]&gt;&gt;,
+    <span class="kw">pub </span>arguments: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Punctuated&lt;Expr, <span class="macro">Token!</span>[,]&gt;,
+    <span class="kw">pub </span>is_pull: bool,
 }
 
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">RangeTrait</span>&lt;<span class="ident">T</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="question-mark">?</span><span class="ident">Sized</span>,
+<span class="kw">pub trait </span>RangeTrait&lt;T&gt;
+<span class="kw">where
+    </span>T: <span class="question-mark">?</span>Sized,
 {
-    <span class="kw">fn</span> <span class="ident">start_bound</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Bound</span>&lt;<span class="kw-2">&amp;</span><span class="ident">T</span>&gt;;
-    <span class="kw">fn</span> <span class="ident">end_bound</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Bound</span>&lt;<span class="kw-2">&amp;</span><span class="ident">T</span>&gt;;
-    <span class="kw">fn</span> <span class="ident">contains</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">item</span>: <span class="kw-2">&amp;</span><span class="ident">T</span>) -&gt; <span class="ident">bool</span>
-    <span class="kw">where</span>
-        <span class="ident">T</span>: <span class="ident">PartialOrd</span>&lt;<span class="ident">T</span>&gt;;
+    <span class="kw">fn </span>start_bound(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Bound&lt;<span class="kw-2">&amp;</span>T&gt;;
+    <span class="kw">fn </span>end_bound(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Bound&lt;<span class="kw-2">&amp;</span>T&gt;;
+    <span class="kw">fn </span>contains(<span class="kw-2">&amp;</span><span class="self">self</span>, item: <span class="kw-2">&amp;</span>T) -&gt; bool
+    <span class="kw">where
+        </span>T: PartialOrd&lt;T&gt;;
 
-    <span class="kw">fn</span> <span class="ident">human_string</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">String</span>
-    <span class="kw">where</span>
-        <span class="ident">T</span>: <span class="ident">Display</span> + <span class="ident">PartialEq</span>,
+    <span class="kw">fn </span>human_string(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String
+    <span class="kw">where
+        </span>T: Display + PartialEq,
     {
-        <span class="kw">match</span> (<span class="self">self</span>.<span class="ident">start_bound</span>(), <span class="self">self</span>.<span class="ident">end_bound</span>()) {
-            (<span class="ident">Bound::Unbounded</span>, <span class="ident">Bound::Unbounded</span>) =&gt; <span class="string">&quot;any number of&quot;</span>.<span class="ident">to_owned</span>(),
+        <span class="kw">match </span>(<span class="self">self</span>.start_bound(), <span class="self">self</span>.end_bound()) {
+            (Bound::Unbounded, Bound::Unbounded) =&gt; <span class="string">&quot;any number of&quot;</span>.to_owned(),
 
-            (<span class="ident">Bound::Included</span>(<span class="ident">n</span>), <span class="ident">Bound::Included</span>(<span class="ident">x</span>)) <span class="kw">if</span> <span class="ident">n</span> == <span class="ident">x</span> =&gt; {
-                <span class="macro">format!</span>(<span class="string">&quot;exactly {}&quot;</span>, <span class="ident">n</span>)
+            (Bound::Included(n), Bound::Included(x)) <span class="kw">if </span>n == x =&gt; {
+                <span class="macro">format!</span>(<span class="string">&quot;exactly {}&quot;</span>, n)
             }
-            (<span class="ident">Bound::Included</span>(<span class="ident">n</span>), <span class="ident">Bound::Included</span>(<span class="ident">x</span>)) =&gt; {
-                <span class="macro">format!</span>(<span class="string">&quot;at least {} and at most {}&quot;</span>, <span class="ident">n</span>, <span class="ident">x</span>)
+            (Bound::Included(n), Bound::Included(x)) =&gt; {
+                <span class="macro">format!</span>(<span class="string">&quot;at least {} and at most {}&quot;</span>, n, x)
             }
-            (<span class="ident">Bound::Included</span>(<span class="ident">n</span>), <span class="ident">Bound::Excluded</span>(<span class="ident">x</span>)) =&gt; {
-                <span class="macro">format!</span>(<span class="string">&quot;at least {} and less than {}&quot;</span>, <span class="ident">n</span>, <span class="ident">x</span>)
+            (Bound::Included(n), Bound::Excluded(x)) =&gt; {
+                <span class="macro">format!</span>(<span class="string">&quot;at least {} and less than {}&quot;</span>, n, x)
             }
-            (<span class="ident">Bound::Included</span>(<span class="ident">n</span>), <span class="ident">Bound::Unbounded</span>) =&gt; <span class="macro">format!</span>(<span class="string">&quot;at least {}&quot;</span>, <span class="ident">n</span>),
-            (<span class="ident">Bound::Excluded</span>(<span class="ident">n</span>), <span class="ident">Bound::Included</span>(<span class="ident">x</span>)) =&gt; {
-                <span class="macro">format!</span>(<span class="string">&quot;more than {} and at most {}&quot;</span>, <span class="ident">n</span>, <span class="ident">x</span>)
+            (Bound::Included(n), Bound::Unbounded) =&gt; <span class="macro">format!</span>(<span class="string">&quot;at least {}&quot;</span>, n),
+            (Bound::Excluded(n), Bound::Included(x)) =&gt; {
+                <span class="macro">format!</span>(<span class="string">&quot;more than {} and at most {}&quot;</span>, n, x)
             }
-            (<span class="ident">Bound::Excluded</span>(<span class="ident">n</span>), <span class="ident">Bound::Excluded</span>(<span class="ident">x</span>)) =&gt; {
-                <span class="macro">format!</span>(<span class="string">&quot;more than {} and less than {}&quot;</span>, <span class="ident">n</span>, <span class="ident">x</span>)
+            (Bound::Excluded(n), Bound::Excluded(x)) =&gt; {
+                <span class="macro">format!</span>(<span class="string">&quot;more than {} and less than {}&quot;</span>, n, x)
             }
-            (<span class="ident">Bound::Excluded</span>(<span class="ident">n</span>), <span class="ident">Bound::Unbounded</span>) =&gt; <span class="macro">format!</span>(<span class="string">&quot;more than {}&quot;</span>, <span class="ident">n</span>),
-            (<span class="ident">Bound::Unbounded</span>, <span class="ident">Bound::Included</span>(<span class="ident">x</span>)) =&gt; <span class="macro">format!</span>(<span class="string">&quot;at most {}&quot;</span>, <span class="ident">x</span>),
-            (<span class="ident">Bound::Unbounded</span>, <span class="ident">Bound::Excluded</span>(<span class="ident">x</span>)) =&gt; <span class="macro">format!</span>(<span class="string">&quot;less than {}&quot;</span>, <span class="ident">x</span>),
+            (Bound::Excluded(n), Bound::Unbounded) =&gt; <span class="macro">format!</span>(<span class="string">&quot;more than {}&quot;</span>, n),
+            (Bound::Unbounded, Bound::Included(x)) =&gt; <span class="macro">format!</span>(<span class="string">&quot;at most {}&quot;</span>, x),
+            (Bound::Unbounded, Bound::Excluded(x)) =&gt; <span class="macro">format!</span>(<span class="string">&quot;less than {}&quot;</span>, x),
         }
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">R</span>, <span class="ident">T</span>&gt; <span class="ident">RangeTrait</span>&lt;<span class="ident">T</span>&gt; <span class="kw">for</span> <span class="ident">R</span>
-<span class="kw">where</span>
-    <span class="ident">R</span>: <span class="ident">RangeBounds</span>&lt;<span class="ident">T</span>&gt;,
+<span class="kw">impl</span>&lt;R, T&gt; RangeTrait&lt;T&gt; <span class="kw">for </span>R
+<span class="kw">where
+    </span>R: RangeBounds&lt;T&gt;,
 {
-    <span class="kw">fn</span> <span class="ident">start_bound</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Bound</span>&lt;<span class="kw-2">&amp;</span><span class="ident">T</span>&gt; {
-        <span class="self">self</span>.<span class="ident">start_bound</span>()
+    <span class="kw">fn </span>start_bound(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Bound&lt;<span class="kw-2">&amp;</span>T&gt; {
+        <span class="self">self</span>.start_bound()
     }
 
-    <span class="kw">fn</span> <span class="ident">end_bound</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Bound</span>&lt;<span class="kw-2">&amp;</span><span class="ident">T</span>&gt; {
-        <span class="self">self</span>.<span class="ident">end_bound</span>()
+    <span class="kw">fn </span>end_bound(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Bound&lt;<span class="kw-2">&amp;</span>T&gt; {
+        <span class="self">self</span>.end_bound()
     }
 
-    <span class="kw">fn</span> <span class="ident">contains</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">item</span>: <span class="kw-2">&amp;</span><span class="ident">T</span>) -&gt; <span class="ident">bool</span>
-    <span class="kw">where</span>
-        <span class="ident">T</span>: <span class="ident">PartialOrd</span>&lt;<span class="ident">T</span>&gt;,
+    <span class="kw">fn </span>contains(<span class="kw-2">&amp;</span><span class="self">self</span>, item: <span class="kw-2">&amp;</span>T) -&gt; bool
+    <span class="kw">where
+        </span>T: PartialOrd&lt;T&gt;,
     {
-        <span class="self">self</span>.<span class="ident">contains</span>(<span class="ident">item</span>)
+        <span class="self">self</span>.contains(item)
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (75b7e52e9 2022-08-13)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

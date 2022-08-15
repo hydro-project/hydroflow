@@ -126,133 +126,133 @@
 <span id="126">126</span>
 <span id="127">127</span>
 <span id="128">128</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::collections::HashMap</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">JoinState</span>&lt;<span class="ident">K</span>, <span class="ident">V1</span>, <span class="ident">V2</span>&gt; {
-    <span class="ident">ltab</span>: <span class="ident">HashMap</span>&lt;<span class="ident">K</span>, <span class="ident">Vec</span>&lt;<span class="ident">V1</span>&gt;&gt;,
-    <span class="ident">rtab</span>: <span class="ident">HashMap</span>&lt;<span class="ident">K</span>, <span class="ident">Vec</span>&lt;<span class="ident">V2</span>&gt;&gt;,
-    <span class="ident">lbuffer</span>: <span class="prelude-ty">Option</span>&lt;(<span class="ident">K</span>, <span class="ident">V1</span>, <span class="ident">Vec</span>&lt;<span class="ident">V2</span>&gt;)&gt;,
-    <span class="ident">rbuffer</span>: <span class="prelude-ty">Option</span>&lt;(<span class="ident">K</span>, <span class="ident">V2</span>, <span class="ident">Vec</span>&lt;<span class="ident">V1</span>&gt;)&gt;,
+<span class="attribute">#[derive(Debug)]</span>
+<span class="kw">pub struct </span>JoinState&lt;K, V1, V2&gt; {
+    ltab: HashMap&lt;K, Vec&lt;V1&gt;&gt;,
+    rtab: HashMap&lt;K, Vec&lt;V2&gt;&gt;,
+    lbuffer: <span class="prelude-ty">Option</span>&lt;(K, V1, Vec&lt;V2&gt;)&gt;,
+    rbuffer: <span class="prelude-ty">Option</span>&lt;(K, V2, Vec&lt;V1&gt;)&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">K</span>, <span class="ident">V1</span>, <span class="ident">V2</span>&gt; <span class="ident">Default</span> <span class="kw">for</span> <span class="ident">JoinState</span>&lt;<span class="ident">K</span>, <span class="ident">V1</span>, <span class="ident">V2</span>&gt; {
-    <span class="kw">fn</span> <span class="ident">default</span>() -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">ltab</span>: <span class="ident">HashMap::new</span>(),
-            <span class="ident">rtab</span>: <span class="ident">HashMap::new</span>(),
-            <span class="ident">lbuffer</span>: <span class="prelude-val">None</span>,
-            <span class="ident">rbuffer</span>: <span class="prelude-val">None</span>,
+<span class="kw">impl</span>&lt;K, V1, V2&gt; Default <span class="kw">for </span>JoinState&lt;K, V1, V2&gt; {
+    <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            ltab: HashMap::new(),
+            rtab: HashMap::new(),
+            lbuffer: <span class="prelude-val">None</span>,
+            rbuffer: <span class="prelude-val">None</span>,
         }
     }
 }
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">SymmetricHashJoin</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">K</span>, <span class="ident">I1</span>, <span class="ident">V1</span>, <span class="ident">I2</span>, <span class="ident">V2</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">K</span>: <span class="ident">Eq</span> + <span class="ident">std::hash::Hash</span> + <span class="ident">Clone</span>,
-    <span class="ident">V1</span>: <span class="ident">Eq</span> + <span class="ident">Clone</span>,
-    <span class="ident">V2</span>: <span class="ident">Eq</span> + <span class="ident">Clone</span>,
-    <span class="ident">I1</span>: <span class="ident">Iterator</span>&lt;<span class="ident">Item</span> = (<span class="ident">K</span>, <span class="ident">V1</span>)&gt;,
-    <span class="ident">I2</span>: <span class="ident">Iterator</span>&lt;<span class="ident">Item</span> = (<span class="ident">K</span>, <span class="ident">V2</span>)&gt;,
+<span class="kw">pub struct </span>SymmetricHashJoin&lt;<span class="lifetime">&#39;a</span>, K, I1, V1, I2, V2&gt;
+<span class="kw">where
+    </span>K: Eq + std::hash::Hash + Clone,
+    V1: Eq + Clone,
+    V2: Eq + Clone,
+    I1: Iterator&lt;Item = (K, V1)&gt;,
+    I2: Iterator&lt;Item = (K, V2)&gt;,
 {
-    <span class="ident">lhs</span>: <span class="ident">I1</span>,
-    <span class="ident">rhs</span>: <span class="ident">I2</span>,
-    <span class="ident">state</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">JoinState</span>&lt;<span class="ident">K</span>, <span class="ident">V1</span>, <span class="ident">V2</span>&gt;,
+    lhs: I1,
+    rhs: I2,
+    state: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>JoinState&lt;K, V1, V2&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">K</span>, <span class="ident">I1</span>, <span class="ident">V1</span>, <span class="ident">I2</span>, <span class="ident">V2</span>&gt; <span class="ident">Iterator</span> <span class="kw">for</span> <span class="ident">SymmetricHashJoin</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">K</span>, <span class="ident">I1</span>, <span class="ident">V1</span>, <span class="ident">I2</span>, <span class="ident">V2</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">K</span>: <span class="ident">Eq</span> + <span class="ident">std::hash::Hash</span> + <span class="ident">Clone</span>,
-    <span class="ident">V1</span>: <span class="ident">Eq</span> + <span class="ident">Clone</span>,
-    <span class="ident">V2</span>: <span class="ident">Eq</span> + <span class="ident">Clone</span>,
-    <span class="ident">I1</span>: <span class="ident">Iterator</span>&lt;<span class="ident">Item</span> = (<span class="ident">K</span>, <span class="ident">V1</span>)&gt;,
-    <span class="ident">I2</span>: <span class="ident">Iterator</span>&lt;<span class="ident">Item</span> = (<span class="ident">K</span>, <span class="ident">V2</span>)&gt;,
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, K, I1, V1, I2, V2&gt; Iterator <span class="kw">for </span>SymmetricHashJoin&lt;<span class="lifetime">&#39;a</span>, K, I1, V1, I2, V2&gt;
+<span class="kw">where
+    </span>K: Eq + std::hash::Hash + Clone,
+    V1: Eq + Clone,
+    V2: Eq + Clone,
+    I1: Iterator&lt;Item = (K, V1)&gt;,
+    I2: Iterator&lt;Item = (K, V2)&gt;,
 {
-    <span class="kw">type</span> <span class="ident">Item</span> = (<span class="ident">K</span>, (<span class="ident">V1</span>, <span class="ident">V2</span>));
+    <span class="kw">type </span>Item = (K, (V1, V2));
 
-    <span class="kw">fn</span> <span class="ident">next</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident"><span class="self">Self</span>::Item</span>&gt; {
-        <span class="kw">loop</span> {
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>((<span class="ident">k</span>, <span class="ident">v</span>, <span class="ident">vs</span>)) = <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">lbuffer</span> {
-                <span class="comment">// TODO(justin): unnecessary clone (sometimes).</span>
-                <span class="kw">let</span> <span class="ident">result</span> = (<span class="ident">k</span>.<span class="ident">clone</span>(), (<span class="ident">v</span>.<span class="ident">clone</span>(), <span class="ident">vs</span>.<span class="ident">pop</span>().<span class="ident">unwrap</span>()));
-                <span class="kw">if</span> <span class="ident">vs</span>.<span class="ident">is_empty</span>() {
-                    <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">lbuffer</span> = <span class="prelude-val">None</span>;
+    <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Item&gt; {
+        <span class="kw">loop </span>{
+            <span class="kw">if let </span><span class="prelude-val">Some</span>((k, v, vs)) = <span class="kw-2">&amp;mut </span><span class="self">self</span>.state.lbuffer {
+                <span class="comment">// TODO(justin): unnecessary clone (sometimes).
+                </span><span class="kw">let </span>result = (k.clone(), (v.clone(), vs.pop().unwrap()));
+                <span class="kw">if </span>vs.is_empty() {
+                    <span class="self">self</span>.state.lbuffer = <span class="prelude-val">None</span>;
                 }
-                <span class="kw">return</span> <span class="prelude-val">Some</span>(<span class="ident">result</span>);
-            } <span class="kw">else</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>((<span class="ident">k</span>, <span class="ident">v</span>, <span class="ident">vs</span>)) = <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">rbuffer</span> {
-                <span class="comment">// TODO(justin): unnecessary clone (sometimes).</span>
-                <span class="kw">let</span> <span class="ident">result</span> = (<span class="ident">k</span>.<span class="ident">clone</span>(), (<span class="ident">vs</span>.<span class="ident">pop</span>().<span class="ident">unwrap</span>(), <span class="ident">v</span>.<span class="ident">clone</span>()));
-                <span class="kw">if</span> <span class="ident">vs</span>.<span class="ident">is_empty</span>() {
-                    <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">rbuffer</span> = <span class="prelude-val">None</span>;
+                <span class="kw">return </span><span class="prelude-val">Some</span>(result);
+            } <span class="kw">else if let </span><span class="prelude-val">Some</span>((k, v, vs)) = <span class="kw-2">&amp;mut </span><span class="self">self</span>.state.rbuffer {
+                <span class="comment">// TODO(justin): unnecessary clone (sometimes).
+                </span><span class="kw">let </span>result = (k.clone(), (vs.pop().unwrap(), v.clone()));
+                <span class="kw">if </span>vs.is_empty() {
+                    <span class="self">self</span>.state.rbuffer = <span class="prelude-val">None</span>;
                 }
-                <span class="kw">return</span> <span class="prelude-val">Some</span>(<span class="ident">result</span>);
+                <span class="kw">return </span><span class="prelude-val">Some</span>(result);
             }
 
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>((<span class="ident">k</span>, <span class="ident">v1</span>)) = <span class="self">self</span>.<span class="ident">lhs</span>.<span class="ident">next</span>() {
-                <span class="kw">let</span> <span class="ident">vec</span> = <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">ltab</span>.<span class="ident">entry</span>(<span class="ident">k</span>.<span class="ident">clone</span>()).<span class="ident">or_insert_with</span>(<span class="ident">Vec::new</span>);
-                <span class="kw">if</span> !<span class="ident">vec</span>.<span class="ident">contains</span>(<span class="kw-2">&amp;</span><span class="ident">v1</span>) {
-                    <span class="ident">vec</span>.<span class="ident">push</span>(<span class="ident">v1</span>.<span class="ident">clone</span>());
-                    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">vs</span>) = <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">rtab</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">k</span>) {
-                        <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">lbuffer</span> = <span class="prelude-val">Some</span>((<span class="ident">k</span>, <span class="ident">v1</span>, <span class="ident">vs</span>.<span class="ident">clone</span>()));
+            <span class="kw">if let </span><span class="prelude-val">Some</span>((k, v1)) = <span class="self">self</span>.lhs.next() {
+                <span class="kw">let </span>vec = <span class="self">self</span>.state.ltab.entry(k.clone()).or_insert_with(Vec::new);
+                <span class="kw">if </span>!vec.contains(<span class="kw-2">&amp;</span>v1) {
+                    vec.push(v1.clone());
+                    <span class="kw">if let </span><span class="prelude-val">Some</span>(vs) = <span class="self">self</span>.state.rtab.get(<span class="kw-2">&amp;</span>k) {
+                        <span class="self">self</span>.state.lbuffer = <span class="prelude-val">Some</span>((k, v1, vs.clone()));
                     }
                 }
                 <span class="kw">continue</span>;
             }
 
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>((<span class="ident">k</span>, <span class="ident">v2</span>)) = <span class="self">self</span>.<span class="ident">rhs</span>.<span class="ident">next</span>() {
-                <span class="kw">let</span> <span class="ident">vec</span> = <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">rtab</span>.<span class="ident">entry</span>(<span class="ident">k</span>.<span class="ident">clone</span>()).<span class="ident">or_insert_with</span>(<span class="ident">Vec::new</span>);
-                <span class="kw">if</span> !<span class="ident">vec</span>.<span class="ident">contains</span>(<span class="kw-2">&amp;</span><span class="ident">v2</span>) {
-                    <span class="ident">vec</span>.<span class="ident">push</span>(<span class="ident">v2</span>.<span class="ident">clone</span>());
-                    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">vs</span>) = <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">ltab</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">k</span>) {
-                        <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">rbuffer</span> = <span class="prelude-val">Some</span>((<span class="ident">k</span>, <span class="ident">v2</span>, <span class="ident">vs</span>.<span class="ident">clone</span>()));
+            <span class="kw">if let </span><span class="prelude-val">Some</span>((k, v2)) = <span class="self">self</span>.rhs.next() {
+                <span class="kw">let </span>vec = <span class="self">self</span>.state.rtab.entry(k.clone()).or_insert_with(Vec::new);
+                <span class="kw">if </span>!vec.contains(<span class="kw-2">&amp;</span>v2) {
+                    vec.push(v2.clone());
+                    <span class="kw">if let </span><span class="prelude-val">Some</span>(vs) = <span class="self">self</span>.state.ltab.get(<span class="kw-2">&amp;</span>k) {
+                        <span class="self">self</span>.state.rbuffer = <span class="prelude-val">Some</span>((k, v2, vs.clone()));
                     }
                 }
                 <span class="kw">continue</span>;
             }
-            <span class="kw">return</span> <span class="prelude-val">None</span>;
+            <span class="kw">return </span><span class="prelude-val">None</span>;
         }
     }
 }
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">K</span>, <span class="ident">I1</span>, <span class="ident">V1</span>, <span class="ident">I2</span>, <span class="ident">V2</span>&gt; <span class="ident">SymmetricHashJoin</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">K</span>, <span class="ident">I1</span>, <span class="ident">V1</span>, <span class="ident">I2</span>, <span class="ident">V2</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">K</span>: <span class="ident">Eq</span> + <span class="ident">std::hash::Hash</span> + <span class="ident">Clone</span>,
-    <span class="ident">V1</span>: <span class="ident">Eq</span> + <span class="ident">Clone</span>,
-    <span class="ident">V2</span>: <span class="ident">Eq</span> + <span class="ident">Clone</span>,
-    <span class="ident">I1</span>: <span class="ident">Iterator</span>&lt;<span class="ident">Item</span> = (<span class="ident">K</span>, <span class="ident">V1</span>)&gt;,
-    <span class="ident">I2</span>: <span class="ident">Iterator</span>&lt;<span class="ident">Item</span> = (<span class="ident">K</span>, <span class="ident">V2</span>)&gt;,
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, K, I1, V1, I2, V2&gt; SymmetricHashJoin&lt;<span class="lifetime">&#39;a</span>, K, I1, V1, I2, V2&gt;
+<span class="kw">where
+    </span>K: Eq + std::hash::Hash + Clone,
+    V1: Eq + Clone,
+    V2: Eq + Clone,
+    I1: Iterator&lt;Item = (K, V1)&gt;,
+    I2: Iterator&lt;Item = (K, V2)&gt;,
 {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">lhs</span>: <span class="ident">I1</span>, <span class="ident">rhs</span>: <span class="ident">I2</span>, <span class="ident">state</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">JoinState</span>&lt;<span class="ident">K</span>, <span class="ident">V1</span>, <span class="ident">V2</span>&gt;) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> { <span class="ident">lhs</span>, <span class="ident">rhs</span>, <span class="ident">state</span> }
+    <span class="kw">pub fn </span>new(lhs: I1, rhs: I2, state: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>JoinState&lt;K, V1, V2&gt;) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{ lhs, rhs, state }
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
-<span class="kw">mod</span> <span class="ident">tests</span> {
-    <span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">JoinState</span>, <span class="ident">SymmetricHashJoin</span>};
+<span class="attribute">#[cfg(test)]</span>
+<span class="kw">mod </span>tests {
+    <span class="kw">use super</span>::{JoinState, SymmetricHashJoin};
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">hash_join</span>() {
-        <span class="kw">let</span> <span class="ident">lhs</span> = (<span class="number">0</span>..<span class="number">10</span>).<span class="ident">map</span>(|<span class="ident">x</span>| (<span class="ident">x</span>, <span class="macro">format!</span>(<span class="string">&quot;left {}&quot;</span>, <span class="ident">x</span>)));
-        <span class="kw">let</span> <span class="ident">rhs</span> = (<span class="number">6</span>..<span class="number">15</span>).<span class="ident">map</span>(|<span class="ident">x</span>| (<span class="ident">x</span> / <span class="number">2</span>, <span class="macro">format!</span>(<span class="string">&quot;right {} / 2&quot;</span>, <span class="ident">x</span>)));
+    <span class="attribute">#[test]</span>
+    <span class="kw">fn </span>hash_join() {
+        <span class="kw">let </span>lhs = (<span class="number">0</span>..<span class="number">10</span>).map(|x| (x, <span class="macro">format!</span>(<span class="string">&quot;left {}&quot;</span>, x)));
+        <span class="kw">let </span>rhs = (<span class="number">6</span>..<span class="number">15</span>).map(|x| (x / <span class="number">2</span>, <span class="macro">format!</span>(<span class="string">&quot;right {} / 2&quot;</span>, x)));
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">state</span> = <span class="ident">JoinState::default</span>();
-        <span class="kw">let</span> <span class="ident">join</span> = <span class="ident">SymmetricHashJoin::new</span>(<span class="ident">lhs</span>, <span class="ident">rhs</span>, <span class="kw-2">&amp;mut</span> <span class="ident">state</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>state = JoinState::default();
+        <span class="kw">let </span>join = SymmetricHashJoin::new(lhs, rhs, <span class="kw-2">&amp;mut </span>state);
 
         <span class="macro">assert_eq!</span>(
-            <span class="ident">join</span>.<span class="ident">collect</span>::&lt;<span class="ident">Vec</span>&lt;<span class="kw">_</span>&gt;&gt;(),
+            join.collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;(),
             <span class="macro">vec!</span>[
-                (<span class="number">3</span>, (<span class="string">&quot;left 3&quot;</span>.<span class="ident">into</span>(), <span class="string">&quot;right 6 / 2&quot;</span>.<span class="ident">into</span>())),
-                (<span class="number">3</span>, (<span class="string">&quot;left 3&quot;</span>.<span class="ident">into</span>(), <span class="string">&quot;right 7 / 2&quot;</span>.<span class="ident">into</span>())),
-                (<span class="number">4</span>, (<span class="string">&quot;left 4&quot;</span>.<span class="ident">into</span>(), <span class="string">&quot;right 8 / 2&quot;</span>.<span class="ident">into</span>())),
-                (<span class="number">4</span>, (<span class="string">&quot;left 4&quot;</span>.<span class="ident">into</span>(), <span class="string">&quot;right 9 / 2&quot;</span>.<span class="ident">into</span>())),
-                (<span class="number">5</span>, (<span class="string">&quot;left 5&quot;</span>.<span class="ident">into</span>(), <span class="string">&quot;right 10 / 2&quot;</span>.<span class="ident">into</span>())),
-                (<span class="number">5</span>, (<span class="string">&quot;left 5&quot;</span>.<span class="ident">into</span>(), <span class="string">&quot;right 11 / 2&quot;</span>.<span class="ident">into</span>())),
-                (<span class="number">6</span>, (<span class="string">&quot;left 6&quot;</span>.<span class="ident">into</span>(), <span class="string">&quot;right 12 / 2&quot;</span>.<span class="ident">into</span>())),
-                (<span class="number">6</span>, (<span class="string">&quot;left 6&quot;</span>.<span class="ident">into</span>(), <span class="string">&quot;right 13 / 2&quot;</span>.<span class="ident">into</span>())),
-                (<span class="number">7</span>, (<span class="string">&quot;left 7&quot;</span>.<span class="ident">into</span>(), <span class="string">&quot;right 14 / 2&quot;</span>.<span class="ident">into</span>()))
+                (<span class="number">3</span>, (<span class="string">&quot;left 3&quot;</span>.into(), <span class="string">&quot;right 6 / 2&quot;</span>.into())),
+                (<span class="number">3</span>, (<span class="string">&quot;left 3&quot;</span>.into(), <span class="string">&quot;right 7 / 2&quot;</span>.into())),
+                (<span class="number">4</span>, (<span class="string">&quot;left 4&quot;</span>.into(), <span class="string">&quot;right 8 / 2&quot;</span>.into())),
+                (<span class="number">4</span>, (<span class="string">&quot;left 4&quot;</span>.into(), <span class="string">&quot;right 9 / 2&quot;</span>.into())),
+                (<span class="number">5</span>, (<span class="string">&quot;left 5&quot;</span>.into(), <span class="string">&quot;right 10 / 2&quot;</span>.into())),
+                (<span class="number">5</span>, (<span class="string">&quot;left 5&quot;</span>.into(), <span class="string">&quot;right 11 / 2&quot;</span>.into())),
+                (<span class="number">6</span>, (<span class="string">&quot;left 6&quot;</span>.into(), <span class="string">&quot;right 12 / 2&quot;</span>.into())),
+                (<span class="number">6</span>, (<span class="string">&quot;left 6&quot;</span>.into(), <span class="string">&quot;right 13 / 2&quot;</span>.into())),
+                (<span class="number">7</span>, (<span class="string">&quot;left 7&quot;</span>.into(), <span class="string">&quot;right 14 / 2&quot;</span>.into()))
             ]
         );
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (75b7e52e9 2022-08-13)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

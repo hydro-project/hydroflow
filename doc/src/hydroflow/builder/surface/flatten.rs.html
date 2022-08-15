@@ -125,132 +125,132 @@
 <span id="125">125</span>
 <span id="126">126</span>
 <span id="127">127</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">AssembleFlowGraph</span>, <span class="ident">BaseSurface</span>, <span class="ident">PullSurface</span>, <span class="ident">PushSurface</span>, <span class="ident">PushSurfaceReversed</span>};
+</pre><pre class="rust"><code><span class="kw">use super</span>::{AssembleFlowGraph, BaseSurface, PullSurface, PushSurface, PushSurfaceReversed};
 
-<span class="kw">use</span> <span class="ident">std::marker::PhantomData</span>;
+<span class="kw">use </span>std::marker::PhantomData;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::builder::build::pull_flatten::FlattenPullBuild</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::builder::build::push_flatten::FlattenPushBuild</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::context::Context</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::flow_graph::FlowNodeId</span>;
+<span class="kw">use </span><span class="kw">crate</span>::builder::build::pull_flatten::FlattenPullBuild;
+<span class="kw">use </span><span class="kw">crate</span>::builder::build::push_flatten::FlattenPushBuild;
+<span class="kw">use </span><span class="kw">crate</span>::scheduled::context::Context;
+<span class="kw">use </span><span class="kw">crate</span>::scheduled::flow_graph::FlowNodeId;
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">FlattenSurface</span>&lt;<span class="ident">Prev</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">Prev</span>: <span class="ident">BaseSurface</span>,
-    <span class="ident">Prev::ItemOut</span>: <span class="ident">IntoIterator</span>,
+<span class="kw">pub struct </span>FlattenSurface&lt;Prev&gt;
+<span class="kw">where
+    </span>Prev: BaseSurface,
+    Prev::ItemOut: IntoIterator,
 {
-    <span class="ident">prev</span>: <span class="ident">Prev</span>,
+    prev: Prev,
 }
-<span class="kw">impl</span>&lt;<span class="ident">Prev</span>&gt; <span class="ident">FlattenSurface</span>&lt;<span class="ident">Prev</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">Prev</span>: <span class="ident">BaseSurface</span>,
-    <span class="ident">Prev::ItemOut</span>: <span class="ident">IntoIterator</span>,
+<span class="kw">impl</span>&lt;Prev&gt; FlattenSurface&lt;Prev&gt;
+<span class="kw">where
+    </span>Prev: BaseSurface,
+    Prev::ItemOut: IntoIterator,
 {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">prev</span>: <span class="ident">Prev</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> { <span class="ident">prev</span> }
+    <span class="kw">pub fn </span>new(prev: Prev) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{ prev }
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">Prev</span>&gt; <span class="ident">BaseSurface</span> <span class="kw">for</span> <span class="ident">FlattenSurface</span>&lt;<span class="ident">Prev</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">Prev</span>: <span class="ident">BaseSurface</span>,
-    <span class="ident">Prev::ItemOut</span>: <span class="ident">IntoIterator</span>,
+<span class="kw">impl</span>&lt;Prev&gt; BaseSurface <span class="kw">for </span>FlattenSurface&lt;Prev&gt;
+<span class="kw">where
+    </span>Prev: BaseSurface,
+    Prev::ItemOut: IntoIterator,
 {
-    <span class="kw">type</span> <span class="ident">ItemOut</span> = &lt;<span class="ident">Prev::ItemOut</span> <span class="kw">as</span> <span class="ident">IntoIterator</span>&gt;<span class="ident">::Item</span>;
+    <span class="kw">type </span>ItemOut = &lt;Prev::ItemOut <span class="kw">as </span>IntoIterator&gt;::Item;
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">Prev</span>&gt; <span class="ident">PullSurface</span> <span class="kw">for</span> <span class="ident">FlattenSurface</span>&lt;<span class="ident">Prev</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">Prev</span>: <span class="ident">PullSurface</span>,
-    <span class="ident">Prev::ItemOut</span>: <span class="ident">IntoIterator</span>,
+<span class="kw">impl</span>&lt;Prev&gt; PullSurface <span class="kw">for </span>FlattenSurface&lt;Prev&gt;
+<span class="kw">where
+    </span>Prev: PullSurface,
+    Prev::ItemOut: IntoIterator,
 {
-    <span class="kw">type</span> <span class="ident">InputHandoffs</span> = <span class="ident">Prev::InputHandoffs</span>;
-    <span class="kw">type</span> <span class="ident">Build</span> = <span class="ident">FlattenPullBuild</span>&lt;<span class="ident">Prev::Build</span>&gt;;
+    <span class="kw">type </span>InputHandoffs = Prev::InputHandoffs;
+    <span class="kw">type </span>Build = FlattenPullBuild&lt;Prev::Build&gt;;
 
-    <span class="kw">fn</span> <span class="ident">make_parts</span>(<span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span>) -&gt; (<span class="ident"><span class="self">Self</span>::InputHandoffs</span>, <span class="ident"><span class="self">Self</span>::Build</span>) {
-        <span class="kw">let</span> (<span class="ident">connect</span>, <span class="ident">build</span>) = <span class="self">self</span>.<span class="ident">prev</span>.<span class="ident">make_parts</span>(<span class="ident">ctx</span>);
-        <span class="kw">let</span> <span class="ident">build</span> = <span class="ident">FlattenPullBuild::new</span>(<span class="ident">build</span>);
-        (<span class="ident">connect</span>, <span class="ident">build</span>)
+    <span class="kw">fn </span>make_parts(<span class="self">self</span>, ctx: <span class="kw-2">&amp;mut </span>Context) -&gt; (<span class="self">Self</span>::InputHandoffs, <span class="self">Self</span>::Build) {
+        <span class="kw">let </span>(connect, build) = <span class="self">self</span>.prev.make_parts(ctx);
+        <span class="kw">let </span>build = FlattenPullBuild::new(build);
+        (connect, build)
     }
 }
-<span class="kw">impl</span>&lt;<span class="ident">Prev</span>&gt; <span class="ident">AssembleFlowGraph</span> <span class="kw">for</span> <span class="ident">FlattenSurface</span>&lt;<span class="ident">Prev</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">Prev</span>: <span class="ident">PullSurface</span> + <span class="ident">AssembleFlowGraph</span>,
-    <span class="ident">Prev::ItemOut</span>: <span class="ident">IntoIterator</span>,
+<span class="kw">impl</span>&lt;Prev&gt; AssembleFlowGraph <span class="kw">for </span>FlattenSurface&lt;Prev&gt;
+<span class="kw">where
+    </span>Prev: PullSurface + AssembleFlowGraph,
+    Prev::ItemOut: IntoIterator,
 {
-    <span class="kw">fn</span> <span class="ident">insert_dep</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">e</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="kw">super</span>::FlowGraph</span>) -&gt; <span class="ident">FlowNodeId</span> {
-        <span class="kw">let</span> <span class="ident">my_id</span> = <span class="ident">e</span>.<span class="ident">add_node</span>(<span class="string">&quot;Flatten&quot;</span>);
-        <span class="kw">let</span> <span class="ident">prev_id</span> = <span class="self">self</span>.<span class="ident">prev</span>.<span class="ident">insert_dep</span>(<span class="ident">e</span>);
-        <span class="ident">e</span>.<span class="ident">add_edge</span>((<span class="ident">prev_id</span>, <span class="ident">my_id</span>));
-        <span class="ident">my_id</span>
+    <span class="kw">fn </span>insert_dep(<span class="kw-2">&amp;</span><span class="self">self</span>, e: <span class="kw-2">&amp;mut </span><span class="kw">super</span>::FlowGraph) -&gt; FlowNodeId {
+        <span class="kw">let </span>my_id = e.add_node(<span class="string">&quot;Flatten&quot;</span>);
+        <span class="kw">let </span>prev_id = <span class="self">self</span>.prev.insert_dep(e);
+        e.add_edge((prev_id, my_id));
+        my_id
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">Prev</span>&gt; <span class="ident">PushSurface</span> <span class="kw">for</span> <span class="ident">FlattenSurface</span>&lt;<span class="ident">Prev</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">Prev</span>: <span class="ident">PushSurface</span>,
-    <span class="ident">Prev::ItemOut</span>: <span class="ident">IntoIterator</span>,
+<span class="kw">impl</span>&lt;Prev&gt; PushSurface <span class="kw">for </span>FlattenSurface&lt;Prev&gt;
+<span class="kw">where
+    </span>Prev: PushSurface,
+    Prev::ItemOut: IntoIterator,
 {
-    <span class="kw">type</span> <span class="ident">Output</span>&lt;<span class="ident">Next</span>&gt; = <span class="ident">Prev::Output</span>&lt;<span class="ident">FlattenPushSurfaceReversed</span>&lt;<span class="ident">Next</span>, <span class="ident">Prev::ItemOut</span>&gt;&gt;
-    <span class="kw">where</span>
-        <span class="ident">Next</span>: <span class="ident">PushSurfaceReversed</span>&lt;<span class="ident">ItemIn</span> = <span class="ident"><span class="self">Self</span>::ItemOut</span>&gt;;
+    <span class="kw">type </span>Output&lt;Next&gt; = Prev::Output&lt;FlattenPushSurfaceReversed&lt;Next, Prev::ItemOut&gt;&gt;
+    <span class="kw">where
+        </span>Next: PushSurfaceReversed&lt;ItemIn = <span class="self">Self</span>::ItemOut&gt;;
 
-    <span class="kw">fn</span> <span class="ident">push_to</span>&lt;<span class="ident">Next</span>&gt;(<span class="self">self</span>, <span class="ident">next</span>: <span class="ident">Next</span>) -&gt; <span class="ident"><span class="self">Self</span>::Output</span>&lt;<span class="ident">Next</span>&gt;
-    <span class="kw">where</span>
-        <span class="ident">Next</span>: <span class="ident">PushSurfaceReversed</span>&lt;<span class="ident">ItemIn</span> = <span class="ident"><span class="self">Self</span>::ItemOut</span>&gt;,
+    <span class="kw">fn </span>push_to&lt;Next&gt;(<span class="self">self</span>, next: Next) -&gt; <span class="self">Self</span>::Output&lt;Next&gt;
+    <span class="kw">where
+        </span>Next: PushSurfaceReversed&lt;ItemIn = <span class="self">Self</span>::ItemOut&gt;,
     {
-        <span class="self">self</span>.<span class="ident">prev</span>.<span class="ident">push_to</span>(<span class="ident">FlattenPushSurfaceReversed::new</span>(<span class="ident">next</span>))
+        <span class="self">self</span>.prev.push_to(FlattenPushSurfaceReversed::new(next))
     }
 }
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">FlattenPushSurfaceReversed</span>&lt;<span class="ident">Next</span>, <span class="ident">In</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">Next</span>: <span class="ident">PushSurfaceReversed</span>,
-    <span class="ident">In</span>: <span class="ident">IntoIterator</span>&lt;<span class="ident">Item</span> = <span class="ident">Next::ItemIn</span>&gt;,
+<span class="kw">pub struct </span>FlattenPushSurfaceReversed&lt;Next, In&gt;
+<span class="kw">where
+    </span>Next: PushSurfaceReversed,
+    In: IntoIterator&lt;Item = Next::ItemIn&gt;,
 {
-    <span class="ident">next</span>: <span class="ident">Next</span>,
-    <span class="ident">_phantom</span>: <span class="ident">PhantomData</span>&lt;<span class="kw">fn</span>(<span class="ident">In</span>)&gt;,
+    next: Next,
+    _phantom: PhantomData&lt;<span class="kw">fn</span>(In)&gt;,
 }
-<span class="kw">impl</span>&lt;<span class="ident">Next</span>, <span class="ident">In</span>&gt; <span class="ident">FlattenPushSurfaceReversed</span>&lt;<span class="ident">Next</span>, <span class="ident">In</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">Next</span>: <span class="ident">PushSurfaceReversed</span>,
-    <span class="ident">In</span>: <span class="ident">IntoIterator</span>&lt;<span class="ident">Item</span> = <span class="ident">Next::ItemIn</span>&gt;,
+<span class="kw">impl</span>&lt;Next, In&gt; FlattenPushSurfaceReversed&lt;Next, In&gt;
+<span class="kw">where
+    </span>Next: PushSurfaceReversed,
+    In: IntoIterator&lt;Item = Next::ItemIn&gt;,
 {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">next</span>: <span class="ident">Next</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">next</span>,
-            <span class="ident">_phantom</span>: <span class="ident">PhantomData</span>,
+    <span class="kw">pub fn </span>new(next: Next) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            next,
+            _phantom: PhantomData,
         }
     }
 }
-<span class="kw">impl</span>&lt;<span class="ident">Next</span>, <span class="ident">In</span>&gt; <span class="ident">AssembleFlowGraph</span> <span class="kw">for</span> <span class="ident">FlattenPushSurfaceReversed</span>&lt;<span class="ident">Next</span>, <span class="ident">In</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">Next</span>: <span class="ident">PushSurfaceReversed</span> + <span class="ident">AssembleFlowGraph</span>,
-    <span class="ident">In</span>: <span class="ident">IntoIterator</span>&lt;<span class="ident">Item</span> = <span class="ident">Next::ItemIn</span>&gt;,
+<span class="kw">impl</span>&lt;Next, In&gt; AssembleFlowGraph <span class="kw">for </span>FlattenPushSurfaceReversed&lt;Next, In&gt;
+<span class="kw">where
+    </span>Next: PushSurfaceReversed + AssembleFlowGraph,
+    In: IntoIterator&lt;Item = Next::ItemIn&gt;,
 {
-    <span class="kw">fn</span> <span class="ident">insert_dep</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">e</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="kw">super</span>::FlowGraph</span>) -&gt; <span class="ident">FlowNodeId</span> {
-        <span class="kw">let</span> <span class="ident">my_id</span> = <span class="ident">e</span>.<span class="ident">add_node</span>(<span class="string">&quot;Flatten&quot;</span>);
-        <span class="kw">let</span> <span class="ident">next_id</span> = <span class="self">self</span>.<span class="ident">next</span>.<span class="ident">insert_dep</span>(<span class="ident">e</span>);
-        <span class="ident">e</span>.<span class="ident">add_edge</span>((<span class="ident">my_id</span>, <span class="ident">next_id</span>));
-        <span class="ident">my_id</span>
+    <span class="kw">fn </span>insert_dep(<span class="kw-2">&amp;</span><span class="self">self</span>, e: <span class="kw-2">&amp;mut </span><span class="kw">super</span>::FlowGraph) -&gt; FlowNodeId {
+        <span class="kw">let </span>my_id = e.add_node(<span class="string">&quot;Flatten&quot;</span>);
+        <span class="kw">let </span>next_id = <span class="self">self</span>.next.insert_dep(e);
+        e.add_edge((my_id, next_id));
+        my_id
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">Next</span>, <span class="ident">In</span>&gt; <span class="ident">PushSurfaceReversed</span> <span class="kw">for</span> <span class="ident">FlattenPushSurfaceReversed</span>&lt;<span class="ident">Next</span>, <span class="ident">In</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">Next</span>: <span class="ident">PushSurfaceReversed</span>,
-    <span class="ident">In</span>: <span class="ident">IntoIterator</span>&lt;<span class="ident">Item</span> = <span class="ident">Next::ItemIn</span>&gt;,
+<span class="kw">impl</span>&lt;Next, In&gt; PushSurfaceReversed <span class="kw">for </span>FlattenPushSurfaceReversed&lt;Next, In&gt;
+<span class="kw">where
+    </span>Next: PushSurfaceReversed,
+    In: IntoIterator&lt;Item = Next::ItemIn&gt;,
 {
-    <span class="kw">type</span> <span class="ident">ItemIn</span> = <span class="ident">In</span>;
+    <span class="kw">type </span>ItemIn = In;
 
-    <span class="kw">type</span> <span class="ident">OutputHandoffs</span> = <span class="ident">Next::OutputHandoffs</span>;
-    <span class="kw">type</span> <span class="ident">Build</span> = <span class="ident">FlattenPushBuild</span>&lt;<span class="ident">Next::Build</span>, <span class="ident">In</span>&gt;;
+    <span class="kw">type </span>OutputHandoffs = Next::OutputHandoffs;
+    <span class="kw">type </span>Build = FlattenPushBuild&lt;Next::Build, In&gt;;
 
-    <span class="kw">fn</span> <span class="ident">make_parts</span>(<span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span>) -&gt; (<span class="ident"><span class="self">Self</span>::OutputHandoffs</span>, <span class="ident"><span class="self">Self</span>::Build</span>) {
-        <span class="kw">let</span> (<span class="ident">connect</span>, <span class="ident">build</span>) = <span class="self">self</span>.<span class="ident">next</span>.<span class="ident">make_parts</span>(<span class="ident">ctx</span>);
-        <span class="kw">let</span> <span class="ident">build</span> = <span class="ident">FlattenPushBuild::new</span>(<span class="ident">build</span>);
-        (<span class="ident">connect</span>, <span class="ident">build</span>)
+    <span class="kw">fn </span>make_parts(<span class="self">self</span>, ctx: <span class="kw-2">&amp;mut </span>Context) -&gt; (<span class="self">Self</span>::OutputHandoffs, <span class="self">Self</span>::Build) {
+        <span class="kw">let </span>(connect, build) = <span class="self">self</span>.next.make_parts(ctx);
+        <span class="kw">let </span>build = FlattenPushBuild::new(build);
+        (connect, build)
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (75b7e52e9 2022-08-13)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

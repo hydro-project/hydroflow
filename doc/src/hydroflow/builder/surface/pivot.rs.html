@@ -36,43 +36,43 @@
 <span id="36">36</span>
 <span id="37">37</span>
 <span id="38">38</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::context::Context</span>;
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::scheduled::context::Context;
 
-<span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">PullSurface</span>, <span class="ident">PushSurfaceReversed</span>};
+<span class="kw">use super</span>::{PullSurface, PushSurfaceReversed};
 
-<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">type_alias_bounds</span>)]</span>
-<span class="kw">type</span> <span class="ident">Parts</span>&lt;<span class="ident">Pull</span>, <span class="ident">Push</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">Pull</span>: <span class="ident">PullSurface</span>,
-    <span class="ident">Push</span>: <span class="ident">PushSurfaceReversed</span>&lt;<span class="ident">ItemIn</span> = <span class="ident">Pull::ItemOut</span>&gt;,
+<span class="attribute">#[allow(type_alias_bounds)]</span>
+<span class="kw">type </span>Parts&lt;Pull, Push&gt;
+<span class="kw">where
+    </span>Pull: PullSurface,
+    Push: PushSurfaceReversed&lt;ItemIn = Pull::ItemOut&gt;,
 = (
-    (<span class="ident">Pull::InputHandoffs</span>, <span class="ident">Push::OutputHandoffs</span>),
-    (<span class="ident">Pull::Build</span>, <span class="ident">Push::Build</span>),
+    (Pull::InputHandoffs, Push::OutputHandoffs),
+    (Pull::Build, Push::Build),
 );
 
-<span class="doccomment">/// The combination of both Pull and Push surface halves.</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">PivotSurface</span>&lt;<span class="ident">Pull</span>, <span class="ident">Push</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">Pull</span>: <span class="ident">PullSurface</span>,
-    <span class="ident">Push</span>: <span class="ident">PushSurfaceReversed</span>&lt;<span class="ident">ItemIn</span> = <span class="ident">Pull::ItemOut</span>&gt;,
+<span class="doccomment">/// The combination of both Pull and Push surface halves.
+</span><span class="kw">pub struct </span>PivotSurface&lt;Pull, Push&gt;
+<span class="kw">where
+    </span>Pull: PullSurface,
+    Push: PushSurfaceReversed&lt;ItemIn = Pull::ItemOut&gt;,
 {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">pull</span>: <span class="ident">Pull</span>,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">push</span>: <span class="ident">Push</span>,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) pull: Pull,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) push: Push,
 }
-<span class="kw">impl</span>&lt;<span class="ident">Pull</span>, <span class="ident">Push</span>&gt; <span class="ident">PivotSurface</span>&lt;<span class="ident">Pull</span>, <span class="ident">Push</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">Pull</span>: <span class="ident">PullSurface</span>,
-    <span class="ident">Push</span>: <span class="ident">PushSurfaceReversed</span>&lt;<span class="ident">ItemIn</span> = <span class="ident">Pull::ItemOut</span>&gt;,
+<span class="kw">impl</span>&lt;Pull, Push&gt; PivotSurface&lt;Pull, Push&gt;
+<span class="kw">where
+    </span>Pull: PullSurface,
+    Push: PushSurfaceReversed&lt;ItemIn = Pull::ItemOut&gt;,
 {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">pull</span>: <span class="ident">Pull</span>, <span class="ident">push</span>: <span class="ident">Push</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> { <span class="ident">pull</span>, <span class="ident">push</span> }
+    <span class="kw">pub fn </span>new(pull: Pull, push: Push) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{ pull, push }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">make_parts</span>(<span class="self">self</span>, <span class="ident">context</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span>) -&gt; <span class="ident">Parts</span>&lt;<span class="ident">Pull</span>, <span class="ident">Push</span>&gt; {
-        <span class="kw">let</span> (<span class="ident">pull_connect</span>, <span class="ident">pull_build</span>) = <span class="self">self</span>.<span class="ident">pull</span>.<span class="ident">make_parts</span>(<span class="ident">context</span>);
-        <span class="kw">let</span> (<span class="ident">push_connect</span>, <span class="ident">push_build</span>) = <span class="self">self</span>.<span class="ident">push</span>.<span class="ident">make_parts</span>(<span class="ident">context</span>);
-        ((<span class="ident">pull_connect</span>, <span class="ident">push_connect</span>), (<span class="ident">pull_build</span>, <span class="ident">push_build</span>))
+    <span class="kw">pub fn </span>make_parts(<span class="self">self</span>, context: <span class="kw-2">&amp;mut </span>Context) -&gt; Parts&lt;Pull, Push&gt; {
+        <span class="kw">let </span>(pull_connect, pull_build) = <span class="self">self</span>.pull.make_parts(context);
+        <span class="kw">let </span>(push_connect, push_build) = <span class="self">self</span>.push.make_parts(context);
+        ((pull_connect, push_connect), (pull_build, push_build))
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (75b7e52e9 2022-08-13)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

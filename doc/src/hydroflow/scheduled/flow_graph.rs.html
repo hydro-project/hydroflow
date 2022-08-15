@@ -311,318 +311,318 @@
 <span id="311">311</span>
 <span id="312">312</span>
 <span id="313">313</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::borrow::Cow</span>;
-<span class="kw">use</span> <span class="ident">std::collections</span>::{<span class="ident">HashMap</span>, <span class="ident">HashSet</span>};
-<span class="kw">use</span> <span class="ident">std::fmt::Write</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>std::borrow::Cow;
+<span class="kw">use </span>std::collections::{HashMap, HashSet};
+<span class="kw">use </span>std::fmt::Write;
 
-<span class="kw">use</span> <span class="ident">serde::Serialize</span>;
+<span class="kw">use </span>serde::Serialize;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::graph</span>::{<span class="ident">HandoffData</span>, <span class="ident">Hydroflow</span>};
-<span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">HandoffId</span>, <span class="ident">SubgraphId</span>};
+<span class="kw">use </span><span class="kw">super</span>::graph::{HandoffData, Hydroflow};
+<span class="kw">use super</span>::{HandoffId, SubgraphId};
 
-<span class="kw">impl</span> <span class="ident">Hydroflow</span> {
-    <span class="kw">fn</span> <span class="ident">mermaid_mangle</span>(
+<span class="kw">impl </span>Hydroflow {
+    <span class="kw">fn </span>mermaid_mangle(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">name</span>: <span class="ident">Cow</span>&lt;<span class="lifetime">&#39;static</span>, <span class="ident">str</span>&gt;,
-        <span class="ident">sg_id</span>: <span class="ident">SubgraphId</span>,
-        <span class="ident">node_id</span>: <span class="ident">FlowNodeId</span>,
-    ) -&gt; <span class="ident">String</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">handoff_id</span>) = <span class="self">self</span>.<span class="ident">subgraphs</span>[<span class="ident">sg_id</span>.<span class="number">0</span>]
-            .<span class="ident">dependencies</span>
-            .<span class="ident">handoff_ids</span>
-            .<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">node_id</span>)
+        name: Cow&lt;<span class="lifetime">&#39;static</span>, str&gt;,
+        sg_id: SubgraphId,
+        node_id: FlowNodeId,
+    ) -&gt; String {
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(handoff_id) = <span class="self">self</span>.subgraphs[sg_id.<span class="number">0</span>]
+            .dependencies
+            .handoff_ids
+            .get(<span class="kw-2">&amp;</span>node_id)
         {
-            <span class="kw">let</span> <span class="ident">handoff</span> = <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">context</span>.<span class="ident">handoffs</span>[<span class="ident">handoff_id</span>.<span class="number">0</span>];
-            <span class="macro">format!</span>(<span class="string">&quot;Handoff_{}[\\{}/]&quot;</span>, <span class="ident">handoff_id</span>.<span class="number">0</span>, <span class="ident">handoff</span>.<span class="ident">name</span>)
-        } <span class="kw">else</span> <span class="kw">if</span> <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">name</span> == <span class="string">&quot;PullToPush&quot;</span> {
-            <span class="macro">format!</span>(<span class="string">&quot;{}.{}[/{}\\]&quot;</span>, <span class="ident">sg_id</span>.<span class="number">0</span>, <span class="ident">node_id</span>.<span class="number">0</span>, <span class="ident">name</span>)
-        } <span class="kw">else</span> {
-            <span class="macro">format!</span>(<span class="string">&quot;{}.{}[{}]&quot;</span>, <span class="ident">sg_id</span>.<span class="number">0</span>, <span class="ident">node_id</span>.<span class="number">0</span>, <span class="ident">name</span>)
+            <span class="kw">let </span>handoff = <span class="kw-2">&amp;</span><span class="self">self</span>.context.handoffs[handoff_id.<span class="number">0</span>];
+            <span class="macro">format!</span>(<span class="string">&quot;Handoff_{}[\\{}/]&quot;</span>, handoff_id.<span class="number">0</span>, handoff.name)
+        } <span class="kw">else if </span><span class="kw-2">&amp;*</span>name == <span class="string">&quot;PullToPush&quot; </span>{
+            <span class="macro">format!</span>(<span class="string">&quot;{}.{}[/{}\\]&quot;</span>, sg_id.<span class="number">0</span>, node_id.<span class="number">0</span>, name)
+        } <span class="kw">else </span>{
+            <span class="macro">format!</span>(<span class="string">&quot;{}.{}[{}]&quot;</span>, sg_id.<span class="number">0</span>, node_id.<span class="number">0</span>, name)
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">generate_mermaid</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">String</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">output</span> = <span class="ident">String::new</span>();
-        <span class="self">self</span>.<span class="ident">write_mermaid</span>(<span class="kw-2">&amp;mut</span> <span class="ident">output</span>).<span class="ident">unwrap</span>();
-        <span class="ident">output</span>
+    <span class="kw">pub fn </span>generate_mermaid(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
+        <span class="kw">let </span><span class="kw-2">mut </span>output = String::new();
+        <span class="self">self</span>.write_mermaid(<span class="kw-2">&amp;mut </span>output).unwrap();
+        output
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">write_mermaid</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">write</span>: <span class="kw-2">&amp;mut</span> <span class="kw">impl</span> <span class="ident">Write</span>) -&gt; <span class="ident">std::fmt::Result</span> {
-        <span class="macro">writeln!</span>(<span class="ident">write</span>, <span class="string">&quot;graph TD&quot;</span>)<span class="question-mark">?</span>;
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">tab</span>: <span class="ident">usize</span> = <span class="number">2</span>;
-        <span class="kw">for</span> (<span class="ident">sg_id</span>, <span class="ident">sg</span>) <span class="kw">in</span> <span class="self">self</span>.<span class="ident">subgraphs</span>.<span class="ident">iter</span>().<span class="ident">enumerate</span>() {
-            <span class="kw">let</span> <span class="ident">sg_id</span> = <span class="ident">SubgraphId</span>(<span class="ident">sg_id</span>);
-            <span class="kw">let</span> <span class="ident">d</span> = <span class="kw-2">&amp;</span><span class="ident">sg</span>.<span class="ident">dependencies</span>;
+    <span class="kw">pub fn </span>write_mermaid(<span class="kw-2">&amp;</span><span class="self">self</span>, write: <span class="kw-2">&amp;mut </span><span class="kw">impl </span>Write) -&gt; std::fmt::Result {
+        <span class="macro">writeln!</span>(write, <span class="string">&quot;graph TD&quot;</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>tab: usize = <span class="number">2</span>;
+        <span class="kw">for </span>(sg_id, sg) <span class="kw">in </span><span class="self">self</span>.subgraphs.iter().enumerate() {
+            <span class="kw">let </span>sg_id = SubgraphId(sg_id);
+            <span class="kw">let </span>d = <span class="kw-2">&amp;</span>sg.dependencies;
 
-            <span class="kw">if</span> !<span class="ident">d</span>.<span class="ident">edges</span>.<span class="ident">is_empty</span>() {
-                <span class="macro">writeln!</span>(<span class="ident">write</span>, <span class="string">&quot;{:t$}subgraph stratum{}&quot;</span>, <span class="string">&quot;&quot;</span>, <span class="ident">sg</span>.<span class="ident">stratum</span>, <span class="ident">t</span> = <span class="ident">tab</span>)<span class="question-mark">?</span>;
-                <span class="ident">tab</span> += <span class="number">2</span>;
-                <span class="macro">writeln!</span>(<span class="ident">write</span>, <span class="string">&quot;{:t$}subgraph {}{}&quot;</span>, <span class="string">&quot;&quot;</span>, <span class="ident">sg</span>.<span class="ident">name</span>, <span class="ident">sg_id</span>.<span class="number">0</span>, <span class="ident">t</span> = <span class="ident">tab</span>)<span class="question-mark">?</span>;
-                <span class="ident">tab</span> += <span class="number">2</span>;
-                <span class="kw">for</span> <span class="kw-2">&amp;</span>(<span class="ident">src</span>, <span class="ident">dst</span>) <span class="kw">in</span> <span class="ident">d</span>.<span class="ident">edges</span>.<span class="ident">iter</span>() {
-                    <span class="kw">let</span> <span class="ident">src</span> = <span class="self">self</span>.<span class="ident">mermaid_mangle</span>(<span class="ident">d</span>.<span class="ident">node_names</span>[<span class="ident">src</span>.<span class="number">0</span>].<span class="ident">clone</span>(), <span class="ident">sg_id</span>, <span class="ident">src</span>);
-                    <span class="kw">let</span> <span class="ident">dst</span> = <span class="self">self</span>.<span class="ident">mermaid_mangle</span>(<span class="ident">d</span>.<span class="ident">node_names</span>[<span class="ident">dst</span>.<span class="number">0</span>].<span class="ident">clone</span>(), <span class="ident">sg_id</span>, <span class="ident">dst</span>);
-                    <span class="macro">writeln!</span>(<span class="ident">write</span>, <span class="string">&quot;{:t$}{} --&gt; {}&quot;</span>, <span class="string">&quot;&quot;</span>, <span class="ident">src</span>, <span class="ident">dst</span>, <span class="ident">t</span> = <span class="ident">tab</span>)<span class="question-mark">?</span>;
+            <span class="kw">if </span>!d.edges.is_empty() {
+                <span class="macro">writeln!</span>(write, <span class="string">&quot;{:t$}subgraph stratum{}&quot;</span>, <span class="string">&quot;&quot;</span>, sg.stratum, t = tab)<span class="question-mark">?</span>;
+                tab += <span class="number">2</span>;
+                <span class="macro">writeln!</span>(write, <span class="string">&quot;{:t$}subgraph {}{}&quot;</span>, <span class="string">&quot;&quot;</span>, sg.name, sg_id.<span class="number">0</span>, t = tab)<span class="question-mark">?</span>;
+                tab += <span class="number">2</span>;
+                <span class="kw">for </span><span class="kw-2">&amp;</span>(src, dst) <span class="kw">in </span>d.edges.iter() {
+                    <span class="kw">let </span>src = <span class="self">self</span>.mermaid_mangle(d.node_names[src.<span class="number">0</span>].clone(), sg_id, src);
+                    <span class="kw">let </span>dst = <span class="self">self</span>.mermaid_mangle(d.node_names[dst.<span class="number">0</span>].clone(), sg_id, dst);
+                    <span class="macro">writeln!</span>(write, <span class="string">&quot;{:t$}{} --&gt; {}&quot;</span>, <span class="string">&quot;&quot;</span>, src, dst, t = tab)<span class="question-mark">?</span>;
                 }
-                <span class="ident">tab</span> -= <span class="number">2</span>;
-                <span class="macro">writeln!</span>(<span class="ident">write</span>, <span class="string">&quot;{:t$}end&quot;</span>, <span class="string">&quot;&quot;</span>, <span class="ident">t</span> = <span class="ident">tab</span>)<span class="question-mark">?</span>;
-                <span class="ident">tab</span> -= <span class="number">2</span>;
-                <span class="macro">writeln!</span>(<span class="ident">write</span>, <span class="string">&quot;{:t$}end&quot;</span>, <span class="string">&quot;&quot;</span>, <span class="ident">t</span> = <span class="ident">tab</span>)<span class="question-mark">?</span>;
+                tab -= <span class="number">2</span>;
+                <span class="macro">writeln!</span>(write, <span class="string">&quot;{:t$}end&quot;</span>, <span class="string">&quot;&quot;</span>, t = tab)<span class="question-mark">?</span>;
+                tab -= <span class="number">2</span>;
+                <span class="macro">writeln!</span>(write, <span class="string">&quot;{:t$}end&quot;</span>, <span class="string">&quot;&quot;</span>, t = tab)<span class="question-mark">?</span>;
             }
         }
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">generate_dot</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">String</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">output</span> = <span class="ident">String::new</span>();
-        <span class="self">self</span>.<span class="ident">write_dot</span>(<span class="kw-2">&amp;mut</span> <span class="ident">output</span>).<span class="ident">unwrap</span>();
-        <span class="ident">output</span>
+    <span class="kw">pub fn </span>generate_dot(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
+        <span class="kw">let </span><span class="kw-2">mut </span>output = String::new();
+        <span class="self">self</span>.write_dot(<span class="kw-2">&amp;mut </span>output).unwrap();
+        output
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">write_dot</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">w</span>: <span class="kw-2">&amp;mut</span> <span class="kw">impl</span> <span class="ident">Write</span>) -&gt; <span class="ident">std::fmt::Result</span> {
-        <span class="kw">let</span> <span class="ident">gg</span> = <span class="self">self</span>.<span class="ident">global_graph</span>();
-        <span class="macro">writeln!</span>(<span class="ident">w</span>, <span class="string">&quot;digraph {{&quot;</span>)<span class="question-mark">?</span>;
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">tab</span>: <span class="ident">usize</span> = <span class="number">2</span>;
-        <span class="comment">// write out nodes</span>
-        <span class="macro">writeln!</span>(<span class="ident">w</span>, <span class="string">&quot;{:t$}{{&quot;</span>, <span class="string">&quot;&quot;</span>, <span class="ident">t</span> = <span class="ident">tab</span>)<span class="question-mark">?</span>;
-        <span class="ident">tab</span> += <span class="number">2</span>;
-        <span class="macro">writeln!</span>(<span class="ident">w</span>, <span class="string">&quot;{:t$}node [shape=box]&quot;</span>, <span class="string">&quot;&quot;</span>, <span class="ident">t</span> = <span class="ident">tab</span>)<span class="question-mark">?</span>;
-        <span class="kw">for</span> (<span class="ident">i</span>, <span class="ident">name</span>) <span class="kw">in</span> <span class="ident">gg</span>.<span class="ident">node_names</span>.<span class="ident">iter</span>().<span class="ident">enumerate</span>() {
-            <span class="kw">if</span> <span class="ident">name</span>.<span class="ident">is_some</span>() {
-                <span class="kw">let</span> <span class="ident">nm</span> = <span class="ident">name</span>.<span class="ident">clone</span>().<span class="ident">unwrap_or_else</span>(|| <span class="string">&quot;&quot;</span>.<span class="ident">into</span>());
-                <span class="kw">let</span> <span class="ident">label</span> = <span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, <span class="ident">i</span>);
-                <span class="macro">write!</span>(<span class="ident">w</span>, <span class="string">&quot;{:t$}{} [label=\&quot;{}\&quot;&quot;</span>, <span class="string">&quot;&quot;</span>, <span class="ident">label</span>, <span class="ident">nm</span>.<span class="ident">clone</span>(), <span class="ident">t</span> = <span class="ident">tab</span>)<span class="question-mark">?</span>;
-                <span class="kw">if</span> <span class="ident">nm</span>.<span class="ident">starts_with</span>(<span class="string">&quot;Handoff&quot;</span>) {
-                    <span class="macro">write!</span>(<span class="ident">w</span>, <span class="string">&quot;, shape=invtrapezium&quot;</span>)<span class="question-mark">?</span>;
-                } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">nm</span> == <span class="string">&quot;PullToPush&quot;</span> {
-                    <span class="macro">write!</span>(<span class="ident">w</span>, <span class="string">&quot;, shape=trapezium&quot;</span>)<span class="question-mark">?</span>;
+    <span class="kw">pub fn </span>write_dot(<span class="kw-2">&amp;</span><span class="self">self</span>, w: <span class="kw-2">&amp;mut </span><span class="kw">impl </span>Write) -&gt; std::fmt::Result {
+        <span class="kw">let </span>gg = <span class="self">self</span>.global_graph();
+        <span class="macro">writeln!</span>(w, <span class="string">&quot;digraph {{&quot;</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>tab: usize = <span class="number">2</span>;
+        <span class="comment">// write out nodes
+        </span><span class="macro">writeln!</span>(w, <span class="string">&quot;{:t$}{{&quot;</span>, <span class="string">&quot;&quot;</span>, t = tab)<span class="question-mark">?</span>;
+        tab += <span class="number">2</span>;
+        <span class="macro">writeln!</span>(w, <span class="string">&quot;{:t$}node [shape=box]&quot;</span>, <span class="string">&quot;&quot;</span>, t = tab)<span class="question-mark">?</span>;
+        <span class="kw">for </span>(i, name) <span class="kw">in </span>gg.node_names.iter().enumerate() {
+            <span class="kw">if </span>name.is_some() {
+                <span class="kw">let </span>nm = name.clone().unwrap_or_else(|| <span class="string">&quot;&quot;</span>.into());
+                <span class="kw">let </span>label = <span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, i);
+                <span class="macro">write!</span>(w, <span class="string">&quot;{:t$}{} [label=\&quot;{}\&quot;&quot;</span>, <span class="string">&quot;&quot;</span>, label, nm.clone(), t = tab)<span class="question-mark">?</span>;
+                <span class="kw">if </span>nm.starts_with(<span class="string">&quot;Handoff&quot;</span>) {
+                    <span class="macro">write!</span>(w, <span class="string">&quot;, shape=invtrapezium&quot;</span>)<span class="question-mark">?</span>;
+                } <span class="kw">else if </span>nm == <span class="string">&quot;PullToPush&quot; </span>{
+                    <span class="macro">write!</span>(w, <span class="string">&quot;, shape=trapezium&quot;</span>)<span class="question-mark">?</span>;
                 }
-                <span class="macro">writeln!</span>(<span class="ident">w</span>, <span class="string">&quot;]&quot;</span>)<span class="question-mark">?</span>;
+                <span class="macro">writeln!</span>(w, <span class="string">&quot;]&quot;</span>)<span class="question-mark">?</span>;
             }
         }
-        <span class="ident">tab</span> -= <span class="number">2</span>;
-        <span class="macro">writeln!</span>(<span class="ident">w</span>, <span class="string">&quot;{:t$}}}&quot;</span>, <span class="string">&quot;&quot;</span>, <span class="ident">t</span> = <span class="ident">tab</span>)<span class="question-mark">?</span>;
+        tab -= <span class="number">2</span>;
+        <span class="macro">writeln!</span>(w, <span class="string">&quot;{:t$}}}&quot;</span>, <span class="string">&quot;&quot;</span>, t = tab)<span class="question-mark">?</span>;
 
-        <span class="comment">// write out edges</span>
-        <span class="kw">for</span> (<span class="ident">sg_id</span>, <span class="ident">es</span>) <span class="kw">in</span> <span class="ident">gg</span>.<span class="ident">edge_sets</span>.<span class="ident">iter</span>().<span class="ident">enumerate</span>() {
-            <span class="kw">let</span> <span class="ident">strt</span> = <span class="ident">es</span>.<span class="ident">stratum</span>;
+        <span class="comment">// write out edges
+        </span><span class="kw">for </span>(sg_id, es) <span class="kw">in </span>gg.edge_sets.iter().enumerate() {
+            <span class="kw">let </span>strt = es.stratum;
             <span class="macro">writeln!</span>(
-                <span class="ident">w</span>,
+                w,
                 <span class="string">&quot;{:t$}subgraph \&quot;cluster stratum {}\&quot; {{&quot;</span>,
                 <span class="string">&quot;&quot;</span>,
-                <span class="ident">strt</span>,
-                <span class="ident">t</span> = <span class="ident">tab</span>,
+                strt,
+                t = tab,
             )<span class="question-mark">?</span>;
-            <span class="ident">tab</span> += <span class="number">2</span>;
-            <span class="macro">writeln!</span>(<span class="ident">w</span>, <span class="string">&quot;{:t$}label = \&quot;Stratum {}\&quot;&quot;</span>, <span class="string">&quot;&quot;</span>, <span class="ident">strt</span>, <span class="ident">t</span> = <span class="ident">tab</span>,)<span class="question-mark">?</span>;
-            <span class="macro">writeln!</span>(<span class="ident">w</span>, <span class="string">&quot;{:t$}subgraph \&quot;cluster {}\&quot; {{&quot;</span>, <span class="string">&quot;&quot;</span>, <span class="ident">sg_id</span>, <span class="ident">t</span> = <span class="ident">tab</span>,)<span class="question-mark">?</span>;
-            <span class="ident">tab</span> += <span class="number">2</span>;
-            <span class="macro">writeln!</span>(<span class="ident">w</span>, <span class="string">&quot;{:t$}label = \&quot;{}\&quot;&quot;</span>, <span class="string">&quot;&quot;</span>, <span class="ident">es</span>.<span class="ident">name</span>, <span class="ident">t</span> = <span class="ident">tab</span>)<span class="question-mark">?</span>;
-            <span class="kw">for</span> <span class="kw-2">&amp;</span>(<span class="ident">src</span>, <span class="ident">dst</span>) <span class="kw">in</span> <span class="ident">es</span>.<span class="ident">edges</span>.<span class="ident">iter</span>() {
-                <span class="macro">writeln!</span>(<span class="ident">w</span>, <span class="string">&quot;{:t$}{} -&gt; {}&quot;</span>, <span class="string">&quot;&quot;</span>, <span class="ident">src</span>.<span class="number">0</span>, <span class="ident">dst</span>.<span class="number">0</span>, <span class="ident">t</span> = <span class="ident">tab</span>,)<span class="question-mark">?</span>;
+            tab += <span class="number">2</span>;
+            <span class="macro">writeln!</span>(w, <span class="string">&quot;{:t$}label = \&quot;Stratum {}\&quot;&quot;</span>, <span class="string">&quot;&quot;</span>, strt, t = tab,)<span class="question-mark">?</span>;
+            <span class="macro">writeln!</span>(w, <span class="string">&quot;{:t$}subgraph \&quot;cluster {}\&quot; {{&quot;</span>, <span class="string">&quot;&quot;</span>, sg_id, t = tab,)<span class="question-mark">?</span>;
+            tab += <span class="number">2</span>;
+            <span class="macro">writeln!</span>(w, <span class="string">&quot;{:t$}label = \&quot;{}\&quot;&quot;</span>, <span class="string">&quot;&quot;</span>, es.name, t = tab)<span class="question-mark">?</span>;
+            <span class="kw">for </span><span class="kw-2">&amp;</span>(src, dst) <span class="kw">in </span>es.edges.iter() {
+                <span class="macro">writeln!</span>(w, <span class="string">&quot;{:t$}{} -&gt; {}&quot;</span>, <span class="string">&quot;&quot;</span>, src.<span class="number">0</span>, dst.<span class="number">0</span>, t = tab,)<span class="question-mark">?</span>;
             }
-            <span class="ident">tab</span> -= <span class="number">2</span>;
-            <span class="macro">writeln!</span>(<span class="ident">w</span>, <span class="string">&quot;{:t$}}}&quot;</span>, <span class="string">&quot;&quot;</span>, <span class="ident">t</span> = <span class="ident">tab</span>)<span class="question-mark">?</span>;
-            <span class="ident">tab</span> -= <span class="number">2</span>;
-            <span class="macro">writeln!</span>(<span class="ident">w</span>, <span class="string">&quot;{:t$}}}&quot;</span>, <span class="string">&quot;&quot;</span>, <span class="ident">t</span> = <span class="ident">tab</span>)<span class="question-mark">?</span>;
+            tab -= <span class="number">2</span>;
+            <span class="macro">writeln!</span>(w, <span class="string">&quot;{:t$}}}&quot;</span>, <span class="string">&quot;&quot;</span>, t = tab)<span class="question-mark">?</span>;
+            tab -= <span class="number">2</span>;
+            <span class="macro">writeln!</span>(w, <span class="string">&quot;{:t$}}}&quot;</span>, <span class="string">&quot;&quot;</span>, t = tab)<span class="question-mark">?</span>;
         }
-        <span class="ident">tab</span> -= <span class="number">2</span>;
-        <span class="macro">writeln!</span>(<span class="ident">w</span>, <span class="string">&quot;{:t$}}}&quot;</span>, <span class="string">&quot;&quot;</span>, <span class="ident">t</span> = <span class="ident">tab</span>)<span class="question-mark">?</span>;
+        tab -= <span class="number">2</span>;
+        <span class="macro">writeln!</span>(w, <span class="string">&quot;{:t$}}}&quot;</span>, <span class="string">&quot;&quot;</span>, t = tab)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">generate_json</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">String</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">output</span> = <span class="ident">String::new</span>();
-        <span class="self">self</span>.<span class="ident">write_json</span>(<span class="kw-2">&amp;mut</span> <span class="ident">output</span>).<span class="ident">unwrap</span>();
-        <span class="ident">output</span>
+    <span class="kw">pub fn </span>generate_json(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
+        <span class="kw">let </span><span class="kw-2">mut </span>output = String::new();
+        <span class="self">self</span>.write_json(<span class="kw-2">&amp;mut </span>output).unwrap();
+        output
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">write_json</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">write</span>: <span class="kw-2">&amp;mut</span> <span class="kw">impl</span> <span class="ident">Write</span>) -&gt; <span class="ident">std::fmt::Result</span> {
+    <span class="kw">pub fn </span>write_json(<span class="kw-2">&amp;</span><span class="self">self</span>, write: <span class="kw-2">&amp;mut </span><span class="kw">impl </span>Write) -&gt; std::fmt::Result {
         <span class="macro">writeln!</span>(
-            <span class="ident">write</span>,
+            write,
             <span class="string">&quot;{}&quot;</span>,
-            <span class="ident">serde_json::to_string</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">global_graph</span>()).<span class="ident">unwrap</span>()
+            serde_json::to_string(<span class="kw-2">&amp;</span><span class="self">self</span>.global_graph()).unwrap()
         )<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">global_graph</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">FlowPartitionedGraph</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">graph</span> = <span class="ident">FlowPartitionedGraph::new</span>();
-        <span class="kw">for</span> <span class="ident">subgraph</span> <span class="kw">in</span> <span class="self">self</span>.<span class="ident">subgraphs</span>.<span class="ident">iter</span>() {
-            <span class="kw">if</span> !<span class="ident">subgraph</span>.<span class="ident">dependencies</span>.<span class="ident">edges</span>.<span class="ident">is_empty</span>() {
-                <span class="ident">graph</span>.<span class="ident">add_flow_graph</span>(
-                    <span class="ident">subgraph</span>.<span class="ident">name</span>.<span class="ident">clone</span>(),
-                    <span class="ident">subgraph</span>.<span class="ident">stratum</span>,
-                    <span class="ident">subgraph</span>.<span class="ident">dependencies</span>.<span class="ident">clone</span>(),
-                    <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="self">self</span>.<span class="ident">context</span>.<span class="ident">handoffs</span>,
+    <span class="kw">pub fn </span>global_graph(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; FlowPartitionedGraph {
+        <span class="kw">let </span><span class="kw-2">mut </span>graph = FlowPartitionedGraph::new();
+        <span class="kw">for </span>subgraph <span class="kw">in </span><span class="self">self</span>.subgraphs.iter() {
+            <span class="kw">if </span>!subgraph.dependencies.edges.is_empty() {
+                graph.add_flow_graph(
+                    subgraph.name.clone(),
+                    subgraph.stratum,
+                    subgraph.dependencies.clone(),
+                    <span class="kw-2">&amp;*</span><span class="self">self</span>.context.handoffs,
                 );
             }
         }
-        <span class="ident">graph</span>.<span class="ident">canonicalize_handoffs</span>();
-        <span class="ident">graph</span>
+        graph.canonicalize_handoffs();
+        graph
     }
 }
 
-<span class="doccomment">/// A FlowGraph nodes&#39;s ID.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Copy</span>, <span class="ident">Debug</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">Hash</span>, <span class="ident">Serialize</span>)]</span>
-<span class="attribute">#[<span class="ident">repr</span>(<span class="ident">transparent</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">FlowNodeId</span>(<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">usize</span>);
+<span class="doccomment">/// A FlowGraph nodes&#39;s ID.
+</span><span class="attribute">#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize)]</span>
+<span class="attribute">#[repr(transparent)]</span>
+<span class="kw">pub struct </span>FlowNodeId(<span class="kw">pub</span>(<span class="kw">crate</span>) usize);
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Debug</span>, <span class="ident">Default</span>, <span class="ident">Serialize</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">FlowEdgeSet</span> {
-    <span class="ident">name</span>: <span class="ident">Cow</span>&lt;<span class="lifetime">&#39;static</span>, <span class="ident">str</span>&gt;,
-    <span class="ident">stratum</span>: <span class="ident">usize</span>,
-    <span class="ident">edges</span>: <span class="ident">HashSet</span>&lt;(<span class="ident">FlowNodeId</span>, <span class="ident">FlowNodeId</span>)&gt;,
+<span class="attribute">#[derive(Clone, Debug, Default, Serialize)]</span>
+<span class="kw">pub struct </span>FlowEdgeSet {
+    name: Cow&lt;<span class="lifetime">&#39;static</span>, str&gt;,
+    stratum: usize,
+    edges: HashSet&lt;(FlowNodeId, FlowNodeId)&gt;,
 }
-<span class="kw">impl</span> <span class="ident">FlowEdgeSet</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(
-        <span class="ident">name</span>: <span class="ident">Cow</span>&lt;<span class="lifetime">&#39;static</span>, <span class="ident">str</span>&gt;,
-        <span class="ident">stratum</span>: <span class="ident">usize</span>,
-        <span class="ident">edges</span>: <span class="ident">HashSet</span>&lt;(<span class="ident">FlowNodeId</span>, <span class="ident">FlowNodeId</span>)&gt;,
-    ) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">name</span>,
-            <span class="ident">stratum</span>,
-            <span class="ident">edges</span>,
+<span class="kw">impl </span>FlowEdgeSet {
+    <span class="kw">pub fn </span>new(
+        name: Cow&lt;<span class="lifetime">&#39;static</span>, str&gt;,
+        stratum: usize,
+        edges: HashSet&lt;(FlowNodeId, FlowNodeId)&gt;,
+    ) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            name,
+            stratum,
+            edges,
         }
     }
 }
-<span class="comment">// A graph connecting up multiple compiled components</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Debug</span>, <span class="ident">Default</span>, <span class="ident">Serialize</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">FlowPartitionedGraph</span> {
-    <span class="ident">node_names</span>: <span class="ident">Vec</span>&lt;<span class="prelude-ty">Option</span>&lt;<span class="ident">Cow</span>&lt;<span class="lifetime">&#39;static</span>, <span class="ident">str</span>&gt;&gt;&gt;,
-    <span class="ident">edge_sets</span>: <span class="ident">Vec</span>&lt;<span class="ident">FlowEdgeSet</span>&gt;,
-    <span class="ident">handoff_ids</span>: <span class="ident">HashMap</span>&lt;<span class="ident">FlowNodeId</span>, <span class="ident">HandoffId</span>&gt;,
+<span class="comment">// A graph connecting up multiple compiled components
+</span><span class="attribute">#[derive(Clone, Debug, Default, Serialize)]</span>
+<span class="kw">pub struct </span>FlowPartitionedGraph {
+    node_names: Vec&lt;<span class="prelude-ty">Option</span>&lt;Cow&lt;<span class="lifetime">&#39;static</span>, str&gt;&gt;&gt;,
+    edge_sets: Vec&lt;FlowEdgeSet&gt;,
+    handoff_ids: HashMap&lt;FlowNodeId, HandoffId&gt;,
 }
-<span class="kw">impl</span> <span class="ident">FlowPartitionedGraph</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> (<span class="ident">node_names</span>, <span class="ident">edge_sets</span>, <span class="ident">handoff_ids</span>) = <span class="ident">Default::default</span>();
-        <span class="self">Self</span> {
-            <span class="ident">node_names</span>,
-            <span class="ident">edge_sets</span>,
-            <span class="ident">handoff_ids</span>,
+<span class="kw">impl </span>FlowPartitionedGraph {
+    <span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
+        <span class="kw">let </span>(node_names, edge_sets, handoff_ids) = Default::default();
+        <span class="self">Self </span>{
+            node_names,
+            edge_sets,
+            handoff_ids,
         }
     }
-    <span class="comment">// handoff names are repeated across compiled components</span>
-    <span class="comment">// make sure all edges reference the first occurrence of a handoff</span>
-    <span class="comment">// and then None out the repeated occurrences.</span>
-    <span class="comment">// Preferably to be called only once after all FlowGraphs are added.</span>
-    <span class="kw">fn</span> <span class="ident">canonicalize_handoffs</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
-        <span class="comment">// invert self.handoff_ids</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">handoff_ids_inv</span>: <span class="ident">HashMap</span>&lt;<span class="ident">HandoffId</span>, <span class="ident">Vec</span>&lt;<span class="ident">FlowNodeId</span>&gt;&gt; = <span class="ident">HashMap::new</span>();
-        <span class="kw">for</span> (<span class="ident">k</span>, <span class="ident">v</span>) <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">handoff_ids</span> {
-            <span class="ident">handoff_ids_inv</span>.<span class="ident">entry</span>(<span class="kw-2">*</span><span class="ident">v</span>).<span class="ident">or_insert_with</span>(<span class="ident">Vec::new</span>).<span class="ident">push</span>(<span class="kw-2">*</span><span class="ident">k</span>);
+    <span class="comment">// handoff names are repeated across compiled components
+    // make sure all edges reference the first occurrence of a handoff
+    // and then None out the repeated occurrences.
+    // Preferably to be called only once after all FlowGraphs are added.
+    </span><span class="kw">fn </span>canonicalize_handoffs(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="comment">// invert self.handoff_ids
+        </span><span class="kw">let </span><span class="kw-2">mut </span>handoff_ids_inv: HashMap&lt;HandoffId, Vec&lt;FlowNodeId&gt;&gt; = HashMap::new();
+        <span class="kw">for </span>(k, v) <span class="kw">in </span><span class="kw-2">&amp;</span><span class="self">self</span>.handoff_ids {
+            handoff_ids_inv.entry(<span class="kw-2">*</span>v).or_insert_with(Vec::new).push(<span class="kw-2">*</span>k);
         }
 
-        <span class="comment">// find repeated handoffs</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">repeated_handoffs</span>: <span class="ident">Vec</span>&lt;<span class="ident">FlowNodeId</span>&gt; = <span class="ident">Vec::new</span>();
-        <span class="kw">for</span> <span class="ident">w</span> <span class="kw">in</span> <span class="ident">handoff_ids_inv</span>.<span class="ident">values</span>() {
-            <span class="ident">repeated_handoffs</span>.<span class="ident">extend</span>(<span class="ident">w</span>.<span class="ident">clone</span>().<span class="ident">split_off</span>(<span class="number">1</span>));
+        <span class="comment">// find repeated handoffs
+        </span><span class="kw">let </span><span class="kw-2">mut </span>repeated_handoffs: Vec&lt;FlowNodeId&gt; = Vec::new();
+        <span class="kw">for </span>w <span class="kw">in </span>handoff_ids_inv.values() {
+            repeated_handoffs.extend(w.clone().split_off(<span class="number">1</span>));
         }
 
-        <span class="comment">// walk edges and replace every handoff ref with the one canonical ref</span>
-        <span class="comment">// taken from handoff_ids_inv[id].first()</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">new_edge_sets</span> = <span class="ident">Vec::new</span>();
-        <span class="kw">for</span> <span class="ident">es</span> <span class="kw">in</span> <span class="self">self</span>.<span class="ident">edge_sets</span>.<span class="ident">iter</span>() {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">new_edges</span> = <span class="ident">HashSet::new</span>();
-            <span class="kw">for</span> (<span class="ident">from</span>, <span class="ident">to</span>) <span class="kw">in</span> <span class="ident">es</span>.<span class="ident">edges</span>.<span class="ident">iter</span>() {
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">new_edge</span> = (<span class="kw-2">*</span><span class="ident">from</span>, <span class="kw-2">*</span><span class="ident">to</span>);
-                <span class="kw">let</span> <span class="ident">hoff_id</span> = <span class="self">self</span>.<span class="ident">handoff_ids</span>.<span class="ident">get</span>(<span class="ident">from</span>);
-                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">id</span>) = <span class="ident">hoff_id</span> {
-                    <span class="ident">new_edge</span>.<span class="number">0</span> = <span class="kw-2">*</span><span class="ident">handoff_ids_inv</span>[<span class="ident">id</span>].<span class="ident">first</span>().<span class="ident">unwrap</span>();
+        <span class="comment">// walk edges and replace every handoff ref with the one canonical ref
+        // taken from handoff_ids_inv[id].first()
+        </span><span class="kw">let </span><span class="kw-2">mut </span>new_edge_sets = Vec::new();
+        <span class="kw">for </span>es <span class="kw">in </span><span class="self">self</span>.edge_sets.iter() {
+            <span class="kw">let </span><span class="kw-2">mut </span>new_edges = HashSet::new();
+            <span class="kw">for </span>(from, to) <span class="kw">in </span>es.edges.iter() {
+                <span class="kw">let </span><span class="kw-2">mut </span>new_edge = (<span class="kw-2">*</span>from, <span class="kw-2">*</span>to);
+                <span class="kw">let </span>hoff_id = <span class="self">self</span>.handoff_ids.get(from);
+                <span class="kw">if let </span><span class="prelude-val">Some</span>(id) = hoff_id {
+                    new_edge.<span class="number">0 </span>= <span class="kw-2">*</span>handoff_ids_inv[id].first().unwrap();
                 }
-                <span class="kw">let</span> <span class="ident">hoff_id</span> = <span class="self">self</span>.<span class="ident">handoff_ids</span>.<span class="ident">get</span>(<span class="ident">to</span>);
-                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">id</span>) = <span class="ident">hoff_id</span> {
-                    <span class="ident">new_edge</span>.<span class="number">1</span> = <span class="kw-2">*</span><span class="ident">handoff_ids_inv</span>[<span class="ident">id</span>].<span class="ident">first</span>().<span class="ident">unwrap</span>();
+                <span class="kw">let </span>hoff_id = <span class="self">self</span>.handoff_ids.get(to);
+                <span class="kw">if let </span><span class="prelude-val">Some</span>(id) = hoff_id {
+                    new_edge.<span class="number">1 </span>= <span class="kw-2">*</span>handoff_ids_inv[id].first().unwrap();
                 }
-                <span class="ident">new_edges</span>.<span class="ident">insert</span>(<span class="ident">new_edge</span>);
+                new_edges.insert(new_edge);
             }
-            <span class="kw">let</span> <span class="ident">new_es</span> = <span class="ident">FlowEdgeSet::new</span>(<span class="ident">es</span>.<span class="ident">name</span>.<span class="ident">clone</span>(), <span class="ident">es</span>.<span class="ident">stratum</span>, <span class="ident">new_edges</span>);
-            <span class="ident">new_edge_sets</span>.<span class="ident">push</span>(<span class="ident">new_es</span>);
+            <span class="kw">let </span>new_es = FlowEdgeSet::new(es.name.clone(), es.stratum, new_edges);
+            new_edge_sets.push(new_es);
         }
-        <span class="self">self</span>.<span class="ident">edge_sets</span> = <span class="ident">new_edge_sets</span>;
+        <span class="self">self</span>.edge_sets = new_edge_sets;
 
-        <span class="comment">// None out the repeated_handoffs in node_names</span>
-        <span class="kw">for</span> <span class="ident">n</span> <span class="kw">in</span> <span class="ident">repeated_handoffs</span> {
-            <span class="self">self</span>.<span class="ident">node_names</span>[<span class="ident">n</span>.<span class="number">0</span>] = <span class="prelude-val">None</span>;
+        <span class="comment">// None out the repeated_handoffs in node_names
+        </span><span class="kw">for </span>n <span class="kw">in </span>repeated_handoffs {
+            <span class="self">self</span>.node_names[n.<span class="number">0</span>] = <span class="prelude-val">None</span>;
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">add_flow_graph</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">name</span>: <span class="ident">Cow</span>&lt;<span class="lifetime">&#39;static</span>, <span class="ident">str</span>&gt;,
-        <span class="ident">stratum</span>: <span class="ident">usize</span>,
-        <span class="ident">fg</span>: <span class="ident">FlowGraph</span>,
-        <span class="ident">handoffs</span>: <span class="kw-2">&amp;</span>[<span class="ident">HandoffData</span>],
+    <span class="kw">pub fn </span>add_flow_graph(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        name: Cow&lt;<span class="lifetime">&#39;static</span>, str&gt;,
+        stratum: usize,
+        fg: FlowGraph,
+        handoffs: <span class="kw-2">&amp;</span>[HandoffData],
     ) {
-        <span class="kw">let</span> <span class="ident">base</span> = <span class="self">self</span>.<span class="ident">node_names</span>.<span class="ident">len</span>();
-        <span class="kw">for</span> <span class="ident">node_name</span> <span class="kw">in</span> <span class="ident">fg</span>.<span class="ident">node_names</span> {
-            <span class="self">self</span>.<span class="ident">node_names</span>.<span class="ident">push</span>(<span class="prelude-val">Some</span>(<span class="ident">node_name</span>));
+        <span class="kw">let </span>base = <span class="self">self</span>.node_names.len();
+        <span class="kw">for </span>node_name <span class="kw">in </span>fg.node_names {
+            <span class="self">self</span>.node_names.push(<span class="prelude-val">Some</span>(node_name));
         }
-        <span class="kw">let</span> <span class="ident">edges</span>: <span class="ident">HashSet</span>&lt;(<span class="ident">FlowNodeId</span>, <span class="ident">FlowNodeId</span>)&gt; = <span class="ident">fg</span>
-            .<span class="ident">edges</span>
-            .<span class="ident">into_iter</span>()
-            .<span class="ident">map</span>(|(<span class="ident">from</span>, <span class="ident">to</span>)| (<span class="ident">FlowNodeId</span>(<span class="ident">from</span>.<span class="number">0</span> + <span class="ident">base</span>), <span class="ident">FlowNodeId</span>(<span class="ident">to</span>.<span class="number">0</span> + <span class="ident">base</span>)))
-            .<span class="ident">collect</span>();
-        <span class="self">self</span>.<span class="ident">edge_sets</span>
-            .<span class="ident">push</span>(<span class="ident">FlowEdgeSet::new</span>(<span class="ident">name</span>.<span class="ident">clone</span>(), <span class="ident">stratum</span>, <span class="ident">edges</span>));
-        <span class="kw">for</span> (<span class="ident">node_id</span>, <span class="ident">hoff_id</span>) <span class="kw">in</span> <span class="ident">fg</span>.<span class="ident">handoff_ids</span>.<span class="ident">iter</span>() {
-            <span class="self">self</span>.<span class="ident">node_names</span>[<span class="ident">node_id</span>.<span class="number">0</span> + <span class="ident">base</span>] =
-                <span class="prelude-val">Some</span>(<span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, <span class="ident">handoffs</span>[<span class="ident">hoff_id</span>.<span class="number">0</span>].<span class="ident">name</span>).<span class="ident">into</span>());
-            <span class="self">self</span>.<span class="ident">handoff_ids</span>
-                .<span class="ident">entry</span>(<span class="ident">FlowNodeId</span>(<span class="ident">node_id</span>.<span class="number">0</span> + <span class="ident">base</span>))
-                .<span class="ident">or_insert</span>(<span class="kw-2">*</span><span class="ident">hoff_id</span>);
+        <span class="kw">let </span>edges: HashSet&lt;(FlowNodeId, FlowNodeId)&gt; = fg
+            .edges
+            .into_iter()
+            .map(|(from, to)| (FlowNodeId(from.<span class="number">0 </span>+ base), FlowNodeId(to.<span class="number">0 </span>+ base)))
+            .collect();
+        <span class="self">self</span>.edge_sets
+            .push(FlowEdgeSet::new(name.clone(), stratum, edges));
+        <span class="kw">for </span>(node_id, hoff_id) <span class="kw">in </span>fg.handoff_ids.iter() {
+            <span class="self">self</span>.node_names[node_id.<span class="number">0 </span>+ base] =
+                <span class="prelude-val">Some</span>(<span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, handoffs[hoff_id.<span class="number">0</span>].name).into());
+            <span class="self">self</span>.handoff_ids
+                .entry(FlowNodeId(node_id.<span class="number">0 </span>+ base))
+                .or_insert(<span class="kw-2">*</span>hoff_id);
         }
     }
 }
 
-<span class="doccomment">/// A graph representation of a compiled component&#39;s graph structure.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Debug</span>, <span class="ident">Default</span>, <span class="ident">Serialize</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">FlowGraph</span> {
-    <span class="ident">node_names</span>: <span class="ident">Vec</span>&lt;<span class="ident">Cow</span>&lt;<span class="lifetime">&#39;static</span>, <span class="ident">str</span>&gt;&gt;,
-    <span class="ident">edges</span>: <span class="ident">HashSet</span>&lt;(<span class="ident">FlowNodeId</span>, <span class="ident">FlowNodeId</span>)&gt;,
-    <span class="ident">handoff_ids</span>: <span class="ident">HashMap</span>&lt;<span class="ident">FlowNodeId</span>, <span class="ident">HandoffId</span>&gt;,
+<span class="doccomment">/// A graph representation of a compiled component&#39;s graph structure.
+</span><span class="attribute">#[derive(Clone, Debug, Default, Serialize)]</span>
+<span class="kw">pub struct </span>FlowGraph {
+    node_names: Vec&lt;Cow&lt;<span class="lifetime">&#39;static</span>, str&gt;&gt;,
+    edges: HashSet&lt;(FlowNodeId, FlowNodeId)&gt;,
+    handoff_ids: HashMap&lt;FlowNodeId, HandoffId&gt;,
 }
 
-<span class="kw">impl</span> <span class="ident">FlowGraph</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> (<span class="ident">node_names</span>, <span class="ident">edges</span>, <span class="ident">handoff_ids</span>) = <span class="ident">Default::default</span>();
-        <span class="self">Self</span> {
-            <span class="ident">node_names</span>,
-            <span class="ident">edges</span>,
-            <span class="ident">handoff_ids</span>,
+<span class="kw">impl </span>FlowGraph {
+    <span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
+        <span class="kw">let </span>(node_names, edges, handoff_ids) = Default::default();
+        <span class="self">Self </span>{
+            node_names,
+            edges,
+            handoff_ids,
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">add_node</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">node_info</span>: <span class="kw">impl</span> <span class="ident">Into</span>&lt;<span class="ident">Cow</span>&lt;<span class="lifetime">&#39;static</span>, <span class="ident">str</span>&gt;&gt;) -&gt; <span class="ident">FlowNodeId</span> {
-        <span class="kw">let</span> <span class="ident">current_index</span> = <span class="self">self</span>.<span class="ident">node_names</span>.<span class="ident">len</span>();
-        <span class="self">self</span>.<span class="ident">node_names</span>.<span class="ident">insert</span>(<span class="ident">current_index</span>, <span class="ident">node_info</span>.<span class="ident">into</span>());
-        <span class="ident">FlowNodeId</span>(<span class="ident">current_index</span>)
+    <span class="kw">pub fn </span>add_node(<span class="kw-2">&amp;mut </span><span class="self">self</span>, node_info: <span class="kw">impl </span>Into&lt;Cow&lt;<span class="lifetime">&#39;static</span>, str&gt;&gt;) -&gt; FlowNodeId {
+        <span class="kw">let </span>current_index = <span class="self">self</span>.node_names.len();
+        <span class="self">self</span>.node_names.insert(current_index, node_info.into());
+        FlowNodeId(current_index)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">add_edge</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">edge</span>: (<span class="ident">FlowNodeId</span>, <span class="ident">FlowNodeId</span>)) {
-        <span class="self">self</span>.<span class="ident">edges</span>.<span class="ident">insert</span>(<span class="ident">edge</span>);
+    <span class="kw">pub fn </span>add_edge(<span class="kw-2">&amp;mut </span><span class="self">self</span>, edge: (FlowNodeId, FlowNodeId)) {
+        <span class="self">self</span>.edges.insert(edge);
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">add_handoff_id</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">node_id</span>: <span class="ident">FlowNodeId</span>, <span class="ident">handoff_id</span>: <span class="ident">HandoffId</span>) {
-        <span class="self">self</span>.<span class="ident">handoff_ids</span>.<span class="ident">insert</span>(<span class="ident">node_id</span>, <span class="ident">handoff_id</span>);
+    <span class="kw">pub fn </span>add_handoff_id(<span class="kw-2">&amp;mut </span><span class="self">self</span>, node_id: FlowNodeId, handoff_id: HandoffId) {
+        <span class="self">self</span>.handoff_ids.insert(node_id, handoff_id);
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">append</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="kw-2">mut</span> <span class="ident">other</span>: <span class="ident">FlowGraph</span>) {
-        <span class="kw">let</span> <span class="ident">base</span> = <span class="self">self</span>.<span class="ident">node_names</span>.<span class="ident">len</span>();
-        <span class="self">self</span>.<span class="ident">node_names</span>.<span class="ident">append</span>(<span class="kw-2">&amp;mut</span> <span class="ident">other</span>.<span class="ident">node_names</span>);
-        <span class="self">self</span>.<span class="ident">edges</span>.<span class="ident">extend</span>(
-            <span class="ident">other</span>
-                .<span class="ident">edges</span>
-                .<span class="ident">into_iter</span>()
-                .<span class="ident">map</span>(|(<span class="ident">from</span>, <span class="ident">to</span>)| (<span class="ident">FlowNodeId</span>(<span class="ident">from</span>.<span class="number">0</span> + <span class="ident">base</span>), <span class="ident">FlowNodeId</span>(<span class="ident">to</span>.<span class="number">0</span> + <span class="ident">base</span>))),
+    <span class="kw">pub fn </span>append(<span class="kw-2">&amp;mut </span><span class="self">self</span>, <span class="kw-2">mut </span>other: FlowGraph) {
+        <span class="kw">let </span>base = <span class="self">self</span>.node_names.len();
+        <span class="self">self</span>.node_names.append(<span class="kw-2">&amp;mut </span>other.node_names);
+        <span class="self">self</span>.edges.extend(
+            other
+                .edges
+                .into_iter()
+                .map(|(from, to)| (FlowNodeId(from.<span class="number">0 </span>+ base), FlowNodeId(to.<span class="number">0 </span>+ base))),
         );
-        <span class="kw">for</span> (<span class="ident">node_id</span>, <span class="ident">hoff_id</span>) <span class="kw">in</span> <span class="ident">other</span>.<span class="ident">handoff_ids</span>.<span class="ident">iter</span>() {
-            <span class="self">self</span>.<span class="ident">handoff_ids</span>
-                .<span class="ident">entry</span>(<span class="ident">FlowNodeId</span>(<span class="ident">node_id</span>.<span class="number">0</span> + <span class="ident">base</span>))
-                .<span class="ident">or_insert</span>(<span class="kw-2">*</span><span class="ident">hoff_id</span>);
+        <span class="kw">for </span>(node_id, hoff_id) <span class="kw">in </span>other.handoff_ids.iter() {
+            <span class="self">self</span>.handoff_ids
+                .entry(FlowNodeId(node_id.<span class="number">0 </span>+ base))
+                .or_insert(<span class="kw-2">*</span>hoff_id);
         }
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (75b7e52e9 2022-08-13)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

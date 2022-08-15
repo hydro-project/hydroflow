@@ -79,86 +79,86 @@
 <span id="79">79</span>
 <span id="80">80</span>
 <span id="81">81</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">Pusherator</span>, <span class="ident">PusheratorBuild</span>};
+</pre><pre class="rust"><code><span class="kw">use super</span>::{Pusherator, PusheratorBuild};
 
-<span class="kw">use</span> <span class="ident">std::marker::PhantomData</span>;
+<span class="kw">use </span>std::marker::PhantomData;
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Tee</span>&lt;<span class="ident">T</span>, <span class="ident">O1</span>, <span class="ident">O2</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="ident">Clone</span>,
-    <span class="ident">O1</span>: <span class="ident">Pusherator</span>&lt;<span class="ident">Item</span> = <span class="ident">T</span>&gt;,
-    <span class="ident">O2</span>: <span class="ident">Pusherator</span>&lt;<span class="ident">Item</span> = <span class="ident">T</span>&gt;,
+<span class="kw">pub struct </span>Tee&lt;T, O1, O2&gt;
+<span class="kw">where
+    </span>T: Clone,
+    O1: Pusherator&lt;Item = T&gt;,
+    O2: Pusherator&lt;Item = T&gt;,
 {
-    <span class="ident">out1</span>: <span class="ident">O1</span>,
-    <span class="ident">out2</span>: <span class="ident">O2</span>,
-    <span class="ident">_marker</span>: <span class="ident">PhantomData</span>&lt;<span class="ident">T</span>&gt;,
+    out1: O1,
+    out2: O2,
+    _marker: PhantomData&lt;T&gt;,
 }
-<span class="kw">impl</span>&lt;<span class="ident">T</span>, <span class="ident">O1</span>, <span class="ident">O2</span>&gt; <span class="ident">Pusherator</span> <span class="kw">for</span> <span class="ident">Tee</span>&lt;<span class="ident">T</span>, <span class="ident">O1</span>, <span class="ident">O2</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="ident">Clone</span>,
-    <span class="ident">O1</span>: <span class="ident">Pusherator</span>&lt;<span class="ident">Item</span> = <span class="ident">T</span>&gt;,
-    <span class="ident">O2</span>: <span class="ident">Pusherator</span>&lt;<span class="ident">Item</span> = <span class="ident">T</span>&gt;,
+<span class="kw">impl</span>&lt;T, O1, O2&gt; Pusherator <span class="kw">for </span>Tee&lt;T, O1, O2&gt;
+<span class="kw">where
+    </span>T: Clone,
+    O1: Pusherator&lt;Item = T&gt;,
+    O2: Pusherator&lt;Item = T&gt;,
 {
-    <span class="kw">type</span> <span class="ident">Item</span> = <span class="ident">T</span>;
-    <span class="kw">fn</span> <span class="ident">give</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">item</span>: <span class="ident"><span class="self">Self</span>::Item</span>) {
-        <span class="self">self</span>.<span class="ident">out1</span>.<span class="ident">give</span>(<span class="ident">item</span>.<span class="ident">clone</span>());
-        <span class="self">self</span>.<span class="ident">out2</span>.<span class="ident">give</span>(<span class="ident">item</span>);
+    <span class="kw">type </span>Item = T;
+    <span class="kw">fn </span>give(<span class="kw-2">&amp;mut </span><span class="self">self</span>, item: <span class="self">Self</span>::Item) {
+        <span class="self">self</span>.out1.give(item.clone());
+        <span class="self">self</span>.out2.give(item);
     }
 }
-<span class="kw">impl</span>&lt;<span class="ident">T</span>, <span class="ident">O1</span>, <span class="ident">O2</span>&gt; <span class="ident">Tee</span>&lt;<span class="ident">T</span>, <span class="ident">O1</span>, <span class="ident">O2</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="ident">Clone</span>,
-    <span class="ident">O1</span>: <span class="ident">Pusherator</span>&lt;<span class="ident">Item</span> = <span class="ident">T</span>&gt;,
-    <span class="ident">O2</span>: <span class="ident">Pusherator</span>&lt;<span class="ident">Item</span> = <span class="ident">T</span>&gt;,
+<span class="kw">impl</span>&lt;T, O1, O2&gt; Tee&lt;T, O1, O2&gt;
+<span class="kw">where
+    </span>T: Clone,
+    O1: Pusherator&lt;Item = T&gt;,
+    O2: Pusherator&lt;Item = T&gt;,
 {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">out1</span>: <span class="ident">O1</span>, <span class="ident">out2</span>: <span class="ident">O2</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">out1</span>,
-            <span class="ident">out2</span>,
-            <span class="ident">_marker</span>: <span class="ident">PhantomData</span>,
+    <span class="kw">pub fn </span>new(out1: O1, out2: O2) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            out1,
+            out2,
+            _marker: PhantomData,
         }
     }
 }
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">TeeBuild</span>&lt;<span class="ident">T</span>, <span class="ident">O1</span>, <span class="ident">P</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="ident">Clone</span>,
-    <span class="ident">P</span>: <span class="ident">PusheratorBuild</span>&lt;<span class="ident">Item</span> = <span class="ident">T</span>&gt;,
-    <span class="ident">O1</span>: <span class="ident">Pusherator</span>&lt;<span class="ident">Item</span> = <span class="ident">T</span>&gt;,
+<span class="kw">pub struct </span>TeeBuild&lt;T, O1, P&gt;
+<span class="kw">where
+    </span>T: Clone,
+    P: PusheratorBuild&lt;Item = T&gt;,
+    O1: Pusherator&lt;Item = T&gt;,
 {
-    <span class="ident">prev</span>: <span class="ident">P</span>,
-    <span class="ident">first_out</span>: <span class="ident">O1</span>,
-    <span class="ident">_marker</span>: <span class="ident">PhantomData</span>&lt;<span class="ident">T</span>&gt;,
+    prev: P,
+    first_out: O1,
+    _marker: PhantomData&lt;T&gt;,
 }
-<span class="kw">impl</span>&lt;<span class="ident">T</span>, <span class="ident">O1</span>, <span class="ident">P</span>&gt; <span class="ident">TeeBuild</span>&lt;<span class="ident">T</span>, <span class="ident">O1</span>, <span class="ident">P</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="ident">Clone</span>,
-    <span class="ident">P</span>: <span class="ident">PusheratorBuild</span>&lt;<span class="ident">Item</span> = <span class="ident">T</span>&gt;,
-    <span class="ident">O1</span>: <span class="ident">Pusherator</span>&lt;<span class="ident">Item</span> = <span class="ident">T</span>&gt;,
+<span class="kw">impl</span>&lt;T, O1, P&gt; TeeBuild&lt;T, O1, P&gt;
+<span class="kw">where
+    </span>T: Clone,
+    P: PusheratorBuild&lt;Item = T&gt;,
+    O1: Pusherator&lt;Item = T&gt;,
 {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">prev</span>: <span class="ident">P</span>, <span class="ident">first_out</span>: <span class="ident">O1</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">prev</span>,
-            <span class="ident">first_out</span>,
-            <span class="ident">_marker</span>: <span class="ident">PhantomData</span>,
+    <span class="kw">pub fn </span>new(prev: P, first_out: O1) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            prev,
+            first_out,
+            _marker: PhantomData,
         }
     }
 }
-<span class="kw">impl</span>&lt;<span class="ident">T</span>, <span class="ident">O1</span>, <span class="ident">P</span>&gt; <span class="ident">PusheratorBuild</span> <span class="kw">for</span> <span class="ident">TeeBuild</span>&lt;<span class="ident">T</span>, <span class="ident">O1</span>, <span class="ident">P</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="ident">Clone</span>,
-    <span class="ident">P</span>: <span class="ident">PusheratorBuild</span>&lt;<span class="ident">Item</span> = <span class="ident">T</span>&gt;,
-    <span class="ident">O1</span>: <span class="ident">Pusherator</span>&lt;<span class="ident">Item</span> = <span class="ident">T</span>&gt;,
+<span class="kw">impl</span>&lt;T, O1, P&gt; PusheratorBuild <span class="kw">for </span>TeeBuild&lt;T, O1, P&gt;
+<span class="kw">where
+    </span>T: Clone,
+    P: PusheratorBuild&lt;Item = T&gt;,
+    O1: Pusherator&lt;Item = T&gt;,
 {
-    <span class="kw">type</span> <span class="ident">Item</span> = <span class="ident">T</span>;
+    <span class="kw">type </span>Item = T;
 
-    <span class="kw">type</span> <span class="ident">Output</span>&lt;<span class="ident">O</span>: <span class="ident">Pusherator</span>&lt;<span class="ident">Item</span> = <span class="ident"><span class="self">Self</span>::Item</span>&gt;&gt; = <span class="ident">P::Output</span>&lt;<span class="ident">Tee</span>&lt;<span class="ident">T</span>, <span class="ident">O1</span>, <span class="ident">O</span>&gt;&gt;;
-    <span class="kw">fn</span> <span class="ident">build</span>&lt;<span class="ident">O</span>&gt;(<span class="self">self</span>, <span class="ident">input</span>: <span class="ident">O</span>) -&gt; <span class="ident"><span class="self">Self</span>::Output</span>&lt;<span class="ident">O</span>&gt;
-    <span class="kw">where</span>
-        <span class="ident">O</span>: <span class="ident">Pusherator</span>&lt;<span class="ident">Item</span> = <span class="ident"><span class="self">Self</span>::Item</span>&gt;,
+    <span class="kw">type </span>Output&lt;O: Pusherator&lt;Item = <span class="self">Self</span>::Item&gt;&gt; = P::Output&lt;Tee&lt;T, O1, O&gt;&gt;;
+    <span class="kw">fn </span>build&lt;O&gt;(<span class="self">self</span>, input: O) -&gt; <span class="self">Self</span>::Output&lt;O&gt;
+    <span class="kw">where
+        </span>O: Pusherator&lt;Item = <span class="self">Self</span>::Item&gt;,
     {
-        <span class="self">self</span>.<span class="ident">prev</span>.<span class="ident">build</span>(<span class="ident">Tee::new</span>(<span class="self">self</span>.<span class="ident">first_out</span>, <span class="ident">input</span>))
+        <span class="self">self</span>.prev.build(Tee::new(<span class="self">self</span>.first_out, input))
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (75b7e52e9 2022-08-13)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

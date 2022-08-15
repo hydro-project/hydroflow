@@ -170,177 +170,177 @@
 <span id="170">170</span>
 <span id="171">171</span>
 <span id="172">172</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">slotmap</span>::{<span class="ident">Key</span>, <span class="ident">SecondaryMap</span>, <span class="ident">SlotMap</span>, <span class="ident">SparseSecondaryMap</span>};
+</pre><pre class="rust"><code><span class="kw">use </span>slotmap::{Key, SecondaryMap, SlotMap, SparseSecondaryMap};
 
-<span class="kw">use</span> <span class="ident">serde</span>::{<span class="ident">Deserialize</span>, <span class="ident">Serialize</span>};
+<span class="kw">use </span>serde::{Deserialize, Serialize};
 
-<span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">GraphNodeId</span>, <span class="ident">GraphSubgraphId</span>};
+<span class="kw">use super</span>::{GraphNodeId, GraphSubgraphId};
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Default</span>, <span class="ident">Serialize</span>, <span class="ident">Deserialize</span>)]</span>
-<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">dead_code</span>)]</span> <span class="comment">// TODO(mingwei): remove when no longer needed.</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">SerdeGraph</span> {
-    <span class="comment">// TODO(jmh): this structure has no way to maintain the index/order of incoming edges</span>
-    <span class="kw">pub</span> <span class="ident">nodes</span>: <span class="ident">SecondaryMap</span>&lt;<span class="ident">GraphNodeId</span>, <span class="ident">String</span>&gt;,
-    <span class="kw">pub</span> <span class="ident">edges</span>: <span class="ident">SecondaryMap</span>&lt;<span class="ident">GraphNodeId</span>, <span class="ident">Vec</span>&lt;<span class="ident">GraphNodeId</span>&gt;&gt;,
-    <span class="kw">pub</span> <span class="ident">handoffs</span>: <span class="ident">SparseSecondaryMap</span>&lt;<span class="ident">GraphNodeId</span>, <span class="ident">bool</span>&gt;,
-    <span class="kw">pub</span> <span class="ident">subgraph_nodes</span>: <span class="ident">SlotMap</span>&lt;<span class="ident">GraphSubgraphId</span>, <span class="ident">Vec</span>&lt;<span class="ident">GraphNodeId</span>&gt;&gt;,
+<span class="attribute">#[derive(Default, Serialize, Deserialize)]</span>
+<span class="attribute">#[allow(dead_code)]</span> <span class="comment">// TODO(mingwei): remove when no longer needed.
+</span><span class="kw">pub struct </span>SerdeGraph {
+    <span class="comment">// TODO(jmh): this structure has no way to maintain the index/order of incoming edges
+    </span><span class="kw">pub </span>nodes: SecondaryMap&lt;GraphNodeId, String&gt;,
+    <span class="kw">pub </span>edges: SecondaryMap&lt;GraphNodeId, Vec&lt;GraphNodeId&gt;&gt;,
+    <span class="kw">pub </span>handoffs: SparseSecondaryMap&lt;GraphNodeId, bool&gt;,
+    <span class="kw">pub </span>subgraph_nodes: SlotMap&lt;GraphSubgraphId, Vec&lt;GraphNodeId&gt;&gt;,
 }
-<span class="kw">impl</span> <span class="ident">SerdeGraph</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="self">Self</span> {
-        <span class="ident">Default::default</span>()
+<span class="kw">impl </span>SerdeGraph {
+    <span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
+        Default::default()
     }
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">to_mermaid</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">String</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">output</span> = <span class="ident">String::new</span>();
-        <span class="self">self</span>.<span class="ident">write_mermaid</span>(<span class="kw-2">&amp;mut</span> <span class="ident">output</span>).<span class="ident">unwrap</span>();
-        <span class="ident">output</span>
+    <span class="kw">pub fn </span>to_mermaid(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
+        <span class="kw">let </span><span class="kw-2">mut </span>output = String::new();
+        <span class="self">self</span>.write_mermaid(<span class="kw-2">&amp;mut </span>output).unwrap();
+        output
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">write_mermaid</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">write</span>: <span class="kw-2">&amp;mut</span> <span class="kw">impl</span> <span class="ident">std::fmt::Write</span>) -&gt; <span class="ident">std::fmt::Result</span> {
-        <span class="macro">writeln!</span>(<span class="ident">write</span>, <span class="string">&quot;flowchart TB&quot;</span>)<span class="question-mark">?</span>;
-        <span class="kw">for</span> (<span class="ident">subgraph_id</span>, <span class="ident">node_ids</span>) <span class="kw">in</span> <span class="self">self</span>.<span class="ident">subgraph_nodes</span>.<span class="ident">iter</span>() {
-            <span class="macro">writeln!</span>(<span class="ident">write</span>, <span class="string">&quot;    subgraph sg_{}&quot;</span>, <span class="ident">subgraph_id</span>.<span class="ident">data</span>().<span class="ident">as_ffi</span>())<span class="question-mark">?</span>;
-            <span class="kw">for</span> <span class="kw-2">&amp;</span><span class="ident">node_id</span> <span class="kw">in</span> <span class="ident">node_ids</span>.<span class="ident">iter</span>() {
-                <span class="kw">if</span> !<span class="self">self</span>.<span class="ident">handoffs</span>.<span class="ident">contains_key</span>(<span class="ident">node_id</span>) {
+    <span class="kw">pub fn </span>write_mermaid(<span class="kw-2">&amp;</span><span class="self">self</span>, write: <span class="kw-2">&amp;mut </span><span class="kw">impl </span>std::fmt::Write) -&gt; std::fmt::Result {
+        <span class="macro">writeln!</span>(write, <span class="string">&quot;flowchart TB&quot;</span>)<span class="question-mark">?</span>;
+        <span class="kw">for </span>(subgraph_id, node_ids) <span class="kw">in </span><span class="self">self</span>.subgraph_nodes.iter() {
+            <span class="macro">writeln!</span>(write, <span class="string">&quot;    subgraph sg_{}&quot;</span>, subgraph_id.data().as_ffi())<span class="question-mark">?</span>;
+            <span class="kw">for </span><span class="kw-2">&amp;</span>node_id <span class="kw">in </span>node_ids.iter() {
+                <span class="kw">if </span>!<span class="self">self</span>.handoffs.contains_key(node_id) {
                     <span class="macro">writeln!</span>(
-                        <span class="ident">write</span>,
+                        write,
                         <span class="string">r#&quot;        {id:?}[&quot;{id:?} &lt;tt&gt;{code}&lt;/tt&gt;&quot;]&quot;#</span>,
-                        <span class="ident">id</span> = <span class="ident">node_id</span>.<span class="ident">data</span>(),
-                        <span class="ident">code</span> = <span class="self">self</span>
-                            .<span class="ident">nodes</span>
-                            .<span class="ident">get</span>(<span class="ident">node_id</span>)
-                            .<span class="ident">unwrap</span>()
-                            .<span class="ident">clone</span>()
-                            .<span class="ident">replace</span>(<span class="string">&#39;&amp;&#39;</span>, <span class="string">&quot;&amp;amp;&quot;</span>)
-                            .<span class="ident">replace</span>(<span class="string">&#39;&lt;&#39;</span>, <span class="string">&quot;&amp;lt;&quot;</span>)
-                            .<span class="ident">replace</span>(<span class="string">&#39;&gt;&#39;</span>, <span class="string">&quot;&amp;gt;&quot;</span>)
-                            .<span class="ident">replace</span>(<span class="string">&#39;&quot;&#39;</span>, <span class="string">&quot;&amp;quot;&quot;</span>)
-                            .<span class="ident">replace</span>(<span class="string">&#39;\n&#39;</span>, <span class="string">&quot;&lt;br&gt;&quot;</span>),
+                        id = node_id.data(),
+                        code = <span class="self">self
+                            </span>.nodes
+                            .get(node_id)
+                            .unwrap()
+                            .clone()
+                            .replace(<span class="string">&#39;&amp;&#39;</span>, <span class="string">&quot;&amp;amp;&quot;</span>)
+                            .replace(<span class="string">&#39;&lt;&#39;</span>, <span class="string">&quot;&amp;lt;&quot;</span>)
+                            .replace(<span class="string">&#39;&gt;&#39;</span>, <span class="string">&quot;&amp;gt;&quot;</span>)
+                            .replace(<span class="string">&#39;&quot;&#39;</span>, <span class="string">&quot;&amp;quot;&quot;</span>)
+                            .replace(<span class="string">&#39;\n&#39;</span>, <span class="string">&quot;&lt;br&gt;&quot;</span>),
                     )<span class="question-mark">?</span>;
                 }
             }
-            <span class="macro">writeln!</span>(<span class="ident">write</span>, <span class="string">&quot;    end&quot;</span>)<span class="question-mark">?</span>;
+            <span class="macro">writeln!</span>(write, <span class="string">&quot;    end&quot;</span>)<span class="question-mark">?</span>;
         }
-        <span class="macro">writeln!</span>(<span class="ident">write</span>)<span class="question-mark">?</span>;
-        <span class="kw">for</span> <span class="ident">node_id</span> <span class="kw">in</span> <span class="self">self</span>.<span class="ident">nodes</span>.<span class="ident">keys</span>() {
-            <span class="kw">if</span> <span class="self">self</span>.<span class="ident">handoffs</span>.<span class="ident">contains_key</span>(<span class="ident">node_id</span>) {
-                <span class="macro">writeln!</span>(<span class="ident">write</span>, <span class="string">r#&quot;    {:?}{{&quot;handoff&quot;}}&quot;#</span>, <span class="ident">node_id</span>.<span class="ident">data</span>())<span class="question-mark">?</span>;
+        <span class="macro">writeln!</span>(write)<span class="question-mark">?</span>;
+        <span class="kw">for </span>node_id <span class="kw">in </span><span class="self">self</span>.nodes.keys() {
+            <span class="kw">if </span><span class="self">self</span>.handoffs.contains_key(node_id) {
+                <span class="macro">writeln!</span>(write, <span class="string">r#&quot;    {:?}{{&quot;handoff&quot;}}&quot;#</span>, node_id.data())<span class="question-mark">?</span>;
             }
         }
-        <span class="macro">writeln!</span>(<span class="ident">write</span>)<span class="question-mark">?</span>;
-        <span class="kw">for</span> (<span class="ident">src</span>, <span class="ident">dests</span>) <span class="kw">in</span> <span class="self">self</span>.<span class="ident">edges</span>.<span class="ident">iter</span>() {
-            <span class="kw">for</span> <span class="ident">dst</span> <span class="kw">in</span> <span class="ident">dests</span> {
-                <span class="macro">writeln!</span>(<span class="ident">write</span>, <span class="string">&quot;    {:?}--&gt;{:?}&quot;</span>, <span class="ident">src</span>.<span class="ident">data</span>(), <span class="ident">dst</span>.<span class="ident">data</span>())<span class="question-mark">?</span>;
+        <span class="macro">writeln!</span>(write)<span class="question-mark">?</span>;
+        <span class="kw">for </span>(src, dests) <span class="kw">in </span><span class="self">self</span>.edges.iter() {
+            <span class="kw">for </span>dst <span class="kw">in </span>dests {
+                <span class="macro">writeln!</span>(write, <span class="string">&quot;    {:?}--&gt;{:?}&quot;</span>, src.data(), dst.data())<span class="question-mark">?</span>;
             }
         }
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">to_dot</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">String</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">output</span> = <span class="ident">String::new</span>();
-        <span class="self">self</span>.<span class="ident">write_dot</span>(<span class="kw-2">&amp;mut</span> <span class="ident">output</span>).<span class="ident">unwrap</span>();
-        <span class="ident">output</span>
+    <span class="kw">pub fn </span>to_dot(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
+        <span class="kw">let </span><span class="kw-2">mut </span>output = String::new();
+        <span class="self">self</span>.write_dot(<span class="kw-2">&amp;mut </span>output).unwrap();
+        output
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">write_dot</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">w</span>: <span class="kw-2">&amp;mut</span> <span class="kw">impl</span> <span class="ident">std::fmt::Write</span>) -&gt; <span class="ident">std::fmt::Result</span> {
-        <span class="macro">writeln!</span>(<span class="ident">w</span>, <span class="string">&quot;digraph {{&quot;</span>)<span class="question-mark">?</span>;
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">tab</span>: <span class="ident">usize</span> = <span class="number">2</span>;
+    <span class="kw">pub fn </span>write_dot(<span class="kw-2">&amp;</span><span class="self">self</span>, w: <span class="kw-2">&amp;mut </span><span class="kw">impl </span>std::fmt::Write) -&gt; std::fmt::Result {
+        <span class="macro">writeln!</span>(w, <span class="string">&quot;digraph {{&quot;</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>tab: usize = <span class="number">2</span>;
 
-        <span class="kw">fn</span> <span class="ident">write_dot_edge</span>(
-            <span class="ident">src</span>: <span class="ident">GraphNodeId</span>,
-            <span class="ident">dst</span>: <span class="ident">GraphNodeId</span>,
-            <span class="ident">tab</span>: <span class="ident">usize</span>,
-            <span class="ident">w</span>: <span class="kw-2">&amp;mut</span> <span class="kw">impl</span> <span class="ident">std::fmt::Write</span>,
-        ) -&gt; <span class="ident">std::fmt::Result</span> {
+        <span class="kw">fn </span>write_dot_edge(
+            src: GraphNodeId,
+            dst: GraphNodeId,
+            tab: usize,
+            w: <span class="kw-2">&amp;mut </span><span class="kw">impl </span>std::fmt::Write,
+        ) -&gt; std::fmt::Result {
             <span class="macro">writeln!</span>(
-                <span class="ident">w</span>,
+                w,
                 <span class="string">&quot;{:t$}{} -&gt; {}&quot;</span>,
                 <span class="string">&quot;&quot;</span>,
-                <span class="ident">src</span>.<span class="ident">data</span>().<span class="ident">as_ffi</span>(),
-                <span class="ident">dst</span>.<span class="ident">data</span>().<span class="ident">as_ffi</span>(),
-                <span class="ident">t</span> = <span class="ident">tab</span>,
+                src.data().as_ffi(),
+                dst.data().as_ffi(),
+                t = tab,
             )<span class="question-mark">?</span>;
             <span class="prelude-val">Ok</span>(())
         }
 
-        <span class="comment">// write out nodes</span>
-        <span class="macro">writeln!</span>(<span class="ident">w</span>, <span class="string">&quot;{:t$}{{&quot;</span>, <span class="string">&quot;&quot;</span>, <span class="ident">t</span> = <span class="ident">tab</span>)<span class="question-mark">?</span>;
-        <span class="ident">tab</span> += <span class="number">2</span>;
-        <span class="macro">writeln!</span>(<span class="ident">w</span>, <span class="string">&quot;{:t$}node [shape=box]&quot;</span>, <span class="string">&quot;&quot;</span>, <span class="ident">t</span> = <span class="ident">tab</span>)<span class="question-mark">?</span>;
-        <span class="kw">for</span> (<span class="ident">node_id</span>, <span class="ident">text</span>) <span class="kw">in</span> <span class="self">self</span>.<span class="ident">nodes</span>.<span class="ident">iter</span>() {
-            <span class="kw">let</span> <span class="ident">nm</span> = <span class="ident">text</span>.<span class="ident">replace</span>(<span class="string">&#39;&quot;&#39;</span>, <span class="string">&quot;\\\&quot;&quot;</span>).<span class="ident">replace</span>(<span class="string">&#39;\n&#39;</span>, <span class="string">&quot;\\l&quot;</span>);
-            <span class="kw">let</span> <span class="ident">label</span> = <span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, <span class="ident">node_id</span>.<span class="ident">data</span>().<span class="ident">as_ffi</span>());
+        <span class="comment">// write out nodes
+        </span><span class="macro">writeln!</span>(w, <span class="string">&quot;{:t$}{{&quot;</span>, <span class="string">&quot;&quot;</span>, t = tab)<span class="question-mark">?</span>;
+        tab += <span class="number">2</span>;
+        <span class="macro">writeln!</span>(w, <span class="string">&quot;{:t$}node [shape=box]&quot;</span>, <span class="string">&quot;&quot;</span>, t = tab)<span class="question-mark">?</span>;
+        <span class="kw">for </span>(node_id, text) <span class="kw">in </span><span class="self">self</span>.nodes.iter() {
+            <span class="kw">let </span>nm = text.replace(<span class="string">&#39;&quot;&#39;</span>, <span class="string">&quot;\\\&quot;&quot;</span>).replace(<span class="string">&#39;\n&#39;</span>, <span class="string">&quot;\\l&quot;</span>);
+            <span class="kw">let </span>label = <span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, node_id.data().as_ffi());
             <span class="macro">write!</span>(
-                <span class="ident">w</span>,
+                w,
                 <span class="string">&quot;{:t$}{} [label=\&quot;{}{}\&quot;&quot;</span>,
                 <span class="string">&quot;&quot;</span>,
-                <span class="ident">label</span>,
-                <span class="ident">nm</span>,
-                <span class="comment">// if contains linebreak left-justify by appending another &quot;\\l&quot;</span>
-                <span class="kw">if</span> <span class="ident">nm</span>.<span class="ident">contains</span>(<span class="string">&quot;\\l&quot;</span>) { <span class="string">&quot;\\l&quot;</span> } <span class="kw">else</span> { <span class="string">&quot;&quot;</span> },
-                <span class="ident">t</span> = <span class="ident">tab</span>
+                label,
+                nm,
+                <span class="comment">// if contains linebreak left-justify by appending another &quot;\\l&quot;
+                </span><span class="kw">if </span>nm.contains(<span class="string">&quot;\\l&quot;</span>) { <span class="string">&quot;\\l&quot; </span>} <span class="kw">else </span>{ <span class="string">&quot;&quot; </span>},
+                t = tab
             )<span class="question-mark">?</span>;
-            <span class="kw">if</span> <span class="self">self</span>.<span class="ident">handoffs</span>.<span class="ident">contains_key</span>(<span class="ident">node_id</span>) {
-                <span class="macro">write!</span>(<span class="ident">w</span>, <span class="string">&quot;, shape=diamond&quot;</span>)<span class="question-mark">?</span>;
+            <span class="kw">if </span><span class="self">self</span>.handoffs.contains_key(node_id) {
+                <span class="macro">write!</span>(w, <span class="string">&quot;, shape=diamond&quot;</span>)<span class="question-mark">?</span>;
             }
-            <span class="macro">writeln!</span>(<span class="ident">w</span>, <span class="string">&quot;]&quot;</span>)<span class="question-mark">?</span>;
+            <span class="macro">writeln!</span>(w, <span class="string">&quot;]&quot;</span>)<span class="question-mark">?</span>;
         }
-        <span class="ident">tab</span> -= <span class="number">2</span>;
-        <span class="macro">writeln!</span>(<span class="ident">w</span>, <span class="string">&quot;{:t$}}}&quot;</span>, <span class="string">&quot;&quot;</span>, <span class="ident">t</span> = <span class="ident">tab</span>)<span class="question-mark">?</span>;
+        tab -= <span class="number">2</span>;
+        <span class="macro">writeln!</span>(w, <span class="string">&quot;{:t$}}}&quot;</span>, <span class="string">&quot;&quot;</span>, t = tab)<span class="question-mark">?</span>;
 
-        <span class="comment">// write out edges per subgraph</span>
-        <span class="kw">for</span> (<span class="ident">sg_id</span>, <span class="ident">nodes</span>) <span class="kw">in</span> <span class="self">self</span>.<span class="ident">subgraph_nodes</span>.<span class="ident">iter</span>() {
-            <span class="comment">// let strt = es.stratum;</span>
-            <span class="macro">writeln!</span>(
-                <span class="ident">w</span>,
+        <span class="comment">// write out edges per subgraph
+        </span><span class="kw">for </span>(sg_id, nodes) <span class="kw">in </span><span class="self">self</span>.subgraph_nodes.iter() {
+            <span class="comment">// let strt = es.stratum;
+            </span><span class="macro">writeln!</span>(
+                w,
                 <span class="string">&quot;{:t$}subgraph \&quot;cluster stratum NUMBER UNKNOWN\&quot; {{&quot;</span>,
                 <span class="string">&quot;&quot;</span>,
-                <span class="ident">t</span> = <span class="ident">tab</span>,
+                t = tab,
             )<span class="question-mark">?</span>;
-            <span class="ident">tab</span> += <span class="number">2</span>;
-            <span class="macro">writeln!</span>(<span class="ident">w</span>, <span class="string">&quot;{:t$}label = \&quot;Stratum NUMBER UNKNOWN\&quot;&quot;</span>, <span class="string">&quot;&quot;</span>, <span class="ident">t</span> = <span class="ident">tab</span>,)<span class="question-mark">?</span>;
+            tab += <span class="number">2</span>;
+            <span class="macro">writeln!</span>(w, <span class="string">&quot;{:t$}label = \&quot;Stratum NUMBER UNKNOWN\&quot;&quot;</span>, <span class="string">&quot;&quot;</span>, t = tab,)<span class="question-mark">?</span>;
             <span class="macro">writeln!</span>(
-                <span class="ident">w</span>,
+                w,
                 <span class="string">&quot;{:t$}subgraph \&quot;cluster {}\&quot; {{&quot;</span>,
                 <span class="string">&quot;&quot;</span>,
-                <span class="ident">sg_id</span>.<span class="ident">data</span>().<span class="ident">as_ffi</span>(),
-                <span class="ident">t</span> = <span class="ident">tab</span>
+                sg_id.data().as_ffi(),
+                t = tab
             )<span class="question-mark">?</span>;
-            <span class="ident">tab</span> += <span class="number">2</span>;
+            tab += <span class="number">2</span>;
             <span class="macro">writeln!</span>(
-                <span class="ident">w</span>,
+                w,
                 <span class="string">&quot;{:t$}label = \&quot;sg_{}\&quot;&quot;</span>,
                 <span class="string">&quot;&quot;</span>,
-                <span class="ident">sg_id</span>.<span class="ident">data</span>().<span class="ident">as_ffi</span>(),
-                <span class="ident">t</span> = <span class="ident">tab</span>
+                sg_id.data().as_ffi(),
+                t = tab
             )<span class="question-mark">?</span>;
-            <span class="kw">let</span> <span class="ident">empty</span> = <span class="macro">vec!</span>[];
-            <span class="kw">for</span> <span class="kw-2">&amp;</span><span class="ident">src</span> <span class="kw">in</span> <span class="ident">nodes</span> {
-                <span class="kw">let</span> <span class="ident">dests</span> = <span class="self">self</span>.<span class="ident">edges</span>.<span class="ident">get</span>(<span class="ident">src</span>).<span class="ident">unwrap_or</span>(<span class="kw-2">&amp;</span><span class="ident">empty</span>);
-                <span class="kw">for</span> <span class="kw-2">&amp;</span><span class="ident">dst</span> <span class="kw">in</span> <span class="ident">dests</span> {
-                    <span class="kw">if</span> !<span class="self">self</span>.<span class="ident">handoffs</span>.<span class="ident">contains_key</span>(<span class="ident">src</span>) &amp;&amp; !<span class="self">self</span>.<span class="ident">handoffs</span>.<span class="ident">contains_key</span>(<span class="ident">dst</span>) {
-                        <span class="ident">write_dot_edge</span>(<span class="ident">src</span>, <span class="ident">dst</span>, <span class="ident">tab</span>, <span class="ident">w</span>)<span class="question-mark">?</span>;
+            <span class="kw">let </span>empty = <span class="macro">vec!</span>[];
+            <span class="kw">for </span><span class="kw-2">&amp;</span>src <span class="kw">in </span>nodes {
+                <span class="kw">let </span>dests = <span class="self">self</span>.edges.get(src).unwrap_or(<span class="kw-2">&amp;</span>empty);
+                <span class="kw">for </span><span class="kw-2">&amp;</span>dst <span class="kw">in </span>dests {
+                    <span class="kw">if </span>!<span class="self">self</span>.handoffs.contains_key(src) &amp;&amp; !<span class="self">self</span>.handoffs.contains_key(dst) {
+                        write_dot_edge(src, dst, tab, w)<span class="question-mark">?</span>;
                     }
                 }
             }
-            <span class="ident">tab</span> -= <span class="number">2</span>;
-            <span class="macro">writeln!</span>(<span class="ident">w</span>, <span class="string">&quot;{:t$}}}&quot;</span>, <span class="string">&quot;&quot;</span>, <span class="ident">t</span> = <span class="ident">tab</span>)<span class="question-mark">?</span>;
-            <span class="ident">tab</span> -= <span class="number">2</span>;
-            <span class="macro">writeln!</span>(<span class="ident">w</span>, <span class="string">&quot;{:t$}}}&quot;</span>, <span class="string">&quot;&quot;</span>, <span class="ident">t</span> = <span class="ident">tab</span>)<span class="question-mark">?</span>;
+            tab -= <span class="number">2</span>;
+            <span class="macro">writeln!</span>(w, <span class="string">&quot;{:t$}}}&quot;</span>, <span class="string">&quot;&quot;</span>, t = tab)<span class="question-mark">?</span>;
+            tab -= <span class="number">2</span>;
+            <span class="macro">writeln!</span>(w, <span class="string">&quot;{:t$}}}&quot;</span>, <span class="string">&quot;&quot;</span>, t = tab)<span class="question-mark">?</span>;
         }
 
-        <span class="comment">//write out edges adjacent to handoffs outside the clusters</span>
-        <span class="kw">for</span> (<span class="ident">src</span>, <span class="ident">dests</span>) <span class="kw">in</span> <span class="self">self</span>.<span class="ident">edges</span>.<span class="ident">iter</span>() {
-            <span class="kw">for</span> <span class="kw-2">&amp;</span><span class="ident">dst</span> <span class="kw">in</span> <span class="ident">dests</span> {
-                <span class="kw">if</span> <span class="self">self</span>.<span class="ident">handoffs</span>.<span class="ident">contains_key</span>(<span class="ident">src</span>) || <span class="self">self</span>.<span class="ident">handoffs</span>.<span class="ident">contains_key</span>(<span class="ident">dst</span>) {
-                    <span class="ident">write_dot_edge</span>(<span class="ident">src</span>, <span class="ident">dst</span>, <span class="ident">tab</span>, <span class="ident">w</span>)<span class="question-mark">?</span>;
+        <span class="comment">//write out edges adjacent to handoffs outside the clusters
+        </span><span class="kw">for </span>(src, dests) <span class="kw">in </span><span class="self">self</span>.edges.iter() {
+            <span class="kw">for </span><span class="kw-2">&amp;</span>dst <span class="kw">in </span>dests {
+                <span class="kw">if </span><span class="self">self</span>.handoffs.contains_key(src) || <span class="self">self</span>.handoffs.contains_key(dst) {
+                    write_dot_edge(src, dst, tab, w)<span class="question-mark">?</span>;
                 }
             }
         }
 
-        <span class="ident">tab</span> -= <span class="number">2</span>;
-        <span class="macro">writeln!</span>(<span class="ident">w</span>, <span class="string">&quot;{:t$}}}&quot;</span>, <span class="string">&quot;&quot;</span>, <span class="ident">t</span> = <span class="ident">tab</span>)<span class="question-mark">?</span>;
+        tab -= <span class="number">2</span>;
+        <span class="macro">writeln!</span>(w, <span class="string">&quot;{:t$}}}&quot;</span>, <span class="string">&quot;&quot;</span>, t = tab)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (75b7e52e9 2022-08-13)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

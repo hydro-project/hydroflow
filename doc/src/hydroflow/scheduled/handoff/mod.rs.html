@@ -43,50 +43,50 @@
 <span id="43">43</span>
 <span id="44">44</span>
 <span id="45">45</span>
-</pre><pre class="rust"><code><span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">handoff_list</span>;
-<span class="kw">mod</span> <span class="ident">tee</span>;
-<span class="kw">mod</span> <span class="ident">vector</span>;
+</pre><pre class="rust"><code><span class="kw">pub mod </span>handoff_list;
+<span class="kw">mod </span>tee;
+<span class="kw">mod </span>vector;
 
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">tee::TeeingHandoff</span>;
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">vector::VecHandoff</span>;
+<span class="kw">pub use </span>tee::TeeingHandoff;
+<span class="kw">pub use </span>vector::VecHandoff;
 
-<span class="kw">use</span> <span class="ident">std::any::Any</span>;
+<span class="kw">use </span>std::any::Any;
 
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">TryCanReceive</span>&lt;<span class="ident">T</span>&gt; {
-    <span class="kw">fn</span> <span class="ident">try_give</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">item</span>: <span class="ident">T</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">T</span>, <span class="ident">T</span>&gt;;
+<span class="kw">pub trait </span>TryCanReceive&lt;T&gt; {
+    <span class="kw">fn </span>try_give(<span class="kw-2">&amp;</span><span class="self">self</span>, item: T) -&gt; <span class="prelude-ty">Result</span>&lt;T, T&gt;;
 }
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">CanReceive</span>&lt;<span class="ident">T</span>&gt; {
-    <span class="kw">fn</span> <span class="ident">give</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">item</span>: <span class="ident">T</span>) -&gt; <span class="ident">T</span>;
+<span class="kw">pub trait </span>CanReceive&lt;T&gt; {
+    <span class="kw">fn </span>give(<span class="kw-2">&amp;</span><span class="self">self</span>, item: T) -&gt; T;
 }
 
 <span class="doccomment">/**
  * A handle onto the metadata part of a [Handoff], with no element type.
- */</span>
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">HandoffMeta</span>: <span class="ident">Any</span> {
-    <span class="kw">fn</span> <span class="ident">any_ref</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="kw">dyn</span> <span class="ident">Any</span>;
+ */
+</span><span class="kw">pub trait </span>HandoffMeta: Any {
+    <span class="kw">fn </span>any_ref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="kw">dyn </span>Any;
 
-    <span class="comment">// TODO(justin): more fine-grained info here.</span>
-    <span class="kw">fn</span> <span class="ident">is_bottom</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span>;
+    <span class="comment">// TODO(justin): more fine-grained info here.
+    </span><span class="kw">fn </span>is_bottom(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool;
 }
 
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">Handoff</span>: <span class="ident">Default</span> + <span class="ident">HandoffMeta</span> {
-    <span class="kw">type</span> <span class="ident">Inner</span>;
+<span class="kw">pub trait </span>Handoff: Default + HandoffMeta {
+    <span class="kw">type </span>Inner;
 
-    <span class="kw">fn</span> <span class="ident">take_inner</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident"><span class="self">Self</span>::Inner</span>;
+    <span class="kw">fn </span>take_inner(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Inner;
 
-    <span class="kw">fn</span> <span class="ident">give</span>&lt;<span class="ident">T</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">item</span>: <span class="ident">T</span>) -&gt; <span class="ident">T</span>
-    <span class="kw">where</span>
-        <span class="self">Self</span>: <span class="ident">CanReceive</span>&lt;<span class="ident">T</span>&gt;,
+    <span class="kw">fn </span>give&lt;T&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, item: T) -&gt; T
+    <span class="kw">where
+        </span><span class="self">Self</span>: CanReceive&lt;T&gt;,
     {
-        &lt;<span class="self">Self</span> <span class="kw">as</span> <span class="ident">CanReceive</span>&lt;<span class="ident">T</span>&gt;&gt;<span class="ident">::give</span>(<span class="self">self</span>, <span class="ident">item</span>)
+        &lt;<span class="self">Self </span><span class="kw">as </span>CanReceive&lt;T&gt;&gt;::give(<span class="self">self</span>, item)
     }
 
-    <span class="kw">fn</span> <span class="ident">try_give</span>&lt;<span class="ident">T</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">item</span>: <span class="ident">T</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">T</span>, <span class="ident">T</span>&gt;
-    <span class="kw">where</span>
-        <span class="self">Self</span>: <span class="ident">TryCanReceive</span>&lt;<span class="ident">T</span>&gt;,
+    <span class="kw">fn </span>try_give&lt;T&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, item: T) -&gt; <span class="prelude-ty">Result</span>&lt;T, T&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: TryCanReceive&lt;T&gt;,
     {
-        &lt;<span class="self">Self</span> <span class="kw">as</span> <span class="ident">TryCanReceive</span>&lt;<span class="ident">T</span>&gt;&gt;<span class="ident">::try_give</span>(<span class="self">self</span>, <span class="ident">item</span>)
+        &lt;<span class="self">Self </span><span class="kw">as </span>TryCanReceive&lt;T&gt;&gt;::try_give(<span class="self">self</span>, item)
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (75b7e52e9 2022-08-13)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

@@ -225,232 +225,232 @@
 <span id="225">225</span>
 <span id="226">226</span>
 <span id="227">227</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::collections::HashMap</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 
-<span class="kw">use</span> <span class="ident">futures</span>::{<span class="ident">SinkExt</span>, <span class="ident">StreamExt</span>};
-<span class="kw">use</span> <span class="ident">serde</span>::{<span class="ident">de::DeserializeOwned</span>, <span class="ident">Serialize</span>};
-<span class="kw">use</span> <span class="ident">tokio::net</span>::{<span class="ident">TcpListener</span>, <span class="ident">TcpStream</span>};
-<span class="kw">use</span> <span class="ident">tokio_util::codec</span>::{<span class="ident">FramedRead</span>, <span class="ident">FramedWrite</span>, <span class="ident">LengthDelimitedCodec</span>};
+<span class="kw">use </span>futures::{SinkExt, StreamExt};
+<span class="kw">use </span>serde::{de::DeserializeOwned, Serialize};
+<span class="kw">use </span>tokio::net::{TcpListener, TcpStream};
+<span class="kw">use </span>tokio_util::codec::{FramedRead, FramedWrite, LengthDelimitedCodec};
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled</span>::{
-    <span class="ident">graph::Hydroflow</span>,
-    <span class="ident">graph_ext::GraphExt</span>,
-    <span class="ident">handoff::VecHandoff</span>,
-    <span class="ident">port</span>::{<span class="ident">RecvPort</span>, <span class="ident">SendPort</span>},
+<span class="kw">use </span><span class="kw">crate</span>::scheduled::{
+    graph::Hydroflow,
+    graph_ext::GraphExt,
+    handoff::VecHandoff,
+    port::{RecvPort, SendPort},
 };
 
-<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">Address</span> = <span class="ident">String</span>;
+<span class="kw">pub type </span>Address = String;
 
-<span class="comment">// These methods can&#39;t be wrapped up in a trait because async methods are not</span>
-<span class="comment">// allowed in traits (yet).</span>
+<span class="comment">// These methods can&#39;t be wrapped up in a trait because async methods are not
+// allowed in traits (yet).
 
-<span class="kw">impl</span> <span class="ident">Hydroflow</span> {
-    <span class="comment">// TODO(justin): document these, but they&#39;re derivatives of inbound_tcp_vertex_internal.</span>
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">inbound_tcp_vertex_port</span>&lt;<span class="ident">T</span>&gt;(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">port</span>: <span class="ident">u16</span>) -&gt; <span class="ident">RecvPort</span>&lt;<span class="ident">VecHandoff</span>&lt;<span class="ident">T</span>&gt;&gt;
-    <span class="kw">where</span>
-        <span class="ident">T</span>: <span class="lifetime">&#39;static</span> + <span class="ident">DeserializeOwned</span> + <span class="ident">Send</span>,
+</span><span class="kw">impl </span>Hydroflow {
+    <span class="comment">// TODO(justin): document these, but they&#39;re derivatives of inbound_tcp_vertex_internal.
+    </span><span class="kw">pub async fn </span>inbound_tcp_vertex_port&lt;T&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, port: u16) -&gt; RecvPort&lt;VecHandoff&lt;T&gt;&gt;
+    <span class="kw">where
+        </span>T: <span class="lifetime">&#39;static </span>+ DeserializeOwned + Send,
     {
-        <span class="self">self</span>.<span class="ident">inbound_tcp_vertex_internal</span>(<span class="prelude-val">Some</span>(<span class="ident">port</span>)).<span class="kw">await</span>.<span class="number">1</span>
-    }
+        <span class="self">self</span>.inbound_tcp_vertex_internal(<span class="prelude-val">Some</span>(port)).<span class="kw">await</span>.<span class="number">1
+    </span>}
 
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">inbound_tcp_vertex</span>&lt;<span class="ident">T</span>&gt;(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; (<span class="ident">u16</span>, <span class="ident">RecvPort</span>&lt;<span class="ident">VecHandoff</span>&lt;<span class="ident">T</span>&gt;&gt;)
-    <span class="kw">where</span>
-        <span class="ident">T</span>: <span class="lifetime">&#39;static</span> + <span class="ident">DeserializeOwned</span> + <span class="ident">Send</span>,
+    <span class="kw">pub async fn </span>inbound_tcp_vertex&lt;T&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; (u16, RecvPort&lt;VecHandoff&lt;T&gt;&gt;)
+    <span class="kw">where
+        </span>T: <span class="lifetime">&#39;static </span>+ DeserializeOwned + Send,
     {
-        <span class="self">self</span>.<span class="ident">inbound_tcp_vertex_internal</span>(<span class="prelude-val">None</span>).<span class="kw">await</span>
-    }
-    <span class="comment">// TODO(justin): this needs to return a result/get rid of all the unwraps, I</span>
-    <span class="comment">// guess we need a HydroflowError?</span>
-    <span class="doccomment">/// Begins listening on some TCP port. Returns an [OutputPort] representing</span>
-    <span class="doccomment">/// the stream of messages received. Currently there is no notion of</span>
-    <span class="doccomment">/// identity to the connections received, if they are to be attached to some</span>
-    <span class="doccomment">/// participant in the system, that needs to be included in the message</span>
-    <span class="doccomment">/// directly.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// The messages will be interpreted to be bincode-encoded, length-delimited</span>
-    <span class="doccomment">/// messages, as produced by [Self::outbound_tcp_vertex].</span>
-    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">inbound_tcp_vertex_internal</span>&lt;<span class="ident">T</span>&gt;(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">port</span>: <span class="prelude-ty">Option</span>&lt;<span class="ident">u16</span>&gt;,
-    ) -&gt; (<span class="ident">u16</span>, <span class="ident">RecvPort</span>&lt;<span class="ident">VecHandoff</span>&lt;<span class="ident">T</span>&gt;&gt;)
-    <span class="kw">where</span>
-        <span class="ident">T</span>: <span class="lifetime">&#39;static</span> + <span class="ident">DeserializeOwned</span> + <span class="ident">Send</span>,
+        <span class="self">self</span>.inbound_tcp_vertex_internal(<span class="prelude-val">None</span>).<span class="kw">await
+    </span>}
+    <span class="comment">// TODO(justin): this needs to return a result/get rid of all the unwraps, I
+    // guess we need a HydroflowError?
+    </span><span class="doccomment">/// Begins listening on some TCP port. Returns an [OutputPort] representing
+    /// the stream of messages received. Currently there is no notion of
+    /// identity to the connections received, if they are to be attached to some
+    /// participant in the system, that needs to be included in the message
+    /// directly.
+    ///
+    /// The messages will be interpreted to be bincode-encoded, length-delimited
+    /// messages, as produced by [Self::outbound_tcp_vertex].
+    </span><span class="kw">async fn </span>inbound_tcp_vertex_internal&lt;T&gt;(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        port: <span class="prelude-ty">Option</span>&lt;u16&gt;,
+    ) -&gt; (u16, RecvPort&lt;VecHandoff&lt;T&gt;&gt;)
+    <span class="kw">where
+        </span>T: <span class="lifetime">&#39;static </span>+ DeserializeOwned + Send,
     {
-        <span class="kw">let</span> <span class="ident">listener</span> = <span class="ident">TcpListener::bind</span>(<span class="macro">format!</span>(<span class="string">&quot;localhost:{}&quot;</span>, <span class="ident">port</span>.<span class="ident">unwrap_or</span>(<span class="number">0</span>)))
-            .<span class="kw">await</span>
-            .<span class="ident">unwrap</span>();
-        <span class="kw">let</span> <span class="ident">port</span> = <span class="ident">listener</span>.<span class="ident">local_addr</span>().<span class="ident">unwrap</span>().<span class="ident">port</span>();
+        <span class="kw">let </span>listener = TcpListener::bind(<span class="macro">format!</span>(<span class="string">&quot;localhost:{}&quot;</span>, port.unwrap_or(<span class="number">0</span>)))
+            .<span class="kw">await
+            </span>.unwrap();
+        <span class="kw">let </span>port = listener.local_addr().unwrap().port();
 
-        <span class="comment">// TODO(justin): figure out an appropriate buffer here.</span>
-        <span class="kw">let</span> (<span class="ident">incoming_send</span>, <span class="ident">incoming_messages</span>) = <span class="ident">futures::channel::mpsc::channel</span>(<span class="number">1024</span>);
+        <span class="comment">// TODO(justin): figure out an appropriate buffer here.
+        </span><span class="kw">let </span>(incoming_send, incoming_messages) = futures::channel::mpsc::channel(<span class="number">1024</span>);
 
-        <span class="comment">// Listen to incoming connections and spawn a tokio task for each one,</span>
-        <span class="comment">// which feeds into the channel.</span>
-        <span class="comment">// TODO(justin): give some way to get a handle into this thing.</span>
-        <span class="ident">tokio::spawn</span>(<span class="kw">async</span> <span class="kw">move</span> {
-            <span class="kw">loop</span> {
-                <span class="kw">let</span> (<span class="ident">socket</span>, <span class="kw">_</span>) = <span class="ident">listener</span>.<span class="ident">accept</span>().<span class="kw">await</span>.<span class="ident">unwrap</span>();
-                <span class="kw">let</span> (<span class="ident">reader</span>, <span class="kw">_</span>) = <span class="ident">socket</span>.<span class="ident">into_split</span>();
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">reader</span> = <span class="ident">FramedRead::new</span>(<span class="ident">reader</span>, <span class="ident">LengthDelimitedCodec::new</span>());
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">incoming_send</span> = <span class="ident">incoming_send</span>.<span class="ident">clone</span>();
-                <span class="ident">tokio::spawn</span>(<span class="kw">async</span> <span class="kw">move</span> {
-                    <span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">msg</span>) = <span class="ident">reader</span>.<span class="ident">next</span>().<span class="kw">await</span> {
-                        <span class="comment">// TODO(justin): figure out error handling here.</span>
-                        <span class="kw">let</span> <span class="ident">msg</span> = <span class="ident">msg</span>.<span class="ident">unwrap</span>();
-                        <span class="kw">let</span> <span class="ident">out</span> = <span class="ident">bincode::deserialize</span>(<span class="kw-2">&amp;</span><span class="ident">msg</span>).<span class="ident">unwrap</span>();
-                        <span class="ident">incoming_send</span>.<span class="ident">send</span>(<span class="ident">out</span>).<span class="kw">await</span>.<span class="ident">unwrap</span>();
+        <span class="comment">// Listen to incoming connections and spawn a tokio task for each one,
+        // which feeds into the channel.
+        // TODO(justin): give some way to get a handle into this thing.
+        </span>tokio::spawn(<span class="kw">async move </span>{
+            <span class="kw">loop </span>{
+                <span class="kw">let </span>(socket, <span class="kw">_</span>) = listener.accept().<span class="kw">await</span>.unwrap();
+                <span class="kw">let </span>(reader, <span class="kw">_</span>) = socket.into_split();
+                <span class="kw">let </span><span class="kw-2">mut </span>reader = FramedRead::new(reader, LengthDelimitedCodec::new());
+                <span class="kw">let </span><span class="kw-2">mut </span>incoming_send = incoming_send.clone();
+                tokio::spawn(<span class="kw">async move </span>{
+                    <span class="kw">while let </span><span class="prelude-val">Some</span>(msg) = reader.next().<span class="kw">await </span>{
+                        <span class="comment">// TODO(justin): figure out error handling here.
+                        </span><span class="kw">let </span>msg = msg.unwrap();
+                        <span class="kw">let </span>out = bincode::deserialize(<span class="kw-2">&amp;</span>msg).unwrap();
+                        incoming_send.send(out).<span class="kw">await</span>.unwrap();
                     }
-                    <span class="comment">// TODO(justin): The connection is closed, so we should</span>
-                    <span class="comment">// clean up its metadata.</span>
-                });
+                    <span class="comment">// TODO(justin): The connection is closed, so we should
+                    // clean up its metadata.
+                </span>});
             }
         });
 
-        <span class="kw">let</span> (<span class="ident">send_port</span>, <span class="ident">recv_port</span>) = <span class="self">self</span>.<span class="ident">make_edge</span>(<span class="string">&quot;tcp ingress handoff&quot;</span>);
-        <span class="self">self</span>.<span class="ident">add_input_from_stream</span>(<span class="string">&quot;tcp ingress stream&quot;</span>, <span class="ident">send_port</span>, <span class="ident">incoming_messages</span>.<span class="ident">map</span>(<span class="prelude-val">Some</span>));
+        <span class="kw">let </span>(send_port, recv_port) = <span class="self">self</span>.make_edge(<span class="string">&quot;tcp ingress handoff&quot;</span>);
+        <span class="self">self</span>.add_input_from_stream(<span class="string">&quot;tcp ingress stream&quot;</span>, send_port, incoming_messages.map(<span class="prelude-val">Some</span>));
 
-        (<span class="ident">port</span>, <span class="ident">recv_port</span>)
+        (port, recv_port)
     }
 
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">outbound_tcp_vertex</span>&lt;<span class="ident">T</span>&gt;(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="ident">SendPort</span>&lt;<span class="ident">VecHandoff</span>&lt;(<span class="ident">Address</span>, <span class="ident">T</span>)&gt;&gt;
-    <span class="kw">where</span>
-        <span class="ident">T</span>: <span class="lifetime">&#39;static</span> + <span class="ident">Serialize</span> + <span class="ident">Send</span>,
+    <span class="kw">pub async fn </span>outbound_tcp_vertex&lt;T&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; SendPort&lt;VecHandoff&lt;(Address, T)&gt;&gt;
+    <span class="kw">where
+        </span>T: <span class="lifetime">&#39;static </span>+ Serialize + Send,
     {
-        <span class="kw">let</span> (<span class="kw-2">mut</span> <span class="ident">connection_reqs_send</span>, <span class="kw-2">mut</span> <span class="ident">connection_reqs_recv</span>) =
-            <span class="ident">futures::channel::mpsc::channel</span>(<span class="number">1024</span>);
-        <span class="kw">let</span> (<span class="kw-2">mut</span> <span class="ident">connections_send</span>, <span class="kw-2">mut</span> <span class="ident">connections_recv</span>) = <span class="ident">futures::channel::mpsc::channel</span>(<span class="number">1024</span>);
+        <span class="kw">let </span>(<span class="kw-2">mut </span>connection_reqs_send, <span class="kw-2">mut </span>connection_reqs_recv) =
+            futures::channel::mpsc::channel(<span class="number">1024</span>);
+        <span class="kw">let </span>(<span class="kw-2">mut </span>connections_send, <span class="kw-2">mut </span>connections_recv) = futures::channel::mpsc::channel(<span class="number">1024</span>);
 
-        <span class="comment">// TODO(justin): handle errors here.</span>
-        <span class="comment">// Spawn an actor which establishes connections.</span>
-        <span class="ident">tokio::spawn</span>(<span class="kw">async</span> <span class="kw">move</span> {
-            <span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">addr</span>) = <span class="ident">connection_reqs_recv</span>.<span class="ident">next</span>().<span class="kw">await</span> {
-                <span class="kw">let</span> <span class="ident">addr</span>: <span class="ident">Address</span> = <span class="ident">addr</span>;
-                <span class="ident">connections_send</span>
-                    .<span class="ident">send</span>((<span class="ident">addr</span>.<span class="ident">clone</span>(), <span class="ident">TcpStream::connect</span>(<span class="ident">addr</span>.<span class="ident">clone</span>()).<span class="kw">await</span>))
-                    .<span class="kw">await</span>
-                    .<span class="ident">unwrap</span>();
+        <span class="comment">// TODO(justin): handle errors here.
+        // Spawn an actor which establishes connections.
+        </span>tokio::spawn(<span class="kw">async move </span>{
+            <span class="kw">while let </span><span class="prelude-val">Some</span>(addr) = connection_reqs_recv.next().<span class="kw">await </span>{
+                <span class="kw">let </span>addr: Address = addr;
+                connections_send
+                    .send((addr.clone(), TcpStream::connect(addr.clone()).<span class="kw">await</span>))
+                    .<span class="kw">await
+                    </span>.unwrap();
             }
         });
 
-        <span class="kw">enum</span> <span class="ident">ConnStatus</span>&lt;<span class="ident">T</span>&gt; {
-            <span class="ident">Pending</span>(<span class="ident">Vec</span>&lt;<span class="ident">T</span>&gt;),
-            <span class="ident">Connected</span>(<span class="ident">FramedWrite</span>&lt;<span class="ident">TcpStream</span>, <span class="ident">LengthDelimitedCodec</span>&gt;),
+        <span class="kw">enum </span>ConnStatus&lt;T&gt; {
+            Pending(Vec&lt;T&gt;),
+            Connected(FramedWrite&lt;TcpStream, LengthDelimitedCodec&gt;),
         }
 
-        <span class="kw">let</span> (<span class="kw-2">mut</span> <span class="ident">outbound_messages_send</span>, <span class="kw-2">mut</span> <span class="ident">outbound_messages_recv</span>) =
-            <span class="ident">futures::channel::mpsc::channel</span>(<span class="number">1024</span>);
-        <span class="ident">tokio::spawn</span>(<span class="kw">async</span> <span class="kw">move</span> {
-            <span class="comment">// TODO(justin): this cache should be global to the entire Hydroflow</span>
-            <span class="comment">// instance so we can reuse connections from inbound connections.</span>
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">connections</span> = <span class="ident">HashMap</span>::&lt;<span class="ident">Address</span>, <span class="ident">ConnStatus</span>&lt;<span class="ident">T</span>&gt;&gt;<span class="ident">::new</span>();
+        <span class="kw">let </span>(<span class="kw-2">mut </span>outbound_messages_send, <span class="kw-2">mut </span>outbound_messages_recv) =
+            futures::channel::mpsc::channel(<span class="number">1024</span>);
+        tokio::spawn(<span class="kw">async move </span>{
+            <span class="comment">// TODO(justin): this cache should be global to the entire Hydroflow
+            // instance so we can reuse connections from inbound connections.
+            </span><span class="kw">let </span><span class="kw-2">mut </span>connections = HashMap::&lt;Address, ConnStatus&lt;T&gt;&gt;::new();
 
-            <span class="kw">loop</span> {
+            <span class="kw">loop </span>{
                 <span class="macro">tokio::select!</span> {
-                    <span class="prelude-val">Some</span>((<span class="ident">addr</span>, <span class="ident">msg</span>)) = <span class="ident">outbound_messages_recv</span>.<span class="ident">next</span>() =&gt; {
-                        <span class="kw">let</span> <span class="ident">addr</span>: <span class="ident">Address</span> = <span class="ident">addr</span>;
-                        <span class="kw">let</span> <span class="ident">msg</span>: <span class="ident">T</span> = <span class="ident">msg</span>;
-                        <span class="kw">match</span> <span class="ident">connections</span>.<span class="ident">get_mut</span>(<span class="kw-2">&amp;</span><span class="ident">addr</span>) {
-                            <span class="prelude-val">None</span> =&gt; {
-                                <span class="comment">// We have not seen this address before, open a</span>
-                                <span class="comment">// connection to it and buffer the message to be</span>
-                                <span class="comment">// sent once it&#39;s open.</span>
+                    <span class="prelude-val">Some</span>((addr, msg)) = outbound_messages_recv.next() =&gt; {
+                        <span class="kw">let </span>addr: Address = addr;
+                        <span class="kw">let </span>msg: T = msg;
+                        <span class="kw">match </span>connections.get_mut(<span class="kw-2">&amp;</span>addr) {
+                            <span class="prelude-val">None </span>=&gt; {
+                                <span class="comment">// We have not seen this address before, open a
+                                // connection to it and buffer the message to be
+                                // sent once it&#39;s open.
 
-                                <span class="comment">// TODO(justin): what do we do if the buffer is full here?</span>
-                                <span class="ident">connection_reqs_send</span>.<span class="ident">try_send</span>(<span class="ident">addr</span>.<span class="ident">clone</span>()).<span class="ident">unwrap</span>();
-                                <span class="ident">connections</span>.<span class="ident">insert</span>(<span class="ident">addr</span>, <span class="ident">ConnStatus::Pending</span>(<span class="macro">vec!</span>[<span class="ident">msg</span>]));
+                                // TODO(justin): what do we do if the buffer is full here?
+                                </span>connection_reqs_send.try_send(addr.clone()).unwrap();
+                                connections.insert(addr, ConnStatus::Pending(<span class="macro">vec!</span>[msg]));
                             }
-                            <span class="prelude-val">Some</span>(<span class="ident">ConnStatus::Pending</span>(<span class="ident">msgs</span>)) =&gt; {
-                                <span class="comment">// We have seen this address before but we&#39;re</span>
-                                <span class="comment">// still trying to connect to it, so buffer this</span>
-                                <span class="comment">// message so that when we _do_ connect we will</span>
-                                <span class="comment">// send it.</span>
-                                <span class="ident">msgs</span>.<span class="ident">push</span>(<span class="ident">msg</span>);
+                            <span class="prelude-val">Some</span>(ConnStatus::Pending(msgs)) =&gt; {
+                                <span class="comment">// We have seen this address before but we&#39;re
+                                // still trying to connect to it, so buffer this
+                                // message so that when we _do_ connect we will
+                                // send it.
+                                </span>msgs.push(msg);
                             }
-                            <span class="prelude-val">Some</span>(<span class="ident">ConnStatus::Connected</span>(<span class="ident">conn</span>)) =&gt; {
-                                <span class="comment">// TODO(justin): move the actual sending here</span>
-                                <span class="comment">// into a different task so we don&#39;t have to</span>
-                                <span class="comment">// wait for the send.</span>
-                                <span class="kw">let</span> <span class="ident">msg</span> = <span class="ident">bincode::serialize</span>(<span class="kw-2">&amp;</span><span class="ident">msg</span>).<span class="ident">unwrap</span>();
-                                <span class="ident">conn</span>.<span class="ident">send</span>(<span class="ident">msg</span>.<span class="ident">into</span>()).<span class="kw">await</span>.<span class="ident">unwrap</span>();
+                            <span class="prelude-val">Some</span>(ConnStatus::Connected(conn)) =&gt; {
+                                <span class="comment">// TODO(justin): move the actual sending here
+                                // into a different task so we don&#39;t have to
+                                // wait for the send.
+                                </span><span class="kw">let </span>msg = bincode::serialize(<span class="kw-2">&amp;</span>msg).unwrap();
+                                conn.send(msg.into()).<span class="kw">await</span>.unwrap();
                             }
                         }
                     },
 
-                    <span class="prelude-val">Some</span>((<span class="ident">addr</span>, <span class="ident">conn</span>)) = <span class="ident">connections_recv</span>.<span class="ident">next</span>() =&gt; {
-                        <span class="kw">match</span> <span class="ident">conn</span> {
-                            <span class="prelude-val">Ok</span>(<span class="ident">conn</span>) =&gt; {
-                                <span class="kw">match</span> <span class="ident">connections</span>.<span class="ident">get_mut</span>(<span class="kw-2">&amp;</span><span class="ident">addr</span>) {
-                                    <span class="prelude-val">Some</span>(<span class="ident">ConnStatus::Pending</span>(<span class="ident">msgs</span>)) =&gt; {
-                                        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">conn</span> = <span class="ident">FramedWrite::new</span>(<span class="ident">conn</span>, <span class="ident">LengthDelimitedCodec::new</span>());
-                                        <span class="kw">for</span> <span class="ident">msg</span> <span class="kw">in</span> <span class="ident">msgs</span>.<span class="ident">drain</span>(..) {
-                                            <span class="comment">// TODO(justin): move the actual sending here</span>
-                                            <span class="comment">// into a different task so we don&#39;t have to</span>
-                                            <span class="comment">// wait for the send.</span>
-                                            <span class="kw">let</span> <span class="ident">msg</span> = <span class="ident">bincode::serialize</span>(<span class="kw-2">&amp;</span><span class="ident">msg</span>).<span class="ident">unwrap</span>();
-                                            <span class="ident">conn</span>.<span class="ident">send</span>(<span class="ident">msg</span>.<span class="ident">into</span>()).<span class="kw">await</span>.<span class="ident">unwrap</span>();
+                    <span class="prelude-val">Some</span>((addr, conn)) = connections_recv.next() =&gt; {
+                        <span class="kw">match </span>conn {
+                            <span class="prelude-val">Ok</span>(conn) =&gt; {
+                                <span class="kw">match </span>connections.get_mut(<span class="kw-2">&amp;</span>addr) {
+                                    <span class="prelude-val">Some</span>(ConnStatus::Pending(msgs)) =&gt; {
+                                        <span class="kw">let </span><span class="kw-2">mut </span>conn = FramedWrite::new(conn, LengthDelimitedCodec::new());
+                                        <span class="kw">for </span>msg <span class="kw">in </span>msgs.drain(..) {
+                                            <span class="comment">// TODO(justin): move the actual sending here
+                                            // into a different task so we don&#39;t have to
+                                            // wait for the send.
+                                            </span><span class="kw">let </span>msg = bincode::serialize(<span class="kw-2">&amp;</span>msg).unwrap();
+                                            conn.send(msg.into()).<span class="kw">await</span>.unwrap();
                                         }
-                                        <span class="ident">connections</span>.<span class="ident">insert</span>(<span class="ident">addr</span>, <span class="ident">ConnStatus::Connected</span>(<span class="ident">conn</span>));
+                                        connections.insert(addr, ConnStatus::Connected(conn));
                                     }
-                                    <span class="prelude-val">None</span> =&gt; {
-                                        <span class="comment">// This means nobody ever requested this</span>
-                                        <span class="comment">// connection, so we shouldn&#39;t have initiated it</span>
-                                        <span class="comment">// in the first place.</span>
-                                        <span class="macro">unreachable!</span>()
+                                    <span class="prelude-val">None </span>=&gt; {
+                                        <span class="comment">// This means nobody ever requested this
+                                        // connection, so we shouldn&#39;t have initiated it
+                                        // in the first place.
+                                        </span><span class="macro">unreachable!</span>()
                                     }
-                                    <span class="prelude-val">Some</span>(<span class="ident">ConnStatus::Connected</span>(<span class="ident">_tcp</span>)) =&gt; {
-                                        <span class="comment">// This means we were already connected, so we</span>
-                                        <span class="comment">// shouldn&#39;t have connected again. If the</span>
-                                        <span class="comment">// connection cache becomes shared this could</span>
-                                        <span class="comment">// become reachable.</span>
-                                        <span class="macro">unreachable!</span>()
+                                    <span class="prelude-val">Some</span>(ConnStatus::Connected(_tcp)) =&gt; {
+                                        <span class="comment">// This means we were already connected, so we
+                                        // shouldn&#39;t have connected again. If the
+                                        // connection cache becomes shared this could
+                                        // become reachable.
+                                        </span><span class="macro">unreachable!</span>()
                                     }
                                 }
                             }
-                            <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
-                                <span class="comment">// We couldn&#39;t connect to the address for some</span>
-                                <span class="comment">// reason.</span>
-                                <span class="comment">// TODO(justin): once we have a clearer picture</span>
-                                <span class="comment">// of error handling, we could do something like</span>
-                                <span class="comment">// send this error along a pipe to be handled by</span>
-                                <span class="comment">// someone else. For now, just log it and drop</span>
-                                <span class="comment">// any pending messages.</span>
-                                <span class="macro">eprintln!</span>(<span class="string">&quot;couldn&#39;t connect to {}: {}&quot;</span>, <span class="ident">addr</span>, <span class="ident">e</span>);
-                                <span class="ident">connections</span>.<span class="ident">remove</span>(<span class="kw-2">&amp;</span><span class="ident">addr</span>);
+                            <span class="prelude-val">Err</span>(e) =&gt; {
+                                <span class="comment">// We couldn&#39;t connect to the address for some
+                                // reason.
+                                // TODO(justin): once we have a clearer picture
+                                // of error handling, we could do something like
+                                // send this error along a pipe to be handled by
+                                // someone else. For now, just log it and drop
+                                // any pending messages.
+                                </span><span class="macro">eprintln!</span>(<span class="string">&quot;couldn&#39;t connect to {}: {}&quot;</span>, addr, e);
+                                connections.remove(<span class="kw-2">&amp;</span>addr);
                             }
                         }
                     },
-                    <span class="kw">else</span> =&gt; <span class="kw">break</span>,
+                    <span class="kw">else </span>=&gt; <span class="kw">break</span>,
                 }
             }
         });
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buffered_messages</span> = <span class="ident">Vec::new</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">next_messages</span> = <span class="ident">Vec::new</span>();
-        <span class="kw">let</span> (<span class="ident">input_port</span>, <span class="ident">output_port</span>) = <span class="self">self</span>.<span class="ident">make_edge</span>(<span class="string">&quot;tcp egress handoff&quot;</span>);
-        <span class="self">self</span>.<span class="ident">add_subgraph_sink</span>(<span class="string">&quot;tcp egress stream&quot;</span>, <span class="ident">output_port</span>, <span class="kw">move</span> |<span class="ident">_ctx</span>, <span class="ident">recv</span>| {
-            <span class="ident">buffered_messages</span>.<span class="ident">extend</span>(<span class="ident">recv</span>.<span class="ident">take_inner</span>());
-            <span class="kw">for</span> <span class="ident">msg</span> <span class="kw">in</span> <span class="ident">buffered_messages</span>.<span class="ident">drain</span>(..) {
-                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>) = <span class="ident">outbound_messages_send</span>.<span class="ident">try_send</span>(<span class="ident">msg</span>) {
-                    <span class="comment">// If we weren&#39;t able to send a message (say, because the</span>
-                    <span class="comment">// buffer is full), we get handed it back in the error. If</span>
-                    <span class="comment">// this happens we hang onto the message to try sending it</span>
-                    <span class="comment">// again next time.</span>
-                    <span class="ident">next_messages</span>.<span class="ident">push</span>(<span class="ident">e</span>.<span class="ident">into_inner</span>());
+        <span class="kw">let </span><span class="kw-2">mut </span>buffered_messages = Vec::new();
+        <span class="kw">let </span><span class="kw-2">mut </span>next_messages = Vec::new();
+        <span class="kw">let </span>(input_port, output_port) = <span class="self">self</span>.make_edge(<span class="string">&quot;tcp egress handoff&quot;</span>);
+        <span class="self">self</span>.add_subgraph_sink(<span class="string">&quot;tcp egress stream&quot;</span>, output_port, <span class="kw">move </span>|_ctx, recv| {
+            buffered_messages.extend(recv.take_inner());
+            <span class="kw">for </span>msg <span class="kw">in </span>buffered_messages.drain(..) {
+                <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = outbound_messages_send.try_send(msg) {
+                    <span class="comment">// If we weren&#39;t able to send a message (say, because the
+                    // buffer is full), we get handed it back in the error. If
+                    // this happens we hang onto the message to try sending it
+                    // again next time.
+                    </span>next_messages.push(e.into_inner());
                 }
             }
 
-            <span class="comment">// NB. we don&#39;t need to flush the channel here due to the use of</span>
-            <span class="comment">// `try_send`.  It&#39;s guaranteed that there was space for the</span>
-            <span class="comment">// messages and that they were sent.</span>
+            <span class="comment">// NB. we don&#39;t need to flush the channel here due to the use of
+            // `try_send`.  It&#39;s guaranteed that there was space for the
+            // messages and that they were sent.
 
-            <span class="comment">// TODO(justin): we do need to make sure we get rescheduled if</span>
-            <span class="comment">// next_messages is empty here.</span>
+            // TODO(justin): we do need to make sure we get rescheduled if
+            // next_messages is empty here.
 
-            <span class="ident">std::mem::swap</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buffered_messages</span>, <span class="kw-2">&amp;mut</span> <span class="ident">next_messages</span>);
+            </span>std::mem::swap(<span class="kw-2">&amp;mut </span>buffered_messages, <span class="kw-2">&amp;mut </span>next_messages);
         });
 
-        <span class="ident">input_port</span>
+        input_port
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (75b7e52e9 2022-08-13)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

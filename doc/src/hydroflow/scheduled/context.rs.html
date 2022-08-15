@@ -110,117 +110,117 @@
 <span id="110">110</span>
 <span id="111">111</span>
 <span id="112">112</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">any::Any</span>, <span class="ident">marker::PhantomData</span>};
+</pre><pre class="rust"><code><span class="kw">use </span>std::{any::Any, marker::PhantomData};
 
-<span class="kw">use</span> <span class="ident">tokio::sync::mpsc::UnboundedSender</span>;
+<span class="kw">use </span>tokio::sync::mpsc::UnboundedSender;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::graph</span>::{<span class="ident">HandoffData</span>, <span class="ident">StateData</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::state::StateHandle</span>;
-<span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">StateId</span>, <span class="ident">SubgraphId</span>};
+<span class="kw">use </span><span class="kw">super</span>::graph::{HandoffData, StateData};
+<span class="kw">use </span><span class="kw">super</span>::state::StateHandle;
+<span class="kw">use super</span>::{StateId, SubgraphId};
 
-<span class="doccomment">/// The main state of the Hydroflow instance, which is provided as a reference</span>
-<span class="doccomment">/// to each operator as it is run.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// As an optimization, each Hydroflow instances stores eactly one Context</span>
-<span class="doccomment">/// inline, which allows us to avoid any construction/deconstruction costs.</span>
-<span class="doccomment">/// Before the `Context` is provided to a running operator, the `subgraph_id`</span>
-<span class="doccomment">/// field must be updated.</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Context</span> {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">handoffs</span>: <span class="ident">Vec</span>&lt;<span class="ident">HandoffData</span>&gt;,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">states</span>: <span class="ident">Vec</span>&lt;<span class="ident">StateData</span>&gt;,
+<span class="doccomment">/// The main state of the Hydroflow instance, which is provided as a reference
+/// to each operator as it is run.
+///
+/// As an optimization, each Hydroflow instances stores eactly one Context
+/// inline, which allows us to avoid any construction/deconstruction costs.
+/// Before the `Context` is provided to a running operator, the `subgraph_id`
+/// field must be updated.
+</span><span class="kw">pub struct </span>Context {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) handoffs: Vec&lt;HandoffData&gt;,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) states: Vec&lt;StateData&gt;,
 
-    <span class="comment">// TODO(mingwei): as long as this is here, it&#39;s impossible to know when all work is done.</span>
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">event_queue_send</span>: <span class="ident">UnboundedSender</span>&lt;<span class="ident">SubgraphId</span>&gt;,
+    <span class="comment">// TODO(mingwei): as long as this is here, it&#39;s impossible to know when all work is done.
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) event_queue_send: UnboundedSender&lt;SubgraphId&gt;,
 
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">current_epoch</span>: <span class="ident">usize</span>,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">current_stratum</span>: <span class="ident">usize</span>,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) current_epoch: usize,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) current_stratum: usize,
 
-    <span class="doccomment">/// The SubgraphId of the currently running operator. When this context is</span>
-    <span class="doccomment">/// not being forwarded to a running operator, this field is (mostly)</span>
-    <span class="doccomment">/// meaningless.</span>
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">subgraph_id</span>: <span class="ident">SubgraphId</span>,
+    <span class="doccomment">/// The SubgraphId of the currently running operator. When this context is
+    /// not being forwarded to a running operator, this field is (mostly)
+    /// meaningless.
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) subgraph_id: SubgraphId,
 }
-<span class="kw">impl</span> <span class="ident">Context</span> {
-    <span class="doccomment">/// Gets the current epoch (local time) count.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">current_epoch</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
-        <span class="self">self</span>.<span class="ident">current_epoch</span>
+<span class="kw">impl </span>Context {
+    <span class="doccomment">/// Gets the current epoch (local time) count.
+    </span><span class="kw">pub fn </span>current_epoch(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        <span class="self">self</span>.current_epoch
     }
 
-    <span class="doccomment">/// Gets the current stratum nubmer.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">current_stratum</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
-        <span class="self">self</span>.<span class="ident">current_stratum</span>
+    <span class="doccomment">/// Gets the current stratum nubmer.
+    </span><span class="kw">pub fn </span>current_stratum(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        <span class="self">self</span>.current_stratum
     }
 
-    <span class="doccomment">/// Schedules a subgraph.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">schedule_subgraph</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">sg_id</span>: <span class="ident">SubgraphId</span>) {
-        <span class="self">self</span>.<span class="ident">event_queue_send</span>.<span class="ident">send</span>(<span class="ident">sg_id</span>).<span class="ident">unwrap</span>()
+    <span class="doccomment">/// Schedules a subgraph.
+    </span><span class="kw">pub fn </span>schedule_subgraph(<span class="kw-2">&amp;</span><span class="self">self</span>, sg_id: SubgraphId) {
+        <span class="self">self</span>.event_queue_send.send(sg_id).unwrap()
     }
 
-    <span class="doccomment">/// Returns a `Waker` for interacting with async Rust.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">waker</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">std::task::Waker</span> {
-        <span class="kw">use</span> <span class="ident">futures::task::ArcWake</span>;
-        <span class="kw">use</span> <span class="ident">std::sync::Arc</span>;
+    <span class="doccomment">/// Returns a `Waker` for interacting with async Rust.
+    </span><span class="kw">pub fn </span>waker(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; std::task::Waker {
+        <span class="kw">use </span>futures::task::ArcWake;
+        <span class="kw">use </span>std::sync::Arc;
 
-        <span class="kw">struct</span> <span class="ident">ContextWaker</span> {
-            <span class="ident">subgraph_id</span>: <span class="ident">SubgraphId</span>,
-            <span class="ident">event_queue_send</span>: <span class="ident">UnboundedSender</span>&lt;<span class="ident">SubgraphId</span>&gt;,
+        <span class="kw">struct </span>ContextWaker {
+            subgraph_id: SubgraphId,
+            event_queue_send: UnboundedSender&lt;SubgraphId&gt;,
         }
-        <span class="kw">impl</span> <span class="ident">ArcWake</span> <span class="kw">for</span> <span class="ident">ContextWaker</span> {
-            <span class="kw">fn</span> <span class="ident">wake_by_ref</span>(<span class="ident">arc_self</span>: <span class="kw-2">&amp;</span><span class="ident">Arc</span>&lt;<span class="self">Self</span>&gt;) {
-                <span class="kw">let</span> <span class="ident">_recv_closed_error</span> = <span class="ident">arc_self</span>.<span class="ident">event_queue_send</span>.<span class="ident">send</span>(<span class="ident">arc_self</span>.<span class="ident">subgraph_id</span>);
+        <span class="kw">impl </span>ArcWake <span class="kw">for </span>ContextWaker {
+            <span class="kw">fn </span>wake_by_ref(arc_self: <span class="kw-2">&amp;</span>Arc&lt;<span class="self">Self</span>&gt;) {
+                <span class="kw">let </span>_recv_closed_error = arc_self.event_queue_send.send(arc_self.subgraph_id);
             }
         }
 
-        <span class="kw">let</span> <span class="ident">context_waker</span> = <span class="ident">ContextWaker</span> {
-            <span class="ident">subgraph_id</span>: <span class="self">self</span>.<span class="ident">subgraph_id</span>,
-            <span class="ident">event_queue_send</span>: <span class="self">self</span>.<span class="ident">event_queue_send</span>.<span class="ident">clone</span>(),
+        <span class="kw">let </span>context_waker = ContextWaker {
+            subgraph_id: <span class="self">self</span>.subgraph_id,
+            event_queue_send: <span class="self">self</span>.event_queue_send.clone(),
         };
-        <span class="ident">futures::task::waker</span>(<span class="ident">Arc::new</span>(<span class="ident">context_waker</span>))
+        futures::task::waker(Arc::new(context_waker))
     }
 
-    <span class="doccomment">/// Returns a shared reference to the state.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">state_ref</span>&lt;<span class="ident">T</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">handle</span>: <span class="ident">StateHandle</span>&lt;<span class="ident">T</span>&gt;) -&gt; <span class="kw-2">&amp;</span><span class="ident">T</span>
-    <span class="kw">where</span>
-        <span class="ident">T</span>: <span class="ident">Any</span>,
+    <span class="doccomment">/// Returns a shared reference to the state.
+    </span><span class="kw">pub fn </span>state_ref&lt;T&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, handle: StateHandle&lt;T&gt;) -&gt; <span class="kw-2">&amp;</span>T
+    <span class="kw">where
+        </span>T: Any,
     {
-        <span class="self">self</span>.<span class="ident">states</span>
-            .<span class="ident">get</span>(<span class="ident">handle</span>.<span class="ident">state_id</span>.<span class="number">0</span>)
-            .<span class="ident">expect</span>(<span class="string">&quot;Failed to find state with given handle.&quot;</span>)
-            .<span class="ident">state</span>
-            .<span class="ident">downcast_ref</span>()
-            .<span class="ident">expect</span>(<span class="string">&quot;StateHandle wrong type T for casting.&quot;</span>)
+        <span class="self">self</span>.states
+            .get(handle.state_id.<span class="number">0</span>)
+            .expect(<span class="string">&quot;Failed to find state with given handle.&quot;</span>)
+            .state
+            .downcast_ref()
+            .expect(<span class="string">&quot;StateHandle wrong type T for casting.&quot;</span>)
     }
 
-    <span class="doccomment">/// Returns an exclusive reference to the state.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">state_mut</span>&lt;<span class="ident">T</span>&gt;(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">handle</span>: <span class="ident">StateHandle</span>&lt;<span class="ident">T</span>&gt;) -&gt; <span class="kw-2">&amp;mut</span> <span class="ident">T</span>
-    <span class="kw">where</span>
-        <span class="ident">T</span>: <span class="ident">Any</span>,
+    <span class="doccomment">/// Returns an exclusive reference to the state.
+    </span><span class="kw">pub fn </span>state_mut&lt;T&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, handle: StateHandle&lt;T&gt;) -&gt; <span class="kw-2">&amp;mut </span>T
+    <span class="kw">where
+        </span>T: Any,
     {
-        <span class="self">self</span>.<span class="ident">states</span>
-            .<span class="ident">get_mut</span>(<span class="ident">handle</span>.<span class="ident">state_id</span>.<span class="number">0</span>)
-            .<span class="ident">expect</span>(<span class="string">&quot;Failed to find state with given handle.&quot;</span>)
-            .<span class="ident">state</span>
-            .<span class="ident">downcast_mut</span>()
-            .<span class="ident">expect</span>(<span class="string">&quot;StateHandle wrong type T for casting.&quot;</span>)
+        <span class="self">self</span>.states
+            .get_mut(handle.state_id.<span class="number">0</span>)
+            .expect(<span class="string">&quot;Failed to find state with given handle.&quot;</span>)
+            .state
+            .downcast_mut()
+            .expect(<span class="string">&quot;StateHandle wrong type T for casting.&quot;</span>)
     }
 
-    <span class="doccomment">/// Adds state to the context and returns the handle.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">add_state</span>&lt;<span class="ident">T</span>&gt;(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">state</span>: <span class="ident">T</span>) -&gt; <span class="ident">StateHandle</span>&lt;<span class="ident">T</span>&gt;
-    <span class="kw">where</span>
-        <span class="ident">T</span>: <span class="ident">Any</span>,
+    <span class="doccomment">/// Adds state to the context and returns the handle.
+    </span><span class="kw">pub fn </span>add_state&lt;T&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, state: T) -&gt; StateHandle&lt;T&gt;
+    <span class="kw">where
+        </span>T: Any,
     {
-        <span class="kw">let</span> <span class="ident">state_id</span> = <span class="ident">StateId</span>(<span class="self">self</span>.<span class="ident">states</span>.<span class="ident">len</span>());
+        <span class="kw">let </span>state_id = StateId(<span class="self">self</span>.states.len());
 
-        <span class="kw">let</span> <span class="ident">state_data</span> = <span class="ident">StateData</span> {
-            <span class="ident">state</span>: <span class="ident">Box::new</span>(<span class="ident">state</span>),
+        <span class="kw">let </span>state_data = StateData {
+            state: Box::new(state),
         };
-        <span class="self">self</span>.<span class="ident">states</span>.<span class="ident">push</span>(<span class="ident">state_data</span>);
+        <span class="self">self</span>.states.push(state_data);
 
-        <span class="ident">StateHandle</span> {
-            <span class="ident">state_id</span>,
-            <span class="ident">_phantom</span>: <span class="ident">PhantomData</span>,
+        StateHandle {
+            state_id,
+            _phantom: PhantomData,
         }
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (75b7e52e9 2022-08-13)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

@@ -64,71 +64,71 @@
 <span id="64">64</span>
 <span id="65">65</span>
 <span id="66">66</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">Pusherator</span>, <span class="ident">PusheratorBuild</span>};
+</pre><pre class="rust"><code><span class="kw">use super</span>::{Pusherator, PusheratorBuild};
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Pivot</span>&lt;<span class="ident">I</span>, <span class="ident">P</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">Iterator</span>,
-    <span class="ident">P</span>: <span class="ident">Pusherator</span>&lt;<span class="ident">Item</span> = <span class="ident">I::Item</span>&gt;,
+<span class="kw">pub struct </span>Pivot&lt;I, P&gt;
+<span class="kw">where
+    </span>I: Iterator,
+    P: Pusherator&lt;Item = I::Item&gt;,
 {
-    <span class="ident">pull</span>: <span class="ident">I</span>,
-    <span class="ident">push</span>: <span class="ident">P</span>,
+    pull: I,
+    push: P,
 }
-<span class="kw">impl</span>&lt;<span class="ident">I</span>, <span class="ident">P</span>&gt; <span class="ident">Pivot</span>&lt;<span class="ident">I</span>, <span class="ident">P</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">Iterator</span>,
-    <span class="ident">P</span>: <span class="ident">Pusherator</span>&lt;<span class="ident">Item</span> = <span class="ident">I::Item</span>&gt;,
+<span class="kw">impl</span>&lt;I, P&gt; Pivot&lt;I, P&gt;
+<span class="kw">where
+    </span>I: Iterator,
+    P: Pusherator&lt;Item = I::Item&gt;,
 {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">pull</span>: <span class="ident">I</span>, <span class="ident">push</span>: <span class="ident">P</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> { <span class="ident">pull</span>, <span class="ident">push</span> }
+    <span class="kw">pub fn </span>new(pull: I, push: P) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{ pull, push }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">step</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">v</span>) = <span class="self">self</span>.<span class="ident">pull</span>.<span class="ident">next</span>() {
-            <span class="self">self</span>.<span class="ident">push</span>.<span class="ident">give</span>(<span class="ident">v</span>);
-            <span class="bool-val">true</span>
-        } <span class="kw">else</span> {
-            <span class="bool-val">false</span>
+    <span class="kw">pub fn </span>step(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; bool {
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(v) = <span class="self">self</span>.pull.next() {
+            <span class="self">self</span>.push.give(v);
+            <span class="bool-val">true
+        </span>} <span class="kw">else </span>{
+            <span class="bool-val">false
+        </span>}
+    }
+
+    <span class="kw">pub fn </span>run(<span class="kw-2">mut </span><span class="self">self</span>) {
+        <span class="kw">for </span>v <span class="kw">in </span><span class="self">self</span>.pull.by_ref() {
+            <span class="self">self</span>.push.give(v);
         }
     }
+}
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">run</span>(<span class="kw-2">mut</span> <span class="self">self</span>) {
-        <span class="kw">for</span> <span class="ident">v</span> <span class="kw">in</span> <span class="self">self</span>.<span class="ident">pull</span>.<span class="ident">by_ref</span>() {
-            <span class="self">self</span>.<span class="ident">push</span>.<span class="ident">give</span>(<span class="ident">v</span>);
-        }
+<span class="kw">pub struct </span>PivotBuild&lt;I&gt;
+<span class="kw">where
+    </span>I: Iterator,
+{
+    pull: I,
+}
+<span class="kw">impl</span>&lt;I&gt; PivotBuild&lt;I&gt;
+<span class="kw">where
+    </span>I: Iterator,
+{
+    <span class="kw">pub fn </span>new(pull: I) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{ pull }
     }
 }
+<span class="kw">impl</span>&lt;I&gt; PusheratorBuild <span class="kw">for </span>PivotBuild&lt;I&gt;
+<span class="kw">where
+    </span>I: Iterator,
+{
+    <span class="kw">type </span>Item = I::Item;
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">PivotBuild</span>&lt;<span class="ident">I</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">Iterator</span>,
-{
-    <span class="ident">pull</span>: <span class="ident">I</span>,
-}
-<span class="kw">impl</span>&lt;<span class="ident">I</span>&gt; <span class="ident">PivotBuild</span>&lt;<span class="ident">I</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">Iterator</span>,
-{
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">pull</span>: <span class="ident">I</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> { <span class="ident">pull</span> }
-    }
-}
-<span class="kw">impl</span>&lt;<span class="ident">I</span>&gt; <span class="ident">PusheratorBuild</span> <span class="kw">for</span> <span class="ident">PivotBuild</span>&lt;<span class="ident">I</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">Iterator</span>,
-{
-    <span class="kw">type</span> <span class="ident">Item</span> = <span class="ident">I::Item</span>;
-
-    <span class="kw">type</span> <span class="ident">Output</span>&lt;<span class="ident">O</span>: <span class="ident">Pusherator</span>&lt;<span class="ident">Item</span> = <span class="ident"><span class="self">Self</span>::Item</span>&gt;&gt; = <span class="ident">Pivot</span>&lt;<span class="ident">I</span>, <span class="ident">O</span>&gt;;
-    <span class="kw">fn</span> <span class="ident">build</span>&lt;<span class="ident">O</span>&gt;(<span class="self">self</span>, <span class="ident">input</span>: <span class="ident">O</span>) -&gt; <span class="ident"><span class="self">Self</span>::Output</span>&lt;<span class="ident">O</span>&gt;
-    <span class="kw">where</span>
-        <span class="ident">O</span>: <span class="ident">Pusherator</span>&lt;<span class="ident">Item</span> = <span class="ident"><span class="self">Self</span>::Item</span>&gt;,
+    <span class="kw">type </span>Output&lt;O: Pusherator&lt;Item = <span class="self">Self</span>::Item&gt;&gt; = Pivot&lt;I, O&gt;;
+    <span class="kw">fn </span>build&lt;O&gt;(<span class="self">self</span>, input: O) -&gt; <span class="self">Self</span>::Output&lt;O&gt;
+    <span class="kw">where
+        </span>O: Pusherator&lt;Item = <span class="self">Self</span>::Item&gt;,
     {
-        <span class="ident">Pivot</span> {
-            <span class="ident">pull</span>: <span class="self">self</span>.<span class="ident">pull</span>,
-            <span class="ident">push</span>: <span class="ident">input</span>,
+        Pivot {
+            pull: <span class="self">self</span>.pull,
+            push: input,
         }
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (75b7e52e9 2022-08-13)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

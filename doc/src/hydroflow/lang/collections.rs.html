@@ -434,441 +434,441 @@
 <span id="434">434</span>
 <span id="435">435</span>
 <span id="436">436</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::array::IntoIter</span>;
-<span class="kw">use</span> <span class="ident">std::collections</span>::{<span class="ident">BTreeMap</span>, <span class="ident">BTreeSet</span>, <span class="ident">HashMap</span>, <span class="ident">HashSet</span>};
-<span class="kw">use</span> <span class="ident">std::hash::Hash</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>std::array::IntoIter;
+<span class="kw">use </span>std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+<span class="kw">use </span>std::hash::Hash;
 
-<span class="kw">fn</span> <span class="ident">bool_to_option</span>&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="ident">value</span>: <span class="ident">bool</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> ()&gt; {
-    <span class="kw">if</span> <span class="ident">value</span> {
+<span class="kw">fn </span>bool_to_option&lt;<span class="lifetime">&#39;a</span>&gt;(value: bool) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>()&gt; {
+    <span class="kw">if </span>value {
         <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>())
-    } <span class="kw">else</span> {
-        <span class="prelude-val">None</span>
-    }
+    } <span class="kw">else </span>{
+        <span class="prelude-val">None
+    </span>}
 }
-<span class="kw">fn</span> <span class="ident">bool_to_option_mut</span>&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="ident">value</span>: <span class="ident">bool</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> ()&gt; {
-    <span class="kw">if</span> <span class="ident">value</span> {
-        <span class="prelude-val">Some</span>(<span class="ident">Box::leak</span>(<span class="ident">Box::new</span>(())))
-    } <span class="kw">else</span> {
-        <span class="prelude-val">None</span>
-    }
+<span class="kw">fn </span>bool_to_option_mut&lt;<span class="lifetime">&#39;a</span>&gt;(value: bool) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>()&gt; {
+    <span class="kw">if </span>value {
+        <span class="prelude-val">Some</span>(Box::leak(Box::new(())))
+    } <span class="kw">else </span>{
+        <span class="prelude-val">None
+    </span>}
 }
 
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">Collection</span>&lt;<span class="ident">K</span>, <span class="ident">V</span>&gt; {
-    <span class="kw">fn</span> <span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">K</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="ident">V</span>&gt;;
-    <span class="kw">fn</span> <span class="ident">get_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">K</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut</span> <span class="ident">V</span>&gt;;
-    <span class="kw">fn</span> <span class="ident">len</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span>;
-    <span class="kw">fn</span> <span class="ident">is_empty</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="number">0</span> == <span class="self">self</span>.<span class="ident">len</span>()
+<span class="kw">pub trait </span>Collection&lt;K, V&gt; {
+    <span class="kw">fn </span>get(<span class="kw-2">&amp;</span><span class="self">self</span>, key: <span class="kw-2">&amp;</span>K) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>V&gt;;
+    <span class="kw">fn </span>get_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, key: <span class="kw-2">&amp;</span>K) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut </span>V&gt;;
+    <span class="kw">fn </span>len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize;
+    <span class="kw">fn </span>is_empty(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="number">0 </span>== <span class="self">self</span>.len()
     }
 
-    <span class="kw">type</span> <span class="ident">Keys</span>&lt;<span class="lifetime">&#39;s</span>&gt;: <span class="ident">Iterator</span>&lt;<span class="ident">Item</span> = <span class="kw-2">&amp;</span><span class="lifetime">&#39;s</span> <span class="ident">K</span>&gt;
-    <span class="kw">where</span>
-        <span class="ident">K</span>: <span class="lifetime">&#39;s</span>,
+    <span class="kw">type </span>Keys&lt;<span class="lifetime">&#39;s</span>&gt;: Iterator&lt;Item = <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span>K&gt;
+    <span class="kw">where
+        </span>K: <span class="lifetime">&#39;s</span>,
         <span class="self">Self</span>: <span class="lifetime">&#39;s</span>;
-    <span class="kw">fn</span> <span class="ident">keys</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident"><span class="self">Self</span>::Keys</span>&lt;<span class="lifetime">&#39;_</span>&gt;;
+    <span class="kw">fn </span>keys(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Keys&lt;<span class="lifetime">&#39;_</span>&gt;;
 
-    <span class="kw">type</span> <span class="ident">Entries</span>&lt;<span class="lifetime">&#39;s</span>&gt;: <span class="ident">Iterator</span>&lt;<span class="ident">Item</span> = (<span class="kw-2">&amp;</span><span class="lifetime">&#39;s</span> <span class="ident">K</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;s</span> <span class="ident">V</span>)&gt;
-    <span class="kw">where</span>
-        <span class="ident">K</span>: <span class="lifetime">&#39;s</span>,
-        <span class="ident">V</span>: <span class="lifetime">&#39;s</span>,
+    <span class="kw">type </span>Entries&lt;<span class="lifetime">&#39;s</span>&gt;: Iterator&lt;Item = (<span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span>K, <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span>V)&gt;
+    <span class="kw">where
+        </span>K: <span class="lifetime">&#39;s</span>,
+        V: <span class="lifetime">&#39;s</span>,
         <span class="self">Self</span>: <span class="lifetime">&#39;s</span>;
-    <span class="kw">fn</span> <span class="ident">entries</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident"><span class="self">Self</span>::Entries</span>&lt;<span class="lifetime">&#39;_</span>&gt;;
+    <span class="kw">fn </span>entries(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Entries&lt;<span class="lifetime">&#39;_</span>&gt;;
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">K</span>: <span class="lifetime">&#39;static</span> + <span class="ident">Eq</span> + <span class="ident">Hash</span>&gt; <span class="ident">Collection</span>&lt;<span class="ident">K</span>, ()&gt; <span class="kw">for</span> <span class="ident">HashSet</span>&lt;<span class="ident">K</span>&gt; {
-    <span class="kw">fn</span> <span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">K</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>()&gt; {
-        <span class="ident">bool_to_option</span>(<span class="self">self</span>.<span class="ident">contains</span>(<span class="ident">key</span>))
+<span class="kw">impl</span>&lt;K: <span class="lifetime">&#39;static </span>+ Eq + Hash&gt; Collection&lt;K, ()&gt; <span class="kw">for </span>HashSet&lt;K&gt; {
+    <span class="kw">fn </span>get(<span class="kw-2">&amp;</span><span class="self">self</span>, key: <span class="kw-2">&amp;</span>K) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>()&gt; {
+        bool_to_option(<span class="self">self</span>.contains(key))
     }
-    <span class="kw">fn</span> <span class="ident">get_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">K</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut</span> ()&gt; {
-        <span class="ident">bool_to_option_mut</span>(<span class="self">self</span>.<span class="ident">contains</span>(<span class="ident">key</span>))
+    <span class="kw">fn </span>get_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, key: <span class="kw-2">&amp;</span>K) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut </span>()&gt; {
+        bool_to_option_mut(<span class="self">self</span>.contains(key))
     }
-    <span class="kw">fn</span> <span class="ident">len</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
-        <span class="self">self</span>.<span class="ident">len</span>()
-    }
-
-    <span class="kw">type</span> <span class="ident">Keys</span>&lt;<span class="lifetime">&#39;s</span>&gt; = <span class="ident">std::collections::hash_set::Iter</span>&lt;<span class="lifetime">&#39;s</span>, <span class="ident">K</span>&gt;;
-    <span class="kw">fn</span> <span class="ident">keys</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident"><span class="self">Self</span>::Keys</span>&lt;<span class="lifetime">&#39;_</span>&gt; {
-        <span class="self">self</span>.<span class="ident">iter</span>()
+    <span class="kw">fn </span>len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        <span class="self">self</span>.len()
     }
 
-    <span class="kw">type</span> <span class="ident">Entries</span>&lt;<span class="lifetime">&#39;s</span>&gt; = <span class="kw">impl</span> <span class="ident">Iterator</span>&lt;<span class="ident">Item</span> = (<span class="kw-2">&amp;</span><span class="lifetime">&#39;s</span> <span class="ident">K</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;s</span> ())&gt;;
-    <span class="kw">fn</span> <span class="ident">entries</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident"><span class="self">Self</span>::Entries</span>&lt;<span class="lifetime">&#39;_</span>&gt; {
-        <span class="self">self</span>.<span class="ident">keys</span>().<span class="ident">map</span>(|<span class="ident">k</span>| (<span class="ident">k</span>, <span class="kw-2">&amp;</span>()))
-    }
-}
-
-<span class="kw">impl</span>&lt;<span class="ident">K</span>: <span class="lifetime">&#39;static</span> + <span class="ident">Eq</span> + <span class="ident">Ord</span>&gt; <span class="ident">Collection</span>&lt;<span class="ident">K</span>, ()&gt; <span class="kw">for</span> <span class="ident">BTreeSet</span>&lt;<span class="ident">K</span>&gt; {
-    <span class="kw">fn</span> <span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">K</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>()&gt; {
-        <span class="ident">bool_to_option</span>(<span class="self">self</span>.<span class="ident">contains</span>(<span class="ident">key</span>))
-    }
-    <span class="kw">fn</span> <span class="ident">get_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">K</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut</span> ()&gt; {
-        <span class="ident">bool_to_option_mut</span>(<span class="self">self</span>.<span class="ident">contains</span>(<span class="ident">key</span>))
-    }
-    <span class="kw">fn</span> <span class="ident">len</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
-        <span class="self">self</span>.<span class="ident">len</span>()
+    <span class="kw">type </span>Keys&lt;<span class="lifetime">&#39;s</span>&gt; = std::collections::hash_set::Iter&lt;<span class="lifetime">&#39;s</span>, K&gt;;
+    <span class="kw">fn </span>keys(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Keys&lt;<span class="lifetime">&#39;_</span>&gt; {
+        <span class="self">self</span>.iter()
     }
 
-    <span class="kw">type</span> <span class="ident">Keys</span>&lt;<span class="lifetime">&#39;s</span>&gt; = <span class="ident">std::collections::btree_set::Iter</span>&lt;<span class="lifetime">&#39;s</span>, <span class="ident">K</span>&gt;;
-    <span class="kw">fn</span> <span class="ident">keys</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident"><span class="self">Self</span>::Keys</span>&lt;<span class="lifetime">&#39;_</span>&gt; {
-        <span class="self">self</span>.<span class="ident">iter</span>()
-    }
-
-    <span class="kw">type</span> <span class="ident">Entries</span>&lt;<span class="lifetime">&#39;s</span>&gt; = <span class="kw">impl</span> <span class="ident">Iterator</span>&lt;<span class="ident">Item</span> = (<span class="kw-2">&amp;</span><span class="lifetime">&#39;s</span> <span class="ident">K</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;s</span> ())&gt;;
-    <span class="kw">fn</span> <span class="ident">entries</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident"><span class="self">Self</span>::Entries</span>&lt;<span class="lifetime">&#39;_</span>&gt; {
-        <span class="self">self</span>.<span class="ident">keys</span>().<span class="ident">map</span>(|<span class="ident">k</span>| (<span class="ident">k</span>, <span class="kw-2">&amp;</span>()))
+    <span class="kw">type </span>Entries&lt;<span class="lifetime">&#39;s</span>&gt; = <span class="kw">impl </span>Iterator&lt;Item = (<span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span>K, <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span>())&gt;;
+    <span class="kw">fn </span>entries(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Entries&lt;<span class="lifetime">&#39;_</span>&gt; {
+        <span class="self">self</span>.keys().map(|k| (k, <span class="kw-2">&amp;</span>()))
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">K</span>: <span class="lifetime">&#39;static</span> + <span class="ident">Eq</span>&gt; <span class="ident">Collection</span>&lt;<span class="ident">K</span>, ()&gt; <span class="kw">for</span> <span class="ident">Vec</span>&lt;<span class="ident">K</span>&gt; {
-    <span class="kw">fn</span> <span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">K</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>()&gt; {
-        <span class="ident">bool_to_option</span>(<span class="self">self</span>.<span class="ident">contains</span>(<span class="ident">key</span>))
+<span class="kw">impl</span>&lt;K: <span class="lifetime">&#39;static </span>+ Eq + Ord&gt; Collection&lt;K, ()&gt; <span class="kw">for </span>BTreeSet&lt;K&gt; {
+    <span class="kw">fn </span>get(<span class="kw-2">&amp;</span><span class="self">self</span>, key: <span class="kw-2">&amp;</span>K) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>()&gt; {
+        bool_to_option(<span class="self">self</span>.contains(key))
     }
-    <span class="kw">fn</span> <span class="ident">get_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">K</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut</span> ()&gt; {
-        <span class="ident">bool_to_option_mut</span>(<span class="self">self</span>.<span class="ident">contains</span>(<span class="ident">key</span>))
+    <span class="kw">fn </span>get_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, key: <span class="kw-2">&amp;</span>K) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut </span>()&gt; {
+        bool_to_option_mut(<span class="self">self</span>.contains(key))
     }
-    <span class="kw">fn</span> <span class="ident">len</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
-        <span class="self">self</span>.<span class="ident">len</span>()
-    }
-
-    <span class="kw">type</span> <span class="ident">Keys</span>&lt;<span class="lifetime">&#39;s</span>&gt; = <span class="ident">std::slice::Iter</span>&lt;<span class="lifetime">&#39;s</span>, <span class="ident">K</span>&gt;;
-    <span class="kw">fn</span> <span class="ident">keys</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident"><span class="self">Self</span>::Keys</span>&lt;<span class="lifetime">&#39;_</span>&gt; {
-        <span class="self">self</span>.<span class="ident">iter</span>()
+    <span class="kw">fn </span>len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        <span class="self">self</span>.len()
     }
 
-    <span class="kw">type</span> <span class="ident">Entries</span>&lt;<span class="lifetime">&#39;s</span>&gt; = <span class="kw">impl</span> <span class="ident">Iterator</span>&lt;<span class="ident">Item</span> = (<span class="kw-2">&amp;</span><span class="lifetime">&#39;s</span> <span class="ident">K</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;s</span> ())&gt;;
-    <span class="kw">fn</span> <span class="ident">entries</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident"><span class="self">Self</span>::Entries</span>&lt;<span class="lifetime">&#39;_</span>&gt; {
-        <span class="self">self</span>.<span class="ident">keys</span>().<span class="ident">map</span>(|<span class="ident">k</span>| (<span class="ident">k</span>, <span class="kw-2">&amp;</span>()))
+    <span class="kw">type </span>Keys&lt;<span class="lifetime">&#39;s</span>&gt; = std::collections::btree_set::Iter&lt;<span class="lifetime">&#39;s</span>, K&gt;;
+    <span class="kw">fn </span>keys(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Keys&lt;<span class="lifetime">&#39;_</span>&gt; {
+        <span class="self">self</span>.iter()
+    }
+
+    <span class="kw">type </span>Entries&lt;<span class="lifetime">&#39;s</span>&gt; = <span class="kw">impl </span>Iterator&lt;Item = (<span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span>K, <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span>())&gt;;
+    <span class="kw">fn </span>entries(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Entries&lt;<span class="lifetime">&#39;_</span>&gt; {
+        <span class="self">self</span>.keys().map(|k| (k, <span class="kw-2">&amp;</span>()))
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">K</span>: <span class="lifetime">&#39;static</span> + <span class="ident">Eq</span>&gt; <span class="ident">Collection</span>&lt;<span class="ident">K</span>, ()&gt; <span class="kw">for</span> <span class="prelude-ty">Option</span>&lt;<span class="ident">K</span>&gt; {
-    <span class="kw">fn</span> <span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">K</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>()&gt; {
-        <span class="ident">bool_to_option</span>(<span class="prelude-val">Some</span>(<span class="ident">key</span>) == <span class="self">self</span>.<span class="ident">as_ref</span>())
+<span class="kw">impl</span>&lt;K: <span class="lifetime">&#39;static </span>+ Eq&gt; Collection&lt;K, ()&gt; <span class="kw">for </span>Vec&lt;K&gt; {
+    <span class="kw">fn </span>get(<span class="kw-2">&amp;</span><span class="self">self</span>, key: <span class="kw-2">&amp;</span>K) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>()&gt; {
+        bool_to_option(<span class="self">self</span>.contains(key))
     }
-    <span class="kw">fn</span> <span class="ident">get_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">K</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut</span> ()&gt; {
-        <span class="ident">bool_to_option_mut</span>(<span class="prelude-val">Some</span>(<span class="ident">key</span>) == <span class="self">self</span>.<span class="ident">as_ref</span>())
+    <span class="kw">fn </span>get_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, key: <span class="kw-2">&amp;</span>K) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut </span>()&gt; {
+        bool_to_option_mut(<span class="self">self</span>.contains(key))
     }
-    <span class="kw">fn</span> <span class="ident">len</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
-        <span class="self">self</span>.<span class="ident">is_some</span>().<span class="ident">into</span>()
-    }
-
-    <span class="kw">type</span> <span class="ident">Keys</span>&lt;<span class="lifetime">&#39;s</span>&gt; = <span class="ident">std::option::Iter</span>&lt;<span class="lifetime">&#39;s</span>, <span class="ident">K</span>&gt;;
-    <span class="kw">fn</span> <span class="ident">keys</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident"><span class="self">Self</span>::Keys</span>&lt;<span class="lifetime">&#39;_</span>&gt; {
-        <span class="self">self</span>.<span class="ident">iter</span>()
+    <span class="kw">fn </span>len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        <span class="self">self</span>.len()
     }
 
-    <span class="kw">type</span> <span class="ident">Entries</span>&lt;<span class="lifetime">&#39;s</span>&gt; = <span class="kw">impl</span> <span class="ident">Iterator</span>&lt;<span class="ident">Item</span> = (<span class="kw-2">&amp;</span><span class="lifetime">&#39;s</span> <span class="ident">K</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;s</span> ())&gt;;
-    <span class="kw">fn</span> <span class="ident">entries</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident"><span class="self">Self</span>::Entries</span>&lt;<span class="lifetime">&#39;_</span>&gt; {
-        <span class="self">self</span>.<span class="ident">keys</span>().<span class="ident">map</span>(|<span class="ident">k</span>| (<span class="ident">k</span>, <span class="kw-2">&amp;</span>()))
+    <span class="kw">type </span>Keys&lt;<span class="lifetime">&#39;s</span>&gt; = std::slice::Iter&lt;<span class="lifetime">&#39;s</span>, K&gt;;
+    <span class="kw">fn </span>keys(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Keys&lt;<span class="lifetime">&#39;_</span>&gt; {
+        <span class="self">self</span>.iter()
+    }
+
+    <span class="kw">type </span>Entries&lt;<span class="lifetime">&#39;s</span>&gt; = <span class="kw">impl </span>Iterator&lt;Item = (<span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span>K, <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span>())&gt;;
+    <span class="kw">fn </span>entries(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Entries&lt;<span class="lifetime">&#39;_</span>&gt; {
+        <span class="self">self</span>.keys().map(|k| (k, <span class="kw-2">&amp;</span>()))
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">K</span>: <span class="lifetime">&#39;static</span> + <span class="ident">Eq</span>&gt; <span class="ident">Collection</span>&lt;<span class="ident">K</span>, ()&gt; <span class="kw">for</span> <span class="ident">Single</span>&lt;<span class="ident">K</span>&gt; {
-    <span class="kw">fn</span> <span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">K</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>()&gt; {
-        <span class="ident">bool_to_option</span>(<span class="ident">key</span> == <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>)
+<span class="kw">impl</span>&lt;K: <span class="lifetime">&#39;static </span>+ Eq&gt; Collection&lt;K, ()&gt; <span class="kw">for </span><span class="prelude-ty">Option</span>&lt;K&gt; {
+    <span class="kw">fn </span>get(<span class="kw-2">&amp;</span><span class="self">self</span>, key: <span class="kw-2">&amp;</span>K) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>()&gt; {
+        bool_to_option(<span class="prelude-val">Some</span>(key) == <span class="self">self</span>.as_ref())
     }
-    <span class="kw">fn</span> <span class="ident">get_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">K</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut</span> ()&gt; {
-        <span class="ident">bool_to_option_mut</span>(<span class="ident">key</span> == <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>)
+    <span class="kw">fn </span>get_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, key: <span class="kw-2">&amp;</span>K) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut </span>()&gt; {
+        bool_to_option_mut(<span class="prelude-val">Some</span>(key) == <span class="self">self</span>.as_ref())
     }
-    <span class="kw">fn</span> <span class="ident">len</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
-        <span class="number">1</span>
-    }
-
-    <span class="kw">type</span> <span class="ident">Keys</span>&lt;<span class="lifetime">&#39;s</span>&gt; = <span class="ident">std::iter::Once</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;s</span> <span class="ident">K</span>&gt;;
-    <span class="kw">fn</span> <span class="ident">keys</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident"><span class="self">Self</span>::Keys</span>&lt;<span class="lifetime">&#39;_</span>&gt; {
-        <span class="ident">std::iter::once</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>)
+    <span class="kw">fn </span>len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        <span class="self">self</span>.is_some().into()
     }
 
-    <span class="kw">type</span> <span class="ident">Entries</span>&lt;<span class="lifetime">&#39;s</span>&gt; = <span class="kw">impl</span> <span class="ident">Iterator</span>&lt;<span class="ident">Item</span> = (<span class="kw-2">&amp;</span><span class="lifetime">&#39;s</span> <span class="ident">K</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;s</span> ())&gt;;
-    <span class="kw">fn</span> <span class="ident">entries</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident"><span class="self">Self</span>::Entries</span>&lt;<span class="lifetime">&#39;_</span>&gt; {
-        <span class="self">self</span>.<span class="ident">keys</span>().<span class="ident">map</span>(|<span class="ident">k</span>| (<span class="ident">k</span>, <span class="kw-2">&amp;</span>()))
+    <span class="kw">type </span>Keys&lt;<span class="lifetime">&#39;s</span>&gt; = std::option::Iter&lt;<span class="lifetime">&#39;s</span>, K&gt;;
+    <span class="kw">fn </span>keys(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Keys&lt;<span class="lifetime">&#39;_</span>&gt; {
+        <span class="self">self</span>.iter()
+    }
+
+    <span class="kw">type </span>Entries&lt;<span class="lifetime">&#39;s</span>&gt; = <span class="kw">impl </span>Iterator&lt;Item = (<span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span>K, <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span>())&gt;;
+    <span class="kw">fn </span>entries(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Entries&lt;<span class="lifetime">&#39;_</span>&gt; {
+        <span class="self">self</span>.keys().map(|k| (k, <span class="kw-2">&amp;</span>()))
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">K</span>: <span class="lifetime">&#39;static</span> + <span class="ident">Eq</span>, <span class="kw">const</span> <span class="ident">N</span>: <span class="ident">usize</span>&gt; <span class="ident">Collection</span>&lt;<span class="ident">K</span>, ()&gt; <span class="kw">for</span> <span class="ident">Array</span>&lt;<span class="ident">K</span>, <span class="ident">N</span>&gt; {
-    <span class="kw">fn</span> <span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">K</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>()&gt; {
-        <span class="ident">bool_to_option</span>(<span class="self">self</span>.<span class="number">0</span>.<span class="ident">contains</span>(<span class="ident">key</span>))
+<span class="kw">impl</span>&lt;K: <span class="lifetime">&#39;static </span>+ Eq&gt; Collection&lt;K, ()&gt; <span class="kw">for </span>Single&lt;K&gt; {
+    <span class="kw">fn </span>get(<span class="kw-2">&amp;</span><span class="self">self</span>, key: <span class="kw-2">&amp;</span>K) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>()&gt; {
+        bool_to_option(key == <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>)
     }
-    <span class="kw">fn</span> <span class="ident">get_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">K</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut</span> ()&gt; {
-        <span class="ident">bool_to_option_mut</span>(<span class="self">self</span>.<span class="number">0</span>.<span class="ident">contains</span>(<span class="ident">key</span>))
+    <span class="kw">fn </span>get_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, key: <span class="kw-2">&amp;</span>K) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut </span>()&gt; {
+        bool_to_option_mut(key == <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>)
     }
-    <span class="kw">fn</span> <span class="ident">len</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
-        <span class="ident">N</span>
+    <span class="kw">fn </span>len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        <span class="number">1
+    </span>}
+
+    <span class="kw">type </span>Keys&lt;<span class="lifetime">&#39;s</span>&gt; = std::iter::Once&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span>K&gt;;
+    <span class="kw">fn </span>keys(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Keys&lt;<span class="lifetime">&#39;_</span>&gt; {
+        std::iter::once(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>)
     }
 
-    <span class="kw">type</span> <span class="ident">Keys</span>&lt;<span class="lifetime">&#39;s</span>&gt; = <span class="ident">std::slice::Iter</span>&lt;<span class="lifetime">&#39;s</span>, <span class="ident">K</span>&gt;;
-    <span class="kw">fn</span> <span class="ident">keys</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident"><span class="self">Self</span>::Keys</span>&lt;<span class="lifetime">&#39;_</span>&gt; {
-        <span class="self">self</span>.<span class="number">0</span>.<span class="ident">iter</span>()
-    }
-
-    <span class="kw">type</span> <span class="ident">Entries</span>&lt;<span class="lifetime">&#39;s</span>&gt; = <span class="kw">impl</span> <span class="ident">Iterator</span>&lt;<span class="ident">Item</span> = (<span class="kw-2">&amp;</span><span class="lifetime">&#39;s</span> <span class="ident">K</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;s</span> ())&gt;;
-    <span class="kw">fn</span> <span class="ident">entries</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident"><span class="self">Self</span>::Entries</span>&lt;<span class="lifetime">&#39;_</span>&gt; {
-        <span class="self">self</span>.<span class="ident">keys</span>().<span class="ident">map</span>(|<span class="ident">k</span>| (<span class="ident">k</span>, <span class="kw-2">&amp;</span>()))
+    <span class="kw">type </span>Entries&lt;<span class="lifetime">&#39;s</span>&gt; = <span class="kw">impl </span>Iterator&lt;Item = (<span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span>K, <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span>())&gt;;
+    <span class="kw">fn </span>entries(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Entries&lt;<span class="lifetime">&#39;_</span>&gt; {
+        <span class="self">self</span>.keys().map(|k| (k, <span class="kw-2">&amp;</span>()))
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">K</span>: <span class="lifetime">&#39;static</span> + <span class="ident">Eq</span>, <span class="kw">const</span> <span class="ident">N</span>: <span class="ident">usize</span>&gt; <span class="ident">Collection</span>&lt;<span class="ident">K</span>, ()&gt; <span class="kw">for</span> <span class="ident">MaskedArray</span>&lt;<span class="ident">K</span>, <span class="ident">N</span>&gt; {
-    <span class="kw">fn</span> <span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">K</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>()&gt; {
-        <span class="ident">bool_to_option</span>(
-            <span class="self">self</span>.<span class="ident">mask</span>
-                .<span class="ident">iter</span>()
-                .<span class="ident">zip</span>(<span class="self">self</span>.<span class="ident">vals</span>.<span class="ident">iter</span>())
-                .<span class="ident">any</span>(|(<span class="ident">mask</span>, <span class="ident">item</span>)| <span class="kw-2">*</span><span class="ident">mask</span> &amp;&amp; <span class="ident">item</span> == <span class="ident">key</span>),
+<span class="kw">impl</span>&lt;K: <span class="lifetime">&#39;static </span>+ Eq, <span class="kw">const </span>N: usize&gt; Collection&lt;K, ()&gt; <span class="kw">for </span>Array&lt;K, N&gt; {
+    <span class="kw">fn </span>get(<span class="kw-2">&amp;</span><span class="self">self</span>, key: <span class="kw-2">&amp;</span>K) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>()&gt; {
+        bool_to_option(<span class="self">self</span>.<span class="number">0</span>.contains(key))
+    }
+    <span class="kw">fn </span>get_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, key: <span class="kw-2">&amp;</span>K) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut </span>()&gt; {
+        bool_to_option_mut(<span class="self">self</span>.<span class="number">0</span>.contains(key))
+    }
+    <span class="kw">fn </span>len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        N
+    }
+
+    <span class="kw">type </span>Keys&lt;<span class="lifetime">&#39;s</span>&gt; = std::slice::Iter&lt;<span class="lifetime">&#39;s</span>, K&gt;;
+    <span class="kw">fn </span>keys(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Keys&lt;<span class="lifetime">&#39;_</span>&gt; {
+        <span class="self">self</span>.<span class="number">0</span>.iter()
+    }
+
+    <span class="kw">type </span>Entries&lt;<span class="lifetime">&#39;s</span>&gt; = <span class="kw">impl </span>Iterator&lt;Item = (<span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span>K, <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span>())&gt;;
+    <span class="kw">fn </span>entries(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Entries&lt;<span class="lifetime">&#39;_</span>&gt; {
+        <span class="self">self</span>.keys().map(|k| (k, <span class="kw-2">&amp;</span>()))
+    }
+}
+
+<span class="kw">impl</span>&lt;K: <span class="lifetime">&#39;static </span>+ Eq, <span class="kw">const </span>N: usize&gt; Collection&lt;K, ()&gt; <span class="kw">for </span>MaskedArray&lt;K, N&gt; {
+    <span class="kw">fn </span>get(<span class="kw-2">&amp;</span><span class="self">self</span>, key: <span class="kw-2">&amp;</span>K) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>()&gt; {
+        bool_to_option(
+            <span class="self">self</span>.mask
+                .iter()
+                .zip(<span class="self">self</span>.vals.iter())
+                .any(|(mask, item)| <span class="kw-2">*</span>mask &amp;&amp; item == key),
         )
     }
-    <span class="kw">fn</span> <span class="ident">get_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">K</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut</span> ()&gt; {
-        <span class="ident">bool_to_option_mut</span>(
-            <span class="self">self</span>.<span class="ident">mask</span>
-                .<span class="ident">iter</span>()
-                .<span class="ident">zip</span>(<span class="self">self</span>.<span class="ident">vals</span>.<span class="ident">iter</span>())
-                .<span class="ident">any</span>(|(<span class="ident">mask</span>, <span class="ident">item</span>)| <span class="kw-2">*</span><span class="ident">mask</span> &amp;&amp; <span class="ident">item</span> == <span class="ident">key</span>),
+    <span class="kw">fn </span>get_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, key: <span class="kw-2">&amp;</span>K) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut </span>()&gt; {
+        bool_to_option_mut(
+            <span class="self">self</span>.mask
+                .iter()
+                .zip(<span class="self">self</span>.vals.iter())
+                .any(|(mask, item)| <span class="kw-2">*</span>mask &amp;&amp; item == key),
         )
     }
-    <span class="kw">fn</span> <span class="ident">len</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
-        <span class="self">self</span>.<span class="ident">mask</span>.<span class="ident">iter</span>().<span class="ident">filter</span>(|<span class="ident">mask</span>| <span class="kw-2">*</span><span class="kw-2">*</span><span class="ident">mask</span>).<span class="ident">count</span>()
+    <span class="kw">fn </span>len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        <span class="self">self</span>.mask.iter().filter(|mask| <span class="kw-2">**</span>mask).count()
     }
 
-    <span class="kw">type</span> <span class="ident">Keys</span>&lt;<span class="lifetime">&#39;s</span>&gt; = <span class="kw">impl</span> <span class="ident">Iterator</span>&lt;<span class="ident">Item</span> = <span class="kw-2">&amp;</span><span class="lifetime">&#39;s</span> <span class="ident">K</span>&gt;;
-    <span class="kw">fn</span> <span class="ident">keys</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident"><span class="self">Self</span>::Keys</span>&lt;<span class="lifetime">&#39;_</span>&gt; {
-        <span class="self">self</span>.<span class="ident">mask</span>
-            .<span class="ident">iter</span>()
-            .<span class="ident">zip</span>(<span class="self">self</span>.<span class="ident">vals</span>.<span class="ident">iter</span>())
-            .<span class="ident">filter</span>(|(<span class="ident">mask</span>, <span class="kw">_</span>)| <span class="kw-2">*</span><span class="kw-2">*</span><span class="ident">mask</span>)
-            .<span class="ident">map</span>(|(<span class="kw">_</span>, <span class="ident">item</span>)| <span class="ident">item</span>)
+    <span class="kw">type </span>Keys&lt;<span class="lifetime">&#39;s</span>&gt; = <span class="kw">impl </span>Iterator&lt;Item = <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span>K&gt;;
+    <span class="kw">fn </span>keys(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Keys&lt;<span class="lifetime">&#39;_</span>&gt; {
+        <span class="self">self</span>.mask
+            .iter()
+            .zip(<span class="self">self</span>.vals.iter())
+            .filter(|(mask, <span class="kw">_</span>)| <span class="kw-2">**</span>mask)
+            .map(|(<span class="kw">_</span>, item)| item)
     }
 
-    <span class="kw">type</span> <span class="ident">Entries</span>&lt;<span class="lifetime">&#39;s</span>&gt; = <span class="kw">impl</span> <span class="ident">Iterator</span>&lt;<span class="ident">Item</span> = (<span class="kw-2">&amp;</span><span class="lifetime">&#39;s</span> <span class="ident">K</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;s</span> ())&gt;;
-    <span class="kw">fn</span> <span class="ident">entries</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident"><span class="self">Self</span>::Entries</span>&lt;<span class="lifetime">&#39;_</span>&gt; {
-        <span class="self">self</span>.<span class="ident">keys</span>().<span class="ident">map</span>(|<span class="ident">k</span>| (<span class="ident">k</span>, <span class="kw-2">&amp;</span>()))
+    <span class="kw">type </span>Entries&lt;<span class="lifetime">&#39;s</span>&gt; = <span class="kw">impl </span>Iterator&lt;Item = (<span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span>K, <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span>())&gt;;
+    <span class="kw">fn </span>entries(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Entries&lt;<span class="lifetime">&#39;_</span>&gt; {
+        <span class="self">self</span>.keys().map(|k| (k, <span class="kw-2">&amp;</span>()))
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">K</span>: <span class="lifetime">&#39;static</span> + <span class="ident">Eq</span> + <span class="ident">Hash</span>, <span class="ident">V</span>: <span class="lifetime">&#39;static</span>&gt; <span class="ident">Collection</span>&lt;<span class="ident">K</span>, <span class="ident">V</span>&gt; <span class="kw">for</span> <span class="ident">HashMap</span>&lt;<span class="ident">K</span>, <span class="ident">V</span>&gt; {
-    <span class="kw">fn</span> <span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">K</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="ident">V</span>&gt; {
-        <span class="self">self</span>.<span class="ident">get</span>(<span class="ident">key</span>)
+<span class="kw">impl</span>&lt;K: <span class="lifetime">&#39;static </span>+ Eq + Hash, V: <span class="lifetime">&#39;static</span>&gt; Collection&lt;K, V&gt; <span class="kw">for </span>HashMap&lt;K, V&gt; {
+    <span class="kw">fn </span>get(<span class="kw-2">&amp;</span><span class="self">self</span>, key: <span class="kw-2">&amp;</span>K) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>V&gt; {
+        <span class="self">self</span>.get(key)
     }
-    <span class="kw">fn</span> <span class="ident">get_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">K</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut</span> <span class="ident">V</span>&gt; {
-        <span class="self">self</span>.<span class="ident">get_mut</span>(<span class="ident">key</span>)
+    <span class="kw">fn </span>get_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, key: <span class="kw-2">&amp;</span>K) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut </span>V&gt; {
+        <span class="self">self</span>.get_mut(key)
     }
-    <span class="kw">fn</span> <span class="ident">len</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
-        <span class="self">self</span>.<span class="ident">len</span>()
-    }
-
-    <span class="kw">type</span> <span class="ident">Keys</span>&lt;<span class="lifetime">&#39;s</span>&gt; = <span class="kw">impl</span> <span class="ident">Iterator</span>&lt;<span class="ident">Item</span> = <span class="kw-2">&amp;</span><span class="lifetime">&#39;s</span> <span class="ident">K</span>&gt;;
-    <span class="kw">fn</span> <span class="ident">keys</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident"><span class="self">Self</span>::Keys</span>&lt;<span class="lifetime">&#39;_</span>&gt; {
-        <span class="self">self</span>.<span class="ident">keys</span>()
+    <span class="kw">fn </span>len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        <span class="self">self</span>.len()
     }
 
-    <span class="kw">type</span> <span class="ident">Entries</span>&lt;<span class="lifetime">&#39;s</span>&gt; = <span class="kw">impl</span> <span class="ident">Iterator</span>&lt;<span class="ident">Item</span> = (<span class="kw-2">&amp;</span><span class="lifetime">&#39;s</span> <span class="ident">K</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;s</span> <span class="ident">V</span>)&gt;;
-    <span class="kw">fn</span> <span class="ident">entries</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident"><span class="self">Self</span>::Entries</span>&lt;<span class="lifetime">&#39;_</span>&gt; {
-        <span class="self">self</span>.<span class="ident">iter</span>()
+    <span class="kw">type </span>Keys&lt;<span class="lifetime">&#39;s</span>&gt; = <span class="kw">impl </span>Iterator&lt;Item = <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span>K&gt;;
+    <span class="kw">fn </span>keys(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Keys&lt;<span class="lifetime">&#39;_</span>&gt; {
+        <span class="self">self</span>.keys()
+    }
+
+    <span class="kw">type </span>Entries&lt;<span class="lifetime">&#39;s</span>&gt; = <span class="kw">impl </span>Iterator&lt;Item = (<span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span>K, <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span>V)&gt;;
+    <span class="kw">fn </span>entries(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Entries&lt;<span class="lifetime">&#39;_</span>&gt; {
+        <span class="self">self</span>.iter()
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">K</span>: <span class="lifetime">&#39;static</span> + <span class="ident">Eq</span> + <span class="ident">Ord</span>, <span class="ident">V</span>: <span class="lifetime">&#39;static</span>&gt; <span class="ident">Collection</span>&lt;<span class="ident">K</span>, <span class="ident">V</span>&gt; <span class="kw">for</span> <span class="ident">BTreeMap</span>&lt;<span class="ident">K</span>, <span class="ident">V</span>&gt; {
-    <span class="kw">fn</span> <span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">K</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="ident">V</span>&gt; {
-        <span class="self">self</span>.<span class="ident">get</span>(<span class="ident">key</span>)
+<span class="kw">impl</span>&lt;K: <span class="lifetime">&#39;static </span>+ Eq + Ord, V: <span class="lifetime">&#39;static</span>&gt; Collection&lt;K, V&gt; <span class="kw">for </span>BTreeMap&lt;K, V&gt; {
+    <span class="kw">fn </span>get(<span class="kw-2">&amp;</span><span class="self">self</span>, key: <span class="kw-2">&amp;</span>K) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>V&gt; {
+        <span class="self">self</span>.get(key)
     }
-    <span class="kw">fn</span> <span class="ident">get_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">K</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut</span> <span class="ident">V</span>&gt; {
-        <span class="self">self</span>.<span class="ident">get_mut</span>(<span class="ident">key</span>)
+    <span class="kw">fn </span>get_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, key: <span class="kw-2">&amp;</span>K) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut </span>V&gt; {
+        <span class="self">self</span>.get_mut(key)
     }
-    <span class="kw">fn</span> <span class="ident">len</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
-        <span class="self">self</span>.<span class="ident">len</span>()
-    }
-
-    <span class="kw">type</span> <span class="ident">Keys</span>&lt;<span class="lifetime">&#39;s</span>&gt; = <span class="kw">impl</span> <span class="ident">Iterator</span>&lt;<span class="ident">Item</span> = <span class="kw-2">&amp;</span><span class="lifetime">&#39;s</span> <span class="ident">K</span>&gt;;
-    <span class="kw">fn</span> <span class="ident">keys</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident"><span class="self">Self</span>::Keys</span>&lt;<span class="lifetime">&#39;_</span>&gt; {
-        <span class="self">self</span>.<span class="ident">keys</span>()
+    <span class="kw">fn </span>len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        <span class="self">self</span>.len()
     }
 
-    <span class="kw">type</span> <span class="ident">Entries</span>&lt;<span class="lifetime">&#39;s</span>&gt; = <span class="kw">impl</span> <span class="ident">Iterator</span>&lt;<span class="ident">Item</span> = (<span class="kw-2">&amp;</span><span class="lifetime">&#39;s</span> <span class="ident">K</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;s</span> <span class="ident">V</span>)&gt;;
-    <span class="kw">fn</span> <span class="ident">entries</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident"><span class="self">Self</span>::Entries</span>&lt;<span class="lifetime">&#39;_</span>&gt; {
-        <span class="self">self</span>.<span class="ident">iter</span>()
+    <span class="kw">type </span>Keys&lt;<span class="lifetime">&#39;s</span>&gt; = <span class="kw">impl </span>Iterator&lt;Item = <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span>K&gt;;
+    <span class="kw">fn </span>keys(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Keys&lt;<span class="lifetime">&#39;_</span>&gt; {
+        <span class="self">self</span>.keys()
+    }
+
+    <span class="kw">type </span>Entries&lt;<span class="lifetime">&#39;s</span>&gt; = <span class="kw">impl </span>Iterator&lt;Item = (<span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span>K, <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span>V)&gt;;
+    <span class="kw">fn </span>entries(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Entries&lt;<span class="lifetime">&#39;_</span>&gt; {
+        <span class="self">self</span>.iter()
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">K</span>: <span class="lifetime">&#39;static</span> + <span class="ident">Eq</span>, <span class="ident">V</span>: <span class="lifetime">&#39;static</span>&gt; <span class="ident">Collection</span>&lt;<span class="ident">K</span>, <span class="ident">V</span>&gt; <span class="kw">for</span> <span class="ident">Vec</span>&lt;(<span class="ident">K</span>, <span class="ident">V</span>)&gt; {
-    <span class="kw">fn</span> <span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">K</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="ident">V</span>&gt; {
-        <span class="self">self</span>.<span class="ident">iter</span>().<span class="ident">find</span>(|(<span class="ident">k</span>, <span class="kw">_</span>)| <span class="ident">k</span> == <span class="ident">key</span>).<span class="ident">map</span>(|(<span class="kw">_</span>, <span class="ident">val</span>)| <span class="ident">val</span>)
+<span class="kw">impl</span>&lt;K: <span class="lifetime">&#39;static </span>+ Eq, V: <span class="lifetime">&#39;static</span>&gt; Collection&lt;K, V&gt; <span class="kw">for </span>Vec&lt;(K, V)&gt; {
+    <span class="kw">fn </span>get(<span class="kw-2">&amp;</span><span class="self">self</span>, key: <span class="kw-2">&amp;</span>K) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>V&gt; {
+        <span class="self">self</span>.iter().find(|(k, <span class="kw">_</span>)| k == key).map(|(<span class="kw">_</span>, val)| val)
     }
-    <span class="kw">fn</span> <span class="ident">get_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">K</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut</span> <span class="ident">V</span>&gt; {
-        <span class="self">self</span>.<span class="ident">iter_mut</span>().<span class="ident">find</span>(|(<span class="ident">k</span>, <span class="kw">_</span>)| <span class="ident">k</span> == <span class="ident">key</span>).<span class="ident">map</span>(|(<span class="kw">_</span>, <span class="ident">val</span>)| <span class="ident">val</span>)
+    <span class="kw">fn </span>get_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, key: <span class="kw-2">&amp;</span>K) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut </span>V&gt; {
+        <span class="self">self</span>.iter_mut().find(|(k, <span class="kw">_</span>)| k == key).map(|(<span class="kw">_</span>, val)| val)
     }
-    <span class="kw">fn</span> <span class="ident">len</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
-        <span class="self">self</span>.<span class="ident">len</span>()
-    }
-
-    <span class="kw">type</span> <span class="ident">Keys</span>&lt;<span class="lifetime">&#39;s</span>&gt; = <span class="kw">impl</span> <span class="ident">Iterator</span>&lt;<span class="ident">Item</span> = <span class="kw-2">&amp;</span><span class="lifetime">&#39;s</span> <span class="ident">K</span>&gt;;
-    <span class="kw">fn</span> <span class="ident">keys</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident"><span class="self">Self</span>::Keys</span>&lt;<span class="lifetime">&#39;_</span>&gt; {
-        <span class="self">self</span>.<span class="ident">iter</span>().<span class="ident">map</span>(|(<span class="ident">k</span>, <span class="kw">_</span>)| <span class="ident">k</span>)
+    <span class="kw">fn </span>len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        <span class="self">self</span>.len()
     }
 
-    <span class="kw">type</span> <span class="ident">Entries</span>&lt;<span class="lifetime">&#39;s</span>&gt; = <span class="kw">impl</span> <span class="ident">Iterator</span>&lt;<span class="ident">Item</span> = (<span class="kw-2">&amp;</span><span class="lifetime">&#39;s</span> <span class="ident">K</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;s</span> <span class="ident">V</span>)&gt;;
-    <span class="kw">fn</span> <span class="ident">entries</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident"><span class="self">Self</span>::Entries</span>&lt;<span class="lifetime">&#39;_</span>&gt; {
-        <span class="self">self</span>.<span class="ident">iter</span>().<span class="ident">map</span>(|(<span class="ident">k</span>, <span class="ident">v</span>)| (<span class="ident">k</span>, <span class="ident">v</span>))
+    <span class="kw">type </span>Keys&lt;<span class="lifetime">&#39;s</span>&gt; = <span class="kw">impl </span>Iterator&lt;Item = <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span>K&gt;;
+    <span class="kw">fn </span>keys(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Keys&lt;<span class="lifetime">&#39;_</span>&gt; {
+        <span class="self">self</span>.iter().map(|(k, <span class="kw">_</span>)| k)
+    }
+
+    <span class="kw">type </span>Entries&lt;<span class="lifetime">&#39;s</span>&gt; = <span class="kw">impl </span>Iterator&lt;Item = (<span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span>K, <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span>V)&gt;;
+    <span class="kw">fn </span>entries(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Entries&lt;<span class="lifetime">&#39;_</span>&gt; {
+        <span class="self">self</span>.iter().map(|(k, v)| (k, v))
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">K</span>: <span class="lifetime">&#39;static</span> + <span class="ident">Eq</span>, <span class="ident">V</span>: <span class="lifetime">&#39;static</span>, <span class="kw">const</span> <span class="ident">N</span>: <span class="ident">usize</span>&gt; <span class="ident">Collection</span>&lt;<span class="ident">K</span>, <span class="ident">V</span>&gt; <span class="kw">for</span> <span class="ident">Array</span>&lt;(<span class="ident">K</span>, <span class="ident">V</span>), <span class="ident">N</span>&gt; {
-    <span class="kw">fn</span> <span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">K</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="ident">V</span>&gt; {
-        <span class="self">self</span>.<span class="number">0</span>.<span class="ident">iter</span>().<span class="ident">find</span>(|(<span class="ident">k</span>, <span class="kw">_</span>)| <span class="ident">k</span> == <span class="ident">key</span>).<span class="ident">map</span>(|(<span class="kw">_</span>, <span class="ident">val</span>)| <span class="ident">val</span>)
+<span class="kw">impl</span>&lt;K: <span class="lifetime">&#39;static </span>+ Eq, V: <span class="lifetime">&#39;static</span>, <span class="kw">const </span>N: usize&gt; Collection&lt;K, V&gt; <span class="kw">for </span>Array&lt;(K, V), N&gt; {
+    <span class="kw">fn </span>get(<span class="kw-2">&amp;</span><span class="self">self</span>, key: <span class="kw-2">&amp;</span>K) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>V&gt; {
+        <span class="self">self</span>.<span class="number">0</span>.iter().find(|(k, <span class="kw">_</span>)| k == key).map(|(<span class="kw">_</span>, val)| val)
     }
-    <span class="kw">fn</span> <span class="ident">get_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">K</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut</span> <span class="ident">V</span>&gt; {
-        <span class="self">self</span>.<span class="number">0</span>
-            .<span class="ident">iter_mut</span>()
-            .<span class="ident">find</span>(|(<span class="ident">k</span>, <span class="kw">_</span>)| <span class="ident">k</span> == <span class="ident">key</span>)
-            .<span class="ident">map</span>(|(<span class="kw">_</span>, <span class="ident">val</span>)| <span class="ident">val</span>)
+    <span class="kw">fn </span>get_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, key: <span class="kw-2">&amp;</span>K) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut </span>V&gt; {
+        <span class="self">self</span>.<span class="number">0
+            </span>.iter_mut()
+            .find(|(k, <span class="kw">_</span>)| k == key)
+            .map(|(<span class="kw">_</span>, val)| val)
     }
-    <span class="kw">fn</span> <span class="ident">len</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
-        <span class="ident">N</span>
-    }
-
-    <span class="kw">type</span> <span class="ident">Keys</span>&lt;<span class="lifetime">&#39;s</span>&gt; = <span class="kw">impl</span> <span class="ident">Iterator</span>&lt;<span class="ident">Item</span> = <span class="kw-2">&amp;</span><span class="lifetime">&#39;s</span> <span class="ident">K</span>&gt;;
-    <span class="kw">fn</span> <span class="ident">keys</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident"><span class="self">Self</span>::Keys</span>&lt;<span class="lifetime">&#39;_</span>&gt; {
-        <span class="self">self</span>.<span class="number">0</span>.<span class="ident">iter</span>().<span class="ident">map</span>(|(<span class="ident">k</span>, <span class="kw">_</span>)| <span class="ident">k</span>)
+    <span class="kw">fn </span>len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        N
     }
 
-    <span class="kw">type</span> <span class="ident">Entries</span>&lt;<span class="lifetime">&#39;s</span>&gt; = <span class="kw">impl</span> <span class="ident">Iterator</span>&lt;<span class="ident">Item</span> = (<span class="kw-2">&amp;</span><span class="lifetime">&#39;s</span> <span class="ident">K</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;s</span> <span class="ident">V</span>)&gt;;
-    <span class="kw">fn</span> <span class="ident">entries</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident"><span class="self">Self</span>::Entries</span>&lt;<span class="lifetime">&#39;_</span>&gt; {
-        <span class="self">self</span>.<span class="number">0</span>.<span class="ident">iter</span>().<span class="ident">map</span>(|(<span class="ident">k</span>, <span class="ident">v</span>)| (<span class="ident">k</span>, <span class="ident">v</span>))
+    <span class="kw">type </span>Keys&lt;<span class="lifetime">&#39;s</span>&gt; = <span class="kw">impl </span>Iterator&lt;Item = <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span>K&gt;;
+    <span class="kw">fn </span>keys(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Keys&lt;<span class="lifetime">&#39;_</span>&gt; {
+        <span class="self">self</span>.<span class="number">0</span>.iter().map(|(k, <span class="kw">_</span>)| k)
+    }
+
+    <span class="kw">type </span>Entries&lt;<span class="lifetime">&#39;s</span>&gt; = <span class="kw">impl </span>Iterator&lt;Item = (<span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span>K, <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span>V)&gt;;
+    <span class="kw">fn </span>entries(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Entries&lt;<span class="lifetime">&#39;_</span>&gt; {
+        <span class="self">self</span>.<span class="number">0</span>.iter().map(|(k, v)| (k, v))
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">K</span>: <span class="lifetime">&#39;static</span> + <span class="ident">Eq</span>, <span class="ident">V</span>: <span class="lifetime">&#39;static</span>, <span class="kw">const</span> <span class="ident">N</span>: <span class="ident">usize</span>&gt; <span class="ident">Collection</span>&lt;<span class="ident">K</span>, <span class="ident">V</span>&gt; <span class="kw">for</span> <span class="ident">MaskedArray</span>&lt;(<span class="ident">K</span>, <span class="ident">V</span>), <span class="ident">N</span>&gt; {
-    <span class="kw">fn</span> <span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">K</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="ident">V</span>&gt; {
-        <span class="self">self</span>.<span class="ident">mask</span>
-            .<span class="ident">iter</span>()
-            .<span class="ident">zip</span>(<span class="self">self</span>.<span class="ident">vals</span>.<span class="ident">iter</span>())
-            .<span class="ident">find</span>(|(<span class="ident">mask</span>, (<span class="ident">k</span>, <span class="kw">_</span>))| <span class="kw-2">*</span><span class="kw-2">*</span><span class="ident">mask</span> &amp;&amp; <span class="ident">k</span> == <span class="ident">key</span>)
-            .<span class="ident">map</span>(|(<span class="kw">_</span>, (<span class="kw">_</span>, <span class="ident">val</span>))| <span class="ident">val</span>)
+<span class="kw">impl</span>&lt;K: <span class="lifetime">&#39;static </span>+ Eq, V: <span class="lifetime">&#39;static</span>, <span class="kw">const </span>N: usize&gt; Collection&lt;K, V&gt; <span class="kw">for </span>MaskedArray&lt;(K, V), N&gt; {
+    <span class="kw">fn </span>get(<span class="kw-2">&amp;</span><span class="self">self</span>, key: <span class="kw-2">&amp;</span>K) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>V&gt; {
+        <span class="self">self</span>.mask
+            .iter()
+            .zip(<span class="self">self</span>.vals.iter())
+            .find(|(mask, (k, <span class="kw">_</span>))| <span class="kw-2">**</span>mask &amp;&amp; k == key)
+            .map(|(<span class="kw">_</span>, (<span class="kw">_</span>, val))| val)
     }
-    <span class="kw">fn</span> <span class="ident">get_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">K</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut</span> <span class="ident">V</span>&gt; {
-        <span class="self">self</span>.<span class="ident">mask</span>
-            .<span class="ident">iter</span>()
-            .<span class="ident">zip</span>(<span class="self">self</span>.<span class="ident">vals</span>.<span class="ident">iter_mut</span>())
-            .<span class="ident">find</span>(|(<span class="ident">mask</span>, (<span class="ident">k</span>, <span class="kw">_</span>))| <span class="kw-2">*</span><span class="kw-2">*</span><span class="ident">mask</span> &amp;&amp; <span class="ident">k</span> == <span class="ident">key</span>)
-            .<span class="ident">map</span>(|(<span class="kw">_</span>, (<span class="kw">_</span>, <span class="ident">val</span>))| <span class="ident">val</span>)
+    <span class="kw">fn </span>get_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, key: <span class="kw-2">&amp;</span>K) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut </span>V&gt; {
+        <span class="self">self</span>.mask
+            .iter()
+            .zip(<span class="self">self</span>.vals.iter_mut())
+            .find(|(mask, (k, <span class="kw">_</span>))| <span class="kw-2">**</span>mask &amp;&amp; k == key)
+            .map(|(<span class="kw">_</span>, (<span class="kw">_</span>, val))| val)
     }
-    <span class="kw">fn</span> <span class="ident">len</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
-        <span class="self">self</span>.<span class="ident">mask</span>.<span class="ident">iter</span>().<span class="ident">filter</span>(|<span class="ident">mask</span>| <span class="kw-2">*</span><span class="kw-2">*</span><span class="ident">mask</span>).<span class="ident">count</span>()
-    }
-
-    <span class="kw">type</span> <span class="ident">Keys</span>&lt;<span class="lifetime">&#39;s</span>&gt; = <span class="kw">impl</span> <span class="ident">Iterator</span>&lt;<span class="ident">Item</span> = <span class="kw-2">&amp;</span><span class="lifetime">&#39;s</span> <span class="ident">K</span>&gt;;
-    <span class="kw">fn</span> <span class="ident">keys</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident"><span class="self">Self</span>::Keys</span>&lt;<span class="lifetime">&#39;_</span>&gt; {
-        <span class="self">self</span>.<span class="ident">mask</span>
-            .<span class="ident">iter</span>()
-            .<span class="ident">zip</span>(<span class="self">self</span>.<span class="ident">vals</span>.<span class="ident">iter</span>())
-            .<span class="ident">filter</span>(|(<span class="ident">mask</span>, <span class="kw">_</span>)| <span class="kw-2">*</span><span class="kw-2">*</span><span class="ident">mask</span>)
-            .<span class="ident">map</span>(|(<span class="kw">_</span>, (<span class="ident">k</span>, <span class="kw">_</span>))| <span class="ident">k</span>)
+    <span class="kw">fn </span>len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        <span class="self">self</span>.mask.iter().filter(|mask| <span class="kw-2">**</span>mask).count()
     }
 
-    <span class="kw">type</span> <span class="ident">Entries</span>&lt;<span class="lifetime">&#39;s</span>&gt; = <span class="kw">impl</span> <span class="ident">Iterator</span>&lt;<span class="ident">Item</span> = (<span class="kw-2">&amp;</span><span class="lifetime">&#39;s</span> <span class="ident">K</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;s</span> <span class="ident">V</span>)&gt;;
-    <span class="kw">fn</span> <span class="ident">entries</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident"><span class="self">Self</span>::Entries</span>&lt;<span class="lifetime">&#39;_</span>&gt; {
-        <span class="self">self</span>.<span class="ident">mask</span>
-            .<span class="ident">iter</span>()
-            .<span class="ident">zip</span>(<span class="self">self</span>.<span class="ident">vals</span>.<span class="ident">iter</span>())
-            .<span class="ident">filter</span>(|(<span class="ident">mask</span>, <span class="kw">_</span>)| <span class="kw-2">*</span><span class="kw-2">*</span><span class="ident">mask</span>)
-            .<span class="ident">map</span>(|(<span class="kw">_</span>, (<span class="ident">k</span>, <span class="ident">v</span>))| (<span class="ident">k</span>, <span class="ident">v</span>))
+    <span class="kw">type </span>Keys&lt;<span class="lifetime">&#39;s</span>&gt; = <span class="kw">impl </span>Iterator&lt;Item = <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span>K&gt;;
+    <span class="kw">fn </span>keys(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Keys&lt;<span class="lifetime">&#39;_</span>&gt; {
+        <span class="self">self</span>.mask
+            .iter()
+            .zip(<span class="self">self</span>.vals.iter())
+            .filter(|(mask, <span class="kw">_</span>)| <span class="kw-2">**</span>mask)
+            .map(|(<span class="kw">_</span>, (k, <span class="kw">_</span>))| k)
+    }
+
+    <span class="kw">type </span>Entries&lt;<span class="lifetime">&#39;s</span>&gt; = <span class="kw">impl </span>Iterator&lt;Item = (<span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span>K, <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span>V)&gt;;
+    <span class="kw">fn </span>entries(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Entries&lt;<span class="lifetime">&#39;_</span>&gt; {
+        <span class="self">self</span>.mask
+            .iter()
+            .zip(<span class="self">self</span>.vals.iter())
+            .filter(|(mask, <span class="kw">_</span>)| <span class="kw-2">**</span>mask)
+            .map(|(<span class="kw">_</span>, (k, v))| (k, v))
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">K</span>: <span class="lifetime">&#39;static</span> + <span class="ident">Eq</span>, <span class="ident">V</span>: <span class="lifetime">&#39;static</span>&gt; <span class="ident">Collection</span>&lt;<span class="ident">K</span>, <span class="ident">V</span>&gt; <span class="kw">for</span> <span class="ident">Single</span>&lt;(<span class="ident">K</span>, <span class="ident">V</span>)&gt; {
-    <span class="kw">fn</span> <span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">K</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="ident">V</span>&gt; {
-        <span class="kw">if</span> <span class="ident">key</span> == <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span> .<span class="number">0</span> {
-            <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span> .<span class="number">1</span>)
-        } <span class="kw">else</span> {
-            <span class="prelude-val">None</span>
-        }
+<span class="kw">impl</span>&lt;K: <span class="lifetime">&#39;static </span>+ Eq, V: <span class="lifetime">&#39;static</span>&gt; Collection&lt;K, V&gt; <span class="kw">for </span>Single&lt;(K, V)&gt; {
+    <span class="kw">fn </span>get(<span class="kw-2">&amp;</span><span class="self">self</span>, key: <span class="kw-2">&amp;</span>K) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>V&gt; {
+        <span class="kw">if </span>key == <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0 </span>.<span class="number">0 </span>{
+            <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0 </span>.<span class="number">1</span>)
+        } <span class="kw">else </span>{
+            <span class="prelude-val">None
+        </span>}
     }
-    <span class="kw">fn</span> <span class="ident">get_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">K</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut</span> <span class="ident">V</span>&gt; {
-        <span class="kw">if</span> <span class="ident">key</span> == <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span> .<span class="number">0</span> {
-            <span class="prelude-val">Some</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="number">0</span> .<span class="number">1</span>)
-        } <span class="kw">else</span> {
-            <span class="prelude-val">None</span>
-        }
+    <span class="kw">fn </span>get_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, key: <span class="kw-2">&amp;</span>K) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut </span>V&gt; {
+        <span class="kw">if </span>key == <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0 </span>.<span class="number">0 </span>{
+            <span class="prelude-val">Some</span>(<span class="kw-2">&amp;mut </span><span class="self">self</span>.<span class="number">0 </span>.<span class="number">1</span>)
+        } <span class="kw">else </span>{
+            <span class="prelude-val">None
+        </span>}
     }
-    <span class="kw">fn</span> <span class="ident">len</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
-        <span class="number">1</span>
+    <span class="kw">fn </span>len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        <span class="number">1
+    </span>}
+
+    <span class="kw">type </span>Keys&lt;<span class="lifetime">&#39;s</span>&gt; = std::iter::Once&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span>K&gt;;
+    <span class="kw">fn </span>keys(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Keys&lt;<span class="lifetime">&#39;_</span>&gt; {
+        std::iter::once(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0 </span>.<span class="number">0</span>)
     }
 
-    <span class="kw">type</span> <span class="ident">Keys</span>&lt;<span class="lifetime">&#39;s</span>&gt; = <span class="ident">std::iter::Once</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;s</span> <span class="ident">K</span>&gt;;
-    <span class="kw">fn</span> <span class="ident">keys</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident"><span class="self">Self</span>::Keys</span>&lt;<span class="lifetime">&#39;_</span>&gt; {
-        <span class="ident">std::iter::once</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span> .<span class="number">0</span>)
-    }
-
-    <span class="kw">type</span> <span class="ident">Entries</span>&lt;<span class="lifetime">&#39;s</span>&gt; = <span class="ident">std::iter::Once</span>&lt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;s</span> <span class="ident">K</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;s</span> <span class="ident">V</span>)&gt;;
-    <span class="kw">fn</span> <span class="ident">entries</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident"><span class="self">Self</span>::Entries</span>&lt;<span class="lifetime">&#39;_</span>&gt; {
-        <span class="ident">std::iter::once</span>((<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span> .<span class="number">0</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span> .<span class="number">1</span>))
-    }
-}
-
-<span class="attribute">#[<span class="ident">repr</span>(<span class="ident">transparent</span>)]</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">Copy</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">PartialOrd</span>, <span class="ident">Ord</span>, <span class="ident">Hash</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Single</span>&lt;<span class="ident">T</span>&gt;(<span class="kw">pub</span> <span class="ident">T</span>);
-<span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">IntoIterator</span> <span class="kw">for</span> <span class="ident">Single</span>&lt;<span class="ident">T</span>&gt; {
-    <span class="kw">type</span> <span class="ident">Item</span> = <span class="ident">T</span>;
-    <span class="kw">type</span> <span class="ident">IntoIter</span> = <span class="ident">std::iter::Once</span>&lt;<span class="ident">T</span>&gt;;
-
-    <span class="kw">fn</span> <span class="ident">into_iter</span>(<span class="self">self</span>) -&gt; <span class="ident"><span class="self">Self</span>::IntoIter</span> {
-        <span class="ident">std::iter::once</span>(<span class="self">self</span>.<span class="number">0</span>)
+    <span class="kw">type </span>Entries&lt;<span class="lifetime">&#39;s</span>&gt; = std::iter::Once&lt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span>K, <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span>V)&gt;;
+    <span class="kw">fn </span>entries(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Entries&lt;<span class="lifetime">&#39;_</span>&gt; {
+        std::iter::once((<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0 </span>.<span class="number">0</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0 </span>.<span class="number">1</span>))
     }
 }
 
-<span class="comment">// impl&lt;T: serde::Serialize&gt; serde::Serialize for Single&lt;T&gt; {</span>
-<span class="comment">//     fn serialize&lt;S: serde::Serializer&gt;(&amp;self, serializer: S) -&gt; Result&lt;S::Ok, S::Error&gt; {</span>
-<span class="comment">//         self.0.serialize(serializer)</span>
-<span class="comment">//     }</span>
-<span class="comment">// }</span>
-<span class="comment">// impl&lt;&#39;de, T: serde::Deserialize&lt;&#39;de&gt;&gt; serde::Deserialize&lt;&#39;de&gt; for Single&lt;T&gt; {</span>
-<span class="comment">//     fn deserialize&lt;D: serde::Deserializer&lt;&#39;de&gt;&gt;(deserializer: D) -&gt; Result&lt;Self, D::Error&gt; {</span>
-<span class="comment">//         T::deserialize(deserializer).map(Single)</span>
-<span class="comment">//     }</span>
-<span class="comment">// }</span>
+<span class="attribute">#[repr(transparent)]</span>
+<span class="attribute">#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]</span>
+<span class="kw">pub struct </span>Single&lt;T&gt;(<span class="kw">pub </span>T);
+<span class="kw">impl</span>&lt;T&gt; IntoIterator <span class="kw">for </span>Single&lt;T&gt; {
+    <span class="kw">type </span>Item = T;
+    <span class="kw">type </span>IntoIter = std::iter::Once&lt;T&gt;;
 
-<span class="attribute">#[<span class="ident">repr</span>(<span class="ident">transparent</span>)]</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">Copy</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">PartialOrd</span>, <span class="ident">Ord</span>, <span class="ident">Hash</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Iter</span>&lt;<span class="ident">I</span>&gt;(<span class="kw">pub</span> <span class="ident">I</span>)
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">IntoIterator</span>;
-<span class="kw">impl</span>&lt;<span class="ident">I</span>&gt; <span class="ident">IntoIterator</span> <span class="kw">for</span> <span class="ident">Iter</span>&lt;<span class="ident">I</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">IntoIterator</span>,
+    <span class="kw">fn </span>into_iter(<span class="self">self</span>) -&gt; <span class="self">Self</span>::IntoIter {
+        std::iter::once(<span class="self">self</span>.<span class="number">0</span>)
+    }
+}
+
+<span class="comment">// impl&lt;T: serde::Serialize&gt; serde::Serialize for Single&lt;T&gt; {
+//     fn serialize&lt;S: serde::Serializer&gt;(&amp;self, serializer: S) -&gt; Result&lt;S::Ok, S::Error&gt; {
+//         self.0.serialize(serializer)
+//     }
+// }
+// impl&lt;&#39;de, T: serde::Deserialize&lt;&#39;de&gt;&gt; serde::Deserialize&lt;&#39;de&gt; for Single&lt;T&gt; {
+//     fn deserialize&lt;D: serde::Deserializer&lt;&#39;de&gt;&gt;(deserializer: D) -&gt; Result&lt;Self, D::Error&gt; {
+//         T::deserialize(deserializer).map(Single)
+//     }
+// }
+
+</span><span class="attribute">#[repr(transparent)]</span>
+<span class="attribute">#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]</span>
+<span class="kw">pub struct </span>Iter&lt;I&gt;(<span class="kw">pub </span>I)
+<span class="kw">where
+    </span>I: IntoIterator;
+<span class="kw">impl</span>&lt;I&gt; IntoIterator <span class="kw">for </span>Iter&lt;I&gt;
+<span class="kw">where
+    </span>I: IntoIterator,
 {
-    <span class="kw">type</span> <span class="ident">Item</span> = <span class="ident">I::Item</span>;
-    <span class="kw">type</span> <span class="ident">IntoIter</span> = <span class="ident">I::IntoIter</span>;
+    <span class="kw">type </span>Item = I::Item;
+    <span class="kw">type </span>IntoIter = I::IntoIter;
 
-    <span class="kw">fn</span> <span class="ident">into_iter</span>(<span class="self">self</span>) -&gt; <span class="ident"><span class="self">Self</span>::IntoIter</span> {
-        <span class="self">self</span>.<span class="number">0</span>.<span class="ident">into_iter</span>()
+    <span class="kw">fn </span>into_iter(<span class="self">self</span>) -&gt; <span class="self">Self</span>::IntoIter {
+        <span class="self">self</span>.<span class="number">0</span>.into_iter()
     }
 }
 
-<span class="attribute">#[<span class="ident">repr</span>(<span class="ident">transparent</span>)]</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Copy</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">Hash</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Array</span>&lt;<span class="ident">T</span>, <span class="kw">const</span> <span class="ident">N</span>: <span class="ident">usize</span>&gt;(<span class="kw">pub</span> [<span class="ident">T</span>; <span class="ident">N</span>]);
-<span class="kw">impl</span>&lt;<span class="ident">T</span>, <span class="kw">const</span> <span class="ident">N</span>: <span class="ident">usize</span>&gt; <span class="ident">IntoIterator</span> <span class="kw">for</span> <span class="ident">Array</span>&lt;<span class="ident">T</span>, <span class="ident">N</span>&gt; {
-    <span class="kw">type</span> <span class="ident">Item</span> = <span class="ident">T</span>;
-    <span class="kw">type</span> <span class="ident">IntoIter</span> = <span class="ident">IntoIter</span>&lt;<span class="ident">T</span>, <span class="ident">N</span>&gt;;
+<span class="attribute">#[repr(transparent)]</span>
+<span class="attribute">#[derive(Clone, Copy, PartialEq, Eq, Hash)]</span>
+<span class="kw">pub struct </span>Array&lt;T, <span class="kw">const </span>N: usize&gt;(<span class="kw">pub </span>[T; N]);
+<span class="kw">impl</span>&lt;T, <span class="kw">const </span>N: usize&gt; IntoIterator <span class="kw">for </span>Array&lt;T, N&gt; {
+    <span class="kw">type </span>Item = T;
+    <span class="kw">type </span>IntoIter = IntoIter&lt;T, N&gt;;
 
-    <span class="kw">fn</span> <span class="ident">into_iter</span>(<span class="self">self</span>) -&gt; <span class="ident"><span class="self">Self</span>::IntoIter</span> {
-        <span class="ident">IntoIterator::into_iter</span>(<span class="self">self</span>.<span class="number">0</span>)
+    <span class="kw">fn </span>into_iter(<span class="self">self</span>) -&gt; <span class="self">Self</span>::IntoIter {
+        IntoIterator::into_iter(<span class="self">self</span>.<span class="number">0</span>)
     }
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Copy</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">Hash</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">MaskedArray</span>&lt;<span class="ident">T</span>, <span class="kw">const</span> <span class="ident">N</span>: <span class="ident">usize</span>&gt; {
-    <span class="kw">pub</span> <span class="ident">mask</span>: [<span class="ident">bool</span>; <span class="ident">N</span>],
-    <span class="kw">pub</span> <span class="ident">vals</span>: [<span class="ident">T</span>; <span class="ident">N</span>],
+<span class="attribute">#[derive(Clone, Copy, PartialEq, Eq, Hash)]</span>
+<span class="kw">pub struct </span>MaskedArray&lt;T, <span class="kw">const </span>N: usize&gt; {
+    <span class="kw">pub </span>mask: [bool; N],
+    <span class="kw">pub </span>vals: [T; N],
 }
-<span class="kw">impl</span>&lt;<span class="ident">T</span>, <span class="kw">const</span> <span class="ident">N</span>: <span class="ident">usize</span>&gt; <span class="ident">IntoIterator</span> <span class="kw">for</span> <span class="ident">MaskedArray</span>&lt;<span class="ident">T</span>, <span class="ident">N</span>&gt; {
-    <span class="kw">type</span> <span class="ident">Item</span> = <span class="ident">T</span>;
-    <span class="kw">type</span> <span class="ident">IntoIter</span> = <span class="kw">impl</span> <span class="ident">Iterator</span>&lt;<span class="ident">Item</span> = <span class="ident"><span class="self">Self</span>::Item</span>&gt;;
+<span class="kw">impl</span>&lt;T, <span class="kw">const </span>N: usize&gt; IntoIterator <span class="kw">for </span>MaskedArray&lt;T, N&gt; {
+    <span class="kw">type </span>Item = T;
+    <span class="kw">type </span>IntoIter = <span class="kw">impl </span>Iterator&lt;Item = <span class="self">Self</span>::Item&gt;;
 
-    <span class="kw">fn</span> <span class="ident">into_iter</span>(<span class="self">self</span>) -&gt; <span class="ident"><span class="self">Self</span>::IntoIter</span> {
-        <span class="ident">IntoIterator::into_iter</span>(<span class="self">self</span>.<span class="ident">mask</span>)
-            .<span class="ident">zip</span>(<span class="ident">IntoIterator::into_iter</span>(<span class="self">self</span>.<span class="ident">vals</span>))
-            .<span class="ident">filter</span>(|(<span class="ident">mask</span>, <span class="kw">_</span>)| <span class="kw-2">*</span><span class="ident">mask</span>)
-            .<span class="ident">map</span>(|(<span class="kw">_</span>, <span class="ident">val</span>)| <span class="ident">val</span>)
+    <span class="kw">fn </span>into_iter(<span class="self">self</span>) -&gt; <span class="self">Self</span>::IntoIter {
+        IntoIterator::into_iter(<span class="self">self</span>.mask)
+            .zip(IntoIterator::into_iter(<span class="self">self</span>.vals))
+            .filter(|(mask, <span class="kw">_</span>)| <span class="kw-2">*</span>mask)
+            .map(|(<span class="kw">_</span>, val)| val)
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (75b7e52e9 2022-08-13)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

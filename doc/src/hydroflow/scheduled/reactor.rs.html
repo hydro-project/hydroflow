@@ -42,49 +42,49 @@
 <span id="42">42</span>
 <span id="43">43</span>
 <span id="44">44</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">tokio::sync::mpsc::error::SendError</span>;
-<span class="kw">use</span> <span class="ident">tokio::sync::mpsc::UnboundedSender</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>tokio::sync::mpsc::error::SendError;
+<span class="kw">use </span>tokio::sync::mpsc::UnboundedSender;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::SubgraphId</span>;
+<span class="kw">use </span><span class="kw">super</span>::SubgraphId;
 
 <span class="doccomment">/**
  * A handle into a specific [super::graph::Hydroflow] instance for triggering
  * subgraphs to run, possibly from another thread.
- */</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Reactor</span> {
-    <span class="ident">event_queue_send</span>: <span class="ident">UnboundedSender</span>&lt;<span class="ident">SubgraphId</span>&gt;,
+ */
+</span><span class="attribute">#[derive(Clone)]</span>
+<span class="kw">pub struct </span>Reactor {
+    event_queue_send: UnboundedSender&lt;SubgraphId&gt;,
 }
-<span class="kw">impl</span> <span class="ident">Reactor</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">event_queue_send</span>: <span class="ident">UnboundedSender</span>&lt;<span class="ident">SubgraphId</span>&gt;) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> { <span class="ident">event_queue_send</span> }
+<span class="kw">impl </span>Reactor {
+    <span class="kw">pub fn </span>new(event_queue_send: UnboundedSender&lt;SubgraphId&gt;) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{ event_queue_send }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">trigger</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">sg_id</span>: <span class="ident">SubgraphId</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="ident">SendError</span>&lt;<span class="ident">SubgraphId</span>&gt;&gt; {
-        <span class="self">self</span>.<span class="ident">event_queue_send</span>.<span class="ident">send</span>(<span class="ident">sg_id</span>)
+    <span class="kw">pub fn </span>trigger(<span class="kw-2">&amp;</span><span class="self">self</span>, sg_id: SubgraphId) -&gt; <span class="prelude-ty">Result</span>&lt;(), SendError&lt;SubgraphId&gt;&gt; {
+        <span class="self">self</span>.event_queue_send.send(sg_id)
     }
 
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;async&quot;</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">into_waker</span>(<span class="self">self</span>, <span class="ident">sg_id</span>: <span class="ident">SubgraphId</span>) -&gt; <span class="ident">std::task::Waker</span> {
-        <span class="kw">use</span> <span class="ident">futures::task::ArcWake</span>;
-        <span class="kw">use</span> <span class="ident">std::sync::Arc</span>;
+    <span class="attribute">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]</span>
+    <span class="kw">pub fn </span>into_waker(<span class="self">self</span>, sg_id: SubgraphId) -&gt; std::task::Waker {
+        <span class="kw">use </span>futures::task::ArcWake;
+        <span class="kw">use </span>std::sync::Arc;
 
-        <span class="kw">struct</span> <span class="ident">ReactorWaker</span> {
-            <span class="ident">reactor</span>: <span class="ident">Reactor</span>,
-            <span class="ident">sg_id</span>: <span class="ident">SubgraphId</span>,
+        <span class="kw">struct </span>ReactorWaker {
+            reactor: Reactor,
+            sg_id: SubgraphId,
         }
-        <span class="kw">impl</span> <span class="ident">ArcWake</span> <span class="kw">for</span> <span class="ident">ReactorWaker</span> {
-            <span class="kw">fn</span> <span class="ident">wake_by_ref</span>(<span class="ident">arc_self</span>: <span class="kw-2">&amp;</span><span class="ident">Arc</span>&lt;<span class="self">Self</span>&gt;) {
-                <span class="ident">arc_self</span>.<span class="ident">reactor</span>.<span class="ident">trigger</span>(<span class="ident">arc_self</span>.<span class="ident">sg_id</span>).<span class="ident">unwrap</span>(<span class="comment">/* TODO(mingwei) */</span>);
+        <span class="kw">impl </span>ArcWake <span class="kw">for </span>ReactorWaker {
+            <span class="kw">fn </span>wake_by_ref(arc_self: <span class="kw-2">&amp;</span>Arc&lt;<span class="self">Self</span>&gt;) {
+                arc_self.reactor.trigger(arc_self.sg_id).unwrap(<span class="comment">/* TODO(mingwei) */</span>);
             }
         }
 
-        <span class="kw">let</span> <span class="ident">reactor_waker</span> = <span class="ident">ReactorWaker</span> {
-            <span class="ident">reactor</span>: <span class="self">self</span>,
-            <span class="ident">sg_id</span>,
+        <span class="kw">let </span>reactor_waker = ReactorWaker {
+            reactor: <span class="self">self</span>,
+            sg_id,
         };
-        <span class="ident">futures::task::waker</span>(<span class="ident">Arc::new</span>(<span class="ident">reactor_waker</span>))
+        futures::task::waker(Arc::new(reactor_waker))
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (75b7e52e9 2022-08-13)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

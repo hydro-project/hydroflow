@@ -64,71 +64,71 @@
 <span id="64">64</span>
 <span id="65">65</span>
 <span id="66">66</span>
-</pre><pre class="rust"><code><span class="attribute">#![<span class="ident">allow</span>(<span class="ident">dead_code</span>)]</span>
+</pre><pre class="rust"><code><span class="attribute">#![allow(dead_code)]</span>
 
-<span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">cell::RefCell</span>, <span class="ident">rc::Rc</span>};
+<span class="kw">use </span>std::{cell::RefCell, rc::Rc};
 
-<span class="kw">use</span> <span class="ident">hydroflow::lang::collections::Iter</span>;
-<span class="kw">use</span> <span class="ident">hydroflow::scheduled::graph::Hydroflow</span>;
-<span class="kw">use</span> <span class="ident">hydroflow::scheduled::graph_ext::GraphExt</span>;
-<span class="kw">use</span> <span class="ident">hydroflow::scheduled::handoff::VecHandoff</span>;
-<span class="kw">use</span> <span class="ident">hydroflow::scheduled::port::RecvPort</span>;
+<span class="kw">use </span>hydroflow::lang::collections::Iter;
+<span class="kw">use </span>hydroflow::scheduled::graph::Hydroflow;
+<span class="kw">use </span>hydroflow::scheduled::graph_ext::GraphExt;
+<span class="kw">use </span>hydroflow::scheduled::handoff::VecHandoff;
+<span class="kw">use </span>hydroflow::scheduled::port::RecvPort;
 
-<span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">Datum</span>, <span class="ident">RelExpr</span>};
+<span class="kw">use crate</span>::{Datum, RelExpr};
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">run_dataflow</span>(<span class="ident">r</span>: <span class="ident">RelExpr</span>) -&gt; <span class="ident">Vec</span>&lt;<span class="ident">Vec</span>&lt;<span class="ident">Datum</span>&gt;&gt; {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">df</span> = <span class="ident">Hydroflow::new</span>();
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>run_dataflow(r: RelExpr) -&gt; Vec&lt;Vec&lt;Datum&gt;&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>df = Hydroflow::new();
 
-    <span class="kw">let</span> <span class="ident">output_port</span> = <span class="ident">render_relational</span>(<span class="kw-2">&amp;mut</span> <span class="ident">df</span>, <span class="ident">r</span>);
+    <span class="kw">let </span>output_port = render_relational(<span class="kw-2">&amp;mut </span>df, r);
 
-    <span class="kw">let</span> <span class="ident">output</span> = <span class="ident">Rc::new</span>(<span class="ident">RefCell::new</span>(<span class="ident">Vec::new</span>()));
-    <span class="kw">let</span> <span class="ident">inner</span> = <span class="ident">output</span>.<span class="ident">clone</span>();
+    <span class="kw">let </span>output = Rc::new(RefCell::new(Vec::new()));
+    <span class="kw">let </span>inner = output.clone();
 
-    <span class="ident">df</span>.<span class="ident">add_subgraph_sink</span>(<span class="string">&quot;output sink&quot;</span>, <span class="ident">output_port</span>, <span class="kw">move</span> |<span class="ident">_ctx</span>, <span class="ident">recv</span>| {
-        <span class="kw">for</span> <span class="ident">v</span> <span class="kw">in</span> <span class="ident">recv</span>.<span class="ident">take_inner</span>() {
-            (<span class="kw-2">*</span><span class="ident">inner</span>).<span class="ident">borrow_mut</span>().<span class="ident">push</span>(<span class="ident">v</span>);
+    df.add_subgraph_sink(<span class="string">&quot;output sink&quot;</span>, output_port, <span class="kw">move </span>|_ctx, recv| {
+        <span class="kw">for </span>v <span class="kw">in </span>recv.take_inner() {
+            (<span class="kw-2">*</span>inner).borrow_mut().push(v);
         }
     });
 
-    <span class="ident">df</span>.<span class="ident">run_available</span>();
+    df.run_available();
 
-    <span class="kw">let</span> <span class="ident">v</span> = (<span class="kw-2">*</span><span class="ident">output</span>).<span class="ident">borrow</span>();
-    <span class="ident">v</span>.<span class="ident">clone</span>()
+    <span class="kw">let </span>v = (<span class="kw-2">*</span>output).borrow();
+    v.clone()
 }
 
-<span class="kw">fn</span> <span class="ident">render_relational</span>(<span class="ident">df</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Hydroflow</span>, <span class="ident">r</span>: <span class="ident">RelExpr</span>) -&gt; <span class="ident">RecvPort</span>&lt;<span class="ident">VecHandoff</span>&lt;<span class="ident">Vec</span>&lt;<span class="ident">Datum</span>&gt;&gt;&gt; {
-    <span class="kw">let</span> (<span class="ident">send_port</span>, <span class="ident">recv_port</span>) = <span class="ident">df</span>.<span class="ident">make_edge</span>(<span class="string">&quot;handoff&quot;</span>);
-    <span class="kw">match</span> <span class="ident">r</span> {
-        <span class="ident">RelExpr::Values</span>(<span class="kw-2">mut</span> <span class="ident">v</span>) =&gt; {
-            <span class="comment">// TODO: drip-feed data?</span>
-            <span class="kw">let</span> <span class="ident">scope</span> = <span class="ident">Vec::new</span>();
-            <span class="ident">df</span>.<span class="ident">add_subgraph_source</span>(<span class="string">&quot;value source&quot;</span>, <span class="ident">send_port</span>, <span class="kw">move</span> |<span class="ident">_ctx</span>, <span class="ident">send</span>| {
-                <span class="ident">send</span>.<span class="ident">give</span>(<span class="ident">Iter</span>(
-                    <span class="ident">v</span>.<span class="ident">drain</span>(..)
-                        .<span class="ident">map</span>(|<span class="ident">row</span>| <span class="ident">row</span>.<span class="ident">into_iter</span>().<span class="ident">map</span>(|<span class="ident">e</span>| <span class="ident">e</span>.<span class="ident">eval</span>(<span class="kw-2">&amp;</span><span class="ident">scope</span>)).<span class="ident">collect</span>()),
+<span class="kw">fn </span>render_relational(df: <span class="kw-2">&amp;mut </span>Hydroflow, r: RelExpr) -&gt; RecvPort&lt;VecHandoff&lt;Vec&lt;Datum&gt;&gt;&gt; {
+    <span class="kw">let </span>(send_port, recv_port) = df.make_edge(<span class="string">&quot;handoff&quot;</span>);
+    <span class="kw">match </span>r {
+        RelExpr::Values(<span class="kw-2">mut </span>v) =&gt; {
+            <span class="comment">// TODO: drip-feed data?
+            </span><span class="kw">let </span>scope = Vec::new();
+            df.add_subgraph_source(<span class="string">&quot;value source&quot;</span>, send_port, <span class="kw">move </span>|_ctx, send| {
+                send.give(Iter(
+                    v.drain(..)
+                        .map(|row| row.into_iter().map(|e| e.eval(<span class="kw-2">&amp;</span>scope)).collect()),
                 ));
             });
         }
-        <span class="ident">RelExpr::Filter</span>(<span class="ident">preds</span>, <span class="ident">v</span>) =&gt; {
-            <span class="kw">let</span> <span class="ident">input</span> = <span class="ident">render_relational</span>(<span class="ident">df</span>, <span class="kw-2">*</span><span class="ident">v</span>);
-            <span class="ident">df</span>.<span class="ident">add_subgraph_in_out</span>(<span class="string">&quot;filter&quot;</span>, <span class="ident">input</span>, <span class="ident">send_port</span>, <span class="kw">move</span> |<span class="ident">_ctx</span>, <span class="ident">recv</span>, <span class="ident">send</span>| {
-                <span class="ident">send</span>.<span class="ident">give</span>(<span class="ident">Iter</span>(<span class="ident">recv</span>.<span class="ident">take_inner</span>().<span class="ident">into_iter</span>().<span class="ident">filter</span>(|<span class="ident">row</span>| {
-                    <span class="ident">preds</span>.<span class="ident">iter</span>().<span class="ident">all</span>(|<span class="ident">p</span>| <span class="ident">p</span>.<span class="ident">eval</span>(<span class="ident">row</span>) == <span class="ident">Datum::Bool</span>(<span class="bool-val">true</span>))
+        RelExpr::Filter(preds, v) =&gt; {
+            <span class="kw">let </span>input = render_relational(df, <span class="kw-2">*</span>v);
+            df.add_subgraph_in_out(<span class="string">&quot;filter&quot;</span>, input, send_port, <span class="kw">move </span>|_ctx, recv, send| {
+                send.give(Iter(recv.take_inner().into_iter().filter(|row| {
+                    preds.iter().all(|p| p.eval(row) == Datum::Bool(<span class="bool-val">true</span>))
                 })));
             });
         }
-        <span class="ident">RelExpr::Project</span>(<span class="ident">exprs</span>, <span class="ident">v</span>) =&gt; {
-            <span class="kw">let</span> <span class="ident">input</span> = <span class="ident">render_relational</span>(<span class="ident">df</span>, <span class="kw-2">*</span><span class="ident">v</span>);
-            <span class="ident">df</span>.<span class="ident">add_subgraph_in_out</span>(<span class="string">&quot;project&quot;</span>, <span class="ident">input</span>, <span class="ident">send_port</span>, <span class="kw">move</span> |<span class="ident">_ctx</span>, <span class="ident">recv</span>, <span class="ident">send</span>| {
-                <span class="ident">send</span>.<span class="ident">give</span>(<span class="ident">Iter</span>(
-                    <span class="ident">recv</span>.<span class="ident">take_inner</span>()
-                        .<span class="ident">into_iter</span>()
-                        .<span class="ident">map</span>(|<span class="ident">row</span>| <span class="ident">exprs</span>.<span class="ident">iter</span>().<span class="ident">map</span>(|<span class="ident">e</span>| <span class="ident">e</span>.<span class="ident">eval</span>(<span class="kw-2">&amp;</span><span class="ident">row</span>)).<span class="ident">collect</span>()),
+        RelExpr::Project(exprs, v) =&gt; {
+            <span class="kw">let </span>input = render_relational(df, <span class="kw-2">*</span>v);
+            df.add_subgraph_in_out(<span class="string">&quot;project&quot;</span>, input, send_port, <span class="kw">move </span>|_ctx, recv, send| {
+                send.give(Iter(
+                    recv.take_inner()
+                        .into_iter()
+                        .map(|row| exprs.iter().map(|e| e.eval(<span class="kw-2">&amp;</span>row)).collect()),
                 ));
             });
         }
     }
-    <span class="ident">recv_port</span>
+    recv_port
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="relalg" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (75b7e52e9 2022-08-13)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="relalg" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

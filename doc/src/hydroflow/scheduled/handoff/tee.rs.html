@@ -90,97 +90,97 @@
 <span id="90">90</span>
 <span id="91">91</span>
 <span id="92">92</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::any::Any</span>;
-<span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">cell::RefCell</span>, <span class="ident">collections::VecDeque</span>, <span class="ident">rc::Rc</span>};
+</pre><pre class="rust"><code><span class="kw">use </span>std::any::Any;
+<span class="kw">use </span>std::{cell::RefCell, collections::VecDeque, rc::Rc};
 
-<span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">CanReceive</span>, <span class="ident">Handoff</span>, <span class="ident">HandoffMeta</span>};
+<span class="kw">use super</span>::{CanReceive, Handoff, HandoffMeta};
 
-<span class="kw">struct</span> <span class="ident">ReaderHandoff</span>&lt;<span class="ident">T</span>&gt; {
-    <span class="ident">contents</span>: <span class="ident">VecDeque</span>&lt;<span class="ident">Vec</span>&lt;<span class="ident">T</span>&gt;&gt;,
+<span class="kw">struct </span>ReaderHandoff&lt;T&gt; {
+    contents: VecDeque&lt;Vec&lt;T&gt;&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">Default</span> <span class="kw">for</span> <span class="ident">ReaderHandoff</span>&lt;<span class="ident">T</span>&gt; {
-    <span class="kw">fn</span> <span class="ident">default</span>() -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">contents</span>: <span class="ident">Default::default</span>(),
+<span class="kw">impl</span>&lt;T&gt; Default <span class="kw">for </span>ReaderHandoff&lt;T&gt; {
+    <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            contents: Default::default(),
         }
     }
 }
 
-<span class="kw">struct</span> <span class="ident">TeeingHandoffInternal</span>&lt;<span class="ident">T</span>&gt; {
-    <span class="ident">readers</span>: <span class="ident">Vec</span>&lt;<span class="ident">ReaderHandoff</span>&lt;<span class="ident">T</span>&gt;&gt;,
+<span class="kw">struct </span>TeeingHandoffInternal&lt;T&gt; {
+    readers: Vec&lt;ReaderHandoff&lt;T&gt;&gt;,
 }
 
-<span class="comment">// A [Handoff] which is part of a &quot;family&quot; of handoffs. Writing to this handoff</span>
-<span class="comment">// will write to every reader. New readers can be created by calling `tee`.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">TeeingHandoff</span>&lt;<span class="ident">T</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="lifetime">&#39;static</span>,
+<span class="comment">// A [Handoff] which is part of a &quot;family&quot; of handoffs. Writing to this handoff
+// will write to every reader. New readers can be created by calling `tee`.
+</span><span class="attribute">#[derive(Clone)]</span>
+<span class="kw">pub struct </span>TeeingHandoff&lt;T&gt;
+<span class="kw">where
+    </span>T: <span class="lifetime">&#39;static</span>,
 {
-    <span class="ident">read_from</span>: <span class="ident">usize</span>,
-    <span class="ident">internal</span>: <span class="ident">Rc</span>&lt;<span class="ident">RefCell</span>&lt;<span class="ident">TeeingHandoffInternal</span>&lt;<span class="ident">T</span>&gt;&gt;&gt;,
+    read_from: usize,
+    internal: Rc&lt;RefCell&lt;TeeingHandoffInternal&lt;T&gt;&gt;&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">Default</span> <span class="kw">for</span> <span class="ident">TeeingHandoff</span>&lt;<span class="ident">T</span>&gt; {
-    <span class="kw">fn</span> <span class="ident">default</span>() -&gt; <span class="self">Self</span> {
-        <span class="ident">TeeingHandoff</span> {
-            <span class="ident">read_from</span>: <span class="number">0</span>,
-            <span class="ident">internal</span>: <span class="ident">Rc::new</span>(<span class="ident">RefCell::new</span>(<span class="ident">TeeingHandoffInternal</span> {
-                <span class="ident">readers</span>: <span class="macro">vec!</span>[<span class="ident">Default::default</span>()],
+<span class="kw">impl</span>&lt;T&gt; Default <span class="kw">for </span>TeeingHandoff&lt;T&gt; {
+    <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
+        TeeingHandoff {
+            read_from: <span class="number">0</span>,
+            internal: Rc::new(RefCell::new(TeeingHandoffInternal {
+                readers: <span class="macro">vec!</span>[Default::default()],
             })),
         }
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">TeeingHandoff</span>&lt;<span class="ident">T</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="ident">Clone</span>,
+<span class="kw">impl</span>&lt;T&gt; TeeingHandoff&lt;T&gt;
+<span class="kw">where
+    </span>T: Clone,
 {
-    <span class="attribute">#[<span class="ident">must_use</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">tee</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="ident">id</span> = (<span class="kw-2">*</span><span class="self">self</span>.<span class="ident">internal</span>).<span class="ident">borrow</span>().<span class="ident">readers</span>.<span class="ident">len</span>();
-        (<span class="kw-2">*</span><span class="self">self</span>.<span class="ident">internal</span>)
-            .<span class="ident">borrow_mut</span>()
-            .<span class="ident">readers</span>
-            .<span class="ident">push</span>(<span class="ident">ReaderHandoff::default</span>());
-        <span class="self">Self</span> {
-            <span class="ident">read_from</span>: <span class="ident">id</span>,
-            <span class="ident">internal</span>: <span class="self">self</span>.<span class="ident">internal</span>.<span class="ident">clone</span>(),
+    <span class="attribute">#[must_use]</span>
+    <span class="kw">pub fn </span>tee(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
+        <span class="kw">let </span>id = (<span class="kw-2">*</span><span class="self">self</span>.internal).borrow().readers.len();
+        (<span class="kw-2">*</span><span class="self">self</span>.internal)
+            .borrow_mut()
+            .readers
+            .push(ReaderHandoff::default());
+        <span class="self">Self </span>{
+            read_from: id,
+            internal: <span class="self">self</span>.internal.clone(),
         }
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">HandoffMeta</span> <span class="kw">for</span> <span class="ident">TeeingHandoff</span>&lt;<span class="ident">T</span>&gt; {
-    <span class="kw">fn</span> <span class="ident">any_ref</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="kw">dyn</span> <span class="ident">Any</span> {
-        <span class="self">self</span>
-    }
+<span class="kw">impl</span>&lt;T&gt; HandoffMeta <span class="kw">for </span>TeeingHandoff&lt;T&gt; {
+    <span class="kw">fn </span>any_ref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="kw">dyn </span>Any {
+        <span class="self">self
+    </span>}
 
-    <span class="kw">fn</span> <span class="ident">is_bottom</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="bool-val">true</span>
+    <span class="kw">fn </span>is_bottom(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="bool-val">true
+    </span>}
+}
+
+<span class="kw">impl</span>&lt;T&gt; Handoff <span class="kw">for </span>TeeingHandoff&lt;T&gt; {
+    <span class="kw">type </span>Inner = VecDeque&lt;Vec&lt;T&gt;&gt;;
+    <span class="kw">fn </span>take_inner(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Inner {
+        std::mem::take(<span class="kw-2">&amp;mut </span>(<span class="kw-2">*</span><span class="self">self</span>.internal).borrow_mut().readers[<span class="self">self</span>.read_from].contents)
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">Handoff</span> <span class="kw">for</span> <span class="ident">TeeingHandoff</span>&lt;<span class="ident">T</span>&gt; {
-    <span class="kw">type</span> <span class="ident">Inner</span> = <span class="ident">VecDeque</span>&lt;<span class="ident">Vec</span>&lt;<span class="ident">T</span>&gt;&gt;;
-    <span class="kw">fn</span> <span class="ident">take_inner</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident"><span class="self">Self</span>::Inner</span> {
-        <span class="ident">std::mem::take</span>(<span class="kw-2">&amp;mut</span> (<span class="kw-2">*</span><span class="self">self</span>.<span class="ident">internal</span>).<span class="ident">borrow_mut</span>().<span class="ident">readers</span>[<span class="self">self</span>.<span class="ident">read_from</span>].<span class="ident">contents</span>)
-    }
-}
-
-<span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">CanReceive</span>&lt;<span class="ident">Vec</span>&lt;<span class="ident">T</span>&gt;&gt; <span class="kw">for</span> <span class="ident">TeeingHandoff</span>&lt;<span class="ident">T</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="ident">Clone</span>,
+<span class="kw">impl</span>&lt;T&gt; CanReceive&lt;Vec&lt;T&gt;&gt; <span class="kw">for </span>TeeingHandoff&lt;T&gt;
+<span class="kw">where
+    </span>T: Clone,
 {
-    <span class="kw">fn</span> <span class="ident">give</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">vec</span>: <span class="ident">Vec</span>&lt;<span class="ident">T</span>&gt;) -&gt; <span class="ident">Vec</span>&lt;<span class="ident">T</span>&gt; {
-        <span class="kw">let</span> <span class="ident">readers</span> = <span class="kw-2">&amp;mut</span> (<span class="kw-2">*</span><span class="self">self</span>.<span class="ident">internal</span>).<span class="ident">borrow_mut</span>().<span class="ident">readers</span>;
-        <span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="number">0</span>..(<span class="ident">readers</span>.<span class="ident">len</span>() - <span class="number">1</span>) {
-            <span class="ident">readers</span>[<span class="ident">i</span>].<span class="ident">contents</span>.<span class="ident">push_back</span>(<span class="ident">vec</span>.<span class="ident">clone</span>());
+    <span class="kw">fn </span>give(<span class="kw-2">&amp;</span><span class="self">self</span>, vec: Vec&lt;T&gt;) -&gt; Vec&lt;T&gt; {
+        <span class="kw">let </span>readers = <span class="kw-2">&amp;mut </span>(<span class="kw-2">*</span><span class="self">self</span>.internal).borrow_mut().readers;
+        <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..(readers.len() - <span class="number">1</span>) {
+            readers[i].contents.push_back(vec.clone());
         }
-        <span class="kw">let</span> <span class="ident">last</span> = <span class="ident">readers</span>.<span class="ident">len</span>() - <span class="number">1</span>;
-        <span class="ident">readers</span>[<span class="ident">last</span>].<span class="ident">contents</span>.<span class="ident">push_back</span>(<span class="ident">vec</span>);
-        <span class="ident">Vec::new</span>()
+        <span class="kw">let </span>last = readers.len() - <span class="number">1</span>;
+        readers[last].contents.push_back(vec);
+        Vec::new()
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (75b7e52e9 2022-08-13)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

@@ -54,61 +54,61 @@
 <span id="54">54</span>
 <span id="55">55</span>
 <span id="56">56</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">super</span>::Pusherator</span>;
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::Pusherator;
 
-<span class="kw">use</span> <span class="ident">std::collections::HashMap</span>;
-<span class="kw">use</span> <span class="ident">std::marker::PhantomData</span>;
+<span class="kw">use </span>std::collections::HashMap;
+<span class="kw">use </span>std::marker::PhantomData;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::lang::lattice</span>::{<span class="ident">Convert</span>, <span class="ident">LatticeRepr</span>, <span class="ident">Merge</span>};
+<span class="kw">use </span><span class="kw">crate</span>::lang::lattice::{Convert, LatticeRepr, Merge};
 
-<span class="comment">// TODO(mingwei): Use map-union lattice to represent groups?</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">GroupBy</span>&lt;<span class="ident">K</span>, <span class="ident">V</span>, <span class="ident">V2</span>, <span class="ident">O</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">K</span>: <span class="ident">Eq</span> + <span class="ident">std::hash::Hash</span> + <span class="ident">Clone</span>,
-    <span class="ident">V</span>: <span class="ident">LatticeRepr</span>&lt;<span class="ident">Lattice</span> = <span class="ident">V2::Lattice</span>&gt; + <span class="ident">Merge</span>&lt;<span class="ident">V2</span>&gt;,
-    <span class="ident">V2</span>: <span class="ident">LatticeRepr</span> + <span class="ident">Convert</span>&lt;<span class="ident">V</span>&gt;,
-    <span class="ident">O</span>: <span class="ident">Pusherator</span>&lt;<span class="ident">Item</span> = (<span class="ident">K</span>, <span class="ident">V::Repr</span>)&gt;,
+<span class="comment">// TODO(mingwei): Use map-union lattice to represent groups?
+</span><span class="kw">pub struct </span>GroupBy&lt;K, V, V2, O&gt;
+<span class="kw">where
+    </span>K: Eq + std::hash::Hash + Clone,
+    V: LatticeRepr&lt;Lattice = V2::Lattice&gt; + Merge&lt;V2&gt;,
+    V2: LatticeRepr + Convert&lt;V&gt;,
+    O: Pusherator&lt;Item = (K, V::Repr)&gt;,
 {
-    <span class="ident">contents</span>: <span class="ident">HashMap</span>&lt;<span class="ident">K</span>, <span class="ident">V::Repr</span>&gt;,
-    <span class="ident">out</span>: <span class="ident">O</span>,
-    <span class="ident">_phantom</span>: <span class="ident">std::marker::PhantomData</span>&lt;<span class="kw">fn</span>(<span class="ident">V2</span>)&gt;,
+    contents: HashMap&lt;K, V::Repr&gt;,
+    out: O,
+    _phantom: std::marker::PhantomData&lt;<span class="kw">fn</span>(V2)&gt;,
 }
-<span class="kw">impl</span>&lt;<span class="ident">K</span>, <span class="ident">V</span>, <span class="ident">V2</span>, <span class="ident">O</span>&gt; <span class="ident">Pusherator</span> <span class="kw">for</span> <span class="ident">GroupBy</span>&lt;<span class="ident">K</span>, <span class="ident">V</span>, <span class="ident">V2</span>, <span class="ident">O</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">K</span>: <span class="ident">Eq</span> + <span class="ident">std::hash::Hash</span> + <span class="ident">Clone</span>,
-    <span class="ident">V</span>: <span class="ident">LatticeRepr</span>&lt;<span class="ident">Lattice</span> = <span class="ident">V2::Lattice</span>&gt; + <span class="ident">Merge</span>&lt;<span class="ident">V2</span>&gt;,
-    <span class="ident">V2</span>: <span class="ident">LatticeRepr</span> + <span class="ident">Convert</span>&lt;<span class="ident">V</span>&gt;,
-    <span class="ident">O</span>: <span class="ident">Pusherator</span>&lt;<span class="ident">Item</span> = (<span class="ident">K</span>, <span class="ident">V::Repr</span>)&gt;,
+<span class="kw">impl</span>&lt;K, V, V2, O&gt; Pusherator <span class="kw">for </span>GroupBy&lt;K, V, V2, O&gt;
+<span class="kw">where
+    </span>K: Eq + std::hash::Hash + Clone,
+    V: LatticeRepr&lt;Lattice = V2::Lattice&gt; + Merge&lt;V2&gt;,
+    V2: LatticeRepr + Convert&lt;V&gt;,
+    O: Pusherator&lt;Item = (K, V::Repr)&gt;,
 {
-    <span class="kw">type</span> <span class="ident">Item</span> = (<span class="ident">K</span>, <span class="ident">V2::Repr</span>);
-    <span class="kw">fn</span> <span class="ident">give</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">item</span>: <span class="ident"><span class="self">Self</span>::Item</span>) {
-        <span class="comment">// TODO(justin): we need a more coherent understanding of time in order</span>
-        <span class="comment">// to not emit a ton of extra stuff here.</span>
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">v</span>) = <span class="self">self</span>.<span class="ident">contents</span>.<span class="ident">get_mut</span>(<span class="kw-2">&amp;</span><span class="ident">item</span>.<span class="number">0</span>) {
-            <span class="kw">if</span> <span class="ident">V::merge</span>(<span class="ident">v</span>, <span class="ident">item</span>.<span class="number">1</span>) {
-                <span class="self">self</span>.<span class="ident">out</span>.<span class="ident">give</span>((<span class="ident">item</span>.<span class="number">0</span>, <span class="ident">v</span>.<span class="ident">clone</span>()));
+    <span class="kw">type </span>Item = (K, V2::Repr);
+    <span class="kw">fn </span>give(<span class="kw-2">&amp;mut </span><span class="self">self</span>, item: <span class="self">Self</span>::Item) {
+        <span class="comment">// TODO(justin): we need a more coherent understanding of time in order
+        // to not emit a ton of extra stuff here.
+        </span><span class="kw">if let </span><span class="prelude-val">Some</span>(v) = <span class="self">self</span>.contents.get_mut(<span class="kw-2">&amp;</span>item.<span class="number">0</span>) {
+            <span class="kw">if </span>V::merge(v, item.<span class="number">1</span>) {
+                <span class="self">self</span>.out.give((item.<span class="number">0</span>, v.clone()));
             }
-        } <span class="kw">else</span> {
-            <span class="kw">let</span> <span class="ident">v</span> = <span class="ident">V2::convert</span>(<span class="ident">item</span>.<span class="number">1</span>);
-            <span class="self">self</span>.<span class="ident">contents</span>.<span class="ident">insert</span>(<span class="ident">item</span>.<span class="number">0</span>.<span class="ident">clone</span>(), <span class="ident">v</span>.<span class="ident">clone</span>());
-            <span class="self">self</span>.<span class="ident">out</span>.<span class="ident">give</span>((<span class="ident">item</span>.<span class="number">0</span>, <span class="ident">v</span>));
+        } <span class="kw">else </span>{
+            <span class="kw">let </span>v = V2::convert(item.<span class="number">1</span>);
+            <span class="self">self</span>.contents.insert(item.<span class="number">0</span>.clone(), v.clone());
+            <span class="self">self</span>.out.give((item.<span class="number">0</span>, v));
         }
     }
 }
-<span class="kw">impl</span>&lt;<span class="ident">K</span>, <span class="ident">V</span>, <span class="ident">V2</span>, <span class="ident">O</span>&gt; <span class="ident">GroupBy</span>&lt;<span class="ident">K</span>, <span class="ident">V</span>, <span class="ident">V2</span>, <span class="ident">O</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">K</span>: <span class="ident">Eq</span> + <span class="ident">std::hash::Hash</span> + <span class="ident">Clone</span>,
-    <span class="ident">V</span>: <span class="ident">LatticeRepr</span>&lt;<span class="ident">Lattice</span> = <span class="ident">V2::Lattice</span>&gt; + <span class="ident">Merge</span>&lt;<span class="ident">V2</span>&gt;,
-    <span class="ident">V2</span>: <span class="ident">LatticeRepr</span> + <span class="ident">Convert</span>&lt;<span class="ident">V</span>&gt;,
-    <span class="ident">O</span>: <span class="ident">Pusherator</span>&lt;<span class="ident">Item</span> = (<span class="ident">K</span>, <span class="ident">V::Repr</span>)&gt;,
+<span class="kw">impl</span>&lt;K, V, V2, O&gt; GroupBy&lt;K, V, V2, O&gt;
+<span class="kw">where
+    </span>K: Eq + std::hash::Hash + Clone,
+    V: LatticeRepr&lt;Lattice = V2::Lattice&gt; + Merge&lt;V2&gt;,
+    V2: LatticeRepr + Convert&lt;V&gt;,
+    O: Pusherator&lt;Item = (K, V::Repr)&gt;,
 {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">out</span>: <span class="ident">O</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">contents</span>: <span class="ident">HashMap::new</span>(),
-            <span class="ident">out</span>,
-            <span class="ident">_phantom</span>: <span class="ident">PhantomData</span>,
+    <span class="kw">pub fn </span>new(out: O) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            contents: HashMap::new(),
+            out,
+            _phantom: PhantomData,
         }
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (75b7e52e9 2022-08-13)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

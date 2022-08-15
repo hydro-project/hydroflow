@@ -303,310 +303,310 @@
 <span id="303">303</span>
 <span id="304">304</span>
 <span id="305">305</span>
-</pre><pre class="rust"><code><span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">filter</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">filter_map</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">flatten</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">for_each</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">group_by</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">map</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">partition</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">pivot</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">pull</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">push_handoff</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">tee</span>;
+</pre><pre class="rust"><code><span class="kw">pub mod </span>filter;
+<span class="kw">pub mod </span>filter_map;
+<span class="kw">pub mod </span>flatten;
+<span class="kw">pub mod </span>for_each;
+<span class="kw">pub mod </span>group_by;
+<span class="kw">pub mod </span>map;
+<span class="kw">pub mod </span>partition;
+<span class="kw">pub mod </span>pivot;
+<span class="kw">pub mod </span>pull;
+<span class="kw">pub mod </span>push_handoff;
+<span class="kw">pub mod </span>tee;
 
-<span class="kw">use</span> <span class="ident">std::marker::PhantomData</span>;
+<span class="kw">use </span>std::marker::PhantomData;
 
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">Pusherator</span>: <span class="ident">Sized</span> {
-    <span class="kw">type</span> <span class="ident">Item</span>;
-    <span class="kw">fn</span> <span class="ident">give</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">item</span>: <span class="ident"><span class="self">Self</span>::Item</span>);
+<span class="kw">pub trait </span>Pusherator: Sized {
+    <span class="kw">type </span>Item;
+    <span class="kw">fn </span>give(<span class="kw-2">&amp;mut </span><span class="self">self</span>, item: <span class="self">Self</span>::Item);
 }
 
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">IteratorToPusherator</span>: <span class="ident">Iterator</span> {
-    <span class="kw">fn</span> <span class="ident">pull_to_push</span>(<span class="self">self</span>) -&gt; <span class="ident">pivot::PivotBuild</span>&lt;<span class="self">Self</span>&gt;
-    <span class="kw">where</span>
-        <span class="self">Self</span>: <span class="ident">Sized</span>,
+<span class="kw">pub trait </span>IteratorToPusherator: Iterator {
+    <span class="kw">fn </span>pull_to_push(<span class="self">self</span>) -&gt; pivot::PivotBuild&lt;<span class="self">Self</span>&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: Sized,
     {
-        <span class="ident">pivot::PivotBuild::new</span>(<span class="self">self</span>)
+        pivot::PivotBuild::new(<span class="self">self</span>)
     }
 }
-<span class="kw">impl</span>&lt;<span class="ident">I</span>&gt; <span class="ident">IteratorToPusherator</span> <span class="kw">for</span> <span class="ident">I</span> <span class="kw">where</span> <span class="ident">I</span>: <span class="ident">Sized</span> + <span class="ident">Iterator</span> {}
+<span class="kw">impl</span>&lt;I&gt; IteratorToPusherator <span class="kw">for </span>I <span class="kw">where </span>I: Sized + Iterator {}
 
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">PusheratorBuild</span> {
-    <span class="kw">type</span> <span class="ident">Item</span>;
+<span class="kw">pub trait </span>PusheratorBuild {
+    <span class="kw">type </span>Item;
 
-    <span class="kw">type</span> <span class="ident">Output</span>&lt;<span class="ident">O</span>: <span class="ident">Pusherator</span>&lt;<span class="ident">Item</span> = <span class="ident"><span class="self">Self</span>::Item</span>&gt;&gt;;
-    <span class="kw">fn</span> <span class="ident">build</span>&lt;<span class="ident">O</span>&gt;(<span class="self">self</span>, <span class="ident">input</span>: <span class="ident">O</span>) -&gt; <span class="ident"><span class="self">Self</span>::Output</span>&lt;<span class="ident">O</span>&gt;
-    <span class="kw">where</span>
-        <span class="ident">O</span>: <span class="ident">Pusherator</span>&lt;<span class="ident">Item</span> = <span class="ident"><span class="self">Self</span>::Item</span>&gt;;
+    <span class="kw">type </span>Output&lt;O: Pusherator&lt;Item = <span class="self">Self</span>::Item&gt;&gt;;
+    <span class="kw">fn </span>build&lt;O&gt;(<span class="self">self</span>, input: O) -&gt; <span class="self">Self</span>::Output&lt;O&gt;
+    <span class="kw">where
+        </span>O: Pusherator&lt;Item = <span class="self">Self</span>::Item&gt;;
 
-    <span class="kw">fn</span> <span class="ident">map</span>&lt;<span class="ident">U</span>, <span class="ident">F</span>&gt;(<span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">map::MapBuild</span>&lt;<span class="ident"><span class="self">Self</span>::Item</span>, <span class="ident">U</span>, <span class="ident">F</span>, <span class="self">Self</span>&gt;
-    <span class="kw">where</span>
-        <span class="self">Self</span>: <span class="ident">Sized</span>,
-        <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="ident"><span class="self">Self</span>::Item</span>) -&gt; <span class="ident">U</span>,
+    <span class="kw">fn </span>map&lt;U, F&gt;(<span class="self">self</span>, f: F) -&gt; map::MapBuild&lt;<span class="self">Self</span>::Item, U, F, <span class="self">Self</span>&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: Sized,
+        F: FnMut(<span class="self">Self</span>::Item) -&gt; U,
     {
-        <span class="ident">map::MapBuild::new</span>(<span class="self">self</span>, <span class="ident">f</span>)
+        map::MapBuild::new(<span class="self">self</span>, f)
     }
 
-    <span class="kw">fn</span> <span class="ident">filter</span>&lt;<span class="ident">F</span>&gt;(<span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">filter::FilterBuild</span>&lt;<span class="ident"><span class="self">Self</span>::Item</span>, <span class="ident">F</span>, <span class="self">Self</span>&gt;
-    <span class="kw">where</span>
-        <span class="self">Self</span>: <span class="ident">Sized</span>,
-        <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident"><span class="self">Self</span>::Item</span>) -&gt; <span class="ident">bool</span>,
+    <span class="kw">fn </span>filter&lt;F&gt;(<span class="self">self</span>, f: F) -&gt; filter::FilterBuild&lt;<span class="self">Self</span>::Item, F, <span class="self">Self</span>&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: Sized,
+        F: FnMut(<span class="kw-2">&amp;</span><span class="self">Self</span>::Item) -&gt; bool,
     {
-        <span class="ident">filter::FilterBuild::new</span>(<span class="self">self</span>, <span class="ident">f</span>)
+        filter::FilterBuild::new(<span class="self">self</span>, f)
     }
 
-    <span class="kw">fn</span> <span class="ident">tee</span>&lt;<span class="ident">O1</span>&gt;(<span class="self">self</span>, <span class="ident">first_out</span>: <span class="ident">O1</span>) -&gt; <span class="ident">tee::TeeBuild</span>&lt;<span class="ident"><span class="self">Self</span>::Item</span>, <span class="ident">O1</span>, <span class="self">Self</span>&gt;
-    <span class="kw">where</span>
-        <span class="self">Self</span>: <span class="ident">Sized</span>,
-        <span class="ident"><span class="self">Self</span>::Item</span>: <span class="ident">Clone</span>,
-        <span class="ident">O1</span>: <span class="ident">Pusherator</span>&lt;<span class="ident">Item</span> = <span class="ident"><span class="self">Self</span>::Item</span>&gt;,
+    <span class="kw">fn </span>tee&lt;O1&gt;(<span class="self">self</span>, first_out: O1) -&gt; tee::TeeBuild&lt;<span class="self">Self</span>::Item, O1, <span class="self">Self</span>&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: Sized,
+        <span class="self">Self</span>::Item: Clone,
+        O1: Pusherator&lt;Item = <span class="self">Self</span>::Item&gt;,
     {
-        <span class="ident">tee::TeeBuild::new</span>(<span class="self">self</span>, <span class="ident">first_out</span>)
+        tee::TeeBuild::new(<span class="self">self</span>, first_out)
     }
 
-    <span class="kw">fn</span> <span class="ident">for_each</span>&lt;<span class="ident">F</span>&gt;(<span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident"><span class="self">Self</span>::Output</span>&lt;<span class="ident">for_each::ForEach</span>&lt;<span class="ident"><span class="self">Self</span>::Item</span>, <span class="ident">F</span>&gt;&gt;
-    <span class="kw">where</span>
-        <span class="self">Self</span>: <span class="ident">Sized</span>,
-        <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="ident"><span class="self">Self</span>::Item</span>),
+    <span class="kw">fn </span>for_each&lt;F&gt;(<span class="self">self</span>, f: F) -&gt; <span class="self">Self</span>::Output&lt;for_each::ForEach&lt;<span class="self">Self</span>::Item, F&gt;&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: Sized,
+        F: FnMut(<span class="self">Self</span>::Item),
     {
-        <span class="self">self</span>.<span class="ident">build</span>(<span class="ident">for_each::ForEach::new</span>(<span class="ident">f</span>))
+        <span class="self">self</span>.build(for_each::ForEach::new(f))
     }
 
-    <span class="kw">fn</span> <span class="ident">handoff</span>&lt;<span class="ident">H</span>&gt;(
+    <span class="kw">fn </span>handoff&lt;H&gt;(
         <span class="self">self</span>,
-        <span class="ident">handoff</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="kw">crate</span>::scheduled::port::SendCtx</span>&lt;<span class="ident">H</span>&gt;,
-    ) -&gt; <span class="ident"><span class="self">Self</span>::Output</span>&lt;<span class="ident">push_handoff::PushHandoff</span>&lt;<span class="lifetime">&#39;_</span>, <span class="ident">H</span>, <span class="ident"><span class="self">Self</span>::Item</span>&gt;&gt;
-    <span class="kw">where</span>
-        <span class="self">Self</span>: <span class="ident">Sized</span>,
-        <span class="ident">H</span>: <span class="ident"><span class="kw">crate</span>::scheduled::handoff::Handoff</span> + <span class="ident"><span class="kw">crate</span>::scheduled::handoff::CanReceive</span>&lt;<span class="ident"><span class="self">Self</span>::Item</span>&gt;,
+        handoff: <span class="kw-2">&amp;mut </span><span class="kw">crate</span>::scheduled::port::SendCtx&lt;H&gt;,
+    ) -&gt; <span class="self">Self</span>::Output&lt;push_handoff::PushHandoff&lt;<span class="lifetime">&#39;_</span>, H, <span class="self">Self</span>::Item&gt;&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: Sized,
+        H: <span class="kw">crate</span>::scheduled::handoff::Handoff + <span class="kw">crate</span>::scheduled::handoff::CanReceive&lt;<span class="self">Self</span>::Item&gt;,
     {
-        <span class="self">self</span>.<span class="ident">build</span>(<span class="ident">push_handoff::PushHandoff::new</span>(<span class="ident">handoff</span>))
+        <span class="self">self</span>.build(push_handoff::PushHandoff::new(handoff))
     }
 }
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">InputBuild</span>&lt;<span class="ident">T</span>&gt;(<span class="ident">PhantomData</span>&lt;<span class="ident">T</span>&gt;);
-<span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">Default</span> <span class="kw">for</span> <span class="ident">InputBuild</span>&lt;<span class="ident">T</span>&gt; {
-    <span class="kw">fn</span> <span class="ident">default</span>() -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span>(<span class="ident">PhantomData</span>)
+<span class="kw">pub struct </span>InputBuild&lt;T&gt;(PhantomData&lt;T&gt;);
+<span class="kw">impl</span>&lt;T&gt; Default <span class="kw">for </span>InputBuild&lt;T&gt; {
+    <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>(PhantomData)
     }
 }
-<span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">InputBuild</span>&lt;<span class="ident">T</span>&gt; {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="self">Self</span> {
-        <span class="ident">Default::default</span>()
+<span class="kw">impl</span>&lt;T&gt; InputBuild&lt;T&gt; {
+    <span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
+        Default::default()
     }
 }
-<span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">PusheratorBuild</span> <span class="kw">for</span> <span class="ident">InputBuild</span>&lt;<span class="ident">T</span>&gt; {
-    <span class="kw">type</span> <span class="ident">Item</span> = <span class="ident">T</span>;
+<span class="kw">impl</span>&lt;T&gt; PusheratorBuild <span class="kw">for </span>InputBuild&lt;T&gt; {
+    <span class="kw">type </span>Item = T;
 
-    <span class="kw">type</span> <span class="ident">Output</span>&lt;<span class="ident">O</span>: <span class="ident">Pusherator</span>&lt;<span class="ident">Item</span> = <span class="ident"><span class="self">Self</span>::Item</span>&gt;&gt; = <span class="ident">O</span>;
-    <span class="kw">fn</span> <span class="ident">build</span>&lt;<span class="ident">O</span>&gt;(<span class="self">self</span>, <span class="ident">input</span>: <span class="ident">O</span>) -&gt; <span class="ident"><span class="self">Self</span>::Output</span>&lt;<span class="ident">O</span>&gt;
-    <span class="kw">where</span>
-        <span class="ident">O</span>: <span class="ident">Pusherator</span>&lt;<span class="ident">Item</span> = <span class="ident"><span class="self">Self</span>::Item</span>&gt;,
+    <span class="kw">type </span>Output&lt;O: Pusherator&lt;Item = <span class="self">Self</span>::Item&gt;&gt; = O;
+    <span class="kw">fn </span>build&lt;O&gt;(<span class="self">self</span>, input: O) -&gt; <span class="self">Self</span>::Output&lt;O&gt;
+    <span class="kw">where
+        </span>O: Pusherator&lt;Item = <span class="self">Self</span>::Item&gt;,
     {
-        <span class="ident">input</span>
+        input
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
-<span class="kw">mod</span> <span class="ident">tests</span> {
-    <span class="kw">use</span> <span class="ident">std::rc::Rc</span>;
+<span class="attribute">#[cfg(test)]</span>
+<span class="kw">mod </span>tests {
+    <span class="kw">use </span>std::rc::Rc;
 
-    <span class="kw">use</span> <span class="kw">super</span>::{
-        <span class="ident">filter::Filter</span>, <span class="ident">for_each::ForEach</span>, <span class="ident">group_by::GroupBy</span>, <span class="ident">map::Map</span>, <span class="ident">partition::Partition</span>,
-        <span class="ident">pivot::Pivot</span>, <span class="ident">tee::Tee</span>, <span class="ident">Pusherator</span>,
+    <span class="kw">use super</span>::{
+        filter::Filter, for_each::ForEach, group_by::GroupBy, map::Map, partition::Partition,
+        pivot::Pivot, tee::Tee, Pusherator,
     };
-    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::lang::lattice::ord::MaxRepr</span>;
+    <span class="kw">use </span><span class="kw">crate</span>::lang::lattice::ord::MaxRepr;
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">linear_chains</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">v</span> = <span class="ident">Vec::new</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pusher</span> = <span class="ident">Map::new</span>(
-            |<span class="ident">x</span>| <span class="ident">x</span> * <span class="number">2</span>,
-            <span class="ident">Filter::new</span>(|<span class="ident">x</span>| <span class="kw-2">*</span><span class="ident">x</span> &gt; <span class="number">5</span>, <span class="ident">ForEach::new</span>(|<span class="ident">x</span>| <span class="ident">v</span>.<span class="ident">push</span>(<span class="ident">x</span>))),
+    <span class="attribute">#[test]</span>
+    <span class="kw">fn </span>linear_chains() {
+        <span class="kw">let </span><span class="kw-2">mut </span>v = Vec::new();
+        <span class="kw">let </span><span class="kw-2">mut </span>pusher = Map::new(
+            |x| x * <span class="number">2</span>,
+            Filter::new(|x| <span class="kw-2">*</span>x &gt; <span class="number">5</span>, ForEach::new(|x| v.push(x))),
         );
 
-        <span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="number">0</span>..<span class="number">5</span> {
-            <span class="ident">pusher</span>.<span class="ident">give</span>(<span class="ident">i</span>);
+        <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..<span class="number">5 </span>{
+            pusher.give(i);
         }
 
-        <span class="macro">assert_eq!</span>(<span class="ident">v</span>, <span class="macro">vec!</span>[<span class="number">6</span>, <span class="number">8</span>]);
+        <span class="macro">assert_eq!</span>(v, <span class="macro">vec!</span>[<span class="number">6</span>, <span class="number">8</span>]);
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">partition</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">evens</span> = <span class="ident">Vec::new</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">odds</span> = <span class="ident">Vec::new</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pusher</span> = <span class="ident">Partition::new</span>(
-            |<span class="ident">x</span>| <span class="ident">x</span> % <span class="number">2</span> == <span class="number">0</span>,
-            <span class="ident">ForEach::new</span>(|<span class="ident">x</span>| <span class="ident">evens</span>.<span class="ident">push</span>(<span class="ident">x</span>)),
-            <span class="ident">ForEach::new</span>(|<span class="ident">x</span>| <span class="ident">odds</span>.<span class="ident">push</span>(<span class="ident">x</span>)),
+    <span class="attribute">#[test]</span>
+    <span class="kw">fn </span>partition() {
+        <span class="kw">let </span><span class="kw-2">mut </span>evens = Vec::new();
+        <span class="kw">let </span><span class="kw-2">mut </span>odds = Vec::new();
+        <span class="kw">let </span><span class="kw-2">mut </span>pusher = Partition::new(
+            |x| x % <span class="number">2 </span>== <span class="number">0</span>,
+            ForEach::new(|x| evens.push(x)),
+            ForEach::new(|x| odds.push(x)),
         );
 
-        <span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="number">0</span>..<span class="number">5</span> {
-            <span class="ident">pusher</span>.<span class="ident">give</span>(<span class="ident">i</span>);
+        <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..<span class="number">5 </span>{
+            pusher.give(i);
         }
 
-        <span class="macro">assert_eq!</span>(<span class="ident">evens</span>, <span class="macro">vec!</span>[<span class="number">0</span>, <span class="number">2</span>, <span class="number">4</span>]);
-        <span class="macro">assert_eq!</span>(<span class="ident">odds</span>, <span class="macro">vec!</span>[<span class="number">1</span>, <span class="number">3</span>]);
+        <span class="macro">assert_eq!</span>(evens, <span class="macro">vec!</span>[<span class="number">0</span>, <span class="number">2</span>, <span class="number">4</span>]);
+        <span class="macro">assert_eq!</span>(odds, <span class="macro">vec!</span>[<span class="number">1</span>, <span class="number">3</span>]);
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">tee</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">left</span> = <span class="ident">Vec::new</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">right</span> = <span class="ident">Vec::new</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pusher</span> = <span class="ident">Tee::new</span>(
-            <span class="ident">ForEach::new</span>(|<span class="ident">x</span>| <span class="ident">left</span>.<span class="ident">push</span>(<span class="ident">x</span>)),
-            <span class="ident">ForEach::new</span>(|<span class="ident">x</span>| <span class="ident">right</span>.<span class="ident">push</span>(<span class="ident">x</span>)),
+    <span class="attribute">#[test]</span>
+    <span class="kw">fn </span>tee() {
+        <span class="kw">let </span><span class="kw-2">mut </span>left = Vec::new();
+        <span class="kw">let </span><span class="kw-2">mut </span>right = Vec::new();
+        <span class="kw">let </span><span class="kw-2">mut </span>pusher = Tee::new(
+            ForEach::new(|x| left.push(x)),
+            ForEach::new(|x| right.push(x)),
         );
 
-        <span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="number">0</span>..<span class="number">5</span> {
-            <span class="ident">pusher</span>.<span class="ident">give</span>(<span class="ident">i</span>);
+        <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..<span class="number">5 </span>{
+            pusher.give(i);
         }
 
-        <span class="macro">assert_eq!</span>(<span class="ident">left</span>, <span class="macro">vec!</span>[<span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>]);
-        <span class="macro">assert_eq!</span>(<span class="ident">right</span>, <span class="macro">vec!</span>[<span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>]);
+        <span class="macro">assert_eq!</span>(left, <span class="macro">vec!</span>[<span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>]);
+        <span class="macro">assert_eq!</span>(right, <span class="macro">vec!</span>[<span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>]);
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">tee_rcs</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">left</span> = <span class="ident">Vec::new</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">right</span> = <span class="ident">Vec::new</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pusher</span> = <span class="ident">Map::new</span>(
-            <span class="ident">Rc::new</span>,
-            <span class="ident">Tee::new</span>(
-                <span class="ident">ForEach::new</span>(|<span class="ident">x</span>: <span class="ident">Rc</span>&lt;<span class="ident">i32</span>&gt;| <span class="ident">left</span>.<span class="ident">push</span>(<span class="kw-2">*</span><span class="ident">x</span>)),
-                <span class="ident">ForEach::new</span>(|<span class="ident">x</span>: <span class="ident">Rc</span>&lt;<span class="ident">i32</span>&gt;| <span class="ident">right</span>.<span class="ident">push</span>(<span class="kw-2">*</span><span class="ident">x</span>)),
+    <span class="attribute">#[test]</span>
+    <span class="kw">fn </span>tee_rcs() {
+        <span class="kw">let </span><span class="kw-2">mut </span>left = Vec::new();
+        <span class="kw">let </span><span class="kw-2">mut </span>right = Vec::new();
+        <span class="kw">let </span><span class="kw-2">mut </span>pusher = Map::new(
+            Rc::new,
+            Tee::new(
+                ForEach::new(|x: Rc&lt;i32&gt;| left.push(<span class="kw-2">*</span>x)),
+                ForEach::new(|x: Rc&lt;i32&gt;| right.push(<span class="kw-2">*</span>x)),
             ),
         );
 
-        <span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="number">0</span>..<span class="number">5</span> {
-            <span class="ident">pusher</span>.<span class="ident">give</span>(<span class="ident">i</span>);
+        <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..<span class="number">5 </span>{
+            pusher.give(i);
         }
 
-        <span class="macro">assert_eq!</span>(<span class="ident">left</span>, <span class="macro">vec!</span>[<span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>]);
-        <span class="macro">assert_eq!</span>(<span class="ident">right</span>, <span class="macro">vec!</span>[<span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>]);
+        <span class="macro">assert_eq!</span>(left, <span class="macro">vec!</span>[<span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>]);
+        <span class="macro">assert_eq!</span>(right, <span class="macro">vec!</span>[<span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>]);
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">pivot</span>() {
-        <span class="kw">let</span> <span class="ident">a</span> = <span class="number">0</span>..<span class="number">10</span>;
-        <span class="kw">let</span> <span class="ident">b</span> = <span class="number">10</span>..<span class="number">20</span>;
+    <span class="attribute">#[test]</span>
+    <span class="kw">fn </span>pivot() {
+        <span class="kw">let </span>a = <span class="number">0</span>..<span class="number">10</span>;
+        <span class="kw">let </span>b = <span class="number">10</span>..<span class="number">20</span>;
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">left</span> = <span class="ident">Vec::new</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">right</span> = <span class="ident">Vec::new</span>();
+        <span class="kw">let </span><span class="kw-2">mut </span>left = Vec::new();
+        <span class="kw">let </span><span class="kw-2">mut </span>right = Vec::new();
 
-        <span class="kw">let</span> <span class="ident">pivot</span> = <span class="ident">Pivot::new</span>(
-            <span class="ident">a</span>.<span class="ident">into_iter</span>().<span class="ident">chain</span>(<span class="ident">b</span>.<span class="ident">into_iter</span>()),
-            <span class="ident">Partition::new</span>(
-                |<span class="ident">x</span>| <span class="ident">x</span> % <span class="number">2</span> == <span class="number">0</span>,
-                <span class="ident">ForEach::new</span>(|<span class="ident">x</span>| <span class="ident">left</span>.<span class="ident">push</span>(<span class="ident">x</span>)),
-                <span class="ident">ForEach::new</span>(|<span class="ident">x</span>| <span class="ident">right</span>.<span class="ident">push</span>(<span class="ident">x</span>)),
+        <span class="kw">let </span>pivot = Pivot::new(
+            a.into_iter().chain(b.into_iter()),
+            Partition::new(
+                |x| x % <span class="number">2 </span>== <span class="number">0</span>,
+                ForEach::new(|x| left.push(x)),
+                ForEach::new(|x| right.push(x)),
             ),
         );
 
-        <span class="ident">pivot</span>.<span class="ident">run</span>();
+        pivot.run();
 
-        <span class="macro">assert_eq!</span>(<span class="ident">left</span>, <span class="macro">vec!</span>[<span class="number">0</span>, <span class="number">2</span>, <span class="number">4</span>, <span class="number">6</span>, <span class="number">8</span>, <span class="number">10</span>, <span class="number">12</span>, <span class="number">14</span>, <span class="number">16</span>, <span class="number">18</span>]);
-        <span class="macro">assert_eq!</span>(<span class="ident">right</span>, <span class="macro">vec!</span>[<span class="number">1</span>, <span class="number">3</span>, <span class="number">5</span>, <span class="number">7</span>, <span class="number">9</span>, <span class="number">11</span>, <span class="number">13</span>, <span class="number">15</span>, <span class="number">17</span>, <span class="number">19</span>]);
+        <span class="macro">assert_eq!</span>(left, <span class="macro">vec!</span>[<span class="number">0</span>, <span class="number">2</span>, <span class="number">4</span>, <span class="number">6</span>, <span class="number">8</span>, <span class="number">10</span>, <span class="number">12</span>, <span class="number">14</span>, <span class="number">16</span>, <span class="number">18</span>]);
+        <span class="macro">assert_eq!</span>(right, <span class="macro">vec!</span>[<span class="number">1</span>, <span class="number">3</span>, <span class="number">5</span>, <span class="number">7</span>, <span class="number">9</span>, <span class="number">11</span>, <span class="number">13</span>, <span class="number">15</span>, <span class="number">17</span>, <span class="number">19</span>]);
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">map_union</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">v</span> = <span class="ident">Vec::new</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pusher</span> =
-            &lt;<span class="ident">GroupBy</span>&lt;<span class="kw">_</span>, <span class="ident">MaxRepr</span>&lt;<span class="ident">usize</span>&gt;, <span class="ident">MaxRepr</span>&lt;<span class="ident">usize</span>&gt;, <span class="kw">_</span>&gt;&gt;<span class="ident">::new</span>(<span class="ident">ForEach::new</span>(|<span class="ident">x</span>| <span class="ident">v</span>.<span class="ident">push</span>(<span class="ident">x</span>)));
+    <span class="attribute">#[test]</span>
+    <span class="kw">fn </span>map_union() {
+        <span class="kw">let </span><span class="kw-2">mut </span>v = Vec::new();
+        <span class="kw">let </span><span class="kw-2">mut </span>pusher =
+            &lt;GroupBy&lt;<span class="kw">_</span>, MaxRepr&lt;usize&gt;, MaxRepr&lt;usize&gt;, <span class="kw">_</span>&gt;&gt;::new(ForEach::new(|x| v.push(x)));
 
-        <span class="ident">pusher</span>.<span class="ident">give</span>((<span class="number">1</span>, <span class="number">1</span>));
-        <span class="ident">pusher</span>.<span class="ident">give</span>((<span class="number">1</span>, <span class="number">2</span>));
-        <span class="ident">pusher</span>.<span class="ident">give</span>((<span class="number">1</span>, <span class="number">1</span>));
+        pusher.give((<span class="number">1</span>, <span class="number">1</span>));
+        pusher.give((<span class="number">1</span>, <span class="number">2</span>));
+        pusher.give((<span class="number">1</span>, <span class="number">1</span>));
 
-        <span class="macro">assert_eq!</span>(<span class="ident">v</span>, <span class="macro">vec!</span>[(<span class="number">1</span>, <span class="number">1</span>), (<span class="number">1</span>, <span class="number">2</span>)]);
+        <span class="macro">assert_eq!</span>(v, <span class="macro">vec!</span>[(<span class="number">1</span>, <span class="number">1</span>), (<span class="number">1</span>, <span class="number">2</span>)]);
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
-<span class="kw">mod</span> <span class="ident">test_builder</span> {
-    <span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
+<span class="attribute">#[cfg(test)]</span>
+<span class="kw">mod </span>test_builder {
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">test_builder_constructed</span>() {
-        <span class="kw">let</span> <span class="ident">pb</span> = <span class="ident">InputBuild</span>::&lt;<span class="ident">usize</span>&gt;(<span class="ident">PhantomData</span>);
-        <span class="kw">let</span> <span class="ident">pb</span> = <span class="ident">filter::FilterBuild::new</span>(<span class="ident">pb</span>, |<span class="kw-2">&amp;</span><span class="ident">x</span>| <span class="number">0</span> == <span class="ident">x</span> % <span class="number">2</span>);
-        <span class="kw">let</span> <span class="ident">pb</span> = <span class="ident">map::MapBuild::new</span>(<span class="ident">pb</span>, |<span class="ident">x</span>| <span class="ident">x</span> * <span class="ident">x</span>);
+    <span class="attribute">#[test]</span>
+    <span class="kw">fn </span>test_builder_constructed() {
+        <span class="kw">let </span>pb = InputBuild::&lt;usize&gt;(PhantomData);
+        <span class="kw">let </span>pb = filter::FilterBuild::new(pb, |<span class="kw-2">&amp;</span>x| <span class="number">0 </span>== x % <span class="number">2</span>);
+        <span class="kw">let </span>pb = map::MapBuild::new(pb, |x| x * x);
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">output</span> = <span class="ident">Vec::new</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pusherator</span> = <span class="ident">pb</span>.<span class="ident">build</span>(<span class="ident">for_each::ForEach::new</span>(|<span class="ident">x</span>| <span class="ident">output</span>.<span class="ident">push</span>(<span class="ident">x</span>)));
+        <span class="kw">let </span><span class="kw-2">mut </span>output = Vec::new();
+        <span class="kw">let </span><span class="kw-2">mut </span>pusherator = pb.build(for_each::ForEach::new(|x| output.push(x)));
 
-        <span class="kw">for</span> <span class="ident">x</span> <span class="kw">in</span> <span class="number">0</span>..<span class="number">10</span> {
-            <span class="ident">pusherator</span>.<span class="ident">give</span>(<span class="ident">x</span>);
+        <span class="kw">for </span>x <span class="kw">in </span><span class="number">0</span>..<span class="number">10 </span>{
+            pusherator.give(x);
         }
 
-        <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span>[<span class="number">0</span>, <span class="number">4</span>, <span class="number">16</span>, <span class="number">36</span>, <span class="number">64</span>], <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">output</span>);
+        <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span>[<span class="number">0</span>, <span class="number">4</span>, <span class="number">16</span>, <span class="number">36</span>, <span class="number">64</span>], <span class="kw-2">&amp;*</span>output);
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">test_builder</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">output</span> = <span class="ident">Vec::new</span>();
+    <span class="attribute">#[test]</span>
+    <span class="kw">fn </span>test_builder() {
+        <span class="kw">let </span><span class="kw-2">mut </span>output = Vec::new();
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pusherator</span> = &lt;<span class="ident">InputBuild</span>&lt;<span class="ident">usize</span>&gt;&gt;<span class="ident">::new</span>()
-            .<span class="ident">filter</span>(|<span class="kw-2">&amp;</span><span class="ident">x</span>| <span class="number">0</span> == <span class="ident">x</span> % <span class="number">2</span>)
-            .<span class="ident">map</span>(|<span class="ident">x</span>| <span class="ident">x</span> * <span class="ident">x</span>)
-            .<span class="ident">for_each</span>(|<span class="ident">x</span>| <span class="ident">output</span>.<span class="ident">push</span>(<span class="ident">x</span>));
+        <span class="kw">let </span><span class="kw-2">mut </span>pusherator = &lt;InputBuild&lt;usize&gt;&gt;::new()
+            .filter(|<span class="kw-2">&amp;</span>x| <span class="number">0 </span>== x % <span class="number">2</span>)
+            .map(|x| x * x)
+            .for_each(|x| output.push(x));
 
-        <span class="kw">for</span> <span class="ident">x</span> <span class="kw">in</span> <span class="number">0</span>..<span class="number">10</span> {
-            <span class="ident">pusherator</span>.<span class="ident">give</span>(<span class="ident">x</span>);
+        <span class="kw">for </span>x <span class="kw">in </span><span class="number">0</span>..<span class="number">10 </span>{
+            pusherator.give(x);
         }
 
-        <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span>[<span class="number">0</span>, <span class="number">4</span>, <span class="number">16</span>, <span class="number">36</span>, <span class="number">64</span>], <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">output</span>);
+        <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span>[<span class="number">0</span>, <span class="number">4</span>, <span class="number">16</span>, <span class="number">36</span>, <span class="number">64</span>], <span class="kw-2">&amp;*</span>output);
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">test_builder_tee</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">output_evn</span> = <span class="ident">Vec::new</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">output_odd</span> = <span class="ident">Vec::new</span>();
+    <span class="attribute">#[test]</span>
+    <span class="kw">fn </span>test_builder_tee() {
+        <span class="kw">let </span><span class="kw-2">mut </span>output_evn = Vec::new();
+        <span class="kw">let </span><span class="kw-2">mut </span>output_odd = Vec::new();
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pusherator</span> = &lt;<span class="ident">InputBuild</span>&lt;<span class="ident">usize</span>&gt;&gt;<span class="ident">::new</span>()
-            .<span class="ident">tee</span>(
-                &lt;<span class="ident">InputBuild</span>&lt;<span class="ident">usize</span>&gt;&gt;<span class="ident">::new</span>()
-                    .<span class="ident">filter</span>(|<span class="kw-2">&amp;</span><span class="ident">x</span>| <span class="number">0</span> == <span class="ident">x</span> % <span class="number">2</span>)
-                    .<span class="ident">for_each</span>(|<span class="ident">x</span>| <span class="ident">output_evn</span>.<span class="ident">push</span>(<span class="ident">x</span>)),
+        <span class="kw">let </span><span class="kw-2">mut </span>pusherator = &lt;InputBuild&lt;usize&gt;&gt;::new()
+            .tee(
+                &lt;InputBuild&lt;usize&gt;&gt;::new()
+                    .filter(|<span class="kw-2">&amp;</span>x| <span class="number">0 </span>== x % <span class="number">2</span>)
+                    .for_each(|x| output_evn.push(x)),
             )
-            .<span class="ident">filter</span>(|<span class="kw-2">&amp;</span><span class="ident">x</span>| <span class="number">1</span> == <span class="ident">x</span> % <span class="number">2</span>)
-            .<span class="ident">for_each</span>(|<span class="ident">x</span>| <span class="ident">output_odd</span>.<span class="ident">push</span>(<span class="ident">x</span>));
+            .filter(|<span class="kw-2">&amp;</span>x| <span class="number">1 </span>== x % <span class="number">2</span>)
+            .for_each(|x| output_odd.push(x));
 
-        <span class="kw">for</span> <span class="ident">x</span> <span class="kw">in</span> <span class="number">0</span>..<span class="number">10</span> {
-            <span class="ident">pusherator</span>.<span class="ident">give</span>(<span class="ident">x</span>);
+        <span class="kw">for </span>x <span class="kw">in </span><span class="number">0</span>..<span class="number">10 </span>{
+            pusherator.give(x);
         }
 
-        <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span>[<span class="number">0</span>, <span class="number">2</span>, <span class="number">4</span>, <span class="number">6</span>, <span class="number">8</span>], <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">output_evn</span>);
-        <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span>[<span class="number">1</span>, <span class="number">3</span>, <span class="number">5</span>, <span class="number">7</span>, <span class="number">9</span>], <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">output_odd</span>);
+        <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span>[<span class="number">0</span>, <span class="number">2</span>, <span class="number">4</span>, <span class="number">6</span>, <span class="number">8</span>], <span class="kw-2">&amp;*</span>output_evn);
+        <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span>[<span class="number">1</span>, <span class="number">3</span>, <span class="number">5</span>, <span class="number">7</span>, <span class="number">9</span>], <span class="kw-2">&amp;*</span>output_odd);
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">test_built_subgraph</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">output_evn</span> = <span class="ident">Vec::new</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">output_odd</span> = <span class="ident">Vec::new</span>();
+    <span class="attribute">#[test]</span>
+    <span class="kw">fn </span>test_built_subgraph() {
+        <span class="kw">let </span><span class="kw-2">mut </span>output_evn = Vec::new();
+        <span class="kw">let </span><span class="kw-2">mut </span>output_odd = Vec::new();
 
-        <span class="kw">let</span> <span class="ident">pivot</span> = [<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>]
-            .<span class="ident">into_iter</span>()
-            .<span class="ident">chain</span>([<span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>, <span class="number">6</span>, <span class="number">7</span>])
-            .<span class="ident">map</span>(|<span class="ident">x</span>| <span class="ident">x</span> * <span class="number">9</span>)
-            .<span class="ident">pull_to_push</span>()
-            .<span class="ident">map</span>(|<span class="ident">x</span>| <span class="kw">if</span> <span class="number">0</span> == <span class="ident">x</span> % <span class="number">2</span> { <span class="ident">x</span> / <span class="number">2</span> } <span class="kw">else</span> { <span class="number">3</span> * <span class="ident">x</span> + <span class="number">1</span> })
-            .<span class="ident">tee</span>(
-                &lt;<span class="ident">InputBuild</span>&lt;<span class="ident">usize</span>&gt;&gt;<span class="ident">::new</span>()
-                    .<span class="ident">filter</span>(|<span class="kw-2">&amp;</span><span class="ident">x</span>| <span class="number">0</span> == <span class="ident">x</span> % <span class="number">2</span>)
-                    .<span class="ident">for_each</span>(|<span class="ident">x</span>| <span class="ident">output_evn</span>.<span class="ident">push</span>(<span class="ident">x</span>)),
+        <span class="kw">let </span>pivot = [<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>]
+            .into_iter()
+            .chain([<span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>, <span class="number">6</span>, <span class="number">7</span>])
+            .map(|x| x * <span class="number">9</span>)
+            .pull_to_push()
+            .map(|x| <span class="kw">if </span><span class="number">0 </span>== x % <span class="number">2 </span>{ x / <span class="number">2 </span>} <span class="kw">else </span>{ <span class="number">3 </span>* x + <span class="number">1 </span>})
+            .tee(
+                &lt;InputBuild&lt;usize&gt;&gt;::new()
+                    .filter(|<span class="kw-2">&amp;</span>x| <span class="number">0 </span>== x % <span class="number">2</span>)
+                    .for_each(|x| output_evn.push(x)),
             )
-            .<span class="ident">filter</span>(|<span class="kw-2">&amp;</span><span class="ident">x</span>| <span class="number">1</span> == <span class="ident">x</span> % <span class="number">2</span>)
-            .<span class="ident">for_each</span>(|<span class="ident">x</span>| <span class="ident">output_odd</span>.<span class="ident">push</span>(<span class="ident">x</span>));
+            .filter(|<span class="kw-2">&amp;</span>x| <span class="number">1 </span>== x % <span class="number">2</span>)
+            .for_each(|x| output_odd.push(x));
 
-        <span class="ident">pivot</span>.<span class="ident">run</span>();
+        pivot.run();
 
-        <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span>[<span class="number">28</span>, <span class="number">82</span>, <span class="number">18</span>, <span class="number">136</span>, <span class="number">82</span>, <span class="number">18</span>, <span class="number">136</span>, <span class="number">190</span>], <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">output_evn</span>);
-        <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span>[<span class="number">9</span>, <span class="number">27</span>], <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">output_odd</span>);
+        <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span>[<span class="number">28</span>, <span class="number">82</span>, <span class="number">18</span>, <span class="number">136</span>, <span class="number">82</span>, <span class="number">18</span>, <span class="number">136</span>, <span class="number">190</span>], <span class="kw-2">&amp;*</span>output_evn);
+        <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span>[<span class="number">9</span>, <span class="number">27</span>], <span class="kw-2">&amp;*</span>output_odd);
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (75b7e52e9 2022-08-13)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

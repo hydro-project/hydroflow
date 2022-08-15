@@ -69,76 +69,76 @@
 <span id="69">69</span>
 <span id="70">70</span>
 <span id="71">71</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">slotmap</span>::{<span class="ident">Key</span>, <span class="ident">SecondaryMap</span>};
+</pre><pre class="rust"><code><span class="kw">use </span>slotmap::{Key, SecondaryMap};
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Default</span>, <span class="ident">Clone</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">UnionFind</span>&lt;<span class="ident">K</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">K</span>: <span class="ident">Key</span>,
+<span class="attribute">#[derive(Default, Clone)]</span>
+<span class="kw">pub struct </span>UnionFind&lt;K&gt;
+<span class="kw">where
+    </span>K: Key,
 {
-    <span class="ident">links</span>: <span class="ident">SecondaryMap</span>&lt;<span class="ident">K</span>, <span class="ident">K</span>&gt;,
+    links: SecondaryMap&lt;K, K&gt;,
 }
-<span class="kw">impl</span>&lt;<span class="ident">K</span>&gt; <span class="ident">UnionFind</span>&lt;<span class="ident">K</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">K</span>: <span class="ident">Key</span>,
+<span class="kw">impl</span>&lt;K&gt; UnionFind&lt;K&gt;
+<span class="kw">where
+    </span>K: Key,
 {
-    <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">dead_code</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="self">Self</span> {
-        <span class="ident"><span class="self">Self</span>::default</span>()
+    <span class="attribute">#[allow(dead_code)]</span>
+    <span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>::default()
     }
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">with_capacity</span>(<span class="ident">capacity</span>: <span class="ident">usize</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">links</span>: <span class="ident">SecondaryMap::with_capacity</span>(<span class="ident">capacity</span>),
+    <span class="kw">pub fn </span>with_capacity(capacity: usize) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            links: SecondaryMap::with_capacity(capacity),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">union</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">a</span>: <span class="ident">K</span>, <span class="ident">b</span>: <span class="ident">K</span>) {
-        <span class="kw">let</span> <span class="ident">i</span> = <span class="self">self</span>.<span class="ident">find</span>(<span class="ident">a</span>);
-        <span class="kw">let</span> <span class="ident">j</span> = <span class="self">self</span>.<span class="ident">find</span>(<span class="ident">b</span>);
-        <span class="kw">if</span> <span class="ident">i</span> == <span class="ident">j</span> {
+    <span class="kw">pub fn </span>union(<span class="kw-2">&amp;mut </span><span class="self">self</span>, a: K, b: K) {
+        <span class="kw">let </span>i = <span class="self">self</span>.find(a);
+        <span class="kw">let </span>j = <span class="self">self</span>.find(b);
+        <span class="kw">if </span>i == j {
             <span class="kw">return</span>;
         }
-        <span class="self">self</span>.<span class="ident">links</span>[<span class="ident">i</span>] = <span class="ident">j</span>;
+        <span class="self">self</span>.links[i] = j;
     }
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">find</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">k</span>: <span class="ident">K</span>) -&gt; <span class="ident">K</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">next</span>) = <span class="self">self</span>.<span class="ident">links</span>.<span class="ident">insert</span>(<span class="ident">k</span>, <span class="ident">k</span>) {
-            <span class="kw">if</span> <span class="ident">k</span> == <span class="ident">next</span> {
-                <span class="kw">return</span> <span class="ident">k</span>;
+    <span class="kw">pub fn </span>find(<span class="kw-2">&amp;mut </span><span class="self">self</span>, k: K) -&gt; K {
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(next) = <span class="self">self</span>.links.insert(k, k) {
+            <span class="kw">if </span>k == next {
+                <span class="kw">return </span>k;
             }
-            <span class="self">self</span>.<span class="ident">links</span>[<span class="ident">k</span>] = <span class="self">self</span>.<span class="ident">find</span>(<span class="ident">next</span>);
+            <span class="self">self</span>.links[k] = <span class="self">self</span>.find(next);
         }
-        <span class="self">self</span>.<span class="ident">links</span>[<span class="ident">k</span>]
+        <span class="self">self</span>.links[k]
     }
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">same_set</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">a</span>: <span class="ident">K</span>, <span class="ident">b</span>: <span class="ident">K</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">find</span>(<span class="ident">a</span>) == <span class="self">self</span>.<span class="ident">find</span>(<span class="ident">b</span>)
+    <span class="kw">pub fn </span>same_set(<span class="kw-2">&amp;mut </span><span class="self">self</span>, a: K, b: K) -&gt; bool {
+        <span class="self">self</span>.find(a) == <span class="self">self</span>.find(b)
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
-<span class="kw">mod</span> <span class="ident">test</span> {
-    <span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
+<span class="attribute">#[cfg(test)]</span>
+<span class="kw">mod </span>test {
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
-    <span class="kw">use</span> <span class="ident">slotmap::SlotMap</span>;
+    <span class="kw">use </span>slotmap::SlotMap;
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">test_basic</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">sm</span> = <span class="ident">SlotMap::new</span>();
-        <span class="kw">let</span> <span class="ident">a</span> = <span class="ident">sm</span>.<span class="ident">insert</span>(());
-        <span class="kw">let</span> <span class="ident">b</span> = <span class="ident">sm</span>.<span class="ident">insert</span>(());
-        <span class="kw">let</span> <span class="ident">c</span> = <span class="ident">sm</span>.<span class="ident">insert</span>(());
-        <span class="kw">let</span> <span class="ident">d</span> = <span class="ident">sm</span>.<span class="ident">insert</span>(());
+    <span class="attribute">#[test]</span>
+    <span class="kw">fn </span>test_basic() {
+        <span class="kw">let </span><span class="kw-2">mut </span>sm = SlotMap::new();
+        <span class="kw">let </span>a = sm.insert(());
+        <span class="kw">let </span>b = sm.insert(());
+        <span class="kw">let </span>c = sm.insert(());
+        <span class="kw">let </span>d = sm.insert(());
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">uf</span> = <span class="ident">UnionFind::new</span>();
-        <span class="macro">assert!</span>(!<span class="ident">uf</span>.<span class="ident">same_set</span>(<span class="ident">a</span>, <span class="ident">b</span>));
-        <span class="ident">uf</span>.<span class="ident">union</span>(<span class="ident">a</span>, <span class="ident">b</span>);
-        <span class="macro">assert!</span>(<span class="ident">uf</span>.<span class="ident">same_set</span>(<span class="ident">a</span>, <span class="ident">b</span>));
-        <span class="ident">uf</span>.<span class="ident">union</span>(<span class="ident">c</span>, <span class="ident">a</span>);
-        <span class="macro">assert!</span>(<span class="ident">uf</span>.<span class="ident">same_set</span>(<span class="ident">b</span>, <span class="ident">c</span>));
+        <span class="kw">let </span><span class="kw-2">mut </span>uf = UnionFind::new();
+        <span class="macro">assert!</span>(!uf.same_set(a, b));
+        uf.union(a, b);
+        <span class="macro">assert!</span>(uf.same_set(a, b));
+        uf.union(c, a);
+        <span class="macro">assert!</span>(uf.same_set(b, c));
 
-        <span class="macro">assert!</span>(!<span class="ident">uf</span>.<span class="ident">same_set</span>(<span class="ident">a</span>, <span class="ident">d</span>));
-        <span class="macro">assert!</span>(!<span class="ident">uf</span>.<span class="ident">same_set</span>(<span class="ident">b</span>, <span class="ident">d</span>));
-        <span class="macro">assert!</span>(!<span class="ident">uf</span>.<span class="ident">same_set</span>(<span class="ident">d</span>, <span class="ident">c</span>));
+        <span class="macro">assert!</span>(!uf.same_set(a, d));
+        <span class="macro">assert!</span>(!uf.same_set(b, d));
+        <span class="macro">assert!</span>(!uf.same_set(d, c));
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (75b7e52e9 2022-08-13)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

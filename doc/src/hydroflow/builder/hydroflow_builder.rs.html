@@ -217,224 +217,224 @@
 <span id="217">217</span>
 <span id="218">218</span>
 <span id="219">219</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">futures::Stream</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>futures::Stream;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::build</span>::{<span class="ident">PullBuild</span>, <span class="ident">PushBuild</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::surface::pivot::PivotSurface</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::surface::pull_iter::IterPullSurface</span>;
+<span class="kw">use </span><span class="kw">super</span>::build::{PullBuild, PushBuild};
+<span class="kw">use </span><span class="kw">super</span>::surface::pivot::PivotSurface;
+<span class="kw">use </span><span class="kw">super</span>::surface::pull_iter::IterPullSurface;
 
-<span class="kw">use</span> <span class="ident">std::borrow::Cow</span>;
-<span class="kw">use</span> <span class="ident">std::sync::mpsc::SyncSender</span>;
+<span class="kw">use </span>std::borrow::Cow;
+<span class="kw">use </span>std::sync::mpsc::SyncSender;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::compiled::pivot::Pivot</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::flow_graph::FlowGraph</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::graph::Hydroflow</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::graph_ext::GraphExt</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::handoff</span>::{<span class="ident">CanReceive</span>, <span class="ident">Handoff</span>, <span class="ident">VecHandoff</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::input::Input</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::net::Message</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::port</span>::{<span class="ident">RecvPort</span>, <span class="ident">SendPort</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::SubgraphId</span>;
+<span class="kw">use </span><span class="kw">crate</span>::compiled::pivot::Pivot;
+<span class="kw">use </span><span class="kw">crate</span>::scheduled::flow_graph::FlowGraph;
+<span class="kw">use </span><span class="kw">crate</span>::scheduled::graph::Hydroflow;
+<span class="kw">use </span><span class="kw">crate</span>::scheduled::graph_ext::GraphExt;
+<span class="kw">use </span><span class="kw">crate</span>::scheduled::handoff::{CanReceive, Handoff, VecHandoff};
+<span class="kw">use </span><span class="kw">crate</span>::scheduled::input::Input;
+<span class="kw">use </span><span class="kw">crate</span>::scheduled::net::Message;
+<span class="kw">use </span><span class="kw">crate</span>::scheduled::port::{RecvPort, SendPort};
+<span class="kw">use </span><span class="kw">crate</span>::scheduled::SubgraphId;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::surface::pull_handoff::HandoffPullSurface</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::surface::push_handoff::HandoffPushSurfaceReversed</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::surface::push_start::StartPushSurface</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::surface</span>::{<span class="ident">AssembleFlowGraph</span>, <span class="ident">PullSurface</span>, <span class="ident">PushSurfaceReversed</span>};
+<span class="kw">use </span><span class="kw">super</span>::surface::pull_handoff::HandoffPullSurface;
+<span class="kw">use </span><span class="kw">super</span>::surface::push_handoff::HandoffPushSurfaceReversed;
+<span class="kw">use </span><span class="kw">super</span>::surface::push_start::StartPushSurface;
+<span class="kw">use </span><span class="kw">super</span>::surface::{AssembleFlowGraph, PullSurface, PushSurfaceReversed};
 
-<span class="doccomment">/// The user-facing entry point for the Surface API.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Default</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">HydroflowBuilder</span> {
-    <span class="kw">pub</span> <span class="ident">hydroflow</span>: <span class="ident">Hydroflow</span>,
+<span class="doccomment">/// The user-facing entry point for the Surface API.
+</span><span class="attribute">#[derive(Default)]</span>
+<span class="kw">pub struct </span>HydroflowBuilder {
+    <span class="kw">pub </span>hydroflow: Hydroflow,
 }
-<span class="kw">impl</span> <span class="ident">HydroflowBuilder</span> {
-    <span class="doccomment">/// Creates a new empty builder.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="self">Self</span> {
-        <span class="ident">Default::default</span>()
+<span class="kw">impl </span>HydroflowBuilder {
+    <span class="doccomment">/// Creates a new empty builder.
+    </span><span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
+        Default::default()
     }
 
-    <span class="doccomment">/// Creates a handoff, returning push and pull ends which can be chained</span>
-    <span class="doccomment">/// using the Surface API.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">make_edge</span>&lt;<span class="ident">Name</span>, <span class="ident">H</span>, <span class="ident">T</span>&gt;(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">name</span>: <span class="ident">Name</span>,
-    ) -&gt; (<span class="ident">HandoffPushSurfaceReversed</span>&lt;<span class="ident">H</span>, <span class="ident">T</span>&gt;, <span class="ident">HandoffPullSurface</span>&lt;<span class="ident">H</span>&gt;)
-    <span class="kw">where</span>
-        <span class="ident">Name</span>: <span class="ident">Into</span>&lt;<span class="ident">Cow</span>&lt;<span class="lifetime">&#39;static</span>, <span class="ident">str</span>&gt;&gt;,
-        <span class="ident">H</span>: <span class="ident">Handoff</span> + <span class="ident">CanReceive</span>&lt;<span class="ident">T</span>&gt;,
+    <span class="doccomment">/// Creates a handoff, returning push and pull ends which can be chained
+    /// using the Surface API.
+    </span><span class="kw">pub fn </span>make_edge&lt;Name, H, T&gt;(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        name: Name,
+    ) -&gt; (HandoffPushSurfaceReversed&lt;H, T&gt;, HandoffPullSurface&lt;H&gt;)
+    <span class="kw">where
+        </span>Name: Into&lt;Cow&lt;<span class="lifetime">&#39;static</span>, str&gt;&gt;,
+        H: Handoff + CanReceive&lt;T&gt;,
     {
-        <span class="kw">let</span> (<span class="ident">send</span>, <span class="ident">recv</span>) = <span class="self">self</span>.<span class="ident">hydroflow</span>.<span class="ident">make_edge</span>(<span class="ident">name</span>);
-        <span class="kw">let</span> <span class="ident">push</span> = <span class="ident">HandoffPushSurfaceReversed::new</span>(<span class="ident">send</span>);
-        <span class="kw">let</span> <span class="ident">pull</span> = <span class="ident">HandoffPullSurface::new</span>(<span class="ident">recv</span>);
-        (<span class="ident">push</span>, <span class="ident">pull</span>)
+        <span class="kw">let </span>(send, recv) = <span class="self">self</span>.hydroflow.make_edge(name);
+        <span class="kw">let </span>push = HandoffPushSurfaceReversed::new(send);
+        <span class="kw">let </span>pull = HandoffPullSurface::new(recv);
+        (push, pull)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">wrap_input</span>&lt;<span class="ident">H</span>&gt;(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">recv_port</span>: <span class="ident">RecvPort</span>&lt;<span class="ident">H</span>&gt;) -&gt; <span class="ident">HandoffPullSurface</span>&lt;<span class="ident">H</span>&gt;
-    <span class="kw">where</span>
-        <span class="ident">H</span>: <span class="ident">Handoff</span>,
+    <span class="kw">pub fn </span>wrap_input&lt;H&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, recv_port: RecvPort&lt;H&gt;) -&gt; HandoffPullSurface&lt;H&gt;
+    <span class="kw">where
+        </span>H: Handoff,
     {
-        <span class="ident">HandoffPullSurface::new</span>(<span class="ident">recv_port</span>)
+        HandoffPullSurface::new(recv_port)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">wrap_output</span>&lt;<span class="ident">H</span>, <span class="ident">T</span>&gt;(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">send_port</span>: <span class="ident">SendPort</span>&lt;<span class="ident">H</span>&gt;) -&gt; <span class="ident">HandoffPushSurfaceReversed</span>&lt;<span class="ident">H</span>, <span class="ident">T</span>&gt;
-    <span class="kw">where</span>
-        <span class="ident">H</span>: <span class="ident">Handoff</span> + <span class="ident">CanReceive</span>&lt;<span class="ident">T</span>&gt;,
+    <span class="kw">pub fn </span>wrap_output&lt;H, T&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, send_port: SendPort&lt;H&gt;) -&gt; HandoffPushSurfaceReversed&lt;H, T&gt;
+    <span class="kw">where
+        </span>H: Handoff + CanReceive&lt;T&gt;,
     {
-        <span class="ident">HandoffPushSurfaceReversed::new</span>(<span class="ident">send_port</span>)
+        HandoffPushSurfaceReversed::new(send_port)
     }
 
-    <span class="doccomment">/// Adds a `pivot` created via the Surface API.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">add_subgraph</span>&lt;<span class="ident">Name</span>, <span class="ident">Pull</span>, <span class="ident">Push</span>&gt;(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">name</span>: <span class="ident">Name</span>,
-        <span class="ident">pivot</span>: <span class="ident">PivotSurface</span>&lt;<span class="ident">Pull</span>, <span class="ident">Push</span>&gt;,
-    ) -&gt; <span class="ident">SubgraphId</span>
-    <span class="kw">where</span>
-        <span class="ident">Name</span>: <span class="ident">Into</span>&lt;<span class="ident">Cow</span>&lt;<span class="lifetime">&#39;static</span>, <span class="ident">str</span>&gt;&gt;,
-        <span class="ident">Pull</span>: <span class="lifetime">&#39;static</span> + <span class="ident">PullSurface</span> + <span class="ident">AssembleFlowGraph</span>,
-        <span class="ident">Push</span>: <span class="lifetime">&#39;static</span> + <span class="ident">PushSurfaceReversed</span>&lt;<span class="ident">ItemIn</span> = <span class="ident">Pull::ItemOut</span>&gt; + <span class="ident">AssembleFlowGraph</span>,
+    <span class="doccomment">/// Adds a `pivot` created via the Surface API.
+    </span><span class="kw">pub fn </span>add_subgraph&lt;Name, Pull, Push&gt;(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        name: Name,
+        pivot: PivotSurface&lt;Pull, Push&gt;,
+    ) -&gt; SubgraphId
+    <span class="kw">where
+        </span>Name: Into&lt;Cow&lt;<span class="lifetime">&#39;static</span>, str&gt;&gt;,
+        Pull: <span class="lifetime">&#39;static </span>+ PullSurface + AssembleFlowGraph,
+        Push: <span class="lifetime">&#39;static </span>+ PushSurfaceReversed&lt;ItemIn = Pull::ItemOut&gt; + AssembleFlowGraph,
     {
-        <span class="self">self</span>.<span class="ident">add_subgraph_stratified</span>(<span class="ident">name</span>, <span class="number">0</span>, <span class="ident">pivot</span>)
+        <span class="self">self</span>.add_subgraph_stratified(name, <span class="number">0</span>, pivot)
     }
 
-    <span class="doccomment">/// Adds a `pivot` created via the Surface API, with the given stratum number.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">add_subgraph_stratified</span>&lt;<span class="ident">Name</span>, <span class="ident">Pull</span>, <span class="ident">Push</span>&gt;(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">name</span>: <span class="ident">Name</span>,
-        <span class="ident">stratum</span>: <span class="ident">usize</span>,
-        <span class="ident">pivot</span>: <span class="ident">PivotSurface</span>&lt;<span class="ident">Pull</span>, <span class="ident">Push</span>&gt;,
-    ) -&gt; <span class="ident">SubgraphId</span>
-    <span class="kw">where</span>
-        <span class="ident">Name</span>: <span class="ident">Into</span>&lt;<span class="ident">Cow</span>&lt;<span class="lifetime">&#39;static</span>, <span class="ident">str</span>&gt;&gt;,
-        <span class="ident">Pull</span>: <span class="lifetime">&#39;static</span> + <span class="ident">PullSurface</span> + <span class="ident">AssembleFlowGraph</span>,
-        <span class="ident">Push</span>: <span class="lifetime">&#39;static</span> + <span class="ident">PushSurfaceReversed</span>&lt;<span class="ident">ItemIn</span> = <span class="ident">Pull::ItemOut</span>&gt; + <span class="ident">AssembleFlowGraph</span>,
+    <span class="doccomment">/// Adds a `pivot` created via the Surface API, with the given stratum number.
+    </span><span class="kw">pub fn </span>add_subgraph_stratified&lt;Name, Pull, Push&gt;(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        name: Name,
+        stratum: usize,
+        pivot: PivotSurface&lt;Pull, Push&gt;,
+    ) -&gt; SubgraphId
+    <span class="kw">where
+        </span>Name: Into&lt;Cow&lt;<span class="lifetime">&#39;static</span>, str&gt;&gt;,
+        Pull: <span class="lifetime">&#39;static </span>+ PullSurface + AssembleFlowGraph,
+        Push: <span class="lifetime">&#39;static </span>+ PushSurfaceReversed&lt;ItemIn = Pull::ItemOut&gt; + AssembleFlowGraph,
     {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">deps</span> = <span class="ident">FlowGraph::new</span>();
-        <span class="kw">let</span> <span class="ident">pull_root</span> = <span class="ident">pivot</span>.<span class="ident">pull</span>.<span class="ident">insert_dep</span>(<span class="kw-2">&amp;mut</span> <span class="ident">deps</span>);
-        <span class="kw">let</span> <span class="ident">push_root</span> = <span class="ident">pivot</span>.<span class="ident">push</span>.<span class="ident">insert_dep</span>(<span class="kw-2">&amp;mut</span> <span class="ident">deps</span>);
-        <span class="kw">let</span> <span class="ident">my_id</span> = <span class="ident">deps</span>.<span class="ident">add_node</span>(<span class="string">&quot;PullToPush&quot;</span>);
-        <span class="ident">deps</span>.<span class="ident">add_edge</span>((<span class="ident">pull_root</span>, <span class="ident">my_id</span>));
-        <span class="ident">deps</span>.<span class="ident">add_edge</span>((<span class="ident">my_id</span>, <span class="ident">push_root</span>));
+        <span class="kw">let </span><span class="kw-2">mut </span>deps = FlowGraph::new();
+        <span class="kw">let </span>pull_root = pivot.pull.insert_dep(<span class="kw-2">&amp;mut </span>deps);
+        <span class="kw">let </span>push_root = pivot.push.insert_dep(<span class="kw-2">&amp;mut </span>deps);
+        <span class="kw">let </span>my_id = deps.add_node(<span class="string">&quot;PullToPush&quot;</span>);
+        deps.add_edge((pull_root, my_id));
+        deps.add_edge((my_id, push_root));
 
-        <span class="kw">let</span> <span class="ident">sg_id</span> = <span class="self">self</span>.<span class="ident">hydroflow</span>.<span class="ident">next_subgraph_id</span>();
-        <span class="kw">let</span> ((<span class="ident">recv_ports</span>, <span class="ident">send_ports</span>), (<span class="kw-2">mut</span> <span class="ident">pull_build</span>, <span class="kw-2">mut</span> <span class="ident">push_build</span>)) =
-            <span class="ident">pivot</span>.<span class="ident">make_parts</span>(<span class="self">self</span>.<span class="ident">hydroflow</span>.<span class="ident">context_mut</span>(<span class="ident">sg_id</span>));
+        <span class="kw">let </span>sg_id = <span class="self">self</span>.hydroflow.next_subgraph_id();
+        <span class="kw">let </span>((recv_ports, send_ports), (<span class="kw-2">mut </span>pull_build, <span class="kw-2">mut </span>push_build)) =
+            pivot.make_parts(<span class="self">self</span>.hydroflow.context_mut(sg_id));
 
-        <span class="kw">let</span> <span class="ident">sg_id_actual</span> = <span class="self">self</span>.<span class="ident">hydroflow</span>.<span class="ident">add_subgraph_stratified</span>(
-            <span class="ident">name</span>,
-            <span class="ident">stratum</span>,
-            <span class="ident">recv_ports</span>,
-            <span class="ident">send_ports</span>,
-            <span class="kw">move</span> |<span class="ident">context</span>, <span class="ident">recv_ctx</span>, <span class="ident">send_ctx</span>| {
-                <span class="kw">let</span> <span class="ident">pull</span> = <span class="ident">pull_build</span>.<span class="ident">build</span>(<span class="ident">context</span>, <span class="ident">recv_ctx</span>);
-                <span class="kw">let</span> <span class="ident">push</span> = <span class="ident">push_build</span>.<span class="ident">build</span>(<span class="ident">context</span>, <span class="ident">send_ctx</span>);
-                <span class="kw">let</span> <span class="ident">pivot</span> = <span class="ident">Pivot::new</span>(<span class="ident">pull</span>, <span class="ident">push</span>);
-                <span class="ident">pivot</span>.<span class="ident">run</span>();
+        <span class="kw">let </span>sg_id_actual = <span class="self">self</span>.hydroflow.add_subgraph_stratified(
+            name,
+            stratum,
+            recv_ports,
+            send_ports,
+            <span class="kw">move </span>|context, recv_ctx, send_ctx| {
+                <span class="kw">let </span>pull = pull_build.build(context, recv_ctx);
+                <span class="kw">let </span>push = push_build.build(context, send_ctx);
+                <span class="kw">let </span>pivot = Pivot::new(pull, push);
+                pivot.run();
             },
         );
-        <span class="macro">assert_eq!</span>(<span class="ident">sg_id</span>, <span class="ident">sg_id_actual</span>);
+        <span class="macro">assert_eq!</span>(sg_id, sg_id_actual);
 
-        <span class="self">self</span>.<span class="ident">hydroflow</span>.<span class="ident">add_dependencies</span>(<span class="ident">sg_id</span>, <span class="ident">deps</span>);
-        <span class="ident">sg_id</span>
+        <span class="self">self</span>.hydroflow.add_dependencies(sg_id, deps);
+        sg_id
     }
 
-    <span class="doccomment">/// Creates a new external channel input.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">add_channel_input</span>&lt;<span class="ident">Name</span>, <span class="ident">T</span>, <span class="ident">W</span>&gt;(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">name</span>: <span class="ident">Name</span>,
-    ) -&gt; (<span class="ident">Input</span>&lt;<span class="ident">T</span>, <span class="ident">SyncSender</span>&lt;<span class="ident">T</span>&gt;&gt;, <span class="ident">HandoffPullSurface</span>&lt;<span class="ident">W</span>&gt;)
-    <span class="kw">where</span>
-        <span class="ident">Name</span>: <span class="ident">Into</span>&lt;<span class="ident">Cow</span>&lt;<span class="lifetime">&#39;static</span>, <span class="ident">str</span>&gt;&gt;,
-        <span class="ident">T</span>: <span class="lifetime">&#39;static</span>,
-        <span class="ident">W</span>: <span class="lifetime">&#39;static</span> + <span class="ident">Handoff</span> + <span class="ident">CanReceive</span>&lt;<span class="ident">T</span>&gt;,
+    <span class="doccomment">/// Creates a new external channel input.
+    </span><span class="kw">pub fn </span>add_channel_input&lt;Name, T, W&gt;(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        name: Name,
+    ) -&gt; (Input&lt;T, SyncSender&lt;T&gt;&gt;, HandoffPullSurface&lt;W&gt;)
+    <span class="kw">where
+        </span>Name: Into&lt;Cow&lt;<span class="lifetime">&#39;static</span>, str&gt;&gt;,
+        T: <span class="lifetime">&#39;static</span>,
+        W: <span class="lifetime">&#39;static </span>+ Handoff + CanReceive&lt;T&gt;,
     {
-        <span class="kw">let</span> <span class="ident">name</span> = <span class="ident">name</span>.<span class="ident">into</span>();
-        <span class="kw">let</span> (<span class="ident">send_port</span>, <span class="ident">recv_port</span>) = <span class="self">self</span>.<span class="ident">hydroflow</span>.<span class="ident">make_edge</span>(<span class="macro">format!</span>(<span class="string">&quot;{} handoff&quot;</span>, <span class="ident">name</span>));
-        <span class="kw">let</span> <span class="ident">input</span> = <span class="self">self</span>.<span class="ident">hydroflow</span>.<span class="ident">add_channel_input</span>(<span class="ident">name</span>, <span class="ident">send_port</span>);
-        <span class="kw">let</span> <span class="ident">pull</span> = <span class="ident">HandoffPullSurface::new</span>(<span class="ident">recv_port</span>);
-        (<span class="ident">input</span>, <span class="ident">pull</span>)
+        <span class="kw">let </span>name = name.into();
+        <span class="kw">let </span>(send_port, recv_port) = <span class="self">self</span>.hydroflow.make_edge(<span class="macro">format!</span>(<span class="string">&quot;{} handoff&quot;</span>, name));
+        <span class="kw">let </span>input = <span class="self">self</span>.hydroflow.add_channel_input(name, send_port);
+        <span class="kw">let </span>pull = HandoffPullSurface::new(recv_port);
+        (input, pull)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">add_input_from_stream</span>&lt;<span class="ident">Name</span>, <span class="ident">T</span>, <span class="ident">W</span>, <span class="ident">S</span>&gt;(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">name</span>: <span class="ident">Name</span>,
-        <span class="ident">stream</span>: <span class="ident">S</span>,
-    ) -&gt; <span class="ident">HandoffPullSurface</span>&lt;<span class="ident">W</span>&gt;
-    <span class="kw">where</span>
-        <span class="ident">Name</span>: <span class="ident">Into</span>&lt;<span class="ident">Cow</span>&lt;<span class="lifetime">&#39;static</span>, <span class="ident">str</span>&gt;&gt;,
-        <span class="ident">S</span>: <span class="lifetime">&#39;static</span> + <span class="ident">Stream</span>&lt;<span class="ident">Item</span> = <span class="ident">T</span>&gt;,
-        <span class="ident">W</span>: <span class="lifetime">&#39;static</span> + <span class="ident">Handoff</span> + <span class="ident">CanReceive</span>&lt;<span class="ident">T</span>&gt;,
+    <span class="kw">pub fn </span>add_input_from_stream&lt;Name, T, W, S&gt;(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        name: Name,
+        stream: S,
+    ) -&gt; HandoffPullSurface&lt;W&gt;
+    <span class="kw">where
+        </span>Name: Into&lt;Cow&lt;<span class="lifetime">&#39;static</span>, str&gt;&gt;,
+        S: <span class="lifetime">&#39;static </span>+ Stream&lt;Item = T&gt;,
+        W: <span class="lifetime">&#39;static </span>+ Handoff + CanReceive&lt;T&gt;,
     {
-        <span class="kw">let</span> <span class="ident">name</span> = <span class="ident">name</span>.<span class="ident">into</span>();
-        <span class="kw">let</span> (<span class="ident">send_port</span>, <span class="ident">recv_port</span>) = <span class="self">self</span>.<span class="ident">hydroflow</span>.<span class="ident">make_edge</span>(<span class="macro">format!</span>(<span class="string">&quot;{} handoff&quot;</span>, <span class="ident">name</span>));
-        <span class="self">self</span>.<span class="ident">hydroflow</span>
-            .<span class="ident">add_input_from_stream</span>(<span class="ident">name</span>, <span class="ident">send_port</span>, <span class="ident">stream</span>);
-        <span class="kw">let</span> <span class="ident">pull</span> = <span class="ident">HandoffPullSurface::new</span>(<span class="ident">recv_port</span>);
-        <span class="ident">pull</span>
+        <span class="kw">let </span>name = name.into();
+        <span class="kw">let </span>(send_port, recv_port) = <span class="self">self</span>.hydroflow.make_edge(<span class="macro">format!</span>(<span class="string">&quot;{} handoff&quot;</span>, name));
+        <span class="self">self</span>.hydroflow
+            .add_input_from_stream(name, send_port, stream);
+        <span class="kw">let </span>pull = HandoffPullSurface::new(recv_port);
+        pull
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">add_write_tcp_stream</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">stream</span>: <span class="ident">tokio::net::TcpStream</span>,
-    ) -&gt; <span class="ident">HandoffPushSurfaceReversed</span>&lt;<span class="ident">VecHandoff</span>&lt;<span class="ident">Message</span>&gt;, <span class="prelude-ty">Option</span>&lt;<span class="ident">Message</span>&gt;&gt; {
-        <span class="kw">let</span> <span class="ident">input_port</span> = <span class="self">self</span>.<span class="ident">hydroflow</span>.<span class="ident">add_write_tcp_stream</span>(<span class="ident">stream</span>);
-        <span class="kw">let</span> <span class="ident">push</span> = <span class="ident">HandoffPushSurfaceReversed::new</span>(<span class="ident">input_port</span>);
-        <span class="ident">push</span>
+    <span class="kw">pub fn </span>add_write_tcp_stream(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        stream: tokio::net::TcpStream,
+    ) -&gt; HandoffPushSurfaceReversed&lt;VecHandoff&lt;Message&gt;, <span class="prelude-ty">Option</span>&lt;Message&gt;&gt; {
+        <span class="kw">let </span>input_port = <span class="self">self</span>.hydroflow.add_write_tcp_stream(stream);
+        <span class="kw">let </span>push = HandoffPushSurfaceReversed::new(input_port);
+        push
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">add_read_tcp_stream</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">stream</span>: <span class="ident">tokio::net::TcpStream</span>,
-    ) -&gt; <span class="ident">HandoffPullSurface</span>&lt;<span class="ident">VecHandoff</span>&lt;<span class="ident">Message</span>&gt;&gt; {
-        <span class="kw">let</span> <span class="ident">output_port</span> = <span class="self">self</span>.<span class="ident">hydroflow</span>.<span class="ident">add_read_tcp_stream</span>(<span class="ident">stream</span>);
-        <span class="kw">let</span> <span class="ident">pull</span> = <span class="ident">HandoffPullSurface::new</span>(<span class="ident">output_port</span>);
-        <span class="ident">pull</span>
+    <span class="kw">pub fn </span>add_read_tcp_stream(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        stream: tokio::net::TcpStream,
+    ) -&gt; HandoffPullSurface&lt;VecHandoff&lt;Message&gt;&gt; {
+        <span class="kw">let </span>output_port = <span class="self">self</span>.hydroflow.add_read_tcp_stream(stream);
+        <span class="kw">let </span>pull = HandoffPullSurface::new(output_port);
+        pull
     }
 
-    <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy::type_complexity</span>)]</span> <span class="comment">// TODO(mingwei).</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">add_tcp_stream</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">stream</span>: <span class="ident">tokio::net::TcpStream</span>,
+    <span class="attribute">#[allow(clippy::type_complexity)]</span> <span class="comment">// TODO(mingwei).
+    </span><span class="kw">pub fn </span>add_tcp_stream(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        stream: tokio::net::TcpStream,
     ) -&gt; (
-        <span class="ident">HandoffPushSurfaceReversed</span>&lt;<span class="ident">VecHandoff</span>&lt;<span class="ident">Message</span>&gt;, <span class="prelude-ty">Option</span>&lt;<span class="ident">Message</span>&gt;&gt;,
-        <span class="ident">HandoffPullSurface</span>&lt;<span class="ident">VecHandoff</span>&lt;<span class="ident">Message</span>&gt;&gt;,
+        HandoffPushSurfaceReversed&lt;VecHandoff&lt;Message&gt;, <span class="prelude-ty">Option</span>&lt;Message&gt;&gt;,
+        HandoffPullSurface&lt;VecHandoff&lt;Message&gt;&gt;,
     ) {
-        <span class="kw">let</span> (<span class="ident">input_port</span>, <span class="ident">output_port</span>) = <span class="self">self</span>.<span class="ident">hydroflow</span>.<span class="ident">add_tcp_stream</span>(<span class="ident">stream</span>);
+        <span class="kw">let </span>(input_port, output_port) = <span class="self">self</span>.hydroflow.add_tcp_stream(stream);
 
-        <span class="kw">let</span> <span class="ident">push</span> = <span class="ident">HandoffPushSurfaceReversed::new</span>(<span class="ident">input_port</span>);
-        <span class="kw">let</span> <span class="ident">pull</span> = <span class="ident">HandoffPullSurface::new</span>(<span class="ident">output_port</span>);
+        <span class="kw">let </span>push = HandoffPushSurfaceReversed::new(input_port);
+        <span class="kw">let </span>pull = HandoffPullSurface::new(output_port);
 
-        (<span class="ident">push</span>, <span class="ident">pull</span>)
+        (push, pull)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">build</span>(<span class="self">self</span>) -&gt; <span class="ident">Hydroflow</span> {
-        <span class="self">self</span>.<span class="ident">hydroflow</span>
+    <span class="kw">pub fn </span>build(<span class="self">self</span>) -&gt; Hydroflow {
+        <span class="self">self</span>.hydroflow
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">start_iter</span>&lt;<span class="ident">I</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">iter</span>: <span class="ident">I</span>) -&gt; <span class="ident">IterPullSurface</span>&lt;<span class="ident">I::IntoIter</span>&gt;
-    <span class="kw">where</span>
-        <span class="ident">I</span>: <span class="ident">IntoIterator</span>,
+    <span class="kw">pub fn </span>start_iter&lt;I&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, iter: I) -&gt; IterPullSurface&lt;I::IntoIter&gt;
+    <span class="kw">where
+        </span>I: IntoIterator,
     {
-        <span class="ident">IterPullSurface::new</span>(<span class="ident">iter</span>.<span class="ident">into_iter</span>())
+        IterPullSurface::new(iter.into_iter())
     }
 
-    <span class="doccomment">/// Start a new branch for teeing.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// For example:</span>
-    <span class="doccomment">/// ```ignore</span>
-    <span class="doccomment">/// my_ints</span>
-    <span class="doccomment">///     .tee(</span>
-    <span class="doccomment">///         builder</span>
-    <span class="doccomment">///             .start_tee()</span>
-    <span class="doccomment">///             .filter(|&amp;x| 0 == x % 2)</span>
-    <span class="doccomment">///             .for_each(|x| println!(&quot;Even: {}&quot;, x)),</span>
-    <span class="doccomment">///         builder</span>
-    <span class="doccomment">///             .start_tee()</span>
-    <span class="doccomment">///             .filter(|&amp;x| 1 == x % 2)</span>
-    <span class="doccomment">///             .for_each(|x| println!(&quot;Odd: {}&quot;, x)));</span>
-    <span class="doccomment">/// ```</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">start_tee</span>&lt;<span class="ident">T</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">StartPushSurface</span>&lt;<span class="ident">T</span>&gt; {
-        <span class="ident">StartPushSurface::new</span>()
+    <span class="doccomment">/// Start a new branch for teeing.
+    ///
+    /// For example:
+    /// ```ignore
+    /// my_ints
+    ///     .tee(
+    ///         builder
+    ///             .start_tee()
+    ///             .filter(|&amp;x| 0 == x % 2)
+    ///             .for_each(|x| println!(&quot;Even: {}&quot;, x)),
+    ///         builder
+    ///             .start_tee()
+    ///             .filter(|&amp;x| 1 == x % 2)
+    ///             .for_each(|x| println!(&quot;Odd: {}&quot;, x)));
+    /// ```
+    </span><span class="kw">pub fn </span>start_tee&lt;T&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; StartPushSurface&lt;T&gt; {
+        StartPushSurface::new()
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (75b7e52e9 2022-08-13)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

@@ -198,205 +198,205 @@
 <span id="198">198</span>
 <span id="199">199</span>
 <span id="200">200</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::borrow::Cow</span>;
-<span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">cell::RefCell</span>, <span class="ident">rc::Rc</span>};
+</pre><pre class="rust"><code><span class="kw">use </span>std::borrow::Cow;
+<span class="kw">use </span>std::{cell::RefCell, rc::Rc};
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::lang::collections::Iter</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::graph::Hydroflow</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::handoff::VecHandoff</span>;
+<span class="kw">use </span><span class="kw">crate</span>::lang::collections::Iter;
+<span class="kw">use </span><span class="kw">crate</span>::scheduled::graph::Hydroflow;
+<span class="kw">use </span><span class="kw">crate</span>::scheduled::handoff::VecHandoff;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::context::Context</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::graph_ext::GraphExt</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::port</span>::{<span class="ident">RecvPort</span>, <span class="ident">SendCtx</span>};
+<span class="kw">use </span><span class="kw">super</span>::context::Context;
+<span class="kw">use </span><span class="kw">super</span>::graph_ext::GraphExt;
+<span class="kw">use </span><span class="kw">super</span>::port::{RecvPort, SendCtx};
 
-<span class="kw">const</span> <span class="ident">QUERY_EDGE_NAME</span>: <span class="ident">Cow</span>&lt;<span class="lifetime">&#39;static</span>, <span class="ident">str</span>&gt; = <span class="ident">Cow::Borrowed</span>(<span class="string">&quot;query handoff&quot;</span>);
+<span class="kw">const </span>QUERY_EDGE_NAME: Cow&lt;<span class="lifetime">&#39;static</span>, str&gt; = Cow::Borrowed(<span class="string">&quot;query handoff&quot;</span>);
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Default</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Query</span> {
-    <span class="ident">df</span>: <span class="ident">Rc</span>&lt;<span class="ident">RefCell</span>&lt;<span class="ident">Hydroflow</span>&gt;&gt;,
+<span class="attribute">#[derive(Default)]</span>
+<span class="kw">pub struct </span>Query {
+    df: Rc&lt;RefCell&lt;Hydroflow&gt;&gt;,
 }
 
-<span class="kw">impl</span> <span class="ident">Query</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="self">Self</span> {
-        <span class="ident">Default::default</span>()
+<span class="kw">impl </span>Query {
+    <span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
+        Default::default()
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">source</span>&lt;<span class="ident">F</span>, <span class="ident">T</span>&gt;(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">Operator</span>&lt;<span class="ident">T</span>&gt;
-    <span class="kw">where</span>
-        <span class="ident">T</span>: <span class="lifetime">&#39;static</span>,
-        <span class="ident">F</span>: <span class="lifetime">&#39;static</span> + <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident">Context</span>, <span class="kw-2">&amp;</span><span class="ident">SendCtx</span>&lt;<span class="ident">VecHandoff</span>&lt;<span class="ident">T</span>&gt;&gt;),
+    <span class="kw">pub fn </span>source&lt;F, T&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, f: F) -&gt; Operator&lt;T&gt;
+    <span class="kw">where
+        </span>T: <span class="lifetime">&#39;static</span>,
+        F: <span class="lifetime">&#39;static </span>+ FnMut(<span class="kw-2">&amp;</span>Context, <span class="kw-2">&amp;</span>SendCtx&lt;VecHandoff&lt;T&gt;&gt;),
     {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">df</span> = <span class="self">self</span>.<span class="ident">df</span>.<span class="ident">borrow_mut</span>();
+        <span class="kw">let </span><span class="kw-2">mut </span>df = <span class="self">self</span>.df.borrow_mut();
 
-        <span class="kw">let</span> (<span class="ident">send_port</span>, <span class="ident">recv_port</span>) = <span class="ident">df</span>.<span class="ident">make_edge</span>(<span class="ident">QUERY_EDGE_NAME</span>);
-        <span class="ident">df</span>.<span class="ident">add_subgraph_source</span>(<span class="string">&quot;source&quot;</span>, <span class="ident">send_port</span>, <span class="ident">f</span>);
+        <span class="kw">let </span>(send_port, recv_port) = df.make_edge(QUERY_EDGE_NAME);
+        df.add_subgraph_source(<span class="string">&quot;source&quot;</span>, send_port, f);
 
-        <span class="ident">Operator</span> {
-            <span class="ident">df</span>: <span class="self">self</span>.<span class="ident">df</span>.<span class="ident">clone</span>(),
-            <span class="ident">recv_port</span>,
+        Operator {
+            df: <span class="self">self</span>.df.clone(),
+            recv_port,
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">concat</span>&lt;<span class="ident">T</span>&gt;(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">ops</span>: <span class="ident">Vec</span>&lt;<span class="ident">Operator</span>&lt;<span class="ident">T</span>&gt;&gt;) -&gt; <span class="ident">Operator</span>&lt;<span class="ident">T</span>&gt;
-    <span class="kw">where</span>
-        <span class="ident">T</span>: <span class="lifetime">&#39;static</span>,
+    <span class="kw">pub fn </span>concat&lt;T&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, ops: Vec&lt;Operator&lt;T&gt;&gt;) -&gt; Operator&lt;T&gt;
+    <span class="kw">where
+        </span>T: <span class="lifetime">&#39;static</span>,
     {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">df</span> = <span class="self">self</span>.<span class="ident">df</span>.<span class="ident">borrow_mut</span>();
+        <span class="kw">let </span><span class="kw-2">mut </span>df = <span class="self">self</span>.df.borrow_mut();
 
-        <span class="kw">let</span> (<span class="ident">send_port</span>, <span class="ident">recv_port</span>) = <span class="ident">df</span>.<span class="ident">make_edge</span>(<span class="ident">QUERY_EDGE_NAME</span>);
-        <span class="ident">df</span>.<span class="ident">add_subgraph_n_m</span>(
+        <span class="kw">let </span>(send_port, recv_port) = df.make_edge(QUERY_EDGE_NAME);
+        df.add_subgraph_n_m(
             <span class="string">&quot;concat&quot;</span>,
-            <span class="ident">ops</span>.<span class="ident">into_iter</span>().<span class="ident">map</span>(|<span class="ident">op</span>| <span class="ident">op</span>.<span class="ident">recv_port</span>).<span class="ident">collect</span>(),
-            <span class="macro">vec!</span>[<span class="ident">send_port</span>],
-            |<span class="ident">_ctx</span>, <span class="ident">ins</span>, <span class="ident">out</span>| {
-                <span class="kw">for</span> <span class="kw-2">&amp;</span><span class="ident">input</span> <span class="kw">in</span> <span class="ident">ins</span> {
-                    <span class="ident">out</span>[<span class="number">0</span>].<span class="ident">give</span>(<span class="ident">Iter</span>(<span class="ident">input</span>.<span class="ident">take_inner</span>().<span class="ident">into_iter</span>()));
+            ops.into_iter().map(|op| op.recv_port).collect(),
+            <span class="macro">vec!</span>[send_port],
+            |_ctx, ins, out| {
+                <span class="kw">for </span><span class="kw-2">&amp;</span>input <span class="kw">in </span>ins {
+                    out[<span class="number">0</span>].give(Iter(input.take_inner().into_iter()));
                 }
             },
         );
 
-        <span class="ident">Operator</span> {
-            <span class="ident">df</span>: <span class="self">self</span>.<span class="ident">df</span>.<span class="ident">clone</span>(),
-            <span class="ident">recv_port</span>,
+        Operator {
+            df: <span class="self">self</span>.df.clone(),
+            recv_port,
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">run_available</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
-        (<span class="kw-2">*</span><span class="self">self</span>.<span class="ident">df</span>).<span class="ident">borrow_mut</span>().<span class="ident">run_available</span>()
+    <span class="kw">pub fn </span>run_available(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        (<span class="kw-2">*</span><span class="self">self</span>.df).borrow_mut().run_available()
     }
 }
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Operator</span>&lt;<span class="ident">T</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="lifetime">&#39;static</span>,
+<span class="kw">pub struct </span>Operator&lt;T&gt;
+<span class="kw">where
+    </span>T: <span class="lifetime">&#39;static</span>,
 {
-    <span class="ident">df</span>: <span class="ident">Rc</span>&lt;<span class="ident">RefCell</span>&lt;<span class="ident">Hydroflow</span>&gt;&gt;,
-    <span class="ident">recv_port</span>: <span class="ident">RecvPort</span>&lt;<span class="ident">VecHandoff</span>&lt;<span class="ident">T</span>&gt;&gt;,
+    df: Rc&lt;RefCell&lt;Hydroflow&gt;&gt;,
+    recv_port: RecvPort&lt;VecHandoff&lt;T&gt;&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">Operator</span>&lt;<span class="ident">T</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="lifetime">&#39;static</span>,
+<span class="kw">impl</span>&lt;T&gt; Operator&lt;T&gt;
+<span class="kw">where
+    </span>T: <span class="lifetime">&#39;static</span>,
 {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">map</span>&lt;<span class="ident">U</span>, <span class="ident">F</span>&gt;(<span class="self">self</span>, <span class="kw-2">mut</span> <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">Operator</span>&lt;<span class="ident">U</span>&gt;
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="lifetime">&#39;static</span> + <span class="ident">Fn</span>(<span class="ident">T</span>) -&gt; <span class="ident">U</span>,
-        <span class="ident">U</span>: <span class="lifetime">&#39;static</span>,
+    <span class="kw">pub fn </span>map&lt;U, F&gt;(<span class="self">self</span>, <span class="kw-2">mut </span>f: F) -&gt; Operator&lt;U&gt;
+    <span class="kw">where
+        </span>F: <span class="lifetime">&#39;static </span>+ Fn(T) -&gt; U,
+        U: <span class="lifetime">&#39;static</span>,
     {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">df</span> = <span class="self">self</span>.<span class="ident">df</span>.<span class="ident">borrow_mut</span>();
+        <span class="kw">let </span><span class="kw-2">mut </span>df = <span class="self">self</span>.df.borrow_mut();
 
-        <span class="kw">let</span> (<span class="ident">send_port</span>, <span class="ident">recv_port</span>) = <span class="ident">df</span>.<span class="ident">make_edge</span>(<span class="ident">QUERY_EDGE_NAME</span>);
-        <span class="ident">df</span>.<span class="ident">add_subgraph_in_out</span>(<span class="string">&quot;map&quot;</span>, <span class="self">self</span>.<span class="ident">recv_port</span>, <span class="ident">send_port</span>, <span class="kw">move</span> |<span class="ident">_ctx</span>, <span class="ident">recv</span>, <span class="ident">send</span>| {
-            <span class="ident">send</span>.<span class="ident">give</span>(<span class="ident">Iter</span>(<span class="ident">recv</span>.<span class="ident">take_inner</span>().<span class="ident">into_iter</span>().<span class="ident">map</span>(<span class="kw-2">&amp;mut</span> <span class="ident">f</span>)));
+        <span class="kw">let </span>(send_port, recv_port) = df.make_edge(QUERY_EDGE_NAME);
+        df.add_subgraph_in_out(<span class="string">&quot;map&quot;</span>, <span class="self">self</span>.recv_port, send_port, <span class="kw">move </span>|_ctx, recv, send| {
+            send.give(Iter(recv.take_inner().into_iter().map(<span class="kw-2">&amp;mut </span>f)));
         });
 
-        <span class="ident">std::mem::drop</span>(<span class="ident">df</span>);
-        <span class="ident">Operator</span> {
-            <span class="ident">df</span>: <span class="self">self</span>.<span class="ident">df</span>,
-            <span class="ident">recv_port</span>,
+        std::mem::drop(df);
+        Operator {
+            df: <span class="self">self</span>.df,
+            recv_port,
         }
     }
 
-    <span class="attribute">#[<span class="ident">must_use</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">filter</span>&lt;<span class="ident">F</span>&gt;(<span class="self">self</span>, <span class="kw-2">mut</span> <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">Operator</span>&lt;<span class="ident">T</span>&gt;
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="lifetime">&#39;static</span> + <span class="ident">Fn</span>(<span class="kw-2">&amp;</span><span class="ident">T</span>) -&gt; <span class="ident">bool</span>,
+    <span class="attribute">#[must_use]</span>
+    <span class="kw">pub fn </span>filter&lt;F&gt;(<span class="self">self</span>, <span class="kw-2">mut </span>f: F) -&gt; Operator&lt;T&gt;
+    <span class="kw">where
+        </span>F: <span class="lifetime">&#39;static </span>+ Fn(<span class="kw-2">&amp;</span>T) -&gt; bool,
     {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">df</span> = <span class="self">self</span>.<span class="ident">df</span>.<span class="ident">borrow_mut</span>();
+        <span class="kw">let </span><span class="kw-2">mut </span>df = <span class="self">self</span>.df.borrow_mut();
 
-        <span class="kw">let</span> (<span class="ident">send_port</span>, <span class="ident">recv_port</span>) = <span class="ident">df</span>.<span class="ident">make_edge</span>(<span class="ident">QUERY_EDGE_NAME</span>);
-        <span class="ident">df</span>.<span class="ident">add_subgraph_in_out</span>(
+        <span class="kw">let </span>(send_port, recv_port) = df.make_edge(QUERY_EDGE_NAME);
+        df.add_subgraph_in_out(
             <span class="string">&quot;filter&quot;</span>,
-            <span class="self">self</span>.<span class="ident">recv_port</span>,
-            <span class="ident">send_port</span>,
-            <span class="kw">move</span> |<span class="ident">_ctx</span>, <span class="ident">recv</span>, <span class="ident">send</span>| {
-                <span class="ident">send</span>.<span class="ident">give</span>(<span class="ident">Iter</span>(<span class="ident">recv</span>.<span class="ident">take_inner</span>().<span class="ident">into_iter</span>().<span class="ident">filter</span>(<span class="kw-2">&amp;mut</span> <span class="ident">f</span>)));
+            <span class="self">self</span>.recv_port,
+            send_port,
+            <span class="kw">move </span>|_ctx, recv, send| {
+                send.give(Iter(recv.take_inner().into_iter().filter(<span class="kw-2">&amp;mut </span>f)));
             },
         );
 
-        <span class="ident">std::mem::drop</span>(<span class="ident">df</span>);
-        <span class="ident">Operator</span> {
-            <span class="ident">df</span>: <span class="self">self</span>.<span class="ident">df</span>,
-            <span class="ident">recv_port</span>,
+        std::mem::drop(df);
+        Operator {
+            df: <span class="self">self</span>.df,
+            recv_port,
         }
     }
 
-    <span class="attribute">#[<span class="ident">must_use</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">concat</span>(<span class="self">self</span>, <span class="ident">other</span>: <span class="ident">Operator</span>&lt;<span class="ident">T</span>&gt;) -&gt; <span class="ident">Operator</span>&lt;<span class="ident">T</span>&gt; {
-        <span class="comment">// TODO(justin): this is very slow.</span>
+    <span class="attribute">#[must_use]</span>
+    <span class="kw">pub fn </span>concat(<span class="self">self</span>, other: Operator&lt;T&gt;) -&gt; Operator&lt;T&gt; {
+        <span class="comment">// TODO(justin): this is very slow.
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">df</span> = <span class="self">self</span>.<span class="ident">df</span>.<span class="ident">borrow_mut</span>();
+        </span><span class="kw">let </span><span class="kw-2">mut </span>df = <span class="self">self</span>.df.borrow_mut();
 
-        <span class="kw">let</span> (<span class="ident">send_port</span>, <span class="ident">recv_port</span>) = <span class="ident">df</span>.<span class="ident">make_edge</span>(<span class="ident">QUERY_EDGE_NAME</span>);
-        <span class="ident">df</span>.<span class="ident">add_subgraph_2in_out</span>(
+        <span class="kw">let </span>(send_port, recv_port) = df.make_edge(QUERY_EDGE_NAME);
+        df.add_subgraph_2in_out(
             <span class="string">&quot;concat&quot;</span>,
-            <span class="self">self</span>.<span class="ident">recv_port</span>,
-            <span class="ident">other</span>.<span class="ident">recv_port</span>,
-            <span class="ident">send_port</span>,
-            |<span class="ident">_ctx</span>, <span class="ident">recv1</span>, <span class="ident">recv2</span>, <span class="ident">send</span>| {
-                <span class="ident">send</span>.<span class="ident">give</span>(<span class="ident">Iter</span>(<span class="ident">recv1</span>.<span class="ident">take_inner</span>().<span class="ident">into_iter</span>()));
-                <span class="ident">send</span>.<span class="ident">give</span>(<span class="ident">Iter</span>(<span class="ident">recv2</span>.<span class="ident">take_inner</span>().<span class="ident">into_iter</span>()));
+            <span class="self">self</span>.recv_port,
+            other.recv_port,
+            send_port,
+            |_ctx, recv1, recv2, send| {
+                send.give(Iter(recv1.take_inner().into_iter()));
+                send.give(Iter(recv2.take_inner().into_iter()));
             },
         );
 
-        <span class="ident">std::mem::drop</span>(<span class="ident">df</span>);
-        <span class="ident">Operator</span> {
-            <span class="ident">df</span>: <span class="self">self</span>.<span class="ident">df</span>,
-            <span class="ident">recv_port</span>,
+        std::mem::drop(df);
+        Operator {
+            df: <span class="self">self</span>.df,
+            recv_port,
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">sink</span>&lt;<span class="ident">F</span>&gt;(<span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>)
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="lifetime">&#39;static</span> + <span class="ident">Fn</span>(<span class="ident">T</span>),
+    <span class="kw">pub fn </span>sink&lt;F&gt;(<span class="self">self</span>, f: F)
+    <span class="kw">where
+        </span>F: <span class="lifetime">&#39;static </span>+ Fn(T),
     {
-        <span class="self">self</span>.<span class="ident">df</span>
-            .<span class="ident">borrow_mut</span>()
-            .<span class="ident">add_subgraph_sink</span>(<span class="string">&quot;sink&quot;</span>, <span class="self">self</span>.<span class="ident">recv_port</span>, <span class="kw">move</span> |<span class="ident">_ctx</span>, <span class="ident">recv</span>| {
-                <span class="kw">for</span> <span class="ident">v</span> <span class="kw">in</span> <span class="ident">recv</span>.<span class="ident">take_inner</span>() {
-                    <span class="ident">f</span>(<span class="ident">v</span>)
+        <span class="self">self</span>.df
+            .borrow_mut()
+            .add_subgraph_sink(<span class="string">&quot;sink&quot;</span>, <span class="self">self</span>.recv_port, <span class="kw">move </span>|_ctx, recv| {
+                <span class="kw">for </span>v <span class="kw">in </span>recv.take_inner() {
+                    f(v)
                 }
             });
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">T</span>: <span class="ident">Clone</span>&gt; <span class="ident">Operator</span>&lt;<span class="ident">T</span>&gt; {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">tee</span>(<span class="self">self</span>, <span class="ident">n</span>: <span class="ident">usize</span>) -&gt; <span class="ident">Vec</span>&lt;<span class="ident">Operator</span>&lt;<span class="ident">T</span>&gt;&gt;
-    <span class="kw">where</span>
-        <span class="ident">T</span>: <span class="lifetime">&#39;static</span>,
+<span class="kw">impl</span>&lt;T: Clone&gt; Operator&lt;T&gt; {
+    <span class="kw">pub fn </span>tee(<span class="self">self</span>, n: usize) -&gt; Vec&lt;Operator&lt;T&gt;&gt;
+    <span class="kw">where
+        </span>T: <span class="lifetime">&#39;static</span>,
     {
-        <span class="comment">// TODO(justin): this is very slow. TODO(mingwei) use teeing handoff once its added.</span>
+        <span class="comment">// TODO(justin): this is very slow. TODO(mingwei) use teeing handoff once its added.
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">df</span> = <span class="self">self</span>.<span class="ident">df</span>.<span class="ident">borrow_mut</span>();
+        </span><span class="kw">let </span><span class="kw-2">mut </span>df = <span class="self">self</span>.df.borrow_mut();
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">sends</span> = <span class="ident">Vec::with_capacity</span>(<span class="ident">n</span>);
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">recvs</span> = <span class="ident">Vec::with_capacity</span>(<span class="ident">n</span>);
-        <span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span>..<span class="ident">n</span> {
-            <span class="kw">let</span> (<span class="ident">send_port</span>, <span class="ident">recv_port</span>) = <span class="ident">df</span>.<span class="ident">make_edge</span>(<span class="ident">QUERY_EDGE_NAME</span>);
-            <span class="ident">sends</span>.<span class="ident">push</span>(<span class="ident">send_port</span>);
-            <span class="ident">recvs</span>.<span class="ident">push</span>(<span class="ident">Operator</span> {
-                <span class="ident">df</span>: <span class="self">self</span>.<span class="ident">df</span>.<span class="ident">clone</span>(),
-                <span class="ident">recv_port</span>,
+        <span class="kw">let </span><span class="kw-2">mut </span>sends = Vec::with_capacity(n);
+        <span class="kw">let </span><span class="kw-2">mut </span>recvs = Vec::with_capacity(n);
+        <span class="kw">for _ in </span><span class="number">0</span>..n {
+            <span class="kw">let </span>(send_port, recv_port) = df.make_edge(QUERY_EDGE_NAME);
+            sends.push(send_port);
+            recvs.push(Operator {
+                df: <span class="self">self</span>.df.clone(),
+                recv_port,
             });
         }
 
-        <span class="ident">df</span>.<span class="ident">add_subgraph_n_m</span>(
+        df.add_subgraph_n_m(
             <span class="string">&quot;tee&quot;</span>,
-            <span class="macro">vec!</span>[<span class="self">self</span>.<span class="ident">recv_port</span>],
-            <span class="ident">sends</span>,
-            <span class="kw">move</span> |<span class="ident">_ctx</span>, <span class="ident">recvs</span>, <span class="ident">sends</span>| {
-                <span class="kw">let</span> <span class="ident">input</span> = <span class="ident">recvs</span>.<span class="ident">iter</span>().<span class="ident">next</span>().<span class="ident">unwrap</span>().<span class="ident">take_inner</span>();
-                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>((<span class="kw-2">&amp;</span><span class="ident">last_output</span>, <span class="ident">outputs</span>)) = <span class="ident">sends</span>.<span class="ident">split_last</span>() {
-                    <span class="kw">for</span> <span class="ident">output</span> <span class="kw">in</span> <span class="ident">outputs</span> {
-                        <span class="ident">output</span>.<span class="ident">give</span>(<span class="ident">Iter</span>(<span class="ident">input</span>.<span class="ident">iter</span>().<span class="ident">cloned</span>()));
+            <span class="macro">vec!</span>[<span class="self">self</span>.recv_port],
+            sends,
+            <span class="kw">move </span>|_ctx, recvs, sends| {
+                <span class="kw">let </span>input = recvs.iter().next().unwrap().take_inner();
+                <span class="kw">if let </span><span class="prelude-val">Some</span>((<span class="kw-2">&amp;</span>last_output, outputs)) = sends.split_last() {
+                    <span class="kw">for </span>output <span class="kw">in </span>outputs {
+                        output.give(Iter(input.iter().cloned()));
                     }
-                    <span class="ident">last_output</span>.<span class="ident">give</span>(<span class="ident">Iter</span>(<span class="ident">input</span>.<span class="ident">into_iter</span>()));
+                    last_output.give(Iter(input.into_iter()));
                 }
             },
         );
 
-        <span class="ident">recvs</span>
+        recvs
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (75b7e52e9 2022-08-13)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

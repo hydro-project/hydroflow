@@ -34,41 +34,41 @@
 <span id="34">34</span>
 <span id="35">35</span>
 <span id="36">36</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">super</span>::PullBuild</span>;
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::PullBuild;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled</span>::{<span class="ident">context::Context</span>, <span class="ident">handoff::handoff_list::PortList</span>, <span class="ident">port::RECV</span>};
+<span class="kw">use </span><span class="kw">crate</span>::scheduled::{context::Context, handoff::handoff_list::PortList, port::RECV};
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">IterPullBuild</span>&lt;<span class="ident">I</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">Iterator</span>,
+<span class="kw">pub struct </span>IterPullBuild&lt;I&gt;
+<span class="kw">where
+    </span>I: Iterator,
 {
-    <span class="ident">it</span>: <span class="ident">I</span>,
+    it: I,
 }
-<span class="kw">impl</span>&lt;<span class="ident">I</span>&gt; <span class="ident">IterPullBuild</span>&lt;<span class="ident">I</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">Iterator</span>,
+<span class="kw">impl</span>&lt;I&gt; IterPullBuild&lt;I&gt;
+<span class="kw">where
+    </span>I: Iterator,
 {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">it</span>: <span class="ident">I</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> { <span class="ident">it</span> }
+    <span class="kw">pub fn </span>new(it: I) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{ it }
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">I</span>&gt; <span class="ident">PullBuild</span> <span class="kw">for</span> <span class="ident">IterPullBuild</span>&lt;<span class="ident">I</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="lifetime">&#39;static</span> + <span class="ident">Iterator</span>,
+<span class="kw">impl</span>&lt;I&gt; PullBuild <span class="kw">for </span>IterPullBuild&lt;I&gt;
+<span class="kw">where
+    </span>I: <span class="lifetime">&#39;static </span>+ Iterator,
 {
-    <span class="kw">type</span> <span class="ident">ItemOut</span> = <span class="ident">I::Item</span>;
-    <span class="kw">type</span> <span class="ident">Build</span>&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt; = <span class="kw-2">&amp;</span><span class="lifetime">&#39;slf</span> <span class="kw-2">mut</span> <span class="ident">I</span>;
+    <span class="kw">type </span>ItemOut = I::Item;
+    <span class="kw">type </span>Build&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt; = <span class="kw-2">&amp;</span><span class="lifetime">&#39;slf </span><span class="kw-2">mut </span>I;
 
-    <span class="kw">type</span> <span class="ident">InputHandoffs</span> = ();
+    <span class="kw">type </span>InputHandoffs = ();
 
-    <span class="kw">fn</span> <span class="ident">build</span>&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt;(
-        <span class="kw-2">&amp;</span><span class="lifetime">&#39;slf</span> <span class="kw-2">mut</span> <span class="self">self</span>,
-        <span class="ident">_context</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx</span> <span class="ident">Context</span>,
-        <span class="ident">_handoffs</span>: &lt;<span class="ident"><span class="self">Self</span>::InputHandoffs</span> <span class="kw">as</span> <span class="ident">PortList</span>&lt;<span class="ident">RECV</span>&gt;&gt;<span class="ident">::Ctx</span>&lt;<span class="lifetime">&#39;ctx</span>&gt;,
-    ) -&gt; <span class="ident"><span class="self">Self</span>::Build</span>&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt; {
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">it</span>
+    <span class="kw">fn </span>build&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt;(
+        <span class="kw-2">&amp;</span><span class="lifetime">&#39;slf </span><span class="kw-2">mut </span><span class="self">self</span>,
+        _context: <span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span>Context,
+        _handoffs: &lt;<span class="self">Self</span>::InputHandoffs <span class="kw">as </span>PortList&lt;RECV&gt;&gt;::Ctx&lt;<span class="lifetime">&#39;ctx</span>&gt;,
+    ) -&gt; <span class="self">Self</span>::Build&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt; {
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>.it
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (75b7e52e9 2022-08-13)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

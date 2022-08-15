@@ -192,199 +192,199 @@
 <span id="192">192</span>
 <span id="193">193</span>
 <span id="194">194</span>
-</pre><pre class="rust"><code><span class="attribute">#![<span class="ident">allow</span>(<span class="ident">dead_code</span>)]</span>
-<span class="attribute">#![<span class="ident">allow</span>(<span class="ident">clippy::iter_with_drain</span>)]</span>
-<span class="attribute">#![<span class="ident">allow</span>(<span class="ident">clippy::explicit_auto_deref</span>)]</span>
+</pre><pre class="rust"><code><span class="attribute">#![allow(dead_code)]</span>
+<span class="attribute">#![allow(clippy::iter_with_drain)]</span>
+<span class="attribute">#![allow(clippy::explicit_auto_deref)]</span>
 
-<span class="kw">use</span> <span class="ident">anyhow::bail</span>;
-<span class="kw">use</span> <span class="ident">sexp::Sexp</span>;
+<span class="kw">use </span>anyhow::bail;
+<span class="kw">use </span>sexp::Sexp;
 
-<span class="kw">mod</span> <span class="ident">codegen</span>;
-<span class="kw">mod</span> <span class="ident">runtime</span>;
-<span class="kw">mod</span> <span class="ident">sexp</span>;
+<span class="kw">mod </span>codegen;
+<span class="kw">mod </span>runtime;
+<span class="kw">mod </span>sexp;
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Hash</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">Clone</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">Datum</span> {
-    <span class="ident">Int</span>(<span class="ident">i64</span>),
-    <span class="ident">String</span>(<span class="ident">String</span>),
-    <span class="ident">Bool</span>(<span class="ident">bool</span>),
+<span class="attribute">#[derive(Debug, Hash, PartialEq, Eq, Clone)]</span>
+<span class="kw">pub enum </span>Datum {
+    Int(i64),
+    String(String),
+    Bool(bool),
 }
 
-<span class="kw">impl</span> <span class="ident">Datum</span> {
-    <span class="kw">fn</span> <span class="ident">unwrap_int</span>(<span class="self">self</span>) -&gt; <span class="ident">i64</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Datum::Int</span>(<span class="ident">i</span>) = <span class="self">self</span> {
-            <span class="ident">i</span>
-        } <span class="kw">else</span> {
+<span class="kw">impl </span>Datum {
+    <span class="kw">fn </span>unwrap_int(<span class="self">self</span>) -&gt; i64 {
+        <span class="kw">if let </span>Datum::Int(i) = <span class="self">self </span>{
+            i
+        } <span class="kw">else </span>{
             <span class="macro">panic!</span>(<span class="string">&quot;was not int&quot;</span>)
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">is_true</span>(<span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="macro">matches!</span>(<span class="self">self</span>, <span class="ident">Datum::Bool</span>(<span class="bool-val">true</span>))
+    <span class="kw">pub fn </span>is_true(<span class="self">self</span>) -&gt; bool {
+        <span class="macro">matches!</span>(<span class="self">self</span>, Datum::Bool(<span class="bool-val">true</span>))
     }
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Hash</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">Clone</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">ScalarExpr</span> {
-    <span class="ident">Literal</span>(<span class="ident">Datum</span>),
-    <span class="ident">ColRef</span>(<span class="ident">usize</span>),
-    <span class="ident">Eq</span>(<span class="ident">Box</span>&lt;<span class="ident">ScalarExpr</span>&gt;, <span class="ident">Box</span>&lt;<span class="ident">ScalarExpr</span>&gt;),
-    <span class="ident">Plus</span>(<span class="ident">Box</span>&lt;<span class="ident">ScalarExpr</span>&gt;, <span class="ident">Box</span>&lt;<span class="ident">ScalarExpr</span>&gt;),
+<span class="attribute">#[derive(Debug, Hash, PartialEq, Eq, Clone)]</span>
+<span class="kw">pub enum </span>ScalarExpr {
+    Literal(Datum),
+    ColRef(usize),
+    Eq(Box&lt;ScalarExpr&gt;, Box&lt;ScalarExpr&gt;),
+    Plus(Box&lt;ScalarExpr&gt;, Box&lt;ScalarExpr&gt;),
 }
 
-<span class="kw">impl</span> <span class="ident">ScalarExpr</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">eval</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">data</span>: <span class="kw-2">&amp;</span>[<span class="ident">Datum</span>]) -&gt; <span class="ident">Datum</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">ScalarExpr::Literal</span>(<span class="ident">d</span>) =&gt; <span class="ident">d</span>.<span class="ident">clone</span>(),
-            <span class="ident">ScalarExpr::ColRef</span>(<span class="ident">u</span>) =&gt; <span class="ident">data</span>[<span class="kw-2">*</span><span class="ident">u</span>].<span class="ident">clone</span>(),
-            <span class="ident">ScalarExpr::Eq</span>(<span class="ident">a</span>, <span class="ident">b</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">a</span> = <span class="ident">a</span>.<span class="ident">eval</span>(<span class="ident">data</span>);
-                <span class="kw">let</span> <span class="ident">b</span> = <span class="ident">b</span>.<span class="ident">eval</span>(<span class="ident">data</span>);
-                <span class="ident">Datum::Bool</span>(<span class="ident">a</span> == <span class="ident">b</span>)
+<span class="kw">impl </span>ScalarExpr {
+    <span class="kw">pub fn </span>eval(<span class="kw-2">&amp;</span><span class="self">self</span>, data: <span class="kw-2">&amp;</span>[Datum]) -&gt; Datum {
+        <span class="kw">match </span><span class="self">self </span>{
+            ScalarExpr::Literal(d) =&gt; d.clone(),
+            ScalarExpr::ColRef(u) =&gt; data[<span class="kw-2">*</span>u].clone(),
+            ScalarExpr::Eq(a, b) =&gt; {
+                <span class="kw">let </span>a = a.eval(data);
+                <span class="kw">let </span>b = b.eval(data);
+                Datum::Bool(a == b)
             }
-            <span class="ident">ScalarExpr::Plus</span>(<span class="ident">a</span>, <span class="ident">b</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">a</span> = <span class="ident">a</span>.<span class="ident">eval</span>(<span class="ident">data</span>).<span class="ident">unwrap_int</span>();
-                <span class="kw">let</span> <span class="ident">b</span> = <span class="ident">b</span>.<span class="ident">eval</span>(<span class="ident">data</span>).<span class="ident">unwrap_int</span>();
-                <span class="ident">Datum::Int</span>(<span class="ident">a</span> + <span class="ident">b</span>)
+            ScalarExpr::Plus(a, b) =&gt; {
+                <span class="kw">let </span>a = a.eval(data).unwrap_int();
+                <span class="kw">let </span>b = b.eval(data).unwrap_int();
+                Datum::Int(a + b)
             }
         }
     }
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Hash</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">Clone</span>)]</span>
-<span class="kw">enum</span> <span class="ident">RelExpr</span> {
-    <span class="ident">Values</span>(<span class="ident">Vec</span>&lt;<span class="ident">Vec</span>&lt;<span class="ident">ScalarExpr</span>&gt;&gt;),
-    <span class="ident">Filter</span>(<span class="ident">Vec</span>&lt;<span class="ident">ScalarExpr</span>&gt;, <span class="ident">Box</span>&lt;<span class="ident">RelExpr</span>&gt;),
-    <span class="ident">Project</span>(<span class="ident">Vec</span>&lt;<span class="ident">ScalarExpr</span>&gt;, <span class="ident">Box</span>&lt;<span class="ident">RelExpr</span>&gt;),
+<span class="attribute">#[derive(Debug, Hash, PartialEq, Eq, Clone)]</span>
+<span class="kw">enum </span>RelExpr {
+    Values(Vec&lt;Vec&lt;ScalarExpr&gt;&gt;),
+    Filter(Vec&lt;ScalarExpr&gt;, Box&lt;RelExpr&gt;),
+    Project(Vec&lt;ScalarExpr&gt;, Box&lt;RelExpr&gt;),
 }
 
-<span class="kw">fn</span> <span class="ident">parse_scalar</span>(<span class="ident">s</span>: <span class="ident">Sexp</span>) -&gt; <span class="ident">anyhow::Result</span>&lt;<span class="ident">ScalarExpr</span>&gt; {
-    <span class="kw">match</span> <span class="ident">s</span> {
-        <span class="ident">Sexp::Atom</span>(<span class="ident">s</span>) =&gt; {
-            <span class="kw">if</span> <span class="ident">s</span>.<span class="ident">strip_prefix</span>(<span class="string">&#39;@&#39;</span>).<span class="ident">is_some</span>() {
-                <span class="prelude-val">Ok</span>(<span class="ident">ScalarExpr::ColRef</span>(<span class="ident">s</span>[<span class="number">1</span>..].<span class="ident">parse</span>::&lt;<span class="ident">usize</span>&gt;()<span class="question-mark">?</span>))
-            } <span class="kw">else</span> {
-                <span class="prelude-val">Ok</span>(<span class="ident">ScalarExpr::Literal</span>(<span class="ident">Datum::Int</span>(<span class="ident">s</span>.<span class="ident">parse</span>::&lt;<span class="ident">i64</span>&gt;()<span class="question-mark">?</span>)))
+<span class="kw">fn </span>parse_scalar(s: Sexp) -&gt; anyhow::Result&lt;ScalarExpr&gt; {
+    <span class="kw">match </span>s {
+        Sexp::Atom(s) =&gt; {
+            <span class="kw">if </span>s.strip_prefix(<span class="string">&#39;@&#39;</span>).is_some() {
+                <span class="prelude-val">Ok</span>(ScalarExpr::ColRef(s[<span class="number">1</span>..].parse::&lt;usize&gt;()<span class="question-mark">?</span>))
+            } <span class="kw">else </span>{
+                <span class="prelude-val">Ok</span>(ScalarExpr::Literal(Datum::Int(s.parse::&lt;i64&gt;()<span class="question-mark">?</span>)))
             }
         }
-        <span class="ident">Sexp::String</span>(<span class="ident">s</span>) =&gt; <span class="prelude-val">Ok</span>(<span class="ident">ScalarExpr::Literal</span>(<span class="ident">Datum::String</span>(<span class="ident">s</span>))),
-        <span class="ident">Sexp::List</span>(<span class="ident">list</span>, <span class="kw">_</span>) =&gt; {
-            <span class="kw">if</span> <span class="ident">list</span>.<span class="ident">is_empty</span>() {
+        Sexp::String(s) =&gt; <span class="prelude-val">Ok</span>(ScalarExpr::Literal(Datum::String(s))),
+        Sexp::List(list, <span class="kw">_</span>) =&gt; {
+            <span class="kw">if </span>list.is_empty() {
                 <span class="macro">bail!</span>(<span class="string">&quot;empty list is not a relexpr&quot;</span>);
             }
-            <span class="kw">match</span> <span class="ident">list</span>[<span class="number">0</span>].<span class="ident">clone</span>().<span class="ident">expect_atom</span>()<span class="question-mark">?</span>.<span class="ident">as_str</span>() {
-                <span class="string">&quot;=&quot;</span> =&gt; {
-                    <span class="kw">if</span> <span class="ident">list</span>.<span class="ident">len</span>() &lt; <span class="number">3</span> {
+            <span class="kw">match </span>list[<span class="number">0</span>].clone().expect_atom()<span class="question-mark">?</span>.as_str() {
+                <span class="string">&quot;=&quot; </span>=&gt; {
+                    <span class="kw">if </span>list.len() &lt; <span class="number">3 </span>{
                         <span class="macro">bail!</span>(<span class="string">&quot;= requires two arguments&quot;</span>);
                     }
-                    <span class="prelude-val">Ok</span>(<span class="ident">ScalarExpr::Eq</span>(
-                        <span class="ident">Box::new</span>(<span class="ident">parse_scalar</span>(<span class="ident">list</span>[<span class="number">1</span>].<span class="ident">clone</span>())<span class="question-mark">?</span>),
-                        <span class="ident">Box::new</span>(<span class="ident">parse_scalar</span>(<span class="ident">list</span>[<span class="number">2</span>].<span class="ident">clone</span>())<span class="question-mark">?</span>),
+                    <span class="prelude-val">Ok</span>(ScalarExpr::Eq(
+                        Box::new(parse_scalar(list[<span class="number">1</span>].clone())<span class="question-mark">?</span>),
+                        Box::new(parse_scalar(list[<span class="number">2</span>].clone())<span class="question-mark">?</span>),
                     ))
                 }
-                <span class="string">&quot;+&quot;</span> =&gt; {
-                    <span class="kw">if</span> <span class="ident">list</span>.<span class="ident">len</span>() &lt; <span class="number">3</span> {
+                <span class="string">&quot;+&quot; </span>=&gt; {
+                    <span class="kw">if </span>list.len() &lt; <span class="number">3 </span>{
                         <span class="macro">bail!</span>(<span class="string">&quot;+ requires two arguments&quot;</span>);
                     }
-                    <span class="prelude-val">Ok</span>(<span class="ident">ScalarExpr::Plus</span>(
-                        <span class="ident">Box::new</span>(<span class="ident">parse_scalar</span>(<span class="ident">list</span>[<span class="number">1</span>].<span class="ident">clone</span>())<span class="question-mark">?</span>),
-                        <span class="ident">Box::new</span>(<span class="ident">parse_scalar</span>(<span class="ident">list</span>[<span class="number">2</span>].<span class="ident">clone</span>())<span class="question-mark">?</span>),
+                    <span class="prelude-val">Ok</span>(ScalarExpr::Plus(
+                        Box::new(parse_scalar(list[<span class="number">1</span>].clone())<span class="question-mark">?</span>),
+                        Box::new(parse_scalar(list[<span class="number">2</span>].clone())<span class="question-mark">?</span>),
                     ))
                 }
-                <span class="ident">v</span> =&gt; <span class="macro">bail!</span>(<span class="string">&quot;{} is not a scalar operator&quot;</span>, <span class="ident">v</span>),
+                v =&gt; <span class="macro">bail!</span>(<span class="string">&quot;{} is not a scalar operator&quot;</span>, v),
             }
         }
     }
 }
 
-<span class="kw">fn</span> <span class="ident">parse_relexpr</span>(<span class="ident">s</span>: <span class="ident">Sexp</span>) -&gt; <span class="ident">anyhow::Result</span>&lt;<span class="ident">RelExpr</span>&gt; {
-    <span class="kw">let</span> (<span class="ident">list</span>, <span class="kw">_</span>) = <span class="ident">s</span>.<span class="ident">expect_list</span>()<span class="question-mark">?</span>;
-    <span class="kw">if</span> <span class="ident">list</span>.<span class="ident">is_empty</span>() {
+<span class="kw">fn </span>parse_relexpr(s: Sexp) -&gt; anyhow::Result&lt;RelExpr&gt; {
+    <span class="kw">let </span>(list, <span class="kw">_</span>) = s.expect_list()<span class="question-mark">?</span>;
+    <span class="kw">if </span>list.is_empty() {
         <span class="macro">bail!</span>(<span class="string">&quot;empty list is not a relexpr&quot;</span>);
     }
-    <span class="kw">match</span> <span class="ident">list</span>[<span class="number">0</span>].<span class="ident">clone</span>().<span class="ident">expect_atom</span>()<span class="question-mark">?</span>.<span class="ident">as_str</span>() {
-        <span class="string">&quot;values&quot;</span> =&gt; {
-            <span class="kw">if</span> <span class="ident">list</span>.<span class="ident">len</span>() &lt; <span class="number">2</span> {
+    <span class="kw">match </span>list[<span class="number">0</span>].clone().expect_atom()<span class="question-mark">?</span>.as_str() {
+        <span class="string">&quot;values&quot; </span>=&gt; {
+            <span class="kw">if </span>list.len() &lt; <span class="number">2 </span>{
                 <span class="macro">bail!</span>(<span class="string">&quot;values requires an argument&quot;</span>);
             }
-            <span class="kw">let</span> (<span class="ident">values</span>, <span class="kw">_</span>) = <span class="ident">list</span>[<span class="number">1</span>].<span class="ident">clone</span>().<span class="ident">expect_list</span>()<span class="question-mark">?</span>;
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rows</span> = <span class="ident">Vec::new</span>();
-            <span class="kw">for</span> <span class="ident">r</span> <span class="kw">in</span> <span class="ident">values</span> {
-                <span class="kw">let</span> (<span class="ident">row</span>, <span class="kw">_</span>) = <span class="ident">r</span>.<span class="ident">expect_list</span>()<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">parsed_row</span> = <span class="ident">Vec::new</span>();
-                <span class="kw">for</span> <span class="ident">d</span> <span class="kw">in</span> <span class="ident">row</span> {
-                    <span class="ident">parsed_row</span>.<span class="ident">push</span>(<span class="ident">parse_scalar</span>(<span class="ident">d</span>)<span class="question-mark">?</span>);
+            <span class="kw">let </span>(values, <span class="kw">_</span>) = list[<span class="number">1</span>].clone().expect_list()<span class="question-mark">?</span>;
+            <span class="kw">let </span><span class="kw-2">mut </span>rows = Vec::new();
+            <span class="kw">for </span>r <span class="kw">in </span>values {
+                <span class="kw">let </span>(row, <span class="kw">_</span>) = r.expect_list()<span class="question-mark">?</span>;
+                <span class="kw">let </span><span class="kw-2">mut </span>parsed_row = Vec::new();
+                <span class="kw">for </span>d <span class="kw">in </span>row {
+                    parsed_row.push(parse_scalar(d)<span class="question-mark">?</span>);
                 }
-                <span class="ident">rows</span>.<span class="ident">push</span>(<span class="ident">parsed_row</span>);
+                rows.push(parsed_row);
             }
-            <span class="prelude-val">Ok</span>(<span class="ident">RelExpr::Values</span>(<span class="ident">rows</span>))
+            <span class="prelude-val">Ok</span>(RelExpr::Values(rows))
         }
-        <span class="string">&quot;project&quot;</span> =&gt; {
-            <span class="kw">if</span> <span class="ident">list</span>.<span class="ident">len</span>() &lt; <span class="number">3</span> {
+        <span class="string">&quot;project&quot; </span>=&gt; {
+            <span class="kw">if </span>list.len() &lt; <span class="number">3 </span>{
                 <span class="macro">bail!</span>(<span class="string">&quot;filter requires two arguments&quot;</span>);
             }
-            <span class="kw">let</span> (<span class="ident">exprs_sexp</span>, <span class="kw">_</span>) = <span class="ident">list</span>[<span class="number">1</span>].<span class="ident">clone</span>().<span class="ident">expect_list</span>()<span class="question-mark">?</span>;
-            <span class="kw">let</span> <span class="ident">exprs</span> = <span class="ident">exprs_sexp</span>
-                .<span class="ident">into_iter</span>()
-                .<span class="ident">map</span>(<span class="ident">parse_scalar</span>)
-                .<span class="ident">collect</span>::&lt;<span class="ident">anyhow::Result</span>&lt;<span class="ident">Vec</span>&lt;<span class="ident">ScalarExpr</span>&gt;&gt;&gt;()<span class="question-mark">?</span>;
+            <span class="kw">let </span>(exprs_sexp, <span class="kw">_</span>) = list[<span class="number">1</span>].clone().expect_list()<span class="question-mark">?</span>;
+            <span class="kw">let </span>exprs = exprs_sexp
+                .into_iter()
+                .map(parse_scalar)
+                .collect::&lt;anyhow::Result&lt;Vec&lt;ScalarExpr&gt;&gt;&gt;()<span class="question-mark">?</span>;
 
-            <span class="prelude-val">Ok</span>(<span class="ident">RelExpr::Project</span>(
-                <span class="ident">exprs</span>,
-                <span class="ident">Box::new</span>(<span class="ident">parse_relexpr</span>(<span class="ident">list</span>[<span class="number">2</span>].<span class="ident">clone</span>())<span class="question-mark">?</span>),
+            <span class="prelude-val">Ok</span>(RelExpr::Project(
+                exprs,
+                Box::new(parse_relexpr(list[<span class="number">2</span>].clone())<span class="question-mark">?</span>),
             ))
         }
-        <span class="string">&quot;filter&quot;</span> =&gt; {
-            <span class="kw">if</span> <span class="ident">list</span>.<span class="ident">len</span>() &lt; <span class="number">3</span> {
+        <span class="string">&quot;filter&quot; </span>=&gt; {
+            <span class="kw">if </span>list.len() &lt; <span class="number">3 </span>{
                 <span class="macro">bail!</span>(<span class="string">&quot;filter requires two arguments&quot;</span>);
             }
-            <span class="kw">let</span> (<span class="ident">filters_sexp</span>, <span class="kw">_</span>) = <span class="ident">list</span>[<span class="number">1</span>].<span class="ident">clone</span>().<span class="ident">expect_list</span>()<span class="question-mark">?</span>;
-            <span class="kw">let</span> <span class="ident">filters</span> = <span class="ident">filters_sexp</span>
-                .<span class="ident">into_iter</span>()
-                .<span class="ident">map</span>(<span class="ident">parse_scalar</span>)
-                .<span class="ident">collect</span>::&lt;<span class="ident">anyhow::Result</span>&lt;<span class="ident">Vec</span>&lt;<span class="ident">ScalarExpr</span>&gt;&gt;&gt;()<span class="question-mark">?</span>;
+            <span class="kw">let </span>(filters_sexp, <span class="kw">_</span>) = list[<span class="number">1</span>].clone().expect_list()<span class="question-mark">?</span>;
+            <span class="kw">let </span>filters = filters_sexp
+                .into_iter()
+                .map(parse_scalar)
+                .collect::&lt;anyhow::Result&lt;Vec&lt;ScalarExpr&gt;&gt;&gt;()<span class="question-mark">?</span>;
 
-            <span class="prelude-val">Ok</span>(<span class="ident">RelExpr::Filter</span>(
-                <span class="ident">filters</span>,
-                <span class="ident">Box::new</span>(<span class="ident">parse_relexpr</span>(<span class="ident">list</span>[<span class="number">2</span>].<span class="ident">clone</span>())<span class="question-mark">?</span>),
+            <span class="prelude-val">Ok</span>(RelExpr::Filter(
+                filters,
+                Box::new(parse_relexpr(list[<span class="number">2</span>].clone())<span class="question-mark">?</span>),
             ))
         }
-        <span class="ident">v</span> =&gt; <span class="macro">bail!</span>(<span class="string">&quot;{} is not a relational operator&quot;</span>, <span class="ident">v</span>),
+        v =&gt; <span class="macro">bail!</span>(<span class="string">&quot;{} is not a relational operator&quot;</span>, v),
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
-<span class="kw">mod</span> <span class="ident">tests</span> {
-    <span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">codegen::generate_dataflow</span>, <span class="ident">parse_relexpr</span>, <span class="ident">runtime::run_dataflow</span>, <span class="ident">sexp::Sexp</span>};
+<span class="attribute">#[cfg(test)]</span>
+<span class="kw">mod </span>tests {
+    <span class="kw">use crate</span>::{codegen::generate_dataflow, parse_relexpr, runtime::run_dataflow, sexp::Sexp};
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">datadriven_tests</span>() {
-        <span class="ident">datadriven::walk</span>(<span class="string">&quot;testdata/&quot;</span>, |<span class="ident">t</span>| {
-            <span class="ident">t</span>.<span class="ident">run</span>(|<span class="ident">test_case</span>| <span class="kw">match</span> <span class="ident">test_case</span>.<span class="ident">directive</span>.<span class="ident">as_str</span>() {
-                <span class="string">&quot;compile&quot;</span> =&gt; {
-                    <span class="kw">let</span> <span class="ident">sexps</span> = <span class="ident">Sexp::parse</span>(<span class="ident">test_case</span>.<span class="ident">input</span>.<span class="ident">clone</span>()).<span class="ident">unwrap</span>();
-                    <span class="kw">let</span> <span class="ident">sexp</span> = (<span class="kw-2">&amp;</span><span class="ident">sexps</span>[<span class="number">0</span>]).<span class="ident">clone</span>();
-                    <span class="kw">let</span> <span class="ident">rel_expr</span> = <span class="ident">parse_relexpr</span>(<span class="ident">sexp</span>).<span class="ident">unwrap</span>();
-                    <span class="kw">let</span> <span class="ident">output</span> = <span class="ident">generate_dataflow</span>(<span class="ident">rel_expr</span>);
-                    <span class="macro">format!</span>(<span class="string">&quot;{}\n&quot;</span>, <span class="ident">output</span>)
+    <span class="attribute">#[test]</span>
+    <span class="kw">fn </span>datadriven_tests() {
+        datadriven::walk(<span class="string">&quot;testdata/&quot;</span>, |t| {
+            t.run(|test_case| <span class="kw">match </span>test_case.directive.as_str() {
+                <span class="string">&quot;compile&quot; </span>=&gt; {
+                    <span class="kw">let </span>sexps = Sexp::parse(test_case.input.clone()).unwrap();
+                    <span class="kw">let </span>sexp = (<span class="kw-2">&amp;</span>sexps[<span class="number">0</span>]).clone();
+                    <span class="kw">let </span>rel_expr = parse_relexpr(sexp).unwrap();
+                    <span class="kw">let </span>output = generate_dataflow(rel_expr);
+                    <span class="macro">format!</span>(<span class="string">&quot;{}\n&quot;</span>, output)
                 }
-                <span class="string">&quot;build&quot;</span> =&gt; {
-                    <span class="kw">let</span> <span class="ident">sexps</span> = <span class="ident">Sexp::parse</span>(<span class="ident">test_case</span>.<span class="ident">input</span>.<span class="ident">clone</span>()).<span class="ident">unwrap</span>();
-                    <span class="kw">let</span> <span class="ident">sexp</span> = (<span class="kw-2">&amp;</span><span class="ident">sexps</span>[<span class="number">0</span>]).<span class="ident">clone</span>();
-                    <span class="kw">let</span> <span class="ident">rel_expr</span> = <span class="ident">parse_relexpr</span>(<span class="ident">sexp</span>);
-                    <span class="macro">format!</span>(<span class="string">&quot;{:?}\n&quot;</span>, <span class="ident">rel_expr</span>)
+                <span class="string">&quot;build&quot; </span>=&gt; {
+                    <span class="kw">let </span>sexps = Sexp::parse(test_case.input.clone()).unwrap();
+                    <span class="kw">let </span>sexp = (<span class="kw-2">&amp;</span>sexps[<span class="number">0</span>]).clone();
+                    <span class="kw">let </span>rel_expr = parse_relexpr(sexp);
+                    <span class="macro">format!</span>(<span class="string">&quot;{:?}\n&quot;</span>, rel_expr)
                 }
-                <span class="string">&quot;run&quot;</span> =&gt; {
-                    <span class="kw">let</span> <span class="ident">sexps</span> = <span class="ident">Sexp::parse</span>(<span class="ident">test_case</span>.<span class="ident">input</span>.<span class="ident">clone</span>()).<span class="ident">unwrap</span>();
-                    <span class="kw">let</span> <span class="ident">sexp</span> = (<span class="kw-2">&amp;</span><span class="ident">sexps</span>[<span class="number">0</span>]).<span class="ident">clone</span>();
-                    <span class="kw">let</span> <span class="ident">rel_expr</span> = <span class="ident">parse_relexpr</span>(<span class="ident">sexp</span>).<span class="ident">unwrap</span>();
-                    <span class="kw">let</span> <span class="ident">output</span> = <span class="ident">run_dataflow</span>(<span class="ident">rel_expr</span>);
-                    <span class="macro">format!</span>(<span class="string">&quot;{:?}\n&quot;</span>, <span class="ident">output</span>)
+                <span class="string">&quot;run&quot; </span>=&gt; {
+                    <span class="kw">let </span>sexps = Sexp::parse(test_case.input.clone()).unwrap();
+                    <span class="kw">let </span>sexp = (<span class="kw-2">&amp;</span>sexps[<span class="number">0</span>]).clone();
+                    <span class="kw">let </span>rel_expr = parse_relexpr(sexp).unwrap();
+                    <span class="kw">let </span>output = run_dataflow(rel_expr);
+                    <span class="macro">format!</span>(<span class="string">&quot;{:?}\n&quot;</span>, output)
                 }
-                <span class="kw">_</span> =&gt; <span class="string">&quot;unhandled directive\n&quot;</span>.<span class="ident">into</span>(),
+                <span class="kw">_ </span>=&gt; <span class="string">&quot;unhandled directive\n&quot;</span>.into(),
             })
         });
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="relalg" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (75b7e52e9 2022-08-13)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="relalg" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

@@ -126,133 +126,133 @@
 <span id="126">126</span>
 <span id="127">127</span>
 <span id="128">128</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::ops::Range</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>std::ops::Range;
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">CrossJoinState</span>&lt;<span class="ident">V1</span>, <span class="ident">V2</span>&gt; {
-    <span class="ident">ltab</span>: <span class="ident">Vec</span>&lt;<span class="ident">V1</span>&gt;,
-    <span class="ident">rtab</span>: <span class="ident">Vec</span>&lt;<span class="ident">V2</span>&gt;,
-    <span class="ident">draw_from_left</span>: <span class="ident">bool</span>,
-    <span class="ident">opposite_ix</span>: <span class="ident">Range</span>&lt;<span class="ident">usize</span>&gt;,
+<span class="kw">pub struct </span>CrossJoinState&lt;V1, V2&gt; {
+    ltab: Vec&lt;V1&gt;,
+    rtab: Vec&lt;V2&gt;,
+    draw_from_left: bool,
+    opposite_ix: Range&lt;usize&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">V1</span>, <span class="ident">V2</span>&gt; <span class="ident">Default</span> <span class="kw">for</span> <span class="ident">CrossJoinState</span>&lt;<span class="ident">V1</span>, <span class="ident">V2</span>&gt; {
-    <span class="kw">fn</span> <span class="ident">default</span>() -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">ltab</span>: <span class="ident">Vec::new</span>(),
-            <span class="ident">rtab</span>: <span class="ident">Vec::new</span>(),
-            <span class="ident">draw_from_left</span>: <span class="bool-val">true</span>,
-            <span class="ident">opposite_ix</span>: <span class="number">0</span>..<span class="number">0</span>,
+<span class="kw">impl</span>&lt;V1, V2&gt; Default <span class="kw">for </span>CrossJoinState&lt;V1, V2&gt; {
+    <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            ltab: Vec::new(),
+            rtab: Vec::new(),
+            draw_from_left: <span class="bool-val">true</span>,
+            opposite_ix: <span class="number">0</span>..<span class="number">0</span>,
         }
     }
 }
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">CrossJoin</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">I1</span>, <span class="ident">V1</span>, <span class="ident">I2</span>, <span class="ident">V2</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">V1</span>: <span class="ident">Eq</span> + <span class="ident">Clone</span>,
-    <span class="ident">V2</span>: <span class="ident">Eq</span> + <span class="ident">Clone</span>,
-    <span class="ident">I1</span>: <span class="ident">Iterator</span>&lt;<span class="ident">Item</span> = <span class="ident">V1</span>&gt;,
-    <span class="ident">I2</span>: <span class="ident">Iterator</span>&lt;<span class="ident">Item</span> = <span class="ident">V2</span>&gt;,
+<span class="kw">pub struct </span>CrossJoin&lt;<span class="lifetime">&#39;a</span>, I1, V1, I2, V2&gt;
+<span class="kw">where
+    </span>V1: Eq + Clone,
+    V2: Eq + Clone,
+    I1: Iterator&lt;Item = V1&gt;,
+    I2: Iterator&lt;Item = V2&gt;,
 {
-    <span class="ident">lhs</span>: <span class="ident">I1</span>,
-    <span class="ident">rhs</span>: <span class="ident">I2</span>,
-    <span class="ident">state</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">CrossJoinState</span>&lt;<span class="ident">V1</span>, <span class="ident">V2</span>&gt;,
+    lhs: I1,
+    rhs: I2,
+    state: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>CrossJoinState&lt;V1, V2&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">I1</span>, <span class="ident">V1</span>: <span class="lifetime">&#39;static</span>, <span class="ident">I2</span>, <span class="ident">V2</span>: <span class="lifetime">&#39;static</span>&gt; <span class="ident">Iterator</span> <span class="kw">for</span> <span class="ident">CrossJoin</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">I1</span>, <span class="ident">V1</span>, <span class="ident">I2</span>, <span class="ident">V2</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">V1</span>: <span class="ident">Eq</span> + <span class="ident">Clone</span>,
-    <span class="ident">V2</span>: <span class="ident">Eq</span> + <span class="ident">Clone</span>,
-    <span class="ident">I1</span>: <span class="ident">Iterator</span>&lt;<span class="ident">Item</span> = <span class="ident">V1</span>&gt;,
-    <span class="ident">I2</span>: <span class="ident">Iterator</span>&lt;<span class="ident">Item</span> = <span class="ident">V2</span>&gt;,
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, I1, V1: <span class="lifetime">&#39;static</span>, I2, V2: <span class="lifetime">&#39;static</span>&gt; Iterator <span class="kw">for </span>CrossJoin&lt;<span class="lifetime">&#39;a</span>, I1, V1, I2, V2&gt;
+<span class="kw">where
+    </span>V1: Eq + Clone,
+    V2: Eq + Clone,
+    I1: Iterator&lt;Item = V1&gt;,
+    I2: Iterator&lt;Item = V2&gt;,
 {
-    <span class="kw">type</span> <span class="ident">Item</span> = (<span class="ident">V1</span>, <span class="ident">V2</span>);
+    <span class="kw">type </span>Item = (V1, V2);
 
-    <span class="kw">fn</span> <span class="ident">next</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident"><span class="self">Self</span>::Item</span>&gt; {
-        <span class="kw">loop</span> {
-            <span class="comment">// see if there&#39;s a match from the opposite&#39;s iterator</span>
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">i</span>) = <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">opposite_ix</span>.<span class="ident">next</span>() {
-                <span class="kw">if</span> <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">draw_from_left</span> {
-                    <span class="kw">let</span> <span class="ident">l</span> = <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">ltab</span>.<span class="ident">last</span>().<span class="ident">unwrap</span>().<span class="ident">clone</span>();
-                    <span class="kw">let</span> <span class="ident">r</span> = <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">rtab</span>.<span class="ident">get</span>(<span class="ident">i</span>).<span class="ident">unwrap</span>().<span class="ident">clone</span>();
-                    <span class="kw">return</span> <span class="prelude-val">Some</span>((<span class="ident">l</span>, <span class="ident">r</span>));
-                } <span class="kw">else</span> {
-                    <span class="kw">let</span> <span class="ident">l</span> = <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">ltab</span>.<span class="ident">get</span>(<span class="ident">i</span>).<span class="ident">unwrap</span>().<span class="ident">clone</span>();
-                    <span class="kw">let</span> <span class="ident">r</span> = <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">rtab</span>.<span class="ident">last</span>().<span class="ident">unwrap</span>().<span class="ident">clone</span>();
-                    <span class="kw">return</span> <span class="prelude-val">Some</span>((<span class="ident">l</span>, <span class="ident">r</span>));
+    <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Item&gt; {
+        <span class="kw">loop </span>{
+            <span class="comment">// see if there&#39;s a match from the opposite&#39;s iterator
+            </span><span class="kw">if let </span><span class="prelude-val">Some</span>(i) = <span class="self">self</span>.state.opposite_ix.next() {
+                <span class="kw">if </span><span class="self">self</span>.state.draw_from_left {
+                    <span class="kw">let </span>l = <span class="self">self</span>.state.ltab.last().unwrap().clone();
+                    <span class="kw">let </span>r = <span class="self">self</span>.state.rtab.get(i).unwrap().clone();
+                    <span class="kw">return </span><span class="prelude-val">Some</span>((l, r));
+                } <span class="kw">else </span>{
+                    <span class="kw">let </span>l = <span class="self">self</span>.state.ltab.get(i).unwrap().clone();
+                    <span class="kw">let </span>r = <span class="self">self</span>.state.rtab.last().unwrap().clone();
+                    <span class="kw">return </span><span class="prelude-val">Some</span>((l, r));
                 }
             }
-            <span class="comment">// else fetch a new tuple, alternating the sides we fetch from,</span>
-            <span class="comment">// so we draw from each input at the same rate.</span>
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">found_new</span> = <span class="bool-val">false</span>;
-            <span class="kw">for</span> <span class="ident">_i</span> <span class="kw">in</span> [<span class="string">&quot;opposite&quot;</span>, <span class="string">&quot;same&quot;</span>] {
-                <span class="comment">// toggle sides</span>
-                <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">draw_from_left</span> = !<span class="self">self</span>.<span class="ident">state</span>.<span class="ident">draw_from_left</span>;
+            <span class="comment">// else fetch a new tuple, alternating the sides we fetch from,
+            // so we draw from each input at the same rate.
+            </span><span class="kw">let </span><span class="kw-2">mut </span>found_new = <span class="bool-val">false</span>;
+            <span class="kw">for </span>_i <span class="kw">in </span>[<span class="string">&quot;opposite&quot;</span>, <span class="string">&quot;same&quot;</span>] {
+                <span class="comment">// toggle sides
+                </span><span class="self">self</span>.state.draw_from_left = !<span class="self">self</span>.state.draw_from_left;
 
-                <span class="comment">// try to fetch from the specified side</span>
-                <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy::collapsible_else_if</span>)]</span>
-                <span class="kw">if</span> <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">draw_from_left</span> {
-                    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">l</span>) = <span class="self">self</span>.<span class="ident">lhs</span>.<span class="ident">next</span>() {
-                        <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">draw_from_left</span> = <span class="bool-val">true</span>;
-                        <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">ltab</span>.<span class="ident">push</span>(<span class="ident">l</span>);
-                        <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">opposite_ix</span> = <span class="number">0</span>..<span class="self">self</span>.<span class="ident">state</span>.<span class="ident">rtab</span>.<span class="ident">len</span>();
-                        <span class="ident">found_new</span> = <span class="bool-val">true</span>;
+                <span class="comment">// try to fetch from the specified side
+                </span><span class="attribute">#[allow(clippy::collapsible_else_if)]</span>
+                <span class="kw">if </span><span class="self">self</span>.state.draw_from_left {
+                    <span class="kw">if let </span><span class="prelude-val">Some</span>(l) = <span class="self">self</span>.lhs.next() {
+                        <span class="self">self</span>.state.draw_from_left = <span class="bool-val">true</span>;
+                        <span class="self">self</span>.state.ltab.push(l);
+                        <span class="self">self</span>.state.opposite_ix = <span class="number">0</span>..<span class="self">self</span>.state.rtab.len();
+                        found_new = <span class="bool-val">true</span>;
                         <span class="kw">break</span>;
                     }
-                } <span class="kw">else</span> {
-                    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">r</span>) = <span class="self">self</span>.<span class="ident">rhs</span>.<span class="ident">next</span>() {
-                        <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">draw_from_left</span> = <span class="bool-val">false</span>;
-                        <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">rtab</span>.<span class="ident">push</span>(<span class="ident">r</span>);
-                        <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">opposite_ix</span> = <span class="number">0</span>..<span class="self">self</span>.<span class="ident">state</span>.<span class="ident">ltab</span>.<span class="ident">len</span>();
-                        <span class="ident">found_new</span> = <span class="bool-val">true</span>;
+                } <span class="kw">else </span>{
+                    <span class="kw">if let </span><span class="prelude-val">Some</span>(r) = <span class="self">self</span>.rhs.next() {
+                        <span class="self">self</span>.state.draw_from_left = <span class="bool-val">false</span>;
+                        <span class="self">self</span>.state.rtab.push(r);
+                        <span class="self">self</span>.state.opposite_ix = <span class="number">0</span>..<span class="self">self</span>.state.ltab.len();
+                        found_new = <span class="bool-val">true</span>;
                         <span class="kw">break</span>;
                     }
                 }
             }
-            <span class="kw">if</span> !<span class="ident">found_new</span> {
-                <span class="kw">return</span> <span class="prelude-val">None</span>;
+            <span class="kw">if </span>!found_new {
+                <span class="kw">return </span><span class="prelude-val">None</span>;
             }
         }
     }
 }
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">I1</span>, <span class="ident">V1</span>, <span class="ident">I2</span>, <span class="ident">V2</span>&gt; <span class="ident">CrossJoin</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">I1</span>, <span class="ident">V1</span>, <span class="ident">I2</span>, <span class="ident">V2</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">V1</span>: <span class="ident">Eq</span> + <span class="ident">Clone</span>,
-    <span class="ident">V2</span>: <span class="ident">Eq</span> + <span class="ident">Clone</span>,
-    <span class="ident">I1</span>: <span class="ident">Iterator</span>&lt;<span class="ident">Item</span> = <span class="ident">V1</span>&gt;,
-    <span class="ident">I2</span>: <span class="ident">Iterator</span>&lt;<span class="ident">Item</span> = <span class="ident">V2</span>&gt;,
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, I1, V1, I2, V2&gt; CrossJoin&lt;<span class="lifetime">&#39;a</span>, I1, V1, I2, V2&gt;
+<span class="kw">where
+    </span>V1: Eq + Clone,
+    V2: Eq + Clone,
+    I1: Iterator&lt;Item = V1&gt;,
+    I2: Iterator&lt;Item = V2&gt;,
 {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">lhs</span>: <span class="ident">I1</span>, <span class="ident">rhs</span>: <span class="ident">I2</span>, <span class="ident">state</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">CrossJoinState</span>&lt;<span class="ident">V1</span>, <span class="ident">V2</span>&gt;) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> { <span class="ident">lhs</span>, <span class="ident">rhs</span>, <span class="ident">state</span> }
+    <span class="kw">pub fn </span>new(lhs: I1, rhs: I2, state: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>CrossJoinState&lt;V1, V2&gt;) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{ lhs, rhs, state }
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
-<span class="kw">mod</span> <span class="ident">tests</span> {
-    <span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">CrossJoin</span>, <span class="ident">CrossJoinState</span>};
+<span class="attribute">#[cfg(test)]</span>
+<span class="kw">mod </span>tests {
+    <span class="kw">use super</span>::{CrossJoin, CrossJoinState};
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">cross_join</span>() {
-        <span class="kw">let</span> <span class="ident">lhs</span> = (<span class="number">0</span>..<span class="number">3</span>).<span class="ident">map</span>(|<span class="ident">x</span>| (<span class="macro">format!</span>(<span class="string">&quot;left {}&quot;</span>, <span class="ident">x</span>)));
-        <span class="kw">let</span> <span class="ident">rhs</span> = (<span class="number">10</span>..<span class="number">13</span>).<span class="ident">map</span>(|<span class="ident">x</span>| (<span class="macro">format!</span>(<span class="string">&quot;right {}&quot;</span>, <span class="ident">x</span>)));
+    <span class="attribute">#[test]</span>
+    <span class="kw">fn </span>cross_join() {
+        <span class="kw">let </span>lhs = (<span class="number">0</span>..<span class="number">3</span>).map(|x| (<span class="macro">format!</span>(<span class="string">&quot;left {}&quot;</span>, x)));
+        <span class="kw">let </span>rhs = (<span class="number">10</span>..<span class="number">13</span>).map(|x| (<span class="macro">format!</span>(<span class="string">&quot;right {}&quot;</span>, x)));
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">state</span> = <span class="ident">CrossJoinState::default</span>();
-        <span class="kw">let</span> <span class="ident">join</span> = <span class="ident">CrossJoin::new</span>(<span class="ident">lhs</span>, <span class="ident">rhs</span>, <span class="kw-2">&amp;mut</span> <span class="ident">state</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>state = CrossJoinState::default();
+        <span class="kw">let </span>join = CrossJoin::new(lhs, rhs, <span class="kw-2">&amp;mut </span>state);
 
         <span class="macro">assert_eq!</span>(
-            <span class="ident">join</span>.<span class="ident">collect</span>::&lt;<span class="ident">Vec</span>&lt;<span class="kw">_</span>&gt;&gt;(),
+            join.collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;(),
             <span class="macro">vec!</span>[
-                (<span class="string">&quot;left 0&quot;</span>.<span class="ident">into</span>(), <span class="string">&quot;right 10&quot;</span>.<span class="ident">into</span>()),
-                (<span class="string">&quot;left 0&quot;</span>.<span class="ident">into</span>(), <span class="string">&quot;right 11&quot;</span>.<span class="ident">into</span>()),
-                (<span class="string">&quot;left 1&quot;</span>.<span class="ident">into</span>(), <span class="string">&quot;right 10&quot;</span>.<span class="ident">into</span>()),
-                (<span class="string">&quot;left 1&quot;</span>.<span class="ident">into</span>(), <span class="string">&quot;right 11&quot;</span>.<span class="ident">into</span>()),
-                (<span class="string">&quot;left 0&quot;</span>.<span class="ident">into</span>(), <span class="string">&quot;right 12&quot;</span>.<span class="ident">into</span>()),
-                (<span class="string">&quot;left 1&quot;</span>.<span class="ident">into</span>(), <span class="string">&quot;right 12&quot;</span>.<span class="ident">into</span>()),
-                (<span class="string">&quot;left 2&quot;</span>.<span class="ident">into</span>(), <span class="string">&quot;right 10&quot;</span>.<span class="ident">into</span>()),
-                (<span class="string">&quot;left 2&quot;</span>.<span class="ident">into</span>(), <span class="string">&quot;right 11&quot;</span>.<span class="ident">into</span>()),
-                (<span class="string">&quot;left 2&quot;</span>.<span class="ident">into</span>(), <span class="string">&quot;right 12&quot;</span>.<span class="ident">into</span>())
+                (<span class="string">&quot;left 0&quot;</span>.into(), <span class="string">&quot;right 10&quot;</span>.into()),
+                (<span class="string">&quot;left 0&quot;</span>.into(), <span class="string">&quot;right 11&quot;</span>.into()),
+                (<span class="string">&quot;left 1&quot;</span>.into(), <span class="string">&quot;right 10&quot;</span>.into()),
+                (<span class="string">&quot;left 1&quot;</span>.into(), <span class="string">&quot;right 11&quot;</span>.into()),
+                (<span class="string">&quot;left 0&quot;</span>.into(), <span class="string">&quot;right 12&quot;</span>.into()),
+                (<span class="string">&quot;left 1&quot;</span>.into(), <span class="string">&quot;right 12&quot;</span>.into()),
+                (<span class="string">&quot;left 2&quot;</span>.into(), <span class="string">&quot;right 10&quot;</span>.into()),
+                (<span class="string">&quot;left 2&quot;</span>.into(), <span class="string">&quot;right 11&quot;</span>.into()),
+                (<span class="string">&quot;left 2&quot;</span>.into(), <span class="string">&quot;right 12&quot;</span>.into())
             ]
         );
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (75b7e52e9 2022-08-13)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

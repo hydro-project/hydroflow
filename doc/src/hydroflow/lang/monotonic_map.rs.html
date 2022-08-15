@@ -55,62 +55,62 @@
 <span id="55">55</span>
 <span id="56">56</span>
 <span id="57">57</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">super</span>::clear::Clear</span>;
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::clear::Clear;
 
-<span class="doccomment">/// A map-like interface which in reality only stored one value at a time. The</span>
-<span class="doccomment">/// keys must be monotonically increasing (i.e. timestamps). For Hydroflow,</span>
-<span class="doccomment">/// this allows state to be stored which resets each epoch (tick) by using the</span>
-<span class="doccomment">/// epoch counter as the key. In the generic `Map` case it can be swapped out</span>
-<span class="doccomment">/// for a true map to allow processing of multiple epochs of data at once.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Copy</span>, <span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">MonotonicMap</span>&lt;<span class="ident">K</span>, <span class="ident">V</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">K</span>: <span class="ident">PartialOrd</span>,
-    <span class="ident">V</span>: <span class="ident">Clear</span>,
+<span class="doccomment">/// A map-like interface which in reality only stored one value at a time. The
+/// keys must be monotonically increasing (i.e. timestamps). For Hydroflow,
+/// this allows state to be stored which resets each epoch (tick) by using the
+/// epoch counter as the key. In the generic `Map` case it can be swapped out
+/// for a true map to allow processing of multiple epochs of data at once.
+</span><span class="attribute">#[derive(Clone, Copy, Debug)]</span>
+<span class="kw">pub struct </span>MonotonicMap&lt;K, V&gt;
+<span class="kw">where
+    </span>K: PartialOrd,
+    V: Clear,
 {
-    <span class="ident">key</span>: <span class="prelude-ty">Option</span>&lt;<span class="ident">K</span>&gt;,
-    <span class="ident">val</span>: <span class="ident">V</span>,
+    key: <span class="prelude-ty">Option</span>&lt;K&gt;,
+    val: V,
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">K</span>, <span class="ident">V</span>&gt; <span class="ident">Default</span> <span class="kw">for</span> <span class="ident">MonotonicMap</span>&lt;<span class="ident">K</span>, <span class="ident">V</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">K</span>: <span class="ident">PartialOrd</span>,
-    <span class="ident">V</span>: <span class="ident">Clear</span> + <span class="ident">Default</span>,
+<span class="kw">impl</span>&lt;K, V&gt; Default <span class="kw">for </span>MonotonicMap&lt;K, V&gt;
+<span class="kw">where
+    </span>K: PartialOrd,
+    V: Clear + Default,
 {
-    <span class="kw">fn</span> <span class="ident">default</span>() -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">key</span>: <span class="prelude-val">None</span>,
-            <span class="ident">val</span>: <span class="ident">Default::default</span>(),
+    <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            key: <span class="prelude-val">None</span>,
+            val: Default::default(),
         }
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">K</span>, <span class="ident">V</span>&gt; <span class="ident">MonotonicMap</span>&lt;<span class="ident">K</span>, <span class="ident">V</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">K</span>: <span class="ident">PartialOrd</span>,
-    <span class="ident">V</span>: <span class="ident">Clear</span>,
+<span class="kw">impl</span>&lt;K, V&gt; MonotonicMap&lt;K, V&gt;
+<span class="kw">where
+    </span>K: PartialOrd,
+    V: Clear,
 {
-    <span class="doccomment">/// Creates a new `MonotonicMap` initialized with the given value. The</span>
-    <span class="doccomment">/// vaue will be `Clear`ed before it is accessed.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new_init</span>(<span class="ident">val</span>: <span class="ident">V</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> { <span class="ident">key</span>: <span class="prelude-val">None</span>, <span class="ident">val</span> }
+    <span class="doccomment">/// Creates a new `MonotonicMap` initialized with the given value. The
+    /// vaue will be `Clear`ed before it is accessed.
+    </span><span class="kw">pub fn </span>new_init(val: V) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{ key: <span class="prelude-val">None</span>, val }
     }
 
-    <span class="doccomment">/// Returns the value for the monotonically increasing key, or `None` if</span>
-    <span class="doccomment">/// the key has already passed.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">key</span>: <span class="ident">K</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut</span> <span class="ident">V</span>&gt; {
-        <span class="kw">if</span> <span class="self">self</span>
-            .<span class="ident">key</span>
-            .<span class="ident">as_ref</span>()
-            .<span class="ident">map</span>(|<span class="ident">old_key</span>| <span class="ident">old_key</span> &lt;= <span class="kw-2">&amp;</span><span class="ident">key</span>)
-            .<span class="ident">unwrap_or</span>(<span class="bool-val">true</span>)
+    <span class="doccomment">/// Returns the value for the monotonically increasing key, or `None` if
+    /// the key has already passed.
+    </span><span class="kw">pub fn </span>get_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, key: K) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut </span>V&gt; {
+        <span class="kw">if </span><span class="self">self
+            </span>.key
+            .as_ref()
+            .map(|old_key| old_key &lt;= <span class="kw-2">&amp;</span>key)
+            .unwrap_or(<span class="bool-val">true</span>)
         {
-            <span class="self">self</span>.<span class="ident">key</span> = <span class="prelude-val">Some</span>(<span class="ident">key</span>);
-            <span class="prelude-val">Some</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">val</span>)
-        } <span class="kw">else</span> {
-            <span class="prelude-val">None</span>
-        }
+            <span class="self">self</span>.key = <span class="prelude-val">Some</span>(key);
+            <span class="prelude-val">Some</span>(<span class="kw-2">&amp;mut </span><span class="self">self</span>.val)
+        } <span class="kw">else </span>{
+            <span class="prelude-val">None
+        </span>}
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (75b7e52e9 2022-08-13)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

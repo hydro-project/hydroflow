@@ -166,173 +166,173 @@
 <span id="166">166</span>
 <span id="167">167</span>
 <span id="168">168</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::cmp::Ordering</span>;
-<span class="kw">use</span> <span class="ident">std::iter::FromIterator</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>std::cmp::Ordering;
+<span class="kw">use </span>std::iter::FromIterator;
 
-<span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">Compare</span>, <span class="ident">Convert</span>, <span class="ident">Debottom</span>, <span class="ident">Lattice</span>, <span class="ident">LatticeRepr</span>, <span class="ident">Merge</span>};
+<span class="kw">use super</span>::{Compare, Convert, Debottom, Lattice, LatticeRepr, Merge};
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::lang::collections::Collection</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::lang::tag</span>;
+<span class="kw">use </span><span class="kw">crate</span>::lang::collections::Collection;
+<span class="kw">use </span><span class="kw">crate</span>::lang::tag;
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">SetUnion</span>&lt;<span class="ident">T</span>&gt; {
-    <span class="ident">_phantom</span>: <span class="ident">std::marker::PhantomData</span>&lt;<span class="ident">T</span>&gt;,
+<span class="kw">pub struct </span>SetUnion&lt;T&gt; {
+    _phantom: std::marker::PhantomData&lt;T&gt;,
 }
-<span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">Lattice</span> <span class="kw">for</span> <span class="ident">SetUnion</span>&lt;<span class="ident">T</span>&gt; {}
+<span class="kw">impl</span>&lt;T&gt; Lattice <span class="kw">for </span>SetUnion&lt;T&gt; {}
 
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">SetTag</span>&lt;<span class="ident">T</span>&gt;: <span class="ident">tag::Tag1</span>&lt;<span class="ident">T</span>&gt; {}
-<span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">SetTag</span>&lt;<span class="ident">T</span>&gt; <span class="kw">for</span> <span class="ident">tag::HASH_SET</span> {}
-<span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">SetTag</span>&lt;<span class="ident">T</span>&gt; <span class="kw">for</span> <span class="ident">tag::BTREE_SET</span> {}
-<span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">SetTag</span>&lt;<span class="ident">T</span>&gt; <span class="kw">for</span> <span class="ident">tag::VEC</span> {}
-<span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">SetTag</span>&lt;<span class="ident">T</span>&gt; <span class="kw">for</span> <span class="ident">tag::SINGLE</span> {}
-<span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">SetTag</span>&lt;<span class="ident">T</span>&gt; <span class="kw">for</span> <span class="ident">tag::OPTION</span> {}
-<span class="kw">impl</span>&lt;<span class="ident">T</span>, <span class="kw">const</span> <span class="ident">N</span>: <span class="ident">usize</span>&gt; <span class="ident">SetTag</span>&lt;<span class="ident">T</span>&gt; <span class="kw">for</span> <span class="ident">tag::ARRAY</span>&lt;<span class="ident">N</span>&gt; {}
-<span class="kw">impl</span>&lt;<span class="ident">T</span>, <span class="kw">const</span> <span class="ident">N</span>: <span class="ident">usize</span>&gt; <span class="ident">SetTag</span>&lt;<span class="ident">T</span>&gt; <span class="kw">for</span> <span class="ident">tag::MASKED_ARRAY</span>&lt;<span class="ident">N</span>&gt; {}
+<span class="kw">pub trait </span>SetTag&lt;T&gt;: tag::Tag1&lt;T&gt; {}
+<span class="kw">impl</span>&lt;T&gt; SetTag&lt;T&gt; <span class="kw">for </span>tag::HASH_SET {}
+<span class="kw">impl</span>&lt;T&gt; SetTag&lt;T&gt; <span class="kw">for </span>tag::BTREE_SET {}
+<span class="kw">impl</span>&lt;T&gt; SetTag&lt;T&gt; <span class="kw">for </span>tag::VEC {}
+<span class="kw">impl</span>&lt;T&gt; SetTag&lt;T&gt; <span class="kw">for </span>tag::SINGLE {}
+<span class="kw">impl</span>&lt;T&gt; SetTag&lt;T&gt; <span class="kw">for </span>tag::OPTION {}
+<span class="kw">impl</span>&lt;T, <span class="kw">const </span>N: usize&gt; SetTag&lt;T&gt; <span class="kw">for </span>tag::ARRAY&lt;N&gt; {}
+<span class="kw">impl</span>&lt;T, <span class="kw">const </span>N: usize&gt; SetTag&lt;T&gt; <span class="kw">for </span>tag::MASKED_ARRAY&lt;N&gt; {}
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">SetUnionRepr</span>&lt;<span class="ident">Tag</span>: <span class="ident">SetTag</span>&lt;<span class="ident">T</span>&gt;, <span class="ident">T</span>&gt; {
-    <span class="ident">_phantom</span>: <span class="ident">std::marker::PhantomData</span>&lt;(<span class="ident">Tag</span>, <span class="ident">T</span>)&gt;,
+<span class="kw">pub struct </span>SetUnionRepr&lt;Tag: SetTag&lt;T&gt;, T&gt; {
+    _phantom: std::marker::PhantomData&lt;(Tag, T)&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">Tag</span>: <span class="ident">SetTag</span>&lt;<span class="ident">T</span>&gt;, <span class="ident">T</span>&gt; <span class="ident">LatticeRepr</span> <span class="kw">for</span> <span class="ident">SetUnionRepr</span>&lt;<span class="ident">Tag</span>, <span class="ident">T</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">Tag::Bind</span>: <span class="ident">Clone</span>,
+<span class="kw">impl</span>&lt;Tag: SetTag&lt;T&gt;, T&gt; LatticeRepr <span class="kw">for </span>SetUnionRepr&lt;Tag, T&gt;
+<span class="kw">where
+    </span>Tag::Bind: Clone,
 {
-    <span class="kw">type</span> <span class="ident">Lattice</span> = <span class="ident">SetUnion</span>&lt;<span class="ident">T</span>&gt;;
-    <span class="kw">type</span> <span class="ident">Repr</span> = <span class="ident">Tag::Bind</span>;
+    <span class="kw">type </span>Lattice = SetUnion&lt;T&gt;;
+    <span class="kw">type </span>Repr = Tag::Bind;
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">T</span>, <span class="ident">SelfTag</span>: <span class="ident">SetTag</span>&lt;<span class="ident">T</span>&gt;, <span class="ident">DeltaTag</span>: <span class="ident">SetTag</span>&lt;<span class="ident">T</span>&gt;&gt; <span class="ident">Merge</span>&lt;<span class="ident">SetUnionRepr</span>&lt;<span class="ident">DeltaTag</span>, <span class="ident">T</span>&gt;&gt;
-    <span class="kw">for</span> <span class="ident">SetUnionRepr</span>&lt;<span class="ident">SelfTag</span>, <span class="ident">T</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">SetUnionRepr</span>&lt;<span class="ident">SelfTag</span>, <span class="ident">T</span>&gt;: <span class="ident">LatticeRepr</span>&lt;<span class="ident">Lattice</span> = <span class="ident">SetUnion</span>&lt;<span class="ident">T</span>&gt;&gt;,
-    <span class="ident">SetUnionRepr</span>&lt;<span class="ident">DeltaTag</span>, <span class="ident">T</span>&gt;: <span class="ident">LatticeRepr</span>&lt;<span class="ident">Lattice</span> = <span class="ident">SetUnion</span>&lt;<span class="ident">T</span>&gt;&gt;,
-    &lt;<span class="ident">SetUnionRepr</span>&lt;<span class="ident">SelfTag</span>, <span class="ident">T</span>&gt; <span class="kw">as</span> <span class="ident">LatticeRepr</span>&gt;<span class="ident">::Repr</span>: <span class="ident">Collection</span>&lt;<span class="ident">T</span>, ()&gt; + <span class="ident">Extend</span>&lt;<span class="ident">T</span>&gt;,
-    &lt;<span class="ident">SetUnionRepr</span>&lt;<span class="ident">DeltaTag</span>, <span class="ident">T</span>&gt; <span class="kw">as</span> <span class="ident">LatticeRepr</span>&gt;<span class="ident">::Repr</span>: <span class="ident">IntoIterator</span>&lt;<span class="ident">Item</span> = <span class="ident">T</span>&gt;,
+<span class="kw">impl</span>&lt;T, SelfTag: SetTag&lt;T&gt;, DeltaTag: SetTag&lt;T&gt;&gt; Merge&lt;SetUnionRepr&lt;DeltaTag, T&gt;&gt;
+    <span class="kw">for </span>SetUnionRepr&lt;SelfTag, T&gt;
+<span class="kw">where
+    </span>SetUnionRepr&lt;SelfTag, T&gt;: LatticeRepr&lt;Lattice = SetUnion&lt;T&gt;&gt;,
+    SetUnionRepr&lt;DeltaTag, T&gt;: LatticeRepr&lt;Lattice = SetUnion&lt;T&gt;&gt;,
+    &lt;SetUnionRepr&lt;SelfTag, T&gt; <span class="kw">as </span>LatticeRepr&gt;::Repr: Collection&lt;T, ()&gt; + Extend&lt;T&gt;,
+    &lt;SetUnionRepr&lt;DeltaTag, T&gt; <span class="kw">as </span>LatticeRepr&gt;::Repr: IntoIterator&lt;Item = T&gt;,
 {
-    <span class="kw">fn</span> <span class="ident">merge</span>(
-        <span class="ident">this</span>: <span class="kw-2">&amp;mut</span> &lt;<span class="ident">SetUnionRepr</span>&lt;<span class="ident">SelfTag</span>, <span class="ident">T</span>&gt; <span class="kw">as</span> <span class="ident">LatticeRepr</span>&gt;<span class="ident">::Repr</span>,
-        <span class="ident">delta</span>: &lt;<span class="ident">SetUnionRepr</span>&lt;<span class="ident">DeltaTag</span>, <span class="ident">T</span>&gt; <span class="kw">as</span> <span class="ident">LatticeRepr</span>&gt;<span class="ident">::Repr</span>,
-    ) -&gt; <span class="ident">bool</span> {
-        <span class="kw">let</span> <span class="ident">old_len</span> = <span class="ident">this</span>.<span class="ident">len</span>();
-        <span class="ident">this</span>.<span class="ident">extend</span>(<span class="ident">delta</span>);
-        <span class="ident">this</span>.<span class="ident">len</span>() &gt; <span class="ident">old_len</span>
+    <span class="kw">fn </span>merge(
+        this: <span class="kw-2">&amp;mut </span>&lt;SetUnionRepr&lt;SelfTag, T&gt; <span class="kw">as </span>LatticeRepr&gt;::Repr,
+        delta: &lt;SetUnionRepr&lt;DeltaTag, T&gt; <span class="kw">as </span>LatticeRepr&gt;::Repr,
+    ) -&gt; bool {
+        <span class="kw">let </span>old_len = this.len();
+        this.extend(delta);
+        this.len() &gt; old_len
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">T</span>, <span class="ident">SelfTag</span>: <span class="ident">SetTag</span>&lt;<span class="ident">T</span>&gt;, <span class="ident">TargetTag</span>: <span class="ident">SetTag</span>&lt;<span class="ident">T</span>&gt;&gt; <span class="ident">Convert</span>&lt;<span class="ident">SetUnionRepr</span>&lt;<span class="ident">TargetTag</span>, <span class="ident">T</span>&gt;&gt;
-    <span class="kw">for</span> <span class="ident">SetUnionRepr</span>&lt;<span class="ident">SelfTag</span>, <span class="ident">T</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">SetUnionRepr</span>&lt;<span class="ident">SelfTag</span>, <span class="ident">T</span>&gt;: <span class="ident">LatticeRepr</span>&lt;<span class="ident">Lattice</span> = <span class="ident">SetUnion</span>&lt;<span class="ident">T</span>&gt;&gt;,
-    <span class="ident">SetUnionRepr</span>&lt;<span class="ident">TargetTag</span>, <span class="ident">T</span>&gt;: <span class="ident">LatticeRepr</span>&lt;<span class="ident">Lattice</span> = <span class="ident">SetUnion</span>&lt;<span class="ident">T</span>&gt;&gt;,
-    &lt;<span class="ident">SetUnionRepr</span>&lt;<span class="ident">SelfTag</span>, <span class="ident">T</span>&gt; <span class="kw">as</span> <span class="ident">LatticeRepr</span>&gt;<span class="ident">::Repr</span>: <span class="ident">IntoIterator</span>&lt;<span class="ident">Item</span> = <span class="ident">T</span>&gt;,
-    &lt;<span class="ident">SetUnionRepr</span>&lt;<span class="ident">TargetTag</span>, <span class="ident">T</span>&gt; <span class="kw">as</span> <span class="ident">LatticeRepr</span>&gt;<span class="ident">::Repr</span>: <span class="ident">FromIterator</span>&lt;<span class="ident">T</span>&gt;,
+<span class="kw">impl</span>&lt;T, SelfTag: SetTag&lt;T&gt;, TargetTag: SetTag&lt;T&gt;&gt; Convert&lt;SetUnionRepr&lt;TargetTag, T&gt;&gt;
+    <span class="kw">for </span>SetUnionRepr&lt;SelfTag, T&gt;
+<span class="kw">where
+    </span>SetUnionRepr&lt;SelfTag, T&gt;: LatticeRepr&lt;Lattice = SetUnion&lt;T&gt;&gt;,
+    SetUnionRepr&lt;TargetTag, T&gt;: LatticeRepr&lt;Lattice = SetUnion&lt;T&gt;&gt;,
+    &lt;SetUnionRepr&lt;SelfTag, T&gt; <span class="kw">as </span>LatticeRepr&gt;::Repr: IntoIterator&lt;Item = T&gt;,
+    &lt;SetUnionRepr&lt;TargetTag, T&gt; <span class="kw">as </span>LatticeRepr&gt;::Repr: FromIterator&lt;T&gt;,
 {
-    <span class="kw">fn</span> <span class="ident">convert</span>(
-        <span class="ident">this</span>: &lt;<span class="ident">SetUnionRepr</span>&lt;<span class="ident">SelfTag</span>, <span class="ident">T</span>&gt; <span class="kw">as</span> <span class="ident">LatticeRepr</span>&gt;<span class="ident">::Repr</span>,
-    ) -&gt; &lt;<span class="ident">SetUnionRepr</span>&lt;<span class="ident">TargetTag</span>, <span class="ident">T</span>&gt; <span class="kw">as</span> <span class="ident">LatticeRepr</span>&gt;<span class="ident">::Repr</span> {
-        <span class="ident">this</span>.<span class="ident">into_iter</span>().<span class="ident">collect</span>()
+    <span class="kw">fn </span>convert(
+        this: &lt;SetUnionRepr&lt;SelfTag, T&gt; <span class="kw">as </span>LatticeRepr&gt;::Repr,
+    ) -&gt; &lt;SetUnionRepr&lt;TargetTag, T&gt; <span class="kw">as </span>LatticeRepr&gt;::Repr {
+        this.into_iter().collect()
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">T</span>: <span class="lifetime">&#39;static</span>, <span class="ident">SelfTag</span>: <span class="ident">SetTag</span>&lt;<span class="ident">T</span>&gt;, <span class="ident">TargetTag</span>: <span class="ident">SetTag</span>&lt;<span class="ident">T</span>&gt;&gt; <span class="ident">Compare</span>&lt;<span class="ident">SetUnionRepr</span>&lt;<span class="ident">TargetTag</span>, <span class="ident">T</span>&gt;&gt;
-    <span class="kw">for</span> <span class="ident">SetUnionRepr</span>&lt;<span class="ident">SelfTag</span>, <span class="ident">T</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">SetUnionRepr</span>&lt;<span class="ident">SelfTag</span>, <span class="ident">T</span>&gt;: <span class="ident">LatticeRepr</span>&lt;<span class="ident">Lattice</span> = <span class="ident">SetUnion</span>&lt;<span class="ident">T</span>&gt;&gt;,
-    <span class="ident">SetUnionRepr</span>&lt;<span class="ident">TargetTag</span>, <span class="ident">T</span>&gt;: <span class="ident">LatticeRepr</span>&lt;<span class="ident">Lattice</span> = <span class="ident">SetUnion</span>&lt;<span class="ident">T</span>&gt;&gt;,
-    &lt;<span class="ident">SetUnionRepr</span>&lt;<span class="ident">SelfTag</span>, <span class="ident">T</span>&gt; <span class="kw">as</span> <span class="ident">LatticeRepr</span>&gt;<span class="ident">::Repr</span>: <span class="ident">Collection</span>&lt;<span class="ident">T</span>, ()&gt;,
-    &lt;<span class="ident">SetUnionRepr</span>&lt;<span class="ident">TargetTag</span>, <span class="ident">T</span>&gt; <span class="kw">as</span> <span class="ident">LatticeRepr</span>&gt;<span class="ident">::Repr</span>: <span class="ident">Collection</span>&lt;<span class="ident">T</span>, ()&gt;,
+<span class="kw">impl</span>&lt;T: <span class="lifetime">&#39;static</span>, SelfTag: SetTag&lt;T&gt;, TargetTag: SetTag&lt;T&gt;&gt; Compare&lt;SetUnionRepr&lt;TargetTag, T&gt;&gt;
+    <span class="kw">for </span>SetUnionRepr&lt;SelfTag, T&gt;
+<span class="kw">where
+    </span>SetUnionRepr&lt;SelfTag, T&gt;: LatticeRepr&lt;Lattice = SetUnion&lt;T&gt;&gt;,
+    SetUnionRepr&lt;TargetTag, T&gt;: LatticeRepr&lt;Lattice = SetUnion&lt;T&gt;&gt;,
+    &lt;SetUnionRepr&lt;SelfTag, T&gt; <span class="kw">as </span>LatticeRepr&gt;::Repr: Collection&lt;T, ()&gt;,
+    &lt;SetUnionRepr&lt;TargetTag, T&gt; <span class="kw">as </span>LatticeRepr&gt;::Repr: Collection&lt;T, ()&gt;,
 {
-    <span class="kw">fn</span> <span class="ident">compare</span>(
-        <span class="ident">this</span>: <span class="kw-2">&amp;</span>&lt;<span class="ident">SetUnionRepr</span>&lt;<span class="ident">SelfTag</span>, <span class="ident">T</span>&gt; <span class="kw">as</span> <span class="ident">LatticeRepr</span>&gt;<span class="ident">::Repr</span>,
-        <span class="ident">other</span>: <span class="kw-2">&amp;</span>&lt;<span class="ident">SetUnionRepr</span>&lt;<span class="ident">TargetTag</span>, <span class="ident">T</span>&gt; <span class="kw">as</span> <span class="ident">LatticeRepr</span>&gt;<span class="ident">::Repr</span>,
-    ) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">Ordering</span>&gt; {
-        <span class="kw">match</span> <span class="ident">this</span>.<span class="ident">len</span>().<span class="ident">cmp</span>(<span class="kw-2">&amp;</span><span class="ident">other</span>.<span class="ident">len</span>()) {
-            <span class="ident">Ordering::Greater</span> =&gt; {
-                <span class="kw">if</span> <span class="ident">this</span>.<span class="ident">keys</span>().<span class="ident">all</span>(|<span class="ident">key</span>| <span class="ident">other</span>.<span class="ident">get</span>(<span class="ident">key</span>).<span class="ident">is_some</span>()) {
-                    <span class="prelude-val">Some</span>(<span class="ident">Ordering::Greater</span>)
-                } <span class="kw">else</span> {
-                    <span class="prelude-val">None</span>
-                }
+    <span class="kw">fn </span>compare(
+        this: <span class="kw-2">&amp;</span>&lt;SetUnionRepr&lt;SelfTag, T&gt; <span class="kw">as </span>LatticeRepr&gt;::Repr,
+        other: <span class="kw-2">&amp;</span>&lt;SetUnionRepr&lt;TargetTag, T&gt; <span class="kw">as </span>LatticeRepr&gt;::Repr,
+    ) -&gt; <span class="prelude-ty">Option</span>&lt;Ordering&gt; {
+        <span class="kw">match </span>this.len().cmp(<span class="kw-2">&amp;</span>other.len()) {
+            Ordering::Greater =&gt; {
+                <span class="kw">if </span>this.keys().all(|key| other.get(key).is_some()) {
+                    <span class="prelude-val">Some</span>(Ordering::Greater)
+                } <span class="kw">else </span>{
+                    <span class="prelude-val">None
+                </span>}
             }
-            <span class="ident">Ordering::Equal</span> =&gt; {
-                <span class="kw">if</span> <span class="ident">this</span>.<span class="ident">keys</span>().<span class="ident">all</span>(|<span class="ident">key</span>| <span class="ident">other</span>.<span class="ident">get</span>(<span class="ident">key</span>).<span class="ident">is_some</span>()) {
-                    <span class="prelude-val">Some</span>(<span class="ident">Ordering::Equal</span>)
-                } <span class="kw">else</span> {
-                    <span class="prelude-val">None</span>
-                }
+            Ordering::Equal =&gt; {
+                <span class="kw">if </span>this.keys().all(|key| other.get(key).is_some()) {
+                    <span class="prelude-val">Some</span>(Ordering::Equal)
+                } <span class="kw">else </span>{
+                    <span class="prelude-val">None
+                </span>}
             }
-            <span class="ident">Ordering::Less</span> =&gt; {
-                <span class="kw">if</span> <span class="ident">other</span>.<span class="ident">keys</span>().<span class="ident">all</span>(|<span class="ident">key</span>| <span class="ident">this</span>.<span class="ident">get</span>(<span class="ident">key</span>).<span class="ident">is_some</span>()) {
-                    <span class="prelude-val">Some</span>(<span class="ident">Ordering::Less</span>)
-                } <span class="kw">else</span> {
-                    <span class="prelude-val">None</span>
-                }
+            Ordering::Less =&gt; {
+                <span class="kw">if </span>other.keys().all(|key| this.get(key).is_some()) {
+                    <span class="prelude-val">Some</span>(Ordering::Less)
+                } <span class="kw">else </span>{
+                    <span class="prelude-val">None
+                </span>}
             }
         }
     }
 }
 
-<span class="comment">// impl&lt;Tag: SetTag&lt;T&gt;, T&gt; Debottom for SetUnionRepr&lt;Tag, T&gt;</span>
-<span class="comment">// where</span>
-<span class="comment">//     Tag::Bind: Clone,</span>
-<span class="comment">//     Self::Repr: Collection&lt;T, ()&gt;,</span>
-<span class="comment">// {</span>
-<span class="comment">//     fn is_bottom(this: &amp;Self::Repr) -&gt; bool {</span>
-<span class="comment">//         this.is_empty()</span>
-<span class="comment">//     }</span>
-<span class="comment">// }</span>
-<span class="kw">impl</span>&lt;<span class="ident">T</span>: <span class="ident">Clone</span>&gt; <span class="ident">Debottom</span> <span class="kw">for</span> <span class="ident">SetUnionRepr</span>&lt;<span class="ident">tag::OPTION</span>, <span class="ident">T</span>&gt; {
-    <span class="kw">fn</span> <span class="ident">is_bottom</span>(<span class="ident">this</span>: <span class="kw-2">&amp;</span><span class="ident"><span class="self">Self</span>::Repr</span>) -&gt; <span class="ident">bool</span> {
-        <span class="ident">this</span>.<span class="ident">is_none</span>()
+<span class="comment">// impl&lt;Tag: SetTag&lt;T&gt;, T&gt; Debottom for SetUnionRepr&lt;Tag, T&gt;
+// where
+//     Tag::Bind: Clone,
+//     Self::Repr: Collection&lt;T, ()&gt;,
+// {
+//     fn is_bottom(this: &amp;Self::Repr) -&gt; bool {
+//         this.is_empty()
+//     }
+// }
+</span><span class="kw">impl</span>&lt;T: Clone&gt; Debottom <span class="kw">for </span>SetUnionRepr&lt;tag::OPTION, T&gt; {
+    <span class="kw">fn </span>is_bottom(this: <span class="kw-2">&amp;</span><span class="self">Self</span>::Repr) -&gt; bool {
+        this.is_none()
     }
 
-    <span class="kw">type</span> <span class="ident">DebottomLr</span> = <span class="ident">SetUnionRepr</span>&lt;<span class="ident">tag::SINGLE</span>, <span class="ident">T</span>&gt;;
-    <span class="kw">fn</span> <span class="ident">debottom</span>(<span class="ident">this</span>: <span class="ident"><span class="self">Self</span>::Repr</span>) -&gt; <span class="prelude-ty">Option</span>&lt;&lt;<span class="ident"><span class="self">Self</span>::DebottomLr</span> <span class="kw">as</span> <span class="ident">LatticeRepr</span>&gt;<span class="ident">::Repr</span>&gt; {
-        <span class="ident">this</span>.<span class="ident">map</span>(<span class="ident"><span class="kw">crate</span>::lang::collections::Single</span>)
+    <span class="kw">type </span>DebottomLr = SetUnionRepr&lt;tag::SINGLE, T&gt;;
+    <span class="kw">fn </span>debottom(this: <span class="self">Self</span>::Repr) -&gt; <span class="prelude-ty">Option</span>&lt;&lt;<span class="self">Self</span>::DebottomLr <span class="kw">as </span>LatticeRepr&gt;::Repr&gt; {
+        this.map(<span class="kw">crate</span>::lang::collections::Single)
     }
 }
 
-<span class="kw">fn</span> <span class="ident">__assert_merges</span>() {
-    <span class="kw">use</span> <span class="ident">static_assertions</span>::{<span class="ident">assert_impl_all</span>, <span class="ident">assert_not_impl_any</span>};
+<span class="kw">fn </span>__assert_merges() {
+    <span class="kw">use </span>static_assertions::{assert_impl_all, assert_not_impl_any};
 
-    <span class="macro">assert_impl_all!</span>(<span class="ident">SetUnionRepr</span>&lt;<span class="ident">tag::HASH_SET</span>, <span class="ident">u32</span>&gt;:
-        <span class="ident">Merge</span>&lt;<span class="ident">SetUnionRepr</span>&lt;<span class="ident">tag::HASH_SET</span>, <span class="ident">u32</span>&gt;&gt;,
-        <span class="ident">Merge</span>&lt;<span class="ident">SetUnionRepr</span>&lt;<span class="ident">tag::BTREE_SET</span>, <span class="ident">u32</span>&gt;&gt;,
-        <span class="ident">Merge</span>&lt;<span class="ident">SetUnionRepr</span>&lt;<span class="ident">tag::VEC</span>, <span class="ident">u32</span>&gt;&gt;,
-        <span class="ident">Merge</span>&lt;<span class="ident">SetUnionRepr</span>&lt;<span class="ident">tag::SINGLE</span>, <span class="ident">u32</span>&gt;&gt;,
-        <span class="ident">Merge</span>&lt;<span class="ident">SetUnionRepr</span>&lt;<span class="ident">tag::OPTION</span>, <span class="ident">u32</span>&gt;&gt;,
-        <span class="ident">Merge</span>&lt;<span class="ident">SetUnionRepr</span>&lt;<span class="ident">tag::ARRAY</span>&lt;<span class="number">8</span>&gt;, <span class="ident">u32</span>&gt;&gt;,
-        <span class="ident">Merge</span>&lt;<span class="ident">SetUnionRepr</span>&lt;<span class="ident">tag::MASKED_ARRAY</span>&lt;<span class="number">8</span>&gt;, <span class="ident">u32</span>&gt;&gt;,
+    <span class="macro">assert_impl_all!</span>(SetUnionRepr&lt;tag::HASH_SET, u32&gt;:
+        Merge&lt;SetUnionRepr&lt;tag::HASH_SET, u32&gt;&gt;,
+        Merge&lt;SetUnionRepr&lt;tag::BTREE_SET, u32&gt;&gt;,
+        Merge&lt;SetUnionRepr&lt;tag::VEC, u32&gt;&gt;,
+        Merge&lt;SetUnionRepr&lt;tag::SINGLE, u32&gt;&gt;,
+        Merge&lt;SetUnionRepr&lt;tag::OPTION, u32&gt;&gt;,
+        Merge&lt;SetUnionRepr&lt;tag::ARRAY&lt;<span class="number">8</span>&gt;, u32&gt;&gt;,
+        Merge&lt;SetUnionRepr&lt;tag::MASKED_ARRAY&lt;<span class="number">8</span>&gt;, u32&gt;&gt;,
     );
 
-    <span class="macro">assert_impl_all!</span>(<span class="ident">SetUnionRepr</span>&lt;<span class="ident">tag::BTREE_SET</span>, <span class="ident">u32</span>&gt;:
-        <span class="ident">Merge</span>&lt;<span class="ident">SetUnionRepr</span>&lt;<span class="ident">tag::HASH_SET</span>, <span class="ident">u32</span>&gt;&gt;,
-        <span class="ident">Merge</span>&lt;<span class="ident">SetUnionRepr</span>&lt;<span class="ident">tag::BTREE_SET</span>, <span class="ident">u32</span>&gt;&gt;,
-        <span class="ident">Merge</span>&lt;<span class="ident">SetUnionRepr</span>&lt;<span class="ident">tag::VEC</span>, <span class="ident">u32</span>&gt;&gt;,
-        <span class="ident">Merge</span>&lt;<span class="ident">SetUnionRepr</span>&lt;<span class="ident">tag::SINGLE</span>, <span class="ident">u32</span>&gt;&gt;,
-        <span class="ident">Merge</span>&lt;<span class="ident">SetUnionRepr</span>&lt;<span class="ident">tag::OPTION</span>, <span class="ident">u32</span>&gt;&gt;,
-        <span class="ident">Merge</span>&lt;<span class="ident">SetUnionRepr</span>&lt;<span class="ident">tag::ARRAY</span>&lt;<span class="number">8</span>&gt;, <span class="ident">u32</span>&gt;&gt;,
-        <span class="ident">Merge</span>&lt;<span class="ident">SetUnionRepr</span>&lt;<span class="ident">tag::MASKED_ARRAY</span>&lt;<span class="number">8</span>&gt;, <span class="ident">u32</span>&gt;&gt;,
+    <span class="macro">assert_impl_all!</span>(SetUnionRepr&lt;tag::BTREE_SET, u32&gt;:
+        Merge&lt;SetUnionRepr&lt;tag::HASH_SET, u32&gt;&gt;,
+        Merge&lt;SetUnionRepr&lt;tag::BTREE_SET, u32&gt;&gt;,
+        Merge&lt;SetUnionRepr&lt;tag::VEC, u32&gt;&gt;,
+        Merge&lt;SetUnionRepr&lt;tag::SINGLE, u32&gt;&gt;,
+        Merge&lt;SetUnionRepr&lt;tag::OPTION, u32&gt;&gt;,
+        Merge&lt;SetUnionRepr&lt;tag::ARRAY&lt;<span class="number">8</span>&gt;, u32&gt;&gt;,
+        Merge&lt;SetUnionRepr&lt;tag::MASKED_ARRAY&lt;<span class="number">8</span>&gt;, u32&gt;&gt;,
     );
 
-    <span class="macro">assert_impl_all!</span>(<span class="ident">SetUnionRepr</span>&lt;<span class="ident">tag::VEC</span>, <span class="ident">u32</span>&gt;:
-        <span class="ident">Merge</span>&lt;<span class="ident">SetUnionRepr</span>&lt;<span class="ident">tag::HASH_SET</span>, <span class="ident">u32</span>&gt;&gt;,
-        <span class="ident">Merge</span>&lt;<span class="ident">SetUnionRepr</span>&lt;<span class="ident">tag::BTREE_SET</span>, <span class="ident">u32</span>&gt;&gt;,
-        <span class="ident">Merge</span>&lt;<span class="ident">SetUnionRepr</span>&lt;<span class="ident">tag::VEC</span>, <span class="ident">u32</span>&gt;&gt;,
-        <span class="ident">Merge</span>&lt;<span class="ident">SetUnionRepr</span>&lt;<span class="ident">tag::SINGLE</span>, <span class="ident">u32</span>&gt;&gt;,
-        <span class="ident">Merge</span>&lt;<span class="ident">SetUnionRepr</span>&lt;<span class="ident">tag::OPTION</span>, <span class="ident">u32</span>&gt;&gt;,
-        <span class="ident">Merge</span>&lt;<span class="ident">SetUnionRepr</span>&lt;<span class="ident">tag::ARRAY</span>&lt;<span class="number">8</span>&gt;, <span class="ident">u32</span>&gt;&gt;,
-        <span class="ident">Merge</span>&lt;<span class="ident">SetUnionRepr</span>&lt;<span class="ident">tag::MASKED_ARRAY</span>&lt;<span class="number">8</span>&gt;, <span class="ident">u32</span>&gt;&gt;,
+    <span class="macro">assert_impl_all!</span>(SetUnionRepr&lt;tag::VEC, u32&gt;:
+        Merge&lt;SetUnionRepr&lt;tag::HASH_SET, u32&gt;&gt;,
+        Merge&lt;SetUnionRepr&lt;tag::BTREE_SET, u32&gt;&gt;,
+        Merge&lt;SetUnionRepr&lt;tag::VEC, u32&gt;&gt;,
+        Merge&lt;SetUnionRepr&lt;tag::SINGLE, u32&gt;&gt;,
+        Merge&lt;SetUnionRepr&lt;tag::OPTION, u32&gt;&gt;,
+        Merge&lt;SetUnionRepr&lt;tag::ARRAY&lt;<span class="number">8</span>&gt;, u32&gt;&gt;,
+        Merge&lt;SetUnionRepr&lt;tag::MASKED_ARRAY&lt;<span class="number">8</span>&gt;, u32&gt;&gt;,
     );
 
-    <span class="macro">assert_not_impl_any!</span>(<span class="ident">SetUnionRepr</span>&lt;<span class="ident">tag::MASKED_ARRAY</span>&lt;<span class="number">8</span>&gt;, <span class="ident">u32</span>&gt;:
-        <span class="ident">Merge</span>&lt;<span class="ident">SetUnionRepr</span>&lt;<span class="ident">tag::HASH_SET</span>, <span class="ident">u32</span>&gt;&gt;,
-        <span class="ident">Merge</span>&lt;<span class="ident">SetUnionRepr</span>&lt;<span class="ident">tag::BTREE_SET</span>, <span class="ident">u32</span>&gt;&gt;,
-        <span class="ident">Merge</span>&lt;<span class="ident">SetUnionRepr</span>&lt;<span class="ident">tag::VEC</span>, <span class="ident">u32</span>&gt;&gt;,
-        <span class="ident">Merge</span>&lt;<span class="ident">SetUnionRepr</span>&lt;<span class="ident">tag::SINGLE</span>, <span class="ident">u32</span>&gt;&gt;,
-        <span class="ident">Merge</span>&lt;<span class="ident">SetUnionRepr</span>&lt;<span class="ident">tag::OPTION</span>, <span class="ident">u32</span>&gt;&gt;,
-        <span class="ident">Merge</span>&lt;<span class="ident">SetUnionRepr</span>&lt;<span class="ident">tag::ARRAY</span>&lt;<span class="number">8</span>&gt;, <span class="ident">u32</span>&gt;&gt;,
-        <span class="ident">Merge</span>&lt;<span class="ident">SetUnionRepr</span>&lt;<span class="ident">tag::MASKED_ARRAY</span>&lt;<span class="number">8</span>&gt;, <span class="ident">u32</span>&gt;&gt;,
+    <span class="macro">assert_not_impl_any!</span>(SetUnionRepr&lt;tag::MASKED_ARRAY&lt;<span class="number">8</span>&gt;, u32&gt;:
+        Merge&lt;SetUnionRepr&lt;tag::HASH_SET, u32&gt;&gt;,
+        Merge&lt;SetUnionRepr&lt;tag::BTREE_SET, u32&gt;&gt;,
+        Merge&lt;SetUnionRepr&lt;tag::VEC, u32&gt;&gt;,
+        Merge&lt;SetUnionRepr&lt;tag::SINGLE, u32&gt;&gt;,
+        Merge&lt;SetUnionRepr&lt;tag::OPTION, u32&gt;&gt;,
+        Merge&lt;SetUnionRepr&lt;tag::ARRAY&lt;<span class="number">8</span>&gt;, u32&gt;&gt;,
+        Merge&lt;SetUnionRepr&lt;tag::MASKED_ARRAY&lt;<span class="number">8</span>&gt;, u32&gt;&gt;,
     );
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (75b7e52e9 2022-08-13)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

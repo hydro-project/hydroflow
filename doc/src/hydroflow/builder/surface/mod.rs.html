@@ -482,489 +482,489 @@
 <span id="482">482</span>
 <span id="483">483</span>
 <span id="484">484</span>
-</pre><pre class="rust"><code><span class="doccomment">//! Structs used to create the user-facing Surface API.</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! Main user-facing traits are [`BaseSurface`], [`PullSurface`], and</span>
-<span class="doccomment">//! [`PushSurface`], which provide an iterator-like API with easy method</span>
-<span class="doccomment">//! chaining. The traits need to be imported when using the Surface API.</span>
-<span class="doccomment">//! You can use the prelude to do this easily:</span>
-<span class="doccomment">//! ```ignore</span>
-<span class="doccomment">//! use hydroflow::build::prelude::*;</span>
-<span class="doccomment">//! ```</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! * [`BaseSurface`] provides linear chaining methods like [`BaseSurface::map`], [`BaseSurface::filter`], etc..</span>
-<span class="doccomment">//! * [`PullSurface`] provides methods to combine multiple input streams: [`PullSurface::chain`], [`PullSurface::join`].</span>
-<span class="doccomment">//!     * To switch to push, call [`PullSurface::pull_to_push`].</span>
-<span class="doccomment">//! * [`PushSurface`] provides sink chaining methods and methods to split into multiple output streams: [`PushSurface::tee`], [`PushSurface::for_each`].</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! For implementation info see [super].</span>
+</pre><pre class="rust"><code><span class="doccomment">//! Structs used to create the user-facing Surface API.
+//!
+//! Main user-facing traits are [`BaseSurface`], [`PullSurface`], and
+//! [`PushSurface`], which provide an iterator-like API with easy method
+//! chaining. The traits need to be imported when using the Surface API.
+//! You can use the prelude to do this easily:
+//! ```ignore
+//! use hydroflow::build::prelude::*;
+//! ```
+//!
+//! * [`BaseSurface`] provides linear chaining methods like [`BaseSurface::map`], [`BaseSurface::filter`], etc..
+//! * [`PullSurface`] provides methods to combine multiple input streams: [`PullSurface::chain`], [`PullSurface::join`].
+//!     * To switch to push, call [`PullSurface::pull_to_push`].
+//! * [`PushSurface`] provides sink chaining methods and methods to split into multiple output streams: [`PushSurface::tee`], [`PushSurface::for_each`].
+//!
+//! For implementation info see [super].
 
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::build</span>::{<span class="ident">PullBuild</span>, <span class="ident">PushBuild</span>};
+</span><span class="kw">use </span><span class="kw">super</span>::build::{PullBuild, PushBuild};
 
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">filter</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">filter_map</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">flatten</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">map</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">map_scan</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">pivot</span>;
+<span class="kw">pub mod </span>filter;
+<span class="kw">pub mod </span>filter_map;
+<span class="kw">pub mod </span>flatten;
+<span class="kw">pub mod </span>map;
+<span class="kw">pub mod </span>map_scan;
+<span class="kw">pub mod </span>pivot;
 
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">pull_batch</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">pull_chain</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">pull_cross_join</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">pull_fold_epoch</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">pull_half_hash_join</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">pull_handoff</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">pull_iter</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">pull_join</span>;
+<span class="kw">pub mod </span>pull_batch;
+<span class="kw">pub mod </span>pull_chain;
+<span class="kw">pub mod </span>pull_cross_join;
+<span class="kw">pub mod </span>pull_fold_epoch;
+<span class="kw">pub mod </span>pull_half_hash_join;
+<span class="kw">pub mod </span>pull_handoff;
+<span class="kw">pub mod </span>pull_iter;
+<span class="kw">pub mod </span>pull_join;
 
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">push_for_each</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">push_handoff</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">push_partition</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">push_pivot</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">push_start</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">push_tee</span>;
+<span class="kw">pub mod </span>push_for_each;
+<span class="kw">pub mod </span>push_handoff;
+<span class="kw">pub mod </span>push_partition;
+<span class="kw">pub mod </span>push_pivot;
+<span class="kw">pub mod </span>push_start;
+<span class="kw">pub mod </span>push_tee;
 
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">exchange</span>;
+<span class="kw">pub mod </span>exchange;
 
-<span class="kw">use</span> <span class="ident">std::any::Any</span>;
-<span class="kw">use</span> <span class="ident">std::hash::Hash</span>;
+<span class="kw">use </span>std::any::Any;
+<span class="kw">use </span>std::hash::Hash;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::lang::lattice</span>::{<span class="ident">LatticeRepr</span>, <span class="ident">Merge</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::context::Context</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::flow_graph</span>::{<span class="ident">FlowGraph</span>, <span class="ident">FlowNodeId</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::handoff::handoff_list</span>::{<span class="ident">PortList</span>, <span class="ident">PortListSplit</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::port</span>::{<span class="ident">RECV</span>, <span class="ident">SEND</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::type_list::Extend</span>;
+<span class="kw">use </span><span class="kw">crate</span>::lang::lattice::{LatticeRepr, Merge};
+<span class="kw">use </span><span class="kw">crate</span>::scheduled::context::Context;
+<span class="kw">use </span><span class="kw">crate</span>::scheduled::flow_graph::{FlowGraph, FlowNodeId};
+<span class="kw">use </span><span class="kw">crate</span>::scheduled::handoff::handoff_list::{PortList, PortListSplit};
+<span class="kw">use </span><span class="kw">crate</span>::scheduled::port::{RECV, SEND};
+<span class="kw">use </span><span class="kw">crate</span>::scheduled::type_list::Extend;
 
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">AssembleFlowGraph</span> {
-    <span class="doccomment">/// return the id of the inserted node</span>
-    <span class="kw">fn</span> <span class="ident">insert_dep</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">e</span>: <span class="kw-2">&amp;mut</span> <span class="ident">FlowGraph</span>) -&gt; <span class="ident">FlowNodeId</span>;
+<span class="kw">pub trait </span>AssembleFlowGraph {
+    <span class="doccomment">/// return the id of the inserted node
+    </span><span class="kw">fn </span>insert_dep(<span class="kw-2">&amp;</span><span class="self">self</span>, e: <span class="kw-2">&amp;mut </span>FlowGraph) -&gt; FlowNodeId;
 }
-<span class="doccomment">/// Common trait shared between push and pull surface APIs.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// Provides non-push/pull-specific chaining methods.</span>
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">BaseSurface</span> {
-    <span class="kw">type</span> <span class="ident">ItemOut</span>;
+<span class="doccomment">/// Common trait shared between push and pull surface APIs.
+///
+/// Provides non-push/pull-specific chaining methods.
+</span><span class="kw">pub trait </span>BaseSurface {
+    <span class="kw">type </span>ItemOut;
 
-    <span class="kw">fn</span> <span class="ident">map_with_context</span>&lt;<span class="ident">Func</span>, <span class="ident">Out</span>&gt;(<span class="self">self</span>, <span class="ident">func</span>: <span class="ident">Func</span>) -&gt; <span class="ident">map::MapSurface</span>&lt;<span class="self">Self</span>, <span class="ident">Func</span>&gt;
-    <span class="kw">where</span>
-        <span class="self">Self</span>: <span class="ident">Sized</span>,
-        <span class="ident">Func</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident">Context</span>, <span class="ident"><span class="self">Self</span>::ItemOut</span>) -&gt; <span class="ident">Out</span>,
+    <span class="kw">fn </span>map_with_context&lt;Func, Out&gt;(<span class="self">self</span>, func: Func) -&gt; map::MapSurface&lt;<span class="self">Self</span>, Func&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: Sized,
+        Func: FnMut(<span class="kw-2">&amp;</span>Context, <span class="self">Self</span>::ItemOut) -&gt; Out,
     {
-        <span class="ident">map::MapSurface::new</span>(<span class="self">self</span>, <span class="ident">func</span>)
+        map::MapSurface::new(<span class="self">self</span>, func)
     }
 
-    <span class="kw">fn</span> <span class="ident">map</span>&lt;<span class="ident">Func</span>, <span class="ident">Out</span>&gt;(<span class="self">self</span>, <span class="kw-2">mut</span> <span class="ident">func</span>: <span class="ident">Func</span>) -&gt; <span class="ident">map::MapSurface</span>&lt;<span class="self">Self</span>, <span class="ident">MapNoCtxFn</span>&lt;<span class="self">Self</span>, <span class="ident">Func</span>, <span class="ident">Out</span>&gt;&gt;
-    <span class="kw">where</span>
-        <span class="self">Self</span>: <span class="ident">Sized</span>,
-        <span class="ident">Func</span>: <span class="ident">FnMut</span>(<span class="ident"><span class="self">Self</span>::ItemOut</span>) -&gt; <span class="ident">Out</span>,
+    <span class="kw">fn </span>map&lt;Func, Out&gt;(<span class="self">self</span>, <span class="kw-2">mut </span>func: Func) -&gt; map::MapSurface&lt;<span class="self">Self</span>, MapNoCtxFn&lt;<span class="self">Self</span>, Func, Out&gt;&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: Sized,
+        Func: FnMut(<span class="self">Self</span>::ItemOut) -&gt; Out,
     {
-        <span class="ident">map::MapSurface::new</span>(<span class="self">self</span>, <span class="kw">move</span> |<span class="ident">_ctx</span>, <span class="ident">x</span>| (<span class="ident">func</span>)(<span class="ident">x</span>))
+        map::MapSurface::new(<span class="self">self</span>, <span class="kw">move </span>|_ctx, x| (func)(x))
     }
 
-    <span class="kw">fn</span> <span class="ident">flat_map_with_context</span>&lt;<span class="ident">Func</span>, <span class="ident">Out</span>&gt;(
+    <span class="kw">fn </span>flat_map_with_context&lt;Func, Out&gt;(
         <span class="self">self</span>,
-        <span class="ident">func</span>: <span class="ident">Func</span>,
-    ) -&gt; <span class="ident">flatten::FlattenSurface</span>&lt;<span class="ident">map::MapSurface</span>&lt;<span class="self">Self</span>, <span class="ident">Func</span>&gt;&gt;
-    <span class="kw">where</span>
-        <span class="self">Self</span>: <span class="ident">Sized</span>,
-        <span class="ident">Func</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident">Context</span>, <span class="ident"><span class="self">Self</span>::ItemOut</span>) -&gt; <span class="ident">Out</span>,
-        <span class="ident">Out</span>: <span class="ident">IntoIterator</span>,
+        func: Func,
+    ) -&gt; flatten::FlattenSurface&lt;map::MapSurface&lt;<span class="self">Self</span>, Func&gt;&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: Sized,
+        Func: FnMut(<span class="kw-2">&amp;</span>Context, <span class="self">Self</span>::ItemOut) -&gt; Out,
+        Out: IntoIterator,
     {
-        <span class="self">self</span>.<span class="ident">map_with_context</span>(<span class="ident">func</span>).<span class="ident">flatten</span>()
+        <span class="self">self</span>.map_with_context(func).flatten()
     }
 
-    <span class="kw">fn</span> <span class="ident">flat_map</span>&lt;<span class="ident">Func</span>, <span class="ident">Out</span>&gt;(
+    <span class="kw">fn </span>flat_map&lt;Func, Out&gt;(
         <span class="self">self</span>,
-        <span class="ident">func</span>: <span class="ident">Func</span>,
-    ) -&gt; <span class="ident">flatten::FlattenSurface</span>&lt;<span class="ident">map::MapSurface</span>&lt;<span class="self">Self</span>, <span class="ident">MapNoCtxFn</span>&lt;<span class="self">Self</span>, <span class="ident">Func</span>, <span class="ident">Out</span>&gt;&gt;&gt;
-    <span class="kw">where</span>
-        <span class="self">Self</span>: <span class="ident">Sized</span>,
-        <span class="ident">Func</span>: <span class="ident">FnMut</span>(<span class="ident"><span class="self">Self</span>::ItemOut</span>) -&gt; <span class="ident">Out</span>,
-        <span class="ident">Out</span>: <span class="ident">IntoIterator</span>,
+        func: Func,
+    ) -&gt; flatten::FlattenSurface&lt;map::MapSurface&lt;<span class="self">Self</span>, MapNoCtxFn&lt;<span class="self">Self</span>, Func, Out&gt;&gt;&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: Sized,
+        Func: FnMut(<span class="self">Self</span>::ItemOut) -&gt; Out,
+        Out: IntoIterator,
     {
-        <span class="self">self</span>.<span class="ident">map</span>(<span class="ident">func</span>).<span class="ident">flatten</span>()
+        <span class="self">self</span>.map(func).flatten()
     }
 
-    <span class="kw">fn</span> <span class="ident">flatten</span>(<span class="self">self</span>) -&gt; <span class="ident">flatten::FlattenSurface</span>&lt;<span class="self">Self</span>&gt;
-    <span class="kw">where</span>
-        <span class="self">Self</span>: <span class="ident">Sized</span>,
-        <span class="ident"><span class="self">Self</span>::ItemOut</span>: <span class="ident">IntoIterator</span>,
+    <span class="kw">fn </span>flatten(<span class="self">self</span>) -&gt; flatten::FlattenSurface&lt;<span class="self">Self</span>&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: Sized,
+        <span class="self">Self</span>::ItemOut: IntoIterator,
     {
-        <span class="ident">flatten::FlattenSurface::new</span>(<span class="self">self</span>)
+        flatten::FlattenSurface::new(<span class="self">self</span>)
     }
 
-    <span class="kw">fn</span> <span class="ident">filter_with_context</span>&lt;<span class="ident">Func</span>&gt;(<span class="self">self</span>, <span class="ident">func</span>: <span class="ident">Func</span>) -&gt; <span class="ident">filter::FilterSurface</span>&lt;<span class="self">Self</span>, <span class="ident">Func</span>&gt;
-    <span class="kw">where</span>
-        <span class="self">Self</span>: <span class="ident">Sized</span>,
-        <span class="ident">Func</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident">Context</span>, <span class="kw-2">&amp;</span><span class="ident"><span class="self">Self</span>::ItemOut</span>) -&gt; <span class="ident">bool</span>,
+    <span class="kw">fn </span>filter_with_context&lt;Func&gt;(<span class="self">self</span>, func: Func) -&gt; filter::FilterSurface&lt;<span class="self">Self</span>, Func&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: Sized,
+        Func: FnMut(<span class="kw-2">&amp;</span>Context, <span class="kw-2">&amp;</span><span class="self">Self</span>::ItemOut) -&gt; bool,
     {
-        <span class="ident">filter::FilterSurface::new</span>(<span class="self">self</span>, <span class="ident">func</span>)
+        filter::FilterSurface::new(<span class="self">self</span>, func)
     }
 
-    <span class="kw">fn</span> <span class="ident">filter</span>&lt;<span class="ident">Func</span>&gt;(<span class="self">self</span>, <span class="kw-2">mut</span> <span class="ident">func</span>: <span class="ident">Func</span>) -&gt; <span class="ident">filter::FilterSurface</span>&lt;<span class="self">Self</span>, <span class="ident">FilterNoCtxFn</span>&lt;<span class="self">Self</span>, <span class="ident">Func</span>&gt;&gt;
-    <span class="kw">where</span>
-        <span class="self">Self</span>: <span class="ident">Sized</span>,
-        <span class="ident">Func</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident"><span class="self">Self</span>::ItemOut</span>) -&gt; <span class="ident">bool</span>,
+    <span class="kw">fn </span>filter&lt;Func&gt;(<span class="self">self</span>, <span class="kw-2">mut </span>func: Func) -&gt; filter::FilterSurface&lt;<span class="self">Self</span>, FilterNoCtxFn&lt;<span class="self">Self</span>, Func&gt;&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: Sized,
+        Func: FnMut(<span class="kw-2">&amp;</span><span class="self">Self</span>::ItemOut) -&gt; bool,
     {
-        <span class="self">self</span>.<span class="ident">filter_with_context</span>(<span class="kw">move</span> |<span class="ident">_ctx</span>, <span class="ident">x</span>| (<span class="ident">func</span>)(<span class="ident">x</span>))
+        <span class="self">self</span>.filter_with_context(<span class="kw">move </span>|_ctx, x| (func)(x))
     }
 
-    <span class="kw">fn</span> <span class="ident">filter_map_with_context</span>&lt;<span class="ident">Func</span>, <span class="ident">Out</span>&gt;(
+    <span class="kw">fn </span>filter_map_with_context&lt;Func, Out&gt;(
         <span class="self">self</span>,
-        <span class="ident">func</span>: <span class="ident">Func</span>,
-    ) -&gt; <span class="ident">filter_map::FilterMapSurface</span>&lt;<span class="self">Self</span>, <span class="ident">Func</span>&gt;
-    <span class="kw">where</span>
-        <span class="self">Self</span>: <span class="ident">Sized</span>,
-        <span class="ident">Func</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident">Context</span>, <span class="ident"><span class="self">Self</span>::ItemOut</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">Out</span>&gt;,
+        func: Func,
+    ) -&gt; filter_map::FilterMapSurface&lt;<span class="self">Self</span>, Func&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: Sized,
+        Func: FnMut(<span class="kw-2">&amp;</span>Context, <span class="self">Self</span>::ItemOut) -&gt; <span class="prelude-ty">Option</span>&lt;Out&gt;,
     {
-        <span class="ident">filter_map::FilterMapSurface::new</span>(<span class="self">self</span>, <span class="ident">func</span>)
+        filter_map::FilterMapSurface::new(<span class="self">self</span>, func)
     }
 
-    <span class="kw">fn</span> <span class="ident">filter_map</span>&lt;<span class="ident">Func</span>, <span class="ident">Out</span>&gt;(
+    <span class="kw">fn </span>filter_map&lt;Func, Out&gt;(
         <span class="self">self</span>,
-        <span class="kw-2">mut</span> <span class="ident">func</span>: <span class="ident">Func</span>,
-    ) -&gt; <span class="ident">filter_map::FilterMapSurface</span>&lt;<span class="self">Self</span>, <span class="ident">FilterMapNoCtxFn</span>&lt;<span class="self">Self</span>, <span class="ident">Func</span>, <span class="ident">Out</span>&gt;&gt;
-    <span class="kw">where</span>
-        <span class="self">Self</span>: <span class="ident">Sized</span>,
-        <span class="ident">Func</span>: <span class="ident">FnMut</span>(<span class="ident"><span class="self">Self</span>::ItemOut</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">Out</span>&gt;,
+        <span class="kw-2">mut </span>func: Func,
+    ) -&gt; filter_map::FilterMapSurface&lt;<span class="self">Self</span>, FilterMapNoCtxFn&lt;<span class="self">Self</span>, Func, Out&gt;&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: Sized,
+        Func: FnMut(<span class="self">Self</span>::ItemOut) -&gt; <span class="prelude-ty">Option</span>&lt;Out&gt;,
     {
-        <span class="self">self</span>.<span class="ident">filter_map_with_context</span>(<span class="kw">move</span> |<span class="ident">_ctx</span>, <span class="ident">x</span>| (<span class="ident">func</span>)(<span class="ident">x</span>))
+        <span class="self">self</span>.filter_map_with_context(<span class="kw">move </span>|_ctx, x| (func)(x))
     }
 
-    <span class="kw">fn</span> <span class="ident">map_scan</span>&lt;<span class="ident">State</span>, <span class="ident">Func</span>, <span class="ident">Out</span>&gt;(
+    <span class="kw">fn </span>map_scan&lt;State, Func, Out&gt;(
         <span class="self">self</span>,
-        <span class="ident">initial_state</span>: <span class="ident">State</span>,
-        <span class="ident">func</span>: <span class="ident">Func</span>,
-    ) -&gt; <span class="ident">map_scan::MapScanSurface</span>&lt;<span class="self">Self</span>, <span class="ident">Func</span>, <span class="ident">State</span>&gt;
-    <span class="kw">where</span>
-        <span class="self">Self</span>: <span class="ident">Sized</span>,
-        <span class="ident">Func</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;mut</span> <span class="ident">State</span>, <span class="ident"><span class="self">Self</span>::ItemOut</span>) -&gt; <span class="ident">Out</span>,
-        <span class="ident">State</span>: <span class="ident">Any</span>,
+        initial_state: State,
+        func: Func,
+    ) -&gt; map_scan::MapScanSurface&lt;<span class="self">Self</span>, Func, State&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: Sized,
+        Func: FnMut(<span class="kw-2">&amp;mut </span>State, <span class="self">Self</span>::ItemOut) -&gt; Out,
+        State: Any,
     {
-        <span class="ident">map_scan::MapScanSurface::new</span>(<span class="self">self</span>, <span class="ident">func</span>, <span class="ident">initial_state</span>)
+        map_scan::MapScanSurface::new(<span class="self">self</span>, func, initial_state)
     }
 
-    <span class="kw">fn</span> <span class="ident">inspect_with_context</span>&lt;<span class="ident">Func</span>&gt;(
+    <span class="kw">fn </span>inspect_with_context&lt;Func&gt;(
         <span class="self">self</span>,
-        <span class="kw-2">mut</span> <span class="ident">func</span>: <span class="ident">Func</span>,
-    ) -&gt; <span class="ident">map::MapSurface</span>&lt;<span class="self">Self</span>, <span class="ident">InspectMapFunc</span>&lt;<span class="self">Self</span>, <span class="ident">Func</span>&gt;&gt;
-    <span class="kw">where</span>
-        <span class="self">Self</span>: <span class="ident">Sized</span>,
-        <span class="ident">Func</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident">Context</span>, <span class="kw-2">&amp;</span><span class="ident"><span class="self">Self</span>::ItemOut</span>),
+        <span class="kw-2">mut </span>func: Func,
+    ) -&gt; map::MapSurface&lt;<span class="self">Self</span>, InspectMapFunc&lt;<span class="self">Self</span>, Func&gt;&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: Sized,
+        Func: FnMut(<span class="kw-2">&amp;</span>Context, <span class="kw-2">&amp;</span><span class="self">Self</span>::ItemOut),
     {
-        <span class="self">self</span>.<span class="ident">map_with_context</span>(<span class="kw">move</span> |<span class="ident">context</span>, <span class="ident">item</span>| {
-            (<span class="ident">func</span>)(<span class="ident">context</span>, <span class="kw-2">&amp;</span><span class="ident">item</span>);
-            <span class="ident">item</span>
+        <span class="self">self</span>.map_with_context(<span class="kw">move </span>|context, item| {
+            (func)(context, <span class="kw-2">&amp;</span>item);
+            item
         })
     }
 
-    <span class="kw">fn</span> <span class="ident">inspect</span>&lt;<span class="ident">Func</span>&gt;(<span class="self">self</span>, <span class="kw-2">mut</span> <span class="ident">func</span>: <span class="ident">Func</span>) -&gt; <span class="ident">map::MapSurface</span>&lt;<span class="self">Self</span>, <span class="ident">InspectMapNoCtxFunc</span>&lt;<span class="self">Self</span>, <span class="ident">Func</span>&gt;&gt;
-    <span class="kw">where</span>
-        <span class="self">Self</span>: <span class="ident">Sized</span>,
-        <span class="ident">Func</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident"><span class="self">Self</span>::ItemOut</span>),
+    <span class="kw">fn </span>inspect&lt;Func&gt;(<span class="self">self</span>, <span class="kw-2">mut </span>func: Func) -&gt; map::MapSurface&lt;<span class="self">Self</span>, InspectMapNoCtxFunc&lt;<span class="self">Self</span>, Func&gt;&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: Sized,
+        Func: FnMut(<span class="kw-2">&amp;</span><span class="self">Self</span>::ItemOut),
     {
-        <span class="self">self</span>.<span class="ident">map_with_context</span>(<span class="kw">move</span> |<span class="ident">_ctx</span>, <span class="ident">item</span>| {
-            (<span class="ident">func</span>)(<span class="kw-2">&amp;</span><span class="ident">item</span>);
-            <span class="ident">item</span>
+        <span class="self">self</span>.map_with_context(<span class="kw">move </span>|_ctx, item| {
+            (func)(<span class="kw-2">&amp;</span>item);
+            item
         })
     }
 }
 
-<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">MapNoCtxFn</span>&lt;<span class="ident">Prev</span>, <span class="ident">Func</span>, <span class="ident">Out</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">Prev</span>: <span class="ident">BaseSurface</span>,
-    <span class="ident">Func</span>: <span class="ident">FnMut</span>(<span class="ident">Prev::ItemOut</span>) -&gt; <span class="ident">Out</span>,
-= <span class="kw">impl</span> <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident">Context</span>, <span class="ident">Prev::ItemOut</span>) -&gt; <span class="ident">Out</span>;
+<span class="kw">pub type </span>MapNoCtxFn&lt;Prev, Func, Out&gt;
+<span class="kw">where
+    </span>Prev: BaseSurface,
+    Func: FnMut(Prev::ItemOut) -&gt; Out,
+= <span class="kw">impl </span>FnMut(<span class="kw-2">&amp;</span>Context, Prev::ItemOut) -&gt; Out;
 
-<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">FilterNoCtxFn</span>&lt;<span class="ident">Prev</span>, <span class="ident">Func</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">Prev</span>: <span class="ident">BaseSurface</span>,
-    <span class="ident">Func</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident">Prev::ItemOut</span>) -&gt; <span class="ident">bool</span>,
-= <span class="kw">impl</span> <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident">Context</span>, <span class="kw-2">&amp;</span><span class="ident">Prev::ItemOut</span>) -&gt; <span class="ident">bool</span>;
+<span class="kw">pub type </span>FilterNoCtxFn&lt;Prev, Func&gt;
+<span class="kw">where
+    </span>Prev: BaseSurface,
+    Func: FnMut(<span class="kw-2">&amp;</span>Prev::ItemOut) -&gt; bool,
+= <span class="kw">impl </span>FnMut(<span class="kw-2">&amp;</span>Context, <span class="kw-2">&amp;</span>Prev::ItemOut) -&gt; bool;
 
-<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">FilterMapNoCtxFn</span>&lt;<span class="ident">Prev</span>, <span class="ident">Func</span>, <span class="ident">Out</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">Prev</span>: <span class="ident">BaseSurface</span>,
-    <span class="ident">Func</span>: <span class="ident">FnMut</span>(<span class="ident">Prev::ItemOut</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">Out</span>&gt;,
-= <span class="kw">impl</span> <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident">Context</span>, <span class="ident">Prev::ItemOut</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">Out</span>&gt;;
+<span class="kw">pub type </span>FilterMapNoCtxFn&lt;Prev, Func, Out&gt;
+<span class="kw">where
+    </span>Prev: BaseSurface,
+    Func: FnMut(Prev::ItemOut) -&gt; <span class="prelude-ty">Option</span>&lt;Out&gt;,
+= <span class="kw">impl </span>FnMut(<span class="kw-2">&amp;</span>Context, Prev::ItemOut) -&gt; <span class="prelude-ty">Option</span>&lt;Out&gt;;
 
-<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">InspectMapFunc</span>&lt;<span class="ident">Prev</span>, <span class="ident">Func</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">Prev</span>: <span class="ident">BaseSurface</span>,
-    <span class="ident">Func</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident">Context</span>, <span class="kw-2">&amp;</span><span class="ident">Prev::ItemOut</span>),
-= <span class="kw">impl</span> <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident">Context</span>, <span class="ident">Prev::ItemOut</span>) -&gt; <span class="ident">Prev::ItemOut</span>;
+<span class="kw">pub type </span>InspectMapFunc&lt;Prev, Func&gt;
+<span class="kw">where
+    </span>Prev: BaseSurface,
+    Func: FnMut(<span class="kw-2">&amp;</span>Context, <span class="kw-2">&amp;</span>Prev::ItemOut),
+= <span class="kw">impl </span>FnMut(<span class="kw-2">&amp;</span>Context, Prev::ItemOut) -&gt; Prev::ItemOut;
 
-<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">InspectMapNoCtxFunc</span>&lt;<span class="ident">Prev</span>, <span class="ident">Func</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">Prev</span>: <span class="ident">BaseSurface</span>,
-    <span class="ident">Func</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident">Prev::ItemOut</span>),
-= <span class="kw">impl</span> <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident">Context</span>, <span class="ident">Prev::ItemOut</span>) -&gt; <span class="ident">Prev::ItemOut</span>;
+<span class="kw">pub type </span>InspectMapNoCtxFunc&lt;Prev, Func&gt;
+<span class="kw">where
+    </span>Prev: BaseSurface,
+    Func: FnMut(<span class="kw-2">&amp;</span>Prev::ItemOut),
+= <span class="kw">impl </span>FnMut(<span class="kw-2">&amp;</span>Context, Prev::ItemOut) -&gt; Prev::ItemOut;
 
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">PullSurface</span>: <span class="ident">BaseSurface</span> {
-    <span class="kw">type</span> <span class="ident">InputHandoffs</span>: <span class="ident">PortList</span>&lt;<span class="ident">RECV</span>&gt;;
-    <span class="kw">type</span> <span class="ident">Build</span>: <span class="ident">PullBuild</span>&lt;<span class="ident">InputHandoffs</span> = <span class="ident"><span class="self">Self</span>::InputHandoffs</span>, <span class="ident">ItemOut</span> = <span class="ident"><span class="self">Self</span>::ItemOut</span>&gt;;
+<span class="kw">pub trait </span>PullSurface: BaseSurface {
+    <span class="kw">type </span>InputHandoffs: PortList&lt;RECV&gt;;
+    <span class="kw">type </span>Build: PullBuild&lt;InputHandoffs = <span class="self">Self</span>::InputHandoffs, ItemOut = <span class="self">Self</span>::ItemOut&gt;;
 
-    <span class="kw">fn</span> <span class="ident">make_parts</span>(<span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span>) -&gt; (<span class="ident"><span class="self">Self</span>::InputHandoffs</span>, <span class="ident"><span class="self">Self</span>::Build</span>);
+    <span class="kw">fn </span>make_parts(<span class="self">self</span>, ctx: <span class="kw-2">&amp;mut </span>Context) -&gt; (<span class="self">Self</span>::InputHandoffs, <span class="self">Self</span>::Build);
 
-    <span class="kw">fn</span> <span class="ident">chain</span>&lt;<span class="ident">Other</span>&gt;(<span class="self">self</span>, <span class="ident">other</span>: <span class="ident">Other</span>) -&gt; <span class="ident">pull_chain::ChainPullSurface</span>&lt;<span class="self">Self</span>, <span class="ident">Other</span>&gt;
-    <span class="kw">where</span>
-        <span class="self">Self</span>: <span class="ident">Sized</span>,
-        <span class="ident">Other</span>: <span class="ident">PullSurface</span>&lt;<span class="ident">ItemOut</span> = <span class="ident"><span class="self">Self</span>::ItemOut</span>&gt;,
+    <span class="kw">fn </span>chain&lt;Other&gt;(<span class="self">self</span>, other: Other) -&gt; pull_chain::ChainPullSurface&lt;<span class="self">Self</span>, Other&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: Sized,
+        Other: PullSurface&lt;ItemOut = <span class="self">Self</span>::ItemOut&gt;,
 
-        <span class="ident"><span class="self">Self</span>::InputHandoffs</span>: <span class="ident">Extend</span>&lt;<span class="ident">Other::InputHandoffs</span>&gt;,
-        &lt;<span class="ident"><span class="self">Self</span>::InputHandoffs</span> <span class="kw">as</span> <span class="ident">Extend</span>&lt;<span class="ident">Other::InputHandoffs</span>&gt;&gt;<span class="ident">::Extended</span>: <span class="ident">PortList</span>&lt;<span class="ident">RECV</span>&gt;
-            + <span class="ident">PortListSplit</span>&lt;<span class="ident">RECV</span>, <span class="ident"><span class="self">Self</span>::InputHandoffs</span>, <span class="ident">Suffix</span> = <span class="ident">Other::InputHandoffs</span>&gt;,
+        <span class="self">Self</span>::InputHandoffs: Extend&lt;Other::InputHandoffs&gt;,
+        &lt;<span class="self">Self</span>::InputHandoffs <span class="kw">as </span>Extend&lt;Other::InputHandoffs&gt;&gt;::Extended: PortList&lt;RECV&gt;
+            + PortListSplit&lt;RECV, <span class="self">Self</span>::InputHandoffs, Suffix = Other::InputHandoffs&gt;,
     {
-        <span class="ident">pull_chain::ChainPullSurface::new</span>(<span class="self">self</span>, <span class="ident">other</span>)
+        pull_chain::ChainPullSurface::new(<span class="self">self</span>, other)
     }
 
-    <span class="kw">fn</span> <span class="ident">join</span>&lt;<span class="ident">Other</span>, <span class="ident">Key</span>, <span class="ident">ValSelf</span>, <span class="ident">ValOther</span>&gt;(
+    <span class="kw">fn </span>join&lt;Other, Key, ValSelf, ValOther&gt;(
         <span class="self">self</span>,
-        <span class="ident">other</span>: <span class="ident">Other</span>,
-    ) -&gt; <span class="ident">pull_join::JoinPullSurface</span>&lt;<span class="self">Self</span>, <span class="ident">Other</span>&gt;
-    <span class="kw">where</span>
-        <span class="self">Self</span>: <span class="ident">Sized</span> + <span class="ident">PullSurface</span>&lt;<span class="ident">ItemOut</span> = (<span class="ident">Key</span>, <span class="ident">ValSelf</span>)&gt;,
-        <span class="ident">Other</span>: <span class="ident">PullSurface</span>&lt;<span class="ident">ItemOut</span> = (<span class="ident">Key</span>, <span class="ident">ValOther</span>)&gt;,
-        <span class="ident">Key</span>: <span class="lifetime">&#39;static</span> + <span class="ident">Eq</span> + <span class="ident">Hash</span> + <span class="ident">Clone</span>,
-        <span class="ident">ValSelf</span>: <span class="lifetime">&#39;static</span> + <span class="ident">Eq</span> + <span class="ident">Clone</span>,
-        <span class="ident">ValOther</span>: <span class="lifetime">&#39;static</span> + <span class="ident">Eq</span> + <span class="ident">Clone</span>,
+        other: Other,
+    ) -&gt; pull_join::JoinPullSurface&lt;<span class="self">Self</span>, Other&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: Sized + PullSurface&lt;ItemOut = (Key, ValSelf)&gt;,
+        Other: PullSurface&lt;ItemOut = (Key, ValOther)&gt;,
+        Key: <span class="lifetime">&#39;static </span>+ Eq + Hash + Clone,
+        ValSelf: <span class="lifetime">&#39;static </span>+ Eq + Clone,
+        ValOther: <span class="lifetime">&#39;static </span>+ Eq + Clone,
 
-        <span class="ident"><span class="self">Self</span>::InputHandoffs</span>: <span class="ident">Extend</span>&lt;<span class="ident">Other::InputHandoffs</span>&gt;,
-        &lt;<span class="ident"><span class="self">Self</span>::InputHandoffs</span> <span class="kw">as</span> <span class="ident">Extend</span>&lt;<span class="ident">Other::InputHandoffs</span>&gt;&gt;<span class="ident">::Extended</span>: <span class="ident">PortList</span>&lt;<span class="ident">RECV</span>&gt;
-            + <span class="ident">PortListSplit</span>&lt;<span class="ident">RECV</span>, <span class="ident"><span class="self">Self</span>::InputHandoffs</span>, <span class="ident">Suffix</span> = <span class="ident">Other::InputHandoffs</span>&gt;,
+        <span class="self">Self</span>::InputHandoffs: Extend&lt;Other::InputHandoffs&gt;,
+        &lt;<span class="self">Self</span>::InputHandoffs <span class="kw">as </span>Extend&lt;Other::InputHandoffs&gt;&gt;::Extended: PortList&lt;RECV&gt;
+            + PortListSplit&lt;RECV, <span class="self">Self</span>::InputHandoffs, Suffix = Other::InputHandoffs&gt;,
     {
-        <span class="ident">pull_join::JoinPullSurface::new</span>(<span class="self">self</span>, <span class="ident">other</span>)
+        pull_join::JoinPullSurface::new(<span class="self">self</span>, other)
     }
 
-    <span class="kw">fn</span> <span class="ident">batch_with</span>&lt;<span class="ident">Other</span>, <span class="ident">L</span>, <span class="ident">Update</span>, <span class="ident">Tick</span>&gt;(
+    <span class="kw">fn </span>batch_with&lt;Other, L, Update, Tick&gt;(
         <span class="self">self</span>,
-        <span class="ident">other</span>: <span class="ident">Other</span>,
-    ) -&gt; <span class="ident">pull_batch::BatchPullSurface</span>&lt;<span class="self">Self</span>, <span class="ident">Other</span>, <span class="ident">L</span>, <span class="ident">Update</span>, <span class="ident">Tick</span>&gt;
-    <span class="kw">where</span>
-        <span class="self">Self</span>: <span class="ident">Sized</span> + <span class="ident">PullSurface</span>&lt;<span class="ident">ItemOut</span> = <span class="ident">Update::Repr</span>&gt;,
-        <span class="ident">Other</span>: <span class="ident">PullSurface</span>&lt;<span class="ident">ItemOut</span> = <span class="ident">Tick</span>&gt;,
-        <span class="ident">Update</span>: <span class="lifetime">&#39;static</span> + <span class="ident">LatticeRepr</span>,
-        <span class="ident">L</span>: <span class="lifetime">&#39;static</span> + <span class="ident">LatticeRepr</span> + <span class="ident">Merge</span>&lt;<span class="ident">Update</span>&gt;,
+        other: Other,
+    ) -&gt; pull_batch::BatchPullSurface&lt;<span class="self">Self</span>, Other, L, Update, Tick&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: Sized + PullSurface&lt;ItemOut = Update::Repr&gt;,
+        Other: PullSurface&lt;ItemOut = Tick&gt;,
+        Update: <span class="lifetime">&#39;static </span>+ LatticeRepr,
+        L: <span class="lifetime">&#39;static </span>+ LatticeRepr + Merge&lt;Update&gt;,
 
-        <span class="ident"><span class="self">Self</span>::InputHandoffs</span>: <span class="ident">Extend</span>&lt;<span class="ident">Other::InputHandoffs</span>&gt;,
-        &lt;<span class="ident"><span class="self">Self</span>::InputHandoffs</span> <span class="kw">as</span> <span class="ident">Extend</span>&lt;<span class="ident">Other::InputHandoffs</span>&gt;&gt;<span class="ident">::Extended</span>: <span class="ident">PortList</span>&lt;<span class="ident">RECV</span>&gt;
-            + <span class="ident">PortListSplit</span>&lt;<span class="ident">RECV</span>, <span class="ident"><span class="self">Self</span>::InputHandoffs</span>, <span class="ident">Suffix</span> = <span class="ident">Other::InputHandoffs</span>&gt;,
+        <span class="self">Self</span>::InputHandoffs: Extend&lt;Other::InputHandoffs&gt;,
+        &lt;<span class="self">Self</span>::InputHandoffs <span class="kw">as </span>Extend&lt;Other::InputHandoffs&gt;&gt;::Extended: PortList&lt;RECV&gt;
+            + PortListSplit&lt;RECV, <span class="self">Self</span>::InputHandoffs, Suffix = Other::InputHandoffs&gt;,
     {
-        <span class="ident">pull_batch::BatchPullSurface::new</span>(<span class="self">self</span>, <span class="ident">other</span>)
+        pull_batch::BatchPullSurface::new(<span class="self">self</span>, other)
     }
 
-    <span class="kw">fn</span> <span class="ident">half_hash_join</span>&lt;<span class="ident">Other</span>, <span class="ident">Key</span>, <span class="ident">ValSelf</span>, <span class="ident">L</span>, <span class="ident">Update</span>&gt;(
+    <span class="kw">fn </span>half_hash_join&lt;Other, Key, ValSelf, L, Update&gt;(
         <span class="self">self</span>,
-        <span class="ident">other</span>: <span class="ident">Other</span>,
-    ) -&gt; <span class="ident">pull_half_hash_join::HalfHashJoinPullSurface</span>&lt;<span class="self">Self</span>, <span class="ident">Other</span>, <span class="ident">L</span>, <span class="ident">Update</span>&gt;
-    <span class="kw">where</span>
-        <span class="self">Self</span>: <span class="ident">Sized</span> + <span class="ident">PullSurface</span>&lt;<span class="ident">ItemOut</span> = (<span class="ident">Key</span>, <span class="ident">ValSelf</span>)&gt;,
-        <span class="ident">Other</span>: <span class="ident">PullSurface</span>&lt;<span class="ident">ItemOut</span> = (<span class="ident">Key</span>, <span class="ident">Update::Repr</span>)&gt;,
-        <span class="ident">Key</span>: <span class="lifetime">&#39;static</span> + <span class="ident">Eq</span> + <span class="ident">Hash</span>,
-        <span class="ident">ValSelf</span>: <span class="lifetime">&#39;static</span>,
-        <span class="ident">Update</span>: <span class="lifetime">&#39;static</span> + <span class="ident">LatticeRepr</span>,
-        <span class="ident">L</span>: <span class="lifetime">&#39;static</span> + <span class="ident">LatticeRepr</span> + <span class="ident">Merge</span>&lt;<span class="ident">Update</span>&gt;,
-        <span class="ident">L::Repr</span>: <span class="ident">Clone</span>,
+        other: Other,
+    ) -&gt; pull_half_hash_join::HalfHashJoinPullSurface&lt;<span class="self">Self</span>, Other, L, Update&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: Sized + PullSurface&lt;ItemOut = (Key, ValSelf)&gt;,
+        Other: PullSurface&lt;ItemOut = (Key, Update::Repr)&gt;,
+        Key: <span class="lifetime">&#39;static </span>+ Eq + Hash,
+        ValSelf: <span class="lifetime">&#39;static</span>,
+        Update: <span class="lifetime">&#39;static </span>+ LatticeRepr,
+        L: <span class="lifetime">&#39;static </span>+ LatticeRepr + Merge&lt;Update&gt;,
+        L::Repr: Clone,
 
-        <span class="ident">Other::InputHandoffs</span>: <span class="ident">Extend</span>&lt;<span class="ident"><span class="self">Self</span>::InputHandoffs</span>&gt;,
-        &lt;<span class="ident">Other::InputHandoffs</span> <span class="kw">as</span> <span class="ident">Extend</span>&lt;<span class="ident"><span class="self">Self</span>::InputHandoffs</span>&gt;&gt;<span class="ident">::Extended</span>: <span class="ident">PortList</span>&lt;<span class="ident">RECV</span>&gt;
-            + <span class="ident">PortListSplit</span>&lt;<span class="ident">RECV</span>, <span class="ident">Other::InputHandoffs</span>, <span class="ident">Suffix</span> = <span class="ident"><span class="self">Self</span>::InputHandoffs</span>&gt;,
+        Other::InputHandoffs: Extend&lt;<span class="self">Self</span>::InputHandoffs&gt;,
+        &lt;Other::InputHandoffs <span class="kw">as </span>Extend&lt;<span class="self">Self</span>::InputHandoffs&gt;&gt;::Extended: PortList&lt;RECV&gt;
+            + PortListSplit&lt;RECV, Other::InputHandoffs, Suffix = <span class="self">Self</span>::InputHandoffs&gt;,
     {
-        <span class="ident">pull_half_hash_join::HalfHashJoinPullSurface::new</span>(<span class="self">self</span>, <span class="ident">other</span>)
+        pull_half_hash_join::HalfHashJoinPullSurface::new(<span class="self">self</span>, other)
     }
 
-    <span class="kw">fn</span> <span class="ident">cross_join</span>&lt;<span class="ident">Other</span>&gt;(<span class="self">self</span>, <span class="ident">other</span>: <span class="ident">Other</span>) -&gt; <span class="ident">pull_cross_join::CrossJoinPullSurface</span>&lt;<span class="self">Self</span>, <span class="ident">Other</span>&gt;
-    <span class="kw">where</span>
-        <span class="self">Self</span>: <span class="ident">Sized</span>,
-        <span class="ident">Other</span>: <span class="ident">PullSurface</span>,
-        <span class="ident"><span class="self">Self</span>::ItemOut</span>: <span class="lifetime">&#39;static</span> + <span class="ident">Eq</span> + <span class="ident">Clone</span>,
-        <span class="ident">Other::ItemOut</span>: <span class="lifetime">&#39;static</span> + <span class="ident">Eq</span> + <span class="ident">Clone</span>,
+    <span class="kw">fn </span>cross_join&lt;Other&gt;(<span class="self">self</span>, other: Other) -&gt; pull_cross_join::CrossJoinPullSurface&lt;<span class="self">Self</span>, Other&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: Sized,
+        Other: PullSurface,
+        <span class="self">Self</span>::ItemOut: <span class="lifetime">&#39;static </span>+ Eq + Clone,
+        Other::ItemOut: <span class="lifetime">&#39;static </span>+ Eq + Clone,
 
-        <span class="ident"><span class="self">Self</span>::InputHandoffs</span>: <span class="ident">Extend</span>&lt;<span class="ident">Other::InputHandoffs</span>&gt;,
-        &lt;<span class="ident"><span class="self">Self</span>::InputHandoffs</span> <span class="kw">as</span> <span class="ident">Extend</span>&lt;<span class="ident">Other::InputHandoffs</span>&gt;&gt;<span class="ident">::Extended</span>: <span class="ident">PortList</span>&lt;<span class="ident">RECV</span>&gt;
-            + <span class="ident">PortListSplit</span>&lt;<span class="ident">RECV</span>, <span class="ident"><span class="self">Self</span>::InputHandoffs</span>, <span class="ident">Suffix</span> = <span class="ident">Other::InputHandoffs</span>&gt;,
+        <span class="self">Self</span>::InputHandoffs: Extend&lt;Other::InputHandoffs&gt;,
+        &lt;<span class="self">Self</span>::InputHandoffs <span class="kw">as </span>Extend&lt;Other::InputHandoffs&gt;&gt;::Extended: PortList&lt;RECV&gt;
+            + PortListSplit&lt;RECV, <span class="self">Self</span>::InputHandoffs, Suffix = Other::InputHandoffs&gt;,
     {
-        <span class="ident">pull_cross_join::CrossJoinPullSurface::new</span>(<span class="self">self</span>, <span class="ident">other</span>)
+        pull_cross_join::CrossJoinPullSurface::new(<span class="self">self</span>, other)
     }
 
-    <span class="doccomment">/// Folds (accumulates) the input such that only the accumulated value is</span>
-    <span class="doccomment">/// output each epoch. This operator should come after a inter-stratum</span>
-    <span class="doccomment">/// handoff to ensure correct scheduling.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// First, creates a accumulation value using the `init` method. Then, for</span>
-    <span class="doccomment">/// each item in the epoch, run `func` to update the accumulation value.</span>
-    <span class="doccomment">/// Finally, at the end of the scheduling quantum, release the single</span>
-    <span class="doccomment">/// accumulation value to the next operator.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// ## Example</span>
-    <span class="doccomment">/// ```</span>
-    <span class="doccomment">/// use hydroflow::builder::prelude::*;</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// let mut builder = HydroflowBuilder::new();</span>
-    <span class="doccomment">/// builder.add_subgraph(</span>
-    <span class="doccomment">///     &quot;My Subgraph&quot;,</span>
-    <span class="doccomment">///     [100_usize, 500, 30, 120]</span>
-    <span class="doccomment">///         .into_iter()</span>
-    <span class="doccomment">///         .into_hydroflow()</span>
-    <span class="doccomment">///         .fold_epoch(|_ctx| 0, |_ctx, val, next| std::cmp::max(val, next))</span>
-    <span class="doccomment">///         .pull_to_push()</span>
-    <span class="doccomment">///         .for_each(|val| assert_eq!(500, val))</span>
-    <span class="doccomment">/// );</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// builder.build().run_available();</span>
-    <span class="doccomment">/// ```</span>
-    <span class="kw">fn</span> <span class="ident">fold_epoch</span>&lt;<span class="ident">Init</span>, <span class="ident">Func</span>, <span class="ident">Out</span>&gt;(
+    <span class="doccomment">/// Folds (accumulates) the input such that only the accumulated value is
+    /// output each epoch. This operator should come after a inter-stratum
+    /// handoff to ensure correct scheduling.
+    ///
+    /// First, creates a accumulation value using the `init` method. Then, for
+    /// each item in the epoch, run `func` to update the accumulation value.
+    /// Finally, at the end of the scheduling quantum, release the single
+    /// accumulation value to the next operator.
+    ///
+    /// ## Example
+    /// ```
+    /// use hydroflow::builder::prelude::*;
+    ///
+    /// let mut builder = HydroflowBuilder::new();
+    /// builder.add_subgraph(
+    ///     &quot;My Subgraph&quot;,
+    ///     [100_usize, 500, 30, 120]
+    ///         .into_iter()
+    ///         .into_hydroflow()
+    ///         .fold_epoch(|_ctx| 0, |_ctx, val, next| std::cmp::max(val, next))
+    ///         .pull_to_push()
+    ///         .for_each(|val| assert_eq!(500, val))
+    /// );
+    ///
+    /// builder.build().run_available();
+    /// ```
+    </span><span class="kw">fn </span>fold_epoch&lt;Init, Func, Out&gt;(
         <span class="self">self</span>,
-        <span class="ident">init</span>: <span class="ident">Init</span>,
-        <span class="ident">func</span>: <span class="ident">Func</span>,
-    ) -&gt; <span class="ident">pull_fold_epoch::FoldEpochPullSurface</span>&lt;<span class="self">Self</span>, <span class="ident">Init</span>, <span class="ident">Func</span>&gt;
-    <span class="kw">where</span>
-        <span class="self">Self</span>: <span class="ident">Sized</span>,
-        <span class="ident">Init</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident">Context</span>) -&gt; <span class="ident">Out</span>,
-        <span class="ident">Func</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident">Context</span>, <span class="ident">Out</span>, <span class="ident"><span class="self">Self</span>::ItemOut</span>) -&gt; <span class="ident">Out</span>,
+        init: Init,
+        func: Func,
+    ) -&gt; pull_fold_epoch::FoldEpochPullSurface&lt;<span class="self">Self</span>, Init, Func&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: Sized,
+        Init: FnMut(<span class="kw-2">&amp;</span>Context) -&gt; Out,
+        Func: FnMut(<span class="kw-2">&amp;</span>Context, Out, <span class="self">Self</span>::ItemOut) -&gt; Out,
     {
-        <span class="ident">pull_fold_epoch::FoldEpochPullSurface::new</span>(<span class="self">self</span>, <span class="ident">init</span>, <span class="ident">func</span>)
+        pull_fold_epoch::FoldEpochPullSurface::new(<span class="self">self</span>, init, func)
     }
 
-    <span class="kw">fn</span> <span class="ident">pull_to_push</span>(<span class="self">self</span>) -&gt; <span class="ident">push_pivot::PivotPushSurface</span>&lt;<span class="self">Self</span>&gt;
-    <span class="kw">where</span>
-        <span class="self">Self</span>: <span class="ident">Sized</span>,
+    <span class="kw">fn </span>pull_to_push(<span class="self">self</span>) -&gt; push_pivot::PivotPushSurface&lt;<span class="self">Self</span>&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: Sized,
     {
-        <span class="ident">push_pivot::PivotPushSurface::new</span>(<span class="self">self</span>)
+        push_pivot::PivotPushSurface::new(<span class="self">self</span>)
     }
 }
 
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">PushSurface</span>: <span class="ident">BaseSurface</span> {
-    <span class="doccomment">/// This should usually be a type which impls [PushSurfaceReversed], but it is not enforced since we also need to return a Pivot in the end.</span>
-    <span class="kw">type</span> <span class="ident">Output</span>&lt;<span class="ident">Next</span>&gt;
-    <span class="kw">where</span>
-        <span class="ident">Next</span>: <span class="ident">PushSurfaceReversed</span>&lt;<span class="ident">ItemIn</span> = <span class="ident"><span class="self">Self</span>::ItemOut</span>&gt;;
+<span class="kw">pub trait </span>PushSurface: BaseSurface {
+    <span class="doccomment">/// This should usually be a type which impls [PushSurfaceReversed], but it is not enforced since we also need to return a Pivot in the end.
+    </span><span class="kw">type </span>Output&lt;Next&gt;
+    <span class="kw">where
+        </span>Next: PushSurfaceReversed&lt;ItemIn = <span class="self">Self</span>::ItemOut&gt;;
 
-    <span class="kw">fn</span> <span class="ident">push_to</span>&lt;<span class="ident">Next</span>&gt;(<span class="self">self</span>, <span class="ident">next</span>: <span class="ident">Next</span>) -&gt; <span class="ident"><span class="self">Self</span>::Output</span>&lt;<span class="ident">Next</span>&gt;
-    <span class="kw">where</span>
-        <span class="ident">Next</span>: <span class="ident">PushSurfaceReversed</span>&lt;<span class="ident">ItemIn</span> = <span class="ident"><span class="self">Self</span>::ItemOut</span>&gt;;
+    <span class="kw">fn </span>push_to&lt;Next&gt;(<span class="self">self</span>, next: Next) -&gt; <span class="self">Self</span>::Output&lt;Next&gt;
+    <span class="kw">where
+        </span>Next: PushSurfaceReversed&lt;ItemIn = <span class="self">Self</span>::ItemOut&gt;;
 
-    <span class="doccomment">/// To create a output tee, use [`HydroflowBuilder::start_tee()`](crate::builder::HydroflowBuilder::start_tee).</span>
-    <span class="kw">fn</span> <span class="ident">tee</span>&lt;<span class="ident">NextA</span>, <span class="ident">NextB</span>&gt;(
+    <span class="doccomment">/// To create a output tee, use [`HydroflowBuilder::start_tee()`](crate::builder::HydroflowBuilder::start_tee).
+    </span><span class="kw">fn </span>tee&lt;NextA, NextB&gt;(
         <span class="self">self</span>,
-        <span class="ident">next_a</span>: <span class="ident">NextA</span>,
-        <span class="ident">next_b</span>: <span class="ident">NextB</span>,
-    ) -&gt; <span class="ident"><span class="self">Self</span>::Output</span>&lt;<span class="ident">push_tee::TeePushSurfaceReversed</span>&lt;<span class="ident">NextA</span>, <span class="ident">NextB</span>&gt;&gt;
-    <span class="kw">where</span>
-        <span class="self">Self</span>: <span class="ident">Sized</span>,
-        <span class="ident"><span class="self">Self</span>::ItemOut</span>: <span class="ident">Clone</span>,
-        <span class="ident">NextA</span>: <span class="ident">PushSurfaceReversed</span>&lt;<span class="ident">ItemIn</span> = <span class="ident"><span class="self">Self</span>::ItemOut</span>&gt;,
-        <span class="ident">NextB</span>: <span class="ident">PushSurfaceReversed</span>&lt;<span class="ident">ItemIn</span> = <span class="ident"><span class="self">Self</span>::ItemOut</span>&gt;,
+        next_a: NextA,
+        next_b: NextB,
+    ) -&gt; <span class="self">Self</span>::Output&lt;push_tee::TeePushSurfaceReversed&lt;NextA, NextB&gt;&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: Sized,
+        <span class="self">Self</span>::ItemOut: Clone,
+        NextA: PushSurfaceReversed&lt;ItemIn = <span class="self">Self</span>::ItemOut&gt;,
+        NextB: PushSurfaceReversed&lt;ItemIn = <span class="self">Self</span>::ItemOut&gt;,
 
-        <span class="ident">NextA::OutputHandoffs</span>: <span class="ident">Extend</span>&lt;<span class="ident">NextB::OutputHandoffs</span>&gt;,
-        &lt;<span class="ident">NextA::OutputHandoffs</span> <span class="kw">as</span> <span class="ident">Extend</span>&lt;<span class="ident">NextB::OutputHandoffs</span>&gt;&gt;<span class="ident">::Extended</span>: <span class="ident">PortList</span>&lt;<span class="ident">SEND</span>&gt;
-            + <span class="ident">PortListSplit</span>&lt;<span class="ident">SEND</span>, <span class="ident">NextA::OutputHandoffs</span>, <span class="ident">Suffix</span> = <span class="ident">NextB::OutputHandoffs</span>&gt;,
+        NextA::OutputHandoffs: Extend&lt;NextB::OutputHandoffs&gt;,
+        &lt;NextA::OutputHandoffs <span class="kw">as </span>Extend&lt;NextB::OutputHandoffs&gt;&gt;::Extended: PortList&lt;SEND&gt;
+            + PortListSplit&lt;SEND, NextA::OutputHandoffs, Suffix = NextB::OutputHandoffs&gt;,
     {
-        <span class="kw">let</span> <span class="ident">next</span> = <span class="ident">push_tee::TeePushSurfaceReversed::new</span>(<span class="ident">next_a</span>, <span class="ident">next_b</span>);
-        <span class="self">self</span>.<span class="ident">push_to</span>(<span class="ident">next</span>)
+        <span class="kw">let </span>next = push_tee::TeePushSurfaceReversed::new(next_a, next_b);
+        <span class="self">self</span>.push_to(next)
     }
 
-    <span class="kw">fn</span> <span class="ident">for_each_with_context</span>&lt;<span class="ident">Func</span>&gt;(
+    <span class="kw">fn </span>for_each_with_context&lt;Func&gt;(
         <span class="self">self</span>,
-        <span class="ident">func</span>: <span class="ident">Func</span>,
-    ) -&gt; <span class="ident"><span class="self">Self</span>::Output</span>&lt;<span class="ident">push_for_each::ForEachPushSurfaceReversed</span>&lt;<span class="ident">Func</span>, <span class="ident"><span class="self">Self</span>::ItemOut</span>&gt;&gt;
-    <span class="kw">where</span>
-        <span class="self">Self</span>: <span class="ident">Sized</span>,
-        <span class="ident">Func</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident">Context</span>, <span class="ident"><span class="self">Self</span>::ItemOut</span>),
+        func: Func,
+    ) -&gt; <span class="self">Self</span>::Output&lt;push_for_each::ForEachPushSurfaceReversed&lt;Func, <span class="self">Self</span>::ItemOut&gt;&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: Sized,
+        Func: FnMut(<span class="kw-2">&amp;</span>Context, <span class="self">Self</span>::ItemOut),
     {
-        <span class="kw">let</span> <span class="ident">next</span> = <span class="ident">push_for_each::ForEachPushSurfaceReversed::new</span>(<span class="ident">func</span>);
-        <span class="self">self</span>.<span class="ident">push_to</span>(<span class="ident">next</span>)
+        <span class="kw">let </span>next = push_for_each::ForEachPushSurfaceReversed::new(func);
+        <span class="self">self</span>.push_to(next)
     }
 
-    <span class="kw">fn</span> <span class="ident">for_each</span>&lt;<span class="ident">Func</span>&gt;(
+    <span class="kw">fn </span>for_each&lt;Func&gt;(
         <span class="self">self</span>,
-        <span class="kw-2">mut</span> <span class="ident">func</span>: <span class="ident">Func</span>,
-    ) -&gt; <span class="ident"><span class="self">Self</span>::Output</span>&lt;
-        <span class="ident">push_for_each::ForEachPushSurfaceReversed</span>&lt;<span class="ident">ForEachNoCtxFunc</span>&lt;<span class="self">Self</span>, <span class="ident">Func</span>&gt;, <span class="ident"><span class="self">Self</span>::ItemOut</span>&gt;,
+        <span class="kw-2">mut </span>func: Func,
+    ) -&gt; <span class="self">Self</span>::Output&lt;
+        push_for_each::ForEachPushSurfaceReversed&lt;ForEachNoCtxFunc&lt;<span class="self">Self</span>, Func&gt;, <span class="self">Self</span>::ItemOut&gt;,
     &gt;
-    <span class="kw">where</span>
-        <span class="self">Self</span>: <span class="ident">Sized</span>,
-        <span class="ident">Func</span>: <span class="ident">FnMut</span>(<span class="ident"><span class="self">Self</span>::ItemOut</span>),
+    <span class="kw">where
+        </span><span class="self">Self</span>: Sized,
+        Func: FnMut(<span class="self">Self</span>::ItemOut),
     {
-        <span class="self">self</span>.<span class="ident">for_each_with_context</span>(<span class="kw">move</span> |<span class="ident">_ctx</span>, <span class="ident">x</span>| (<span class="ident">func</span>)(<span class="ident">x</span>))
+        <span class="self">self</span>.for_each_with_context(<span class="kw">move </span>|_ctx, x| (func)(x))
     }
 
-    <span class="kw">fn</span> <span class="ident">partition_with_context</span>&lt;<span class="ident">Func</span>, <span class="ident">NextA</span>, <span class="ident">NextB</span>&gt;(
+    <span class="kw">fn </span>partition_with_context&lt;Func, NextA, NextB&gt;(
         <span class="self">self</span>,
-        <span class="ident">func</span>: <span class="ident">Func</span>,
-        <span class="ident">next_a</span>: <span class="ident">NextA</span>,
-        <span class="ident">next_b</span>: <span class="ident">NextB</span>,
-    ) -&gt; <span class="ident"><span class="self">Self</span>::Output</span>&lt;<span class="ident">push_partition::PartitionPushSurfaceReversed</span>&lt;<span class="ident">NextA</span>, <span class="ident">NextB</span>, <span class="ident">Func</span>&gt;&gt;
-    <span class="kw">where</span>
-        <span class="self">Self</span>: <span class="ident">Sized</span>,
-        <span class="ident">Func</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident">Context</span>, <span class="kw-2">&amp;</span><span class="ident"><span class="self">Self</span>::ItemOut</span>) -&gt; <span class="ident">bool</span>,
-        <span class="ident">NextA</span>: <span class="ident">PushSurfaceReversed</span>&lt;<span class="ident">ItemIn</span> = <span class="ident"><span class="self">Self</span>::ItemOut</span>&gt;,
-        <span class="ident">NextB</span>: <span class="ident">PushSurfaceReversed</span>&lt;<span class="ident">ItemIn</span> = <span class="ident"><span class="self">Self</span>::ItemOut</span>&gt;,
+        func: Func,
+        next_a: NextA,
+        next_b: NextB,
+    ) -&gt; <span class="self">Self</span>::Output&lt;push_partition::PartitionPushSurfaceReversed&lt;NextA, NextB, Func&gt;&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: Sized,
+        Func: FnMut(<span class="kw-2">&amp;</span>Context, <span class="kw-2">&amp;</span><span class="self">Self</span>::ItemOut) -&gt; bool,
+        NextA: PushSurfaceReversed&lt;ItemIn = <span class="self">Self</span>::ItemOut&gt;,
+        NextB: PushSurfaceReversed&lt;ItemIn = <span class="self">Self</span>::ItemOut&gt;,
 
-        <span class="ident">NextA::OutputHandoffs</span>: <span class="ident">Extend</span>&lt;<span class="ident">NextB::OutputHandoffs</span>&gt;,
-        &lt;<span class="ident">NextA::OutputHandoffs</span> <span class="kw">as</span> <span class="ident">Extend</span>&lt;<span class="ident">NextB::OutputHandoffs</span>&gt;&gt;<span class="ident">::Extended</span>: <span class="ident">PortList</span>&lt;<span class="ident">SEND</span>&gt;
-            + <span class="ident">PortListSplit</span>&lt;<span class="ident">SEND</span>, <span class="ident">NextA::OutputHandoffs</span>, <span class="ident">Suffix</span> = <span class="ident">NextB::OutputHandoffs</span>&gt;,
+        NextA::OutputHandoffs: Extend&lt;NextB::OutputHandoffs&gt;,
+        &lt;NextA::OutputHandoffs <span class="kw">as </span>Extend&lt;NextB::OutputHandoffs&gt;&gt;::Extended: PortList&lt;SEND&gt;
+            + PortListSplit&lt;SEND, NextA::OutputHandoffs, Suffix = NextB::OutputHandoffs&gt;,
     {
-        <span class="kw">let</span> <span class="ident">next</span> = <span class="ident">push_partition::PartitionPushSurfaceReversed::new</span>(<span class="ident">func</span>, <span class="ident">next_a</span>, <span class="ident">next_b</span>);
-        <span class="self">self</span>.<span class="ident">push_to</span>(<span class="ident">next</span>)
+        <span class="kw">let </span>next = push_partition::PartitionPushSurfaceReversed::new(func, next_a, next_b);
+        <span class="self">self</span>.push_to(next)
     }
 
-    <span class="kw">fn</span> <span class="ident">partition</span>&lt;<span class="ident">Func</span>, <span class="ident">NextA</span>, <span class="ident">NextB</span>&gt;(
+    <span class="kw">fn </span>partition&lt;Func, NextA, NextB&gt;(
         <span class="self">self</span>,
-        <span class="ident">func</span>: <span class="ident">Func</span>,
-        <span class="ident">next_a</span>: <span class="ident">NextA</span>,
-        <span class="ident">next_b</span>: <span class="ident">NextB</span>,
-    ) -&gt; <span class="ident"><span class="self">Self</span>::Output</span>&lt;<span class="ident">PartitionNoCtxOutput</span>&lt;<span class="self">Self</span>, <span class="ident">Func</span>, <span class="ident">NextA</span>, <span class="ident">NextB</span>&gt;&gt;
-    <span class="kw">where</span>
-        <span class="self">Self</span>: <span class="ident">Sized</span>,
-        <span class="ident">Func</span>: <span class="ident">Fn</span>(<span class="kw-2">&amp;</span><span class="ident"><span class="self">Self</span>::ItemOut</span>) -&gt; <span class="ident">bool</span>,
-        <span class="ident">NextA</span>: <span class="ident">PushSurfaceReversed</span>&lt;<span class="ident">ItemIn</span> = <span class="ident"><span class="self">Self</span>::ItemOut</span>&gt;,
-        <span class="ident">NextB</span>: <span class="ident">PushSurfaceReversed</span>&lt;<span class="ident">ItemIn</span> = <span class="ident"><span class="self">Self</span>::ItemOut</span>&gt;,
+        func: Func,
+        next_a: NextA,
+        next_b: NextB,
+    ) -&gt; <span class="self">Self</span>::Output&lt;PartitionNoCtxOutput&lt;<span class="self">Self</span>, Func, NextA, NextB&gt;&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: Sized,
+        Func: Fn(<span class="kw-2">&amp;</span><span class="self">Self</span>::ItemOut) -&gt; bool,
+        NextA: PushSurfaceReversed&lt;ItemIn = <span class="self">Self</span>::ItemOut&gt;,
+        NextB: PushSurfaceReversed&lt;ItemIn = <span class="self">Self</span>::ItemOut&gt;,
 
-        <span class="ident">NextA::OutputHandoffs</span>: <span class="ident">Extend</span>&lt;<span class="ident">NextB::OutputHandoffs</span>&gt;,
-        &lt;<span class="ident">NextA::OutputHandoffs</span> <span class="kw">as</span> <span class="ident">Extend</span>&lt;<span class="ident">NextB::OutputHandoffs</span>&gt;&gt;<span class="ident">::Extended</span>: <span class="ident">PortList</span>&lt;<span class="ident">SEND</span>&gt;
-            + <span class="ident">PortListSplit</span>&lt;<span class="ident">SEND</span>, <span class="ident">NextA::OutputHandoffs</span>, <span class="ident">Suffix</span> = <span class="ident">NextB::OutputHandoffs</span>&gt;,
+        NextA::OutputHandoffs: Extend&lt;NextB::OutputHandoffs&gt;,
+        &lt;NextA::OutputHandoffs <span class="kw">as </span>Extend&lt;NextB::OutputHandoffs&gt;&gt;::Extended: PortList&lt;SEND&gt;
+            + PortListSplit&lt;SEND, NextA::OutputHandoffs, Suffix = NextB::OutputHandoffs&gt;,
     {
-        <span class="self">self</span>.<span class="ident">partition_with_context</span>(<span class="kw">move</span> |<span class="ident">_ctx</span>, <span class="ident">x</span>| (<span class="ident">func</span>)(<span class="ident">x</span>), <span class="ident">next_a</span>, <span class="ident">next_b</span>)
+        <span class="self">self</span>.partition_with_context(<span class="kw">move </span>|_ctx, x| (func)(x), next_a, next_b)
     }
 }
 
-<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">ForEachNoCtxFunc</span>&lt;<span class="ident">Prev</span>, <span class="ident">Func</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">Prev</span>: <span class="ident">PushSurface</span>,
-    <span class="ident">Func</span>: <span class="ident">FnMut</span>(<span class="ident">Prev::ItemOut</span>),
-= <span class="kw">impl</span> <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident">Context</span>, <span class="ident">Prev::ItemOut</span>);
+<span class="kw">pub type </span>ForEachNoCtxFunc&lt;Prev, Func&gt;
+<span class="kw">where
+    </span>Prev: PushSurface,
+    Func: FnMut(Prev::ItemOut),
+= <span class="kw">impl </span>FnMut(<span class="kw-2">&amp;</span>Context, Prev::ItemOut);
 
-<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">PartitionNoCtxOutput</span>&lt;<span class="ident">Prev</span>, <span class="ident">Func</span>, <span class="ident">NextA</span>, <span class="ident">NextB</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">Prev</span>: <span class="ident">PushSurface</span>,
-    <span class="ident">Func</span>: <span class="ident">Fn</span>(<span class="kw-2">&amp;</span><span class="ident">Prev::ItemOut</span>) -&gt; <span class="ident">bool</span>,
-    <span class="ident">NextA</span>: <span class="ident">PushSurfaceReversed</span>&lt;<span class="ident">ItemIn</span> = <span class="ident">Prev::ItemOut</span>&gt;,
-    <span class="ident">NextB</span>: <span class="ident">PushSurfaceReversed</span>&lt;<span class="ident">ItemIn</span> = <span class="ident">Prev::ItemOut</span>&gt;,
+<span class="kw">pub type </span>PartitionNoCtxOutput&lt;Prev, Func, NextA, NextB&gt;
+<span class="kw">where
+    </span>Prev: PushSurface,
+    Func: Fn(<span class="kw-2">&amp;</span>Prev::ItemOut) -&gt; bool,
+    NextA: PushSurfaceReversed&lt;ItemIn = Prev::ItemOut&gt;,
+    NextB: PushSurfaceReversed&lt;ItemIn = Prev::ItemOut&gt;,
 
-    <span class="ident">NextA::OutputHandoffs</span>: <span class="ident">Extend</span>&lt;<span class="ident">NextB::OutputHandoffs</span>&gt;,
-    &lt;<span class="ident">NextA::OutputHandoffs</span> <span class="kw">as</span> <span class="ident">Extend</span>&lt;<span class="ident">NextB::OutputHandoffs</span>&gt;&gt;<span class="ident">::Extended</span>:
-        <span class="ident">PortList</span>&lt;<span class="ident">SEND</span>&gt; + <span class="ident">PortListSplit</span>&lt;<span class="ident">SEND</span>, <span class="ident">NextA::OutputHandoffs</span>, <span class="ident">Suffix</span> = <span class="ident">NextB::OutputHandoffs</span>&gt;,
-= <span class="ident">push_partition::PartitionPushSurfaceReversed</span>&lt;
-    <span class="ident">NextA</span>,
-    <span class="ident">NextB</span>,
-    <span class="kw">impl</span> <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident">Context</span>, <span class="kw-2">&amp;</span><span class="ident">Prev::ItemOut</span>) -&gt; <span class="ident">bool</span>,
+    NextA::OutputHandoffs: Extend&lt;NextB::OutputHandoffs&gt;,
+    &lt;NextA::OutputHandoffs <span class="kw">as </span>Extend&lt;NextB::OutputHandoffs&gt;&gt;::Extended:
+        PortList&lt;SEND&gt; + PortListSplit&lt;SEND, NextA::OutputHandoffs, Suffix = NextB::OutputHandoffs&gt;,
+= push_partition::PartitionPushSurfaceReversed&lt;
+    NextA,
+    NextB,
+    <span class="kw">impl </span>FnMut(<span class="kw-2">&amp;</span>Context, <span class="kw-2">&amp;</span>Prev::ItemOut) -&gt; bool,
 &gt;;
 
-<span class="doccomment">/// This extra layer is needed due to the ownership order. In the functional</span>
-<span class="doccomment">/// chaining syntax each operator owns the previous (can only go in order</span>
-<span class="doccomment">/// things are called/defined), but in the end we need each pusherator to own</span>
-<span class="doccomment">/// the _next_ pusherator which it&#39;s pushing to.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// This is the already-reversed, [PushSurface] does the actual reversing.</span>
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">PushSurfaceReversed</span> {
-    <span class="kw">type</span> <span class="ident">ItemIn</span>;
+<span class="doccomment">/// This extra layer is needed due to the ownership order. In the functional
+/// chaining syntax each operator owns the previous (can only go in order
+/// things are called/defined), but in the end we need each pusherator to own
+/// the _next_ pusherator which it&#39;s pushing to.
+///
+/// This is the already-reversed, [PushSurface] does the actual reversing.
+</span><span class="kw">pub trait </span>PushSurfaceReversed {
+    <span class="kw">type </span>ItemIn;
 
-    <span class="kw">type</span> <span class="ident">OutputHandoffs</span>: <span class="ident">PortList</span>&lt;<span class="ident">SEND</span>&gt;;
-    <span class="kw">type</span> <span class="ident">Build</span>: <span class="ident">PushBuild</span>&lt;<span class="ident">OutputHandoffs</span> = <span class="ident"><span class="self">Self</span>::OutputHandoffs</span>, <span class="ident">ItemIn</span> = <span class="ident"><span class="self">Self</span>::ItemIn</span>&gt;;
+    <span class="kw">type </span>OutputHandoffs: PortList&lt;SEND&gt;;
+    <span class="kw">type </span>Build: PushBuild&lt;OutputHandoffs = <span class="self">Self</span>::OutputHandoffs, ItemIn = <span class="self">Self</span>::ItemIn&gt;;
 
-    <span class="kw">fn</span> <span class="ident">make_parts</span>(<span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span>) -&gt; (<span class="ident"><span class="self">Self</span>::OutputHandoffs</span>, <span class="ident"><span class="self">Self</span>::Build</span>);
+    <span class="kw">fn </span>make_parts(<span class="self">self</span>, ctx: <span class="kw-2">&amp;mut </span>Context) -&gt; (<span class="self">Self</span>::OutputHandoffs, <span class="self">Self</span>::Build);
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (75b7e52e9 2022-08-13)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

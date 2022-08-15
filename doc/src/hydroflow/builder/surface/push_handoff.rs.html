@@ -52,59 +52,59 @@
 <span id="52">52</span>
 <span id="53">53</span>
 <span id="54">54</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">AssembleFlowGraph</span>, <span class="ident">PushSurfaceReversed</span>};
+</pre><pre class="rust"><code><span class="kw">use super</span>::{AssembleFlowGraph, PushSurfaceReversed};
 
-<span class="kw">use</span> <span class="ident">std::marker::PhantomData</span>;
+<span class="kw">use </span>std::marker::PhantomData;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::builder::build::push_handoff::HandoffPushBuild</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::context::Context</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::flow_graph::FlowNodeId</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::handoff</span>::{<span class="ident">CanReceive</span>, <span class="ident">Handoff</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::port::SendPort</span>;
-<span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">tl</span>, <span class="ident">tt</span>};
+<span class="kw">use </span><span class="kw">crate</span>::builder::build::push_handoff::HandoffPushBuild;
+<span class="kw">use </span><span class="kw">crate</span>::scheduled::context::Context;
+<span class="kw">use </span><span class="kw">crate</span>::scheduled::flow_graph::FlowNodeId;
+<span class="kw">use </span><span class="kw">crate</span>::scheduled::handoff::{CanReceive, Handoff};
+<span class="kw">use </span><span class="kw">crate</span>::scheduled::port::SendPort;
+<span class="kw">use crate</span>::{tl, tt};
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">HandoffPushSurfaceReversed</span>&lt;<span class="ident">Hof</span>, <span class="ident">In</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">Hof</span>: <span class="ident">Handoff</span> + <span class="ident">CanReceive</span>&lt;<span class="ident">In</span>&gt;,
+<span class="kw">pub struct </span>HandoffPushSurfaceReversed&lt;Hof, In&gt;
+<span class="kw">where
+    </span>Hof: Handoff + CanReceive&lt;In&gt;,
 {
-    <span class="ident">port</span>: <span class="ident">SendPort</span>&lt;<span class="ident">Hof</span>&gt;,
-    <span class="ident">_phantom</span>: <span class="ident">PhantomData</span>&lt;<span class="kw">fn</span>(<span class="ident">In</span>)&gt;,
+    port: SendPort&lt;Hof&gt;,
+    _phantom: PhantomData&lt;<span class="kw">fn</span>(In)&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">Hof</span>, <span class="ident">In</span>&gt; <span class="ident">HandoffPushSurfaceReversed</span>&lt;<span class="ident">Hof</span>, <span class="ident">In</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">Hof</span>: <span class="ident">Handoff</span> + <span class="ident">CanReceive</span>&lt;<span class="ident">In</span>&gt;,
+<span class="kw">impl</span>&lt;Hof, In&gt; HandoffPushSurfaceReversed&lt;Hof, In&gt;
+<span class="kw">where
+    </span>Hof: Handoff + CanReceive&lt;In&gt;,
 {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">port</span>: <span class="ident">SendPort</span>&lt;<span class="ident">Hof</span>&gt;) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">port</span>,
-            <span class="ident">_phantom</span>: <span class="ident">PhantomData</span>,
+    <span class="kw">pub fn </span>new(port: SendPort&lt;Hof&gt;) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            port,
+            _phantom: PhantomData,
         }
     }
 }
-<span class="kw">impl</span>&lt;<span class="ident">Hof</span>, <span class="ident">In</span>&gt; <span class="ident">AssembleFlowGraph</span> <span class="kw">for</span> <span class="ident">HandoffPushSurfaceReversed</span>&lt;<span class="ident">Hof</span>, <span class="ident">In</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">Hof</span>: <span class="ident">Handoff</span> + <span class="ident">CanReceive</span>&lt;<span class="ident">In</span>&gt;,
+<span class="kw">impl</span>&lt;Hof, In&gt; AssembleFlowGraph <span class="kw">for </span>HandoffPushSurfaceReversed&lt;Hof, In&gt;
+<span class="kw">where
+    </span>Hof: Handoff + CanReceive&lt;In&gt;,
 {
-    <span class="kw">fn</span> <span class="ident">insert_dep</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">e</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="kw">super</span>::FlowGraph</span>) -&gt; <span class="ident">FlowNodeId</span> {
-        <span class="kw">let</span> <span class="ident">my_id</span> = <span class="ident">e</span>.<span class="ident">add_node</span>(<span class="string">&quot;Handoff&quot;</span>);
-        <span class="ident">e</span>.<span class="ident">add_handoff_id</span>(<span class="ident">my_id</span>, <span class="self">self</span>.<span class="ident">port</span>.<span class="ident">handoff_id</span>);
-        <span class="ident">my_id</span>
+    <span class="kw">fn </span>insert_dep(<span class="kw-2">&amp;</span><span class="self">self</span>, e: <span class="kw-2">&amp;mut </span><span class="kw">super</span>::FlowGraph) -&gt; FlowNodeId {
+        <span class="kw">let </span>my_id = e.add_node(<span class="string">&quot;Handoff&quot;</span>);
+        e.add_handoff_id(my_id, <span class="self">self</span>.port.handoff_id);
+        my_id
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">Hof</span>, <span class="ident">In</span>&gt; <span class="ident">PushSurfaceReversed</span> <span class="kw">for</span> <span class="ident">HandoffPushSurfaceReversed</span>&lt;<span class="ident">Hof</span>, <span class="ident">In</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">Hof</span>: <span class="ident">Handoff</span> + <span class="ident">CanReceive</span>&lt;<span class="ident">In</span>&gt;,
+<span class="kw">impl</span>&lt;Hof, In&gt; PushSurfaceReversed <span class="kw">for </span>HandoffPushSurfaceReversed&lt;Hof, In&gt;
+<span class="kw">where
+    </span>Hof: Handoff + CanReceive&lt;In&gt;,
 {
-    <span class="kw">type</span> <span class="ident">ItemIn</span> = <span class="ident">In</span>;
+    <span class="kw">type </span>ItemIn = In;
 
-    <span class="kw">type</span> <span class="ident">OutputHandoffs</span> = <span class="macro">tt!</span>(<span class="ident">SendPort</span>&lt;<span class="ident">Hof</span>&gt;);
-    <span class="kw">type</span> <span class="ident">Build</span> = <span class="ident">HandoffPushBuild</span>&lt;<span class="ident">Hof</span>, <span class="ident">In</span>&gt;;
+    <span class="kw">type </span>OutputHandoffs = <span class="macro">tt!</span>(SendPort&lt;Hof&gt;);
+    <span class="kw">type </span>Build = HandoffPushBuild&lt;Hof, In&gt;;
 
-    <span class="kw">fn</span> <span class="ident">make_parts</span>(<span class="self">self</span>, <span class="ident">_ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span>) -&gt; (<span class="ident"><span class="self">Self</span>::OutputHandoffs</span>, <span class="ident"><span class="self">Self</span>::Build</span>) {
-        (<span class="macro">tl!</span>(<span class="self">self</span>.<span class="ident">port</span>), <span class="ident">HandoffPushBuild::new</span>())
+    <span class="kw">fn </span>make_parts(<span class="self">self</span>, _ctx: <span class="kw-2">&amp;mut </span>Context) -&gt; (<span class="self">Self</span>::OutputHandoffs, <span class="self">Self</span>::Build) {
+        (<span class="macro">tl!</span>(<span class="self">self</span>.port), HandoffPushBuild::new())
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (75b7e52e9 2022-08-13)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

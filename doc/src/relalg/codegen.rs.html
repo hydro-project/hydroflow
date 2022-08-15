@@ -123,130 +123,130 @@
 <span id="123">123</span>
 <span id="124">124</span>
 <span id="125">125</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">quote</span>::{
-    <span class="ident">__private</span>::{<span class="ident">Ident</span>, <span class="ident">TokenStream</span>},
-    <span class="ident">format_ident</span>, <span class="ident">quote</span>, <span class="ident">ToTokens</span>,
+</pre><pre class="rust"><code><span class="kw">use </span>quote::{
+    __private::{Ident, TokenStream},
+    format_ident, quote, ToTokens,
 };
-<span class="kw">use</span> <span class="ident">xshell::cmd</span>;
+<span class="kw">use </span>xshell::cmd;
 
-<span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">Datum</span>, <span class="ident">RelExpr</span>, <span class="ident">ScalarExpr</span>};
+<span class="kw">use crate</span>::{Datum, RelExpr, ScalarExpr};
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">generate_dataflow</span>(<span class="ident">r</span>: <span class="ident">RelExpr</span>) -&gt; <span class="ident">String</span> {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">builder</span> = <span class="ident">SubgraphBuilder::new</span>();
-    <span class="kw">let</span> <span class="ident">id</span> = <span class="ident">builder</span>.<span class="ident">compile_op</span>(<span class="kw-2">&amp;</span><span class="ident">r</span>);
-    <span class="kw">let</span> <span class="ident">code</span> = <span class="ident">builder</span>.<span class="ident">code</span>;
-    <span class="ident">run_rustfmt</span>(<span class="macro">format!</span>(
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>generate_dataflow(r: RelExpr) -&gt; String {
+    <span class="kw">let </span><span class="kw-2">mut </span>builder = SubgraphBuilder::new();
+    <span class="kw">let </span>id = builder.compile_op(<span class="kw-2">&amp;</span>r);
+    <span class="kw">let </span>code = builder.code;
+    run_rustfmt(<span class="macro">format!</span>(
         <span class="string">&quot;{}&quot;</span>,
         <span class="macro">quote!</span> {
-            <span class="kw">fn</span> <span class="ident">main</span>() {
-                #(#<span class="ident">code</span>)*
+            <span class="kw">fn </span>main() {
+                #(#code)*
 
-                <span class="kw">for</span> <span class="ident">row</span> <span class="kw">in</span> #<span class="ident">id</span> {
-                    <span class="macro">println!</span>(<span class="string">&quot;{:?}&quot;</span>, <span class="ident">row</span>);
+                <span class="kw">for </span>row <span class="kw">in </span>#id {
+                    <span class="macro">println!</span>(<span class="string">&quot;{:?}&quot;</span>, row);
                 }
             }
         }
     ))
-    .<span class="ident">unwrap</span>()
+    .unwrap()
 }
 
-<span class="comment">// TODO(justin): How do we make this portable/run on CI?</span>
-<span class="kw">fn</span> <span class="ident">run_rustfmt</span>(<span class="ident">s</span>: <span class="ident">String</span>) -&gt; <span class="ident">anyhow::Result</span>&lt;<span class="ident">String</span>&gt; {
+<span class="comment">// TODO(justin): How do we make this portable/run on CI?
+</span><span class="kw">fn </span>run_rustfmt(s: String) -&gt; anyhow::Result&lt;String&gt; {
     <span class="prelude-val">Ok</span>(<span class="macro">cmd!</span>(<span class="string">&quot;rustfmt --config newline_style=Unix&quot;</span>)
-        .<span class="ident">stdin</span>(<span class="ident">s</span>)
-        .<span class="ident">read</span>()<span class="question-mark">?</span>)
+        .stdin(s)
+        .read()<span class="question-mark">?</span>)
 }
 
-<span class="kw">struct</span> <span class="ident">SubgraphBuilder</span> {
-    <span class="ident">sym_id</span>: <span class="ident">usize</span>,
-    <span class="ident">code</span>: <span class="ident">Vec</span>&lt;<span class="ident">TokenStream</span>&gt;,
+<span class="kw">struct </span>SubgraphBuilder {
+    sym_id: usize,
+    code: Vec&lt;TokenStream&gt;,
 }
 
-<span class="comment">// TODO(justin): we can manually inline all this to just get raw rust code, but should check</span>
-<span class="comment">// to see how much of that the rust compiler will do for us first.</span>
-<span class="kw">impl</span> <span class="ident">ToTokens</span> <span class="kw">for</span> <span class="ident">ScalarExpr</span> {
-    <span class="kw">fn</span> <span class="ident">to_tokens</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">tokens</span>: <span class="kw-2">&amp;mut</span> <span class="ident">TokenStream</span>) {
-        <span class="ident">tokens</span>.<span class="ident">extend</span>(<span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">ScalarExpr::Literal</span>(<span class="ident">Datum::Int</span>(<span class="ident">x</span>)) =&gt; <span class="macro">quote!</span> { <span class="ident">ScalarExpr::Literal</span>(<span class="ident">Datum::Int</span>(#<span class="ident">x</span>)) },
-            <span class="ident">ScalarExpr::ColRef</span>(<span class="ident">x</span>) =&gt; <span class="macro">quote!</span> { <span class="ident">ScalarExpr::ColRef</span>(#<span class="ident">x</span>) },
-            <span class="ident">ScalarExpr::Eq</span>(<span class="ident">a</span>, <span class="ident">b</span>) =&gt; <span class="macro">quote!</span> {
-                <span class="ident">ScalarExpr::Eq</span>(<span class="ident">Box::new</span>(#<span class="ident">a</span>), <span class="ident">Box::new</span>(#<span class="ident">b</span>))
+<span class="comment">// TODO(justin): we can manually inline all this to just get raw rust code, but should check
+// to see how much of that the rust compiler will do for us first.
+</span><span class="kw">impl </span>ToTokens <span class="kw">for </span>ScalarExpr {
+    <span class="kw">fn </span>to_tokens(<span class="kw-2">&amp;</span><span class="self">self</span>, tokens: <span class="kw-2">&amp;mut </span>TokenStream) {
+        tokens.extend(<span class="kw">match </span><span class="self">self </span>{
+            ScalarExpr::Literal(Datum::Int(x)) =&gt; <span class="macro">quote!</span> { ScalarExpr::Literal(Datum::Int(#x)) },
+            ScalarExpr::ColRef(x) =&gt; <span class="macro">quote!</span> { ScalarExpr::ColRef(#x) },
+            ScalarExpr::Eq(a, b) =&gt; <span class="macro">quote!</span> {
+                ScalarExpr::Eq(Box::new(#a), Box::new(#b))
             },
-            <span class="ident">ScalarExpr::Plus</span>(<span class="ident">a</span>, <span class="ident">b</span>) =&gt; <span class="macro">quote!</span> {
-                <span class="ident">ScalarExpr::Plus</span>(<span class="ident">Box::new</span>(#<span class="ident">a</span>), <span class="ident">Box::new</span>(#<span class="ident">b</span>))
+            ScalarExpr::Plus(a, b) =&gt; <span class="macro">quote!</span> {
+                ScalarExpr::Plus(Box::new(#a), Box::new(#b))
             },
-            <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;unhandled&quot;</span>),
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;unhandled&quot;</span>),
         })
     }
 }
 
-<span class="kw">impl</span> <span class="ident">SubgraphBuilder</span> {
-    <span class="kw">fn</span> <span class="ident">gensym</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">prefix</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="ident">Ident</span> {
-        <span class="self">self</span>.<span class="ident">sym_id</span> += <span class="number">1</span>;
-        <span class="macro">format_ident!</span>(<span class="string">&quot;__{}_{}&quot;</span>, <span class="ident">prefix</span>, <span class="self">self</span>.<span class="ident">sym_id</span>)
+<span class="kw">impl </span>SubgraphBuilder {
+    <span class="kw">fn </span>gensym(<span class="kw-2">&amp;mut </span><span class="self">self</span>, prefix: <span class="kw-2">&amp;</span>str) -&gt; Ident {
+        <span class="self">self</span>.sym_id += <span class="number">1</span>;
+        <span class="macro">format_ident!</span>(<span class="string">&quot;__{}_{}&quot;</span>, prefix, <span class="self">self</span>.sym_id)
     }
 
-    <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="self">Self</span> {
-        <span class="ident">SubgraphBuilder</span> {
-            <span class="ident">sym_id</span>: <span class="number">0</span>,
-            <span class="ident">code</span>: <span class="ident">Vec::new</span>(),
+    <span class="kw">fn </span>new() -&gt; <span class="self">Self </span>{
+        SubgraphBuilder {
+            sym_id: <span class="number">0</span>,
+            code: Vec::new(),
         }
     }
 
-    <span class="kw">fn</span> <span class="ident">compile_op</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">r</span>: <span class="kw-2">&amp;</span><span class="ident">RelExpr</span>) -&gt; <span class="ident">Ident</span> {
-        <span class="kw">match</span> <span class="ident">r</span> {
-            <span class="ident">RelExpr::Values</span>(<span class="ident">v</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">op_name</span> = <span class="self">self</span>.<span class="ident">gensym</span>(<span class="string">&quot;values&quot;</span>);
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">payload</span> = <span class="ident">TokenStream::default</span>();
-                <span class="kw">let</span> <span class="ident">iter</span> = <span class="ident">v</span>.<span class="ident">iter</span>().<span class="ident">map</span>(|<span class="ident">row</span>| {
+    <span class="kw">fn </span>compile_op(<span class="kw-2">&amp;mut </span><span class="self">self</span>, r: <span class="kw-2">&amp;</span>RelExpr) -&gt; Ident {
+        <span class="kw">match </span>r {
+            RelExpr::Values(v) =&gt; {
+                <span class="kw">let </span>op_name = <span class="self">self</span>.gensym(<span class="string">&quot;values&quot;</span>);
+                <span class="kw">let </span><span class="kw-2">mut </span>payload = TokenStream::default();
+                <span class="kw">let </span>iter = v.iter().map(|row| {
                     <span class="macro">quote!</span> {
-                        <span class="macro">vec!</span>[ #(#<span class="ident">row</span>.<span class="ident">eval</span>(<span class="kw-2">&amp;</span><span class="ident">Vec::new</span>())),* ]
+                        <span class="macro">vec!</span>[ #(#row.eval(<span class="kw-2">&amp;</span>Vec::new())),* ]
                     }
                 });
-                <span class="ident">payload</span>.<span class="ident">extend</span>(<span class="macro">quote!</span> {
+                payload.extend(<span class="macro">quote!</span> {
                     <span class="macro">vec!</span>[
                         #(
-                            #<span class="ident">iter</span>
+                            #iter
                         ),*
                     ]
                 });
 
-                <span class="self">self</span>.<span class="ident">code</span>.<span class="ident">push</span>(<span class="macro">quote!</span> {
-                    <span class="kw">let</span> #<span class="ident">op_name</span> = #<span class="ident">payload</span>.<span class="ident">into_iter</span>();
+                <span class="self">self</span>.code.push(<span class="macro">quote!</span> {
+                    <span class="kw">let </span>#op_name = #payload.into_iter();
                 });
 
-                <span class="ident">op_name</span>
+                op_name
             }
-            <span class="ident">RelExpr::Filter</span>(<span class="ident">preds</span>, <span class="ident">input</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">op_name</span> = <span class="self">self</span>.<span class="ident">gensym</span>(<span class="string">&quot;filter&quot;</span>);
-                <span class="kw">let</span> <span class="ident">input_name</span> = <span class="self">self</span>.<span class="ident">compile_op</span>(<span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="kw-2">*</span><span class="ident">input</span>);
+            RelExpr::Filter(preds, input) =&gt; {
+                <span class="kw">let </span>op_name = <span class="self">self</span>.gensym(<span class="string">&quot;filter&quot;</span>);
+                <span class="kw">let </span>input_name = <span class="self">self</span>.compile_op(<span class="kw-2">&amp;**</span>input);
 
-                <span class="kw">let</span> <span class="ident">pred</span> = <span class="macro">quote!</span> {
-                    #(#<span class="ident">preds</span>.<span class="ident">eval</span>(<span class="ident">row</span>).<span class="ident">is_true</span>())&amp;&amp;*
+                <span class="kw">let </span>pred = <span class="macro">quote!</span> {
+                    #(#preds.eval(row).is_true())&amp;&amp;*
                 };
 
-                <span class="self">self</span>.<span class="ident">code</span>.<span class="ident">push</span>(<span class="macro">quote!</span> {
-                    <span class="kw">let</span> #<span class="ident">op_name</span> = #<span class="ident">input_name</span>.<span class="ident">filter</span>(|<span class="ident">row</span>| #<span class="ident">pred</span>);
+                <span class="self">self</span>.code.push(<span class="macro">quote!</span> {
+                    <span class="kw">let </span>#op_name = #input_name.filter(|row| #pred);
                 });
 
-                <span class="ident">op_name</span>
+                op_name
             }
-            <span class="ident">RelExpr::Project</span>(<span class="ident">exprs</span>, <span class="ident">input</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">op_name</span> = <span class="self">self</span>.<span class="ident">gensym</span>(<span class="string">&quot;project&quot;</span>);
-                <span class="kw">let</span> <span class="ident">input_name</span> = <span class="self">self</span>.<span class="ident">compile_op</span>(<span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="kw-2">*</span><span class="ident">input</span>);
+            RelExpr::Project(exprs, input) =&gt; {
+                <span class="kw">let </span>op_name = <span class="self">self</span>.gensym(<span class="string">&quot;project&quot;</span>);
+                <span class="kw">let </span>input_name = <span class="self">self</span>.compile_op(<span class="kw-2">&amp;**</span>input);
 
-                <span class="kw">let</span> <span class="ident">pred</span> = <span class="macro">quote!</span> {
-                    <span class="macro">vec!</span>[ #(#<span class="ident">exprs</span>.<span class="ident">eval</span>(<span class="kw-2">&amp;</span><span class="ident">row</span>)),* ]
+                <span class="kw">let </span>pred = <span class="macro">quote!</span> {
+                    <span class="macro">vec!</span>[ #(#exprs.eval(<span class="kw-2">&amp;</span>row)),* ]
                 };
 
-                <span class="self">self</span>.<span class="ident">code</span>.<span class="ident">push</span>(<span class="macro">quote!</span> {
-                    <span class="kw">let</span> #<span class="ident">op_name</span> = #<span class="ident">input_name</span>.<span class="ident">map</span>(|<span class="ident">row</span>| #<span class="ident">pred</span>);
+                <span class="self">self</span>.code.push(<span class="macro">quote!</span> {
+                    <span class="kw">let </span>#op_name = #input_name.map(|row| #pred);
                 });
 
-                <span class="ident">op_name</span>
+                op_name
             }
         }
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="relalg" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (75b7e52e9 2022-08-13)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="relalg" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

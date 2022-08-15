@@ -289,296 +289,296 @@
 <span id="289">289</span>
 <span id="290">290</span>
 <span id="291">291</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">anyhow::bail</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>anyhow::bail;
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>)]</span>
-<span class="kw">struct</span> <span class="ident">Parser</span> {
-    <span class="ident">input</span>: <span class="ident">Vec</span>&lt;<span class="ident">char</span>&gt;,
-    <span class="ident">idx</span>: <span class="ident">usize</span>,
+<span class="attribute">#[derive(Debug, Clone)]</span>
+<span class="kw">struct </span>Parser {
+    input: Vec&lt;char&gt;,
+    idx: usize,
 }
 
-<span class="kw">fn</span> <span class="ident">closer</span>(<span class="ident">ch</span>: <span class="ident">char</span>) -&gt; <span class="ident">char</span> {
-    <span class="kw">match</span> <span class="ident">ch</span> {
-        <span class="string">&#39;(&#39;</span> =&gt; <span class="string">&#39;)&#39;</span>,
-        <span class="string">&#39;[&#39;</span> =&gt; <span class="string">&#39;]&#39;</span>,
-        <span class="string">&#39;{&#39;</span> =&gt; <span class="string">&#39;}&#39;</span>,
-        <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;&quot;</span>),
+<span class="kw">fn </span>closer(ch: char) -&gt; char {
+    <span class="kw">match </span>ch {
+        <span class="string">&#39;(&#39; </span>=&gt; <span class="string">&#39;)&#39;</span>,
+        <span class="string">&#39;[&#39; </span>=&gt; <span class="string">&#39;]&#39;</span>,
+        <span class="string">&#39;{&#39; </span>=&gt; <span class="string">&#39;}&#39;</span>,
+        <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;&quot;</span>),
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Parser</span> {
-    <span class="kw">fn</span> <span class="ident">atom_char</span>(<span class="ident">ch</span>: <span class="ident">char</span>) -&gt; <span class="ident">bool</span> {
-        <span class="ident">ch</span> != <span class="string">&#39;{&#39;</span>
-            &amp;&amp; <span class="ident">ch</span> != <span class="string">&#39;}&#39;</span>
-            &amp;&amp; <span class="ident">ch</span> != <span class="string">&#39;[&#39;</span>
-            &amp;&amp; <span class="ident">ch</span> != <span class="string">&#39;]&#39;</span>
-            &amp;&amp; <span class="ident">ch</span> != <span class="string">&#39;(&#39;</span>
-            &amp;&amp; <span class="ident">ch</span> != <span class="string">&#39;)&#39;</span>
-            &amp;&amp; !<span class="ident">ch</span>.<span class="ident">is_whitespace</span>()
+<span class="kw">impl </span>Parser {
+    <span class="kw">fn </span>atom_char(ch: char) -&gt; bool {
+        ch != <span class="string">&#39;{&#39;
+            </span>&amp;&amp; ch != <span class="string">&#39;}&#39;
+            </span>&amp;&amp; ch != <span class="string">&#39;[&#39;
+            </span>&amp;&amp; ch != <span class="string">&#39;]&#39;
+            </span>&amp;&amp; ch != <span class="string">&#39;(&#39;
+            </span>&amp;&amp; ch != <span class="string">&#39;)&#39;
+            </span>&amp;&amp; !ch.is_whitespace()
     }
 
-    <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">input</span>: <span class="ident">String</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident">Parser</span> {
-            <span class="ident">input</span>: <span class="ident">input</span>.<span class="ident">chars</span>().<span class="ident">collect</span>(),
-            <span class="ident">idx</span>: <span class="number">0</span>,
+    <span class="kw">fn </span>new(input: String) -&gt; <span class="self">Self </span>{
+        Parser {
+            input: input.chars().collect(),
+            idx: <span class="number">0</span>,
         }
     }
 
-    <span class="kw">fn</span> <span class="ident">munch</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
-        <span class="kw">while</span> <span class="self">self</span>.<span class="ident">idx</span> &lt; <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">len</span>() &amp;&amp; <span class="self">self</span>.<span class="ident">input</span>[<span class="self">self</span>.<span class="ident">idx</span>].<span class="ident">is_whitespace</span>() {
-            <span class="self">self</span>.<span class="ident">idx</span> += <span class="number">1</span>;
+    <span class="kw">fn </span>munch(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="kw">while </span><span class="self">self</span>.idx &lt; <span class="self">self</span>.input.len() &amp;&amp; <span class="self">self</span>.input[<span class="self">self</span>.idx].is_whitespace() {
+            <span class="self">self</span>.idx += <span class="number">1</span>;
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">parse_multiple</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Vec</span>&lt;<span class="ident">Sexp</span>&gt;, <span class="ident">anyhow::Error</span>&gt; {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">out</span> = <span class="ident">Vec::new</span>();
-        <span class="kw">loop</span> {
-            <span class="self">self</span>.<span class="ident">munch</span>();
-            <span class="kw">if</span> <span class="self">self</span>.<span class="ident">idx</span> &gt;= <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">len</span>() {
+    <span class="kw">pub fn </span>parse_multiple(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;Sexp&gt;, anyhow::Error&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>out = Vec::new();
+        <span class="kw">loop </span>{
+            <span class="self">self</span>.munch();
+            <span class="kw">if </span><span class="self">self</span>.idx &gt;= <span class="self">self</span>.input.len() {
                 <span class="kw">break</span>;
             }
-            <span class="kw">match</span> <span class="self">self</span>.<span class="ident">input</span>[<span class="self">self</span>.<span class="ident">idx</span>] {
-                <span class="string">&#39;)&#39;</span> | <span class="string">&#39;]&#39;</span> | <span class="string">&#39;}&#39;</span> =&gt; <span class="kw">break</span>,
-                <span class="kw">_</span> =&gt; <span class="ident">out</span>.<span class="ident">push</span>(<span class="self">self</span>.<span class="ident">parse_one</span>()<span class="question-mark">?</span>),
+            <span class="kw">match </span><span class="self">self</span>.input[<span class="self">self</span>.idx] {
+                <span class="string">&#39;)&#39; </span>| <span class="string">&#39;]&#39; </span>| <span class="string">&#39;}&#39; </span>=&gt; <span class="kw">break</span>,
+                <span class="kw">_ </span>=&gt; out.push(<span class="self">self</span>.parse_one()<span class="question-mark">?</span>),
             }
         }
 
-        <span class="prelude-val">Ok</span>(<span class="ident">out</span>)
+        <span class="prelude-val">Ok</span>(out)
     }
 
-    <span class="kw">fn</span> <span class="ident">parse_one</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Sexp</span>, <span class="ident">anyhow::Error</span>&gt; {
-        <span class="self">self</span>.<span class="ident">munch</span>();
-        <span class="kw">match</span> <span class="self">self</span>.<span class="ident">input</span>[<span class="self">self</span>.<span class="ident">idx</span>] {
-            <span class="ident">ch</span> @ <span class="string">&#39;[&#39;</span> | <span class="ident">ch</span> @ <span class="string">&#39;(&#39;</span> | <span class="ident">ch</span> @ <span class="string">&#39;{&#39;</span> =&gt; {
-                <span class="self">self</span>.<span class="ident">idx</span> += <span class="number">1</span>;
-                <span class="kw">let</span> <span class="ident">contents</span> = <span class="self">self</span>.<span class="ident">parse_multiple</span>()<span class="question-mark">?</span>;
-                <span class="self">self</span>.<span class="ident">munch</span>();
-                <span class="kw">if</span> <span class="self">self</span>.<span class="ident">idx</span> &gt;= <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">len</span>() || <span class="self">self</span>.<span class="ident">input</span>[<span class="self">self</span>.<span class="ident">idx</span>] != <span class="ident">closer</span>(<span class="ident">ch</span>) {
-                    <span class="macro">bail!</span>(<span class="string">&quot;unclosed {}&quot;</span>, <span class="ident">ch</span>);
+    <span class="kw">fn </span>parse_one(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Sexp, anyhow::Error&gt; {
+        <span class="self">self</span>.munch();
+        <span class="kw">match </span><span class="self">self</span>.input[<span class="self">self</span>.idx] {
+            ch @ <span class="string">&#39;[&#39; </span>| ch @ <span class="string">&#39;(&#39; </span>| ch @ <span class="string">&#39;{&#39; </span>=&gt; {
+                <span class="self">self</span>.idx += <span class="number">1</span>;
+                <span class="kw">let </span>contents = <span class="self">self</span>.parse_multiple()<span class="question-mark">?</span>;
+                <span class="self">self</span>.munch();
+                <span class="kw">if </span><span class="self">self</span>.idx &gt;= <span class="self">self</span>.input.len() || <span class="self">self</span>.input[<span class="self">self</span>.idx] != closer(ch) {
+                    <span class="macro">bail!</span>(<span class="string">&quot;unclosed {}&quot;</span>, ch);
                 }
-                <span class="self">self</span>.<span class="ident">idx</span> += <span class="number">1</span>;
-                <span class="prelude-val">Ok</span>(<span class="ident">Sexp::List</span>(<span class="ident">contents</span>, <span class="ident">ch</span>))
+                <span class="self">self</span>.idx += <span class="number">1</span>;
+                <span class="prelude-val">Ok</span>(Sexp::List(contents, ch))
             }
-            <span class="string">&#39;&quot;&#39;</span> =&gt; {
-                <span class="self">self</span>.<span class="ident">idx</span> += <span class="number">1</span>;
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">out</span> = <span class="ident">String::new</span>();
-                <span class="kw">while</span> <span class="self">self</span>.<span class="ident">idx</span> &lt; <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">len</span>() {
-                    <span class="kw">match</span> <span class="self">self</span>.<span class="ident">input</span>[<span class="self">self</span>.<span class="ident">idx</span>] {
-                        <span class="string">&#39;&quot;&#39;</span> =&gt; {
-                            <span class="self">self</span>.<span class="ident">idx</span> += <span class="number">1</span>;
-                            <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">Sexp::String</span>(<span class="ident">out</span>));
+            <span class="string">&#39;&quot;&#39; </span>=&gt; {
+                <span class="self">self</span>.idx += <span class="number">1</span>;
+                <span class="kw">let </span><span class="kw-2">mut </span>out = String::new();
+                <span class="kw">while </span><span class="self">self</span>.idx &lt; <span class="self">self</span>.input.len() {
+                    <span class="kw">match </span><span class="self">self</span>.input[<span class="self">self</span>.idx] {
+                        <span class="string">&#39;&quot;&#39; </span>=&gt; {
+                            <span class="self">self</span>.idx += <span class="number">1</span>;
+                            <span class="kw">return </span><span class="prelude-val">Ok</span>(Sexp::String(out));
                         }
-                        <span class="string">&#39;\\&#39;</span> =&gt; {
-                            <span class="self">self</span>.<span class="ident">idx</span> += <span class="number">1</span>;
-                            <span class="kw">if</span> <span class="self">self</span>.<span class="ident">idx</span> &gt;= <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">len</span>() {
+                        <span class="string">&#39;\\&#39; </span>=&gt; {
+                            <span class="self">self</span>.idx += <span class="number">1</span>;
+                            <span class="kw">if </span><span class="self">self</span>.idx &gt;= <span class="self">self</span>.input.len() {
                                 <span class="macro">bail!</span>(<span class="string">&quot;unexpected EOF after \\&quot;</span>)
                             }
-                            <span class="kw">match</span> <span class="self">self</span>.<span class="ident">input</span>[<span class="self">self</span>.<span class="ident">idx</span>] {
-                                <span class="string">&#39;n&#39;</span> =&gt; <span class="ident">out</span>.<span class="ident">push</span>(<span class="string">&#39;\n&#39;</span>),
-                                <span class="string">&#39;t&#39;</span> =&gt; <span class="ident">out</span>.<span class="ident">push</span>(<span class="string">&#39;\t&#39;</span>),
-                                <span class="string">&#39;&quot;&#39;</span> =&gt; <span class="ident">out</span>.<span class="ident">push</span>(<span class="string">&#39;&quot;&#39;</span>),
-                                <span class="string">&#39;\\&#39;</span> =&gt; <span class="ident">out</span>.<span class="ident">push</span>(<span class="string">&#39;\\&#39;</span>),
-                                <span class="kw">_</span> =&gt; <span class="macro">bail!</span>(<span class="string">&quot;unknown escape sequence&quot;</span>),
+                            <span class="kw">match </span><span class="self">self</span>.input[<span class="self">self</span>.idx] {
+                                <span class="string">&#39;n&#39; </span>=&gt; out.push(<span class="string">&#39;\n&#39;</span>),
+                                <span class="string">&#39;t&#39; </span>=&gt; out.push(<span class="string">&#39;\t&#39;</span>),
+                                <span class="string">&#39;&quot;&#39; </span>=&gt; out.push(<span class="string">&#39;&quot;&#39;</span>),
+                                <span class="string">&#39;\\&#39; </span>=&gt; out.push(<span class="string">&#39;\\&#39;</span>),
+                                <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(<span class="string">&quot;unknown escape sequence&quot;</span>),
                             }
-                            <span class="self">self</span>.<span class="ident">idx</span> += <span class="number">1</span>;
+                            <span class="self">self</span>.idx += <span class="number">1</span>;
                         }
-                        <span class="ident">ch</span> =&gt; {
-                            <span class="ident">out</span>.<span class="ident">push</span>(<span class="ident">ch</span>);
+                        ch =&gt; {
+                            out.push(ch);
                         }
                     }
-                    <span class="self">self</span>.<span class="ident">idx</span> += <span class="number">1</span>;
+                    <span class="self">self</span>.idx += <span class="number">1</span>;
                 }
                 <span class="macro">bail!</span>(<span class="string">&quot;unclosed &#39;\&quot;&#39;&quot;</span>);
             }
-            <span class="ident">ch</span> <span class="kw">if</span> <span class="ident"><span class="self">Self</span>::atom_char</span>(<span class="ident">ch</span>) =&gt; {
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">s</span> = <span class="ident">String::new</span>();
-                <span class="kw">while</span> <span class="self">self</span>.<span class="ident">idx</span> &lt; <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">len</span>() &amp;&amp; <span class="ident"><span class="self">Self</span>::atom_char</span>(<span class="self">self</span>.<span class="ident">input</span>[<span class="self">self</span>.<span class="ident">idx</span>]) {
-                    <span class="ident">s</span>.<span class="ident">push</span>(<span class="self">self</span>.<span class="ident">input</span>[<span class="self">self</span>.<span class="ident">idx</span>]);
-                    <span class="self">self</span>.<span class="ident">idx</span> += <span class="number">1</span>;
+            ch <span class="kw">if </span><span class="self">Self</span>::atom_char(ch) =&gt; {
+                <span class="kw">let </span><span class="kw-2">mut </span>s = String::new();
+                <span class="kw">while </span><span class="self">self</span>.idx &lt; <span class="self">self</span>.input.len() &amp;&amp; <span class="self">Self</span>::atom_char(<span class="self">self</span>.input[<span class="self">self</span>.idx]) {
+                    s.push(<span class="self">self</span>.input[<span class="self">self</span>.idx]);
+                    <span class="self">self</span>.idx += <span class="number">1</span>;
                 }
-                <span class="prelude-val">Ok</span>(<span class="ident">Sexp::Atom</span>(<span class="ident">s</span>))
+                <span class="prelude-val">Ok</span>(Sexp::Atom(s))
             }
-            <span class="kw">_</span> =&gt; <span class="macro">bail!</span>(<span class="string">&quot;unhandled: {:?}&quot;</span>, <span class="self">self</span>.<span class="ident">input</span>[<span class="self">self</span>.<span class="ident">idx</span>]),
+            <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(<span class="string">&quot;unhandled: {:?}&quot;</span>, <span class="self">self</span>.input[<span class="self">self</span>.idx]),
         }
     }
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">Sexp</span> {
-    <span class="ident">Atom</span>(<span class="ident">String</span>),
-    <span class="ident">List</span>(<span class="ident">Vec</span>&lt;<span class="ident">Sexp</span>&gt;, <span class="ident">char</span>),
-    <span class="ident">String</span>(<span class="ident">String</span>),
+<span class="attribute">#[derive(Debug, Clone)]</span>
+<span class="kw">pub enum </span>Sexp {
+    Atom(String),
+    List(Vec&lt;Sexp&gt;, char),
+    String(String),
 }
 
-<span class="kw">impl</span> <span class="ident">Sexp</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">expect_atom</span>(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">String</span>, <span class="ident">anyhow::Error</span>&gt; {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">Sexp::Atom</span>(<span class="ident">r</span>) =&gt; <span class="prelude-val">Ok</span>(<span class="ident">r</span>),
-            <span class="kw">_</span> =&gt; <span class="macro">bail!</span>(<span class="string">&quot;expected atom&quot;</span>),
+<span class="kw">impl </span>Sexp {
+    <span class="kw">pub fn </span>expect_atom(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;String, anyhow::Error&gt; {
+        <span class="kw">match </span><span class="self">self </span>{
+            Sexp::Atom(r) =&gt; <span class="prelude-val">Ok</span>(r),
+            <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(<span class="string">&quot;expected atom&quot;</span>),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">expect_list</span>(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(<span class="ident">Vec</span>&lt;<span class="ident">Sexp</span>&gt;, <span class="ident">char</span>), <span class="ident">anyhow::Error</span>&gt; {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">Sexp::List</span>(<span class="ident">v</span>, <span class="ident">ch</span>) =&gt; <span class="prelude-val">Ok</span>((<span class="ident">v</span>, <span class="ident">ch</span>)),
-            <span class="kw">_</span> =&gt; <span class="macro">bail!</span>(<span class="string">&quot;expected list&quot;</span>),
+    <span class="kw">pub fn </span>expect_list(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(Vec&lt;Sexp&gt;, char), anyhow::Error&gt; {
+        <span class="kw">match </span><span class="self">self </span>{
+            Sexp::List(v, ch) =&gt; <span class="prelude-val">Ok</span>((v, ch)),
+            <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(<span class="string">&quot;expected list&quot;</span>),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">expect_string</span>(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">String</span>, <span class="ident">anyhow::Error</span>&gt; {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">Sexp::String</span>(<span class="ident">r</span>) =&gt; <span class="prelude-val">Ok</span>(<span class="ident">r</span>),
-            <span class="kw">_</span> =&gt; <span class="macro">bail!</span>(<span class="string">&quot;expected string&quot;</span>),
+    <span class="kw">pub fn </span>expect_string(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;String, anyhow::Error&gt; {
+        <span class="kw">match </span><span class="self">self </span>{
+            Sexp::String(r) =&gt; <span class="prelude-val">Ok</span>(r),
+            <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(<span class="string">&quot;expected string&quot;</span>),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">parse</span>(<span class="ident">s</span>: <span class="ident">String</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Vec</span>&lt;<span class="ident">Sexp</span>&gt;, <span class="ident">anyhow::Error</span>&gt; {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">p</span> = <span class="ident">Parser::new</span>(<span class="ident">s</span>);
-        <span class="ident">p</span>.<span class="ident">parse_multiple</span>()
+    <span class="kw">pub fn </span>parse(s: String) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;Sexp&gt;, anyhow::Error&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>p = Parser::new(s);
+        p.parse_multiple()
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">format</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">String</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">out</span> = <span class="ident">String::new</span>();
-        <span class="self">self</span>.<span class="ident">write</span>(<span class="kw-2">&amp;mut</span> <span class="ident">out</span>);
-        <span class="ident">out</span>
+    <span class="kw">pub fn </span>format(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
+        <span class="kw">let </span><span class="kw-2">mut </span>out = String::new();
+        <span class="self">self</span>.write(<span class="kw-2">&amp;mut </span>out);
+        out
     }
 
-    <span class="kw">fn</span> <span class="ident">write</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">s</span>: <span class="kw-2">&amp;mut</span> <span class="ident">String</span>) {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">Sexp::String</span>(<span class="ident">st</span>) =&gt; {
-                <span class="ident">s</span>.<span class="ident">push</span>(<span class="string">&#39;&quot;&#39;</span>);
-                <span class="kw">for</span> <span class="ident">ch</span> <span class="kw">in</span> <span class="ident">st</span>.<span class="ident">chars</span>() {
-                    <span class="kw">match</span> <span class="ident">ch</span> {
-                        <span class="string">&#39;\n&#39;</span> =&gt; <span class="ident">s</span>.<span class="ident">push_str</span>(<span class="string">&quot;\\n&quot;</span>),
-                        <span class="string">&#39;&quot;&#39;</span> =&gt; <span class="ident">s</span>.<span class="ident">push_str</span>(<span class="string">&quot;\\\&quot;&quot;</span>),
-                        <span class="string">&#39;\t&#39;</span> =&gt; <span class="ident">s</span>.<span class="ident">push_str</span>(<span class="string">&quot;\\t&quot;</span>),
-                        <span class="string">&#39;\\&#39;</span> =&gt; <span class="ident">s</span>.<span class="ident">push_str</span>(<span class="string">&quot;\\\\&quot;</span>),
-                        <span class="ident">ch</span> =&gt; <span class="ident">s</span>.<span class="ident">push</span>(<span class="ident">ch</span>),
+    <span class="kw">fn </span>write(<span class="kw-2">&amp;</span><span class="self">self</span>, s: <span class="kw-2">&amp;mut </span>String) {
+        <span class="kw">match </span><span class="self">self </span>{
+            Sexp::String(st) =&gt; {
+                s.push(<span class="string">&#39;&quot;&#39;</span>);
+                <span class="kw">for </span>ch <span class="kw">in </span>st.chars() {
+                    <span class="kw">match </span>ch {
+                        <span class="string">&#39;\n&#39; </span>=&gt; s.push_str(<span class="string">&quot;\\n&quot;</span>),
+                        <span class="string">&#39;&quot;&#39; </span>=&gt; s.push_str(<span class="string">&quot;\\\&quot;&quot;</span>),
+                        <span class="string">&#39;\t&#39; </span>=&gt; s.push_str(<span class="string">&quot;\\t&quot;</span>),
+                        <span class="string">&#39;\\&#39; </span>=&gt; s.push_str(<span class="string">&quot;\\\\&quot;</span>),
+                        ch =&gt; s.push(ch),
                     }
                 }
-                <span class="ident">s</span>.<span class="ident">push</span>(<span class="string">&#39;&quot;&#39;</span>);
+                s.push(<span class="string">&#39;&quot;&#39;</span>);
             }
-            <span class="ident">Sexp::Atom</span>(<span class="ident">atom</span>) =&gt; <span class="ident">s</span>.<span class="ident">push_str</span>(<span class="ident">atom</span>),
-            <span class="ident">Sexp::List</span>(<span class="ident">v</span>, <span class="ident">ch</span>) =&gt; {
-                <span class="ident">s</span>.<span class="ident">push</span>(<span class="kw-2">*</span><span class="ident">ch</span>);
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">space</span> = <span class="string">&quot;&quot;</span>;
-                <span class="kw">for</span> <span class="ident">sexp</span> <span class="kw">in</span> <span class="ident">v</span> {
-                    <span class="ident">s</span>.<span class="ident">push_str</span>(<span class="ident">space</span>);
-                    <span class="ident">space</span> = <span class="string">&quot; &quot;</span>;
-                    <span class="ident"><span class="self">Self</span>::write</span>(<span class="ident">sexp</span>, <span class="ident">s</span>);
+            Sexp::Atom(atom) =&gt; s.push_str(atom),
+            Sexp::List(v, ch) =&gt; {
+                s.push(<span class="kw-2">*</span>ch);
+                <span class="kw">let </span><span class="kw-2">mut </span>space = <span class="string">&quot;&quot;</span>;
+                <span class="kw">for </span>sexp <span class="kw">in </span>v {
+                    s.push_str(space);
+                    space = <span class="string">&quot; &quot;</span>;
+                    <span class="self">Self</span>::write(sexp, s);
                 }
-                <span class="ident">s</span>.<span class="ident">push</span>(<span class="ident">closer</span>(<span class="kw-2">*</span><span class="ident">ch</span>));
+                s.push(closer(<span class="kw-2">*</span>ch));
             }
         }
     }
 }
 
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">FromSexp</span>: <span class="ident">Sized</span> {
-    <span class="kw">fn</span> <span class="ident">from_sexp</span>(<span class="ident">s</span>: <span class="ident">Sexp</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="ident">anyhow::Error</span>&gt;;
+<span class="kw">pub trait </span>FromSexp: Sized {
+    <span class="kw">fn </span>from_sexp(s: Sexp) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, anyhow::Error&gt;;
 }
 
-<span class="kw">impl</span> <span class="ident">FromSexp</span> <span class="kw">for</span> <span class="ident">Sexp</span> {
-    <span class="kw">fn</span> <span class="ident">from_sexp</span>(<span class="ident">s</span>: <span class="ident">Sexp</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="ident">anyhow::Error</span>&gt; {
-        <span class="prelude-val">Ok</span>(<span class="ident">s</span>)
+<span class="kw">impl </span>FromSexp <span class="kw">for </span>Sexp {
+    <span class="kw">fn </span>from_sexp(s: Sexp) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, anyhow::Error&gt; {
+        <span class="prelude-val">Ok</span>(s)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">ToSexp</span> <span class="kw">for</span> <span class="ident">Sexp</span> {
-    <span class="kw">fn</span> <span class="ident">to_sexp</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Sexp</span> {
-        <span class="self">self</span>.<span class="ident">clone</span>()
+<span class="kw">impl </span>ToSexp <span class="kw">for </span>Sexp {
+    <span class="kw">fn </span>to_sexp(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Sexp {
+        <span class="self">self</span>.clone()
     }
 }
 
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">ToSexp</span> {
-    <span class="kw">fn</span> <span class="ident">to_sexp</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Sexp</span>;
+<span class="kw">pub trait </span>ToSexp {
+    <span class="kw">fn </span>to_sexp(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Sexp;
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">I</span>: <span class="ident">FromSexp</span>&gt; <span class="ident">FromSexp</span> <span class="kw">for</span> <span class="ident">Vec</span>&lt;<span class="ident">I</span>&gt; {
-    <span class="kw">fn</span> <span class="ident">from_sexp</span>(<span class="ident">s</span>: <span class="ident">Sexp</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="ident">anyhow::Error</span>&gt; {
-        <span class="kw">let</span> (<span class="ident">v</span>, <span class="kw">_</span>) = <span class="ident">s</span>.<span class="ident">expect_list</span>()<span class="question-mark">?</span>;
-        <span class="ident">v</span>.<span class="ident">into_iter</span>()
-            .<span class="ident">map</span>(|<span class="ident">s</span>| <span class="ident">I::from_sexp</span>(<span class="ident">s</span>))
-            .<span class="ident">collect</span>::&lt;<span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="kw">_</span>&gt;&gt;()
+<span class="kw">impl</span>&lt;I: FromSexp&gt; FromSexp <span class="kw">for </span>Vec&lt;I&gt; {
+    <span class="kw">fn </span>from_sexp(s: Sexp) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, anyhow::Error&gt; {
+        <span class="kw">let </span>(v, <span class="kw">_</span>) = s.expect_list()<span class="question-mark">?</span>;
+        v.into_iter()
+            .map(|s| I::from_sexp(s))
+            .collect::&lt;<span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="kw">_</span>&gt;&gt;()
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">I</span>: <span class="ident">ToSexp</span>&gt; <span class="ident">ToSexp</span> <span class="kw">for</span> <span class="ident">Vec</span>&lt;<span class="ident">I</span>&gt; {
-    <span class="kw">fn</span> <span class="ident">to_sexp</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Sexp</span> {
-        <span class="ident">Sexp::List</span>(<span class="self">self</span>.<span class="ident">iter</span>().<span class="ident">map</span>(|<span class="ident">i</span>| <span class="ident">i</span>.<span class="ident">to_sexp</span>()).<span class="ident">collect</span>(), <span class="string">&#39;[&#39;</span>)
+<span class="kw">impl</span>&lt;I: ToSexp&gt; ToSexp <span class="kw">for </span>Vec&lt;I&gt; {
+    <span class="kw">fn </span>to_sexp(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Sexp {
+        Sexp::List(<span class="self">self</span>.iter().map(|i| i.to_sexp()).collect(), <span class="string">&#39;[&#39;</span>)
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">A</span>: <span class="ident">FromSexp</span>, <span class="ident">B</span>: <span class="ident">FromSexp</span>&gt; <span class="ident">FromSexp</span> <span class="kw">for</span> (<span class="ident">A</span>, <span class="ident">B</span>) {
-    <span class="kw">fn</span> <span class="ident">from_sexp</span>(<span class="ident">s</span>: <span class="ident">Sexp</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="ident">anyhow::Error</span>&gt; {
-        <span class="kw">let</span> (<span class="ident">v</span>, <span class="kw">_</span>) = <span class="ident">s</span>.<span class="ident">expect_list</span>()<span class="question-mark">?</span>;
-        <span class="kw">if</span> <span class="ident">v</span>.<span class="ident">len</span>() != <span class="number">2</span> {
+<span class="kw">impl</span>&lt;A: FromSexp, B: FromSexp&gt; FromSexp <span class="kw">for </span>(A, B) {
+    <span class="kw">fn </span>from_sexp(s: Sexp) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, anyhow::Error&gt; {
+        <span class="kw">let </span>(v, <span class="kw">_</span>) = s.expect_list()<span class="question-mark">?</span>;
+        <span class="kw">if </span>v.len() != <span class="number">2 </span>{
             <span class="macro">bail!</span>(<span class="string">&quot;expected pair&quot;</span>);
         }
-        <span class="comment">// TODO: remove clone</span>
-        <span class="prelude-val">Ok</span>((<span class="ident">A::from_sexp</span>(<span class="ident">v</span>[<span class="number">0</span>].<span class="ident">clone</span>())<span class="question-mark">?</span>, <span class="ident">B::from_sexp</span>(<span class="ident">v</span>[<span class="number">1</span>].<span class="ident">clone</span>())<span class="question-mark">?</span>))
+        <span class="comment">// TODO: remove clone
+        </span><span class="prelude-val">Ok</span>((A::from_sexp(v[<span class="number">0</span>].clone())<span class="question-mark">?</span>, B::from_sexp(v[<span class="number">1</span>].clone())<span class="question-mark">?</span>))
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">A</span>: <span class="ident">ToSexp</span>, <span class="ident">B</span>: <span class="ident">ToSexp</span>&gt; <span class="ident">ToSexp</span> <span class="kw">for</span> (<span class="ident">A</span>, <span class="ident">B</span>) {
-    <span class="kw">fn</span> <span class="ident">to_sexp</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Sexp</span> {
-        <span class="ident">Sexp::List</span>(<span class="macro">vec!</span>[<span class="self">self</span>.<span class="number">0</span>.<span class="ident">to_sexp</span>(), <span class="self">self</span>.<span class="number">1</span>.<span class="ident">to_sexp</span>()], <span class="string">&#39;(&#39;</span>)
+<span class="kw">impl</span>&lt;A: ToSexp, B: ToSexp&gt; ToSexp <span class="kw">for </span>(A, B) {
+    <span class="kw">fn </span>to_sexp(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Sexp {
+        Sexp::List(<span class="macro">vec!</span>[<span class="self">self</span>.<span class="number">0</span>.to_sexp(), <span class="self">self</span>.<span class="number">1</span>.to_sexp()], <span class="string">&#39;(&#39;</span>)
     }
 }
 
-<span class="macro">macro_rules!</span> <span class="ident">impl_from_fromstr</span> {
-    (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span>:<span class="ident">ident</span>) =&gt; {
-        <span class="kw">impl</span> <span class="ident">FromSexp</span> <span class="kw">for</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span> {
-            <span class="kw">fn</span> <span class="ident">from_sexp</span>(<span class="ident">s</span>: <span class="ident">Sexp</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="ident">anyhow::Error</span>&gt; {
-                <span class="prelude-val">Ok</span>(<span class="ident">s</span>.<span class="ident">expect_atom</span>()<span class="question-mark">?</span>.<span class="ident">parse</span>::&lt;<span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span>&gt;()<span class="question-mark">?</span>)
+<span class="macro">macro_rules!</span> impl_from_fromstr {
+    (<span class="macro-nonterminal">$name</span>:ident) =&gt; {
+        <span class="kw">impl </span>FromSexp <span class="kw">for </span><span class="macro-nonterminal">$name </span>{
+            <span class="kw">fn </span>from_sexp(s: Sexp) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, anyhow::Error&gt; {
+                <span class="prelude-val">Ok</span>(s.expect_atom()<span class="question-mark">?</span>.parse::&lt;<span class="macro-nonterminal">$name</span>&gt;()<span class="question-mark">?</span>)
             }
         }
 
-        <span class="kw">impl</span> <span class="ident">ToSexp</span> <span class="kw">for</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span> {
-            <span class="kw">fn</span> <span class="ident">to_sexp</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Sexp</span> {
-                <span class="ident">Sexp::Atom</span>(<span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, <span class="self">self</span>))
+        <span class="kw">impl </span>ToSexp <span class="kw">for </span><span class="macro-nonterminal">$name </span>{
+            <span class="kw">fn </span>to_sexp(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Sexp {
+                Sexp::Atom(<span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, <span class="self">self</span>))
             }
         }
     };
 }
 
-<span class="macro">impl_from_fromstr!</span>(<span class="ident">i64</span>);
-<span class="macro">impl_from_fromstr!</span>(<span class="ident">usize</span>);
-<span class="macro">impl_from_fromstr!</span>(<span class="ident">String</span>);
+<span class="macro">impl_from_fromstr!</span>(i64);
+<span class="macro">impl_from_fromstr!</span>(usize);
+<span class="macro">impl_from_fromstr!</span>(String);
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>)]</span>
-<span class="kw">struct</span> <span class="ident">LitString</span>(<span class="ident">String</span>);
+<span class="attribute">#[derive(Debug, Clone)]</span>
+<span class="kw">struct </span>LitString(String);
 
-<span class="kw">impl</span> <span class="ident">FromSexp</span> <span class="kw">for</span> <span class="ident">LitString</span> {
-    <span class="kw">fn</span> <span class="ident">from_sexp</span>(<span class="ident">s</span>: <span class="ident">Sexp</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="ident">anyhow::Error</span>&gt; {
-        <span class="prelude-val">Ok</span>(<span class="ident">LitString</span>(<span class="ident">s</span>.<span class="ident">expect_string</span>()<span class="question-mark">?</span>.<span class="ident">parse</span>::&lt;<span class="ident">String</span>&gt;()<span class="question-mark">?</span>))
+<span class="kw">impl </span>FromSexp <span class="kw">for </span>LitString {
+    <span class="kw">fn </span>from_sexp(s: Sexp) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, anyhow::Error&gt; {
+        <span class="prelude-val">Ok</span>(LitString(s.expect_string()<span class="question-mark">?</span>.parse::&lt;String&gt;()<span class="question-mark">?</span>))
     }
 }
 
-<span class="kw">impl</span> <span class="ident">ToSexp</span> <span class="kw">for</span> <span class="ident">LitString</span> {
-    <span class="kw">fn</span> <span class="ident">to_sexp</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Sexp</span> {
-        <span class="ident">Sexp::String</span>(<span class="self">self</span>.<span class="number">0</span>.<span class="ident">to_string</span>())
+<span class="kw">impl </span>ToSexp <span class="kw">for </span>LitString {
+    <span class="kw">fn </span>to_sexp(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Sexp {
+        Sexp::String(<span class="self">self</span>.<span class="number">0</span>.to_string())
     }
 }
 
-<span class="kw">impl</span> <span class="ident">ToSexp</span> <span class="kw">for</span> () {
-    <span class="kw">fn</span> <span class="ident">to_sexp</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Sexp</span> {
-        <span class="ident">Sexp::List</span>(<span class="ident">Vec::new</span>(), <span class="string">&#39;(&#39;</span>)
+<span class="kw">impl </span>ToSexp <span class="kw">for </span>() {
+    <span class="kw">fn </span>to_sexp(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Sexp {
+        Sexp::List(Vec::new(), <span class="string">&#39;(&#39;</span>)
     }
 }
 
-<span class="attribute">#[<span class="ident">test</span>]</span>
-<span class="kw">fn</span> <span class="ident">test_parse</span>() {
-    <span class="kw">for</span> <span class="ident">s</span> <span class="kw">in</span> [<span class="string">&quot;1&quot;</span>, <span class="string">&quot;(1)&quot;</span>, <span class="string">&quot;(plus (one two))&quot;</span>, <span class="string">&quot;(+ 1 2)&quot;</span>, <span class="string">&quot;\&quot;foo\&quot;&quot;</span>] {
+<span class="attribute">#[test]</span>
+<span class="kw">fn </span>test_parse() {
+    <span class="kw">for </span>s <span class="kw">in </span>[<span class="string">&quot;1&quot;</span>, <span class="string">&quot;(1)&quot;</span>, <span class="string">&quot;(plus (one two))&quot;</span>, <span class="string">&quot;(+ 1 2)&quot;</span>, <span class="string">&quot;\&quot;foo\&quot;&quot;</span>] {
         <span class="macro">assert_eq!</span>(
-            <span class="ident">s</span>,
-            <span class="ident">Sexp::parse</span>(<span class="ident">s</span>.<span class="ident">into</span>())
-                .<span class="ident">unwrap</span>()
-                .<span class="ident">into_iter</span>()
-                .<span class="ident">map</span>(|<span class="ident">s</span>| <span class="ident">s</span>.<span class="ident">format</span>())
-                .<span class="ident">collect</span>::&lt;<span class="ident">Vec</span>&lt;<span class="ident">String</span>&gt;&gt;()
-                .<span class="ident">join</span>(<span class="string">&quot; &quot;</span>)
+            s,
+            Sexp::parse(s.into())
+                .unwrap()
+                .into_iter()
+                .map(|s| s.format())
+                .collect::&lt;Vec&lt;String&gt;&gt;()
+                .join(<span class="string">&quot; &quot;</span>)
         );
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="relalg" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (75b7e52e9 2022-08-13)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="relalg" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

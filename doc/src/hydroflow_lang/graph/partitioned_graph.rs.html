@@ -269,276 +269,276 @@
 <span id="269">269</span>
 <span id="270">270</span>
 <span id="271">271</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">proc_macro2</span>::{<span class="ident">Ident</span>, <span class="ident">Literal</span>, <span class="ident">Span</span>, <span class="ident">TokenStream</span>};
-<span class="kw">use</span> <span class="ident">quote</span>::{<span class="ident">quote</span>, <span class="ident">ToTokens</span>};
-<span class="kw">use</span> <span class="ident">slotmap</span>::{<span class="ident">Key</span>, <span class="ident">SecondaryMap</span>, <span class="ident">SlotMap</span>};
-<span class="kw">use</span> <span class="ident">syn::spanned::Spanned</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>proc_macro2::{Ident, Literal, Span, TokenStream};
+<span class="kw">use </span>quote::{quote, ToTokens};
+<span class="kw">use </span>slotmap::{Key, SecondaryMap, SlotMap};
+<span class="kw">use </span>syn::spanned::Spanned;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::flat_graph::FlatGraph</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::ops</span>::{<span class="ident">WriteContextArgs</span>, <span class="ident">WriteIteratorArgs</span>, <span class="ident">OPERATORS</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::serde_graph::SerdeGraph</span>;
-<span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">node_color</span>, <span class="ident">Color</span>, <span class="ident">EdgePortRef</span>, <span class="ident">GraphNodeId</span>, <span class="ident">GraphSubgraphId</span>, <span class="ident">Node</span>, <span class="ident">OutboundEdges</span>};
+<span class="kw">use </span><span class="kw">super</span>::flat_graph::FlatGraph;
+<span class="kw">use </span><span class="kw">super</span>::ops::{WriteContextArgs, WriteIteratorArgs, OPERATORS};
+<span class="kw">use </span><span class="kw">super</span>::serde_graph::SerdeGraph;
+<span class="kw">use super</span>::{node_color, Color, EdgePortRef, GraphNodeId, GraphSubgraphId, Node, OutboundEdges};
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Default</span>)]</span>
-<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">dead_code</span>)]</span> <span class="comment">// TODO(mingwei): remove when no longer needed.</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">PartitionedGraph</span> {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">nodes</span>: <span class="ident">SlotMap</span>&lt;<span class="ident">GraphNodeId</span>, <span class="ident">Node</span>&gt;,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">preds</span>: <span class="ident">SecondaryMap</span>&lt;<span class="ident">GraphNodeId</span>, <span class="ident">OutboundEdges</span>&gt;,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">succs</span>: <span class="ident">SecondaryMap</span>&lt;<span class="ident">GraphNodeId</span>, <span class="ident">OutboundEdges</span>&gt;,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">node_subgraph</span>: <span class="ident">SecondaryMap</span>&lt;<span class="ident">GraphNodeId</span>, <span class="ident">GraphSubgraphId</span>&gt;,
+<span class="attribute">#[derive(Default)]</span>
+<span class="attribute">#[allow(dead_code)]</span> <span class="comment">// TODO(mingwei): remove when no longer needed.
+</span><span class="kw">pub struct </span>PartitionedGraph {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) nodes: SlotMap&lt;GraphNodeId, Node&gt;,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) preds: SecondaryMap&lt;GraphNodeId, OutboundEdges&gt;,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) succs: SecondaryMap&lt;GraphNodeId, OutboundEdges&gt;,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) node_subgraph: SecondaryMap&lt;GraphNodeId, GraphSubgraphId&gt;,
 
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">subgraph_nodes</span>: <span class="ident">SlotMap</span>&lt;<span class="ident">GraphSubgraphId</span>, <span class="ident">Vec</span>&lt;<span class="ident">GraphNodeId</span>&gt;&gt;,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">subgraph_recv_handoffs</span>: <span class="ident">SecondaryMap</span>&lt;<span class="ident">GraphSubgraphId</span>, <span class="ident">Vec</span>&lt;<span class="ident">GraphNodeId</span>&gt;&gt;,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">subgraph_send_handoffs</span>: <span class="ident">SecondaryMap</span>&lt;<span class="ident">GraphSubgraphId</span>, <span class="ident">Vec</span>&lt;<span class="ident">GraphNodeId</span>&gt;&gt;,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) subgraph_nodes: SlotMap&lt;GraphSubgraphId, Vec&lt;GraphNodeId&gt;&gt;,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) subgraph_recv_handoffs: SecondaryMap&lt;GraphSubgraphId, Vec&lt;GraphNodeId&gt;&gt;,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) subgraph_send_handoffs: SecondaryMap&lt;GraphSubgraphId, Vec&lt;GraphNodeId&gt;&gt;,
 }
-<span class="kw">impl</span> <span class="ident">PartitionedGraph</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="self">Self</span> {
-        <span class="ident">Default::default</span>()
+<span class="kw">impl </span>PartitionedGraph {
+    <span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
+        Default::default()
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_flat_graph</span>(<span class="ident">flat_graph</span>: <span class="ident">FlatGraph</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident">flat_graph</span>.<span class="ident">into</span>()
+    <span class="kw">pub fn </span>from_flat_graph(flat_graph: FlatGraph) -&gt; <span class="self">Self </span>{
+        flat_graph.into()
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">edges</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">impl</span> <span class="lifetime">&#39;_</span> + <span class="ident">Iterator</span>&lt;<span class="ident">Item</span> = (<span class="ident">EdgePortRef</span>, <span class="ident">EdgePortRef</span>)&gt; {
-        <span class="ident"><span class="kw">super</span>::iter_edges</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">succs</span>)
+    <span class="kw">pub fn </span>edges(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;_ </span>+ Iterator&lt;Item = (EdgePortRef, EdgePortRef)&gt; {
+        <span class="kw">super</span>::iter_edges(<span class="kw-2">&amp;</span><span class="self">self</span>.succs)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">serde_string</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">String</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">string</span> = <span class="ident">String::new</span>();
-        <span class="self">self</span>.<span class="ident">write_serde_graph</span>(<span class="kw-2">&amp;mut</span> <span class="ident">string</span>).<span class="ident">unwrap</span>();
-        <span class="ident">string</span>
+    <span class="kw">pub fn </span>serde_string(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
+        <span class="kw">let </span><span class="kw-2">mut </span>string = String::new();
+        <span class="self">self</span>.write_serde_graph(<span class="kw-2">&amp;mut </span>string).unwrap();
+        string
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">node_id_as_string</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">node_id</span>: <span class="ident">GraphNodeId</span>, <span class="ident">is_pred</span>: <span class="ident">bool</span>) -&gt; <span class="ident">String</span> {
-        <span class="kw">match</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">nodes</span>[<span class="ident">node_id</span>] {
-            <span class="ident">Node::Operator</span>(<span class="kw">_</span>) =&gt; <span class="macro">format!</span>(<span class="string">&quot;op_{:?}&quot;</span>, <span class="ident">node_id</span>.<span class="ident">data</span>()),
-            <span class="ident">Node::Handoff</span> =&gt; <span class="macro">format!</span>(
+    <span class="kw">pub fn </span>node_id_as_string(<span class="kw-2">&amp;</span><span class="self">self</span>, node_id: GraphNodeId, is_pred: bool) -&gt; String {
+        <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.nodes[node_id] {
+            Node::Operator(<span class="kw">_</span>) =&gt; <span class="macro">format!</span>(<span class="string">&quot;op_{:?}&quot;</span>, node_id.data()),
+            Node::Handoff =&gt; <span class="macro">format!</span>(
                 <span class="string">&quot;hoff_{:?}_{}&quot;</span>,
-                <span class="ident">node_id</span>.<span class="ident">data</span>(),
-                <span class="kw">if</span> <span class="ident">is_pred</span> { <span class="string">&quot;recv&quot;</span> } <span class="kw">else</span> { <span class="string">&quot;send&quot;</span> }
+                node_id.data(),
+                <span class="kw">if </span>is_pred { <span class="string">&quot;recv&quot; </span>} <span class="kw">else </span>{ <span class="string">&quot;send&quot; </span>}
             ),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">node_id_as_ident</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">node_id</span>: <span class="ident">GraphNodeId</span>, <span class="ident">is_pred</span>: <span class="ident">bool</span>) -&gt; <span class="ident">Ident</span> {
-        <span class="kw">let</span> <span class="ident">name</span> = <span class="self">self</span>.<span class="ident">node_id_as_string</span>(<span class="ident">node_id</span>, <span class="ident">is_pred</span>);
-        <span class="ident">Ident::new</span>(<span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">name</span>, <span class="self">self</span>.<span class="ident">nodes</span>[<span class="ident">node_id</span>].<span class="ident">span</span>())
+    <span class="kw">pub fn </span>node_id_as_ident(<span class="kw-2">&amp;</span><span class="self">self</span>, node_id: GraphNodeId, is_pred: bool) -&gt; Ident {
+        <span class="kw">let </span>name = <span class="self">self</span>.node_id_as_string(node_id, is_pred);
+        Ident::new(<span class="kw-2">&amp;*</span>name, <span class="self">self</span>.nodes[node_id].span())
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">as_code</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">root</span>: <span class="ident">TokenStream</span>) -&gt; <span class="ident">TokenStream</span> {
-        <span class="kw">let</span> <span class="ident">handoffs</span> = <span class="self">self</span>
-            .<span class="ident">nodes</span>
-            .<span class="ident">iter</span>()
-            .<span class="ident">filter</span>(|(<span class="ident">_node_id</span>, <span class="ident">node</span>)| <span class="macro">matches!</span>(<span class="ident">node</span>, <span class="ident">Node::Handoff</span>))
-            .<span class="ident">map</span>(|(<span class="ident">node_id</span>, <span class="ident">_node</span>)| {
-                <span class="kw">let</span> <span class="ident">ident_send</span> = <span class="ident">Ident::new</span>(
-                    <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="macro">format!</span>(<span class="string">&quot;hoff_{:?}_send&quot;</span>, <span class="ident">node_id</span>.<span class="ident">data</span>()),
-                    <span class="ident">Span::call_site</span>(),
+    <span class="kw">pub fn </span>as_code(<span class="kw-2">&amp;</span><span class="self">self</span>, root: TokenStream) -&gt; TokenStream {
+        <span class="kw">let </span>handoffs = <span class="self">self
+            </span>.nodes
+            .iter()
+            .filter(|(_node_id, node)| <span class="macro">matches!</span>(node, Node::Handoff))
+            .map(|(node_id, _node)| {
+                <span class="kw">let </span>ident_send = Ident::new(
+                    <span class="kw-2">&amp;*</span><span class="macro">format!</span>(<span class="string">&quot;hoff_{:?}_send&quot;</span>, node_id.data()),
+                    Span::call_site(),
                 );
-                <span class="kw">let</span> <span class="ident">ident_recv</span> = <span class="ident">Ident::new</span>(
-                    <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="macro">format!</span>(<span class="string">&quot;hoff_{:?}_recv&quot;</span>, <span class="ident">node_id</span>.<span class="ident">data</span>()),
-                    <span class="ident">Span::call_site</span>(),
+                <span class="kw">let </span>ident_recv = Ident::new(
+                    <span class="kw-2">&amp;*</span><span class="macro">format!</span>(<span class="string">&quot;hoff_{:?}_recv&quot;</span>, node_id.data()),
+                    Span::call_site(),
                 );
-                <span class="kw">let</span> <span class="ident">hoff_name</span> = <span class="ident">Literal::string</span>(<span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="macro">format!</span>(<span class="string">&quot;handoff {:?}&quot;</span>, <span class="ident">node_id</span>));
+                <span class="kw">let </span>hoff_name = Literal::string(<span class="kw-2">&amp;*</span><span class="macro">format!</span>(<span class="string">&quot;handoff {:?}&quot;</span>, node_id));
                 <span class="macro">quote!</span> {
-                    <span class="kw">let</span> (#<span class="ident">ident_send</span>, #<span class="ident">ident_recv</span>) =
-                        <span class="ident">df</span>.<span class="ident">make_edge</span>::&lt;<span class="kw">_</span>, #<span class="ident">root::scheduled::handoff::VecHandoff</span>&lt;<span class="kw">_</span>&gt;&gt;(#<span class="ident">hoff_name</span>);
+                    <span class="kw">let </span>(#ident_send, #ident_recv) =
+                        df.make_edge::&lt;<span class="kw">_</span>, #root::scheduled::handoff::VecHandoff&lt;<span class="kw">_</span>&gt;&gt;(#hoff_name);
                 }
             });
 
-        <span class="kw">let</span> <span class="ident">subgraphs</span> = <span class="self">self</span>
-            .<span class="ident">subgraph_nodes</span>
-            .<span class="ident">iter</span>()
-            .<span class="ident">map</span>(|(<span class="ident">subgraph_id</span>, <span class="ident">subgraph_nodes</span>)| {
-                <span class="kw">let</span> <span class="ident">recv_ports</span>: <span class="ident">Vec</span>&lt;<span class="ident">Ident</span>&gt; = <span class="self">self</span>.<span class="ident">subgraph_recv_handoffs</span>[<span class="ident">subgraph_id</span>]
-                    .<span class="ident">iter</span>()
-                    .<span class="ident">map</span>(|<span class="kw-2">&amp;</span><span class="ident">hoff_id</span>| <span class="self">self</span>.<span class="ident">node_id_as_ident</span>(<span class="ident">hoff_id</span>, <span class="bool-val">true</span>))
-                    .<span class="ident">collect</span>();
-                <span class="kw">let</span> <span class="ident">send_ports</span>: <span class="ident">Vec</span>&lt;<span class="ident">Ident</span>&gt; = <span class="self">self</span>.<span class="ident">subgraph_send_handoffs</span>[<span class="ident">subgraph_id</span>]
-                    .<span class="ident">iter</span>()
-                    .<span class="ident">map</span>(|<span class="kw-2">&amp;</span><span class="ident">hoff_id</span>| <span class="self">self</span>.<span class="ident">node_id_as_ident</span>(<span class="ident">hoff_id</span>, <span class="bool-val">false</span>))
-                    .<span class="ident">collect</span>();
+        <span class="kw">let </span>subgraphs = <span class="self">self
+            </span>.subgraph_nodes
+            .iter()
+            .map(|(subgraph_id, subgraph_nodes)| {
+                <span class="kw">let </span>recv_ports: Vec&lt;Ident&gt; = <span class="self">self</span>.subgraph_recv_handoffs[subgraph_id]
+                    .iter()
+                    .map(|<span class="kw-2">&amp;</span>hoff_id| <span class="self">self</span>.node_id_as_ident(hoff_id, <span class="bool-val">true</span>))
+                    .collect();
+                <span class="kw">let </span>send_ports: Vec&lt;Ident&gt; = <span class="self">self</span>.subgraph_send_handoffs[subgraph_id]
+                    .iter()
+                    .map(|<span class="kw-2">&amp;</span>hoff_id| <span class="self">self</span>.node_id_as_ident(hoff_id, <span class="bool-val">false</span>))
+                    .collect();
 
-                <span class="kw">let</span> <span class="ident">recv_port_code</span> = <span class="ident">recv_ports</span>
-                    .<span class="ident">iter</span>()
-                    .<span class="ident">map</span>(|<span class="ident">ident</span>| <span class="macro">quote!</span> { <span class="kw">let</span> #<span class="ident">ident</span> = #<span class="ident">ident</span>.<span class="ident">take_inner</span>().<span class="ident">into_iter</span>(); });
-                <span class="kw">let</span> <span class="ident">send_port_code</span> = <span class="ident">send_ports</span>.<span class="ident">iter</span>().<span class="ident">map</span>(|<span class="ident">ident</span>| {
+                <span class="kw">let </span>recv_port_code = recv_ports
+                    .iter()
+                    .map(|ident| <span class="macro">quote!</span> { <span class="kw">let </span>#ident = #ident.take_inner().into_iter(); });
+                <span class="kw">let </span>send_port_code = send_ports.iter().map(|ident| {
                     <span class="macro">quote!</span> {
-                        <span class="kw">let</span> #<span class="ident">ident</span> = #<span class="ident">root::compiled::for_each::ForEach::new</span>(|<span class="ident">v</span>| {
-                            #<span class="ident">ident</span>.<span class="ident">give</span>(<span class="prelude-val">Some</span>(<span class="ident">v</span>));
+                        <span class="kw">let </span>#ident = #root::compiled::for_each::ForEach::new(|v| {
+                            #ident.give(<span class="prelude-val">Some</span>(v));
                         });
                     }
                 });
 
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">op_prologue_code</span> = <span class="ident">Vec::new</span>();
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">subgraph_op_iter_code</span> = <span class="ident">Vec::new</span>();
+                <span class="kw">let </span><span class="kw-2">mut </span>op_prologue_code = Vec::new();
+                <span class="kw">let </span><span class="kw-2">mut </span>subgraph_op_iter_code = Vec::new();
                 {
-                    <span class="kw">let</span> <span class="ident">pull_to_push_idx</span> = <span class="ident">subgraph_nodes</span>
-                        .<span class="ident">iter</span>()
-                        .<span class="ident">position</span>(|<span class="kw-2">&amp;</span><span class="ident">node_id</span>| {
-                            <span class="ident">node_color</span>(
-                                <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">nodes</span>[<span class="ident">node_id</span>],
-                                <span class="self">self</span>.<span class="ident">preds</span>[<span class="ident">node_id</span>].<span class="ident">len</span>(),
-                                <span class="self">self</span>.<span class="ident">succs</span>[<span class="ident">node_id</span>].<span class="ident">len</span>(),
+                    <span class="kw">let </span>pull_to_push_idx = subgraph_nodes
+                        .iter()
+                        .position(|<span class="kw-2">&amp;</span>node_id| {
+                            node_color(
+                                <span class="kw-2">&amp;</span><span class="self">self</span>.nodes[node_id],
+                                <span class="self">self</span>.preds[node_id].len(),
+                                <span class="self">self</span>.succs[node_id].len(),
                             )
-                            .<span class="ident">map</span>(|<span class="ident">color</span>| <span class="ident">Color::Pull</span> != <span class="ident">color</span>)
-                            .<span class="ident">unwrap_or</span>(<span class="bool-val">false</span>)
+                            .map(|color| Color::Pull != color)
+                            .unwrap_or(<span class="bool-val">false</span>)
                         })
-                        .<span class="ident">unwrap_or</span>(<span class="ident">subgraph_nodes</span>.<span class="ident">len</span>());
+                        .unwrap_or(subgraph_nodes.len());
 
-                    <span class="kw">let</span> (<span class="ident">pull_half</span>, <span class="ident">push_half</span>) = <span class="ident">subgraph_nodes</span>.<span class="ident">split_at</span>(<span class="ident">pull_to_push_idx</span>);
-                    <span class="kw">let</span> <span class="ident">nodes_iter</span> = <span class="ident">pull_half</span>.<span class="ident">iter</span>().<span class="ident">chain</span>(<span class="ident">push_half</span>.<span class="ident">iter</span>().<span class="ident">rev</span>());
+                    <span class="kw">let </span>(pull_half, push_half) = subgraph_nodes.split_at(pull_to_push_idx);
+                    <span class="kw">let </span>nodes_iter = pull_half.iter().chain(push_half.iter().rev());
 
-                    <span class="kw">for</span> (<span class="ident">idx</span>, <span class="kw-2">&amp;</span><span class="ident">node_id</span>) <span class="kw">in</span> <span class="ident">nodes_iter</span>.<span class="ident">enumerate</span>() {
-                        <span class="kw">let</span> <span class="ident">node</span> = <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">nodes</span>[<span class="ident">node_id</span>];
-                        <span class="kw">let</span> <span class="ident">op</span> = <span class="kw">match</span> <span class="ident">node</span> {
-                            <span class="ident">Node::Operator</span>(<span class="ident">op</span>) =&gt; <span class="ident">op</span>,
-                            <span class="ident">Node::Handoff</span> =&gt; <span class="macro">unreachable!</span>(<span class="string">&quot;Handoffs are not part of subgraphs.&quot;</span>),
+                    <span class="kw">for </span>(idx, <span class="kw-2">&amp;</span>node_id) <span class="kw">in </span>nodes_iter.enumerate() {
+                        <span class="kw">let </span>node = <span class="kw-2">&amp;</span><span class="self">self</span>.nodes[node_id];
+                        <span class="kw">let </span>op = <span class="kw">match </span>node {
+                            Node::Operator(op) =&gt; op,
+                            Node::Handoff =&gt; <span class="macro">unreachable!</span>(<span class="string">&quot;Handoffs are not part of subgraphs.&quot;</span>),
                         };
 
-                        <span class="kw">let</span> <span class="ident">op_name</span> = <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">op</span>.<span class="ident">name_string</span>();
-                        <span class="kw">let</span> <span class="ident">op_constraints</span> = <span class="ident">OPERATORS</span>
-                            .<span class="ident">iter</span>()
-                            .<span class="ident">find</span>(|<span class="ident">op</span>| <span class="ident">op_name</span> == <span class="ident">op</span>.<span class="ident">name</span>)
-                            .<span class="ident">unwrap_or_else</span>(|| <span class="macro">panic!</span>(<span class="string">&quot;Failed to find op: {}&quot;</span>, <span class="ident">op_name</span>));
+                        <span class="kw">let </span>op_name = <span class="kw-2">&amp;*</span>op.name_string();
+                        <span class="kw">let </span>op_constraints = OPERATORS
+                            .iter()
+                            .find(|op| op_name == op.name)
+                            .unwrap_or_else(|| <span class="macro">panic!</span>(<span class="string">&quot;Failed to find op: {}&quot;</span>, op_name));
 
-                        <span class="kw">let</span> <span class="ident">ident</span> = <span class="self">self</span>.<span class="ident">node_id_as_ident</span>(<span class="ident">node_id</span>, <span class="bool-val">false</span>);
+                        <span class="kw">let </span>ident = <span class="self">self</span>.node_id_as_ident(node_id, <span class="bool-val">false</span>);
 
                         {
-                            <span class="kw">let</span> <span class="ident">context_args</span> = <span class="ident">WriteContextArgs</span> {
-                                <span class="ident">root</span>: <span class="kw-2">&amp;</span><span class="ident">root</span>,
-                                <span class="ident">subgraph_id</span>,
-                                <span class="ident">node_id</span>,
-                                <span class="ident">ident</span>: <span class="kw-2">&amp;</span><span class="ident">ident</span>,
+                            <span class="kw">let </span>context_args = WriteContextArgs {
+                                root: <span class="kw-2">&amp;</span>root,
+                                subgraph_id,
+                                node_id,
+                                ident: <span class="kw-2">&amp;</span>ident,
                             };
 
-                            <span class="comment">// Note: `IndexInt` order is guaranteed by `BTreeMap` iteration order.</span>
-                            <span class="kw">let</span> <span class="ident">inputs</span>: <span class="ident">Vec</span>&lt;<span class="kw">_</span>&gt; = <span class="self">self</span>.<span class="ident">preds</span>[<span class="ident">node_id</span>]
-                                .<span class="ident">values</span>()
-                                .<span class="ident">map</span>(|<span class="kw-2">&amp;</span>(<span class="ident">pred_id</span>, <span class="kw">_</span>)| <span class="self">self</span>.<span class="ident">node_id_as_ident</span>(<span class="ident">pred_id</span>, <span class="bool-val">true</span>))
-                                .<span class="ident">collect</span>();
-                            <span class="kw">let</span> <span class="ident">outputs</span>: <span class="ident">Vec</span>&lt;<span class="kw">_</span>&gt; = <span class="self">self</span>.<span class="ident">succs</span>[<span class="ident">node_id</span>]
-                                .<span class="ident">values</span>()
-                                .<span class="ident">map</span>(|<span class="kw-2">&amp;</span>(<span class="ident">succ_id</span>, <span class="kw">_</span>)| <span class="self">self</span>.<span class="ident">node_id_as_ident</span>(<span class="ident">succ_id</span>, <span class="bool-val">false</span>))
-                                .<span class="ident">collect</span>();
+                            <span class="comment">// Note: `IndexInt` order is guaranteed by `BTreeMap` iteration order.
+                            </span><span class="kw">let </span>inputs: Vec&lt;<span class="kw">_</span>&gt; = <span class="self">self</span>.preds[node_id]
+                                .values()
+                                .map(|<span class="kw-2">&amp;</span>(pred_id, <span class="kw">_</span>)| <span class="self">self</span>.node_id_as_ident(pred_id, <span class="bool-val">true</span>))
+                                .collect();
+                            <span class="kw">let </span>outputs: Vec&lt;<span class="kw">_</span>&gt; = <span class="self">self</span>.succs[node_id]
+                                .values()
+                                .map(|<span class="kw-2">&amp;</span>(succ_id, <span class="kw">_</span>)| <span class="self">self</span>.node_id_as_ident(succ_id, <span class="bool-val">false</span>))
+                                .collect();
 
-                            <span class="kw">let</span> <span class="ident">iter_args</span> = <span class="ident">WriteIteratorArgs</span> {
-                                <span class="ident">inputs</span>: <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">inputs</span>,
-                                <span class="ident">outputs</span>: <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">outputs</span>,
-                                <span class="ident">type_arguments</span>: <span class="ident">op</span>.<span class="ident">type_arguments</span>(),
-                                <span class="ident">arguments</span>: <span class="kw-2">&amp;</span><span class="ident">op</span>.<span class="ident">args</span>,
-                                <span class="ident">is_pull</span>: <span class="ident">idx</span> &lt; <span class="ident">pull_to_push_idx</span>,
+                            <span class="kw">let </span>iter_args = WriteIteratorArgs {
+                                inputs: <span class="kw-2">&amp;*</span>inputs,
+                                outputs: <span class="kw-2">&amp;*</span>outputs,
+                                type_arguments: op.type_arguments(),
+                                arguments: <span class="kw-2">&amp;</span>op.args,
+                                is_pull: idx &lt; pull_to_push_idx,
                             };
 
-                            <span class="ident">op_prologue_code</span>.<span class="ident">push</span>((<span class="ident">op_constraints</span>.<span class="ident">write_prologue_fn</span>)(
-                                <span class="kw-2">&amp;</span><span class="ident">context_args</span>,
-                                <span class="kw-2">&amp;</span><span class="ident">iter_args</span>,
+                            op_prologue_code.push((op_constraints.write_prologue_fn)(
+                                <span class="kw-2">&amp;</span>context_args,
+                                <span class="kw-2">&amp;</span>iter_args,
                             ));
 
-                            <span class="kw">let</span> <span class="ident">iter_code</span> =
-                                (<span class="ident">op_constraints</span>.<span class="ident">write_iterator_fn</span>)(<span class="kw-2">&amp;</span><span class="ident">context_args</span>, <span class="kw-2">&amp;</span><span class="ident">iter_args</span>);
+                            <span class="kw">let </span>iter_code =
+                                (op_constraints.write_iterator_fn)(<span class="kw-2">&amp;</span>context_args, <span class="kw-2">&amp;</span>iter_args);
 
-                            <span class="ident">subgraph_op_iter_code</span>.<span class="ident">push</span>(<span class="macro">quote!</span> {
-                                <span class="kw">let</span> #<span class="ident">ident</span> = #<span class="ident">iter_code</span>;
+                            subgraph_op_iter_code.push(<span class="macro">quote!</span> {
+                                <span class="kw">let </span>#ident = #iter_code;
                             });
                         }
                     }
 
                     {
-                        <span class="kw">let</span> <span class="ident">pull_to_push_idx</span> = <span class="ident">pull_to_push_idx</span>;
-                        <span class="kw">let</span> <span class="ident">pull_ident</span> =
-                            <span class="self">self</span>.<span class="ident">node_id_as_ident</span>(<span class="ident">subgraph_nodes</span>[<span class="ident">pull_to_push_idx</span> - <span class="number">1</span>], <span class="bool-val">false</span>);
-                        <span class="kw">let</span> <span class="ident">push_ident</span> =
-                            <span class="self">self</span>.<span class="ident">node_id_as_ident</span>(<span class="ident">subgraph_nodes</span>[<span class="ident">pull_to_push_idx</span>], <span class="bool-val">false</span>);
-                        <span class="ident">subgraph_op_iter_code</span>.<span class="ident">push</span>(<span class="macro">quote!</span> {
-                            #<span class="ident">root::compiled::pivot::Pivot::new</span>(#<span class="ident">pull_ident</span>, #<span class="ident">push_ident</span>).<span class="ident">run</span>();
+                        <span class="kw">let </span>pull_to_push_idx = pull_to_push_idx;
+                        <span class="kw">let </span>pull_ident =
+                            <span class="self">self</span>.node_id_as_ident(subgraph_nodes[pull_to_push_idx - <span class="number">1</span>], <span class="bool-val">false</span>);
+                        <span class="kw">let </span>push_ident =
+                            <span class="self">self</span>.node_id_as_ident(subgraph_nodes[pull_to_push_idx], <span class="bool-val">false</span>);
+                        subgraph_op_iter_code.push(<span class="macro">quote!</span> {
+                            #root::compiled::pivot::Pivot::new(#pull_ident, #push_ident).run();
                         });
                     }
                 };
 
-                <span class="kw">let</span> <span class="ident">hoff_name</span> = <span class="ident">Literal::string</span>(<span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="macro">format!</span>(<span class="string">&quot;Subgraph {:?}&quot;</span>, <span class="ident">subgraph_id</span>));
+                <span class="kw">let </span>hoff_name = Literal::string(<span class="kw-2">&amp;*</span><span class="macro">format!</span>(<span class="string">&quot;Subgraph {:?}&quot;</span>, subgraph_id));
                 <span class="macro">quote!</span> {
-                    #( #<span class="ident">op_prologue_code</span> )*
+                    #( #op_prologue_code )*
 
-                    <span class="ident">df</span>.<span class="ident">add_subgraph</span>(
-                        #<span class="ident">hoff_name</span>,
-                        <span class="macro">tl!</span>( #( #<span class="ident">recv_ports</span> ),* ),
-                        <span class="macro">tl!</span>( #( #<span class="ident">send_ports</span> ),* ),
-                        <span class="kw">move</span> |<span class="ident">context</span>, <span class="macro">tl!</span>( #( #<span class="ident">recv_ports</span> ),* ), <span class="macro">tl!</span>( #( #<span class="ident">send_ports</span> ),* )| {
-                            #( #<span class="ident">recv_port_code</span> )*
-                            #( #<span class="ident">send_port_code</span> )*
-                            #( #<span class="ident">subgraph_op_iter_code</span> )*
+                    df.add_subgraph(
+                        #hoff_name,
+                        <span class="macro">tl!</span>( #( #recv_ports ),* ),
+                        <span class="macro">tl!</span>( #( #send_ports ),* ),
+                        <span class="kw">move </span>|context, <span class="macro">tl!</span>( #( #recv_ports ),* ), <span class="macro">tl!</span>( #( #send_ports ),* )| {
+                            #( #recv_port_code )*
+                            #( #send_port_code )*
+                            #( #subgraph_op_iter_code )*
                         },
                     );
                 }
             });
 
-        <span class="kw">let</span> <span class="ident">serde_string</span> = <span class="ident">Literal::string</span>(<span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="self">self</span>.<span class="ident">serde_string</span>());
+        <span class="kw">let </span>serde_string = Literal::string(<span class="kw-2">&amp;*</span><span class="self">self</span>.serde_string());
         <span class="macro">quote!</span> {
             {
-                <span class="kw">use</span> #<span class="ident">root::tl</span>;
+                <span class="kw">use </span>#root::tl;
 
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">df</span> = #<span class="ident">root::scheduled::graph::Hydroflow::new_with_graph</span>(#<span class="ident">serde_string</span>);
+                <span class="kw">let </span><span class="kw-2">mut </span>df = #root::scheduled::graph::Hydroflow::new_with_graph(#serde_string);
 
-                #( #<span class="ident">handoffs</span> )*
-                #( #<span class="ident">subgraphs</span> )*
+                #( #handoffs )*
+                #( #subgraphs )*
 
-                <span class="ident">df</span>
+                df
             }
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">node_to_txt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">node_id</span>: <span class="ident">GraphNodeId</span>) -&gt; <span class="ident">String</span> {
+    <span class="kw">pub fn </span>node_to_txt(<span class="kw-2">&amp;</span><span class="self">self</span>, node_id: GraphNodeId) -&gt; String {
         <span class="macro">format!</span>(
             <span class="string">&quot;{}: {}&quot;</span>,
-            <span class="self">self</span>.<span class="ident">node_id_as_string</span>(<span class="ident">node_id</span>, <span class="bool-val">false</span>),
-            <span class="kw">match</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">nodes</span>[<span class="ident">node_id</span>] {
-                <span class="ident">Node::Operator</span>(<span class="ident">operator</span>) =&gt; {
-                    <span class="ident">operator</span>.<span class="ident">to_token_stream</span>().<span class="ident">to_string</span>()
+            <span class="self">self</span>.node_id_as_string(node_id, <span class="bool-val">false</span>),
+            <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.nodes[node_id] {
+                Node::Operator(operator) =&gt; {
+                    operator.to_token_stream().to_string()
                 }
-                <span class="ident">Node::Handoff</span> =&gt; {
-                    <span class="string">&quot;handoff&quot;</span>.<span class="ident">to_string</span>()
+                Node::Handoff =&gt; {
+                    <span class="string">&quot;handoff&quot;</span>.to_string()
                 }
             }
         )
     }
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">to_serde_graph</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">SerdeGraph</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">g</span> = <span class="ident">SerdeGraph::new</span>();
-        <span class="kw">for</span> ((<span class="ident">src</span>, <span class="ident">_src_idx</span>), (<span class="ident">dst</span>, <span class="ident">_dst_idx</span>)) <span class="kw">in</span> <span class="self">self</span>.<span class="ident">edges</span>() {
-            <span class="comment">// add nodes</span>
-            <span class="ident">g</span>.<span class="ident">nodes</span>.<span class="ident">insert</span>(<span class="ident">src</span>, <span class="self">self</span>.<span class="ident">node_to_txt</span>(<span class="ident">src</span>));
-            <span class="ident">g</span>.<span class="ident">nodes</span>.<span class="ident">insert</span>(<span class="ident">dst</span>, <span class="self">self</span>.<span class="ident">node_to_txt</span>(<span class="ident">dst</span>));
+    <span class="kw">pub fn </span>to_serde_graph(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SerdeGraph {
+        <span class="kw">let </span><span class="kw-2">mut </span>g = SerdeGraph::new();
+        <span class="kw">for </span>((src, _src_idx), (dst, _dst_idx)) <span class="kw">in </span><span class="self">self</span>.edges() {
+            <span class="comment">// add nodes
+            </span>g.nodes.insert(src, <span class="self">self</span>.node_to_txt(src));
+            g.nodes.insert(dst, <span class="self">self</span>.node_to_txt(dst));
 
-            <span class="comment">// add handoffs</span>
-            <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Node::Handoff</span> = <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">nodes</span>[<span class="ident">src</span>] {
-                <span class="ident">g</span>.<span class="ident">handoffs</span>.<span class="ident">insert</span>(<span class="ident">src</span>, <span class="bool-val">true</span>);
+            <span class="comment">// add handoffs
+            </span><span class="kw">if let </span>Node::Handoff = <span class="kw-2">&amp;</span><span class="self">self</span>.nodes[src] {
+                g.handoffs.insert(src, <span class="bool-val">true</span>);
             }
-            <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Node::Handoff</span> = <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">nodes</span>[<span class="ident">dst</span>] {
-                <span class="ident">g</span>.<span class="ident">handoffs</span>.<span class="ident">insert</span>(<span class="ident">dst</span>, <span class="bool-val">true</span>);
+            <span class="kw">if let </span>Node::Handoff = <span class="kw-2">&amp;</span><span class="self">self</span>.nodes[dst] {
+                g.handoffs.insert(dst, <span class="bool-val">true</span>);
             }
 
-            <span class="comment">// add edges</span>
-            <span class="kw">match</span> <span class="ident">g</span>.<span class="ident">edges</span>.<span class="ident">get_mut</span>(<span class="ident">src</span>) {
-                <span class="prelude-val">Some</span>(<span class="ident">e</span>) =&gt; {
-                    <span class="ident">e</span>.<span class="ident">push</span>(<span class="ident">dst</span>);
+            <span class="comment">// add edges
+            </span><span class="kw">match </span>g.edges.get_mut(src) {
+                <span class="prelude-val">Some</span>(e) =&gt; {
+                    e.push(dst);
                 }
-                <span class="prelude-val">None</span> =&gt; {
-                    <span class="ident">g</span>.<span class="ident">edges</span>.<span class="ident">insert</span>(<span class="ident">src</span>, <span class="macro">vec!</span>[<span class="ident">dst</span>]);
+                <span class="prelude-val">None </span>=&gt; {
+                    g.edges.insert(src, <span class="macro">vec!</span>[dst]);
                 }
             }
 
-            <span class="comment">// add subgraphs</span>
-            <span class="ident">g</span>.<span class="ident">subgraph_nodes</span> = <span class="self">self</span>.<span class="ident">subgraph_nodes</span>.<span class="ident">clone</span>();
+            <span class="comment">// add subgraphs
+            </span>g.subgraph_nodes = <span class="self">self</span>.subgraph_nodes.clone();
         }
-        <span class="ident">g</span>
+        g
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">write_serde_graph</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">write</span>: <span class="kw-2">&amp;mut</span> <span class="kw">impl</span> <span class="ident">std::fmt::Write</span>) -&gt; <span class="ident">std::fmt::Result</span> {
-        <span class="kw">let</span> <span class="ident">sg</span> = <span class="self">self</span>.<span class="ident">to_serde_graph</span>();
-        <span class="macro">writeln!</span>(<span class="ident">write</span>, <span class="string">&quot;{}&quot;</span>, <span class="ident">serde_json::to_string</span>(<span class="kw-2">&amp;</span><span class="ident">sg</span>).<span class="ident">unwrap</span>())<span class="question-mark">?</span>;
+    <span class="kw">pub fn </span>write_serde_graph(<span class="kw-2">&amp;</span><span class="self">self</span>, write: <span class="kw-2">&amp;mut </span><span class="kw">impl </span>std::fmt::Write) -&gt; std::fmt::Result {
+        <span class="kw">let </span>sg = <span class="self">self</span>.to_serde_graph();
+        <span class="macro">writeln!</span>(write, <span class="string">&quot;{}&quot;</span>, serde_json::to_string(<span class="kw-2">&amp;</span>sg).unwrap())<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (75b7e52e9 2022-08-13)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

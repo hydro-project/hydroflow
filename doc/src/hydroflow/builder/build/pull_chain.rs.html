@@ -59,66 +59,66 @@
 <span id="59">59</span>
 <span id="60">60</span>
 <span id="61">61</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">super</span>::PullBuild</span>;
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::PullBuild;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::context::Context</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::handoff::handoff_list</span>::{<span class="ident">PortList</span>, <span class="ident">PortListSplit</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::port::RECV</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::type_list::Extend</span>;
+<span class="kw">use </span><span class="kw">crate</span>::scheduled::context::Context;
+<span class="kw">use </span><span class="kw">crate</span>::scheduled::handoff::handoff_list::{PortList, PortListSplit};
+<span class="kw">use </span><span class="kw">crate</span>::scheduled::port::RECV;
+<span class="kw">use </span><span class="kw">crate</span>::scheduled::type_list::Extend;
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ChainPullBuild</span>&lt;<span class="ident">PrevA</span>, <span class="ident">PrevB</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">PrevA</span>: <span class="ident">PullBuild</span>,
-    <span class="ident">PrevB</span>: <span class="ident">PullBuild</span>&lt;<span class="ident">ItemOut</span> = <span class="ident">PrevA::ItemOut</span>&gt;,
+<span class="kw">pub struct </span>ChainPullBuild&lt;PrevA, PrevB&gt;
+<span class="kw">where
+    </span>PrevA: PullBuild,
+    PrevB: PullBuild&lt;ItemOut = PrevA::ItemOut&gt;,
 
-    <span class="ident">PrevA::InputHandoffs</span>: <span class="ident">Extend</span>&lt;<span class="ident">PrevB::InputHandoffs</span>&gt;,
-    &lt;<span class="ident">PrevA::InputHandoffs</span> <span class="kw">as</span> <span class="ident">Extend</span>&lt;<span class="ident">PrevB::InputHandoffs</span>&gt;&gt;<span class="ident">::Extended</span>:
-        <span class="ident">PortList</span>&lt;<span class="ident">RECV</span>&gt; + <span class="ident">PortListSplit</span>&lt;<span class="ident">RECV</span>, <span class="ident">PrevA::InputHandoffs</span>, <span class="ident">Suffix</span> = <span class="ident">PrevB::InputHandoffs</span>&gt;,
+    PrevA::InputHandoffs: Extend&lt;PrevB::InputHandoffs&gt;,
+    &lt;PrevA::InputHandoffs <span class="kw">as </span>Extend&lt;PrevB::InputHandoffs&gt;&gt;::Extended:
+        PortList&lt;RECV&gt; + PortListSplit&lt;RECV, PrevA::InputHandoffs, Suffix = PrevB::InputHandoffs&gt;,
 {
-    <span class="ident">prev_a</span>: <span class="ident">PrevA</span>,
-    <span class="ident">prev_b</span>: <span class="ident">PrevB</span>,
+    prev_a: PrevA,
+    prev_b: PrevB,
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">PrevA</span>, <span class="ident">PrevB</span>&gt; <span class="ident">ChainPullBuild</span>&lt;<span class="ident">PrevA</span>, <span class="ident">PrevB</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">PrevA</span>: <span class="ident">PullBuild</span>,
-    <span class="ident">PrevB</span>: <span class="ident">PullBuild</span>&lt;<span class="ident">ItemOut</span> = <span class="ident">PrevA::ItemOut</span>&gt;,
+<span class="kw">impl</span>&lt;PrevA, PrevB&gt; ChainPullBuild&lt;PrevA, PrevB&gt;
+<span class="kw">where
+    </span>PrevA: PullBuild,
+    PrevB: PullBuild&lt;ItemOut = PrevA::ItemOut&gt;,
 
-    <span class="ident">PrevA::InputHandoffs</span>: <span class="ident">Extend</span>&lt;<span class="ident">PrevB::InputHandoffs</span>&gt;,
-    &lt;<span class="ident">PrevA::InputHandoffs</span> <span class="kw">as</span> <span class="ident">Extend</span>&lt;<span class="ident">PrevB::InputHandoffs</span>&gt;&gt;<span class="ident">::Extended</span>:
-        <span class="ident">PortList</span>&lt;<span class="ident">RECV</span>&gt; + <span class="ident">PortListSplit</span>&lt;<span class="ident">RECV</span>, <span class="ident">PrevA::InputHandoffs</span>, <span class="ident">Suffix</span> = <span class="ident">PrevB::InputHandoffs</span>&gt;,
+    PrevA::InputHandoffs: Extend&lt;PrevB::InputHandoffs&gt;,
+    &lt;PrevA::InputHandoffs <span class="kw">as </span>Extend&lt;PrevB::InputHandoffs&gt;&gt;::Extended:
+        PortList&lt;RECV&gt; + PortListSplit&lt;RECV, PrevA::InputHandoffs, Suffix = PrevB::InputHandoffs&gt;,
 {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">prev_a</span>: <span class="ident">PrevA</span>, <span class="ident">prev_b</span>: <span class="ident">PrevB</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> { <span class="ident">prev_a</span>, <span class="ident">prev_b</span> }
+    <span class="kw">pub fn </span>new(prev_a: PrevA, prev_b: PrevB) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{ prev_a, prev_b }
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">PrevA</span>, <span class="ident">PrevB</span>&gt; <span class="ident">PullBuild</span> <span class="kw">for</span> <span class="ident">ChainPullBuild</span>&lt;<span class="ident">PrevA</span>, <span class="ident">PrevB</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">PrevA</span>: <span class="ident">PullBuild</span>,
-    <span class="ident">PrevB</span>: <span class="ident">PullBuild</span>&lt;<span class="ident">ItemOut</span> = <span class="ident">PrevA::ItemOut</span>&gt;,
+<span class="kw">impl</span>&lt;PrevA, PrevB&gt; PullBuild <span class="kw">for </span>ChainPullBuild&lt;PrevA, PrevB&gt;
+<span class="kw">where
+    </span>PrevA: PullBuild,
+    PrevB: PullBuild&lt;ItemOut = PrevA::ItemOut&gt;,
 
-    <span class="ident">PrevA::InputHandoffs</span>: <span class="ident">Extend</span>&lt;<span class="ident">PrevB::InputHandoffs</span>&gt;,
-    &lt;<span class="ident">PrevA::InputHandoffs</span> <span class="kw">as</span> <span class="ident">Extend</span>&lt;<span class="ident">PrevB::InputHandoffs</span>&gt;&gt;<span class="ident">::Extended</span>:
-        <span class="ident">PortList</span>&lt;<span class="ident">RECV</span>&gt; + <span class="ident">PortListSplit</span>&lt;<span class="ident">RECV</span>, <span class="ident">PrevA::InputHandoffs</span>, <span class="ident">Suffix</span> = <span class="ident">PrevB::InputHandoffs</span>&gt;,
+    PrevA::InputHandoffs: Extend&lt;PrevB::InputHandoffs&gt;,
+    &lt;PrevA::InputHandoffs <span class="kw">as </span>Extend&lt;PrevB::InputHandoffs&gt;&gt;::Extended:
+        PortList&lt;RECV&gt; + PortListSplit&lt;RECV, PrevA::InputHandoffs, Suffix = PrevB::InputHandoffs&gt;,
 {
-    <span class="kw">type</span> <span class="ident">ItemOut</span> = <span class="ident">PrevA::ItemOut</span>;
-    <span class="kw">type</span> <span class="ident">Build</span>&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt; = <span class="ident">std::iter::Chain</span>&lt;<span class="ident">PrevA::Build</span>&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt;, <span class="ident">PrevB::Build</span>&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt;&gt;
-    <span class="kw">where</span>
-        <span class="self">Self</span>: <span class="lifetime">&#39;slf</span>;
+    <span class="kw">type </span>ItemOut = PrevA::ItemOut;
+    <span class="kw">type </span>Build&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt; = std::iter::Chain&lt;PrevA::Build&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt;, PrevB::Build&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt;&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: <span class="lifetime">&#39;slf</span>;
 
-    <span class="kw">type</span> <span class="ident">InputHandoffs</span> = &lt;<span class="ident">PrevA::InputHandoffs</span> <span class="kw">as</span> <span class="ident">Extend</span>&lt;<span class="ident">PrevB::InputHandoffs</span>&gt;&gt;<span class="ident">::Extended</span>;
+    <span class="kw">type </span>InputHandoffs = &lt;PrevA::InputHandoffs <span class="kw">as </span>Extend&lt;PrevB::InputHandoffs&gt;&gt;::Extended;
 
-    <span class="kw">fn</span> <span class="ident">build</span>&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt;(
-        <span class="kw-2">&amp;</span><span class="lifetime">&#39;slf</span> <span class="kw-2">mut</span> <span class="self">self</span>,
-        <span class="ident">context</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx</span> <span class="ident">Context</span>,
-        <span class="ident">input</span>: &lt;<span class="ident"><span class="self">Self</span>::InputHandoffs</span> <span class="kw">as</span> <span class="ident">PortList</span>&lt;<span class="ident">RECV</span>&gt;&gt;<span class="ident">::Ctx</span>&lt;<span class="lifetime">&#39;ctx</span>&gt;,
-    ) -&gt; <span class="ident"><span class="self">Self</span>::Build</span>&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt; {
-        <span class="kw">let</span> (<span class="ident">input_a</span>, <span class="ident">input_b</span>) = &lt;<span class="ident"><span class="self">Self</span>::InputHandoffs</span> <span class="kw">as</span> <span class="ident">PortListSplit</span>&lt;<span class="kw">_</span>, <span class="kw">_</span>&gt;&gt;<span class="ident">::split_ctx</span>(<span class="ident">input</span>);
-        <span class="kw">let</span> <span class="ident">iter_a</span> = <span class="self">self</span>.<span class="ident">prev_a</span>.<span class="ident">build</span>(<span class="ident">context</span>, <span class="ident">input_a</span>);
-        <span class="kw">let</span> <span class="ident">iter_b</span> = <span class="self">self</span>.<span class="ident">prev_b</span>.<span class="ident">build</span>(<span class="ident">context</span>, <span class="ident">input_b</span>);
-        <span class="ident">iter_a</span>.<span class="ident">chain</span>(<span class="ident">iter_b</span>)
+    <span class="kw">fn </span>build&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt;(
+        <span class="kw-2">&amp;</span><span class="lifetime">&#39;slf </span><span class="kw-2">mut </span><span class="self">self</span>,
+        context: <span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span>Context,
+        input: &lt;<span class="self">Self</span>::InputHandoffs <span class="kw">as </span>PortList&lt;RECV&gt;&gt;::Ctx&lt;<span class="lifetime">&#39;ctx</span>&gt;,
+    ) -&gt; <span class="self">Self</span>::Build&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt; {
+        <span class="kw">let </span>(input_a, input_b) = &lt;<span class="self">Self</span>::InputHandoffs <span class="kw">as </span>PortListSplit&lt;<span class="kw">_</span>, <span class="kw">_</span>&gt;&gt;::split_ctx(input);
+        <span class="kw">let </span>iter_a = <span class="self">self</span>.prev_a.build(context, input_a);
+        <span class="kw">let </span>iter_b = <span class="self">self</span>.prev_b.build(context, input_b);
+        iter_a.chain(iter_b)
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (75b7e52e9 2022-08-13)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

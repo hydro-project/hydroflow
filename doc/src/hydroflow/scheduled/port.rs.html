@@ -75,82 +75,82 @@
 <span id="75">75</span>
 <span id="76">76</span>
 <span id="77">77</span>
-</pre><pre class="rust"><code><span class="doccomment">//! Organizational module for Hydroflow Send/RecvCtx structs and Input/OutputPort structs.</span>
-<span class="kw">use</span> <span class="ident">std::marker::PhantomData</span>;
+</pre><pre class="rust"><code><span class="doccomment">//! Organizational module for Hydroflow Send/RecvCtx structs and Input/OutputPort structs.
+</span><span class="kw">use </span>std::marker::PhantomData;
 
-<span class="kw">use</span> <span class="ident">ref_cast::RefCast</span>;
-<span class="kw">use</span> <span class="ident">sealed::sealed</span>;
+<span class="kw">use </span>ref_cast::RefCast;
+<span class="kw">use </span>sealed::sealed;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::handoff</span>::{<span class="ident">CanReceive</span>, <span class="ident">Handoff</span>, <span class="ident">TryCanReceive</span>};
+<span class="kw">use </span><span class="kw">crate</span>::scheduled::handoff::{CanReceive, Handoff, TryCanReceive};
 
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::HandoffId</span>;
+<span class="kw">use </span><span class="kw">super</span>::HandoffId;
 
-<span class="doccomment">/// An empty trait used to denote [`Polarity`]: either **send** or **receive**.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// [`SendPort`] and [`RecvPort`] have identical representations (via [`Port`]) but are not</span>
-<span class="doccomment">/// interchangable, so [`SEND`] and [`RECV`] which implement this trait are used to differentiate</span>
-<span class="doccomment">/// between the two polarities.</span>
-<span class="attribute">#[<span class="ident">sealed</span>]</span>
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">Polarity</span>: <span class="lifetime">&#39;static</span> {}
+<span class="doccomment">/// An empty trait used to denote [`Polarity`]: either **send** or **receive**.
+///
+/// [`SendPort`] and [`RecvPort`] have identical representations (via [`Port`]) but are not
+/// interchangable, so [`SEND`] and [`RECV`] which implement this trait are used to differentiate
+/// between the two polarities.
+</span><span class="attribute">#[sealed]</span>
+<span class="kw">pub trait </span>Polarity: <span class="lifetime">&#39;static </span>{}
 
-<span class="doccomment">/// An uninstantiable type used to tag port [`Polarity`] as **send**.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// See also: [`RECV`].</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">SEND</span> {}
-<span class="doccomment">/// An uninstantiable type used to tag port [`Polarity`] as **receive**.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// See also: [`SEND`].</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">RECV</span> {}
-<span class="attribute">#[<span class="ident">sealed</span>]</span>
-<span class="kw">impl</span> <span class="ident">Polarity</span> <span class="kw">for</span> <span class="ident">SEND</span> {}
-<span class="attribute">#[<span class="ident">sealed</span>]</span>
-<span class="kw">impl</span> <span class="ident">Polarity</span> <span class="kw">for</span> <span class="ident">RECV</span> {}
+<span class="doccomment">/// An uninstantiable type used to tag port [`Polarity`] as **send**.
+///
+/// See also: [`RECV`].
+</span><span class="kw">pub enum </span>SEND {}
+<span class="doccomment">/// An uninstantiable type used to tag port [`Polarity`] as **receive**.
+///
+/// See also: [`SEND`].
+</span><span class="kw">pub enum </span>RECV {}
+<span class="attribute">#[sealed]</span>
+<span class="kw">impl </span>Polarity <span class="kw">for </span>SEND {}
+<span class="attribute">#[sealed]</span>
+<span class="kw">impl </span>Polarity <span class="kw">for </span>RECV {}
 
-<span class="attribute">#[<span class="ident">must_use</span>]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Port</span>&lt;<span class="ident">S</span>: <span class="ident">Polarity</span>, <span class="ident">H</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">H</span>: <span class="ident">Handoff</span>,
+<span class="attribute">#[must_use]</span>
+<span class="kw">pub struct </span>Port&lt;S: Polarity, H&gt;
+<span class="kw">where
+    </span>H: Handoff,
 {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">handoff_id</span>: <span class="ident">HandoffId</span>,
-    <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy::type_complexity</span>)]</span>
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">_marker</span>: <span class="ident">PhantomData</span>&lt;(<span class="kw-2">*const</span> <span class="ident">S</span>, <span class="kw">fn</span>() -&gt; <span class="ident">H</span>)&gt;,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) handoff_id: HandoffId,
+    <span class="attribute">#[allow(clippy::type_complexity)]</span>
+    <span class="kw">pub</span>(<span class="kw">crate</span>) _marker: PhantomData&lt;(<span class="kw-2">*const </span>S, <span class="kw">fn</span>() -&gt; H)&gt;,
 }
-<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">SendPort</span>&lt;<span class="ident">H</span>&gt; = <span class="ident">Port</span>&lt;<span class="ident">SEND</span>, <span class="ident">H</span>&gt;;
-<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">RecvPort</span>&lt;<span class="ident">H</span>&gt; = <span class="ident">Port</span>&lt;<span class="ident">RECV</span>, <span class="ident">H</span>&gt;;
+<span class="kw">pub type </span>SendPort&lt;H&gt; = Port&lt;SEND, H&gt;;
+<span class="kw">pub type </span>RecvPort&lt;H&gt; = Port&lt;RECV, H&gt;;
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">RefCast</span>)]</span>
-<span class="attribute">#[<span class="ident">repr</span>(<span class="ident">transparent</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">PortCtx</span>&lt;<span class="ident">S</span>: <span class="ident">Polarity</span>, <span class="ident">H</span>&gt; {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">handoff</span>: <span class="ident">H</span>,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">_marker</span>: <span class="ident">PhantomData</span>&lt;<span class="kw-2">*const</span> <span class="ident">S</span>&gt;,
+<span class="attribute">#[derive(RefCast)]</span>
+<span class="attribute">#[repr(transparent)]</span>
+<span class="kw">pub struct </span>PortCtx&lt;S: Polarity, H&gt; {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) handoff: H,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) _marker: PhantomData&lt;<span class="kw-2">*const </span>S&gt;,
 }
 
-<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">SendCtx</span>&lt;<span class="ident">H</span>&gt; = <span class="ident">PortCtx</span>&lt;<span class="ident">SEND</span>, <span class="ident">H</span>&gt;;
-<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">RecvCtx</span>&lt;<span class="ident">H</span>&gt; = <span class="ident">PortCtx</span>&lt;<span class="ident">RECV</span>, <span class="ident">H</span>&gt;;
+<span class="kw">pub type </span>SendCtx&lt;H&gt; = PortCtx&lt;SEND, H&gt;;
+<span class="kw">pub type </span>RecvCtx&lt;H&gt; = PortCtx&lt;RECV, H&gt;;
 
-<span class="doccomment">/// Context provided to a subgraph for reading from a handoff. Corresponds to a [`SendPort`].</span>
-<span class="kw">impl</span>&lt;<span class="ident">H</span>: <span class="ident">Handoff</span>&gt; <span class="ident">SendCtx</span>&lt;<span class="ident">H</span>&gt; {
-    <span class="comment">// TODO: represent backpressure in this return value.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">give</span>&lt;<span class="ident">T</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">item</span>: <span class="ident">T</span>) -&gt; <span class="ident">T</span>
-    <span class="kw">where</span>
-        <span class="ident">H</span>: <span class="ident">CanReceive</span>&lt;<span class="ident">T</span>&gt;,
+<span class="doccomment">/// Context provided to a subgraph for reading from a handoff. Corresponds to a [`SendPort`].
+</span><span class="kw">impl</span>&lt;H: Handoff&gt; SendCtx&lt;H&gt; {
+    <span class="comment">// TODO: represent backpressure in this return value.
+    </span><span class="kw">pub fn </span>give&lt;T&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, item: T) -&gt; T
+    <span class="kw">where
+        </span>H: CanReceive&lt;T&gt;,
     {
-        &lt;<span class="ident">H</span> <span class="kw">as</span> <span class="ident">CanReceive</span>&lt;<span class="ident">T</span>&gt;&gt;<span class="ident">::give</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">handoff</span>, <span class="ident">item</span>)
+        &lt;H <span class="kw">as </span>CanReceive&lt;T&gt;&gt;::give(<span class="kw-2">&amp;</span><span class="self">self</span>.handoff, item)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">try_give</span>&lt;<span class="ident">T</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">item</span>: <span class="ident">T</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">T</span>, <span class="ident">T</span>&gt;
-    <span class="kw">where</span>
-        <span class="ident">H</span>: <span class="ident">TryCanReceive</span>&lt;<span class="ident">T</span>&gt;,
+    <span class="kw">pub fn </span>try_give&lt;T&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, item: T) -&gt; <span class="prelude-ty">Result</span>&lt;T, T&gt;
+    <span class="kw">where
+        </span>H: TryCanReceive&lt;T&gt;,
     {
-        &lt;<span class="ident">H</span> <span class="kw">as</span> <span class="ident">TryCanReceive</span>&lt;<span class="ident">T</span>&gt;&gt;<span class="ident">::try_give</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">handoff</span>, <span class="ident">item</span>)
+        &lt;H <span class="kw">as </span>TryCanReceive&lt;T&gt;&gt;::try_give(<span class="kw-2">&amp;</span><span class="self">self</span>.handoff, item)
     }
 }
 
-<span class="doccomment">/// Context provided to a subgraph for reading from a handoff. Corresponds to a [`RecvPort`].</span>
-<span class="kw">impl</span>&lt;<span class="ident">H</span>: <span class="ident">Handoff</span>&gt; <span class="ident">RecvCtx</span>&lt;<span class="ident">H</span>&gt; {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">take_inner</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">H::Inner</span> {
-        <span class="self">self</span>.<span class="ident">handoff</span>.<span class="ident">take_inner</span>()
+<span class="doccomment">/// Context provided to a subgraph for reading from a handoff. Corresponds to a [`RecvPort`].
+</span><span class="kw">impl</span>&lt;H: Handoff&gt; RecvCtx&lt;H&gt; {
+    <span class="kw">pub fn </span>take_inner(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; H::Inner {
+        <span class="self">self</span>.handoff.take_inner()
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (75b7e52e9 2022-08-13)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

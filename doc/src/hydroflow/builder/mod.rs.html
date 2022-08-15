@@ -286,293 +286,293 @@
 <span id="286">286</span>
 <span id="287">287</span>
 <span id="288">288</span>
-</pre><pre class="rust"><code><span class="doccomment">//! Hydroflow&#39;s Surface API.</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! ## Internal Documentation</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! Due to the limitations of type-level programming in Rust, this code is</span>
-<span class="doccomment">//! &quot;baklava&quot; code containing lot of layers. Each layer does one thing, then</span>
-<span class="doccomment">//! constructs the next layer(s) down. This table describes what each layer</span>
-<span class="doccomment">//! does and is named. Layers are listed starting from the highest</span>
-<span class="doccomment">//! (user-facing API) layer and ending with the lowest (code-running) layer.</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! ### Layer Structure</span>
-<span class="doccomment">//! ```text</span>
-<span class="doccomment">//!               (A) Surface API</span>
-<span class="doccomment">//!         (B) (Push Surface Reversed*)</span>
-<span class="doccomment">//!                      |</span>
-<span class="doccomment">//!            (D) Subgraph Builder</span>
-<span class="doccomment">//!                      |</span>
-<span class="doccomment">//!           (E) Iterator/Pusherator</span>
-<span class="doccomment">//! ```</span>
-<span class="doccomment">//! &lt;sup&gt;*Only used with `Push` to reverse the ownership direction.&lt;/sup&gt;</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! (Note (C) used to be `Connectors` but they&#39;re no longer needed)</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! ### Layer Descriptions</span>
-<span class="doccomment">//! &lt;table&gt;</span>
-<span class="doccomment">//! &lt;tr&gt;</span>
-<span class="doccomment">//!     &lt;th rowspan=&quot;2&quot;&gt;Layer&lt;/th&gt;</span>
-<span class="doccomment">//!     &lt;th rowspan=&quot;2&quot;&gt;Purpose&lt;/th&gt;</span>
-<span class="doccomment">//!     &lt;th colspan=&quot;2&quot;&gt;Naming&lt;/th&gt;</span>
-<span class="doccomment">//! &lt;/tr&gt;</span>
-<span class="doccomment">//! &lt;tr&gt;</span>
-<span class="doccomment">//!    &lt;th&gt;Pull&lt;/th&gt;</span>
-<span class="doccomment">//!    &lt;th&gt;Push&lt;/th&gt;</span>
-<span class="doccomment">//! &lt;/tr&gt;</span>
-<span class="doccomment">//! &lt;tr&gt;</span>
-<span class="doccomment">//!     &lt;td&gt;(A) The Surface API&lt;/td&gt;</span>
-<span class="doccomment">//!     &lt;td rowspan=&quot;2&quot;&gt;</span>
-<span class="doccomment">//!         &amp;bull; Presents a clean functional-chaining API for users.&lt;br&gt;</span>
-<span class="doccomment">//!         &amp;bull; Consumed to simultaneously create a (C) connector and (D) builder.&lt;br&gt;</span>
-<span class="doccomment">//!         &amp;bull; &lt;strong&gt;Push Only&lt;/strong&gt;: Extra layer needed to reverse ownership order.</span>
-<span class="doccomment">//!     &lt;/td&gt;</span>
-<span class="doccomment">//!     &lt;td&gt;&lt;code&gt;PullSurface&lt;/code&gt;&lt;/td&gt;</span>
-<span class="doccomment">//!     &lt;td&gt;&lt;code&gt;PushSurface&lt;/code&gt;&lt;/td&gt;</span>
-<span class="doccomment">//! &lt;/tr&gt;</span>
-<span class="doccomment">//! &lt;tr&gt;</span>
-<span class="doccomment">//!     &lt;td&gt;(B) Push Surface Reversed&lt;/td&gt;</span>
-<span class="doccomment">//!     &lt;td&gt;N/A&lt;/td&gt;</span>
-<span class="doccomment">//!     &lt;td&gt;&lt;code&gt;PushSurfaceReversed&lt;/code&gt;&lt;/td&gt;</span>
-<span class="doccomment">//! &lt;/tr&gt;</span>
-<span class="doccomment">//! &lt;tr&gt;</span>
-<span class="doccomment">//!     &lt;td&gt;(D) Subgraph Builders&lt;/td&gt;</span>
-<span class="doccomment">//!     &lt;td&gt;</span>
-<span class="doccomment">//!         &amp;bull; On each subgraph invocation, constructs the (E) iterators and pivot which will be run.&lt;br&gt;</span>
-<span class="doccomment">//!         &amp;bull; Is owned by the subgraph task, lends closures to (E) iterators.&lt;br&gt;</span>
-<span class="doccomment">//!         &amp;bull; Uses the input/output &lt;code&gt;HandoffList&lt;/code&gt; variadic type.</span>
-<span class="doccomment">//!     &lt;/td&gt;</span>
-<span class="doccomment">//!     &lt;td&gt;&lt;code&gt;PullBuild&lt;/code&gt;&lt;/td&gt;</span>
-<span class="doccomment">//!     &lt;td&gt;&lt;code&gt;PushBuild&lt;/code&gt;&lt;/td&gt;</span>
-<span class="doccomment">//! &lt;/tr&gt;</span>
-<span class="doccomment">//! &lt;tr&gt;</span>
-<span class="doccomment">//!     &lt;td&gt;(E) Iterators&lt;/td&gt;</span>
-<span class="doccomment">//!     &lt;td&gt;</span>
-<span class="doccomment">//!         &amp;bull; Runs code on individual dataflow elements, in the case of dataflow.&lt;br&gt;</span>
-<span class="doccomment">//!         &amp;bull; In the future, will correspond to semilattice morphisms alternatively.</span>
-<span class="doccomment">//!     &lt;/td&gt;</span>
-<span class="doccomment">//!     &lt;td&gt;&lt;code&gt;std::iter::Iterator&lt;/code&gt;&lt;/td&gt;</span>
-<span class="doccomment">//!     &lt;td&gt;&lt;code&gt;crate::compiled::Pusherator&lt;/code&gt;&lt;/td&gt;</span>
-<span class="doccomment">//! &lt;/tr&gt;</span>
-<span class="doccomment">//! &lt;/table&gt;</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! ### How the code actually runs</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! The layers are used in [HydroflowBuilder::add_subgraph]. The method</span>
-<span class="doccomment">//! receives a pivot with `PullSurface` and `PushSurfaceReversed` halves. Then</span>
-<span class="doccomment">//! `make_parts()` splits them into the ports half and the build half. Those</span>
-<span class="doccomment">//! are then both sent to [Hydroflow::add_subgraph()](crate::scheduled::graph::Hydroflow::add_subgraph)</span>
-<span class="doccomment">//! to create a subgraph.</span>
+</pre><pre class="rust"><code><span class="doccomment">//! Hydroflow&#39;s Surface API.
+//!
+//! ## Internal Documentation
+//!
+//! Due to the limitations of type-level programming in Rust, this code is
+//! &quot;baklava&quot; code containing lot of layers. Each layer does one thing, then
+//! constructs the next layer(s) down. This table describes what each layer
+//! does and is named. Layers are listed starting from the highest
+//! (user-facing API) layer and ending with the lowest (code-running) layer.
+//!
+//! ### Layer Structure
+//! ```text
+//!               (A) Surface API
+//!         (B) (Push Surface Reversed*)
+//!                      |
+//!            (D) Subgraph Builder
+//!                      |
+//!           (E) Iterator/Pusherator
+//! ```
+//! &lt;sup&gt;*Only used with `Push` to reverse the ownership direction.&lt;/sup&gt;
+//!
+//! (Note (C) used to be `Connectors` but they&#39;re no longer needed)
+//!
+//! ### Layer Descriptions
+//! &lt;table&gt;
+//! &lt;tr&gt;
+//!     &lt;th rowspan=&quot;2&quot;&gt;Layer&lt;/th&gt;
+//!     &lt;th rowspan=&quot;2&quot;&gt;Purpose&lt;/th&gt;
+//!     &lt;th colspan=&quot;2&quot;&gt;Naming&lt;/th&gt;
+//! &lt;/tr&gt;
+//! &lt;tr&gt;
+//!    &lt;th&gt;Pull&lt;/th&gt;
+//!    &lt;th&gt;Push&lt;/th&gt;
+//! &lt;/tr&gt;
+//! &lt;tr&gt;
+//!     &lt;td&gt;(A) The Surface API&lt;/td&gt;
+//!     &lt;td rowspan=&quot;2&quot;&gt;
+//!         &amp;bull; Presents a clean functional-chaining API for users.&lt;br&gt;
+//!         &amp;bull; Consumed to simultaneously create a (C) connector and (D) builder.&lt;br&gt;
+//!         &amp;bull; &lt;strong&gt;Push Only&lt;/strong&gt;: Extra layer needed to reverse ownership order.
+//!     &lt;/td&gt;
+//!     &lt;td&gt;&lt;code&gt;PullSurface&lt;/code&gt;&lt;/td&gt;
+//!     &lt;td&gt;&lt;code&gt;PushSurface&lt;/code&gt;&lt;/td&gt;
+//! &lt;/tr&gt;
+//! &lt;tr&gt;
+//!     &lt;td&gt;(B) Push Surface Reversed&lt;/td&gt;
+//!     &lt;td&gt;N/A&lt;/td&gt;
+//!     &lt;td&gt;&lt;code&gt;PushSurfaceReversed&lt;/code&gt;&lt;/td&gt;
+//! &lt;/tr&gt;
+//! &lt;tr&gt;
+//!     &lt;td&gt;(D) Subgraph Builders&lt;/td&gt;
+//!     &lt;td&gt;
+//!         &amp;bull; On each subgraph invocation, constructs the (E) iterators and pivot which will be run.&lt;br&gt;
+//!         &amp;bull; Is owned by the subgraph task, lends closures to (E) iterators.&lt;br&gt;
+//!         &amp;bull; Uses the input/output &lt;code&gt;HandoffList&lt;/code&gt; variadic type.
+//!     &lt;/td&gt;
+//!     &lt;td&gt;&lt;code&gt;PullBuild&lt;/code&gt;&lt;/td&gt;
+//!     &lt;td&gt;&lt;code&gt;PushBuild&lt;/code&gt;&lt;/td&gt;
+//! &lt;/tr&gt;
+//! &lt;tr&gt;
+//!     &lt;td&gt;(E) Iterators&lt;/td&gt;
+//!     &lt;td&gt;
+//!         &amp;bull; Runs code on individual dataflow elements, in the case of dataflow.&lt;br&gt;
+//!         &amp;bull; In the future, will correspond to semilattice morphisms alternatively.
+//!     &lt;/td&gt;
+//!     &lt;td&gt;&lt;code&gt;std::iter::Iterator&lt;/code&gt;&lt;/td&gt;
+//!     &lt;td&gt;&lt;code&gt;crate::compiled::Pusherator&lt;/code&gt;&lt;/td&gt;
+//! &lt;/tr&gt;
+//! &lt;/table&gt;
+//!
+//! ### How the code actually runs
+//!
+//! The layers are used in [HydroflowBuilder::add_subgraph]. The method
+//! receives a pivot with `PullSurface` and `PushSurfaceReversed` halves. Then
+//! `make_parts()` splits them into the ports half and the build half. Those
+//! are then both sent to [Hydroflow::add_subgraph()](crate::scheduled::graph::Hydroflow::add_subgraph)
+//! to create a subgraph.
 
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">build</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">surface</span>;
+</span><span class="kw">pub mod </span>build;
+<span class="kw">pub mod </span>surface;
 
-<span class="kw">mod</span> <span class="ident">hydroflow_builder</span>;
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">hydroflow_builder::HydroflowBuilder</span>;
+<span class="kw">mod </span>hydroflow_builder;
+<span class="kw">pub use </span>hydroflow_builder::HydroflowBuilder;
 
-<span class="kw">mod</span> <span class="ident">into_hydroflow</span>;
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">into_hydroflow::IntoHydroflow</span>;
+<span class="kw">mod </span>into_hydroflow;
+<span class="kw">pub use </span>into_hydroflow::IntoHydroflow;
 
-<span class="doccomment">/// Prelude to quick-import items needed for using the Surface API.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// Usage:</span>
-<span class="doccomment">/// ```rust</span>
-<span class="doccomment">/// use hydroflow::builder::prelude::*;</span>
-<span class="doccomment">/// ```</span>
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">prelude</span> {
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::surface</span>::{<span class="ident">BaseSurface</span>, <span class="ident">PullSurface</span>, <span class="ident">PushSurface</span>};
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">HydroflowBuilder</span>, <span class="ident">IntoHydroflow</span>};
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::handoff::VecHandoff</span>;
+<span class="doccomment">/// Prelude to quick-import items needed for using the Surface API.
+///
+/// Usage:
+/// ```rust
+/// use hydroflow::builder::prelude::*;
+/// ```
+</span><span class="kw">pub mod </span>prelude {
+    <span class="kw">pub use </span><span class="kw">super</span>::surface::{BaseSurface, PullSurface, PushSurface};
+    <span class="kw">pub use super</span>::{HydroflowBuilder, IntoHydroflow};
+    <span class="kw">pub use </span><span class="kw">crate</span>::scheduled::handoff::VecHandoff;
 }
 
-<span class="attribute">#[<span class="ident">test</span>]</span>
-<span class="kw">fn</span> <span class="ident">test_teeing</span>() {
-    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::handoff::VecHandoff</span>;
-    <span class="kw">use</span> <span class="ident">prelude</span>::<span class="kw-2">*</span>;
+<span class="attribute">#[test]</span>
+<span class="kw">fn </span>test_teeing() {
+    <span class="kw">use </span><span class="kw">crate</span>::scheduled::handoff::VecHandoff;
+    <span class="kw">use </span>prelude::<span class="kw-2">*</span>;
 
-    <span class="kw">use</span> <span class="ident">std::cell::RefCell</span>;
-    <span class="kw">use</span> <span class="ident">std::rc::Rc</span>;
+    <span class="kw">use </span>std::cell::RefCell;
+    <span class="kw">use </span>std::rc::Rc;
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">builder</span> = <span class="ident">HydroflowBuilder::default</span>();
-    <span class="kw">let</span> (<span class="ident">ingress_send</span>, <span class="ident">ingress</span>) =
-        <span class="ident">builder</span>.<span class="ident">add_channel_input</span>::&lt;<span class="kw">_</span>, <span class="prelude-ty">Option</span>&lt;<span class="ident">usize</span>&gt;, <span class="ident">VecHandoff</span>&lt;<span class="kw">_</span>&gt;&gt;(<span class="string">&quot;ingress&quot;</span>);
+    <span class="kw">let </span><span class="kw-2">mut </span>builder = HydroflowBuilder::default();
+    <span class="kw">let </span>(ingress_send, ingress) =
+        builder.add_channel_input::&lt;<span class="kw">_</span>, <span class="prelude-ty">Option</span>&lt;usize&gt;, VecHandoff&lt;<span class="kw">_</span>&gt;&gt;(<span class="string">&quot;ingress&quot;</span>);
 
-    <span class="kw">let</span> <span class="ident">output_evn</span>: <span class="ident">Rc</span>&lt;<span class="ident">RefCell</span>&lt;<span class="ident">Vec</span>&lt;<span class="ident">usize</span>&gt;&gt;&gt; = <span class="ident">Default::default</span>();
-    <span class="kw">let</span> <span class="ident">output_odd</span>: <span class="ident">Rc</span>&lt;<span class="ident">RefCell</span>&lt;<span class="ident">Vec</span>&lt;<span class="ident">usize</span>&gt;&gt;&gt; = <span class="ident">Default::default</span>();
+    <span class="kw">let </span>output_evn: Rc&lt;RefCell&lt;Vec&lt;usize&gt;&gt;&gt; = Default::default();
+    <span class="kw">let </span>output_odd: Rc&lt;RefCell&lt;Vec&lt;usize&gt;&gt;&gt; = Default::default();
 
-    <span class="kw">let</span> <span class="ident">output_evn_take</span> = <span class="ident">Rc::clone</span>(<span class="kw-2">&amp;</span><span class="ident">output_evn</span>);
-    <span class="kw">let</span> <span class="ident">output_odd_take</span> = <span class="ident">Rc::clone</span>(<span class="kw-2">&amp;</span><span class="ident">output_odd</span>);
+    <span class="kw">let </span>output_evn_take = Rc::clone(<span class="kw-2">&amp;</span>output_evn);
+    <span class="kw">let </span>output_odd_take = Rc::clone(<span class="kw-2">&amp;</span>output_odd);
 
-    <span class="kw">let</span> <span class="ident">sg</span> = <span class="ident">ingress</span>
-        .<span class="ident">flatten</span>()
-        .<span class="ident">flat_map</span>(|<span class="ident">x</span>| [<span class="number">11</span> * <span class="ident">x</span>, <span class="ident">x</span>])
-        .<span class="ident">pull_to_push</span>()
-        .<span class="ident">tee</span>(
-            <span class="ident">builder</span>
-                .<span class="ident">start_tee</span>()
-                .<span class="ident">filter</span>(|<span class="kw-2">&amp;</span><span class="ident">x</span>| <span class="number">0</span> == <span class="ident">x</span> % <span class="number">2</span>)
-                .<span class="ident">for_each</span>(<span class="kw">move</span> |<span class="ident">x</span>| <span class="ident">output_evn_take</span>.<span class="ident">borrow_mut</span>().<span class="ident">push</span>(<span class="ident">x</span>)),
-            <span class="ident">builder</span>
-                .<span class="ident">start_tee</span>()
-                .<span class="ident">filter</span>(|<span class="kw-2">&amp;</span><span class="ident">x</span>| <span class="number">1</span> == <span class="ident">x</span> % <span class="number">2</span>)
-                .<span class="ident">for_each</span>(<span class="kw">move</span> |<span class="ident">x</span>| <span class="ident">output_odd_take</span>.<span class="ident">borrow_mut</span>().<span class="ident">push</span>(<span class="ident">x</span>)),
+    <span class="kw">let </span>sg = ingress
+        .flatten()
+        .flat_map(|x| [<span class="number">11 </span>* x, x])
+        .pull_to_push()
+        .tee(
+            builder
+                .start_tee()
+                .filter(|<span class="kw-2">&amp;</span>x| <span class="number">0 </span>== x % <span class="number">2</span>)
+                .for_each(<span class="kw">move </span>|x| output_evn_take.borrow_mut().push(x)),
+            builder
+                .start_tee()
+                .filter(|<span class="kw-2">&amp;</span>x| <span class="number">1 </span>== x % <span class="number">2</span>)
+                .for_each(<span class="kw">move </span>|x| output_odd_take.borrow_mut().push(x)),
         );
-    <span class="ident">builder</span>.<span class="ident">add_subgraph</span>(<span class="string">&quot;main&quot;</span>, <span class="ident">sg</span>);
+    builder.add_subgraph(<span class="string">&quot;main&quot;</span>, sg);
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">hydroflow</span> = <span class="ident">builder</span>.<span class="ident">build</span>();
+    <span class="kw">let </span><span class="kw-2">mut </span>hydroflow = builder.build();
     {
-        <span class="kw">for</span> <span class="ident">x</span> <span class="kw">in</span> <span class="number">1</span>..<span class="number">9</span> {
-            <span class="ident">ingress_send</span>.<span class="ident">give</span>(<span class="prelude-val">Some</span>(<span class="ident">x</span>));
+        <span class="kw">for </span>x <span class="kw">in </span><span class="number">1</span>..<span class="number">9 </span>{
+            ingress_send.give(<span class="prelude-val">Some</span>(x));
         }
-        <span class="ident">ingress_send</span>.<span class="ident">flush</span>();
+        ingress_send.flush();
 
-        <span class="ident">hydroflow</span>.<span class="ident">run_available</span>();
+        hydroflow.run_available();
 
-        <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span>[<span class="number">22</span>, <span class="number">2</span>, <span class="number">44</span>, <span class="number">4</span>, <span class="number">66</span>, <span class="number">6</span>, <span class="number">88</span>, <span class="number">8</span>], <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="kw-2">*</span><span class="ident">output_evn</span>.<span class="ident">borrow</span>());
-        <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span>[<span class="number">11</span>, <span class="number">1</span>, <span class="number">33</span>, <span class="number">3</span>, <span class="number">55</span>, <span class="number">5</span>, <span class="number">77</span>, <span class="number">7</span>], <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="kw-2">*</span><span class="ident">output_odd</span>.<span class="ident">borrow</span>());
+        <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span>[<span class="number">22</span>, <span class="number">2</span>, <span class="number">44</span>, <span class="number">4</span>, <span class="number">66</span>, <span class="number">6</span>, <span class="number">88</span>, <span class="number">8</span>], <span class="kw-2">&amp;**</span>output_evn.borrow());
+        <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span>[<span class="number">11</span>, <span class="number">1</span>, <span class="number">33</span>, <span class="number">3</span>, <span class="number">55</span>, <span class="number">5</span>, <span class="number">77</span>, <span class="number">7</span>], <span class="kw-2">&amp;**</span>output_odd.borrow());
     }
 }
 
-<span class="attribute">#[<span class="ident">test</span>]</span>
-<span class="kw">fn</span> <span class="ident">test_partition</span>() {
-    <span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">cell::RefCell</span>, <span class="ident">rc::Rc</span>};
+<span class="attribute">#[test]</span>
+<span class="kw">fn </span>test_partition() {
+    <span class="kw">use </span>std::{cell::RefCell, rc::Rc};
 
-    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::handoff::VecHandoff</span>;
-    <span class="kw">use</span> <span class="ident">prelude</span>::<span class="kw-2">*</span>;
+    <span class="kw">use </span><span class="kw">crate</span>::scheduled::handoff::VecHandoff;
+    <span class="kw">use </span>prelude::<span class="kw-2">*</span>;
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">builder</span> = <span class="ident">HydroflowBuilder::default</span>();
+    <span class="kw">let </span><span class="kw-2">mut </span>builder = HydroflowBuilder::default();
 
-    <span class="kw">let</span> (<span class="ident">data_send</span>, <span class="ident">data</span>) = <span class="ident">builder</span>.<span class="ident">add_channel_input</span>::&lt;<span class="kw">_</span>, <span class="prelude-ty">Option</span>&lt;<span class="ident">u64</span>&gt;, <span class="ident">VecHandoff</span>&lt;<span class="kw">_</span>&gt;&gt;(<span class="string">&quot;data&quot;</span>);
+    <span class="kw">let </span>(data_send, data) = builder.add_channel_input::&lt;<span class="kw">_</span>, <span class="prelude-ty">Option</span>&lt;u64&gt;, VecHandoff&lt;<span class="kw">_</span>&gt;&gt;(<span class="string">&quot;data&quot;</span>);
 
-    <span class="kw">let</span> <span class="ident">out</span> = <span class="ident">Rc::new</span>(<span class="ident">RefCell::new</span>(<span class="ident">Vec::new</span>()));
-    <span class="kw">let</span> <span class="ident">even_out</span> = <span class="ident">out</span>.<span class="ident">clone</span>();
-    <span class="kw">let</span> <span class="ident">odd_out</span> = <span class="ident">out</span>.<span class="ident">clone</span>();
+    <span class="kw">let </span>out = Rc::new(RefCell::new(Vec::new()));
+    <span class="kw">let </span>even_out = out.clone();
+    <span class="kw">let </span>odd_out = out.clone();
 
-    <span class="ident">builder</span>.<span class="ident">add_subgraph</span>(
+    builder.add_subgraph(
         <span class="string">&quot;main&quot;</span>,
-        <span class="ident">data</span>.<span class="ident">flatten</span>().<span class="ident">pull_to_push</span>().<span class="ident">partition_with_context</span>(
-            |<span class="ident">_ctx</span>, <span class="ident">x</span>| <span class="kw-2">*</span><span class="ident">x</span> % <span class="number">2</span> == <span class="number">0</span>,
-            <span class="ident">builder</span>
-                .<span class="ident">start_tee</span>()
-                .<span class="ident">for_each</span>(<span class="kw">move</span> |<span class="ident">x</span>| (<span class="kw-2">*</span><span class="ident">even_out</span>).<span class="ident">borrow_mut</span>().<span class="ident">push</span>((<span class="string">&quot;even&quot;</span>, <span class="ident">x</span>))),
-            <span class="ident">builder</span>
-                .<span class="ident">start_tee</span>()
-                .<span class="ident">for_each</span>(<span class="kw">move</span> |<span class="ident">x</span>| (<span class="kw-2">*</span><span class="ident">odd_out</span>).<span class="ident">borrow_mut</span>().<span class="ident">push</span>((<span class="string">&quot;odd&quot;</span>, <span class="ident">x</span>))),
+        data.flatten().pull_to_push().partition_with_context(
+            |_ctx, x| <span class="kw-2">*</span>x % <span class="number">2 </span>== <span class="number">0</span>,
+            builder
+                .start_tee()
+                .for_each(<span class="kw">move </span>|x| (<span class="kw-2">*</span>even_out).borrow_mut().push((<span class="string">&quot;even&quot;</span>, x))),
+            builder
+                .start_tee()
+                .for_each(<span class="kw">move </span>|x| (<span class="kw-2">*</span>odd_out).borrow_mut().push((<span class="string">&quot;odd&quot;</span>, x))),
         ),
     );
 
-    <span class="ident">data_send</span>.<span class="ident">give</span>(<span class="prelude-val">Some</span>(<span class="number">1</span>));
-    <span class="ident">data_send</span>.<span class="ident">give</span>(<span class="prelude-val">Some</span>(<span class="number">2</span>));
-    <span class="ident">data_send</span>.<span class="ident">give</span>(<span class="prelude-val">Some</span>(<span class="number">3</span>));
-    <span class="ident">data_send</span>.<span class="ident">give</span>(<span class="prelude-val">Some</span>(<span class="number">4</span>));
-    <span class="ident">data_send</span>.<span class="ident">give</span>(<span class="prelude-val">Some</span>(<span class="number">5</span>));
+    data_send.give(<span class="prelude-val">Some</span>(<span class="number">1</span>));
+    data_send.give(<span class="prelude-val">Some</span>(<span class="number">2</span>));
+    data_send.give(<span class="prelude-val">Some</span>(<span class="number">3</span>));
+    data_send.give(<span class="prelude-val">Some</span>(<span class="number">4</span>));
+    data_send.give(<span class="prelude-val">Some</span>(<span class="number">5</span>));
 
-    <span class="ident">builder</span>.<span class="ident">build</span>().<span class="ident">run_available</span>();
+    builder.build().run_available();
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">out</span> = (<span class="kw-2">*</span><span class="ident">out</span>).<span class="ident">take</span>();
-    <span class="ident">out</span>.<span class="ident">sort_unstable</span>();
+    <span class="kw">let </span><span class="kw-2">mut </span>out = (<span class="kw-2">*</span>out).take();
+    out.sort_unstable();
 
     <span class="macro">assert_eq!</span>(
         <span class="kw-2">&amp;</span>[(<span class="string">&quot;even&quot;</span>, <span class="number">2</span>), (<span class="string">&quot;even&quot;</span>, <span class="number">4</span>), (<span class="string">&quot;odd&quot;</span>, <span class="number">1</span>), (<span class="string">&quot;odd&quot;</span>, <span class="number">3</span>), (<span class="string">&quot;odd&quot;</span>, <span class="number">5</span>)],
-        <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">out</span>,
+        <span class="kw-2">&amp;*</span>out,
     );
 }
 
-<span class="attribute">#[<span class="ident">test</span>]</span>
-<span class="kw">fn</span> <span class="ident">test_covid_tracing</span>() {
-    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::handoff::VecHandoff</span>;
-    <span class="kw">use</span> <span class="ident">prelude</span>::<span class="kw-2">*</span>;
+<span class="attribute">#[test]</span>
+<span class="kw">fn </span>test_covid_tracing() {
+    <span class="kw">use </span><span class="kw">crate</span>::scheduled::handoff::VecHandoff;
+    <span class="kw">use </span>prelude::<span class="kw-2">*</span>;
 
-    <span class="kw">type</span> <span class="ident">Pid</span> = <span class="ident">usize</span>;
-    <span class="kw">type</span> <span class="ident">Name</span> = <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span>;
-    <span class="kw">type</span> <span class="ident">Phone</span> = <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span>;
-    <span class="kw">type</span> <span class="ident">DateTime</span> = <span class="ident">usize</span>;
+    <span class="kw">type </span>Pid = usize;
+    <span class="kw">type </span>Name = <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str;
+    <span class="kw">type </span>Phone = <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str;
+    <span class="kw">type </span>DateTime = usize;
 
-    <span class="kw">const</span> <span class="ident">TRANSMISSIBLE_DURATION</span>: <span class="ident">usize</span> = <span class="number">14</span>;
+    <span class="kw">const </span>TRANSMISSIBLE_DURATION: usize = <span class="number">14</span>;
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">builder</span> = <span class="ident">HydroflowBuilder::default</span>();
+    <span class="kw">let </span><span class="kw-2">mut </span>builder = HydroflowBuilder::default();
 
-    <span class="kw">let</span> (<span class="ident">loop_send</span>, <span class="ident">loop_recv</span>) = <span class="ident">builder</span>.<span class="ident">make_edge</span>::&lt;<span class="kw">_</span>, <span class="ident">VecHandoff</span>&lt;(<span class="ident">Pid</span>, <span class="ident">DateTime</span>)&gt;, <span class="kw">_</span>&gt;(<span class="string">&quot;loopback&quot;</span>);
-    <span class="kw">let</span> (<span class="ident">notifs_send</span>, <span class="ident">notifs_recv</span>) =
-        <span class="ident">builder</span>.<span class="ident">make_edge</span>::&lt;<span class="kw">_</span>, <span class="ident">VecHandoff</span>&lt;(<span class="ident">Pid</span>, <span class="ident">DateTime</span>)&gt;, <span class="kw">_</span>&gt;(<span class="string">&quot;notifs&quot;</span>);
+    <span class="kw">let </span>(loop_send, loop_recv) = builder.make_edge::&lt;<span class="kw">_</span>, VecHandoff&lt;(Pid, DateTime)&gt;, <span class="kw">_</span>&gt;(<span class="string">&quot;loopback&quot;</span>);
+    <span class="kw">let </span>(notifs_send, notifs_recv) =
+        builder.make_edge::&lt;<span class="kw">_</span>, VecHandoff&lt;(Pid, DateTime)&gt;, <span class="kw">_</span>&gt;(<span class="string">&quot;notifs&quot;</span>);
 
-    <span class="kw">let</span> (<span class="ident">diagnosed_send</span>, <span class="ident">diagnosed</span>) = <span class="ident">builder</span>
-        .<span class="ident">add_channel_input</span>::&lt;<span class="kw">_</span>, <span class="prelude-ty">Option</span>&lt;(<span class="ident">Pid</span>, (<span class="ident">DateTime</span>, <span class="ident">DateTime</span>))&gt;, <span class="ident">VecHandoff</span>&lt;<span class="kw">_</span>&gt;&gt;(<span class="string">&quot;diagnosed&quot;</span>);
-    <span class="kw">let</span> (<span class="ident">contacts_send</span>, <span class="ident">contacts</span>) =
-        <span class="ident">builder</span>.<span class="ident">add_channel_input</span>::&lt;<span class="kw">_</span>, <span class="prelude-ty">Option</span>&lt;(<span class="ident">Pid</span>, <span class="ident">Pid</span>, <span class="ident">DateTime</span>)&gt;, <span class="ident">VecHandoff</span>&lt;<span class="kw">_</span>&gt;&gt;(<span class="string">&quot;contacts&quot;</span>);
-    <span class="kw">let</span> (<span class="ident">peoples_send</span>, <span class="ident">peoples</span>) =
-        <span class="ident">builder</span>.<span class="ident">add_channel_input</span>::&lt;<span class="kw">_</span>, <span class="prelude-ty">Option</span>&lt;(<span class="ident">Pid</span>, (<span class="ident">Name</span>, <span class="ident">Phone</span>))&gt;, <span class="ident">VecHandoff</span>&lt;<span class="kw">_</span>&gt;&gt;(<span class="string">&quot;peoples&quot;</span>);
+    <span class="kw">let </span>(diagnosed_send, diagnosed) = builder
+        .add_channel_input::&lt;<span class="kw">_</span>, <span class="prelude-ty">Option</span>&lt;(Pid, (DateTime, DateTime))&gt;, VecHandoff&lt;<span class="kw">_</span>&gt;&gt;(<span class="string">&quot;diagnosed&quot;</span>);
+    <span class="kw">let </span>(contacts_send, contacts) =
+        builder.add_channel_input::&lt;<span class="kw">_</span>, <span class="prelude-ty">Option</span>&lt;(Pid, Pid, DateTime)&gt;, VecHandoff&lt;<span class="kw">_</span>&gt;&gt;(<span class="string">&quot;contacts&quot;</span>);
+    <span class="kw">let </span>(peoples_send, peoples) =
+        builder.add_channel_input::&lt;<span class="kw">_</span>, <span class="prelude-ty">Option</span>&lt;(Pid, (Name, Phone))&gt;, VecHandoff&lt;<span class="kw">_</span>&gt;&gt;(<span class="string">&quot;peoples&quot;</span>);
 
-    <span class="kw">let</span> <span class="ident">exposed</span> = <span class="ident">loop_recv</span>
-        .<span class="ident">flatten</span>()
-        .<span class="ident">map</span>(|(<span class="ident">pid</span>, <span class="ident">t</span>)| (<span class="ident">pid</span>, (<span class="ident">t</span>, <span class="ident">t</span> + <span class="ident">TRANSMISSIBLE_DURATION</span>)))
-        .<span class="ident">chain</span>(<span class="ident">diagnosed</span>.<span class="ident">flatten</span>());
+    <span class="kw">let </span>exposed = loop_recv
+        .flatten()
+        .map(|(pid, t)| (pid, (t, t + TRANSMISSIBLE_DURATION)))
+        .chain(diagnosed.flatten());
 
-    <span class="ident">builder</span>.<span class="ident">add_subgraph</span>(
+    builder.add_subgraph(
         <span class="string">&quot;main loop&quot;</span>,
-        <span class="ident">contacts</span>
-            .<span class="ident">flatten</span>()
-            .<span class="ident">flat_map</span>(|(<span class="ident">pid_a</span>, <span class="ident">pid_b</span>, <span class="ident">t</span>)| [(<span class="ident">pid_a</span>, (<span class="ident">pid_b</span>, <span class="ident">t</span>)), (<span class="ident">pid_b</span>, (<span class="ident">pid_a</span>, <span class="ident">t</span>))])
-            .<span class="ident">join</span>(<span class="ident">exposed</span>)
-            .<span class="ident">filter</span>(|(<span class="ident">_pid_a</span>, ((<span class="ident">_pid_b</span>, <span class="ident">t_contact</span>), (<span class="ident">t_from</span>, <span class="ident">t_to</span>)))| {
-                (<span class="ident">t_from</span>..=<span class="ident">t_to</span>).<span class="ident">contains</span>(<span class="kw-2">&amp;</span><span class="ident">t_contact</span>)
+        contacts
+            .flatten()
+            .flat_map(|(pid_a, pid_b, t)| [(pid_a, (pid_b, t)), (pid_b, (pid_a, t))])
+            .join(exposed)
+            .filter(|(_pid_a, ((_pid_b, t_contact), (t_from, t_to)))| {
+                (t_from..=t_to).contains(<span class="kw-2">&amp;</span>t_contact)
             })
-            .<span class="ident">map</span>(|(<span class="ident">_pid_a</span>, (<span class="ident">pid_b_t_contact</span>, <span class="ident">_t_from_to</span>))| <span class="ident">pid_b_t_contact</span>)
-            .<span class="ident">pull_to_push</span>()
-            .<span class="ident">map</span>(<span class="prelude-val">Some</span>) <span class="comment">// For handoff CanReceive.</span>
-            .<span class="ident">tee</span>(<span class="ident">notifs_send</span>, <span class="ident">loop_send</span>),
+            .map(|(_pid_a, (pid_b_t_contact, _t_from_to))| pid_b_t_contact)
+            .pull_to_push()
+            .map(<span class="prelude-val">Some</span>) <span class="comment">// For handoff CanReceive.
+            </span>.tee(notifs_send, loop_send),
     );
 
-    <span class="ident">builder</span>.<span class="ident">add_subgraph</span>(
+    builder.add_subgraph(
         <span class="string">&quot;nofits&quot;</span>,
-        <span class="ident">notifs_recv</span>
-            .<span class="ident">flatten</span>()
-            .<span class="ident">join</span>(<span class="ident">peoples</span>.<span class="ident">flatten</span>())
-            .<span class="ident">pull_to_push</span>()
-            .<span class="ident">for_each</span>(|(<span class="ident">_pid</span>, (<span class="ident">exposure_time</span>, (<span class="ident">name</span>, <span class="ident">phone</span>)))| {
+        notifs_recv
+            .flatten()
+            .join(peoples.flatten())
+            .pull_to_push()
+            .for_each(|(_pid, (exposure_time, (name, phone)))| {
                 <span class="macro">println!</span>(
                     <span class="string">&quot;[{}] To {}: Possible Exposure at t = {}&quot;</span>,
-                    <span class="ident">name</span>, <span class="ident">phone</span>, <span class="ident">exposure_time</span>
+                    name, phone, exposure_time
                 );
             }),
     );
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">hydroflow</span> = <span class="ident">builder</span>.<span class="ident">build</span>();
+    <span class="kw">let </span><span class="kw-2">mut </span>hydroflow = builder.build();
     {
-        <span class="ident">peoples_send</span>.<span class="ident">give</span>(<span class="prelude-val">Some</span>((<span class="number">101</span>, (<span class="string">&quot;Mingwei S&quot;</span>, <span class="string">&quot;+1 650 555 7283&quot;</span>))));
-        <span class="ident">peoples_send</span>.<span class="ident">give</span>(<span class="prelude-val">Some</span>((<span class="number">102</span>, (<span class="string">&quot;Justin J&quot;</span>, <span class="string">&quot;+1 519 555 3458&quot;</span>))));
-        <span class="ident">peoples_send</span>.<span class="ident">give</span>(<span class="prelude-val">Some</span>((<span class="number">103</span>, (<span class="string">&quot;Mae M&quot;</span>, <span class="string">&quot;+1 912 555 9129&quot;</span>))));
-        <span class="ident">peoples_send</span>.<span class="ident">flush</span>();
+        peoples_send.give(<span class="prelude-val">Some</span>((<span class="number">101</span>, (<span class="string">&quot;Mingwei S&quot;</span>, <span class="string">&quot;+1 650 555 7283&quot;</span>))));
+        peoples_send.give(<span class="prelude-val">Some</span>((<span class="number">102</span>, (<span class="string">&quot;Justin J&quot;</span>, <span class="string">&quot;+1 519 555 3458&quot;</span>))));
+        peoples_send.give(<span class="prelude-val">Some</span>((<span class="number">103</span>, (<span class="string">&quot;Mae M&quot;</span>, <span class="string">&quot;+1 912 555 9129&quot;</span>))));
+        peoples_send.flush();
 
-        <span class="ident">contacts_send</span>.<span class="ident">give</span>(<span class="prelude-val">Some</span>((<span class="number">101</span>, <span class="number">102</span>, <span class="number">1031</span>))); <span class="comment">// Mingwei + Justin</span>
-        <span class="ident">contacts_send</span>.<span class="ident">give</span>(<span class="prelude-val">Some</span>((<span class="number">101</span>, <span class="number">201</span>, <span class="number">1027</span>))); <span class="comment">// Mingwei + Joe</span>
-        <span class="ident">contacts_send</span>.<span class="ident">flush</span>();
+        contacts_send.give(<span class="prelude-val">Some</span>((<span class="number">101</span>, <span class="number">102</span>, <span class="number">1031</span>))); <span class="comment">// Mingwei + Justin
+        </span>contacts_send.give(<span class="prelude-val">Some</span>((<span class="number">101</span>, <span class="number">201</span>, <span class="number">1027</span>))); <span class="comment">// Mingwei + Joe
+        </span>contacts_send.flush();
 
-        <span class="kw">let</span> <span class="ident">mae_diag_datetime</span> = <span class="number">1022</span>;
+        <span class="kw">let </span>mae_diag_datetime = <span class="number">1022</span>;
 
-        <span class="ident">diagnosed_send</span>.<span class="ident">give</span>(<span class="prelude-val">Some</span>((
-            <span class="number">103</span>, <span class="comment">// Mae</span>
-            (
-                <span class="ident">mae_diag_datetime</span>,
-                <span class="ident">mae_diag_datetime</span> + <span class="ident">TRANSMISSIBLE_DURATION</span>,
+        diagnosed_send.give(<span class="prelude-val">Some</span>((
+            <span class="number">103</span>, <span class="comment">// Mae
+            </span>(
+                mae_diag_datetime,
+                mae_diag_datetime + TRANSMISSIBLE_DURATION,
             ),
         )));
-        <span class="ident">diagnosed_send</span>.<span class="ident">flush</span>();
+        diagnosed_send.flush();
 
-        <span class="ident">hydroflow</span>.<span class="ident">run_available</span>();
+        hydroflow.run_available();
         <span class="macro">println!</span>(<span class="string">&quot;A&quot;</span>);
 
-        <span class="ident">contacts_send</span>.<span class="ident">give</span>(<span class="prelude-val">Some</span>((<span class="number">101</span>, <span class="number">103</span>, <span class="ident">mae_diag_datetime</span> + <span class="number">6</span>))); <span class="comment">// Mingwei + Mae</span>
-        <span class="ident">contacts_send</span>.<span class="ident">flush</span>();
+        contacts_send.give(<span class="prelude-val">Some</span>((<span class="number">101</span>, <span class="number">103</span>, mae_diag_datetime + <span class="number">6</span>))); <span class="comment">// Mingwei + Mae
+        </span>contacts_send.flush();
 
-        <span class="ident">hydroflow</span>.<span class="ident">run_available</span>();
+        hydroflow.run_available();
         <span class="macro">println!</span>(<span class="string">&quot;B&quot;</span>);
 
-        <span class="ident">peoples_send</span>.<span class="ident">give</span>(<span class="prelude-val">Some</span>((<span class="number">103</span>, (<span class="string">&quot;Joe H&quot;</span>, <span class="string">&quot;+1 510 555 9999&quot;</span>))));
-        <span class="ident">peoples_send</span>.<span class="ident">flush</span>();
+        peoples_send.give(<span class="prelude-val">Some</span>((<span class="number">103</span>, (<span class="string">&quot;Joe H&quot;</span>, <span class="string">&quot;+1 510 555 9999&quot;</span>))));
+        peoples_send.flush();
 
-        <span class="ident">hydroflow</span>.<span class="ident">run_available</span>();
+        hydroflow.run_available();
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (75b7e52e9 2022-08-13)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

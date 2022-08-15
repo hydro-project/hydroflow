@@ -45,52 +45,52 @@
 <span id="45">45</span>
 <span id="46">46</span>
 <span id="47">47</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scheduled::flow_graph::FlowNodeId</span>;
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::scheduled::flow_graph::FlowNodeId;
 
-<span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">AssembleFlowGraph</span>, <span class="ident">BaseSurface</span>, <span class="ident">PushSurface</span>, <span class="ident">PushSurfaceReversed</span>};
+<span class="kw">use super</span>::{AssembleFlowGraph, BaseSurface, PushSurface, PushSurfaceReversed};
 
-<span class="kw">use</span> <span class="ident">std::marker::PhantomData</span>;
+<span class="kw">use </span>std::marker::PhantomData;
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">StartPushSurface</span>&lt;<span class="ident">Out</span>&gt; {
-    <span class="ident">_phantom</span>: <span class="ident">PhantomData</span>&lt;<span class="kw">fn</span>(<span class="ident">Out</span>)&gt;,
+<span class="kw">pub struct </span>StartPushSurface&lt;Out&gt; {
+    _phantom: PhantomData&lt;<span class="kw">fn</span>(Out)&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">Out</span>&gt; <span class="ident">Default</span> <span class="kw">for</span> <span class="ident">StartPushSurface</span>&lt;<span class="ident">Out</span>&gt; {
-    <span class="kw">fn</span> <span class="ident">default</span>() -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">_phantom</span>: <span class="ident">PhantomData</span>,
+<span class="kw">impl</span>&lt;Out&gt; Default <span class="kw">for </span>StartPushSurface&lt;Out&gt; {
+    <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            _phantom: PhantomData,
         }
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">Out</span>&gt; <span class="ident">StartPushSurface</span>&lt;<span class="ident">Out</span>&gt; {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="self">Self</span> {
-        <span class="ident">Default::default</span>()
+<span class="kw">impl</span>&lt;Out&gt; StartPushSurface&lt;Out&gt; {
+    <span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
+        Default::default()
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">Out</span>&gt; <span class="ident">AssembleFlowGraph</span> <span class="kw">for</span> <span class="ident">StartPushSurface</span>&lt;<span class="ident">Out</span>&gt; {
-    <span class="kw">fn</span> <span class="ident">insert_dep</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">e</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="kw">super</span>::FlowGraph</span>) -&gt; <span class="ident">FlowNodeId</span> {
-        <span class="kw">let</span> <span class="ident">my_id</span> = <span class="ident">e</span>.<span class="ident">add_node</span>(<span class="string">&quot;Start&quot;</span>);
-        <span class="ident">my_id</span>
+<span class="kw">impl</span>&lt;Out&gt; AssembleFlowGraph <span class="kw">for </span>StartPushSurface&lt;Out&gt; {
+    <span class="kw">fn </span>insert_dep(<span class="kw-2">&amp;</span><span class="self">self</span>, e: <span class="kw-2">&amp;mut </span><span class="kw">super</span>::FlowGraph) -&gt; FlowNodeId {
+        <span class="kw">let </span>my_id = e.add_node(<span class="string">&quot;Start&quot;</span>);
+        my_id
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">Out</span>&gt; <span class="ident">BaseSurface</span> <span class="kw">for</span> <span class="ident">StartPushSurface</span>&lt;<span class="ident">Out</span>&gt; {
-    <span class="kw">type</span> <span class="ident">ItemOut</span> = <span class="ident">Out</span>;
+<span class="kw">impl</span>&lt;Out&gt; BaseSurface <span class="kw">for </span>StartPushSurface&lt;Out&gt; {
+    <span class="kw">type </span>ItemOut = Out;
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">Out</span>&gt; <span class="ident">PushSurface</span> <span class="kw">for</span> <span class="ident">StartPushSurface</span>&lt;<span class="ident">Out</span>&gt; {
-    <span class="kw">type</span> <span class="ident">Output</span>&lt;<span class="ident">Next</span>&gt; = <span class="ident">Next</span>
-    <span class="kw">where</span>
-        <span class="ident">Next</span>: <span class="ident">PushSurfaceReversed</span>&lt;<span class="ident">ItemIn</span> = <span class="ident"><span class="self">Self</span>::ItemOut</span>&gt;;
+<span class="kw">impl</span>&lt;Out&gt; PushSurface <span class="kw">for </span>StartPushSurface&lt;Out&gt; {
+    <span class="kw">type </span>Output&lt;Next&gt; = Next
+    <span class="kw">where
+        </span>Next: PushSurfaceReversed&lt;ItemIn = <span class="self">Self</span>::ItemOut&gt;;
 
-    <span class="kw">fn</span> <span class="ident">push_to</span>&lt;<span class="ident">Next</span>&gt;(<span class="self">self</span>, <span class="ident">next</span>: <span class="ident">Next</span>) -&gt; <span class="ident"><span class="self">Self</span>::Output</span>&lt;<span class="ident">Next</span>&gt;
-    <span class="kw">where</span>
-        <span class="ident">Next</span>: <span class="ident">PushSurfaceReversed</span>&lt;<span class="ident">ItemIn</span> = <span class="ident"><span class="self">Self</span>::ItemOut</span>&gt;,
+    <span class="kw">fn </span>push_to&lt;Next&gt;(<span class="self">self</span>, next: Next) -&gt; <span class="self">Self</span>::Output&lt;Next&gt;
+    <span class="kw">where
+        </span>Next: PushSurfaceReversed&lt;ItemIn = <span class="self">Self</span>::ItemOut&gt;,
     {
-        <span class="ident">next</span>
+        next
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (75b7e52e9 2022-08-13)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>
