@@ -295,21 +295,6 @@ pub const OPERATORS: [OperatorConstraints; 18] = [
             }
         }),
     },
-    // OperatorConstraints {
-    //     name: "dedup",
-    //     hard_range_inn: RANGE_1,
-    //     soft_range_inn: RANGE_1,
-    //     hard_range_out: RANGE_1,
-    //     soft_range_out: RANGE_1,
-    //     num_args: 1,
-    //     crosses_stratum: false,
-    //     write_prologue_fn: &(|_| quote! {}),
-    //     write_fn: &(|_, inputs, outputs, args| {
-    //         let ts = quote! { dedup #( #inputs ),* #( #outputs ),* #args };
-    //         let lit = Literal::string(&*format!("{}", ts));
-    //         quote! { #lit }
-    //     }),
-    // },
     OperatorConstraints {
         name: "fold",
         hard_range_inn: RANGE_1,
