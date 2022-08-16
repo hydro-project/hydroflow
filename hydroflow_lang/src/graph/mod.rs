@@ -403,10 +403,14 @@ fn find_subgraph_strata(
 
     let topo_sort_order = {
         // Condensed each SCC into a single node for toposort.
-        let condensed_preds: HashMap<GraphSubgraphId, Vec<GraphSubgraphId>> = subgraph_preds
-            .iter()
-            .map(|(u, preds)| (scc[u], preds.iter().map(|v| scc[v]).collect()))
-            .collect();
+        let mut condensed_preds: HashMap<GraphSubgraphId, Vec<GraphSubgraphId>> =
+            Default::default();
+        for (u, preds) in subgraph_preds.iter() {
+            condensed_preds
+                .entry(scc[u])
+                .or_default()
+                .extend(preds.iter().map(|v| scc[v]));
+        }
 
         graph_algorithms::topo_sort(subgraph_nodes.keys(), |v| {
             condensed_preds.get(&v).into_iter().flatten().cloned()
