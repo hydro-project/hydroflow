@@ -93,6 +93,26 @@ pub fn node_color(node: &Node, inn_degree: usize, out_degree: usize) -> Option<C
 
 type AdjList = SecondaryMap<GraphNodeId, BTreeMap<IndexInt, (GraphNodeId, IndexInt)>>;
 
+fn find_barrier_crossers(
+    nodes: &SlotMap<GraphNodeId, Node>,
+    succs: &AdjList,
+) -> Vec<(GraphNodeId, GraphNodeId, IndexInt, DelayType)> {
+    iter_edges(succs)
+        .filter_map(|((src, _src_idx), (dst, dst_idx))| {
+            if let Node::Operator(dst_operator) = &nodes[dst] {
+                let dst_name = &*dst_operator.name_string();
+                OPERATORS
+                    .iter()
+                    .find(|&op| dst_name == op.name)
+                    .and_then(|op_constraints| (op_constraints.input_delaytype_fn)(dst_idx.value))
+                    .map(|input_barrier| (src, dst, *dst_idx, input_barrier))
+            } else {
+                None
+            }
+        })
+        .collect()
+}
+
 fn find_subgraphs(
     nodes: &mut SlotMap<GraphNodeId, Node>,
     preds: &mut AdjList,
@@ -512,20 +532,7 @@ impl TryFrom<FlatGraph> for PartitionedGraph {
 
     fn try_from(mut flat_graph: FlatGraph) -> Result<Self, Self::Error> {
         // Pairs of node IDs which cross stratums or epochs and therefore cannot be in the same subgraph.
-        let barrier_crossers = iter_edges(&flat_graph.succs)
-            .filter_map(|((src, _src_idx), (dst, dst_idx))| {
-                if let Node::Operator(dst_operator) = &flat_graph.nodes[dst] {
-                    let dst_name = &*dst_operator.name_string();
-                    OPERATORS
-                        .iter()
-                        .find(|&op| dst_name == op.name)
-                        .and_then(|op_constraints| (op_constraints.input_delaytype_fn)(dst_idx.value))
-                        .map(|input_barrier| (src, dst, *dst_idx, input_barrier))
-                } else {
-                    None
-                }
-            })
-            .collect::<Vec<_>>();
+        let barrier_crossers = find_barrier_crossers(&flat_graph.nodes, &flat_graph.succs);
 
         let (mut new_preds, mut new_succs, mut node_subgraph, mut subgraph_nodes) = find_subgraphs(
             &mut flat_graph.nodes,
