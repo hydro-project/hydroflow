@@ -28,6 +28,8 @@ where
                 pred_dfs_postorder(next_pred, preds_fn, marked, order);
             }
             order.push(node_id);
+        } else {
+            // TODO(mingwei): cycle found!
         }
     }
 
@@ -36,4 +38,40 @@ where
     }
 
     order
+}
+
+#[cfg(test)]
+mod test {
+    use std::collections::HashMap;
+
+    use super::*;
+
+    #[test]
+    pub fn test_toposort() {
+        let edges = [
+            (5, 11),
+            (11, 2),
+            (11, 9),
+            (11, 10),
+            (7, 11),
+            (7, 8),
+            (8, 9),
+            (3, 8),
+            (3, 10),
+        ];
+
+        // https://commons.wikimedia.org/wiki/File:Directed_acyclic_graph_2.svg
+        let sort = topo_sort([2, 3, 5, 7, 8, 9, 10, 11], |v| {
+            edges
+                .iter()
+                .filter(move |&&(_, dst)| v == dst)
+                .map(|&(src, _)| src)
+        });
+        println!("{:?}", sort);
+
+        let position: HashMap<_, _> = sort.iter().enumerate().map(|(i, &x)| (x, i)).collect();
+        for (src, dst) in edges.iter() {
+            assert!(position[src] < position[dst]);
+        }
+    }
 }
