@@ -119,92 +119,93 @@ fn find_subgraphs(
             (node_id, op_color)
         })
         .collect();
-    let mut node_union: UnionFind<GraphNodeId> = UnionFind::with_capacity(nodes.len());
+    let mut subgraph_unionfind: UnionFind<GraphNodeId> = UnionFind::with_capacity(nodes.len());
     // All edges which belong to a single subgraph. Other & self-edges become handoffs.
     let mut subgraph_edges: HashSet<(EdgePortRef, EdgePortRef)> = Default::default();
 
     // Sort edges here (for now, no sort/priority).
-    loop {
-        let mut updated = false;
-        for ((src, src_idx), (dst, dst_idx)) in iter_edges(succs) {
-            // Ignore new self-loops.
-            if node_union.same_set(src, dst) {
-                // Note this might be triggered even if the edge (src, dst) is not in the subgraph.
-                // This prevents self-loops. Handoffs needed to break self loops.
-                continue;
+    for ((src, src_idx), (dst, dst_idx)) in iter_edges(succs) {
+        // (Each edge gets looked at once to check if it can be unioned into one subgraph.)
+
+        // Ignore (1) already added edges as well as (2) new self-cycles.
+        if subgraph_unionfind.same_set(src, dst) {
+            // Note this might be triggered even if the edge (src, dst) is not in the subgraph (not case 1).
+            // This prevents self-loops which would violate the in-out tree structure (case 2).
+            // Handoffs will be inserted later for this self-loop.
+            continue;
+        }
+
+        // Ignore if would join stratum crossers (next edges).
+        if barrier_crossers
+            .iter()
+            .any(|&(x_src, x_dst, _x_dst_idx, _x_input_barrier)| {
+                (subgraph_unionfind.same_set(x_src, src) && subgraph_unionfind.same_set(x_dst, dst))
+                    || (subgraph_unionfind.same_set(x_src, dst)
+                        && subgraph_unionfind.same_set(x_dst, src))
+            })
+        {
+            continue;
+        }
+
+        // Set `src` or `dst` color if `None` based on the other (if possible):
+        // `None` indicates an op could be pull or push i.e. unary-in & unary-out.
+        // So in that case we color `src` or `dst` based on its newfound neighbor (the other one).
+        //
+        // Pull -> Pull
+        // Push -> Push
+        // Pull -> [Computation] -> Push
+        // Push -> [Handoff] -> Pull
+        match (node_color[src], node_color[dst]) {
+            (Some(_), Some(_)) => (),
+            (None, None) => (),
+            (None, Some(dst_color)) => {
+                node_color[src] = Some(match dst_color {
+                    Color::Comp => Color::Pull,
+                    Color::Hoff => Color::Push,
+                    pull_or_push => pull_or_push,
+                });
             }
-
-            // Ignore if would join stratum crossers.
-            if barrier_crossers
-                .iter()
-                .any(|&(x_src, x_dst, _x_dst_idx, _x_input_barrier)| {
-                    (node_union.same_set(x_src, src) && node_union.same_set(x_dst, dst))
-                        || (node_union.same_set(x_src, dst) && node_union.same_set(x_dst, src))
-                })
-            {
-                continue;
-            }
-
-            // Set `src` or `dst` color if `None` based on the other (if possible):
-            // Pull -> Pull
-            // Push -> Push
-            // Pull -> [Comp] -> Push
-            // Push -> [Hoff] -> Pull
-            match (node_color[src], node_color[dst]) {
-                (Some(_), Some(_)) => (),
-                (None, None) => (),
-                (None, Some(dst_color)) => {
-                    node_color[src] = Some(match dst_color {
-                        Color::Comp => Color::Pull,
-                        Color::Hoff => Color::Push,
-                        pull_or_push => pull_or_push,
-                    });
-                    updated = true;
-                }
-                (Some(src_color), None) => {
-                    node_color[dst] = Some(match src_color {
-                        Color::Comp => Color::Push,
-                        Color::Hoff => Color::Pull,
-                        pull_or_push => pull_or_push,
-                    });
-                    updated = true;
-                }
-            }
-
-            // If SRC and DST can be in the same subgraph.
-            let can_connect = match (node_color[src], node_color[dst]) {
-                (Some(Color::Pull), Some(Color::Pull)) => true,
-                (Some(Color::Pull), Some(Color::Comp)) => true,
-                (Some(Color::Pull), Some(Color::Push)) => true,
-
-                (Some(Color::Comp | Color::Push), Some(Color::Pull)) => false,
-                (Some(Color::Comp | Color::Push), Some(Color::Comp)) => false,
-                (Some(Color::Comp | Color::Push), Some(Color::Push)) => true,
-
-                // Handoffs are not part of subgraphs.
-                (Some(Color::Hoff), Some(_)) => false,
-                (Some(_), Some(Color::Hoff)) => false,
-
-                // Linear chain.
-                (None, None) => true,
-
-                _some_none => unreachable!(),
-            };
-            if can_connect {
-                node_union.union(src, dst);
-                subgraph_edges.insert(((src, src_idx), (dst, dst_idx)));
-                updated = true;
+            (Some(src_color), None) => {
+                node_color[dst] = Some(match src_color {
+                    Color::Comp => Color::Push,
+                    Color::Hoff => Color::Pull,
+                    pull_or_push => pull_or_push,
+                });
             }
         }
-        if !updated {
-            break;
+
+        // If `src` and `dst` can be in the same subgraph.
+        let can_connect = match (node_color[src], node_color[dst]) {
+            (Some(Color::Pull), Some(Color::Pull)) => true,
+            (Some(Color::Pull), Some(Color::Comp)) => true,
+            (Some(Color::Pull), Some(Color::Push)) => true,
+
+            (Some(Color::Comp | Color::Push), Some(Color::Pull)) => false,
+            (Some(Color::Comp | Color::Push), Some(Color::Comp)) => false,
+            (Some(Color::Comp | Color::Push), Some(Color::Push)) => true,
+
+            // Handoffs are not part of subgraphs.
+            (Some(Color::Hoff), Some(_)) => false,
+            (Some(_), Some(Color::Hoff)) => false,
+
+            // Linear chain.
+            (None, None) => true,
+
+            _some_none => unreachable!(),
+        };
+
+        if can_connect {
+            // At this point we have selected this edge and its src & dst to be
+            // within a single subgraph.
+            subgraph_unionfind.union(src, dst);
+            subgraph_edges.insert(((src, src_idx), (dst, dst_idx)));
         }
     }
 
-    // Copy of `self.preds` for the output.
+    // Initialize for creating a copy of `self.preds` for the output.
     let mut new_preds: SecondaryMap<GraphNodeId, OutboundEdges> =
         nodes.keys().map(|k| (k, Default::default())).collect();
-    // Copy of `self.succs` for the output.
+    // Initialize for creating a copy of `self.succs` for the output.
     let mut new_succs: SecondaryMap<GraphNodeId, OutboundEdges> =
         nodes.keys().map(|k| (k, Default::default())).collect();
 
@@ -244,6 +245,7 @@ fn find_subgraphs(
 
     // Determine node's subgraph and subgraph's nodes.
     // This list of nodes in each subgraph are to be in topological sort order.
+    // Eventually returned directly in the `PartitionedGraph`.
     let (node_subgraph, subgraph_nodes) = {
         // Ignore handoffs. Esentially each subgraph has it's own topo sort.
         let topo_sort = graph_algorithms::topo_sort(
@@ -261,19 +263,22 @@ fn find_subgraphs(
             },
         );
 
-        // For a `NodeId`, what `SubgraphId` does it belong to.
-        let mut node_subgraph: SecondaryMap<GraphNodeId, GraphSubgraphId> = Default::default();
-        // For a `SubgraphId`, what `NodeId`s belong to it.
-        let mut subgraph_nodes: SlotMap<GraphSubgraphId, Vec<GraphNodeId>> = Default::default();
-        // Populate above.
+        // Go through the `UnionFind` and create a list of nodes in each union.
+        // TODO(mingwei): put in own UnionFind fn.
         let mut grouped_nodes: SecondaryMap<GraphNodeId, Vec<GraphNodeId>> = Default::default();
         for node_id in topo_sort {
-            let repr_node = node_union.find(node_id);
+            let repr_node = subgraph_unionfind.find(node_id);
             if !grouped_nodes.contains_key(repr_node) {
                 grouped_nodes.insert(repr_node, Default::default());
             }
             grouped_nodes[repr_node].push(node_id);
         }
+
+        // For a `NodeId`, what `SubgraphId` does it belong to.
+        let mut node_subgraph: SecondaryMap<GraphNodeId, GraphSubgraphId> = Default::default();
+        // For a `SubgraphId`, what `NodeId`s belong to it.
+        let mut subgraph_nodes: SlotMap<GraphSubgraphId, Vec<GraphNodeId>> = Default::default();
+        // Populate above.
         for (_repr_node, member_nodes) in grouped_nodes {
             subgraph_nodes.insert_with_key(|subgraph_id| {
                 for &node_id in member_nodes.iter() {
@@ -298,7 +303,8 @@ fn find_subgraph_strata(
     barrier_crossers: &[(GraphNodeId, GraphNodeId, IndexInt, InputBarrier)],
 ) -> Result<SecondaryMap<GraphSubgraphId, usize>, ()> {
     // Determine subgraphs's stratum number.
-    // Find SCCs ignoring negative edges, then do TopoSort on the resulting DAG.
+    // Find SCCs ignoring `next_epoch()` edges, then do TopoSort on the resulting DAG.
+    // (Cycles on cross-stratum negative edges are an error.)
 
     // Generate subgraph graph.
     let mut subgraph_preds: HashMap<GraphSubgraphId, Vec<GraphSubgraphId>> = Default::default();
@@ -376,13 +382,15 @@ fn find_subgraph_strata(
         })
     };
 
+    // Just number the subgraphs 0, 1, 2, 3 in toposort order.
     let mut subgraph_stratum: SecondaryMap<GraphSubgraphId, usize> = topo_sort_order
         .into_iter()
         .enumerate()
         .map(|(n, sg_id)| (sg_id, n))
         .collect();
 
-    let max_stratum = subgraph_stratum.values().cloned().max().unwrap_or(0) + 1;
+    // Re-introduce the `next_epoch()` edges, ensuring they actually go to the next epoch.
+    let max_stratum = subgraph_stratum.values().cloned().max().unwrap_or(0) + 1; // Used for `next_epoch()` delayer subgraphs.
     for &(src, dst, dst_idx, input_barrier) in barrier_crossers.iter() {
         let src_sg = node_subgraph[src];
         let dst_sg = node_subgraph[dst];
@@ -390,22 +398,12 @@ fn find_subgraph_strata(
         let dst_stratum = subgraph_stratum[dst_sg];
         match input_barrier {
             InputBarrier::None => unreachable!("No barrier"),
-            InputBarrier::Stratum => {
-                // Any negative edges which go onto the same or previous stratum are bad.
-                // Indicates an unbroken negative cycle.
-                if dst_stratum <= src_stratum {
-                    dst_idx
-                        .span()
-                        .unwrap()
-                        .error("Connection creates a negative cycle which must be broken with a `next_epoch()` operator.")
-                        .emit();
-                    return Err(());
-                }
-            }
             InputBarrier::Epoch => {
-                // If epoch edge goes foreward, need to buffer. (TODO: use a different kind of handoff).
+                // If epoch edge goes foreward in stratum, need to buffer.
+                // (TODO(mingwei): could use a different kind of handoff.)
                 if src_stratum <= dst_stratum {
-                    // Need to inject.
+                    // We inject a new subgraph between the src/dst which runs as the last stratum
+                    // of the epoch and therefore delays the data until the next epoch.
                     let new_node_id = nodes.insert(Node::Operator(parse_quote! { identity() }));
                     let new_subgraph_id = subgraph_nodes.insert(vec![new_node_id]);
                     subgraph_stratum.insert(new_subgraph_id, max_stratum);
@@ -447,12 +445,25 @@ fn find_subgraph_strata(
                     }
                 }
             }
+            InputBarrier::Stratum => {
+                // Any negative edges which go onto the same or previous stratum are bad.
+                // Indicates an unbroken negative cycle.
+                if dst_stratum <= src_stratum {
+                    dst_idx
+                        .span()
+                        .unwrap()
+                        .error("Negative edge creates a negative cycle which must be broken with a `next_epoch()` operator.")
+                        .emit();
+                    return Err(());
+                }
+            }
         }
     }
 
     Ok(subgraph_stratum)
 }
 
+// Find the input (recv) and output (send) handoffs for each subgraph.
 fn find_subgraph_handoffs(
     nodes: &SlotMap<GraphNodeId, Node>,
     new_succs: &AdjList,
@@ -469,6 +480,10 @@ fn find_subgraph_handoffs(
             .map(|k| (k, Default::default()))
             .collect();
     let mut subgraph_send_handoffs = subgraph_recv_handoffs.clone();
+
+    // For each edge in the graph, if `src` or `dst` are a handoff then assign
+    // that handoff the to neighboring subgraphs (the other of `src`/`dst`).
+    // (Mingwei: alternatively, could iterate nodes instead and just look at pred/succ).
     for edge in iter_edges(new_succs) {
         let ((src, _), (dst, _)) = edge;
         let (src_node, dst_node) = (&nodes[src], &nodes[dst]);

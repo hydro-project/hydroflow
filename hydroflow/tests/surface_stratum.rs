@@ -162,9 +162,10 @@ pub fn test_epoch_loop_3() {
     assert_eq!(&[] as &[usize], &*output.take());
 }
 
-// RUSTFLAGS="$RUSTFLAGS -Z proc-macro-backtrace" cargo test --package hydroflow --test surface_stratum -- test_surface_syntax_strata --exact --nocapture
 #[test]
-pub fn test_surface_syntax_strata() {
+pub fn test_surface_syntax_graph_unreachability() {
+    // TODO(mingwei): may need persistence if we want this to make easier to eyeball.
+
     // An edge in the input data = a pair of `usize` vertex IDs.
     let (pairs_send, pairs_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
 
