@@ -167,54 +167,7 @@ fn find_subgraphs(
             continue;
         }
 
-        // Set `src` or `dst` color if `None` based on the other (if possible):
-        // `None` indicates an op could be pull or push i.e. unary-in & unary-out.
-        // So in that case we color `src` or `dst` based on its newfound neighbor (the other one).
-        //
-        // Pull -> Pull
-        // Push -> Push
-        // Pull -> [Computation] -> Push
-        // Push -> [Handoff] -> Pull
-        match (node_color[src], node_color[dst]) {
-            (Some(_), Some(_)) => (),
-            (None, None) => (),
-            (None, Some(dst_color)) => {
-                node_color[src] = Some(match dst_color {
-                    Color::Comp => Color::Pull,
-                    Color::Hoff => Color::Push,
-                    pull_or_push => pull_or_push,
-                });
-            }
-            (Some(src_color), None) => {
-                node_color[dst] = Some(match src_color {
-                    Color::Comp => Color::Push,
-                    Color::Hoff => Color::Pull,
-                    pull_or_push => pull_or_push,
-                });
-            }
-        }
-
-        // If `src` and `dst` can be in the same subgraph.
-        let can_connect = match (node_color[src], node_color[dst]) {
-            (Some(Color::Pull), Some(Color::Pull)) => true,
-            (Some(Color::Pull), Some(Color::Comp)) => true,
-            (Some(Color::Pull), Some(Color::Push)) => true,
-
-            (Some(Color::Comp | Color::Push), Some(Color::Pull)) => false,
-            (Some(Color::Comp | Color::Push), Some(Color::Comp)) => false,
-            (Some(Color::Comp | Color::Push), Some(Color::Push)) => true,
-
-            // Handoffs are not part of subgraphs.
-            (Some(Color::Hoff), Some(_)) => false,
-            (Some(_), Some(Color::Hoff)) => false,
-
-            // Linear chain.
-            (None, None) => true,
-
-            _some_none => unreachable!(),
-        };
-
-        if can_connect {
+        if can_connect_colorize(&mut node_color, src, dst) {
             // At this point we have selected this edge and its src & dst to be
             // within a single subgraph.
             subgraph_unionfind.union(src, dst);
@@ -312,6 +265,64 @@ fn find_subgraphs(
     };
 
     (new_preds, new_succs, node_subgraph, subgraph_nodes)
+}
+
+/// Set `src` or `dst` color if `None` based on the other (if possible):
+/// `None` indicates an op could be pull or push i.e. unary-in & unary-out.
+/// So in that case we color `src` or `dst` based on its newfound neighbor (the other one).
+///
+/// Returns if `src` and `dst` can be in the same subgraph.
+fn can_connect_colorize(
+    node_color: &mut SecondaryMap<GraphNodeId, Option<Color>>,
+    src: GraphNodeId,
+    dst: GraphNodeId,
+) -> bool {
+    // Pull -> Pull
+    // Push -> Push
+    // Pull -> [Computation] -> Push
+    // Push -> [Handoff] -> Pull
+    let can_connect = match (node_color[src], node_color[dst]) {
+        // Linear chain.
+        (None, None) => true,
+
+        // Infer left side.
+        (None, Some(Color::Pull | Color::Comp)) => {
+            node_color[src] = Some(Color::Pull);
+            true
+        }
+        (None, Some(Color::Push | Color::Hoff)) => {
+            node_color[src] = Some(Color::Push);
+            true
+        }
+
+        // Infer right side.
+        (Some(Color::Pull | Color::Hoff), None) => {
+            node_color[dst] = Some(Color::Pull);
+            true
+        }
+        (Some(Color::Comp | Color::Push), None) => {
+            node_color[dst] = Some(Color::Push);
+            true
+        }
+
+        // Both sides already specified.
+        (Some(Color::Pull), Some(Color::Pull)) => true,
+        (Some(Color::Pull), Some(Color::Comp)) => true,
+        (Some(Color::Pull), Some(Color::Push)) => true,
+
+        (Some(Color::Comp), Some(Color::Pull)) => false,
+        (Some(Color::Comp), Some(Color::Comp)) => false,
+        (Some(Color::Comp), Some(Color::Push)) => true,
+
+        (Some(Color::Push), Some(Color::Pull)) => false,
+        (Some(Color::Push), Some(Color::Comp)) => false,
+        (Some(Color::Push), Some(Color::Push)) => true,
+
+        // Handoffs are not part of subgraphs.
+        (Some(Color::Hoff), Some(_)) => false,
+        (Some(_), Some(Color::Hoff)) => false,
+    };
+    can_connect
 }
 
 fn find_subgraph_strata(
