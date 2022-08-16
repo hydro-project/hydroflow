@@ -10,8 +10,7 @@ use syn::{Expr, GenericArgument, Token};
 use super::{GraphNodeId, GraphSubgraphId};
 
 #[derive(Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Debug)]
-pub enum InputBarrier {
-    None,
+pub enum DelayType {
     Stratum,
     Epoch,
 }
@@ -33,7 +32,7 @@ pub struct OperatorConstraints {
     pub num_args: usize,
 
     /// Determines if this input must be preceeded by a stratum barrier.
-    pub input_barrier_fn: &'static dyn Fn(usize) -> InputBarrier,
+    pub input_delaytype_fn: &'static dyn Fn(usize) -> Option<DelayType>,
     /// Generate code which runs once outside the subgraph to set up any
     /// external stuff like state API stuff or external chanels, etc.
     pub write_prologue_fn:
@@ -77,7 +76,7 @@ pub const OPERATORS: [OperatorConstraints; 18] = [
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
         num_args: 0,
-        input_barrier_fn: &|_| InputBarrier::None,
+        input_delaytype_fn: &|_| None,
         write_prologue_fn: &(|_, _| quote! {}),
         write_iterator_fn: &(|&WriteContextArgs { ident, .. },
                               &WriteIteratorArgs { inputs, .. }| {
@@ -96,7 +95,7 @@ pub const OPERATORS: [OperatorConstraints; 18] = [
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
         num_args: 0,
-        input_barrier_fn: &|_| InputBarrier::None,
+        input_delaytype_fn: &|_| None,
         write_prologue_fn: &(|&WriteContextArgs {
                                   subgraph_id,
                                   node_id,
@@ -146,7 +145,7 @@ pub const OPERATORS: [OperatorConstraints; 18] = [
         hard_range_out: &(0..),
         soft_range_out: &(2..),
         num_args: 0,
-        input_barrier_fn: &|_| InputBarrier::None,
+        input_delaytype_fn: &|_| None,
         write_prologue_fn: &(|_, _| quote! {}),
         write_iterator_fn: &(|&WriteContextArgs { root, ident, .. },
                               &WriteIteratorArgs { outputs, .. }| {
@@ -168,7 +167,7 @@ pub const OPERATORS: [OperatorConstraints; 18] = [
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
         num_args: 0,
-        input_barrier_fn: &|_| InputBarrier::None,
+        input_delaytype_fn: &|_| None,
         write_prologue_fn: &(|_, _| quote! {}),
         write_iterator_fn: IDENTITY_WRITE_ITERATOR_FN,
     },
@@ -179,7 +178,7 @@ pub const OPERATORS: [OperatorConstraints; 18] = [
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
         num_args: 1,
-        input_barrier_fn: &|_| InputBarrier::None,
+        input_delaytype_fn: &|_| None,
         write_prologue_fn: &(|_, _| quote! {}),
         write_iterator_fn: &(|&WriteContextArgs { root, ident, .. },
                               &WriteIteratorArgs {
@@ -209,7 +208,7 @@ pub const OPERATORS: [OperatorConstraints; 18] = [
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
         num_args: 1,
-        input_barrier_fn: &|_| InputBarrier::None,
+        input_delaytype_fn: &|_| None,
         write_prologue_fn: &(|_, _| quote! {}),
         write_iterator_fn: &(|&WriteContextArgs { root, ident, .. },
                               &WriteIteratorArgs {
@@ -242,7 +241,7 @@ pub const OPERATORS: [OperatorConstraints; 18] = [
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
         num_args: 1,
-        input_barrier_fn: &|_| InputBarrier::None,
+        input_delaytype_fn: &|_| None,
         write_prologue_fn: &(|_, _| quote! {}),
         write_iterator_fn: &(|&WriteContextArgs { root, ident, .. },
                               &WriteIteratorArgs {
@@ -272,7 +271,7 @@ pub const OPERATORS: [OperatorConstraints; 18] = [
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
         num_args: 1,
-        input_barrier_fn: &|_| InputBarrier::None,
+        input_delaytype_fn: &|_| None,
         write_prologue_fn: &(|_, _| quote! {}),
         write_iterator_fn: &(|&WriteContextArgs { root, ident, .. },
                               &WriteIteratorArgs {
@@ -302,7 +301,7 @@ pub const OPERATORS: [OperatorConstraints; 18] = [
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
         num_args: 2,
-        input_barrier_fn: &|_| InputBarrier::Stratum,
+        input_delaytype_fn: &|_| Some(DelayType::Stratum),
         write_prologue_fn: &(|_, _| quote! {}),
         write_iterator_fn: &(|&WriteContextArgs { ident, .. },
                               &WriteIteratorArgs {
@@ -327,7 +326,7 @@ pub const OPERATORS: [OperatorConstraints; 18] = [
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
         num_args: 1,
-        input_barrier_fn: &|_| InputBarrier::Stratum,
+        input_delaytype_fn: &|_| Some(DelayType::Stratum),
         write_prologue_fn: &(|_, _| quote! {}),
         write_iterator_fn: &(|&WriteContextArgs { ident, .. },
                               &WriteIteratorArgs {
@@ -350,7 +349,7 @@ pub const OPERATORS: [OperatorConstraints; 18] = [
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
         num_args: 0,
-        input_barrier_fn: &|_| InputBarrier::Stratum,
+        input_delaytype_fn: &|_| Some(DelayType::Stratum),
         write_prologue_fn: &(|_, _| quote! {}),
         write_iterator_fn: &(|&WriteContextArgs { ident, .. },
                               &WriteIteratorArgs {
@@ -374,7 +373,7 @@ pub const OPERATORS: [OperatorConstraints; 18] = [
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
         num_args: 1,
-        input_barrier_fn: &|_| InputBarrier::None,
+        input_delaytype_fn: &|_| None,
         write_prologue_fn: &(|_, &WriteIteratorArgs { arguments, .. }| {
             let receiver = &arguments[0];
             quote! {
@@ -401,7 +400,7 @@ pub const OPERATORS: [OperatorConstraints; 18] = [
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
         num_args: 1,
-        input_barrier_fn: &|_| InputBarrier::None,
+        input_delaytype_fn: &|_| None,
         write_prologue_fn: &(|&WriteContextArgs {
                                   subgraph_id,
                                   node_id,
@@ -439,7 +438,7 @@ pub const OPERATORS: [OperatorConstraints; 18] = [
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
         num_args: 1,
-        input_barrier_fn: &|_| InputBarrier::None,
+        input_delaytype_fn: &|_| None,
         write_prologue_fn: &(|_, _| quote! {}),
         write_iterator_fn: &(|&WriteContextArgs { ident, .. },
                               &WriteIteratorArgs { arguments, .. }| {
@@ -455,7 +454,7 @@ pub const OPERATORS: [OperatorConstraints; 18] = [
         hard_range_out: RANGE_0,
         soft_range_out: RANGE_0,
         num_args: 1,
-        input_barrier_fn: &|_| InputBarrier::None,
+        input_delaytype_fn: &|_| None,
         write_prologue_fn: &(|_, _| quote! {}),
         write_iterator_fn: &(|&WriteContextArgs { root, ident, .. },
                               &WriteIteratorArgs { arguments, .. }| {
@@ -471,13 +470,7 @@ pub const OPERATORS: [OperatorConstraints; 18] = [
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
         num_args: 0,
-        input_barrier_fn: &|idx| {
-            if 1 == idx {
-                InputBarrier::Stratum
-            } else {
-                InputBarrier::None
-            }
-        },
+        input_delaytype_fn: &|idx| (1 == idx).then_some(DelayType::Stratum),
         write_prologue_fn: &(|&WriteContextArgs {
                                   root,
                                   subgraph_id,
@@ -543,7 +536,7 @@ pub const OPERATORS: [OperatorConstraints; 18] = [
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
         num_args: 0,
-        input_barrier_fn: &|_| InputBarrier::Stratum,
+        input_delaytype_fn: &|_| Some(DelayType::Stratum),
         write_prologue_fn: &(|_, _| quote! {}),
         write_iterator_fn: IDENTITY_WRITE_ITERATOR_FN,
     },
@@ -554,7 +547,7 @@ pub const OPERATORS: [OperatorConstraints; 18] = [
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
         num_args: 0,
-        input_barrier_fn: &|_| InputBarrier::Epoch,
+        input_delaytype_fn: &|_| Some(DelayType::Epoch),
         write_prologue_fn: &(|_, _| quote! {}),
         write_iterator_fn: IDENTITY_WRITE_ITERATOR_FN,
     },
