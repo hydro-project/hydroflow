@@ -15,7 +15,7 @@ use crate::pretty_span::PrettySpan;
 use crate::union_find::UnionFind;
 
 use self::flat_graph::FlatGraph;
-use self::ops::InputBarrier;
+use self::ops::DelayType;
 use self::partitioned_graph::PartitionedGraph;
 
 pub mod flat_graph;
@@ -97,7 +97,7 @@ fn find_subgraphs(
     nodes: &mut SlotMap<GraphNodeId, Node>,
     preds: &mut AdjList,
     succs: &mut AdjList,
-    barrier_crossers: &[(GraphNodeId, GraphNodeId, IndexInt, InputBarrier)],
+    barrier_crossers: &[(GraphNodeId, GraphNodeId, IndexInt, DelayType)],
 ) -> (
     AdjList,
     AdjList,
@@ -300,7 +300,7 @@ fn find_subgraph_strata(
     new_succs: &mut AdjList,
     node_subgraph: &mut SecondaryMap<GraphNodeId, GraphSubgraphId>,
     subgraph_nodes: &mut SlotMap<GraphSubgraphId, Vec<GraphNodeId>>,
-    barrier_crossers: &[(GraphNodeId, GraphNodeId, IndexInt, InputBarrier)],
+    barrier_crossers: &[(GraphNodeId, GraphNodeId, IndexInt, DelayType)],
 ) -> Result<SecondaryMap<GraphSubgraphId, usize>, ()> {
     // Determine subgraphs's stratum number.
     // Find SCCs ignoring `next_epoch()` edges, then do TopoSort on the resulting DAG.
@@ -315,7 +315,7 @@ fn find_subgraph_strata(
             for &(pred, _) in new_preds[node_id].values() {
                 let pred_sg = node_subgraph[pred];
                 for &(succ, succ_idx) in new_succs[node_id].values() {
-                    if barrier_crossers.contains(&(pred, succ, succ_idx, InputBarrier::Epoch)) {
+                    if barrier_crossers.contains(&(pred, succ, succ_idx, DelayType::Epoch)) {
                         continue;
                     }
                     let succ_sg = node_subgraph[succ];
@@ -397,8 +397,7 @@ fn find_subgraph_strata(
         let src_stratum = subgraph_stratum[src_sg];
         let dst_stratum = subgraph_stratum[dst_sg];
         match input_barrier {
-            InputBarrier::None => unreachable!("No barrier"),
-            InputBarrier::Epoch => {
+            DelayType::Epoch => {
                 // If epoch edge goes foreward in stratum, need to buffer.
                 // (TODO(mingwei): could use a different kind of handoff.)
                 if src_stratum <= dst_stratum {
@@ -445,7 +444,7 @@ fn find_subgraph_strata(
                     }
                 }
             }
-            InputBarrier::Stratum => {
+            DelayType::Stratum => {
                 // Any negative edges which go onto the same or previous stratum are bad.
                 // Indicates an unbroken negative cycle.
                 if dst_stratum <= src_stratum {
@@ -520,15 +519,12 @@ impl TryFrom<FlatGraph> for PartitionedGraph {
                     OPERATORS
                         .iter()
                         .find(|&op| dst_name == op.name)
-                        .map(|op_constraints| {
-                            let input_barrier = (op_constraints.input_barrier_fn)(dst_idx.value);
-                            (src, dst, *dst_idx, input_barrier)
-                        })
+                        .and_then(|op_constraints| (op_constraints.input_delaytype_fn)(dst_idx.value))
+                        .map(|input_barrier| (src, dst, *dst_idx, input_barrier))
                 } else {
                     None
                 }
             })
-            .filter(|&(_, _, _, input_barrier)| InputBarrier::None != input_barrier)
             .collect::<Vec<_>>();
 
         let (mut new_preds, mut new_succs, mut node_subgraph, mut subgraph_nodes) = find_subgraphs(
