@@ -438,45 +438,28 @@ fn find_subgraph_strata(
                 if src_stratum <= dst_stratum {
                     // We inject a new subgraph between the src/dst which runs as the last stratum
                     // of the epoch and therefore delays the data until the next epoch.
-                    let new_node_id = nodes.insert(Node::Operator(parse_quote! { identity() }));
+
+                    // Before: A (src) -> H -> B (dst)
+                    let (hoff_node_id, _hoff_idx) = new_preds[dst][&dst_idx];
+                    let new_node_id = insert_intermediate_node(
+                        nodes,
+                        new_preds,
+                        new_succs,
+                        Node::Operator(parse_quote! { identity() }),
+                        (hoff_node_id, dst, dst_idx),
+                    );
                     let new_subgraph_id = subgraph_nodes.insert(vec![new_node_id]);
                     subgraph_stratum.insert(new_subgraph_id, max_stratum);
                     node_subgraph.insert(new_node_id, new_subgraph_id);
-
-                    let new_hoff_id = nodes.insert(Node::Handoff);
-
-                    {
-                        new_preds.insert(new_node_id, Default::default());
-                        new_succs.insert(new_node_id, Default::default());
-                        new_preds.insert(new_hoff_id, Default::default());
-                        new_succs.insert(new_hoff_id, Default::default());
-                    }
-
-                    // Before: A (src) -> H -> B (dst)
-                    // After: A -> H' -> X -> H -> B
-                    {
-                        let ii0 = IndexInt {
-                            value: 0,
-                            span: Span::call_site(),
-                        };
-
-                        let (old_hoff_id, _) = new_preds[dst][&dst_idx];
-                        // X <- H
-                        let (a_id, a_idx) = new_preds[old_hoff_id]
-                            .insert(ii0, (new_node_id, ii0))
-                            .expect("Handoff should be connected");
-
-                        // A <-> H'
-                        new_succs[a_id]
-                            .insert(a_idx, (new_hoff_id, ii0))
-                            .expect("A should be connected to old handoff");
-                        new_preds[new_hoff_id].insert(ii0, (a_id, ii0));
-
-                        //  H' <-> X -> H
-                        new_succs[new_hoff_id].insert(ii0, (new_node_id, ii0));
-                        new_preds[new_node_id].insert(ii0, (new_hoff_id, ii0));
-                        new_succs[new_node_id].insert(ii0, (old_hoff_id, ii0));
-                    }
+                    // Intermediate: A (src) -> H -> X -> B (dst)
+                    let _hoff_node_id = insert_intermediate_node(
+                        nodes,
+                        new_preds,
+                        new_succs,
+                        Node::Handoff,
+                        (new_node_id, dst, dst_idx),
+                    );
+                    // After: A (src) -> H -> X -> H' -> B (dst)
                 }
             }
             DelayType::Stratum => {
@@ -584,6 +567,46 @@ impl TryFrom<FlatGraph> for PartitionedGraph {
             subgraph_send_handoffs,
         })
     }
+}
+
+/// `edge`: (src, dst, dst_idx)
+///
+/// Before: A (src) ------------> B (dst)
+/// After:  A (src) -> X (new) -> B (dst)
+fn insert_intermediate_node(
+    nodes: &mut SlotMap<GraphNodeId, Node>,
+    preds: &mut AdjList,
+    succs: &mut AdjList,
+    node: Node,
+    edge: (GraphNodeId, GraphNodeId, IndexInt),
+) -> GraphNodeId {
+    let ii0 = IndexInt {
+        value: 0,
+        span: Span::call_site(),
+    };
+
+    let (src, dst, dst_idx) = edge;
+    let new_id = nodes.insert(node);
+
+    // X <- B
+    let (src_alt, src_idx) = preds[dst]
+        .insert(dst_idx, (new_id, ii0))
+        .expect("Pred edge should exist.");
+    assert_eq!(src, src_alt, "Src should match.");
+
+    // A -> X
+    let (dst_alt, dst_idx_alt) = succs[src]
+        .insert(src_idx, (new_id, ii0))
+        .expect("Succ edge should exist.");
+    assert_eq!(dst, dst_alt, "Dst should match.");
+    assert_eq!(dst_idx, dst_idx_alt, "Dst idx should match.");
+
+    // A <- X
+    preds.insert(new_id, BTreeMap::from([(ii0, (src, src_idx))]));
+    // X -> B
+    succs.insert(new_id, BTreeMap::from([(ii0, (dst, dst_idx))]));
+
+    new_id
 }
 
 pub(crate) fn iter_edges(
