@@ -39,6 +39,8 @@ pub type EdgePortRef<'a> = (GraphNodeId, &'a IndexInt);
 /// BTreeMap is used to ensure iteration order matches `IndexInt` order.
 pub type OutboundEdges = BTreeMap<IndexInt, EdgePort>;
 
+type AdjList = SecondaryMap<GraphNodeId, OutboundEdges>;
+
 pub enum Node {
     Operator(Operator),
     Handoff,
@@ -91,8 +93,6 @@ pub fn node_color(node: &Node, inn_degree: usize, out_degree: usize) -> Option<C
     }
 }
 
-type AdjList = SecondaryMap<GraphNodeId, BTreeMap<IndexInt, (GraphNodeId, IndexInt)>>;
-
 fn find_barrier_crossers(
     nodes: &SlotMap<GraphNodeId, Node>,
     succs: &AdjList,
@@ -119,8 +119,6 @@ fn find_subgraphs(
     succs: &mut AdjList,
     barrier_crossers: &[(GraphNodeId, GraphNodeId, IndexInt, DelayType)],
 ) -> (
-    AdjList,
-    AdjList,
     SecondaryMap<GraphNodeId, GraphSubgraphId>,
     SlotMap<GraphSubgraphId, Vec<GraphNodeId>>,
 ) {
@@ -140,8 +138,12 @@ fn find_subgraphs(
         })
         .collect();
     let mut subgraph_unionfind: UnionFind<GraphNodeId> = UnionFind::with_capacity(nodes.len());
-    // All edges which belong to a single subgraph. Other & self-edges become handoffs.
-    let mut subgraph_edges: HashSet<(EdgePortRef, EdgePortRef)> = Default::default();
+
+    // All edges which are handoffs. Starts out with all edges and we remove
+    // from this set as we construct subgraphs.
+    let mut handoff_edges: HashSet<(EdgePort, EdgePort)> = iter_edges(succs)
+        .map(|((src, &src_idx), (dst, &dst_idx))| ((src, src_idx), (dst, dst_idx)))
+        .collect();
 
     // Sort edges here (for now, no sort/priority).
     for ((src, src_idx), (dst, dst_idx)) in iter_edges(succs) {
@@ -171,49 +173,20 @@ fn find_subgraphs(
             // At this point we have selected this edge and its src & dst to be
             // within a single subgraph.
             subgraph_unionfind.union(src, dst);
-            subgraph_edges.insert(((src, src_idx), (dst, dst_idx)));
+            assert!(handoff_edges.remove(&((src, *src_idx), (dst, *dst_idx))));
         }
     }
 
-    // Initialize for creating a copy of `self.preds` for the output.
-    let mut new_preds: SecondaryMap<GraphNodeId, OutboundEdges> =
-        nodes.keys().map(|k| (k, Default::default())).collect();
-    // Initialize for creating a copy of `self.succs` for the output.
-    let mut new_succs: SecondaryMap<GraphNodeId, OutboundEdges> =
-        nodes.keys().map(|k| (k, Default::default())).collect();
-
-    // Copy over edges, inserting handoffs between subgraphs (or on subgraph self-edges) when needed.
-    for edge in iter_edges(succs) {
-        let is_subgraph_edge = subgraph_edges.contains(&edge); // Internal subgraph edges are not handoffs.
-        let ((src, src_idx), (dst, dst_idx)) = edge;
+    // Insert handoffs between subgraphs (or on subgraph self-loop edges)
+    for edge in handoff_edges {
+        let ((src, _src_idx), (dst, dst_idx)) = edge;
 
         // Already has a handoff, no need to insert one.
-        if is_subgraph_edge
-            || matches!(nodes[src], Node::Handoff)
-            || matches!(nodes[dst], Node::Handoff)
-        {
-            new_preds[dst].insert(*dst_idx, (src, *src_idx));
-            new_succs[src].insert(*src_idx, (dst, *dst_idx));
-        } else {
-            // Needs handoff inserted.
-            // A -> H -> Z
-            let hoff_id = nodes.insert(Node::Handoff);
-            new_preds.insert(hoff_id, Default::default());
-            new_succs.insert(hoff_id, Default::default());
-
-            let zero_index = IndexInt {
-                value: 0,
-                span: Span::call_site(),
-            };
-            // A -> H.
-            new_succs[src].insert(*src_idx, (hoff_id, zero_index));
-            // A <- H.
-            new_preds[hoff_id].insert(zero_index, (src, *src_idx));
-            // H <- Z.
-            new_preds[dst].insert(*dst_idx, (hoff_id, zero_index));
-            // H -> Z.
-            new_succs[hoff_id].insert(zero_index, (dst, *dst_idx));
+        if matches!(nodes[src], Node::Handoff) || matches!(nodes[dst], Node::Handoff) {
+            continue;
         }
+
+        insert_intermediate_node(nodes, preds, succs, Node::Handoff, (src, dst, dst_idx));
     }
 
     // Determine node's subgraph and subgraph's nodes.
@@ -227,7 +200,7 @@ fn find_subgraphs(
                 .filter(|&(_, node)| !matches!(node, Node::Handoff))
                 .map(|(node_id, _)| node_id),
             |v| {
-                new_preds
+                preds
                     .get(v)
                     .into_iter()
                     .flatten()
@@ -264,7 +237,7 @@ fn find_subgraphs(
         (node_subgraph, subgraph_nodes)
     };
 
-    (new_preds, new_succs, node_subgraph, subgraph_nodes)
+    (node_subgraph, subgraph_nodes)
 }
 
 /// Set `src` or `dst` color if `None` based on the other (if possible):
@@ -528,37 +501,36 @@ fn find_subgraph_handoffs(
 impl TryFrom<FlatGraph> for PartitionedGraph {
     type Error = (); // TODO(mingwei).
 
-    fn try_from(mut flat_graph: FlatGraph) -> Result<Self, Self::Error> {
-        // Pairs of node IDs which cross stratums or epochs and therefore cannot be in the same subgraph.
-        let barrier_crossers = find_barrier_crossers(&flat_graph.nodes, &flat_graph.succs);
+    fn try_from(flat_graph: FlatGraph) -> Result<Self, Self::Error> {
+        let FlatGraph {
+            mut nodes,
+            mut preds,
+            mut succs,
+            ..
+        } = flat_graph;
 
-        let (mut new_preds, mut new_succs, mut node_subgraph, mut subgraph_nodes) = find_subgraphs(
-            &mut flat_graph.nodes,
-            &mut flat_graph.preds,
-            &mut flat_graph.succs,
-            &barrier_crossers,
-        );
+        // Pairs of node IDs which cross stratums or epochs and therefore cannot be in the same subgraph.
+        let barrier_crossers = find_barrier_crossers(&nodes, &succs);
+
+        let (mut node_subgraph, mut subgraph_nodes) =
+            find_subgraphs(&mut nodes, &mut preds, &mut succs, &barrier_crossers);
 
         let subgraph_stratum = find_subgraph_strata(
-            &mut flat_graph.nodes,
-            &mut new_preds,
-            &mut new_succs,
+            &mut nodes,
+            &mut preds,
+            &mut succs,
             &mut node_subgraph,
             &mut subgraph_nodes,
             &barrier_crossers,
         )?;
 
-        let (subgraph_recv_handoffs, subgraph_send_handoffs) = find_subgraph_handoffs(
-            &flat_graph.nodes,
-            &new_succs,
-            &node_subgraph,
-            &subgraph_nodes,
-        );
+        let (subgraph_recv_handoffs, subgraph_send_handoffs) =
+            find_subgraph_handoffs(&nodes, &succs, &node_subgraph, &subgraph_nodes);
 
         Ok(PartitionedGraph {
-            nodes: flat_graph.nodes,
-            preds: new_preds,
-            succs: new_succs,
+            nodes,
+            preds,
+            succs,
             node_subgraph,
 
             subgraph_nodes,
