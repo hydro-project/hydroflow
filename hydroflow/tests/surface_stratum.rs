@@ -20,7 +20,7 @@ use tokio::sync::mpsc::error::SendError;
 #[test]
 pub fn test_difference_a() {
     let output = <Rc<RefCell<Vec<usize>>>>::default();
-    let output_inner = output.clone();
+    let output_inner = Rc::clone(&output);
 
     let mut df: Hydroflow = hydroflow_syntax! {
         a = difference();
@@ -40,7 +40,7 @@ pub fn test_difference_b() -> Result<(), SendError<&'static str>> {
     let (inp_send, inp_recv) = mpsc::unbounded_channel::<&'static str>();
 
     let output = <Rc<RefCell<Vec<&'static str>>>>::default();
-    let output_inner = output.clone();
+    let output_inner = Rc::clone(&output);
 
     let mut df: Hydroflow = hydroflow_syntax! {
         a = difference();
@@ -76,7 +76,7 @@ pub fn test_difference_b() -> Result<(), SendError<&'static str>> {
 #[test]
 pub fn test_epoch_loop_1() {
     let output = <Rc<RefCell<Vec<usize>>>>::default();
-    let output_inner = output.clone();
+    let output_inner = Rc::clone(&output);
 
     // Without `next_epoch()` this would be "unsafe" although legal.
     // E.g. it would spin forever in a single infinite tick/epoch.
@@ -105,7 +105,7 @@ pub fn test_epoch_loop_1() {
 #[test]
 pub fn test_epoch_loop_2() {
     let output = <Rc<RefCell<Vec<usize>>>>::default();
-    let output_inner = output.clone();
+    let output_inner = Rc::clone(&output);
 
     let mut df: Hydroflow = hydroflow_syntax! {
         a = merge() -> tee();
@@ -135,7 +135,7 @@ pub fn test_epoch_loop_2() {
 #[test]
 pub fn test_epoch_loop_3() {
     let output = <Rc<RefCell<Vec<usize>>>>::default();
-    let output_inner = output.clone();
+    let output_inner = Rc::clone(&output);
 
     let mut df: Hydroflow = hydroflow_syntax! {
         a = merge() -> tee();
