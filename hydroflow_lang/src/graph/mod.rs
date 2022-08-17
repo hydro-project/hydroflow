@@ -113,20 +113,12 @@ fn find_barrier_crossers(
         .collect()
 }
 
-fn find_subgraphs(
+fn find_subgraph_unionfind(
     nodes: &mut SlotMap<GraphNodeId, Node>,
     preds: &mut AdjList,
     succs: &mut AdjList,
     barrier_crossers: &[(GraphNodeId, GraphNodeId, IndexInt, DelayType)],
-) -> (
-    SecondaryMap<GraphNodeId, GraphSubgraphId>,
-    SlotMap<GraphSubgraphId, Vec<GraphNodeId>>,
-) {
-    // Algorithm:
-    // 1. Each node begins as its own subgraph.
-    // 2. Collect edges. (Future optimization: sort so edges which should not be split across a handoff come first).
-    // 3. For each edge, try to join `(to, from)` into the same subgraph.
-
+) -> (UnionFind<GraphNodeId>, HashSet<(EdgePort, EdgePort)>) {
     // Pre-calculate node colors.
     let mut node_color: SecondaryMap<GraphNodeId, Option<Color>> = nodes
         .keys()
@@ -137,8 +129,8 @@ fn find_subgraphs(
             (node_id, op_color)
         })
         .collect();
-    let mut subgraph_unionfind: UnionFind<GraphNodeId> = UnionFind::with_capacity(nodes.len());
 
+    let mut subgraph_unionfind: UnionFind<GraphNodeId> = UnionFind::with_capacity(nodes.len());
     // All edges which are handoffs. Starts out with all edges and we remove
     // from this set as we construct subgraphs.
     let mut handoff_edges: HashSet<(EdgePort, EdgePort)> = iter_edges(succs)
@@ -176,6 +168,73 @@ fn find_subgraphs(
             assert!(handoff_edges.remove(&((src, *src_idx), (dst, *dst_idx))));
         }
     }
+    (subgraph_unionfind, handoff_edges)
+}
+
+fn find_subgraph_collect(
+    nodes: &mut SlotMap<GraphNodeId, Node>,
+    preds: &mut AdjList,
+    mut subgraph_unionfind: UnionFind<GraphNodeId>,
+) -> (
+    SecondaryMap<GraphNodeId, GraphSubgraphId>,
+    SlotMap<GraphSubgraphId, Vec<GraphNodeId>>,
+) {
+    // We want the nodes of each subgraph to be listed in topo-sort order.
+    // We could do this on each subgraph, or we could do it all at once on the
+    // whole node graph by ignoring handoffs, which is what we do here:
+    let topo_sort = graph_algorithms::topo_sort(
+        nodes
+            .iter()
+            .filter(|&(_, node)| !matches!(node, Node::Handoff))
+            .map(|(node_id, _)| node_id),
+        |v| {
+            preds
+                .get(v)
+                .into_iter()
+                .flatten()
+                .map(|(_src_idx, &(dst, _dst_idx))| dst)
+                .filter(|&dst| !matches!(nodes[dst], Node::Handoff))
+        },
+    );
+
+    let mut grouped_nodes: SecondaryMap<GraphNodeId, Vec<GraphNodeId>> = Default::default();
+    for node_id in topo_sort {
+        let repr_node = subgraph_unionfind.find(node_id);
+        if !grouped_nodes.contains_key(repr_node) {
+            grouped_nodes.insert(repr_node, Default::default());
+        }
+        grouped_nodes[repr_node].push(node_id);
+    }
+
+    let mut node_subgraph: SecondaryMap<GraphNodeId, GraphSubgraphId> = Default::default();
+    let mut subgraph_nodes: SlotMap<GraphSubgraphId, Vec<GraphNodeId>> = Default::default();
+    for (_repr_node, member_nodes) in grouped_nodes {
+        subgraph_nodes.insert_with_key(|subgraph_id| {
+            for &node_id in member_nodes.iter() {
+                node_subgraph.insert(node_id, subgraph_id);
+            }
+            member_nodes
+        });
+    }
+    (node_subgraph, subgraph_nodes)
+}
+
+fn find_subgraphs(
+    nodes: &mut SlotMap<GraphNodeId, Node>,
+    preds: &mut AdjList,
+    succs: &mut AdjList,
+    barrier_crossers: &[(GraphNodeId, GraphNodeId, IndexInt, DelayType)],
+) -> (
+    SecondaryMap<GraphNodeId, GraphSubgraphId>,
+    SlotMap<GraphSubgraphId, Vec<GraphNodeId>>,
+) {
+    // Algorithm:
+    // 1. Each node begins as its own subgraph.
+    // 2. Collect edges. (Future optimization: sort so edges which should not be split across a handoff come first).
+    // 3. For each edge, try to join `(to, from)` into the same subgraph.
+
+    let (subgraph_unionfind, handoff_edges) =
+        find_subgraph_unionfind(nodes, preds, succs, barrier_crossers);
 
     // Insert handoffs between subgraphs (or on subgraph self-loop edges)
     for edge in handoff_edges {
@@ -192,51 +251,7 @@ fn find_subgraphs(
     // Determine node's subgraph and subgraph's nodes.
     // This list of nodes in each subgraph are to be in topological sort order.
     // Eventually returned directly in the `PartitionedGraph`.
-    let (node_subgraph, subgraph_nodes) = {
-        // Ignore handoffs. Esentially each subgraph has it's own topo sort.
-        let topo_sort = graph_algorithms::topo_sort(
-            nodes
-                .iter()
-                .filter(|&(_, node)| !matches!(node, Node::Handoff))
-                .map(|(node_id, _)| node_id),
-            |v| {
-                preds
-                    .get(v)
-                    .into_iter()
-                    .flatten()
-                    .map(|(_src_idx, &(dst, _dst_idx))| dst)
-                    .filter(|&dst| !matches!(nodes[dst], Node::Handoff))
-            },
-        );
-
-        // Go through the `UnionFind` and create a list of nodes in each union.
-        // TODO(mingwei): put in own UnionFind fn.
-        let mut grouped_nodes: SecondaryMap<GraphNodeId, Vec<GraphNodeId>> = Default::default();
-        for node_id in topo_sort {
-            let repr_node = subgraph_unionfind.find(node_id);
-            if !grouped_nodes.contains_key(repr_node) {
-                grouped_nodes.insert(repr_node, Default::default());
-            }
-            grouped_nodes[repr_node].push(node_id);
-        }
-
-        // For a `NodeId`, what `SubgraphId` does it belong to.
-        let mut node_subgraph: SecondaryMap<GraphNodeId, GraphSubgraphId> = Default::default();
-        // For a `SubgraphId`, what `NodeId`s belong to it.
-        let mut subgraph_nodes: SlotMap<GraphSubgraphId, Vec<GraphNodeId>> = Default::default();
-        // Populate above.
-        for (_repr_node, member_nodes) in grouped_nodes {
-            subgraph_nodes.insert_with_key(|subgraph_id| {
-                for &node_id in member_nodes.iter() {
-                    node_subgraph.insert(node_id, subgraph_id);
-                }
-                member_nodes
-            });
-        }
-
-        (node_subgraph, subgraph_nodes)
-    };
-
+    let (node_subgraph, subgraph_nodes) = find_subgraph_collect(nodes, preds, subgraph_unionfind);
     (node_subgraph, subgraph_nodes)
 }
 
