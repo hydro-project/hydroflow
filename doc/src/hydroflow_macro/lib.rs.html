@@ -49,7 +49,6 @@
 <span id="49">49</span>
 <span id="50">50</span>
 <span id="51">51</span>
-<span id="52">52</span>
 </pre><pre class="rust"><code><span class="attribute">#![feature(proc_macro_diagnostic, proc_macro_span)]</span>
 <span class="attribute">#![allow(clippy::explicit_auto_deref)]</span>
 
@@ -75,13 +74,12 @@
     <span class="kw">let </span>input = <span class="macro">parse_macro_input!</span>(input <span class="kw">as </span>HfCode);
 
     <span class="kw">let </span>flat_graph = FlatGraph::from_hfcode(input);
-    <span class="kw">let </span>tokens = <span class="kw">if </span>flat_graph.emit_operator_errors() {
-        <span class="macro">quote!</span> { #root::scheduled::graph::Hydroflow::new() }
-    } <span class="kw">else </span>{
-        <span class="kw">let </span>part_graph = flat_graph.into_partitioned_graph();
-        part_graph.as_code(root)
-    };
-    tokens.into()
+    <span class="kw">if </span>!flat_graph.emit_operator_errors() {
+        <span class="kw">if let </span><span class="prelude-val">Ok</span>(part_graph) = flat_graph.into_partitioned_graph() {
+            <span class="kw">return </span>part_graph.as_code(root).into();
+        }
+    }
+    <span class="macro">quote!</span> { #root::scheduled::graph::Hydroflow::new() }.into()
 }
 
 <span class="attribute">#[proc_macro]</span>

@@ -545,15 +545,42 @@
 <span id="545">545</span>
 <span id="546">546</span>
 <span id="547">547</span>
+<span id="548">548</span>
+<span id="549">549</span>
+<span id="550">550</span>
+<span id="551">551</span>
+<span id="552">552</span>
+<span id="553">553</span>
+<span id="554">554</span>
+<span id="555">555</span>
+<span id="556">556</span>
+<span id="557">557</span>
+<span id="558">558</span>
+<span id="559">559</span>
+<span id="560">560</span>
+<span id="561">561</span>
+<span id="562">562</span>
+<span id="563">563</span>
+<span id="564">564</span>
+<span id="565">565</span>
+<span id="566">566</span>
+<span id="567">567</span>
+<span id="568">568</span>
+<span id="569">569</span>
+<span id="570">570</span>
+<span id="571">571</span>
+<span id="572">572</span>
 </pre><pre class="rust"><code><span class="kw">use </span>std::any::Any;
 <span class="kw">use </span>std::borrow::Cow;
 <span class="kw">use </span>std::cell::Cell;
 <span class="kw">use </span>std::collections::VecDeque;
 <span class="kw">use </span>std::marker::PhantomData;
 <span class="kw">use </span>std::num::NonZeroUsize;
+<span class="kw">use </span>std::time::Duration;
 
 <span class="kw">use </span>hydroflow_lang::graph::serde_graph::SerdeGraph;
 <span class="kw">use </span>ref_cast::RefCast;
+<span class="kw">use </span>tokio::runtime::{Builder, Runtime};
 <span class="kw">use </span>tokio::sync::mpsc::{<span class="self">self</span>, UnboundedReceiver};
 
 <span class="kw">use </span><span class="kw">super</span>::context::Context;
@@ -571,10 +598,16 @@
     <span class="kw">pub</span>(<span class="kw">super</span>) subgraphs: Vec&lt;SubgraphData&gt;,
     <span class="kw">pub</span>(<span class="kw">super</span>) context: Context,
 
-    <span class="comment">// TODO(mingwei): separate scheduler into its own struct/trait?
-    // Index is stratum, value is FIFO queue for that stratum.
+    <span class="doccomment">/// TODO(mingwei): separate scheduler into its own struct/trait?
+    /// Index is stratum, value is FIFO queue for that stratum.
     </span>stratum_queues: Vec&lt;VecDeque&lt;SubgraphId&gt;&gt;,
     event_queue_recv: UnboundedReceiver&lt;SubgraphId&gt;,
+
+    <span class="doccomment">/// Tokio async runtime worker for running async tasks to completion.
+    /// A `Hydroflow` instance&#39;s scheduler acts like a async runtime but
+    /// the tasks are only subgraphs, not in general any future. This runtime
+    /// handles general futures.
+    </span>tokio_worker: Runtime,
 
     serde_graph: <span class="prelude-ty">Option</span>&lt;SerdeGraph&gt;,
 }
@@ -594,6 +627,11 @@
 
             subgraph_id: SubgraphId(<span class="number">0</span>),
         };
+        <span class="kw">let </span>tokio_worker = Builder::new_multi_thread()
+            .worker_threads(<span class="number">1</span>)
+            .enable_all()
+            .build()
+            .expect(<span class="string">&quot;Failed to construction Tokio Runtime worker.&quot;</span>);
         <span class="self">Self </span>{
             subgraphs,
             context,
@@ -601,6 +639,7 @@
             stratum_queues,
 
             event_queue_recv,
+            tokio_worker,
 
             serde_graph: <span class="prelude-val">None</span>,
         }
@@ -1005,6 +1044,17 @@
 
     <span class="kw">pub fn </span>add_dependencies(<span class="kw-2">&amp;mut </span><span class="self">self</span>, sg_id: SubgraphId, deps: FlowGraph) {
         <span class="self">self</span>.subgraphs[sg_id.<span class="number">0</span>].dependencies.append(deps);
+    }
+}
+
+<span class="kw">impl </span>Hydroflow {
+    <span class="doccomment">/// Retrieve handle to internal tokio worker.
+    </span><span class="kw">pub fn </span>tokio_worker(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Runtime {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.tokio_worker
+    }
+
+    <span class="kw">pub fn </span>shutdown(<span class="self">self</span>, duration: Duration) {
+        <span class="self">self</span>.tokio_worker.shutdown_timeout(duration)
     }
 }
 

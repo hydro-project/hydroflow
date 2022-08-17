@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":[["OPERATORS",""],["RANGE_0",""],["RANGE_1",""]],"struct":[["OperatorConstraints",""],["WriteContextArgs",""],["WriteIteratorArgs",""]],"trait":[["RangeTrait",""]]};
+window.SIDEBAR_ITEMS = {"constant":[["OPERATORS",""],["RANGE_0",""],["RANGE_1",""]],"enum":[["DelayType",""]],"struct":[["OperatorConstraints",""],["WriteContextArgs",""],["WriteIteratorArgs",""]],"trait":[["RangeTrait",""]]};

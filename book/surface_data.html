@@ -166,7 +166,7 @@ in from outside the flow:</p>
 </span><span class="boring">use hydroflow::hydroflow_syntax;
 </span>let (input_send, input_recv) = tokio::sync::mpsc::unbounded_channel::&lt;&amp;str&gt;();
 let mut flow = hydroflow_syntax! {
-    recv_stream(input_recv) -&gt; map(|x| x.to_uppercase()) 
+    recv_stream(input_recv) -&gt; map(|x| x.to_uppercase())
         -&gt; for_each(|x| println!(&quot;{}&quot;, x));
 };
 input_send.send(&quot;Hello&quot;).unwrap();

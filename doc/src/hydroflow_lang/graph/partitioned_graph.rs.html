@@ -269,6 +269,24 @@
 <span id="269">269</span>
 <span id="270">270</span>
 <span id="271">271</span>
+<span id="272">272</span>
+<span id="273">273</span>
+<span id="274">274</span>
+<span id="275">275</span>
+<span id="276">276</span>
+<span id="277">277</span>
+<span id="278">278</span>
+<span id="279">279</span>
+<span id="280">280</span>
+<span id="281">281</span>
+<span id="282">282</span>
+<span id="283">283</span>
+<span id="284">284</span>
+<span id="285">285</span>
+<span id="286">286</span>
+<span id="287">287</span>
+<span id="288">288</span>
+<span id="289">289</span>
 </pre><pre class="rust"><code><span class="kw">use </span>proc_macro2::{Ident, Literal, Span, TokenStream};
 <span class="kw">use </span>quote::{quote, ToTokens};
 <span class="kw">use </span>slotmap::{Key, SecondaryMap, SlotMap};
@@ -288,6 +306,7 @@
     <span class="kw">pub</span>(<span class="kw">crate</span>) node_subgraph: SecondaryMap&lt;GraphNodeId, GraphSubgraphId&gt;,
 
     <span class="kw">pub</span>(<span class="kw">crate</span>) subgraph_nodes: SlotMap&lt;GraphSubgraphId, Vec&lt;GraphNodeId&gt;&gt;,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) subgraph_stratum: SecondaryMap&lt;GraphSubgraphId, usize&gt;,
     <span class="kw">pub</span>(<span class="kw">crate</span>) subgraph_recv_handoffs: SecondaryMap&lt;GraphSubgraphId, Vec&lt;GraphNodeId&gt;&gt;,
     <span class="kw">pub</span>(<span class="kw">crate</span>) subgraph_send_handoffs: SecondaryMap&lt;GraphSubgraphId, Vec&lt;GraphNodeId&gt;&gt;,
 }
@@ -296,8 +315,9 @@
         Default::default()
     }
 
-    <span class="kw">pub fn </span>from_flat_graph(flat_graph: FlatGraph) -&gt; <span class="self">Self </span>{
-        flat_graph.into()
+    <span class="attribute">#[allow(clippy::result_unit_err)]</span>
+    <span class="kw">pub fn </span>from_flat_graph(flat_graph: FlatGraph) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, ()&gt; {
+        flat_graph.try_into()
     }
 
     <span class="kw">pub fn </span>edges(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;_ </span>+ Iterator&lt;Item = (EdgePortRef, EdgePortRef)&gt; {
@@ -439,9 +459,7 @@
                             <span class="kw">let </span>iter_code =
                                 (op_constraints.write_iterator_fn)(<span class="kw-2">&amp;</span>context_args, <span class="kw-2">&amp;</span>iter_args);
 
-                            subgraph_op_iter_code.push(<span class="macro">quote!</span> {
-                                <span class="kw">let </span>#ident = #iter_code;
-                            });
+                            subgraph_op_iter_code.push(iter_code);
                         }
                     }
 
@@ -449,8 +467,20 @@
                         <span class="kw">let </span>pull_to_push_idx = pull_to_push_idx;
                         <span class="kw">let </span>pull_ident =
                             <span class="self">self</span>.node_id_as_ident(subgraph_nodes[pull_to_push_idx - <span class="number">1</span>], <span class="bool-val">false</span>);
+
                         <span class="kw">let </span>push_ident =
-                            <span class="self">self</span>.node_id_as_ident(subgraph_nodes[pull_to_push_idx], <span class="bool-val">false</span>);
+                            <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>node_id) = subgraph_nodes.get(pull_to_push_idx) {
+                                <span class="self">self</span>.node_id_as_ident(node_id, <span class="bool-val">false</span>)
+                            } <span class="kw">else </span>{
+                                <span class="comment">// Entire subgraph is pull (except for a single send/push handoff output).
+                                </span><span class="macro">assert_eq!</span>(
+                                <span class="number">1</span>,
+                                send_ports.len(),
+                                <span class="string">&quot;If entire subgraph is pull, should have only one handoff output.&quot;
+                            </span>);
+                                send_ports[<span class="number">0</span>].clone()
+                            };
+
                         subgraph_op_iter_code.push(<span class="macro">quote!</span> {
                             #root::compiled::pivot::Pivot::new(#pull_ident, #push_ident).run();
                         });
@@ -458,11 +488,15 @@
                 };
 
                 <span class="kw">let </span>hoff_name = Literal::string(<span class="kw-2">&amp;*</span><span class="macro">format!</span>(<span class="string">&quot;Subgraph {:?}&quot;</span>, subgraph_id));
+                <span class="kw">let </span>stratum = Literal::usize_unsuffixed(
+                    <span class="self">self</span>.subgraph_stratum.get(subgraph_id).cloned().unwrap_or(<span class="number">0</span>),
+                );
                 <span class="macro">quote!</span> {
                     #( #op_prologue_code )*
 
-                    df.add_subgraph(
+                    df.add_subgraph_stratified(
                         #hoff_name,
+                        #stratum,
                         <span class="macro">tl!</span>( #( #recv_ports ),* ),
                         <span class="macro">tl!</span>( #( #send_ports ),* ),
                         <span class="kw">move </span>|context, <span class="macro">tl!</span>( #( #recv_ports ),* ), <span class="macro">tl!</span>( #( #send_ports ),* )| {
@@ -504,7 +538,8 @@
         )
     }
     <span class="kw">pub fn </span>to_serde_graph(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SerdeGraph {
-        <span class="kw">let </span><span class="kw-2">mut </span>g = SerdeGraph::new();
+        <span class="comment">// TODO(mingwei): Double initialization of SerdeGraph fields.
+        </span><span class="kw">let </span><span class="kw-2">mut </span>g = SerdeGraph::new();
         <span class="kw">for </span>((src, _src_idx), (dst, _dst_idx)) <span class="kw">in </span><span class="self">self</span>.edges() {
             <span class="comment">// add nodes
             </span>g.nodes.insert(src, <span class="self">self</span>.node_to_txt(src));
@@ -530,6 +565,7 @@
 
             <span class="comment">// add subgraphs
             </span>g.subgraph_nodes = <span class="self">self</span>.subgraph_nodes.clone();
+            g.subgraph_stratum = <span class="self">self</span>.subgraph_stratum.clone();
         }
         g
     }

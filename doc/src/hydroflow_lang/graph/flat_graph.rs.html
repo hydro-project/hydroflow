@@ -297,6 +297,7 @@
 <span id="297">297</span>
 <span id="298">298</span>
 <span id="299">299</span>
+<span id="300">300</span>
 </pre><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 
 <span class="kw">use </span>quote::ToTokens;
@@ -443,7 +444,7 @@
                                     .span()
                                     .unwrap()
                                     .error(<span class="macro">format!</span>(
-                                        <span class="string">&quot;expected {} arguments, found {}&quot;</span>,
+                                        <span class="string">&quot;expected {} argument(s), found {}&quot;</span>,
                                         op_constraints.num_args,
                                         operator.args.len()
                                     ))
@@ -586,8 +587,9 @@
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">pub fn </span>into_partitioned_graph(<span class="self">self</span>) -&gt; PartitionedGraph {
-        <span class="self">self</span>.into()
+    <span class="attribute">#[allow(clippy::result_unit_err)]</span>
+    <span class="kw">pub fn </span>into_partitioned_graph(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;PartitionedGraph, ()&gt; {
+        <span class="self">self</span>.try_into()
     }
 }
 

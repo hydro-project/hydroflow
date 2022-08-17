@@ -170,6 +170,13 @@
 <span id="170">170</span>
 <span id="171">171</span>
 <span id="172">172</span>
+<span id="173">173</span>
+<span id="174">174</span>
+<span id="175">175</span>
+<span id="176">176</span>
+<span id="177">177</span>
+<span id="178">178</span>
+<span id="179">179</span>
 </pre><pre class="rust"><code><span class="kw">use </span>slotmap::{Key, SecondaryMap, SlotMap, SparseSecondaryMap};
 
 <span class="kw">use </span>serde::{Deserialize, Serialize};
@@ -184,6 +191,7 @@
     <span class="kw">pub </span>edges: SecondaryMap&lt;GraphNodeId, Vec&lt;GraphNodeId&gt;&gt;,
     <span class="kw">pub </span>handoffs: SparseSecondaryMap&lt;GraphNodeId, bool&gt;,
     <span class="kw">pub </span>subgraph_nodes: SlotMap&lt;GraphSubgraphId, Vec&lt;GraphNodeId&gt;&gt;,
+    <span class="kw">pub </span>subgraph_stratum: SecondaryMap&lt;GraphSubgraphId, usize&gt;,
 }
 <span class="kw">impl </span>SerdeGraph {
     <span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
@@ -198,7 +206,13 @@
     <span class="kw">pub fn </span>write_mermaid(<span class="kw-2">&amp;</span><span class="self">self</span>, write: <span class="kw-2">&amp;mut </span><span class="kw">impl </span>std::fmt::Write) -&gt; std::fmt::Result {
         <span class="macro">writeln!</span>(write, <span class="string">&quot;flowchart TB&quot;</span>)<span class="question-mark">?</span>;
         <span class="kw">for </span>(subgraph_id, node_ids) <span class="kw">in </span><span class="self">self</span>.subgraph_nodes.iter() {
-            <span class="macro">writeln!</span>(write, <span class="string">&quot;    subgraph sg_{}&quot;</span>, subgraph_id.data().as_ffi())<span class="question-mark">?</span>;
+            <span class="kw">let </span>stratum = <span class="self">self</span>.subgraph_stratum.get(subgraph_id);
+            <span class="macro">writeln!</span>(
+                write,
+                <span class="string">&quot;    subgraph \&quot;sg_{:?} stratum {:?}\&quot;&quot;</span>,
+                subgraph_id.data(),
+                stratum
+            )<span class="question-mark">?</span>;
             <span class="kw">for </span><span class="kw-2">&amp;</span>node_id <span class="kw">in </span>node_ids.iter() {
                 <span class="kw">if </span>!<span class="self">self</span>.handoffs.contains_key(node_id) {
                     <span class="macro">writeln!</span>(

@@ -235,7 +235,10 @@ my_tee[2] -&gt; for_each(|x: &amp;str| println!(&quot;{}&quot;, x));
 <p>Given a tokio channel created in Rust code, <code>recv_stream</code> 
 is passed the receive endpoint of the channel and emits each of the
 elements it receives downstream.</p>
-<pre><code class="language-rust ignore"><span class="boring">use hydroflow::hydroflow_syntax;
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">use hydroflow::hydroflow_syntax;
 </span>let (input_send, input_recv) = tokio::sync::mpsc::unbounded_channel::&lt;&amp;str&gt;();
 let mut flow = hydroflow_syntax! {
     recv_stream(input_recv) -&gt; map(|x| x.to_uppercase()) 
@@ -244,7 +247,8 @@ let mut flow = hydroflow_syntax! {
 input_send.send(&quot;Hello&quot;).unwrap();
 input_send.send(&quot;World&quot;).unwrap();
 flow.run_available();
-</code></pre>
+<span class="boring">}
+</span></code></pre></pre>
 <h2 id="recv_iter"><a class="header" href="#recv_iter">recv_iter</a></h2>
 <blockquote>
 <p>0 input streams, 1 output stream</p>
