@@ -183,12 +183,12 @@ impl PartitionedGraph {
                             if let Some(&node_id) = subgraph_nodes.get(pull_to_push_idx) {
                                 self.node_id_as_ident(node_id, false)
                             } else {
-                                // Entire subgraph is pull.
+                                // Entire subgraph is pull (except for a single send/push handoff output).
                                 assert_eq!(
-                                    1,
-                                    send_ports.len(),
-                                    "If entire subgraph is pull, should have only one output."
-                                );
+                                1,
+                                send_ports.len(),
+                                "If entire subgraph is pull, should have only one handoff output."
+                            );
                                 send_ports[0].clone()
                             };
 
