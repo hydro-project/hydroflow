@@ -120,13 +120,13 @@ pub fn test_epoch_loop_2() {
     assert_eq!(&[1, 3], &*output.take());
 
     df.run_epoch();
-    assert_eq!(&[] as &[usize], &*output.take());
+    assert!(output.take().is_empty());
 
     df.run_epoch();
     assert_eq!(&[2, 6], &*output.take());
 
     df.run_epoch();
-    assert_eq!(&[] as &[usize], &*output.take());
+    assert!(output.take().is_empty());
 
     df.run_epoch();
     assert_eq!(&[4, 12], &*output.take());
@@ -150,16 +150,16 @@ pub fn test_epoch_loop_3() {
     assert_eq!(&[1, 3], &*output.take());
 
     df.run_epoch();
-    assert_eq!(&[] as &[usize], &*output.take());
+    assert!(output.take().is_empty());
 
     df.run_epoch();
-    assert_eq!(&[] as &[usize], &*output.take());
+    assert!(output.take().is_empty());
 
     df.run_epoch();
     assert_eq!(&[2, 6], &*output.take());
 
     df.run_epoch();
-    assert_eq!(&[] as &[usize], &*output.take());
+    assert!(output.take().is_empty());
 }
 
 #[test]
@@ -207,4 +207,29 @@ pub fn test_surface_syntax_graph_unreachability() {
 
     // pairs_send.send((0, 3)).unwrap();
     // df.run_available();
+}
+
+/// Test that subgraphs are in the same stratum when possible.
+#[test]
+pub fn test_subgraph_stratum_consolidation() {
+    let output = <Rc<RefCell<Vec<usize>>>>::default();
+    let output_inner = Rc::clone(&output);
+
+    // Bunch of triangles generate consecutive subgraphs, but since there are
+    // no negative edges they can all be in the same stratum.
+    let mut df: Hydroflow = hydroflow_syntax! {
+        a = merge() -> tee();
+        b = merge() -> tee();
+        c = merge() -> tee();
+        d = merge() -> for_each(|x| output_inner.borrow_mut().push(x));
+        recv_iter([0]) -> [0]a[0] -> [0]b[0] -> [0]c[0] -> [0]d;
+        recv_iter([1]) -> [1]a[1] -> [1]b[1] -> [1]c[1] -> [1]d;
+    };
+    println!("{}", df.serde_graph().unwrap().to_mermaid());
+
+    df.run_available();
+    assert_eq!(2 * usize::pow(2, 3), output.take().len());
+
+    df.run_available();
+    assert!(output.take().is_empty());
 }

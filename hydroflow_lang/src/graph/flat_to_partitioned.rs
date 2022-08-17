@@ -288,12 +288,34 @@ fn find_subgraph_strata(
         })
     };
 
-    // Just number the subgraphs 0, 1, 2, 3 in toposort order.
-    let mut subgraph_stratum: SecondaryMap<GraphSubgraphId, usize> = topo_sort_order
-        .into_iter()
-        .enumerate()
-        .map(|(n, sg_id)| (sg_id, n))
+    // Negative (next stratum) connections between subgraphs. (Ignore `next_epoch()` connections).
+    let subgraph_negative_connections: HashSet<_> = barrier_crossers
+        .iter()
+        .filter(|(_src, _dst, _dst_idx, delay_type)| DelayType::Stratum == *delay_type)
+        .map(|(src, dst, _dst_idx, _delay_type)| (node_subgraph[*src], node_subgraph[*dst]))
         .collect();
+
+    let mut subgraph_stratum: SecondaryMap<GraphSubgraphId, usize> =
+        SecondaryMap::with_capacity(topo_sort_order.len());
+    // Each subgraph stratum is the same as it's predacessors unless there is a negative edge.
+    for sg_id in topo_sort_order {
+        subgraph_stratum.insert(
+            sg_id,
+            subgraph_preds
+                .get(&sg_id)
+                .into_iter()
+                .flatten()
+                .filter_map(|&pred_sg_id| {
+                    subgraph_stratum.get(pred_sg_id).map(|stratum| {
+                        stratum
+                            + (subgraph_negative_connections.contains(&(pred_sg_id, sg_id))
+                                as usize)
+                    })
+                })
+                .max()
+                .unwrap_or(0),
+        );
+    }
 
     // Re-introduce the `next_epoch()` edges, ensuring they actually go to the next epoch.
     let max_stratum = subgraph_stratum.values().cloned().max().unwrap_or(0) + 1; // Used for `next_epoch()` delayer subgraphs.
