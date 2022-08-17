@@ -1,6 +1,5 @@
 //! Graph representation stages for Hydroflow graphs.
 
-use std::collections::hash_map::Entry;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::hash::Hash;
 
@@ -345,49 +344,11 @@ fn find_subgraph_strata(
         }
     }
 
-    let scc = {
-        // https://en.wikipedia.org/wiki/Kosaraju%27s_algorithm
-        fn visit(
-            succs: &HashMap<GraphSubgraphId, Vec<GraphSubgraphId>>,
-            u: GraphSubgraphId,
-            seen: &mut HashSet<GraphSubgraphId>,
-            stack: &mut Vec<GraphSubgraphId>,
-        ) {
-            if seen.insert(u) {
-                for &v in succs.get(&u).into_iter().flatten() {
-                    visit(succs, v, seen, stack);
-                }
-                stack.push(u);
-            }
-        }
-
-        let (mut seen, mut stack) = Default::default();
-        for sg in subgraph_nodes.keys() {
-            visit(&subgraph_succs, sg, &mut seen, &mut stack);
-        }
-        std::mem::drop(seen);
-
-        fn assign(
-            preds: &HashMap<GraphSubgraphId, Vec<GraphSubgraphId>>,
-            u: GraphSubgraphId,
-            root: GraphSubgraphId,
-            components: &mut HashMap<GraphSubgraphId, GraphSubgraphId>,
-        ) {
-            if let Entry::Vacant(vacant_entry) = components.entry(u) {
-                vacant_entry.insert(root);
-                for &v in preds.get(&u).into_iter().flatten() {
-                    assign(preds, v, root, components);
-                }
-            }
-        }
-
-        let mut components = Default::default();
-        for sg in stack.into_iter().rev() {
-            assign(&subgraph_preds, sg, sg, &mut components);
-        }
-
-        components
-    };
+    let scc = graph_algorithms::scc_kosaraju(
+        subgraph_nodes.keys(),
+        |v| subgraph_preds.get(&v).into_iter().flatten().cloned(),
+        |u| subgraph_succs.get(&u).into_iter().flatten().cloned(),
+    );
 
     let topo_sort_order = {
         // Condensed each SCC into a single node for toposort.
