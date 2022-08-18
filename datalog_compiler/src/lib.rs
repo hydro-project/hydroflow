@@ -163,7 +163,7 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
 
     dbg!(flat_graph.surface_syntax_string());
 
-    let code_tokens = flat_graph.into_partitioned_graph().as_code(root);
+    let code_tokens = flat_graph.into_partitioned_graph().expect("failed to partition").as_code(root);
 
     syn::parse_quote!({
         #code_tokens
