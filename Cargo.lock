@@ -398,6 +398,7 @@ version = "0.1.0"
 dependencies = [
  "hydroflow_lang",
  "insta",
+ "proc-macro-crate",
  "proc-macro2",
  "quote",
  "rust-sitter",
