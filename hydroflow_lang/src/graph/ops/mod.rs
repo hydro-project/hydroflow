@@ -69,7 +69,7 @@ const IDENTITY_WRITE_ITERATOR_FN: &'static dyn Fn(
     }
 });
 
-pub const OPERATORS: [OperatorConstraints; 20] = [
+pub const OPERATORS: [OperatorConstraints; 21] = [
     OperatorConstraints {
         name: "null",
         hard_range_inn: RANGE_ANY,
@@ -417,6 +417,33 @@ pub const OPERATORS: [OperatorConstraints; 20] = [
             quote! {
                 let #ident = std::iter::from_fn(|| {
                     match #root::futures::stream::Stream::poll_next(#stream_ident.as_mut(), &mut std::task::Context::from_waker(&context.waker())) {
+                        std::task::Poll::Ready(maybe) => maybe,
+                        std::task::Poll::Pending => None,
+                    }
+                });
+            }
+        }),
+    },
+    OperatorConstraints {
+        name: "recv_stream2",
+        hard_range_inn: RANGE_0,
+        soft_range_inn: RANGE_0,
+        hard_range_out: RANGE_1,
+        soft_range_out: RANGE_1,
+        num_args: 1,
+        input_delaytype_fn: &|_| None,
+        write_prologue_fn: &(|_, &WriteIteratorArgs { arguments, .. }| {
+            let receiver = &arguments[0];
+            quote! {
+                let mut #receiver = #receiver;
+            }
+        }),
+        write_iterator_fn: &(|&WriteContextArgs { root, ident, .. },
+                              &WriteIteratorArgs { arguments, .. }| {
+            let stream = &arguments[0];
+            quote! {
+                let #ident = std::iter::from_fn(|| {
+                    match #root::futures::stream::Stream::poll_next(Pin::new(&mut #stream), &mut std::task::Context::from_waker(&context.waker())) {
                         std::task::Poll::Ready(maybe) => maybe,
                         std::task::Poll::Pending => None,
                     }
