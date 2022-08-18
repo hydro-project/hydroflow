@@ -73,7 +73,7 @@ use datalog_grammar::*;
 fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn::Stmt {
     let str_node: syn::LitStr = parse_quote!(#literal);
     let actual_str = str_node.value();
-    let program = datalog_grammar::parse(&actual_str).unwrap();
+    let program: Program = datalog_grammar::parse(&actual_str).unwrap();
 
     let inputs = program
         .rules
@@ -186,38 +186,49 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
             })
             .collect::<Vec<syn::Expr>>();
 
+        let after_join_map: syn::Expr = if sources.len() == 1 {
+            parse_quote!(|v0| (#(#output_data),*))
+        } else {
+            parse_quote!(|(k, (v0, v1))| (#(#output_data),*))
+        };
+
+        let after_join = Pipeline::Link(PipelineLink {
+            lhs: Box::new(Pipeline::Operator(Operator {
+                path: parse_quote!(map),
+                paren_token: Paren::default(),
+                args: vec![after_join_map].iter().cloned::<syn::Expr>().collect(),
+            })),
+            connector: ArrowConnector {
+                src: None,
+                arrow: Token![->](Span::call_site()),
+                dst: None,
+            },
+            rhs: Box::new(Pipeline::Name(target_ident.clone())),
+        });
+
+        let join_and_map = if sources.len() == 1 {
+            after_join
+        } else {
+            Pipeline::Link(PipelineLink {
+                lhs: Box::new(Pipeline::Operator(Operator {
+                    path: parse_quote!(join),
+                    paren_token: Paren::default(),
+                    args: Punctuated::new(),
+                })),
+                connector: ArrowConnector {
+                    src: None,
+                    arrow: Token![->](Span::call_site()),
+                    dst: None,
+                },
+                rhs: Box::new(after_join),
+            })
+        };
+
         flat_graph.add_statement(hydroflow_lang::parse::HfStatement::Named(
             NamedHfStatement {
                 name: join_node.clone(),
                 equals: Token![=](Span::call_site()),
-                pipeline: Pipeline::Link(PipelineLink {
-                    lhs: Box::new(Pipeline::Operator(Operator {
-                        path: parse_quote!(join),
-                        paren_token: Paren::default(),
-                        args: Punctuated::new(),
-                    })),
-                    connector: ArrowConnector {
-                        src: None,
-                        arrow: Token![->](Span::call_site()),
-                        dst: None,
-                    },
-                    rhs: Box::new(Pipeline::Link(PipelineLink {
-                        lhs: Box::new(Pipeline::Operator(Operator {
-                            path: parse_quote!(map),
-                            paren_token: Paren::default(),
-                            args: vec![parse_quote!(|(k, (v0, v1))| (#(#output_data),*))]
-                                .iter()
-                                .cloned::<syn::Expr>()
-                                .collect(),
-                        })),
-                        connector: ArrowConnector {
-                            src: None,
-                            arrow: Token![->](Span::call_site()),
-                            dst: None,
-                        },
-                        rhs: Box::new(Pipeline::Name(target_ident.clone())),
-                    })),
-                }),
+                pipeline: join_and_map,
             },
         ));
 
@@ -246,28 +257,32 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
                         arrow: Token![->](Span::call_site()),
                         dst: None,
                     },
-                    rhs: Box::new(Pipeline::Link(PipelineLink {
-                        lhs: Box::new(Pipeline::Operator(Operator {
-                            path: parse_quote!(map),
-                            paren_token: Paren::default(),
-                            args: vec![parse_quote!(|v| ((#(#hash_keys),*), v))]
-                                .iter()
-                                .cloned::<syn::Expr>()
-                                .collect(),
-                        })),
-                        connector: ArrowConnector {
-                            src: None,
-                            arrow: Token![->](Span::call_site()),
-                            dst: Some(Indexing {
-                                bracket_token: syn::token::Bracket::default(),
-                                index: IndexInt {
-                                    value: source_i,
-                                    span: Span::call_site(),
-                                },
-                            }),
-                        },
-                        rhs: Box::new(Pipeline::Name(join_node.clone())),
-                    })),
+                    rhs: Box::new(if sources.len() == 1 {
+                        Pipeline::Name(join_node.clone())
+                    } else {
+                        Pipeline::Link(PipelineLink {
+                            lhs: Box::new(Pipeline::Operator(Operator {
+                                path: parse_quote!(map),
+                                paren_token: Paren::default(),
+                                args: vec![parse_quote!(|v| ((#(#hash_keys),*), v))]
+                                    .iter()
+                                    .cloned::<syn::Expr>()
+                                    .collect(),
+                            })),
+                            connector: ArrowConnector {
+                                src: None,
+                                arrow: Token![->](Span::call_site()),
+                                dst: Some(Indexing {
+                                    bracket_token: syn::token::Bracket::default(),
+                                    index: IndexInt {
+                                        value: source_i,
+                                        span: Span::call_site(),
+                                    },
+                                }),
+                            },
+                            rhs: Box::new(Pipeline::Name(join_node.clone())),
+                        })
+                    }),
                 }),
             ));
         }
@@ -340,40 +355,40 @@ mod tests {
         data
     }
 
-    // #[test]
-    // fn minimal_program() {
-    //     let out = &gen_datalog_program(
-    //         parse_quote!(
-    //             r#"
-    //         .input in
-    //         .output out
+    #[test]
+    fn minimal_program() {
+        let out = &gen_datalog_program(
+            parse_quote!(
+                r#"
+                .input in
+                .output out
 
-    //         out(x, y) :- in(x, y).
-    //     "#
-    //         ),
-    //         quote::quote! { hydroflow },
-    //     );
+                out(y, x) :- in(x, y).
+                "#
+            ),
+            quote::quote! { hydroflow },
+        );
 
-    //     let wrapped: syn::Item = parse_quote! {
-    //         fn main() {
-    //             #out
-    //         }
-    //     };
+        let wrapped: syn::Item = parse_quote! {
+            fn main() {
+                #out
+            }
+        };
 
-    //     insta::assert_display_snapshot!(rustfmt_code(&wrapped.to_token_stream().to_string()));
-    // }
+        insta::assert_display_snapshot!(rustfmt_code(&wrapped.to_token_stream().to_string()));
+    }
 
     #[test]
     fn join_with_other() {
         let out = &gen_datalog_program(
             parse_quote!(
                 r#"
-            .input in1
-            .input in2
-            .output out
+                .input in1
+                .input in2
+                .output out
 
-            out(x, y) :- in1(x, y), in2(y, x).
-        "#
+                out(x, y) :- in1(x, y), in2(y, x).
+                "#
             ),
             quote::quote! { hydroflow },
         );
