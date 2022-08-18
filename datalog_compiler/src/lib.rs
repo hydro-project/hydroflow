@@ -146,12 +146,12 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
 
         // TODO(shadaj): more than two sources, nested join
         let mut identifier_to_bindings = HashMap::new();
-        for source in &sources {
+        for (source_idx, source) in sources.iter().enumerate() {
             for (i, param) in source.fields.iter().enumerate() {
                 let entry = identifier_to_bindings
                     .entry(param.clone())
                     .or_insert_with(HashMap::new);
-                entry.insert(source.name.clone(), i);
+                entry.insert(source_idx, i);
             }
         }
 
@@ -172,6 +172,20 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
 
         let join_node = syn::Ident::new(&format!("{}_join", target_ident), Span::call_site());
 
+        let output_data = rule
+            .target
+            .fields
+            .iter()
+            .map(|field| {
+                let bindings = identifier_to_bindings.get(field).unwrap();
+                let source = bindings.keys().min().unwrap();
+                let source_ident = syn::Ident::new(&format!("v{}", source), Span::call_site());
+                let source_index = syn::Index::from(*bindings.get(source).unwrap());
+
+                parse_quote!(#source_ident.#source_index)
+            })
+            .collect::<Vec<syn::Expr>>();
+
         flat_graph.add_statement(hydroflow_lang::parse::HfStatement::Named(
             NamedHfStatement {
                 name: join_node.clone(),
@@ -191,8 +205,7 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
                         lhs: Box::new(Pipeline::Operator(Operator {
                             path: parse_quote!(map),
                             paren_token: Paren::default(),
-                            // TODO(shadaj): THIS IS WRONG! SHOULD USE BINDINGS
-                            args: vec![parse_quote!(|(k, (v1, v2))| v1)]
+                            args: vec![parse_quote!(|(k, (v0, v1))| (#(#output_data),*))]
                                 .iter()
                                 .cloned::<syn::Expr>()
                                 .collect(),
@@ -208,11 +221,11 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
             },
         ));
 
-        for (i, source) in sources.iter().enumerate() {
+        for (source_i, source) in sources.iter().enumerate() {
             let hash_keys: Vec<syn::Expr> = identifiers_to_join
                 .iter()
                 .map(|(ident, bindings)| {
-                    if let Some(idx) = bindings.get(&source.name) {
+                    if let Some(idx) = bindings.get(&source_i) {
                         let idx_ident = syn::Index::from(*idx);
                         parse_quote!(v.#idx_ident)
                     } else {
@@ -248,7 +261,7 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
                             dst: Some(Indexing {
                                 bracket_token: syn::token::Bracket::default(),
                                 index: IndexInt {
-                                    value: i,
+                                    value: source_i,
                                     span: Span::call_site(),
                                 },
                             }),
