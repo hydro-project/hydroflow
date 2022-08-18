@@ -1,10 +1,14 @@
+use std::collections::HashMap;
+
 use hydroflow_lang::{
     graph::flat_graph::FlatGraph,
-    parse::{ArrowConnector, NamedHfStatement, Operator, Pipeline, PipelineLink},
+    parse::{
+        ArrowConnector, IndexInt, Indexing, NamedHfStatement, Operator, Pipeline, PipelineLink,
+    },
 };
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, ToTokens};
-use syn::{parse_quote, token::Paren, Token};
+use syn::{parse_quote, punctuated::Punctuated, token::Paren, Token};
 
 #[rust_sitter::grammar("datalog")]
 #[allow(dead_code)]
@@ -46,12 +50,12 @@ mod datalog_grammar {
             #[rust_sitter::leaf(text = ",")]
             ()
         )]
-        fields: Vec<Ident>,
+        pub fields: Vec<Ident>,
         #[rust_sitter::leaf(text = ")")]
         _r_paren: (),
     }
 
-    #[derive(Debug, Clone)]
+    #[derive(Clone, PartialEq, Eq, Hash, Debug)]
     pub struct Ident {
         #[rust_sitter::leaf(pattern = r"[a-zA-Z_][a-zA-Z0-9_]*", transform = |s| s.to_string())]
         pub name: String,
@@ -138,30 +142,125 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
     for rule in rules {
         let target = rule.target.name;
         let target_ident = syn::Ident::new(&target.name, Span::call_site());
-        let sources: Vec<Ident> = rule
-            .sources
-            .iter()
-            .map(|source| source.name.clone())
-            .collect();
+        let sources: Vec<Target> = rule.sources.to_vec();
 
-        // TODO(shadaj): multiple sources
-        flat_graph.add_statement(hydroflow_lang::parse::HfStatement::Pipeline(
-            Pipeline::Link(PipelineLink {
-                lhs: Box::new(Pipeline::Name(syn::Ident::new(
-                    &sources[0].name,
-                    Span::call_site(),
-                ))),
-                connector: ArrowConnector {
-                    src: None,
-                    arrow: Token![->](Span::call_site()),
-                    dst: None,
-                },
-                rhs: Box::new(Pipeline::Name(target_ident)),
-            }),
+        // TODO(shadaj): more than two sources, nested join
+        let mut identifier_to_bindings = HashMap::new();
+        for source in &sources {
+            for (i, param) in source.fields.iter().enumerate() {
+                let entry = identifier_to_bindings
+                    .entry(param.clone())
+                    .or_insert_with(HashMap::new);
+                entry.insert(source.name.clone(), i);
+            }
+        }
+
+        let mut sorted_identifiers = identifier_to_bindings.keys().cloned().collect::<Vec<_>>();
+        sorted_identifiers.sort_by_key(|ident| ident.name.clone());
+
+        let identifiers_to_join = sorted_identifiers
+            .iter()
+            .filter_map(|ident| {
+                let bindings = identifier_to_bindings.get(ident).unwrap();
+                if bindings.len() > 1 {
+                    Some((ident.clone(), bindings.clone()))
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
+
+        let join_node = syn::Ident::new(&format!("{}_join", target_ident), Span::call_site());
+
+        flat_graph.add_statement(hydroflow_lang::parse::HfStatement::Named(
+            NamedHfStatement {
+                name: join_node.clone(),
+                equals: Token![=](Span::call_site()),
+                pipeline: Pipeline::Link(PipelineLink {
+                    lhs: Box::new(Pipeline::Operator(Operator {
+                        path: parse_quote!(join),
+                        paren_token: Paren::default(),
+                        args: Punctuated::new(),
+                    })),
+                    connector: ArrowConnector {
+                        src: None,
+                        arrow: Token![->](Span::call_site()),
+                        dst: None,
+                    },
+                    rhs: Box::new(Pipeline::Link(PipelineLink {
+                        lhs: Box::new(Pipeline::Operator(Operator {
+                            path: parse_quote!(map),
+                            paren_token: Paren::default(),
+                            // TODO(shadaj): THIS IS WRONG! SHOULD USE BINDINGS
+                            args: vec![parse_quote!(|(k, (v1, v2))| v1)]
+                                .iter()
+                                .cloned::<syn::Expr>()
+                                .collect(),
+                        })),
+                        connector: ArrowConnector {
+                            src: None,
+                            arrow: Token![->](Span::call_site()),
+                            dst: None,
+                        },
+                        rhs: Box::new(Pipeline::Name(target_ident.clone())),
+                    })),
+                }),
+            },
         ));
+
+        for (i, source) in sources.iter().enumerate() {
+            let hash_keys: Vec<syn::Expr> = identifiers_to_join
+                .iter()
+                .map(|(ident, bindings)| {
+                    if let Some(idx) = bindings.get(&source.name) {
+                        let idx_ident = syn::Index::from(*idx);
+                        parse_quote!(v.#idx_ident)
+                    } else {
+                        panic!("Could not find key that is being joined on: {:?}", ident);
+                    }
+                })
+                .collect::<Vec<_>>();
+
+            flat_graph.add_statement(hydroflow_lang::parse::HfStatement::Pipeline(
+                Pipeline::Link(PipelineLink {
+                    // TODO(shadaj): tee if used multiple times
+                    lhs: Box::new(Pipeline::Name(syn::Ident::new(
+                        &source.name.name,
+                        Span::call_site(),
+                    ))),
+                    connector: ArrowConnector {
+                        src: None,
+                        arrow: Token![->](Span::call_site()),
+                        dst: None,
+                    },
+                    rhs: Box::new(Pipeline::Link(PipelineLink {
+                        lhs: Box::new(Pipeline::Operator(Operator {
+                            path: parse_quote!(map),
+                            paren_token: Paren::default(),
+                            args: vec![parse_quote!(|v| ((#(#hash_keys),*), v))]
+                                .iter()
+                                .cloned::<syn::Expr>()
+                                .collect(),
+                        })),
+                        connector: ArrowConnector {
+                            src: None,
+                            arrow: Token![->](Span::call_site()),
+                            dst: Some(Indexing {
+                                bracket_token: syn::token::Bracket::default(),
+                                index: IndexInt {
+                                    value: i,
+                                    span: Span::call_site(),
+                                },
+                            }),
+                        },
+                        rhs: Box::new(Pipeline::Name(join_node.clone())),
+                    })),
+                }),
+            ));
+        }
     }
 
-    dbg!(flat_graph.surface_syntax_string());
+    println!("{}", flat_graph.surface_syntax_string());
 
     let code_tokens = flat_graph
         .into_partitioned_graph()
@@ -228,15 +327,39 @@ mod tests {
         data
     }
 
+    // #[test]
+    // fn minimal_program() {
+    //     let out = &gen_datalog_program(
+    //         parse_quote!(
+    //             r#"
+    //         .input in
+    //         .output out
+
+    //         out(x, y) :- in(x, y).
+    //     "#
+    //         ),
+    //         quote::quote! { hydroflow },
+    //     );
+
+    //     let wrapped: syn::Item = parse_quote! {
+    //         fn main() {
+    //             #out
+    //         }
+    //     };
+
+    //     insta::assert_display_snapshot!(rustfmt_code(&wrapped.to_token_stream().to_string()));
+    // }
+
     #[test]
-    fn minimal_program() {
+    fn join_with_other() {
         let out = &gen_datalog_program(
             parse_quote!(
                 r#"
-            .input in
+            .input in1
+            .input in2
             .output out
 
-            out(x, y) :- in(x, y).
+            out(x, y) :- in1(x, y), in2(y, x).
         "#
             ),
             quote::quote! { hydroflow },
@@ -250,4 +373,6 @@ mod tests {
 
         insta::assert_display_snapshot!(rustfmt_code(&wrapped.to_token_stream().to_string()));
     }
+
+    // todo: join with self
 }
