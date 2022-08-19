@@ -79,12 +79,25 @@ pub const OPERATORS: [OperatorConstraints; 19] = [
         input_delaytype_fn: &|_| None,
         write_prologue_fn: &(|_, _| quote! {}),
         write_iterator_fn: &(|&WriteContextArgs { ident, .. },
-                              &WriteIteratorArgs { inputs, .. }| {
-            let mut inputs = inputs.iter();
-            let first = inputs.next();
-            let rest = inputs.map(|ident| quote! { .chain(#ident) });
-            quote! {
-                let #ident = #first #( #rest )*;
+                              &WriteIteratorArgs {
+                                  inputs,
+                                  outputs,
+                                  is_pull,
+                                  ..
+                              }| {
+            if is_pull {
+                let mut inputs = inputs.iter();
+                let first = inputs.next();
+                let rest = inputs.map(|ident| quote! { .chain(#ident) });
+                quote! {
+                    let #ident = #first #( #rest )*;
+                }
+            } else {
+                assert_eq!(1, outputs.len());
+                let output = &outputs[1];
+                quote! {
+                    let #ident = #output;
+                }
             }
         }),
     },
@@ -123,15 +136,28 @@ pub const OPERATORS: [OperatorConstraints; 19] = [
         input_delaytype_fn: &|_| None,
         write_prologue_fn: &(|_, _| quote! {}),
         write_iterator_fn: &(|&WriteContextArgs { root, ident, .. },
-                              &WriteIteratorArgs { outputs, .. }| {
-            let tees = outputs
-                .iter()
-                .rev()
-                .map(|i| quote! { #i })
-                .reduce(|b, a| quote! { #root::compiled::tee::Tee::new(#a, #b) })
-                .unwrap_or_else(|| quote! { () }); // TODO(mingwei): this seems like it would cause an error?
-            quote! {
-                let #ident = #tees;
+                              &WriteIteratorArgs {
+                                  inputs,
+                                  outputs,
+                                  is_pull,
+                                  ..
+                              }| {
+            if !is_pull {
+                let tees = outputs
+                    .iter()
+                    .rev()
+                    .map(|i| quote! { #i })
+                    .reduce(|b, a| quote! { #root::compiled::tee::Tee::new(#a, #b) })
+                    .unwrap_or_else(|| quote! { std::iter::empty() });
+                quote! {
+                    let #ident = #tees;
+                }
+            } else {
+                assert_eq!(1, inputs.len());
+                let input = &inputs[0];
+                quote! {
+                    let #ident = #input;
+                }
             }
         }),
     },
