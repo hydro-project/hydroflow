@@ -16,7 +16,7 @@ fn main() {
                 move |context, tl!(), tl!()| {
                     let op_3v1 = std::iter::from_fn(|| {
                         match in_recv
-                            .poll_recv(&mut std::task::Context::from_waker(&mut context.waker()))
+                            .poll_recv(&mut std::task::Context::from_waker(&context.waker()))
                         {
                             std::task::Poll::Ready(maybe) => maybe,
                             std::task::Poll::Pending => None,
