@@ -1,13 +1,12 @@
-use std::collections::hash_map::Entry;
-use std::collections::{HashMap, HashSet};
-use std::hash::Hash;
+use std::collections::btree_map::Entry;
+use std::collections::{BTreeMap, BTreeSet};
 
 pub fn topo_sort<Id, NodeIds, PredsFn, PredsIter>(
     node_ids: NodeIds,
     mut preds_fn: PredsFn,
 ) -> Vec<Id>
 where
-    Id: Copy + Hash + Eq,
+    Id: Copy + Eq + Ord,
     NodeIds: IntoIterator<Item = Id>,
     PredsFn: FnMut(Id) -> PredsIter,
     PredsIter: IntoIterator<Item = Id>,
@@ -17,10 +16,10 @@ where
     fn pred_dfs_postorder<Id, PredsFn, PredsIter>(
         node_id: Id,
         preds_fn: &mut PredsFn,
-        marked: &mut HashSet<Id>,
+        marked: &mut BTreeSet<Id>,
         order: &mut Vec<Id>,
     ) where
-        Id: Copy + Hash + Eq,
+        Id: Copy + Eq + Ord,
         PredsFn: FnMut(Id) -> PredsIter,
         PredsIter: IntoIterator<Item = Id>,
     {
@@ -45,9 +44,9 @@ pub fn scc_kosaraju<Id, NodeIds, PredsFn, SuccsFn, PredsIter, SuccsIter>(
     nodes: NodeIds,
     mut preds_fn: PredsFn,
     mut succs_fn: SuccsFn,
-) -> HashMap<Id, Id>
+) -> BTreeMap<Id, Id>
 where
-    Id: Copy + Eq + Hash,
+    Id: Copy + Eq + Ord,
     NodeIds: IntoIterator<Item = Id>,
     PredsFn: FnMut(Id) -> PredsIter,
     SuccsFn: FnMut(Id) -> SuccsIter,
@@ -58,10 +57,10 @@ where
     fn visit<Id, SuccsFn, SuccsIter>(
         succs_fn: &mut SuccsFn,
         u: Id,
-        seen: &mut HashSet<Id>,
+        seen: &mut BTreeSet<Id>,
         stack: &mut Vec<Id>,
     ) where
-        Id: Copy + Eq + Hash,
+        Id: Copy + Eq + Ord,
         SuccsFn: FnMut(Id) -> SuccsIter,
         SuccsIter: IntoIterator<Item = Id>,
     {
@@ -82,9 +81,9 @@ where
         preds_fn: &mut PredsFn,
         v: Id,
         root: Id,
-        components: &mut HashMap<Id, Id>,
+        components: &mut BTreeMap<Id, Id>,
     ) where
-        Id: Copy + Eq + Hash,
+        Id: Copy + Eq + Ord,
         PredsFn: FnMut(Id) -> PredsIter,
         PredsIter: IntoIterator<Item = Id>,
     {
@@ -105,8 +104,6 @@ where
 
 #[cfg(test)]
 mod test {
-    use std::collections::HashMap;
-
     use super::*;
 
     #[test]
@@ -132,7 +129,7 @@ mod test {
         });
         println!("{:?}", sort);
 
-        let position: HashMap<_, _> = sort.iter().enumerate().map(|(i, &x)| (x, i)).collect();
+        let position: BTreeMap<_, _> = sort.iter().enumerate().map(|(i, &x)| (x, i)).collect();
         for (src, dst) in edges.iter() {
             assert!(position[src] < position[dst]);
         }

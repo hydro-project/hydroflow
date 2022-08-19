@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet};
 
 use proc_macro2::Span;
 use slotmap::{Key, SecondaryMap, SlotMap};
@@ -39,7 +39,7 @@ fn find_subgraph_unionfind(
     preds: &mut AdjList,
     succs: &mut AdjList,
     barrier_crossers: &[(GraphNodeId, GraphNodeId, IndexInt, DelayType)],
-) -> (UnionFind<GraphNodeId>, HashSet<(EdgePort, EdgePort)>) {
+) -> (UnionFind<GraphNodeId>, BTreeSet<(EdgePort, EdgePort)>) {
     // Pre-calculate node colors.
     let mut node_color: SecondaryMap<GraphNodeId, Option<Color>> = nodes
         .keys()
@@ -54,7 +54,7 @@ fn find_subgraph_unionfind(
     let mut subgraph_unionfind: UnionFind<GraphNodeId> = UnionFind::with_capacity(nodes.len());
     // All edges which are handoffs. Starts out with all edges and we remove
     // from this set as we construct subgraphs.
-    let mut handoff_edges: HashSet<(EdgePort, EdgePort)> = iter_edges(succs)
+    let mut handoff_edges: BTreeSet<(EdgePort, EdgePort)> = iter_edges(succs)
         .map(|((src, &src_idx), (dst, &dst_idx))| ((src, src_idx), (dst, dst_idx)))
         .collect();
 
@@ -247,8 +247,8 @@ fn find_subgraph_strata(
     // (Cycles on cross-stratum negative edges are an error.)
 
     // Generate subgraph graph.
-    let mut subgraph_preds: HashMap<GraphSubgraphId, Vec<GraphSubgraphId>> = Default::default();
-    let mut subgraph_succs: HashMap<GraphSubgraphId, Vec<GraphSubgraphId>> = Default::default();
+    let mut subgraph_preds: BTreeMap<GraphSubgraphId, Vec<GraphSubgraphId>> = Default::default();
+    let mut subgraph_succs: BTreeMap<GraphSubgraphId, Vec<GraphSubgraphId>> = Default::default();
 
     for (node_id, node) in nodes.iter() {
         if matches!(node, Node::Handoff) {
@@ -274,7 +274,7 @@ fn find_subgraph_strata(
 
     let topo_sort_order = {
         // Condensed each SCC into a single node for toposort.
-        let mut condensed_preds: HashMap<GraphSubgraphId, Vec<GraphSubgraphId>> =
+        let mut condensed_preds: BTreeMap<GraphSubgraphId, Vec<GraphSubgraphId>> =
             Default::default();
         for (u, preds) in subgraph_preds.iter() {
             condensed_preds
@@ -289,7 +289,7 @@ fn find_subgraph_strata(
     };
 
     // Negative (next stratum) connections between subgraphs. (Ignore `next_epoch()` connections).
-    let subgraph_negative_connections: HashSet<_> = barrier_crossers
+    let subgraph_negative_connections: BTreeSet<_> = barrier_crossers
         .iter()
         .filter(|(_src, _dst, _dst_idx, delay_type)| DelayType::Stratum == *delay_type)
         .map(|(src, dst, _dst_idx, _delay_type)| (node_subgraph[*src], node_subgraph[*dst]))
