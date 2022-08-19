@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use hydroflow_lang::{
     graph::flat_graph::FlatGraph,
@@ -49,50 +49,86 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
     let mut flat_graph = FlatGraph::default();
     let mut tee_counter = HashMap::new();
 
-    for target in inputs {
-        let target_ident = syn::Ident::new(&format!("{}_recv", &target.name), Span::call_site());
-        flat_graph.add_statement(hydroflow_lang::parse::HfStatement::Named(
-            NamedHfStatement {
-                name: syn::Ident::new(&target.name, Span::call_site()),
-                equals: Token![=](Span::call_site()),
-                pipeline: Pipeline::Link(PipelineLink {
-                    lhs: Box::new(Pipeline::Operator(Operator {
-                        path: parse_quote!(recv_stream),
-                        paren_token: Paren::default(),
-                        args: vec![parse_quote!(#target_ident)]
-                            .iter()
-                            .cloned::<syn::Expr>()
-                            .collect(),
-                    })),
-                    connector: ArrowConnector {
-                        src: None,
-                        arrow: Token![->](Span::call_site()),
-                        dst: None,
-                    },
-                    rhs: Box::new(Pipeline::Operator(Operator {
+    let mut created_rules = HashSet::new();
+    for decl in program.rules {
+        let target_ident = match decl {
+            Declaration::Input(_, ident) => ident.clone(),
+            Declaration::Output(_, ident) => ident.clone(),
+            Declaration::Rule(rule) => rule.target.name.clone(),
+        };
+
+        if !created_rules.contains(&target_ident) {
+            created_rules.insert(target_ident.clone());
+            flat_graph.add_statement(hydroflow_lang::parse::HfStatement::Named(
+                NamedHfStatement {
+                    name: syn::Ident::new(&target_ident.name, Span::call_site()),
+                    equals: Token![=](Span::call_site()),
+                    pipeline: Pipeline::Operator(Operator {
                         path: parse_quote!(tee),
                         paren_token: Paren::default(),
                         args: Punctuated::new(),
-                    }))
-                }),
-            },
+                    }),
+                },
+            ));
+        }
+    }
+
+    for target in inputs {
+        let target_ident = syn::Ident::new(&format!("{}_recv", &target.name), Span::call_site());
+        flat_graph.add_statement(hydroflow_lang::parse::HfStatement::Pipeline(
+            Pipeline::Link(PipelineLink {
+                lhs: Box::new(Pipeline::Operator(Operator {
+                    path: parse_quote!(recv_stream),
+                    paren_token: Paren::default(),
+                    args: vec![parse_quote!(#target_ident)]
+                        .iter()
+                        .cloned::<syn::Expr>()
+                        .collect(),
+                })),
+                connector: ArrowConnector {
+                    src: None,
+                    arrow: Token![->](Span::call_site()),
+                    dst: None,
+                },
+                rhs: Box::new(Pipeline::Name(syn::Ident::new(
+                    &target.name,
+                    Span::call_site(),
+                ))),
+            }),
         ));
     }
 
     for target in outputs {
-        flat_graph.add_statement(hydroflow_lang::parse::HfStatement::Named(
-            NamedHfStatement {
-                name: syn::Ident::new(&target.name, Span::call_site()),
-                equals: Token![=](Span::call_site()),
-                pipeline: Pipeline::Operator(Operator {
+        let tee_index = tee_counter.entry(target.name.clone()).or_insert(0);
+        let my_tee_index = *tee_index;
+        *tee_index += 1;
+
+        flat_graph.add_statement(hydroflow_lang::parse::HfStatement::Pipeline(
+            Pipeline::Link(PipelineLink {
+                lhs: Box::new(Pipeline::Name(syn::Ident::new(
+                    &target.name,
+                    Span::call_site(),
+                ))),
+                connector: ArrowConnector {
+                    src: Some(Indexing {
+                        bracket_token: syn::token::Bracket::default(),
+                        index: IndexInt {
+                            value: my_tee_index,
+                            span: Span::call_site(),
+                        },
+                    }),
+                    arrow: Token![->](Span::call_site()),
+                    dst: None,
+                },
+                rhs: Box::new(Pipeline::Operator(Operator {
                     path: parse_quote!(for_each),
                     paren_token: Paren::default(),
                     args: vec![parse_quote!(|v| println!("{:?}", v))]
                         .iter()
                         .cloned::<syn::Expr>()
                         .collect(),
-                }),
-            },
+                })),
+            }),
         ));
     }
 
@@ -153,11 +189,10 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
         let source_types = sources
             .iter()
             .map(|source| {
-                let col_types = source.fields
+                let col_types = source
+                    .fields
                     .iter()
-                    .map(|_| {
-                        parse_quote!(usize)
-                    })
+                    .map(|_| parse_quote!(usize))
                     .collect::<Vec<syn::Type>>();
 
                 parse_quote!((#(#col_types),*))
@@ -166,9 +201,7 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
 
         let key_type = identifiers_to_join
             .iter()
-            .map(|(_, _)| {
-                parse_quote!(usize)
-            })
+            .map(|(_, _)| parse_quote!(usize))
             .collect::<Vec<syn::Type>>();
 
         let after_join_map: syn::Expr = if sources.len() == 1 {
@@ -237,9 +270,7 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
             let source_data_types = source
                 .fields
                 .iter()
-                .map(|_| {
-                    parse_quote!(usize)
-                })
+                .map(|_| parse_quote!(usize))
                 .collect::<Vec<syn::Type>>();
 
             flat_graph.add_statement(hydroflow_lang::parse::HfStatement::Pipeline(

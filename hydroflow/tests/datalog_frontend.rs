@@ -35,6 +35,24 @@ pub fn test_join_with_self() {
 }
 
 #[test]
+pub fn test_multi_use_intermediate() {
+    let (in_send, in_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
+
+    let mut flow = datalog!(
+        r#"
+        .input in
+        .output out
+
+        in_dup(x, y) :- in(x, y).
+        out(x, y) :- in_dup(x, y), in_dup(y, x).
+        "#
+    );
+
+    in_send.send((1, 2)).unwrap();
+    flow.run_available();
+}
+
+#[test]
 pub fn test_join_with_other() {
     let (in1_send, in1_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
     let (in2_send, in2_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
