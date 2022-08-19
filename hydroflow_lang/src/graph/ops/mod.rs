@@ -386,7 +386,7 @@ pub const OPERATORS: [OperatorConstraints; 19] = [
             let receiver = &arguments[0];
             quote! {
                 let #ident = std::iter::from_fn(|| {
-                    match #receiver.poll_recv(&mut std::task::Context::from_waker(&mut context.waker())) {
+                    match #receiver.poll_recv(&mut std::task::Context::from_waker(&context.waker())) {
                         std::task::Poll::Ready(maybe) => maybe,
                         std::task::Poll::Pending => None,
                     }
@@ -528,7 +528,7 @@ pub const OPERATORS: [OperatorConstraints; 19] = [
                     let mut write = #async_write_arg;
                     while let Some(item) = recv.recv().await {
                         let bytes = std::convert::AsRef::<[u8]>::as_ref(&item);
-                        write.write(bytes).await.expect("Error processing async write item.");
+                        write.write_all(bytes).await.expect("Error processing async write item.");
                     }
                 });
             }
