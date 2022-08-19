@@ -289,7 +289,7 @@ pub(crate) async fn run_coordinator(opts: Opts, subordinates: Vec<String>) {
         GraphType::Dot => {
             println!("{}", hf.generate_dot())
         }
-        GraphType::JSON => {
+        GraphType::Json => {
             println!("{}", hf.generate_json())
         }
     }

@@ -6,7 +6,7 @@ use hydroflow::scheduled::handoff::VecHandoff;
 enum GraphType {
     Mermaid,
     Dot,
-    JSON,
+    Json,
 }
 #[derive(Parser, Debug)]
 struct Opts {
@@ -44,7 +44,7 @@ pub fn main() {
         GraphType::Dot => {
             println!("{}", hf.generate_dot())
         }
-        GraphType::JSON => {
+        GraphType::Json => {
             println!("{}", hf.generate_json())
         }
     }
