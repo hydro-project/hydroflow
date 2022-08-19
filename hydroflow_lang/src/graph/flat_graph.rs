@@ -186,7 +186,8 @@ impl FlatGraph {
                                 true,
                                 inn_degree,
                                 op_constraints.hard_range_inn,
-                            ) || emit_arity_error(
+                            );
+                            emit_arity_error(
                                 operator,
                                 true,
                                 false,
@@ -201,7 +202,8 @@ impl FlatGraph {
                                 true,
                                 out_degree,
                                 op_constraints.hard_range_out,
-                            ) || emit_arity_error(
+                            );
+                            emit_arity_error(
                                 operator,
                                 false,
                                 false,
