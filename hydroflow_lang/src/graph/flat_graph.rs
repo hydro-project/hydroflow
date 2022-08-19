@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use quote::ToTokens;
 use slotmap::{Key, SecondaryMap, SlotMap};
@@ -17,7 +17,7 @@ pub struct FlatGraph {
     pub(crate) nodes: SlotMap<GraphNodeId, Node>,
     pub(crate) preds: SecondaryMap<GraphNodeId, OutboundEdges>,
     pub(crate) succs: SecondaryMap<GraphNodeId, OutboundEdges>,
-    names: HashMap<Ident, Ports>,
+    names: BTreeMap<Ident, Ports>,
 }
 impl FlatGraph {
     // TODO(mingwei): better error/diagnostic handling.
