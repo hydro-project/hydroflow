@@ -87,7 +87,7 @@ pub(crate) async fn run_server(opts: Opts) {
         GraphType::Dot => {
             println!("{}", hf.generate_dot())
         }
-        GraphType::JSON => {
+        GraphType::Json => {
             println!("{}", hf.generate_json())
         }
     }

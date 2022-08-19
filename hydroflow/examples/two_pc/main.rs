@@ -25,7 +25,7 @@ enum Role {
 enum GraphType {
     Mermaid,
     Dot,
-    JSON,
+    Json,
 }
 
 #[derive(Parser, Debug)]
