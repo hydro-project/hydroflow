@@ -10,70 +10,14 @@ use proc_macro2::{Span, TokenStream};
 use quote::{quote, ToTokens};
 use syn::{parse_quote, punctuated::Punctuated, token::Paren, Token};
 
-#[rust_sitter::grammar("datalog")]
-#[allow(dead_code)]
-mod datalog_grammar {
-    #[rust_sitter::language]
-    #[derive(Debug)]
-    pub struct Program {
-        pub rules: Vec<Declaration>,
-    }
+mod grammar;
 
-    #[derive(Debug, Clone)]
-    pub enum Declaration {
-        Input(#[rust_sitter::leaf(text = ".input")] (), Ident),
-        Output(#[rust_sitter::leaf(text = ".output")] (), Ident),
-        Rule(Rule),
-    }
-
-    #[derive(Debug, Clone)]
-    pub struct Rule {
-        pub target: Target,
-        #[rust_sitter::leaf(text = ":-")]
-        _from: (),
-        #[rust_sitter::repeat(non_empty = true)]
-        #[rust_sitter::delimited(
-            #[rust_sitter::leaf(text = ",")]
-            ()
-        )]
-        pub sources: Vec<Target>,
-        #[rust_sitter::leaf(text = ".")]
-        _dot: Option<()>,
-    }
-
-    #[derive(Debug, Clone)]
-    pub struct Target {
-        pub name: Ident,
-        #[rust_sitter::leaf(text = "(")]
-        _l_paren: (),
-        #[rust_sitter::delimited(
-            #[rust_sitter::leaf(text = ",")]
-            ()
-        )]
-        pub fields: Vec<Ident>,
-        #[rust_sitter::leaf(text = ")")]
-        _r_paren: (),
-    }
-
-    #[derive(Clone, PartialEq, Eq, Hash, Debug)]
-    pub struct Ident {
-        #[rust_sitter::leaf(pattern = r"[a-zA-Z_][a-zA-Z0-9_]*", transform = |s| s.to_string())]
-        pub name: String,
-    }
-
-    #[rust_sitter::extra]
-    struct Whitespace {
-        #[rust_sitter::leaf(pattern = r"\s")]
-        _whitespace: (),
-    }
-}
-
-use datalog_grammar::*;
+use grammar::datalog::*;
 
 fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn::Stmt {
     let str_node: syn::LitStr = parse_quote!(#literal);
     let actual_str = str_node.value();
-    let program: Program = datalog_grammar::parse(&actual_str).unwrap();
+    let program: Program = grammar::datalog::parse(&actual_str).unwrap();
 
     let inputs = program
         .rules
