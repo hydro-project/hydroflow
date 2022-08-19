@@ -105,7 +105,7 @@ pub(crate) async fn run_client(opts: Opts) {
         GraphType::Dot => {
             println!("{}", hf.generate_dot())
         }
-        GraphType::JSON => {
+        GraphType::Json => {
             println!("{}", hf.generate_json())
         }
     }

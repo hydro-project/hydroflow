@@ -6,11 +6,7 @@ use hydroflow::scheduled::handoff::VecHandoff;
 use rand::Rng;
 fn decide(odds: u8) -> bool {
     let mut rng = rand::thread_rng();
-    if rng.gen_range(0..100) > odds {
-        return false;
-    } else {
-        return true;
-    };
+    rng.gen_range(0..100) <= odds
 }
 
 pub(crate) async fn run_subordinate(opts: Opts, coordinator: String) {
@@ -146,7 +142,7 @@ pub(crate) async fn run_subordinate(opts: Opts, coordinator: String) {
         GraphType::Dot => {
             println!("{}", hf.generate_dot())
         }
-        GraphType::JSON => {
+        GraphType::Json => {
             println!("{}", hf.generate_json())
         }
     }
