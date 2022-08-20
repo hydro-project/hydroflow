@@ -298,6 +298,8 @@
 <span id="298">298</span>
 <span id="299">299</span>
 <span id="300">300</span>
+<span id="301">301</span>
+<span id="302">302</span>
 </pre><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 
 <span class="kw">use </span>quote::ToTokens;
@@ -486,7 +488,8 @@
                                 <span class="bool-val">true</span>,
                                 inn_degree,
                                 op_constraints.hard_range_inn,
-                            ) || emit_arity_error(
+                            );
+                            emit_arity_error(
                                 operator,
                                 <span class="bool-val">true</span>,
                                 <span class="bool-val">false</span>,
@@ -501,7 +504,8 @@
                                 <span class="bool-val">true</span>,
                                 out_degree,
                                 op_constraints.hard_range_out,
-                            ) || emit_arity_error(
+                            );
+                            emit_arity_error(
                                 operator,
                                 <span class="bool-val">false</span>,
                                 <span class="bool-val">false</span>,
@@ -599,4 +603,4 @@
     out: <span class="prelude-ty">Option</span>&lt;GraphNodeId&gt;,
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (0b79f758c 2022-08-18)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (e1b28cd2f 2022-08-19)" ></div></body></html>
