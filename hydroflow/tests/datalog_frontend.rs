@@ -71,3 +71,24 @@ pub fn test_join_with_other() {
     in2_send.send((2, 1)).unwrap();
     flow.run_available();
 }
+
+#[test]
+pub fn test_multiple_contributors() {
+    let (in1_send, in1_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
+    let (in2_send, in2_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
+
+    let mut flow = datalog!(
+        r#"
+        .input in1
+        .input in2
+        .output out
+
+        out(x, y) :- in1(x, y).
+        out(x, y) :- in2(y, x).
+        "#
+    );
+
+    in1_send.send((1, 2)).unwrap();
+    in2_send.send((2, 1)).unwrap();
+    flow.run_available();
+}

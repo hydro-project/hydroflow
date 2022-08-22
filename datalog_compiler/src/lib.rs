@@ -48,6 +48,7 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
 
     let mut flat_graph = FlatGraph::default();
     let mut tee_counter = HashMap::new();
+    let mut merge_counter = HashMap::new();
 
     let mut created_rules = HashSet::new();
     for decl in program.rules {
@@ -63,10 +64,22 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
                 NamedHfStatement {
                     name: syn::Ident::new(&target_ident.name, Span::call_site()),
                     equals: Token![=](Span::call_site()),
-                    pipeline: Pipeline::Operator(Operator {
-                        path: parse_quote!(tee),
-                        paren_token: Paren::default(),
-                        args: Punctuated::new(),
+                    pipeline: Pipeline::Link(PipelineLink {
+                        lhs: Box::new(Pipeline::Operator(Operator {
+                            path: parse_quote!(merge),
+                            paren_token: Paren::default(),
+                            args: Punctuated::new(),
+                        })),
+                        connector: ArrowConnector {
+                            src: None,
+                            arrow: Token![->](Span::call_site()),
+                            dst: None,
+                        },
+                        rhs: Box::new(Pipeline::Operator(Operator {
+                            path: parse_quote!(tee),
+                            paren_token: Paren::default(),
+                            args: Punctuated::new(),
+                        })),
                     }),
                 },
             ));
@@ -75,6 +88,11 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
 
     for target in inputs {
         let target_ident = syn::Ident::new(&format!("{}_recv", &target.name), Span::call_site());
+
+        let merge_index = merge_counter.entry(target.name.clone()).or_insert(0);
+        let my_merge_index = *merge_index;
+        *merge_index += 1;
+
         flat_graph.add_statement(hydroflow_lang::parse::HfStatement::Pipeline(
             Pipeline::Link(PipelineLink {
                 lhs: Box::new(Pipeline::Operator(Operator {
@@ -88,7 +106,13 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
                 connector: ArrowConnector {
                     src: None,
                     arrow: Token![->](Span::call_site()),
-                    dst: None,
+                    dst: Some(Indexing {
+                        bracket_token: syn::token::Bracket::default(),
+                        index: IndexInt {
+                            value: my_merge_index,
+                            span: Span::call_site(),
+                        },
+                    }),
                 },
                 rhs: Box::new(Pipeline::Name(syn::Ident::new(
                     &target.name,
@@ -210,6 +234,10 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
             parse_quote!(|kv: ((#(#key_type),*), (#(#source_types),*))| (#(#output_data),*))
         };
 
+        let merge_index = merge_counter.entry(target.name.clone()).or_insert(0);
+        let my_merge_index = *merge_index;
+        *merge_index += 1;
+
         let after_join = Pipeline::Link(PipelineLink {
             lhs: Box::new(Pipeline::Operator(Operator {
                 path: parse_quote!(map),
@@ -219,7 +247,13 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
             connector: ArrowConnector {
                 src: None,
                 arrow: Token![->](Span::call_site()),
-                dst: None,
+                dst: Some(Indexing {
+                    bracket_token: syn::token::Bracket::default(),
+                    index: IndexInt {
+                        value: my_merge_index,
+                        span: Span::call_site(),
+                    },
+                }),
             },
             rhs: Box::new(Pipeline::Name(target_ident.clone())),
         });
@@ -445,6 +479,31 @@ mod tests {
                 .output out
 
                 out(x, y) :- in1(x, y), in2(y, x).
+                "#
+            ),
+            quote::quote! { hydroflow },
+        );
+
+        let wrapped: syn::Item = parse_quote! {
+            fn main() {
+                #out
+            }
+        };
+
+        insta::assert_display_snapshot!(rustfmt_code(&wrapped.to_token_stream().to_string()));
+    }
+
+    #[test]
+    fn multiple_contributors() {
+        let out = &gen_datalog_program(
+            parse_quote!(
+                r#"
+                .input in1
+                .input in2
+                .output out
+
+                out(x, y) :- in1(x, y).
+                out(x, y) :- in2(y, x).
                 "#
             ),
             quote::quote! { hydroflow },
