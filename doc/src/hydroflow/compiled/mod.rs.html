@@ -408,8 +408,8 @@
     }
 }
 
-<span class="attribute">#[cfg(test)]</span>
-<span class="kw">mod </span>tests {
+<span class="attribute">#[cfg(test)]
+</span><span class="kw">mod </span>tests {
     <span class="kw">use </span>std::rc::Rc;
 
     <span class="kw">use super</span>::{
@@ -418,8 +418,8 @@
     };
     <span class="kw">use </span><span class="kw">crate</span>::lang::lattice::ord::MaxRepr;
 
-    <span class="attribute">#[test]</span>
-    <span class="kw">fn </span>linear_chains() {
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>linear_chains() {
         <span class="kw">let </span><span class="kw-2">mut </span>v = Vec::new();
         <span class="kw">let </span><span class="kw-2">mut </span>pusher = Map::new(
             |x| x * <span class="number">2</span>,
@@ -433,8 +433,8 @@
         <span class="macro">assert_eq!</span>(v, <span class="macro">vec!</span>[<span class="number">6</span>, <span class="number">8</span>]);
     }
 
-    <span class="attribute">#[test]</span>
-    <span class="kw">fn </span>partition() {
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>partition() {
         <span class="kw">let </span><span class="kw-2">mut </span>evens = Vec::new();
         <span class="kw">let </span><span class="kw-2">mut </span>odds = Vec::new();
         <span class="kw">let </span><span class="kw-2">mut </span>pusher = Partition::new(
@@ -451,8 +451,8 @@
         <span class="macro">assert_eq!</span>(odds, <span class="macro">vec!</span>[<span class="number">1</span>, <span class="number">3</span>]);
     }
 
-    <span class="attribute">#[test]</span>
-    <span class="kw">fn </span>tee() {
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>tee() {
         <span class="kw">let </span><span class="kw-2">mut </span>left = Vec::new();
         <span class="kw">let </span><span class="kw-2">mut </span>right = Vec::new();
         <span class="kw">let </span><span class="kw-2">mut </span>pusher = Tee::new(
@@ -468,8 +468,8 @@
         <span class="macro">assert_eq!</span>(right, <span class="macro">vec!</span>[<span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>]);
     }
 
-    <span class="attribute">#[test]</span>
-    <span class="kw">fn </span>tee_rcs() {
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>tee_rcs() {
         <span class="kw">let </span><span class="kw-2">mut </span>left = Vec::new();
         <span class="kw">let </span><span class="kw-2">mut </span>right = Vec::new();
         <span class="kw">let </span><span class="kw-2">mut </span>pusher = Map::new(
@@ -488,8 +488,8 @@
         <span class="macro">assert_eq!</span>(right, <span class="macro">vec!</span>[<span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>]);
     }
 
-    <span class="attribute">#[test]</span>
-    <span class="kw">fn </span>pivot() {
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>pivot() {
         <span class="kw">let </span>a = <span class="number">0</span>..<span class="number">10</span>;
         <span class="kw">let </span>b = <span class="number">10</span>..<span class="number">20</span>;
 
@@ -511,8 +511,8 @@
         <span class="macro">assert_eq!</span>(right, <span class="macro">vec!</span>[<span class="number">1</span>, <span class="number">3</span>, <span class="number">5</span>, <span class="number">7</span>, <span class="number">9</span>, <span class="number">11</span>, <span class="number">13</span>, <span class="number">15</span>, <span class="number">17</span>, <span class="number">19</span>]);
     }
 
-    <span class="attribute">#[test]</span>
-    <span class="kw">fn </span>map_union() {
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>map_union() {
         <span class="kw">let </span><span class="kw-2">mut </span>v = Vec::new();
         <span class="kw">let </span><span class="kw-2">mut </span>pusher =
             &lt;GroupBy&lt;<span class="kw">_</span>, MaxRepr&lt;usize&gt;, MaxRepr&lt;usize&gt;, <span class="kw">_</span>&gt;&gt;::new(ForEach::new(|x| v.push(x)));
@@ -525,12 +525,12 @@
     }
 }
 
-<span class="attribute">#[cfg(test)]</span>
-<span class="kw">mod </span>test_builder {
+<span class="attribute">#[cfg(test)]
+</span><span class="kw">mod </span>test_builder {
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
-    <span class="attribute">#[test]</span>
-    <span class="kw">fn </span>test_builder_constructed() {
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_builder_constructed() {
         <span class="kw">let </span>pb = InputBuild::&lt;usize&gt;(PhantomData);
         <span class="kw">let </span>pb = filter::FilterBuild::new(pb, |<span class="kw-2">&amp;</span>x| <span class="number">0 </span>== x % <span class="number">2</span>);
         <span class="kw">let </span>pb = map::MapBuild::new(pb, |x| x * x);
@@ -545,8 +545,8 @@
         <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span>[<span class="number">0</span>, <span class="number">4</span>, <span class="number">16</span>, <span class="number">36</span>, <span class="number">64</span>], <span class="kw-2">&amp;*</span>output);
     }
 
-    <span class="attribute">#[test]</span>
-    <span class="kw">fn </span>test_builder() {
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_builder() {
         <span class="kw">let </span><span class="kw-2">mut </span>output = Vec::new();
 
         <span class="kw">let </span><span class="kw-2">mut </span>pusherator = &lt;InputBuild&lt;usize&gt;&gt;::new()
@@ -561,8 +561,8 @@
         <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span>[<span class="number">0</span>, <span class="number">4</span>, <span class="number">16</span>, <span class="number">36</span>, <span class="number">64</span>], <span class="kw-2">&amp;*</span>output);
     }
 
-    <span class="attribute">#[test]</span>
-    <span class="kw">fn </span>test_builder_tee() {
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_builder_tee() {
         <span class="kw">let </span><span class="kw-2">mut </span>output_evn = Vec::new();
         <span class="kw">let </span><span class="kw-2">mut </span>output_odd = Vec::new();
 
@@ -583,8 +583,8 @@
         <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span>[<span class="number">1</span>, <span class="number">3</span>, <span class="number">5</span>, <span class="number">7</span>, <span class="number">9</span>], <span class="kw-2">&amp;*</span>output_odd);
     }
 
-    <span class="attribute">#[test]</span>
-    <span class="kw">fn </span>test_built_subgraph() {
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_built_subgraph() {
         <span class="kw">let </span><span class="kw-2">mut </span>output_evn = Vec::new();
         <span class="kw">let </span><span class="kw-2">mut </span>output_odd = Vec::new();
 
@@ -609,4 +609,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (878aef79d 2022-08-20)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (c0941dfb5 2022-08-21)" ></div></body></html>

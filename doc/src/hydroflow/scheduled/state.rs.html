@@ -20,8 +20,8 @@
 
 <span class="kw">use </span><span class="kw">super</span>::StateId;
 
-<span class="attribute">#[must_use]</span>
-<span class="kw">pub struct </span>StateHandle&lt;T&gt; {
+<span class="attribute">#[must_use]
+</span><span class="kw">pub struct </span>StateHandle&lt;T&gt; {
     <span class="kw">pub</span>(<span class="kw">crate</span>) state_id: StateId,
     <span class="kw">pub</span>(<span class="kw">crate</span>) _phantom: PhantomData&lt;<span class="kw-2">*mut </span>T&gt;,
 }
@@ -35,4 +35,4 @@
 }
 <span class="kw">impl</span>&lt;T&gt; Copy <span class="kw">for </span>StateHandle&lt;T&gt; {}
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (878aef79d 2022-08-20)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (c0941dfb5 2022-08-21)" ></div></body></html>

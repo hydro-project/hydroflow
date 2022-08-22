@@ -802,9 +802,9 @@
     }
 }
 
-<span class="attribute">#[repr(transparent)]</span>
-<span class="attribute">#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]</span>
-<span class="kw">pub struct </span>Single&lt;T&gt;(<span class="kw">pub </span>T);
+<span class="attribute">#[repr(transparent)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+</span><span class="kw">pub struct </span>Single&lt;T&gt;(<span class="kw">pub </span>T);
 <span class="kw">impl</span>&lt;T&gt; IntoIterator <span class="kw">for </span>Single&lt;T&gt; {
     <span class="kw">type </span>Item = T;
     <span class="kw">type </span>IntoIter = std::iter::Once&lt;T&gt;;
@@ -825,9 +825,9 @@
 //     }
 // }
 
-</span><span class="attribute">#[repr(transparent)]</span>
-<span class="attribute">#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]</span>
-<span class="kw">pub struct </span>Iter&lt;I&gt;(<span class="kw">pub </span>I)
+</span><span class="attribute">#[repr(transparent)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+</span><span class="kw">pub struct </span>Iter&lt;I&gt;(<span class="kw">pub </span>I)
 <span class="kw">where
     </span>I: IntoIterator;
 <span class="kw">impl</span>&lt;I&gt; IntoIterator <span class="kw">for </span>Iter&lt;I&gt;
@@ -842,9 +842,9 @@
     }
 }
 
-<span class="attribute">#[repr(transparent)]</span>
-<span class="attribute">#[derive(Clone, Copy, PartialEq, Eq, Hash)]</span>
-<span class="kw">pub struct </span>Array&lt;T, <span class="kw">const </span>N: usize&gt;(<span class="kw">pub </span>[T; N]);
+<span class="attribute">#[repr(transparent)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+</span><span class="kw">pub struct </span>Array&lt;T, <span class="kw">const </span>N: usize&gt;(<span class="kw">pub </span>[T; N]);
 <span class="kw">impl</span>&lt;T, <span class="kw">const </span>N: usize&gt; IntoIterator <span class="kw">for </span>Array&lt;T, N&gt; {
     <span class="kw">type </span>Item = T;
     <span class="kw">type </span>IntoIter = IntoIter&lt;T, N&gt;;
@@ -854,8 +854,8 @@
     }
 }
 
-<span class="attribute">#[derive(Clone, Copy, PartialEq, Eq, Hash)]</span>
-<span class="kw">pub struct </span>MaskedArray&lt;T, <span class="kw">const </span>N: usize&gt; {
+<span class="attribute">#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+</span><span class="kw">pub struct </span>MaskedArray&lt;T, <span class="kw">const </span>N: usize&gt; {
     <span class="kw">pub </span>mask: [bool; N],
     <span class="kw">pub </span>vals: [T; N],
 }
@@ -871,4 +871,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (878aef79d 2022-08-20)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (c0941dfb5 2022-08-21)" ></div></body></html>

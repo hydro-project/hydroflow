@@ -137,7 +137,7 @@
     <span class="kw">let </span>code = builder.code;
     run_rustfmt(<span class="macro">format!</span>(
         <span class="string">&quot;{}&quot;</span>,
-        <span class="macro">quote!</span> {
+        <span class="macro">quote! </span>{
             <span class="kw">fn </span>main() {
                 #(#code)*
 
@@ -167,12 +167,12 @@
 </span><span class="kw">impl </span>ToTokens <span class="kw">for </span>ScalarExpr {
     <span class="kw">fn </span>to_tokens(<span class="kw-2">&amp;</span><span class="self">self</span>, tokens: <span class="kw-2">&amp;mut </span>TokenStream) {
         tokens.extend(<span class="kw">match </span><span class="self">self </span>{
-            ScalarExpr::Literal(Datum::Int(x)) =&gt; <span class="macro">quote!</span> { ScalarExpr::Literal(Datum::Int(#x)) },
-            ScalarExpr::ColRef(x) =&gt; <span class="macro">quote!</span> { ScalarExpr::ColRef(#x) },
-            ScalarExpr::Eq(a, b) =&gt; <span class="macro">quote!</span> {
+            ScalarExpr::Literal(Datum::Int(x)) =&gt; <span class="macro">quote! </span>{ ScalarExpr::Literal(Datum::Int(#x)) },
+            ScalarExpr::ColRef(x) =&gt; <span class="macro">quote! </span>{ ScalarExpr::ColRef(#x) },
+            ScalarExpr::Eq(a, b) =&gt; <span class="macro">quote! </span>{
                 ScalarExpr::Eq(Box::new(#a), Box::new(#b))
             },
-            ScalarExpr::Plus(a, b) =&gt; <span class="macro">quote!</span> {
+            ScalarExpr::Plus(a, b) =&gt; <span class="macro">quote! </span>{
                 ScalarExpr::Plus(Box::new(#a), Box::new(#b))
             },
             <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;unhandled&quot;</span>),
@@ -199,11 +199,11 @@
                 <span class="kw">let </span>op_name = <span class="self">self</span>.gensym(<span class="string">&quot;values&quot;</span>);
                 <span class="kw">let </span><span class="kw-2">mut </span>payload = TokenStream::default();
                 <span class="kw">let </span>iter = v.iter().map(|row| {
-                    <span class="macro">quote!</span> {
+                    <span class="macro">quote! </span>{
                         <span class="macro">vec!</span>[ #(#row.eval(<span class="kw-2">&amp;</span>Vec::new())),* ]
                     }
                 });
-                payload.extend(<span class="macro">quote!</span> {
+                payload.extend(<span class="macro">quote! </span>{
                     <span class="macro">vec!</span>[
                         #(
                             #iter
@@ -211,7 +211,7 @@
                     ]
                 });
 
-                <span class="self">self</span>.code.push(<span class="macro">quote!</span> {
+                <span class="self">self</span>.code.push(<span class="macro">quote! </span>{
                     <span class="kw">let </span>#op_name = #payload.into_iter();
                 });
 
@@ -221,11 +221,11 @@
                 <span class="kw">let </span>op_name = <span class="self">self</span>.gensym(<span class="string">&quot;filter&quot;</span>);
                 <span class="kw">let </span>input_name = <span class="self">self</span>.compile_op(<span class="kw-2">&amp;**</span>input);
 
-                <span class="kw">let </span>pred = <span class="macro">quote!</span> {
+                <span class="kw">let </span>pred = <span class="macro">quote! </span>{
                     #(#preds.eval(row).is_true())&amp;&amp;*
                 };
 
-                <span class="self">self</span>.code.push(<span class="macro">quote!</span> {
+                <span class="self">self</span>.code.push(<span class="macro">quote! </span>{
                     <span class="kw">let </span>#op_name = #input_name.filter(|row| #pred);
                 });
 
@@ -235,11 +235,11 @@
                 <span class="kw">let </span>op_name = <span class="self">self</span>.gensym(<span class="string">&quot;project&quot;</span>);
                 <span class="kw">let </span>input_name = <span class="self">self</span>.compile_op(<span class="kw-2">&amp;**</span>input);
 
-                <span class="kw">let </span>pred = <span class="macro">quote!</span> {
+                <span class="kw">let </span>pred = <span class="macro">quote! </span>{
                     <span class="macro">vec!</span>[ #(#exprs.eval(<span class="kw-2">&amp;</span>row)),* ]
                 };
 
-                <span class="self">self</span>.code.push(<span class="macro">quote!</span> {
+                <span class="self">self</span>.code.push(<span class="macro">quote! </span>{
                     <span class="kw">let </span>#op_name = #input_name.map(|row| #pred);
                 });
 
@@ -249,4 +249,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="relalg" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (878aef79d 2022-08-20)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="relalg" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (c0941dfb5 2022-08-21)" ></div></body></html>

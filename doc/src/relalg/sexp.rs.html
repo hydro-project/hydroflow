@@ -291,8 +291,8 @@
 <span id="291">291</span>
 </pre><pre class="rust"><code><span class="kw">use </span>anyhow::bail;
 
-<span class="attribute">#[derive(Debug, Clone)]</span>
-<span class="kw">struct </span>Parser {
+<span class="attribute">#[derive(Debug, Clone)]
+</span><span class="kw">struct </span>Parser {
     input: Vec&lt;char&gt;,
     idx: usize,
 }
@@ -403,8 +403,8 @@
     }
 }
 
-<span class="attribute">#[derive(Debug, Clone)]</span>
-<span class="kw">pub enum </span>Sexp {
+<span class="attribute">#[derive(Debug, Clone)]
+</span><span class="kw">pub enum </span>Sexp {
     Atom(String),
     List(Vec&lt;Sexp&gt;, char),
     String(String),
@@ -525,7 +525,7 @@
     }
 }
 
-<span class="macro">macro_rules!</span> impl_from_fromstr {
+<span class="macro">macro_rules! </span>impl_from_fromstr {
     (<span class="macro-nonterminal">$name</span>:ident) =&gt; {
         <span class="kw">impl </span>FromSexp <span class="kw">for </span><span class="macro-nonterminal">$name </span>{
             <span class="kw">fn </span>from_sexp(s: Sexp) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, anyhow::Error&gt; {
@@ -545,8 +545,8 @@
 <span class="macro">impl_from_fromstr!</span>(usize);
 <span class="macro">impl_from_fromstr!</span>(String);
 
-<span class="attribute">#[derive(Debug, Clone)]</span>
-<span class="kw">struct </span>LitString(String);
+<span class="attribute">#[derive(Debug, Clone)]
+</span><span class="kw">struct </span>LitString(String);
 
 <span class="kw">impl </span>FromSexp <span class="kw">for </span>LitString {
     <span class="kw">fn </span>from_sexp(s: Sexp) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, anyhow::Error&gt; {
@@ -566,8 +566,8 @@
     }
 }
 
-<span class="attribute">#[test]</span>
-<span class="kw">fn </span>test_parse() {
+<span class="attribute">#[test]
+</span><span class="kw">fn </span>test_parse() {
     <span class="kw">for </span>s <span class="kw">in </span>[<span class="string">&quot;1&quot;</span>, <span class="string">&quot;(1)&quot;</span>, <span class="string">&quot;(plus (one two))&quot;</span>, <span class="string">&quot;(+ 1 2)&quot;</span>, <span class="string">&quot;\&quot;foo\&quot;&quot;</span>] {
         <span class="macro">assert_eq!</span>(
             s,
@@ -581,4 +581,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="relalg" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (878aef79d 2022-08-20)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="relalg" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (c0941dfb5 2022-08-21)" ></div></body></html>

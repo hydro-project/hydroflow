@@ -345,7 +345,7 @@
             </span><span class="kw">let </span><span class="kw-2">mut </span>connections = HashMap::&lt;Address, ConnStatus&lt;T&gt;&gt;::new();
 
             <span class="kw">loop </span>{
-                <span class="macro">tokio::select!</span> {
+                <span class="macro">tokio::select! </span>{
                     <span class="prelude-val">Some</span>((addr, msg)) = outbound_messages_recv.next() =&gt; {
                         <span class="kw">let </span>addr: Address = addr;
                         <span class="kw">let </span>msg: T = msg;
@@ -453,4 +453,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (878aef79d 2022-08-20)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (c0941dfb5 2022-08-21)" ></div></body></html>

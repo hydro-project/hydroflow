@@ -1065,7 +1065,7 @@
 /// TODO(mingwei): restructure `PortList` so this can be crate-private.
 </span><span class="kw">pub struct </span>HandoffData {
     <span class="doccomment">/// A friendly name for diagnostics.
-    </span><span class="attribute">#[allow(dead_code)]</span> <span class="comment">// TODO(mingwei): remove attr once used.
+    </span><span class="attribute">#[allow(dead_code)] </span><span class="comment">// TODO(mingwei): remove attr once used.
     </span><span class="kw">pub</span>(<span class="kw">super</span>) name: Cow&lt;<span class="lifetime">&#39;static</span>, str&gt;,
     <span class="doccomment">/// Crate-visible to crate for `handoff_list` internals.
     </span><span class="kw">pub</span>(<span class="kw">super</span>) handoff: Box&lt;<span class="kw">dyn </span>HandoffMeta&gt;,
@@ -1098,14 +1098,14 @@
 /// structure and scheduled state.
 </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">struct </span>SubgraphData {
     <span class="doccomment">/// A friendly name for diagnostics.
-    </span><span class="attribute">#[allow(dead_code)]</span> <span class="comment">// TODO(mingwei): remove attr once used.
+    </span><span class="attribute">#[allow(dead_code)] </span><span class="comment">// TODO(mingwei): remove attr once used.
     </span><span class="kw">pub</span>(<span class="kw">super</span>) name: Cow&lt;<span class="lifetime">&#39;static</span>, str&gt;,
     <span class="doccomment">/// This subgraph&#39;s stratum number.
     </span><span class="kw">pub</span>(<span class="kw">super</span>) stratum: usize,
     <span class="doccomment">/// The actual execution code of the subgraph.
     </span>subgraph: Box&lt;<span class="kw">dyn </span>Subgraph&gt;,
-    <span class="attribute">#[allow(dead_code)]</span>
-    preds: Vec&lt;HandoffId&gt;,
+    <span class="attribute">#[allow(dead_code)]
+    </span>preds: Vec&lt;HandoffId&gt;,
     succs: Vec&lt;HandoffId&gt;,
 
     <span class="kw">pub</span>(<span class="kw">super</span>) dependencies: FlowGraph,
@@ -1143,4 +1143,4 @@
     <span class="kw">pub </span>state: Box&lt;<span class="kw">dyn </span>Any&gt;,
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (878aef79d 2022-08-20)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (c0941dfb5 2022-08-21)" ></div></body></html>

@@ -128,8 +128,8 @@
 <span id="128">128</span>
 </pre><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 
-<span class="attribute">#[derive(Debug)]</span>
-<span class="kw">pub struct </span>JoinState&lt;K, V1, V2&gt; {
+<span class="attribute">#[derive(Debug)]
+</span><span class="kw">pub struct </span>JoinState&lt;K, V1, V2&gt; {
     ltab: HashMap&lt;K, Vec&lt;V1&gt;&gt;,
     rtab: HashMap&lt;K, Vec&lt;V2&gt;&gt;,
     lbuffer: <span class="prelude-ty">Option</span>&lt;(K, V1, Vec&lt;V2&gt;)&gt;,
@@ -226,12 +226,12 @@
     }
 }
 
-<span class="attribute">#[cfg(test)]</span>
-<span class="kw">mod </span>tests {
+<span class="attribute">#[cfg(test)]
+</span><span class="kw">mod </span>tests {
     <span class="kw">use super</span>::{JoinState, SymmetricHashJoin};
 
-    <span class="attribute">#[test]</span>
-    <span class="kw">fn </span>hash_join() {
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>hash_join() {
         <span class="kw">let </span>lhs = (<span class="number">0</span>..<span class="number">10</span>).map(|x| (x, <span class="macro">format!</span>(<span class="string">&quot;left {}&quot;</span>, x)));
         <span class="kw">let </span>rhs = (<span class="number">6</span>..<span class="number">15</span>).map(|x| (x / <span class="number">2</span>, <span class="macro">format!</span>(<span class="string">&quot;right {} / 2&quot;</span>, x)));
 
@@ -255,4 +255,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (878aef79d 2022-08-20)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (c0941dfb5 2022-08-21)" ></div></body></html>

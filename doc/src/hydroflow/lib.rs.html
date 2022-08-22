@@ -43,15 +43,15 @@
 <span id="43">43</span>
 <span id="44">44</span>
 <span id="45">45</span>
-</pre><pre class="rust"><code><span class="attribute">#![feature(never_type)]</span>
-<span class="attribute">#![feature(type_alias_impl_trait)]</span>
-<span class="attribute">#![feature(generic_associated_types)]</span>
-<span class="attribute">#![allow(type_alias_bounds)]</span>
-<span class="attribute">#![allow(clippy::let_and_return)]</span>
-<span class="attribute">#![allow(clippy::iter_with_drain)]</span>
-<span class="attribute">#![allow(clippy::explicit_auto_deref)]</span>
+</pre><pre class="rust"><code><span class="attribute">#![feature(never_type)]
+#![feature(type_alias_impl_trait)]
+#![feature(generic_associated_types)]
+#![allow(type_alias_bounds)]
+#![allow(clippy::let_and_return)]
+#![allow(clippy::iter_with_drain)]
+#![allow(clippy::explicit_auto_deref)]
 
-<span class="kw">pub mod </span>builder;
+</span><span class="kw">pub mod </span>builder;
 <span class="kw">pub mod </span>compiled;
 <span class="kw">pub mod </span>lang;
 <span class="kw">pub mod </span>scheduled;
@@ -62,12 +62,12 @@
 <span class="kw">pub use </span>tuple_list::tuple_list <span class="kw">as </span>tl;
 <span class="kw">pub use </span>tuple_list::tuple_list_type <span class="kw">as </span>tt;
 
-<span class="attribute">#[cfg(doctest)]</span>
-<span class="kw">mod </span>booktest {
-    <span class="macro">macro_rules!</span> booktest {
+<span class="attribute">#[cfg(doctest)]
+</span><span class="kw">mod </span>booktest {
+    <span class="macro">macro_rules! </span>booktest {
         (<span class="macro-nonterminal">$i</span>:ident) =&gt; {
-            <span class="attribute">#[doc = <span class="macro">include_str!</span>(<span class="macro">concat!</span>(<span class="string">&quot;../../book/&quot;</span>, <span class="macro">stringify!</span>(<span class="macro-nonterminal">$i</span>), <span class="string">&quot;.md&quot;</span>))]</span>
-            <span class="kw">mod </span><span class="macro-nonterminal">$i </span>{}
+            <span class="attribute">#[doc = <span class="macro">include_str!</span>(<span class="macro">concat!</span>(<span class="string">&quot;../../book/&quot;</span>, <span class="macro">stringify!</span>(<span class="macro-nonterminal">$i</span>), <span class="string">&quot;.md&quot;</span>))]
+            </span><span class="kw">mod </span><span class="macro-nonterminal">$i </span>{}
         };
     }
     <span class="macro">booktest!</span>(example_1);
@@ -89,4 +89,4 @@
     <span class="macro">booktest!</span>(surface_ops);
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (878aef79d 2022-08-20)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (c0941dfb5 2022-08-21)" ></div></body></html>

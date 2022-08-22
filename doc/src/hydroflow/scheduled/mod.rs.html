@@ -140,9 +140,9 @@
 
 <span class="doccomment">/// A subgraph&#39;s ID. Invalid if used in a different [`graph::Hydroflow`]
 /// instance than the original that created it.
-</span><span class="attribute">#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize)]</span>
-<span class="attribute">#[repr(transparent)]</span>
-<span class="kw">pub struct </span>SubgraphId(<span class="kw">pub</span>(<span class="kw">crate</span>) usize);
+</span><span class="attribute">#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize)]
+#[repr(transparent)]
+</span><span class="kw">pub struct </span>SubgraphId(<span class="kw">pub</span>(<span class="kw">crate</span>) usize);
 <span class="kw">impl </span>Display <span class="kw">for </span>SubgraphId {
     <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>Formatter) -&gt; <span class="prelude-ty">Result </span>{
         <span class="macro">write!</span>(f, <span class="string">&quot;{}&quot;</span>, <span class="self">self</span>.<span class="number">0</span>)
@@ -151,9 +151,9 @@
 
 <span class="doccomment">/// A handoff&#39;s ID. Invalid if used in a different [`graph::Hydroflow`]
 /// instance than the original that created it.
-</span><span class="attribute">#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize)]</span>
-<span class="attribute">#[repr(transparent)]</span>
-<span class="kw">pub struct </span>HandoffId(<span class="kw">pub</span>(<span class="kw">crate</span>) usize);
+</span><span class="attribute">#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize)]
+#[repr(transparent)]
+</span><span class="kw">pub struct </span>HandoffId(<span class="kw">pub</span>(<span class="kw">crate</span>) usize);
 <span class="kw">impl </span>Display <span class="kw">for </span>HandoffId {
     <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>Formatter) -&gt; <span class="prelude-ty">Result </span>{
         <span class="macro">write!</span>(f, <span class="string">&quot;{}&quot;</span>, <span class="self">self</span>.<span class="number">0</span>)
@@ -162,12 +162,12 @@
 
 <span class="doccomment">/// A staten handle&#39;s ID. Invalid if used in a different [`graph::Hydroflow`]
 /// instance than the original that created it.
-</span><span class="attribute">#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]</span>
-<span class="attribute">#[repr(transparent)]</span>
-<span class="kw">pub struct </span>StateId(<span class="kw">pub</span>(<span class="kw">crate</span>) usize);
+</span><span class="attribute">#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[repr(transparent)]
+</span><span class="kw">pub struct </span>StateId(<span class="kw">pub</span>(<span class="kw">crate</span>) usize);
 
-<span class="attribute">#[cfg(test)]</span>
-<span class="kw">mod </span>tests {
+<span class="attribute">#[cfg(test)]
+</span><span class="kw">mod </span>tests {
     <span class="kw">use </span>std::{cell::RefCell, rc::Rc};
 
     <span class="kw">use crate</span>::{
@@ -179,8 +179,8 @@
         scheduled::handoff::VecHandoff,
     };
 
-    <span class="attribute">#[test]</span>
-    <span class="kw">fn </span>test_batcher() {
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_batcher() {
         <span class="kw">let </span>outputs = Rc::new(RefCell::new(Vec::new()));
         <span class="kw">let </span><span class="kw-2">mut </span>df = HydroflowBuilder::default();
 
@@ -243,4 +243,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (878aef79d 2022-08-20)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (c0941dfb5 2022-08-21)" ></div></body></html>

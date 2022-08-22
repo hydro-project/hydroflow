@@ -114,12 +114,12 @@
 <span class="kw">pub mod </span>partitioned_graph;
 <span class="kw">pub mod </span>serde_graph;
 
-<span class="macro">new_key_type!</span> {
+<span class="macro">new_key_type! </span>{
     <span class="doccomment">/// ID to identify a node (operator or handoff) in both [`flat_graph::FlatGraph`]
     /// and [`partitioned_graph::PartitionedGraph`].
     </span><span class="kw">pub struct </span>GraphNodeId;
 }
-<span class="macro">new_key_type!</span> {
+<span class="macro">new_key_type! </span>{
     <span class="doccomment">/// ID to identify a subgraph in [`partitioned_graph::PartitionedGraph`].
     </span><span class="kw">pub struct </span>GraphSubgraphId;
 }
@@ -154,8 +154,8 @@
     }
 }
 
-<span class="attribute">#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]</span>
-<span class="kw">pub enum </span>Color {
+<span class="attribute">#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+</span><span class="kw">pub enum </span>Color {
     <span class="doccomment">/// Pull (green)
     </span>Pull,
     <span class="doccomment">/// Push (blue)
@@ -193,4 +193,4 @@
     })
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (878aef79d 2022-08-20)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (c0941dfb5 2022-08-21)" ></div></body></html>

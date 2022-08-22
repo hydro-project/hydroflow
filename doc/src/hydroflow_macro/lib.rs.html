@@ -49,25 +49,25 @@
 <span id="49">49</span>
 <span id="50">50</span>
 <span id="51">51</span>
-</pre><pre class="rust"><code><span class="attribute">#![feature(proc_macro_diagnostic, proc_macro_span)]</span>
-<span class="attribute">#![allow(clippy::explicit_auto_deref)]</span>
+</pre><pre class="rust"><code><span class="attribute">#![feature(proc_macro_diagnostic, proc_macro_span)]
+#![allow(clippy::explicit_auto_deref)]
 
-<span class="kw">use </span>proc_macro2::{Ident, Literal, Span};
+</span><span class="kw">use </span>proc_macro2::{Ident, Literal, Span};
 <span class="kw">use </span>quote::quote;
 <span class="kw">use </span>syn::parse_macro_input;
 
 <span class="kw">use </span>hydroflow_lang::graph::flat_graph::FlatGraph;
 <span class="kw">use </span>hydroflow_lang::parse::HfCode;
 
-<span class="attribute">#[proc_macro]</span>
-<span class="kw">pub fn </span>hydroflow_syntax(input: proc_macro::TokenStream) -&gt; proc_macro::TokenStream {
+<span class="attribute">#[proc_macro]
+</span><span class="kw">pub fn </span>hydroflow_syntax(input: proc_macro::TokenStream) -&gt; proc_macro::TokenStream {
     <span class="kw">let </span>hydroflow_crate = proc_macro_crate::crate_name(<span class="string">&quot;hydroflow&quot;</span>)
         .expect(<span class="string">&quot;hydroflow should be present in `Cargo.toml`&quot;</span>);
     <span class="kw">let </span>root = <span class="kw">match </span>hydroflow_crate {
-        proc_macro_crate::FoundCrate::Itself =&gt; <span class="macro">quote!</span> { hydroflow },
+        proc_macro_crate::FoundCrate::Itself =&gt; <span class="macro">quote! </span>{ hydroflow },
         proc_macro_crate::FoundCrate::Name(name) =&gt; {
             <span class="kw">let </span>ident = Ident::new(<span class="kw-2">&amp;</span>name, Span::call_site());
-            <span class="macro">quote!</span> { #ident }
+            <span class="macro">quote! </span>{ #ident }
         }
     };
 
@@ -79,11 +79,11 @@
             <span class="kw">return </span>part_graph.as_code(root).into();
         }
     }
-    <span class="macro">quote!</span> { #root::scheduled::graph::Hydroflow::new() }.into()
+    <span class="macro">quote! </span>{ #root::scheduled::graph::Hydroflow::new() }.into()
 }
 
-<span class="attribute">#[proc_macro]</span>
-<span class="kw">pub fn </span>hydroflow_parser(input: proc_macro::TokenStream) -&gt; proc_macro::TokenStream {
+<span class="attribute">#[proc_macro]
+</span><span class="kw">pub fn </span>hydroflow_parser(input: proc_macro::TokenStream) -&gt; proc_macro::TokenStream {
     <span class="kw">let </span>input = <span class="macro">parse_macro_input!</span>(input <span class="kw">as </span>HfCode);
     <span class="comment">// // input.into_token_stream().into()
 
@@ -98,7 +98,7 @@
     </span><span class="kw">let </span>lit0 = Literal::string(<span class="kw-2">&amp;*</span>flat_mermaid);
     <span class="comment">// let lit1 = Literal::string(&amp;*part_mermaid);
 
-    </span><span class="macro">quote!</span> { <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, #lit0); }.into()
+    </span><span class="macro">quote! </span>{ <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, #lit0); }.into()
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="hydroflow_macro" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (878aef79d 2022-08-20)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="hydroflow_macro" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (c0941dfb5 2022-08-21)" ></div></body></html>

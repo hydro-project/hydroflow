@@ -642,8 +642,8 @@
 
 <span class="kw">use super</span>::{GraphNodeId, GraphSubgraphId};
 
-<span class="attribute">#[derive(Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Debug)]</span>
-<span class="kw">pub enum </span>DelayType {
+<span class="attribute">#[derive(Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Debug)]
+</span><span class="kw">pub enum </span>DelayType {
     Stratum,
     Epoch,
 }
@@ -690,12 +690,12 @@
                       }| {
     <span class="kw">if </span>is_pull {
         <span class="kw">let </span>input = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>];
-        <span class="macro">quote!</span> {
+        <span class="macro">quote! </span>{
             <span class="kw">let </span>#ident = #input;
         }
     } <span class="kw">else </span>{
         <span class="kw">let </span>output = <span class="kw-2">&amp;</span>outputs[<span class="number">0</span>];
-        <span class="macro">quote!</span> {
+        <span class="macro">quote! </span>{
             <span class="kw">let </span>#ident = #output;
         }
     }
@@ -710,7 +710,7 @@
         soft_range_out: RANGE_1,
         num_args: <span class="number">0</span>,
         input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">None</span>,
-        write_prologue_fn: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="macro">quote!</span> {}),
+        write_prologue_fn: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="macro">quote! </span>{}),
         write_iterator_fn: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span>WriteContextArgs { ident, .. },
                               <span class="kw-2">&amp;</span>WriteIteratorArgs {
                                   inputs,
@@ -721,14 +721,14 @@
             <span class="kw">if </span>is_pull {
                 <span class="kw">let </span><span class="kw-2">mut </span>inputs = inputs.iter();
                 <span class="kw">let </span>first = inputs.next();
-                <span class="kw">let </span>rest = inputs.map(|ident| <span class="macro">quote!</span> { .chain(#ident) });
-                <span class="macro">quote!</span> {
+                <span class="kw">let </span>rest = inputs.map(|ident| <span class="macro">quote! </span>{ .chain(#ident) });
+                <span class="macro">quote! </span>{
                     <span class="kw">let </span>#ident = #first #( #rest )<span class="kw-2">*</span>;
                 }
             } <span class="kw">else </span>{
                 <span class="macro">assert_eq!</span>(<span class="number">1</span>, outputs.len());
                 <span class="kw">let </span>output = <span class="kw-2">&amp;</span>outputs[<span class="number">1</span>];
-                <span class="macro">quote!</span> {
+                <span class="macro">quote! </span>{
                     <span class="kw">let </span>#ident = #output;
                 }
             }
@@ -745,7 +745,7 @@
         write_prologue_fn: <span class="kw-2">&amp;</span>(|wc, <span class="kw">_</span>| {
             <span class="comment">// TODO(mingwei): use state api.
             </span><span class="kw">let </span>joindata_ident = wc.make_ident(<span class="string">&quot;joindata&quot;</span>);
-            <span class="macro">quote!</span> {
+            <span class="macro">quote! </span>{
                 <span class="kw">let </span><span class="kw-2">mut </span>#joindata_ident = Default::default();
             }
         }),
@@ -754,7 +754,7 @@
             <span class="kw">let </span>joindata_ident = wc.make_ident(<span class="string">&quot;joindata&quot;</span>);
             <span class="kw">let </span>lhs = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>];
             <span class="kw">let </span>rhs = <span class="kw-2">&amp;</span>inputs[<span class="number">1</span>];
-            <span class="macro">quote!</span> {
+            <span class="macro">quote! </span>{
                 <span class="kw">let </span>#ident = #root::compiled::pull::SymmetricHashJoin::new(#lhs, #rhs, <span class="kw-2">&amp;mut </span>#joindata_ident);
             }
         }),
@@ -767,7 +767,7 @@
         soft_range_out: <span class="kw-2">&amp;</span>(<span class="number">2</span>..),
         num_args: <span class="number">0</span>,
         input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">None</span>,
-        write_prologue_fn: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="macro">quote!</span> {}),
+        write_prologue_fn: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="macro">quote! </span>{}),
         write_iterator_fn: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span>WriteContextArgs { root, ident, .. },
                               <span class="kw-2">&amp;</span>WriteIteratorArgs {
                                   inputs,
@@ -779,16 +779,16 @@
                 <span class="kw">let </span>tees = outputs
                     .iter()
                     .rev()
-                    .map(|i| <span class="macro">quote!</span> { #i })
-                    .reduce(|b, a| <span class="macro">quote!</span> { #root::compiled::tee::Tee::new(#a, #b) })
-                    .unwrap_or_else(|| <span class="macro">quote!</span> { std::iter::empty() });
-                <span class="macro">quote!</span> {
+                    .map(|i| <span class="macro">quote! </span>{ #i })
+                    .reduce(|b, a| <span class="macro">quote! </span>{ #root::compiled::tee::Tee::new(#a, #b) })
+                    .unwrap_or_else(|| <span class="macro">quote! </span>{ std::iter::empty() });
+                <span class="macro">quote! </span>{
                     <span class="kw">let </span>#ident = #tees;
                 }
             } <span class="kw">else </span>{
                 <span class="macro">assert_eq!</span>(<span class="number">1</span>, inputs.len());
                 <span class="kw">let </span>input = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>];
-                <span class="macro">quote!</span> {
+                <span class="macro">quote! </span>{
                     <span class="kw">let </span>#ident = #input;
                 }
             }
@@ -802,7 +802,7 @@
         soft_range_out: RANGE_1,
         num_args: <span class="number">0</span>,
         input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">None</span>,
-        write_prologue_fn: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="macro">quote!</span> {}),
+        write_prologue_fn: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="macro">quote! </span>{}),
         write_iterator_fn: IDENTITY_WRITE_ITERATOR_FN,
     },
     OperatorConstraints {
@@ -813,7 +813,7 @@
         soft_range_out: RANGE_1,
         num_args: <span class="number">1</span>,
         input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">None</span>,
-        write_prologue_fn: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="macro">quote!</span> {}),
+        write_prologue_fn: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="macro">quote! </span>{}),
         write_iterator_fn: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span>WriteContextArgs { root, ident, .. },
                               <span class="kw-2">&amp;</span>WriteIteratorArgs {
                                   inputs,
@@ -824,12 +824,12 @@
                               }| {
             <span class="kw">if </span>is_pull {
                 <span class="kw">let </span>input = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>];
-                <span class="macro">quote!</span> {
+                <span class="macro">quote! </span>{
                     <span class="kw">let </span>#ident = #input.map(#arguments);
                 }
             } <span class="kw">else </span>{
                 <span class="kw">let </span>output = <span class="kw-2">&amp;</span>outputs[<span class="number">0</span>];
-                <span class="macro">quote!</span> {
+                <span class="macro">quote! </span>{
                     <span class="kw">let </span>#ident = #root::compiled::map::Map::new(#arguments, #output);
                 }
             }
@@ -843,7 +843,7 @@
         soft_range_out: RANGE_1,
         num_args: <span class="number">1</span>,
         input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">None</span>,
-        write_prologue_fn: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="macro">quote!</span> {}),
+        write_prologue_fn: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="macro">quote! </span>{}),
         write_iterator_fn: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span>WriteContextArgs { root, ident, .. },
                               <span class="kw-2">&amp;</span>WriteIteratorArgs {
                                   inputs,
@@ -854,12 +854,12 @@
                               }| {
             <span class="kw">if </span>is_pull {
                 <span class="kw">let </span>input = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>];
-                <span class="macro">quote!</span> {
+                <span class="macro">quote! </span>{
                     <span class="kw">let </span>#ident = #input.flat_map(#arguments);
                 }
             } <span class="kw">else </span>{
                 <span class="kw">let </span>output = <span class="kw-2">&amp;</span>outputs[<span class="number">0</span>];
-                <span class="macro">quote!</span> {
+                <span class="macro">quote! </span>{
                     <span class="kw">let </span>#ident = #root::compiled::map::Map::new(
                         #arguments,
                         #root::compiled::flatten::Flatten::new(#output)
@@ -876,7 +876,7 @@
         soft_range_out: RANGE_1,
         num_args: <span class="number">1</span>,
         input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">None</span>,
-        write_prologue_fn: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="macro">quote!</span> {}),
+        write_prologue_fn: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="macro">quote! </span>{}),
         write_iterator_fn: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span>WriteContextArgs { root, ident, .. },
                               <span class="kw-2">&amp;</span>WriteIteratorArgs {
                                   inputs,
@@ -887,12 +887,12 @@
                               }| {
             <span class="kw">if </span>is_pull {
                 <span class="kw">let </span>input = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>];
-                <span class="macro">quote!</span> {
+                <span class="macro">quote! </span>{
                     <span class="kw">let </span>#ident = #input.filter_map(#arguments);
                 }
             } <span class="kw">else </span>{
                 <span class="kw">let </span>output = <span class="kw-2">&amp;</span>outputs[<span class="number">0</span>];
-                <span class="macro">quote!</span> {
+                <span class="macro">quote! </span>{
                     <span class="kw">let </span>#ident = #root::compiled::filter_map::FilterMap::new(#arguments, #output);
                 }
             }
@@ -906,7 +906,7 @@
         soft_range_out: RANGE_1,
         num_args: <span class="number">1</span>,
         input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">None</span>,
-        write_prologue_fn: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="macro">quote!</span> {}),
+        write_prologue_fn: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="macro">quote! </span>{}),
         write_iterator_fn: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span>WriteContextArgs { root, ident, .. },
                               <span class="kw-2">&amp;</span>WriteIteratorArgs {
                                   inputs,
@@ -917,12 +917,12 @@
                               }| {
             <span class="kw">if </span>is_pull {
                 <span class="kw">let </span>input = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>];
-                <span class="macro">quote!</span> {
+                <span class="macro">quote! </span>{
                     <span class="kw">let </span>#ident = #input.filter(#arguments);
                 }
             } <span class="kw">else </span>{
                 <span class="kw">let </span>output = <span class="kw-2">&amp;</span>outputs[<span class="number">0</span>];
-                <span class="macro">quote!</span> {
+                <span class="macro">quote! </span>{
                     <span class="kw">let </span>#ident = #root::compiled::filter::Filter::new(#arguments, #output);
                 }
             }
@@ -936,7 +936,7 @@
         soft_range_out: RANGE_1,
         num_args: <span class="number">2</span>,
         input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">Some</span>(DelayType::Stratum),
-        write_prologue_fn: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="macro">quote!</span> {}),
+        write_prologue_fn: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="macro">quote! </span>{}),
         write_iterator_fn: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span>WriteContextArgs { ident, .. },
                               <span class="kw-2">&amp;</span>WriteIteratorArgs {
                                   inputs,
@@ -948,7 +948,7 @@
             <span class="kw">let </span>input = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>];
             <span class="comment">// TODO(mingwei): Issues if initial value is not copy.
             // TODO(mingwei): Might introduce the initial value multiple times on scheduling.
-            </span><span class="macro">quote!</span> {
+            </span><span class="macro">quote! </span>{
                 <span class="kw">let </span>#ident = std::iter::once(#input.fold(#arguments));
             }
         }),
@@ -961,7 +961,7 @@
         soft_range_out: RANGE_1,
         num_args: <span class="number">1</span>,
         input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">Some</span>(DelayType::Stratum),
-        write_prologue_fn: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="macro">quote!</span> {}),
+        write_prologue_fn: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="macro">quote! </span>{}),
         write_iterator_fn: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span>WriteContextArgs { ident, .. },
                               <span class="kw-2">&amp;</span>WriteIteratorArgs {
                                   inputs,
@@ -971,7 +971,7 @@
                               }| {
             <span class="macro">assert!</span>(is_pull);
             <span class="kw">let </span>input = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>];
-            <span class="macro">quote!</span> {
+            <span class="macro">quote! </span>{
                 <span class="kw">let </span>#ident = #input.reduce(#arguments).into_iter();
             }
         }),
@@ -984,7 +984,7 @@
         soft_range_out: RANGE_1,
         num_args: <span class="number">0</span>,
         input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">Some</span>(DelayType::Stratum),
-        write_prologue_fn: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="macro">quote!</span> {}),
+        write_prologue_fn: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="macro">quote! </span>{}),
         write_iterator_fn: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span>WriteContextArgs { ident, .. },
                               <span class="kw-2">&amp;</span>WriteIteratorArgs {
                                   inputs,
@@ -994,7 +994,7 @@
                               }| {
             <span class="macro">assert!</span>(is_pull);
             <span class="kw">let </span>input = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>];
-            <span class="macro">quote!</span> {
+            <span class="macro">quote! </span>{
                 <span class="comment">// TODO(mingwei): unneccesary extra into_iter() then collect()
                 </span><span class="kw">let </span>#ident = #input.collect::&lt;std::collections::BinaryHeap&lt;<span class="kw">_</span>&gt;&gt;(#arguments).into_sorted_vec().into_iter();
             }
@@ -1010,14 +1010,14 @@
         input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">None</span>,
         write_prologue_fn: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw-2">&amp;</span>WriteIteratorArgs { arguments, .. }| {
             <span class="kw">let </span>receiver = <span class="kw-2">&amp;</span>arguments[<span class="number">0</span>];
-            <span class="macro">quote!</span> {
+            <span class="macro">quote! </span>{
                 <span class="kw">let </span><span class="kw-2">mut </span>#receiver = #receiver;
             }
         }),
         write_iterator_fn: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span>WriteContextArgs { ident, .. },
                               <span class="kw-2">&amp;</span>WriteIteratorArgs { arguments, .. }| {
             <span class="kw">let </span>receiver = <span class="kw-2">&amp;</span>arguments[<span class="number">0</span>];
-            <span class="macro">quote!</span> {
+            <span class="macro">quote! </span>{
                 <span class="kw">let </span>#ident = std::iter::from_fn(|| {
                     <span class="kw">match </span>#receiver.poll_recv(<span class="kw-2">&amp;mut </span>std::task::Context::from_waker(<span class="kw-2">&amp;</span>context.waker())) {
                         std::task::Poll::Ready(maybe) =&gt; maybe,
@@ -1037,13 +1037,13 @@
         input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">None</span>,
         write_prologue_fn: <span class="kw-2">&amp;</span>(|wc, <span class="kw-2">&amp;</span>WriteIteratorArgs { arguments, .. }| {
             <span class="kw">let </span>iter_ident = wc.make_ident(<span class="string">&quot;iter&quot;</span>);
-            <span class="macro">quote!</span> {
+            <span class="macro">quote! </span>{
                 <span class="kw">let </span><span class="kw-2">mut </span>#iter_ident = std::iter::IntoIterator::into_iter(#arguments);
             }
         }),
         write_iterator_fn: <span class="kw-2">&amp;</span>(|wc @ <span class="kw-2">&amp;</span>WriteContextArgs { ident, .. }, <span class="kw">_</span>| {
             <span class="kw">let </span>iter_ident = wc.make_ident(<span class="string">&quot;iter&quot;</span>);
-            <span class="macro">quote!</span> {
+            <span class="macro">quote! </span>{
                 <span class="kw">let </span>#ident = #iter_ident.by_ref();
             }
         }),
@@ -1056,10 +1056,10 @@
         soft_range_out: RANGE_1,
         num_args: <span class="number">1</span>,
         input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">None</span>,
-        write_prologue_fn: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="macro">quote!</span> {}),
+        write_prologue_fn: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="macro">quote! </span>{}),
         write_iterator_fn: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span>WriteContextArgs { ident, .. },
                               <span class="kw-2">&amp;</span>WriteIteratorArgs { arguments, .. }| {
-            <span class="macro">quote!</span> {
+            <span class="macro">quote! </span>{
                 <span class="kw">let </span>#ident = std::iter::IntoIterator::into_iter(#arguments);
             }
         }),
@@ -1074,7 +1074,7 @@
         input_delaytype_fn: <span class="kw-2">&amp;</span>|idx| (<span class="number">1 </span>== idx).then_some(DelayType::Stratum),
         write_prologue_fn: <span class="kw-2">&amp;</span>(|wc @ <span class="kw-2">&amp;</span>WriteContextArgs { root, .. }, <span class="kw">_</span>| {
             <span class="kw">let </span>handle_ident = wc.make_ident(<span class="string">&quot;diffdata_handle&quot;</span>);
-            <span class="macro">quote!</span> {
+            <span class="macro">quote! </span>{
                 <span class="kw">let </span>#handle_ident = df.add_state(std::cell::RefCell::new(
                     #root::lang::monotonic_map::MonotonicMap::&lt;<span class="kw">_</span>, std::collections::HashSet&lt;<span class="kw">_</span>&gt;&gt;::default(),
                 ));
@@ -1089,7 +1089,7 @@
 
             <span class="kw">let </span>input_pos = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>];
             <span class="kw">let </span>input_neg = <span class="kw-2">&amp;</span>inputs[<span class="number">1</span>];
-            <span class="macro">quote!</span> {
+            <span class="macro">quote! </span>{
                 <span class="kw">let </span><span class="kw-2">mut </span>#borrow_ident = context.state_ref(#handle_ident).borrow_mut();
                 <span class="kw">let </span>#negset_ident = #borrow_ident
                     .try_insert_with((context.current_epoch(), context.current_stratum()), || {
@@ -1107,7 +1107,7 @@
         soft_range_out: RANGE_1,
         num_args: <span class="number">0</span>,
         input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">Some</span>(DelayType::Stratum),
-        write_prologue_fn: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="macro">quote!</span> {}),
+        write_prologue_fn: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="macro">quote! </span>{}),
         write_iterator_fn: IDENTITY_WRITE_ITERATOR_FN,
     },
     OperatorConstraints {
@@ -1118,7 +1118,7 @@
         soft_range_out: RANGE_1,
         num_args: <span class="number">0</span>,
         input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">Some</span>(DelayType::Epoch),
-        write_prologue_fn: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="macro">quote!</span> {}),
+        write_prologue_fn: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="macro">quote! </span>{}),
         write_iterator_fn: IDENTITY_WRITE_ITERATOR_FN,
     },
     OperatorConstraints {
@@ -1129,10 +1129,10 @@
         soft_range_out: RANGE_0,
         num_args: <span class="number">1</span>,
         input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">None</span>,
-        write_prologue_fn: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="macro">quote!</span> {}),
+        write_prologue_fn: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="macro">quote! </span>{}),
         write_iterator_fn: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span>WriteContextArgs { root, ident, .. },
                               <span class="kw-2">&amp;</span>WriteIteratorArgs { arguments, .. }| {
-            <span class="macro">quote!</span> {
+            <span class="macro">quote! </span>{
                 <span class="kw">let </span>#ident = #root::compiled::for_each::ForEach::new(#arguments);
             }
         }),
@@ -1152,7 +1152,7 @@
             <span class="kw">let </span>send_ident = wc.make_ident(<span class="string">&quot;item_send&quot;</span>);
             <span class="kw">let </span>recv_ident = wc.make_ident(<span class="string">&quot;item_recv&quot;</span>);
 
-            <span class="macro">quote!</span> {
+            <span class="macro">quote! </span>{
                 <span class="kw">let </span>(#send_ident, #recv_ident) = #root::tokio::sync::mpsc::unbounded_channel();
                 df.tokio_worker().spawn(<span class="kw">async move </span>{
                     <span class="kw">use </span>#root::tokio::io::AsyncWriteExt;
@@ -1168,7 +1168,7 @@
         }),
         write_iterator_fn: <span class="kw-2">&amp;</span>(|wc @ <span class="kw-2">&amp;</span>WriteContextArgs { root, ident, .. }, <span class="kw">_</span>| {
             <span class="kw">let </span>send_ident = wc.make_ident(<span class="string">&quot;item_send&quot;</span>);
-            <span class="macro">quote!</span> {
+            <span class="macro">quote! </span>{
                 <span class="kw">let </span>#ident = #root::compiled::for_each::ForEach::new(|item| {
                     #send_ident.send(item).expect(<span class="string">&quot;Failed to send async write item for processing.&quot;</span>);
                 });
@@ -1265,4 +1265,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (878aef79d 2022-08-20)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (c0941dfb5 2022-08-21)" ></div></body></html>

@@ -211,8 +211,8 @@
 
 <span class="kw">const </span>QUERY_EDGE_NAME: Cow&lt;<span class="lifetime">&#39;static</span>, str&gt; = Cow::Borrowed(<span class="string">&quot;query handoff&quot;</span>);
 
-<span class="attribute">#[derive(Default)]</span>
-<span class="kw">pub struct </span>Query {
+<span class="attribute">#[derive(Default)]
+</span><span class="kw">pub struct </span>Query {
     df: Rc&lt;RefCell&lt;Hydroflow&gt;&gt;,
 }
 
@@ -297,8 +297,8 @@
         }
     }
 
-    <span class="attribute">#[must_use]</span>
-    <span class="kw">pub fn </span>filter&lt;F&gt;(<span class="self">self</span>, <span class="kw-2">mut </span>f: F) -&gt; Operator&lt;T&gt;
+    <span class="attribute">#[must_use]
+    </span><span class="kw">pub fn </span>filter&lt;F&gt;(<span class="self">self</span>, <span class="kw-2">mut </span>f: F) -&gt; Operator&lt;T&gt;
     <span class="kw">where
         </span>F: <span class="lifetime">&#39;static </span>+ Fn(<span class="kw-2">&amp;</span>T) -&gt; bool,
     {
@@ -321,8 +321,8 @@
         }
     }
 
-    <span class="attribute">#[must_use]</span>
-    <span class="kw">pub fn </span>concat(<span class="self">self</span>, other: Operator&lt;T&gt;) -&gt; Operator&lt;T&gt; {
+    <span class="attribute">#[must_use]
+    </span><span class="kw">pub fn </span>concat(<span class="self">self</span>, other: Operator&lt;T&gt;) -&gt; Operator&lt;T&gt; {
         <span class="comment">// TODO(justin): this is very slow.
 
         </span><span class="kw">let </span><span class="kw-2">mut </span>df = <span class="self">self</span>.df.borrow_mut();
@@ -399,4 +399,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (878aef79d 2022-08-20)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (c0941dfb5 2022-08-21)" ></div></body></html>

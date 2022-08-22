@@ -61,8 +61,8 @@
 }
 
 <span class="comment">// A wrapper struct which implements [`Clear`] by setting self to `Default::default()`.
-</span><span class="attribute">#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]</span>
-<span class="kw">pub struct </span>ClearDefault&lt;T&gt;(<span class="kw">pub </span>T)
+</span><span class="attribute">#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+</span><span class="kw">pub struct </span>ClearDefault&lt;T&gt;(<span class="kw">pub </span>T)
 <span class="kw">where
     </span>T: Default;
 <span class="kw">impl</span>&lt;T&gt; Clear <span class="kw">for </span>ClearDefault&lt;T&gt;
@@ -74,7 +74,7 @@
     }
 }
 
-<span class="macro">macro_rules!</span> clear_impl {
+<span class="macro">macro_rules! </span>clear_impl {
     (
         <span class="macro-nonterminal">$t</span>:ident $( &lt; $( <span class="macro-nonterminal">$g</span>:ident ),* &gt; )<span class="question-mark">?
     </span>) =&gt; {
@@ -103,4 +103,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (878aef79d 2022-08-20)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (c0941dfb5 2022-08-21)" ></div></body></html>

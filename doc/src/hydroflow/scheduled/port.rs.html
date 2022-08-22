@@ -90,8 +90,8 @@
 /// [`SendPort`] and [`RecvPort`] have identical representations (via [`Port`]) but are not
 /// interchangable, so [`SEND`] and [`RECV`] which implement this trait are used to differentiate
 /// between the two polarities.
-</span><span class="attribute">#[sealed]</span>
-<span class="kw">pub trait </span>Polarity: <span class="lifetime">&#39;static </span>{}
+</span><span class="attribute">#[sealed]
+</span><span class="kw">pub trait </span>Polarity: <span class="lifetime">&#39;static </span>{}
 
 <span class="doccomment">/// An uninstantiable type used to tag port [`Polarity`] as **send**.
 ///
@@ -101,26 +101,26 @@
 ///
 /// See also: [`SEND`].
 </span><span class="kw">pub enum </span>RECV {}
-<span class="attribute">#[sealed]</span>
-<span class="kw">impl </span>Polarity <span class="kw">for </span>SEND {}
-<span class="attribute">#[sealed]</span>
-<span class="kw">impl </span>Polarity <span class="kw">for </span>RECV {}
+<span class="attribute">#[sealed]
+</span><span class="kw">impl </span>Polarity <span class="kw">for </span>SEND {}
+<span class="attribute">#[sealed]
+</span><span class="kw">impl </span>Polarity <span class="kw">for </span>RECV {}
 
-<span class="attribute">#[must_use]</span>
-<span class="kw">pub struct </span>Port&lt;S: Polarity, H&gt;
+<span class="attribute">#[must_use]
+</span><span class="kw">pub struct </span>Port&lt;S: Polarity, H&gt;
 <span class="kw">where
     </span>H: Handoff,
 {
     <span class="kw">pub</span>(<span class="kw">crate</span>) handoff_id: HandoffId,
-    <span class="attribute">#[allow(clippy::type_complexity)]</span>
-    <span class="kw">pub</span>(<span class="kw">crate</span>) _marker: PhantomData&lt;(<span class="kw-2">*const </span>S, <span class="kw">fn</span>() -&gt; H)&gt;,
+    <span class="attribute">#[allow(clippy::type_complexity)]
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) _marker: PhantomData&lt;(<span class="kw-2">*const </span>S, <span class="kw">fn</span>() -&gt; H)&gt;,
 }
 <span class="kw">pub type </span>SendPort&lt;H&gt; = Port&lt;SEND, H&gt;;
 <span class="kw">pub type </span>RecvPort&lt;H&gt; = Port&lt;RECV, H&gt;;
 
-<span class="attribute">#[derive(RefCast)]</span>
-<span class="attribute">#[repr(transparent)]</span>
-<span class="kw">pub struct </span>PortCtx&lt;S: Polarity, H&gt; {
+<span class="attribute">#[derive(RefCast)]
+#[repr(transparent)]
+</span><span class="kw">pub struct </span>PortCtx&lt;S: Polarity, H&gt; {
     <span class="kw">pub</span>(<span class="kw">crate</span>) handoff: H,
     <span class="kw">pub</span>(<span class="kw">crate</span>) _marker: PhantomData&lt;<span class="kw-2">*const </span>S&gt;,
 }
@@ -153,4 +153,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (878aef79d 2022-08-20)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (c0941dfb5 2022-08-21)" ></div></body></html>

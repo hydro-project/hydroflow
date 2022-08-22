@@ -314,8 +314,8 @@
 <span class="kw">use </span><span class="kw">super</span>::partitioned_graph::PartitionedGraph;
 <span class="kw">use super</span>::{EdgePortRef, GraphNodeId, Node, OutboundEdges};
 
-<span class="attribute">#[derive(Debug, Default)]</span>
-<span class="kw">pub struct </span>FlatGraph {
+<span class="attribute">#[derive(Debug, Default)]
+</span><span class="kw">pub struct </span>FlatGraph {
     <span class="kw">pub</span>(<span class="kw">crate</span>) nodes: SlotMap&lt;GraphNodeId, Node&gt;,
     <span class="kw">pub</span>(<span class="kw">crate</span>) preds: SecondaryMap&lt;GraphNodeId, OutboundEdges&gt;,
     <span class="kw">pub</span>(<span class="kw">crate</span>) succs: SecondaryMap&lt;GraphNodeId, OutboundEdges&gt;,
@@ -591,16 +591,16 @@
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="attribute">#[allow(clippy::result_unit_err)]</span>
-    <span class="kw">pub fn </span>into_partitioned_graph(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;PartitionedGraph, ()&gt; {
+    <span class="attribute">#[allow(clippy::result_unit_err)]
+    </span><span class="kw">pub fn </span>into_partitioned_graph(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;PartitionedGraph, ()&gt; {
         <span class="self">self</span>.try_into()
     }
 }
 
-<span class="attribute">#[derive(Clone, Copy, Debug)]</span>
-<span class="kw">struct </span>Ports {
+<span class="attribute">#[derive(Clone, Copy, Debug)]
+</span><span class="kw">struct </span>Ports {
     inn: <span class="prelude-ty">Option</span>&lt;GraphNodeId&gt;,
     out: <span class="prelude-ty">Option</span>&lt;GraphNodeId&gt;,
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (878aef79d 2022-08-20)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (c0941dfb5 2022-08-21)" ></div></body></html>

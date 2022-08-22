@@ -242,8 +242,8 @@
 <span class="kw">use </span><span class="kw">super</span>::surface::{AssembleFlowGraph, PullSurface, PushSurfaceReversed};
 
 <span class="doccomment">/// The user-facing entry point for the Surface API.
-</span><span class="attribute">#[derive(Default)]</span>
-<span class="kw">pub struct </span>HydroflowBuilder {
+</span><span class="attribute">#[derive(Default)]
+</span><span class="kw">pub struct </span>HydroflowBuilder {
     <span class="kw">pub </span>hydroflow: Hydroflow,
 }
 <span class="kw">impl </span>HydroflowBuilder {
@@ -390,7 +390,7 @@
         pull
     }
 
-    <span class="attribute">#[allow(clippy::type_complexity)]</span> <span class="comment">// TODO(mingwei).
+    <span class="attribute">#[allow(clippy::type_complexity)] </span><span class="comment">// TODO(mingwei).
     </span><span class="kw">pub fn </span>add_tcp_stream(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         stream: tokio::net::TcpStream,
@@ -437,4 +437,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (878aef79d 2022-08-20)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (c0941dfb5 2022-08-21)" ></div></body></html>
