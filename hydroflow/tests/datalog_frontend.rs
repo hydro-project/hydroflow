@@ -4,18 +4,18 @@ use datalog_compiler::datalog;
 
 #[tokio::test]
 pub async fn test_minimal() {
-    let (in_send, in_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
-    let (out_send, mut out_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
+    let (in_send, input) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
+    let (out, mut out_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
 
     in_send.send((1, 2)).unwrap();
 
     thread::spawn(|| {
         let mut flow = datalog!(
             r#"
-            .input in
+            .input input
             .output out
     
-            out(y, x) :- in(x, y).
+            out(y, x) :- input(x, y).
             "#
         );
 
@@ -30,8 +30,8 @@ pub async fn test_minimal() {
 
 #[tokio::test]
 pub async fn test_join_with_self() {
-    let (in_send, in_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
-    let (out_send, mut out_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
+    let (in_send, input) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
+    let (out, mut out_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
 
     in_send.send((1, 2)).unwrap();
     in_send.send((2, 1)).unwrap();
@@ -40,10 +40,10 @@ pub async fn test_join_with_self() {
     thread::spawn(|| {
         let mut flow = datalog!(
             r#"
-            .input in
+            .input input
             .output out
 
-            out(x, y) :- in(x, y), in(y, x).
+            out(x, y) :- input(x, y), input(y, x).
             "#
         );
 
@@ -59,8 +59,8 @@ pub async fn test_join_with_self() {
 
 #[tokio::test]
 pub async fn test_multi_use_intermediate() {
-    let (in_send, in_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
-    let (out_send, mut out_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
+    let (in_send, input) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
+    let (out, mut out_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
 
     in_send.send((1, 2)).unwrap();
     in_send.send((2, 1)).unwrap();
@@ -69,10 +69,10 @@ pub async fn test_multi_use_intermediate() {
     thread::spawn(|| {
         let mut flow = datalog!(
             r#"
-            .input in
+            .input input
             .output out
 
-            in_dup(x, y) :- in(x, y).
+            in_dup(x, y) :- input(x, y).
             out(x, y) :- in_dup(x, y), in_dup(y, x).
             "#
         );
@@ -89,9 +89,9 @@ pub async fn test_multi_use_intermediate() {
 
 #[tokio::test]
 pub async fn test_join_with_other() {
-    let (in1_send, in1_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
-    let (in2_send, in2_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
-    let (out_send, mut out_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
+    let (in1_send, in1) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
+    let (in2_send, in2) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
+    let (out, mut out_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
 
     in1_send.send((1, 2)).unwrap();
     in2_send.send((2, 1)).unwrap();
@@ -119,9 +119,9 @@ pub async fn test_join_with_other() {
 
 #[tokio::test]
 pub async fn test_multiple_contributors() {
-    let (in1_send, in1_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
-    let (in2_send, in2_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
-    let (out_send, mut out_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
+    let (in1_send, in1) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
+    let (in2_send, in2) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
+    let (out, mut out_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
 
     in1_send.send((1, 2)).unwrap();
     in2_send.send((3, 1)).unwrap();
@@ -150,10 +150,9 @@ pub async fn test_multiple_contributors() {
 
 #[tokio::test]
 pub async fn test_transitive_closure() {
-    let (edges_send, edges_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
-    let (seed_reachable_send, seed_reachable_recv) =
-        tokio::sync::mpsc::unbounded_channel::<(usize,)>();
-    let (reachable_send, mut reachable_recv) = tokio::sync::mpsc::unbounded_channel::<(usize,)>();
+    let (edges_send, edges) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
+    let (seed_reachable_send, seed_reachable) = tokio::sync::mpsc::unbounded_channel::<(usize,)>();
+    let (reachable, mut reachable_recv) = tokio::sync::mpsc::unbounded_channel::<(usize,)>();
 
     seed_reachable_send.send((1,)).unwrap();
     edges_send.send((3, 4)).unwrap();

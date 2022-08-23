@@ -87,7 +87,7 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
     }
 
     for target in inputs {
-        let target_ident = syn::Ident::new(&format!("{}_recv", &target.name), Span::call_site());
+        let target_ident = syn::Ident::new(&target.name, Span::call_site());
 
         let merge_index = merge_counter.entry(target.name.clone()).or_insert(0);
         let my_merge_index = *merge_index;
@@ -127,7 +127,7 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
         let my_tee_index = *tee_index;
         *tee_index += 1;
 
-        let out_send_ident = syn::Ident::new(&format!("{}_send", &target.name), Span::call_site());
+        let out_send_ident = syn::Ident::new(&target.name, Span::call_site());
 
         flat_graph.add_statement(hydroflow_lang::parse::HfStatement::Pipeline(
             Pipeline::Link(PipelineLink {
@@ -429,10 +429,10 @@ mod tests {
         let out = &gen_datalog_program(
             parse_quote!(
                 r#"
-                .input in
+                .input input
                 .output out
 
-                out(y, x) :- in(x, y).
+                out(y, x) :- input(x, y).
                 "#
             ),
             quote::quote! { hydroflow },
