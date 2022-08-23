@@ -157,6 +157,7 @@ pub async fn test_transitive_closure() {
     seed_reachable_send.send((1,)).unwrap();
     edges_send.send((3, 4)).unwrap();
     edges_send.send((1, 2)).unwrap();
+    edges_send.send((2, 5)).unwrap();
 
     thread::spawn(|| {
         let mut flow = datalog!(
@@ -177,5 +178,6 @@ pub async fn test_transitive_closure() {
 
     assert_eq!(reachable_recv.recv().await.unwrap(), (1,));
     assert_eq!(reachable_recv.recv().await.unwrap(), (2,));
+    assert_eq!(reachable_recv.recv().await.unwrap(), (5,));
     assert_eq!(reachable_recv.recv().await, None);
 }
