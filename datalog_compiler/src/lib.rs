@@ -219,7 +219,7 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
                     .map(|_| parse_quote!(usize))
                     .collect::<Vec<syn::Type>>();
 
-                parse_quote!((#(#col_types),*))
+                parse_quote!((#(#col_types, )*))
             })
             .collect::<Vec<syn::Type>>();
 
@@ -229,9 +229,9 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
             .collect::<Vec<syn::Type>>();
 
         let after_join_map: syn::Expr = if sources.len() == 1 {
-            parse_quote!(|v| (#(#output_data),*))
+            parse_quote!(|v| (#(#output_data, )*))
         } else {
-            parse_quote!(|kv: ((#(#key_type),*), (#(#source_types),*))| (#(#output_data),*))
+            parse_quote!(|kv: ((#(#key_type, )*), (#(#source_types, )*))| (#(#output_data, )*))
         };
 
         let merge_index = merge_counter.entry(target.name.clone()).or_insert(0);
@@ -331,7 +331,7 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
                             lhs: Box::new(Pipeline::Operator(Operator {
                                 path: parse_quote!(map),
                                 paren_token: Paren::default(),
-                                args: vec![parse_quote!(|v: (#(#source_data_types),*)| ((#(#hash_keys),*), v))]
+                                args: vec![parse_quote!(|v: (#(#source_data_types, )*)| ((#(#hash_keys, )*), v))]
                                     .iter()
                                     .cloned::<syn::Expr>()
                                     .collect(),
@@ -504,6 +504,29 @@ mod tests {
 
                 out(x, y) :- in1(x, y).
                 out(x, y) :- in2(y, x).
+                "#
+            ),
+            quote::quote! { hydroflow },
+        );
+
+        let wrapped: syn::Item = parse_quote! {
+            fn main() {
+                #out
+            }
+        };
+
+        insta::assert_display_snapshot!(rustfmt_code(&wrapped.to_token_stream().to_string()));
+    }
+
+    #[test]
+    fn single_column_program() {
+        let out = &gen_datalog_program(
+            parse_quote!(
+                r#"
+                .input in
+                .output out
+
+                out(x) :- in(x), in(x).
                 "#
             ),
             quote::quote! { hydroflow },

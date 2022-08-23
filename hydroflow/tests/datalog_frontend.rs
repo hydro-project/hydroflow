@@ -97,7 +97,7 @@ pub fn test_multiple_contributors() {
 pub fn test_transitive_closure() {
     let (edges_send, edges_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
     let (seed_reachable_send, seed_reachable_recv) =
-        tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
+        tokio::sync::mpsc::unbounded_channel::<(usize,)>();
 
     let mut flow = datalog!(
         r#"
@@ -105,12 +105,12 @@ pub fn test_transitive_closure() {
         .input seed_reachable
         .output reachable
 
-        reachable(x, x) :- seed_reachable(x, dummy).
-        reachable(y, y) :- reachable(x, dummy), edges(x, y).
+        reachable(x) :- seed_reachable(x).
+        reachable(y) :- reachable(x), edges(x, y).
         "#
     );
 
-    seed_reachable_send.send((1, 0)).unwrap();
+    seed_reachable_send.send((1,)).unwrap();
     edges_send.send((3, 4)).unwrap();
     edges_send.send((1, 2)).unwrap();
     flow.run_available();
