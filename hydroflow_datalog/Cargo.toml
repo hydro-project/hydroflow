@@ -1,0 +1,24 @@
+[package]
+name = "hydroflow_datalog"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+proc-macro = true
+path = "src/lib.rs"
+
+[dependencies]
+quote = "1.0.0"
+slotmap = "1.0.6"
+syn = { version = "1.0.0", features = [ "parsing", "extra-traits" ] }
+proc-macro2 = "1.0.27"
+proc-macro-crate = "1.1.0"
+rust-sitter = { git = "https://github.com/hydro-project/rust-sitter" }
+hydroflow_lang = { path = "../hydroflow_lang" }
+
+[build-dependencies]
+rust-sitter-tool = { git = "https://github.com/hydro-project/rust-sitter" }
+
+[dev-dependencies]
+insta = "1.7.1"
+tempfile = "3.2.0"
