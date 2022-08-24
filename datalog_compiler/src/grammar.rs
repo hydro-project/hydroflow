@@ -43,7 +43,7 @@ pub mod datalog {
         _r_paren: (),
     }
 
-    #[derive(Clone, PartialEq, Eq, Hash, Debug)]
+    #[derive(Clone, PartialEq, Eq, Hash, Ord, PartialOrd, Debug)]
     pub struct Ident {
         #[rust_sitter::leaf(pattern = r"[a-zA-Z_][a-zA-Z0-9_]*", transform = |s| s.to_string())]
         pub name: String,

@@ -1,14 +1,9 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
-use hydroflow_lang::{
-    graph::flat_graph::FlatGraph,
-    parse::{
-        ArrowConnector, IndexInt, Indexing, NamedHfStatement, Operator, Pipeline, PipelineLink,
-    },
-};
+use hydroflow_lang::{graph::flat_graph::FlatGraph, parse::Pipeline};
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, ToTokens};
-use syn::{parse_quote, punctuated::Punctuated, token::Paren, Token};
+use syn::parse_quote;
 
 mod grammar;
 
@@ -19,39 +14,24 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
     let actual_str = str_node.value();
     let program: Program = grammar::datalog::parse(&actual_str).unwrap();
 
-    let inputs = program
-        .rules
-        .iter()
-        .filter_map(|decl| match decl {
-            Declaration::Input(_, ident) => Some(ident.clone()),
-            _ => None,
-        })
-        .collect::<Vec<_>>();
+    let mut inputs = Vec::new();
+    let mut outputs = Vec::new();
+    let mut rules = Vec::new();
 
-    let outputs = program
-        .rules
-        .iter()
-        .filter_map(|decl| match decl {
-            Declaration::Output(_, ident) => Some(ident.clone()),
-            _ => None,
-        })
-        .collect::<Vec<_>>();
-
-    let rules = program
-        .rules
-        .iter()
-        .filter_map(|decl| match decl {
-            Declaration::Rule(rule) => Some(rule.clone()),
-            _ => None,
-        })
-        .collect::<Vec<_>>();
+    for stmt in &program.rules {
+        match stmt {
+            Declaration::Input(_, ident) => inputs.push(ident),
+            Declaration::Output(_, ident) => outputs.push(ident),
+            Declaration::Rule(rule) => rules.push(rule),
+        }
+    }
 
     let mut flat_graph = FlatGraph::default();
     let mut tee_counter = HashMap::new();
     let mut merge_counter = HashMap::new();
 
     let mut created_rules = HashSet::new();
-    for decl in program.rules {
+    for decl in &program.rules {
         let target_ident = match decl {
             Declaration::Input(_, ident) => ident.clone(),
             Declaration::Output(_, ident) => ident.clone(),
@@ -60,29 +40,8 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
 
         if !created_rules.contains(&target_ident) {
             created_rules.insert(target_ident.clone());
-            flat_graph.add_statement(hydroflow_lang::parse::HfStatement::Named(
-                NamedHfStatement {
-                    name: syn::Ident::new(&target_ident.name, Span::call_site()),
-                    equals: Token![=](Span::call_site()),
-                    pipeline: Pipeline::Link(PipelineLink {
-                        lhs: Box::new(Pipeline::Operator(Operator {
-                            path: parse_quote!(merge),
-                            paren_token: Paren::default(),
-                            args: Punctuated::new(),
-                        })),
-                        connector: ArrowConnector {
-                            src: None,
-                            arrow: Token![->](Span::call_site()),
-                            dst: None,
-                        },
-                        rhs: Box::new(Pipeline::Operator(Operator {
-                            path: parse_quote!(tee),
-                            paren_token: Paren::default(),
-                            args: Punctuated::new(),
-                        })),
-                    }),
-                },
-            ));
+            let name = syn::Ident::new(&target_ident.name, Span::call_site());
+            flat_graph.add_statement(parse_quote!(#name = merge() -> tee()));
         }
     }
 
@@ -93,33 +52,13 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
         let my_merge_index = *merge_index;
         *merge_index += 1;
 
-        flat_graph.add_statement(hydroflow_lang::parse::HfStatement::Pipeline(
-            Pipeline::Link(PipelineLink {
-                lhs: Box::new(Pipeline::Operator(Operator {
-                    path: parse_quote!(recv_stream),
-                    paren_token: Paren::default(),
-                    args: vec![parse_quote!(#target_ident)]
-                        .iter()
-                        .cloned::<syn::Expr>()
-                        .collect(),
-                })),
-                connector: ArrowConnector {
-                    src: None,
-                    arrow: Token![->](Span::call_site()),
-                    dst: Some(Indexing {
-                        bracket_token: syn::token::Bracket::default(),
-                        index: IndexInt {
-                            value: my_merge_index,
-                            span: Span::call_site(),
-                        },
-                    }),
-                },
-                rhs: Box::new(Pipeline::Name(syn::Ident::new(
-                    &target.name,
-                    Span::call_site(),
-                ))),
-            }),
-        ));
+        let my_merge_index_lit =
+            syn::LitInt::new(&format!("{}", my_merge_index), Span::call_site());
+        let name = syn::Ident::new(&target.name, Span::call_site());
+
+        flat_graph.add_statement(parse_quote! {
+            recv_stream(#target_ident) -> [#my_merge_index_lit] #name
+        });
     }
 
     for target in outputs {
@@ -129,56 +68,32 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
 
         let out_send_ident = syn::Ident::new(&target.name, Span::call_site());
 
-        flat_graph.add_statement(hydroflow_lang::parse::HfStatement::Pipeline(
-            Pipeline::Link(PipelineLink {
-                lhs: Box::new(Pipeline::Name(syn::Ident::new(
-                    &target.name,
-                    Span::call_site(),
-                ))),
-                connector: ArrowConnector {
-                    src: Some(Indexing {
-                        bracket_token: syn::token::Bracket::default(),
-                        index: IndexInt {
-                            value: my_tee_index,
-                            span: Span::call_site(),
-                        },
-                    }),
-                    arrow: Token![->](Span::call_site()),
-                    dst: None,
-                },
-                rhs: Box::new(Pipeline::Operator(Operator {
-                    path: parse_quote!(for_each),
-                    paren_token: Paren::default(),
-                    args: vec![parse_quote!(|v| #out_send_ident.send(v).unwrap())]
-                        .iter()
-                        .cloned::<syn::Expr>()
-                        .collect(),
-                })),
-            }),
-        ));
+        let my_tee_index_lit = syn::LitInt::new(&format!("{}", my_tee_index), Span::call_site());
+        let target_ident = syn::Ident::new(&target.name, Span::call_site());
+
+        flat_graph.add_statement(parse_quote! {
+            #target_ident [#my_tee_index_lit] -> for_each(|v| #out_send_ident.send(v).unwrap())
+        });
     }
 
     for rule in rules {
-        let target = rule.target.name;
+        let target = &rule.target.name;
         let target_ident = syn::Ident::new(&target.name, Span::call_site());
         let sources: Vec<Target> = rule.sources.to_vec();
 
         // TODO(shadaj): more than two sources, nested join
-        let mut identifier_to_bindings = HashMap::new();
+        let mut identifier_to_bindings = BTreeMap::new();
         for (source_idx, source) in sources.iter().enumerate() {
             for (i, param) in source.fields.iter().enumerate() {
                 let entry = identifier_to_bindings
                     .entry(param.clone())
-                    .or_insert_with(HashMap::new);
+                    .or_insert_with(BTreeMap::new);
                 entry.insert(source_idx, i);
             }
         }
 
-        let mut sorted_identifiers = identifier_to_bindings.keys().cloned().collect::<Vec<_>>();
-        sorted_identifiers.sort_by_key(|ident| ident.name.clone());
-
-        let identifiers_to_join = sorted_identifiers
-            .iter()
+        let identifiers_to_join = identifier_to_bindings
+            .keys()
             .filter_map(|ident| {
                 let bindings = identifier_to_bindings.get(ident).unwrap();
                 if bindings.len() > 1 {
@@ -240,51 +155,20 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
         let my_merge_index = *merge_index;
         *merge_index += 1;
 
-        let after_join = Pipeline::Link(PipelineLink {
-            lhs: Box::new(Pipeline::Operator(Operator {
-                path: parse_quote!(map),
-                paren_token: Paren::default(),
-                args: vec![after_join_map].iter().cloned::<syn::Expr>().collect(),
-            })),
-            connector: ArrowConnector {
-                src: None,
-                arrow: Token![->](Span::call_site()),
-                dst: Some(Indexing {
-                    bracket_token: syn::token::Bracket::default(),
-                    index: IndexInt {
-                        value: my_merge_index,
-                        span: Span::call_site(),
-                    },
-                }),
-            },
-            rhs: Box::new(Pipeline::Name(target_ident.clone())),
-        });
+        let my_merge_index_lit =
+            syn::LitInt::new(&format!("{}", my_merge_index), Span::call_site());
+
+        let after_join: Pipeline = parse_quote! {
+            map(#after_join_map) -> [#my_merge_index_lit] #target_ident
+        };
 
         let join_and_map = if sources.len() == 1 {
             after_join
         } else {
-            Pipeline::Link(PipelineLink {
-                lhs: Box::new(Pipeline::Operator(Operator {
-                    path: parse_quote!(join),
-                    paren_token: Paren::default(),
-                    args: Punctuated::new(),
-                })),
-                connector: ArrowConnector {
-                    src: None,
-                    arrow: Token![->](Span::call_site()),
-                    dst: None,
-                },
-                rhs: Box::new(after_join),
-            })
+            parse_quote!(join() -> #after_join)
         };
 
-        flat_graph.add_statement(hydroflow_lang::parse::HfStatement::Named(
-            NamedHfStatement {
-                name: join_node.clone(),
-                equals: Token![=](Span::call_site()),
-                pipeline: join_and_map,
-            },
-        ));
+        flat_graph.add_statement(parse_quote!(#join_node = #join_and_map));
 
         for (source_i, source) in sources.iter().enumerate() {
             let hash_keys: Vec<syn::Expr> = identifiers_to_join
@@ -297,11 +181,14 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
                         panic!("Could not find key that is being joined on: {:?}", ident);
                     }
                 })
-                .collect::<Vec<_>>();
+                .collect();
 
             let tee_index = tee_counter.entry(source.name.name.clone()).or_insert(0);
             let my_tee_index = *tee_index;
             *tee_index += 1;
+
+            let my_tee_index_lit =
+                syn::LitInt::new(&format!("{}", my_tee_index), Span::call_site());
 
             let source_data_types = source
                 .fields
@@ -309,51 +196,20 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
                 .map(|_| parse_quote!(usize))
                 .collect::<Vec<syn::Type>>();
 
-            flat_graph.add_statement(hydroflow_lang::parse::HfStatement::Pipeline(
-                Pipeline::Link(PipelineLink {
-                    lhs: Box::new(Pipeline::Name(syn::Ident::new(
-                        &source.name.name,
-                        Span::call_site(),
-                    ))),
-                    connector: ArrowConnector {
-                        src: Some(Indexing {
-                            bracket_token: syn::token::Bracket::default(),
-                            index: IndexInt {
-                                value: my_tee_index,
-                                span: Span::call_site(),
-                            }
-                        }),
-                        arrow: Token![->](Span::call_site()),
-                        dst: None,
-                    },
-                    rhs: Box::new(if sources.len() == 1 {
-                        Pipeline::Name(join_node.clone())
-                    } else {
-                        Pipeline::Link(PipelineLink {
-                            lhs: Box::new(Pipeline::Operator(Operator {
-                                path: parse_quote!(map),
-                                paren_token: Paren::default(),
-                                args: vec![parse_quote!(|v: (#(#source_data_types, )*)| ((#(#hash_keys, )*), v))]
-                                    .iter()
-                                    .cloned::<syn::Expr>()
-                                    .collect(),
-                            })),
-                            connector: ArrowConnector {
-                                src: None,
-                                arrow: Token![->](Span::call_site()),
-                                dst: Some(Indexing {
-                                    bracket_token: syn::token::Bracket::default(),
-                                    index: IndexInt {
-                                        value: source_i,
-                                        span: Span::call_site(),
-                                    },
-                                }),
-                            },
-                            rhs: Box::new(Pipeline::Name(join_node.clone())),
-                        })
-                    }),
-                }),
-            ));
+            let source_ident = syn::Ident::new(&source.name.name, Span::call_site());
+
+            let transform_join_source = if sources.len() == 1 {
+                Pipeline::Name(join_node.clone())
+            } else {
+                let source_i_lit = syn::LitInt::new(&format!("{}", source_i), Span::call_site());
+                parse_quote! {
+                    map(|v: (#(#source_data_types, )*)| ((#(#hash_keys, )*), v)) -> [#source_i_lit] #join_node
+                }
+            };
+
+            flat_graph.add_statement(parse_quote! {
+                #source_ident [#my_tee_index_lit] -> #transform_join_source
+            });
         }
     }
 
