@@ -500,7 +500,7 @@
 <span id="500">500</span>
 <span id="501">501</span>
 <span id="502">502</span>
-</pre><pre class="rust"><code><span class="kw">use </span>std::collections::{HashMap, HashSet};
+</pre><pre class="rust"><code><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
 
 <span class="kw">use </span>proc_macro2::Span;
 <span class="kw">use </span>slotmap::{Key, SecondaryMap, SlotMap};
@@ -541,7 +541,7 @@
     preds: <span class="kw-2">&amp;mut </span>AdjList,
     succs: <span class="kw-2">&amp;mut </span>AdjList,
     barrier_crossers: <span class="kw-2">&amp;</span>[(GraphNodeId, GraphNodeId, IndexInt, DelayType)],
-) -&gt; (UnionFind&lt;GraphNodeId&gt;, HashSet&lt;(EdgePort, EdgePort)&gt;) {
+) -&gt; (UnionFind&lt;GraphNodeId&gt;, BTreeSet&lt;(EdgePort, EdgePort)&gt;) {
     <span class="comment">// Pre-calculate node colors.
     </span><span class="kw">let </span><span class="kw-2">mut </span>node_color: SecondaryMap&lt;GraphNodeId, <span class="prelude-ty">Option</span>&lt;Color&gt;&gt; = nodes
         .keys()
@@ -556,7 +556,7 @@
     <span class="kw">let </span><span class="kw-2">mut </span>subgraph_unionfind: UnionFind&lt;GraphNodeId&gt; = UnionFind::with_capacity(nodes.len());
     <span class="comment">// All edges which are handoffs. Starts out with all edges and we remove
     // from this set as we construct subgraphs.
-    </span><span class="kw">let </span><span class="kw-2">mut </span>handoff_edges: HashSet&lt;(EdgePort, EdgePort)&gt; = iter_edges(succs)
+    </span><span class="kw">let </span><span class="kw-2">mut </span>handoff_edges: BTreeSet&lt;(EdgePort, EdgePort)&gt; = iter_edges(succs)
         .map(|((src, <span class="kw-2">&amp;</span>src_idx), (dst, <span class="kw-2">&amp;</span>dst_idx))| ((src, src_idx), (dst, dst_idx)))
         .collect();
 
@@ -749,8 +749,8 @@
     // (Cycles on cross-stratum negative edges are an error.)
 
     // Generate subgraph graph.
-    </span><span class="kw">let </span><span class="kw-2">mut </span>subgraph_preds: HashMap&lt;GraphSubgraphId, Vec&lt;GraphSubgraphId&gt;&gt; = Default::default();
-    <span class="kw">let </span><span class="kw-2">mut </span>subgraph_succs: HashMap&lt;GraphSubgraphId, Vec&lt;GraphSubgraphId&gt;&gt; = Default::default();
+    </span><span class="kw">let </span><span class="kw-2">mut </span>subgraph_preds: BTreeMap&lt;GraphSubgraphId, Vec&lt;GraphSubgraphId&gt;&gt; = Default::default();
+    <span class="kw">let </span><span class="kw-2">mut </span>subgraph_succs: BTreeMap&lt;GraphSubgraphId, Vec&lt;GraphSubgraphId&gt;&gt; = Default::default();
 
     <span class="kw">for </span>(node_id, node) <span class="kw">in </span>nodes.iter() {
         <span class="kw">if </span><span class="macro">matches!</span>(node, Node::Handoff) {
@@ -776,7 +776,7 @@
 
     <span class="kw">let </span>topo_sort_order = {
         <span class="comment">// Condensed each SCC into a single node for toposort.
-        </span><span class="kw">let </span><span class="kw-2">mut </span>condensed_preds: HashMap&lt;GraphSubgraphId, Vec&lt;GraphSubgraphId&gt;&gt; =
+        </span><span class="kw">let </span><span class="kw-2">mut </span>condensed_preds: BTreeMap&lt;GraphSubgraphId, Vec&lt;GraphSubgraphId&gt;&gt; =
             Default::default();
         <span class="kw">for </span>(u, preds) <span class="kw">in </span>subgraph_preds.iter() {
             condensed_preds
@@ -791,7 +791,7 @@
     };
 
     <span class="comment">// Negative (next stratum) connections between subgraphs. (Ignore `next_epoch()` connections).
-    </span><span class="kw">let </span>subgraph_negative_connections: HashSet&lt;<span class="kw">_</span>&gt; = barrier_crossers
+    </span><span class="kw">let </span>subgraph_negative_connections: BTreeSet&lt;<span class="kw">_</span>&gt; = barrier_crossers
         .iter()
         .filter(|(_src, _dst, _dst_idx, delay_type)| DelayType::Stratum == <span class="kw-2">*</span>delay_type)
         .map(|(src, dst, _dst_idx, _delay_type)| (node_subgraph[<span class="kw-2">*</span>src], node_subgraph[<span class="kw-2">*</span>dst]))
@@ -1003,4 +1003,4 @@
     new_id
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (015a824f2 2022-08-22)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (060e47f74 2022-08-23)" ></div></body></html>

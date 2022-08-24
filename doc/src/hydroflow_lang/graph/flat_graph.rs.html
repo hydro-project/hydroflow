@@ -300,7 +300,7 @@
 <span id="300">300</span>
 <span id="301">301</span>
 <span id="302">302</span>
-</pre><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
+</pre><pre class="rust"><code><span class="kw">use </span>std::collections::BTreeMap;
 
 <span class="kw">use </span>quote::ToTokens;
 <span class="kw">use </span>slotmap::{Key, SecondaryMap, SlotMap};
@@ -319,7 +319,7 @@
     <span class="kw">pub</span>(<span class="kw">crate</span>) nodes: SlotMap&lt;GraphNodeId, Node&gt;,
     <span class="kw">pub</span>(<span class="kw">crate</span>) preds: SecondaryMap&lt;GraphNodeId, OutboundEdges&gt;,
     <span class="kw">pub</span>(<span class="kw">crate</span>) succs: SecondaryMap&lt;GraphNodeId, OutboundEdges&gt;,
-    names: HashMap&lt;Ident, Ports&gt;,
+    names: BTreeMap&lt;Ident, Ports&gt;,
 }
 <span class="kw">impl </span>FlatGraph {
     <span class="comment">// TODO(mingwei): better error/diagnostic handling.
@@ -603,4 +603,4 @@
     out: <span class="prelude-ty">Option</span>&lt;GraphNodeId&gt;,
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (015a824f2 2022-08-22)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (060e47f74 2022-08-23)" ></div></body></html>

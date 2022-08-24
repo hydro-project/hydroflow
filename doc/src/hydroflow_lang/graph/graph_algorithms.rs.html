@@ -184,19 +184,15 @@
 <span id="184">184</span>
 <span id="185">185</span>
 <span id="186">186</span>
-<span id="187">187</span>
-<span id="188">188</span>
-<span id="189">189</span>
-</pre><pre class="rust"><code><span class="kw">use </span>std::collections::hash_map::Entry;
-<span class="kw">use </span>std::collections::{HashMap, HashSet};
-<span class="kw">use </span>std::hash::Hash;
+</pre><pre class="rust"><code><span class="kw">use </span>std::collections::btree_map::Entry;
+<span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
 
 <span class="kw">pub fn </span>topo_sort&lt;Id, NodeIds, PredsFn, PredsIter&gt;(
     node_ids: NodeIds,
     <span class="kw-2">mut </span>preds_fn: PredsFn,
 ) -&gt; Vec&lt;Id&gt;
 <span class="kw">where
-    </span>Id: Copy + Hash + Eq,
+    </span>Id: Copy + Eq + Ord,
     NodeIds: IntoIterator&lt;Item = Id&gt;,
     PredsFn: FnMut(Id) -&gt; PredsIter,
     PredsIter: IntoIterator&lt;Item = Id&gt;,
@@ -206,10 +202,10 @@
     <span class="kw">fn </span>pred_dfs_postorder&lt;Id, PredsFn, PredsIter&gt;(
         node_id: Id,
         preds_fn: <span class="kw-2">&amp;mut </span>PredsFn,
-        marked: <span class="kw-2">&amp;mut </span>HashSet&lt;Id&gt;,
+        marked: <span class="kw-2">&amp;mut </span>BTreeSet&lt;Id&gt;,
         order: <span class="kw-2">&amp;mut </span>Vec&lt;Id&gt;,
     ) <span class="kw">where
-        </span>Id: Copy + Hash + Eq,
+        </span>Id: Copy + Eq + Ord,
         PredsFn: FnMut(Id) -&gt; PredsIter,
         PredsIter: IntoIterator&lt;Item = Id&gt;,
     {
@@ -234,9 +230,9 @@
     nodes: NodeIds,
     <span class="kw-2">mut </span>preds_fn: PredsFn,
     <span class="kw-2">mut </span>succs_fn: SuccsFn,
-) -&gt; HashMap&lt;Id, Id&gt;
+) -&gt; BTreeMap&lt;Id, Id&gt;
 <span class="kw">where
-    </span>Id: Copy + Eq + Hash,
+    </span>Id: Copy + Eq + Ord,
     NodeIds: IntoIterator&lt;Item = Id&gt;,
     PredsFn: FnMut(Id) -&gt; PredsIter,
     SuccsFn: FnMut(Id) -&gt; SuccsIter,
@@ -247,10 +243,10 @@
     </span><span class="kw">fn </span>visit&lt;Id, SuccsFn, SuccsIter&gt;(
         succs_fn: <span class="kw-2">&amp;mut </span>SuccsFn,
         u: Id,
-        seen: <span class="kw-2">&amp;mut </span>HashSet&lt;Id&gt;,
+        seen: <span class="kw-2">&amp;mut </span>BTreeSet&lt;Id&gt;,
         stack: <span class="kw-2">&amp;mut </span>Vec&lt;Id&gt;,
     ) <span class="kw">where
-        </span>Id: Copy + Eq + Hash,
+        </span>Id: Copy + Eq + Ord,
         SuccsFn: FnMut(Id) -&gt; SuccsIter,
         SuccsIter: IntoIterator&lt;Item = Id&gt;,
     {
@@ -271,9 +267,9 @@
         preds_fn: <span class="kw-2">&amp;mut </span>PredsFn,
         v: Id,
         root: Id,
-        components: <span class="kw-2">&amp;mut </span>HashMap&lt;Id, Id&gt;,
+        components: <span class="kw-2">&amp;mut </span>BTreeMap&lt;Id, Id&gt;,
     ) <span class="kw">where
-        </span>Id: Copy + Eq + Hash,
+        </span>Id: Copy + Eq + Ord,
         PredsFn: FnMut(Id) -&gt; PredsIter,
         PredsIter: IntoIterator&lt;Item = Id&gt;,
     {
@@ -294,8 +290,6 @@
 
 <span class="attribute">#[cfg(test)]
 </span><span class="kw">mod </span>test {
-    <span class="kw">use </span>std::collections::HashMap;
-
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
     <span class="attribute">#[test]
@@ -321,7 +315,7 @@
         });
         <span class="macro">println!</span>(<span class="string">&quot;{:?}&quot;</span>, sort);
 
-        <span class="kw">let </span>position: HashMap&lt;<span class="kw">_</span>, <span class="kw">_</span>&gt; = sort.iter().enumerate().map(|(i, <span class="kw-2">&amp;</span>x)| (x, i)).collect();
+        <span class="kw">let </span>position: BTreeMap&lt;<span class="kw">_</span>, <span class="kw">_</span>&gt; = sort.iter().enumerate().map(|(i, <span class="kw-2">&amp;</span>x)| (x, i)).collect();
         <span class="kw">for </span>(src, dst) <span class="kw">in </span>edges.iter() {
             <span class="macro">assert!</span>(position[src] &lt; position[dst]);
         }
@@ -377,4 +371,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (015a824f2 2022-08-22)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (060e47f74 2022-08-23)" ></div></body></html>
