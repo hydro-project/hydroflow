@@ -148,14 +148,13 @@ fn generate_join(
         })
         .collect::<Vec<syn::Expr>>();
 
-    // TODO(shadaj): this is all a hack, will fall apart when we have more than usize types
     let source_types = sources
         .iter()
         .map(|source| {
             let col_types = source
                 .fields
                 .iter()
-                .map(|_| parse_quote!(usize))
+                .map(|_| parse_quote!(_))
                 .collect::<Vec<syn::Type>>();
 
             parse_quote!((#(#col_types, )*))
@@ -164,7 +163,7 @@ fn generate_join(
 
     let key_type = identifiers_to_join
         .iter()
-        .map(|(_, _)| parse_quote!(usize))
+        .map(|(_, _)| parse_quote!(_))
         .collect::<Vec<syn::Type>>();
 
     let after_join_map: syn::Expr = if sources.len() == 1 {
@@ -213,7 +212,7 @@ fn generate_join(
         let source_data_types = source
             .fields
             .iter()
-            .map(|_| parse_quote!(usize))
+            .map(|_| parse_quote!(_))
             .collect::<Vec<syn::Type>>();
 
         let source_ident = syn::Ident::new(&source.name.name, Span::call_site());
