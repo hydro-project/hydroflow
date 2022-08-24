@@ -1,3 +1,11 @@
+//! Pusherator generics and argument order conventions:
+//! - `Next` (being the next owned pusherator) should come first in generic
+//!   arguments.
+//! - However `next: Next` in `new(...)` arguments should come last. This is so
+//!   the rest of the arguments appear in the order data flows in.
+//! - Any closures `Func` should come before their arguments, so:
+//!   `<Func: Fn(A) -> B, A, B>`
+
 #![feature(never_type)]
 #![feature(type_alias_impl_trait)]
 #![feature(generic_associated_types)]
@@ -29,44 +37,44 @@ pub trait IteratorToPusherator: Iterator {
 impl<I> IteratorToPusherator for I where I: Sized + Iterator {}
 
 pub trait PusheratorBuild {
-    type Item;
+    type ItemOut;
 
-    type Output<O: Pusherator<Item = Self::Item>>;
-    fn build<O>(self, input: O) -> Self::Output<O>
+    type Output<Next: Pusherator<Item = Self::ItemOut>>;
+    fn push_to<Next>(self, input: Next) -> Self::Output<Next>
     where
-        O: Pusherator<Item = Self::Item>;
+        Next: Pusherator<Item = Self::ItemOut>;
 
-    fn map<U, F>(self, f: F) -> map::MapBuild<Self::Item, U, F, Self>
+    fn map<Func, Out>(self, func: Func) -> map::MapBuild<Self, Func>
     where
         Self: Sized,
-        F: FnMut(Self::Item) -> U,
+        Func: FnMut(Self::ItemOut) -> Out,
     {
-        map::MapBuild::new(self, f)
+        map::MapBuild::new(self, func)
     }
 
-    fn filter<F>(self, f: F) -> filter::FilterBuild<Self::Item, F, Self>
+    fn filter<Func>(self, func: Func) -> filter::FilterBuild<Self, Func>
     where
         Self: Sized,
-        F: FnMut(&Self::Item) -> bool,
+        Func: FnMut(&Self::ItemOut) -> bool,
     {
-        filter::FilterBuild::new(self, f)
+        filter::FilterBuild::new(self, func)
     }
 
-    fn tee<O1>(self, first_out: O1) -> tee::TeeBuild<Self::Item, O1, Self>
+    fn tee<Next1>(self, next1: Next1) -> tee::TeeBuild<Self, Next1>
     where
         Self: Sized,
-        Self::Item: Clone,
-        O1: Pusherator<Item = Self::Item>,
+        Self::ItemOut: Clone,
+        Next1: Pusherator<Item = Self::ItemOut>,
     {
-        tee::TeeBuild::new(self, first_out)
+        tee::TeeBuild::new(self, next1)
     }
 
-    fn for_each<F>(self, f: F) -> Self::Output<for_each::ForEach<Self::Item, F>>
+    fn for_each<Func>(self, func: Func) -> Self::Output<for_each::ForEach<Func, Self::ItemOut>>
     where
         Self: Sized,
-        F: FnMut(Self::Item),
+        Func: FnMut(Self::ItemOut),
     {
-        self.build(for_each::ForEach::new(f))
+        self.push_to(for_each::ForEach::new(func))
     }
 }
 
@@ -82,12 +90,12 @@ impl<T> InputBuild<T> {
     }
 }
 impl<T> PusheratorBuild for InputBuild<T> {
-    type Item = T;
+    type ItemOut = T;
 
-    type Output<O: Pusherator<Item = Self::Item>> = O;
-    fn build<O>(self, input: O) -> Self::Output<O>
+    type Output<O: Pusherator<Item = Self::ItemOut>> = O;
+    fn push_to<O>(self, input: O) -> Self::Output<O>
     where
-        O: Pusherator<Item = Self::Item>,
+        O: Pusherator<Item = Self::ItemOut>,
     {
         input
     }
@@ -207,7 +215,7 @@ mod test_builder {
         let pb = map::MapBuild::new(pb, |x| x * x);
 
         let mut output = Vec::new();
-        let mut pusherator = pb.build(for_each::ForEach::new(|x| output.push(x)));
+        let mut pusherator = pb.push_to(for_each::ForEach::new(|x| output.push(x)));
 
         for x in 0..10 {
             pusherator.give(x);

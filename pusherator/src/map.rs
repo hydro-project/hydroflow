@@ -2,73 +2,61 @@ use super::{Pusherator, PusheratorBuild};
 
 use std::marker::PhantomData;
 
-pub struct Map<T, U, F, O>
-where
-    F: FnMut(T) -> U,
-    O: Pusherator<Item = U>,
-{
-    out: O,
-    f: F,
-    _marker: PhantomData<T>,
+pub struct Map<Next, Func, In> {
+    next: Next,
+    func: Func,
+    _in: PhantomData<fn(In)>,
 }
-impl<T, U, F, O> Pusherator for Map<T, U, F, O>
+impl<Next, Func, In> Pusherator for Map<Next, Func, In>
 where
-    F: FnMut(T) -> U,
-    O: Pusherator<Item = U>,
+    Next: Pusherator,
+    Func: FnMut(In) -> Next::Item,
 {
-    type Item = T;
+    type Item = In;
     fn give(&mut self, item: Self::Item) {
-        self.out.give((self.f)(item));
+        self.next.give((self.func)(item));
     }
 }
-impl<T, U, F, O> Map<T, U, F, O>
+impl<Next, Func, In> Map<Next, Func, In>
 where
-    F: FnMut(T) -> U,
-    O: Pusherator<Item = U>,
+    Next: Pusherator,
+    Func: FnMut(In) -> Next::Item,
 {
-    pub fn new(f: F, out: O) -> Self {
+    pub fn new(func: Func, next: Next) -> Self {
         Self {
-            out,
-            f,
-            _marker: PhantomData,
+            next,
+            func,
+            _in: PhantomData,
         }
     }
 }
 
-pub struct MapBuild<T, U, F, P>
-where
-    F: FnMut(T) -> U,
-    P: PusheratorBuild<Item = T>,
-{
-    prev: P,
-    f: F,
-    _marker: PhantomData<T>,
+pub struct MapBuild<Prev, Func> {
+    prev: Prev,
+    func: Func,
 }
-impl<T, U, F, P> MapBuild<T, U, F, P>
+impl<Prev, Func, Out> MapBuild<Prev, Func>
 where
-    F: FnMut(T) -> U,
-    P: PusheratorBuild<Item = T>,
+    Prev: PusheratorBuild,
+    Func: FnMut(Prev::ItemOut) -> Out,
 {
-    pub fn new(prev: P, f: F) -> Self {
-        Self {
-            prev,
-            f,
-            _marker: PhantomData,
-        }
+    pub fn new(prev: Prev, func: Func) -> Self {
+        Self { prev, func }
     }
 }
-impl<T, U, F, P> PusheratorBuild for MapBuild<T, U, F, P>
+impl<Prev, Func, Out> PusheratorBuild for MapBuild<Prev, Func>
 where
-    F: FnMut(T) -> U,
-    P: PusheratorBuild<Item = T>,
+    Prev: PusheratorBuild,
+    Func: FnMut(Prev::ItemOut) -> Out,
 {
-    type Item = U;
+    type ItemOut = Out;
 
-    type Output<O: Pusherator<Item = Self::Item>> = P::Output<Map<T, U, F, O>>;
-    fn build<O>(self, input: O) -> Self::Output<O>
+    type Output<Next: Pusherator<Item = Self::ItemOut>> =
+        Prev::Output<Map<Next, Func, Prev::ItemOut>>;
+    fn push_to<Next>(self, next: Next) -> Self::Output<Next>
     where
-        O: Pusherator<Item = Self::Item>,
+        Next: Pusherator<Item = Self::ItemOut>,
     {
-        self.prev.build(Map::new(self.f, input))
+        self.prev.push_to(Map::new(self.func, next))
     }
 }

@@ -1,81 +1,64 @@
 use super::{Pusherator, PusheratorBuild};
 
-use std::marker::PhantomData;
-
-pub struct Tee<T, O1, O2>
-where
-    T: Clone,
-    O1: Pusherator<Item = T>,
-    O2: Pusherator<Item = T>,
-{
-    out1: O1,
-    out2: O2,
-    _marker: PhantomData<T>,
+pub struct Tee<Next1, Next2> {
+    next1: Next1,
+    next2: Next2,
 }
-impl<T, O1, O2> Pusherator for Tee<T, O1, O2>
+impl<Next1, Next2> Pusherator for Tee<Next1, Next2>
 where
-    T: Clone,
-    O1: Pusherator<Item = T>,
-    O2: Pusherator<Item = T>,
+    Next1: Pusherator,
+    Next2: Pusherator<Item = Next1::Item>,
+    Next1::Item: Clone,
 {
-    type Item = T;
+    type Item = Next1::Item;
     fn give(&mut self, item: Self::Item) {
-        self.out1.give(item.clone());
-        self.out2.give(item);
+        self.next1.give(item.clone());
+        self.next2.give(item);
     }
 }
-impl<T, O1, O2> Tee<T, O1, O2>
+impl<Next1, Next2> Tee<Next1, Next2>
 where
-    T: Clone,
-    O1: Pusherator<Item = T>,
-    O2: Pusherator<Item = T>,
+    Next1: Pusherator,
+    Next2: Pusherator<Item = Next1::Item>,
+    Next1::Item: Clone,
 {
-    pub fn new(out1: O1, out2: O2) -> Self {
-        Self {
-            out1,
-            out2,
-            _marker: PhantomData,
-        }
+    pub fn new(next1: Next1, next2: Next2) -> Self {
+        Self { next1, next2 }
     }
 }
 
-pub struct TeeBuild<T, O1, P>
+pub struct TeeBuild<Prev, Next1>
 where
-    T: Clone,
-    P: PusheratorBuild<Item = T>,
-    O1: Pusherator<Item = T>,
+    Prev: PusheratorBuild,
+    Next1: Pusherator<Item = Prev::ItemOut>,
+    Prev::ItemOut: Clone,
 {
-    prev: P,
-    first_out: O1,
-    _marker: PhantomData<T>,
+    prev: Prev,
+    next1: Next1,
 }
-impl<T, O1, P> TeeBuild<T, O1, P>
+impl<Prev, Next1> TeeBuild<Prev, Next1>
 where
-    T: Clone,
-    P: PusheratorBuild<Item = T>,
-    O1: Pusherator<Item = T>,
+    Prev: PusheratorBuild,
+    Next1: Pusherator<Item = Prev::ItemOut>,
+    Prev::ItemOut: Clone,
 {
-    pub fn new(prev: P, first_out: O1) -> Self {
-        Self {
-            prev,
-            first_out,
-            _marker: PhantomData,
-        }
+    pub fn new(prev: Prev, next1: Next1) -> Self {
+        Self { prev, next1 }
     }
 }
-impl<T, O1, P> PusheratorBuild for TeeBuild<T, O1, P>
+impl<Prev, Next1> PusheratorBuild for TeeBuild<Prev, Next1>
 where
-    T: Clone,
-    P: PusheratorBuild<Item = T>,
-    O1: Pusherator<Item = T>,
+    Prev: PusheratorBuild,
+    Next1: Pusherator<Item = Prev::ItemOut>,
+    Prev::ItemOut: Clone,
 {
-    type Item = T;
+    type ItemOut = Prev::ItemOut;
 
-    type Output<O: Pusherator<Item = Self::Item>> = P::Output<Tee<T, O1, O>>;
-    fn build<O>(self, input: O) -> Self::Output<O>
+    type Output<Next: Pusherator<Item = Self::ItemOut>> = Prev::Output<Tee<Next1, Next>>;
+    fn push_to<Next>(self, input: Next) -> Self::Output<Next>
     where
-        O: Pusherator<Item = Self::Item>,
+        Next: Pusherator<Item = Self::ItemOut>,
     {
-        self.prev.build(Tee::new(self.first_out, input))
+        self.prev.push_to(Tee::new(self.next1, input))
     }
 }

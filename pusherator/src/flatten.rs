@@ -2,67 +2,64 @@ use super::{Pusherator, PusheratorBuild};
 
 use std::marker::PhantomData;
 
-pub struct Flatten<O, T>
-where
-    T: IntoIterator,
-    O: Pusherator<Item = T::Item>,
-{
-    out: O,
-    _marker: PhantomData<T>,
+pub struct Flatten<Next, In> {
+    next: Next,
+    _marker: PhantomData<fn(In)>,
 }
-impl<O, T> Pusherator for Flatten<O, T>
+impl<Next, In> Pusherator for Flatten<Next, In>
 where
-    T: IntoIterator,
-    O: Pusherator<Item = T::Item>,
+    Next: Pusherator<Item = In::Item>,
+    In: IntoIterator,
 {
-    type Item = T;
+    type Item = In;
     fn give(&mut self, item: Self::Item) {
         for x in item {
-            self.out.give(x);
+            self.next.give(x);
         }
     }
 }
-impl<O, T> Flatten<O, T>
+impl<Next, In> Flatten<Next, In>
 where
-    T: IntoIterator,
-    O: Pusherator<Item = T::Item>,
+    Next: Pusherator<Item = In::Item>,
+    In: IntoIterator,
 {
-    pub fn new(out: O) -> Self {
+    pub fn new(next: Next) -> Self {
         Self {
-            out,
+            next,
             _marker: PhantomData,
         }
     }
 }
 
-pub struct FlattenBuild<P>
+pub struct FlattenBuild<Prev>
 where
-    P: PusheratorBuild,
-    P::Item: IntoIterator,
+    Prev: PusheratorBuild,
+    Prev::ItemOut: IntoIterator,
 {
-    prev: P,
+    prev: Prev,
 }
-impl<P> FlattenBuild<P>
+impl<Prev> FlattenBuild<Prev>
 where
-    P: PusheratorBuild,
-    P::Item: IntoIterator,
+    Prev: PusheratorBuild,
+    Prev::ItemOut: IntoIterator,
 {
-    pub fn new(prev: P) -> Self {
+    pub fn new(prev: Prev) -> Self {
         Self { prev }
     }
 }
-impl<P> PusheratorBuild for FlattenBuild<P>
+impl<Prev> PusheratorBuild for FlattenBuild<Prev>
 where
-    P: PusheratorBuild,
-    P::Item: IntoIterator,
+    Prev: PusheratorBuild,
+    Prev::ItemOut: IntoIterator,
 {
-    type Item = <P::Item as IntoIterator>::Item;
+    type ItemOut = <Prev::ItemOut as IntoIterator>::Item;
 
-    type Output<O: Pusherator<Item = Self::Item>> = P::Output<Flatten<O, P::Item>>;
-    fn build<O>(self, input: O) -> Self::Output<O>
+    type Output<Next: Pusherator<Item = Self::ItemOut>> =
+        Prev::Output<Flatten<Next, Prev::ItemOut>>;
+    fn push_to<Next>(self, input: Next) -> Self::Output<Next>
     where
-        O: Pusherator<Item = Self::Item>,
+        Next: Pusherator<Item = Self::ItemOut>,
     {
-        self.prev.build(Flatten::new(input))
+        self.prev.push_to(Flatten::new(input))
     }
 }
