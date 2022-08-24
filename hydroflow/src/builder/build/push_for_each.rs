@@ -31,7 +31,7 @@ where
 type PushBuildImpl<'slf, 'ctx, Func, In>
 where
     Func: 'slf + FnMut(&Context, In),
-= ForEach<In, impl FnMut(In)>;
+= ForEach<impl FnMut(In), In>;
 
 impl<Func, In> PushBuild for ForEachPushBuild<Func, In>
 where

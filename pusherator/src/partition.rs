@@ -1,88 +1,71 @@
 use super::{Pusherator, PusheratorBuild};
 
-use std::marker::PhantomData;
-
-pub struct Partition<T, F, O1, O2>
-where
-    F: FnMut(&T) -> bool,
-    O1: Pusherator<Item = T>,
-    O2: Pusherator<Item = T>,
-{
-    out1: O1,
-    out2: O2,
-    f: F,
-    _marker: PhantomData<T>,
+pub struct Partition<Next1, Next2, Func> {
+    next1: Next1,
+    next2: Next2,
+    func: Func,
 }
-impl<T, F, O1, O2> Pusherator for Partition<T, F, O1, O2>
+impl<Next1, Next2, Func> Pusherator for Partition<Next1, Next2, Func>
 where
-    F: FnMut(&T) -> bool,
-    O1: Pusherator<Item = T>,
-    O2: Pusherator<Item = T>,
+    Next1: Pusherator,
+    Next2: Pusherator<Item = Next1::Item>,
+    Func: FnMut(&Next1::Item) -> bool,
 {
-    type Item = T;
+    type Item = Next1::Item;
     fn give(&mut self, item: Self::Item) {
-        if (self.f)(&item) {
-            self.out1.give(item);
+        if (self.func)(&item) {
+            self.next1.give(item);
         } else {
-            self.out2.give(item);
+            self.next2.give(item);
         }
     }
 }
-impl<T, F, O1, O2> Partition<T, F, O1, O2>
+impl<Next1, Next2, Func> Partition<Next1, Next2, Func>
 where
-    F: FnMut(&T) -> bool,
-    O1: Pusherator<Item = T>,
-    O2: Pusherator<Item = T>,
+    Next1: Pusherator,
+    Next2: Pusherator<Item = Next1::Item>,
+    Func: FnMut(&Next1::Item) -> bool,
 {
-    pub fn new(f: F, out1: O1, out2: O2) -> Self {
-        Self {
-            out1,
-            out2,
-            f,
-            _marker: PhantomData,
-        }
+    pub fn new(func: Func, next1: Next1, next2: Next2) -> Self {
+        Self { next1, next2, func }
     }
 }
 
-pub struct PartitionBuild<T, F, O1, P>
+pub struct PartitionBuild<Prev, Next1, Func>
 where
-    F: FnMut(&T) -> bool,
-    O1: Pusherator<Item = T>,
-    P: PusheratorBuild<Item = T>,
+    Prev: PusheratorBuild,
+    Next1: Pusherator<Item = Prev::ItemOut>,
+    Func: FnMut(&Prev::ItemOut) -> bool,
 {
-    prev: P,
-    out1: O1,
-    f: F,
-    _marker: PhantomData<T>,
+    prev: Prev,
+    next1: Next1,
+    func: Func,
 }
-impl<T, F, O1, P> PartitionBuild<T, F, O1, P>
+impl<Prev, Next1, Func> PartitionBuild<Prev, Next1, Func>
 where
-    F: FnMut(&T) -> bool,
-    O1: Pusherator<Item = T>,
-    P: PusheratorBuild<Item = T>,
+    Prev: PusheratorBuild,
+    Next1: Pusherator<Item = Prev::ItemOut>,
+    Func: FnMut(&Prev::ItemOut) -> bool,
 {
-    pub fn new(prev: P, out1: O1, f: F) -> Self {
-        Self {
-            prev,
-            out1,
-            f,
-            _marker: PhantomData,
-        }
+    pub fn new(prev: Prev, next1: Next1, func: Func) -> Self {
+        Self { prev, next1, func }
     }
 }
-impl<T, F, O1, P> PusheratorBuild for PartitionBuild<T, F, O1, P>
+impl<Prev, Next1, Func> PusheratorBuild for PartitionBuild<Prev, Next1, Func>
 where
-    F: FnMut(&T) -> bool,
-    O1: Pusherator<Item = T>,
-    P: PusheratorBuild<Item = T>,
+    Prev: PusheratorBuild,
+    Next1: Pusherator<Item = Prev::ItemOut>,
+    Func: FnMut(&Prev::ItemOut) -> bool,
 {
-    type Item = T;
+    type ItemOut = Prev::ItemOut;
 
-    type Output<O: Pusherator<Item = Self::Item>> = P::Output<Partition<T, F, O1, O>>;
-    fn build<O>(self, input: O) -> Self::Output<O>
+    type Output<Next: Pusherator<Item = Self::ItemOut>> =
+        Prev::Output<Partition<Next1, Next, Func>>;
+    fn push_to<Next>(self, input: Next) -> Self::Output<Next>
     where
-        O: Pusherator<Item = Self::Item>,
+        Next: Pusherator<Item = Self::ItemOut>,
     {
-        self.prev.build(Partition::new(self.f, self.out1, input))
+        self.prev
+            .push_to(Partition::new(self.func, self.next1, input))
     }
 }

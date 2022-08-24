@@ -2,68 +2,66 @@ use super::{Pusherator, PusheratorBuild};
 
 use std::marker::PhantomData;
 
-pub struct FilterMap<O, F, In>
-where
-    O: Pusherator,
-{
-    out: O,
-    f: F,
+pub struct FilterMap<Next, Func, In> {
+    next: Next,
+    func: Func,
     _marker: PhantomData<fn(In)>,
 }
-impl<O, F, In> Pusherator for FilterMap<O, F, In>
+impl<Next, Func, In> Pusherator for FilterMap<Next, Func, In>
 where
-    O: Pusherator,
-    F: FnMut(In) -> Option<O::Item>,
+    Next: Pusherator,
+    Func: FnMut(In) -> Option<Next::Item>,
 {
     type Item = In;
     fn give(&mut self, item: Self::Item) {
-        if let Some(item) = (self.f)(item) {
-            self.out.give(item);
+        if let Some(item) = (self.func)(item) {
+            self.next.give(item);
         }
     }
 }
-impl<O, F, In> FilterMap<O, F, In>
+impl<Next, Func, In> FilterMap<Next, Func, In>
 where
-    O: Pusherator,
-    F: FnMut(In) -> Option<O::Item>,
+    Next: Pusherator,
+    Func: FnMut(In) -> Option<Next::Item>,
 {
-    pub fn new(f: F, out: O) -> Self {
+    pub fn new(func: Func, next: Next) -> Self {
         Self {
-            out,
-            f,
+            next,
+            func,
             _marker: PhantomData,
         }
     }
 }
 
-pub struct FilterMapBuild<P, F>
+pub struct FilterMapBuild<Prev, Func>
 where
-    P: PusheratorBuild,
+    Prev: PusheratorBuild,
 {
-    prev: P,
-    f: F,
+    prev: Prev,
+    func: Func,
 }
-impl<P, F, Out> FilterMapBuild<P, F>
+impl<Prev, Func, Out> FilterMapBuild<Prev, Func>
 where
-    P: PusheratorBuild,
-    F: FnMut(P::Item) -> Option<Out>,
+    Prev: PusheratorBuild,
+    Func: FnMut(Prev::ItemOut) -> Option<Out>,
 {
-    pub fn new(prev: P, f: F) -> Self {
-        Self { prev, f }
+    pub fn new(prev: Prev, func: Func) -> Self {
+        Self { prev, func }
     }
 }
-impl<P, F, Out> PusheratorBuild for FilterMapBuild<P, F>
+impl<Prev, Func, Out> PusheratorBuild for FilterMapBuild<Prev, Func>
 where
-    P: PusheratorBuild,
-    F: FnMut(P::Item) -> Option<Out>,
+    Prev: PusheratorBuild,
+    Func: FnMut(Prev::ItemOut) -> Option<Out>,
 {
-    type Item = Out;
+    type ItemOut = Out;
 
-    type Output<O: Pusherator<Item = Self::Item>> = P::Output<FilterMap<O, F, P::Item>>;
-    fn build<O>(self, input: O) -> Self::Output<O>
+    type Output<O: Pusherator<Item = Self::ItemOut>> =
+        Prev::Output<FilterMap<O, Func, Prev::ItemOut>>;
+    fn push_to<O>(self, input: O) -> Self::Output<O>
     where
-        O: Pusherator<Item = Self::Item>,
+        O: Pusherator<Item = Self::ItemOut>,
     {
-        self.prev.build(FilterMap::new(self.f, input))
+        self.prev.push_to(FilterMap::new(self.func, input))
     }
 }

@@ -2,29 +2,26 @@ use super::Pusherator;
 
 use std::marker::PhantomData;
 
-pub struct ForEach<T, F>
-where
-    F: FnMut(T),
-{
-    f: F,
-    _marker: PhantomData<T>,
+pub struct ForEach<Func, In> {
+    func: Func,
+    _marker: PhantomData<fn(In)>,
 }
-impl<T, F> Pusherator for ForEach<T, F>
+impl<Func, In> Pusherator for ForEach<Func, In>
 where
-    F: FnMut(T),
+    Func: FnMut(In),
 {
-    type Item = T;
+    type Item = In;
     fn give(&mut self, item: Self::Item) {
-        (self.f)(item)
+        (self.func)(item)
     }
 }
-impl<T, F> ForEach<T, F>
+impl<Func, In> ForEach<Func, In>
 where
-    F: FnMut(T),
+    Func: FnMut(In),
 {
-    pub fn new(f: F) -> Self {
+    pub fn new(func: Func) -> Self {
         Self {
-            f,
+            func,
             _marker: PhantomData,
         }
     }

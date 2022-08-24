@@ -1,76 +1,60 @@
 use super::{Pusherator, PusheratorBuild};
 
-use std::marker::PhantomData;
-
-pub struct Filter<T, F, O>
-where
-    F: FnMut(&T) -> bool,
-    O: Pusherator<Item = T>,
-{
-    out: O,
-    f: F,
-    _marker: PhantomData<T>,
+pub struct Filter<Next, Func> {
+    next: Next,
+    func: Func,
 }
-impl<T, F, O> Pusherator for Filter<T, F, O>
+impl<Next, Func> Pusherator for Filter<Next, Func>
 where
-    F: FnMut(&T) -> bool,
-    O: Pusherator<Item = T>,
+    Next: Pusherator,
+    Func: FnMut(&Next::Item) -> bool,
 {
-    type Item = T;
+    type Item = Next::Item;
     fn give(&mut self, item: Self::Item) {
-        if (self.f)(&item) {
-            self.out.give(item);
+        if (self.func)(&item) {
+            self.next.give(item);
         }
     }
 }
-impl<T, F, O> Filter<T, F, O>
+impl<Next, Func> Filter<Next, Func>
 where
-    F: FnMut(&T) -> bool,
-    O: Pusherator<Item = T>,
+    Next: Pusherator,
+    Func: FnMut(&Next::Item) -> bool,
 {
-    pub fn new(f: F, out: O) -> Self {
-        Self {
-            out,
-            f,
-            _marker: PhantomData,
-        }
+    pub fn new(func: Func, next: Next) -> Self {
+        Self { next, func }
     }
 }
 
-pub struct FilterBuild<T, F, P>
+pub struct FilterBuild<Prev, Func>
 where
-    F: FnMut(&T) -> bool,
-    P: PusheratorBuild<Item = T>,
+    Prev: PusheratorBuild,
+    Func: FnMut(&Prev::ItemOut) -> bool,
 {
-    prev: P,
-    f: F,
-    _marker: PhantomData<T>,
+    prev: Prev,
+    func: Func,
 }
-impl<T, F, P> FilterBuild<T, F, P>
+impl<Prev, Func> FilterBuild<Prev, Func>
 where
-    F: FnMut(&T) -> bool,
-    P: PusheratorBuild<Item = T>,
+    Prev: PusheratorBuild,
+    Func: FnMut(&Prev::ItemOut) -> bool,
 {
-    pub fn new(prev: P, f: F) -> Self {
-        Self {
-            prev,
-            f,
-            _marker: PhantomData,
-        }
+    pub fn new(prev: Prev, func: Func) -> Self {
+        Self { prev, func }
     }
 }
-impl<T, F, P> PusheratorBuild for FilterBuild<T, F, P>
+impl<Prev, Func> PusheratorBuild for FilterBuild<Prev, Func>
 where
-    F: FnMut(&T) -> bool,
-    P: PusheratorBuild<Item = T>,
+    Prev: PusheratorBuild,
+    Func: FnMut(&Prev::ItemOut) -> bool,
 {
-    type Item = T;
+    type ItemOut = Prev::ItemOut;
 
-    type Output<O: Pusherator<Item = Self::Item>> = P::Output<Filter<T, F, O>>;
-    fn build<O>(self, input: O) -> Self::Output<O>
+    type Output<Next: Pusherator<Item = Self::ItemOut>> = Prev::Output<Filter<Next, Func>>;
+    fn push_to<Next>(self, input: Next) -> Self::Output<Next>
     where
-        O: Pusherator<Item = Self::Item>,
+        Next: Pusherator<Item = Self::ItemOut>,
     {
-        self.prev.build(Filter::new(self.f, input))
+        self.prev.push_to(Filter::new(self.func, input))
     }
 }
