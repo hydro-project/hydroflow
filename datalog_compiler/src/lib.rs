@@ -77,140 +77,7 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
     }
 
     for rule in rules {
-        let target = &rule.target.name;
-        let target_ident = syn::Ident::new(&target.name, Span::call_site());
-        let sources: Vec<Target> = rule.sources.to_vec();
-
-        // TODO(shadaj): more than two sources, nested join
-        let mut identifier_to_bindings = BTreeMap::new();
-        for (source_idx, source) in sources.iter().enumerate() {
-            for (i, param) in source.fields.iter().enumerate() {
-                let entry = identifier_to_bindings
-                    .entry(param.clone())
-                    .or_insert_with(BTreeMap::new);
-                entry.insert(source_idx, i);
-            }
-        }
-
-        let identifiers_to_join = identifier_to_bindings
-            .keys()
-            .filter_map(|ident| {
-                let bindings = identifier_to_bindings.get(ident).unwrap();
-                if bindings.len() > 1 {
-                    Some((ident.clone(), bindings.clone()))
-                } else {
-                    None
-                }
-            })
-            .collect::<Vec<_>>();
-
-        let join_node = syn::Ident::new(&format!("{}_join", target_ident), Span::call_site());
-
-        let output_data = rule
-            .target
-            .fields
-            .iter()
-            .map(|field| {
-                let bindings = identifier_to_bindings.get(field).unwrap();
-                let source = bindings.keys().min().unwrap();
-                let source_expr: syn::Expr = if sources.len() == 1 {
-                    parse_quote!(v)
-                } else {
-                    let pair_idx = syn::Index::from(*source);
-                    parse_quote!(kv.1.#pair_idx)
-                };
-
-                let source_col_idx = syn::Index::from(*bindings.get(source).unwrap());
-
-                parse_quote!(#source_expr.#source_col_idx)
-            })
-            .collect::<Vec<syn::Expr>>();
-
-        // TODO(shadaj): this is all a hack, will fall apart when we have more than usize types
-        let source_types = sources
-            .iter()
-            .map(|source| {
-                let col_types = source
-                    .fields
-                    .iter()
-                    .map(|_| parse_quote!(usize))
-                    .collect::<Vec<syn::Type>>();
-
-                parse_quote!((#(#col_types, )*))
-            })
-            .collect::<Vec<syn::Type>>();
-
-        let key_type = identifiers_to_join
-            .iter()
-            .map(|(_, _)| parse_quote!(usize))
-            .collect::<Vec<syn::Type>>();
-
-        let after_join_map: syn::Expr = if sources.len() == 1 {
-            parse_quote!(|v| (#(#output_data, )*))
-        } else {
-            parse_quote!(|kv: ((#(#key_type, )*), (#(#source_types, )*))| (#(#output_data, )*))
-        };
-
-        let merge_index = merge_counter.entry(target.name.clone()).or_insert(0);
-        let my_merge_index = *merge_index;
-        *merge_index += 1;
-
-        let my_merge_index_lit =
-            syn::LitInt::new(&format!("{}", my_merge_index), Span::call_site());
-
-        let after_join: Pipeline = parse_quote! {
-            map(#after_join_map) -> [#my_merge_index_lit] #target_ident
-        };
-
-        let join_and_map = if sources.len() == 1 {
-            after_join
-        } else {
-            parse_quote!(join() -> #after_join)
-        };
-
-        flat_graph.add_statement(parse_quote!(#join_node = #join_and_map));
-
-        for (source_i, source) in sources.iter().enumerate() {
-            let hash_keys: Vec<syn::Expr> = identifiers_to_join
-                .iter()
-                .map(|(ident, bindings)| {
-                    if let Some(idx) = bindings.get(&source_i) {
-                        let idx_ident = syn::Index::from(*idx);
-                        parse_quote!(v.#idx_ident)
-                    } else {
-                        panic!("Could not find key that is being joined on: {:?}", ident);
-                    }
-                })
-                .collect();
-
-            let tee_index = tee_counter.entry(source.name.name.clone()).or_insert(0);
-            let my_tee_index = *tee_index;
-            *tee_index += 1;
-
-            let my_tee_index_lit =
-                syn::LitInt::new(&format!("{}", my_tee_index), Span::call_site());
-
-            let source_data_types = source
-                .fields
-                .iter()
-                .map(|_| parse_quote!(usize))
-                .collect::<Vec<syn::Type>>();
-
-            let source_ident = syn::Ident::new(&source.name.name, Span::call_site());
-
-            let transform_join_source = if sources.len() == 1 {
-                Pipeline::Name(join_node.clone())
-            } else {
-                let source_i_lit = syn::LitInt::new(&format!("{}", source_i), Span::call_site());
-                parse_quote! {
-                    map(|v: (#(#source_data_types, )*)| ((#(#hash_keys, )*), v)) -> [#source_i_lit] #join_node
-                }
-            };
-
-            flat_graph.add_statement(parse_quote! {
-                #source_ident [#my_tee_index_lit] -> #transform_join_source
-            });
-        }
+        generate_join(rule, &mut flat_graph, &mut tee_counter, &mut merge_counter);
     }
 
     println!("{}", flat_graph.surface_syntax_string());
@@ -223,6 +90,147 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
     syn::parse_quote!({
         #code_tokens
     })
+}
+
+fn generate_join(
+    rule: &Rule,
+    flat_graph: &mut FlatGraph,
+    tee_counter: &mut HashMap<String, i32>,
+    merge_counter: &mut HashMap<String, i32>,
+) {
+    let target = &rule.target.name;
+    let target_ident = syn::Ident::new(&target.name, Span::call_site());
+
+    let sources: Vec<Target> = rule.sources.to_vec();
+
+    // TODO(shadaj): more than two sources, nested join
+    let mut identifier_to_bindings = BTreeMap::new();
+    for (source_idx, source) in sources.iter().enumerate() {
+        for (i, param) in source.fields.iter().enumerate() {
+            let entry = identifier_to_bindings
+                .entry(param.clone())
+                .or_insert_with(BTreeMap::new);
+            entry.insert(source_idx, i);
+        }
+    }
+
+    let identifiers_to_join = identifier_to_bindings
+        .keys()
+        .filter_map(|ident| {
+            let bindings = identifier_to_bindings.get(ident).unwrap();
+            if bindings.len() > 1 {
+                Some((ident.clone(), bindings.clone()))
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<_>>();
+
+    let join_node = syn::Ident::new(&format!("{}_join", target_ident), Span::call_site());
+
+    let output_data = rule
+        .target
+        .fields
+        .iter()
+        .map(|field| {
+            let bindings = identifier_to_bindings.get(field).unwrap();
+            let source = bindings.keys().min().unwrap();
+            let source_expr: syn::Expr = if sources.len() == 1 {
+                parse_quote!(v)
+            } else {
+                let pair_idx = syn::Index::from(*source);
+                parse_quote!(kv.1.#pair_idx)
+            };
+
+            let source_col_idx = syn::Index::from(*bindings.get(source).unwrap());
+
+            parse_quote!(#source_expr.#source_col_idx)
+        })
+        .collect::<Vec<syn::Expr>>();
+
+    // TODO(shadaj): this is all a hack, will fall apart when we have more than usize types
+    let source_types = sources
+        .iter()
+        .map(|source| {
+            let col_types = source
+                .fields
+                .iter()
+                .map(|_| parse_quote!(usize))
+                .collect::<Vec<syn::Type>>();
+
+            parse_quote!((#(#col_types, )*))
+        })
+        .collect::<Vec<syn::Type>>();
+
+    let key_type = identifiers_to_join
+        .iter()
+        .map(|(_, _)| parse_quote!(usize))
+        .collect::<Vec<syn::Type>>();
+
+    let after_join_map: syn::Expr = if sources.len() == 1 {
+        parse_quote!(|v| (#(#output_data, )*))
+    } else {
+        parse_quote!(|kv: ((#(#key_type, )*), (#(#source_types, )*))| (#(#output_data, )*))
+    };
+
+    let merge_index = merge_counter.entry(target.name.clone()).or_insert(0);
+    let my_merge_index = *merge_index;
+    *merge_index += 1;
+
+    let my_merge_index_lit = syn::LitInt::new(&format!("{}", my_merge_index), Span::call_site());
+
+    let after_join: Pipeline = parse_quote! {
+        map(#after_join_map) -> [#my_merge_index_lit] #target_ident
+    };
+
+    let join_and_map = if sources.len() == 1 {
+        after_join
+    } else {
+        parse_quote!(join() -> #after_join)
+    };
+
+    flat_graph.add_statement(parse_quote!(#join_node = #join_and_map));
+
+    for (source_i, source) in sources.iter().enumerate() {
+        let hash_keys: Vec<syn::Expr> = identifiers_to_join
+            .iter()
+            .map(|(ident, bindings)| {
+                if let Some(idx) = bindings.get(&source_i) {
+                    let idx_ident = syn::Index::from(*idx);
+                    parse_quote!(v.#idx_ident)
+                } else {
+                    panic!("Could not find key that is being joined on: {:?}", ident);
+                }
+            })
+            .collect();
+
+        let tee_index = tee_counter.entry(source.name.name.clone()).or_insert(0);
+        let my_tee_index = *tee_index;
+        *tee_index += 1;
+
+        let my_tee_index_lit = syn::LitInt::new(&format!("{}", my_tee_index), Span::call_site());
+
+        let source_data_types = source
+            .fields
+            .iter()
+            .map(|_| parse_quote!(usize))
+            .collect::<Vec<syn::Type>>();
+
+        let source_ident = syn::Ident::new(&source.name.name, Span::call_site());
+
+        let transform_join_source = if sources.len() == 1 {
+            Pipeline::Name(join_node.clone())
+        } else {
+            let source_i_lit = syn::LitInt::new(&format!("{}", source_i), Span::call_site());
+            parse_quote! {
+                map(|v: (#(#source_data_types, )*)| ((#(#hash_keys, )*), v)) -> [#source_i_lit] #join_node
+            }
+        };
+
+        flat_graph.add_statement(parse_quote! {
+            #source_ident [#my_tee_index_lit] -> #transform_join_source
+        });
+    }
 }
 
 #[proc_macro]
