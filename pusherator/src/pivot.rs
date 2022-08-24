@@ -51,12 +51,12 @@ impl<I> PusheratorBuild for PivotBuild<I>
 where
     I: Iterator,
 {
-    type Item = I::Item;
+    type ItemOut = I::Item;
 
-    type Output<O: Pusherator<Item = Self::Item>> = Pivot<I, O>;
-    fn build<O>(self, input: O) -> Self::Output<O>
+    type Output<O: Pusherator<Item = Self::ItemOut>> = Pivot<I, O>;
+    fn push_to<O>(self, input: O) -> Self::Output<O>
     where
-        O: Pusherator<Item = Self::Item>,
+        O: Pusherator<Item = Self::ItemOut>,
     {
         Pivot {
             pull: self.pull,
