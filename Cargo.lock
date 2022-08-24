@@ -393,22 +393,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "datalog_compiler"
-version = "0.1.0"
-dependencies = [
- "hydroflow_lang",
- "insta",
- "proc-macro-crate",
- "proc-macro2",
- "quote",
- "rust-sitter",
- "rust-sitter-tool",
- "slotmap",
- "syn",
- "tempfile",
-]
-
-[[package]]
 name = "difference"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -689,9 +673,9 @@ dependencies = [
  "colored",
  "core_affinity",
  "criterion",
- "datalog_compiler",
  "futures",
  "hdrhistogram",
+ "hydroflow_datalog",
  "hydroflow_lang",
  "hydroflow_macro",
  "itertools",
@@ -708,6 +692,22 @@ dependencies = [
  "tokio-util",
  "tuple_list",
  "zipf",
+]
+
+[[package]]
+name = "hydroflow_datalog"
+version = "0.1.0"
+dependencies = [
+ "hydroflow_lang",
+ "insta",
+ "proc-macro-crate",
+ "proc-macro2",
+ "quote",
+ "rust-sitter",
+ "rust-sitter-tool",
+ "slotmap",
+ "syn",
+ "tempfile",
 ]
 
 [[package]]

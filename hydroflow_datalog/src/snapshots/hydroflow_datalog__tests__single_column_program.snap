@@ -1,5 +1,5 @@
 ---
-source: datalog_compiler/src/lib.rs
+source: hydroflow_datalog/src/lib.rs
 expression: rustfmt_code(&wrapped.to_token_stream().to_string())
 ---
 fn main() {

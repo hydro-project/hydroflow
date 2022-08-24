@@ -1,6 +1,6 @@
 use std::thread;
 
-use datalog_compiler::datalog;
+use hydroflow_datalog::datalog;
 
 #[tokio::test]
 pub async fn test_minimal() {
