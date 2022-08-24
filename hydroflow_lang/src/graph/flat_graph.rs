@@ -31,7 +31,7 @@ impl FlatGraph {
         graph
     }
 
-    fn add_statement(&mut self, stmt: HfStatement) {
+    pub fn add_statement(&mut self, stmt: HfStatement) {
         match stmt {
             HfStatement::Named(named) => {
                 let ports = self.add_pipeline(named.pipeline);
