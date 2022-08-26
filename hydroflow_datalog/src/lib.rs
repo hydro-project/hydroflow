@@ -116,7 +116,7 @@ fn emit_source_to_join(
     output: (&syn::Ident, usize),
     flat_graph: &mut FlatGraph,
 ) {
-    let hash_keys_right: Vec<syn::Expr> = identifiers_to_join
+    let hash_keys: Vec<syn::Expr> = identifiers_to_join
         .iter()
         .map(|ident| {
             if let Some(idx) = source_idents.get(ident) {
@@ -146,7 +146,7 @@ fn emit_source_to_join(
                 dst: None,
             },
             rhs: Box::new(parse_quote! {
-                map(|v: #source_tuple| ((#(#hash_keys_right, )*), v)) -> [#out_index] #out_node
+                map(|v: #source_tuple| ((#(#hash_keys, )*), v)) -> [#out_index] #out_node
             }),
         }),
     ));
@@ -222,12 +222,13 @@ fn expand_join_plan(
 
             for (ident, source_idx) in left_idents
                 .keys()
-                .map(|l| (l, syn::Index::from(0)))
-                .chain(right_idents.keys().map(|l| (l, syn::Index::from(1))))
+                .map(|l| (l, 0))
+                .chain(right_idents.keys().map(|l| (l, 1)))
             {
                 if !ident_to_index.contains_key(ident) {
-                    let source_expr: syn::Expr = parse_quote!(kv.1.#source_idx);
-                    let bindings = if source_idx.index == 0 {
+                    let syn_source_index = syn::Index::from(source_idx);
+                    let source_expr: syn::Expr = parse_quote!(kv.1.#syn_source_index);
+                    let bindings = if source_idx == 0 {
                         &left_idents
                     } else {
                         &right_idents
