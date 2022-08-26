@@ -532,4 +532,29 @@ mod tests {
 
         insta::assert_display_snapshot!(rustfmt_code(&wrapped.to_token_stream().to_string()));
     }
+
+    #[test]
+    fn triple_relation_join() {
+        let out = &gen_datalog_program(
+            parse_quote!(
+                r#"
+                .input in1
+                .input in2
+                .input in3
+                .output out
+
+                out(d, c, b, a) :- in1(a, b), in2(b, c), in3(c, d).
+                "#
+            ),
+            quote::quote! { hydroflow },
+        );
+
+        let wrapped: syn::Item = parse_quote! {
+            fn main() {
+                #out
+            }
+        };
+
+        insta::assert_display_snapshot!(rustfmt_code(&wrapped.to_token_stream().to_string()));
+    }
 }
