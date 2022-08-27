@@ -1,6 +1,6 @@
 window.BENCHMARK_DATA = 
 {
-  "lastUpdate": 1661488366064,
+  "lastUpdate": 1661573824892,
   "repoUrl": "https://github.com/hydro-project/hydroflow",
   "entries": {
     "Benchmark": [
@@ -23140,6 +23140,82 @@ window.BENCHMARK_DATA =
             "name": "reachability/hydroflow",
             "value": 3311417,
             "range": "± 142355",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Shadaj Laddad",
+            "username": "shadaj",
+            "email": "shadaj@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "fd3867fde4302aabd747ca81564dfba6016a6395",
+          "message": "Add datalog frontend via a proc macro (#155)\n\n* Implement parser for datalog and set up proc macro infra\r\n\r\n* Eliminate boxing of fields in Datalog grammar\r\n\r\n* Allow Souffle style trailing dot\r\n\r\n* Update rust-sitter\r\n\r\n* Initial graph creation logic\r\n\r\n* Update snapshots\r\n\r\n* Update to latest main\r\n\r\n* cargo fmt\r\n\r\n* Initial hacked up join implementation\r\n\r\n* Properly handle target bindings\r\n\r\n* Fix rules without a join\r\n\r\n* Move grammar to separate file\r\n\r\n* Add tees so that relations can be used multiple times\r\n\r\n* Fix other tests\r\n\r\n* Tee all relations\r\n\r\n* Support multiple contributors to one relation\r\n\r\n* Add transitive closure test\r\n\r\n* Support single column relations\r\n\r\n* Emit outputs to mpsc\r\n\r\n* Don't augment input/output names\r\n\r\n* Expand transitive closure test\r\n\r\n* Add join-with-self test that requires deterministic codegen\r\n\r\n* Address feedback\r\n\r\n* Extract join generation logic to a separate function\r\n\r\n* Eliminate assumption of usize columns\r\n\r\n* Rename datalog_compiler => hydroflow_datalog",
+          "timestamp": "2022-08-24T05:53:13Z",
+          "url": "https://github.com/hydro-project/hydroflow/commit/fd3867fde4302aabd747ca81564dfba6016a6395"
+        },
+        "date": 1661573824882,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "arithmetic/hydroflow/compiled",
+            "value": 375870,
+            "range": "± 2656",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fan_in/hydroflow",
+            "value": 184928885,
+            "range": "± 1234537",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fan_out/hydroflow/scheduled",
+            "value": 113830730,
+            "range": "± 2006626",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fork_join/hydroflow",
+            "value": 11306186,
+            "range": "± 227897",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fork_join/hydroflow_builder",
+            "value": 32116957,
+            "range": "± 163020",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "identity/hydroflow",
+            "value": 44568842,
+            "range": "± 3328672",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "identity/hydroflow/compiled",
+            "value": 14700129,
+            "range": "± 9870",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "reachability/hydroflow/scheduled",
+            "value": 2773347,
+            "range": "± 23414",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "reachability/hydroflow",
+            "value": 2796407,
+            "range": "± 26664",
             "unit": "ns/iter"
           }
         ]
