@@ -42,6 +42,7 @@ pub struct OperatorConstraints {
         &'static dyn Fn(&WriteContextArgs<'_>, &WriteIteratorArgs<'_>) -> TokenStream,
 }
 
+pub const RANGE_ANY: &'static dyn RangeTrait<usize> = &(0..);
 pub const RANGE_0: &'static dyn RangeTrait<usize> = &(0..=0);
 pub const RANGE_1: &'static dyn RangeTrait<usize> = &(1..=1);
 
@@ -68,10 +69,39 @@ const IDENTITY_WRITE_ITERATOR_FN: &'static dyn Fn(
     }
 });
 
-pub const OPERATORS: [OperatorConstraints; 19] = [
+pub const OPERATORS: [OperatorConstraints; 20] = [
+    OperatorConstraints {
+        name: "null",
+        hard_range_inn: RANGE_ANY,
+        soft_range_inn: RANGE_ANY,
+        hard_range_out: RANGE_ANY,
+        soft_range_out: RANGE_ANY,
+        num_args: 0,
+        input_delaytype_fn: &|_| None,
+        write_prologue_fn: &(|_, _| quote! {}),
+        write_iterator_fn: &(|&WriteContextArgs { root, ident, .. },
+                              &WriteIteratorArgs {
+                                  inputs,
+                                  outputs,
+                                  is_pull,
+                                  ..
+                              }| {
+            if is_pull {
+                quote! {
+                    let _ = (#(#inputs),*);
+                    let #ident = std::iter::empty();
+                }
+            } else {
+                quote! {
+                    let _ = (#(#outputs),*);
+                    let #ident = #root::pusherator::for_each::ForEach::new(std::mem::drop);
+                }
+            }
+        }),
+    },
     OperatorConstraints {
         name: "merge",
-        hard_range_inn: &(0..),
+        hard_range_inn: RANGE_ANY,
         soft_range_inn: &(2..),
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
@@ -130,7 +160,7 @@ pub const OPERATORS: [OperatorConstraints; 19] = [
         name: "tee",
         hard_range_inn: RANGE_1,
         soft_range_inn: RANGE_1,
-        hard_range_out: &(0..),
+        hard_range_out: RANGE_ANY,
         soft_range_out: &(2..),
         num_args: 0,
         input_delaytype_fn: &|_| None,
