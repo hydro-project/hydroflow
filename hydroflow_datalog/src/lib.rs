@@ -129,7 +129,7 @@ fn generate_rule(
 
     let out_expanded = expand_join_plan(&plan, flat_graph, tee_counter, next_join_idx);
 
-    let output_data = rule
+    let output_tuple_elems = rule
         .target
         .fields
         .iter()
@@ -144,8 +144,9 @@ fn generate_rule(
         })
         .collect::<Vec<syn::Expr>>();
 
-    let out_type = out_expanded.tuple_type;
-    let after_join_map: syn::Expr = parse_quote!(|row: #out_type| (#(#output_data, )*));
+    let flattened_tuple_type = out_expanded.tuple_type;
+    let after_join_map: syn::Expr =
+        parse_quote!(|row: #flattened_tuple_type| (#(#output_tuple_elems, )*));
 
     let my_merge_index = merge_counter
         .entry(target.name.clone())
@@ -163,6 +164,9 @@ fn generate_rule(
         Pipeline::Link(PipelineLink {
             lhs: Box::new(parse_quote!(#out_name)),
             connector: ArrowConnector {
+                // if the output comes with a tee index, we must read with that
+                // this only happens when we are directly outputting a transformation
+                // of a single relation on the RHS
                 src: out_expanded.tee_idx.map(|i| Indexing {
                     bracket_token: syn::token::Bracket::default(),
                     index: IndexInt {

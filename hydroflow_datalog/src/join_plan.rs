@@ -46,7 +46,7 @@ impl JoinSide {
 
 /// Generates a Hydroflow pipeline that transforms some input to a join
 /// to emit key-value tuples that can be fed into a join operator.
-fn emit_source_to_join(
+fn emit_join_input_pipeline(
     // The identifiers of the input node that the key should be populated with.
     identifiers_to_join: &[&syn::Ident],
     // The Hydroflow node that is one side of the join.
@@ -136,7 +136,6 @@ pub fn expand_join_plan(
         }
         JoinPlan::Join(lhs, rhs) => {
             let left_expanded = expand_join_plan(lhs, flat_graph, tee_counter, next_join_idx);
-
             let right_expanded = expand_join_plan(rhs, flat_graph, tee_counter, next_join_idx);
 
             let my_idx = next_join_idx.next();
@@ -147,6 +146,9 @@ pub fn expand_join_plan(
                 .filter(|i| left_expanded.variable_mapping.contains_key(i))
                 .collect::<Vec<_>>();
 
+            // we start by defining the pipeline from the `join()` operator onwards
+            // the main logic here is to flatten the tuples from the left and right sides of the join
+            // into a single tuple that is used by downstream joins or the final output
             let mut flattened_tuple_elems: Vec<syn::Expr> = vec![];
             let mut flattened_mapping = BTreeMap::new();
 
@@ -179,12 +181,13 @@ pub fn expand_join_plan(
 
             let left_type = &left_expanded.tuple_type;
             let right_type = &right_expanded.tuple_type;
-            let after_join_flatten: syn::Expr = parse_quote!(|kv: ((#(#key_type, )*), (#left_type, #right_type))| (#(#flattened_tuple_elems, )*));
+
+            let flatten_closure: syn::Expr = parse_quote!(|kv: ((#(#key_type, )*), (#left_type, #right_type))| (#(#flattened_tuple_elems, )*));
 
             let join_node = syn::Ident::new(&format!("join_{}", my_idx), Span::call_site());
-            flat_graph.add_statement(parse_quote!(#join_node = join() -> map(#after_join_flatten)));
+            flat_graph.add_statement(parse_quote!(#join_node = join() -> map(#flatten_closure)));
 
-            emit_source_to_join(
+            emit_join_input_pipeline(
                 &identifiers_to_join,
                 &left_expanded,
                 &join_node,
@@ -192,7 +195,7 @@ pub fn expand_join_plan(
                 flat_graph,
             );
 
-            emit_source_to_join(
+            emit_join_input_pipeline(
                 &identifiers_to_join,
                 &right_expanded,
                 &join_node,
