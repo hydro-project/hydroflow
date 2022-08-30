@@ -35,8 +35,8 @@ fn main() {
                     let op_3v1 = op_11v1;
                     let op_4v1 = op_3v1;
                     let op_6v1 =
-                        hydroflow::compiled::for_each::ForEach::new(|v| out.send(v).unwrap());
-                    hydroflow::compiled::pivot::Pivot::new(op_4v1, op_6v1).run();
+                        hydroflow::pusherator::for_each::ForEach::new(|v| out.send(v).unwrap());
+                    hydroflow::pusherator::pivot::Pivot::new(op_4v1, op_6v1).run();
                 },
             );
             let mut input = input;
@@ -46,10 +46,10 @@ fn main() {
                 tl!(),
                 tl!(hoff_12v1_send, hoff_13v1_send),
                 move |context, tl!(), tl!(hoff_12v1_send, hoff_13v1_send)| {
-                    let hoff_12v1_send = hydroflow::compiled::for_each::ForEach::new(|v| {
+                    let hoff_12v1_send = hydroflow::pusherator::for_each::ForEach::new(|v| {
                         hoff_12v1_send.give(Some(v));
                     });
-                    let hoff_13v1_send = hydroflow::compiled::for_each::ForEach::new(|v| {
+                    let hoff_13v1_send = hydroflow::pusherator::for_each::ForEach::new(|v| {
                         hoff_13v1_send.give(Some(v));
                     });
                     let op_5v1 = std::iter::from_fn(|| {
@@ -60,16 +60,16 @@ fn main() {
                         }
                     });
                     let op_1v1 = op_5v1;
-                    let op_10v1 = hydroflow::compiled::map::Map::new(
+                    let op_10v1 = hydroflow::pusherator::map::Map::new(
                         |v: (_, _)| ((v.1, v.0), v),
                         hoff_13v1_send,
                     );
-                    let op_9v1 = hydroflow::compiled::map::Map::new(
+                    let op_9v1 = hydroflow::pusherator::map::Map::new(
                         |v: (_, _)| ((v.0, v.1), v),
                         hoff_12v1_send,
                     );
-                    let op_2v1 = hydroflow::compiled::tee::Tee::new(op_9v1, op_10v1);
-                    hydroflow::compiled::pivot::Pivot::new(op_1v1, op_2v1).run();
+                    let op_2v1 = hydroflow::pusherator::tee::Tee::new(op_9v1, op_10v1);
+                    hydroflow::pusherator::pivot::Pivot::new(op_1v1, op_2v1).run();
                 },
             );
             df

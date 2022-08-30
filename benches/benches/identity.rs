@@ -109,7 +109,7 @@ fn benchmark_timely(c: &mut Criterion) {
 }
 
 fn benchmark_hydroflow_compiled(c: &mut Criterion) {
-    use hydroflow::compiled::{InputBuild, Pusherator, PusheratorBuild};
+    use hydroflow::pusherator::{InputBuild, Pusherator, PusheratorBuild};
 
     c.bench_function("identity/hydroflow/compiled", |b| {
         b.iter(|| {

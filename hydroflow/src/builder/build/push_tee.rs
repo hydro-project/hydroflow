@@ -1,10 +1,10 @@
 use super::PushBuild;
 
-use crate::compiled::tee::Tee;
 use crate::scheduled::context::Context;
 use crate::scheduled::handoff::handoff_list::{PortList, PortListSplit};
 use crate::scheduled::port::SEND;
 use crate::scheduled::type_list::Extend;
+use pusherator::tee::Tee;
 
 pub struct TeePushBuild<NextA, NextB>
 where
@@ -45,7 +45,7 @@ where
         PortList<SEND> + PortListSplit<SEND, NextA::OutputHandoffs, Suffix = NextB::OutputHandoffs>,
 {
     type ItemIn = NextA::ItemIn;
-    type Build<'slf, 'ctx> = Tee<Self::ItemIn, NextA::Build<'slf, 'ctx>, NextB::Build<'slf, 'ctx>>
+    type Build<'slf, 'ctx> = Tee<NextA::Build<'slf, 'ctx>, NextB::Build<'slf, 'ctx>>
     where
         Self: 'slf;
 

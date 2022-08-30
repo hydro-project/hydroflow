@@ -2,11 +2,11 @@ use super::PushBuild;
 
 use std::marker::PhantomData;
 
-use crate::compiled::for_each::ForEach;
 use crate::scheduled::context::Context;
 use crate::scheduled::handoff::handoff_list::PortList;
 use crate::scheduled::port::SEND;
 use crate::tt;
+use pusherator::for_each::ForEach;
 
 pub struct ForEachPushBuild<Func, In>
 where
@@ -31,7 +31,7 @@ where
 type PushBuildImpl<'slf, 'ctx, Func, In>
 where
     Func: 'slf + FnMut(&Context, In),
-= ForEach<In, impl FnMut(In)>;
+= ForEach<impl FnMut(In), In>;
 
 impl<Func, In> PushBuild for ForEachPushBuild<Func, In>
 where

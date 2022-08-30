@@ -65,8 +65,8 @@ fn main() {
                     let op_7v1 = op_21v1;
                     let op_8v1 = op_7v1;
                     let op_12v1 =
-                        hydroflow::compiled::for_each::ForEach::new(|v| out.send(v).unwrap());
-                    hydroflow::compiled::pivot::Pivot::new(op_8v1, op_12v1).run();
+                        hydroflow::pusherator::for_each::ForEach::new(|v| out.send(v).unwrap());
+                    hydroflow::pusherator::pivot::Pivot::new(op_8v1, op_12v1).run();
                 },
             );
             df

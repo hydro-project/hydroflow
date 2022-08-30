@@ -2,10 +2,10 @@ use super::PushBuild;
 
 use std::marker::PhantomData;
 
-use crate::compiled::map::Map;
 use crate::scheduled::context::Context;
 use crate::scheduled::handoff::handoff_list::PortList;
 use crate::scheduled::port::SEND;
+use pusherator::map::Map;
 
 pub struct MapPushBuild<Next, Func, In>
 where
@@ -35,7 +35,7 @@ type PushBuildImpl<'slf, 'ctx, Next, Func, In>
 where
     Next: PushBuild,
     Func: 'slf + FnMut(&Context, In) -> Next::ItemIn,
-= Map<In, Next::ItemIn, impl FnMut(In) -> Next::ItemIn, Next::Build<'slf, 'ctx>>;
+= Map<Next::Build<'slf, 'ctx>, impl FnMut(In) -> Next::ItemIn, In>;
 
 impl<Next, Func, In> PushBuild for MapPushBuild<Next, Func, In>
 where

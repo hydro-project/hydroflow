@@ -211,7 +211,8 @@ fn benchmark_hydroflow_scheduled(c: &mut Criterion) {
 }
 
 fn benchmark_hydroflow(c: &mut Criterion) {
-    use hydroflow::compiled::{for_each::ForEach, IteratorToPusherator, PusheratorBuild};
+    use hydroflow::pusherator::for_each::ForEach;
+    use hydroflow::pusherator::{IteratorToPusherator, PusheratorBuild};
     use hydroflow::scheduled::graph::Hydroflow;
     use hydroflow::scheduled::handoff::VecHandoff;
     use hydroflow::tl;
