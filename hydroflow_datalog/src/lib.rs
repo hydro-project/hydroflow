@@ -83,7 +83,7 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
 
     let mut next_join_idx = 0;
     for rule in rules {
-        generate_join(
+        generate_rule(
             rule,
             &mut flat_graph,
             &mut tee_counter,
@@ -104,7 +104,7 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
     })
 }
 
-fn generate_join(
+fn generate_rule(
     rule: &Rule,
     flat_graph: &mut FlatGraph,
     tee_counter: &mut HashMap<String, usize>,
