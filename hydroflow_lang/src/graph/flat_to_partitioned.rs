@@ -297,7 +297,7 @@ fn find_subgraph_strata(
 
     let mut subgraph_stratum: SecondaryMap<GraphSubgraphId, usize> =
         SecondaryMap::with_capacity(topo_sort_order.len());
-    // Each subgraph stratum is the same as it's predacessors unless there is a negative edge.
+    // Each subgraph stratum is the same as it's predecessors unless there is a negative edge.
     for sg_id in topo_sort_order {
         subgraph_stratum.insert(
             sg_id,

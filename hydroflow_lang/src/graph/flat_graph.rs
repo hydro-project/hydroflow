@@ -12,15 +12,28 @@ use crate::pretty_span::{PrettyRowCol, PrettySpan};
 use super::partitioned_graph::PartitionedGraph;
 use super::{EdgePortRef, GraphNodeId, Node, OutboundEdges};
 
+/// A graph representing a hydroflow dataflow graph before subgraph partitioning, stratification, and handoff insertion.
+/// I.e. the graph is a simple "flat" without any subgraph heirarchy.
+///
+/// May optionally contain handoffs, but in this stage these are transparent and treated like an identity operator.
+///
+/// Use `Self::into_partitioned_graph()` to convert into a subgraph-partitioned & stratified graph.
 #[derive(Debug, Default)]
 pub struct FlatGraph {
+    /// Each node (operator or handoff).
     pub(crate) nodes: SlotMap<GraphNodeId, Node>,
+    /// Predecessors for each node.
     pub(crate) preds: SecondaryMap<GraphNodeId, OutboundEdges>,
+    /// Successors for each node.
     pub(crate) succs: SecondaryMap<GraphNodeId, OutboundEdges>,
+    /// Variable names, used as [`HfStatement::Named`] are added.
     names: BTreeMap<Ident, Ports>,
 }
+
 impl FlatGraph {
-    // TODO(mingwei): better error/diagnostic handling.
+    /// Creates a new `FlatGraph` instance based on the [`HfCode`] AST.
+    ///
+    /// TODO(mingwei): better error/diagnostic handling. Maybe collect all diagnostics before emitting.
     pub fn from_hfcode(input: HfCode) -> Self {
         let mut graph = Self::default();
 
@@ -31,6 +44,7 @@ impl FlatGraph {
         graph
     }
 
+    /// Add a single [`HfStatement`] line to this `FlatGraph`.
     pub fn add_statement(&mut self, stmt: HfStatement) {
         match stmt {
             HfStatement::Named(named) => {
@@ -46,6 +60,7 @@ impl FlatGraph {
         }
     }
 
+    /// Helper: Add a pipeline, i.e. `a -> b -> c`. Return the input and output port for it.
     fn add_pipeline(&mut self, pipeline: Pipeline) -> Ports {
         match pipeline {
             Pipeline::Paren(pipeline_paren) => self.add_pipeline(*pipeline_paren.pipeline),
@@ -228,16 +243,19 @@ impl FlatGraph {
         errored
     }
 
+    /// Iterator over all edges.
     pub fn edges(&self) -> impl '_ + Iterator<Item = (EdgePortRef, EdgePortRef)> {
         super::iter_edges(&self.succs)
     }
 
+    /// Convert back into surface syntax.
     pub fn surface_syntax_string(&self) -> String {
         let mut string = String::new();
         self.write_surface_syntax(&mut string).unwrap();
         string
     }
 
+    /// Convert back into surface syntax.
     pub fn write_surface_syntax(&self, write: &mut impl std::fmt::Write) -> std::fmt::Result {
         for (key, node) in self.nodes.iter() {
             match node {
@@ -254,12 +272,14 @@ impl FlatGraph {
         Ok(())
     }
 
+    /// Convert into a [mermaid](https://mermaid-js.github.io/) graph.
     pub fn mermaid_string(&self) -> String {
         let mut string = String::new();
         self.write_mermaid(&mut string).unwrap();
         string
     }
 
+    /// Convert into a [mermaid](https://mermaid-js.github.io/) graph.
     pub fn write_mermaid(&self, write: &mut impl std::fmt::Write) -> std::fmt::Result {
         writeln!(write, "flowchart TB")?;
         for (key, node) in self.nodes.iter() {
@@ -289,6 +309,7 @@ impl FlatGraph {
         Ok(())
     }
 
+    /// Run subgraph partitioning and stratification and convert this graph into a [`PartitionedGraph`].
     #[allow(clippy::result_unit_err)]
     pub fn into_partitioned_graph(self) -> Result<PartitionedGraph, ()> {
         self.try_into()
