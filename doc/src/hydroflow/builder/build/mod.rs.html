@@ -58,6 +58,7 @@
 <span id="58">58</span>
 <span id="59">59</span>
 <span id="60">60</span>
+<span id="61">61</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Internal &quot;subgraph builders&quot; to implement the Surface API. For more info see [super].
 
 </span><span class="kw">pub mod </span>pull_batch;
@@ -82,7 +83,8 @@
 <span class="kw">pub mod </span>push_partition;
 <span class="kw">pub mod </span>push_tee;
 
-<span class="kw">use </span><span class="kw">crate</span>::compiled::Pusherator;
+<span class="kw">use </span>pusherator::Pusherator;
+
 <span class="kw">use </span><span class="kw">crate</span>::scheduled::context::Context;
 <span class="kw">use </span><span class="kw">crate</span>::scheduled::handoff::handoff_list::PortList;
 <span class="kw">use </span><span class="kw">crate</span>::scheduled::port::{RECV, SEND};
@@ -119,4 +121,4 @@
     ) -&gt; <span class="self">Self</span>::Build&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt;;
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (ce36e8825 2022-08-28)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (bc4b39c27 2022-08-29)" ></div></body></html>

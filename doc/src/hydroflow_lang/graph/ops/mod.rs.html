@@ -780,7 +780,7 @@
                     .iter()
                     .rev()
                     .map(|i| <span class="macro">quote! </span>{ #i })
-                    .reduce(|b, a| <span class="macro">quote! </span>{ #root::compiled::tee::Tee::new(#a, #b) })
+                    .reduce(|b, a| <span class="macro">quote! </span>{ #root::pusherator::tee::Tee::new(#a, #b) })
                     .unwrap_or_else(|| <span class="macro">quote! </span>{ std::iter::empty() });
                 <span class="macro">quote! </span>{
                     <span class="kw">let </span>#ident = #tees;
@@ -830,7 +830,7 @@
             } <span class="kw">else </span>{
                 <span class="kw">let </span>output = <span class="kw-2">&amp;</span>outputs[<span class="number">0</span>];
                 <span class="macro">quote! </span>{
-                    <span class="kw">let </span>#ident = #root::compiled::map::Map::new(#arguments, #output);
+                    <span class="kw">let </span>#ident = #root::pusherator::map::Map::new(#arguments, #output);
                 }
             }
         }),
@@ -860,9 +860,9 @@
             } <span class="kw">else </span>{
                 <span class="kw">let </span>output = <span class="kw-2">&amp;</span>outputs[<span class="number">0</span>];
                 <span class="macro">quote! </span>{
-                    <span class="kw">let </span>#ident = #root::compiled::map::Map::new(
+                    <span class="kw">let </span>#ident = #root::pusherator::map::Map::new(
                         #arguments,
-                        #root::compiled::flatten::Flatten::new(#output)
+                        #root::pusherator::flatten::Flatten::new(#output)
                     );
                 }
             }
@@ -893,7 +893,7 @@
             } <span class="kw">else </span>{
                 <span class="kw">let </span>output = <span class="kw-2">&amp;</span>outputs[<span class="number">0</span>];
                 <span class="macro">quote! </span>{
-                    <span class="kw">let </span>#ident = #root::compiled::filter_map::FilterMap::new(#arguments, #output);
+                    <span class="kw">let </span>#ident = #root::pusherator::filter_map::FilterMap::new(#arguments, #output);
                 }
             }
         }),
@@ -923,7 +923,7 @@
             } <span class="kw">else </span>{
                 <span class="kw">let </span>output = <span class="kw-2">&amp;</span>outputs[<span class="number">0</span>];
                 <span class="macro">quote! </span>{
-                    <span class="kw">let </span>#ident = #root::compiled::filter::Filter::new(#arguments, #output);
+                    <span class="kw">let </span>#ident = #root::pusherator::filter::Filter::new(#arguments, #output);
                 }
             }
         }),
@@ -1133,7 +1133,7 @@
         write_iterator_fn: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span>WriteContextArgs { root, ident, .. },
                               <span class="kw-2">&amp;</span>WriteIteratorArgs { arguments, .. }| {
             <span class="macro">quote! </span>{
-                <span class="kw">let </span>#ident = #root::compiled::for_each::ForEach::new(#arguments);
+                <span class="kw">let </span>#ident = #root::pusherator::for_each::ForEach::new(#arguments);
             }
         }),
     },
@@ -1169,7 +1169,7 @@
         write_iterator_fn: <span class="kw-2">&amp;</span>(|wc @ <span class="kw-2">&amp;</span>WriteContextArgs { root, ident, .. }, <span class="kw">_</span>| {
             <span class="kw">let </span>send_ident = wc.make_ident(<span class="string">&quot;item_send&quot;</span>);
             <span class="macro">quote! </span>{
-                <span class="kw">let </span>#ident = #root::compiled::for_each::ForEach::new(|item| {
+                <span class="kw">let </span>#ident = #root::pusherator::for_each::ForEach::new(|item| {
                     #send_ident.send(item).expect(<span class="string">&quot;Failed to send async write item for processing.&quot;</span>);
                 });
             }
@@ -1265,4 +1265,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (ce36e8825 2022-08-28)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (bc4b39c27 2022-08-29)" ></div></body></html>

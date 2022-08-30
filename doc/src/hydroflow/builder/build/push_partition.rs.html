@@ -79,18 +79,13 @@
 <span id="79">79</span>
 <span id="80">80</span>
 <span id="81">81</span>
-<span id="82">82</span>
-<span id="83">83</span>
-<span id="84">84</span>
-<span id="85">85</span>
-<span id="86">86</span>
 </pre><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::PushBuild;
 
-<span class="kw">use </span><span class="kw">crate</span>::compiled::partition::Partition;
 <span class="kw">use </span><span class="kw">crate</span>::scheduled::context::Context;
 <span class="kw">use </span><span class="kw">crate</span>::scheduled::handoff::handoff_list::{PortList, PortListSplit};
 <span class="kw">use </span><span class="kw">crate</span>::scheduled::port::SEND;
 <span class="kw">use </span><span class="kw">crate</span>::scheduled::type_list::Extend;
+<span class="kw">use </span>pusherator::partition::Partition;
 
 <span class="kw">pub struct </span>PartitionPushBuild&lt;NextA, NextB, Func&gt;
 <span class="kw">where
@@ -135,12 +130,7 @@
     NextA::OutputHandoffs: Extend&lt;NextB::OutputHandoffs&gt;,
     &lt;NextA::OutputHandoffs <span class="kw">as </span>Extend&lt;NextB::OutputHandoffs&gt;&gt;::Extended:
         PortList&lt;SEND&gt; + PortListSplit&lt;SEND, NextA::OutputHandoffs, Suffix = NextB::OutputHandoffs&gt;,
-= Partition&lt;
-    NextA::ItemIn,
-    <span class="kw">impl </span>FnMut(<span class="kw-2">&amp;</span>NextA::ItemIn) -&gt; bool,
-    NextA::Build&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt;,
-    NextB::Build&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt;,
-&gt;;
+= Partition&lt;NextA::Build&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt;, NextB::Build&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt;, <span class="kw">impl </span>FnMut(<span class="kw-2">&amp;</span>NextA::ItemIn) -&gt; bool&gt;;
 
 <span class="kw">impl</span>&lt;NextA, NextB, Func&gt; PushBuild <span class="kw">for </span>PartitionPushBuild&lt;NextA, NextB, Func&gt;
 <span class="kw">where
@@ -171,4 +161,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (ce36e8825 2022-08-28)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (bc4b39c27 2022-08-29)" ></div></body></html>

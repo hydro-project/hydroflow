@@ -385,7 +385,7 @@
                     .map(|ident| <span class="macro">quote! </span>{ <span class="kw">let </span>#ident = #ident.take_inner().into_iter(); });
                 <span class="kw">let </span>send_port_code = send_ports.iter().map(|ident| {
                     <span class="macro">quote! </span>{
-                        <span class="kw">let </span>#ident = #root::compiled::for_each::ForEach::new(|v| {
+                        <span class="kw">let </span>#ident = #root::pusherator::for_each::ForEach::new(|v| {
                             #ident.give(<span class="prelude-val">Some</span>(v));
                         });
                     }
@@ -482,7 +482,7 @@
                             };
 
                         subgraph_op_iter_code.push(<span class="macro">quote! </span>{
-                            #root::compiled::pivot::Pivot::new(#pull_ident, #push_ident).run();
+                            #root::pusherator::pivot::Pivot::new(#pull_ident, #push_ident).run();
                         });
                     }
                 };
@@ -577,4 +577,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (ce36e8825 2022-08-28)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (bc4b39c27 2022-08-29)" ></div></body></html>

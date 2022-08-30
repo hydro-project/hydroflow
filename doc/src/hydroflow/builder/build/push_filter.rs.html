@@ -55,10 +55,10 @@
 <span id="55">55</span>
 </pre><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::PushBuild;
 
-<span class="kw">use </span><span class="kw">crate</span>::compiled::filter::Filter;
 <span class="kw">use </span><span class="kw">crate</span>::scheduled::context::Context;
 <span class="kw">use </span><span class="kw">crate</span>::scheduled::handoff::handoff_list::PortList;
 <span class="kw">use </span><span class="kw">crate</span>::scheduled::port::SEND;
+<span class="kw">use </span>pusherator::filter::Filter;
 
 <span class="kw">pub struct </span>FilterPushBuild&lt;Next, Func&gt;
 <span class="kw">where
@@ -83,7 +83,7 @@
 <span class="kw">where
     </span>Next: PushBuild,
     Func: <span class="lifetime">&#39;slf </span>+ FnMut(<span class="kw-2">&amp;</span>Context, <span class="kw-2">&amp;</span>Next::ItemIn) -&gt; bool,
-= Filter&lt;Next::ItemIn, <span class="kw">impl </span>FnMut(<span class="kw-2">&amp;</span>Next::ItemIn) -&gt; bool, Next::Build&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt;&gt;;
+= Filter&lt;Next::Build&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt;, <span class="kw">impl </span>FnMut(<span class="kw-2">&amp;</span>Next::ItemIn) -&gt; bool&gt;;
 
 <span class="kw">impl</span>&lt;Next, Func&gt; PushBuild <span class="kw">for </span>FilterPushBuild&lt;Next, Func&gt;
 <span class="kw">where
@@ -109,4 +109,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (ce36e8825 2022-08-28)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (bc4b39c27 2022-08-29)" ></div></body></html>

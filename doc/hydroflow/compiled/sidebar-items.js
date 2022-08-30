@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":[["filter",""],["filter_map",""],["flatten",""],["for_each",""],["group_by",""],["map",""],["partition",""],["pivot",""],["pull",""],["push_handoff",""],["tee",""]],"struct":[["InputBuild",""]],"trait":[["IteratorToPusherator",""],["Pusherator",""],["PusheratorBuild",""]]};
+window.SIDEBAR_ITEMS = {"mod":[["pull",""],["push_handoff",""]]};

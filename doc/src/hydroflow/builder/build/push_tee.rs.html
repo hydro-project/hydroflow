@@ -64,11 +64,11 @@
 <span id="64">64</span>
 </pre><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::PushBuild;
 
-<span class="kw">use </span><span class="kw">crate</span>::compiled::tee::Tee;
 <span class="kw">use </span><span class="kw">crate</span>::scheduled::context::Context;
 <span class="kw">use </span><span class="kw">crate</span>::scheduled::handoff::handoff_list::{PortList, PortListSplit};
 <span class="kw">use </span><span class="kw">crate</span>::scheduled::port::SEND;
 <span class="kw">use </span><span class="kw">crate</span>::scheduled::type_list::Extend;
+<span class="kw">use </span>pusherator::tee::Tee;
 
 <span class="kw">pub struct </span>TeePushBuild&lt;NextA, NextB&gt;
 <span class="kw">where
@@ -109,7 +109,7 @@
         PortList&lt;SEND&gt; + PortListSplit&lt;SEND, NextA::OutputHandoffs, Suffix = NextB::OutputHandoffs&gt;,
 {
     <span class="kw">type </span>ItemIn = NextA::ItemIn;
-    <span class="kw">type </span>Build&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt; = Tee&lt;<span class="self">Self</span>::ItemIn, NextA::Build&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt;, NextB::Build&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt;&gt;
+    <span class="kw">type </span>Build&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt; = Tee&lt;NextA::Build&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt;, NextB::Build&lt;<span class="lifetime">&#39;slf</span>, <span class="lifetime">&#39;ctx</span>&gt;&gt;
     <span class="kw">where
         </span><span class="self">Self</span>: <span class="lifetime">&#39;slf</span>;
 
@@ -127,4 +127,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (ce36e8825 2022-08-28)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (bc4b39c27 2022-08-29)" ></div></body></html>
