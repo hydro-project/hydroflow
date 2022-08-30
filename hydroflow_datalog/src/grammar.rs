@@ -16,7 +16,7 @@ pub mod datalog {
 
     #[derive(Debug, Clone)]
     pub struct Rule {
-        pub target: Target,
+        pub target: Atom,
         #[rust_sitter::leaf(text = ":-")]
         _from: (),
         #[rust_sitter::repeat(non_empty = true)]
@@ -24,13 +24,13 @@ pub mod datalog {
             #[rust_sitter::leaf(text = ",")]
             ()
         )]
-        pub sources: Vec<Target>,
+        pub sources: Vec<Atom>,
         #[rust_sitter::leaf(text = ".")]
         _dot: Option<()>,
     }
 
     #[derive(Debug, Clone)]
-    pub struct Target {
+    pub struct Atom {
         pub name: Ident,
         #[rust_sitter::leaf(text = "(")]
         _l_paren: (),

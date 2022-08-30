@@ -1,13 +1,20 @@
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{HashMap, HashSet};
 
-use hydroflow_lang::{graph::flat_graph::FlatGraph, parse::Pipeline};
+use hydroflow_lang::{
+    graph::flat_graph::FlatGraph,
+    parse::{ArrowConnector, IndexInt, Indexing, Pipeline, PipelineLink},
+};
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, ToTokens};
 use syn::parse_quote;
 
 mod grammar;
+mod join_plan;
+mod util;
 
 use grammar::datalog::*;
+use join_plan::*;
+use util::Counter;
 
 fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn::Stmt {
     let str_node: syn::LitStr = parse_quote!(#literal);
@@ -48,9 +55,10 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
     for target in inputs {
         let target_ident = syn::Ident::new(&target.name, Span::call_site());
 
-        let merge_index = merge_counter.entry(target.name.clone()).or_insert(0);
-        let my_merge_index = *merge_index;
-        *merge_index += 1;
+        let my_merge_index = merge_counter
+            .entry(target.name.clone())
+            .or_insert_with(Counter::new)
+            .next();
 
         let my_merge_index_lit =
             syn::LitInt::new(&format!("{}", my_merge_index), Span::call_site());
@@ -62,9 +70,10 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
     }
 
     for target in outputs {
-        let tee_index = tee_counter.entry(target.name.clone()).or_insert(0);
-        let my_tee_index = *tee_index;
-        *tee_index += 1;
+        let my_tee_index = tee_counter
+            .entry(target.name.clone())
+            .or_insert_with(Counter::new)
+            .next();
 
         let out_send_ident = syn::Ident::new(&target.name, Span::call_site());
 
@@ -76,8 +85,15 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
         });
     }
 
+    let mut next_join_idx = Counter::new();
     for rule in rules {
-        generate_join(rule, &mut flat_graph, &mut tee_counter, &mut merge_counter);
+        generate_rule(
+            rule,
+            &mut flat_graph,
+            &mut tee_counter,
+            &mut merge_counter,
+            &mut next_join_idx,
+        );
     }
 
     println!("{}", flat_graph.surface_syntax_string());
@@ -92,89 +108,50 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
     })
 }
 
-fn generate_join(
+fn generate_rule(
     rule: &Rule,
     flat_graph: &mut FlatGraph,
-    tee_counter: &mut HashMap<String, i32>,
-    merge_counter: &mut HashMap<String, i32>,
+    tee_counter: &mut HashMap<String, Counter>,
+    merge_counter: &mut HashMap<String, Counter>,
+    next_join_idx: &mut Counter,
 ) {
     let target = &rule.target.name;
     let target_ident = syn::Ident::new(&target.name, Span::call_site());
 
-    let sources: Vec<Target> = rule.sources.to_vec();
+    let sources: Vec<Atom> = rule.sources.to_vec();
 
-    // TODO(shadaj): more than two sources, nested join
-    let mut identifier_to_bindings = BTreeMap::new();
-    for (source_idx, source) in sources.iter().enumerate() {
-        for (i, param) in source.fields.iter().enumerate() {
-            let entry = identifier_to_bindings
-                .entry(param.clone())
-                .or_insert_with(BTreeMap::new);
-            entry.insert(source_idx, i);
-        }
-    }
+    // TODO(shadaj): smarter plans
+    let plan = sources
+        .iter()
+        .map(JoinPlan::Source)
+        .reduce(|a, b| JoinPlan::Join(Box::new(a), Box::new(b)))
+        .unwrap();
 
-    let identifiers_to_join = identifier_to_bindings
-        .keys()
-        .filter_map(|ident| {
-            let bindings = identifier_to_bindings.get(ident).unwrap();
-            if bindings.len() > 1 {
-                Some((ident.clone(), bindings.clone()))
-            } else {
-                None
-            }
-        })
-        .collect::<Vec<_>>();
+    let out_expanded = expand_join_plan(&plan, flat_graph, tee_counter, next_join_idx);
 
-    let join_node = syn::Ident::new(&format!("{}_join", target_ident), Span::call_site());
-
-    let output_data = rule
+    let output_tuple_elems = rule
         .target
         .fields
         .iter()
         .map(|field| {
-            let bindings = identifier_to_bindings.get(field).unwrap();
-            let source = bindings.keys().min().unwrap();
-            let source_expr: syn::Expr = if sources.len() == 1 {
-                parse_quote!(v)
-            } else {
-                let pair_idx = syn::Index::from(*source);
-                parse_quote!(kv.1.#pair_idx)
-            };
+            let col = out_expanded
+                .variable_mapping
+                .get(&syn::Ident::new(&field.name, Span::call_site()))
+                .unwrap();
+            let source_col_idx = syn::Index::from(*col);
 
-            let source_col_idx = syn::Index::from(*bindings.get(source).unwrap());
-
-            parse_quote!(#source_expr.#source_col_idx)
+            parse_quote!(row.#source_col_idx)
         })
         .collect::<Vec<syn::Expr>>();
 
-    let source_types = sources
-        .iter()
-        .map(|source| {
-            let col_types = source
-                .fields
-                .iter()
-                .map(|_| parse_quote!(_))
-                .collect::<Vec<syn::Type>>();
+    let flattened_tuple_type = out_expanded.tuple_type;
+    let after_join_map: syn::Expr =
+        parse_quote!(|row: #flattened_tuple_type| (#(#output_tuple_elems, )*));
 
-            parse_quote!((#(#col_types, )*))
-        })
-        .collect::<Vec<syn::Type>>();
-
-    let key_type = identifiers_to_join
-        .iter()
-        .map(|(_, _)| parse_quote!(_))
-        .collect::<Vec<syn::Type>>();
-
-    let after_join_map: syn::Expr = if sources.len() == 1 {
-        parse_quote!(|v| (#(#output_data, )*))
-    } else {
-        parse_quote!(|kv: ((#(#key_type, )*), (#(#source_types, )*))| (#(#output_data, )*))
-    };
-
-    let merge_index = merge_counter.entry(target.name.clone()).or_insert(0);
-    let my_merge_index = *merge_index;
-    *merge_index += 1;
+    let my_merge_index = merge_counter
+        .entry(target.name.clone())
+        .or_insert_with(Counter::new)
+        .next();
 
     let my_merge_index_lit = syn::LitInt::new(&format!("{}", my_merge_index), Span::call_site());
 
@@ -182,54 +159,27 @@ fn generate_join(
         map(#after_join_map) -> [#my_merge_index_lit] #target_ident
     };
 
-    let join_and_map = if sources.len() == 1 {
-        after_join
-    } else {
-        parse_quote!(join() -> #after_join)
-    };
-
-    flat_graph.add_statement(parse_quote!(#join_node = #join_and_map));
-
-    for (source_i, source) in sources.iter().enumerate() {
-        let hash_keys: Vec<syn::Expr> = identifiers_to_join
-            .iter()
-            .map(|(ident, bindings)| {
-                if let Some(idx) = bindings.get(&source_i) {
-                    let idx_ident = syn::Index::from(*idx);
-                    parse_quote!(v.#idx_ident)
-                } else {
-                    panic!("Could not find key that is being joined on: {:?}", ident);
-                }
-            })
-            .collect();
-
-        let tee_index = tee_counter.entry(source.name.name.clone()).or_insert(0);
-        let my_tee_index = *tee_index;
-        *tee_index += 1;
-
-        let my_tee_index_lit = syn::LitInt::new(&format!("{}", my_tee_index), Span::call_site());
-
-        let source_data_types = source
-            .fields
-            .iter()
-            .map(|_| parse_quote!(_))
-            .collect::<Vec<syn::Type>>();
-
-        let source_ident = syn::Ident::new(&source.name.name, Span::call_site());
-
-        let transform_join_source = if sources.len() == 1 {
-            Pipeline::Name(join_node.clone())
-        } else {
-            let source_i_lit = syn::LitInt::new(&format!("{}", source_i), Span::call_site());
-            parse_quote! {
-                map(|v: (#(#source_data_types, )*)| ((#(#hash_keys, )*), v)) -> [#source_i_lit] #join_node
-            }
-        };
-
-        flat_graph.add_statement(parse_quote! {
-            #source_ident [#my_tee_index_lit] -> #transform_join_source
-        });
-    }
+    let out_name = out_expanded.name;
+    flat_graph.add_statement(hydroflow_lang::parse::HfStatement::Pipeline(
+        Pipeline::Link(PipelineLink {
+            lhs: Box::new(parse_quote!(#out_name)),
+            connector: ArrowConnector {
+                // if the output comes with a tee index, we must read with that
+                // this only happens when we are directly outputting a transformation
+                // of a single relation on the RHS
+                src: out_expanded.tee_idx.map(|i| Indexing {
+                    bracket_token: syn::token::Bracket::default(),
+                    index: IndexInt {
+                        value: i,
+                        span: Span::call_site(),
+                    },
+                }),
+                arrow: parse_quote!(->),
+                dst: None,
+            },
+            rhs: Box::new(after_join),
+        }),
+    ));
 }
 
 #[proc_macro]
@@ -392,6 +342,31 @@ mod tests {
                 .output out
 
                 out(x) :- in1(x), in2(x).
+                "#
+            ),
+            quote::quote! { hydroflow },
+        );
+
+        let wrapped: syn::Item = parse_quote! {
+            fn main() {
+                #out
+            }
+        };
+
+        insta::assert_display_snapshot!(rustfmt_code(&wrapped.to_token_stream().to_string()));
+    }
+
+    #[test]
+    fn triple_relation_join() {
+        let out = &gen_datalog_program(
+            parse_quote!(
+                r#"
+                .input in1
+                .input in2
+                .input in3
+                .output out
+
+                out(d, c, b, a) :- in1(a, b), in2(b, c), in3(c, d).
                 "#
             ),
             quote::quote! { hydroflow },

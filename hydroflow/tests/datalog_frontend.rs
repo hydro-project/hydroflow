@@ -181,3 +181,40 @@ pub async fn test_transitive_closure() {
     assert_eq!(reachable_recv.recv().await.unwrap(), (5,));
     assert_eq!(reachable_recv.recv().await, None);
 }
+
+#[tokio::test]
+pub async fn test_triple_relation_join() {
+    let (in1_send, in1) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
+    let (in2_send, in2) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
+    let (in3_send, in3) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
+    let (out, mut out_recv) =
+        tokio::sync::mpsc::unbounded_channel::<(usize, usize, usize, usize)>();
+
+    in1_send.send((1, 2)).unwrap();
+    in2_send.send((2, 1)).unwrap();
+
+    in3_send.send((1, 3)).unwrap();
+    in3_send.send((1, 4)).unwrap();
+    in3_send.send((2, 3)).unwrap();
+
+    thread::spawn(|| {
+        let mut flow = datalog!(
+            r#"
+            .input in1
+            .input in2
+            .input in3
+            .output out
+
+            out(d, c, b, a) :- in1(a, b), in2(b, c), in3(c, d).
+            "#
+        );
+
+        flow.run_available();
+    })
+    .join()
+    .unwrap();
+
+    assert_eq!(out_recv.recv().await.unwrap(), (3, 1, 2, 1));
+    assert_eq!(out_recv.recv().await.unwrap(), (4, 1, 2, 1));
+    assert_eq!(out_recv.recv().await, None);
+}
