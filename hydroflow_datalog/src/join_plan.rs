@@ -7,10 +7,10 @@ use hydroflow_lang::{
 use proc_macro2::Span;
 use syn::{self, parse_quote};
 
-use crate::grammar::datalog::Target;
+use crate::grammar::datalog::Atom;
 
 pub enum JoinPlan<'a> {
-    Source(&'a Target),
+    Source(&'a Atom),
     Join(Box<JoinPlan<'a>>, Box<JoinPlan<'a>>),
 }
 

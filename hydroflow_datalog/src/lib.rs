@@ -114,7 +114,7 @@ fn generate_rule(
     let target = &rule.target.name;
     let target_ident = syn::Ident::new(&target.name, Span::call_site());
 
-    let sources: Vec<Target> = rule.sources.to_vec();
+    let sources: Vec<Atom> = rule.sources.to_vec();
 
     // TODO(shadaj): smarter plans
     let plan = sources
