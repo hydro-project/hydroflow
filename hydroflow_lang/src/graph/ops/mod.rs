@@ -88,7 +88,7 @@ pub const OPERATORS: [OperatorConstraints; 20] = [
                               }| {
             if is_pull {
                 quote! {
-                    let _ = (#(#inputs),*);
+                    (#(#inputs.for_each(std::mem::drop)),*);
                     let #ident = std::iter::empty();
                 }
             } else {

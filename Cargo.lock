@@ -245,9 +245,9 @@ dependencies = [
 
 [[package]]
 name = "console"
-version = "0.15.0"
+version = "0.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a28b32d32ca44b70c3e4acd7db1babf555fa026e385fb95f18028f88848b3c31"
+checksum = "89eab4d20ce20cea182308bca13088fecea9c05f6776cf287205d41a0ed3c847"
 dependencies = [
  "encode_unicode",
  "libc",
@@ -446,9 +446,9 @@ checksum = "a357d28ed41a50f9c765dbfe56cbc04a64e53e5fc58ba79fbc34c10ef3df831f"
 
 [[package]]
 name = "fastrand"
-version = "1.7.0"
+version = "1.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c3fcf0cee53519c866c09b5de1f6c56ff9d647101f81c1964fa632e148896cdf"
+checksum = "a7a407cfaa3385c4ae6b23e84623d48c2798d06e3e6a1878f7f59f17b3f86499"
 dependencies = [
  "instant",
 ]
@@ -757,16 +757,15 @@ dependencies = [
 
 [[package]]
 name = "insta"
-version = "1.15.0"
+version = "1.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4126dd76ebfe2561486a1bd6738a33d2029ffb068a99ac446b7f8c77b2e58dbc"
+checksum = "f37dc501f12ec0c339b385787fa89ffda3d5d2caa62e558da731134c24d6e0c4"
 dependencies = [
  "console",
+ "linked-hash-map",
  "once_cell",
- "serde",
- "serde_json",
- "serde_yaml",
  "similar",
+ "yaml-rust",
 ]
 
 [[package]]
@@ -1306,8 +1305,8 @@ dependencies = [
 
 [[package]]
 name = "rust-sitter"
-version = "0.1.1"
-source = "git+https://github.com/hydro-project/rust-sitter#4f603c6f58493e0e741db10f3e408913520ea50e"
+version = "0.1.2"
+source = "git+https://github.com/hydro-project/rust-sitter#91d0526e76e4a91c9c81d1db73b8a124cc2a6603"
 dependencies = [
  "rust-sitter-macro",
  "tree-sitter",
@@ -1315,8 +1314,8 @@ dependencies = [
 
 [[package]]
 name = "rust-sitter-common"
-version = "0.1.1"
-source = "git+https://github.com/hydro-project/rust-sitter#4f603c6f58493e0e741db10f3e408913520ea50e"
+version = "0.1.2"
+source = "git+https://github.com/hydro-project/rust-sitter#91d0526e76e4a91c9c81d1db73b8a124cc2a6603"
 dependencies = [
  "quote",
  "syn",
@@ -1324,8 +1323,8 @@ dependencies = [
 
 [[package]]
 name = "rust-sitter-macro"
-version = "0.1.1"
-source = "git+https://github.com/hydro-project/rust-sitter#4f603c6f58493e0e741db10f3e408913520ea50e"
+version = "0.1.2"
+source = "git+https://github.com/hydro-project/rust-sitter#91d0526e76e4a91c9c81d1db73b8a124cc2a6603"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1335,8 +1334,8 @@ dependencies = [
 
 [[package]]
 name = "rust-sitter-tool"
-version = "0.1.1"
-source = "git+https://github.com/hydro-project/rust-sitter#4f603c6f58493e0e741db10f3e408913520ea50e"
+version = "0.1.2"
+source = "git+https://github.com/hydro-project/rust-sitter#91d0526e76e4a91c9c81d1db73b8a124cc2a6603"
 dependencies = [
  "cc",
  "rust-sitter-common",
@@ -1452,18 +1451,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "serde_yaml"
-version = "0.8.24"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "707d15895415db6628332b737c838b88c598522e4dc70647e59b72312924aebc"
-dependencies = [
- "indexmap",
- "ryu",
- "serde",
- "yaml-rust",
-]
-
-[[package]]
 name = "signal-hook-registry"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1474,9 +1461,9 @@ dependencies = [
 
 [[package]]
 name = "similar"
-version = "2.1.0"
+version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2e24979f63a11545f5f2c60141afe249d4f19f84581ea2138065e400941d83d3"
+checksum = "62ac7f900db32bf3fd12e0117dd3dc4da74bc52ebaac97f39668446d89694803"
 
 [[package]]
 name = "slab"
@@ -1928,9 +1915,9 @@ checksum = "099b7128301d285f79ddd55b9a83d5e6b9e97c92e0ea0daebee7263e932de992"
 
 [[package]]
 name = "unicode-normalization"
-version = "0.1.20"
+version = "0.1.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "81dee68f85cab8cf68dec42158baf3a79a1cdc065a8b103025965d6ccb7f6cbd"
+checksum = "854cbdc4f7bc6ae19c820d44abdc3277ac3e1b2b93db20a636825d9322fb60e6"
 dependencies = [
  "tinyvec",
 ]
