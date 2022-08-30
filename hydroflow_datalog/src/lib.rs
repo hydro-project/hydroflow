@@ -380,4 +380,27 @@ mod tests {
 
         insta::assert_display_snapshot!(rustfmt_code(&wrapped.to_token_stream().to_string()));
     }
+
+    #[test]
+    fn local_constraints() {
+        let out = &gen_datalog_program(
+            parse_quote!(
+                r#"
+                .input input
+                .output out
+
+                out(x, x) :- input(x, x).
+                "#
+            ),
+            quote::quote! { hydroflow },
+        );
+
+        let wrapped: syn::Item = parse_quote! {
+            fn main() {
+                #out
+            }
+        };
+
+        insta::assert_display_snapshot!(rustfmt_code(&wrapped.to_token_stream().to_string()));
+    }
 }
