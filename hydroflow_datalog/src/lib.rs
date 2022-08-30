@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{HashMap, HashSet};
 
 use hydroflow_lang::{
     graph::flat_graph::FlatGraph,
@@ -9,8 +9,10 @@ use quote::{quote, ToTokens};
 use syn::parse_quote;
 
 mod grammar;
+mod join_plan;
 
 use grammar::datalog::*;
+use join_plan::*;
 
 fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn::Stmt {
     let str_node: syn::LitStr = parse_quote!(#literal);
@@ -102,189 +104,6 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
     })
 }
 
-enum JoinPlan {
-    Source(usize),
-    Join(Box<JoinPlan>, Box<JoinPlan>),
-}
-
-fn emit_source_to_join(
-    identifiers_to_join: &[&syn::Ident],
-    source_node: syn::Ident,
-    source_node_tee_idx: Option<usize>,
-    source_tuple: syn::Type,
-    source_idents: &BTreeMap<syn::Ident, usize>,
-    output: (&syn::Ident, usize),
-    flat_graph: &mut FlatGraph,
-) {
-    let hash_keys: Vec<syn::Expr> = identifiers_to_join
-        .iter()
-        .map(|ident| {
-            if let Some(idx) = source_idents.get(ident) {
-                let idx_ident = syn::Index::from(*idx);
-                parse_quote!(v.#idx_ident)
-            } else {
-                panic!("Could not find key that is being joined on: {:?}", ident);
-            }
-        })
-        .collect();
-
-    let (out_node, out_idx) = output;
-    let out_index = syn::Index::from(out_idx);
-
-    flat_graph.add_statement(hydroflow_lang::parse::HfStatement::Pipeline(
-        Pipeline::Link(PipelineLink {
-            lhs: Box::new(parse_quote!(#source_node)),
-            connector: ArrowConnector {
-                src: source_node_tee_idx.map(|i| Indexing {
-                    bracket_token: syn::token::Bracket::default(),
-                    index: IndexInt {
-                        value: i,
-                        span: Span::call_site(),
-                    },
-                }),
-                arrow: parse_quote!(->),
-                dst: None,
-            },
-            rhs: Box::new(parse_quote! {
-                map(|v: #source_tuple| ((#(#hash_keys, )*), v)) -> [#out_index] #out_node
-            }),
-        }),
-    ));
-}
-
-// outputs the identifier for the join node and a mapping from rule identifiers to indices in the join output tuple
-fn expand_join_plan(
-    plan: &JoinPlan,
-    all_sources: &[Target],
-    flat_graph: &mut FlatGraph,
-    tee_counter: &mut HashMap<String, usize>,
-    merge_counter: &mut HashMap<String, usize>,
-    next_join_idx: &mut usize,
-) -> (
-    (syn::Ident, Option<usize>),
-    BTreeMap<syn::Ident, usize>,
-    syn::Type,
-) {
-    match plan {
-        JoinPlan::Source(idx) => {
-            let target = &all_sources[*idx];
-            let mut mapping = BTreeMap::new();
-            let mut row_types: Vec<syn::Type> = vec![];
-            for (i, ident) in target.fields.iter().enumerate() {
-                row_types.push(parse_quote!(_));
-                mapping.insert(syn::Ident::new(&ident.name, Span::call_site()), i);
-                // TODO(shadaj): if there is already an entry in mapping that means filter
-            }
-
-            let tee_index = tee_counter.entry(target.name.name.clone()).or_insert(0);
-            let my_tee_index = *tee_index;
-            *tee_index += 1;
-
-            (
-                (
-                    syn::Ident::new(&target.name.name, Span::call_site()),
-                    Some(my_tee_index),
-                ),
-                mapping,
-                parse_quote!((#(#row_types, )*)),
-            )
-        }
-        JoinPlan::Join(lhs, rhs) => {
-            let ((left_node, left_node_tee_idx), left_idents, left_tuple) = expand_join_plan(
-                lhs,
-                all_sources,
-                flat_graph,
-                tee_counter,
-                merge_counter,
-                next_join_idx,
-            );
-
-            let ((right_node, right_node_tee_idx), right_idents, right_tuple) = expand_join_plan(
-                rhs,
-                all_sources,
-                flat_graph,
-                tee_counter,
-                merge_counter,
-                next_join_idx,
-            );
-
-            let my_idx = *next_join_idx;
-            *next_join_idx += 1;
-
-            let left_identifiers = left_idents.keys().collect::<HashSet<_>>();
-            let identifiers_to_join = right_idents
-                .keys()
-                .filter(|i| left_identifiers.contains(i))
-                .collect::<Vec<_>>();
-
-            let mut output_data: Vec<syn::Expr> = vec![];
-            let mut ident_to_index = BTreeMap::new();
-
-            for (ident, source_idx) in left_idents
-                .keys()
-                .map(|l| (l, 0))
-                .chain(right_idents.keys().map(|l| (l, 1)))
-            {
-                if !ident_to_index.contains_key(ident) {
-                    let syn_source_index = syn::Index::from(source_idx);
-                    let source_expr: syn::Expr = parse_quote!(kv.1.#syn_source_index);
-                    let bindings = if source_idx == 0 {
-                        &left_idents
-                    } else {
-                        &right_idents
-                    };
-
-                    let source_col_idx = syn::Index::from(*bindings.get(ident).unwrap());
-
-                    ident_to_index.insert(ident.clone(), output_data.len());
-                    output_data.push(parse_quote!(#source_expr.#source_col_idx));
-                }
-            }
-
-            let key_type = identifiers_to_join
-                .iter()
-                .map(|_| parse_quote!(_))
-                .collect::<Vec<syn::Type>>();
-
-            let after_join_map: syn::Expr = parse_quote!(|kv: ((#(#key_type, )*), (#left_tuple, #right_tuple))| (#(#output_data, )*));
-
-            let join_node = syn::Ident::new(&format!("join_{}", my_idx), Span::call_site());
-            flat_graph.add_statement(parse_quote!(#join_node = join() -> map(#after_join_map)));
-
-            emit_source_to_join(
-                &identifiers_to_join,
-                left_node,
-                left_node_tee_idx,
-                left_tuple,
-                &left_idents,
-                (&join_node, 0),
-                flat_graph,
-            );
-
-            emit_source_to_join(
-                &identifiers_to_join,
-                right_node,
-                right_node_tee_idx,
-                right_tuple,
-                &right_idents,
-                (&join_node, 1),
-                flat_graph,
-            );
-
-            let output_types: Vec<syn::Type> = output_data
-                .iter()
-                .map(|_| parse_quote!(_))
-                .collect::<Vec<_>>();
-
-            (
-                (join_node, None),
-                ident_to_index,
-                parse_quote!((#(#output_types, )*)),
-            )
-        }
-    }
-}
-
 fn generate_join(
     rule: &Rule,
     flat_graph: &mut FlatGraph,
@@ -305,7 +124,7 @@ fn generate_join(
         .reduce(|a, b| JoinPlan::Join(Box::new(a), Box::new(b)))
         .unwrap();
 
-    let ((join_node, join_tee), ident_mapping, out_type) = expand_join_plan(
+    let out_expanded = expand_join_plan(
         &plan,
         &sources,
         flat_graph,
@@ -319,7 +138,8 @@ fn generate_join(
         .fields
         .iter()
         .map(|field| {
-            let col = ident_mapping
+            let col = out_expanded
+                .variable_mapping
                 .get(&syn::Ident::new(&field.name, Span::call_site()))
                 .unwrap();
             let source_col_idx = syn::Index::from(*col);
@@ -328,6 +148,7 @@ fn generate_join(
         })
         .collect::<Vec<syn::Expr>>();
 
+    let out_type = out_expanded.tuple_type;
     let after_join_map: syn::Expr = parse_quote!(|row: #out_type| (#(#output_data, )*));
 
     let merge_index = merge_counter.entry(target.name.clone()).or_insert(0);
@@ -340,11 +161,12 @@ fn generate_join(
         map(#after_join_map) -> [#my_merge_index_lit] #target_ident
     };
 
+    let out_name = out_expanded.name;
     flat_graph.add_statement(hydroflow_lang::parse::HfStatement::Pipeline(
         Pipeline::Link(PipelineLink {
-            lhs: Box::new(parse_quote!(#join_node)),
+            lhs: Box::new(parse_quote!(#out_name)),
             connector: ArrowConnector {
-                src: join_tee.map(|i| Indexing {
+                src: out_expanded.tee_idx.map(|i| Indexing {
                     bracket_token: syn::token::Bracket::default(),
                     index: IndexInt {
                         value: i,
