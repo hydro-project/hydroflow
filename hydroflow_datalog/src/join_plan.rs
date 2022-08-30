@@ -9,9 +9,9 @@ use syn::{self, parse_quote};
 
 use crate::grammar::datalog::Target;
 
-pub enum JoinPlan {
-    Source(usize),
-    Join(Box<JoinPlan>, Box<JoinPlan>),
+pub enum JoinPlan<'a> {
+    Source(&'a Target),
+    Join(Box<JoinPlan<'a>>, Box<JoinPlan<'a>>),
 }
 
 pub struct IntermediateJoinNode {
@@ -73,15 +73,13 @@ fn emit_source_to_join(
 // outputs the identifier for the join node and a mapping from rule identifiers to indices in the join output tuple
 pub fn expand_join_plan(
     plan: &JoinPlan,
-    all_sources: &[Target],
     flat_graph: &mut FlatGraph,
     tee_counter: &mut HashMap<String, usize>,
     merge_counter: &mut HashMap<String, usize>,
     next_join_idx: &mut usize,
 ) -> IntermediateJoinNode {
     match plan {
-        JoinPlan::Source(idx) => {
-            let target = &all_sources[*idx];
+        JoinPlan::Source(target) => {
             let mut variable_mapping = BTreeMap::new();
             let mut row_types: Vec<syn::Type> = vec![];
             for (i, ident) in target.fields.iter().enumerate() {
@@ -109,23 +107,11 @@ pub fn expand_join_plan(
             }
         }
         JoinPlan::Join(lhs, rhs) => {
-            let left_expanded = expand_join_plan(
-                lhs,
-                all_sources,
-                flat_graph,
-                tee_counter,
-                merge_counter,
-                next_join_idx,
-            );
+            let left_expanded =
+                expand_join_plan(lhs, flat_graph, tee_counter, merge_counter, next_join_idx);
 
-            let right_expanded = expand_join_plan(
-                rhs,
-                all_sources,
-                flat_graph,
-                tee_counter,
-                merge_counter,
-                next_join_idx,
-            );
+            let right_expanded =
+                expand_join_plan(rhs, flat_graph, tee_counter, merge_counter, next_join_idx);
 
             let my_idx = *next_join_idx;
             *next_join_idx += 1;

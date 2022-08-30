@@ -119,19 +119,12 @@ fn generate_rule(
     // TODO(shadaj): smarter plans
     let plan = sources
         .iter()
-        .enumerate()
-        .map(|(i, _)| JoinPlan::Source(i))
+        .map(JoinPlan::Source)
         .reduce(|a, b| JoinPlan::Join(Box::new(a), Box::new(b)))
         .unwrap();
 
-    let out_expanded = expand_join_plan(
-        &plan,
-        &sources,
-        flat_graph,
-        tee_counter,
-        merge_counter,
-        next_join_idx,
-    );
+    let out_expanded =
+        expand_join_plan(&plan, flat_graph, tee_counter, merge_counter, next_join_idx);
 
     let output_data = rule
         .target
