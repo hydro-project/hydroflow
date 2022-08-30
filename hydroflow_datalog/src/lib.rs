@@ -10,9 +10,11 @@ use syn::parse_quote;
 
 mod grammar;
 mod join_plan;
+mod util;
 
 use grammar::datalog::*;
 use join_plan::*;
+use util::Counter;
 
 fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn::Stmt {
     let str_node: syn::LitStr = parse_quote!(#literal);
@@ -53,9 +55,10 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
     for target in inputs {
         let target_ident = syn::Ident::new(&target.name, Span::call_site());
 
-        let merge_index = merge_counter.entry(target.name.clone()).or_insert(0);
-        let my_merge_index = *merge_index;
-        *merge_index += 1;
+        let my_merge_index = merge_counter
+            .entry(target.name.clone())
+            .or_insert_with(Counter::new)
+            .next();
 
         let my_merge_index_lit =
             syn::LitInt::new(&format!("{}", my_merge_index), Span::call_site());
@@ -67,9 +70,10 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
     }
 
     for target in outputs {
-        let tee_index = tee_counter.entry(target.name.clone()).or_insert(0);
-        let my_tee_index = *tee_index;
-        *tee_index += 1;
+        let my_tee_index = tee_counter
+            .entry(target.name.clone())
+            .or_insert_with(Counter::new)
+            .next();
 
         let out_send_ident = syn::Ident::new(&target.name, Span::call_site());
 
@@ -81,7 +85,7 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
         });
     }
 
-    let mut next_join_idx = 0;
+    let mut next_join_idx = Counter::new();
     for rule in rules {
         generate_rule(
             rule,
@@ -107,9 +111,9 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
 fn generate_rule(
     rule: &Rule,
     flat_graph: &mut FlatGraph,
-    tee_counter: &mut HashMap<String, usize>,
-    merge_counter: &mut HashMap<String, usize>,
-    next_join_idx: &mut usize,
+    tee_counter: &mut HashMap<String, Counter>,
+    merge_counter: &mut HashMap<String, Counter>,
+    next_join_idx: &mut Counter,
 ) {
     let target = &rule.target.name;
     let target_ident = syn::Ident::new(&target.name, Span::call_site());
@@ -144,9 +148,10 @@ fn generate_rule(
     let out_type = out_expanded.tuple_type;
     let after_join_map: syn::Expr = parse_quote!(|row: #out_type| (#(#output_data, )*));
 
-    let merge_index = merge_counter.entry(target.name.clone()).or_insert(0);
-    let my_merge_index = *merge_index;
-    *merge_index += 1;
+    let my_merge_index = merge_counter
+        .entry(target.name.clone())
+        .or_insert_with(Counter::new)
+        .next();
 
     let my_merge_index_lit = syn::LitInt::new(&format!("{}", my_merge_index), Span::call_site());
 

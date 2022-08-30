@@ -7,7 +7,7 @@ use hydroflow_lang::{
 use proc_macro2::Span;
 use syn::{self, parse_quote};
 
-use crate::grammar::datalog::Atom;
+use crate::{grammar::datalog::Atom, util::Counter};
 
 pub enum JoinPlan<'a> {
     Source(&'a Atom),
@@ -74,9 +74,9 @@ fn emit_source_to_join(
 pub fn expand_join_plan(
     plan: &JoinPlan,
     flat_graph: &mut FlatGraph,
-    tee_counter: &mut HashMap<String, usize>,
-    merge_counter: &mut HashMap<String, usize>,
-    next_join_idx: &mut usize,
+    tee_counter: &mut HashMap<String, Counter>,
+    merge_counter: &mut HashMap<String, Counter>,
+    next_join_idx: &mut Counter,
 ) -> IntermediateJoinNode {
     match plan {
         JoinPlan::Source(target) => {
@@ -95,9 +95,10 @@ pub fn expand_join_plan(
                 }
             }
 
-            let tee_index = tee_counter.entry(target.name.name.clone()).or_insert(0);
-            let my_tee_index = *tee_index;
-            *tee_index += 1;
+            let my_tee_index = tee_counter
+                .entry(target.name.name.clone())
+                .or_insert_with(Counter::new)
+                .next();
 
             IntermediateJoinNode {
                 name: syn::Ident::new(&target.name.name, Span::call_site()),
@@ -113,8 +114,7 @@ pub fn expand_join_plan(
             let right_expanded =
                 expand_join_plan(rhs, flat_graph, tee_counter, merge_counter, next_join_idx);
 
-            let my_idx = *next_join_idx;
-            *next_join_idx += 1;
+            let my_idx = next_join_idx.next();
 
             let identifiers_to_join = right_expanded
                 .variable_mapping
