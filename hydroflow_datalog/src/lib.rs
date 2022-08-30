@@ -127,8 +127,7 @@ fn generate_rule(
         .reduce(|a, b| JoinPlan::Join(Box::new(a), Box::new(b)))
         .unwrap();
 
-    let out_expanded =
-        expand_join_plan(&plan, flat_graph, tee_counter, merge_counter, next_join_idx);
+    let out_expanded = expand_join_plan(&plan, flat_graph, tee_counter, next_join_idx);
 
     let output_data = rule
         .target
