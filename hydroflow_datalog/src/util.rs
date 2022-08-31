@@ -1,15 +1,3 @@
-pub struct Counter {
-    counter: usize,
-}
+use std::ops::RangeFrom;
 
-impl Counter {
-    pub fn new() -> Self {
-        Counter { counter: 0 }
-    }
-
-    pub fn next(&mut self) -> usize {
-        let ret = self.counter;
-        self.counter += 1;
-        ret
-    }
-}
+pub type Counter = RangeFrom<usize>;

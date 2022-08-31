@@ -218,3 +218,30 @@ pub async fn test_triple_relation_join() {
     assert_eq!(out_recv.recv().await.unwrap(), (4, 1, 2, 1));
     assert_eq!(out_recv.recv().await, None);
 }
+
+#[tokio::test]
+pub async fn test_local_constraints() {
+    let (in_send, input) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
+    let (out, mut out_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
+
+    in_send.send((1, 2)).unwrap();
+    in_send.send((1, 1)).unwrap();
+
+    thread::spawn(|| {
+        let mut flow = datalog!(
+            r#"
+            .input input
+            .output out
+
+            out(x, x) :- input(x, x).
+            "#
+        );
+
+        flow.run_available();
+    })
+    .join()
+    .unwrap();
+
+    assert_eq!(out_recv.recv().await.unwrap(), (1, 1));
+    assert_eq!(out_recv.recv().await, None);
+}

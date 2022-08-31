@@ -108,37 +108,93 @@ pub fn expand_join_plan(
         JoinPlan::Source(target) => {
             let mut variable_mapping = BTreeMap::new();
             let mut row_types: Vec<syn::Type> = vec![];
+
+            // for each variable, a vec of all tuple indices that should equal that variable
+            // we only track variables with >= 2 indices, since that is when we need to enforce constraints
+            let mut local_constraints = BTreeMap::new();
+
             for (i, ident) in target.fields.iter().enumerate() {
                 row_types.push(parse_quote!(_));
                 let variable_ident = syn::Ident::new(&ident.name, Span::call_site());
-                if let std::collections::btree_map::Entry::Vacant(e) =
-                    variable_mapping.entry(variable_ident)
-                {
-                    e.insert(i);
-                } else {
-                    // TODO(shadaj): if there is already an entry in mapping that means filter
-                    panic!()
+
+                // TODO(shadaj): is there something nicer than a clone here?
+                match variable_mapping.entry(variable_ident) {
+                    std::collections::btree_map::Entry::Vacant(e) => {
+                        e.insert(i);
+                    }
+
+                    std::collections::btree_map::Entry::Occupied(e) => {
+                        let constraint_entry = local_constraints
+                            .entry(e.key().clone())
+                            .or_insert_with(|| vec![*e.get()]);
+                        constraint_entry.push(i);
+                    }
                 }
             }
 
             // Because this is a node corresponding to some Datalog relation, we need to tee from it.
             let my_tee_index = tee_counter
                 .entry(target.name.name.clone())
-                .or_insert_with(Counter::new)
-                .next();
+                .or_insert_with(|| 0..)
+                .next()
+                .expect("Out of tee indices");
 
-            IntermediateJoinNode {
-                name: syn::Ident::new(&target.name.name, Span::call_site()),
-                tee_idx: Some(my_tee_index),
-                variable_mapping,
-                tuple_type: parse_quote!((#(#row_types, )*)),
+            let row_type = parse_quote!((#(#row_types, )*));
+
+            if !local_constraints.is_empty() {
+                let relation_node = syn::Ident::new(&target.name.name, Span::call_site());
+                let relation_idx = syn::Index::from(my_tee_index);
+
+                let filter_node = syn::Ident::new(
+                    &format!(
+                        "join_{}_filter",
+                        next_join_idx.next().expect("Out of join indices")
+                    ),
+                    Span::call_site(),
+                );
+
+                let conditions = local_constraints
+                    .values()
+                    .map(|indices| {
+                        let equal_indices = indices
+                            .iter()
+                            .map(|i| syn::Index::from(*i))
+                            .collect::<Vec<_>>();
+
+                        let first_index = &equal_indices[0];
+
+                        equal_indices
+                            .iter()
+                            .skip(1)
+                            .map(|i| parse_quote!(row.#first_index == row.#i))
+                            .reduce(|a: syn::Expr, b| parse_quote!(#a && #b))
+                            .unwrap()
+                    })
+                    .reduce(|a: syn::Expr, b| parse_quote!(#a && #b))
+                    .unwrap();
+
+                flat_graph.add_statement(parse_quote! {
+                    #filter_node = #relation_node [#relation_idx] -> filter(|&row: &#row_type| #conditions)
+                });
+
+                IntermediateJoinNode {
+                    name: filter_node,
+                    tee_idx: None,
+                    variable_mapping,
+                    tuple_type: row_type,
+                }
+            } else {
+                IntermediateJoinNode {
+                    name: syn::Ident::new(&target.name.name, Span::call_site()),
+                    tee_idx: Some(my_tee_index),
+                    variable_mapping,
+                    tuple_type: row_type,
+                }
             }
         }
         JoinPlan::Join(lhs, rhs) => {
             let left_expanded = expand_join_plan(lhs, flat_graph, tee_counter, next_join_idx);
             let right_expanded = expand_join_plan(rhs, flat_graph, tee_counter, next_join_idx);
-
-            let my_idx = next_join_idx.next();
 
             let identifiers_to_join = right_expanded
                 .variable_mapping
@@ -184,7 +240,13 @@ pub fn expand_join_plan(
 
             let flatten_closure: syn::Expr = parse_quote!(|kv: ((#(#key_type, )*), (#left_type, #right_type))| (#(#flattened_tuple_elems, )*));
 
-            let join_node = syn::Ident::new(&format!("join_{}", my_idx), Span::call_site());
+            let join_node = syn::Ident::new(
+                &format!(
+                    "join_{}",
+                    next_join_idx.next().expect("Out of join indices")
+                ),
+                Span::call_site(),
+            );
             flat_graph.add_statement(parse_quote!(#join_node = join() -> map(#flatten_closure)));
 
             emit_join_input_pipeline(

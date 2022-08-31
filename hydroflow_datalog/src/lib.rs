@@ -57,8 +57,9 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
 
         let my_merge_index = merge_counter
             .entry(target.name.clone())
-            .or_insert_with(Counter::new)
-            .next();
+            .or_insert_with(|| 0..)
+            .next()
+            .expect("Out of merge indices");
 
         let my_merge_index_lit =
             syn::LitInt::new(&format!("{}", my_merge_index), Span::call_site());
@@ -72,8 +73,9 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
     for target in outputs {
         let my_tee_index = tee_counter
             .entry(target.name.clone())
-            .or_insert_with(Counter::new)
-            .next();
+            .or_insert_with(|| 0..)
+            .next()
+            .expect("Out of tee indices");
 
         let out_send_ident = syn::Ident::new(&target.name, Span::call_site());
 
@@ -85,7 +87,7 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
         });
     }
 
-    let mut next_join_idx = Counter::new();
+    let mut next_join_idx = 0..;
     for rule in rules {
         generate_rule(
             rule,
@@ -150,8 +152,9 @@ fn generate_rule(
 
     let my_merge_index = merge_counter
         .entry(target.name.clone())
-        .or_insert_with(Counter::new)
-        .next();
+        .or_insert_with(|| 0..)
+        .next()
+        .expect("Out of merge indices");
 
     let my_merge_index_lit = syn::LitInt::new(&format!("{}", my_merge_index), Span::call_site());
 
@@ -237,147 +240,116 @@ mod tests {
         data
     }
 
+    macro_rules! test_datalog_snapshot {
+        ($program:literal) => {
+            let out = &gen_datalog_program(parse_quote!($program), quote::quote! { hydroflow });
+
+            let wrapped: syn::Item = parse_quote! {
+                fn main() {
+                    #out
+                }
+            };
+
+            insta::assert_display_snapshot!(rustfmt_code(&wrapped.to_token_stream().to_string()));
+        };
+    }
+
     #[test]
     fn minimal_program() {
-        let out = &gen_datalog_program(
-            parse_quote!(
-                r#"
-                .input input
-                .output out
+        test_datalog_snapshot!(
+            r#"
+            .input input
+            .output out
 
-                out(y, x) :- input(x, y).
-                "#
-            ),
-            quote::quote! { hydroflow },
+            out(y, x) :- input(x, y).
+            "#
         );
-
-        let wrapped: syn::Item = parse_quote! {
-            fn main() {
-                #out
-            }
-        };
-
-        insta::assert_display_snapshot!(rustfmt_code(&wrapped.to_token_stream().to_string()));
     }
 
     #[test]
     fn join_with_self() {
-        let out = &gen_datalog_program(
-            parse_quote!(
-                r#"
-                .input input
-                .output out
+        test_datalog_snapshot!(
+            r#"
+            .input input
+            .output out
 
-                out(x, y) :- input(x, y), input(y, x).
-                "#
-            ),
-            quote::quote! { hydroflow },
+            out(x, y) :- input(x, y), input(y, x).
+            "#
         );
-
-        let wrapped: syn::Item = parse_quote! {
-            fn main() {
-                #out
-            }
-        };
-
-        insta::assert_display_snapshot!(rustfmt_code(&wrapped.to_token_stream().to_string()));
     }
 
     #[test]
     fn join_with_other() {
-        let out = &gen_datalog_program(
-            parse_quote!(
-                r#"
-                .input in1
-                .input in2
-                .output out
+        test_datalog_snapshot!(
+            r#"
+            .input in1
+            .input in2
+            .output out
 
-                out(x, y) :- in1(x, y), in2(y, x).
-                "#
-            ),
-            quote::quote! { hydroflow },
+            out(x, y) :- in1(x, y), in2(y, x).
+            "#
         );
-
-        let wrapped: syn::Item = parse_quote! {
-            fn main() {
-                #out
-            }
-        };
-
-        insta::assert_display_snapshot!(rustfmt_code(&wrapped.to_token_stream().to_string()));
     }
 
     #[test]
     fn multiple_contributors() {
-        let out = &gen_datalog_program(
-            parse_quote!(
-                r#"
-                .input in1
-                .input in2
-                .output out
+        test_datalog_snapshot!(
+            r#"
+            .input in1
+            .input in2
+            .output out
 
-                out(x, y) :- in1(x, y).
-                out(x, y) :- in2(y, x).
-                "#
-            ),
-            quote::quote! { hydroflow },
+            out(x, y) :- in1(x, y).
+            out(x, y) :- in2(y, x).
+            "#
         );
-
-        let wrapped: syn::Item = parse_quote! {
-            fn main() {
-                #out
-            }
-        };
-
-        insta::assert_display_snapshot!(rustfmt_code(&wrapped.to_token_stream().to_string()));
     }
 
     #[test]
     fn single_column_program() {
-        let out = &gen_datalog_program(
-            parse_quote!(
-                r#"
-                .input in1
-                .input in2
-                .output out
+        test_datalog_snapshot!(
+            r#"
+            .input in1
+            .input in2
+            .output out
 
-                out(x) :- in1(x), in2(x).
-                "#
-            ),
-            quote::quote! { hydroflow },
+            out(x) :- in1(x), in2(x).
+            "#
         );
-
-        let wrapped: syn::Item = parse_quote! {
-            fn main() {
-                #out
-            }
-        };
-
-        insta::assert_display_snapshot!(rustfmt_code(&wrapped.to_token_stream().to_string()));
     }
 
     #[test]
     fn triple_relation_join() {
-        let out = &gen_datalog_program(
-            parse_quote!(
-                r#"
-                .input in1
-                .input in2
-                .input in3
-                .output out
+        test_datalog_snapshot!(
+            r#"
+            .input in1
+            .input in2
+            .input in3
+            .output out
 
-                out(d, c, b, a) :- in1(a, b), in2(b, c), in3(c, d).
-                "#
-            ),
-            quote::quote! { hydroflow },
+            out(d, c, b, a) :- in1(a, b), in2(b, c), in3(c, d).
+            "#
+        );
+    }
+
+    #[test]
+    fn local_constraints() {
+        test_datalog_snapshot!(
+            r#"
+            .input input
+            .output out
+
+            out(x, x) :- input(x, x).
+            "#
         );
 
-        let wrapped: syn::Item = parse_quote! {
-            fn main() {
-                #out
-            }
-        };
+        test_datalog_snapshot!(
+            r#"
+            .input input
+            .output out
 
-        insta::assert_display_snapshot!(rustfmt_code(&wrapped.to_token_stream().to_string()));
+            out(x, x, y, y) :- input(x, x, y, y).
+            "#
+        );
     }
 }
