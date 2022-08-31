@@ -10,6 +10,7 @@ use syn::spanned::Spanned;
 use crate::parse::{IndexInt, Operator};
 use crate::pretty_span::PrettySpan;
 
+pub mod di_mul_graph;
 pub mod flat_graph;
 pub mod flat_to_partitioned;
 pub mod graph_algorithms;
@@ -21,8 +22,10 @@ new_key_type! {
     /// ID to identify a node (operator or handoff) in both [`flat_graph::FlatGraph`]
     /// and [`partitioned_graph::PartitionedGraph`].
     pub struct GraphNodeId;
-}
-new_key_type! {
+
+    /// ID to identify an edge.
+    pub struct GraphEdgeId;
+
     /// ID to identify a subgraph in [`partitioned_graph::PartitionedGraph`].
     pub struct GraphSubgraphId;
 }
