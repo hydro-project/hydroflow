@@ -156,10 +156,13 @@ pub fn expand_join_plan(
                             .iter()
                             .map(|i| syn::Index::from(*i))
                             .collect::<Vec<_>>();
+
+                        let first_index = &equal_indices[0];
+
                         equal_indices
                             .iter()
                             .skip(1)
-                            .map(|i| parse_quote!(row.0 == row.#i))
+                            .map(|i| parse_quote!(row.#first_index == row.#i))
                             .reduce(|a: syn::Expr, b| parse_quote!(#a && #b))
                             .unwrap()
                     })
