@@ -118,14 +118,14 @@ pub fn expand_join_plan(
                 let variable_ident = syn::Ident::new(&ident.name, Span::call_site());
 
                 // TODO(shadaj): is there something nicer than a clone here?
-                match variable_mapping.entry(variable_ident.clone()) {
+                match variable_mapping.entry(variable_ident) {
                     std::collections::btree_map::Entry::Vacant(e) => {
                         e.insert(i);
                     }
 
                     std::collections::btree_map::Entry::Occupied(e) => {
                         let constraint_entry = local_constraints
-                            .entry(variable_ident)
+                            .entry(e.key().clone())
                             .or_insert_with(|| vec![*e.get()]);
                         constraint_entry.push(i);
                     }
@@ -135,8 +135,9 @@ pub fn expand_join_plan(
             // Because this is a node corresponding to some Datalog relation, we need to tee from it.
             let my_tee_index = tee_counter
                 .entry(target.name.name.clone())
-                .or_insert_with(Counter::new)
-                .next();
+                .or_insert_with(|| 0..)
+                .next()
+                .expect("Out of tee indices");
 
             let row_type = parse_quote!((#(#row_types, )*));
 
@@ -145,7 +146,10 @@ pub fn expand_join_plan(
                 let relation_idx = syn::Index::from(my_tee_index);
 
                 let filter_node = syn::Ident::new(
-                    &format!("join_{}_filter", next_join_idx.next()),
+                    &format!(
+                        "join_{}_filter",
+                        next_join_idx.next().expect("Out of join indices")
+                    ),
                     Span::call_site(),
                 );
 
@@ -236,8 +240,13 @@ pub fn expand_join_plan(
 
             let flatten_closure: syn::Expr = parse_quote!(|kv: ((#(#key_type, )*), (#left_type, #right_type))| (#(#flattened_tuple_elems, )*));
 
-            let join_node =
-                syn::Ident::new(&format!("join_{}", next_join_idx.next()), Span::call_site());
+            let join_node = syn::Ident::new(
+                &format!(
+                    "join_{}",
+                    next_join_idx.next().expect("Out of join indices")
+                ),
+                Span::call_site(),
+            );
             flat_graph.add_statement(parse_quote!(#join_node = join() -> map(#flatten_closure)));
 
             emit_join_input_pipeline(

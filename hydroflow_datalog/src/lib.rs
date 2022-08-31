@@ -57,8 +57,9 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
 
         let my_merge_index = merge_counter
             .entry(target.name.clone())
-            .or_insert_with(Counter::new)
-            .next();
+            .or_insert_with(|| 0..)
+            .next()
+            .expect("Out of merge indices");
 
         let my_merge_index_lit =
             syn::LitInt::new(&format!("{}", my_merge_index), Span::call_site());
@@ -72,8 +73,9 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
     for target in outputs {
         let my_tee_index = tee_counter
             .entry(target.name.clone())
-            .or_insert_with(Counter::new)
-            .next();
+            .or_insert_with(|| 0..)
+            .next()
+            .expect("Out of tee indices");
 
         let out_send_ident = syn::Ident::new(&target.name, Span::call_site());
 
@@ -85,7 +87,7 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
         });
     }
 
-    let mut next_join_idx = Counter::new();
+    let mut next_join_idx = 0..;
     for rule in rules {
         generate_rule(
             rule,
@@ -150,8 +152,9 @@ fn generate_rule(
 
     let my_merge_index = merge_counter
         .entry(target.name.clone())
-        .or_insert_with(Counter::new)
-        .next();
+        .or_insert_with(|| 0..)
+        .next()
+        .expect("Out of merge indices");
 
     let my_merge_index_lit = syn::LitInt::new(&format!("{}", my_merge_index), Span::call_site());
 
