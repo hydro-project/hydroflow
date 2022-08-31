@@ -339,5 +339,14 @@ mod tests {
             out(x, x) :- input(x, x).
             "#
         );
+
+        test_datalog_snapshot!(
+            r#"
+            .input input
+            .output out
+
+            out(x, x, y, y) :- input(x, x, y, y).
+            "#
+        );
     }
 }
