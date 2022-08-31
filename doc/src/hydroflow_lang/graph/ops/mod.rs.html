@@ -631,6 +631,36 @@
 <span id="631">631</span>
 <span id="632">632</span>
 <span id="633">633</span>
+<span id="634">634</span>
+<span id="635">635</span>
+<span id="636">636</span>
+<span id="637">637</span>
+<span id="638">638</span>
+<span id="639">639</span>
+<span id="640">640</span>
+<span id="641">641</span>
+<span id="642">642</span>
+<span id="643">643</span>
+<span id="644">644</span>
+<span id="645">645</span>
+<span id="646">646</span>
+<span id="647">647</span>
+<span id="648">648</span>
+<span id="649">649</span>
+<span id="650">650</span>
+<span id="651">651</span>
+<span id="652">652</span>
+<span id="653">653</span>
+<span id="654">654</span>
+<span id="655">655</span>
+<span id="656">656</span>
+<span id="657">657</span>
+<span id="658">658</span>
+<span id="659">659</span>
+<span id="660">660</span>
+<span id="661">661</span>
+<span id="662">662</span>
+<span id="663">663</span>
 </pre><pre class="rust"><code><span class="kw">use </span>std::fmt::Display;
 <span class="kw">use </span>std::ops::{Bound, RangeBounds};
 
@@ -675,6 +705,7 @@
         <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span><span class="kw">dyn </span>Fn(<span class="kw-2">&amp;</span>WriteContextArgs&lt;<span class="lifetime">&#39;_</span>&gt;, <span class="kw-2">&amp;</span>WriteIteratorArgs&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; TokenStream,
 }
 
+<span class="kw">pub const </span>RANGE_ANY: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span><span class="kw">dyn </span>RangeTrait&lt;usize&gt; = <span class="kw-2">&amp;</span>(<span class="number">0</span>..);
 <span class="kw">pub const </span>RANGE_0: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span><span class="kw">dyn </span>RangeTrait&lt;usize&gt; = <span class="kw-2">&amp;</span>(<span class="number">0</span>..=<span class="number">0</span>);
 <span class="kw">pub const </span>RANGE_1: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span><span class="kw">dyn </span>RangeTrait&lt;usize&gt; = <span class="kw-2">&amp;</span>(<span class="number">1</span>..=<span class="number">1</span>);
 
@@ -701,10 +732,39 @@
     }
 });
 
-<span class="kw">pub const </span>OPERATORS: [OperatorConstraints; <span class="number">19</span>] = [
+<span class="kw">pub const </span>OPERATORS: [OperatorConstraints; <span class="number">20</span>] = [
+    OperatorConstraints {
+        name: <span class="string">&quot;null&quot;</span>,
+        hard_range_inn: RANGE_ANY,
+        soft_range_inn: RANGE_ANY,
+        hard_range_out: RANGE_ANY,
+        soft_range_out: RANGE_ANY,
+        num_args: <span class="number">0</span>,
+        input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">None</span>,
+        write_prologue_fn: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="macro">quote! </span>{}),
+        write_iterator_fn: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span>WriteContextArgs { root, ident, .. },
+                              <span class="kw-2">&amp;</span>WriteIteratorArgs {
+                                  inputs,
+                                  outputs,
+                                  is_pull,
+                                  ..
+                              }| {
+            <span class="kw">if </span>is_pull {
+                <span class="macro">quote! </span>{
+                    (#(#inputs.for_each(std::mem::drop)),<span class="kw-2">*</span>);
+                    <span class="kw">let </span>#ident = std::iter::empty();
+                }
+            } <span class="kw">else </span>{
+                <span class="macro">quote! </span>{
+                    <span class="kw">let _ </span>= (#(#outputs),<span class="kw-2">*</span>);
+                    <span class="kw">let </span>#ident = #root::pusherator::for_each::ForEach::new(std::mem::drop);
+                }
+            }
+        }),
+    },
     OperatorConstraints {
         name: <span class="string">&quot;merge&quot;</span>,
-        hard_range_inn: <span class="kw-2">&amp;</span>(<span class="number">0</span>..),
+        hard_range_inn: RANGE_ANY,
         soft_range_inn: <span class="kw-2">&amp;</span>(<span class="number">2</span>..),
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
@@ -763,7 +823,7 @@
         name: <span class="string">&quot;tee&quot;</span>,
         hard_range_inn: RANGE_1,
         soft_range_inn: RANGE_1,
-        hard_range_out: <span class="kw-2">&amp;</span>(<span class="number">0</span>..),
+        hard_range_out: RANGE_ANY,
         soft_range_out: <span class="kw-2">&amp;</span>(<span class="number">2</span>..),
         num_args: <span class="number">0</span>,
         input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">None</span>,

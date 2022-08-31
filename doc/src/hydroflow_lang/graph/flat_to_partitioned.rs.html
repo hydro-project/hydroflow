@@ -799,7 +799,7 @@
 
     <span class="kw">let </span><span class="kw-2">mut </span>subgraph_stratum: SecondaryMap&lt;GraphSubgraphId, usize&gt; =
         SecondaryMap::with_capacity(topo_sort_order.len());
-    <span class="comment">// Each subgraph stratum is the same as it&#39;s predacessors unless there is a negative edge.
+    <span class="comment">// Each subgraph stratum is the same as it&#39;s predecessors unless there is a negative edge.
     </span><span class="kw">for </span>sg_id <span class="kw">in </span>topo_sort_order {
         subgraph_stratum.insert(
             sg_id,

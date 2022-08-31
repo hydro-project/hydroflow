@@ -300,6 +300,27 @@
 <span id="300">300</span>
 <span id="301">301</span>
 <span id="302">302</span>
+<span id="303">303</span>
+<span id="304">304</span>
+<span id="305">305</span>
+<span id="306">306</span>
+<span id="307">307</span>
+<span id="308">308</span>
+<span id="309">309</span>
+<span id="310">310</span>
+<span id="311">311</span>
+<span id="312">312</span>
+<span id="313">313</span>
+<span id="314">314</span>
+<span id="315">315</span>
+<span id="316">316</span>
+<span id="317">317</span>
+<span id="318">318</span>
+<span id="319">319</span>
+<span id="320">320</span>
+<span id="321">321</span>
+<span id="322">322</span>
+<span id="323">323</span>
 </pre><pre class="rust"><code><span class="kw">use </span>std::collections::BTreeMap;
 
 <span class="kw">use </span>quote::ToTokens;
@@ -314,15 +335,28 @@
 <span class="kw">use </span><span class="kw">super</span>::partitioned_graph::PartitionedGraph;
 <span class="kw">use super</span>::{EdgePortRef, GraphNodeId, Node, OutboundEdges};
 
-<span class="attribute">#[derive(Debug, Default)]
+<span class="doccomment">/// A graph representing a hydroflow dataflow graph before subgraph partitioning, stratification, and handoff insertion.
+/// I.e. the graph is a simple &quot;flat&quot; without any subgraph heirarchy.
+///
+/// May optionally contain handoffs, but in this stage these are transparent and treated like an identity operator.
+///
+/// Use `Self::into_partitioned_graph()` to convert into a subgraph-partitioned &amp; stratified graph.
+</span><span class="attribute">#[derive(Debug, Default)]
 </span><span class="kw">pub struct </span>FlatGraph {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) nodes: SlotMap&lt;GraphNodeId, Node&gt;,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) preds: SecondaryMap&lt;GraphNodeId, OutboundEdges&gt;,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) succs: SecondaryMap&lt;GraphNodeId, OutboundEdges&gt;,
-    names: BTreeMap&lt;Ident, Ports&gt;,
+    <span class="doccomment">/// Each node (operator or handoff).
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) nodes: SlotMap&lt;GraphNodeId, Node&gt;,
+    <span class="doccomment">/// Predecessors for each node.
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) preds: SecondaryMap&lt;GraphNodeId, OutboundEdges&gt;,
+    <span class="doccomment">/// Successors for each node.
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) succs: SecondaryMap&lt;GraphNodeId, OutboundEdges&gt;,
+    <span class="doccomment">/// Variable names, used as [`HfStatement::Named`] are added.
+    </span>names: BTreeMap&lt;Ident, Ports&gt;,
 }
+
 <span class="kw">impl </span>FlatGraph {
-    <span class="comment">// TODO(mingwei): better error/diagnostic handling.
+    <span class="doccomment">/// Creates a new `FlatGraph` instance based on the [`HfCode`] AST.
+    ///
+    /// TODO(mingwei): better error/diagnostic handling. Maybe collect all diagnostics before emitting.
     </span><span class="kw">pub fn </span>from_hfcode(input: HfCode) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span><span class="kw-2">mut </span>graph = <span class="self">Self</span>::default();
 
@@ -333,7 +367,8 @@
         graph
     }
 
-    <span class="kw">pub fn </span>add_statement(<span class="kw-2">&amp;mut </span><span class="self">self</span>, stmt: HfStatement) {
+    <span class="doccomment">/// Add a single [`HfStatement`] line to this `FlatGraph`.
+    </span><span class="kw">pub fn </span>add_statement(<span class="kw-2">&amp;mut </span><span class="self">self</span>, stmt: HfStatement) {
         <span class="kw">match </span>stmt {
             HfStatement::Named(named) =&gt; {
                 <span class="kw">let </span>ports = <span class="self">self</span>.add_pipeline(named.pipeline);
@@ -348,7 +383,8 @@
         }
     }
 
-    <span class="kw">fn </span>add_pipeline(<span class="kw-2">&amp;mut </span><span class="self">self</span>, pipeline: Pipeline) -&gt; Ports {
+    <span class="doccomment">/// Helper: Add a pipeline, i.e. `a -&gt; b -&gt; c`. Return the input and output port for it.
+    </span><span class="kw">fn </span>add_pipeline(<span class="kw-2">&amp;mut </span><span class="self">self</span>, pipeline: Pipeline) -&gt; Ports {
         <span class="kw">match </span>pipeline {
             Pipeline::Paren(pipeline_paren) =&gt; <span class="self">self</span>.add_pipeline(<span class="kw-2">*</span>pipeline_paren.pipeline),
             Pipeline::Link(pipeline_link) =&gt; {
@@ -530,17 +566,20 @@
         errored
     }
 
-    <span class="kw">pub fn </span>edges(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;_ </span>+ Iterator&lt;Item = (EdgePortRef, EdgePortRef)&gt; {
+    <span class="doccomment">/// Iterator over all edges.
+    </span><span class="kw">pub fn </span>edges(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;_ </span>+ Iterator&lt;Item = (EdgePortRef, EdgePortRef)&gt; {
         <span class="kw">super</span>::iter_edges(<span class="kw-2">&amp;</span><span class="self">self</span>.succs)
     }
 
-    <span class="kw">pub fn </span>surface_syntax_string(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
+    <span class="doccomment">/// Convert back into surface syntax.
+    </span><span class="kw">pub fn </span>surface_syntax_string(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
         <span class="kw">let </span><span class="kw-2">mut </span>string = String::new();
         <span class="self">self</span>.write_surface_syntax(<span class="kw-2">&amp;mut </span>string).unwrap();
         string
     }
 
-    <span class="kw">pub fn </span>write_surface_syntax(<span class="kw-2">&amp;</span><span class="self">self</span>, write: <span class="kw-2">&amp;mut </span><span class="kw">impl </span>std::fmt::Write) -&gt; std::fmt::Result {
+    <span class="doccomment">/// Convert back into surface syntax.
+    </span><span class="kw">pub fn </span>write_surface_syntax(<span class="kw-2">&amp;</span><span class="self">self</span>, write: <span class="kw-2">&amp;mut </span><span class="kw">impl </span>std::fmt::Write) -&gt; std::fmt::Result {
         <span class="kw">for </span>(key, node) <span class="kw">in </span><span class="self">self</span>.nodes.iter() {
             <span class="kw">match </span>node {
                 Node::Operator(op) =&gt; {
@@ -556,13 +595,15 @@
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">pub fn </span>mermaid_string(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
+    <span class="doccomment">/// Convert into a [mermaid](https://mermaid-js.github.io/) graph.
+    </span><span class="kw">pub fn </span>mermaid_string(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
         <span class="kw">let </span><span class="kw-2">mut </span>string = String::new();
         <span class="self">self</span>.write_mermaid(<span class="kw-2">&amp;mut </span>string).unwrap();
         string
     }
 
-    <span class="kw">pub fn </span>write_mermaid(<span class="kw-2">&amp;</span><span class="self">self</span>, write: <span class="kw-2">&amp;mut </span><span class="kw">impl </span>std::fmt::Write) -&gt; std::fmt::Result {
+    <span class="doccomment">/// Convert into a [mermaid](https://mermaid-js.github.io/) graph.
+    </span><span class="kw">pub fn </span>write_mermaid(<span class="kw-2">&amp;</span><span class="self">self</span>, write: <span class="kw-2">&amp;mut </span><span class="kw">impl </span>std::fmt::Write) -&gt; std::fmt::Result {
         <span class="macro">writeln!</span>(write, <span class="string">&quot;flowchart TB&quot;</span>)<span class="question-mark">?</span>;
         <span class="kw">for </span>(key, node) <span class="kw">in </span><span class="self">self</span>.nodes.iter() {
             <span class="kw">match </span>node {
@@ -591,7 +632,8 @@
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="attribute">#[allow(clippy::result_unit_err)]
+    <span class="doccomment">/// Run subgraph partitioning and stratification and convert this graph into a [`PartitionedGraph`].
+    </span><span class="attribute">#[allow(clippy::result_unit_err)]
     </span><span class="kw">pub fn </span>into_partitioned_graph(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;PartitionedGraph, ()&gt; {
         <span class="self">self</span>.try_into()
     }
