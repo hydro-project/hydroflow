@@ -73,7 +73,7 @@
 
     <span class="attribute">#[derive(Debug, Clone)]
     </span><span class="kw">pub struct </span>Rule {
-        <span class="kw">pub </span>target: Target,
+        <span class="kw">pub </span>target: Atom,
         <span class="attribute">#[rust_sitter::leaf(text = <span class="string">&quot;:-&quot;</span>)]
         </span>_from: (),
         <span class="attribute">#[rust_sitter::repeat(non_empty = <span class="bool-val">true</span>)]
@@ -81,13 +81,13 @@
             <span class="attribute">#[rust_sitter::leaf(text = <span class="string">&quot;,&quot;</span>)]
             </span>()
         )]
-        <span class="kw">pub </span>sources: Vec&lt;Target&gt;,
+        <span class="kw">pub </span>sources: Vec&lt;Atom&gt;,
         <span class="attribute">#[rust_sitter::leaf(text = <span class="string">&quot;.&quot;</span>)]
         </span>_dot: <span class="prelude-ty">Option</span>&lt;()&gt;,
     }
 
     <span class="attribute">#[derive(Debug, Clone)]
-    </span><span class="kw">pub struct </span>Target {
+    </span><span class="kw">pub struct </span>Atom {
         <span class="kw">pub </span>name: Ident,
         <span class="attribute">#[rust_sitter::leaf(text = <span class="string">&quot;(&quot;</span>)]
         </span>_l_paren: (),
@@ -113,4 +113,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="hydroflow_datalog" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (bc4b39c27 2022-08-29)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="hydroflow_datalog" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (02654a084 2022-08-30)" ></div></body></html>
