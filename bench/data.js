@@ -1,6 +1,6 @@
 window.BENCHMARK_DATA = 
 {
-  "lastUpdate": 1661833966655,
+  "lastUpdate": 1661920427627,
   "repoUrl": "https://github.com/hydro-project/hydroflow",
   "entries": {
     "Benchmark": [
@@ -23444,6 +23444,82 @@ window.BENCHMARK_DATA =
             "name": "reachability/hydroflow",
             "value": 3379741,
             "range": "± 154589",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Shadaj Laddad",
+            "username": "shadaj",
+            "email": "shadaj@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "863fdc8fea27d3b41dd3bd94212bee515a923340",
+          "message": "Generate nested joins for rules with more than two RHS relations (#184)\n\n* Generate nested joins for rules with more than two RHS relations\r\n\r\n* Add tests\r\n\r\n* Dedup code\r\n\r\n* Cleanup\r\n\r\n* Add struct capturing join plan expansion\r\n\r\n* Rename generate_join -> generate_rule\r\n\r\n* Embed target reference within JoinPlans\r\n\r\n* Rename Target => Atom\r\n\r\n* Add utility counter abstraction\r\n\r\n* Add more docs\r\n\r\n* More docs",
+          "timestamp": "2022-08-30T21:54:21Z",
+          "url": "https://github.com/hydro-project/hydroflow/commit/863fdc8fea27d3b41dd3bd94212bee515a923340"
+        },
+        "date": 1661920427621,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "arithmetic/hydroflow/compiled",
+            "value": 376013,
+            "range": "± 2540",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fan_in/hydroflow",
+            "value": 158065015,
+            "range": "± 1214869",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fan_out/hydroflow/scheduled",
+            "value": 94418236,
+            "range": "± 2948503",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fork_join/hydroflow",
+            "value": 11473825,
+            "range": "± 266486",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fork_join/hydroflow_builder",
+            "value": 31733459,
+            "range": "± 121626",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "identity/hydroflow",
+            "value": 40434662,
+            "range": "± 930994",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "identity/hydroflow/compiled",
+            "value": 12965255,
+            "range": "± 7567",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "reachability/hydroflow/scheduled",
+            "value": 2459592,
+            "range": "± 14539",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "reachability/hydroflow",
+            "value": 2500653,
+            "range": "± 158776",
             "unit": "ns/iter"
           }
         ]
