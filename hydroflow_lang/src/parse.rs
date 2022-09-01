@@ -263,17 +263,7 @@ impl Parse for Operator {
 
         let content;
         let paren_token = parenthesized!(content in input);
-        let mut args = Punctuated::new();
-
-        while !content.is_empty() {
-            let first = content.parse()?;
-            args.push_value(first);
-            if content.is_empty() {
-                break;
-            }
-            let punct = content.parse()?;
-            args.push_punct(punct);
-        }
+        let args = Punctuated::parse_terminated(&content)?;
 
         Ok(Self {
             path,
