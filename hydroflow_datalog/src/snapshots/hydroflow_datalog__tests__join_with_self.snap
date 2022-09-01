@@ -1,5 +1,6 @@
 ---
 source: hydroflow_datalog/src/lib.rs
+assertion_line: 333
 expression: rustfmt_code(&wrapped.to_token_stream().to_string())
 ---
 fn main() {
@@ -39,7 +40,7 @@ fn main() {
                     hydroflow::pusherator::pivot::Pivot::new(op_4v1, op_6v1).run();
                 },
             );
-            let mut input = input;
+            let mut sg_2v1_node_5v1_stream = input;
             df.add_subgraph_stratified(
                 "Subgraph GraphSubgraphId(2v1)",
                 0,
@@ -53,7 +54,8 @@ fn main() {
                         hoff_13v1_send.give(Some(v));
                     });
                     let op_5v1 = std::iter::from_fn(|| {
-                        match input.poll_recv(&mut std::task::Context::from_waker(&context.waker()))
+                        match sg_2v1_node_5v1_stream
+                            .poll_recv(&mut std::task::Context::from_waker(&context.waker()))
                         {
                             std::task::Poll::Ready(maybe) => maybe,
                             std::task::Poll::Pending => None,
