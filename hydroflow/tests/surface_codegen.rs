@@ -22,9 +22,33 @@ use tokio::task::LocalSet;
 // TODO(mingwei): Documentation articles.
 // TODO(mingwei): Find a way to display join keys
 
+/// Test that recv_stream can handle "complex" expressions.
+#[test]
+pub fn test_recv_expr() {
+    let send_recv = tokio::sync::mpsc::unbounded_channel::<usize>();
+
+    let mut df = hydroflow_syntax! {
+        recv_stream(send_recv.1)
+            -> for_each(|v| print!("{:?}", v));
+    };
+
+    println!(
+        "{}",
+        df.serde_graph()
+            .expect("No graph found, maybe failed to parse.")
+            .to_mermaid()
+    );
+    df.run_available();
+
+    let items_send = send_recv.0;
+    items_send.send(9).unwrap();
+    items_send.send(2).unwrap();
+    items_send.send(5).unwrap();
+    df.run_available();
+}
+
 #[test]
 pub fn test_reduce_sum() {
-    // An edge in the input data = a pair of `usize` vertex IDs.
     let (items_send, items_recv) = tokio::sync::mpsc::unbounded_channel::<usize>();
 
     let mut df = hydroflow_syntax! {
@@ -62,9 +86,6 @@ pub fn test_reduce_sum() {
 
 #[test]
 pub fn test_sort() {
-    // use std::collections::BinaryHeap;
-
-    // An edge in the input data = a pair of `usize` vertex IDs.
     let (items_send, items_recv) = tokio::sync::mpsc::unbounded_channel::<usize>();
 
     let mut df = hydroflow_syntax! {
@@ -102,7 +123,6 @@ pub fn test_sort() {
 
 #[test]
 pub fn test_fold_sort() {
-    // An edge in the input data = a pair of `usize` vertex IDs.
     let (items_send, items_recv) = tokio::sync::mpsc::unbounded_channel::<usize>();
 
     let mut df = hydroflow_syntax! {
