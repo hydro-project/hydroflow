@@ -1068,18 +1068,18 @@
         soft_range_out: RANGE_1,
         num_args: <span class="number">1</span>,
         input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">None</span>,
-        write_prologue_fn: <span class="kw-2">&amp;</span>(|<span class="kw">_</span>, <span class="kw-2">&amp;</span>WriteIteratorArgs { arguments, .. }| {
+        write_prologue_fn: <span class="kw-2">&amp;</span>(|wc, <span class="kw-2">&amp;</span>WriteIteratorArgs { arguments, .. }| {
             <span class="kw">let </span>receiver = <span class="kw-2">&amp;</span>arguments[<span class="number">0</span>];
+            <span class="kw">let </span>stream_ident = wc.make_ident(<span class="string">&quot;stream&quot;</span>);
             <span class="macro">quote! </span>{
-                <span class="kw">let </span><span class="kw-2">mut </span>#receiver = #receiver;
+                <span class="kw">let </span><span class="kw-2">mut </span>#stream_ident = #receiver;
             }
         }),
-        write_iterator_fn: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span>WriteContextArgs { ident, .. },
-                              <span class="kw-2">&amp;</span>WriteIteratorArgs { arguments, .. }| {
-            <span class="kw">let </span>receiver = <span class="kw-2">&amp;</span>arguments[<span class="number">0</span>];
+        write_iterator_fn: <span class="kw-2">&amp;</span>(|wc @ <span class="kw-2">&amp;</span>WriteContextArgs { ident, .. }, <span class="kw">_</span>| {
+            <span class="kw">let </span>stream_ident = wc.make_ident(<span class="string">&quot;stream&quot;</span>);
             <span class="macro">quote! </span>{
                 <span class="kw">let </span>#ident = std::iter::from_fn(|| {
-                    <span class="kw">match </span>#receiver.poll_recv(<span class="kw-2">&amp;mut </span>std::task::Context::from_waker(<span class="kw-2">&amp;</span>context.waker())) {
+                    <span class="kw">match </span>#stream_ident.poll_recv(<span class="kw-2">&amp;mut </span>std::task::Context::from_waker(<span class="kw-2">&amp;</span>context.waker())) {
                         std::task::Poll::Ready(maybe) =&gt; maybe,
                         std::task::Poll::Pending =&gt; <span class="prelude-val">None</span>,
                     }
@@ -1325,4 +1325,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (9243168fa 2022-08-31)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (2e35f954a 2022-09-01)" ></div></body></html>
