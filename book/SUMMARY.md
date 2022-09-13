@@ -17,7 +17,7 @@
   - [Flows](./surface_flows.md)
   - [Data Sources](./surface_data.md)
   - [Operators](./surface_ops.md)
-- [Core API: Alternative Quickstart](./core_api.md)
+- [(Deprecated) Surface API: Alternative Quickstart](./surface_api.md)
   - [Simplest Example](./example_1.md)
   - [Simple Example](./example_2.md)
   - [A Example With Streaming Input](./example_3.md)

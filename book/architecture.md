@@ -67,19 +67,13 @@ You can interact with Hydroflow at a high level with a _Surface Syntax_ that hid
 the distinction between these two layers. It offers a natural `Iterator`-like chaining syntax for building 
 graphs that get parsed and compiled into a scheduled graph of one or more compiled subgraphs. Please see the [Surface Syntax](./surface_syntax.md) docs for more information.
 
-Alternatively, the _Core API_ allows you to interact with handoffs directly at a low
-level. It doesn't provide any notion of chainable operators. You can use Rust `Iterator`s
-or any other arbitrary Rust code to implement the operators.
-
-We intend users to use the Surface Syntax as it is much more friendly, but as
+> **Deprecated**:  There is a _Surface API_ that provides an `Iterator`-like chaining syntax in Rust. You can use Rust `Iterator`s
+or any other arbitrary Rust code to implement the operators. The Surface API code lives in [`hydroflow::builder`](https://hydro-project.github.io/hydroflow/doc/hydroflow/builder/index.html), 
+mainly in methods on the [`Hydroflow` struct](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html).  Compiled push-based iterators live in [`hydroflow::compiled`](https://hydro-project.github.io/hydroflow/doc/hydroflow/compiled/index.html). We intend users to use the Surface Syntax as it is much more friendly, but as
 Hydroflow is in active development some operators might not be available in
-the Surface Syntax, in which case the Core API can be used instead. If you find
+the Surface Syntax, in which case the Surface API can be used instead. If you find
 yourself in this sitation be sure to [submit an issue](https://github.com/hydro-project/hydroflow/issues/new)!
 
-> **Deprecated**:  There is a _Surface API_ that provides an `Iterator`-like chaining syntax in Rust. The Surface API code lives in [`hydroflow::builder`](https://hydro-project.github.io/hydroflow/doc/hydroflow/builder/index.html).
-
-The Core API lives in [`hydroflow::scheduled`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/index.html),
-mainly in methods on the [`Hydroflow` struct](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html).  Compiled push-based iterators live in [`hydroflow::compiled`](https://hydro-project.github.io/hydroflow/doc/hydroflow/compiled/index.html).
 ## Scheduling
 
 ## Handoffs
