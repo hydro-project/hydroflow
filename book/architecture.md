@@ -41,12 +41,12 @@ does just this by cloning each incoming item into two output buffers, but this
 requires allocation and could cause unbounded buffer growth if the outputs are
 not read from evenly.
 
-However, if instead iterators were _pull_-based, where each operator owns one
+However, if instead iterators were _push_-based, where each operator owns one
 or more _output_ operators, then teeing is very easy, just clone each element
 and push to (i.e. run) both outputs. So that's what we did, created push-based
 iterators to allow fast teeing or splitting in the compiled layer.
 
-Pull-based iterators can be connected to push-based iterators at a "pivot"
+Pull-based iterators can be connected to push-based iterators at a single "pivot"
 point. Together, this pull-to-push setup dictates the shape compiled subgraphs
 can take. Informally, this is like the roots and leaves of a tree. Water flows
 from the roots (the pull inputs), eventually all join together in the trunk
