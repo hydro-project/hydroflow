@@ -90,6 +90,8 @@ and the stream of edges coming in:
     origin = recv_iter(vec![0]);
     stream_of_edges = recv_stream(pairs_recv);
 ```
+The Rust syntax `vec![0]` constructs a vector with a single element, `0`, which we iterate
+over using `recv_iter`.
 
 We then set up a [`join()`](./surface_ops.md#join),
 we call `my_join`, which acts like a SQL inner join. Hydroflow's `join()` requires
