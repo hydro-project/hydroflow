@@ -3,7 +3,7 @@
 Hydroflow graphs are divided into two layers: the outer _scheduled layer_ and
 inner _compiled layer_.
 
-The [Hydroflow Architecture Design Doc](https://www.mingweisamuel.com/hydroflow/design_docs/2021-10_architecture_design_doc.html)
+The [Hydroflow Architecture Design Doc](https://hydro-project.github.io/hydroflow/design_docs/2021-10_architecture_design_doc.html)
 contains a more detailed explanation of this section. Note that some aspects of
 the design doc are not implemented (e.g. early yielding) or may become out of
 date as time passes.
