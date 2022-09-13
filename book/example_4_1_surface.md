@@ -91,7 +91,7 @@ Reached: 4
 
 Let's review the significant changes here. First, in setting up the inputs we have the 
 addition of the `reached_vertices` variable, which uses the [merge()](./surface_ops.md#merge) 
-op to merge the output of two pull-based operators into one. 
+op to merge the output of two operators into one. 
 We route the `origin` node into it as one input right away:
 ```rust,ignore
     reached_vertices = merge();
@@ -107,7 +107,7 @@ output to two places: to the original `for_each` from above to print output, and
 back to the `merge` operator we called `reached_vertices`.
 We feed the `join()` output 
 through a `map()` as before, and then we feed the result into a [`tee()`](./surface_ops.md#tee) operator,
-which is the mirror image of `merge()`:  instead of merging many pull-based inputs to one output, 
+which is the mirror image of `merge()`:  instead of merging many inputs to one output, 
 it copies one input to many different outputs. Each input element is _cloned_, in Rust terms, and
 given to each of the outputs. 
 
