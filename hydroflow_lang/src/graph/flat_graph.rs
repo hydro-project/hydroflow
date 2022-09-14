@@ -23,12 +23,10 @@ use super::{GraphEdgeId, GraphNodeId, Node};
 pub struct FlatGraph {
     /// Each node (operator or handoff).
     pub(crate) nodes: SlotMap<GraphNodeId, Node>,
-
-    /// Input and output port for each edge.
-    pub(crate) indices: SecondaryMap<GraphEdgeId, (IndexInt, IndexInt)>,
-
     /// Graph
     pub(crate) graph: DiMulGraph<GraphNodeId, GraphEdgeId>,
+    /// Input and output port for each edge.
+    pub(crate) indices: SecondaryMap<GraphEdgeId, (IndexInt, IndexInt)>,
 
     /// Variable names, used as [`HfStatement::Named`] are added.
     names: BTreeMap<Ident, Ports>,
@@ -154,7 +152,7 @@ impl FlatGraph {
             let mut out_ports = HashSet::new();
             for (_, out_port) in self
                 .graph
-                .predecessors(node_key)
+                .predecessor_edges(node_key)
                 .map(|edge_key| self.indices.get(edge_key).expect("Edge was inserted."))
             {
                 if let Some(old_out_port) = out_ports.replace(out_port) {
