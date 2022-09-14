@@ -22,8 +22,8 @@ fn find_barrier_crossers(
 ) -> SecondaryMap<GraphEdgeId, DelayType> {
     graph
         .edges()
-        .filter_map(|(edge_id, (src, dst))| {
-            let (src_idx, dst_idx) = indices[edge_id];
+        .filter_map(|(edge_id, (_src, dst))| {
+            let (_src_idx, dst_idx) = indices[edge_id];
             if let Node::Operator(dst_operator) = &nodes[dst] {
                 let dst_name = &*dst_operator.name_string();
                 OPERATORS
@@ -40,7 +40,6 @@ fn find_barrier_crossers(
 
 fn find_subgraph_unionfind(
     nodes: &SlotMap<GraphNodeId, Node>,
-    indices: &SecondaryMap<GraphEdgeId, (IndexInt, IndexInt)>,
     graph: &DiMulGraph<GraphNodeId, GraphEdgeId>,
     barrier_crossers: &SecondaryMap<GraphEdgeId, DelayType>,
 ) -> (UnionFind<GraphNodeId>, BTreeSet<GraphEdgeId>) {
@@ -64,8 +63,6 @@ fn find_subgraph_unionfind(
 
     // (Each edge gets looked at once to check if it can be unioned into one subgraph.)
     for (edge_id, (src, dst)) in graph.edges() {
-        let (src_idx, dst_idx) = indices[edge_id];
-
         // Ignore (1) already added edges as well as (2) new self-cycles.
         if subgraph_unionfind.same_set(src, dst) {
             // Note this might be triggered even if the edge (src, dst) is not in the subgraph (not case 1).
@@ -99,7 +96,6 @@ fn find_subgraph_unionfind(
 /// This list of nodes in each subgraph are returned in topological sort order.
 fn make_subgraph_collect(
     nodes: &SlotMap<GraphNodeId, Node>,
-    indices: &SecondaryMap<GraphEdgeId, (IndexInt, IndexInt)>,
     graph: &DiMulGraph<GraphNodeId, GraphEdgeId>,
     mut subgraph_unionfind: UnionFind<GraphNodeId>,
 ) -> (
@@ -160,10 +156,10 @@ fn make_subgraphs(
     // 2. Collect edges. (Future optimization: sort so edges which should not be split across a handoff come first).
     // 3. For each edge, try to join `(to, from)` into the same subgraph.
 
-    graph.assert_valid((0, 0, 0));
+    graph.assert_valid();
 
     let (subgraph_unionfind, handoff_edges) =
-        find_subgraph_unionfind(nodes, indices, graph, barrier_crossers);
+        find_subgraph_unionfind(nodes, graph, barrier_crossers);
 
     // Insert handoffs between subgraphs (or on subgraph self-loop edges)
     for edge_id in handoff_edges {
@@ -186,8 +182,7 @@ fn make_subgraphs(
     // Determine node's subgraph and subgraph's nodes.
     // This list of nodes in each subgraph are to be in topological sort order.
     // Eventually returned directly in the `PartitionedGraph`.
-    let (node_subgraph, subgraph_nodes) =
-        make_subgraph_collect(nodes, indices, graph, subgraph_unionfind);
+    let (node_subgraph, subgraph_nodes) = make_subgraph_collect(nodes, graph, subgraph_unionfind);
     (node_subgraph, subgraph_nodes)
 }
 
@@ -382,7 +377,7 @@ fn find_subgraph_strata(
                 // Any negative edges which go onto the same or previous stratum are bad.
                 // Indicates an unbroken negative cycle.
                 if dst_stratum <= src_stratum {
-                    let (src_idx, dst_idx) = indices[edge_id];
+                    let (_src_idx, dst_idx) = indices[edge_id];
                     dst_idx
                         .span()
                         .unwrap()
@@ -418,7 +413,7 @@ fn find_subgraph_handoffs(
     // For each edge in the graph, if `src` or `dst` are a handoff then assign
     // that handoff the to neighboring subgraphs (the other of `src`/`dst`).
     // (Mingwei: alternatively, could iterate nodes instead and just look at pred/succ).
-    for (edge_id, (src, dst)) in graph.edges() {
+    for (_edge_id, (src, dst)) in graph.edges() {
         let (src_node, dst_node) = (&nodes[src], &nodes[dst]);
         match (src_node, dst_node) {
             (Node::Operator(_), Node::Operator(_)) => {}

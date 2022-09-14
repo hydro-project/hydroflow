@@ -1,5 +1,3 @@
-use std::collections::BinaryHeap;
-
 use proc_macro2::{Ident, Literal, Span, TokenStream};
 use quote::{quote, ToTokens};
 use slotmap::{Key, SecondaryMap, SlotMap};
@@ -11,7 +9,7 @@ use super::di_mul_graph::DiMulGraph;
 use super::flat_graph::FlatGraph;
 use super::ops::{WriteContextArgs, WriteIteratorArgs, OPERATORS};
 use super::serde_graph::SerdeGraph;
-use super::{node_color, Color, EdgePortRef, GraphEdgeId, GraphNodeId, GraphSubgraphId, Node};
+use super::{node_color, Color, GraphEdgeId, GraphNodeId, GraphSubgraphId, Node};
 
 #[derive(Default)]
 #[allow(dead_code)] // TODO(mingwei): remove when no longer needed.

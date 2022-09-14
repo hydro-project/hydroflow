@@ -57,7 +57,7 @@ where
 
     /// Assert that `self` is in a consistent state, for debugging.
     /// This is computationally expensive for large graphs.
-    pub fn assert_valid(&self, extra: impl std::fmt::Debug) {
+    pub fn assert_valid(&self) {
         // Ensure each edge exists in the adj lists.
         for (edge_id, &(src, dst)) in self.edges.iter() {
             assert!(self.succs[src].contains(&edge_id));
@@ -79,13 +79,12 @@ where
         assert_eq!(
             self.edges.len(),
             self.succs.values().map(|vec| vec.len()).sum::<usize>(),
-            "succs broken {:?}",
-            extra
+            "succs broken (contains duplicate or removed edge?)"
         );
         assert_eq!(
             self.edges.len(),
             self.preds.values().map(|vec| vec.len()).sum::<usize>(),
-            "preds broken"
+            "preds broken (contains duplicate or removed edge?)"
         );
     }
 
@@ -109,20 +108,10 @@ where
     ///
     /// Returns None if the edge doesn't exist.
     pub fn insert_intermediate_node(&mut self, new_node: V, edge: E) -> Option<(E, E)> {
-        self.assert_valid((0, 0, 0));
-
-        let before = (
-            self.edges.len(),
-            self.preds.values().map(|vec| vec.len()).sum::<usize>(),
-            self.succs.values().map(|vec| vec.len()).sum::<usize>(),
-        );
+        self.assert_valid();
 
         // Remove old edge from edges.
         let (src, dst) = self.edges.remove(edge)?;
-
-        if src == dst {
-            panic!("TRICKY TRICKY!!!");
-        }
 
         // Insert new edges into edges.
         let e0 = self.edges.insert((src, new_node));
@@ -150,7 +139,7 @@ where
             "Cannot insert intermediate node that already exists"
         );
 
-        self.assert_valid(before);
+        self.assert_valid();
         Some((e0, e1))
     }
 
