@@ -159,16 +159,23 @@ where
         self.preds.get(v).into_iter().flatten().copied()
     }
 
-    pub fn successors(&self, v: V) -> impl '_ + Iterator<Item = V> {
-        self.successor_edges(v)
-            .map(|edge_id| self.edges[edge_id])
-            .map(|(_v, succ)| succ)
+    pub fn successor_nodes(&self, v: V) -> impl '_ + Iterator<Item = V> {
+        self.successor_edges(v).map(|edge_id| self.edges[edge_id].1)
     }
 
-    pub fn predecessors(&self, v: V) -> impl '_ + Iterator<Item = V> {
+    pub fn predecessor_nodes(&self, v: V) -> impl '_ + Iterator<Item = V> {
         self.predecessor_edges(v)
-            .map(|edge_id| self.edges[edge_id])
-            .map(|(pred, _v)| pred)
+            .map(|edge_id| self.edges[edge_id].0)
+    }
+
+    pub fn successors(&self, v: V) -> impl '_ + Iterator<Item = (E, V)> {
+        self.successor_edges(v)
+            .map(|edge_id| (edge_id, self.edges[edge_id].1))
+    }
+
+    pub fn predecessors(&self, v: V) -> impl '_ + Iterator<Item = (E, V)> {
+        self.predecessor_edges(v)
+            .map(|edge_id| (edge_id, self.edges[edge_id].0))
     }
 
     pub fn degree_out(&self, v: V) -> usize {
