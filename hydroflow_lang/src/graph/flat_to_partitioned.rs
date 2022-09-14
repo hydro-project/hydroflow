@@ -112,7 +112,7 @@ fn make_subgraph_collect(
             .map(|(node_id, _)| node_id),
         |v| {
             graph
-                .predecessors(v)
+                .predecessor_nodes(v)
                 .filter(|&pred| !matches!(nodes[pred], Node::Handoff))
         },
     );
@@ -268,19 +268,18 @@ fn find_subgraph_strata(
 
     for (node_id, node) in nodes.iter() {
         if matches!(node, Node::Handoff) {
-            assert_eq!(1, graph.successor_edges(node_id).count());
-            let succ_edge = graph.successor_edges(node_id).next().unwrap();
+            assert_eq!(1, graph.successors(node_id).count());
+            let (succ_edge, succ) = graph.successors(node_id).next().unwrap();
 
             // Ignore Epoch edges.
             if Some(&DelayType::Epoch) == barrier_crossers.get(succ_edge) {
                 continue;
             }
 
-            assert_eq!(1, graph.predecessors(node_id).count());
-            let pred = graph.predecessors(node_id).next().unwrap();
-            let pred_sg = node_subgraph[pred];
+            assert_eq!(1, graph.predecessor_nodes(node_id).count());
+            let pred = graph.predecessor_nodes(node_id).next().unwrap();
 
-            let (_node, succ) = graph.edge(succ_edge).unwrap();
+            let pred_sg = node_subgraph[pred];
             let succ_sg = node_subgraph[succ];
 
             subgraph_preds.entry(succ_sg).or_default().push(pred_sg);
@@ -340,8 +339,8 @@ fn find_subgraph_strata(
     let max_stratum = subgraph_stratum.values().cloned().max().unwrap_or(0) + 1; // Used for `next_epoch()` delayer subgraphs.
     for (edge_id, &delay_type) in barrier_crossers.iter() {
         let (hoff, dst) = graph.edge(edge_id).unwrap();
-        assert_eq!(1, graph.predecessors(hoff).count());
-        let src = graph.predecessors(hoff).next().unwrap();
+        assert_eq!(1, graph.predecessor_nodes(hoff).count());
+        let src = graph.predecessor_nodes(hoff).next().unwrap();
 
         let src_sg = node_subgraph[src];
         let dst_sg = node_subgraph[dst];
