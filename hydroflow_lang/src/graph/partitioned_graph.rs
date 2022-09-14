@@ -1,24 +1,37 @@
+use std::collections::BinaryHeap;
+
 use proc_macro2::{Ident, Literal, Span, TokenStream};
 use quote::{quote, ToTokens};
 use slotmap::{Key, SecondaryMap, SlotMap};
 use syn::spanned::Spanned;
 
+use crate::parse::IndexInt;
+
+use super::di_mul_graph::DiMulGraph;
 use super::flat_graph::FlatGraph;
 use super::ops::{WriteContextArgs, WriteIteratorArgs, OPERATORS};
 use super::serde_graph::SerdeGraph;
-use super::{node_color, Color, EdgePortRef, GraphNodeId, GraphSubgraphId, Node, OutboundEdges};
+use super::{node_color, Color, EdgePortRef, GraphEdgeId, GraphNodeId, GraphSubgraphId, Node};
 
 #[derive(Default)]
 #[allow(dead_code)] // TODO(mingwei): remove when no longer needed.
 pub struct PartitionedGraph {
+    /// Each node (operator or handoff).
     pub(crate) nodes: SlotMap<GraphNodeId, Node>,
-    pub(crate) preds: SecondaryMap<GraphNodeId, OutboundEdges>,
-    pub(crate) succs: SecondaryMap<GraphNodeId, OutboundEdges>,
+    /// Graph
+    pub(crate) graph: DiMulGraph<GraphNodeId, GraphEdgeId>,
+    /// Input and output port for each edge.
+    pub(crate) indices: SecondaryMap<GraphEdgeId, (IndexInt, IndexInt)>,
+    /// Which subgraph each node belongs to.
     pub(crate) node_subgraph: SecondaryMap<GraphNodeId, GraphSubgraphId>,
 
+    /// Which nodes belong to each subgraph.
     pub(crate) subgraph_nodes: SlotMap<GraphSubgraphId, Vec<GraphNodeId>>,
+    /// Which stratum each subgraph belongs to.
     pub(crate) subgraph_stratum: SecondaryMap<GraphSubgraphId, usize>,
+    /// Which handoffs go into each subgraph.
     pub(crate) subgraph_recv_handoffs: SecondaryMap<GraphSubgraphId, Vec<GraphNodeId>>,
+    /// Which handoffs go out of each subgraph.
     pub(crate) subgraph_send_handoffs: SecondaryMap<GraphSubgraphId, Vec<GraphNodeId>>,
 }
 impl PartitionedGraph {
@@ -29,10 +42,6 @@ impl PartitionedGraph {
     #[allow(clippy::result_unit_err)]
     pub fn from_flat_graph(flat_graph: FlatGraph) -> Result<Self, ()> {
         flat_graph.try_into()
-    }
-
-    pub fn edges(&self) -> impl '_ + Iterator<Item = (EdgePortRef, EdgePortRef)> {
-        super::iter_edges(&self.succs)
     }
 
     pub fn serde_string(&self) -> String {
@@ -110,8 +119,8 @@ impl PartitionedGraph {
                         .position(|&node_id| {
                             node_color(
                                 &self.nodes[node_id],
-                                self.preds[node_id].len(),
-                                self.succs[node_id].len(),
+                                self.graph.degree_in(node_id),
+                                self.graph.degree_out(node_id),
                             )
                             .map(|color| Color::Pull != color)
                             .unwrap_or(false)
@@ -144,14 +153,32 @@ impl PartitionedGraph {
                                 ident: &ident,
                             };
 
-                            // Note: `IndexInt` order is guaranteed by `BTreeMap` iteration order.
-                            let inputs: Vec<_> = self.preds[node_id]
-                                .values()
-                                .map(|&(pred_id, _)| self.node_id_as_ident(pred_id, true))
+                            // TODO clean this up.
+                            // Collect input arguments (predacessors).
+                            let mut input_edges: Vec<_> =
+                                self.graph.predecessor_edges(node_id).collect();
+                            // Ensure sorted by port index.
+                            input_edges.sort_unstable_by_key(|&edge_id| self.indices[edge_id].0);
+                            let inputs: Vec<_> = input_edges
+                                .into_iter()
+                                .map(|edge_id| {
+                                    self.node_id_as_ident(self.graph.edge(edge_id).unwrap().0, true)
+                                })
                                 .collect();
-                            let outputs: Vec<_> = self.succs[node_id]
-                                .values()
-                                .map(|&(succ_id, _)| self.node_id_as_ident(succ_id, false))
+
+                            // Collect output arguments (successors).
+                            let mut output_edges: Vec<_> =
+                                self.graph.successor_edges(node_id).collect();
+                            // Ensure sorted by port index.
+                            output_edges.sort_unstable_by_key(|&edge_id| self.indices[edge_id].1);
+                            let outputs: Vec<_> = output_edges
+                                .into_iter()
+                                .map(|edge_id| {
+                                    self.node_id_as_ident(
+                                        self.graph.edge(edge_id).unwrap().1,
+                                        false,
+                                    )
+                                })
                                 .collect();
 
                             let iter_args = WriteIteratorArgs {
@@ -251,7 +278,7 @@ impl PartitionedGraph {
     pub fn to_serde_graph(&self) -> SerdeGraph {
         // TODO(mingwei): Double initialization of SerdeGraph fields.
         let mut g = SerdeGraph::new();
-        for ((src, _src_idx), (dst, _dst_idx)) in self.edges() {
+        for (_edge_id, (src, dst)) in self.graph.edges() {
             // add nodes
             g.nodes.insert(src, self.node_to_txt(src));
             g.nodes.insert(dst, self.node_to_txt(dst));
