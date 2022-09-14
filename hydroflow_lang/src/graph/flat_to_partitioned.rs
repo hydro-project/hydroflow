@@ -7,26 +7,30 @@ use syn::{parse_quote, spanned::Spanned};
 use crate::{parse::IndexInt, union_find::UnionFind};
 
 use super::{
+    di_mul_graph::DiMulGraph,
     flat_graph::FlatGraph,
-    graph_algorithms, iter_edges, node_color,
+    graph_algorithms, node_color,
     ops::{DelayType, OPERATORS},
     partitioned_graph::PartitionedGraph,
-    AdjList, Color, EdgePort, GraphNodeId, GraphSubgraphId, Node,
+    Color, GraphEdgeId, GraphNodeId, GraphSubgraphId, Node,
 };
 
 fn find_barrier_crossers(
     nodes: &SlotMap<GraphNodeId, Node>,
-    succs: &AdjList,
-) -> Vec<(GraphNodeId, GraphNodeId, IndexInt, DelayType)> {
-    iter_edges(succs)
-        .filter_map(|((src, _src_idx), (dst, dst_idx))| {
+    indices: &SecondaryMap<GraphEdgeId, (IndexInt, IndexInt)>,
+    graph: &DiMulGraph<GraphNodeId, GraphEdgeId>,
+) -> SecondaryMap<GraphEdgeId, DelayType> {
+    graph
+        .edges()
+        .filter_map(|(edge_id, (src, dst))| {
+            let (src_idx, dst_idx) = indices[edge_id];
             if let Node::Operator(dst_operator) = &nodes[dst] {
                 let dst_name = &*dst_operator.name_string();
                 OPERATORS
                     .iter()
                     .find(|&op| dst_name == op.name)
                     .and_then(|op_constraints| (op_constraints.input_delaytype_fn)(dst_idx.value))
-                    .map(|input_barrier| (src, dst, *dst_idx, input_barrier))
+                    .map(|input_barrier| (edge_id, input_barrier))
             } else {
                 None
             }
@@ -35,32 +39,32 @@ fn find_barrier_crossers(
 }
 
 fn find_subgraph_unionfind(
-    nodes: &mut SlotMap<GraphNodeId, Node>,
-    preds: &mut AdjList,
-    succs: &mut AdjList,
-    barrier_crossers: &[(GraphNodeId, GraphNodeId, IndexInt, DelayType)],
-) -> (UnionFind<GraphNodeId>, BTreeSet<(EdgePort, EdgePort)>) {
+    nodes: &SlotMap<GraphNodeId, Node>,
+    indices: &SecondaryMap<GraphEdgeId, (IndexInt, IndexInt)>,
+    graph: &DiMulGraph<GraphNodeId, GraphEdgeId>,
+    barrier_crossers: &SecondaryMap<GraphEdgeId, DelayType>,
+) -> (UnionFind<GraphNodeId>, BTreeSet<GraphEdgeId>) {
     // Pre-calculate node colors.
     let mut node_color: SecondaryMap<GraphNodeId, Option<Color>> = nodes
         .keys()
         .map(|node_id| {
-            let inn_degree = preds[node_id].len();
-            let out_degree = succs[node_id].len();
+            let inn_degree = graph.degree_in(node_id);
+            let out_degree = graph.degree_out(node_id);
             let op_color = node_color(&nodes[node_id], inn_degree, out_degree);
             (node_id, op_color)
         })
         .collect();
 
     let mut subgraph_unionfind: UnionFind<GraphNodeId> = UnionFind::with_capacity(nodes.len());
-    // All edges which are handoffs. Starts out with all edges and we remove
-    // from this set as we construct subgraphs.
-    let mut handoff_edges: BTreeSet<(EdgePort, EdgePort)> = iter_edges(succs)
-        .map(|((src, &src_idx), (dst, &dst_idx))| ((src, src_idx), (dst, dst_idx)))
-        .collect();
+    // Will contain all edges which are handoffs. Starts out with all edges and
+    // we remove from this set as we construct subgraphs.
+    let mut handoff_edges: BTreeSet<GraphEdgeId> =
+        graph.edges().map(|(edge_id, _)| edge_id).collect();
+    // Would sort edges here for priority (for now, no sort/priority).
 
-    // Sort edges here (for now, no sort/priority).
-    for ((src, src_idx), (dst, dst_idx)) in iter_edges(succs) {
-        // (Each edge gets looked at once to check if it can be unioned into one subgraph.)
+    // (Each edge gets looked at once to check if it can be unioned into one subgraph.)
+    for (edge_id, (src, dst)) in graph.edges() {
+        let (src_idx, dst_idx) = indices[edge_id];
 
         // Ignore (1) already added edges as well as (2) new self-cycles.
         if subgraph_unionfind.same_set(src, dst) {
@@ -71,14 +75,12 @@ fn find_subgraph_unionfind(
         }
 
         // Ignore if would join stratum crossers (next edges).
-        if barrier_crossers
-            .iter()
-            .any(|&(x_src, x_dst, _x_dst_idx, _x_input_barrier)| {
-                (subgraph_unionfind.same_set(x_src, src) && subgraph_unionfind.same_set(x_dst, dst))
-                    || (subgraph_unionfind.same_set(x_src, dst)
-                        && subgraph_unionfind.same_set(x_dst, src))
-            })
-        {
+        if barrier_crossers.iter().any(|(edge_id, _)| {
+            let (x_src, x_dst) = graph.edge(edge_id).unwrap();
+            (subgraph_unionfind.same_set(x_src, src) && subgraph_unionfind.same_set(x_dst, dst))
+                || (subgraph_unionfind.same_set(x_src, dst)
+                    && subgraph_unionfind.same_set(x_dst, src))
+        }) {
             continue;
         }
 
@@ -86,15 +88,19 @@ fn find_subgraph_unionfind(
             // At this point we have selected this edge and its src & dst to be
             // within a single subgraph.
             subgraph_unionfind.union(src, dst);
-            assert!(handoff_edges.remove(&((src, *src_idx), (dst, *dst_idx))));
+            assert!(handoff_edges.remove(&edge_id));
         }
     }
     (subgraph_unionfind, handoff_edges)
 }
 
-fn find_subgraph_collect(
-    nodes: &mut SlotMap<GraphNodeId, Node>,
-    preds: &mut AdjList,
+/// Builds the datastructures for checking which subgraph each node belongs to
+/// after handoffs have already been inserted to partition subgraphs.
+/// This list of nodes in each subgraph are returned in topological sort order.
+fn make_subgraph_collect(
+    nodes: &SlotMap<GraphNodeId, Node>,
+    indices: &SecondaryMap<GraphEdgeId, (IndexInt, IndexInt)>,
+    graph: &DiMulGraph<GraphNodeId, GraphEdgeId>,
     mut subgraph_unionfind: UnionFind<GraphNodeId>,
 ) -> (
     SecondaryMap<GraphNodeId, GraphSubgraphId>,
@@ -109,12 +115,9 @@ fn find_subgraph_collect(
             .filter(|&(_, node)| !matches!(node, Node::Handoff))
             .map(|(node_id, _)| node_id),
         |v| {
-            preds
-                .get(v)
-                .into_iter()
-                .flatten()
-                .map(|(_src_idx, &(dst, _dst_idx))| dst)
-                .filter(|&dst| !matches!(nodes[dst], Node::Handoff))
+            graph
+                .predecessors(v)
+                .filter(|&pred| !matches!(nodes[pred], Node::Handoff))
         },
     );
 
@@ -140,11 +143,14 @@ fn find_subgraph_collect(
     (node_subgraph, subgraph_nodes)
 }
 
-fn find_subgraphs(
+/// Find subgraph and insert handoffs.
+/// Modifies barrier_crossers so that the edge OUT of an inserted handoff has
+/// the DelayType data.
+fn make_subgraphs(
     nodes: &mut SlotMap<GraphNodeId, Node>,
-    preds: &mut AdjList,
-    succs: &mut AdjList,
-    barrier_crossers: &[(GraphNodeId, GraphNodeId, IndexInt, DelayType)],
+    indices: &mut SecondaryMap<GraphEdgeId, (IndexInt, IndexInt)>,
+    graph: &mut DiMulGraph<GraphNodeId, GraphEdgeId>,
+    barrier_crossers: &mut SecondaryMap<GraphEdgeId, DelayType>,
 ) -> (
     SecondaryMap<GraphNodeId, GraphSubgraphId>,
     SlotMap<GraphSubgraphId, Vec<GraphNodeId>>,
@@ -154,25 +160,34 @@ fn find_subgraphs(
     // 2. Collect edges. (Future optimization: sort so edges which should not be split across a handoff come first).
     // 3. For each edge, try to join `(to, from)` into the same subgraph.
 
+    graph.assert_valid((0, 0, 0));
+
     let (subgraph_unionfind, handoff_edges) =
-        find_subgraph_unionfind(nodes, preds, succs, barrier_crossers);
+        find_subgraph_unionfind(nodes, indices, graph, barrier_crossers);
 
     // Insert handoffs between subgraphs (or on subgraph self-loop edges)
-    for edge in handoff_edges {
-        let ((src, _src_idx), (dst, dst_idx)) = edge;
+    for edge_id in handoff_edges {
+        let (src, dst) = graph.edge(edge_id).unwrap();
 
         // Already has a handoff, no need to insert one.
         if matches!(nodes[src], Node::Handoff) || matches!(nodes[dst], Node::Handoff) {
             continue;
         }
 
-        insert_intermediate_node(nodes, preds, succs, Node::Handoff, (src, dst, dst_idx));
+        let (_node_id, out_edge_id) =
+            insert_intermediate_node(nodes, indices, graph, Node::Handoff, edge_id);
+
+        // Update barrier_crossers for inserted node.
+        if let Some(delay_type) = barrier_crossers.remove(edge_id) {
+            barrier_crossers.insert(out_edge_id, delay_type);
+        }
     }
 
     // Determine node's subgraph and subgraph's nodes.
     // This list of nodes in each subgraph are to be in topological sort order.
     // Eventually returned directly in the `PartitionedGraph`.
-    let (node_subgraph, subgraph_nodes) = find_subgraph_collect(nodes, preds, subgraph_unionfind);
+    let (node_subgraph, subgraph_nodes) =
+        make_subgraph_collect(nodes, indices, graph, subgraph_unionfind);
     (node_subgraph, subgraph_nodes)
 }
 
@@ -236,32 +251,48 @@ fn can_connect_colorize(
 
 fn find_subgraph_strata(
     nodes: &mut SlotMap<GraphNodeId, Node>,
-    new_preds: &mut AdjList,
-    new_succs: &mut AdjList,
+    indices: &mut SecondaryMap<GraphEdgeId, (IndexInt, IndexInt)>,
+    graph: &mut DiMulGraph<GraphNodeId, GraphEdgeId>,
     node_subgraph: &mut SecondaryMap<GraphNodeId, GraphSubgraphId>,
     subgraph_nodes: &mut SlotMap<GraphSubgraphId, Vec<GraphNodeId>>,
-    barrier_crossers: &[(GraphNodeId, GraphNodeId, IndexInt, DelayType)],
+    barrier_crossers: &SecondaryMap<GraphEdgeId, DelayType>,
 ) -> Result<SecondaryMap<GraphSubgraphId, usize>, ()> {
     // Determine subgraphs's stratum number.
     // Find SCCs ignoring `next_epoch()` edges, then do TopoSort on the resulting DAG.
     // (Cycles on cross-stratum negative edges are an error.)
 
-    // Generate subgraph graph.
+    // Generate a subgraph graph. I.e. each node is a subgraph.
+    // Edges are connections between subgraphs, ignoring epoch-crossers.
+    // TODO: use DiMulGraph here?
     let mut subgraph_preds: BTreeMap<GraphSubgraphId, Vec<GraphSubgraphId>> = Default::default();
     let mut subgraph_succs: BTreeMap<GraphSubgraphId, Vec<GraphSubgraphId>> = Default::default();
 
+    // Negative (next stratum) connections between subgraphs. (Ignore `next_epoch()` connections).
+    let mut subgraph_negative_connections: BTreeSet<(GraphSubgraphId, GraphSubgraphId)> =
+        Default::default();
+
     for (node_id, node) in nodes.iter() {
         if matches!(node, Node::Handoff) {
-            for &(pred, _) in new_preds[node_id].values() {
-                let pred_sg = node_subgraph[pred];
-                for &(succ, succ_idx) in new_succs[node_id].values() {
-                    if barrier_crossers.contains(&(pred, succ, succ_idx, DelayType::Epoch)) {
-                        continue;
-                    }
-                    let succ_sg = node_subgraph[succ];
-                    subgraph_preds.entry(succ_sg).or_default().push(pred_sg);
-                    subgraph_succs.entry(pred_sg).or_default().push(succ_sg);
-                }
+            assert_eq!(1, graph.successor_edges(node_id).count());
+            let succ_edge = graph.successor_edges(node_id).next().unwrap();
+
+            // Ignore Epoch edges.
+            if Some(&DelayType::Epoch) == barrier_crossers.get(succ_edge) {
+                continue;
+            }
+
+            assert_eq!(1, graph.predecessors(node_id).count());
+            let pred = graph.predecessors(node_id).next().unwrap();
+            let pred_sg = node_subgraph[pred];
+
+            let (_node, succ) = graph.edge(succ_edge).unwrap();
+            let succ_sg = node_subgraph[succ];
+
+            subgraph_preds.entry(succ_sg).or_default().push(pred_sg);
+            subgraph_succs.entry(pred_sg).or_default().push(succ_sg);
+
+            if Some(&DelayType::Stratum) == barrier_crossers.get(succ_edge) {
+                subgraph_negative_connections.insert((pred_sg, succ_sg));
             }
         }
     }
@@ -288,13 +319,6 @@ fn find_subgraph_strata(
         })
     };
 
-    // Negative (next stratum) connections between subgraphs. (Ignore `next_epoch()` connections).
-    let subgraph_negative_connections: BTreeSet<_> = barrier_crossers
-        .iter()
-        .filter(|(_src, _dst, _dst_idx, delay_type)| DelayType::Stratum == *delay_type)
-        .map(|(src, dst, _dst_idx, _delay_type)| (node_subgraph[*src], node_subgraph[*dst]))
-        .collect();
-
     let mut subgraph_stratum: SecondaryMap<GraphSubgraphId, usize> =
         SecondaryMap::with_capacity(topo_sort_order.len());
     // Each subgraph stratum is the same as it's predecessors unless there is a negative edge.
@@ -319,12 +343,16 @@ fn find_subgraph_strata(
 
     // Re-introduce the `next_epoch()` edges, ensuring they actually go to the next epoch.
     let max_stratum = subgraph_stratum.values().cloned().max().unwrap_or(0) + 1; // Used for `next_epoch()` delayer subgraphs.
-    for &(src, dst, dst_idx, input_barrier) in barrier_crossers.iter() {
+    for (edge_id, &delay_type) in barrier_crossers.iter() {
+        let (hoff, dst) = graph.edge(edge_id).unwrap();
+        assert_eq!(1, graph.predecessors(hoff).count());
+        let src = graph.predecessors(hoff).next().unwrap();
+
         let src_sg = node_subgraph[src];
         let dst_sg = node_subgraph[dst];
         let src_stratum = subgraph_stratum[src_sg];
         let dst_stratum = subgraph_stratum[dst_sg];
-        match input_barrier {
+        match delay_type {
             DelayType::Epoch => {
                 // If epoch edge goes foreward in stratum, need to buffer.
                 // (TODO(mingwei): could use a different kind of handoff.)
@@ -333,32 +361,28 @@ fn find_subgraph_strata(
                     // of the epoch and therefore delays the data until the next epoch.
 
                     // Before: A (src) -> H -> B (dst)
-                    let (hoff_node_id, _hoff_idx) = new_preds[dst][&dst_idx];
-                    let new_node_id = insert_intermediate_node(
+                    let (new_node_id, new_edge_id) = insert_intermediate_node(
                         nodes,
-                        new_preds,
-                        new_succs,
+                        indices,
+                        graph,
                         Node::Operator(parse_quote! { identity() }),
-                        (hoff_node_id, dst, dst_idx),
+                        edge_id,
                     );
+                    // Intermediate: A (src) -> H -> X -> B (dst)
+                    let (_hoff_node_id, _hoff_edge_id) =
+                        insert_intermediate_node(nodes, indices, graph, Node::Handoff, new_edge_id);
+
+                    // Set stratum numbers.
                     let new_subgraph_id = subgraph_nodes.insert(vec![new_node_id]);
                     subgraph_stratum.insert(new_subgraph_id, max_stratum);
                     node_subgraph.insert(new_node_id, new_subgraph_id);
-                    // Intermediate: A (src) -> H -> X -> B (dst)
-                    let _hoff_node_id = insert_intermediate_node(
-                        nodes,
-                        new_preds,
-                        new_succs,
-                        Node::Handoff,
-                        (new_node_id, dst, dst_idx),
-                    );
-                    // After: A (src) -> H -> X -> H' -> B (dst)
                 }
             }
             DelayType::Stratum => {
                 // Any negative edges which go onto the same or previous stratum are bad.
                 // Indicates an unbroken negative cycle.
                 if dst_stratum <= src_stratum {
+                    let (src_idx, dst_idx) = indices[edge_id];
                     dst_idx
                         .span()
                         .unwrap()
@@ -376,7 +400,7 @@ fn find_subgraph_strata(
 // Find the input (recv) and output (send) handoffs for each subgraph.
 fn find_subgraph_handoffs(
     nodes: &SlotMap<GraphNodeId, Node>,
-    new_succs: &AdjList,
+    graph: &DiMulGraph<GraphNodeId, GraphEdgeId>,
     node_subgraph: &SecondaryMap<GraphNodeId, GraphSubgraphId>,
     subgraph_nodes: &SlotMap<GraphSubgraphId, Vec<GraphNodeId>>,
 ) -> (
@@ -394,8 +418,7 @@ fn find_subgraph_handoffs(
     // For each edge in the graph, if `src` or `dst` are a handoff then assign
     // that handoff the to neighboring subgraphs (the other of `src`/`dst`).
     // (Mingwei: alternatively, could iterate nodes instead and just look at pred/succ).
-    for edge in iter_edges(new_succs) {
-        let ((src, _), (dst, _)) = edge;
+    for (edge_id, (src, dst)) in graph.edges() {
         let (src_node, dst_node) = (&nodes[src], &nodes[dst]);
         match (src_node, dst_node) {
             (Node::Operator(_), Node::Operator(_)) => {}
@@ -424,33 +447,33 @@ impl TryFrom<FlatGraph> for PartitionedGraph {
     fn try_from(flat_graph: FlatGraph) -> Result<Self, Self::Error> {
         let FlatGraph {
             mut nodes,
-            mut preds,
-            mut succs,
+            mut graph,
+            mut indices,
             ..
         } = flat_graph;
 
         // Pairs of node IDs which cross stratums or epochs and therefore cannot be in the same subgraph.
-        let barrier_crossers = find_barrier_crossers(&nodes, &succs);
+        let mut barrier_crossers = find_barrier_crossers(&nodes, &indices, &graph);
 
         let (mut node_subgraph, mut subgraph_nodes) =
-            find_subgraphs(&mut nodes, &mut preds, &mut succs, &barrier_crossers);
+            make_subgraphs(&mut nodes, &mut indices, &mut graph, &mut barrier_crossers);
 
         let subgraph_stratum = find_subgraph_strata(
             &mut nodes,
-            &mut preds,
-            &mut succs,
+            &mut indices,
+            &mut graph,
             &mut node_subgraph,
             &mut subgraph_nodes,
             &barrier_crossers,
         )?;
 
         let (subgraph_recv_handoffs, subgraph_send_handoffs) =
-            find_subgraph_handoffs(&nodes, &succs, &node_subgraph, &subgraph_nodes);
+            find_subgraph_handoffs(&nodes, &graph, &node_subgraph, &subgraph_nodes);
 
         Ok(PartitionedGraph {
             nodes,
-            preds,
-            succs,
+            graph,
+            indices,
             node_subgraph,
 
             subgraph_nodes,
@@ -465,38 +488,26 @@ impl TryFrom<FlatGraph> for PartitionedGraph {
 ///
 /// Before: A (src) ------------> B (dst)
 /// After:  A (src) -> X (new) -> B (dst)
+///
+/// Returns the ID of X & ID of edge OUT of X.
 fn insert_intermediate_node(
     nodes: &mut SlotMap<GraphNodeId, Node>,
-    preds: &mut AdjList,
-    succs: &mut AdjList,
+    indices: &mut SecondaryMap<GraphEdgeId, (IndexInt, IndexInt)>,
+    graph: &mut DiMulGraph<GraphNodeId, GraphEdgeId>,
     node: Node,
-    edge: (GraphNodeId, GraphNodeId, IndexInt),
-) -> GraphNodeId {
+    edge_id: GraphEdgeId,
+) -> (GraphNodeId, GraphEdgeId) {
     let ii0 = IndexInt {
         value: 0,
         span: Span::call_site(),
     };
 
-    let (src, dst, dst_idx) = edge;
-    let new_id = nodes.insert(node);
+    let node_id = nodes.insert(node);
+    let (e0, e1) = graph.insert_intermediate_node(node_id, edge_id).unwrap();
 
-    // X <- B
-    let (src_alt, src_idx) = preds[dst]
-        .insert(dst_idx, (new_id, ii0))
-        .expect("Pred edge should exist.");
-    assert_eq!(src, src_alt, "Src should match.");
+    let (src_idx, dst_idx) = indices.remove(edge_id).unwrap();
+    indices.insert(e0, (src_idx, ii0));
+    indices.insert(e1, (ii0, dst_idx));
 
-    // A -> X
-    let (dst_alt, dst_idx_alt) = succs[src]
-        .insert(src_idx, (new_id, ii0))
-        .expect("Succ edge should exist.");
-    assert_eq!(dst, dst_alt, "Dst should match.");
-    assert_eq!(dst_idx, dst_idx_alt, "Dst idx should match.");
-
-    // A <- X
-    preds.insert(new_id, [(ii0, (src, src_idx))].into());
-    // X -> B
-    succs.insert(new_id, [(ii0, (dst, dst_idx))].into());
-
-    new_id
+    (node_id, e1)
 }

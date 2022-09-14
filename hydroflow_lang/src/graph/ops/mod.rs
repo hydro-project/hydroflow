@@ -124,7 +124,7 @@ pub const OPERATORS: [OperatorConstraints; 20] = [
                 }
             } else {
                 assert_eq!(1, outputs.len());
-                let output = &outputs[1];
+                let output = &outputs[0];
                 quote! {
                     let #ident = #output;
                 }

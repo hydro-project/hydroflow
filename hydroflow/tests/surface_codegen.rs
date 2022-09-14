@@ -22,6 +22,42 @@ use tokio::task::LocalSet;
 // TODO(mingwei): Documentation articles.
 // TODO(mingwei): Find a way to display join keys
 
+#[test]
+pub fn test_basic_2() {
+    let mut df = hydroflow_syntax! {
+        recv_iter([1]) -> for_each(|v| println!("{}", v));
+    };
+    df.run_available();
+}
+
+#[test]
+pub fn test_basic_3() {
+    let mut df = hydroflow_syntax! {
+        recv_iter([1]) -> map(|v| v + 1) -> for_each(|v| println!("{}", v));
+    };
+    df.run_available();
+}
+
+#[test]
+pub fn test_basic_merge() {
+    let mut df = hydroflow_syntax! {
+        m = merge() -> for_each(|v| println!("{}", v));
+        recv_iter([1]) -> m;
+        recv_iter([2]) -> m;
+    };
+    df.run_available();
+}
+
+#[test]
+pub fn test_basic_tee() {
+    let mut df = hydroflow_syntax! {
+        t = recv_iter([1]) -> tee();
+        t -> for_each(|v| println!("A {}", v));
+        t -> for_each(|v| println!("B {}", v));
+    };
+    df.run_available();
+}
+
 /// Test that recv_stream can handle "complex" expressions.
 #[test]
 pub fn test_recv_expr() {

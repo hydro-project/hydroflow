@@ -82,7 +82,8 @@ pub fn node_color(node: &Node, inn_degree: usize, out_degree: usize) -> Option<C
             (false, false) => match (inn_degree, out_degree) {
                 (0, _) => Some(Color::Pull),
                 (_, 0) => Some(Color::Push),
-                _same => None,
+                // (1, 1) =>
+                _both_unary => None,
             },
         },
         Node::Handoff => Some(Color::Hoff),
