@@ -1,13 +1,12 @@
 //! Graph representation stages for Hydroflow graphs.
 
-use std::collections::BTreeMap;
 use std::hash::Hash;
 
 use proc_macro2::Span;
-use slotmap::{new_key_type, SecondaryMap};
+use slotmap::new_key_type;
 use syn::spanned::Spanned;
 
-use crate::parse::{IndexInt, Operator};
+use crate::parse::Operator;
 use crate::pretty_span::PrettySpan;
 
 pub mod di_mul_graph;
@@ -29,13 +28,6 @@ new_key_type! {
     /// ID to identify a subgraph in [`partitioned_graph::PartitionedGraph`].
     pub struct GraphSubgraphId;
 }
-
-pub type EdgePort = (GraphNodeId, IndexInt);
-pub type EdgePortRef<'a> = (GraphNodeId, &'a IndexInt);
-/// BTreeMap is used to ensure iteration order matches `IndexInt` order.
-pub type OutboundEdges = BTreeMap<IndexInt, EdgePort>;
-
-type AdjList = SecondaryMap<GraphNodeId, OutboundEdges>;
 
 pub enum Node {
     Operator(Operator),
@@ -88,14 +80,4 @@ pub fn node_color(node: &Node, inn_degree: usize, out_degree: usize) -> Option<C
         },
         Node::Handoff => Some(Color::Hoff),
     }
-}
-
-pub(crate) fn iter_edges(
-    succs: &SecondaryMap<GraphNodeId, OutboundEdges>,
-) -> impl '_ + Iterator<Item = (EdgePortRef, EdgePortRef)> {
-    succs.iter().flat_map(|(src, succs)| {
-        succs
-            .iter()
-            .map(move |(src_idx, (dst, dst_idx))| ((src, src_idx), (*dst, dst_idx)))
-    })
 }
