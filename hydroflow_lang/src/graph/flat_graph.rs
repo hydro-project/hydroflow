@@ -67,11 +67,12 @@ impl FlatGraph {
         match pipeline {
             Pipeline::Paren(pipeline_paren) => self.add_pipeline(*pipeline_paren.pipeline),
             Pipeline::Link(pipeline_link) => {
+                // Add the nested LHS and RHS of this link.
                 let lhs_ports = self.add_pipeline(*pipeline_link.lhs);
                 let connector = pipeline_link.connector;
                 let rhs_ports = self.add_pipeline(*pipeline_link.rhs);
 
-                if let (Some(out), Some(inn)) = (lhs_ports.out, rhs_ports.inn) {
+                if let (Some(src), Some(dst)) = (lhs_ports.out, rhs_ports.inn) {
                     let src_port = connector.src.map(|x| x.index).unwrap_or_else(|| IndexInt {
                         value: 0,
                         span: connector.arrow.span(),
@@ -82,39 +83,47 @@ impl FlatGraph {
                     });
 
                     {
-                        // /// Helper to emit conflicts when a port is overwritten.
-                        // fn emit_conflict(inout: &str, old: IndexInt, new: IndexInt) {
-                        //     old.span()
-                        //         .unwrap()
-                        //         .error(format!(
-                        //             "{} connection conflicts with below ({})",
-                        //             inout,
-                        //             PrettySpan(new.span()),
-                        //         ))
-                        //         .emit();
-                        //     new.span()
-                        //         .unwrap()
-                        //         .error(format!(
-                        //             "{} connection conflicts with above ({})",
-                        //             inout,
-                        //             PrettySpan(old.span()),
-                        //         ))
-                        //         .emit();
-                        // }
+                        /// Helper to emit conflicts when a port is overwritten.
+                        fn emit_conflict(inout: &str, old: IndexInt, new: IndexInt) {
+                            old.span()
+                                .unwrap()
+                                .error(format!(
+                                    "{} connection conflicts with below ({})",
+                                    inout,
+                                    PrettySpan(new.span()),
+                                ))
+                                .emit();
+                            new.span()
+                                .unwrap()
+                                .error(format!(
+                                    "{} connection conflicts with above ({})",
+                                    inout,
+                                    PrettySpan(old.span()),
+                                ))
+                                .emit();
+                        }
 
-                        let e = self.graph.insert_edge(out, inn);
-                        self.indices.insert(e, (src_port, dst_port));
+                        // Handle src's successor port conflicts:
+                        for conflicting_edge in self
+                            .graph
+                            .successor_edges(src)
+                            .filter(|&e| self.indices[e].0 == src_port)
+                        {
+                            emit_conflict("Output", self.indices[conflicting_edge].0, src_port);
+                        }
 
-                        // if let Some((old_a, _)) = self.succs[out].remove_entry(&src_port) {
-                        //     emit_conflict("Output", old_a, src_port);
-                        // }
-                        // self.succs[out].insert(src_port, (inn, dst_port));
-
-                        // if let Some((old_b, _)) = self.preds[inn].remove_entry(&dst_port) {
-                        //     emit_conflict("Input", old_b, dst_port);
-                        // }
-                        // self.preds[inn].insert(dst_port, (out, src_port));
+                        // Handle dst's predecessor port conflicts:
+                        for conflicting_edge in self
+                            .graph
+                            .predecessor_edges(dst)
+                            .filter(|&e| self.indices[e].1 == dst_port)
+                        {
+                            emit_conflict("Input", self.indices[conflicting_edge].1, dst_port);
+                        }
                     }
+
+                    let e = self.graph.insert_edge(src, dst);
+                    self.indices.insert(e, (src_port, dst_port));
                 }
 
                 Ports {
@@ -143,46 +152,11 @@ impl FlatGraph {
         }
     }
 
-    /// Validates that operators have no overlapping edges, and valid number of inputs, outputs, & arguments.
+    /// Validates that operators have valid number of inputs, outputs, & arguments.
     /// (Emits error messages on span).
-    /// TODO(mingwei): Clean this up, make it do more than just arity?
+    /// TODO(mingwei): Clean this up, make it do more than just arity? Do no overlapping edge ports.
     /// Returns `true` if errors were found.
     pub fn emit_operator_errors(&self) -> bool {
-        for node_key in self.nodes.keys() {
-            let mut out_ports = HashSet::new();
-            for (_, out_port) in self
-                .graph
-                .predecessor_edges(node_key)
-                .map(|edge_key| self.indices.get(edge_key).expect("Edge was inserted."))
-            {
-                if let Some(old_out_port) = out_ports.replace(out_port) {
-                    // proc_macro::Diagnostic::span_error(
-                    //     vec![old_out_port.span(), out_port.span()],
-                    //     "Hello",
-                    // );
-                    let x = old_out_port.span().unwrap();
-
-                    // old_out_port
-                    //     .span()
-                    //     .unwrap()
-                    //     .error(format!(
-                    //         "{} connection conflicts with below ({})",
-                    //         inout,
-                    //         PrettySpan(new.span()),
-                    //     ))
-                    //     .emit();
-                    // new.span()
-                    //     .unwrap()
-                    //     .error(format!(
-                    //         "{} connection conflicts with above ({})",
-                    //         inout,
-                    //         PrettySpan(old.span()),
-                    //     ))
-                    //     .emit();
-                }
-            }
-        }
-
         let mut errored = false;
         for (node_key, node) in self.nodes.iter() {
             match node {
