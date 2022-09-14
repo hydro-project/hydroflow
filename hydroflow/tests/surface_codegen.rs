@@ -42,8 +42,8 @@ pub fn test_basic_3() {
 pub fn test_basic_merge() {
     let mut df = hydroflow_syntax! {
         m = merge() -> for_each(|v| println!("{}", v));
-        recv_iter([1]) -> m;
-        recv_iter([2]) -> m;
+        recv_iter([1]) -> [0]m;
+        recv_iter([2]) -> [1]m;
     };
     df.run_available();
 }
@@ -52,8 +52,8 @@ pub fn test_basic_merge() {
 pub fn test_basic_tee() {
     let mut df = hydroflow_syntax! {
         t = recv_iter([1]) -> tee();
-        t -> for_each(|v| println!("A {}", v));
-        t -> for_each(|v| println!("B {}", v));
+        t[0] -> for_each(|v| println!("A {}", v));
+        t[1] -> for_each(|v| println!("B {}", v));
     };
     df.run_available();
 }
