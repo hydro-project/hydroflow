@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashSet};
+use std::collections::BTreeMap;
 
 use quote::ToTokens;
 use slotmap::{Key, SecondaryMap, SlotMap};
@@ -254,11 +254,6 @@ impl FlatGraph {
         }
         errored
     }
-
-    // /// Iterator over all edges.
-    // pub fn edges(&self) -> impl '_ + Iterator<Item = (EdgePortRef, EdgePortRef)> {
-    //     super::iter_edges(&self.succs)
-    // }
 
     /// Convert back into surface syntax.
     pub fn surface_syntax_string(&self) -> String {
