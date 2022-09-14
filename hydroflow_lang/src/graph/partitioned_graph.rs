@@ -153,30 +153,25 @@ impl PartitionedGraph {
 
                             // TODO clean this up.
                             // Collect input arguments (predacessors).
-                            let mut input_edges: Vec<_> =
-                                self.graph.predecessor_edges(node_id).collect();
+                            let mut input_edges: Vec<(GraphEdgeId, GraphNodeId)> =
+                                self.graph.predecessors(node_id).collect();
                             // Ensure sorted by port index.
-                            input_edges.sort_unstable_by_key(|&edge_id| self.indices[edge_id].0);
-                            let inputs: Vec<_> = input_edges
+                            input_edges
+                                .sort_unstable_by_key(|&(edge_id, _pred)| self.indices[edge_id].0);
+                            let inputs: Vec<Ident> = input_edges
                                 .into_iter()
-                                .map(|edge_id| {
-                                    self.node_id_as_ident(self.graph.edge(edge_id).unwrap().0, true)
-                                })
+                                .map(|(_edge_id, pred)| self.node_id_as_ident(pred, true))
                                 .collect();
 
                             // Collect output arguments (successors).
-                            let mut output_edges: Vec<_> =
-                                self.graph.successor_edges(node_id).collect();
+                            let mut output_edges: Vec<(GraphEdgeId, GraphNodeId)> =
+                                self.graph.successors(node_id).collect();
                             // Ensure sorted by port index.
-                            output_edges.sort_unstable_by_key(|&edge_id| self.indices[edge_id].1);
-                            let outputs: Vec<_> = output_edges
+                            output_edges
+                                .sort_unstable_by_key(|&(edge_id, _succ)| self.indices[edge_id].1);
+                            let outputs: Vec<Ident> = output_edges
                                 .into_iter()
-                                .map(|edge_id| {
-                                    self.node_id_as_ident(
-                                        self.graph.edge(edge_id).unwrap().1,
-                                        false,
-                                    )
-                                })
+                                .map(|(_edge_id, succ)| self.node_id_as_ident(succ, false))
                                 .collect();
 
                             let iter_args = WriteIteratorArgs {
