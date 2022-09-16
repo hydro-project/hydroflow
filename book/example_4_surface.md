@@ -2,7 +2,7 @@
 
 So far all the operators we've used have one input and one output and therefore
 create a linear flow of operators. Let's now take a look at a Hydroflow program containing
-a subgraph which has multiple inputs; in the following examples we'll extend this to
+an operator which has multiple inputs; in the following examples we'll extend this to
 multiple outputs.
 
 To motivate this, we'll build a simple flow-based algorithm for the problem of *graph neighbors*. 
@@ -93,8 +93,13 @@ and the stream of edges coming in:
 The Rust syntax `vec![0]` constructs a vector with a single element, `0`, which we iterate
 over using `recv_iter`.
 
-We then set up a [`join()`](./surface_ops.md#join),
-we call `my_join`, which acts like a SQL inner join. Hydroflow's `join()` requires
+We then set up a [`join()`](./surface_ops.md#join) that we
+name `my_join`, which acts like a SQL inner join. 
+First, note the syntax for passing data into a subflow with multiple inputs *prepends* 
+an input index (starting at `0`) in square brackets to the multi-input variable name or operator.  In this example we have `-> [0]my_join`
+and `-> [1]my_join`.
+
+Hydroflow's `join()` API requires
 a little massaging of its inputs to work properly.
 The inputs must be of the form of a pair of elements `(K, V1)`
 and `(K, V2)`, and the operator joins them on equal keys `K` and produces an
@@ -140,5 +145,5 @@ flowchart TB
 If you read the `pairs_send` calls in the code carefully, you'll see that the example data 
 has nodes (`2`, `4`) that are more than one hop away from `0`, which were
 not output by our simple program. To extend this example to graph *reachability*, 
-we need to do this process many times. In Hydroflow,
+we need to recurse: find neighbors of our neighbors, neighbors of our neighbors' neighbors, and so on. In Hydroflow,
 this is done by adding a loop to the flow, as we'll see [next](example_4_1_surface.md).

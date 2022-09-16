@@ -19,7 +19,7 @@ channel, we can use the `tokio` library:
 ```rust, ignore
     let (input_example, example_recv) = tokio::sync::mpsc::unbounded_channel::<usize>();
 ```
-This is a multiple-producer/single-consumer (`mpsc`) channel, which is usually the appropriate choice for an inbound Hydroflow stream:
+This is a [multiple-producer/single-consumer (`mpsc`) channel](https://docs.rs/tokio/latest/tokio/sync/mpsc/fn.unbounded_channel.html), which is usually the appropriate choice for an inbound Hydroflow stream:
 think of it as a high-performance "mailbox" that any sender can fill with well-typed data.
 
 The Rust `::<usize>` syntax is affectionately

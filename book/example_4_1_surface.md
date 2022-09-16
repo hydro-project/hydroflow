@@ -97,7 +97,7 @@ We route the `origin` node into it as one input right away:
     reached_vertices = merge();
     origin -> [0]reached_vertices;
 ```
-Note the syntax for differentiating the multiple inputs to `merge()`
+Note the square-bracket syntax for differentiating the multiple inputs to `merge()`
 is the same as that of `join()` (except that merge can have an unbounded number of inputs,
 whereas `join()` is defined to only have two.)
 
@@ -108,8 +108,10 @@ back to the `merge` operator we called `reached_vertices`.
 We feed the `join()` output 
 through a `map()` as before, and then we feed the result into a [`tee()`](./surface_ops.md#tee) operator,
 which is the mirror image of `merge()`:  instead of merging many inputs to one output, 
-it copies one input to many different outputs. Each input element is _cloned_, in Rust terms, and
-given to each of the outputs. 
+it copies one input to many different outputs.  Each input element is _cloned_, in Rust terms, and
+given to each of the outputs. The syntax for the outputs of `tee()` mirrors that of merge: we *append* 
+an output index in square brackets to the `tee` or variable. In this example we have
+`my_join_tee[0] ->` and `my_join_tee[1] ->`.
 
 Finally, we process the output of the `join` as passed through the `tee`.
 One branch pushes reached vertices back up into the `reached_vertices` variable (which begins with a `merge`), while the other
