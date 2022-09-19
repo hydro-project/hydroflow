@@ -8,7 +8,6 @@
 
 #![feature(never_type)]
 #![feature(type_alias_impl_trait)]
-#![feature(generic_associated_types)]
 
 pub mod filter;
 pub mod filter_map;

@@ -1,15 +1,15 @@
 //! Graph representation stages for Hydroflow graphs.
 
-use std::collections::BTreeMap;
 use std::hash::Hash;
 
 use proc_macro2::Span;
-use slotmap::{new_key_type, SecondaryMap};
+use slotmap::new_key_type;
 use syn::spanned::Spanned;
 
-use crate::parse::{IndexInt, Operator};
+use crate::parse::Operator;
 use crate::pretty_span::PrettySpan;
 
+pub mod di_mul_graph;
 pub mod flat_graph;
 pub mod flat_to_partitioned;
 pub mod graph_algorithms;
@@ -21,18 +21,13 @@ new_key_type! {
     /// ID to identify a node (operator or handoff) in both [`flat_graph::FlatGraph`]
     /// and [`partitioned_graph::PartitionedGraph`].
     pub struct GraphNodeId;
-}
-new_key_type! {
+
+    /// ID to identify an edge.
+    pub struct GraphEdgeId;
+
     /// ID to identify a subgraph in [`partitioned_graph::PartitionedGraph`].
     pub struct GraphSubgraphId;
 }
-
-pub type EdgePort = (GraphNodeId, IndexInt);
-pub type EdgePortRef<'a> = (GraphNodeId, &'a IndexInt);
-/// BTreeMap is used to ensure iteration order matches `IndexInt` order.
-pub type OutboundEdges = BTreeMap<IndexInt, EdgePort>;
-
-type AdjList = SecondaryMap<GraphNodeId, OutboundEdges>;
 
 pub enum Node {
     Operator(Operator),
@@ -79,19 +74,10 @@ pub fn node_color(node: &Node, inn_degree: usize, out_degree: usize) -> Option<C
             (false, false) => match (inn_degree, out_degree) {
                 (0, _) => Some(Color::Pull),
                 (_, 0) => Some(Color::Push),
-                _same => None,
+                // (1, 1) =>
+                _both_unary => None,
             },
         },
         Node::Handoff => Some(Color::Hoff),
     }
-}
-
-pub(crate) fn iter_edges(
-    succs: &SecondaryMap<GraphNodeId, OutboundEdges>,
-) -> impl '_ + Iterator<Item = (EdgePortRef, EdgePortRef)> {
-    succs.iter().flat_map(|(src, succs)| {
-        succs
-            .iter()
-            .map(move |(src_idx, (dst, dst_idx))| ((src, src_idx), (*dst, dst_idx)))
-    })
 }

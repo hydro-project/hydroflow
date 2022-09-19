@@ -3,6 +3,7 @@ use std::rc::Rc;
 
 use hydroflow::hydroflow_syntax;
 use hydroflow::scheduled::graph::Hydroflow;
+use tokio::sync::mpsc::UnboundedReceiver;
 use tokio::task::LocalSet;
 
 // TODO(mingwei): custom operators? How to handle in syntax? How to handle state?
@@ -21,6 +22,66 @@ use tokio::task::LocalSet;
 // Joe:
 // TODO(mingwei): Documentation articles.
 // TODO(mingwei): Find a way to display join keys
+
+fn recv_into_vec<T>(recv: &mut UnboundedReceiver<T>) -> Vec<T> {
+    std::iter::from_fn(|| recv.try_recv().ok()).collect()
+}
+
+#[test]
+pub fn test_basic_2() {
+    let (out_send, mut out_recv) = tokio::sync::mpsc::unbounded_channel::<usize>();
+
+    let mut df = hydroflow_syntax! {
+        recv_iter([1]) -> for_each(|v| out_send.send(v).unwrap());
+    };
+    df.run_available();
+
+    assert_eq!(&[1], &*recv_into_vec(&mut out_recv));
+}
+
+#[test]
+pub fn test_basic_3() {
+    let (out_send, mut out_recv) = tokio::sync::mpsc::unbounded_channel::<usize>();
+
+    let mut df = hydroflow_syntax! {
+        recv_iter([1]) -> map(|v| v + 1) -> for_each(|v| out_send.send(v).unwrap());
+    };
+    df.run_available();
+
+    assert_eq!(&[2], &*recv_into_vec(&mut out_recv));
+}
+
+#[test]
+pub fn test_basic_merge() {
+    let (out_send, mut out_recv) = tokio::sync::mpsc::unbounded_channel::<usize>();
+
+    let mut df = hydroflow_syntax! {
+        m = merge() -> for_each(|v| out_send.send(v).unwrap());
+        recv_iter([1]) -> [0]m;
+        recv_iter([2]) -> [1]m;
+    };
+    df.run_available();
+
+    assert_eq!(&[1, 2], &*recv_into_vec(&mut out_recv));
+}
+
+#[test]
+pub fn test_basic_tee() {
+    let (out_send_a, mut out_recv) = tokio::sync::mpsc::unbounded_channel::<String>();
+    let out_send_b = out_send_a.clone();
+
+    let mut df = hydroflow_syntax! {
+        t = recv_iter([1]) -> tee();
+        t[0] -> for_each(|v| out_send_a.send(format!("A {}", v)).unwrap());
+        t[1] -> for_each(|v| out_send_b.send(format!("B {}", v)).unwrap());
+    };
+    df.run_available();
+
+    let out = recv_into_vec(&mut out_recv);
+    assert_eq!(2, out.len());
+    assert!(out.contains(&"A 1".to_owned()));
+    assert!(out.contains(&"B 1".to_owned()));
+}
 
 /// Test that recv_stream can handle "complex" expressions.
 #[test]

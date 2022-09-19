@@ -9,8 +9,9 @@ use crate::graph::ops::{RangeTrait, OPERATORS};
 use crate::parse::{HfCode, HfStatement, IndexInt, Operator, Pipeline};
 use crate::pretty_span::{PrettyRowCol, PrettySpan};
 
+use super::di_mul_graph::DiMulGraph;
 use super::partitioned_graph::PartitionedGraph;
-use super::{EdgePortRef, GraphNodeId, Node, OutboundEdges};
+use super::{GraphEdgeId, GraphNodeId, Node};
 
 /// A graph representing a hydroflow dataflow graph before subgraph partitioning, stratification, and handoff insertion.
 /// I.e. the graph is a simple "flat" without any subgraph heirarchy.
@@ -22,10 +23,11 @@ use super::{EdgePortRef, GraphNodeId, Node, OutboundEdges};
 pub struct FlatGraph {
     /// Each node (operator or handoff).
     pub(crate) nodes: SlotMap<GraphNodeId, Node>,
-    /// Predecessors for each node.
-    pub(crate) preds: SecondaryMap<GraphNodeId, OutboundEdges>,
-    /// Successors for each node.
-    pub(crate) succs: SecondaryMap<GraphNodeId, OutboundEdges>,
+    /// Graph
+    pub(crate) graph: DiMulGraph<GraphNodeId, GraphEdgeId>,
+    /// Input and output port for each edge.
+    pub(crate) indices: SecondaryMap<GraphEdgeId, (IndexInt, IndexInt)>,
+
     /// Variable names, used as [`HfStatement::Named`] are added.
     names: BTreeMap<Ident, Ports>,
 }
@@ -65,11 +67,12 @@ impl FlatGraph {
         match pipeline {
             Pipeline::Paren(pipeline_paren) => self.add_pipeline(*pipeline_paren.pipeline),
             Pipeline::Link(pipeline_link) => {
+                // Add the nested LHS and RHS of this link.
                 let lhs_ports = self.add_pipeline(*pipeline_link.lhs);
                 let connector = pipeline_link.connector;
                 let rhs_ports = self.add_pipeline(*pipeline_link.rhs);
 
-                if let (Some(out), Some(inn)) = (lhs_ports.out, rhs_ports.inn) {
+                if let (Some(src), Some(dst)) = (lhs_ports.out, rhs_ports.inn) {
                     let src_port = connector.src.map(|x| x.index).unwrap_or_else(|| IndexInt {
                         value: 0,
                         span: connector.arrow.span(),
@@ -100,16 +103,27 @@ impl FlatGraph {
                                 .emit();
                         }
 
-                        if let Some((old_a, _)) = self.succs[out].remove_entry(&src_port) {
-                            emit_conflict("Output", old_a, src_port);
+                        // Handle src's successor port conflicts:
+                        for conflicting_edge in self
+                            .graph
+                            .successor_edges(src)
+                            .filter(|&e| self.indices[e].0 == src_port)
+                        {
+                            emit_conflict("Output", self.indices[conflicting_edge].0, src_port);
                         }
-                        self.succs[out].insert(src_port, (inn, dst_port));
 
-                        if let Some((old_b, _)) = self.preds[inn].remove_entry(&dst_port) {
-                            emit_conflict("Input", old_b, dst_port);
+                        // Handle dst's predecessor port conflicts:
+                        for conflicting_edge in self
+                            .graph
+                            .predecessor_edges(dst)
+                            .filter(|&e| self.indices[e].1 == dst_port)
+                        {
+                            emit_conflict("Input", self.indices[conflicting_edge].1, dst_port);
                         }
-                        self.preds[inn].insert(dst_port, (out, src_port));
                     }
+
+                    let e = self.graph.insert_edge(src, dst);
+                    self.indices.insert(e, (src_port, dst_port));
                 }
 
                 Ports {
@@ -130,8 +144,6 @@ impl FlatGraph {
             }),
             Pipeline::Operator(operator) => {
                 let key = self.nodes.insert(Node::Operator(operator));
-                self.preds.insert(key, Default::default());
-                self.succs.insert(key, Default::default());
                 Ports {
                     inn: Some(key),
                     out: Some(key),
@@ -140,9 +152,9 @@ impl FlatGraph {
         }
     }
 
-    /// Validates that operators have valid number of inputs, outputs, and arguments.
+    /// Validates that operators have valid number of inputs, outputs, & arguments.
     /// (Emits error messages on span).
-    /// TODO(mingwei): Clean this up, make it do more than just arity?
+    /// TODO(mingwei): Clean this up, make it do more than just arity? Do no overlapping edge ports.
     /// Returns `true` if errors were found.
     pub fn emit_operator_errors(&self) -> bool {
         let mut errored = false;
@@ -194,7 +206,7 @@ impl FlatGraph {
                                 out_of_range
                             }
 
-                            let inn_degree = self.preds[node_key].len();
+                            let inn_degree = self.graph.degree_in(node_key);
                             errored |= emit_arity_error(
                                 operator,
                                 true,
@@ -210,7 +222,7 @@ impl FlatGraph {
                                 op_constraints.soft_range_inn,
                             );
 
-                            let out_degree = self.succs[node_key].len();
+                            let out_degree = self.graph.degree_out(node_key);
                             errored |= emit_arity_error(
                                 operator,
                                 false,
@@ -243,11 +255,6 @@ impl FlatGraph {
         errored
     }
 
-    /// Iterator over all edges.
-    pub fn edges(&self) -> impl '_ + Iterator<Item = (EdgePortRef, EdgePortRef)> {
-        super::iter_edges(&self.succs)
-    }
-
     /// Convert back into surface syntax.
     pub fn surface_syntax_string(&self) -> String {
         let mut string = String::new();
@@ -266,7 +273,7 @@ impl FlatGraph {
             }
         }
         writeln!(write)?;
-        for ((src_key, _src_port), (dst_key, _dst_port)) in super::iter_edges(&self.succs) {
+        for (_e, (src_key, dst_key)) in self.graph.edges() {
             writeln!(write, "({:?}-->{:?});", src_key.data(), dst_key.data())?;
         }
         Ok(())
@@ -303,7 +310,7 @@ impl FlatGraph {
             }?;
         }
         writeln!(write)?;
-        for ((src_key, _src_port), (dst_key, _dst_port)) in super::iter_edges(&self.succs) {
+        for (_e, (src_key, dst_key)) in self.graph.edges() {
             writeln!(write, "    {:?}-->{:?}", src_key.data(), dst_key.data())?;
         }
         Ok(())
