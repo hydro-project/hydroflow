@@ -16,7 +16,7 @@ fn main() {
                 .make_edge::<_, hydroflow::scheduled::handoff::VecHandoff<_>>(
                     "handoff GraphNodeId(13v1)",
                 );
-            let mut sg_1v1_node_5v1_stream = input;
+            let mut sg_1v1_node_5v1_stream = Box::pin(input);
             df.add_subgraph_stratified(
                 "Subgraph GraphSubgraphId(1v1)",
                 0,
@@ -29,14 +29,14 @@ fn main() {
                     let hoff_13v1_send = hydroflow::pusherator::for_each::ForEach::new(|v| {
                         hoff_13v1_send.give(Some(v));
                     });
-                    let op_5v1 = std::iter::from_fn(|| {
-                        match sg_1v1_node_5v1_stream
-                            .poll_recv(&mut std::task::Context::from_waker(&context.waker()))
-                        {
+                    let op_5v1 =
+                        std::iter::from_fn(|| match hydroflow::futures::stream::Stream::poll_next(
+                            sg_1v1_node_5v1_stream.as_mut(),
+                            &mut std::task::Context::from_waker(&context.waker()),
+                        ) {
                             std::task::Poll::Ready(maybe) => maybe,
                             std::task::Poll::Pending => None,
-                        }
-                    });
+                        });
                     let op_1v1 = op_5v1;
                     let op_2v1 =
                         hydroflow::pusherator::tee::Tee::new(hoff_12v1_send, hoff_13v1_send);

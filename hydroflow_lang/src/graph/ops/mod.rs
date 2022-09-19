@@ -409,14 +409,14 @@ pub const OPERATORS: [OperatorConstraints; 20] = [
             let receiver = &arguments[0];
             let stream_ident = wc.make_ident("stream");
             quote! {
-                let mut #stream_ident = #receiver;
+                let mut #stream_ident = Box::pin(#receiver);
             }
         }),
-        write_iterator_fn: &(|wc @ &WriteContextArgs { ident, .. }, _| {
+        write_iterator_fn: &(|wc @ &WriteContextArgs { root, ident, .. }, _| {
             let stream_ident = wc.make_ident("stream");
             quote! {
                 let #ident = std::iter::from_fn(|| {
-                    match #stream_ident.poll_recv(&mut std::task::Context::from_waker(&context.waker())) {
+                    match #root::futures::stream::Stream::poll_next(#stream_ident.as_mut(), &mut std::task::Context::from_waker(&context.waker())) {
                         std::task::Poll::Ready(maybe) => maybe,
                         std::task::Poll::Pending => None,
                     }

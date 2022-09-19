@@ -3,7 +3,6 @@ use std::rc::Rc;
 
 use hydroflow::hydroflow_syntax;
 use hydroflow::scheduled::graph::Hydroflow;
-use tokio::sync::mpsc;
 use tokio::sync::mpsc::error::SendError;
 
 // /// Testing an interesting topology: a self-loop which does nothing.
@@ -37,7 +36,7 @@ pub fn test_difference_a() {
 /// Take the difference of each epoch of items and subtract the previous epoch's items.
 #[test]
 pub fn test_difference_b() -> Result<(), SendError<&'static str>> {
-    let (inp_send, inp_recv) = mpsc::unbounded_channel::<&'static str>();
+    let (inp_send, inp_recv) = hydroflow::util::unbounded_channel::<&'static str>();
 
     let output = <Rc<RefCell<Vec<&'static str>>>>::default();
     let output_inner = Rc::clone(&output);
@@ -167,7 +166,7 @@ pub fn test_surface_syntax_graph_unreachability() {
     // TODO(mingwei): may need persistence if we want this to make easier to eyeball.
 
     // An edge in the input data = a pair of `usize` vertex IDs.
-    let (pairs_send, pairs_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
+    let (pairs_send, pairs_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
 
     let mut df = hydroflow_syntax! {
         reached_vertices = merge() -> map(|v| (v, ()));
