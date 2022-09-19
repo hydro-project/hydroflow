@@ -9,9 +9,6 @@ async = [ "futures" ]
 macros = [ "hydroflow_macro", "hydroflow_datalog" ]
 
 [[example]]
-name = "book"
-
-[[example]]
 name = "chat"
 
 [[example]]
