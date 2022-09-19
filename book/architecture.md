@@ -3,7 +3,7 @@
 Hydroflow graphs are divided into two layers: the outer _scheduled layer_ and
 inner _compiled layer_.
 
-The [Hydroflow Architecture Design Doc](https://www.mingweisamuel.com/hydroflow/design_docs/2021-10_architecture_design_doc.html)
+The [Hydroflow Architecture Design Doc](https://hydro-project.github.io/hydroflow/design_docs/2021-10_architecture_design_doc.html)
 contains a more detailed explanation of this section. Note that some aspects of
 the design doc are not implemented (e.g. early yielding) or may become out of
 date as time passes.
@@ -41,12 +41,12 @@ does just this by cloning each incoming item into two output buffers, but this
 requires allocation and could cause unbounded buffer growth if the outputs are
 not read from evenly.
 
-However, if instead iterators were _pull_-based, where each operator owns one
+However, if instead iterators were _push_-based, where each operator owns one
 or more _output_ operators, then teeing is very easy, just clone each element
 and push to (i.e. run) both outputs. So that's what we did, created push-based
 iterators to allow fast teeing or splitting in the compiled layer.
 
-Pull-based iterators can be connected to push-based iterators at a "pivot"
+Pull-based iterators can be connected to push-based iterators at a single "pivot"
 point. Together, this pull-to-push setup dictates the shape compiled subgraphs
 can take. Informally, this is like the roots and leaves of a tree. Water flows
 from the roots (the pull inputs), eventually all join together in the trunk
@@ -67,19 +67,18 @@ You can interact with Hydroflow at a high level with a _Surface Syntax_ that hid
 the distinction between these two layers. It offers a natural `Iterator`-like chaining syntax for building 
 graphs that get parsed and compiled into a scheduled graph of one or more compiled subgraphs. Please see the [Surface Syntax](./surface_syntax.md) docs for more information.
 
+> **Deprecated**:  There is a _Surface API_ that provides an `Iterator`-like chaining syntax in Rust. The Surface API code lives in [`hydroflow::builder`](https://hydro-project.github.io/hydroflow/doc/hydroflow/builder/index.html). Some of the examples still use this API.
+
 Alternatively, the _Core API_ allows you to interact with handoffs directly at a low
 level. It doesn't provide any notion of chainable operators. You can use Rust `Iterator`s
 or any other arbitrary Rust code to implement the operators.
 
-We intend users to use the Surface Syntax as it is much more friendly, but as
+The Core API lives in [`hydroflow::scheduled`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/index.html),
+mainly in methods on the [`Hydroflow` struct](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html).  Compiled push-based iterators live in [`hydroflow::compiled`](https://hydro-project.github.io/hydroflow/doc/hydroflow/compiled/index.html). We intend users to use the Surface Syntax as it is much more friendly, but as
 Hydroflow is in active development some operators might not be available in
 the Surface Syntax, in which case the Core API can be used instead. If you find
 yourself in this sitation be sure to [submit an issue](https://github.com/hydro-project/hydroflow/issues/new)!
 
-> **Deprecated**:  There is a _Surface API_ that provides an `Iterator`-like chaining syntax in Rust. The Surface API code lives in [`hydroflow::builder`](https://hydro-project.github.io/hydroflow/doc/hydroflow/builder/index.html).
-
-The Core API lives in [`hydroflow::scheduled`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/index.html),
-mainly in methods on the [`Hydroflow` struct](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html).  Compiled push-based iterators live in [`hydroflow::compiled`](https://hydro-project.github.io/hydroflow/doc/hydroflow/compiled/index.html).
 ## Scheduling
 
 ## Handoffs

@@ -15,12 +15,12 @@ edges direct the flow of data between operators.
 
 ## Converting Graph
 
-Any graph can be partitioned into in-out trees. There is usually not a unique
-partitioning, but it usually makes sense to create as few subgraphs as
-possible.
+Any graph can be partitioned into in-out trees. Any non-trivial graph will have many possible
+partitionings to choose from; a useful heuristic is to partition the graph
+into as few subgraphs as possible, in order to minimize scheduling overheads.
 
 Most graphs are pretty simple and can be partitioned with a bit of eye-balling.
-But it is also not too tricky to find in-out tree subgraphs with a simple
+To do this systematically, we can use a simple
 coloring algorithm.
 
 ||

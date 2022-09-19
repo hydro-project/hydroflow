@@ -22,14 +22,14 @@ pub fn main() {
     flow.run_available();
 }
 ```
-`-> map()` transforms each element one-to-one as it flows through the subgraph.
+`-> map(|n| n * n)` transforms each element one-to-one as it flows through the subgraph.
 In this case, we square each number. Then `-> filter()` only keeps any squared
 numbers which are greater than 10.
 
-The next `-> map()` converts each number `n` into a
+The next `-> map(|n| (n..=n+1))` uses standard Rust syntax to convert each number `n` into a
 [`RangeInclusive`](https://doc.rust-lang.org/std/ops/struct.RangeInclusive.html)
 from `n` to `n+1`. We then call `-> flat_map()` to convert the ranges
-into the numbers which they contain.
+into a stream of the individual numbers which they contain.
 
 We can also express the same program with more aggressive use of combination operators like
 [`filter_map()`](./surface_ops.md#filtermap) and [`flat_map()`](./surface_ops.md#flatmap):
