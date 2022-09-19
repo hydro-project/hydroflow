@@ -6,7 +6,7 @@ use hydroflow::scheduled::graph::Hydroflow;
 #[test]
 pub fn test_echo() {
     // An edge in the input data = a pair of `usize` vertex IDs.
-    let (lines_send, lines_recv) = tokio::sync::mpsc::unbounded_channel::<String>();
+    let (lines_send, lines_recv) = hydroflow::util::unbounded_channel::<String>();
 
     //use tokio::io::{AsyncBufReadExt, BufReader};
     // use tokio_stream::wrappers::LinesStream;

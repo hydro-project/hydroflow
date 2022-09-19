@@ -2,7 +2,7 @@ use hydroflow::hydroflow_syntax;
 
 pub fn main() {
     // An edge in the input data = a pair of `usize` vertex IDs.
-    let (pairs_send, pairs_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
+    let (pairs_send, pairs_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
 
     let mut df = hydroflow_syntax! {
         reached_vertices = merge() -> map(|v| (v, ()));
