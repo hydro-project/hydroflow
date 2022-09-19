@@ -44,7 +44,7 @@ Lets take a look at some hydroflow code that implements the program:
 # use hydroflow::hydroflow_syntax;
 pub fn main() {
     // An edge in the input data = a pair of `usize` vertex IDs.
-    let (pairs_send, pairs_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
+    let (pairs_send, pairs_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
 
     let mut flow = hydroflow_syntax! {
         // inputs: the origin vertex (node 0) and stream of input edges

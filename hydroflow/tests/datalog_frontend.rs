@@ -1,11 +1,12 @@
 use std::thread;
 
+use hydroflow::futures::StreamExt;
 use hydroflow_datalog::datalog;
 
 #[tokio::test]
 pub async fn test_minimal() {
-    let (in_send, input) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
-    let (out, mut out_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
+    let (in_send, input) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (out, mut out_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
 
     in_send.send((1, 2)).unwrap();
 
@@ -14,7 +15,7 @@ pub async fn test_minimal() {
             r#"
             .input input
             .output out
-    
+
             out(y, x) :- input(x, y).
             "#
         );
@@ -24,14 +25,14 @@ pub async fn test_minimal() {
     .join()
     .unwrap();
 
-    assert_eq!(out_recv.recv().await.unwrap(), (2, 1));
-    assert_eq!(out_recv.recv().await, None);
+    assert_eq!(out_recv.next().await.unwrap(), (2, 1));
+    assert_eq!(out_recv.next().await, None);
 }
 
 #[tokio::test]
 pub async fn test_join_with_self() {
-    let (in_send, input) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
-    let (out, mut out_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
+    let (in_send, input) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (out, mut out_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
 
     in_send.send((1, 2)).unwrap();
     in_send.send((2, 1)).unwrap();
@@ -52,15 +53,15 @@ pub async fn test_join_with_self() {
     .join()
     .unwrap();
 
-    assert_eq!(out_recv.recv().await.unwrap(), (2, 1));
-    assert_eq!(out_recv.recv().await.unwrap(), (1, 2));
-    assert_eq!(out_recv.recv().await, None);
+    assert_eq!(out_recv.next().await.unwrap(), (2, 1));
+    assert_eq!(out_recv.next().await.unwrap(), (1, 2));
+    assert_eq!(out_recv.next().await, None);
 }
 
 #[tokio::test]
 pub async fn test_multi_use_intermediate() {
-    let (in_send, input) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
-    let (out, mut out_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
+    let (in_send, input) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (out, mut out_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
 
     in_send.send((1, 2)).unwrap();
     in_send.send((2, 1)).unwrap();
@@ -82,16 +83,16 @@ pub async fn test_multi_use_intermediate() {
     .join()
     .unwrap();
 
-    assert_eq!(out_recv.recv().await.unwrap(), (2, 1));
-    assert_eq!(out_recv.recv().await.unwrap(), (1, 2));
-    assert_eq!(out_recv.recv().await, None);
+    assert_eq!(out_recv.next().await.unwrap(), (2, 1));
+    assert_eq!(out_recv.next().await.unwrap(), (1, 2));
+    assert_eq!(out_recv.next().await, None);
 }
 
 #[tokio::test]
 pub async fn test_join_with_other() {
-    let (in1_send, in1) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
-    let (in2_send, in2) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
-    let (out, mut out_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
+    let (in1_send, in1) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (in2_send, in2) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (out, mut out_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
 
     in1_send.send((1, 2)).unwrap();
     in2_send.send((2, 1)).unwrap();
@@ -113,15 +114,15 @@ pub async fn test_join_with_other() {
     .join()
     .unwrap();
 
-    assert_eq!(out_recv.recv().await.unwrap(), (1, 2));
-    assert_eq!(out_recv.recv().await, None);
+    assert_eq!(out_recv.next().await.unwrap(), (1, 2));
+    assert_eq!(out_recv.next().await, None);
 }
 
 #[tokio::test]
 pub async fn test_multiple_contributors() {
-    let (in1_send, in1) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
-    let (in2_send, in2) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
-    let (out, mut out_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
+    let (in1_send, in1) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (in2_send, in2) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (out, mut out_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
 
     in1_send.send((1, 2)).unwrap();
     in2_send.send((3, 1)).unwrap();
@@ -143,16 +144,16 @@ pub async fn test_multiple_contributors() {
     .join()
     .unwrap();
 
-    assert_eq!(out_recv.recv().await.unwrap(), (1, 2));
-    assert_eq!(out_recv.recv().await.unwrap(), (1, 3));
-    assert_eq!(out_recv.recv().await, None);
+    assert_eq!(out_recv.next().await.unwrap(), (1, 2));
+    assert_eq!(out_recv.next().await.unwrap(), (1, 3));
+    assert_eq!(out_recv.next().await, None);
 }
 
 #[tokio::test]
 pub async fn test_transitive_closure() {
-    let (edges_send, edges) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
-    let (seed_reachable_send, seed_reachable) = tokio::sync::mpsc::unbounded_channel::<(usize,)>();
-    let (reachable, mut reachable_recv) = tokio::sync::mpsc::unbounded_channel::<(usize,)>();
+    let (edges_send, edges) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (seed_reachable_send, seed_reachable) = hydroflow::util::unbounded_channel::<(usize,)>();
+    let (reachable, mut reachable_recv) = hydroflow::util::unbounded_channel::<(usize,)>();
 
     seed_reachable_send.send((1,)).unwrap();
     edges_send.send((3, 4)).unwrap();
@@ -176,19 +177,18 @@ pub async fn test_transitive_closure() {
     .join()
     .unwrap();
 
-    assert_eq!(reachable_recv.recv().await.unwrap(), (1,));
-    assert_eq!(reachable_recv.recv().await.unwrap(), (2,));
-    assert_eq!(reachable_recv.recv().await.unwrap(), (5,));
-    assert_eq!(reachable_recv.recv().await, None);
+    assert_eq!(reachable_recv.next().await.unwrap(), (1,));
+    assert_eq!(reachable_recv.next().await.unwrap(), (2,));
+    assert_eq!(reachable_recv.next().await.unwrap(), (5,));
+    assert_eq!(reachable_recv.next().await, None);
 }
 
 #[tokio::test]
 pub async fn test_triple_relation_join() {
-    let (in1_send, in1) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
-    let (in2_send, in2) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
-    let (in3_send, in3) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
-    let (out, mut out_recv) =
-        tokio::sync::mpsc::unbounded_channel::<(usize, usize, usize, usize)>();
+    let (in1_send, in1) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (in2_send, in2) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (in3_send, in3) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (out, mut out_recv) = hydroflow::util::unbounded_channel::<(usize, usize, usize, usize)>();
 
     in1_send.send((1, 2)).unwrap();
     in2_send.send((2, 1)).unwrap();
@@ -214,15 +214,15 @@ pub async fn test_triple_relation_join() {
     .join()
     .unwrap();
 
-    assert_eq!(out_recv.recv().await.unwrap(), (3, 1, 2, 1));
-    assert_eq!(out_recv.recv().await.unwrap(), (4, 1, 2, 1));
-    assert_eq!(out_recv.recv().await, None);
+    assert_eq!(out_recv.next().await.unwrap(), (3, 1, 2, 1));
+    assert_eq!(out_recv.next().await.unwrap(), (4, 1, 2, 1));
+    assert_eq!(out_recv.next().await, None);
 }
 
 #[tokio::test]
 pub async fn test_local_constraints() {
-    let (in_send, input) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
-    let (out, mut out_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
+    let (in_send, input) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (out, mut out_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
 
     in_send.send((1, 2)).unwrap();
     in_send.send((1, 1)).unwrap();
@@ -242,6 +242,6 @@ pub async fn test_local_constraints() {
     .join()
     .unwrap();
 
-    assert_eq!(out_recv.recv().await.unwrap(), (1, 1));
-    assert_eq!(out_recv.recv().await, None);
+    assert_eq!(out_recv.next().await.unwrap(), (1, 1));
+    assert_eq!(out_recv.next().await, None);
 }
