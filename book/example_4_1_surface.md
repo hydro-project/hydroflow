@@ -9,7 +9,9 @@ one of two cases:
 1. a neighbor of `origin` *or* 
 2. a neighbor of some other node that is itself reachable from `origin`. 
 
-It turns out this is a very small change to our Hydroflow program!
+It turns out this is a very small change to our Hydroflow program! It will also illustrate an operator, [`tee()`](./surface_ops.md#tee),
+which has multiple outputs.
+
 Essentially we want to take *all* the reached vertices we found in our graph neighbors program,
 and treat them recursively just as we treated `origin`.
 To do this in a language like Hydroflow, we introduce a cycle in the flow:
