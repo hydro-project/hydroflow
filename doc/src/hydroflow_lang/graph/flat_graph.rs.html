@@ -321,6 +321,13 @@
 <span id="321">321</span>
 <span id="322">322</span>
 <span id="323">323</span>
+<span id="324">324</span>
+<span id="325">325</span>
+<span id="326">326</span>
+<span id="327">327</span>
+<span id="328">328</span>
+<span id="329">329</span>
+<span id="330">330</span>
 </pre><pre class="rust"><code><span class="kw">use </span>std::collections::BTreeMap;
 
 <span class="kw">use </span>quote::ToTokens;
@@ -332,8 +339,9 @@
 <span class="kw">use </span><span class="kw">crate</span>::parse::{HfCode, HfStatement, IndexInt, Operator, Pipeline};
 <span class="kw">use </span><span class="kw">crate</span>::pretty_span::{PrettyRowCol, PrettySpan};
 
+<span class="kw">use </span><span class="kw">super</span>::di_mul_graph::DiMulGraph;
 <span class="kw">use </span><span class="kw">super</span>::partitioned_graph::PartitionedGraph;
-<span class="kw">use super</span>::{EdgePortRef, GraphNodeId, Node, OutboundEdges};
+<span class="kw">use super</span>::{GraphEdgeId, GraphNodeId, Node};
 
 <span class="doccomment">/// A graph representing a hydroflow dataflow graph before subgraph partitioning, stratification, and handoff insertion.
 /// I.e. the graph is a simple &quot;flat&quot; without any subgraph heirarchy.
@@ -345,10 +353,11 @@
 </span><span class="kw">pub struct </span>FlatGraph {
     <span class="doccomment">/// Each node (operator or handoff).
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) nodes: SlotMap&lt;GraphNodeId, Node&gt;,
-    <span class="doccomment">/// Predecessors for each node.
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) preds: SecondaryMap&lt;GraphNodeId, OutboundEdges&gt;,
-    <span class="doccomment">/// Successors for each node.
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) succs: SecondaryMap&lt;GraphNodeId, OutboundEdges&gt;,
+    <span class="doccomment">/// Graph
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) graph: DiMulGraph&lt;GraphNodeId, GraphEdgeId&gt;,
+    <span class="doccomment">/// Input and output port for each edge.
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) indices: SecondaryMap&lt;GraphEdgeId, (IndexInt, IndexInt)&gt;,
+
     <span class="doccomment">/// Variable names, used as [`HfStatement::Named`] are added.
     </span>names: BTreeMap&lt;Ident, Ports&gt;,
 }
@@ -388,11 +397,12 @@
         <span class="kw">match </span>pipeline {
             Pipeline::Paren(pipeline_paren) =&gt; <span class="self">self</span>.add_pipeline(<span class="kw-2">*</span>pipeline_paren.pipeline),
             Pipeline::Link(pipeline_link) =&gt; {
-                <span class="kw">let </span>lhs_ports = <span class="self">self</span>.add_pipeline(<span class="kw-2">*</span>pipeline_link.lhs);
+                <span class="comment">// Add the nested LHS and RHS of this link.
+                </span><span class="kw">let </span>lhs_ports = <span class="self">self</span>.add_pipeline(<span class="kw-2">*</span>pipeline_link.lhs);
                 <span class="kw">let </span>connector = pipeline_link.connector;
                 <span class="kw">let </span>rhs_ports = <span class="self">self</span>.add_pipeline(<span class="kw-2">*</span>pipeline_link.rhs);
 
-                <span class="kw">if let </span>(<span class="prelude-val">Some</span>(out), <span class="prelude-val">Some</span>(inn)) = (lhs_ports.out, rhs_ports.inn) {
+                <span class="kw">if let </span>(<span class="prelude-val">Some</span>(src), <span class="prelude-val">Some</span>(dst)) = (lhs_ports.out, rhs_ports.inn) {
                     <span class="kw">let </span>src_port = connector.src.map(|x| x.index).unwrap_or_else(|| IndexInt {
                         value: <span class="number">0</span>,
                         span: connector.arrow.span(),
@@ -423,16 +433,27 @@
                                 .emit();
                         }
 
-                        <span class="kw">if let </span><span class="prelude-val">Some</span>((old_a, <span class="kw">_</span>)) = <span class="self">self</span>.succs[out].remove_entry(<span class="kw-2">&amp;</span>src_port) {
-                            emit_conflict(<span class="string">&quot;Output&quot;</span>, old_a, src_port);
+                        <span class="comment">// Handle src&#39;s successor port conflicts:
+                        </span><span class="kw">for </span>conflicting_edge <span class="kw">in </span><span class="self">self
+                            </span>.graph
+                            .successor_edges(src)
+                            .filter(|<span class="kw-2">&amp;</span>e| <span class="self">self</span>.indices[e].<span class="number">0 </span>== src_port)
+                        {
+                            emit_conflict(<span class="string">&quot;Output&quot;</span>, <span class="self">self</span>.indices[conflicting_edge].<span class="number">0</span>, src_port);
                         }
-                        <span class="self">self</span>.succs[out].insert(src_port, (inn, dst_port));
 
-                        <span class="kw">if let </span><span class="prelude-val">Some</span>((old_b, <span class="kw">_</span>)) = <span class="self">self</span>.preds[inn].remove_entry(<span class="kw-2">&amp;</span>dst_port) {
-                            emit_conflict(<span class="string">&quot;Input&quot;</span>, old_b, dst_port);
+                        <span class="comment">// Handle dst&#39;s predecessor port conflicts:
+                        </span><span class="kw">for </span>conflicting_edge <span class="kw">in </span><span class="self">self
+                            </span>.graph
+                            .predecessor_edges(dst)
+                            .filter(|<span class="kw-2">&amp;</span>e| <span class="self">self</span>.indices[e].<span class="number">1 </span>== dst_port)
+                        {
+                            emit_conflict(<span class="string">&quot;Input&quot;</span>, <span class="self">self</span>.indices[conflicting_edge].<span class="number">1</span>, dst_port);
                         }
-                        <span class="self">self</span>.preds[inn].insert(dst_port, (out, src_port));
                     }
+
+                    <span class="kw">let </span>e = <span class="self">self</span>.graph.insert_edge(src, dst);
+                    <span class="self">self</span>.indices.insert(e, (src_port, dst_port));
                 }
 
                 Ports {
@@ -453,8 +474,6 @@
             }),
             Pipeline::Operator(operator) =&gt; {
                 <span class="kw">let </span>key = <span class="self">self</span>.nodes.insert(Node::Operator(operator));
-                <span class="self">self</span>.preds.insert(key, Default::default());
-                <span class="self">self</span>.succs.insert(key, Default::default());
                 Ports {
                     inn: <span class="prelude-val">Some</span>(key),
                     out: <span class="prelude-val">Some</span>(key),
@@ -463,9 +482,9 @@
         }
     }
 
-    <span class="doccomment">/// Validates that operators have valid number of inputs, outputs, and arguments.
+    <span class="doccomment">/// Validates that operators have valid number of inputs, outputs, &amp; arguments.
     /// (Emits error messages on span).
-    /// TODO(mingwei): Clean this up, make it do more than just arity?
+    /// TODO(mingwei): Clean this up, make it do more than just arity? Do no overlapping edge ports.
     /// Returns `true` if errors were found.
     </span><span class="kw">pub fn </span>emit_operator_errors(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
         <span class="kw">let </span><span class="kw-2">mut </span>errored = <span class="bool-val">false</span>;
@@ -517,7 +536,7 @@
                                 out_of_range
                             }
 
-                            <span class="kw">let </span>inn_degree = <span class="self">self</span>.preds[node_key].len();
+                            <span class="kw">let </span>inn_degree = <span class="self">self</span>.graph.degree_in(node_key);
                             errored |= emit_arity_error(
                                 operator,
                                 <span class="bool-val">true</span>,
@@ -533,7 +552,7 @@
                                 op_constraints.soft_range_inn,
                             );
 
-                            <span class="kw">let </span>out_degree = <span class="self">self</span>.succs[node_key].len();
+                            <span class="kw">let </span>out_degree = <span class="self">self</span>.graph.degree_out(node_key);
                             errored |= emit_arity_error(
                                 operator,
                                 <span class="bool-val">false</span>,
@@ -566,11 +585,6 @@
         errored
     }
 
-    <span class="doccomment">/// Iterator over all edges.
-    </span><span class="kw">pub fn </span>edges(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;_ </span>+ Iterator&lt;Item = (EdgePortRef, EdgePortRef)&gt; {
-        <span class="kw">super</span>::iter_edges(<span class="kw-2">&amp;</span><span class="self">self</span>.succs)
-    }
-
     <span class="doccomment">/// Convert back into surface syntax.
     </span><span class="kw">pub fn </span>surface_syntax_string(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
         <span class="kw">let </span><span class="kw-2">mut </span>string = String::new();
@@ -589,7 +603,7 @@
             }
         }
         <span class="macro">writeln!</span>(write)<span class="question-mark">?</span>;
-        <span class="kw">for </span>((src_key, _src_port), (dst_key, _dst_port)) <span class="kw">in </span><span class="kw">super</span>::iter_edges(<span class="kw-2">&amp;</span><span class="self">self</span>.succs) {
+        <span class="kw">for </span>(_e, (src_key, dst_key)) <span class="kw">in </span><span class="self">self</span>.graph.edges() {
             <span class="macro">writeln!</span>(write, <span class="string">&quot;({:?}--&gt;{:?});&quot;</span>, src_key.data(), dst_key.data())<span class="question-mark">?</span>;
         }
         <span class="prelude-val">Ok</span>(())
@@ -626,7 +640,7 @@
             }<span class="question-mark">?</span>;
         }
         <span class="macro">writeln!</span>(write)<span class="question-mark">?</span>;
-        <span class="kw">for </span>((src_key, _src_port), (dst_key, _dst_port)) <span class="kw">in </span><span class="kw">super</span>::iter_edges(<span class="kw-2">&amp;</span><span class="self">self</span>.succs) {
+        <span class="kw">for </span>(_e, (src_key, dst_key)) <span class="kw">in </span><span class="self">self</span>.graph.edges() {
             <span class="macro">writeln!</span>(write, <span class="string">&quot;    {:?}--&gt;{:?}&quot;</span>, src_key.data(), dst_key.data())<span class="question-mark">?</span>;
         }
         <span class="prelude-val">Ok</span>(())
@@ -645,4 +659,4 @@
     out: <span class="prelude-ty">Option</span>&lt;GraphNodeId&gt;,
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0-nightly (a37499ae6 2022-09-18)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0-nightly (2019147c5 2022-09-19)" ></div></body></html>
