@@ -1,6 +1,6 @@
 window.BENCHMARK_DATA = 
 {
-  "lastUpdate": 1663562053430,
+  "lastUpdate": 1663648349762,
   "repoUrl": "https://github.com/hydro-project/hydroflow",
   "entries": {
     "Benchmark": [
@@ -24964,6 +24964,82 @@ window.BENCHMARK_DATA =
             "name": "reachability/hydroflow",
             "value": 3313263,
             "range": "± 30189",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Joe Hellerstein",
+            "username": "jhellerstein",
+            "email": "jmh@berkeley.edu"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "5a1777991cd72a566596b4d7b0375387c6985967",
+          "message": "Book edits, fix #183 (#190)\n\n* replace refs in book: \"Core API\" -> \"Surface API\"\r\n\r\n* remove dead examples/book\r\n\r\n* split Graph Reachability into two subsections\r\n\r\n* explain vec![0] and remove refs to pull\r\n\r\n* explain vec![0]\r\n\r\n* fix link to design doc\r\n\r\n* fix bug/typo where pull should have been push\r\n\r\n* more careful discussion of the space of partitionings\r\n\r\n* restore refs to Core API, other small edits\r\n\r\n* clarify that example_4_1 illustrates multiple outputs",
+          "timestamp": "2022-09-19T20:20:37Z",
+          "url": "https://github.com/hydro-project/hydroflow/commit/5a1777991cd72a566596b4d7b0375387c6985967"
+        },
+        "date": 1663648349752,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "arithmetic/hydroflow/compiled",
+            "value": 380050,
+            "range": "± 12369",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fan_in/hydroflow",
+            "value": 194130623,
+            "range": "± 5189650",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fan_out/hydroflow/scheduled",
+            "value": 111355653,
+            "range": "± 5764077",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fork_join/hydroflow",
+            "value": 13982596,
+            "range": "± 495031",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fork_join/hydroflow_builder",
+            "value": 35020038,
+            "range": "± 1210121",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "identity/hydroflow",
+            "value": 39388757,
+            "range": "± 1644380",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "identity/hydroflow/compiled",
+            "value": 18079102,
+            "range": "± 614770",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "reachability/hydroflow/scheduled",
+            "value": 3452353,
+            "range": "± 173644",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "reachability/hydroflow",
+            "value": 3476653,
+            "range": "± 146985",
             "unit": "ns/iter"
           }
         ]
