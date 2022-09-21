@@ -3,7 +3,6 @@ use std::time::Duration;
 
 use hydroflow::hydroflow_syntax;
 use hydroflow::scheduled::graph::Hydroflow;
-use std::pin::Pin;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::task::LocalSet;
@@ -24,7 +23,7 @@ pub async fn test_echo_tcp() -> Result<(), Box<dyn Error>> {
         println!("Server accepted connection!");
 
         let mut df: Hydroflow = hydroflow_syntax! {
-            recv_stream2(lines_recv)
+            recv_stream(lines_recv)
                 -> map(|x| x.unwrap())
                 -> map(|s| { println!("serv {}", s); s })
                 -> map(|s| format!("{}\n", s))
@@ -50,7 +49,7 @@ pub async fn test_echo_tcp() -> Result<(), Box<dyn Error>> {
         let lines_recv = LinesStream::new(BufReader::new(client_recv).lines());
 
         let mut df = hydroflow_syntax! {
-            recv_stream2(lines_recv)
+            recv_stream(lines_recv)
                 -> map(|x| x.unwrap())
                 -> for_each(|s| println!("echo {}", s));
             recv_iter([ "Hello\n", "World\n" ]) -> send_async(client_send);
@@ -84,7 +83,7 @@ pub fn test_echo() {
     let stdout_lines = tokio::io::stdout();
 
     let mut df: Hydroflow = hydroflow_syntax! {
-        recv_stream2(lines_recv) -> map(|line| line + "\n") -> send_async(stdout_lines);
+        recv_stream(lines_recv) -> map(|line| line + "\n") -> send_async(stdout_lines);
     };
 
     println!(
