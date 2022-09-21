@@ -1072,14 +1072,14 @@
             <span class="kw">let </span>receiver = <span class="kw-2">&amp;</span>arguments[<span class="number">0</span>];
             <span class="kw">let </span>stream_ident = wc.make_ident(<span class="string">&quot;stream&quot;</span>);
             <span class="macro">quote! </span>{
-                <span class="kw">let </span><span class="kw-2">mut </span>#stream_ident = #receiver;
+                <span class="kw">let </span><span class="kw-2">mut </span>#stream_ident = Box::pin(#receiver);
             }
         }),
-        write_iterator_fn: <span class="kw-2">&amp;</span>(|wc @ <span class="kw-2">&amp;</span>WriteContextArgs { ident, .. }, <span class="kw">_</span>| {
+        write_iterator_fn: <span class="kw-2">&amp;</span>(|wc @ <span class="kw-2">&amp;</span>WriteContextArgs { root, ident, .. }, <span class="kw">_</span>| {
             <span class="kw">let </span>stream_ident = wc.make_ident(<span class="string">&quot;stream&quot;</span>);
             <span class="macro">quote! </span>{
                 <span class="kw">let </span>#ident = std::iter::from_fn(|| {
-                    <span class="kw">match </span>#stream_ident.poll_recv(<span class="kw-2">&amp;mut </span>std::task::Context::from_waker(<span class="kw-2">&amp;</span>context.waker())) {
+                    <span class="kw">match </span>#root::futures::stream::Stream::poll_next(#stream_ident.as_mut(), <span class="kw-2">&amp;mut </span>std::task::Context::from_waker(<span class="kw-2">&amp;</span>context.waker())) {
                         std::task::Poll::Ready(maybe) =&gt; maybe,
                         std::task::Poll::Pending =&gt; <span class="prelude-val">None</span>,
                     }
@@ -1325,4 +1325,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0-nightly (2019147c5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0-nightly (432abd86f 2022-09-20)" ></div></body></html>

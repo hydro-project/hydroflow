@@ -147,8 +147,8 @@ pub fn main() {
 }
 </code></pre></pre>
 <p>We'll start out with the above boilerplate. To add a new external input
-channel, we can use the <code>tokio</code> library:</p>
-<pre><code class="language-rust  ignore">    let (input_example, example_recv) = tokio::sync::mpsc::unbounded_channel::&lt;usize&gt;();
+channel, we can use the <code>hydroflow::util::unbounded_channel()</code> function:</p>
+<pre><code class="language-rust  ignore">    let (input_example, example_recv) = hydroflow::util::unbounded_channel::&lt;usize&gt;();
 </code></pre>
 <p>This is a <a href="https://docs.rs/tokio/latest/tokio/sync/mpsc/fn.unbounded_channel.html">multiple-producer/single-consumer (<code>mpsc</code>) channel</a>, which is usually the appropriate choice for an inbound Hydroflow stream:
 think of it as a high-performance &quot;mailbox&quot; that any sender can fill with well-typed data.</p>
@@ -163,7 +163,7 @@ input channel:</p>
 
 pub fn main() {
 // Create our channel input
-let (input_example, example_recv) = tokio::sync::mpsc::unbounded_channel::&lt;usize&gt;();
+let (input_example, example_recv) = hydroflow::util::unbounded_channel::&lt;usize&gt;();
 
 let mut hydroflow = hydroflow_syntax! {
     recv_stream(example_recv)

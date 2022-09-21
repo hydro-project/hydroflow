@@ -334,8 +334,8 @@ pub fn main() {
 }
 </code></pre></pre>
 <p>We'll start out with the above boilerplate. To add a new external input
-channel, we can use the <code>tokio</code> library:</p>
-<pre><code class="language-rust  ignore">    let (input_example, example_recv) = tokio::sync::mpsc::unbounded_channel::&lt;usize&gt;();
+channel, we can use the <code>hydroflow::util::unbounded_channel()</code> function:</p>
+<pre><code class="language-rust  ignore">    let (input_example, example_recv) = hydroflow::util::unbounded_channel::&lt;usize&gt;();
 </code></pre>
 <p>This is a <a href="https://docs.rs/tokio/latest/tokio/sync/mpsc/fn.unbounded_channel.html">multiple-producer/single-consumer (<code>mpsc</code>) channel</a>, which is usually the appropriate choice for an inbound Hydroflow stream:
 think of it as a high-performance &quot;mailbox&quot; that any sender can fill with well-typed data.</p>
@@ -350,7 +350,7 @@ input channel:</p>
 
 pub fn main() {
 // Create our channel input
-let (input_example, example_recv) = tokio::sync::mpsc::unbounded_channel::&lt;usize&gt;();
+let (input_example, example_recv) = hydroflow::util::unbounded_channel::&lt;usize&gt;();
 
 let mut hydroflow = hydroflow_syntax! {
     recv_stream(example_recv)
@@ -441,7 +441,7 @@ below):</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">use hydroflow::hydroflow_syntax;
 </span>pub fn main() {
     // An edge in the input data = a pair of `usize` vertex IDs.
-    let (pairs_send, pairs_recv) = tokio::sync::mpsc::unbounded_channel::&lt;(usize, usize)&gt;();
+    let (pairs_send, pairs_recv) = hydroflow::util::unbounded_channel::&lt;(usize, usize)&gt;();
 
     let mut flow = hydroflow_syntax! {
         // inputs: the origin vertex (node 0) and stream of input edges
@@ -800,13 +800,14 @@ For example, here we iterate through a vector of <code>usize</code> items and pu
 </code></pre>
 <p>The Hello, World example above uses this construct.</p>
 <h2 id="recv_stream"><a class="header" href="#recv_stream"><code>recv_stream</code></a></h2>
-<p>More commonly, a flow is handling external data that comes in asynchronously via Rust's <em>tokio</em> library.
-For this we need to allocate tokio <em>channels</em> that allow Rust code to send data into the Hydroflow inputs. 
+<p>More commonly, a flow should handle external data coming in asynchronously from a <a href="https://tokio.rs/tokio/tutorial"><em>Tokio</em> runtime</a>.
+One way to do this is with <em>channels</em> that allow Rust code to send data into the Hydroflow inputs.
 The code below creates a channel for data of (Rust) type <code>(usize, usize)</code>:</p>
-<pre><code class="language-rust ignore">    let (input_send, input_recv) = tokio::sync::mpsc::unbounded_channel::&lt;(usize, usize)&gt;();
+<pre><code class="language-rust ignore">    let (input_send, input_recv) = hydroflow::util::unbounded_channel::&lt;(usize, usize)&gt;();
 </code></pre>
-<p>Now in Rust we can now push data into the channel via <em>tokio</em>'s methods. E.g. for testing
-we can do it explicitly as follows:</p>
+<p>Under the hood this uses <a href="https://docs.rs/tokio/latest/tokio/sync/mpsc/fn.unbounded_channel.html">Tokio unbounded channels</a>.
+Now in Rust we can now push data into the channel. E.g. for testing we can do
+it explicitly as follows:</p>
 <pre><code class="language-rust ignore">    input_send.send((0, 1)).unwrap()
 </code></pre>
 <p>And in our Hydroflow syntax we can receive the data from the channel using the <code>recv_stream</code> syntax and
@@ -819,7 +820,7 @@ in from outside the flow:</p>
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span><span class="boring">use hydroflow::hydroflow_syntax;
-</span>let (input_send, input_recv) = tokio::sync::mpsc::unbounded_channel::&lt;&amp;str&gt;();
+</span>let (input_send, input_recv) = hydroflow::util::unbounded_channel::&lt;&amp;str&gt;();
 let mut flow = hydroflow_syntax! {
     recv_stream(input_recv) -&gt; map(|x| x.to_uppercase())
         -&gt; for_each(|x| println!(&quot;{}&quot;, x));
@@ -927,14 +928,15 @@ my_tee[2] -&gt; for_each(|x: &amp;str| println!(&quot;{}&quot;, x));
 <blockquote>
 <p>Arguments: The receive end of a tokio channel</p>
 </blockquote>
-<p>Given a tokio channel created in Rust code, <code>recv_stream</code> 
+<p>Given a <a href="https://docs.rs/futures/latest/futures/stream/trait.Stream.html"><code>Stream</code></a>
+created in Rust code, <code>recv_stream</code>
 is passed the receive endpoint of the channel and emits each of the
 elements it receives downstream.</p>
 <pre><pre class="playground"><code class="language-rust">
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span><span class="boring">use hydroflow::hydroflow_syntax;
-</span>let (input_send, input_recv) = tokio::sync::mpsc::unbounded_channel::&lt;&amp;str&gt;();
+</span>let (input_send, input_recv) = hydroflow::util::unbounded_channel::&lt;&amp;str&gt;();
 let mut flow = hydroflow_syntax! {
     recv_stream(input_recv) -&gt; map(|x| x.to_uppercase()) 
         -&gt; for_each(|x| println!(&quot;{}&quot;, x));

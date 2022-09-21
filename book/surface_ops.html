@@ -232,14 +232,15 @@ my_tee[2] -&gt; for_each(|x: &amp;str| println!(&quot;{}&quot;, x));
 <blockquote>
 <p>Arguments: The receive end of a tokio channel</p>
 </blockquote>
-<p>Given a tokio channel created in Rust code, <code>recv_stream</code> 
+<p>Given a <a href="https://docs.rs/futures/latest/futures/stream/trait.Stream.html"><code>Stream</code></a>
+created in Rust code, <code>recv_stream</code>
 is passed the receive endpoint of the channel and emits each of the
 elements it receives downstream.</p>
 <pre><pre class="playground"><code class="language-rust">
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span><span class="boring">use hydroflow::hydroflow_syntax;
-</span>let (input_send, input_recv) = tokio::sync::mpsc::unbounded_channel::&lt;&amp;str&gt;();
+</span>let (input_send, input_recv) = hydroflow::util::unbounded_channel::&lt;&amp;str&gt;();
 let mut flow = hydroflow_syntax! {
     recv_stream(input_recv) -&gt; map(|x| x.to_uppercase()) 
         -&gt; for_each(|x| println!(&quot;{}&quot;, x));

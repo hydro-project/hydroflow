@@ -145,13 +145,14 @@ For example, here we iterate through a vector of <code>usize</code> items and pu
 </code></pre>
 <p>The Hello, World example above uses this construct.</p>
 <h2 id="recv_stream"><a class="header" href="#recv_stream"><code>recv_stream</code></a></h2>
-<p>More commonly, a flow is handling external data that comes in asynchronously via Rust's <em>tokio</em> library.
-For this we need to allocate tokio <em>channels</em> that allow Rust code to send data into the Hydroflow inputs. 
+<p>More commonly, a flow should handle external data coming in asynchronously from a <a href="https://tokio.rs/tokio/tutorial"><em>Tokio</em> runtime</a>.
+One way to do this is with <em>channels</em> that allow Rust code to send data into the Hydroflow inputs.
 The code below creates a channel for data of (Rust) type <code>(usize, usize)</code>:</p>
-<pre><code class="language-rust ignore">    let (input_send, input_recv) = tokio::sync::mpsc::unbounded_channel::&lt;(usize, usize)&gt;();
+<pre><code class="language-rust ignore">    let (input_send, input_recv) = hydroflow::util::unbounded_channel::&lt;(usize, usize)&gt;();
 </code></pre>
-<p>Now in Rust we can now push data into the channel via <em>tokio</em>'s methods. E.g. for testing
-we can do it explicitly as follows:</p>
+<p>Under the hood this uses <a href="https://docs.rs/tokio/latest/tokio/sync/mpsc/fn.unbounded_channel.html">Tokio unbounded channels</a>.
+Now in Rust we can now push data into the channel. E.g. for testing we can do
+it explicitly as follows:</p>
 <pre><code class="language-rust ignore">    input_send.send((0, 1)).unwrap()
 </code></pre>
 <p>And in our Hydroflow syntax we can receive the data from the channel using the <code>recv_stream</code> syntax and
@@ -164,7 +165,7 @@ in from outside the flow:</p>
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span><span class="boring">use hydroflow::hydroflow_syntax;
-</span>let (input_send, input_recv) = tokio::sync::mpsc::unbounded_channel::&lt;&amp;str&gt;();
+</span>let (input_send, input_recv) = hydroflow::util::unbounded_channel::&lt;&amp;str&gt;();
 let mut flow = hydroflow_syntax! {
     recv_stream(input_recv) -&gt; map(|x| x.to_uppercase())
         -&gt; for_each(|x| println!(&quot;{}&quot;, x));
