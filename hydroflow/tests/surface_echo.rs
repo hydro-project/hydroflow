@@ -3,8 +3,8 @@ use std::time::Duration;
 use hydroflow::hydroflow_syntax;
 use hydroflow::scheduled::graph::Hydroflow;
 
-#[test]
-pub fn test_echo() {
+#[tokio::test]
+pub async fn test_echo() {
     // An edge in the input data = a pair of `usize` vertex IDs.
     let (lines_send, lines_recv) = hydroflow::util::unbounded_channel::<String>();
 
@@ -34,5 +34,5 @@ pub fn test_echo() {
     df.run_available();
 
     // Allow background thread to catch up.
-    std::thread::sleep(Duration::from_secs(1));
+    tokio::time::sleep(Duration::from_secs(1)).await;
 }

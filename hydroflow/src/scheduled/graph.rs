@@ -2,13 +2,13 @@ use std::any::Any;
 use std::borrow::Cow;
 use std::cell::Cell;
 use std::collections::VecDeque;
+use std::future::Future;
 use std::marker::PhantomData;
 use std::num::NonZeroUsize;
-use std::time::Duration;
 
 use hydroflow_lang::graph::serde_graph::SerdeGraph;
 use ref_cast::RefCast;
-use tokio::runtime::{Builder, Runtime};
+use tokio::runtime::TryCurrentError;
 use tokio::sync::mpsc::{self, UnboundedReceiver};
 
 use super::context::Context;
@@ -31,17 +31,11 @@ pub struct Hydroflow {
     stratum_queues: Vec<VecDeque<SubgraphId>>,
     event_queue_recv: UnboundedReceiver<SubgraphId>,
 
-    /// Tokio async runtime worker for running async tasks to completion.
-    /// A `Hydroflow` instance's scheduler acts like a async runtime but
-    /// the tasks are only subgraphs, not in general any future. This runtime
-    /// handles general futures.
-    tokio_worker: Runtime,
-
     serde_graph: Option<SerdeGraph>,
 }
 impl Default for Hydroflow {
     fn default() -> Self {
-        let (subgraphs, handoffs, states) = Default::default();
+        let (subgraphs, handoffs, states, task_join_handles) = Default::default();
         let stratum_queues = vec![Default::default()]; // Always initialize stratum #0.
         let (event_queue_send, event_queue_recv) = mpsc::unbounded_channel();
         let context = Context {
@@ -54,12 +48,9 @@ impl Default for Hydroflow {
             current_epoch: 0,
 
             subgraph_id: SubgraphId(0),
+
+            task_join_handles,
         };
-        let tokio_worker = Builder::new_multi_thread()
-            .worker_threads(1)
-            .enable_all()
-            .build()
-            .expect("Failed to construction Tokio Runtime worker.");
         Self {
             subgraphs,
             context,
@@ -67,7 +58,6 @@ impl Default for Hydroflow {
             stratum_queues,
 
             event_queue_recv,
-            tokio_worker,
 
             serde_graph: None,
         }
@@ -476,13 +466,25 @@ impl Hydroflow {
 }
 
 impl Hydroflow {
-    /// Retrieve handle to internal tokio worker.
-    pub fn tokio_worker(&self) -> &Runtime {
-        &self.tokio_worker
+    pub fn spawn_task<Fut>(&mut self, future: Fut) -> Result<(), TryCurrentError>
+    where
+        Fut: Future<Output = ()> + Send + 'static,
+    {
+        self.context.spawn_task(future)
     }
 
-    pub fn shutdown(self, duration: Duration) {
-        self.tokio_worker.shutdown_timeout(duration)
+    pub fn abort_tasks(&mut self) {
+        self.context.abort_tasks()
+    }
+
+    pub fn join_tasks(&mut self) -> impl '_ + Future {
+        self.context.join_tasks()
+    }
+}
+
+impl Drop for Hydroflow {
+    fn drop(&mut self) {
+        self.abort_tasks();
     }
 }
 
