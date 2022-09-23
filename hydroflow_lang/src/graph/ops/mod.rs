@@ -555,16 +555,18 @@ pub const OPERATORS: [OperatorConstraints; 20] = [
 
             quote! {
                 let (#send_ident, #recv_ident) = #root::tokio::sync::mpsc::unbounded_channel();
-                df.tokio_worker().spawn(async move {
-                    use #root::tokio::io::AsyncWriteExt;
+                df
+                    .spawn_task(async move {
+                        use #root::tokio::io::AsyncWriteExt;
 
-                    let mut recv = #recv_ident;
-                    let mut write = #async_write_arg;
-                    while let Some(item) = recv.recv().await {
-                        let bytes = std::convert::AsRef::<[u8]>::as_ref(&item);
-                        write.write_all(bytes).await.expect("Error processing async write item.");
-                    }
-                });
+                        let mut recv = #recv_ident;
+                        let mut write = #async_write_arg;
+                        while let Some(item) = recv.recv().await {
+                            let bytes = std::convert::AsRef::<[u8]>::as_ref(&item);
+                            write.write_all(bytes).await.expect("Error processing async write item.");
+                        }
+                    })
+                    .expect("send_async() must be used within a tokio runtime");
             }
         }),
         write_iterator_fn: &(|wc @ &WriteContextArgs { root, ident, .. }, _| {

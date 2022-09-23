@@ -1,6 +1,10 @@
-use std::{any::Any, marker::PhantomData};
+use std::any::Any;
+use std::marker::PhantomData;
 
+use std::future::Future;
+use tokio::runtime::{Handle, TryCurrentError};
 use tokio::sync::mpsc::UnboundedSender;
+use tokio::task::JoinHandle;
 
 use super::graph::{HandoffData, StateData};
 use super::state::StateHandle;
@@ -27,6 +31,9 @@ pub struct Context {
     /// not being forwarded to a running operator, this field is (mostly)
     /// meaningless.
     pub(crate) subgraph_id: SubgraphId,
+
+    /// Join handles for spawned tasks.
+    pub(crate) task_join_handles: Vec<JoinHandle<()>>,
 }
 impl Context {
     /// Gets the current epoch (local time) count.
@@ -108,5 +115,22 @@ impl Context {
             state_id,
             _phantom: PhantomData,
         }
+    }
+
+    pub fn spawn_task<Fut>(&mut self, future: Fut) -> Result<(), TryCurrentError>
+    where
+        Fut: Future<Output = ()> + Send + 'static,
+    {
+        Handle::try_current().map(|handle| self.task_join_handles.push(handle.spawn(future)))
+    }
+
+    pub fn abort_tasks(&mut self) {
+        for task in self.task_join_handles.drain(..) {
+            task.abort();
+        }
+    }
+
+    pub async fn join_tasks(&mut self) {
+        futures::future::join_all(self.task_join_handles.drain(..)).await;
     }
 }
