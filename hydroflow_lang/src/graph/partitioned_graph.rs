@@ -7,7 +7,7 @@ use crate::parse::IndexInt;
 
 use super::di_mul_graph::DiMulGraph;
 use super::flat_graph::FlatGraph;
-use super::ops::{WriteContextArgs, WriteIteratorArgs, OPERATORS};
+use super::ops::{OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, OPERATORS};
 use super::serde_graph::SerdeGraph;
 use super::{node_color, Color, GraphEdgeId, GraphNodeId, GraphSubgraphId, Node};
 
@@ -111,6 +111,7 @@ impl PartitionedGraph {
 
                 let mut op_prologue_code = Vec::new();
                 let mut subgraph_op_iter_code = Vec::new();
+                let mut subgraph_op_iter_after_code = Vec::new();
                 {
                     let pull_to_push_idx = subgraph_nodes
                         .iter()
@@ -148,7 +149,6 @@ impl PartitionedGraph {
                                 root: &root,
                                 subgraph_id,
                                 node_id,
-                                ident: &ident,
                             };
 
                             // TODO clean this up.
@@ -175,6 +175,7 @@ impl PartitionedGraph {
                                 .collect();
 
                             let iter_args = WriteIteratorArgs {
+                                ident: &ident,
                                 inputs: &*inputs,
                                 outputs: &*outputs,
                                 type_arguments: op.type_arguments(),
@@ -182,15 +183,15 @@ impl PartitionedGraph {
                                 is_pull: idx < pull_to_push_idx,
                             };
 
-                            op_prologue_code.push((op_constraints.write_prologue_fn)(
-                                &context_args,
-                                &iter_args,
-                            ));
+                            let OperatorWriteOutput {
+                                write_prologue,
+                                write_iterator,
+                                write_iterator_after,
+                            } = (op_constraints.write_fn)(&context_args, &iter_args);
 
-                            let iter_code =
-                                (op_constraints.write_iterator_fn)(&context_args, &iter_args);
-
-                            subgraph_op_iter_code.push(iter_code);
+                            op_prologue_code.push(write_prologue);
+                            subgraph_op_iter_code.push(write_iterator);
+                            subgraph_op_iter_after_code.push(write_iterator_after);
                         }
                     }
 
@@ -234,6 +235,7 @@ impl PartitionedGraph {
                             #( #recv_port_code )*
                             #( #send_port_code )*
                             #( #subgraph_op_iter_code )*
+                            #( #subgraph_op_iter_after_code )*
                         },
                     );
                 }
