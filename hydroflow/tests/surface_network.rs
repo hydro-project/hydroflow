@@ -27,7 +27,7 @@ pub async fn test_echo_tcp() -> Result<(), Box<dyn Error>> {
                 -> map(|x| x.unwrap())
                 -> map(|s| { println!("serv {}", s); s })
                 -> map(|s| format!("{}\n", s))
-                -> send_async(server_send);
+                -> write_async(server_send);
         };
 
         tokio::select! {
@@ -51,7 +51,7 @@ pub async fn test_echo_tcp() -> Result<(), Box<dyn Error>> {
             recv_stream(lines_recv)
                 -> map(|x| x.unwrap())
                 -> for_each(|s| println!("echo {}", s));
-            recv_iter([ "Hello\n", "World\n" ]) -> send_async(client_send);
+            recv_iter([ "Hello\n", "World\n" ]) -> write_async(client_send);
         };
 
         println!("Client running!");
@@ -80,7 +80,7 @@ pub async fn test_echo() {
     let stdout_lines = tokio::io::stdout();
 
     let mut df: Hydroflow = hydroflow_syntax! {
-        recv_stream(lines_recv) -> map(|line| line + "\n") -> send_async(stdout_lines);
+        recv_stream(lines_recv) -> map(|line| line + "\n") -> write_async(stdout_lines);
     };
 
     println!(

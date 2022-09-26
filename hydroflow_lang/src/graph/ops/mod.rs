@@ -535,7 +535,7 @@ pub const OPERATORS: [OperatorConstraints; 20] = [
         }),
     },
     OperatorConstraints {
-        name: "send_async",
+        name: "write_async",
         hard_range_inn: RANGE_1,
         soft_range_inn: RANGE_1,
         hard_range_out: RANGE_0,
@@ -562,7 +562,7 @@ pub const OPERATORS: [OperatorConstraints; 20] = [
                             write.write_all(bytes).await.expect("Error processing async write item.");
                         }
                     })
-                    .expect("send_async() must be used within a tokio runtime");
+                    .expect("write_async() must be used within a tokio runtime");
             }
         }),
         write_iterator_fn: &(|wc @ &WriteContextArgs { root, ident, .. }, _| {
