@@ -83,6 +83,7 @@ pub fn test_basic_tee() {
 // Mainly checking subgraph partitioning pull-push handling.
 #[test]
 pub fn test_large_diamond() {
+    #[allow(clippy::map_identity)]
     let mut df: Hydroflow = hydroflow_syntax! {
         t = recv_iter([1]) -> tee();
         j = merge() -> for_each(|x| println!("{}", x));
