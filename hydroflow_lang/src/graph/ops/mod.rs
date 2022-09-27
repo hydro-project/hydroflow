@@ -116,11 +116,13 @@ pub const OPERATORS: [OperatorConstraints; 20] = [
                                   ..
                               }| {
             if is_pull {
-                let mut inputs = inputs.iter();
-                let first = inputs.next();
-                let rest = inputs.map(|ident| quote! { .chain(#ident) });
+                let chains = inputs
+                    .iter()
+                    .map(|i| quote! { #i })
+                    .reduce(|a, b| quote! { #a.chain(#b) })
+                    .unwrap_or_else(|| quote! { std::iter::empty() });
                 quote! {
-                    let #ident = #first #( #rest )*;
+                    let #ident = #chains;
                 }
             } else {
                 assert_eq!(1, outputs.len());
@@ -178,7 +180,9 @@ pub const OPERATORS: [OperatorConstraints; 20] = [
                     .rev()
                     .map(|i| quote! { #i })
                     .reduce(|b, a| quote! { #root::pusherator::tee::Tee::new(#a, #b) })
-                    .unwrap_or_else(|| quote! { std::iter::empty() });
+                    .unwrap_or_else(
+                        || quote! { #root::pusherator::for_each::ForEach::new(std::mem::drop) },
+                    );
                 quote! {
                     let #ident = #tees;
                 }
