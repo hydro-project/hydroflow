@@ -661,6 +661,12 @@
 <span id="661">661</span>
 <span id="662">662</span>
 <span id="663">663</span>
+<span id="664">664</span>
+<span id="665">665</span>
+<span id="666">666</span>
+<span id="667">667</span>
+<span id="668">668</span>
+<span id="669">669</span>
 </pre><pre class="rust"><code><span class="kw">use </span>std::fmt::Display;
 <span class="kw">use </span>std::ops::{Bound, RangeBounds};
 
@@ -779,11 +785,13 @@
                                   ..
                               }| {
             <span class="kw">if </span>is_pull {
-                <span class="kw">let </span><span class="kw-2">mut </span>inputs = inputs.iter();
-                <span class="kw">let </span>first = inputs.next();
-                <span class="kw">let </span>rest = inputs.map(|ident| <span class="macro">quote! </span>{ .chain(#ident) });
+                <span class="kw">let </span>chains = inputs
+                    .iter()
+                    .map(|i| <span class="macro">quote! </span>{ #i })
+                    .reduce(|a, b| <span class="macro">quote! </span>{ #a.chain(#b) })
+                    .unwrap_or_else(|| <span class="macro">quote! </span>{ std::iter::empty() });
                 <span class="macro">quote! </span>{
-                    <span class="kw">let </span>#ident = #first #( #rest )<span class="kw-2">*</span>;
+                    <span class="kw">let </span>#ident = #chains;
                 }
             } <span class="kw">else </span>{
                 <span class="macro">assert_eq!</span>(<span class="number">1</span>, outputs.len());
@@ -841,7 +849,9 @@
                     .rev()
                     .map(|i| <span class="macro">quote! </span>{ #i })
                     .reduce(|b, a| <span class="macro">quote! </span>{ #root::pusherator::tee::Tee::new(#a, #b) })
-                    .unwrap_or_else(|| <span class="macro">quote! </span>{ std::iter::empty() });
+                    .unwrap_or_else(
+                        || <span class="macro">quote! </span>{ #root::pusherator::for_each::ForEach::new(std::mem::drop) },
+                    );
                 <span class="macro">quote! </span>{
                     <span class="kw">let </span>#ident = #tees;
                 }
@@ -1198,7 +1208,7 @@
         }),
     },
     OperatorConstraints {
-        name: <span class="string">&quot;send_async&quot;</span>,
+        name: <span class="string">&quot;write_async&quot;</span>,
         hard_range_inn: RANGE_1,
         soft_range_inn: RANGE_1,
         hard_range_out: RANGE_0,
@@ -1214,16 +1224,18 @@
 
             <span class="macro">quote! </span>{
                 <span class="kw">let </span>(#send_ident, #recv_ident) = #root::tokio::sync::mpsc::unbounded_channel();
-                df.tokio_worker().spawn(<span class="kw">async move </span>{
-                    <span class="kw">use </span>#root::tokio::io::AsyncWriteExt;
+                df
+                    .spawn_task(<span class="kw">async move </span>{
+                        <span class="kw">use </span>#root::tokio::io::AsyncWriteExt;
 
-                    <span class="kw">let </span><span class="kw-2">mut </span>recv = #recv_ident;
-                    <span class="kw">let </span><span class="kw-2">mut </span>write = #async_write_arg;
-                    <span class="kw">while let </span><span class="prelude-val">Some</span>(item) = recv.recv().<span class="kw">await </span>{
-                        <span class="kw">let </span>bytes = std::convert::AsRef::&lt;[u8]&gt;::as_ref(<span class="kw-2">&amp;</span>item);
-                        write.write_all(bytes).<span class="kw">await</span>.expect(<span class="string">&quot;Error processing async write item.&quot;</span>);
-                    }
-                });
+                        <span class="kw">let </span><span class="kw-2">mut </span>recv = #recv_ident;
+                        <span class="kw">let </span><span class="kw-2">mut </span>write = #async_write_arg;
+                        <span class="kw">while let </span><span class="prelude-val">Some</span>(item) = recv.recv().<span class="kw">await </span>{
+                            <span class="kw">let </span>bytes = std::convert::AsRef::&lt;[u8]&gt;::as_ref(<span class="kw-2">&amp;</span>item);
+                            write.write_all(bytes).<span class="kw">await</span>.expect(<span class="string">&quot;Error processing async write item.&quot;</span>);
+                        }
+                    })
+                    .expect(<span class="string">&quot;write_async() must be used within a tokio runtime&quot;</span>);
             }
         }),
         write_iterator_fn: <span class="kw-2">&amp;</span>(|wc @ <span class="kw-2">&amp;</span>WriteContextArgs { root, ident, .. }, <span class="kw">_</span>| {
