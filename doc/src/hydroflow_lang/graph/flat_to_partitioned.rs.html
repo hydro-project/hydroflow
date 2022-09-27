@@ -505,6 +505,18 @@
 <span id="505">505</span>
 <span id="506">506</span>
 <span id="507">507</span>
+<span id="508">508</span>
+<span id="509">509</span>
+<span id="510">510</span>
+<span id="511">511</span>
+<span id="512">512</span>
+<span id="513">513</span>
+<span id="514">514</span>
+<span id="515">515</span>
+<span id="516">516</span>
+<span id="517">517</span>
+<span id="518">518</span>
+<span id="519">519</span>
 </pre><pre class="rust"><code><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
 
 <span class="kw">use </span>proc_macro2::Span;
@@ -568,33 +580,44 @@
         graph.edges().map(|(edge_id, <span class="kw">_</span>)| edge_id).collect();
     <span class="comment">// Would sort edges here for priority (for now, no sort/priority).
 
-    // (Each edge gets looked at once to check if it can be unioned into one subgraph.)
-    </span><span class="kw">for </span>(edge_id, (src, dst)) <span class="kw">in </span>graph.edges() {
-        <span class="comment">// Ignore (1) already added edges as well as (2) new self-cycles.
-        </span><span class="kw">if </span>subgraph_unionfind.same_set(src, dst) {
-            <span class="comment">// Note this might be triggered even if the edge (src, dst) is not in the subgraph (not case 1).
-            // This prevents self-loops which would violate the in-out tree structure (case 2).
-            // Handoffs will be inserted later for this self-loop.
-            </span><span class="kw">continue</span>;
-        }
+    // Each edge gets looked at in order. However we may not know if a linear
+    // chain of operators is PUSH vs PULL until we look at the ends. A fancier
+    // algorithm would know to handle linear chains from the outside inward.
+    // But instead we just run through the edges in a loop until no more
+    // progress is made. Could have some sort of O(N^2) pathological worst
+    // case.
+    </span><span class="kw">let </span><span class="kw-2">mut </span>progress = <span class="bool-val">true</span>;
+    <span class="kw">while </span>progress {
+        progress = <span class="bool-val">false</span>;
+        <span class="kw">for </span>(edge_id, (src, dst)) <span class="kw">in </span>graph.edges() {
+            <span class="comment">// Ignore (1) already added edges as well as (2) new self-cycles.
+            </span><span class="kw">if </span>subgraph_unionfind.same_set(src, dst) {
+                <span class="comment">// Note this might be triggered even if the edge (src, dst) is not in the subgraph (not case 1).
+                // This prevents self-loops which would violate the in-out tree structure (case 2).
+                // Handoffs will be inserted later for this self-loop.
+                </span><span class="kw">continue</span>;
+            }
 
-        <span class="comment">// Ignore if would join stratum crossers (next edges).
-        </span><span class="kw">if </span>barrier_crossers.iter().any(|(edge_id, <span class="kw">_</span>)| {
-            <span class="kw">let </span>(x_src, x_dst) = graph.edge(edge_id).unwrap();
-            (subgraph_unionfind.same_set(x_src, src) &amp;&amp; subgraph_unionfind.same_set(x_dst, dst))
-                || (subgraph_unionfind.same_set(x_src, dst)
-                    &amp;&amp; subgraph_unionfind.same_set(x_dst, src))
-        }) {
-            <span class="kw">continue</span>;
-        }
+            <span class="comment">// Ignore if would join stratum crossers (next edges).
+            </span><span class="kw">if </span>barrier_crossers.iter().any(|(edge_id, <span class="kw">_</span>)| {
+                <span class="kw">let </span>(x_src, x_dst) = graph.edge(edge_id).unwrap();
+                (subgraph_unionfind.same_set(x_src, src) &amp;&amp; subgraph_unionfind.same_set(x_dst, dst))
+                    || (subgraph_unionfind.same_set(x_src, dst)
+                        &amp;&amp; subgraph_unionfind.same_set(x_dst, src))
+            }) {
+                <span class="kw">continue</span>;
+            }
 
-        <span class="kw">if </span>can_connect_colorize(<span class="kw-2">&amp;mut </span>node_color, src, dst) {
-            <span class="comment">// At this point we have selected this edge and its src &amp; dst to be
-            // within a single subgraph.
-            </span>subgraph_unionfind.union(src, dst);
-            <span class="macro">assert!</span>(handoff_edges.remove(<span class="kw-2">&amp;</span>edge_id));
+            <span class="kw">if </span>can_connect_colorize(<span class="kw-2">&amp;mut </span>node_color, src, dst) {
+                <span class="comment">// At this point we have selected this edge and its src &amp; dst to be
+                // within a single subgraph.
+                </span>subgraph_unionfind.union(src, dst);
+                <span class="macro">assert!</span>(handoff_edges.remove(<span class="kw-2">&amp;</span>edge_id));
+                progress = <span class="bool-val">true</span>;
+            }
         }
     }
+
     (subgraph_unionfind, handoff_edges)
 }
 
@@ -708,8 +731,9 @@
     // Pull -&gt; [Computation] -&gt; Push
     // Push -&gt; [Handoff] -&gt; Pull
     </span><span class="kw">let </span>can_connect = <span class="kw">match </span>(node_color[src], node_color[dst]) {
-        <span class="comment">// Linear chain.
-        </span>(<span class="prelude-val">None</span>, <span class="prelude-val">None</span>) =&gt; <span class="bool-val">true</span>,
+        <span class="comment">// Linear chain, can&#39;t connect because it may cause future conflicts.
+        // But if it doesn&#39;t in the _future_ we can connect it (once either/both ends are determined).
+        </span>(<span class="prelude-val">None</span>, <span class="prelude-val">None</span>) =&gt; <span class="bool-val">false</span>,
 
         <span class="comment">// Infer left side.
         </span>(<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(Color::Pull | Color::Comp)) =&gt; {
@@ -1013,4 +1037,4 @@
     (node_id, e1)
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0-nightly (f5193a9fc 2022-09-25)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0-nightly (8b705839c 2022-09-26)" ></div></body></html>

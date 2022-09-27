@@ -92,13 +92,13 @@
 
     <span class="kw">let </span>flat_mermaid = flat_graph.mermaid_string();
 
-    <span class="comment">// let part_graph = flat_graph.into_partitioned_graph();
-    // let part_mermaid = part_graph.to_serde_graph();
+    <span class="kw">let </span>part_graph = flat_graph.into_partitioned_graph().unwrap();
+    <span class="kw">let </span>part_mermaid = part_graph.to_serde_graph().to_mermaid();
 
-    </span><span class="kw">let </span>lit0 = Literal::string(<span class="kw-2">&amp;*</span>flat_mermaid);
-    <span class="comment">// let lit1 = Literal::string(&amp;*part_mermaid);
+    <span class="kw">let </span>lit0 = Literal::string(<span class="kw-2">&amp;*</span>flat_mermaid);
+    <span class="kw">let </span>lit1 = Literal::string(<span class="kw-2">&amp;*</span>part_mermaid);
 
-    </span><span class="macro">quote! </span>{ <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, #lit0); }.into()
+    <span class="macro">quote! </span>{ <span class="macro">println!</span>(<span class="string">&quot;{}\n\n{}\n&quot;</span>, #lit0, #lit1); }.into()
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="hydroflow_macro" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0-nightly (f5193a9fc 2022-09-25)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="hydroflow_macro" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0-nightly (8b705839c 2022-09-26)" ></div></body></html>
