@@ -80,6 +80,40 @@ pub fn test_basic_tee() {
     assert!(out.contains(&"B 1".to_owned()));
 }
 
+// Mainly checking subgraph partitioning pull-push handling.
+#[test]
+pub fn test_large_diamond() {
+    let mut df: Hydroflow = hydroflow_syntax! {
+        t = recv_iter([1]) -> tee();
+        j = merge() -> for_each(|x| println!("{}", x));
+        t[0] -> map(std::convert::identity) -> map(std::convert::identity) -> [0]j;
+        t[1] -> map(std::convert::identity) -> map(std::convert::identity) -> [1]j;
+    };
+    df.run_available();
+}
+
+// Mainly checking subgraph partitioning pull-push handling.
+// But in a different edge order.
+#[test]
+pub fn test_warped_diamond() {
+    let mut df: Hydroflow = hydroflow_syntax! {
+        // active nodes
+        nodes = merge();
+
+        // stream of nodes into the system
+        init = join() -> for_each(|(n, (a, b))| {
+            println!("DEBUG ({:?}, ({:?}, {:?}))", n, a, b);
+        });
+        new_node = recv_iter([1, 2, 3]) -> tee();
+        // add self
+        new_node[0] -> map(|n| (n, 'a')) -> [0]nodes;
+        // join peers against active nodes
+        nodes -> [0]init;
+        new_node[1] -> map(|n| (n, 'b')) -> [1]init;
+    };
+    df.run_available();
+}
+
 /// Test that recv_stream can handle "complex" expressions.
 #[test]
 pub fn test_recv_expr() {
