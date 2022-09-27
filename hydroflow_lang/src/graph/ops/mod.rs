@@ -699,13 +699,17 @@ pub const OPERATORS: [OperatorConstraints; 21] = [
                 let (#send_ident, #recv_ident) = #root::tokio::sync::mpsc::unbounded_channel();
                 df
                     .spawn_task(async move {
-                        use #root::tokio::io::AsyncWriteExt;
+                        use #root::futures::sink::SinkExt;
 
                         let mut recv = #recv_ident;
                         let mut sink = #sink_arg;
                         while let Some(item) = recv.recv().await {
-                            let bytes = std::convert::AsRef::<[u8]>::as_ref(&item);
-                            sink.write_all(bytes).await.expect("Error processing async write item.");
+                            sink.feed(item).await.expect("Error processing async sink item.");
+                            // Receive as many items synchronously as possible before flushing.
+                            while let Ok(item) = recv.try_recv() {
+                                sink.feed(item).await.expect("Error processing async sink item.");
+                            }
+                            sink.flush().await.expect("Failed to flush async sink.");
                         }
                     })
                     .expect("sink_async() must be used within a tokio runtime");
@@ -713,7 +717,6 @@ pub const OPERATORS: [OperatorConstraints; 21] = [
 
             let write_iterator = quote_spanned! {op_span=>
                 let #ident = #root::pusherator::for_each::ForEach::new(|item| {
-                    // TODO(mingwei): Use FEED and FLUSH instead of SEND
                     #send_ident.send(item).expect("Failed to send async write item for processing.");
                 });
             };
