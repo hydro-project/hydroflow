@@ -136,6 +136,7 @@ impl PartitionedGraph {
                             Node::Handoff => unreachable!("Handoffs are not part of subgraphs."),
                         };
 
+                        let op_span = node.span();
                         let op_name = &*op.name_string();
                         let op_constraints = OPERATORS
                             .iter()
@@ -149,6 +150,7 @@ impl PartitionedGraph {
                                 root: &root,
                                 subgraph_id,
                                 node_id,
+                                op_span,
                             };
 
                             // TODO clean this up.
