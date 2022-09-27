@@ -1,6 +1,6 @@
 window.BENCHMARK_DATA = 
 {
-  "lastUpdate": 1664166775403,
+  "lastUpdate": 1664252729989,
   "repoUrl": "https://github.com/hydro-project/hydroflow",
   "entries": {
     "Benchmark": [
@@ -25496,6 +25496,82 @@ window.BENCHMARK_DATA =
             "name": "reachability/hydroflow",
             "value": 2971372,
             "range": "± 13611",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Mingwei Samuel",
+            "username": "MingweiSamuel",
+            "email": "mingwei.samuel@gmail.com"
+          },
+          "committer": {
+            "name": "Mingwei Samuel",
+            "username": "MingweiSamuel",
+            "email": "mingwei.samuel@gmail.com"
+          },
+          "id": "3559fbfa19711447fc53dfc597ad18b9a2f81a50",
+          "message": "Surface syntax fix handling of wildcard linear chains which might cause later pull-push conflicts",
+          "timestamp": "2022-09-27T00:47:17Z",
+          "url": "https://github.com/hydro-project/hydroflow/commit/3559fbfa19711447fc53dfc597ad18b9a2f81a50"
+        },
+        "date": 1664252729981,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "arithmetic/hydroflow/compiled",
+            "value": 269110,
+            "range": "± 4111",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fan_in/hydroflow",
+            "value": 146380023,
+            "range": "± 844749",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fan_out/hydroflow/scheduled",
+            "value": 87656434,
+            "range": "± 1257095",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fork_join/hydroflow",
+            "value": 10508610,
+            "range": "± 96977",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fork_join/hydroflow_builder",
+            "value": 32397669,
+            "range": "± 113063",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "identity/hydroflow",
+            "value": 49459999,
+            "range": "± 1191609",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "identity/hydroflow/compiled",
+            "value": 18205103,
+            "range": "± 27565",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "reachability/hydroflow/scheduled",
+            "value": 2912461,
+            "range": "± 11847",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "reachability/hydroflow",
+            "value": 2921271,
+            "range": "± 18571",
             "unit": "ns/iter"
           }
         ]
