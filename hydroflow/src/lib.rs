@@ -12,8 +12,7 @@ pub mod props;
 pub mod scheduled;
 pub mod util;
 
-pub use hydroflow_macro::*;
-
+pub use bytes;
 pub use futures;
 pub use pusherator;
 pub use tokio;
@@ -21,6 +20,10 @@ pub use tokio_stream;
 pub use tokio_util;
 pub use tuple_list::tuple_list as tl;
 pub use tuple_list::tuple_list_type as tt;
+
+mod declarative_macro;
+pub use declarative_macro::*;
+pub use hydroflow_macro::*;
 
 #[cfg(doctest)]
 mod booktest {
