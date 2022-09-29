@@ -138,18 +138,23 @@ pub async fn test_echo_tcp() -> Result<(), Box<dyn Error>> {
 
         println!("Server accepted connection!");
 
+        let (seen_send, seen_recv) = hydroflow::util::unbounded_channel();
+
         let mut df: Hydroflow = hydroflow_syntax! {
-            recv_stream(lines_recv)
+            rev = recv_stream(lines_recv)
                 -> map(|x| x.unwrap())
-                -> map(|s| { println!("serv {}", s); s })
-                -> map(|s| format!("{}\n", s))
-                -> write_async(server_send);
+                -> tee();
+            rev[0] -> map(|s| format!("{}\n", s)) -> write_async(server_send);
+            rev[1] -> for_each(|s| seen_send.send(s).unwrap());
         };
 
         tokio::select! {
             _ = df.run_async() => (),
             _ = tokio::time::sleep(Duration::from_secs(1)) => (),
         };
+
+        let seen: Vec<_> = hydroflow::util::collect_ready(seen_recv).await;
+        rassert_eq!(&["Hello".to_owned(), "World".to_owned()], &*seen)?;
 
         Ok(()) as Result<(), Box<dyn Error>>
     });
@@ -163,10 +168,16 @@ pub async fn test_echo_tcp() -> Result<(), Box<dyn Error>> {
         let (client_recv, client_send) = client_stream.into_split();
         let lines_recv = LinesStream::new(BufReader::new(client_recv).lines());
 
+        let (seen_send, seen_recv) = hydroflow::util::unbounded_channel();
+
         let mut df = hydroflow_syntax! {
-            recv_stream(lines_recv)
+            recv = recv_stream(lines_recv)
                 -> map(|x| x.unwrap())
-                -> for_each(|s| println!("echo {}", s));
+                -> tee();
+
+            recv[0] -> for_each(|s| println!("echo {}", s));
+            recv[1] -> for_each(|s| seen_send.send(s).unwrap());
+
             recv_iter([ "Hello\n", "World\n" ]) -> write_async(client_send);
         };
 
@@ -176,6 +187,9 @@ pub async fn test_echo_tcp() -> Result<(), Box<dyn Error>> {
             _ = df.run_async() => (),
             _ = tokio::time::sleep(Duration::from_secs(1)) => (),
         };
+
+        let seen: Vec<_> = hydroflow::util::collect_ready(seen_recv).await;
+        rassert_eq!(&["Hello".to_owned(), "World".to_owned()], &*seen)?;
 
         Ok(()) as Result<(), Box<dyn Error>>
     });
