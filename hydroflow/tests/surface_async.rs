@@ -1,10 +1,8 @@
 //! Surface syntax tests of asynchrony and networking.
 
-use std::cell::RefCell;
 use std::collections::HashSet;
 use std::error::Error;
 use std::net::{Ipv4Addr, SocketAddr};
-use std::rc::Rc;
 use std::time::Duration;
 
 use hydroflow::scheduled::graph::Hydroflow;
@@ -26,17 +24,19 @@ pub async fn test_echo_udp() -> Result<(), Box<dyn Error>> {
         let socket = UdpSocket::bind((Ipv4Addr::UNSPECIFIED, SERVER_PORT))
             .await
             .unwrap();
-        let (send, recv) = hydroflow::util::udp_lines(socket);
+        let (udp_send, udp_recv) = hydroflow::util::udp_lines(socket);
         println!("Server live!");
 
-        let seen = <Rc<RefCell<HashSet<String>>>>::default();
-        let seen_inner = Rc::clone(&seen);
+        let (seen_send, seen_recv) = hydroflow::util::unbounded_channel();
 
         let mut df: Hydroflow = hydroflow_syntax! {
-            recv_stream(recv)
+            recv = recv_stream(udp_recv)
                 -> map(|r| r.unwrap())
-                -> map(|x| { seen_inner.borrow_mut().insert(x.0.clone()); x })
-                -> sink_async(send);
+                -> tee();
+            // Echo
+            recv[0] -> sink_async(udp_send);
+            // Testing
+            recv[1] -> map(|(s, _addr)| s) -> for_each(|s| seen_send.send(s).unwrap());
         };
 
         tokio::select! {
@@ -44,11 +44,12 @@ pub async fn test_echo_udp() -> Result<(), Box<dyn Error>> {
             _ = tokio::time::sleep(Duration::from_secs(1)) => (),
         };
 
-        rassert_eq!(4, seen.borrow().len())?;
-        rassert!(seen.borrow().contains("Hello"))?;
-        rassert!(seen.borrow().contains("World"))?;
-        rassert!(seen.borrow().contains("Raise"))?;
-        rassert!(seen.borrow().contains("Count"))?;
+        let seen: HashSet<_> = hydroflow::util::collect_ready(seen_recv).await;
+        rassert_eq!(4, seen.len())?;
+        rassert!(seen.contains("Hello"))?;
+        rassert!(seen.contains("World"))?;
+        rassert!(seen.contains("Raise"))?;
+        rassert!(seen.contains("Count"))?;
 
         Ok(()) as Result<(), Box<dyn Error>>
     });
@@ -58,17 +59,19 @@ pub async fn test_echo_udp() -> Result<(), Box<dyn Error>> {
         let socket = UdpSocket::bind((Ipv4Addr::UNSPECIFIED, 0))
             .await
             .unwrap();
-        let (send, recv) = hydroflow::util::udp_lines(socket);
+        let (send_udp, recv_udp) = hydroflow::util::udp_lines(socket);
 
-        let seen = <Rc<RefCell<Vec<String>>>>::default();
-        let seen_inner = Rc::clone(&seen);
+        let (seen_send, seen_recv) = hydroflow::util::unbounded_channel();
 
         let mut df = hydroflow_syntax! {
-            recv_stream(recv)
-                -> map(|x| x.unwrap())
-                -> map(|x| { seen_inner.borrow_mut().push(x.0.clone()); x })
-                -> for_each(|x| println!("client A recv: {:?}", x));
-            recv_iter([ "Hello", "World" ]) -> map(|s| (s.to_owned(), server_socket)) -> sink_async(send);
+            recv = recv_stream(recv_udp)
+                -> map(|r| r.unwrap())
+                -> tee();
+            recv[0] -> for_each(|x| println!("client A recv: {:?}", x));
+            recv[1] -> map(|(s, _addr)| s) -> for_each(|s| seen_send.send(s).unwrap());
+
+            // Sending
+            recv_iter([ "Hello", "World" ]) -> map(|s| (s.to_owned(), server_socket)) -> sink_async(send_udp);
         };
 
         tokio::select! {
@@ -76,7 +79,8 @@ pub async fn test_echo_udp() -> Result<(), Box<dyn Error>> {
             _ = tokio::time::sleep(Duration::from_secs(1)) => (),
         };
 
-        rassert_eq!(&["Hello".to_owned(), "World".to_owned()], &**seen.borrow())?;
+        let seen: Vec<_> = hydroflow::util::collect_ready(seen_recv).await;
+        rassert_eq!(&["Hello".to_owned(), "World".to_owned()], &*seen)?;
 
         Ok(()) as Result<(), Box<dyn Error>>
     });
@@ -86,17 +90,19 @@ pub async fn test_echo_udp() -> Result<(), Box<dyn Error>> {
         let socket = UdpSocket::bind((Ipv4Addr::UNSPECIFIED, 0))
             .await
             .unwrap();
-        let (send, recv) = hydroflow::util::udp_lines(socket);
+        let (send_udp, recv_udp) = hydroflow::util::udp_lines(socket);
 
-        let seen = <Rc<RefCell<Vec<String>>>>::default();
-        let seen_inner = Rc::clone(&seen);
+        let (seen_send, seen_recv) = hydroflow::util::unbounded_channel();
 
         let mut df = hydroflow_syntax! {
-            recv_stream(recv)
-                -> map(|x| x.unwrap())
-                -> map(|x| { seen_inner.borrow_mut().push(x.0.clone()); x })
-                -> for_each(|x| println!("client B recv: {:?}", x));
-            recv_iter([ "Raise", "Count" ]) -> map(|s| (s.to_owned(), server_socket)) -> sink_async(send);
+            recv = recv_stream(recv_udp)
+                -> map(|r| r.unwrap())
+                -> tee();
+            recv[0] -> for_each(|x| println!("client B recv: {:?}", x));
+            recv[1] -> map(|(s, _addr)| s) -> for_each(|s| seen_send.send(s).unwrap());
+
+            // Sending
+            recv_iter([ "Raise", "Count" ]) -> map(|s| (s.to_owned(), server_socket)) -> sink_async(send_udp);
         };
 
         tokio::select! {
@@ -104,7 +110,8 @@ pub async fn test_echo_udp() -> Result<(), Box<dyn Error>> {
             _ = tokio::time::sleep(Duration::from_secs(1)) => (),
         };
 
-        rassert_eq!(&["Raise".to_owned(), "Count".to_owned()], &**seen.borrow())?;
+        let seen: Vec<_> = hydroflow::util::collect_ready(seen_recv).await;
+        rassert_eq!(&["Raise".to_owned(), "Count".to_owned()], &*seen)?;
 
         Ok(()) as Result<(), Box<dyn Error>>
     });
@@ -221,15 +228,14 @@ pub async fn test_futures_stream_sink() -> Result<(), Box<dyn Error>> {
     let (mut send, recv) = hydroflow::futures::channel::mpsc::channel::<usize>(5);
     send.try_send(0).unwrap();
 
-    let seen = <Rc<RefCell<Vec<usize>>>>::default();
-    let seen_inner = Rc::clone(&seen);
+    let (seen_send, seen_recv) = hydroflow::util::unbounded_channel();
 
     let mut df = hydroflow_syntax! {
-        recv_stream(recv)
-            -> map(|x| { seen_inner.borrow_mut().push(x); x })
-            -> map(|x| x + 1)
+        recv = recv_stream(recv) -> tee();
+        recv[0] -> map(|x| x + 1)
             -> filter(|&x| x < MAX)
             -> sink_async(send);
+        recv[1] -> for_each(|x| seen_send.send(x).unwrap());
     };
 
     tokio::select! {
@@ -237,7 +243,8 @@ pub async fn test_futures_stream_sink() -> Result<(), Box<dyn Error>> {
         _ = tokio::time::sleep(Duration::from_secs(1)) => (),
     };
 
-    assert_eq!(&std::array::from_fn::<_, MAX, _>(|i| i), &**seen.borrow());
+    let seen: Vec<_> = hydroflow::util::collect_ready(seen_recv).await;
+    rassert_eq!(&std::array::from_fn::<_, MAX, _>(|i| i), &*seen)?;
 
     Ok(())
 }
