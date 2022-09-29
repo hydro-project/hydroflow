@@ -1,9 +1,15 @@
 //! Helper utilities for the Hydroflow surface syntax.
 
+use std::future::Future;
+use std::marker::PhantomData;
 use std::net::SocketAddr;
+use std::pin::Pin;
+use std::task::{Context, Poll};
 
 use bytes::Bytes;
 use futures::stream::{SplitSink, SplitStream};
+use futures::Stream;
+use pin_project_lite::pin_project;
 use tokio::net::UdpSocket;
 use tokio_util::codec::length_delimited::LengthDelimitedCodec;
 use tokio_util::codec::{Decoder, Encoder, LinesCodec};
@@ -48,4 +54,45 @@ pub fn udp_lines(
     UdpFramedStream<LinesCodec>,
 ) {
     udp_framed(socket, LinesCodec::new())
+}
+
+pin_project! {
+    pub struct CollectReady<St, Out> {
+        #[pin]
+        stream: St,
+        _phantom: PhantomData<Out>,
+    }
+}
+impl<St, Out> Future for CollectReady<St, Out>
+where
+    St: Stream,
+    Out: FromIterator<St::Item>,
+{
+    type Output = Out;
+
+    fn poll(self: Pin<&mut Self>, ctx: &mut Context<'_>) -> Poll<Self::Output> {
+        let mut this = self.project();
+        let out = std::iter::from_fn(move || match Pin::new(&mut this.stream).poll_next(ctx) {
+            Poll::Pending => None,
+            Poll::Ready(opt_item) => opt_item,
+        })
+        .collect();
+        Poll::Ready(out)
+    }
+}
+
+/// Collects the immediately available items into the stream.
+///
+/// This consumes the stream, use [`futures::StreamExt::by_ref()`] if you want
+/// to retain ownership of your stream.
+pub async fn collect_ready<St, Out>(stream: St) -> Out
+where
+    St: Stream,
+    Out: FromIterator<St::Item>,
+{
+    let collect_ready = CollectReady {
+        stream,
+        _phantom: PhantomData,
+    };
+    collect_ready.await
 }
