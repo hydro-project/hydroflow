@@ -12,14 +12,15 @@ For example, here we iterate through a vector of `usize` items and push them dow
 The Hello, World example above uses this construct.
 
 ## `recv_stream`
-More commonly, a flow is handling external data that comes in asynchronously via Rust's _tokio_ library.
-For this we need to allocate tokio _channels_ that allow Rust code to send data into the Hydroflow inputs. 
+More commonly, a flow should handle external data coming in asynchronously from a [_Tokio_ runtime](https://tokio.rs/tokio/tutorial).
+One way to do this is with _channels_ that allow Rust code to send data into the Hydroflow inputs.
 The code below creates a channel for data of (Rust) type `(usize, usize)`:
 ```rust,ignore
-    let (input_send, input_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
+    let (input_send, input_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
 ```
-Now in Rust we can now push data into the channel via _tokio_'s methods. E.g. for testing
-we can do it explicitly as follows:
+Under the hood this uses [Tokio unbounded channels](https://docs.rs/tokio/latest/tokio/sync/mpsc/fn.unbounded_channel.html).
+Now in Rust we can now push data into the channel. E.g. for testing we can do
+it explicitly as follows:
 ```rust,ignore
     input_send.send((0, 1)).unwrap()
 ```
@@ -33,7 +34,7 @@ To put this together, let's revisit our Hello, World example from above with dat
 in from outside the flow:
 ```rust
 # use hydroflow::hydroflow_syntax;
-let (input_send, input_recv) = tokio::sync::mpsc::unbounded_channel::<&str>();
+let (input_send, input_recv) = hydroflow::util::unbounded_channel::<&str>();
 let mut flow = hydroflow_syntax! {
     recv_stream(input_recv) -> map(|x| x.to_uppercase())
         -> for_each(|x| println!("{}", x));

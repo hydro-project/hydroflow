@@ -61,33 +61,44 @@ fn find_subgraph_unionfind(
         graph.edges().map(|(edge_id, _)| edge_id).collect();
     // Would sort edges here for priority (for now, no sort/priority).
 
-    // (Each edge gets looked at once to check if it can be unioned into one subgraph.)
-    for (edge_id, (src, dst)) in graph.edges() {
-        // Ignore (1) already added edges as well as (2) new self-cycles.
-        if subgraph_unionfind.same_set(src, dst) {
-            // Note this might be triggered even if the edge (src, dst) is not in the subgraph (not case 1).
-            // This prevents self-loops which would violate the in-out tree structure (case 2).
-            // Handoffs will be inserted later for this self-loop.
-            continue;
-        }
+    // Each edge gets looked at in order. However we may not know if a linear
+    // chain of operators is PUSH vs PULL until we look at the ends. A fancier
+    // algorithm would know to handle linear chains from the outside inward.
+    // But instead we just run through the edges in a loop until no more
+    // progress is made. Could have some sort of O(N^2) pathological worst
+    // case.
+    let mut progress = true;
+    while progress {
+        progress = false;
+        for (edge_id, (src, dst)) in graph.edges() {
+            // Ignore (1) already added edges as well as (2) new self-cycles.
+            if subgraph_unionfind.same_set(src, dst) {
+                // Note this might be triggered even if the edge (src, dst) is not in the subgraph (not case 1).
+                // This prevents self-loops which would violate the in-out tree structure (case 2).
+                // Handoffs will be inserted later for this self-loop.
+                continue;
+            }
 
-        // Ignore if would join stratum crossers (next edges).
-        if barrier_crossers.iter().any(|(edge_id, _)| {
-            let (x_src, x_dst) = graph.edge(edge_id).unwrap();
-            (subgraph_unionfind.same_set(x_src, src) && subgraph_unionfind.same_set(x_dst, dst))
-                || (subgraph_unionfind.same_set(x_src, dst)
-                    && subgraph_unionfind.same_set(x_dst, src))
-        }) {
-            continue;
-        }
+            // Ignore if would join stratum crossers (next edges).
+            if barrier_crossers.iter().any(|(edge_id, _)| {
+                let (x_src, x_dst) = graph.edge(edge_id).unwrap();
+                (subgraph_unionfind.same_set(x_src, src) && subgraph_unionfind.same_set(x_dst, dst))
+                    || (subgraph_unionfind.same_set(x_src, dst)
+                        && subgraph_unionfind.same_set(x_dst, src))
+            }) {
+                continue;
+            }
 
-        if can_connect_colorize(&mut node_color, src, dst) {
-            // At this point we have selected this edge and its src & dst to be
-            // within a single subgraph.
-            subgraph_unionfind.union(src, dst);
-            assert!(handoff_edges.remove(&edge_id));
+            if can_connect_colorize(&mut node_color, src, dst) {
+                // At this point we have selected this edge and its src & dst to be
+                // within a single subgraph.
+                subgraph_unionfind.union(src, dst);
+                assert!(handoff_edges.remove(&edge_id));
+                progress = true;
+            }
         }
     }
+
     (subgraph_unionfind, handoff_edges)
 }
 
@@ -201,8 +212,9 @@ fn can_connect_colorize(
     // Pull -> [Computation] -> Push
     // Push -> [Handoff] -> Pull
     let can_connect = match (node_color[src], node_color[dst]) {
-        // Linear chain.
-        (None, None) => true,
+        // Linear chain, can't connect because it may cause future conflicts.
+        // But if it doesn't in the _future_ we can connect it (once either/both ends are determined).
+        (None, None) => false,
 
         // Infer left side.
         (None, Some(Color::Pull | Color::Comp)) => {

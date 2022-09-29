@@ -1,10 +1,7 @@
-use std::cell::RefCell;
-use std::rc::Rc;
-
 use hydroflow::hydroflow_syntax;
 use hydroflow::scheduled::graph::Hydroflow;
-use tokio::sync::mpsc::UnboundedReceiver;
 use tokio::task::LocalSet;
+use tokio_stream::wrappers::UnboundedReceiverStream;
 
 // TODO(mingwei): custom operators? How to handle in syntax? How to handle state?
 
@@ -23,13 +20,13 @@ use tokio::task::LocalSet;
 // TODO(mingwei): Documentation articles.
 // TODO(mingwei): Find a way to display join keys
 
-fn recv_into_vec<T>(recv: &mut UnboundedReceiver<T>) -> Vec<T> {
-    std::iter::from_fn(|| recv.try_recv().ok()).collect()
+fn recv_into_vec<T>(recv: &mut UnboundedReceiverStream<T>) -> Vec<T> {
+    std::iter::from_fn(|| recv.as_mut().try_recv().ok()).collect()
 }
 
 #[test]
 pub fn test_basic_2() {
-    let (out_send, mut out_recv) = tokio::sync::mpsc::unbounded_channel::<usize>();
+    let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
 
     let mut df = hydroflow_syntax! {
         recv_iter([1]) -> for_each(|v| out_send.send(v).unwrap());
@@ -41,7 +38,7 @@ pub fn test_basic_2() {
 
 #[test]
 pub fn test_basic_3() {
-    let (out_send, mut out_recv) = tokio::sync::mpsc::unbounded_channel::<usize>();
+    let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
 
     let mut df = hydroflow_syntax! {
         recv_iter([1]) -> map(|v| v + 1) -> for_each(|v| out_send.send(v).unwrap());
@@ -53,7 +50,7 @@ pub fn test_basic_3() {
 
 #[test]
 pub fn test_basic_merge() {
-    let (out_send, mut out_recv) = tokio::sync::mpsc::unbounded_channel::<usize>();
+    let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
 
     let mut df = hydroflow_syntax! {
         m = merge() -> for_each(|v| out_send.send(v).unwrap());
@@ -67,7 +64,7 @@ pub fn test_basic_merge() {
 
 #[test]
 pub fn test_basic_tee() {
-    let (out_send_a, mut out_recv) = tokio::sync::mpsc::unbounded_channel::<String>();
+    let (out_send_a, mut out_recv) = hydroflow::util::unbounded_channel::<String>();
     let out_send_b = out_send_a.clone();
 
     let mut df = hydroflow_syntax! {
@@ -83,10 +80,23 @@ pub fn test_basic_tee() {
     assert!(out.contains(&"B 1".to_owned()));
 }
 
+// Mainly checking subgraph partitioning pull-push handling.
+#[test]
+pub fn test_large_diamond() {
+    #[allow(clippy::map_identity)]
+    let mut df: Hydroflow = hydroflow_syntax! {
+        t = recv_iter([1]) -> tee();
+        j = merge() -> for_each(|x| println!("{}", x));
+        t[0] -> map(std::convert::identity) -> map(std::convert::identity) -> [0]j;
+        t[1] -> map(std::convert::identity) -> map(std::convert::identity) -> [1]j;
+    };
+    df.run_available();
+}
+
 /// Test that recv_stream can handle "complex" expressions.
 #[test]
 pub fn test_recv_expr() {
-    let send_recv = tokio::sync::mpsc::unbounded_channel::<usize>();
+    let send_recv = hydroflow::util::unbounded_channel::<usize>();
 
     let mut df = hydroflow_syntax! {
         recv_stream(send_recv.1)
@@ -110,7 +120,7 @@ pub fn test_recv_expr() {
 
 #[test]
 pub fn test_reduce_sum() {
-    let (items_send, items_recv) = tokio::sync::mpsc::unbounded_channel::<usize>();
+    let (items_send, items_recv) = hydroflow::util::unbounded_channel::<usize>();
 
     let mut df = hydroflow_syntax! {
         recv_stream(items_recv)
@@ -147,7 +157,7 @@ pub fn test_reduce_sum() {
 
 #[test]
 pub fn test_sort() {
-    let (items_send, items_recv) = tokio::sync::mpsc::unbounded_channel::<usize>();
+    let (items_send, items_recv) = hydroflow::util::unbounded_channel::<usize>();
 
     let mut df = hydroflow_syntax! {
         recv_stream(items_recv)
@@ -184,7 +194,7 @@ pub fn test_sort() {
 
 #[test]
 pub fn test_fold_sort() {
-    let (items_send, items_recv) = tokio::sync::mpsc::unbounded_channel::<usize>();
+    let (items_send, items_recv) = hydroflow::util::unbounded_channel::<usize>();
 
     let mut df = hydroflow_syntax! {
         recv_stream(items_recv)
@@ -225,7 +235,7 @@ pub fn test_fold_sort() {
 
 #[test]
 pub fn test_channel_minimal() {
-    let (send, recv) = tokio::sync::mpsc::unbounded_channel::<usize>();
+    let (send, recv) = hydroflow::util::unbounded_channel::<usize>();
 
     let mut df1 = hydroflow_syntax! {
         recv_iter([1, 2, 3]) -> for_each(|x| { send.send(x).unwrap(); })
@@ -245,7 +255,7 @@ pub fn test_channel_minimal() {
 #[test]
 pub fn test_surface_syntax_reachability_generated() {
     // An edge in the input data = a pair of `usize` vertex IDs.
-    let (pairs_send, pairs_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
+    let (pairs_send, pairs_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
 
     let mut df: Hydroflow = hydroflow_syntax! {
         reached_vertices = merge() -> map(|v| (v, ()));
@@ -293,7 +303,7 @@ pub fn test_surface_syntax_reachability_generated() {
 #[test]
 pub fn test_transitive_closure() {
     // An edge in the input data = a pair of `usize` vertex IDs.
-    let (pairs_send, pairs_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
+    let (pairs_send, pairs_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
 
     let mut df = hydroflow_syntax! {
         // edge(x,y) :- link(x,y)
@@ -349,7 +359,7 @@ pub fn test_transitive_closure() {
 
 #[test]
 pub fn test_covid_tracing() {
-    use tokio::sync::mpsc::unbounded_channel;
+    use hydroflow::util::unbounded_channel;
 
     const TRANSMISSIBLE_DURATION: usize = 14; // Days.
 
@@ -450,7 +460,7 @@ pub fn test_covid_tracing() {
 #[test]
 pub fn test_reduce() {
     // An edge in the input data = a pair of `usize` vertex IDs.
-    let (pairs_send, pairs_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
+    let (pairs_send, pairs_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
 
     let mut df = hydroflow_syntax! {
         reached_vertices = merge() -> map(|v| (v, ()));
@@ -491,8 +501,8 @@ pub fn test_reduce() {
 async fn async_test() {
     LocalSet::new()
         .run_until(async {
-            let (a_send, a_recv) = tokio::sync::mpsc::unbounded_channel::<usize>();
-            let (b_send, b_recv) = tokio::sync::mpsc::unbounded_channel::<usize>();
+            let (a_send, a_recv) = hydroflow::util::unbounded_channel::<usize>();
+            let (b_send, b_recv) = hydroflow::util::unbounded_channel::<usize>();
 
             tokio::task::spawn_local(async move {
                 let mut flow = hydroflow_syntax! {
@@ -514,32 +524,4 @@ async fn async_test() {
             tokio::task::yield_now().await;
         })
         .await;
-}
-
-#[test]
-#[allow(warnings)]
-fn test_degenerate_merge() {
-    let output = <Rc<RefCell<Vec<usize>>>>::default();
-    let output_inner = Rc::clone(&output);
-
-    let mut df: Hydroflow = hydroflow_syntax! {
-        recv_iter([1, 2, 3]) -> merge() -> for_each(|x| output_inner.borrow_mut().push(x));
-    };
-    df.run_available();
-
-    assert_eq!(&[1, 2, 3], &**output.borrow());
-}
-
-#[test]
-#[allow(warnings)]
-fn test_degenerate_tee() {
-    let output = <Rc<RefCell<Vec<usize>>>>::default();
-    let output_inner = Rc::clone(&output);
-
-    let mut df: Hydroflow = hydroflow_syntax! {
-        recv_iter([1, 2, 3]) -> tee() -> for_each(|x| output_inner.borrow_mut().push(x));
-    };
-    df.run_available();
-
-    assert_eq!(&[1, 2, 3], &**output.borrow());
 }
