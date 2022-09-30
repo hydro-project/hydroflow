@@ -48,6 +48,9 @@
 <span id="48">48</span>
 <span id="49">49</span>
 <span id="50">50</span>
+<span id="51">51</span>
+<span id="52">52</span>
+<span id="53">53</span>
 </pre><pre class="rust"><code><span class="attribute">#![feature(never_type)]
 #![feature(type_alias_impl_trait)]
 #![allow(type_alias_bounds)]
@@ -62,8 +65,7 @@
 <span class="kw">pub mod </span>scheduled;
 <span class="kw">pub mod </span>util;
 
-<span class="kw">pub use </span>hydroflow_macro::<span class="kw-2">*</span>;
-
+<span class="kw">pub use </span>bytes;
 <span class="kw">pub use </span>futures;
 <span class="kw">pub use </span>pusherator;
 <span class="kw">pub use </span>tokio;
@@ -71,6 +73,10 @@
 <span class="kw">pub use </span>tokio_util;
 <span class="kw">pub use </span>tuple_list::tuple_list <span class="kw">as </span>tl;
 <span class="kw">pub use </span>tuple_list::tuple_list_type <span class="kw">as </span>tt;
+
+<span class="kw">mod </span>declarative_macro;
+<span class="kw">pub use </span>declarative_macro::<span class="kw-2">*</span>;
+<span class="kw">pub use </span>hydroflow_macro::<span class="kw-2">*</span>;
 
 <span class="attribute">#[cfg(doctest)]
 </span><span class="kw">mod </span>booktest {
@@ -99,4 +105,4 @@
     <span class="macro">booktest!</span>(surface_ops);
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0-nightly (ce7f0f1aa 2022-09-28)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0-nightly (9c56d9d6f 2022-09-29)" ></div></body></html>

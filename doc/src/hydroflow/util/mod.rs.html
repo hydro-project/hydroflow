@@ -8,9 +8,112 @@
 <span id="8">8</span>
 <span id="9">9</span>
 <span id="10">10</span>
+<span id="11">11</span>
+<span id="12">12</span>
+<span id="13">13</span>
+<span id="14">14</span>
+<span id="15">15</span>
+<span id="16">16</span>
+<span id="17">17</span>
+<span id="18">18</span>
+<span id="19">19</span>
+<span id="20">20</span>
+<span id="21">21</span>
+<span id="22">22</span>
+<span id="23">23</span>
+<span id="24">24</span>
+<span id="25">25</span>
+<span id="26">26</span>
+<span id="27">27</span>
+<span id="28">28</span>
+<span id="29">29</span>
+<span id="30">30</span>
+<span id="31">31</span>
+<span id="32">32</span>
+<span id="33">33</span>
+<span id="34">34</span>
+<span id="35">35</span>
+<span id="36">36</span>
+<span id="37">37</span>
+<span id="38">38</span>
+<span id="39">39</span>
+<span id="40">40</span>
+<span id="41">41</span>
+<span id="42">42</span>
+<span id="43">43</span>
+<span id="44">44</span>
+<span id="45">45</span>
+<span id="46">46</span>
+<span id="47">47</span>
+<span id="48">48</span>
+<span id="49">49</span>
+<span id="50">50</span>
+<span id="51">51</span>
+<span id="52">52</span>
+<span id="53">53</span>
+<span id="54">54</span>
+<span id="55">55</span>
+<span id="56">56</span>
+<span id="57">57</span>
+<span id="58">58</span>
+<span id="59">59</span>
+<span id="60">60</span>
+<span id="61">61</span>
+<span id="62">62</span>
+<span id="63">63</span>
+<span id="64">64</span>
+<span id="65">65</span>
+<span id="66">66</span>
+<span id="67">67</span>
+<span id="68">68</span>
+<span id="69">69</span>
+<span id="70">70</span>
+<span id="71">71</span>
+<span id="72">72</span>
+<span id="73">73</span>
+<span id="74">74</span>
+<span id="75">75</span>
+<span id="76">76</span>
+<span id="77">77</span>
+<span id="78">78</span>
+<span id="79">79</span>
+<span id="80">80</span>
+<span id="81">81</span>
+<span id="82">82</span>
+<span id="83">83</span>
+<span id="84">84</span>
+<span id="85">85</span>
+<span id="86">86</span>
+<span id="87">87</span>
+<span id="88">88</span>
+<span id="89">89</span>
+<span id="90">90</span>
+<span id="91">91</span>
+<span id="92">92</span>
+<span id="93">93</span>
+<span id="94">94</span>
+<span id="95">95</span>
+<span id="96">96</span>
+<span id="97">97</span>
+<span id="98">98</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Helper utilities for the Hydroflow surface syntax.
 
-</span><span class="kw">pub fn </span>unbounded_channel&lt;T&gt;() -&gt; (
+</span><span class="kw">use </span>std::future::Future;
+<span class="kw">use </span>std::marker::PhantomData;
+<span class="kw">use </span>std::net::SocketAddr;
+<span class="kw">use </span>std::pin::Pin;
+<span class="kw">use </span>std::task::{Context, Poll};
+
+<span class="kw">use </span>bytes::Bytes;
+<span class="kw">use </span>futures::stream::{SplitSink, SplitStream};
+<span class="kw">use </span>futures::Stream;
+<span class="kw">use </span>pin_project_lite::pin_project;
+<span class="kw">use </span>tokio::net::UdpSocket;
+<span class="kw">use </span>tokio_util::codec::length_delimited::LengthDelimitedCodec;
+<span class="kw">use </span>tokio_util::codec::{Decoder, Encoder, LinesCodec};
+<span class="kw">use </span>tokio_util::udp::UdpFramed;
+
+<span class="kw">pub fn </span>unbounded_channel&lt;T&gt;() -&gt; (
     tokio::sync::mpsc::UnboundedSender&lt;T&gt;,
     tokio_stream::wrappers::UnboundedReceiverStream&lt;T&gt;,
 ) {
@@ -18,5 +121,78 @@
     <span class="kw">let </span>recv = tokio_stream::wrappers::UnboundedReceiverStream::new(recv);
     (send, recv)
 }
+
+<span class="kw">pub type </span>UdpFramedSink&lt;Codec, Item&gt; = SplitSink&lt;UdpFramed&lt;Codec&gt;, (Item, SocketAddr)&gt;;
+<span class="kw">pub type </span>UdpFramedStream&lt;Codec&gt; = SplitStream&lt;UdpFramed&lt;Codec&gt;&gt;;
+
+<span class="kw">pub fn </span>udp_framed&lt;Codec, Item&gt;(
+    socket: UdpSocket,
+    codec: Codec,
+) -&gt; (UdpFramedSink&lt;Codec, Item&gt;, UdpFramedStream&lt;Codec&gt;)
+<span class="kw">where
+    </span>Codec: Encoder&lt;Item&gt; + Decoder,
+{
+    <span class="kw">let </span>framed = UdpFramed::new(socket, codec);
+    futures::stream::StreamExt::split(framed)
+}
+
+<span class="kw">pub fn </span>udp_bytes(
+    socket: UdpSocket,
+) -&gt; (
+    UdpFramedSink&lt;LengthDelimitedCodec, Bytes&gt;,
+    UdpFramedStream&lt;LengthDelimitedCodec&gt;,
+) {
+    udp_framed(socket, LengthDelimitedCodec::new())
+}
+
+<span class="kw">pub fn </span>udp_lines(
+    socket: UdpSocket,
+) -&gt; (
+    UdpFramedSink&lt;LinesCodec, String&gt;,
+    UdpFramedStream&lt;LinesCodec&gt;,
+) {
+    udp_framed(socket, LinesCodec::new())
+}
+
+<span class="macro">pin_project! </span>{
+    <span class="kw">pub struct </span>CollectReady&lt;St, Out&gt; {
+        <span class="attribute">#[pin]
+        </span>stream: St,
+        _phantom: PhantomData&lt;Out&gt;,
+    }
+}
+<span class="kw">impl</span>&lt;St, Out&gt; Future <span class="kw">for </span>CollectReady&lt;St, Out&gt;
+<span class="kw">where
+    </span>St: Stream,
+    Out: FromIterator&lt;St::Item&gt;,
+{
+    <span class="kw">type </span>Output = Out;
+
+    <span class="kw">fn </span>poll(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, ctx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;<span class="self">Self</span>::Output&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>this = <span class="self">self</span>.project();
+        <span class="kw">let </span>out = std::iter::from_fn(<span class="kw">move </span>|| <span class="kw">match </span>Pin::new(<span class="kw-2">&amp;mut </span>this.stream).poll_next(ctx) {
+            Poll::Pending =&gt; <span class="prelude-val">None</span>,
+            Poll::Ready(opt_item) =&gt; opt_item,
+        })
+        .collect();
+        Poll::Ready(out)
+    }
+}
+
+<span class="doccomment">/// Collects the immediately available items into the stream.
+///
+/// This consumes the stream, use [`futures::StreamExt::by_ref()`] if you want
+/// to retain ownership of your stream.
+</span><span class="kw">pub async fn </span>collect_ready&lt;St, Out&gt;(stream: St) -&gt; Out
+<span class="kw">where
+    </span>St: Stream,
+    Out: FromIterator&lt;St::Item&gt;,
+{
+    <span class="kw">let </span>collect_ready = CollectReady {
+        stream,
+        _phantom: PhantomData,
+    };
+    collect_ready.<span class="kw">await
+</span>}
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0-nightly (ce7f0f1aa 2022-09-28)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0-nightly (9c56d9d6f 2022-09-29)" ></div></body></html>
