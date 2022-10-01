@@ -1,96 +1,67 @@
 use crate::{GraphType, Opts};
 
-use crate::protocol::{ChatMessage, MemberRequest, MemberResponse};
-use chrono::prelude::*;
-use hydroflow::builder::prelude::*;
-use hydroflow::scheduled::handoff::VecHandoff;
+use crate::protocol::{MemberRequest, MemberResponse};
+
+use hydroflow::hydroflow_syntax;
+use hydroflow::scheduled::graph::Hydroflow;
+use serde_json::json;
+use tokio::net::UdpSocket;
 
 pub(crate) async fn run_server(opts: Opts) {
-    let mut hf = HydroflowBuilder::default();
+    // Set up sockets.
+    // First, use the canonical ip:port passed into the opts for membership requests
+    let server_members_socket = UdpSocket::bind((opts.addr.clone(), opts.port))
+        .await
+        .unwrap();
+    let (server_members_send, server_members_recv) =
+        hydroflow::util::udp_lines(server_members_socket);
 
-    let members_in = hf
-        .hydroflow
-        .inbound_tcp_vertex_port::<MemberRequest>(opts.port)
-        .await;
-    let members_in = hf.wrap_input(members_in);
-    println!("Listening for member joins on {}", opts.port);
+    // Second, allocate a new port from the OS for messaging
+    let server_msg_socket = UdpSocket::bind((opts.addr.clone(), 0)).await.unwrap();
+    // Because we requested port 0, we got assigned an arbitrary port. Read that back into a SocketAddr
+    let server_msg_addr = server_msg_socket.local_addr().unwrap();
+    let (server_msg_send, server_msg_recv) = hydroflow::util::udp_lines(server_msg_socket);
 
-    let members_out = hf.hydroflow.outbound_tcp_vertex::<MemberResponse>().await;
-    let members_out = hf.wrap_output(members_out);
+    println!("Server live!");
 
-    let (port, msgs_in) = hf.hydroflow.inbound_tcp_vertex::<ChatMessage>().await;
-    let msgs_in = hf.wrap_input(msgs_in);
-    println!("Listening for messages on {}", port);
+    let mut df: Hydroflow = hydroflow_syntax! {
+        // Handle member requests. Respond with the ip:port we allocated for messages.
+        members = recv_stream(server_members_recv)
+            -> map(|r| serde_json::from_str(&(r.unwrap().0)).unwrap())
+            -> tee();
+        members[0] -> for_each(|m: MemberRequest| println!("got member: {:?}", m));
+        members[1] -> map(|m: MemberRequest|
+                          (json!(MemberResponse{messages_addr: server_msg_addr}).to_string(),
+                           m.connect_addr))
+            -> sink_async(server_members_send);
 
-    let messages_out = hf.hydroflow.outbound_tcp_vertex::<ChatMessage>().await;
-    let messages_out = hf.wrap_output(messages_out);
-
-    // we're going to tee the output of members_in to 2 destinations.
-    // 1. acknowledge with messages_port via members_out
-    let membership_response = hf
-        .start_tee()
-        .map(move |req: MemberRequest| {
-            Some((
-                req.connect_addr,
-                MemberResponse {
-                    messages_port: port,
-                },
-            ))
-        })
-        .push_to(members_out);
-
-    // 2. feed new members into the join
-    // But first, we need a buffer to turn push into pull for cross_join.
-    let (memberships_push, memberships_pull) =
-        hf.make_edge::<_, VecHandoff<String>, Option<String>>("memberships");
-    // and now the other start_tee
-    let member_join_input = hf
-        .start_tee()
-        .map(|req: MemberRequest| req.messages_addr)
-        .map(Some)
-        .push_to(memberships_push);
-
-    // Now assemble the prelude to the tee
-    let sg = members_in
-        .flatten()
-        .pull_to_push()
-        .tee(membership_response, member_join_input);
-    hf.add_subgraph("tee members", sg);
-
-    // And assemble the cross-join of msgs_in and members_in, flowing to members_out
-    let msgs_in = msgs_in.flatten();
-
-    let sg = memberships_pull
-        .flatten()
-        .cross_join(msgs_in)
-        .map(|(addr, msg)| {
-            Some((
-                addr,
-                ChatMessage {
-                    nickname: msg.nickname,
-                    message: msg.message,
-                    ts: Utc::now(),
-                },
-            ))
-        })
-        .pull_to_push()
-        .push_to(messages_out);
-
-    hf.add_subgraph("main cross-join", sg);
-
-    let mut hf = hf.build();
+             // Handle messages.
+        // Every message that comes in will be joined with every member seen.
+        // The result is that each member will see all messages (even from the past).
+        broadcast = join()
+            -> map(|((), (msg, addr))| (msg.to_owned(), addr))
+            -> sink_async(server_msg_send);
+        // Left branch of the join is the message stream
+        recv = recv_stream(server_msg_recv)
+            -> map(|r| r.unwrap())
+            -> tee();
+        recv[0] -> for_each(|m| println!("got msg: {:?}", m));
+        recv[1] -> map(|(msg, _addr): (String, std::net::SocketAddr)| ((), msg)) -> [0]broadcast;
+        // Right branch of the join is the stream of members
+        members[2] -> map(|m: MemberRequest| ((), m.messages_addr)) -> [1]broadcast;
+    };
 
     match opts.graph {
         GraphType::Mermaid => {
-            println!("{}", hf.generate_mermaid())
+            println!("{}", df.generate_mermaid())
         }
         GraphType::Dot => {
-            println!("{}", hf.generate_dot())
+            println!("{}", df.generate_dot())
         }
         GraphType::Json => {
-            println!("{}", hf.generate_json())
+            println!("{}", df.generate_json())
         }
     }
 
-    hf.run_async().await.unwrap();
+    df.run_async().await.unwrap();
 }
