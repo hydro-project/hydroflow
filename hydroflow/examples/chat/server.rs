@@ -1,65 +1,69 @@
 use crate::{GraphType, Opts};
 
-use crate::protocol::{MemberRequest, MemberResponse};
+use crate::protocol::{deserialize_msg, serialize_msg, Message};
 
 use hydroflow::hydroflow_syntax;
 use hydroflow::scheduled::graph::Hydroflow;
-use serde_json::json;
 use tokio::net::UdpSocket;
 
 pub(crate) async fn run_server(opts: Opts) {
-    // Set up sockets.
-    // First, use the canonical ip:port passed into the opts for membership requests
-    let server_members_socket = UdpSocket::bind((opts.addr.clone(), opts.port))
-        .await
-        .unwrap();
-    let (server_members_send, server_members_recv) =
-        hydroflow::util::udp_lines(server_members_socket);
-
-    // Second, allocate a new port from the OS for messaging
-    let server_msg_socket = UdpSocket::bind((opts.addr.clone(), 0)).await.unwrap();
-    // Because we requested port 0, we got assigned an arbitrary port. Read that back into a SocketAddr
-    let server_msg_addr = server_msg_socket.local_addr().unwrap();
-    let (server_msg_send, server_msg_recv) = hydroflow::util::udp_lines(server_msg_socket);
-
+    // First, set up the socket
+    let server_socket = UdpSocket::bind(("127.0.0.1", opts.port)).await.unwrap();
+    let (outbound, inbound) = hydroflow::util::udp_lines(server_socket);
     println!("Server live!");
 
     let mut df: Hydroflow = hydroflow_syntax! {
-        // Handle member requests. Respond with the ip:port we allocated for messages.
-        members = recv_stream(server_members_recv)
-            -> map(|r| serde_json::from_str(&(r.unwrap().0)).unwrap())
-            -> tee();
-        members[0] -> for_each(|m: MemberRequest| println!("got member: {:?}", m));
-        members[1] -> map(|m: MemberRequest|
-                          (json!(MemberResponse{messages_addr: server_msg_addr}).to_string(),
-                           m.connect_addr))
-            -> sink_async(server_members_send);
+        // set up channels
+        outbound_chan = merge() -> sink_async(outbound);
+        inbound_chan = recv_stream(inbound) -> map(|m| deserialize_msg(m)) -> tee();
+        member_chan = inbound_chan[0] -> filter_map(|m: Message| match m {
+                Message::ConnectRequest { nickname: _, addr: _ } => Some(m),
+                _ => None });
+        members = member_chan -> tee();
 
-             // Handle messages.
+        msg_chan = inbound_chan[1] -> filter_map(|m: Message| match m {
+                Message::ChatMessage{ nickname, message, ts } =>
+                    Some(Message::ChatMessage{nickname: nickname, message: message, ts: ts}),
+                _ => None });
+
+        // Member request handler. Respond with the ip:port we allocated for messages.
+        members[0] -> filter_map(|m: Message| {
+                    match m {
+                        Message::ConnectRequest { nickname: _, addr } =>
+                            Some((serialize_msg(Message::ConnectResponse), addr)),
+                        _ => None
+                    }
+                } ) -> [0]outbound_chan;
+
+        // Message handler.
         // Every message that comes in will be joined with every member seen.
-        // The result is that each member will see all messages (even from the past).
+        // Each member will see all messages (even from the past).
         broadcast = join()
             -> map(|((), (msg, addr))| (msg.to_owned(), addr))
-            -> sink_async(server_msg_send);
+            -> [1]outbound_chan;
         // Left branch of the join is the message stream
-        recv = recv_stream(server_msg_recv)
-            -> map(|r| r.unwrap())
-            -> tee();
-        recv[0] -> for_each(|m| println!("got msg: {:?}", m));
-        recv[1] -> map(|(msg, _addr): (String, std::net::SocketAddr)| ((), msg)) -> [0]broadcast;
+        msg_chan -> map(|m| ((), serialize_msg(m))) -> [0]broadcast;
         // Right branch of the join is the stream of members
-        members[2] -> map(|m: MemberRequest| ((), m.messages_addr)) -> [1]broadcast;
+        members[1] -> filter_map(|m: Message| {
+            match m {
+                Message::ConnectRequest{ nickname: _, addr } =>
+                    Some(((), addr)),
+                _ => None
+            }
+        }) -> [1]broadcast;
     };
 
-    match opts.graph {
-        GraphType::Mermaid => {
-            println!("{}", df.generate_mermaid())
-        }
-        GraphType::Dot => {
-            println!("{}", df.generate_dot())
-        }
-        GraphType::Json => {
-            println!("{}", df.generate_json())
+    if let Some(graph) = opts.graph {
+        match graph {
+            GraphType::Mermaid => {
+                println!("{}", df.generate_mermaid())
+            }
+            GraphType::Dot => {
+                println!("{}", df.generate_dot())
+            }
+            GraphType::Json => {
+                println!("{}", df.generate_json())
+            }
         }
     }
 

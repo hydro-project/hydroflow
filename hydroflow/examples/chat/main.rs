@@ -34,7 +34,7 @@ struct Opts {
     #[clap(long)]
     addr: String,
     #[clap(arg_enum, long)]
-    graph: GraphType,
+    graph: Option<GraphType>,
 }
 
 #[tokio::main]

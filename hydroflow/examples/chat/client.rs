@@ -1,84 +1,94 @@
 use chrono::prelude::*;
 use colored::Colorize;
 
-use crate::protocol::{ChatMessage, MemberRequest, MemberResponse};
+use crate::protocol::{deserialize_msg, serialize_msg, Message};
 use crate::{GraphType, Opts};
 use chrono::Utc;
 use hydroflow::hydroflow_syntax;
-use serde_json::json;
-use std::net::{IpAddr, SocketAddr};
-use std::str::FromStr;
+use std::net::SocketAddr;
 use tokio::io::AsyncBufReadExt;
 use tokio::net::UdpSocket;
 use tokio_stream::wrappers::LinesStream;
 
 pub(crate) async fn run_client(opts: Opts) {
-    let addr = IpAddr::from_str(&opts.addr).unwrap();
-    let server_members_addr: SocketAddr = format!("{}:{}", opts.addr, opts.port).parse().unwrap();
+    // set up network and I/O channels
+    let server_addr: SocketAddr = format!("{}:{}", opts.addr, opts.port).parse().unwrap();
 
-    let client_msg_socket = UdpSocket::bind((addr, 0)).await.unwrap();
-    let client_msg_addr = client_msg_socket.local_addr().unwrap();
-    let (client_msg_send, client_msg_recv) = hydroflow::util::udp_lines(client_msg_socket);
-    let client_members_socket = UdpSocket::bind((addr, 0)).await.unwrap();
-    let client_members_addr = client_members_socket.local_addr().unwrap();
-    let (client_members_send, client_members_recv) =
-        hydroflow::util::udp_lines(client_members_socket);
+    let client_socket = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+    let client_addr = client_socket.local_addr().unwrap();
+    let (outbound, inbound) = hydroflow::util::udp_lines(client_socket);
 
     let reader = tokio::io::BufReader::new(tokio::io::stdin());
     let stdin_lines = LinesStream::new(reader.lines());
     println!("Client live!");
-    let member = json!(MemberRequest {
-        nickname: opts.name.clone(),
-        connect_addr: client_members_addr,
-        messages_addr: client_msg_addr,
-    })
-    .to_string();
 
     let mut hf = hydroflow_syntax! {
-        // send a members message
-        recv_iter([()]) -> map(|_m| (member.clone(), server_members_addr)) -> sink_async(client_members_send);
+        // set up channels
+        outbound_chan = merge() -> sink_async(outbound);
+        inbound_chan = recv_stream(inbound) -> map(|r| deserialize_msg(r)) -> tee();
+        connect_acks = inbound_chan[0] -> filter_map(|m: Message| match m {
+            Message::ConnectResponse => Some(m),
+            _ => None }) -> tee();
+        messages = inbound_chan[1] -> filter_map(|m: Message| match m {
+            Message::ChatMessage{ nickname, message, ts } =>
+                Some(Message::ChatMessage{nickname: nickname, message: message, ts: ts}),
+            _ => None });
 
-        // send the messages
+        // send a single connection request on startup
+        recv_iter([()]) -> map(|_m| (serialize_msg(Message::ConnectRequest {
+            nickname: opts.name.clone(),
+            addr: client_addr,
+        }), server_addr)) -> [0]outbound_chan;
+
+        // take stdin and send to server as a msg
+        // the join serves to postpone msgs until the connection request is acked
         msg_send = join()
-          -> map(|((), (msg, addr)): ((), (std::string::String, SocketAddr))| (msg, addr))
-          -> sink_async(client_msg_send);
+          -> map(|((), (msg, ()))| (msg, server_addr))
+          -> [1]outbound_chan;
         lines = recv_stream(stdin_lines)
           -> map(|l: Result<std::string::String, std::io::Error>| l.unwrap())
-          -> map(|l| ((), json!(ChatMessage {nickname: opts.name.clone(), message: l, ts: Utc::now()}).to_string()))
+          -> map(|l| ((), serialize_msg(Message::ChatMessage {nickname: opts.name.clone(), message: l, ts: Utc::now()})))
           -> [0]msg_send;
 
         // receive and print messages
-        recv_stream(client_msg_recv)
-           -> map(|m| m.unwrap())
-           -> map(|(m, _addr)| serde_json::from_str(&m).unwrap())
-           -> for_each(|m: ChatMessage| println!(
-            "{} {}: {}",
-            m.ts
-                .with_timezone(&Local)
-                .format("%b %-d, %-I:%M:%S")
-                .to_string()
-                .truecolor(126, 126, 126)
-                .italic(),
-            m.nickname.green().italic(),
-            m.message,
-        ));
+        messages -> for_each(|m: Message| match m {
+            Message::ChatMessage{ nickname, message, ts } => {
+                println!(
+                    "{} {}: {}",
+                    ts
+                        .with_timezone(&Local)
+                        .format("%b %-d, %-I:%M:%S")
+                        .to_string()
+                        .truecolor(126, 126, 126)
+                        .italic(),
+                    nickname.green().italic(),
+                    message,
+                );
+                ()
+        }
+        _ => ()
+        });
 
-        // handle connect ack, which contains the messages port
-        connect_ack = recv_stream(client_members_recv)
-          -> map(|r| serde_json::from_str(&(r.unwrap().0)).unwrap()) -> tee();
-        connect_ack[0] -> map(|m: MemberResponse| ((), m.messages_addr)) -> [1]msg_send;
-        connect_ack[1] -> for_each(|m: MemberResponse| println!("connection acked: {:?}", m));
+        // handle connect ack
+        connect_acks[0] -> for_each(|m: Message| println!("connected: {:?}", m));
+        connect_acks[1] -> filter_map(|m: Message| match m {
+            Message::ConnectResponse => Some(((), ())),
+            _ => None
+        }) -> [1]msg_send;
+
     };
 
-    match opts.graph {
-        GraphType::Mermaid => {
-            println!("{}", hf.generate_mermaid())
-        }
-        GraphType::Dot => {
-            println!("{}", hf.generate_dot())
-        }
-        GraphType::Json => {
-            println!("{}", hf.generate_json())
+    if let Some(graph) = opts.graph {
+        match graph {
+            GraphType::Mermaid => {
+                println!("{}", hf.generate_mermaid())
+            }
+            GraphType::Dot => {
+                println!("{}", hf.generate_dot())
+            }
+            GraphType::Json => {
+                println!("{}", hf.generate_json())
+            }
         }
     }
     hf.run_async().await.unwrap();
