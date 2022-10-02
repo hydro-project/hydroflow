@@ -7,10 +7,6 @@ mod client;
 mod protocol;
 mod server;
 
-// This is a distributed version of the covid tracing app. It somewhat
-// arbitrarily splits apart two "responsibilities" of the app to exercise
-// network communication.
-
 #[derive(Clone, ArgEnum, Debug)]
 enum Role {
     Client,
@@ -38,7 +34,7 @@ struct Opts {
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() p {
     let opts = Opts::parse();
 
     match opts.role {
