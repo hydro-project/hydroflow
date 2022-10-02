@@ -34,7 +34,7 @@ struct Opts {
 }
 
 #[tokio::main]
-async fn main() p {
+async fn main() {
     let opts = Opts::parse();
 
     match opts.role {
