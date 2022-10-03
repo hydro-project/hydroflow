@@ -1287,7 +1287,8 @@ dependencies = [
 [[package]]
 name = "rust-sitter"
 version = "0.1.2"
-source = "git+https://github.com/hydro-project/rust-sitter#91d0526e76e4a91c9c81d1db73b8a124cc2a6603"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "087c410727bbcdc22770e1f8a1a88f96d5affcf87ea94ffd30be7c0b9e9f2e32"
 dependencies = [
  "rust-sitter-macro",
  "tree-sitter",
@@ -1296,7 +1297,8 @@ dependencies = [
 [[package]]
 name = "rust-sitter-common"
 version = "0.1.2"
-source = "git+https://github.com/hydro-project/rust-sitter#91d0526e76e4a91c9c81d1db73b8a124cc2a6603"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "304f6e6ee1310812794db260ff0e86d957bd2b4d25d42bf2170acb29444c3805"
 dependencies = [
  "quote",
  "syn",
@@ -1305,7 +1307,8 @@ dependencies = [
 [[package]]
 name = "rust-sitter-macro"
 version = "0.1.2"
-source = "git+https://github.com/hydro-project/rust-sitter#91d0526e76e4a91c9c81d1db73b8a124cc2a6603"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5c5810650c98de69433f7f569a5ad234189847666ab3f6392a3f0cb7d34e54a3"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1316,7 +1319,8 @@ dependencies = [
 [[package]]
 name = "rust-sitter-tool"
 version = "0.1.2"
-source = "git+https://github.com/hydro-project/rust-sitter#91d0526e76e4a91c9c81d1db73b8a124cc2a6603"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2df3f9e51d34d03021c919e9bb18648203ab327b70c5ad2e81fd71e14b2a5ad4"
 dependencies = [
  "cc",
  "rust-sitter-common",
