@@ -27,3 +27,15 @@ macro_rules! rassert_eq {
         $crate::rassert!($a == $b, $($arg)*)
     };
 }
+
+/// Asserts that the variable's type implements the given traits.
+#[macro_export]
+macro_rules! assert_var_impl {
+    ($var:ident: $($trait:path),+ $(,)?) => {
+        let _ = || {
+            // Only callable when `$var` implements all traits in `$($trait)+`.
+            fn assert_var_impl<T: ?Sized $(+ $trait)+>(_x: &T) {}
+            assert_var_impl(& $var);
+        };
+    };
+}
