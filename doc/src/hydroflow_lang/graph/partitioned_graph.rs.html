@@ -472,7 +472,7 @@
                                 <span class="self">self</span>.graph.predecessors(node_id).collect();
                             <span class="comment">// Ensure sorted by port index.
                             </span>input_edges
-                                .sort_unstable_by_key(|<span class="kw-2">&amp;</span>(edge_id, _pred)| <span class="self">self</span>.indices[edge_id].<span class="number">0</span>);
+                                .sort_unstable_by_key(|<span class="kw-2">&amp;</span>(edge_id, _pred)| <span class="self">self</span>.indices[edge_id].<span class="number">1</span>);
                             <span class="kw">let </span>inputs: Vec&lt;Ident&gt; = input_edges
                                 .into_iter()
                                 .map(|(_edge_id, pred)| <span class="self">self</span>.node_id_as_ident(pred, <span class="bool-val">true</span>))
@@ -483,7 +483,7 @@
                                 <span class="self">self</span>.graph.successors(node_id).collect();
                             <span class="comment">// Ensure sorted by port index.
                             </span>output_edges
-                                .sort_unstable_by_key(|<span class="kw-2">&amp;</span>(edge_id, _succ)| <span class="self">self</span>.indices[edge_id].<span class="number">1</span>);
+                                .sort_unstable_by_key(|<span class="kw-2">&amp;</span>(edge_id, _succ)| <span class="self">self</span>.indices[edge_id].<span class="number">0</span>);
                             <span class="kw">let </span>outputs: Vec&lt;Ident&gt; = output_edges
                                 .into_iter()
                                 .map(|(_edge_id, succ)| <span class="self">self</span>.node_id_as_ident(succ, <span class="bool-val">false</span>))
