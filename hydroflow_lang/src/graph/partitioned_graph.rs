@@ -159,7 +159,7 @@ impl PartitionedGraph {
                                 self.graph.predecessors(node_id).collect();
                             // Ensure sorted by port index.
                             input_edges
-                                .sort_unstable_by_key(|&(edge_id, _pred)| self.indices[edge_id].0);
+                                .sort_unstable_by_key(|&(edge_id, _pred)| self.indices[edge_id].1);
                             let inputs: Vec<Ident> = input_edges
                                 .into_iter()
                                 .map(|(_edge_id, pred)| self.node_id_as_ident(pred, true))
@@ -170,7 +170,7 @@ impl PartitionedGraph {
                                 self.graph.successors(node_id).collect();
                             // Ensure sorted by port index.
                             output_edges
-                                .sort_unstable_by_key(|&(edge_id, _succ)| self.indices[edge_id].1);
+                                .sort_unstable_by_key(|&(edge_id, _succ)| self.indices[edge_id].0);
                             let outputs: Vec<Ident> = output_edges
                                 .into_iter()
                                 .map(|(_edge_id, succ)| self.node_id_as_ident(succ, false))
