@@ -1,5 +1,5 @@
 use proc_macro2::{Ident, Literal, Span, TokenStream};
-use quote::{quote, ToTokens};
+use quote::{quote, quote_spanned, ToTokens};
 use slotmap::{Key, SecondaryMap, SlotMap};
 use syn::spanned::Spanned;
 
@@ -176,13 +176,15 @@ impl PartitionedGraph {
                                 .map(|(_edge_id, succ)| self.node_id_as_ident(succ, false))
                                 .collect();
 
+                            let is_pull = idx < pull_to_push_idx;
+
                             let iter_args = WriteIteratorArgs {
                                 ident: &ident,
                                 inputs: &*inputs,
                                 outputs: &*outputs,
                                 type_arguments: op.type_arguments(),
                                 arguments: &op.args,
-                                is_pull: idx < pull_to_push_idx,
+                                is_pull,
                             };
 
                             let OperatorWriteOutput {
@@ -191,8 +193,22 @@ impl PartitionedGraph {
                                 write_iterator_after,
                             } = (op_constraints.write_fn)(&context_args, &iter_args);
 
+                            let required_trait = if is_pull {
+                                quote_spanned! {op_span=>
+                                    std::iter::Iterator
+                                }
+                            } else {
+                                quote_spanned! {op_span=>
+                                    #root::pusherator::Pusherator
+                                }
+                            };
+                            let iter_type_guard = quote_spanned! {op_span=>
+                                #root::assert_var_impl!(#ident: #required_trait);
+                            };
+
                             op_prologue_code.push(write_prologue);
                             subgraph_op_iter_code.push(write_iterator);
+                            subgraph_op_iter_code.push(iter_type_guard);
                             subgraph_op_iter_after_code.push(write_iterator_after);
                         }
                     }
@@ -215,7 +231,12 @@ impl PartitionedGraph {
                                 send_ports[0].clone()
                             };
 
-                        subgraph_op_iter_code.push(quote! {
+                        // Pivot span is combination of pull and push spans (or if not possible, just take the push).
+                        let pivot_span = pull_ident
+                            .span()
+                            .join(push_ident.span())
+                            .unwrap_or_else(|| push_ident.span());
+                        subgraph_op_iter_code.push(quote_spanned! {pivot_span=>
                             #root::pusherator::pivot::Pivot::new(#pull_ident, #push_ident).run();
                         });
                     }
