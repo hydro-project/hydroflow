@@ -572,6 +572,10 @@
 <span id="572">572</span>
 <span id="573">573</span>
 <span id="574">574</span>
+<span id="575">575</span>
+<span id="576">576</span>
+<span id="577">577</span>
+<span id="578">578</span>
 </pre><pre class="rust"><code><span class="kw">use </span>std::any::Any;
 <span class="kw">use </span>std::borrow::Cow;
 <span class="kw">use </span>std::cell::Cell;
@@ -687,8 +691,10 @@
     <span class="doccomment">/// Runs the dataflow until no more work is immediately available.
     /// If the dataflow contains loops this method may run forever.
     </span><span class="kw">pub fn </span>run_available(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-        <span class="kw">while </span><span class="self">self</span>.next_stratum() {
-            <span class="self">self</span>.run_stratum();
+        <span class="comment">// While work is immediately available.
+        </span><span class="kw">while </span><span class="self">self</span>.next_stratum() {
+            <span class="comment">// And do any work (this also receives events).
+            </span><span class="self">self</span>.run_stratum();
         }
     }
 
@@ -767,9 +773,11 @@
     /// TODO(mingwei): Currently blockes forever, no notion of &quot;completion.&quot;
     </span><span class="kw">pub async fn </span>run_async(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;!&gt; {
         <span class="kw">loop </span>{
-            <span class="self">self</span>.run_epoch();
-            <span class="self">self</span>.recv_events_async().<span class="kw">await</span><span class="question-mark">?</span>;
-            tokio::task::yield_now().<span class="kw">await</span>;
+            <span class="comment">// Run any work which is immediately available.
+            </span><span class="self">self</span>.run_available();
+            <span class="comment">// Only when there is absolutely no work available in any stratum.
+            // Do we yield to wait for more events.
+            </span><span class="self">self</span>.recv_events_async().<span class="kw">await</span>;
         }
     }
 
