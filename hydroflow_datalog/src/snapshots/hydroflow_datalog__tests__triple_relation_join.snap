@@ -27,8 +27,11 @@ fn main() {
                             std::task::Poll::Ready(maybe) => maybe,
                             std::task::Poll::Pending => None,
                         });
+                    hydroflow::assert_var_impl!(op_9v1: std::iter::Iterator);
                     let op_1v1 = op_9v1;
+                    hydroflow::assert_var_impl!(op_1v1: std::iter::Iterator);
                     let op_2v1 = op_1v1;
+                    hydroflow::assert_var_impl!(op_2v1: std::iter::Iterator);
                     let op_10v1 =
                         std::iter::from_fn(|| match hydroflow::futures::stream::Stream::poll_next(
                             sg_1v1_node_10v1_stream.as_mut(),
@@ -37,8 +40,11 @@ fn main() {
                             std::task::Poll::Ready(maybe) => maybe,
                             std::task::Poll::Pending => None,
                         });
+                    hydroflow::assert_var_impl!(op_10v1: std::iter::Iterator);
                     let op_3v1 = op_10v1;
+                    hydroflow::assert_var_impl!(op_3v1: std::iter::Iterator);
                     let op_4v1 = op_3v1;
+                    hydroflow::assert_var_impl!(op_4v1: std::iter::Iterator);
                     let op_11v1 =
                         std::iter::from_fn(|| match hydroflow::futures::stream::Stream::poll_next(
                             sg_1v1_node_11v1_stream.as_mut(),
@@ -47,32 +53,47 @@ fn main() {
                             std::task::Poll::Ready(maybe) => maybe,
                             std::task::Poll::Pending => None,
                         });
+                    hydroflow::assert_var_impl!(op_11v1: std::iter::Iterator);
                     let op_5v1 = op_11v1;
+                    hydroflow::assert_var_impl!(op_5v1: std::iter::Iterator);
                     let op_6v1 = op_5v1;
+                    hydroflow::assert_var_impl!(op_6v1: std::iter::Iterator);
                     let op_15v1 = op_2v1.map(|v: (_, _)| ((v.1,), v));
+                    hydroflow::assert_var_impl!(op_15v1: std::iter::Iterator);
                     let op_16v1 = op_4v1.map(|v: (_, _)| ((v.0,), v));
+                    hydroflow::assert_var_impl!(op_16v1: std::iter::Iterator);
                     let op_13v1 = hydroflow::compiled::pull::SymmetricHashJoin::new(
                         op_15v1,
                         op_16v1,
                         &mut sg_1v1_node_13v1_joindata,
                     );
+                    hydroflow::assert_var_impl!(op_13v1: std::iter::Iterator);
                     let op_14v1 = op_13v1
                         .map(|kv: ((_,), ((_, _), (_, _)))| (kv.1 .0 .0, kv.1 .0 .1, kv.1 .1 .1));
+                    hydroflow::assert_var_impl!(op_14v1: std::iter::Iterator);
                     let op_19v1 = op_14v1.map(|v: (_, _, _)| ((v.2,), v));
+                    hydroflow::assert_var_impl!(op_19v1: std::iter::Iterator);
                     let op_20v1 = op_6v1.map(|v: (_, _)| ((v.0,), v));
+                    hydroflow::assert_var_impl!(op_20v1: std::iter::Iterator);
                     let op_17v1 = hydroflow::compiled::pull::SymmetricHashJoin::new(
                         op_19v1,
                         op_20v1,
                         &mut sg_1v1_node_17v1_joindata,
                     );
+                    hydroflow::assert_var_impl!(op_17v1: std::iter::Iterator);
                     let op_18v1 = op_17v1.map(|kv: ((_,), ((_, _, _), (_, _)))| {
                         (kv.1 .0 .0, kv.1 .0 .1, kv.1 .0 .2, kv.1 .1 .1)
                     });
+                    hydroflow::assert_var_impl!(op_18v1: std::iter::Iterator);
                     let op_21v1 = op_18v1.map(|row: (_, _, _, _)| (row.3, row.2, row.1, row.0));
+                    hydroflow::assert_var_impl!(op_21v1: std::iter::Iterator);
                     let op_7v1 = op_21v1;
+                    hydroflow::assert_var_impl!(op_7v1: std::iter::Iterator);
                     let op_8v1 = op_7v1;
+                    hydroflow::assert_var_impl!(op_8v1: std::iter::Iterator);
                     let op_12v1 =
                         hydroflow::pusherator::for_each::ForEach::new(|v| out.send(v).unwrap());
+                    hydroflow::assert_var_impl!(op_12v1: hydroflow::pusherator::Pusherator);
                     hydroflow::pusherator::pivot::Pivot::new(op_8v1, op_12v1).run();
                 },
             );
