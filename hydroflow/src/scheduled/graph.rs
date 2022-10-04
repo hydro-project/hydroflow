@@ -113,7 +113,9 @@ impl Hydroflow {
     /// Runs the dataflow until no more work is immediately available.
     /// If the dataflow contains loops this method may run forever.
     pub fn run_available(&mut self) {
+        // While work is immediately available.
         while self.next_stratum() {
+            // And do any work (this also receives events).
             self.run_stratum();
         }
     }
@@ -193,9 +195,11 @@ impl Hydroflow {
     /// TODO(mingwei): Currently blockes forever, no notion of "completion."
     pub async fn run_async(&mut self) -> Option<!> {
         loop {
-            self.run_epoch();
-            self.recv_events_async().await?;
-            tokio::task::yield_now().await;
+            // Run any work which is immediately available.
+            self.run_available();
+            // Only when there is absolutely no work available in any stratum.
+            // Do we yield to wait for more events.
+            self.recv_events_async().await;
         }
     }
 
