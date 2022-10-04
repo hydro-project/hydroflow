@@ -119,6 +119,20 @@ pub fn test_recv_expr() {
 }
 
 #[test]
+pub fn test_join_order() {
+    let _df_good = hydroflow_syntax! {
+        yikes = join() -> for_each(|m: ((), (u32, String))| println!("{:?}", m));
+        recv_iter([0,1,2]) -> map(|i| ((), i)) -> [0]yikes;
+        recv_iter(["a".to_string(),"b".to_string(),"c".to_string()]) -> map(|s| ((), s)) -> [1]yikes;
+    };
+    let _df_bad = hydroflow_syntax! {
+        yikes = join() -> for_each(|m: ((), (u32, String))| println!("{:?}", m));
+        recv_iter(["a".to_string(),"b".to_string(),"c".to_string()]) -> map(|s| ((), s)) -> [1]yikes;
+        recv_iter([0,1,2]) -> map(|i| ((), i)) -> [0]yikes;
+    };
+}
+
+#[test]
 pub fn test_reduce_sum() {
     let (items_send, items_recv) = hydroflow::util::unbounded_channel::<usize>();
 
