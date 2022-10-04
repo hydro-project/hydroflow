@@ -12,12 +12,6 @@ macros = [ "hydroflow_macro", "hydroflow_datalog" ]
 name = "chat"
 
 [[example]]
-name = "covid_tracing"
-
-[[example]]
-name = "covid_tracing_dist"
-
-[[example]]
 name = "graph_reachability"
 
 [[example]]
@@ -25,9 +19,6 @@ name = "three_clique"
 
 [[example]]
 name = "two_pc"
-
-[[example]]
-name = "kvs"
 
 [dependencies]
 bincode = "1.3"
