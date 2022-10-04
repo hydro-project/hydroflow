@@ -23,15 +23,23 @@ fn main() {
                             std::task::Poll::Ready(maybe) => maybe,
                             std::task::Poll::Pending => None,
                         });
+                    hydroflow::assert_var_impl!(op_5v1: std::iter::Iterator);
                     let op_1v1 = op_5v1;
+                    hydroflow::assert_var_impl!(op_1v1: std::iter::Iterator);
                     let op_2v1 = op_1v1;
+                    hydroflow::assert_var_impl!(op_2v1: std::iter::Iterator);
                     let op_7v1 =
                         op_2v1.filter(|&row: &(_, _, _, _)| row.0 == row.1 && row.2 == row.3);
+                    hydroflow::assert_var_impl!(op_7v1: std::iter::Iterator);
                     let op_8v1 = op_7v1.map(|row: (_, _, _, _)| (row.0, row.0, row.2, row.2));
+                    hydroflow::assert_var_impl!(op_8v1: std::iter::Iterator);
                     let op_3v1 = op_8v1;
+                    hydroflow::assert_var_impl!(op_3v1: std::iter::Iterator);
                     let op_4v1 = op_3v1;
+                    hydroflow::assert_var_impl!(op_4v1: std::iter::Iterator);
                     let op_6v1 =
                         hydroflow::pusherator::for_each::ForEach::new(|v| out.send(v).unwrap());
+                    hydroflow::assert_var_impl!(op_6v1: hydroflow::pusherator::Pusherator);
                     hydroflow::pusherator::pivot::Pivot::new(op_4v1, op_6v1).run();
                 },
             );
