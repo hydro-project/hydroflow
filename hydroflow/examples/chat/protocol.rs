@@ -13,7 +13,7 @@ pub enum Message {
 
     ConnectResponse,
 
-    ChatMessage {
+    ChatMsg {
         nickname: String,
         message: String,
         ts: DateTime<Utc>,

@@ -25,13 +25,13 @@ pub(crate) async fn run_client(opts: Opts) {
     let mut hf = hydroflow_syntax! {
         // set up channels
         outbound_chan = merge() -> sink_async(outbound);
-        inbound_chan = recv_stream(inbound) -> map(|r| deserialize_msg(r)) -> tee();
+        inbound_chan = recv_stream(inbound) -> map(deserialize_msg) -> tee();
         connect_acks = inbound_chan[0] -> filter_map(|m: Message| match m {
             Message::ConnectResponse => Some(m),
             _ => None }) -> tee();
         messages = inbound_chan[1] -> filter_map(|m: Message| match m {
-            Message::ChatMessage{ nickname, message, ts } =>
-                Some(Message::ChatMessage{nickname, message, ts}),
+            Message::ChatMsg{ nickname, message, ts } =>
+                Some(Message::ChatMsg{nickname, message, ts}),
             _ => None });
 
         // send a single connection request on startup
@@ -47,12 +47,12 @@ pub(crate) async fn run_client(opts: Opts) {
           -> [1]outbound_chan;
         lines = recv_stream(stdin_lines)
           -> map(|l: Result<std::string::String, std::io::Error>| l.unwrap())
-          -> map(|l| ((), serialize_msg(Message::ChatMessage {nickname: opts.name.clone(), message: l, ts: Utc::now()})))
+          -> map(|l| ((), serialize_msg(Message::ChatMsg {nickname: opts.name.clone(), message: l, ts: Utc::now()})))
           -> [0]msg_send;
 
         // receive and print messages
-        messages -> for_each(|m: Message| match m {
-            Message::ChatMessage{ nickname, message, ts } => {
+        messages -> for_each(|m: Message| if let Message::ChatMsg{ nickname, message, ts } = m {
+            // Message::ChatMessage{ nickname, message, ts } => {
                 println!(
                     "{} {}: {}",
                     ts
@@ -64,8 +64,6 @@ pub(crate) async fn run_client(opts: Opts) {
                     nickname.green().italic(),
                     message,
                 );
-        }
-        _ => ()
         });
 
         // handle connect ack

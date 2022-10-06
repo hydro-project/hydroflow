@@ -15,15 +15,15 @@ pub(crate) async fn run_server(opts: Opts) {
     let mut df: Hydroflow = hydroflow_syntax! {
         // set up channels
         outbound_chan = merge() -> sink_async(outbound);
-        inbound_chan = recv_stream(inbound) -> map(|m| deserialize_msg(m)) -> tee();
+        inbound_chan = recv_stream(inbound) -> map(deserialize_msg) -> tee();
         member_chan = inbound_chan[0] -> filter_map(|m: Message| match m {
                 Message::ConnectRequest { nickname: _, addr: _ } => Some(m),
                 _ => None });
         members = member_chan -> tee();
 
         msg_chan = inbound_chan[1] -> filter_map(|m: Message| match m {
-                Message::ChatMessage{ nickname, message, ts } =>
-                    Some(Message::ChatMessage{nickname, message, ts}),
+                Message::ChatMsg{ nickname, message, ts } =>
+                    Some(Message::ChatMsg{nickname, message, ts}),
                 _ => None });
 
         // Member request handler. Respond with the ip:port we allocated for messages.
@@ -39,7 +39,7 @@ pub(crate) async fn run_server(opts: Opts) {
         // Every message that comes in will be joined with every member seen.
         // Each member will see all messages (even from the past).
         broadcast = join()
-            -> map(|((), (msg, addr))| (msg.to_owned(), addr))
+            -> map(|((), (msg, addr))| (msg, addr))
             -> [1]outbound_chan;
         // Left branch of the join is the message stream
         msg_chan -> map(|m| ((), serialize_msg(m))) -> [0]broadcast;
