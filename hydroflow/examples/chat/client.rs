@@ -31,7 +31,7 @@ pub(crate) async fn run_client(opts: Opts) {
             _ => None }) -> tee();
         messages = inbound_chan[1] -> filter_map(|m: Message| match m {
             Message::ChatMessage{ nickname, message, ts } =>
-                Some(Message::ChatMessage{nickname: nickname, message: message, ts: ts}),
+                Some(Message::ChatMessage{nickname, message, ts}),
             _ => None });
 
         // send a single connection request on startup
@@ -64,7 +64,6 @@ pub(crate) async fn run_client(opts: Opts) {
                     nickname.green().italic(),
                     message,
                 );
-                ()
         }
         _ => ()
         });

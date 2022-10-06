@@ -23,7 +23,7 @@ pub(crate) async fn run_server(opts: Opts) {
 
         msg_chan = inbound_chan[1] -> filter_map(|m: Message| match m {
                 Message::ChatMessage{ nickname, message, ts } =>
-                    Some(Message::ChatMessage{nickname: nickname, message: message, ts: ts}),
+                    Some(Message::ChatMessage{nickname, message, ts}),
                 _ => None });
 
         // Member request handler. Respond with the ip:port we allocated for messages.
