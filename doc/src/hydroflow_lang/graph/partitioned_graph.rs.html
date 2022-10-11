@@ -311,8 +311,29 @@
 <span id="311">311</span>
 <span id="312">312</span>
 <span id="313">313</span>
+<span id="314">314</span>
+<span id="315">315</span>
+<span id="316">316</span>
+<span id="317">317</span>
+<span id="318">318</span>
+<span id="319">319</span>
+<span id="320">320</span>
+<span id="321">321</span>
+<span id="322">322</span>
+<span id="323">323</span>
+<span id="324">324</span>
+<span id="325">325</span>
+<span id="326">326</span>
+<span id="327">327</span>
+<span id="328">328</span>
+<span id="329">329</span>
+<span id="330">330</span>
+<span id="331">331</span>
+<span id="332">332</span>
+<span id="333">333</span>
+<span id="334">334</span>
 </pre><pre class="rust"><code><span class="kw">use </span>proc_macro2::{Ident, Literal, Span, TokenStream};
-<span class="kw">use </span>quote::{quote, ToTokens};
+<span class="kw">use </span>quote::{quote, quote_spanned, ToTokens};
 <span class="kw">use </span>slotmap::{Key, SecondaryMap, SlotMap};
 <span class="kw">use </span>syn::spanned::Spanned;
 
@@ -489,13 +510,15 @@
                                 .map(|(_edge_id, succ)| <span class="self">self</span>.node_id_as_ident(succ, <span class="bool-val">false</span>))
                                 .collect();
 
+                            <span class="kw">let </span>is_pull = idx &lt; pull_to_push_idx;
+
                             <span class="kw">let </span>iter_args = WriteIteratorArgs {
                                 ident: <span class="kw-2">&amp;</span>ident,
                                 inputs: <span class="kw-2">&amp;*</span>inputs,
                                 outputs: <span class="kw-2">&amp;*</span>outputs,
                                 type_arguments: op.type_arguments(),
                                 arguments: <span class="kw-2">&amp;</span>op.args,
-                                is_pull: idx &lt; pull_to_push_idx,
+                                is_pull,
                             };
 
                             <span class="kw">let </span>OperatorWriteOutput {
@@ -504,8 +527,22 @@
                                 write_iterator_after,
                             } = (op_constraints.write_fn)(<span class="kw-2">&amp;</span>context_args, <span class="kw-2">&amp;</span>iter_args);
 
+                            <span class="kw">let </span>required_trait = <span class="kw">if </span>is_pull {
+                                <span class="macro">quote_spanned! </span>{op_span=&gt;
+                                    std::iter::Iterator
+                                }
+                            } <span class="kw">else </span>{
+                                <span class="macro">quote_spanned! </span>{op_span=&gt;
+                                    #root::pusherator::Pusherator
+                                }
+                            };
+                            <span class="kw">let </span>iter_type_guard = <span class="macro">quote_spanned! </span>{op_span=&gt;
+                                #<span class="macro">root::assert_var_impl!</span>(#ident: #required_trait);
+                            };
+
                             op_prologue_code.push(write_prologue);
                             subgraph_op_iter_code.push(write_iterator);
+                            subgraph_op_iter_code.push(iter_type_guard);
                             subgraph_op_iter_after_code.push(write_iterator_after);
                         }
                     }
@@ -528,7 +565,12 @@
                                 send_ports[<span class="number">0</span>].clone()
                             };
 
-                        subgraph_op_iter_code.push(<span class="macro">quote! </span>{
+                        <span class="comment">// Pivot span is combination of pull and push spans (or if not possible, just take the push).
+                        </span><span class="kw">let </span>pivot_span = pull_ident
+                            .span()
+                            .join(push_ident.span())
+                            .unwrap_or_else(|| push_ident.span());
+                        subgraph_op_iter_code.push(<span class="macro">quote_spanned! </span>{pivot_span=&gt;
                             #root::pusherator::pivot::Pivot::new(#pull_ident, #push_ident).run();
                         });
                     }

@@ -27,6 +27,18 @@
 <span id="27">27</span>
 <span id="28">28</span>
 <span id="29">29</span>
+<span id="30">30</span>
+<span id="31">31</span>
+<span id="32">32</span>
+<span id="33">33</span>
+<span id="34">34</span>
+<span id="35">35</span>
+<span id="36">36</span>
+<span id="37">37</span>
+<span id="38">38</span>
+<span id="39">39</span>
+<span id="40">40</span>
+<span id="41">41</span>
 </pre><pre class="rust"><code><span class="attribute">#[macro_export]
 </span><span class="macro">macro_rules! </span>rassert {
     (<span class="macro-nonterminal">$cond</span>:expr $(,)<span class="question-mark">?</span>) =&gt; {
@@ -54,6 +66,18 @@
     };
     (<span class="macro-nonterminal">$a</span>:expr, <span class="macro-nonterminal">$b</span>:expr, $(<span class="macro-nonterminal">$arg</span>:tt)<span class="kw-2">*</span>) =&gt; {
         <span class="macro-nonterminal">$</span><span class="macro">crate::rassert!</span>(<span class="macro-nonterminal">$a </span>== <span class="macro-nonterminal">$b</span>, $(<span class="macro-nonterminal">$arg</span>)<span class="kw-2">*</span>)
+    };
+}
+
+<span class="doccomment">/// Asserts that the variable&#39;s type implements the given traits.
+</span><span class="attribute">#[macro_export]
+</span><span class="macro">macro_rules! </span>assert_var_impl {
+    (<span class="macro-nonterminal">$var</span>:ident: $(<span class="macro-nonterminal">$</span><span class="kw">trait</span>:<span class="macro-nonterminal">path</span>),+ $(,)<span class="question-mark">?</span>) =&gt; {
+        <span class="kw">let _ </span>= || {
+            <span class="comment">// Only callable when `$var` implements all traits in `$($trait)+`.
+            </span><span class="kw">fn </span>assert_var_impl&lt;T: <span class="question-mark">?</span>Sized $(+ <span class="macro-nonterminal">$</span><span class="kw">trait</span>)+&gt;(<span class="macro-nonterminal">_x</span>: <span class="kw-2">&amp;</span>T) {}
+            assert_var_impl(&amp; <span class="macro-nonterminal">$var</span>);
+        };
     };
 }
 </code></pre></div>
