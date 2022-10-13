@@ -13,6 +13,7 @@ pub mod filter;
 pub mod filter_map;
 pub mod flatten;
 pub mod for_each;
+pub mod inspect;
 pub mod map;
 pub mod partition;
 pub mod pivot;
@@ -49,6 +50,14 @@ pub trait PusheratorBuild {
         Func: FnMut(Self::ItemOut) -> Out,
     {
         map::MapBuild::new(self, func)
+    }
+
+    fn inspect<Func>(self, func: Func) -> inspect::InspectBuild<Self, Func>
+    where
+        Self: Sized,
+        Func: FnMut(&Self::ItemOut),
+    {
+        inspect::InspectBuild::new(self, func)
     }
 
     fn filter<Func>(self, func: Func) -> filter::FilterBuild<Self, Func>
