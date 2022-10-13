@@ -100,7 +100,7 @@ pub const IDENTITY_WRITE_FN: &'static dyn Fn(
     }
 });
 
-pub const OPERATORS: [OperatorConstraints; 22] = [
+pub const OPERATORS: [OperatorConstraints; 23] = [
     OperatorConstraints {
         name: "null",
         hard_range_inn: RANGE_ANY,
@@ -124,6 +124,7 @@ pub const OPERATORS: [OperatorConstraints; 22] = [
                 }
             } else {
                 quote_spanned! {op_span=>
+                    #[allow(clippy::let_unit_value)]
                     let _ = (#(#outputs),*);
                     let #ident = #root::pusherator::for_each::ForEach::new(std::mem::drop);
                 }
@@ -308,6 +309,40 @@ pub const OPERATORS: [OperatorConstraints; 22] = [
                 let output = &outputs[0];
                 quote_spanned! {op_span=>
                     let #ident = #root::pusherator::map::Map::new(#arguments, #output);
+                }
+            };
+            OperatorWriteOutput {
+                write_iterator,
+                ..Default::default()
+            }
+        }),
+    },
+    OperatorConstraints {
+        name: "inspect",
+        hard_range_inn: RANGE_1,
+        soft_range_inn: RANGE_1,
+        hard_range_out: RANGE_1,
+        soft_range_out: RANGE_1,
+        num_args: 1,
+        input_delaytype_fn: &|_| None,
+        write_fn: &(|&WriteContextArgs { root, op_span, .. },
+                     &WriteIteratorArgs {
+                         ident,
+                         inputs,
+                         outputs,
+                         arguments,
+                         is_pull,
+                         ..
+                     }| {
+            let write_iterator = if is_pull {
+                let input = &inputs[0];
+                quote_spanned! {op_span=>
+                    let #ident = #input.inspect(#arguments);
+                }
+            } else {
+                let output = &outputs[0];
+                quote_spanned! {op_span=>
+                    let #ident = #root::pusherator::inspect::Inspect::new(#arguments, #output);
                 }
             };
             OperatorWriteOutput {
