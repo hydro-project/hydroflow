@@ -38,16 +38,15 @@ pub(crate) async fn run_server(opts: Opts) {
         // Message handler.
         // Every message that comes in will be joined with every member seen.
         // Each member will see all messages (even from the past).
-        broadcast = join()
-            -> map(|((), (msg, addr))| (msg, addr))
+        broadcast = cross_join()
             -> [1]outbound_chan;
         // Left branch of the join is the message stream
-        msg_chan -> map(|m| ((), serialize_msg(m))) -> [0]broadcast;
+        msg_chan -> map(|m| serialize_msg(m)) -> [0]broadcast;
         // Right branch of the join is the stream of members
         members[1] -> filter_map(|m: Message| {
             match m {
                 Message::ConnectRequest{ nickname: _, addr } =>
-                    Some(((), addr)),
+                    Some(addr),
                 _ => None
             }
         }) -> [1]broadcast;

@@ -42,12 +42,12 @@ pub(crate) async fn run_client(opts: Opts) {
 
         // take stdin and send to server as a msg
         // the join serves to postpone msgs until the connection request is acked
-        msg_send = join()
-          -> map(|((), (msg, ()))| (msg, server_addr))
+        msg_send = cross_join()
+          -> map(|(msg, ())| (msg, server_addr))
           -> [1]outbound_chan;
         lines = recv_stream(stdin_lines)
           -> map(|l: Result<std::string::String, std::io::Error>| l.unwrap())
-          -> map(|l| ((), serialize_msg(Message::ChatMsg {nickname: opts.name.clone(), message: l, ts: Utc::now()})))
+          -> map(|l| serialize_msg(Message::ChatMsg {nickname: opts.name.clone(), message: l, ts: Utc::now()}))
           -> [0]msg_send;
 
         // receive and print messages
@@ -69,7 +69,7 @@ pub(crate) async fn run_client(opts: Opts) {
         // handle connect ack
         connect_acks[0] -> for_each(|m: Message| println!("connected: {:?}", m));
         connect_acks[1] -> filter_map(|m: Message| match m {
-            Message::ConnectResponse => Some(((), ())),
+            Message::ConnectResponse => Some(()),
             _ => None
         }) -> [1]msg_send;
 
