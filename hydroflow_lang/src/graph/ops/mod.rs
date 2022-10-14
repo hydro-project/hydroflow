@@ -100,7 +100,7 @@ pub const IDENTITY_WRITE_FN: &'static dyn Fn(
     }
 });
 
-pub const OPERATORS: [OperatorConstraints; 21] = [
+pub const OPERATORS: [OperatorConstraints; 22] = [
     OperatorConstraints {
         name: "null",
         hard_range_inn: RANGE_ANY,
@@ -191,6 +191,37 @@ pub const OPERATORS: [OperatorConstraints; 21] = [
             let rhs = &inputs[1];
             let write_iterator = quote_spanned! {op_span=>
                 let #ident = #root::compiled::pull::SymmetricHashJoin::new(#lhs, #rhs, &mut #joindata_ident);
+            };
+
+            OperatorWriteOutput {
+                write_prologue,
+                write_iterator,
+                ..Default::default()
+            }
+        }),
+    },
+    OperatorConstraints {
+        name: "cross_join",
+        hard_range_inn: &(2..=2),
+        soft_range_inn: &(2..=2),
+        hard_range_out: RANGE_1,
+        soft_range_out: RANGE_1,
+        num_args: 0,
+        input_delaytype_fn: &|_| None,
+        write_fn: &(|wc @ &WriteContextArgs { root, op_span, .. },
+                     &WriteIteratorArgs { ident, inputs, .. }| {
+            let joindata_ident = wc.make_ident("joindata");
+            let write_prologue = quote_spanned! {op_span=>
+                let mut #joindata_ident = Default::default();
+            };
+
+            let lhs = &inputs[0];
+            let rhs = &inputs[1];
+            let write_iterator = quote_spanned! {op_span=>
+                let #lhs = #lhs.map(|a| ((), a));
+                let #rhs = #rhs.map(|b| ((), b));
+                let #ident = #root::compiled::pull::SymmetricHashJoin::new(#lhs, #rhs, &mut #joindata_ident);
+                let #ident = #ident.map(|((), (a, b))| (a, b));
             };
 
             OperatorWriteOutput {
