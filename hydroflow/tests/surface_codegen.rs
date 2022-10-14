@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use hydroflow::hydroflow_syntax;
 use hydroflow::scheduled::graph::Hydroflow;
 use tokio::task::LocalSet;
@@ -20,7 +22,10 @@ use tokio_stream::wrappers::UnboundedReceiverStream;
 // TODO(mingwei): Documentation articles.
 // TODO(mingwei): Find a way to display join keys
 
-fn recv_into_vec<T>(recv: &mut UnboundedReceiverStream<T>) -> Vec<T> {
+fn recv_into<C, T>(recv: &mut UnboundedReceiverStream<T>) -> C
+where
+    C: FromIterator<T>,
+{
     std::iter::from_fn(|| recv.as_mut().try_recv().ok()).collect()
 }
 
@@ -33,7 +38,7 @@ pub fn test_basic_2() {
     };
     df.run_available();
 
-    assert_eq!(&[1], &*recv_into_vec(&mut out_recv));
+    assert_eq!(&[1], &*recv_into::<Vec<_>, _>(&mut out_recv));
 }
 
 #[test]
@@ -45,7 +50,7 @@ pub fn test_basic_3() {
     };
     df.run_available();
 
-    assert_eq!(&[2], &*recv_into_vec(&mut out_recv));
+    assert_eq!(&[2], &*recv_into::<Vec<_>, _>(&mut out_recv));
 }
 
 #[test]
@@ -59,7 +64,7 @@ pub fn test_basic_merge() {
     };
     df.run_available();
 
-    assert_eq!(&[1, 2], &*recv_into_vec(&mut out_recv));
+    assert_eq!(&[1, 2], &*recv_into::<Vec<_>, _>(&mut out_recv));
 }
 
 #[test]
@@ -74,7 +79,7 @@ pub fn test_basic_tee() {
     };
     df.run_available();
 
-    let out = recv_into_vec(&mut out_recv);
+    let out: HashSet<_> = recv_into(&mut out_recv);
     assert_eq!(2, out.len());
     assert!(out.contains(&"A 1".to_owned()));
     assert!(out.contains(&"B 1".to_owned()));
@@ -130,6 +135,26 @@ pub fn test_join_order() {
         recv_iter(["a".to_string(),"b".to_string(),"c".to_string()]) -> map(|s| ((), s)) -> [1]yikes;
         recv_iter([0,1,2]) -> map(|i| ((), i)) -> [0]yikes;
     };
+}
+
+#[test]
+pub fn test_cross_join() {
+    let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<(usize, &str)>();
+
+    let mut df = hydroflow_syntax! {
+        cj = cross_join() -> for_each(|v| out_send.send(v).unwrap());
+        recv_iter([1, 2, 3]) -> [0]cj;
+        recv_iter(["a", "b", "c"]) -> [1]cj;
+    };
+    df.run_available();
+
+    let out: HashSet<_> = recv_into(&mut out_recv);
+    assert_eq!(3 * 3, out.len());
+    for n in [1, 2, 3] {
+        for c in ["a", "b", "c"] {
+            assert!(out.contains(&(n, c)));
+        }
+    }
 }
 
 #[test]
