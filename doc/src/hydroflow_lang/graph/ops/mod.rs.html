@@ -825,6 +825,37 @@
 <span id="825">825</span>
 <span id="826">826</span>
 <span id="827">827</span>
+<span id="828">828</span>
+<span id="829">829</span>
+<span id="830">830</span>
+<span id="831">831</span>
+<span id="832">832</span>
+<span id="833">833</span>
+<span id="834">834</span>
+<span id="835">835</span>
+<span id="836">836</span>
+<span id="837">837</span>
+<span id="838">838</span>
+<span id="839">839</span>
+<span id="840">840</span>
+<span id="841">841</span>
+<span id="842">842</span>
+<span id="843">843</span>
+<span id="844">844</span>
+<span id="845">845</span>
+<span id="846">846</span>
+<span id="847">847</span>
+<span id="848">848</span>
+<span id="849">849</span>
+<span id="850">850</span>
+<span id="851">851</span>
+<span id="852">852</span>
+<span id="853">853</span>
+<span id="854">854</span>
+<span id="855">855</span>
+<span id="856">856</span>
+<span id="857">857</span>
+<span id="858">858</span>
 </pre><pre class="rust"><code><span class="kw">use </span>std::fmt::Display;
 <span class="kw">use </span>std::ops::{Bound, RangeBounds};
 
@@ -927,7 +958,7 @@
     }
 });
 
-<span class="kw">pub const </span>OPERATORS: [OperatorConstraints; <span class="number">21</span>] = [
+<span class="kw">pub const </span>OPERATORS: [OperatorConstraints; <span class="number">22</span>] = [
     OperatorConstraints {
         name: <span class="string">&quot;null&quot;</span>,
         hard_range_inn: RANGE_ANY,
@@ -1018,6 +1049,37 @@
             <span class="kw">let </span>rhs = <span class="kw-2">&amp;</span>inputs[<span class="number">1</span>];
             <span class="kw">let </span>write_iterator = <span class="macro">quote_spanned! </span>{op_span=&gt;
                 <span class="kw">let </span>#ident = #root::compiled::pull::SymmetricHashJoin::new(#lhs, #rhs, <span class="kw-2">&amp;mut </span>#joindata_ident);
+            };
+
+            OperatorWriteOutput {
+                write_prologue,
+                write_iterator,
+                ..Default::default()
+            }
+        }),
+    },
+    OperatorConstraints {
+        name: <span class="string">&quot;cross_join&quot;</span>,
+        hard_range_inn: <span class="kw-2">&amp;</span>(<span class="number">2</span>..=<span class="number">2</span>),
+        soft_range_inn: <span class="kw-2">&amp;</span>(<span class="number">2</span>..=<span class="number">2</span>),
+        hard_range_out: RANGE_1,
+        soft_range_out: RANGE_1,
+        num_args: <span class="number">0</span>,
+        input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">None</span>,
+        write_fn: <span class="kw-2">&amp;</span>(|wc @ <span class="kw-2">&amp;</span>WriteContextArgs { root, op_span, .. },
+                     <span class="kw-2">&amp;</span>WriteIteratorArgs { ident, inputs, .. }| {
+            <span class="kw">let </span>joindata_ident = wc.make_ident(<span class="string">&quot;joindata&quot;</span>);
+            <span class="kw">let </span>write_prologue = <span class="macro">quote_spanned! </span>{op_span=&gt;
+                <span class="kw">let </span><span class="kw-2">mut </span>#joindata_ident = Default::default();
+            };
+
+            <span class="kw">let </span>lhs = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>];
+            <span class="kw">let </span>rhs = <span class="kw-2">&amp;</span>inputs[<span class="number">1</span>];
+            <span class="kw">let </span>write_iterator = <span class="macro">quote_spanned! </span>{op_span=&gt;
+                <span class="kw">let </span>#lhs = #lhs.map(|a| ((), a));
+                <span class="kw">let </span>#rhs = #rhs.map(|b| ((), b));
+                <span class="kw">let </span>#ident = #root::compiled::pull::SymmetricHashJoin::new(#lhs, #rhs, <span class="kw-2">&amp;mut </span>#joindata_ident);
+                <span class="kw">let </span>#ident = #ident.map(|((), (a, b))| (a, b));
             };
 
             OperatorWriteOutput {
@@ -1653,4 +1715,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0-nightly (6b3ede3f7 2022-10-13)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0-nightly (bf15a9e52 2022-10-14)" ></div></body></html>
