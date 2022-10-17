@@ -1,8 +1,9 @@
 use crate::{GraphType, Opts};
 
-use crate::protocol::{
-    connect_get_addr, deserialize_msg, is_chat_msg, is_connect_req, serialize_msg, Message,
+use crate::helpers::{
+    connect_get_addr, deserialize_msg, is_chat_msg, is_connect_req, serialize_msg,
 };
+use crate::protocol::Message;
 
 use hydroflow::hydroflow_syntax;
 use hydroflow::scheduled::graph::Hydroflow;

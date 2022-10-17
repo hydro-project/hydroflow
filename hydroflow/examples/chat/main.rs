@@ -4,6 +4,7 @@ use hydroflow::tokio;
 use server::run_server;
 
 mod client;
+mod helpers;
 mod protocol;
 mod server;
 

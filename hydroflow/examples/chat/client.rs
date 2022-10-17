@@ -1,7 +1,8 @@
 use chrono::prelude::*;
 use colored::Colorize;
 
-use crate::protocol::{deserialize_msg, is_chat_msg, is_connect_resp, serialize_msg, Message};
+use crate::helpers::{deserialize_msg, is_chat_msg, is_connect_resp, serialize_msg};
+use crate::protocol::Message;
 use crate::{GraphType, Opts};
 use chrono::Utc;
 use hydroflow::hydroflow_syntax;
