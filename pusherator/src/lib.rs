@@ -17,6 +17,7 @@ pub mod inspect;
 pub mod map;
 pub mod partition;
 pub mod pivot;
+pub mod split;
 pub mod tee;
 
 use std::marker::PhantomData;
@@ -75,6 +76,15 @@ pub trait PusheratorBuild {
         Next1: Pusherator<Item = Self::ItemOut>,
     {
         tee::TeeBuild::new(self, next1)
+    }
+
+    fn split<NextA, ItemB>(self, next_a: NextA) -> split::SplitBuild<Self, NextA>
+    where
+        Self: Sized,
+        Self: PusheratorBuild<ItemOut = (NextA::Item, ItemB)>,
+        NextA: Pusherator,
+    {
+        split::SplitBuild::new(self, next_a)
     }
 
     fn for_each<Func>(self, func: Func) -> Self::Output<for_each::ForEach<Func, Self::ItemOut>>
