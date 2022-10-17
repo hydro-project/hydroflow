@@ -33,3 +33,38 @@ where
 {
     serde_json::from_str(&(msg.unwrap().0)).unwrap()
 }
+
+pub fn is_connect_req(m: Message) -> Option<Message> {
+    match m {
+        Message::ConnectRequest {
+            nickname: _,
+            addr: _,
+        } => Some(m),
+        _ => None,
+    }
+}
+
+pub fn is_connect_resp(m: Message) -> Option<Message> {
+    match m {
+        Message::ConnectResponse {} => Some(m),
+        _ => None,
+    }
+}
+
+pub fn is_chat_msg(m: Message) -> Option<Message> {
+    match m {
+        Message::ChatMsg {
+            nickname: _,
+            message: _,
+            ts: _,
+        } => Some(m),
+        _ => None,
+    }
+}
+
+pub fn connect_get_addr(m: Message) -> Option<SocketAddr> {
+    match m {
+        Message::ConnectRequest { nickname: _, addr } => Some(addr),
+        _ => None,
+    }
+}

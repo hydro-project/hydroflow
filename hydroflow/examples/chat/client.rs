@@ -1,7 +1,7 @@
 use chrono::prelude::*;
 use colored::Colorize;
 
-use crate::protocol::{deserialize_msg, serialize_msg, Message};
+use crate::protocol::{deserialize_msg, is_chat_msg, is_connect_resp, serialize_msg, Message};
 use crate::{GraphType, Opts};
 use chrono::Utc;
 use hydroflow::hydroflow_syntax;
@@ -24,35 +24,29 @@ pub(crate) async fn run_client(opts: Opts) {
 
     let mut hf = hydroflow_syntax! {
         // set up channels
-        outbound_chan = merge() -> sink_async(outbound);
+        outbound_chan = merge() -> map(|(m,a)| (serialize_msg(m), a)) -> sink_async(outbound);
         inbound_chan = recv_stream(inbound) -> map(deserialize_msg) -> tee();
-        connect_acks = inbound_chan[0] -> filter_map(|m: Message| match m {
-            Message::ConnectResponse => Some(m),
-            _ => None }) -> tee();
-        messages = inbound_chan[1] -> filter_map(|m: Message| match m {
-            Message::ChatMsg{ nickname, message, ts } =>
-                Some(Message::ChatMsg{nickname, message, ts}),
-            _ => None });
+        connect_acks = inbound_chan[0] -> filter_map(is_connect_resp) -> tee();
+        messages = inbound_chan[1] -> filter_map(is_chat_msg);
 
         // send a single connection request on startup
-        recv_iter([()]) -> map(|_m| (serialize_msg(Message::ConnectRequest {
+        recv_iter([()]) -> map(|_m| (Message::ConnectRequest {
             nickname: opts.name.clone(),
             addr: client_addr,
-        }), server_addr)) -> [0]outbound_chan;
+        }, server_addr)) -> [0]outbound_chan;
 
         // take stdin and send to server as a msg
         // the join serves to postpone msgs until the connection request is acked
-        msg_send = cross_join()
-          -> map(|(msg, ())| (msg, server_addr))
-          -> [1]outbound_chan;
+        msg_send = cross_join() -> map(|(msg, _)| (msg, server_addr)) -> [1]outbound_chan;
         lines = recv_stream(stdin_lines)
-          -> map(|l: Result<std::string::String, std::io::Error>| l.unwrap())
-          -> map(|l| serialize_msg(Message::ChatMsg {nickname: opts.name.clone(), message: l, ts: Utc::now()}))
+          -> map(|l| Message::ChatMsg {
+                    nickname: opts.name.clone(),
+                    message: l.unwrap(),
+                    ts: Utc::now()})
           -> [0]msg_send;
 
         // receive and print messages
         messages -> for_each(|m: Message| if let Message::ChatMsg{ nickname, message, ts } = m {
-            // Message::ChatMessage{ nickname, message, ts } => {
                 println!(
                     "{} {}: {}",
                     ts
@@ -68,10 +62,7 @@ pub(crate) async fn run_client(opts: Opts) {
 
         // handle connect ack
         connect_acks[0] -> for_each(|m: Message| println!("connected: {:?}", m));
-        connect_acks[1] -> filter_map(|m: Message| match m {
-            Message::ConnectResponse => Some(()),
-            _ => None
-        }) -> [1]msg_send;
+        connect_acks[1] -> filter_map(|m| is_connect_resp(m)) -> [1]msg_send;
 
     };
 
