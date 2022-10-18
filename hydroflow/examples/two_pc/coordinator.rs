@@ -64,7 +64,7 @@ pub(crate) async fn run_coordinator(opts: Opts, subordinates: Vec<String>) {
                     let e = ht.entry(m.xid).or_insert(0);
                     *e += 1;
                     ht})
-            -> flat_map(|ht| ht)
+            -> flatten()
             -> map(|(xid, c)| (xid, c));
 
         // count subordinates
