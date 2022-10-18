@@ -693,6 +693,7 @@ dependencies = [
  "tokio-stream",
  "tokio-util",
  "tuple_list",
+ "variadic_list",
  "zipf",
 ]
 
@@ -1963,6 +1964,13 @@ name = "utf8-width"
 version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5190c9442dcdaf0ddd50f37420417d219ae5261bbf5db120d0f9bab996c9cba1"
+
+[[package]]
+name = "variadic_list"
+version = "0.1.0"
+dependencies = [
+ "tuple_list",
+]
 
 [[package]]
 name = "vec_map"

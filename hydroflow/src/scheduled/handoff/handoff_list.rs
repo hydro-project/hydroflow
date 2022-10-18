@@ -3,13 +3,13 @@ use sealed::sealed;
 
 use crate::scheduled::graph::HandoffData;
 use crate::scheduled::port::{Polarity, Port, PortCtx};
-use crate::scheduled::type_list::TypeList;
+use crate::scheduled::type_list::Variadic;
 use crate::scheduled::{HandoffId, SubgraphId};
 
 use super::Handoff;
 
 #[sealed]
-pub trait PortList<S>: TypeList
+pub trait PortList<S>: Variadic
 where
     S: Polarity,
 {
@@ -22,7 +22,7 @@ where
         out_handoff_ids: &mut Vec<HandoffId>,
     );
 
-    type Ctx<'a>: TypeList;
+    type Ctx<'a>: Variadic;
     fn make_ctx<'a>(&self, handoffs: &'a [HandoffData]) -> Self::Ctx<'a>;
 }
 #[sealed]
@@ -145,7 +145,7 @@ where
 /// type MyHandoffList = tl!(VecHandoff<usize>, VecHandoff<String>, TeeingHandoff<u32>);
 /// ```
 #[sealed]
-pub trait HandoffList: TypeList {}
+pub trait HandoffList: Variadic {}
 #[sealed]
 impl<H, L> HandoffList for (H, L)
 where
