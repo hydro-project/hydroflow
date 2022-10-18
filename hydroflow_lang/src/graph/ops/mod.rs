@@ -274,6 +274,47 @@ pub const OPERATORS: [OperatorConstraints; 24] = [
         }),
     },
     OperatorConstraints {
+        name: "split",
+        hard_range_inn: RANGE_1,
+        soft_range_inn: RANGE_1,
+        hard_range_out: RANGE_ANY,
+        soft_range_out: &(2..),
+        num_args: 0,
+        input_delaytype_fn: &|_| None,
+        write_fn: &(|&WriteContextArgs { root, op_span, .. },
+                     &WriteIteratorArgs {
+                         ident,
+                         inputs,
+                         outputs,
+                         is_pull,
+                         ..
+                     }| {
+            let write_iterator = if !is_pull {
+                let tees = outputs
+                    .iter()
+                    .rev()
+                    .map(|i| i.to_token_stream())
+                    .reduce(|b, a| quote_spanned! {op_span=> #root::pusherator::split::Split::new(#a, #b) })
+                    .unwrap_or_else(
+                        || quote_spanned! {op_span=> #root::pusherator::for_each::ForEach::new(std::mem::drop) },
+                    );
+                quote_spanned! {op_span=>
+                    let #ident = #tees;
+                }
+            } else {
+                assert_eq!(1, inputs.len());
+                let input = &inputs[0];
+                quote_spanned! {op_span=>
+                    let #ident = #input;
+                }
+            };
+            OperatorWriteOutput {
+                write_iterator,
+                ..Default::default()
+            }
+        }),
+    },
+    OperatorConstraints {
         name: "identity",
         hard_range_inn: RANGE_1,
         soft_range_inn: RANGE_1,

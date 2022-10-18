@@ -114,6 +114,24 @@ pub fn test_large_diamond() {
     df.run_available();
 }
 
+#[test]
+pub fn test_split() {
+    let (out_send_a, mut out_recv_a) = hydroflow::util::unbounded_channel::<usize>();
+    let (out_send_b, mut out_recv_b) = hydroflow::util::unbounded_channel::<usize>();
+
+    let mut df = hydroflow_syntax! {
+        s = recv_iter(0..10) -> map(|x| if 0 == x % 2 { (Some(x), None) } else { (None, Some(x)) }) -> split();
+        s[0] -> filter_map(std::convert::identity) -> for_each(|x| out_send_a.send(x).unwrap());
+        s[1] -> filter_map(std::convert::identity) -> for_each(|x| out_send_b.send(x).unwrap());
+    };
+    df.run_available();
+
+    let out_a: Vec<_> = recv_into(&mut out_recv_a);
+    let out_b: Vec<_> = recv_into(&mut out_recv_b);
+    assert_eq!(&[0, 2, 4, 6, 8], &*out_a);
+    assert_eq!(&[1, 3, 5, 7, 9], &*out_b);
+}
+
 /// Test that recv_stream can handle "complex" expressions.
 #[test]
 pub fn test_recv_expr() {
