@@ -286,6 +286,15 @@
 <span id="286">286</span>
 <span id="287">287</span>
 <span id="288">288</span>
+<span id="289">289</span>
+<span id="290">290</span>
+<span id="291">291</span>
+<span id="292">292</span>
+<span id="293">293</span>
+<span id="294">294</span>
+<span id="295">295</span>
+<span id="296">296</span>
+<span id="297">297</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Pusherator generics and argument order conventions:
 //! - `Next` (being the next owned pusherator) should come first in generic
 //!   arguments.
@@ -301,6 +310,7 @@
 <span class="kw">pub mod </span>filter_map;
 <span class="kw">pub mod </span>flatten;
 <span class="kw">pub mod </span>for_each;
+<span class="kw">pub mod </span>inspect;
 <span class="kw">pub mod </span>map;
 <span class="kw">pub mod </span>partition;
 <span class="kw">pub mod </span>pivot;
@@ -337,6 +347,14 @@
         Func: FnMut(<span class="self">Self</span>::ItemOut) -&gt; Out,
     {
         map::MapBuild::new(<span class="self">self</span>, func)
+    }
+
+    <span class="kw">fn </span>inspect&lt;Func&gt;(<span class="self">self</span>, func: Func) -&gt; inspect::InspectBuild&lt;<span class="self">Self</span>, Func&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: Sized,
+        Func: FnMut(<span class="kw-2">&amp;</span><span class="self">Self</span>::ItemOut),
+    {
+        inspect::InspectBuild::new(<span class="self">self</span>, func)
     }
 
     <span class="kw">fn </span>filter&lt;Func&gt;(<span class="self">self</span>, func: Func) -&gt; filter::FilterBuild&lt;<span class="self">Self</span>, Func&gt;
@@ -575,4 +593,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="pusherator" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0-nightly (b8b5caee0 2022-10-16)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="pusherator" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0-nightly (06f049a35 2022-10-17)" ></div></body></html>
