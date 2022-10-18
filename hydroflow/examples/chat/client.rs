@@ -63,7 +63,7 @@ pub(crate) async fn run_client(opts: Opts) {
 
         // handle connect ack
         connect_acks[0] -> for_each(|m: Message| println!("connected: {:?}", m));
-        connect_acks[1] -> filter_map(|m| is_connect_resp(m)) -> [1]msg_send;
+        connect_acks[1] -> filter_map(is_connect_resp) -> [1]msg_send;
 
     };
 

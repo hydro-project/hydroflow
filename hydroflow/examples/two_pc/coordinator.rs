@@ -48,7 +48,7 @@ pub(crate) async fn run_coordinator(opts: Opts, subordinates: Vec<String>) {
         // Given a transaction commit request from stdio, broadcast a Prepare to subordinates
         recv_stream(stdin_lines)
             -> filter_map(|l: Result<std::string::String, std::io::Error>| parse_out(l.unwrap()))
-            -> map(|xid| CoordMsg{xid: xid, mtype: MsgType::Prepare})
+            -> map(|xid| CoordMsg{xid, mtype: MsgType::Prepare})
             -> [0]broadcast;
 
         // Phase 1 responses:
@@ -74,7 +74,7 @@ pub(crate) async fn run_coordinator(opts: Opts, subordinates: Vec<String>) {
         committed = join() -> map(|(_c, (xid, ()))| xid);
         commit_votes -> map(|(xid, c)| (c, xid)) -> [0]committed;
         subord_total -> map(|c| (c, ())) -> [1]committed;
-        committed -> map(|xid| CoordMsg{xid: xid, mtype: MsgType::Commit}) -> [2]broadcast;
+        committed -> map(|xid| CoordMsg{xid, mtype: MsgType::Commit}) -> [2]broadcast;
 
         // Handle p2 acknowledgments by sending an End message
         p2_ack_chan -> map(|m:SubordResponse| CoordMsg{xid: m.xid, mtype: MsgType::End,})
