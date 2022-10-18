@@ -412,9 +412,7 @@ pub const OPERATORS: [OperatorConstraints; 24] = [
             } else {
                 let output = &outputs[0];
                 quote_spanned! {op_span=>
-                    let #ident = #root::pusherator::map::Map::new(
-                        #root::pusherator::flatten::Flatten::new(#output)
-                    );
+                    let #ident = #root::pusherator::flatten::Flatten::new(#output);
                 }
             };
             OperatorWriteOutput {
