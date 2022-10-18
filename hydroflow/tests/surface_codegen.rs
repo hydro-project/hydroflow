@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use hydroflow::hydroflow_syntax;
 use hydroflow::scheduled::graph::Hydroflow;
@@ -170,6 +170,27 @@ pub fn test_cross_join() {
         for c in ["a", "b", "c"] {
             assert!(out.contains(&(n, c)));
         }
+    }
+}
+
+#[test]
+pub fn test_flatten() {
+    let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<(u8, u8)>();
+
+    let mut df = hydroflow_syntax! {
+        recv_iter([(1,1), (1,2), (2,3), (2,4)])
+        -> fold(HashMap::<u8,u8>::new(), |mut ht, t:(u8,u8)| {
+                let e = ht.entry(t.0).or_insert(0);
+                *e += t.1;
+                ht})
+        -> flatten()
+        -> for_each(|(k,v)| out_send.send((k,v)).unwrap());
+    };
+    df.run_available();
+
+    let out: HashSet<_> = recv_into(&mut out_recv);
+    for pair in [(1, 3), (2, 7)] {
+        assert!(out.contains(&pair));
     }
 }
 
