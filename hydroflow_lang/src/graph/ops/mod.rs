@@ -100,7 +100,7 @@ pub const IDENTITY_WRITE_FN: &'static dyn Fn(
     }
 });
 
-pub const OPERATORS: [OperatorConstraints; 23] = [
+pub const OPERATORS: [OperatorConstraints; 24] = [
     OperatorConstraints {
         name: "null",
         hard_range_inn: RANGE_ANY,
@@ -380,6 +380,39 @@ pub const OPERATORS: [OperatorConstraints; 23] = [
                         #arguments,
                         #root::pusherator::flatten::Flatten::new(#output)
                     );
+                }
+            };
+            OperatorWriteOutput {
+                write_iterator,
+                ..Default::default()
+            }
+        }),
+    },
+    OperatorConstraints {
+        name: "flatten",
+        hard_range_inn: RANGE_1,
+        soft_range_inn: RANGE_1,
+        hard_range_out: RANGE_1,
+        soft_range_out: RANGE_1,
+        num_args: 0,
+        input_delaytype_fn: &|_| None,
+        write_fn: &(|&WriteContextArgs { root, op_span, .. },
+                     &WriteIteratorArgs {
+                         ident,
+                         inputs,
+                         outputs,
+                         is_pull,
+                         ..
+                     }| {
+            let write_iterator = if is_pull {
+                let input = &inputs[0];
+                quote_spanned! {op_span=>
+                    let #ident = #input.flatten();
+                }
+            } else {
+                let output = &outputs[0];
+                quote_spanned! {op_span=>
+                    let #ident = #root::pusherator::flatten::Flatten::new(#output);
                 }
             };
             OperatorWriteOutput {
