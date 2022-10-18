@@ -2,6 +2,7 @@ use std::collections::{HashMap, HashSet};
 
 use hydroflow::hydroflow_syntax;
 use hydroflow::scheduled::graph::Hydroflow;
+use hydroflow::util::Split;
 use tokio::task::LocalSet;
 use tokio_stream::wrappers::UnboundedReceiverStream;
 
@@ -116,13 +117,23 @@ pub fn test_large_diamond() {
 
 #[test]
 pub fn test_split() {
+    use hydroflow::{tl, tt};
+
     let (out_send_a, mut out_recv_a) = hydroflow::util::unbounded_channel::<usize>();
     let (out_send_b, mut out_recv_b) = hydroflow::util::unbounded_channel::<usize>();
 
+    fn split_even_odd(x: usize) -> tt!(Option<usize>, Option<usize>) {
+        if 0 == x % 2 {
+            tl!(Some(x), None)
+        } else {
+            tl!(None, Some(x))
+        }
+    }
+
     let mut df = hydroflow_syntax! {
-        s = recv_iter(0..10) -> map(|x| if 0 == x % 2 { (Some(x), None) } else { (None, Some(x)) }) -> split();
-        s[0] -> filter_map(std::convert::identity) -> for_each(|x| out_send_a.send(x).unwrap());
-        s[1] -> filter_map(std::convert::identity) -> for_each(|x| out_send_b.send(x).unwrap());
+        s = recv_iter(0..10) -> map(split_even_odd) -> split();
+        s[0] -> flatten() -> for_each(|x| out_send_a.send(x).unwrap());
+        s[1] -> flatten() -> for_each(|x| out_send_b.send(x).unwrap());
     };
     df.run_available();
 
@@ -130,6 +141,49 @@ pub fn test_split() {
     let out_b: Vec<_> = recv_into(&mut out_recv_b);
     assert_eq!(&[0, 2, 4, 6, 8], &*out_a);
     assert_eq!(&[1, 3, 5, 7, 9], &*out_b);
+}
+
+#[test]
+pub fn test_split_enum() {
+    #[derive(Split, Debug)]
+    pub enum Value {
+        Integer(u32),
+        String(&'static str),
+        Null,
+        Point { x: f32, y: f32 },
+    }
+
+    let (in_send, in_recv) = hydroflow::util::unbounded_channel::<Value>();
+
+    let (out_send_integer, mut out_recv_integer) = hydroflow::util::unbounded_channel::<u32>();
+    let (out_send_string, mut out_recv_string) =
+        hydroflow::util::unbounded_channel::<&'static str>();
+    let (out_send_null, mut out_recv_null) = hydroflow::util::unbounded_channel::<()>();
+    let (out_send_point, mut out_recv_point) = hydroflow::util::unbounded_channel::<(f32, f32)>();
+
+    let mut df = hydroflow_syntax! {
+        s = recv_stream(in_recv) -> split();
+        s[0] -> flatten() -> for_each(|(x,)| out_send_integer.send(x).unwrap());
+        s[1] -> flatten() -> for_each(|(s,)| out_send_string.send(s).unwrap());
+        s[2] -> flatten() -> for_each(|()| out_send_null.send(()).unwrap());
+        s[3] -> flatten() -> for_each(|(x, y)| out_send_point.send((x, y)).unwrap());
+    };
+
+    in_send.send(Value::Integer(100)).unwrap();
+    in_send.send(Value::String("Hello World")).unwrap();
+    in_send.send(Value::String("Bye World")).unwrap();
+    in_send.send(Value::Null).unwrap();
+    in_send.send(Value::Point { x: 0.5, y: 1.2 }).unwrap();
+    in_send.send(Value::Integer(22)).unwrap();
+    df.run_available();
+
+    assert_eq!(&[100, 22], &*recv_into::<Vec<_>, _>(&mut out_recv_integer));
+    assert_eq!(
+        &["Hello World", "Bye World"],
+        &*recv_into::<Vec<_>, _>(&mut out_recv_string)
+    );
+    assert_eq!(&[()], &*recv_into::<Vec<_>, _>(&mut out_recv_null));
+    assert_eq!(&[(0.5, 1.2)], &*recv_into::<Vec<_>, _>(&mut out_recv_point));
 }
 
 /// Test that recv_stream can handle "complex" expressions.

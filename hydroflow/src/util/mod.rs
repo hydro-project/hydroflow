@@ -14,6 +14,7 @@ use tokio::net::UdpSocket;
 use tokio_util::codec::length_delimited::LengthDelimitedCodec;
 use tokio_util::codec::{Decoder, Encoder, LinesCodec};
 use tokio_util::udp::UdpFramed;
+use variadic_list::Variadic;
 
 pub fn unbounded_channel<T>() -> (
     tokio::sync::mpsc::UnboundedSender<T>,
@@ -95,4 +96,20 @@ where
         _phantom: PhantomData,
     };
     collect_ready.await
+}
+
+/// Trait for splitting enums. Use `#[derive(Split)]`
+pub use hydroflow_macro::Split;
+pub trait Split {
+    type Split: Variadic;
+    fn split(self) -> Self::Split;
+}
+impl<V> Split for V
+where
+    V: Variadic,
+{
+    type Split = Self;
+    fn split(self) -> Self::Split {
+        self
+    }
 }

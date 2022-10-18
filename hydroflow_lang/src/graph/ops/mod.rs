@@ -100,7 +100,7 @@ pub const IDENTITY_WRITE_FN: &'static dyn Fn(
     }
 });
 
-pub const OPERATORS: [OperatorConstraints; 24] = [
+pub const OPERATORS: [OperatorConstraints; 25] = [
     OperatorConstraints {
         name: "null",
         hard_range_inn: RANGE_ANY,
@@ -290,22 +290,23 @@ pub const OPERATORS: [OperatorConstraints; 24] = [
                          ..
                      }| {
             let write_iterator = if !is_pull {
-                let tees = outputs
-                    .iter()
-                    .rev()
-                    .map(|i| i.to_token_stream())
-                    .reduce(|b, a| quote_spanned! {op_span=> #root::pusherator::split::Split::new(#a, #b) })
-                    .unwrap_or_else(
-                        || quote_spanned! {op_span=> #root::pusherator::for_each::ForEach::new(std::mem::drop) },
-                    );
+                let mut code = quote_spanned! {op_span=>
+                    #root::pusherator::for_each::ForEach::new(std::mem::drop)
+                };
+                for output_ident in outputs.iter().rev() {
+                    code = quote_spanned! {op_span=>
+                        #root::pusherator::split::Split::new( #output_ident, #code )
+                    };
+                }
                 quote_spanned! {op_span=>
-                    let #ident = #tees;
+                    let #ident = #code;
+                    let #ident = #root::pusherator::map::Map::new(#root::util::Split::split, #ident);
                 }
             } else {
                 assert_eq!(1, inputs.len());
                 let input = &inputs[0];
                 quote_spanned! {op_span=>
-                    let #ident = #input;
+                    let #ident = #input.map(#root::util::Split::split).map(|tl!(opt_item)| opt_item);
                 }
             };
             OperatorWriteOutput {
