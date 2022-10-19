@@ -1,112 +1,83 @@
 use chrono::prelude::*;
 use colored::Colorize;
 
-use crate::protocol::{ChatMessage, MemberRequest, MemberResponse};
+use crate::helpers::{deserialize_msg, is_chat_msg, is_connect_resp, serialize_msg};
+use crate::protocol::Message;
 use crate::{GraphType, Opts};
-use hydroflow::builder::prelude::*;
-use hydroflow::scheduled::handoff::VecHandoff;
+use chrono::Utc;
+use hydroflow::hydroflow_syntax;
+use std::net::SocketAddr;
+use tokio::io::AsyncBufReadExt;
+use tokio::net::UdpSocket;
+use tokio_stream::wrappers::LinesStream;
 
 pub(crate) async fn run_client(opts: Opts) {
-    let mut hf = HydroflowBuilder::default();
+    // set up network and I/O channels
+    let server_addr: SocketAddr = format!("{}:{}", opts.addr, opts.port).parse().unwrap();
 
-    // setup connection req/resp ports
-    let connect_req = hf.hydroflow.outbound_tcp_vertex::<MemberRequest>().await;
-    let connect_req = hf.wrap_output(connect_req);
-    let (connect_response_port, connect_resp) =
-        hf.hydroflow.inbound_tcp_vertex::<MemberResponse>().await;
-    let connect_resp = hf.wrap_input(connect_resp);
+    let client_socket = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+    let client_addr = client_socket.local_addr().unwrap();
+    let (outbound, inbound) = hydroflow::util::udp_lines(client_socket);
 
-    // setup message send/recv ports
-    let (messages_port, messages_recv) = hf.hydroflow.inbound_tcp_vertex::<ChatMessage>().await;
-    let messages_recv = hf.wrap_input(messages_recv);
-    let messages_send = hf.hydroflow.outbound_tcp_vertex().await;
-    let messages_send = hf.wrap_output(messages_send);
+    let reader = tokio::io::BufReader::new(tokio::io::stdin());
+    let stdin_lines = LinesStream::new(reader.lines());
+    println!("Client live!");
 
-    // setup stdio input handler
-    let text_out = {
-        use futures::stream::StreamExt;
-        use tokio::io::AsyncBufReadExt;
-        let reader = tokio::io::BufReader::new(tokio::io::stdin());
-        let lines = tokio_stream::wrappers::LinesStream::new(reader.lines())
-            .map(|result| Some(result.expect("Failed to read stdin as UTF-8.")));
-        hf.add_input_from_stream::<_, _, VecHandoff<String>, _>("stdin", lines)
-    };
+    let mut hf = hydroflow_syntax! {
+        // set up channels
+        outbound_chan = merge() -> map(|(m,a)| (serialize_msg(m), a)) -> sink_async(outbound);
+        inbound_chan = recv_stream(inbound) -> map(deserialize_msg) -> tee();
+        connect_acks = inbound_chan[0] -> filter_map(is_connect_resp) -> tee();
+        messages = inbound_chan[1] -> filter_map(is_chat_msg);
 
-    // format addresses
-    let addr = format!("localhost:{}", opts.port);
-    let connect_addr = format!("localhost:{}", connect_response_port);
-    let messages_addr = format!("localhost:{}", messages_port);
-
-    // set up the flow for requesting to be a member
-    let init_info = (
-        addr,
-        MemberRequest {
+        // send a single connection request on startup
+        recv_iter([()]) -> map(|_m| (Message::ConnectRequest {
             nickname: opts.name.clone(),
-            connect_addr,
-            messages_addr,
-        },
-    );
-    hf.add_subgraph(
-        "my_info",
-        std::iter::once(Some(init_info))
-            .into_hydroflow()
-            .pull_to_push()
-            .push_to(connect_req),
-    );
+            addr: client_addr,
+        }, server_addr)) -> [0]outbound_chan;
 
-    let nickname = opts.name.clone();
-    let nick2 = nickname.clone();
-    // set up the flow for sending messages
-    let sg = connect_resp
-        .flatten()
-        .cross_join(text_out.flatten())
-        .pull_to_push()
-        .map(move |(member_response, text)| {
-            (
-                format!("localhost:{}", member_response.messages_port),
-                ChatMessage {
-                    nickname: nickname.to_string(),
-                    message: text,
-                    ts: Utc::now(),
-                },
-            )
-        })
-        .map(Some)
-        .push_to(messages_send);
-    hf.add_subgraph("sending messages", sg);
+        // take stdin and send to server as a msg
+        // the join serves to postpone msgs until the connection request is acked
+        msg_send = cross_join() -> map(|(msg, _)| (msg, server_addr)) -> [1]outbound_chan;
+        lines = recv_stream(stdin_lines)
+          -> map(|l| Message::ChatMsg {
+                    nickname: opts.name.clone(),
+                    message: l.unwrap(),
+                    ts: Utc::now()})
+          -> [0]msg_send;
 
-    // set up the flow for receiving messages
-    hf.add_subgraph(
-        "receiving messages",
-        messages_recv
-            .flatten()
-            .filter(move |x| x.nickname != nick2)
-            .pull_to_push()
-            .for_each(move |msg| {
+        // receive and print messages
+        messages -> for_each(|m: Message| if let Message::ChatMsg{ nickname, message, ts } = m {
                 println!(
                     "{} {}: {}",
-                    msg.ts
+                    ts
                         .with_timezone(&Local)
                         .format("%b %-d, %-I:%M:%S")
                         .to_string()
                         .truecolor(126, 126, 126)
                         .italic(),
-                    msg.nickname.green().italic(),
-                    msg.message,
+                    nickname.green().italic(),
+                    message,
                 );
-            }),
-    );
+        });
 
-    let mut hf = hf.build();
-    match opts.graph {
-        GraphType::Mermaid => {
-            println!("{}", hf.generate_mermaid())
-        }
-        GraphType::Dot => {
-            println!("{}", hf.generate_dot())
-        }
-        GraphType::Json => {
-            println!("{}", hf.generate_json())
+        // handle connect ack
+        connect_acks[0] -> for_each(|m: Message| println!("connected: {:?}", m));
+        connect_acks[1] -> filter_map(is_connect_resp) -> [1]msg_send;
+
+    };
+
+    if let Some(graph) = opts.graph {
+        match graph {
+            GraphType::Mermaid => {
+                println!("{}", hf.generate_mermaid())
+            }
+            GraphType::Dot => {
+                println!("{}", hf.generate_dot())
+            }
+            GraphType::Json => {
+                println!("{}", hf.generate_json())
+            }
         }
     }
     hf.run_async().await.unwrap();

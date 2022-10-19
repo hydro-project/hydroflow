@@ -10,7 +10,6 @@ use std::io::BufReader;
 use std::path::Path;
 
 mod coordinator;
-mod helpers;
 mod protocol;
 mod subordinate;
 
@@ -40,7 +39,7 @@ struct Opts {
     #[clap(long)]
     addr: String,
     #[clap(arg_enum, long)]
-    graph: Option<GraphType>,
+    graph: GraphType,
 }
 
 #[derive(Deserialize, Debug)]
