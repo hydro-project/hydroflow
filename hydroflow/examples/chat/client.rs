@@ -68,15 +68,19 @@ pub(crate) async fn run_client(opts: Opts) {
     };
 
     if let Some(graph) = opts.graph {
+        let serde_graph = hf
+            .serde_graph()
+            .expect("No graph found, maybe failed to parse.");
         match graph {
             GraphType::Mermaid => {
-                println!("{}", hf.generate_mermaid())
+                println!("{}", serde_graph.to_mermaid());
             }
             GraphType::Dot => {
-                println!("{}", hf.generate_dot())
+                println!("{}", serde_graph.to_dot())
             }
             GraphType::Json => {
-                println!("{}", hf.generate_json())
+                unimplemented!();
+                // println!("{}", serde_graph.to_json())
             }
         }
     }
