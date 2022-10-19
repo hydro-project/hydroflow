@@ -1,96 +1,48 @@
 use crate::{GraphType, Opts};
 
-use crate::protocol::{ChatMessage, MemberRequest, MemberResponse};
-use chrono::prelude::*;
-use hydroflow::builder::prelude::*;
-use hydroflow::scheduled::handoff::VecHandoff;
+use crate::helpers::{
+    connect_get_addr, deserialize_msg, is_chat_msg, is_connect_req, serialize_msg,
+};
+use crate::protocol::Message;
+
+use hydroflow::hydroflow_syntax;
+use hydroflow::scheduled::graph::Hydroflow;
+use tokio::net::UdpSocket;
 
 pub(crate) async fn run_server(opts: Opts) {
-    let mut hf = HydroflowBuilder::default();
+    // First, set up the socket
+    let server_socket = UdpSocket::bind(("127.0.0.1", opts.port)).await.unwrap();
+    let (outbound, inbound) = hydroflow::util::udp_lines(server_socket);
+    println!("Server live!");
 
-    let members_in = hf
-        .hydroflow
-        .inbound_tcp_vertex_port::<MemberRequest>(opts.port)
-        .await;
-    let members_in = hf.wrap_input(members_in);
-    println!("Listening for member joins on {}", opts.port);
+    let mut df: Hydroflow = hydroflow_syntax! {
+        // NW channels
+        outbound_chan = merge() -> map(|(m,a)| (serialize_msg(m), a)) -> sink_async(outbound);
+        inbound_chan = recv_stream(inbound) -> map(deserialize_msg) -> tee();
+        members = inbound_chan[0] -> filter_map(is_connect_req)
+                                  -> filter_map(connect_get_addr) -> tee();
+        msgs = inbound_chan[1] -> filter_map(is_chat_msg);
 
-    let members_out = hf.hydroflow.outbound_tcp_vertex::<MemberResponse>().await;
-    let members_out = hf.wrap_output(members_out);
+        // Logic
+        members[0] -> map(|addr| (Message::ConnectResponse, addr)) -> [0]outbound_chan;
+        broadcast = cross_join() -> [1]outbound_chan;
+        msgs -> [0]broadcast;
+        members[1] -> [1]broadcast;
+    };
 
-    let (port, msgs_in) = hf.hydroflow.inbound_tcp_vertex::<ChatMessage>().await;
-    let msgs_in = hf.wrap_input(msgs_in);
-    println!("Listening for messages on {}", port);
-
-    let messages_out = hf.hydroflow.outbound_tcp_vertex::<ChatMessage>().await;
-    let messages_out = hf.wrap_output(messages_out);
-
-    // we're going to tee the output of members_in to 2 destinations.
-    // 1. acknowledge with messages_port via members_out
-    let membership_response = hf
-        .start_tee()
-        .map(move |req: MemberRequest| {
-            Some((
-                req.connect_addr,
-                MemberResponse {
-                    messages_port: port,
-                },
-            ))
-        })
-        .push_to(members_out);
-
-    // 2. feed new members into the join
-    // But first, we need a buffer to turn push into pull for cross_join.
-    let (memberships_push, memberships_pull) =
-        hf.make_edge::<_, VecHandoff<String>, Option<String>>("memberships");
-    // and now the other start_tee
-    let member_join_input = hf
-        .start_tee()
-        .map(|req: MemberRequest| req.messages_addr)
-        .map(Some)
-        .push_to(memberships_push);
-
-    // Now assemble the prelude to the tee
-    let sg = members_in
-        .flatten()
-        .pull_to_push()
-        .tee(membership_response, member_join_input);
-    hf.add_subgraph("tee members", sg);
-
-    // And assemble the cross-join of msgs_in and members_in, flowing to members_out
-    let msgs_in = msgs_in.flatten();
-
-    let sg = memberships_pull
-        .flatten()
-        .cross_join(msgs_in)
-        .map(|(addr, msg)| {
-            Some((
-                addr,
-                ChatMessage {
-                    nickname: msg.nickname,
-                    message: msg.message,
-                    ts: Utc::now(),
-                },
-            ))
-        })
-        .pull_to_push()
-        .push_to(messages_out);
-
-    hf.add_subgraph("main cross-join", sg);
-
-    let mut hf = hf.build();
-
-    match opts.graph {
-        GraphType::Mermaid => {
-            println!("{}", hf.generate_mermaid())
-        }
-        GraphType::Dot => {
-            println!("{}", hf.generate_dot())
-        }
-        GraphType::Json => {
-            println!("{}", hf.generate_json())
+    if let Some(graph) = opts.graph {
+        match graph {
+            GraphType::Mermaid => {
+                println!("{}", df.generate_mermaid())
+            }
+            GraphType::Dot => {
+                println!("{}", df.generate_dot())
+            }
+            GraphType::Json => {
+                println!("{}", df.generate_json())
+            }
         }
     }
 
-    hf.run_async().await.unwrap();
+    df.run_async().await.unwrap();
 }

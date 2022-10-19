@@ -1,8 +1,8 @@
 {
-    "coordinator": "localhost:12346",
+    "coordinator": "127.0.0.1:12346",
     "subordinates": [
-        "localhost:12347",
-        "localhost:12348",
-        "localhost:12349"
+        "127.0.0.1:12347",
+        "127.0.0.1:12348",
+        "127.0.0.1:12349"
     ]
 }

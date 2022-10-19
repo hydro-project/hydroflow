@@ -14,12 +14,14 @@ pub enum MsgType {
 #[derive(PartialEq, Eq, Clone, Serialize, Deserialize, Debug)]
 pub struct CoordMsg {
     pub xid: u16,
+    pub mid: u16,
     pub mtype: MsgType,
 }
 /// Member Response
 #[derive(PartialEq, Eq, Clone, Serialize, Deserialize, Debug)]
 pub struct SubordResponse {
     pub xid: u16,
+    pub mid: u16,
     pub addr: String,
     pub mtype: MsgType,
 }

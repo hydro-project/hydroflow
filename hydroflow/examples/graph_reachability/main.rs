@@ -1,8 +1,7 @@
 use clap::{ArgEnum, Parser};
-use hydroflow::builder::prelude::*;
-use hydroflow::scheduled::handoff::VecHandoff;
+use hydroflow::hydroflow_syntax;
 
-#[derive(Clone, ArgEnum, Debug)]
+#[derive(Parser, Debug, Clone, ArgEnum)]
 enum GraphType {
     Mermaid,
     Dot,
@@ -11,55 +10,57 @@ enum GraphType {
 #[derive(Parser, Debug)]
 struct Opts {
     #[clap(arg_enum, long)]
-    graph: GraphType,
+    graph: Option<GraphType>,
 }
 pub fn main() {
     let opts = Opts::parse();
-    let mut builder = HydroflowBuilder::default();
+    // An edge in the input data = a pair of `usize` vertex IDs.
+    let (edges_send, edges_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
 
-    let (send_edges, recv_edges) =
-        builder.add_channel_input::<_, _, VecHandoff<(usize, usize)>>("edge input");
-    let (send_loop, recv_loop) = builder.make_edge::<_, VecHandoff<usize>, _>("loop");
+    let mut df = hydroflow_syntax! {
+        reached_vertices = merge() -> map(|v| (v, ()));
+        recv_iter(vec![0]) -> [0]reached_vertices;
 
-    builder.add_subgraph(
-        "main",
-        std::iter::once(0)
-            .into_hydroflow()
-            .chain(recv_loop.flatten())
-            .map(|v| (v, ()))
-            .join(recv_edges.flatten())
-            .pull_to_push()
-            .map(|(_old_v, ((), new_v))| new_v)
-            .tee(
-                builder.start_tee().for_each(|v| println!("Reached: {}", v)),
-                builder.start_tee().map(Some).push_to(send_loop),
-            ),
-    );
+        my_join_tee = join() -> map(|(_src, ((), dst))| dst) -> tee();
+        reached_vertices -> [0]my_join_tee;
+        recv_stream(edges_recv) -> [1]my_join_tee;
 
-    let mut hf = builder.build();
-    match opts.graph {
-        GraphType::Mermaid => {
-            println!("{}", hf.generate_mermaid())
-        }
-        GraphType::Dot => {
-            println!("{}", hf.generate_dot())
-        }
-        GraphType::Json => {
-            println!("{}", hf.generate_json())
+        my_join_tee[0] -> [1]reached_vertices;
+        my_join_tee[1] -> for_each(|x| println!("Reached: {}", x));
+    };
+
+    if let Some(graph) = opts.graph {
+        match graph {
+            GraphType::Mermaid => {
+                println!("{}", df.generate_mermaid())
+            }
+            GraphType::Dot => {
+                println!("{}", df.generate_dot())
+            }
+            GraphType::Json => {
+                println!("{}", df.generate_json())
+            }
         }
     }
 
+    df.run_available();
+
     println!("A");
 
-    send_edges.give(Some((5, 10)));
-    send_edges.give(Some((0, 3)));
-    send_edges.give(Some((3, 6)));
-    send_edges.flush();
-    hf.run_available();
+    edges_send.send((5, 10)).unwrap();
+    edges_send.send((0, 3)).unwrap();
+    edges_send.send((3, 6)).unwrap();
+    df.run_available();
 
     println!("B");
 
-    send_edges.give(Some((6, 5)));
-    send_edges.flush();
-    hf.run_available();
+    edges_send.send((6, 5)).unwrap();
+    df.run_available();
+
+    // A
+    // Reached: 3
+    // Reached: 6
+    // B
+    // Reached: 5
+    // Reached: 10
 }

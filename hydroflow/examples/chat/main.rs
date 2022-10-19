@@ -4,12 +4,9 @@ use hydroflow::tokio;
 use server::run_server;
 
 mod client;
+mod helpers;
 mod protocol;
 mod server;
-
-// This is a distributed version of the covid tracing app. It somewhat
-// arbitrarily splits apart two "responsibilities" of the app to exercise
-// network communication.
 
 #[derive(Clone, ArgEnum, Debug)]
 enum Role {
@@ -34,7 +31,7 @@ struct Opts {
     #[clap(long)]
     addr: String,
     #[clap(arg_enum, long)]
-    graph: GraphType,
+    graph: Option<GraphType>,
 }
 
 #[tokio::main]
