@@ -100,7 +100,7 @@ pub const IDENTITY_WRITE_FN: &'static dyn Fn(
     }
 });
 
-pub const OPERATORS: [OperatorConstraints; 23] = [
+pub const OPERATORS: [OperatorConstraints; 24] = [
     OperatorConstraints {
         name: "null",
         hard_range_inn: RANGE_ANY,

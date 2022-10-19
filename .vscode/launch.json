@@ -228,7 +228,7 @@
                 "--role=coordinator",
                 "--port=12346",
                 "--addr=localhost",
-                "--graph dot"
+                "--graph=mermaid"
             ],
             "cwd": "${workspaceFolder}"
         },

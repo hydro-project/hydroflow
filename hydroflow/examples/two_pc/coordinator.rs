@@ -59,20 +59,26 @@ pub(crate) async fn run_coordinator(opts: Opts, subordinates: Vec<String>) {
             -> [1]broadcast;
 
         // count commit votes
-        commit_votes = votes_chan[2] -> filter_map(is_subord_commit)
-            -> fold(HashMap::new(), |mut ht, m:SubordResponse| {
-                    let e = ht.entry(m.xid).or_insert(0);
-                    *e += 1;
+        // persistence done explicitly here!
+        commit_buf = merge();
+        commit_votes = tee();
+        votes_chan[2] -> filter_map(is_subord_commit)
+            -> map(|m:SubordResponse| (m.xid, 1)) -> [0]commit_buf;
+        commit_buf
+            -> fold(HashMap::new(), |mut ht, (xid, addend)| {
+                    let e = ht.entry(xid).or_insert(0);
+                    *e += addend;
                     ht})
             -> flatten()
-            -> map(|(xid, c)| (xid, c));
+            -> commit_votes;
+        commit_votes[0] -> next_epoch() -> [1]commit_buf;
 
         // count subordinates
         subord_total = subords[0] -> fold(0, |a,_b| a+1); // -> for_each(|n| println!("There are {} subordinates.", n));
 
         // If commit_votes for this xid is the same as all_votes, send a P2 Commit message
         committed = join() -> map(|(_c, (xid, ()))| xid);
-        commit_votes -> map(|(xid, c)| (c, xid)) -> [0]committed;
+        commit_votes[1] -> map(|(xid, c)| (c, xid)) -> [0]committed;
         subord_total -> map(|c| (c, ())) -> [1]committed;
         committed -> map(|xid| CoordMsg{xid, mtype: MsgType::Commit}) -> [2]broadcast;
 
