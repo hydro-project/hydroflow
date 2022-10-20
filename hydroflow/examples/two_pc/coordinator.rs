@@ -35,7 +35,7 @@ pub(crate) async fn run_coordinator(opts: Opts, subordinates: Vec<String>) {
         p2_ack_chan = inbound_chan[1] -> filter_map(is_ackp2_msg);
 
         // we log all messages (in this prototype we just print)
-        inbound_chan[3] -> for_each(|m| println!("Received {:?}", m));
+        inbound_chan[2] -> for_each(|m| println!("Received {:?}", m));
         outbound_chan[1] -> for_each(|(m, a)| println!("Sending {:?} to {:?}", m, a));
 
         // setup broadcast channel to all subords
