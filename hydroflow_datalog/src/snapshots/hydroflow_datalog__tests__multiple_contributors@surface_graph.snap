@@ -1,0 +1,27 @@
+---
+source: hydroflow_datalog/src/lib.rs
+expression: graph.surface_syntax_string()
+---
+1v1 = merge ();
+2v1 = tee ();
+3v1 = merge ();
+4v1 = tee ();
+5v1 = merge ();
+6v1 = tee ();
+7v1 = recv_stream (in1);
+8v1 = recv_stream (in2);
+9v1 = for_each (| v | out . send (v) . unwrap ());
+10v1 = map (| row : (_ , _ ,) | (row . 0 , row . 1 ,));
+11v1 = map (| row : (_ , _ ,) | (row . 1 , row . 0 ,));
+
+(1v1-->2v1);
+(3v1-->4v1);
+(5v1-->6v1);
+(7v1-->1v1);
+(8v1-->3v1);
+(6v1-->9v1);
+(10v1-->5v1);
+(2v1-->10v1);
+(11v1-->5v1);
+(4v1-->11v1);
+
