@@ -1,3 +1,6 @@
+// TODO(mingwei): Need rust-analyzer support
+#![allow(clippy::uninlined_format_args)]
+
 use clap::{ArgEnum, Parser};
 use client::run_client;
 use hydroflow::tokio;

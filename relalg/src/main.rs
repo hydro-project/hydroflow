@@ -1,3 +1,6 @@
+// TODO(mingwei): Need rust-analyzer support
+#![allow(clippy::uninlined_format_args)]
+
 use relalg::{Datum, ScalarExpr};
 
 // Can copy-paste the examples from the tests in here to actually run them.

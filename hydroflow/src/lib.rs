@@ -4,8 +4,9 @@
 #![allow(clippy::let_and_return)]
 #![allow(clippy::iter_with_drain)]
 #![allow(clippy::explicit_auto_deref)]
+// TODO(mingwei): Need rust-analyzer support
+#![allow(clippy::uninlined_format_args)]
 
-pub mod builder;
 pub mod compiled;
 pub mod lang;
 pub mod props;
