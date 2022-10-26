@@ -1,8 +1,0 @@
-{
-    "coordinator": "localhost:12346",
-    "subordinates": [
-        "localhost:12347",
-        "localhost:12348",
-        "localhost:12349"
-    ]
-}

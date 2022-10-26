@@ -1,6 +1,8 @@
 #![allow(dead_code)]
 #![allow(clippy::iter_with_drain)]
 #![allow(clippy::explicit_auto_deref)]
+// TODO(mingwei): Need rust-analyzer support
+#![allow(clippy::uninlined_format_args)]
 
 use anyhow::bail;
 use sexp::Sexp;
