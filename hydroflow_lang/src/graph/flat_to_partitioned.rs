@@ -2,9 +2,11 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use proc_macro2::Span;
 use slotmap::{Key, SecondaryMap, SlotMap};
-use syn::{parse_quote, spanned::Spanned};
+use syn::parse_quote;
+use syn::spanned::Spanned;
 
-use crate::{parse::IndexInt, union_find::UnionFind};
+use crate::parse::PortIndex;
+use crate::union_find::UnionFind;
 
 use super::{
     di_mul_graph::DiMulGraph,
@@ -17,19 +19,19 @@ use super::{
 
 fn find_barrier_crossers(
     nodes: &SlotMap<GraphNodeId, Node>,
-    indices: &SecondaryMap<GraphEdgeId, (IndexInt, IndexInt)>,
+    indices: &SecondaryMap<GraphEdgeId, (Option<PortIndex>, Option<PortIndex>)>,
     graph: &DiMulGraph<GraphNodeId, GraphEdgeId>,
 ) -> SecondaryMap<GraphEdgeId, DelayType> {
     graph
         .edges()
         .filter_map(|(edge_id, (_src, dst))| {
-            let (_src_idx, dst_idx) = indices[edge_id];
+            let (_src_idx, dst_idx) = &indices[edge_id];
             if let Node::Operator(dst_operator) = &nodes[dst] {
                 let dst_name = &*dst_operator.name_string();
                 OPERATORS
                     .iter()
                     .find(|&op| dst_name == op.name)
-                    .and_then(|op_constraints| (op_constraints.input_delaytype_fn)(dst_idx.value))
+                    .and_then(|op_constraints| (op_constraints.input_delaytype_fn)(dst_idx))
                     .map(|input_barrier| (edge_id, input_barrier))
             } else {
                 None
@@ -155,7 +157,7 @@ fn make_subgraph_collect(
 /// the DelayType data.
 fn make_subgraphs(
     nodes: &mut SlotMap<GraphNodeId, Node>,
-    indices: &mut SecondaryMap<GraphEdgeId, (IndexInt, IndexInt)>,
+    indices: &mut SecondaryMap<GraphEdgeId, (Option<PortIndex>, Option<PortIndex>)>,
     graph: &mut DiMulGraph<GraphNodeId, GraphEdgeId>,
     barrier_crossers: &mut SecondaryMap<GraphEdgeId, DelayType>,
 ) -> (
@@ -258,7 +260,7 @@ fn can_connect_colorize(
 
 fn find_subgraph_strata(
     nodes: &mut SlotMap<GraphNodeId, Node>,
-    indices: &mut SecondaryMap<GraphEdgeId, (IndexInt, IndexInt)>,
+    indices: &mut SecondaryMap<GraphEdgeId, (Option<PortIndex>, Option<PortIndex>)>,
     graph: &mut DiMulGraph<GraphNodeId, GraphEdgeId>,
     node_subgraph: &mut SecondaryMap<GraphNodeId, GraphSubgraphId>,
     subgraph_nodes: &mut SlotMap<GraphSubgraphId, Vec<GraphNodeId>>,
@@ -388,7 +390,7 @@ fn find_subgraph_strata(
                 // Any negative edges which go onto the same or previous stratum are bad.
                 // Indicates an unbroken negative cycle.
                 if dst_stratum <= src_stratum {
-                    let (_src_idx, dst_idx) = indices[edge_id];
+                    let (_src_idx, dst_idx) = &indices[edge_id];
                     dst_idx
                         .span()
                         .unwrap()
@@ -498,22 +500,17 @@ impl TryFrom<FlatGraph> for PartitionedGraph {
 /// Returns the ID of X & ID of edge OUT of X.
 fn insert_intermediate_node(
     nodes: &mut SlotMap<GraphNodeId, Node>,
-    indices: &mut SecondaryMap<GraphEdgeId, (IndexInt, IndexInt)>,
+    indices: &mut SecondaryMap<GraphEdgeId, (Option<PortIndex>, Option<PortIndex>)>,
     graph: &mut DiMulGraph<GraphNodeId, GraphEdgeId>,
     node: Node,
     edge_id: GraphEdgeId,
 ) -> (GraphNodeId, GraphEdgeId) {
-    let ii0 = IndexInt {
-        value: 0,
-        span: Span::call_site(),
-    };
-
     let node_id = nodes.insert(node);
     let (e0, e1) = graph.insert_intermediate_node(node_id, edge_id).unwrap();
 
     let (src_idx, dst_idx) = indices.remove(edge_id).unwrap();
-    indices.insert(e0, (src_idx, ii0));
-    indices.insert(e1, (ii0, dst_idx));
+    indices.insert(e0, (src_idx, None));
+    indices.insert(e1, (None, dst_idx));
 
     (node_id, e1)
 }

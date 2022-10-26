@@ -175,10 +175,10 @@ fn generate_rule(
                 // of a single relation on the RHS
                 src: out_expanded.tee_idx.map(|i| Indexing {
                     bracket_token: syn::token::Bracket::default(),
-                    index: IndexInt {
+                    index: hydroflow_lang::parse::PortIndex::Int(IndexInt {
                         value: i,
                         span: Span::call_site(),
-                    },
+                    }),
                 }),
                 arrow: parse_quote!(->),
                 dst: None,
