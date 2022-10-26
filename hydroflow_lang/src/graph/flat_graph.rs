@@ -6,7 +6,7 @@ use syn::spanned::Spanned;
 use syn::Ident;
 
 use crate::graph::ops::{RangeTrait, OPERATORS};
-use crate::parse::{HfCode, HfStatement, IndexInt, Operator, Pipeline};
+use crate::parse::{HfCode, HfStatement, Operator, Pipeline, PortIndex};
 use crate::pretty_span::{PrettyRowCol, PrettySpan};
 
 use super::di_mul_graph::DiMulGraph;
@@ -26,7 +26,7 @@ pub struct FlatGraph {
     /// Graph
     pub(crate) graph: DiMulGraph<GraphNodeId, GraphEdgeId>,
     /// Input and output port for each edge.
-    pub(crate) indices: SecondaryMap<GraphEdgeId, (IndexInt, IndexInt)>,
+    pub(crate) indices: SecondaryMap<GraphEdgeId, (Option<PortIndex>, Option<PortIndex>)>,
 
     /// Variable names, used as [`HfStatement::Named`] are added.
     names: BTreeMap<Ident, Ports>,
@@ -73,54 +73,52 @@ impl FlatGraph {
                 let rhs_ports = self.add_pipeline(*pipeline_link.rhs);
 
                 if let (Some(src), Some(dst)) = (lhs_ports.out, rhs_ports.inn) {
-                    let src_port = connector.src.map(|x| x.index).unwrap_or_else(|| IndexInt {
-                        value: 0,
-                        span: connector.arrow.span(),
-                    });
-                    let dst_port = connector.dst.map(|x| x.index).unwrap_or_else(|| IndexInt {
-                        value: 0,
-                        span: connector.arrow.span(),
-                    });
+                    let src_port = connector.src.map(|x| x.index);
+                    let dst_port = connector.dst.map(|x| x.index);
 
-                    {
-                        /// Helper to emit conflicts when a port is overwritten.
-                        fn emit_conflict(inout: &str, old: IndexInt, new: IndexInt) {
-                            old.span()
-                                .unwrap()
-                                .error(format!(
-                                    "{} connection conflicts with below ({})",
-                                    inout,
-                                    PrettySpan(new.span()),
-                                ))
-                                .emit();
-                            new.span()
-                                .unwrap()
-                                .error(format!(
-                                    "{} connection conflicts with above ({})",
-                                    inout,
-                                    PrettySpan(old.span()),
-                                ))
-                                .emit();
-                        }
+                    // {
+                    //     /// Helper to emit conflicts when a port is overwritten.
+                    //     fn emit_conflict(
+                    //         inout: &str,
+                    //         old: Option<PortIndex>,
+                    //         new: Option<PortIndex>,
+                    //     ) {
+                    //         old.span()
+                    //             .unwrap()
+                    //             .error(format!(
+                    //                 "{} connection conflicts with below ({})",
+                    //                 inout,
+                    //                 PrettySpan(new.span()),
+                    //             ))
+                    //             .emit();
+                    //         new.span()
+                    //             .unwrap()
+                    //             .error(format!(
+                    //                 "{} connection conflicts with above ({})",
+                    //                 inout,
+                    //                 PrettySpan(old.span()),
+                    //             ))
+                    //             .emit();
+                    //     }
 
-                        // Handle src's successor port conflicts:
-                        for conflicting_edge in self
-                            .graph
-                            .successor_edges(src)
-                            .filter(|&e| self.indices[e].0 == src_port)
-                        {
-                            emit_conflict("Output", self.indices[conflicting_edge].0, src_port);
-                        }
+                    //     // Handle src's successor port conflicts:
+                    //     for conflicting_edge in self
+                    //         .graph
+                    //         .successor_edges(src)
+                    //         .filter(|&e| self.indices[e].0 == src_port)
+                    //     {
+                    //         emit_conflict("Output", self.indices[conflicting_edge].0, src_port);
+                    //     }
 
-                        // Handle dst's predecessor port conflicts:
-                        for conflicting_edge in self
-                            .graph
-                            .predecessor_edges(dst)
-                            .filter(|&e| self.indices[e].1 == dst_port)
-                        {
-                            emit_conflict("Input", self.indices[conflicting_edge].1, dst_port);
-                        }
-                    }
+                    //     // Handle dst's predecessor port conflicts:
+                    //     for conflicting_edge in self
+                    //         .graph
+                    //         .predecessor_edges(dst)
+                    //         .filter(|&e| self.indices[e].1 == dst_port)
+                    //     {
+                    //         emit_conflict("Input", self.indices[conflicting_edge].1, dst_port);
+                    //     }
+                    // }
 
                     let e = self.graph.insert_edge(src, dst);
                     self.indices.insert(e, (src_port, dst_port));
@@ -164,6 +162,7 @@ impl FlatGraph {
                     let op_name = &*operator.name_string();
                     match OPERATORS.iter().find(|&op| op_name == op.name) {
                         Some(op_constraints) => {
+                            // Check numer of args
                             if op_constraints.num_args != operator.args.len() {
                                 errored = true;
 
@@ -178,6 +177,7 @@ impl FlatGraph {
                                     .emit();
                             }
 
+                            // Check input/output (port) arity
                             /// Returns true if an error was found.
                             fn emit_arity_error(
                                 operator: &Operator,
@@ -237,6 +237,17 @@ impl FlatGraph {
                                 out_degree,
                                 op_constraints.soft_range_out,
                             );
+
+                            // Check input port indexes/names
+                            // TODO(mingwei): actually check
+                            let _inn_ports = self
+                                .graph
+                                .predecessor_edges(node_key)
+                                .map(|edge_id| &self.indices[edge_id]);
+                            let _out_ports = self
+                                .graph
+                                .successor_edges(node_key)
+                                .map(|edge_id| &self.indices[edge_id]);
                         }
                         None => {
                             operator

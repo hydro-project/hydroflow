@@ -3,7 +3,7 @@ use quote::{quote, quote_spanned, ToTokens};
 use slotmap::{Key, SecondaryMap, SlotMap};
 use syn::spanned::Spanned;
 
-use crate::parse::IndexInt;
+use crate::parse::PortIndex;
 
 use super::di_mul_graph::DiMulGraph;
 use super::flat_graph::FlatGraph;
@@ -19,7 +19,7 @@ pub struct PartitionedGraph {
     /// Graph
     pub(crate) graph: DiMulGraph<GraphNodeId, GraphEdgeId>,
     /// Input and output port for each edge.
-    pub(crate) indices: SecondaryMap<GraphEdgeId, (IndexInt, IndexInt)>,
+    pub(crate) indices: SecondaryMap<GraphEdgeId, (Option<PortIndex>, Option<PortIndex>)>,
     /// Which subgraph each node belongs to.
     pub(crate) node_subgraph: SecondaryMap<GraphNodeId, GraphSubgraphId>,
 
@@ -159,7 +159,7 @@ impl PartitionedGraph {
                                 self.graph.predecessors(node_id).collect();
                             // Ensure sorted by port index.
                             input_edges
-                                .sort_unstable_by_key(|&(edge_id, _pred)| self.indices[edge_id].1);
+                                .sort_unstable_by_key(|&(edge_id, _pred)| &self.indices[edge_id].1);
                             let inputs: Vec<Ident> = input_edges
                                 .into_iter()
                                 .map(|(_edge_id, pred)| self.node_id_as_ident(pred, true))
@@ -170,7 +170,7 @@ impl PartitionedGraph {
                                 self.graph.successors(node_id).collect();
                             // Ensure sorted by port index.
                             output_edges
-                                .sort_unstable_by_key(|&(edge_id, _succ)| self.indices[edge_id].0);
+                                .sort_unstable_by_key(|&(edge_id, _succ)| &self.indices[edge_id].0);
                             let outputs: Vec<Ident> = output_edges
                                 .into_iter()
                                 .map(|(_edge_id, succ)| self.node_id_as_ident(succ, false))

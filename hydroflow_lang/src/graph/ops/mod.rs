@@ -11,6 +11,8 @@ use slotmap::Key;
 use syn::punctuated::Punctuated;
 use syn::{Expr, GenericArgument, Token};
 
+use crate::parse::PortIndex;
+
 use super::{GraphNodeId, GraphSubgraphId};
 
 #[derive(Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Debug)]
@@ -36,7 +38,7 @@ pub struct OperatorConstraints {
     pub num_args: usize,
 
     /// Determines if this input must be preceeded by a stratum barrier.
-    pub input_delaytype_fn: &'static dyn Fn(usize) -> Option<DelayType>,
+    pub input_delaytype_fn: &'static dyn Fn(&Option<PortIndex>) -> Option<DelayType>,
 
     /// Emit code in multiple locations. See [`OperatorWriteOutput`].
     pub write_fn:
@@ -659,7 +661,15 @@ pub const OPERATORS: [OperatorConstraints; 24] = [
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
         num_args: 0,
-        input_delaytype_fn: &|idx| (1 == idx).then_some(DelayType::Stratum),
+        input_delaytype_fn: &|idx| {
+            idx.as_ref().and_then(|port_index| match port_index {
+                PortIndex::Int(idx) if 1 == idx.value => Some(DelayType::Stratum),
+                PortIndex::Path(path) if "neg" == path.to_token_stream().to_string() => {
+                    Some(DelayType::Stratum)
+                }
+                _ => None,
+            })
+        },
         write_fn: &(|wc @ &WriteContextArgs { root, op_span, .. },
                      &WriteIteratorArgs { ident, inputs, .. }| {
             let handle_ident = wc.make_ident("diffdata_handle");
