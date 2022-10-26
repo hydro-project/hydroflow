@@ -35,11 +35,6 @@ mod booktest {
             mod $i {}
         };
     }
-    booktest!(example_1);
-    booktest!(example_2);
-    booktest!(example_3);
-    booktest!(example_4);
-    booktest!(example_5);
 
     booktest!(example_1_surface);
     booktest!(example_2_surface);
