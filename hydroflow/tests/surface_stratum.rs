@@ -1,3 +1,6 @@
+// TODO(mingwei): Need rust-analyzer support
+#![allow(clippy::uninlined_format_args)]
+
 use std::cell::RefCell;
 use std::rc::Rc;
 

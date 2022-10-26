@@ -1,3 +1,6 @@
+// TODO(mingwei): Need rust-analyzer support
+#![allow(clippy::uninlined_format_args)]
+
 //! Surface syntax tests of asynchrony and networking.
 
 use std::collections::HashSet;

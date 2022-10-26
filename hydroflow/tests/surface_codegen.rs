@@ -1,3 +1,6 @@
+// TODO(mingwei): Need rust-analyzer support
+#![allow(clippy::uninlined_format_args)]
+
 use std::collections::{HashMap, HashSet};
 
 use hydroflow::hydroflow_syntax;
