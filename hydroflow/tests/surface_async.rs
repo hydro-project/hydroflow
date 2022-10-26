@@ -5,7 +5,7 @@
 
 use std::collections::HashSet;
 use std::error::Error;
-use std::net::{Ipv4Addr, SocketAddr};
+use std::net::Ipv4Addr;
 use std::time::Duration;
 
 use hydroflow::scheduled::graph::Hydroflow;
@@ -17,16 +17,14 @@ use tokio_stream::wrappers::LinesStream;
 
 #[tokio::test]
 pub async fn test_echo_udp() -> Result<(), Box<dyn Error>> {
-    const SERVER_PORT: u16 = 8099;
-    let server_socket = SocketAddr::new(Ipv4Addr::LOCALHOST.into(), SERVER_PORT);
-
     let local = LocalSet::new();
+
+    let server_socket = UdpSocket::bind((Ipv4Addr::UNSPECIFIED, 0)).await?;
+    let server_addr = server_socket.local_addr()?;
 
     // Server:
     let serv = local.spawn_local(async {
-        let socket = UdpSocket::bind((Ipv4Addr::UNSPECIFIED, SERVER_PORT))
-            .await
-            .unwrap();
+        let socket = server_socket;
         let (udp_send, udp_recv) = hydroflow::util::udp_lines(socket);
         println!("Server live!");
 
@@ -74,7 +72,7 @@ pub async fn test_echo_udp() -> Result<(), Box<dyn Error>> {
             recv[1] -> map(|(s, _addr)| s) -> for_each(|s| seen_send.send(s).unwrap());
 
             // Sending
-            recv_iter([ "Hello", "World" ]) -> map(|s| (s.to_owned(), server_socket)) -> sink_async(send_udp);
+            recv_iter([ "Hello", "World" ]) -> map(|s| (s.to_owned(), server_addr)) -> sink_async(send_udp);
         };
 
         tokio::select! {
@@ -105,7 +103,7 @@ pub async fn test_echo_udp() -> Result<(), Box<dyn Error>> {
             recv[1] -> map(|(s, _addr)| s) -> for_each(|s| seen_send.send(s).unwrap());
 
             // Sending
-            recv_iter([ "Raise", "Count" ]) -> map(|s| (s.to_owned(), server_socket)) -> sink_async(send_udp);
+            recv_iter([ "Raise", "Count" ]) -> map(|s| (s.to_owned(), server_addr)) -> sink_async(send_udp);
         };
 
         tokio::select! {
@@ -131,10 +129,12 @@ pub async fn test_echo_udp() -> Result<(), Box<dyn Error>> {
 pub async fn test_echo_tcp() -> Result<(), Box<dyn Error>> {
     let local = LocalSet::new();
 
-    // Server:
-    let serv = local.spawn_local(async {
-        let listener = TcpListener::bind("localhost:8090").await?;
+    // Port 0 -> picks any available port.
+    let listener = TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, 0)).await?;
+    let addr = listener.local_addr()?;
 
+    // Server:
+    let serv = local.spawn_local(async move {
         let (server_stream, _) = listener.accept().await?;
         let (server_recv, server_send) = server_stream.into_split();
         let lines_recv = LinesStream::new(BufReader::new(server_recv).lines());
@@ -163,8 +163,8 @@ pub async fn test_echo_tcp() -> Result<(), Box<dyn Error>> {
     });
 
     // Client:
-    let client = local.spawn_local(async {
-        let client_stream = TcpStream::connect("localhost:8090").await?;
+    let client = local.spawn_local(async move {
+        let client_stream = TcpStream::connect(addr).await?;
 
         println!("Client connected!");
 
