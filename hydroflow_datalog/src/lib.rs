@@ -1,3 +1,5 @@
+#![feature(proc_macro_diagnostic)]
+
 use std::collections::{HashMap, HashSet};
 
 use hydroflow_lang::{
@@ -22,16 +24,31 @@ fn handle_errors(errors: Vec<ParseError>, literal: &proc_macro2::Literal) {
         let my_span = literal.subspan(error.start + 3..error.end + 3).unwrap();
         match reason {
             ParseErrorReason::UnexpectedToken(msg) => {
-                Diagnostic::spanned(my_span.unwrap(), proc_macro::Level::Error, format!("Unexpected Token: '{msg}'", msg=msg)).emit();
+                Diagnostic::spanned(
+                    my_span.unwrap(),
+                    proc_macro::Level::Error,
+                    format!("Unexpected Token: '{msg}'", msg = msg),
+                )
+                .emit();
             }
             ParseErrorReason::MissingToken(msg) => {
-                Diagnostic::spanned(my_span.unwrap(), proc_macro::Level::Error, format!("Missing Token: '{msg}'", msg=msg)).emit();
+                Diagnostic::spanned(
+                    my_span.unwrap(),
+                    proc_macro::Level::Error,
+                    format!("Missing Token: '{msg}'", msg = msg),
+                )
+                .emit();
             }
             ParseErrorReason::FailedNode(_vec) => {
                 if _vec.is_empty() {
-                    Diagnostic::spanned(my_span.unwrap(), proc_macro::Level::Error, "Failed to parse").emit();
+                    Diagnostic::spanned(
+                        my_span.unwrap(),
+                        proc_macro::Level::Error,
+                        "Failed to parse",
+                    )
+                    .emit();
                 } else {
-                    handle_errors(_vec, literal) 
+                    handle_errors(_vec, literal)
                 }
             }
         }
