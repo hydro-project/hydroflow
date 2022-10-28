@@ -5,21 +5,20 @@ use slotmap::{Key, SecondaryMap, SlotMap};
 use syn::parse_quote;
 use syn::spanned::Spanned;
 
-use crate::parse::PortIndex;
 use crate::union_find::UnionFind;
 
+use super::di_mul_graph::DiMulGraph;
+use super::flat_graph::FlatGraph;
+use super::ops::{DelayType, OPERATORS};
+use super::partitioned_graph::PartitionedGraph;
 use super::{
-    di_mul_graph::DiMulGraph,
-    flat_graph::FlatGraph,
-    graph_algorithms, node_color,
-    ops::{DelayType, OPERATORS},
-    partitioned_graph::PartitionedGraph,
-    Color, GraphEdgeId, GraphNodeId, GraphSubgraphId, Node,
+    graph_algorithms, node_color, Color, GraphEdgeId, GraphNodeId, GraphSubgraphId, Node,
+    PortIndexValue,
 };
 
 fn find_barrier_crossers(
     nodes: &SlotMap<GraphNodeId, Node>,
-    indices: &SecondaryMap<GraphEdgeId, (Option<PortIndex>, Option<PortIndex>)>,
+    indices: &SecondaryMap<GraphEdgeId, (PortIndexValue, PortIndexValue)>,
     graph: &DiMulGraph<GraphNodeId, GraphEdgeId>,
 ) -> SecondaryMap<GraphEdgeId, DelayType> {
     graph
@@ -157,7 +156,7 @@ fn make_subgraph_collect(
 /// the DelayType data.
 fn make_subgraphs(
     nodes: &mut SlotMap<GraphNodeId, Node>,
-    indices: &mut SecondaryMap<GraphEdgeId, (Option<PortIndex>, Option<PortIndex>)>,
+    indices: &mut SecondaryMap<GraphEdgeId, (PortIndexValue, PortIndexValue)>,
     graph: &mut DiMulGraph<GraphNodeId, GraphEdgeId>,
     barrier_crossers: &mut SecondaryMap<GraphEdgeId, DelayType>,
 ) -> (
@@ -260,7 +259,7 @@ fn can_connect_colorize(
 
 fn find_subgraph_strata(
     nodes: &mut SlotMap<GraphNodeId, Node>,
-    indices: &mut SecondaryMap<GraphEdgeId, (Option<PortIndex>, Option<PortIndex>)>,
+    indices: &mut SecondaryMap<GraphEdgeId, (PortIndexValue, PortIndexValue)>,
     graph: &mut DiMulGraph<GraphNodeId, GraphEdgeId>,
     node_subgraph: &mut SecondaryMap<GraphNodeId, GraphSubgraphId>,
     subgraph_nodes: &mut SlotMap<GraphSubgraphId, Vec<GraphNodeId>>,
@@ -500,17 +499,18 @@ impl TryFrom<FlatGraph> for PartitionedGraph {
 /// Returns the ID of X & ID of edge OUT of X.
 fn insert_intermediate_node(
     nodes: &mut SlotMap<GraphNodeId, Node>,
-    indices: &mut SecondaryMap<GraphEdgeId, (Option<PortIndex>, Option<PortIndex>)>,
+    indices: &mut SecondaryMap<GraphEdgeId, (PortIndexValue, PortIndexValue)>,
     graph: &mut DiMulGraph<GraphNodeId, GraphEdgeId>,
     node: Node,
     edge_id: GraphEdgeId,
 ) -> (GraphNodeId, GraphEdgeId) {
+    let span = node.span();
     let node_id = nodes.insert(node);
     let (e0, e1) = graph.insert_intermediate_node(node_id, edge_id).unwrap();
 
     let (src_idx, dst_idx) = indices.remove(edge_id).unwrap();
-    indices.insert(e0, (src_idx, None));
-    indices.insert(e1, (None, dst_idx));
+    indices.insert(e0, (src_idx, PortIndexValue::Elided(span)));
+    indices.insert(e1, (PortIndexValue::Elided(span), dst_idx));
 
     (node_id, e1)
 }
