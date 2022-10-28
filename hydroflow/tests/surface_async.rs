@@ -5,7 +5,7 @@
 
 use std::collections::HashSet;
 use std::error::Error;
-use std::net::Ipv4Addr;
+use std::net::{Ipv4Addr, SocketAddr};
 use std::time::Duration;
 
 use hydroflow::scheduled::graph::Hydroflow;
@@ -21,6 +21,7 @@ pub async fn test_echo_udp() -> Result<(), Box<dyn Error>> {
 
     let server_socket = UdpSocket::bind((Ipv4Addr::UNSPECIFIED, 0)).await?;
     let server_addr = server_socket.local_addr()?;
+    let server_addr: SocketAddr = (Ipv4Addr::LOCALHOST, server_addr.port()).into();
 
     // Server:
     let serv = local.spawn_local(async {

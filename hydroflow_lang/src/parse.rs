@@ -220,7 +220,6 @@ impl ToTokens for Indexing {
 }
 
 /// Port can either be an int or a name (path).
-#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum PortIndex {
     Int(IndexInt),
     Path(ExprPath),
@@ -240,32 +239,6 @@ impl ToTokens for PortIndex {
         match self {
             PortIndex::Int(index_int) => index_int.to_tokens(tokens),
             PortIndex::Path(expr_path) => expr_path.to_tokens(tokens),
-        }
-    }
-}
-impl PartialOrd for PortIndex {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        match (self, other) {
-            (PortIndex::Int(s), PortIndex::Int(o)) => s.partial_cmp(o),
-            (PortIndex::Int(_), PortIndex::Path(_)) => Some(std::cmp::Ordering::Less),
-            (PortIndex::Path(_), PortIndex::Int(_)) => Some(std::cmp::Ordering::Greater),
-            (PortIndex::Path(s), PortIndex::Path(o)) => s
-                .to_token_stream()
-                .to_string()
-                .partial_cmp(&o.to_token_stream().to_string()),
-        }
-    }
-}
-impl Ord for PortIndex {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        match (self, other) {
-            (PortIndex::Int(s), PortIndex::Int(o)) => s.cmp(o),
-            (PortIndex::Int(_), PortIndex::Path(_)) => std::cmp::Ordering::Less,
-            (PortIndex::Path(_), PortIndex::Int(_)) => std::cmp::Ordering::Greater,
-            (PortIndex::Path(s), PortIndex::Path(o)) => s
-                .to_token_stream()
-                .to_string()
-                .cmp(&o.to_token_stream().to_string()),
         }
     }
 }

@@ -26,8 +26,8 @@ pub fn test_difference_a() {
 
     let mut df: Hydroflow = hydroflow_syntax! {
         a = difference();
-        recv_iter([1, 2, 3, 4]) -> [0]a;
-        recv_iter([1, 3, 5, 7]) -> [1]a;
+        recv_iter([1, 2, 3, 4]) -> [pos]a;
+        recv_iter([1, 3, 5, 7]) -> [neg]a;
         a -> for_each(|x| output_inner.borrow_mut().push(x));
     };
     df.run_available();
@@ -46,9 +46,9 @@ pub fn test_difference_b() -> Result<(), SendError<&'static str>> {
 
     let mut df: Hydroflow = hydroflow_syntax! {
         a = difference();
-        recv_stream(inp_recv) -> [0]a;
+        recv_stream(inp_recv) -> [pos]a;
         b = a -> tee();
-        b[0] -> next_epoch() -> [1]a;
+        b[0] -> next_epoch() -> [neg]a;
         b[1] -> for_each(|x| output_inner.borrow_mut().push(x));
     };
 
@@ -186,8 +186,8 @@ pub fn test_surface_syntax_graph_unreachability() {
 
         diff = difference() -> for_each(|x| println!("Not reached: {}", x));
 
-        edges[0] -> flat_map(|(a, b)| [a, b]) -> [0]diff;
-        my_join_tee[1] -> [1]diff;
+        edges[0] -> flat_map(|(a, b)| [a, b]) -> [pos]diff;
+        my_join_tee[1] -> [neg]diff;
     };
 
     println!(

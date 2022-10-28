@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use quote::ToTokens;
 use slotmap::{Key, SecondaryMap, SlotMap};
@@ -6,12 +6,12 @@ use syn::spanned::Spanned;
 use syn::Ident;
 
 use crate::graph::ops::{RangeTrait, OPERATORS};
-use crate::parse::{HfCode, HfStatement, Operator, Pipeline, PortIndex};
+use crate::parse::{HfCode, HfStatement, Operator, Pipeline};
 use crate::pretty_span::{PrettyRowCol, PrettySpan};
 
 use super::di_mul_graph::DiMulGraph;
 use super::partitioned_graph::PartitionedGraph;
-use super::{GraphEdgeId, GraphNodeId, Node};
+use super::{GraphEdgeId, GraphNodeId, Node, PortIndexValue};
 
 /// A graph representing a hydroflow dataflow graph before subgraph partitioning, stratification, and handoff insertion.
 /// I.e. the graph is a simple "flat" without any subgraph heirarchy.
@@ -26,7 +26,7 @@ pub struct FlatGraph {
     /// Graph
     pub(crate) graph: DiMulGraph<GraphNodeId, GraphEdgeId>,
     /// Input and output port for each edge.
-    pub(crate) indices: SecondaryMap<GraphEdgeId, (Option<PortIndex>, Option<PortIndex>)>,
+    pub(crate) indices: SecondaryMap<GraphEdgeId, (PortIndexValue, PortIndexValue)>,
 
     /// Variable names, used as [`HfStatement::Named`] are added.
     names: BTreeMap<Ident, Ports>,
@@ -73,52 +73,59 @@ impl FlatGraph {
                 let rhs_ports = self.add_pipeline(*pipeline_link.rhs);
 
                 if let (Some(src), Some(dst)) = (lhs_ports.out, rhs_ports.inn) {
-                    let src_port = connector.src.map(|x| x.index);
-                    let dst_port = connector.dst.map(|x| x.index);
+                    let (src_port, dst_port) = PortIndexValue::from_arrow_connector(connector);
 
-                    // {
-                    //     /// Helper to emit conflicts when a port is overwritten.
-                    //     fn emit_conflict(
-                    //         inout: &str,
-                    //         old: Option<PortIndex>,
-                    //         new: Option<PortIndex>,
-                    //     ) {
-                    //         old.span()
-                    //             .unwrap()
-                    //             .error(format!(
-                    //                 "{} connection conflicts with below ({})",
-                    //                 inout,
-                    //                 PrettySpan(new.span()),
-                    //             ))
-                    //             .emit();
-                    //         new.span()
-                    //             .unwrap()
-                    //             .error(format!(
-                    //                 "{} connection conflicts with above ({})",
-                    //                 inout,
-                    //                 PrettySpan(old.span()),
-                    //             ))
-                    //             .emit();
-                    //     }
+                    {
+                        /// Helper to emit conflicts when a port is used twice.
+                        fn emit_conflict(inout: &str, old: &PortIndexValue, new: &PortIndexValue) {
+                            old.span()
+                                .unwrap()
+                                .error(format!(
+                                    "{} connection conflicts with below ({})",
+                                    inout,
+                                    PrettySpan(new.span()),
+                                ))
+                                .emit();
+                            new.span()
+                                .unwrap()
+                                .error(format!(
+                                    "{} connection conflicts with above ({})",
+                                    inout,
+                                    PrettySpan(old.span()),
+                                ))
+                                .emit();
+                        }
 
-                    //     // Handle src's successor port conflicts:
-                    //     for conflicting_edge in self
-                    //         .graph
-                    //         .successor_edges(src)
-                    //         .filter(|&e| self.indices[e].0 == src_port)
-                    //     {
-                    //         emit_conflict("Output", self.indices[conflicting_edge].0, src_port);
-                    //     }
+                        // Handle src's successor port conflicts:
+                        if src_port.is_specified() {
+                            for conflicting_edge in self
+                                .graph
+                                .successor_edges(src)
+                                .filter(|&e| self.indices[e].0 == src_port)
+                            {
+                                emit_conflict(
+                                    "Output",
+                                    &self.indices[conflicting_edge].0,
+                                    &src_port,
+                                );
+                            }
+                        }
 
-                    //     // Handle dst's predecessor port conflicts:
-                    //     for conflicting_edge in self
-                    //         .graph
-                    //         .predecessor_edges(dst)
-                    //         .filter(|&e| self.indices[e].1 == dst_port)
-                    //     {
-                    //         emit_conflict("Input", self.indices[conflicting_edge].1, dst_port);
-                    //     }
-                    // }
+                        // Handle dst's predecessor port conflicts:
+                        if dst_port.is_specified() {
+                            for conflicting_edge in self
+                                .graph
+                                .predecessor_edges(dst)
+                                .filter(|&e| self.indices[e].1 == dst_port)
+                            {
+                                emit_conflict(
+                                    "Input",
+                                    &self.indices[conflicting_edge].1,
+                                    &dst_port,
+                                );
+                            }
+                        }
+                    }
 
                     let e = self.graph.insert_edge(src, dst);
                     self.indices.insert(e, (src_port, dst_port));
@@ -239,15 +246,48 @@ impl FlatGraph {
                             );
 
                             // Check input port indexes/names
-                            // TODO(mingwei): actually check
-                            let _inn_ports = self
-                                .graph
-                                .predecessor_edges(node_key)
-                                .map(|edge_id| &self.indices[edge_id]);
-                            let _out_ports = self
-                                .graph
-                                .successor_edges(node_key)
-                                .map(|edge_id| &self.indices[edge_id]);
+                            if let Some(ports_inn_fn) = op_constraints.ports_inn {
+                                let inn_ports: BTreeSet<_> = self
+                                    .graph
+                                    .predecessor_edges(node_key)
+                                    .map(|edge_id| &self.indices[edge_id].1)
+                                    .collect();
+
+                                for expected_port in (ports_inn_fn)() {
+                                    let tokens = expected_port.to_token_stream();
+                                    if !inn_ports.contains(&&expected_port.into()) {
+                                        operator
+                                            .span()
+                                            .unwrap()
+                                            .error(&*format!(
+                                                "Missing expected input port `{}`.",
+                                                tokens
+                                            ))
+                                            .emit();
+                                    }
+                                }
+                            }
+                            if let Some(ports_out_fn) = op_constraints.ports_out {
+                                let out_ports: BTreeSet<_> = self
+                                    .graph
+                                    .successor_edges(node_key)
+                                    .map(|edge_id| &self.indices[edge_id].0)
+                                    .collect();
+
+                                for expected_port in (ports_out_fn)() {
+                                    let tokens = expected_port.to_token_stream();
+                                    if !out_ports.contains(&&expected_port.into()) {
+                                        operator
+                                            .span()
+                                            .unwrap()
+                                            .error(&*format!(
+                                                "Missing expected output port `{}`.",
+                                                tokens
+                                            ))
+                                            .emit();
+                                    }
+                                }
+                            }
                         }
                         None => {
                             operator
