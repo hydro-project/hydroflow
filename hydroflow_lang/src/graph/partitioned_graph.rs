@@ -3,13 +3,11 @@ use quote::{quote, quote_spanned, ToTokens};
 use slotmap::{Key, SecondaryMap, SlotMap};
 use syn::spanned::Spanned;
 
-use crate::parse::PortIndex;
-
 use super::di_mul_graph::DiMulGraph;
 use super::flat_graph::FlatGraph;
 use super::ops::{OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, OPERATORS};
 use super::serde_graph::SerdeGraph;
-use super::{node_color, Color, GraphEdgeId, GraphNodeId, GraphSubgraphId, Node};
+use super::{node_color, Color, GraphEdgeId, GraphNodeId, GraphSubgraphId, Node, PortIndexValue};
 
 #[derive(Default)]
 #[allow(dead_code)] // TODO(mingwei): remove when no longer needed.
@@ -19,7 +17,7 @@ pub struct PartitionedGraph {
     /// Graph
     pub(crate) graph: DiMulGraph<GraphNodeId, GraphEdgeId>,
     /// Input and output port for each edge.
-    pub(crate) indices: SecondaryMap<GraphEdgeId, (Option<PortIndex>, Option<PortIndex>)>,
+    pub(crate) indices: SecondaryMap<GraphEdgeId, (PortIndexValue, PortIndexValue)>,
     /// Which subgraph each node belongs to.
     pub(crate) node_subgraph: SecondaryMap<GraphNodeId, GraphSubgraphId>,
 

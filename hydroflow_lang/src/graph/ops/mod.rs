@@ -9,11 +9,11 @@ use proc_macro2::{Ident, Span, TokenStream};
 use quote::{quote_spanned, ToTokens};
 use slotmap::Key;
 use syn::punctuated::Punctuated;
-use syn::{Expr, GenericArgument, Token};
+use syn::{parse_quote, Expr, GenericArgument, Token};
 
 use crate::parse::PortIndex;
 
-use super::{GraphNodeId, GraphSubgraphId};
+use super::{GraphNodeId, GraphSubgraphId, PortIndexValue};
 
 #[derive(Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Debug)]
 pub enum DelayType {
@@ -37,8 +37,13 @@ pub struct OperatorConstraints {
     /// Number of arguments i.e. `operator(a, b, c)` has `num_args = 3`.
     pub num_args: usize,
 
+    /// What named or numbered input ports to expect?
+    pub ports_inn: Option<&'static dyn Fn() -> Punctuated<PortIndex, Token![,]>>,
+    /// What named or numbered output ports to expect?
+    pub ports_out: Option<&'static dyn Fn() -> Punctuated<PortIndex, Token![,]>>,
+
     /// Determines if this input must be preceeded by a stratum barrier.
-    pub input_delaytype_fn: &'static dyn Fn(&Option<PortIndex>) -> Option<DelayType>,
+    pub input_delaytype_fn: &'static dyn Fn(&PortIndexValue) -> Option<DelayType>,
 
     /// Emit code in multiple locations. See [`OperatorWriteOutput`].
     pub write_fn:
@@ -109,6 +114,8 @@ pub const OPERATORS: [OperatorConstraints; 24] = [
         soft_range_inn: RANGE_ANY,
         hard_range_out: RANGE_ANY,
         soft_range_out: RANGE_ANY,
+        ports_inn: None,
+        ports_out: None,
         num_args: 0,
         input_delaytype_fn: &|_| None,
         write_fn: &(|&WriteContextArgs { root, op_span, .. },
@@ -143,6 +150,8 @@ pub const OPERATORS: [OperatorConstraints; 24] = [
         soft_range_inn: &(2..),
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
+        ports_inn: None,
+        ports_out: None,
         num_args: 0,
         input_delaytype_fn: &|_| None,
         write_fn: &(|&WriteContextArgs { op_span, .. },
@@ -181,6 +190,8 @@ pub const OPERATORS: [OperatorConstraints; 24] = [
         soft_range_inn: &(2..=2),
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
+        ports_inn: Some(&(|| parse_quote! { 0, 1 })),
+        ports_out: None,
         num_args: 0,
         input_delaytype_fn: &|_| None,
         write_fn: &(|wc @ &WriteContextArgs { root, op_span, .. },
@@ -209,6 +220,8 @@ pub const OPERATORS: [OperatorConstraints; 24] = [
         soft_range_inn: &(2..=2),
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
+        ports_inn: None,
+        ports_out: None,
         num_args: 0,
         input_delaytype_fn: &|_| None,
         write_fn: &(|wc @ &WriteContextArgs { root, op_span, .. },
@@ -240,6 +253,8 @@ pub const OPERATORS: [OperatorConstraints; 24] = [
         soft_range_inn: RANGE_1,
         hard_range_out: RANGE_ANY,
         soft_range_out: &(2..),
+        ports_inn: None,
+        ports_out: None,
         num_args: 0,
         input_delaytype_fn: &|_| None,
         write_fn: &(|&WriteContextArgs { root, op_span, .. },
@@ -281,6 +296,8 @@ pub const OPERATORS: [OperatorConstraints; 24] = [
         soft_range_inn: RANGE_1,
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
+        ports_inn: None,
+        ports_out: None,
         num_args: 0,
         input_delaytype_fn: &|_| None,
         write_fn: IDENTITY_WRITE_FN,
@@ -291,6 +308,8 @@ pub const OPERATORS: [OperatorConstraints; 24] = [
         soft_range_inn: RANGE_1,
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
+        ports_inn: None,
+        ports_out: None,
         num_args: 1,
         input_delaytype_fn: &|_| None,
         write_fn: &(|&WriteContextArgs { root, op_span, .. },
@@ -325,6 +344,8 @@ pub const OPERATORS: [OperatorConstraints; 24] = [
         soft_range_inn: RANGE_1,
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
+        ports_inn: None,
+        ports_out: None,
         num_args: 1,
         input_delaytype_fn: &|_| None,
         write_fn: &(|&WriteContextArgs { root, op_span, .. },
@@ -359,6 +380,8 @@ pub const OPERATORS: [OperatorConstraints; 24] = [
         soft_range_inn: RANGE_1,
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
+        ports_inn: None,
+        ports_out: None,
         num_args: 1,
         input_delaytype_fn: &|_| None,
         write_fn: &(|&WriteContextArgs { root, op_span, .. },
@@ -396,6 +419,8 @@ pub const OPERATORS: [OperatorConstraints; 24] = [
         soft_range_inn: RANGE_1,
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
+        ports_inn: None,
+        ports_out: None,
         num_args: 0,
         input_delaytype_fn: &|_| None,
         write_fn: &(|&WriteContextArgs { root, op_span, .. },
@@ -429,6 +454,8 @@ pub const OPERATORS: [OperatorConstraints; 24] = [
         soft_range_inn: RANGE_1,
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
+        ports_inn: None,
+        ports_out: None,
         num_args: 1,
         input_delaytype_fn: &|_| None,
         write_fn: &(|&WriteContextArgs { root, op_span, .. },
@@ -463,6 +490,8 @@ pub const OPERATORS: [OperatorConstraints; 24] = [
         soft_range_inn: RANGE_1,
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
+        ports_inn: None,
+        ports_out: None,
         num_args: 1,
         input_delaytype_fn: &|_| None,
         write_fn: &(|&WriteContextArgs { root, op_span, .. },
@@ -497,6 +526,8 @@ pub const OPERATORS: [OperatorConstraints; 24] = [
         soft_range_inn: RANGE_1,
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
+        ports_inn: None,
+        ports_out: None,
         num_args: 2,
         input_delaytype_fn: &|_| Some(DelayType::Stratum),
         write_fn: &(|&WriteContextArgs { op_span, .. },
@@ -526,6 +557,8 @@ pub const OPERATORS: [OperatorConstraints; 24] = [
         soft_range_inn: RANGE_1,
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
+        ports_inn: None,
+        ports_out: None,
         num_args: 1,
         input_delaytype_fn: &|_| Some(DelayType::Stratum),
         write_fn: &(|&WriteContextArgs { op_span, .. },
@@ -553,6 +586,8 @@ pub const OPERATORS: [OperatorConstraints; 24] = [
         soft_range_inn: RANGE_1,
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
+        ports_inn: None,
+        ports_out: None,
         num_args: 0,
         input_delaytype_fn: &|_| Some(DelayType::Stratum),
         write_fn: &(|&WriteContextArgs { op_span, .. },
@@ -581,6 +616,8 @@ pub const OPERATORS: [OperatorConstraints; 24] = [
         soft_range_inn: RANGE_0,
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
+        ports_inn: None,
+        ports_out: None,
         num_args: 1,
         input_delaytype_fn: &|_| None,
         write_fn: &(|wc @ &WriteContextArgs { root, op_span, .. },
@@ -613,6 +650,8 @@ pub const OPERATORS: [OperatorConstraints; 24] = [
         soft_range_inn: RANGE_0,
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
+        ports_inn: None,
+        ports_out: None,
         num_args: 1,
         input_delaytype_fn: &|_| None,
         write_fn: &(|wc @ &WriteContextArgs { op_span, .. },
@@ -639,6 +678,8 @@ pub const OPERATORS: [OperatorConstraints; 24] = [
         soft_range_inn: RANGE_0,
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
+        ports_inn: None,
+        ports_out: None,
         num_args: 1,
         input_delaytype_fn: &|_| None,
         write_fn: &(|&WriteContextArgs { op_span, .. },
@@ -660,15 +701,14 @@ pub const OPERATORS: [OperatorConstraints; 24] = [
         soft_range_inn: &(2..=2),
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
+        ports_inn: Some(&|| parse_quote! { pos, neg }),
+        ports_out: None,
         num_args: 0,
-        input_delaytype_fn: &|idx| {
-            idx.as_ref().and_then(|port_index| match port_index {
-                PortIndex::Int(idx) if 1 == idx.value => Some(DelayType::Stratum),
-                PortIndex::Path(path) if "neg" == path.to_token_stream().to_string() => {
-                    Some(DelayType::Stratum)
-                }
-                _ => None,
-            })
+        input_delaytype_fn: &|idx| match idx {
+            PortIndexValue::Path(path) if "neg" == path.to_token_stream().to_string() => {
+                Some(DelayType::Stratum)
+            }
+            _else => None,
         },
         write_fn: &(|wc @ &WriteContextArgs { root, op_span, .. },
                      &WriteIteratorArgs { ident, inputs, .. }| {
@@ -682,8 +722,8 @@ pub const OPERATORS: [OperatorConstraints; 24] = [
                 let borrow_ident = wc.make_ident("borrow");
                 let negset_ident = wc.make_ident("negset");
 
-                let input_pos = &inputs[0];
-                let input_neg = &inputs[1];
+                let input_neg = &inputs[0]; // N before P
+                let input_pos = &inputs[1];
                 quote_spanned! {op_span=>
                     let mut #borrow_ident = context.state_ref(#handle_ident).borrow_mut();
                     let #negset_ident = #borrow_ident
@@ -706,6 +746,8 @@ pub const OPERATORS: [OperatorConstraints; 24] = [
         soft_range_inn: RANGE_1,
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
+        ports_inn: None,
+        ports_out: None,
         num_args: 0,
         input_delaytype_fn: &|_| Some(DelayType::Stratum),
         write_fn: IDENTITY_WRITE_FN,
@@ -716,6 +758,8 @@ pub const OPERATORS: [OperatorConstraints; 24] = [
         soft_range_inn: RANGE_1,
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
+        ports_inn: None,
+        ports_out: None,
         num_args: 0,
         input_delaytype_fn: &|_| Some(DelayType::Epoch),
         write_fn: IDENTITY_WRITE_FN,
@@ -726,6 +770,8 @@ pub const OPERATORS: [OperatorConstraints; 24] = [
         soft_range_inn: RANGE_1,
         hard_range_out: RANGE_0,
         soft_range_out: RANGE_0,
+        ports_inn: None,
+        ports_out: None,
         num_args: 1,
         input_delaytype_fn: &|_| None,
         write_fn: &(|&WriteContextArgs { root, op_span, .. },
@@ -747,6 +793,8 @@ pub const OPERATORS: [OperatorConstraints; 24] = [
         soft_range_inn: RANGE_1,
         hard_range_out: RANGE_0,
         soft_range_out: RANGE_0,
+        ports_inn: None,
+        ports_out: None,
         num_args: 1,
         input_delaytype_fn: &|_| None,
         write_fn: &(|wc @ &WriteContextArgs { root, op_span, .. },
@@ -793,6 +841,8 @@ pub const OPERATORS: [OperatorConstraints; 24] = [
         soft_range_inn: RANGE_1,
         hard_range_out: RANGE_0,
         soft_range_out: RANGE_0,
+        ports_inn: None,
+        ports_out: None,
         num_args: 1,
         input_delaytype_fn: &|_| None,
         write_fn: &(|wc @ &WriteContextArgs { root, op_span, .. },
