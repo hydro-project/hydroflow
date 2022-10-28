@@ -16,98 +16,118 @@ use grammar::datalog::*;
 use join_plan::*;
 use util::Counter;
 
-fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn::Stmt {
+fn handle_errors(errors: Vec<ParseError>, literal: &proc_macro2::Literal) {
+    for error in errors {
+        let reason = error.reason;
+        let my_span = literal.subspan(error.start + 3..error.end + 3).unwrap();
+        match reason {
+            ParseErrorReason::UnexpectedToken(msg) => {
+                Diagnostic::spanned(my_span.unwrap(), proc_macro::Level::Error, format!("Unexpected Token: '{msg}'", msg=msg)).emit();
+            }
+            ParseErrorReason::MissingToken(msg) => {
+                Diagnostic::spanned(my_span.unwrap(), proc_macro::Level::Error, format!("Missing Token: '{msg}'", msg=msg)).emit();
+            }
+            ParseErrorReason::FailedNode(_vec) => {
+                if _vec.is_empty() {
+                    Diagnostic::spanned(my_span.unwrap(), proc_macro::Level::Error, "Failed to parse").emit();
+                } else {
+                    handle_errors(_vec, literal) 
+                }
+            }
+        }
+    }
+}
+
+fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> Option<syn::Stmt> {
     let str_node: syn::LitStr = parse_quote!(#literal);
     let actual_str = str_node.value();
-    let program: Program = grammar::datalog::parse(&actual_str).unwrap();
-
-    let mut inputs = Vec::new();
-    let mut outputs = Vec::new();
-    let mut rules = Vec::new();
-
-    for stmt in &program.rules {
-        match stmt {
-            Declaration::Input(_, ident) => inputs.push(ident),
-            Declaration::Output(_, ident) => outputs.push(ident),
-            Declaration::Rule(rule) => rules.push(rule),
+    let program = grammar::datalog::parse(&actual_str);
+    match program {
+        Result::Err(errors) => {
+            dbg!(&errors);
+            handle_errors(errors, &literal);
+            None
         }
-    }
+        Result::Ok(program) => {
+            let mut inputs = Vec::new();
+            let mut outputs = Vec::new();
+            let mut rules = Vec::new();
 
-    let mut flat_graph = FlatGraph::default();
-    let mut tee_counter = HashMap::new();
-    let mut merge_counter = HashMap::new();
+            for stmt in &program.rules {
+                match stmt {
+                    Declaration::Input(_, ident) => inputs.push(ident),
+                    Declaration::Output(_, ident) => outputs.push(ident),
+                    Declaration::Rule(rule) => rules.push(rule),
+                }
+            }
 
-    let mut created_rules = HashSet::new();
-    for decl in &program.rules {
-        let target_ident = match decl {
-            Declaration::Input(_, ident) => ident.clone(),
-            Declaration::Output(_, ident) => ident.clone(),
-            Declaration::Rule(rule) => rule.target.name.clone(),
-        };
+            let mut flat_graph = FlatGraph::default();
+            let mut tee_counter = HashMap::new();
+            let mut merge_counter = HashMap::new();
 
-        if !created_rules.contains(&target_ident) {
-            created_rules.insert(target_ident.clone());
-            let name = syn::Ident::new(&target_ident.name, Span::call_site());
-            flat_graph.add_statement(parse_quote!(#name = merge() -> tee()));
-        }
-    }
+            let mut created_rules = HashSet::new();
+            for decl in &program.rules {
+                let target_ident = match decl {
+                    Declaration::Input(_, ident) => ident.clone(),
+                    Declaration::Output(_, ident) => ident.clone(),
+                    Declaration::Rule(rule) => rule.target.name.clone(),
+                };
 
-    for target in inputs {
-        let target_ident = syn::Ident::new(&target.name, Span::call_site());
+                if !created_rules.contains(&target_ident) {
+                    created_rules.insert(target_ident.clone());
+                    let name = syn::Ident::new(&target_ident.name, Span::call_site());
+                    flat_graph.add_statement(parse_quote!(#name = merge() -> tee()));
+                }
+            }
 
-        let my_merge_index = merge_counter
-            .entry(target.name.clone())
-            .or_insert_with(|| 0..)
-            .next()
-            .expect("Out of merge indices");
+            for target in inputs {
+                let target_ident = syn::Ident::new(&target.name, Span::call_site());
 
-        let my_merge_index_lit =
-            syn::LitInt::new(&format!("{}", my_merge_index), Span::call_site());
-        let name = syn::Ident::new(&target.name, Span::call_site());
+                let merge_index = merge_counter.entry(target.name.clone()).or_insert(0);
+                let my_merge_index = *merge_index;
+                *merge_index += 1;
 
-        flat_graph.add_statement(parse_quote! {
-            recv_stream(#target_ident) -> [#my_merge_index_lit] #name
-        });
-    }
+                let my_merge_index_lit =
+                    syn::LitInt::new(&format!("{}", my_merge_index), Span::call_site());
+                let name = syn::Ident::new(&target.name, Span::call_site());
 
-    for target in outputs {
-        let my_tee_index = tee_counter
-            .entry(target.name.clone())
-            .or_insert_with(|| 0..)
-            .next()
-            .expect("Out of tee indices");
+                flat_graph.add_statement(parse_quote! {
+                    recv_stream(#target_ident) -> [#my_merge_index_lit] #name
+                });
+            }
 
-        let out_send_ident = syn::Ident::new(&target.name, Span::call_site());
+            for target in outputs {
+                let tee_index = tee_counter.entry(target.name.clone()).or_insert(0);
+                let my_tee_index = *tee_index;
+                *tee_index += 1;
 
-        let my_tee_index_lit = syn::LitInt::new(&format!("{}", my_tee_index), Span::call_site());
-        let target_ident = syn::Ident::new(&target.name, Span::call_site());
+                let out_send_ident = syn::Ident::new(&target.name, Span::call_site());
 
-        flat_graph.add_statement(parse_quote! {
+                let my_tee_index_lit =
+                    syn::LitInt::new(&format!("{}", my_tee_index), Span::call_site());
+                let target_ident = syn::Ident::new(&target.name, Span::call_site());
+
+                flat_graph.add_statement(parse_quote! {
             #target_ident [#my_tee_index_lit] -> for_each(|v| #out_send_ident.send(v).unwrap())
         });
+            }
+
+            for rule in rules {
+                generate_join(rule, &mut flat_graph, &mut tee_counter, &mut merge_counter);
+            }
+
+            println!("{}", flat_graph.surface_syntax_string());
+
+            let code_tokens = flat_graph
+                .into_partitioned_graph()
+                .expect("failed to partition")
+                .as_code(root);
+
+            Some(syn::parse_quote!({
+                #code_tokens
+            }))
+        }
     }
-
-    let mut next_join_idx = 0..;
-    for rule in rules {
-        generate_rule(
-            rule,
-            &mut flat_graph,
-            &mut tee_counter,
-            &mut merge_counter,
-            &mut next_join_idx,
-        );
-    }
-
-    println!("{}", flat_graph.surface_syntax_string());
-
-    let code_tokens = flat_graph
-        .into_partitioned_graph()
-        .expect("failed to partition")
-        .as_code(root);
-
-    syn::parse_quote!({
-        #code_tokens
-    })
 }
 
 fn generate_rule(
