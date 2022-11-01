@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydroflow/src/scheduled/mod.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>mod.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><a class="sidebar-logo" href="../../../hydroflow/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../hydroflow/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydroflow/src/scheduled/mod.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>mod.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../hydroflow/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -43,83 +43,6 @@
 <span id="43">43</span>
 <span id="44">44</span>
 <span id="45">45</span>
-<span id="46">46</span>
-<span id="47">47</span>
-<span id="48">48</span>
-<span id="49">49</span>
-<span id="50">50</span>
-<span id="51">51</span>
-<span id="52">52</span>
-<span id="53">53</span>
-<span id="54">54</span>
-<span id="55">55</span>
-<span id="56">56</span>
-<span id="57">57</span>
-<span id="58">58</span>
-<span id="59">59</span>
-<span id="60">60</span>
-<span id="61">61</span>
-<span id="62">62</span>
-<span id="63">63</span>
-<span id="64">64</span>
-<span id="65">65</span>
-<span id="66">66</span>
-<span id="67">67</span>
-<span id="68">68</span>
-<span id="69">69</span>
-<span id="70">70</span>
-<span id="71">71</span>
-<span id="72">72</span>
-<span id="73">73</span>
-<span id="74">74</span>
-<span id="75">75</span>
-<span id="76">76</span>
-<span id="77">77</span>
-<span id="78">78</span>
-<span id="79">79</span>
-<span id="80">80</span>
-<span id="81">81</span>
-<span id="82">82</span>
-<span id="83">83</span>
-<span id="84">84</span>
-<span id="85">85</span>
-<span id="86">86</span>
-<span id="87">87</span>
-<span id="88">88</span>
-<span id="89">89</span>
-<span id="90">90</span>
-<span id="91">91</span>
-<span id="92">92</span>
-<span id="93">93</span>
-<span id="94">94</span>
-<span id="95">95</span>
-<span id="96">96</span>
-<span id="97">97</span>
-<span id="98">98</span>
-<span id="99">99</span>
-<span id="100">100</span>
-<span id="101">101</span>
-<span id="102">102</span>
-<span id="103">103</span>
-<span id="104">104</span>
-<span id="105">105</span>
-<span id="106">106</span>
-<span id="107">107</span>
-<span id="108">108</span>
-<span id="109">109</span>
-<span id="110">110</span>
-<span id="111">111</span>
-<span id="112">112</span>
-<span id="113">113</span>
-<span id="114">114</span>
-<span id="115">115</span>
-<span id="116">116</span>
-<span id="117">117</span>
-<span id="118">118</span>
-<span id="119">119</span>
-<span id="120">120</span>
-<span id="121">121</span>
-<span id="122">122</span>
 </pre><pre class="rust"><code><span class="kw">use </span>serde::Serialize;
 <span class="kw">use </span>std::fmt::{Display, Formatter, <span class="prelude-ty">Result</span>};
 
@@ -165,82 +88,5 @@
 </span><span class="attribute">#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[repr(transparent)]
 </span><span class="kw">pub struct </span>StateId(<span class="kw">pub</span>(<span class="kw">crate</span>) usize);
-
-<span class="attribute">#[cfg(test)]
-</span><span class="kw">mod </span>tests {
-    <span class="kw">use </span>std::{cell::RefCell, rc::Rc};
-
-    <span class="kw">use crate</span>::{
-        builder::{
-            prelude::{BaseSurface, PullSurface, PushSurface},
-            HydroflowBuilder,
-        },
-        lang::{collections::Single, lattice::set_union::SetUnionRepr, tag},
-        scheduled::handoff::VecHandoff,
-    };
-
-    <span class="attribute">#[test]
-    </span><span class="kw">fn </span>test_batcher() {
-        <span class="kw">let </span>outputs = Rc::new(RefCell::new(Vec::new()));
-        <span class="kw">let </span><span class="kw-2">mut </span>df = HydroflowBuilder::default();
-
-        <span class="kw">let </span>(stream_input, stream_hoff) =
-            df.add_channel_input::&lt;<span class="kw">_</span>, <span class="prelude-ty">Option</span>&lt;u64&gt;, VecHandoff&lt;<span class="kw">_</span>&gt;&gt;(<span class="string">&quot;stream input&quot;</span>);
-        <span class="kw">let </span>(ticks_input, ticks_hoff) =
-            df.add_channel_input::&lt;<span class="kw">_</span>, <span class="prelude-ty">Option</span>&lt;u64&gt;, VecHandoff&lt;<span class="kw">_</span>&gt;&gt;(<span class="string">&quot;ticks input&quot;</span>);
-
-        <span class="kw">let </span>outputs_inner = outputs.clone();
-        df.add_subgraph(
-            <span class="string">&quot;main&quot;</span>,
-            stream_hoff
-                .flatten()
-                .map(Single)
-                .batch_with::&lt;<span class="kw">_</span>, SetUnionRepr&lt;tag::HASH_SET, u64&gt;, SetUnionRepr&lt;tag::SINGLE, u64&gt;, <span class="kw">_</span>&gt;(ticks_hoff.flatten())
-                .map(|(x, v)| (x, v))
-                .pull_to_push()
-                .for_each(<span class="kw">move </span>|x| (<span class="kw-2">*</span>outputs_inner).borrow_mut().push(x)),
-        );
-
-        <span class="kw">let </span><span class="kw-2">mut </span>df = df.build();
-
-        stream_input.give(<span class="prelude-val">Some</span>(<span class="number">1</span>));
-        stream_input.give(<span class="prelude-val">Some</span>(<span class="number">2</span>));
-        stream_input.give(<span class="prelude-val">Some</span>(<span class="number">3</span>));
-        stream_input.flush();
-        ticks_input.give(<span class="prelude-val">Some</span>(<span class="number">1</span>));
-        ticks_input.flush();
-
-        df.run_available();
-        <span class="macro">assert_eq!</span>(<span class="macro">vec!</span>[(<span class="number">1</span>, [<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>].into())], <span class="kw-2">*</span>outputs.borrow());
-
-        ticks_input.give(<span class="prelude-val">Some</span>(<span class="number">2</span>));
-        ticks_input.flush();
-
-        df.run_available();
-        <span class="macro">assert_eq!</span>(
-            <span class="macro">vec!</span>[(<span class="number">1</span>, [<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>].into()), (<span class="number">2</span>, [].into())],
-            <span class="kw-2">*</span>outputs.borrow()
-        );
-
-        stream_input.give(<span class="prelude-val">Some</span>(<span class="number">4</span>));
-        stream_input.give(<span class="prelude-val">Some</span>(<span class="number">5</span>));
-        stream_input.flush();
-
-        df.run_available();
-        <span class="macro">assert_eq!</span>(
-            <span class="macro">vec!</span>[(<span class="number">1</span>, [<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>].into()), (<span class="number">2</span>, [].into())],
-            <span class="kw-2">*</span>outputs.borrow()
-        );
-
-        ticks_input.give(<span class="prelude-val">Some</span>(<span class="number">3</span>));
-        ticks_input.flush();
-
-        df.run_available();
-        <span class="macro">assert_eq!</span>(
-            <span class="macro">vec!</span>[(<span class="number">1</span>, [<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>].into()), (<span class="number">2</span>, [].into()), (<span class="number">3</span>, [<span class="number">4</span>, <span class="number">5</span>].into())],
-            <span class="kw-2">*</span>outputs.borrow()
-        );
-    }
-}
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0-nightly (4b8f43199 2022-10-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (95a3a7277 2022-10-31)" ></div></body></html>

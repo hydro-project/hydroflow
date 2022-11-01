@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"struct":[["HydroflowBuilder","The user-facing entry point for the Surface API."],["VecHandoff","A [VecDeque]-based FIFO handoff."]],"trait":[["IntoHydroflow","A trait to convert [`IntoIterator`]s for use with Hydroflow’s surface (build) API."]]};
