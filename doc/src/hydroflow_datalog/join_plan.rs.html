@@ -283,7 +283,7 @@
 
 <span class="kw">use </span>hydroflow_lang::{
     graph::flat_graph::FlatGraph,
-    parse::{ArrowConnector, IndexInt, Indexing, Pipeline, PipelineLink},
+    parse::{ArrowConnector, IndexInt, Indexing, Pipeline, PipelineLink, PortIndex},
 };
 <span class="kw">use </span>proc_macro2::Span;
 <span class="kw">use </span>syn::{<span class="self">self</span>, parse_quote};
@@ -304,7 +304,7 @@
     </span><span class="kw">pub </span>name: syn::Ident,
     <span class="doccomment">/// If this join node outputs data through a `tee()` operator, this is the index to consume the node with.
     /// (this is only used for cases where we are directly reading a relation)
-    </span><span class="kw">pub </span>tee_idx: <span class="prelude-ty">Option</span>&lt;usize&gt;,
+    </span><span class="kw">pub </span>tee_idx: <span class="prelude-ty">Option</span>&lt;isize&gt;,
     <span class="doccomment">/// A mapping from variables in the rule to the index of the corresponding element in the flattened tuples this node emits.
     </span><span class="kw">pub </span>variable_mapping: BTreeMap&lt;syn::Ident, usize&gt;,
     <span class="doccomment">/// The type of the flattened tuples this node emits.
@@ -361,10 +361,10 @@
             connector: ArrowConnector {
                 src: source_expanded.tee_idx.map(|i| Indexing {
                     bracket_token: syn::token::Bracket::default(),
-                    index: IndexInt {
+                    index: PortIndex::Int(IndexInt {
                         value: i,
                         span: Span::call_site(),
-                    },
+                    }),
                 }),
                 arrow: <span class="macro">parse_quote!</span>(-&gt;),
                 dst: <span class="prelude-val">None</span>,
@@ -424,7 +424,7 @@
 
             <span class="kw">if </span>!local_constraints.is_empty() {
                 <span class="kw">let </span>relation_node = syn::Ident::new(<span class="kw-2">&amp;</span>target.name.name, Span::call_site());
-                <span class="kw">let </span>relation_idx = syn::Index::from(my_tee_index);
+                <span class="kw">let </span>relation_idx = syn::LitInt::new(<span class="kw-2">&amp;</span>my_tee_index.to_string(), Span::call_site());
 
                 <span class="kw">let </span>filter_node = syn::Ident::new(
                     <span class="kw-2">&amp;</span><span class="macro">format!</span>(
@@ -561,4 +561,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="hydroflow_datalog" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (95a3a7277 2022-10-31)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="hydroflow_datalog" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (11ebe6512 2022-11-01)" ></div></body></html>

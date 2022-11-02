@@ -323,6 +323,30 @@
 <span id="323">323</span>
 <span id="324">324</span>
 <span id="325">325</span>
+<span id="326">326</span>
+<span id="327">327</span>
+<span id="328">328</span>
+<span id="329">329</span>
+<span id="330">330</span>
+<span id="331">331</span>
+<span id="332">332</span>
+<span id="333">333</span>
+<span id="334">334</span>
+<span id="335">335</span>
+<span id="336">336</span>
+<span id="337">337</span>
+<span id="338">338</span>
+<span id="339">339</span>
+<span id="340">340</span>
+<span id="341">341</span>
+<span id="342">342</span>
+<span id="343">343</span>
+<span id="344">344</span>
+<span id="345">345</span>
+<span id="346">346</span>
+<span id="347">347</span>
+<span id="348">348</span>
+<span id="349">349</span>
 </pre><pre class="rust"><code><span class="kw">use </span>std::hash::Hash;
 
 <span class="kw">use </span>proc_macro2::{Span, TokenStream};
@@ -331,7 +355,7 @@
 <span class="kw">use </span>syn::punctuated::Punctuated;
 <span class="kw">use </span>syn::token::{Bracket, Paren};
 <span class="kw">use </span>syn::{
-    bracketed, parenthesized, Expr, GenericArgument, Ident, LitInt, Path, PathArguments,
+    bracketed, parenthesized, Expr, ExprPath, GenericArgument, Ident, LitInt, Path, PathArguments,
     PathSegment, Token,
 };
 
@@ -523,7 +547,7 @@
 
 <span class="kw">pub struct </span>Indexing {
     <span class="kw">pub </span>bracket_token: Bracket,
-    <span class="kw">pub </span>index: IndexInt,
+    <span class="kw">pub </span>index: PortIndex,
 }
 <span class="kw">impl </span>Parse <span class="kw">for </span>Indexing {
     <span class="kw">fn </span>parse(input: ParseStream) -&gt; syn::Result&lt;<span class="self">Self</span>&gt; {
@@ -541,6 +565,30 @@
         <span class="self">self</span>.bracket_token.surround(tokens, |tokens| {
             <span class="self">self</span>.index.to_tokens(tokens);
         });
+    }
+}
+
+<span class="doccomment">/// Port can either be an int or a name (path).
+</span><span class="kw">pub enum </span>PortIndex {
+    Int(IndexInt),
+    Path(ExprPath),
+}
+<span class="kw">impl </span>Parse <span class="kw">for </span>PortIndex {
+    <span class="kw">fn </span>parse(input: ParseStream) -&gt; syn::Result&lt;<span class="self">Self</span>&gt; {
+        <span class="kw">let </span>lookahead = input.lookahead1();
+        <span class="kw">if </span>lookahead.peek(LitInt) {
+            input.parse().map(<span class="self">Self</span>::Int)
+        } <span class="kw">else </span>{
+            input.parse().map(<span class="self">Self</span>::Path)
+        }
+    }
+}
+<span class="kw">impl </span>ToTokens <span class="kw">for </span>PortIndex {
+    <span class="kw">fn </span>to_tokens(<span class="kw-2">&amp;</span><span class="self">self</span>, tokens: <span class="kw-2">&amp;mut </span>TokenStream) {
+        <span class="kw">match </span><span class="self">self </span>{
+            PortIndex::Int(index_int) =&gt; index_int.to_tokens(tokens),
+            PortIndex::Path(expr_path) =&gt; expr_path.to_tokens(tokens),
+        }
     }
 }
 
@@ -606,9 +654,9 @@
     }
 }
 
-<span class="attribute">#[derive(Clone, Copy, Debug)]
+<span class="attr">#[derive(Clone, Copy, Debug)]
 </span><span class="kw">pub struct </span>IndexInt {
-    <span class="kw">pub </span>value: usize,
+    <span class="kw">pub </span>value: isize,
     <span class="kw">pub </span>span: Span,
 }
 <span class="kw">impl </span>Parse <span class="kw">for </span>IndexInt {
@@ -649,4 +697,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (95a3a7277 2022-10-31)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (11ebe6512 2022-11-01)" ></div></body></html>

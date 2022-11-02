@@ -464,11 +464,11 @@
 }
 
 <span class="doccomment">/// A FlowGraph nodes&#39;s ID.
-</span><span class="attribute">#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize)]
+</span><span class="attr">#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize)]
 #[repr(transparent)]
 </span><span class="kw">pub struct </span>FlowNodeId(<span class="kw">pub</span>(<span class="kw">crate</span>) usize);
 
-<span class="attribute">#[derive(Clone, Debug, Default, Serialize)]
+<span class="attr">#[derive(Clone, Debug, Default, Serialize)]
 </span><span class="kw">pub struct </span>FlowEdgeSet {
     name: Cow&lt;<span class="lifetime">&#39;static</span>, str&gt;,
     stratum: usize,
@@ -488,7 +488,7 @@
     }
 }
 <span class="comment">// A graph connecting up multiple compiled components
-</span><span class="attribute">#[derive(Clone, Debug, Default, Serialize)]
+</span><span class="attr">#[derive(Clone, Debug, Default, Serialize)]
 </span><span class="kw">pub struct </span>FlowPartitionedGraph {
     node_names: Vec&lt;<span class="prelude-ty">Option</span>&lt;Cow&lt;<span class="lifetime">&#39;static</span>, str&gt;&gt;&gt;,
     edge_sets: Vec&lt;FlowEdgeSet&gt;,
@@ -577,7 +577,7 @@
 }
 
 <span class="doccomment">/// A graph representation of a compiled component&#39;s graph structure.
-</span><span class="attribute">#[derive(Clone, Debug, Default, Serialize)]
+</span><span class="attr">#[derive(Clone, Debug, Default, Serialize)]
 </span><span class="kw">pub struct </span>FlowGraph {
     node_names: Vec&lt;Cow&lt;<span class="lifetime">&#39;static</span>, str&gt;&gt;,
     edges: HashSet&lt;(FlowNodeId, FlowNodeId)&gt;,
@@ -625,4 +625,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (95a3a7277 2022-10-31)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (11ebe6512 2022-11-01)" ></div></body></html>

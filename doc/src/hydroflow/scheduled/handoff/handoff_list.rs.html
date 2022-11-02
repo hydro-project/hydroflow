@@ -165,12 +165,12 @@
 
 <span class="kw">use </span><span class="kw">super</span>::Handoff;
 
-<span class="attribute">#[sealed]
+<span class="attr">#[sealed]
 </span><span class="kw">pub trait </span>PortList&lt;S&gt;: TypeList
 <span class="kw">where
     </span>S: Polarity,
 {
-    <span class="attribute">#[allow(clippy::ptr_arg)]
+    <span class="attr">#[allow(clippy::ptr_arg)]
     </span><span class="kw">fn </span>set_graph_meta&lt;<span class="lifetime">&#39;a</span>&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         handoffs: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>[HandoffData],
@@ -182,7 +182,7 @@
     <span class="kw">type </span>Ctx&lt;<span class="lifetime">&#39;a</span>&gt;: TypeList;
     <span class="kw">fn </span>make_ctx&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, handoffs: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[HandoffData]) -&gt; <span class="self">Self</span>::Ctx&lt;<span class="lifetime">&#39;a</span>&gt;;
 }
-<span class="attribute">#[sealed]
+<span class="attr">#[sealed]
 </span><span class="kw">impl</span>&lt;S, Rest, H&gt; PortList&lt;S&gt; <span class="kw">for </span>(Port&lt;S, H&gt;, Rest)
 <span class="kw">where
     </span>S: Polarity,
@@ -226,7 +226,7 @@
         (ctx, ctx_rest)
     }
 }
-<span class="attribute">#[sealed]
+<span class="attr">#[sealed]
 </span><span class="kw">impl</span>&lt;S&gt; PortList&lt;S&gt; <span class="kw">for </span>()
 <span class="kw">where
     </span>S: Polarity,
@@ -244,7 +244,7 @@
     <span class="kw">fn </span>make_ctx&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, _handoffs: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[HandoffData]) -&gt; <span class="self">Self</span>::Ctx&lt;<span class="lifetime">&#39;a</span>&gt; {}
 }
 
-<span class="attribute">#[sealed]
+<span class="attr">#[sealed]
 </span><span class="kw">pub trait </span>PortListSplit&lt;S, A&gt;: PortList&lt;S&gt;
 <span class="kw">where
     </span>S: Polarity,
@@ -252,10 +252,10 @@
 {
     <span class="kw">type </span>Suffix: PortList&lt;S&gt;;
 
-    <span class="attribute">#[allow(clippy::needless_lifetimes)]
+    <span class="attr">#[allow(clippy::needless_lifetimes)]
     </span><span class="kw">fn </span>split_ctx&lt;<span class="lifetime">&#39;a</span>&gt;(ctx: <span class="self">Self</span>::Ctx&lt;<span class="lifetime">&#39;a</span>&gt;) -&gt; (A::Ctx&lt;<span class="lifetime">&#39;a</span>&gt;, &lt;<span class="self">Self</span>::Suffix <span class="kw">as </span>PortList&lt;S&gt;&gt;::Ctx&lt;<span class="lifetime">&#39;a</span>&gt;);
 }
-<span class="attribute">#[sealed]
+<span class="attr">#[sealed]
 </span><span class="kw">impl</span>&lt;S, H, T, U&gt; PortListSplit&lt;S, (Port&lt;S, H&gt;, U)&gt; <span class="kw">for </span>(Port&lt;S, H&gt;, T)
 <span class="kw">where
     </span>S: Polarity,
@@ -265,7 +265,7 @@
 {
     <span class="kw">type </span>Suffix = T::Suffix;
 
-    <span class="attribute">#[allow(clippy::needless_lifetimes)]
+    <span class="attr">#[allow(clippy::needless_lifetimes)]
     </span><span class="kw">fn </span>split_ctx&lt;<span class="lifetime">&#39;a</span>&gt;(
         ctx: <span class="self">Self</span>::Ctx&lt;<span class="lifetime">&#39;a</span>&gt;,
     ) -&gt; (
@@ -277,7 +277,7 @@
         ((x, u), v)
     }
 }
-<span class="attribute">#[sealed]
+<span class="attr">#[sealed]
 </span><span class="kw">impl</span>&lt;S, T&gt; PortListSplit&lt;S, ()&gt; <span class="kw">for </span>T
 <span class="kw">where
     </span>S: Polarity,
@@ -285,7 +285,7 @@
 {
     <span class="kw">type </span>Suffix = T;
 
-    <span class="attribute">#[allow(clippy::needless_lifetimes)]
+    <span class="attr">#[allow(clippy::needless_lifetimes)]
     </span><span class="kw">fn </span>split_ctx&lt;<span class="lifetime">&#39;a</span>&gt;(ctx: <span class="self">Self</span>::Ctx&lt;<span class="lifetime">&#39;a</span>&gt;) -&gt; ((), T::Ctx&lt;<span class="lifetime">&#39;a</span>&gt;) {
         ((), ctx)
     }
@@ -301,16 +301,16 @@
 /// ```ignore
 /// type MyHandoffList = tl!(VecHandoff&lt;usize&gt;, VecHandoff&lt;String&gt;, TeeingHandoff&lt;u32&gt;);
 /// ```
-</span><span class="attribute">#[sealed]
+</span><span class="attr">#[sealed]
 </span><span class="kw">pub trait </span>HandoffList: TypeList {}
-<span class="attribute">#[sealed]
+<span class="attr">#[sealed]
 </span><span class="kw">impl</span>&lt;H, L&gt; HandoffList <span class="kw">for </span>(H, L)
 <span class="kw">where
     </span>H: <span class="lifetime">&#39;static </span>+ Handoff,
     L: HandoffList,
 {
 }
-<span class="attribute">#[sealed]
+<span class="attr">#[sealed]
 </span><span class="kw">impl </span>HandoffList <span class="kw">for </span>() {}
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (95a3a7277 2022-10-31)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (11ebe6512 2022-11-01)" ></div></body></html>

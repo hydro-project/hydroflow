@@ -357,7 +357,7 @@
 <span id="357">357</span>
 <span id="358">358</span>
 </pre><pre class="rust"><code><span class="comment">// TODO(mingwei): Need rust-analyzer support
-</span><span class="attribute">#![allow(clippy::uninlined_format_args)]
+</span><span class="attr">#![allow(clippy::uninlined_format_args)]
 
 </span><span class="kw">use </span>std::collections::{HashMap, HashSet};
 
@@ -533,10 +533,10 @@
                 // of a single relation on the RHS
                 </span>src: out_expanded.tee_idx.map(|i| Indexing {
                     bracket_token: syn::token::Bracket::default(),
-                    index: IndexInt {
+                    index: hydroflow_lang::parse::PortIndex::Int(IndexInt {
                         value: i,
                         span: Span::call_site(),
-                    },
+                    }),
                 }),
                 arrow: <span class="macro">parse_quote!</span>(-&gt;),
                 dst: <span class="prelude-val">None</span>,
@@ -546,7 +546,7 @@
     ));
 }
 
-<span class="attribute">#[proc_macro]
+<span class="attr">#[proc_macro]
 </span><span class="kw">pub fn </span>datalog(item: proc_macro::TokenStream) -&gt; proc_macro::TokenStream {
     <span class="kw">let </span>item = proc_macro2::TokenStream::from(item);
     <span class="kw">let </span>literal: proc_macro2::Literal = <span class="macro">syn::parse_quote! </span>{
@@ -566,7 +566,7 @@
     proc_macro::TokenStream::from(gen_datalog_program(literal, root).to_token_stream())
 }
 
-<span class="attribute">#[cfg(test)]
+<span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>tests {
     <span class="kw">use </span>std::fs::File;
     <span class="kw">use </span>std::io::{Read, Write};
@@ -615,7 +615,7 @@
         };
     }
 
-    <span class="attribute">#[test]
+    <span class="attr">#[test]
     </span><span class="kw">fn </span>minimal_program() {
         <span class="macro">test_datalog_snapshot!</span>(
             <span class="string">r#&quot;
@@ -627,7 +627,7 @@
         </span>);
     }
 
-    <span class="attribute">#[test]
+    <span class="attr">#[test]
     </span><span class="kw">fn </span>join_with_self() {
         <span class="macro">test_datalog_snapshot!</span>(
             <span class="string">r#&quot;
@@ -639,7 +639,7 @@
         </span>);
     }
 
-    <span class="attribute">#[test]
+    <span class="attr">#[test]
     </span><span class="kw">fn </span>join_with_other() {
         <span class="macro">test_datalog_snapshot!</span>(
             <span class="string">r#&quot;
@@ -652,7 +652,7 @@
         </span>);
     }
 
-    <span class="attribute">#[test]
+    <span class="attr">#[test]
     </span><span class="kw">fn </span>multiple_contributors() {
         <span class="macro">test_datalog_snapshot!</span>(
             <span class="string">r#&quot;
@@ -666,7 +666,7 @@
         </span>);
     }
 
-    <span class="attribute">#[test]
+    <span class="attr">#[test]
     </span><span class="kw">fn </span>single_column_program() {
         <span class="macro">test_datalog_snapshot!</span>(
             <span class="string">r#&quot;
@@ -679,7 +679,7 @@
         </span>);
     }
 
-    <span class="attribute">#[test]
+    <span class="attr">#[test]
     </span><span class="kw">fn </span>triple_relation_join() {
         <span class="macro">test_datalog_snapshot!</span>(
             <span class="string">r#&quot;
@@ -693,7 +693,7 @@
         </span>);
     }
 
-    <span class="attribute">#[test]
+    <span class="attr">#[test]
     </span><span class="kw">fn </span>local_constraints() {
         <span class="macro">test_datalog_snapshot!</span>(
             <span class="string">r#&quot;
@@ -715,4 +715,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="hydroflow_datalog" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (95a3a7277 2022-10-31)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="hydroflow_datalog" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (11ebe6512 2022-11-01)" ></div></body></html>

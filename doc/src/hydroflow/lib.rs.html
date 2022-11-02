@@ -48,14 +48,14 @@
 <span id="48">48</span>
 <span id="49">49</span>
 <span id="50">50</span>
-</pre><pre class="rust"><code><span class="attribute">#![feature(never_type)]
+</pre><pre class="rust"><code><span class="attr">#![feature(never_type)]
 #![feature(type_alias_impl_trait)]
 #![allow(type_alias_bounds)]
 #![allow(clippy::let_and_return)]
 #![allow(clippy::iter_with_drain)]
 #![allow(clippy::explicit_auto_deref)]
 </span><span class="comment">// TODO(mingwei): Need rust-analyzer support
-</span><span class="attribute">#![allow(clippy::uninlined_format_args)]
+</span><span class="attr">#![allow(clippy::uninlined_format_args)]
 
 </span><span class="kw">pub mod </span>compiled;
 <span class="kw">pub mod </span>lang;
@@ -77,11 +77,11 @@
 <span class="kw">pub use </span>declarative_macro::<span class="kw-2">*</span>;
 <span class="kw">pub use </span>hydroflow_macro::<span class="kw-2">*</span>;
 
-<span class="attribute">#[cfg(doctest)]
+<span class="attr">#[cfg(doctest)]
 </span><span class="kw">mod </span>booktest {
     <span class="macro">macro_rules! </span>booktest {
         (<span class="macro-nonterminal">$i</span>:ident) =&gt; {
-            <span class="attribute">#[doc = <span class="macro">include_str!</span>(<span class="macro">concat!</span>(<span class="string">&quot;../../book/&quot;</span>, <span class="macro">stringify!</span>(<span class="macro-nonterminal">$i</span>), <span class="string">&quot;.md&quot;</span>))]
+            <span class="attr">#[doc = <span class="macro">include_str!</span>(<span class="macro">concat!</span>(<span class="string">&quot;../../book/&quot;</span>, <span class="macro">stringify!</span>(<span class="macro-nonterminal">$i</span>), <span class="string">&quot;.md&quot;</span>))]
             </span><span class="kw">mod </span><span class="macro-nonterminal">$i </span>{}
         };
     }
@@ -99,4 +99,4 @@
     <span class="macro">booktest!</span>(surface_ops);
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (95a3a7277 2022-10-31)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (11ebe6512 2022-11-01)" ></div></body></html>

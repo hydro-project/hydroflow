@@ -49,7 +49,7 @@
 <span id="49">49</span>
 <span id="50">50</span>
 <span id="51">51</span>
-</pre><pre class="rust"><code><span class="attribute">#![feature(proc_macro_diagnostic, proc_macro_span)]
+</pre><pre class="rust"><code><span class="attr">#![feature(proc_macro_diagnostic, proc_macro_span)]
 #![allow(clippy::explicit_auto_deref)]
 
 </span><span class="kw">use </span>proc_macro2::{Ident, Literal, Span};
@@ -59,7 +59,7 @@
 <span class="kw">use </span>hydroflow_lang::graph::flat_graph::FlatGraph;
 <span class="kw">use </span>hydroflow_lang::parse::HfCode;
 
-<span class="attribute">#[proc_macro]
+<span class="attr">#[proc_macro]
 </span><span class="kw">pub fn </span>hydroflow_syntax(input: proc_macro::TokenStream) -&gt; proc_macro::TokenStream {
     <span class="kw">let </span>hydroflow_crate = proc_macro_crate::crate_name(<span class="string">&quot;hydroflow&quot;</span>)
         .expect(<span class="string">&quot;hydroflow should be present in `Cargo.toml`&quot;</span>);
@@ -82,7 +82,7 @@
     <span class="macro">quote! </span>{ #root::scheduled::graph::Hydroflow::new() }.into()
 }
 
-<span class="attribute">#[proc_macro]
+<span class="attr">#[proc_macro]
 </span><span class="kw">pub fn </span>hydroflow_parser(input: proc_macro::TokenStream) -&gt; proc_macro::TokenStream {
     <span class="kw">let </span>input = <span class="macro">parse_macro_input!</span>(input <span class="kw">as </span>HfCode);
     <span class="comment">// // input.into_token_stream().into()
@@ -101,4 +101,4 @@
     <span class="macro">quote! </span>{ <span class="macro">println!</span>(<span class="string">&quot;{}\n\n{}\n&quot;</span>, #lit0, #lit1); }.into()
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="hydroflow_macro" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (95a3a7277 2022-10-31)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="hydroflow_macro" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (11ebe6512 2022-11-01)" ></div></body></html>

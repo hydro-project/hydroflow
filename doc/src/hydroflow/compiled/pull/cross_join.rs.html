@@ -189,7 +189,7 @@
                 </span><span class="self">self</span>.state.draw_from_left = !<span class="self">self</span>.state.draw_from_left;
 
                 <span class="comment">// try to fetch from the specified side
-                </span><span class="attribute">#[allow(clippy::collapsible_else_if)]
+                </span><span class="attr">#[allow(clippy::collapsible_else_if)]
                 </span><span class="kw">if </span><span class="self">self</span>.state.draw_from_left {
                     <span class="kw">if let </span><span class="prelude-val">Some</span>(l) = <span class="self">self</span>.lhs.next() {
                         <span class="self">self</span>.state.draw_from_left = <span class="bool-val">true</span>;
@@ -226,11 +226,11 @@
     }
 }
 
-<span class="attribute">#[cfg(test)]
+<span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>tests {
     <span class="kw">use super</span>::{CrossJoin, CrossJoinState};
 
-    <span class="attribute">#[test]
+    <span class="attr">#[test]
     </span><span class="kw">fn </span>cross_join() {
         <span class="kw">let </span>lhs = (<span class="number">0</span>..<span class="number">3</span>).map(|x| (<span class="macro">format!</span>(<span class="string">&quot;left {}&quot;</span>, x)));
         <span class="kw">let </span>rhs = (<span class="number">10</span>..<span class="number">13</span>).map(|x| (<span class="macro">format!</span>(<span class="string">&quot;right {}&quot;</span>, x)));
@@ -255,4 +255,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (95a3a7277 2022-10-31)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (11ebe6512 2022-11-01)" ></div></body></html>

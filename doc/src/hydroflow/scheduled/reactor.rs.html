@@ -51,7 +51,7 @@
  * A handle into a specific [super::graph::Hydroflow] instance for triggering
  * subgraphs to run, possibly from another thread.
  */
-</span><span class="attribute">#[derive(Clone)]
+</span><span class="attr">#[derive(Clone)]
 </span><span class="kw">pub struct </span>Reactor {
     event_queue_send: UnboundedSender&lt;SubgraphId&gt;,
 }
@@ -64,7 +64,7 @@
         <span class="self">self</span>.event_queue_send.send(sg_id)
     }
 
-    <span class="attribute">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]
+    <span class="attr">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]
     </span><span class="kw">pub fn </span>into_waker(<span class="self">self</span>, sg_id: SubgraphId) -&gt; std::task::Waker {
         <span class="kw">use </span>futures::task::ArcWake;
         <span class="kw">use </span>std::sync::Arc;
@@ -87,4 +87,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (95a3a7277 2022-10-31)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (11ebe6512 2022-11-01)" ></div></body></html>

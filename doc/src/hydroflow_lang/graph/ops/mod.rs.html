@@ -924,22 +924,84 @@
 <span id="924">924</span>
 <span id="925">925</span>
 <span id="926">926</span>
+<span id="927">927</span>
+<span id="928">928</span>
+<span id="929">929</span>
+<span id="930">930</span>
+<span id="931">931</span>
+<span id="932">932</span>
+<span id="933">933</span>
+<span id="934">934</span>
+<span id="935">935</span>
+<span id="936">936</span>
+<span id="937">937</span>
+<span id="938">938</span>
+<span id="939">939</span>
+<span id="940">940</span>
+<span id="941">941</span>
+<span id="942">942</span>
+<span id="943">943</span>
+<span id="944">944</span>
+<span id="945">945</span>
+<span id="946">946</span>
+<span id="947">947</span>
+<span id="948">948</span>
+<span id="949">949</span>
+<span id="950">950</span>
+<span id="951">951</span>
+<span id="952">952</span>
+<span id="953">953</span>
+<span id="954">954</span>
+<span id="955">955</span>
+<span id="956">956</span>
+<span id="957">957</span>
+<span id="958">958</span>
+<span id="959">959</span>
+<span id="960">960</span>
+<span id="961">961</span>
+<span id="962">962</span>
+<span id="963">963</span>
+<span id="964">964</span>
+<span id="965">965</span>
+<span id="966">966</span>
+<span id="967">967</span>
+<span id="968">968</span>
+<span id="969">969</span>
+<span id="970">970</span>
+<span id="971">971</span>
+<span id="972">972</span>
+<span id="973">973</span>
+<span id="974">974</span>
+<span id="975">975</span>
+<span id="976">976</span>
+<span id="977">977</span>
+<span id="978">978</span>
+<span id="979">979</span>
+<span id="980">980</span>
+<span id="981">981</span>
+<span id="982">982</span>
+<span id="983">983</span>
+<span id="984">984</span>
+<span id="985">985</span>
+<span id="986">986</span>
 </pre><pre class="rust"><code><span class="kw">use </span>std::fmt::Display;
 <span class="kw">use </span>std::ops::{Bound, RangeBounds};
 
 <span class="comment">// Don&#39;t use `quote!`, use `quote_spanned!`.
-</span><span class="attribute">#[allow(unused_imports)]
+</span><span class="attr">#[allow(unused_imports)]
 </span><span class="kw">use </span>std::compile_error <span class="kw">as </span>quote;
 
 <span class="kw">use </span>proc_macro2::{Ident, Span, TokenStream};
 <span class="kw">use </span>quote::{quote_spanned, ToTokens};
 <span class="kw">use </span>slotmap::Key;
 <span class="kw">use </span>syn::punctuated::Punctuated;
-<span class="kw">use </span>syn::{Expr, GenericArgument, Token};
+<span class="kw">use </span>syn::{parse_quote, Expr, GenericArgument, Token};
 
-<span class="kw">use super</span>::{GraphNodeId, GraphSubgraphId};
+<span class="kw">use </span><span class="kw">crate</span>::parse::PortIndex;
 
-<span class="attribute">#[derive(Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Debug)]
+<span class="kw">use super</span>::{GraphNodeId, GraphSubgraphId, PortIndexValue};
+
+<span class="attr">#[derive(Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Debug)]
 </span><span class="kw">pub enum </span>DelayType {
     Stratum,
     Epoch,
@@ -961,15 +1023,20 @@
     <span class="doccomment">/// Number of arguments i.e. `operator(a, b, c)` has `num_args = 3`.
     </span><span class="kw">pub </span>num_args: usize,
 
+    <span class="doccomment">/// What named or numbered input ports to expect?
+    </span><span class="kw">pub </span>ports_inn: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span><span class="kw">dyn </span>Fn() -&gt; Punctuated&lt;PortIndex, <span class="macro">Token!</span>[,]&gt;&gt;,
+    <span class="doccomment">/// What named or numbered output ports to expect?
+    </span><span class="kw">pub </span>ports_out: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span><span class="kw">dyn </span>Fn() -&gt; Punctuated&lt;PortIndex, <span class="macro">Token!</span>[,]&gt;&gt;,
+
     <span class="doccomment">/// Determines if this input must be preceeded by a stratum barrier.
-    </span><span class="kw">pub </span>input_delaytype_fn: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span><span class="kw">dyn </span>Fn(usize) -&gt; <span class="prelude-ty">Option</span>&lt;DelayType&gt;,
+    </span><span class="kw">pub </span>input_delaytype_fn: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span><span class="kw">dyn </span>Fn(<span class="kw-2">&amp;</span>PortIndexValue) -&gt; <span class="prelude-ty">Option</span>&lt;DelayType&gt;,
 
     <span class="doccomment">/// Emit code in multiple locations. See [`OperatorWriteOutput`].
     </span><span class="kw">pub </span>write_fn:
         <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span><span class="kw">dyn </span>Fn(<span class="kw-2">&amp;</span>WriteContextArgs&lt;<span class="lifetime">&#39;_</span>&gt;, <span class="kw-2">&amp;</span>WriteIteratorArgs&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; OperatorWriteOutput,
 }
 
-<span class="attribute">#[derive(Default)]
+<span class="attr">#[derive(Default)]
 #[non_exhaustive]
 </span><span class="kw">pub struct </span>OperatorWriteOutput {
     <span class="doccomment">/// Code which runs once outside the subgraph to set up any external stuff
@@ -1033,6 +1100,8 @@
         soft_range_inn: RANGE_ANY,
         hard_range_out: RANGE_ANY,
         soft_range_out: RANGE_ANY,
+        ports_inn: <span class="prelude-val">None</span>,
+        ports_out: <span class="prelude-val">None</span>,
         num_args: <span class="number">0</span>,
         input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">None</span>,
         write_fn: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span>WriteContextArgs { root, op_span, .. },
@@ -1050,7 +1119,7 @@
                 }
             } <span class="kw">else </span>{
                 <span class="macro">quote_spanned! </span>{op_span=&gt;
-                    <span class="attribute">#[allow(clippy::let_unit_value)]
+                    <span class="attr">#[allow(clippy::let_unit_value)]
                     </span><span class="kw">let _ </span>= (#(#outputs),<span class="kw-2">*</span>);
                     <span class="kw">let </span>#ident = #root::pusherator::for_each::ForEach::new(std::mem::drop);
                 }
@@ -1067,6 +1136,8 @@
         soft_range_inn: <span class="kw-2">&amp;</span>(<span class="number">2</span>..),
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
+        ports_inn: <span class="prelude-val">None</span>,
+        ports_out: <span class="prelude-val">None</span>,
         num_args: <span class="number">0</span>,
         input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">None</span>,
         write_fn: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span>WriteContextArgs { op_span, .. },
@@ -1105,6 +1176,8 @@
         soft_range_inn: <span class="kw-2">&amp;</span>(<span class="number">2</span>..=<span class="number">2</span>),
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
+        ports_inn: <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>(|| <span class="macro">parse_quote! </span>{ <span class="number">0</span>, <span class="number">1 </span>})),
+        ports_out: <span class="prelude-val">None</span>,
         num_args: <span class="number">0</span>,
         input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">None</span>,
         write_fn: <span class="kw-2">&amp;</span>(|wc @ <span class="kw-2">&amp;</span>WriteContextArgs { root, op_span, .. },
@@ -1133,6 +1206,8 @@
         soft_range_inn: <span class="kw-2">&amp;</span>(<span class="number">2</span>..=<span class="number">2</span>),
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
+        ports_inn: <span class="prelude-val">None</span>,
+        ports_out: <span class="prelude-val">None</span>,
         num_args: <span class="number">0</span>,
         input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">None</span>,
         write_fn: <span class="kw-2">&amp;</span>(|wc @ <span class="kw-2">&amp;</span>WriteContextArgs { root, op_span, .. },
@@ -1164,6 +1239,8 @@
         soft_range_inn: RANGE_1,
         hard_range_out: RANGE_ANY,
         soft_range_out: <span class="kw-2">&amp;</span>(<span class="number">2</span>..),
+        ports_inn: <span class="prelude-val">None</span>,
+        ports_out: <span class="prelude-val">None</span>,
         num_args: <span class="number">0</span>,
         input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">None</span>,
         write_fn: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span>WriteContextArgs { root, op_span, .. },
@@ -1205,6 +1282,8 @@
         soft_range_inn: RANGE_1,
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
+        ports_inn: <span class="prelude-val">None</span>,
+        ports_out: <span class="prelude-val">None</span>,
         num_args: <span class="number">0</span>,
         input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">None</span>,
         write_fn: IDENTITY_WRITE_FN,
@@ -1215,6 +1294,8 @@
         soft_range_inn: RANGE_1,
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
+        ports_inn: <span class="prelude-val">None</span>,
+        ports_out: <span class="prelude-val">None</span>,
         num_args: <span class="number">1</span>,
         input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">None</span>,
         write_fn: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span>WriteContextArgs { root, op_span, .. },
@@ -1249,6 +1330,8 @@
         soft_range_inn: RANGE_1,
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
+        ports_inn: <span class="prelude-val">None</span>,
+        ports_out: <span class="prelude-val">None</span>,
         num_args: <span class="number">1</span>,
         input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">None</span>,
         write_fn: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span>WriteContextArgs { root, op_span, .. },
@@ -1283,6 +1366,8 @@
         soft_range_inn: RANGE_1,
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
+        ports_inn: <span class="prelude-val">None</span>,
+        ports_out: <span class="prelude-val">None</span>,
         num_args: <span class="number">1</span>,
         input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">None</span>,
         write_fn: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span>WriteContextArgs { root, op_span, .. },
@@ -1320,6 +1405,8 @@
         soft_range_inn: RANGE_1,
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
+        ports_inn: <span class="prelude-val">None</span>,
+        ports_out: <span class="prelude-val">None</span>,
         num_args: <span class="number">0</span>,
         input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">None</span>,
         write_fn: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span>WriteContextArgs { root, op_span, .. },
@@ -1353,6 +1440,8 @@
         soft_range_inn: RANGE_1,
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
+        ports_inn: <span class="prelude-val">None</span>,
+        ports_out: <span class="prelude-val">None</span>,
         num_args: <span class="number">1</span>,
         input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">None</span>,
         write_fn: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span>WriteContextArgs { root, op_span, .. },
@@ -1387,6 +1476,8 @@
         soft_range_inn: RANGE_1,
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
+        ports_inn: <span class="prelude-val">None</span>,
+        ports_out: <span class="prelude-val">None</span>,
         num_args: <span class="number">1</span>,
         input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">None</span>,
         write_fn: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span>WriteContextArgs { root, op_span, .. },
@@ -1421,6 +1512,8 @@
         soft_range_inn: RANGE_1,
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
+        ports_inn: <span class="prelude-val">None</span>,
+        ports_out: <span class="prelude-val">None</span>,
         num_args: <span class="number">2</span>,
         input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">Some</span>(DelayType::Stratum),
         write_fn: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span>WriteContextArgs { op_span, .. },
@@ -1450,6 +1543,8 @@
         soft_range_inn: RANGE_1,
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
+        ports_inn: <span class="prelude-val">None</span>,
+        ports_out: <span class="prelude-val">None</span>,
         num_args: <span class="number">1</span>,
         input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">Some</span>(DelayType::Stratum),
         write_fn: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span>WriteContextArgs { op_span, .. },
@@ -1477,6 +1572,8 @@
         soft_range_inn: RANGE_1,
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
+        ports_inn: <span class="prelude-val">None</span>,
+        ports_out: <span class="prelude-val">None</span>,
         num_args: <span class="number">0</span>,
         input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">Some</span>(DelayType::Stratum),
         write_fn: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span>WriteContextArgs { op_span, .. },
@@ -1505,6 +1602,8 @@
         soft_range_inn: RANGE_0,
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
+        ports_inn: <span class="prelude-val">None</span>,
+        ports_out: <span class="prelude-val">None</span>,
         num_args: <span class="number">1</span>,
         input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">None</span>,
         write_fn: <span class="kw-2">&amp;</span>(|wc @ <span class="kw-2">&amp;</span>WriteContextArgs { root, op_span, .. },
@@ -1537,6 +1636,8 @@
         soft_range_inn: RANGE_0,
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
+        ports_inn: <span class="prelude-val">None</span>,
+        ports_out: <span class="prelude-val">None</span>,
         num_args: <span class="number">1</span>,
         input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">None</span>,
         write_fn: <span class="kw-2">&amp;</span>(|wc @ <span class="kw-2">&amp;</span>WriteContextArgs { op_span, .. },
@@ -1563,6 +1664,8 @@
         soft_range_inn: RANGE_0,
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
+        ports_inn: <span class="prelude-val">None</span>,
+        ports_out: <span class="prelude-val">None</span>,
         num_args: <span class="number">1</span>,
         input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">None</span>,
         write_fn: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span>WriteContextArgs { op_span, .. },
@@ -1584,8 +1687,15 @@
         soft_range_inn: <span class="kw-2">&amp;</span>(<span class="number">2</span>..=<span class="number">2</span>),
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
+        ports_inn: <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>|| <span class="macro">parse_quote! </span>{ pos, neg }),
+        ports_out: <span class="prelude-val">None</span>,
         num_args: <span class="number">0</span>,
-        input_delaytype_fn: <span class="kw-2">&amp;</span>|idx| (<span class="number">1 </span>== idx).then_some(DelayType::Stratum),
+        input_delaytype_fn: <span class="kw-2">&amp;</span>|idx| <span class="kw">match </span>idx {
+            PortIndexValue::Path(path) <span class="kw">if </span><span class="string">&quot;neg&quot; </span>== path.to_token_stream().to_string() =&gt; {
+                <span class="prelude-val">Some</span>(DelayType::Stratum)
+            }
+            _else =&gt; <span class="prelude-val">None</span>,
+        },
         write_fn: <span class="kw-2">&amp;</span>(|wc @ <span class="kw-2">&amp;</span>WriteContextArgs { root, op_span, .. },
                      <span class="kw-2">&amp;</span>WriteIteratorArgs { ident, inputs, .. }| {
             <span class="kw">let </span>handle_ident = wc.make_ident(<span class="string">&quot;diffdata_handle&quot;</span>);
@@ -1598,8 +1708,8 @@
                 <span class="kw">let </span>borrow_ident = wc.make_ident(<span class="string">&quot;borrow&quot;</span>);
                 <span class="kw">let </span>negset_ident = wc.make_ident(<span class="string">&quot;negset&quot;</span>);
 
-                <span class="kw">let </span>input_pos = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>];
-                <span class="kw">let </span>input_neg = <span class="kw-2">&amp;</span>inputs[<span class="number">1</span>];
+                <span class="kw">let </span>input_neg = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>]; <span class="comment">// N before P
+                </span><span class="kw">let </span>input_pos = <span class="kw-2">&amp;</span>inputs[<span class="number">1</span>];
                 <span class="macro">quote_spanned! </span>{op_span=&gt;
                     <span class="kw">let </span><span class="kw-2">mut </span>#borrow_ident = context.state_ref(#handle_ident).borrow_mut();
                     <span class="kw">let </span>#negset_ident = #borrow_ident
@@ -1622,6 +1732,8 @@
         soft_range_inn: RANGE_1,
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
+        ports_inn: <span class="prelude-val">None</span>,
+        ports_out: <span class="prelude-val">None</span>,
         num_args: <span class="number">0</span>,
         input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">Some</span>(DelayType::Stratum),
         write_fn: IDENTITY_WRITE_FN,
@@ -1632,6 +1744,8 @@
         soft_range_inn: RANGE_1,
         hard_range_out: RANGE_1,
         soft_range_out: RANGE_1,
+        ports_inn: <span class="prelude-val">None</span>,
+        ports_out: <span class="prelude-val">None</span>,
         num_args: <span class="number">0</span>,
         input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">Some</span>(DelayType::Epoch),
         write_fn: IDENTITY_WRITE_FN,
@@ -1642,6 +1756,8 @@
         soft_range_inn: RANGE_1,
         hard_range_out: RANGE_0,
         soft_range_out: RANGE_0,
+        ports_inn: <span class="prelude-val">None</span>,
+        ports_out: <span class="prelude-val">None</span>,
         num_args: <span class="number">1</span>,
         input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">None</span>,
         write_fn: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span>WriteContextArgs { root, op_span, .. },
@@ -1663,6 +1779,8 @@
         soft_range_inn: RANGE_1,
         hard_range_out: RANGE_0,
         soft_range_out: RANGE_0,
+        ports_inn: <span class="prelude-val">None</span>,
+        ports_out: <span class="prelude-val">None</span>,
         num_args: <span class="number">1</span>,
         input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">None</span>,
         write_fn: <span class="kw-2">&amp;</span>(|wc @ <span class="kw-2">&amp;</span>WriteContextArgs { root, op_span, .. },
@@ -1709,6 +1827,8 @@
         soft_range_inn: RANGE_1,
         hard_range_out: RANGE_0,
         soft_range_out: RANGE_0,
+        ports_inn: <span class="prelude-val">None</span>,
+        ports_out: <span class="prelude-val">None</span>,
         num_args: <span class="number">1</span>,
         input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">None</span>,
         write_fn: <span class="kw-2">&amp;</span>(|wc @ <span class="kw-2">&amp;</span>WriteContextArgs { root, op_span, .. },
@@ -1851,4 +1971,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (95a3a7277 2022-10-31)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (11ebe6512 2022-11-01)" ></div></body></html>

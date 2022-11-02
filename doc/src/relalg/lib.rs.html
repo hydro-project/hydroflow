@@ -194,11 +194,11 @@
 <span id="194">194</span>
 <span id="195">195</span>
 <span id="196">196</span>
-</pre><pre class="rust"><code><span class="attribute">#![allow(dead_code)]
+</pre><pre class="rust"><code><span class="attr">#![allow(dead_code)]
 #![allow(clippy::iter_with_drain)]
 #![allow(clippy::explicit_auto_deref)]
 </span><span class="comment">// TODO(mingwei): Need rust-analyzer support
-</span><span class="attribute">#![allow(clippy::uninlined_format_args)]
+</span><span class="attr">#![allow(clippy::uninlined_format_args)]
 
 </span><span class="kw">use </span>anyhow::bail;
 <span class="kw">use </span>sexp::Sexp;
@@ -207,7 +207,7 @@
 <span class="kw">mod </span>runtime;
 <span class="kw">mod </span>sexp;
 
-<span class="attribute">#[derive(Debug, Hash, PartialEq, Eq, Clone)]
+<span class="attr">#[derive(Debug, Hash, PartialEq, Eq, Clone)]
 </span><span class="kw">pub enum </span>Datum {
     Int(i64),
     String(String),
@@ -228,7 +228,7 @@
     }
 }
 
-<span class="attribute">#[derive(Debug, Hash, PartialEq, Eq, Clone)]
+<span class="attr">#[derive(Debug, Hash, PartialEq, Eq, Clone)]
 </span><span class="kw">pub enum </span>ScalarExpr {
     Literal(Datum),
     ColRef(usize),
@@ -255,7 +255,7 @@
     }
 }
 
-<span class="attribute">#[derive(Debug, Hash, PartialEq, Eq, Clone)]
+<span class="attr">#[derive(Debug, Hash, PartialEq, Eq, Clone)]
 </span><span class="kw">enum </span>RelExpr {
     Values(Vec&lt;Vec&lt;ScalarExpr&gt;&gt;),
     Filter(Vec&lt;ScalarExpr&gt;, Box&lt;RelExpr&gt;),
@@ -357,11 +357,11 @@
     }
 }
 
-<span class="attribute">#[cfg(test)]
+<span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>tests {
     <span class="kw">use crate</span>::{codegen::generate_dataflow, parse_relexpr, runtime::run_dataflow, sexp::Sexp};
 
-    <span class="attribute">#[test]
+    <span class="attr">#[test]
     </span><span class="kw">fn </span>datadriven_tests() {
         datadriven::walk(<span class="string">&quot;testdata/&quot;</span>, |t| {
             t.run(|test_case| <span class="kw">match </span>test_case.directive.as_str() {
@@ -391,4 +391,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="relalg" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (95a3a7277 2022-10-31)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="relalg" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (11ebe6512 2022-11-01)" ></div></body></html>

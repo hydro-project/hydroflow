@@ -303,7 +303,7 @@
 //! - Any closures `Func` should come before their arguments, so:
 //!   `&lt;Func: Fn(A) -&gt; B, A, B&gt;`
 
-</span><span class="attribute">#![feature(never_type)]
+</span><span class="attr">#![feature(never_type)]
 #![feature(type_alias_impl_trait)]
 
 </span><span class="kw">pub mod </span>filter;
@@ -406,7 +406,7 @@
     }
 }
 
-<span class="attribute">#[cfg(test)]
+<span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>tests {
     <span class="kw">use </span>std::rc::Rc;
 
@@ -415,7 +415,7 @@
         Pusherator,
     };
 
-    <span class="attribute">#[test]
+    <span class="attr">#[test]
     </span><span class="kw">fn </span>linear_chains() {
         <span class="kw">let </span><span class="kw-2">mut </span>v = Vec::new();
         <span class="kw">let </span><span class="kw-2">mut </span>pusher = Map::new(
@@ -430,7 +430,7 @@
         <span class="macro">assert_eq!</span>(v, <span class="macro">vec!</span>[<span class="number">6</span>, <span class="number">8</span>]);
     }
 
-    <span class="attribute">#[test]
+    <span class="attr">#[test]
     </span><span class="kw">fn </span>partition() {
         <span class="kw">let </span><span class="kw-2">mut </span>evens = Vec::new();
         <span class="kw">let </span><span class="kw-2">mut </span>odds = Vec::new();
@@ -448,7 +448,7 @@
         <span class="macro">assert_eq!</span>(odds, <span class="macro">vec!</span>[<span class="number">1</span>, <span class="number">3</span>]);
     }
 
-    <span class="attribute">#[test]
+    <span class="attr">#[test]
     </span><span class="kw">fn </span>tee() {
         <span class="kw">let </span><span class="kw-2">mut </span>left = Vec::new();
         <span class="kw">let </span><span class="kw-2">mut </span>right = Vec::new();
@@ -465,7 +465,7 @@
         <span class="macro">assert_eq!</span>(right, <span class="macro">vec!</span>[<span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>]);
     }
 
-    <span class="attribute">#[test]
+    <span class="attr">#[test]
     </span><span class="kw">fn </span>tee_rcs() {
         <span class="kw">let </span><span class="kw-2">mut </span>left = Vec::new();
         <span class="kw">let </span><span class="kw-2">mut </span>right = Vec::new();
@@ -485,7 +485,7 @@
         <span class="macro">assert_eq!</span>(right, <span class="macro">vec!</span>[<span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>]);
     }
 
-    <span class="attribute">#[test]
+    <span class="attr">#[test]
     </span><span class="kw">fn </span>pivot() {
         <span class="kw">let </span>a = <span class="number">0</span>..<span class="number">10</span>;
         <span class="kw">let </span>b = <span class="number">10</span>..<span class="number">20</span>;
@@ -509,11 +509,11 @@
     }
 }
 
-<span class="attribute">#[cfg(test)]
+<span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>test_builder {
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
-    <span class="attribute">#[test]
+    <span class="attr">#[test]
     </span><span class="kw">fn </span>test_builder_constructed() {
         <span class="kw">let </span>pb = InputBuild::&lt;usize&gt;(PhantomData);
         <span class="kw">let </span>pb = filter::FilterBuild::new(pb, |<span class="kw-2">&amp;</span>x| <span class="number">0 </span>== x % <span class="number">2</span>);
@@ -529,7 +529,7 @@
         <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span>[<span class="number">0</span>, <span class="number">4</span>, <span class="number">16</span>, <span class="number">36</span>, <span class="number">64</span>], <span class="kw-2">&amp;*</span>output);
     }
 
-    <span class="attribute">#[test]
+    <span class="attr">#[test]
     </span><span class="kw">fn </span>test_builder() {
         <span class="kw">let </span><span class="kw-2">mut </span>output = Vec::new();
 
@@ -545,7 +545,7 @@
         <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span>[<span class="number">0</span>, <span class="number">4</span>, <span class="number">16</span>, <span class="number">36</span>, <span class="number">64</span>], <span class="kw-2">&amp;*</span>output);
     }
 
-    <span class="attribute">#[test]
+    <span class="attr">#[test]
     </span><span class="kw">fn </span>test_builder_tee() {
         <span class="kw">let </span><span class="kw-2">mut </span>output_evn = Vec::new();
         <span class="kw">let </span><span class="kw-2">mut </span>output_odd = Vec::new();
@@ -567,7 +567,7 @@
         <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span>[<span class="number">1</span>, <span class="number">3</span>, <span class="number">5</span>, <span class="number">7</span>, <span class="number">9</span>], <span class="kw-2">&amp;*</span>output_odd);
     }
 
-    <span class="attribute">#[test]
+    <span class="attr">#[test]
     </span><span class="kw">fn </span>test_built_subgraph() {
         <span class="kw">let </span><span class="kw-2">mut </span>output_evn = Vec::new();
         <span class="kw">let </span><span class="kw-2">mut </span>output_odd = Vec::new();
@@ -593,4 +593,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="pusherator" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (95a3a7277 2022-10-31)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="pusherator" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (11ebe6512 2022-11-01)" ></div></body></html>

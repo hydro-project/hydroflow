@@ -330,22 +330,18 @@
 <span id="330">330</span>
 <span id="331">331</span>
 <span id="332">332</span>
-<span id="333">333</span>
-<span id="334">334</span>
 </pre><pre class="rust"><code><span class="kw">use </span>proc_macro2::{Ident, Literal, Span, TokenStream};
 <span class="kw">use </span>quote::{quote, quote_spanned, ToTokens};
 <span class="kw">use </span>slotmap::{Key, SecondaryMap, SlotMap};
 <span class="kw">use </span>syn::spanned::Spanned;
 
-<span class="kw">use </span><span class="kw">crate</span>::parse::IndexInt;
-
 <span class="kw">use </span><span class="kw">super</span>::di_mul_graph::DiMulGraph;
 <span class="kw">use </span><span class="kw">super</span>::flat_graph::FlatGraph;
 <span class="kw">use </span><span class="kw">super</span>::ops::{OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, OPERATORS};
 <span class="kw">use </span><span class="kw">super</span>::serde_graph::SerdeGraph;
-<span class="kw">use super</span>::{node_color, Color, GraphEdgeId, GraphNodeId, GraphSubgraphId, Node};
+<span class="kw">use super</span>::{node_color, Color, GraphEdgeId, GraphNodeId, GraphSubgraphId, Node, PortIndexValue};
 
-<span class="attribute">#[derive(Default)]
+<span class="attr">#[derive(Default)]
 #[allow(dead_code)] </span><span class="comment">// TODO(mingwei): remove when no longer needed.
 </span><span class="kw">pub struct </span>PartitionedGraph {
     <span class="doccomment">/// Each node (operator or handoff).
@@ -353,7 +349,7 @@
     <span class="doccomment">/// Graph
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) graph: DiMulGraph&lt;GraphNodeId, GraphEdgeId&gt;,
     <span class="doccomment">/// Input and output port for each edge.
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) indices: SecondaryMap&lt;GraphEdgeId, (IndexInt, IndexInt)&gt;,
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) indices: SecondaryMap&lt;GraphEdgeId, (PortIndexValue, PortIndexValue)&gt;,
     <span class="doccomment">/// Which subgraph each node belongs to.
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) node_subgraph: SecondaryMap&lt;GraphNodeId, GraphSubgraphId&gt;,
 
@@ -371,7 +367,7 @@
         Default::default()
     }
 
-    <span class="attribute">#[allow(clippy::result_unit_err)]
+    <span class="attr">#[allow(clippy::result_unit_err)]
     </span><span class="kw">pub fn </span>from_flat_graph(flat_graph: FlatGraph) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, ()&gt; {
         flat_graph.try_into()
     }
@@ -493,7 +489,7 @@
                                 <span class="self">self</span>.graph.predecessors(node_id).collect();
                             <span class="comment">// Ensure sorted by port index.
                             </span>input_edges
-                                .sort_unstable_by_key(|<span class="kw-2">&amp;</span>(edge_id, _pred)| <span class="self">self</span>.indices[edge_id].<span class="number">1</span>);
+                                .sort_unstable_by_key(|<span class="kw-2">&amp;</span>(edge_id, _pred)| <span class="kw-2">&amp;</span><span class="self">self</span>.indices[edge_id].<span class="number">1</span>);
                             <span class="kw">let </span>inputs: Vec&lt;Ident&gt; = input_edges
                                 .into_iter()
                                 .map(|(_edge_id, pred)| <span class="self">self</span>.node_id_as_ident(pred, <span class="bool-val">true</span>))
@@ -504,7 +500,7 @@
                                 <span class="self">self</span>.graph.successors(node_id).collect();
                             <span class="comment">// Ensure sorted by port index.
                             </span>output_edges
-                                .sort_unstable_by_key(|<span class="kw-2">&amp;</span>(edge_id, _succ)| <span class="self">self</span>.indices[edge_id].<span class="number">0</span>);
+                                .sort_unstable_by_key(|<span class="kw-2">&amp;</span>(edge_id, _succ)| <span class="kw-2">&amp;</span><span class="self">self</span>.indices[edge_id].<span class="number">0</span>);
                             <span class="kw">let </span>outputs: Vec&lt;Ident&gt; = output_edges
                                 .into_iter()
                                 .map(|(_edge_id, succ)| <span class="self">self</span>.node_id_as_ident(succ, <span class="bool-val">false</span>))
@@ -667,4 +663,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (95a3a7277 2022-10-31)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (11ebe6512 2022-11-01)" ></div></body></html>

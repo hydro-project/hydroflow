@@ -39,7 +39,7 @@
 <span id="39">39</span>
 <span id="40">40</span>
 <span id="41">41</span>
-</pre><pre class="rust"><code><span class="attribute">#[macro_export]
+</pre><pre class="rust"><code><span class="attr">#[macro_export]
 </span><span class="macro">macro_rules! </span>rassert {
     (<span class="macro-nonterminal">$cond</span>:expr $(,)<span class="question-mark">?</span>) =&gt; {
         <span class="macro-nonterminal">$</span><span class="macro">crate::rassert!</span>(<span class="macro-nonterminal">$cond</span>, <span class="string">&quot;assertion failed: `{}`&quot;</span>, <span class="macro">stringify!</span>(<span class="macro-nonterminal">$cond</span>))
@@ -59,7 +59,7 @@
     };
 }
 
-<span class="attribute">#[macro_export]
+<span class="attr">#[macro_export]
 </span><span class="macro">macro_rules! </span>rassert_eq {
     (<span class="macro-nonterminal">$a</span>:expr, <span class="macro-nonterminal">$b</span>:expr) =&gt; {
         <span class="macro-nonterminal">$</span><span class="macro">crate::rassert!</span>(<span class="macro-nonterminal">$a </span>== <span class="macro-nonterminal">$b</span>,)
@@ -70,7 +70,7 @@
 }
 
 <span class="doccomment">/// Asserts that the variable&#39;s type implements the given traits.
-</span><span class="attribute">#[macro_export]
+</span><span class="attr">#[macro_export]
 </span><span class="macro">macro_rules! </span>assert_var_impl {
     (<span class="macro-nonterminal">$var</span>:ident: $(<span class="macro-nonterminal">$</span><span class="kw">trait</span>:<span class="macro-nonterminal">path</span>),+ $(,)<span class="question-mark">?</span>) =&gt; {
         <span class="kw">let _ </span>= || {
@@ -81,4 +81,4 @@
     };
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (95a3a7277 2022-10-31)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (11ebe6512 2022-11-01)" ></div></body></html>

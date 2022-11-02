@@ -113,7 +113,7 @@
 
 <span class="comment">// A [Handoff] which is part of a &quot;family&quot; of handoffs. Writing to this handoff
 // will write to every reader. New readers can be created by calling `tee`.
-</span><span class="attribute">#[derive(Clone)]
+</span><span class="attr">#[derive(Clone)]
 </span><span class="kw">pub struct </span>TeeingHandoff&lt;T&gt;
 <span class="kw">where
     </span>T: <span class="lifetime">&#39;static</span>,
@@ -137,7 +137,7 @@
 <span class="kw">where
     </span>T: Clone,
 {
-    <span class="attribute">#[must_use]
+    <span class="attr">#[must_use]
     </span><span class="kw">pub fn </span>tee(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span>id = (<span class="kw-2">*</span><span class="self">self</span>.internal).borrow().readers.len();
         (<span class="kw-2">*</span><span class="self">self</span>.internal)
@@ -183,4 +183,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (95a3a7277 2022-10-31)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (11ebe6512 2022-11-01)" ></div></body></html>

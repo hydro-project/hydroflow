@@ -71,7 +71,7 @@
 <span id="71">71</span>
 </pre><pre class="rust"><code><span class="kw">use </span>slotmap::{Key, SecondaryMap};
 
-<span class="attribute">#[derive(Default, Clone)]
+<span class="attr">#[derive(Default, Clone)]
 </span><span class="kw">pub struct </span>UnionFind&lt;K&gt;
 <span class="kw">where
     </span>K: Key,
@@ -82,7 +82,7 @@
 <span class="kw">where
     </span>K: Key,
 {
-    <span class="attribute">#[allow(dead_code)]
+    <span class="attr">#[allow(dead_code)]
     </span><span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
         <span class="self">Self</span>::default()
     }
@@ -114,13 +114,13 @@
     }
 }
 
-<span class="attribute">#[cfg(test)]
+<span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>test {
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
     <span class="kw">use </span>slotmap::SlotMap;
 
-    <span class="attribute">#[test]
+    <span class="attr">#[test]
     </span><span class="kw">fn </span>test_basic() {
         <span class="kw">let </span><span class="kw-2">mut </span>sm = SlotMap::new();
         <span class="kw">let </span>a = sm.insert(());
@@ -141,4 +141,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (95a3a7277 2022-10-31)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (11ebe6512 2022-11-01)" ></div></body></html>

@@ -55,62 +55,62 @@
 <span id="55">55</span>
 <span id="56">56</span>
 <span id="57">57</span>
-</pre><pre class="rust"><code><span class="attribute">#[rust_sitter::grammar(<span class="string">&quot;datalog&quot;</span>)]
+</pre><pre class="rust"><code><span class="attr">#[rust_sitter::grammar(<span class="string">&quot;datalog&quot;</span>)]
 #[allow(dead_code)]
 </span><span class="kw">pub mod </span>datalog {
-    <span class="attribute">#[rust_sitter::language]
+    <span class="attr">#[rust_sitter::language]
     #[derive(Debug)]
     </span><span class="kw">pub struct </span>Program {
         <span class="kw">pub </span>rules: Vec&lt;Declaration&gt;,
     }
 
-    <span class="attribute">#[derive(Debug, Clone)]
+    <span class="attr">#[derive(Debug, Clone)]
     </span><span class="kw">pub enum </span>Declaration {
-        Input(<span class="attribute">#[rust_sitter::leaf(text = <span class="string">&quot;.input&quot;</span>)] </span>(), Ident),
-        Output(<span class="attribute">#[rust_sitter::leaf(text = <span class="string">&quot;.output&quot;</span>)] </span>(), Ident),
+        Input(<span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;.input&quot;</span>)] </span>(), Ident),
+        Output(<span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;.output&quot;</span>)] </span>(), Ident),
         Rule(Rule),
     }
 
-    <span class="attribute">#[derive(Debug, Clone)]
+    <span class="attr">#[derive(Debug, Clone)]
     </span><span class="kw">pub struct </span>Rule {
         <span class="kw">pub </span>target: Atom,
-        <span class="attribute">#[rust_sitter::leaf(text = <span class="string">&quot;:-&quot;</span>)]
+        <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;:-&quot;</span>)]
         </span>_from: (),
-        <span class="attribute">#[rust_sitter::repeat(non_empty = <span class="bool-val">true</span>)]
+        <span class="attr">#[rust_sitter::repeat(non_empty = <span class="bool-val">true</span>)]
         #[rust_sitter::delimited(
-            <span class="attribute">#[rust_sitter::leaf(text = <span class="string">&quot;,&quot;</span>)]
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;,&quot;</span>)]
             </span>()
         )]
         <span class="kw">pub </span>sources: Vec&lt;Atom&gt;,
-        <span class="attribute">#[rust_sitter::leaf(text = <span class="string">&quot;.&quot;</span>)]
+        <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;.&quot;</span>)]
         </span>_dot: <span class="prelude-ty">Option</span>&lt;()&gt;,
     }
 
-    <span class="attribute">#[derive(Debug, Clone)]
+    <span class="attr">#[derive(Debug, Clone)]
     </span><span class="kw">pub struct </span>Atom {
         <span class="kw">pub </span>name: Ident,
-        <span class="attribute">#[rust_sitter::leaf(text = <span class="string">&quot;(&quot;</span>)]
+        <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;(&quot;</span>)]
         </span>_l_paren: (),
-        <span class="attribute">#[rust_sitter::delimited(
-            <span class="attribute">#[rust_sitter::leaf(text = <span class="string">&quot;,&quot;</span>)]
+        <span class="attr">#[rust_sitter::delimited(
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;,&quot;</span>)]
             </span>()
         )]
         <span class="kw">pub </span>fields: Vec&lt;Ident&gt;,
-        <span class="attribute">#[rust_sitter::leaf(text = <span class="string">&quot;)&quot;</span>)]
+        <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;)&quot;</span>)]
         </span>_r_paren: (),
     }
 
-    <span class="attribute">#[derive(Clone, PartialEq, Eq, Hash, Ord, PartialOrd, Debug)]
+    <span class="attr">#[derive(Clone, PartialEq, Eq, Hash, Ord, PartialOrd, Debug)]
     </span><span class="kw">pub struct </span>Ident {
-        <span class="attribute">#[rust_sitter::leaf(pattern = <span class="string">r&quot;[a-zA-Z_][a-zA-Z0-9_]*&quot;</span>, transform = |s| s.to_string())]
+        <span class="attr">#[rust_sitter::leaf(pattern = <span class="string">r&quot;[a-zA-Z_][a-zA-Z0-9_]*&quot;</span>, transform = |s| s.to_string())]
         </span><span class="kw">pub </span>name: String,
     }
 
-    <span class="attribute">#[rust_sitter::extra]
+    <span class="attr">#[rust_sitter::extra]
     </span><span class="kw">struct </span>Whitespace {
-        <span class="attribute">#[rust_sitter::leaf(pattern = <span class="string">r&quot;\s&quot;</span>)]
+        <span class="attr">#[rust_sitter::leaf(pattern = <span class="string">r&quot;\s&quot;</span>)]
         </span>_whitespace: (),
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="hydroflow_datalog" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (95a3a7277 2022-10-31)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="hydroflow_datalog" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (11ebe6512 2022-11-01)" ></div></body></html>

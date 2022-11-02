@@ -802,7 +802,7 @@
     }
 }
 
-<span class="attribute">#[repr(transparent)]
+<span class="attr">#[repr(transparent)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 </span><span class="kw">pub struct </span>Single&lt;T&gt;(<span class="kw">pub </span>T);
 <span class="kw">impl</span>&lt;T&gt; IntoIterator <span class="kw">for </span>Single&lt;T&gt; {
@@ -825,7 +825,7 @@
 //     }
 // }
 
-</span><span class="attribute">#[repr(transparent)]
+</span><span class="attr">#[repr(transparent)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 </span><span class="kw">pub struct </span>Iter&lt;I&gt;(<span class="kw">pub </span>I)
 <span class="kw">where
@@ -842,7 +842,7 @@
     }
 }
 
-<span class="attribute">#[repr(transparent)]
+<span class="attr">#[repr(transparent)]
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 </span><span class="kw">pub struct </span>Array&lt;T, <span class="kw">const </span>N: usize&gt;(<span class="kw">pub </span>[T; N]);
 <span class="kw">impl</span>&lt;T, <span class="kw">const </span>N: usize&gt; IntoIterator <span class="kw">for </span>Array&lt;T, N&gt; {
@@ -854,7 +854,7 @@
     }
 }
 
-<span class="attribute">#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+<span class="attr">#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 </span><span class="kw">pub struct </span>MaskedArray&lt;T, <span class="kw">const </span>N: usize&gt; {
     <span class="kw">pub </span>mask: [bool; N],
     <span class="kw">pub </span>vals: [T; N],
@@ -871,4 +871,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (95a3a7277 2022-10-31)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (11ebe6512 2022-11-01)" ></div></body></html>
