@@ -5,6 +5,7 @@ use slotmap::{Key, SecondaryMap, SlotMap};
 use syn::parse_quote;
 use syn::spanned::Spanned;
 
+use crate::diagnostic::{Diagnostic, Level};
 use crate::union_find::UnionFind;
 
 use super::di_mul_graph::DiMulGraph;
@@ -264,7 +265,7 @@ fn find_subgraph_strata(
     node_subgraph: &mut SecondaryMap<GraphNodeId, GraphSubgraphId>,
     subgraph_nodes: &mut SlotMap<GraphSubgraphId, Vec<GraphNodeId>>,
     barrier_crossers: &SecondaryMap<GraphEdgeId, DelayType>,
-) -> Result<SecondaryMap<GraphSubgraphId, usize>, ()> {
+) -> Result<SecondaryMap<GraphSubgraphId, usize>, Diagnostic> {
     // Determine subgraphs's stratum number.
     // Find SCCs ignoring `next_epoch()` edges, then do TopoSort on the resulting DAG.
     // (Cycles on cross-stratum negative edges are an error.)
@@ -390,12 +391,7 @@ fn find_subgraph_strata(
                 // Indicates an unbroken negative cycle.
                 if dst_stratum <= src_stratum {
                     let (_src_idx, dst_idx) = &indices[edge_id];
-                    dst_idx
-                        .span()
-                        .unwrap()
-                        .error("Negative edge creates a negative cycle which must be broken with a `next_epoch()` operator.")
-                        .emit();
-                    return Err(());
+                    return Err(Diagnostic::spanned(dst_idx.span(), Level::Error, "Negative edge creates a negative cycle which must be broken with a `next_epoch()` operator."));
                 }
             }
         }
@@ -449,7 +445,7 @@ fn find_subgraph_handoffs(
 }
 
 impl TryFrom<FlatGraph> for PartitionedGraph {
-    type Error = (); // TODO(mingwei).
+    type Error = Diagnostic;
 
     fn try_from(flat_graph: FlatGraph) -> Result<Self, Self::Error> {
         let FlatGraph {

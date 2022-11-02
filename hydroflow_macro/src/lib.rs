@@ -23,9 +23,10 @@ pub fn hydroflow_syntax(input: proc_macro::TokenStream) -> proc_macro::TokenStre
     let input = parse_macro_input!(input as HfCode);
 
     let flat_graph = FlatGraph::from_hfcode(input);
-    if !flat_graph.emit_operator_errors() {
-        if let Ok(part_graph) = flat_graph.into_partitioned_graph() {
-            return part_graph.as_code(root).into();
+    if !flat_graph.emit_diagnostics() {
+        match flat_graph.into_partitioned_graph() {
+            Ok(part_graph) => return part_graph.as_code(root).into(),
+            Err(diagnostic) => diagnostic.emit(),
         }
     }
     quote! { #root::scheduled::graph::Hydroflow::new() }.into()
@@ -34,10 +35,9 @@ pub fn hydroflow_syntax(input: proc_macro::TokenStream) -> proc_macro::TokenStre
 #[proc_macro]
 pub fn hydroflow_parser(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = parse_macro_input!(input as HfCode);
-    // // input.into_token_stream().into()
 
     let flat_graph = FlatGraph::from_hfcode(input);
-    flat_graph.emit_operator_errors();
+    flat_graph.emit_diagnostics();
 
     let flat_mermaid = flat_graph.mermaid_string();
 

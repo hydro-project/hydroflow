@@ -3,6 +3,8 @@ use quote::{quote, quote_spanned, ToTokens};
 use slotmap::{Key, SecondaryMap, SlotMap};
 use syn::spanned::Spanned;
 
+use crate::diagnostic::Diagnostic;
+
 use super::di_mul_graph::DiMulGraph;
 use super::flat_graph::FlatGraph;
 use super::ops::{OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, OPERATORS};
@@ -36,7 +38,7 @@ impl PartitionedGraph {
     }
 
     #[allow(clippy::result_unit_err)]
-    pub fn from_flat_graph(flat_graph: FlatGraph) -> Result<Self, ()> {
+    pub fn from_flat_graph(flat_graph: FlatGraph) -> Result<Self, Diagnostic> {
         flat_graph.try_into()
     }
 
