@@ -5,6 +5,7 @@ use slotmap::{Key, SecondaryMap, SlotMap};
 use syn::spanned::Spanned;
 use syn::Ident;
 
+use crate::diagnostic::{Diagnostic, Level};
 use crate::graph::ops::{RangeTrait, OPERATORS};
 use crate::parse::{HfCode, HfStatement, Operator, Pipeline};
 use crate::pretty_span::{PrettyRowCol, PrettySpan};
@@ -27,6 +28,8 @@ pub struct FlatGraph {
     pub(crate) graph: DiMulGraph<GraphNodeId, GraphEdgeId>,
     /// Input and output port for each edge.
     pub(crate) indices: SecondaryMap<GraphEdgeId, (PortIndexValue, PortIndexValue)>,
+    /// Spanned error/warning/etc diagnostics to emit.
+    pub(crate) diagnostics: Vec<Diagnostic>,
 
     /// Variable names, used as [`HfStatement::Named`] are added.
     names: BTreeMap<Ident, Ports>,
@@ -43,6 +46,7 @@ impl FlatGraph {
             graph.add_statement(stmt);
         }
 
+        graph.check_operator_errors();
         graph
     }
 
@@ -51,9 +55,6 @@ impl FlatGraph {
         match stmt {
             HfStatement::Named(named) => {
                 let ports = self.add_pipeline(named.pipeline);
-                // if let Some((old_name, _)) = self.names.remove_entry(&named.name) {
-                //     old_name.span().unwrap().warning(format!("`{}` is shadowed"))
-                // }
                 self.names.insert(named.name, ports);
             }
             HfStatement::Pipeline(pipeline) => {
@@ -77,23 +78,30 @@ impl FlatGraph {
 
                     {
                         /// Helper to emit conflicts when a port is used twice.
-                        fn emit_conflict(inout: &str, old: &PortIndexValue, new: &PortIndexValue) {
-                            old.span()
-                                .unwrap()
-                                .error(format!(
+                        fn emit_conflict(
+                            inout: &str,
+                            old: &PortIndexValue,
+                            new: &PortIndexValue,
+                            diagnostics: &mut Vec<Diagnostic>,
+                        ) {
+                            diagnostics.push(Diagnostic::spanned(
+                                old.span(),
+                                Level::Error,
+                                format!(
                                     "{} connection conflicts with below ({})",
                                     inout,
                                     PrettySpan(new.span()),
-                                ))
-                                .emit();
-                            new.span()
-                                .unwrap()
-                                .error(format!(
+                                ),
+                            ));
+                            diagnostics.push(Diagnostic::spanned(
+                                new.span(),
+                                Level::Error,
+                                format!(
                                     "{} connection conflicts with above ({})",
                                     inout,
                                     PrettySpan(old.span()),
-                                ))
-                                .emit();
+                                ),
+                            ));
                         }
 
                         // Handle src's successor port conflicts:
@@ -107,6 +115,7 @@ impl FlatGraph {
                                     "Output",
                                     &self.indices[conflicting_edge].0,
                                     &src_port,
+                                    &mut self.diagnostics,
                                 );
                             }
                         }
@@ -122,6 +131,7 @@ impl FlatGraph {
                                     "Input",
                                     &self.indices[conflicting_edge].1,
                                     &dst_port,
+                                    &mut self.diagnostics,
                                 );
                             }
                         }
@@ -137,11 +147,11 @@ impl FlatGraph {
                 }
             }
             Pipeline::Name(ident) => self.names.get(&ident).copied().unwrap_or_else(|| {
-                ident
-                    .span()
-                    .unwrap()
-                    .error(format!("Cannot find name `{ident}`"))
-                    .emit();
+                self.diagnostics.push(Diagnostic::spanned(
+                    ident.span(),
+                    Level::Error,
+                    format!("Cannot find name `{}`", ident),
+                ));
                 Ports {
                     inn: None,
                     out: None,
@@ -158,11 +168,9 @@ impl FlatGraph {
     }
 
     /// Validates that operators have valid number of inputs, outputs, & arguments.
-    /// (Emits error messages on span).
+    /// Adds errors (and warnings) to `self.diagnostics`.
     /// TODO(mingwei): Clean this up, make it do more than just arity? Do no overlapping edge ports.
-    /// Returns `true` if errors were found.
-    pub fn emit_operator_errors(&self) -> bool {
-        let mut errored = false;
+    fn check_operator_errors(&mut self) {
         for (node_key, node) in self.nodes.iter() {
             match node {
                 Node::Operator(operator) => {
@@ -171,17 +179,15 @@ impl FlatGraph {
                         Some(op_constraints) => {
                             // Check numer of args
                             if op_constraints.num_args != operator.args.len() {
-                                errored = true;
-
-                                operator
-                                    .span()
-                                    .unwrap()
-                                    .error(format!(
+                                self.diagnostics.push(Diagnostic::spanned(
+                                    operator.span(),
+                                    Level::Error,
+                                    format!(
                                         "expected {} argument(s), found {}",
                                         op_constraints.num_args,
                                         operator.args.len()
-                                    ))
-                                    .emit();
+                                    ),
+                                ));
                             }
 
                             // Check input/output (port) arity
@@ -192,6 +198,7 @@ impl FlatGraph {
                                 is_hard: bool,
                                 degree: usize,
                                 range: &dyn RangeTrait<usize>,
+                                diagnostics: &mut Vec<Diagnostic>,
                             ) -> bool {
                                 let op_name = &*operator.name_string();
                                 let message = format!(
@@ -204,22 +211,27 @@ impl FlatGraph {
                                 );
                                 let out_of_range = !range.contains(&degree);
                                 if out_of_range {
-                                    if is_hard {
-                                        operator.span().unwrap().error(message).emit();
-                                    } else {
-                                        operator.span().unwrap().warning(message).emit();
-                                    }
+                                    diagnostics.push(Diagnostic::spanned(
+                                        operator.span(),
+                                        if is_hard {
+                                            Level::Error
+                                        } else {
+                                            Level::Warning
+                                        },
+                                        message,
+                                    ));
                                 }
                                 out_of_range
                             }
 
                             let inn_degree = self.graph.degree_in(node_key);
-                            errored |= emit_arity_error(
+                            emit_arity_error(
                                 operator,
                                 true,
                                 true,
                                 inn_degree,
                                 op_constraints.hard_range_inn,
+                                &mut self.diagnostics,
                             );
                             emit_arity_error(
                                 operator,
@@ -227,15 +239,17 @@ impl FlatGraph {
                                 false,
                                 inn_degree,
                                 op_constraints.soft_range_inn,
+                                &mut self.diagnostics,
                             );
 
                             let out_degree = self.graph.degree_out(node_key);
-                            errored |= emit_arity_error(
+                            emit_arity_error(
                                 operator,
                                 false,
                                 true,
                                 out_degree,
                                 op_constraints.hard_range_out,
+                                &mut self.diagnostics,
                             );
                             emit_arity_error(
                                 operator,
@@ -243,6 +257,7 @@ impl FlatGraph {
                                 false,
                                 out_degree,
                                 op_constraints.soft_range_out,
+                                &mut self.diagnostics,
                             );
 
                             // Check input port indexes/names
@@ -256,14 +271,11 @@ impl FlatGraph {
                                 for expected_port in (ports_inn_fn)() {
                                     let tokens = expected_port.to_token_stream();
                                     if !inn_ports.contains(&&expected_port.into()) {
-                                        operator
-                                            .span()
-                                            .unwrap()
-                                            .error(&*format!(
-                                                "Missing expected input port `{}`.",
-                                                tokens
-                                            ))
-                                            .emit();
+                                        self.diagnostics.push(Diagnostic::spanned(
+                                            operator.span(),
+                                            Level::Error,
+                                            format!("Missing expected input port `{}`.", tokens),
+                                        ));
                                     }
                                 }
                             }
@@ -277,33 +289,33 @@ impl FlatGraph {
                                 for expected_port in (ports_out_fn)() {
                                     let tokens = expected_port.to_token_stream();
                                     if !out_ports.contains(&&expected_port.into()) {
-                                        operator
-                                            .span()
-                                            .unwrap()
-                                            .error(&*format!(
-                                                "Missing expected output port `{}`.",
-                                                tokens
-                                            ))
-                                            .emit();
+                                        self.diagnostics.push(Diagnostic::spanned(
+                                            operator.span(),
+                                            Level::Error,
+                                            format!("Missing expected output port `{}`.", tokens),
+                                        ));
                                     }
                                 }
                             }
                         }
                         None => {
-                            operator
-                                .path
-                                .span()
-                                .unwrap()
-                                .error(format!("Unknown operator `{}`", op_name))
-                                .emit();
-                            errored = true;
+                            self.diagnostics.push(Diagnostic::spanned(
+                                operator.path.span(),
+                                Level::Error,
+                                format!("Unknown operator `{}`", op_name),
+                            ));
                         }
                     }
                 }
                 Node::Handoff => todo!("Node::Handoff"),
             }
         }
-        errored
+    }
+
+    /// Emits diagnostics, returns true if there are errors.
+    pub fn emit_diagnostics(&self) -> bool {
+        self.diagnostics.iter().for_each(Diagnostic::emit);
+        self.diagnostics.iter().any(Diagnostic::is_error)
     }
 
     /// Convert back into surface syntax.
@@ -369,7 +381,7 @@ impl FlatGraph {
 
     /// Run subgraph partitioning and stratification and convert this graph into a [`PartitionedGraph`].
     #[allow(clippy::result_unit_err)]
-    pub fn into_partitioned_graph(self) -> Result<PartitionedGraph, ()> {
+    pub fn into_partitioned_graph(self) -> Result<PartitionedGraph, Diagnostic> {
         self.try_into()
     }
 }
