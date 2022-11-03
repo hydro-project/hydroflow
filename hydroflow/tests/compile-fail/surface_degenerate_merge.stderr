@@ -1,0 +1,11 @@
+warning: `merge` should have at least 2 input(s), actually has 0.
+ --> tests/compile-fail/surface_degenerate_merge.rs:5:9
+  |
+5 |         merge();
+  |         ^^^^^^^
+
+error: `merge` must have exactly 1 output(s), actually has 0.
+ --> tests/compile-fail/surface_degenerate_merge.rs:5:9
+  |
+5 |         merge();
+  |         ^^^^^^^

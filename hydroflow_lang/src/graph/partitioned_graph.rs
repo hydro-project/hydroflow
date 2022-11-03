@@ -214,22 +214,25 @@ impl PartitionedGraph {
                     }
 
                     {
+                        // Determine pull and push halves of the `Pivot`.
                         let pull_to_push_idx = pull_to_push_idx;
                         let pull_ident =
                             self.node_id_as_ident(subgraph_nodes[pull_to_push_idx - 1], false);
 
-                        let push_ident =
-                            if let Some(&node_id) = subgraph_nodes.get(pull_to_push_idx) {
-                                self.node_id_as_ident(node_id, false)
-                            } else {
-                                // Entire subgraph is pull (except for a single send/push handoff output).
-                                assert_eq!(
+                        #[rustfmt::skip]
+                        let push_ident = if let Some(&node_id) =
+                            subgraph_nodes.get(pull_to_push_idx)
+                        {
+                            self.node_id_as_ident(node_id, false)
+                        } else {
+                            // Entire subgraph is pull (except for a single send/push handoff output).
+                            assert_eq!(
                                 1,
                                 send_ports.len(),
-                                "If entire subgraph is pull, should have only one handoff output."
+                                "If entire subgraph is pull, should have only one handoff output. Do you have a loose `null()` or other degenerate pipeline somewhere?"
                             );
-                                send_ports[0].clone()
-                            };
+                            send_ports[0].clone()
+                        };
 
                         // Pivot span is combination of pull and push spans (or if not possible, just take the push).
                         let pivot_span = pull_ident
