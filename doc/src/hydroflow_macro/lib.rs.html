@@ -74,9 +74,10 @@
     <span class="kw">let </span>input = <span class="macro">parse_macro_input!</span>(input <span class="kw">as </span>HfCode);
 
     <span class="kw">let </span>flat_graph = FlatGraph::from_hfcode(input);
-    <span class="kw">if </span>!flat_graph.emit_operator_errors() {
-        <span class="kw">if let </span><span class="prelude-val">Ok</span>(part_graph) = flat_graph.into_partitioned_graph() {
-            <span class="kw">return </span>part_graph.as_code(root).into();
+    <span class="kw">if </span>!flat_graph.emit_diagnostics() {
+        <span class="kw">match </span>flat_graph.into_partitioned_graph() {
+            <span class="prelude-val">Ok</span>(part_graph) =&gt; <span class="kw">return </span>part_graph.as_code(root).into(),
+            <span class="prelude-val">Err</span>(diagnostic) =&gt; diagnostic.emit(),
         }
     }
     <span class="macro">quote! </span>{ #root::scheduled::graph::Hydroflow::new() }.into()
@@ -85,10 +86,9 @@
 <span class="attr">#[proc_macro]
 </span><span class="kw">pub fn </span>hydroflow_parser(input: proc_macro::TokenStream) -&gt; proc_macro::TokenStream {
     <span class="kw">let </span>input = <span class="macro">parse_macro_input!</span>(input <span class="kw">as </span>HfCode);
-    <span class="comment">// // input.into_token_stream().into()
 
-    </span><span class="kw">let </span>flat_graph = FlatGraph::from_hfcode(input);
-    flat_graph.emit_operator_errors();
+    <span class="kw">let </span>flat_graph = FlatGraph::from_hfcode(input);
+    flat_graph.emit_diagnostics();
 
     <span class="kw">let </span>flat_mermaid = flat_graph.mermaid_string();
 
@@ -101,4 +101,4 @@
     <span class="macro">quote! </span>{ <span class="macro">println!</span>(<span class="string">&quot;{}\n\n{}\n&quot;</span>, #lit0, #lit1); }.into()
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="hydroflow_macro" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (edf018221 2022-11-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="hydroflow_macro" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (215e3cd21 2022-11-03)" ></div></body></html>

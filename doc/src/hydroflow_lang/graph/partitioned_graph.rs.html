@@ -330,10 +330,17 @@
 <span id="330">330</span>
 <span id="331">331</span>
 <span id="332">332</span>
+<span id="333">333</span>
+<span id="334">334</span>
+<span id="335">335</span>
+<span id="336">336</span>
+<span id="337">337</span>
 </pre><pre class="rust"><code><span class="kw">use </span>proc_macro2::{Ident, Literal, Span, TokenStream};
 <span class="kw">use </span>quote::{quote, quote_spanned, ToTokens};
 <span class="kw">use </span>slotmap::{Key, SecondaryMap, SlotMap};
 <span class="kw">use </span>syn::spanned::Spanned;
+
+<span class="kw">use </span><span class="kw">crate</span>::diagnostic::Diagnostic;
 
 <span class="kw">use </span><span class="kw">super</span>::di_mul_graph::DiMulGraph;
 <span class="kw">use </span><span class="kw">super</span>::flat_graph::FlatGraph;
@@ -368,7 +375,7 @@
     }
 
     <span class="attr">#[allow(clippy::result_unit_err)]
-    </span><span class="kw">pub fn </span>from_flat_graph(flat_graph: FlatGraph) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, ()&gt; {
+    </span><span class="kw">pub fn </span>from_flat_graph(flat_graph: FlatGraph) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, Diagnostic&gt; {
         flat_graph.try_into()
     }
 
@@ -544,22 +551,25 @@
                     }
 
                     {
-                        <span class="kw">let </span>pull_to_push_idx = pull_to_push_idx;
+                        <span class="comment">// Determine pull and push halves of the `Pivot`.
+                        </span><span class="kw">let </span>pull_to_push_idx = pull_to_push_idx;
                         <span class="kw">let </span>pull_ident =
                             <span class="self">self</span>.node_id_as_ident(subgraph_nodes[pull_to_push_idx - <span class="number">1</span>], <span class="bool-val">false</span>);
 
-                        <span class="kw">let </span>push_ident =
-                            <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>node_id) = subgraph_nodes.get(pull_to_push_idx) {
-                                <span class="self">self</span>.node_id_as_ident(node_id, <span class="bool-val">false</span>)
-                            } <span class="kw">else </span>{
-                                <span class="comment">// Entire subgraph is pull (except for a single send/push handoff output).
-                                </span><span class="macro">assert_eq!</span>(
+                        <span class="attr">#[rustfmt::skip]
+                        </span><span class="kw">let </span>push_ident = <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>node_id) =
+                            subgraph_nodes.get(pull_to_push_idx)
+                        {
+                            <span class="self">self</span>.node_id_as_ident(node_id, <span class="bool-val">false</span>)
+                        } <span class="kw">else </span>{
+                            <span class="comment">// Entire subgraph is pull (except for a single send/push handoff output).
+                            </span><span class="macro">assert_eq!</span>(
                                 <span class="number">1</span>,
                                 send_ports.len(),
-                                <span class="string">&quot;If entire subgraph is pull, should have only one handoff output.&quot;
+                                <span class="string">&quot;If entire subgraph is pull, should have only one handoff output. Do you have a loose `null()` or other degenerate pipeline somewhere?&quot;
                             </span>);
-                                send_ports[<span class="number">0</span>].clone()
-                            };
+                            send_ports[<span class="number">0</span>].clone()
+                        };
 
                         <span class="comment">// Pivot span is combination of pull and push spans (or if not possible, just take the push).
                         </span><span class="kw">let </span>pivot_span = pull_ident
@@ -663,4 +673,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (edf018221 2022-11-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (215e3cd21 2022-11-03)" ></div></body></html>

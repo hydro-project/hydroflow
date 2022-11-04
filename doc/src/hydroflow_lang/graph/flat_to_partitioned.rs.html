@@ -510,10 +510,6 @@
 <span id="510">510</span>
 <span id="511">511</span>
 <span id="512">512</span>
-<span id="513">513</span>
-<span id="514">514</span>
-<span id="515">515</span>
-<span id="516">516</span>
 </pre><pre class="rust"><code><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
 
 <span class="kw">use </span>proc_macro2::Span;
@@ -521,6 +517,7 @@
 <span class="kw">use </span>syn::parse_quote;
 <span class="kw">use </span>syn::spanned::Spanned;
 
+<span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
 <span class="kw">use </span><span class="kw">crate</span>::union_find::UnionFind;
 
 <span class="kw">use </span><span class="kw">super</span>::di_mul_graph::DiMulGraph;
@@ -780,7 +777,7 @@
     node_subgraph: <span class="kw-2">&amp;mut </span>SecondaryMap&lt;GraphNodeId, GraphSubgraphId&gt;,
     subgraph_nodes: <span class="kw-2">&amp;mut </span>SlotMap&lt;GraphSubgraphId, Vec&lt;GraphNodeId&gt;&gt;,
     barrier_crossers: <span class="kw-2">&amp;</span>SecondaryMap&lt;GraphEdgeId, DelayType&gt;,
-) -&gt; <span class="prelude-ty">Result</span>&lt;SecondaryMap&lt;GraphSubgraphId, usize&gt;, ()&gt; {
+) -&gt; <span class="prelude-ty">Result</span>&lt;SecondaryMap&lt;GraphSubgraphId, usize&gt;, Diagnostic&gt; {
     <span class="comment">// Determine subgraphs&#39;s stratum number.
     // Find SCCs ignoring `next_epoch()` edges, then do TopoSort on the resulting DAG.
     // (Cycles on cross-stratum negative edges are an error.)
@@ -906,12 +903,7 @@
                 // Indicates an unbroken negative cycle.
                 </span><span class="kw">if </span>dst_stratum &lt;= src_stratum {
                     <span class="kw">let </span>(_src_idx, dst_idx) = <span class="kw-2">&amp;</span>indices[edge_id];
-                    dst_idx
-                        .span()
-                        .unwrap()
-                        .error(<span class="string">&quot;Negative edge creates a negative cycle which must be broken with a `next_epoch()` operator.&quot;</span>)
-                        .emit();
-                    <span class="kw">return </span><span class="prelude-val">Err</span>(());
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(Diagnostic::spanned(dst_idx.span(), Level::Error, <span class="string">&quot;Negative edge creates a negative cycle which must be broken with a `next_epoch()` operator.&quot;</span>));
                 }
             }
         }
@@ -965,9 +957,9 @@
 }
 
 <span class="kw">impl </span>TryFrom&lt;FlatGraph&gt; <span class="kw">for </span>PartitionedGraph {
-    <span class="kw">type </span>Error = (); <span class="comment">// TODO(mingwei).
+    <span class="kw">type </span>Error = Diagnostic;
 
-    </span><span class="kw">fn </span>try_from(flat_graph: FlatGraph) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
+    <span class="kw">fn </span>try_from(flat_graph: FlatGraph) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
         <span class="kw">let </span>FlatGraph {
             <span class="kw-2">mut </span>nodes,
             <span class="kw-2">mut </span>graph,
@@ -1031,4 +1023,4 @@
     (node_id, e1)
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (edf018221 2022-11-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (215e3cd21 2022-11-03)" ></div></body></html>

@@ -96,6 +96,15 @@
 <span id="96">96</span>
 <span id="97">97</span>
 <span id="98">98</span>
+<span id="99">99</span>
+<span id="100">100</span>
+<span id="101">101</span>
+<span id="102">102</span>
+<span id="103">103</span>
+<span id="104">104</span>
+<span id="105">105</span>
+<span id="106">106</span>
+<span id="107">107</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Helper utilities for the Hydroflow surface syntax.
 
 </span><span class="kw">use </span>std::future::Future;
@@ -109,6 +118,7 @@
 <span class="kw">use </span>futures::Stream;
 <span class="kw">use </span>pin_project_lite::pin_project;
 <span class="kw">use </span>tokio::net::UdpSocket;
+<span class="kw">use </span>tokio_stream::wrappers::UnboundedReceiverStream;
 <span class="kw">use </span>tokio_util::codec::length_delimited::LengthDelimitedCodec;
 <span class="kw">use </span>tokio_util::codec::{Decoder, Encoder, LinesCodec};
 <span class="kw">use </span>tokio_util::udp::UdpFramed;
@@ -194,5 +204,13 @@
     };
     collect_ready.<span class="kw">await
 </span>}
+
+<span class="doccomment">/// Receives available items in an `UnboundedReceiverStream` into a `FromIterator` collection.
+</span><span class="kw">pub fn </span>recv_into&lt;C, T&gt;(recv: <span class="kw-2">&amp;mut </span>UnboundedReceiverStream&lt;T&gt;) -&gt; C
+<span class="kw">where
+    </span>C: FromIterator&lt;T&gt;,
+{
+    std::iter::from_fn(|| recv.as_mut().try_recv().ok()).collect()
+}
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (edf018221 2022-11-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hydroflow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (215e3cd21 2022-11-03)" ></div></body></html>

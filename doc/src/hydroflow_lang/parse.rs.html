@@ -347,6 +347,7 @@
 <span id="347">347</span>
 <span id="348">348</span>
 <span id="349">349</span>
+<span id="350">350</span>
 </pre><pre class="rust"><code><span class="kw">use </span>std::hash::Hash;
 
 <span class="kw">use </span>proc_macro2::{Span, TokenStream};
@@ -569,6 +570,7 @@
 }
 
 <span class="doccomment">/// Port can either be an int or a name (path).
+</span><span class="attr">#[derive(Clone, Debug)]
 </span><span class="kw">pub enum </span>PortIndex {
     Int(IndexInt),
     Path(ExprPath),
@@ -697,4 +699,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (edf018221 2022-11-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="hydroflow_lang" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (215e3cd21 2022-11-03)" ></div></body></html>
