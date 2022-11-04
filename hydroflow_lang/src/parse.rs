@@ -220,6 +220,7 @@ impl ToTokens for Indexing {
 }
 
 /// Port can either be an int or a name (path).
+#[derive(Clone, Debug)]
 pub enum PortIndex {
     Int(IndexInt),
     Path(ExprPath),

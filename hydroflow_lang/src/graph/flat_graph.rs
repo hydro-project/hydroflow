@@ -1,13 +1,16 @@
+use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet};
 
+use proc_macro2::Span;
 use quote::ToTokens;
 use slotmap::{Key, SecondaryMap, SlotMap};
+use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
-use syn::Ident;
+use syn::{Ident, Token};
 
 use crate::diagnostic::{Diagnostic, Level};
 use crate::graph::ops::{RangeTrait, OPERATORS};
-use crate::parse::{HfCode, HfStatement, Operator, Pipeline};
+use crate::parse::{HfCode, HfStatement, Operator, Pipeline, PortIndex};
 use crate::pretty_span::{PrettyRowCol, PrettySpan};
 
 use super::di_mul_graph::DiMulGraph;
@@ -225,15 +228,14 @@ impl FlatGraph {
                             }
 
                             let inn_degree = self.graph.degree_in(node_key);
-                            emit_arity_error(
+                            let _ = emit_arity_error(
                                 operator,
                                 true,
                                 true,
                                 inn_degree,
                                 op_constraints.hard_range_inn,
                                 &mut self.diagnostics,
-                            );
-                            emit_arity_error(
+                            ) || emit_arity_error(
                                 operator,
                                 true,
                                 false,
@@ -243,15 +245,14 @@ impl FlatGraph {
                             );
 
                             let out_degree = self.graph.degree_out(node_key);
-                            emit_arity_error(
+                            let _ = emit_arity_error(
                                 operator,
                                 false,
                                 true,
                                 out_degree,
                                 op_constraints.hard_range_out,
                                 &mut self.diagnostics,
-                            );
-                            emit_arity_error(
+                            ) || emit_arity_error(
                                 operator,
                                 false,
                                 false,
@@ -260,43 +261,95 @@ impl FlatGraph {
                                 &mut self.diagnostics,
                             );
 
-                            // Check input port indexes/names
-                            if let Some(ports_inn_fn) = op_constraints.ports_inn {
-                                let inn_ports: BTreeSet<_> = self
-                                    .graph
+                            fn emit_port_error<'a>(
+                                operator_span: Span,
+                                expected_ports_fn: Option<
+                                    &dyn Fn() -> Punctuated<PortIndex, Token![,]>,
+                                >,
+                                actual_ports_iter: impl Iterator<Item = &'a PortIndexValue>,
+                                input_output: &'static str,
+                                diagnostics: &mut Vec<Diagnostic>,
+                            ) {
+                                let Some(expected_ports_fn) = expected_ports_fn else {
+                                    return
+                                };
+                                let expected_ports: Vec<_> =
+                                    (expected_ports_fn)().into_iter().collect();
+
+                                // Reject unexpected ports.
+                                let ports: BTreeSet<_> = actual_ports_iter
+                                    .inspect(|port_index_value| {
+                                        if !expected_ports.iter().any(|port_index| {
+                                            port_index_value == &&port_index.clone().into()
+                                        }) {
+                                            diagnostics.push(Diagnostic::spanned(
+                                                port_index_value.span(),
+                                                Level::Error,
+                                                format!(
+                                                    "Unexpected {} port. Expected one of: `{}`",
+                                                    input_output,
+                                                    expected_ports
+                                                        .iter()
+                                                        .map(|port| Cow::Owned(
+                                                            port.to_token_stream().to_string()
+                                                        ))
+                                                        .intersperse(Cow::Borrowed("`, `"))
+                                                        .collect::<String>()
+                                                ),
+                                            ))
+                                        }
+                                    })
+                                    .collect();
+
+                                // List missing ports.
+                                let missing: Vec<_> = expected_ports
+                                    .into_iter()
+                                    .filter_map(|expected_port| {
+                                        let tokens = expected_port.to_token_stream();
+                                        if !ports.contains(&&expected_port.into()) {
+                                            Some(tokens)
+                                        } else {
+                                            None
+                                        }
+                                    })
+                                    .collect();
+                                if !missing.is_empty() {
+                                    diagnostics.push(Diagnostic::spanned(
+                                        operator_span,
+                                        Level::Error,
+                                        format!(
+                                            "Missing expected {} port(s): `{}`.",
+                                            input_output,
+                                            missing
+                                                .into_iter()
+                                                .map(|port| Cow::Owned(
+                                                    port.to_token_stream().to_string()
+                                                ))
+                                                .intersperse(Cow::Borrowed("`, `"))
+                                                .collect::<String>()
+                                        ),
+                                    ));
+                                }
+                            }
+
+                            emit_port_error(
+                                operator.span(),
+                                op_constraints.ports_inn,
+                                self.graph
                                     .predecessor_edges(node_key)
-                                    .map(|edge_id| &self.indices[edge_id].1)
-                                    .collect();
-
-                                for expected_port in (ports_inn_fn)() {
-                                    let tokens = expected_port.to_token_stream();
-                                    if !inn_ports.contains(&&expected_port.into()) {
-                                        self.diagnostics.push(Diagnostic::spanned(
-                                            operator.span(),
-                                            Level::Error,
-                                            format!("Missing expected input port `{}`.", tokens),
-                                        ));
-                                    }
-                                }
-                            }
-                            if let Some(ports_out_fn) = op_constraints.ports_out {
-                                let out_ports: BTreeSet<_> = self
-                                    .graph
+                                    .map(|edge_id| &self.indices[edge_id].1),
+                                "input",
+                                &mut self.diagnostics,
+                            );
+                            emit_port_error(
+                                operator.span(),
+                                op_constraints.ports_out,
+                                self.graph
                                     .successor_edges(node_key)
-                                    .map(|edge_id| &self.indices[edge_id].0)
-                                    .collect();
-
-                                for expected_port in (ports_out_fn)() {
-                                    let tokens = expected_port.to_token_stream();
-                                    if !out_ports.contains(&&expected_port.into()) {
-                                        self.diagnostics.push(Diagnostic::spanned(
-                                            operator.span(),
-                                            Level::Error,
-                                            format!("Missing expected output port `{}`.", tokens),
-                                        ));
-                                    }
-                                }
-                            }
+                                    .map(|edge_id| &self.indices[edge_id].0),
+                                "output",
+                                &mut self.diagnostics,
+                            );
                         }
                         None => {
                             self.diagnostics.push(Diagnostic::spanned(

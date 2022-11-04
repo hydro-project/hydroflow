@@ -5,8 +5,8 @@ use std::collections::{HashMap, HashSet};
 
 use hydroflow::hydroflow_syntax;
 use hydroflow::scheduled::graph::Hydroflow;
+use hydroflow::util::recv_into;
 use tokio::task::LocalSet;
-use tokio_stream::wrappers::UnboundedReceiverStream;
 
 // TODO(mingwei): custom operators? How to handle in syntax? How to handle state?
 
@@ -24,13 +24,6 @@ use tokio_stream::wrappers::UnboundedReceiverStream;
 // Joe:
 // TODO(mingwei): Documentation articles.
 // TODO(mingwei): Find a way to display join keys
-
-fn recv_into<C, T>(recv: &mut UnboundedReceiverStream<T>) -> C
-where
-    C: FromIterator<T>,
-{
-    std::iter::from_fn(|| recv.as_mut().try_recv().ok()).collect()
-}
 
 #[test]
 pub fn test_basic_2() {
