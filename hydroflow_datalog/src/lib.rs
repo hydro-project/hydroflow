@@ -1,5 +1,4 @@
 #![feature(proc_macro_diagnostic)]
-
 // TODO(mingwei): Need rust-analyzer support
 #![allow(clippy::uninlined_format_args)]
 
