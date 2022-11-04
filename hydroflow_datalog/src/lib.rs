@@ -6,8 +6,10 @@ use hydroflow_lang::{
     graph::flat_graph::FlatGraph,
     parse::{ArrowConnector, IndexInt, Indexing, Pipeline, PipelineLink},
 };
+use proc_macro::Diagnostic;
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, ToTokens};
+use rust_sitter::errors::{ParseError, ParseErrorReason};
 use syn::parse_quote;
 
 mod grammar;
