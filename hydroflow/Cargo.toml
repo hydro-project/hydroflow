@@ -42,7 +42,7 @@ tokio-util = { version = "0.7.4", features = [ "net", "codec" ] }
 tuple_list = "0.1"
 
 [dev-dependencies]
-chrono = { version = "0.4", features = [ "serde" ] }
+chrono = { version = "0.4.20", features = [ "serde" ], default-features = false }
 clap = { version = "3.0.14", features = [ "derive" ] }
 colored = "2.0"
 criterion = { version = "0.3", features = [ "async_tokio" ] }
@@ -51,6 +51,7 @@ itertools = "0.10.3"
 rand = "0.8.4"
 time = "0.3"
 tokio-stream = { version = "0.1.8", features = [ "io-util" ] }
+trybuild = "1.0.71"
 hdrhistogram = "7"
 zipf = "7.0.0"
 core_affinity = "0.5.10"

@@ -1,3 +1,3 @@
 use std::ops::RangeFrom;
 
-pub type Counter = RangeFrom<usize>;
+pub type Counter = RangeFrom<isize>;

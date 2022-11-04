@@ -3,13 +3,13 @@ use quote::{quote, quote_spanned, ToTokens};
 use slotmap::{Key, SecondaryMap, SlotMap};
 use syn::spanned::Spanned;
 
-use crate::parse::IndexInt;
+use crate::diagnostic::Diagnostic;
 
 use super::di_mul_graph::DiMulGraph;
 use super::flat_graph::FlatGraph;
 use super::ops::{OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, OPERATORS};
 use super::serde_graph::SerdeGraph;
-use super::{node_color, Color, GraphEdgeId, GraphNodeId, GraphSubgraphId, Node};
+use super::{node_color, Color, GraphEdgeId, GraphNodeId, GraphSubgraphId, Node, PortIndexValue};
 
 #[derive(Default)]
 #[allow(dead_code)] // TODO(mingwei): remove when no longer needed.
@@ -19,7 +19,7 @@ pub struct PartitionedGraph {
     /// Graph
     pub(crate) graph: DiMulGraph<GraphNodeId, GraphEdgeId>,
     /// Input and output port for each edge.
-    pub(crate) indices: SecondaryMap<GraphEdgeId, (IndexInt, IndexInt)>,
+    pub(crate) indices: SecondaryMap<GraphEdgeId, (PortIndexValue, PortIndexValue)>,
     /// Which subgraph each node belongs to.
     pub(crate) node_subgraph: SecondaryMap<GraphNodeId, GraphSubgraphId>,
 
@@ -38,7 +38,7 @@ impl PartitionedGraph {
     }
 
     #[allow(clippy::result_unit_err)]
-    pub fn from_flat_graph(flat_graph: FlatGraph) -> Result<Self, ()> {
+    pub fn from_flat_graph(flat_graph: FlatGraph) -> Result<Self, Diagnostic> {
         flat_graph.try_into()
     }
 
@@ -159,7 +159,7 @@ impl PartitionedGraph {
                                 self.graph.predecessors(node_id).collect();
                             // Ensure sorted by port index.
                             input_edges
-                                .sort_unstable_by_key(|&(edge_id, _pred)| self.indices[edge_id].1);
+                                .sort_unstable_by_key(|&(edge_id, _pred)| &self.indices[edge_id].1);
                             let inputs: Vec<Ident> = input_edges
                                 .into_iter()
                                 .map(|(_edge_id, pred)| self.node_id_as_ident(pred, true))
@@ -170,7 +170,7 @@ impl PartitionedGraph {
                                 self.graph.successors(node_id).collect();
                             // Ensure sorted by port index.
                             output_edges
-                                .sort_unstable_by_key(|&(edge_id, _succ)| self.indices[edge_id].0);
+                                .sort_unstable_by_key(|&(edge_id, _succ)| &self.indices[edge_id].0);
                             let outputs: Vec<Ident> = output_edges
                                 .into_iter()
                                 .map(|(_edge_id, succ)| self.node_id_as_ident(succ, false))
@@ -214,22 +214,25 @@ impl PartitionedGraph {
                     }
 
                     {
+                        // Determine pull and push halves of the `Pivot`.
                         let pull_to_push_idx = pull_to_push_idx;
                         let pull_ident =
                             self.node_id_as_ident(subgraph_nodes[pull_to_push_idx - 1], false);
 
-                        let push_ident =
-                            if let Some(&node_id) = subgraph_nodes.get(pull_to_push_idx) {
-                                self.node_id_as_ident(node_id, false)
-                            } else {
-                                // Entire subgraph is pull (except for a single send/push handoff output).
-                                assert_eq!(
+                        #[rustfmt::skip]
+                        let push_ident = if let Some(&node_id) =
+                            subgraph_nodes.get(pull_to_push_idx)
+                        {
+                            self.node_id_as_ident(node_id, false)
+                        } else {
+                            // Entire subgraph is pull (except for a single send/push handoff output).
+                            assert_eq!(
                                 1,
                                 send_ports.len(),
-                                "If entire subgraph is pull, should have only one handoff output."
+                                "If entire subgraph is pull, should have only one handoff output. Do you have a loose `null()` or other degenerate pipeline somewhere?"
                             );
-                                send_ports[0].clone()
-                            };
+                            send_ports[0].clone()
+                        };
 
                         // Pivot span is combination of pull and push spans (or if not possible, just take the push).
                         let pivot_span = pull_ident

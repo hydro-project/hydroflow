@@ -6,7 +6,7 @@ use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
 use syn::token::{Bracket, Paren};
 use syn::{
-    bracketed, parenthesized, Expr, GenericArgument, Ident, LitInt, Path, PathArguments,
+    bracketed, parenthesized, Expr, ExprPath, GenericArgument, Ident, LitInt, Path, PathArguments,
     PathSegment, Token,
 };
 
@@ -198,7 +198,7 @@ impl ToTokens for ArrowConnector {
 
 pub struct Indexing {
     pub bracket_token: Bracket,
-    pub index: IndexInt,
+    pub index: PortIndex,
 }
 impl Parse for Indexing {
     fn parse(input: ParseStream) -> syn::Result<Self> {
@@ -216,6 +216,31 @@ impl ToTokens for Indexing {
         self.bracket_token.surround(tokens, |tokens| {
             self.index.to_tokens(tokens);
         });
+    }
+}
+
+/// Port can either be an int or a name (path).
+#[derive(Clone, Debug)]
+pub enum PortIndex {
+    Int(IndexInt),
+    Path(ExprPath),
+}
+impl Parse for PortIndex {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let lookahead = input.lookahead1();
+        if lookahead.peek(LitInt) {
+            input.parse().map(Self::Int)
+        } else {
+            input.parse().map(Self::Path)
+        }
+    }
+}
+impl ToTokens for PortIndex {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        match self {
+            PortIndex::Int(index_int) => index_int.to_tokens(tokens),
+            PortIndex::Path(expr_path) => expr_path.to_tokens(tokens),
+        }
     }
 }
 
@@ -283,7 +308,7 @@ impl ToTokens for Operator {
 
 #[derive(Clone, Copy, Debug)]
 pub struct IndexInt {
-    pub value: usize,
+    pub value: isize,
     pub span: Span,
 }
 impl Parse for IndexInt {

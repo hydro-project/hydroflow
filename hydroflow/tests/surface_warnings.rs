@@ -1,3 +1,6 @@
+// TODO(mingwei): Need rust-analyzer support
+#![allow(clippy::uninlined_format_args)]
+
 //! `#[allow(warnings)]` doesn't actually do anything with proc-macro warnings.
 
 use std::cell::RefCell;
