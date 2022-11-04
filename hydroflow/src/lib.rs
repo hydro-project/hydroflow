@@ -20,8 +20,7 @@ pub use static_assertions;
 pub use tokio;
 pub use tokio_stream;
 pub use tokio_util;
-pub use tuple_list::tuple_list as tl;
-pub use tuple_list::tuple_list_type as tt;
+pub use type_list::{self, tl, tt};
 
 mod declarative_macro;
 pub use declarative_macro::*;
