@@ -134,7 +134,7 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> Opti
             }
 
             for rule in rules {
-                generate_join(rule, &mut flat_graph, &mut tee_counter, &mut merge_counter);
+                generate_rule(rule, &mut flat_graph, &mut tee_counter, &mut merge_counter);
             }
 
             println!("{}", flat_graph.surface_syntax_string());
