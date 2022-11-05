@@ -4,6 +4,7 @@ var sourcesIndex = JSON.parse('{\
 "hydroflow_lang":["",[["graph",[["ops",[],["mod.rs"]]],["di_mul_graph.rs","flat_graph.rs","flat_to_partitioned.rs","graph_algorithms.rs","mod.rs","partitioned_graph.rs","serde_graph.rs"]]],["diagnostic.rs","lib.rs","parse.rs","pretty_span.rs","union_find.rs"]],\
 "hydroflow_macro":["",[],["lib.rs"]],\
 "pusherator":["",[],["filter.rs","filter_map.rs","flatten.rs","for_each.rs","inspect.rs","lib.rs","map.rs","partition.rs","pivot.rs","tee.rs"]],\
-"relalg":["",[],["codegen.rs","lib.rs","runtime.rs","sexp.rs"]]\
+"relalg":["",[],["codegen.rs","lib.rs","runtime.rs","sexp.rs"]],\
+"type_list":["",[],["lib.rs"]]\
 }');
 createSourceSidebar();
