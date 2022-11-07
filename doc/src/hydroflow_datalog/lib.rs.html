@@ -356,6 +356,22 @@
 <span id="356">356</span>
 <span id="357">357</span>
 <span id="358">358</span>
+<span id="359">359</span>
+<span id="360">360</span>
+<span id="361">361</span>
+<span id="362">362</span>
+<span id="363">363</span>
+<span id="364">364</span>
+<span id="365">365</span>
+<span id="366">366</span>
+<span id="367">367</span>
+<span id="368">368</span>
+<span id="369">369</span>
+<span id="370">370</span>
+<span id="371">371</span>
+<span id="372">372</span>
+<span id="373">373</span>
+<span id="374">374</span>
 </pre><pre class="rust"><code><span class="comment">// TODO(mingwei): Need rust-analyzer support
 </span><span class="attr">#![allow(clippy::uninlined_format_args)]
 
@@ -377,7 +393,7 @@
 <span class="kw">use </span>join_plan::<span class="kw-2">*</span>;
 <span class="kw">use </span>util::Counter;
 
-<span class="kw">fn </span>gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -&gt; syn::Stmt {
+<span class="kw">fn </span>gen_hydroflow_graph(literal: proc_macro2::Literal) -&gt; FlatGraph {
     <span class="kw">let </span>str_node: syn::LitStr = <span class="macro">parse_quote!</span>(#literal);
     <span class="kw">let </span>actual_str = str_node.value();
     <span class="kw">let </span>program: Program = grammar::datalog::parse(<span class="kw-2">&amp;</span>actual_str).unwrap();
@@ -459,8 +475,10 @@
         );
     }
 
-    <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, flat_graph.surface_syntax_string());
+    flat_graph
+}
 
+<span class="kw">fn </span>hydroflow_graph_to_program(flat_graph: FlatGraph, root: TokenStream) -&gt; syn::Stmt {
     <span class="kw">let </span>code_tokens = flat_graph
         .into_partitioned_graph()
         .expect(<span class="string">&quot;failed to partition&quot;</span>)
@@ -563,7 +581,9 @@
         }
     };
 
-    proc_macro::TokenStream::from(gen_datalog_program(literal, root).to_token_stream())
+    <span class="kw">let </span>graph = gen_hydroflow_graph(literal);
+    <span class="kw">let </span>program = hydroflow_graph_to_program(graph, root);
+    proc_macro::TokenStream::from(program.to_token_stream())
 }
 
 <span class="attr">#[cfg(test)]
@@ -576,7 +596,8 @@
     <span class="kw">use </span>syn::parse_quote;
     <span class="kw">use </span>tempfile::tempdir;
 
-    <span class="kw">use </span><span class="kw">super</span>::gen_datalog_program;
+    <span class="kw">use </span><span class="kw">super</span>::gen_hydroflow_graph;
+    <span class="kw">use </span><span class="kw">super</span>::hydroflow_graph_to_program;
 
     <span class="kw">fn </span>rustfmt_code(code: <span class="kw-2">&amp;</span>str) -&gt; String {
         <span class="kw">let </span>dir = tempdir().unwrap();
@@ -601,23 +622,34 @@
         data
     }
 
-    <span class="macro">macro_rules! </span>test_datalog_snapshot {
+    <span class="macro">macro_rules! </span>test_snapshots {
         (<span class="macro-nonterminal">$program</span>:literal) =&gt; {
-            <span class="kw">let </span>out = <span class="kw-2">&amp;</span>gen_datalog_program(<span class="macro">parse_quote!</span>(<span class="macro-nonterminal">$program</span>), <span class="macro">quote::quote! </span>{ hydroflow });
+            <span class="kw">let </span>graph = gen_hydroflow_graph(<span class="macro">parse_quote!</span>(<span class="macro-nonterminal">$program</span>));
 
+            <span class="macro">insta::with_settings!</span>({snapshot_suffix =&gt; <span class="string">&quot;surface_graph&quot;</span>}, {
+                <span class="macro">insta::assert_display_snapshot!</span>(graph.surface_syntax_string());
+            });
+
+            <span class="comment">// Have to make a new graph as the above closure borrows.
+            </span><span class="kw">let </span>graph2 = gen_hydroflow_graph(<span class="macro">parse_quote!</span>(<span class="macro-nonterminal">$program</span>));
+            <span class="kw">let </span>out = <span class="kw-2">&amp;</span>hydroflow_graph_to_program(graph2, <span class="macro">quote::quote! </span>{ hydroflow });
             <span class="kw">let </span>wrapped: syn::Item = <span class="macro">parse_quote! </span>{
                 <span class="kw">fn </span>main() {
                     #out
                 }
             };
 
-            <span class="macro">insta::assert_display_snapshot!</span>(rustfmt_code(<span class="kw-2">&amp;</span>wrapped.to_token_stream().to_string()));
+            <span class="macro">insta::with_settings!</span>({snapshot_suffix =&gt; <span class="string">&quot;datalog_program&quot;</span>}, {
+                <span class="macro">insta::assert_display_snapshot!</span>(
+                    rustfmt_code(<span class="kw-2">&amp;</span>wrapped.to_token_stream().to_string())
+                );
+            });
         };
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>minimal_program() {
-        <span class="macro">test_datalog_snapshot!</span>(
+        <span class="macro">test_snapshots!</span>(
             <span class="string">r#&quot;
             .input input
             .output out
@@ -629,7 +661,7 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>join_with_self() {
-        <span class="macro">test_datalog_snapshot!</span>(
+        <span class="macro">test_snapshots!</span>(
             <span class="string">r#&quot;
             .input input
             .output out
@@ -641,7 +673,7 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>join_with_other() {
-        <span class="macro">test_datalog_snapshot!</span>(
+        <span class="macro">test_snapshots!</span>(
             <span class="string">r#&quot;
             .input in1
             .input in2
@@ -654,7 +686,7 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>multiple_contributors() {
-        <span class="macro">test_datalog_snapshot!</span>(
+        <span class="macro">test_snapshots!</span>(
             <span class="string">r#&quot;
             .input in1
             .input in2
@@ -668,7 +700,7 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>single_column_program() {
-        <span class="macro">test_datalog_snapshot!</span>(
+        <span class="macro">test_snapshots!</span>(
             <span class="string">r#&quot;
             .input in1
             .input in2
@@ -681,7 +713,7 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>triple_relation_join() {
-        <span class="macro">test_datalog_snapshot!</span>(
+        <span class="macro">test_snapshots!</span>(
             <span class="string">r#&quot;
             .input in1
             .input in2
@@ -695,7 +727,7 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>local_constraints() {
-        <span class="macro">test_datalog_snapshot!</span>(
+        <span class="macro">test_snapshots!</span>(
             <span class="string">r#&quot;
             .input input
             .output out
@@ -704,7 +736,7 @@
             &quot;#
         </span>);
 
-        <span class="macro">test_datalog_snapshot!</span>(
+        <span class="macro">test_snapshots!</span>(
             <span class="string">r#&quot;
             .input input
             .output out
