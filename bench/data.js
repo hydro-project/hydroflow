@@ -1,6 +1,6 @@
 window.BENCHMARK_DATA = 
 {
-  "lastUpdate": 1667880306459,
+  "lastUpdate": 1667966715083,
   "repoUrl": "https://github.com/hydro-project/hydroflow",
   "entries": {
     "Benchmark": [
@@ -27928,6 +27928,82 @@ window.BENCHMARK_DATA =
             "name": "reachability/hydroflow",
             "value": 2922052,
             "range": "± 99759",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Tyler Hou",
+            "username": "tylerhou",
+            "email": "tyler.hou.cs@gmail.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "b2357466115dd2fe6257da01af855840f1ff33c9",
+          "message": "Add surface graph snapshot tests for datalog. (#223)",
+          "timestamp": "2022-11-07T06:31:33Z",
+          "url": "https://github.com/hydro-project/hydroflow/commit/b2357466115dd2fe6257da01af855840f1ff33c9"
+        },
+        "date": 1667966715075,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "arithmetic/hydroflow/compiled",
+            "value": 318611,
+            "range": "± 18744",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fan_in/hydroflow",
+            "value": 170287330,
+            "range": "± 7939574",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fan_out/hydroflow/scheduled",
+            "value": 97750729,
+            "range": "± 4963346",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fork_join/hydroflow",
+            "value": 11792399,
+            "range": "± 1109802",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fork_join/hydroflow_builder",
+            "value": 30072981,
+            "range": "± 1893522",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "identity/hydroflow",
+            "value": 42491114,
+            "range": "± 2797627",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "identity/hydroflow/compiled",
+            "value": 14696511,
+            "range": "± 927564",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "reachability/hydroflow/scheduled",
+            "value": 2646135,
+            "range": "± 224705",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "reachability/hydroflow",
+            "value": 3034330,
+            "range": "± 178003",
             "unit": "ns/iter"
           }
         ]
