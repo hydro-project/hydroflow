@@ -17,9 +17,13 @@ pub mod inspect;
 pub mod map;
 pub mod partition;
 pub mod pivot;
+pub mod split;
+pub mod switch;
 pub mod tee;
 
 use std::marker::PhantomData;
+
+use either::Either;
 
 pub trait Pusherator: Sized {
     type Item;
@@ -75,6 +79,24 @@ pub trait PusheratorBuild {
         Next1: Pusherator<Item = Self::ItemOut>,
     {
         tee::TeeBuild::new(self, next1)
+    }
+
+    fn split<Next1, Item2>(self, next1: Next1) -> split::SplitBuild<Self, Next1>
+    where
+        Self: Sized,
+        Self: PusheratorBuild<ItemOut = (Next1::Item, Item2)>,
+        Next1: Pusherator,
+    {
+        split::SplitBuild::new(self, next1)
+    }
+
+    fn switch<Next1, Item2>(self, next1: Next1) -> switch::SwitchBuild<Self, Next1>
+    where
+        Self: Sized,
+        Self: PusheratorBuild<ItemOut = Either<Next1::Item, Item2>>,
+        Next1: Pusherator,
+    {
+        switch::SwitchBuild::new(self, next1)
     }
 
     fn for_each<Func>(self, func: Func) -> Self::Output<for_each::ForEach<Func, Self::ItemOut>>
