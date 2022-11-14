@@ -43,16 +43,16 @@ where
         s
     }
     pub fn cycle(&self) -> bool {
-        self.loop_end != None
+        self.loop_end.is_some()
     }
 
     pub fn push(&mut self, item: T) {
         if self.cycle() {
-            return;
+            // NOOP
         } else if self.nodes.contains(&item) {
             self.loop_end = Some(item);
         } else {
-            self.visited.push(item.clone());
+            self.visited.push(item);
             self.nodes.insert(item);
         }
     }

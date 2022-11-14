@@ -31,7 +31,7 @@ pub(crate) async fn run_detector(opts: Opts, peer_list: Vec<String>) {
 
         // setup gossip channel to all peers
         gossip_join = cross_join()
-            -> filter_map(|(m, a):(Message, SocketAddr)| if decide(80) {Some((m,a))} else {None}) -> outbound_chan;
+            -> filter_map(|(m, a)| if decide(80) {Some((m,a))} else {None}) -> outbound_chan;
         gossip = map(identity) -> [0]gossip_join;
         peers[1] -> [1]gossip_join;
         peers[2] -> for_each(|s| println!("Peer: {:?}", s));
@@ -40,7 +40,7 @@ pub(crate) async fn run_detector(opts: Opts, peer_list: Vec<String>) {
         recv_iter([()]) -> for_each(|_s| println!("Type in an edge as a tuple of two integers (x,y): "));
         // read in edges from stdin
         new_edges = recv_stream(stdin_lines)
-            -> filter_map(|line: Result<std::string::String, std::io::Error>| {
+            -> filter_map(|line| {
                 parse_edge(line.unwrap())});
 
         // persist an edges set
@@ -78,7 +78,7 @@ pub(crate) async fn run_detector(opts: Opts, peer_list: Vec<String>) {
         edges[3] -> map(|(from, to)| (from, to)) -> [1]new_paths;
         // stdio(from, to, path) :- new_paths(from, to, path)
         new_paths[0]
-          -> filter_map(|(from, to, path): (u32, u32, SimplePath<u32>)| if from == to {Some(path)} else {None})
+          -> filter_map(|(from, to, path)| if from == to {Some(path)} else {None})
           -> fold (HashMap::new(), |mut total, path| {
              total.insert(path.ordered(), path);
              total
