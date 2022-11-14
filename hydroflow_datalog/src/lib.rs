@@ -1,3 +1,6 @@
+// TODO(mingwei): Need rust-analyzer support
+#![allow(clippy::uninlined_format_args)]
+
 use std::collections::{HashMap, HashSet};
 
 use hydroflow_lang::{
@@ -16,7 +19,7 @@ use grammar::datalog::*;
 use join_plan::*;
 use util::Counter;
 
-fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn::Stmt {
+fn gen_hydroflow_graph(literal: proc_macro2::Literal) -> FlatGraph {
     let str_node: syn::LitStr = parse_quote!(#literal);
     let actual_str = str_node.value();
     let program: Program = grammar::datalog::parse(&actual_str).unwrap();
@@ -98,8 +101,10 @@ fn gen_datalog_program(literal: proc_macro2::Literal, root: TokenStream) -> syn:
         );
     }
 
-    println!("{}", flat_graph.surface_syntax_string());
+    flat_graph
+}
 
+fn hydroflow_graph_to_program(flat_graph: FlatGraph, root: TokenStream) -> syn::Stmt {
     let code_tokens = flat_graph
         .into_partitioned_graph()
         .expect("failed to partition")
@@ -172,10 +177,10 @@ fn generate_rule(
                 // of a single relation on the RHS
                 src: out_expanded.tee_idx.map(|i| Indexing {
                     bracket_token: syn::token::Bracket::default(),
-                    index: IndexInt {
+                    index: hydroflow_lang::parse::PortIndex::Int(IndexInt {
                         value: i,
                         span: Span::call_site(),
-                    },
+                    }),
                 }),
                 arrow: parse_quote!(->),
                 dst: None,
@@ -202,7 +207,9 @@ pub fn datalog(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
         }
     };
 
-    proc_macro::TokenStream::from(gen_datalog_program(literal, root).to_token_stream())
+    let graph = gen_hydroflow_graph(literal);
+    let program = hydroflow_graph_to_program(graph, root);
+    proc_macro::TokenStream::from(program.to_token_stream())
 }
 
 #[cfg(test)]
@@ -215,7 +222,8 @@ mod tests {
     use syn::parse_quote;
     use tempfile::tempdir;
 
-    use super::gen_datalog_program;
+    use super::gen_hydroflow_graph;
+    use super::hydroflow_graph_to_program;
 
     fn rustfmt_code(code: &str) -> String {
         let dir = tempdir().unwrap();
@@ -240,23 +248,34 @@ mod tests {
         data
     }
 
-    macro_rules! test_datalog_snapshot {
+    macro_rules! test_snapshots {
         ($program:literal) => {
-            let out = &gen_datalog_program(parse_quote!($program), quote::quote! { hydroflow });
+            let graph = gen_hydroflow_graph(parse_quote!($program));
 
+            insta::with_settings!({snapshot_suffix => "surface_graph"}, {
+                insta::assert_display_snapshot!(graph.surface_syntax_string());
+            });
+
+            // Have to make a new graph as the above closure borrows.
+            let graph2 = gen_hydroflow_graph(parse_quote!($program));
+            let out = &hydroflow_graph_to_program(graph2, quote::quote! { hydroflow });
             let wrapped: syn::Item = parse_quote! {
                 fn main() {
                     #out
                 }
             };
 
-            insta::assert_display_snapshot!(rustfmt_code(&wrapped.to_token_stream().to_string()));
+            insta::with_settings!({snapshot_suffix => "datalog_program"}, {
+                insta::assert_display_snapshot!(
+                    rustfmt_code(&wrapped.to_token_stream().to_string())
+                );
+            });
         };
     }
 
     #[test]
     fn minimal_program() {
-        test_datalog_snapshot!(
+        test_snapshots!(
             r#"
             .input input
             .output out
@@ -268,7 +287,7 @@ mod tests {
 
     #[test]
     fn join_with_self() {
-        test_datalog_snapshot!(
+        test_snapshots!(
             r#"
             .input input
             .output out
@@ -280,7 +299,7 @@ mod tests {
 
     #[test]
     fn join_with_other() {
-        test_datalog_snapshot!(
+        test_snapshots!(
             r#"
             .input in1
             .input in2
@@ -293,7 +312,7 @@ mod tests {
 
     #[test]
     fn multiple_contributors() {
-        test_datalog_snapshot!(
+        test_snapshots!(
             r#"
             .input in1
             .input in2
@@ -307,7 +326,7 @@ mod tests {
 
     #[test]
     fn single_column_program() {
-        test_datalog_snapshot!(
+        test_snapshots!(
             r#"
             .input in1
             .input in2
@@ -320,7 +339,7 @@ mod tests {
 
     #[test]
     fn triple_relation_join() {
-        test_datalog_snapshot!(
+        test_snapshots!(
             r#"
             .input in1
             .input in2
@@ -334,7 +353,7 @@ mod tests {
 
     #[test]
     fn local_constraints() {
-        test_datalog_snapshot!(
+        test_snapshots!(
             r#"
             .input input
             .output out
@@ -343,7 +362,7 @@ mod tests {
             "#
         );
 
-        test_datalog_snapshot!(
+        test_snapshots!(
             r#"
             .input input
             .output out

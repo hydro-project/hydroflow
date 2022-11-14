@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, HashMap};
 
 use hydroflow_lang::{
     graph::flat_graph::FlatGraph,
-    parse::{ArrowConnector, IndexInt, Indexing, Pipeline, PipelineLink},
+    parse::{ArrowConnector, IndexInt, Indexing, Pipeline, PipelineLink, PortIndex},
 };
 use proc_macro2::Span;
 use syn::{self, parse_quote};
@@ -23,7 +23,7 @@ pub struct IntermediateJoinNode {
     pub name: syn::Ident,
     /// If this join node outputs data through a `tee()` operator, this is the index to consume the node with.
     /// (this is only used for cases where we are directly reading a relation)
-    pub tee_idx: Option<usize>,
+    pub tee_idx: Option<isize>,
     /// A mapping from variables in the rule to the index of the corresponding element in the flattened tuples this node emits.
     pub variable_mapping: BTreeMap<syn::Ident, usize>,
     /// The type of the flattened tuples this node emits.
@@ -80,10 +80,10 @@ fn emit_join_input_pipeline(
             connector: ArrowConnector {
                 src: source_expanded.tee_idx.map(|i| Indexing {
                     bracket_token: syn::token::Bracket::default(),
-                    index: IndexInt {
+                    index: PortIndex::Int(IndexInt {
                         value: i,
                         span: Span::call_site(),
-                    },
+                    }),
                 }),
                 arrow: parse_quote!(->),
                 dst: None,
@@ -143,7 +143,7 @@ pub fn expand_join_plan(
 
             if !local_constraints.is_empty() {
                 let relation_node = syn::Ident::new(&target.name.name, Span::call_site());
-                let relation_idx = syn::Index::from(my_tee_index);
+                let relation_idx = syn::LitInt::new(&my_tee_index.to_string(), Span::call_site());
 
                 let filter_node = syn::Ident::new(
                     &format!(

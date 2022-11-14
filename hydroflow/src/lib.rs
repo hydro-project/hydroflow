@@ -4,8 +4,9 @@
 #![allow(clippy::let_and_return)]
 #![allow(clippy::iter_with_drain)]
 #![allow(clippy::explicit_auto_deref)]
+// TODO(mingwei): Need rust-analyzer support
+#![allow(clippy::uninlined_format_args)]
 
-pub mod builder;
 pub mod compiled;
 pub mod lang;
 pub mod props;
@@ -19,8 +20,7 @@ pub use static_assertions;
 pub use tokio;
 pub use tokio_stream;
 pub use tokio_util;
-pub use tuple_list::tuple_list as tl;
-pub use tuple_list::tuple_list_type as tt;
+pub use type_list::{self, tl, tt};
 
 mod declarative_macro;
 pub use declarative_macro::*;
@@ -34,11 +34,6 @@ mod booktest {
             mod $i {}
         };
     }
-    booktest!(example_1);
-    booktest!(example_2);
-    booktest!(example_3);
-    booktest!(example_4);
-    booktest!(example_5);
 
     booktest!(example_1_surface);
     booktest!(example_2_surface);

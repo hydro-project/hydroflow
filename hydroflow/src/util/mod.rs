@@ -11,6 +11,7 @@ use futures::stream::{SplitSink, SplitStream};
 use futures::Stream;
 use pin_project_lite::pin_project;
 use tokio::net::UdpSocket;
+use tokio_stream::wrappers::UnboundedReceiverStream;
 use tokio_util::codec::length_delimited::LengthDelimitedCodec;
 use tokio_util::codec::{Decoder, Encoder, LinesCodec};
 use tokio_util::udp::UdpFramed;
@@ -95,4 +96,12 @@ where
         _phantom: PhantomData,
     };
     collect_ready.await
+}
+
+/// Receives available items in an `UnboundedReceiverStream` into a `FromIterator` collection.
+pub fn recv_into<C, T>(recv: &mut UnboundedReceiverStream<T>) -> C
+where
+    C: FromIterator<T>,
+{
+    std::iter::from_fn(|| recv.as_mut().try_recv().ok()).collect()
 }

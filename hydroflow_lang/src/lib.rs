@@ -1,7 +1,11 @@
 #![feature(proc_macro_diagnostic, proc_macro_span)]
+#![feature(iter_intersperse)]
 #![allow(clippy::let_and_return)]
 #![allow(clippy::explicit_auto_deref)]
+// TODO(mingwei): Need rust-analyzer support
+#![allow(clippy::uninlined_format_args)]
 
+pub mod diagnostic;
 pub mod graph;
 pub mod parse;
 pub mod pretty_span;

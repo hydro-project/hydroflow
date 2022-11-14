@@ -1,17 +1,21 @@
-use std::collections::BTreeMap;
+use std::borrow::Cow;
+use std::collections::{BTreeMap, BTreeSet};
 
+use proc_macro2::Span;
 use quote::ToTokens;
 use slotmap::{Key, SecondaryMap, SlotMap};
+use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
-use syn::Ident;
+use syn::{Ident, Token};
 
+use crate::diagnostic::{Diagnostic, Level};
 use crate::graph::ops::{RangeTrait, OPERATORS};
-use crate::parse::{HfCode, HfStatement, IndexInt, Operator, Pipeline};
+use crate::parse::{HfCode, HfStatement, Operator, Pipeline, PortIndex};
 use crate::pretty_span::{PrettyRowCol, PrettySpan};
 
 use super::di_mul_graph::DiMulGraph;
 use super::partitioned_graph::PartitionedGraph;
-use super::{GraphEdgeId, GraphNodeId, Node};
+use super::{GraphEdgeId, GraphNodeId, Node, PortIndexValue};
 
 /// A graph representing a hydroflow dataflow graph before subgraph partitioning, stratification, and handoff insertion.
 /// I.e. the graph is a simple "flat" without any subgraph heirarchy.
@@ -26,7 +30,9 @@ pub struct FlatGraph {
     /// Graph
     pub(crate) graph: DiMulGraph<GraphNodeId, GraphEdgeId>,
     /// Input and output port for each edge.
-    pub(crate) indices: SecondaryMap<GraphEdgeId, (IndexInt, IndexInt)>,
+    pub(crate) indices: SecondaryMap<GraphEdgeId, (PortIndexValue, PortIndexValue)>,
+    /// Spanned error/warning/etc diagnostics to emit.
+    pub(crate) diagnostics: Vec<Diagnostic>,
 
     /// Variable names, used as [`HfStatement::Named`] are added.
     names: BTreeMap<Ident, Ports>,
@@ -43,6 +49,7 @@ impl FlatGraph {
             graph.add_statement(stmt);
         }
 
+        graph.check_operator_errors();
         graph
     }
 
@@ -51,9 +58,6 @@ impl FlatGraph {
         match stmt {
             HfStatement::Named(named) => {
                 let ports = self.add_pipeline(named.pipeline);
-                // if let Some((old_name, _)) = self.names.remove_entry(&named.name) {
-                //     old_name.span().unwrap().warning(format!("`{}` is shadowed"))
-                // }
                 self.names.insert(named.name, ports);
             }
             HfStatement::Pipeline(pipeline) => {
@@ -73,52 +77,66 @@ impl FlatGraph {
                 let rhs_ports = self.add_pipeline(*pipeline_link.rhs);
 
                 if let (Some(src), Some(dst)) = (lhs_ports.out, rhs_ports.inn) {
-                    let src_port = connector.src.map(|x| x.index).unwrap_or_else(|| IndexInt {
-                        value: 0,
-                        span: connector.arrow.span(),
-                    });
-                    let dst_port = connector.dst.map(|x| x.index).unwrap_or_else(|| IndexInt {
-                        value: 0,
-                        span: connector.arrow.span(),
-                    });
+                    let (src_port, dst_port) = PortIndexValue::from_arrow_connector(connector);
 
                     {
-                        /// Helper to emit conflicts when a port is overwritten.
-                        fn emit_conflict(inout: &str, old: IndexInt, new: IndexInt) {
-                            old.span()
-                                .unwrap()
-                                .error(format!(
+                        /// Helper to emit conflicts when a port is used twice.
+                        fn emit_conflict(
+                            inout: &str,
+                            old: &PortIndexValue,
+                            new: &PortIndexValue,
+                            diagnostics: &mut Vec<Diagnostic>,
+                        ) {
+                            diagnostics.push(Diagnostic::spanned(
+                                old.span(),
+                                Level::Error,
+                                format!(
                                     "{} connection conflicts with below ({})",
                                     inout,
                                     PrettySpan(new.span()),
-                                ))
-                                .emit();
-                            new.span()
-                                .unwrap()
-                                .error(format!(
+                                ),
+                            ));
+                            diagnostics.push(Diagnostic::spanned(
+                                new.span(),
+                                Level::Error,
+                                format!(
                                     "{} connection conflicts with above ({})",
                                     inout,
                                     PrettySpan(old.span()),
-                                ))
-                                .emit();
+                                ),
+                            ));
                         }
 
                         // Handle src's successor port conflicts:
-                        for conflicting_edge in self
-                            .graph
-                            .successor_edges(src)
-                            .filter(|&e| self.indices[e].0 == src_port)
-                        {
-                            emit_conflict("Output", self.indices[conflicting_edge].0, src_port);
+                        if src_port.is_specified() {
+                            for conflicting_edge in self
+                                .graph
+                                .successor_edges(src)
+                                .filter(|&e| self.indices[e].0 == src_port)
+                            {
+                                emit_conflict(
+                                    "Output",
+                                    &self.indices[conflicting_edge].0,
+                                    &src_port,
+                                    &mut self.diagnostics,
+                                );
+                            }
                         }
 
                         // Handle dst's predecessor port conflicts:
-                        for conflicting_edge in self
-                            .graph
-                            .predecessor_edges(dst)
-                            .filter(|&e| self.indices[e].1 == dst_port)
-                        {
-                            emit_conflict("Input", self.indices[conflicting_edge].1, dst_port);
+                        if dst_port.is_specified() {
+                            for conflicting_edge in self
+                                .graph
+                                .predecessor_edges(dst)
+                                .filter(|&e| self.indices[e].1 == dst_port)
+                            {
+                                emit_conflict(
+                                    "Input",
+                                    &self.indices[conflicting_edge].1,
+                                    &dst_port,
+                                    &mut self.diagnostics,
+                                );
+                            }
                         }
                     }
 
@@ -132,11 +150,11 @@ impl FlatGraph {
                 }
             }
             Pipeline::Name(ident) => self.names.get(&ident).copied().unwrap_or_else(|| {
-                ident
-                    .span()
-                    .unwrap()
-                    .error(format!("Cannot find name `{}`", ident))
-                    .emit();
+                self.diagnostics.push(Diagnostic::spanned(
+                    ident.span(),
+                    Level::Error,
+                    format!("Cannot find name `{}`", ident),
+                ));
                 Ports {
                     inn: None,
                     out: None,
@@ -153,31 +171,29 @@ impl FlatGraph {
     }
 
     /// Validates that operators have valid number of inputs, outputs, & arguments.
-    /// (Emits error messages on span).
+    /// Adds errors (and warnings) to `self.diagnostics`.
     /// TODO(mingwei): Clean this up, make it do more than just arity? Do no overlapping edge ports.
-    /// Returns `true` if errors were found.
-    pub fn emit_operator_errors(&self) -> bool {
-        let mut errored = false;
+    fn check_operator_errors(&mut self) {
         for (node_key, node) in self.nodes.iter() {
             match node {
                 Node::Operator(operator) => {
                     let op_name = &*operator.name_string();
                     match OPERATORS.iter().find(|&op| op_name == op.name) {
                         Some(op_constraints) => {
+                            // Check numer of args
                             if op_constraints.num_args != operator.args.len() {
-                                errored = true;
-
-                                operator
-                                    .span()
-                                    .unwrap()
-                                    .error(format!(
+                                self.diagnostics.push(Diagnostic::spanned(
+                                    operator.span(),
+                                    Level::Error,
+                                    format!(
                                         "expected {} argument(s), found {}",
                                         op_constraints.num_args,
                                         operator.args.len()
-                                    ))
-                                    .emit();
+                                    ),
+                                ));
                             }
 
+                            // Check input/output (port) arity
                             /// Returns true if an error was found.
                             fn emit_arity_error(
                                 operator: &Operator,
@@ -185,6 +201,7 @@ impl FlatGraph {
                                 is_hard: bool,
                                 degree: usize,
                                 range: &dyn RangeTrait<usize>,
+                                diagnostics: &mut Vec<Diagnostic>,
                             ) -> bool {
                                 let op_name = &*operator.name_string();
                                 let message = format!(
@@ -197,62 +214,161 @@ impl FlatGraph {
                                 );
                                 let out_of_range = !range.contains(&degree);
                                 if out_of_range {
-                                    if is_hard {
-                                        operator.span().unwrap().error(message).emit();
-                                    } else {
-                                        operator.span().unwrap().warning(message).emit();
-                                    }
+                                    diagnostics.push(Diagnostic::spanned(
+                                        operator.span(),
+                                        if is_hard {
+                                            Level::Error
+                                        } else {
+                                            Level::Warning
+                                        },
+                                        message,
+                                    ));
                                 }
                                 out_of_range
                             }
 
                             let inn_degree = self.graph.degree_in(node_key);
-                            errored |= emit_arity_error(
+                            let _ = emit_arity_error(
                                 operator,
                                 true,
                                 true,
                                 inn_degree,
                                 op_constraints.hard_range_inn,
-                            );
-                            emit_arity_error(
+                                &mut self.diagnostics,
+                            ) || emit_arity_error(
                                 operator,
                                 true,
                                 false,
                                 inn_degree,
                                 op_constraints.soft_range_inn,
+                                &mut self.diagnostics,
                             );
 
                             let out_degree = self.graph.degree_out(node_key);
-                            errored |= emit_arity_error(
+                            let _ = emit_arity_error(
                                 operator,
                                 false,
                                 true,
                                 out_degree,
                                 op_constraints.hard_range_out,
-                            );
-                            emit_arity_error(
+                                &mut self.diagnostics,
+                            ) || emit_arity_error(
                                 operator,
                                 false,
                                 false,
                                 out_degree,
                                 op_constraints.soft_range_out,
+                                &mut self.diagnostics,
+                            );
+
+                            fn emit_port_error<'a>(
+                                operator_span: Span,
+                                expected_ports_fn: Option<
+                                    &dyn Fn() -> Punctuated<PortIndex, Token![,]>,
+                                >,
+                                actual_ports_iter: impl Iterator<Item = &'a PortIndexValue>,
+                                input_output: &'static str,
+                                diagnostics: &mut Vec<Diagnostic>,
+                            ) {
+                                let Some(expected_ports_fn) = expected_ports_fn else {
+                                    return
+                                };
+                                let expected_ports: Vec<_> =
+                                    (expected_ports_fn)().into_iter().collect();
+
+                                // Reject unexpected ports.
+                                let ports: BTreeSet<_> = actual_ports_iter
+                                    .inspect(|port_index_value| {
+                                        if !expected_ports.iter().any(|port_index| {
+                                            port_index_value == &&port_index.clone().into()
+                                        }) {
+                                            diagnostics.push(Diagnostic::spanned(
+                                                port_index_value.span(),
+                                                Level::Error,
+                                                format!(
+                                                    "Unexpected {} port. Expected one of: `{}`",
+                                                    input_output,
+                                                    expected_ports
+                                                        .iter()
+                                                        .map(|port| Cow::Owned(
+                                                            port.to_token_stream().to_string()
+                                                        ))
+                                                        .intersperse(Cow::Borrowed("`, `"))
+                                                        .collect::<String>()
+                                                ),
+                                            ))
+                                        }
+                                    })
+                                    .collect();
+
+                                // List missing ports.
+                                let missing: Vec<_> = expected_ports
+                                    .into_iter()
+                                    .filter_map(|expected_port| {
+                                        let tokens = expected_port.to_token_stream();
+                                        if !ports.contains(&&expected_port.into()) {
+                                            Some(tokens)
+                                        } else {
+                                            None
+                                        }
+                                    })
+                                    .collect();
+                                if !missing.is_empty() {
+                                    diagnostics.push(Diagnostic::spanned(
+                                        operator_span,
+                                        Level::Error,
+                                        format!(
+                                            "Missing expected {} port(s): `{}`.",
+                                            input_output,
+                                            missing
+                                                .into_iter()
+                                                .map(|port| Cow::Owned(
+                                                    port.to_token_stream().to_string()
+                                                ))
+                                                .intersperse(Cow::Borrowed("`, `"))
+                                                .collect::<String>()
+                                        ),
+                                    ));
+                                }
+                            }
+
+                            emit_port_error(
+                                operator.span(),
+                                op_constraints.ports_inn,
+                                self.graph
+                                    .predecessor_edges(node_key)
+                                    .map(|edge_id| &self.indices[edge_id].1),
+                                "input",
+                                &mut self.diagnostics,
+                            );
+                            emit_port_error(
+                                operator.span(),
+                                op_constraints.ports_out,
+                                self.graph
+                                    .successor_edges(node_key)
+                                    .map(|edge_id| &self.indices[edge_id].0),
+                                "output",
+                                &mut self.diagnostics,
                             );
                         }
                         None => {
-                            operator
-                                .path
-                                .span()
-                                .unwrap()
-                                .error(format!("Unknown operator `{}`", op_name))
-                                .emit();
-                            errored = true;
+                            self.diagnostics.push(Diagnostic::spanned(
+                                operator.path.span(),
+                                Level::Error,
+                                format!("Unknown operator `{}`", op_name),
+                            ));
                         }
                     }
                 }
                 Node::Handoff => todo!("Node::Handoff"),
             }
         }
-        errored
+    }
+
+    /// Emits diagnostics, returns true if there are errors.
+    pub fn emit_diagnostics(&self) -> bool {
+        self.diagnostics.iter().for_each(Diagnostic::emit);
+        self.diagnostics.iter().any(Diagnostic::is_error)
     }
 
     /// Convert back into surface syntax.
@@ -318,7 +434,7 @@ impl FlatGraph {
 
     /// Run subgraph partitioning and stratification and convert this graph into a [`PartitionedGraph`].
     #[allow(clippy::result_unit_err)]
-    pub fn into_partitioned_graph(self) -> Result<PartitionedGraph, ()> {
+    pub fn into_partitioned_graph(self) -> Result<PartitionedGraph, Diagnostic> {
         self.try_into()
     }
 }

@@ -460,10 +460,6 @@ impl Hydroflow {
         &mut self.context
     }
 
-    pub(crate) fn next_subgraph_id(&self) -> SubgraphId {
-        SubgraphId(self.subgraphs.len())
-    }
-
     pub fn add_dependencies(&mut self, sg_id: SubgraphId, deps: FlowGraph) {
         self.subgraphs[sg_id.0].dependencies.append(deps);
     }
