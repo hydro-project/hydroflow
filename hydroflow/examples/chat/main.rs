@@ -33,6 +33,10 @@ struct Opts {
     port: u16,
     #[clap(long)]
     addr: String,
+    #[clap(long)]
+    server_addr: Option<String>,
+    #[clap(long)]
+    server_port: Option<u16>,
     #[clap(arg_enum, long)]
     graph: Option<GraphType>,
 }

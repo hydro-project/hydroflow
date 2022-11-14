@@ -11,7 +11,8 @@ use tokio::net::UdpSocket;
 
 pub(crate) async fn run_server(opts: Opts) {
     // First, set up the socket
-    let server_socket = UdpSocket::bind(("127.0.0.1", opts.port)).await.unwrap();
+
+    let server_socket = UdpSocket::bind((opts.addr, opts.port)).await.unwrap();
     let (outbound, inbound) = hydroflow::util::udp_lines(server_socket);
     println!("Server live!");
 
