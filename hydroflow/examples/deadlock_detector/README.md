@@ -1,6 +1,6 @@
 # Deadlock Detector
 
-This is a distributed deadlock detector. I.e. if finds 
+This is a distributed deadlock detector. I.e. it finds 
 cycles in a graph that has been partitioned across peers.
 In the demo, new waits-for edges can be added at each node via the command line, and
 cycles are printed to stdio in canonical order (starting with the lowest node id in the cycle).

@@ -1,3 +1,4 @@
+/// This is a remedial distributed deadlock (cycle) detector
 use clap::{ArgEnum, Parser};
 use hydroflow::tokio;
 use peer::run_detector;
@@ -12,7 +13,6 @@ mod helpers;
 mod peer;
 mod protocol;
 
-/// This is a remedial distributed deadlock (cycle) detector
 #[derive(Clone, ArgEnum, Debug)]
 enum GraphType {
     Mermaid,
@@ -37,7 +37,7 @@ struct Addresses {
     peers: Vec<String>,
 }
 
-fn read_addresses_from_file<P: AsRef<Path>>(path: P) -> Result<Addresses, Box<dyn Error>> {
+fn read_addresses_from_file(path: impl AsRef<Path>) -> Result<Addresses, Box<dyn Error>> {
     // Open the file in read-only mode with buffer.
     let file = File::open(path)?;
     let reader = BufReader::new(file);

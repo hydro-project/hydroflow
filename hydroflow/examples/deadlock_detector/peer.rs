@@ -1,4 +1,4 @@
-use crate::helpers::{decide, deserialize_msg, parse_edge, serialize_msg};
+use crate::helpers::{deserialize_msg, gen_bool, parse_edge, serialize_msg};
 use crate::protocol::{Message, SimplePath};
 use crate::{GraphType, Opts};
 use hydroflow::hydroflow_syntax;
@@ -29,9 +29,9 @@ pub(crate) async fn run_detector(opts: Opts, peer_list: Vec<String>) {
         outbound_chan = map(|(m,a)| (serialize_msg(m), a)) -> sink_async(outbound);
         inbound_chan = recv_stream(inbound) -> map(deserialize_msg::<Message>);
 
-        // setup gossip channel to all peers
+        // setup gossip channel to all peers. gen_bool chooses True with the odds passed in.
         gossip_join = cross_join()
-            -> filter_map(|(m, a)| if decide(80) {Some((m,a))} else {None}) -> outbound_chan;
+            -> filter(|_| gen_bool(0.8)) -> outbound_chan;
         gossip = map(identity) -> [0]gossip_join;
         peers[1] -> [1]gossip_join;
         peers[2] -> for_each(|s| println!("Peer: {:?}", s));
