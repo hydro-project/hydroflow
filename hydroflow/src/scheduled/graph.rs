@@ -12,7 +12,6 @@ use tokio::runtime::TryCurrentError;
 use tokio::sync::mpsc::{self, UnboundedReceiver};
 
 use super::context::Context;
-use super::flow_graph::FlowGraph;
 use super::handoff::handoff_list::PortList;
 use super::handoff::{Handoff, HandoffMeta};
 use super::port::{RecvCtx, RecvPort, SendCtx, SendPort, RECV, SEND};
@@ -308,7 +307,6 @@ impl Hydroflow {
             subgraph,
             subgraph_preds,
             subgraph_succs,
-            FlowGraph::default(),
             true,
         ));
         self.init_stratum(stratum);
@@ -404,7 +402,6 @@ impl Hydroflow {
             subgraph,
             subgraph_preds,
             subgraph_succs,
-            FlowGraph::default(),
             true,
         ));
         self.init_stratum(stratum);
@@ -458,10 +455,6 @@ impl Hydroflow {
     pub fn context_mut(&mut self, sg_id: SubgraphId) -> &mut Context {
         self.context.subgraph_id = sg_id;
         &mut self.context
-    }
-
-    pub fn add_dependencies(&mut self, sg_id: SubgraphId, deps: FlowGraph) {
-        self.subgraphs[sg_id.0].dependencies.append(deps);
     }
 }
 
@@ -538,8 +531,6 @@ pub(super) struct SubgraphData {
     preds: Vec<HandoffId>,
     succs: Vec<HandoffId>,
 
-    pub(super) dependencies: FlowGraph,
-
     /// If this subgraph is scheduled in [`Hydroflow::stratum_queues`].
     /// [`Cell`] allows modifying this field when iterating `Self::preds` or
     /// `Self::succs`, as all `SubgraphData` are owned by the same vec
@@ -553,7 +544,6 @@ impl SubgraphData {
         subgraph: impl 'static + Subgraph,
         preds: Vec<HandoffId>,
         succs: Vec<HandoffId>,
-        dependencies: FlowGraph,
         is_scheduled: bool,
     ) -> Self {
         Self {
@@ -562,7 +552,6 @@ impl SubgraphData {
             subgraph: Box::new(subgraph),
             preds,
             succs,
-            dependencies,
             is_scheduled: Cell::new(is_scheduled),
         }
     }
