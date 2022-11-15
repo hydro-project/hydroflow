@@ -285,6 +285,43 @@ pub fn test_sort() {
 }
 
 #[test]
+pub fn test_unique() {
+    let (items_send, items_recv) = hydroflow::util::unbounded_channel::<usize>();
+
+    let mut df = hydroflow_syntax! {
+        recv_stream(items_recv)
+            -> unique()
+            -> for_each(|v| print!("{:?}, ", v));
+    };
+
+    println!(
+        "{}",
+        df.serde_graph()
+            .expect("No graph found, maybe failed to parse.")
+            .to_mermaid()
+    );
+    df.run_available();
+
+    print!("\nA: ");
+
+    items_send.send(9).unwrap();
+    items_send.send(9).unwrap();
+    items_send.send(5).unwrap();
+    df.run_available();
+
+    print!("\nB: ");
+
+    items_send.send(9).unwrap();
+    items_send.send(9).unwrap();
+    items_send.send(2).unwrap();
+    items_send.send(0).unwrap();
+    items_send.send(2).unwrap();
+    df.run_available();
+
+    println!();
+}
+
+#[test]
 pub fn test_fold_sort() {
     let (items_send, items_recv) = hydroflow::util::unbounded_channel::<usize>();
 
