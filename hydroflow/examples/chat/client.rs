@@ -13,19 +13,18 @@ use tokio_stream::wrappers::LinesStream;
 
 pub(crate) async fn run_client(opts: Opts) {
     // set up network and I/O channels
-    let server_ip = match opts.server_addr {
-        Some(ip) => ip,
-        None => panic!("Clients must specify --server-addr"),
-    };
-
-    let server_port = match opts.server_port {
-        Some(port) => port,
-        None => panic!("Clients must specify --server-port"),
-    };
+    let server_ip = opts
+        .server_addr
+        .expect("Clients must specify --server-addr");
+    let server_port = opts
+        .server_port
+        .expect("Clients must specify --server-port");
 
     let server_addr: SocketAddr = format!("{}:{}", server_ip, server_port).parse().unwrap();
-    
-    let client_socket = UdpSocket::bind(format!("{}:{}", opts.addr, opts.port)).await.unwrap();
+
+    let client_socket = UdpSocket::bind(format!("{}:{}", opts.addr, opts.port))
+        .await
+        .unwrap();
     let client_addr = client_socket.local_addr().unwrap();
     let (outbound, inbound) = hydroflow::util::udp_lines(client_socket);
 
