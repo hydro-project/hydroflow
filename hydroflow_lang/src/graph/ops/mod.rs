@@ -107,7 +107,7 @@ pub const IDENTITY_WRITE_FN: &'static dyn Fn(
     }
 });
 
-pub const OPERATORS: [OperatorConstraints; 25] = [
+pub const OPERATORS: [OperatorConstraints; 26] = [
     OperatorConstraints {
         name: "null",
         hard_range_inn: RANGE_ANY,
@@ -573,6 +573,42 @@ pub const OPERATORS: [OperatorConstraints; 25] = [
             let input = &inputs[0];
             let write_iterator = quote_spanned! {op_span=>
                 let #ident = #input.reduce(#arguments).into_iter();
+            };
+            OperatorWriteOutput {
+                write_iterator,
+                ..Default::default()
+            }
+        }),
+    },
+    OperatorConstraints {
+        name: "groupby",
+        hard_range_inn: RANGE_1,
+        soft_range_inn: RANGE_1,
+        hard_range_out: RANGE_1,
+        soft_range_out: RANGE_1,
+        ports_inn: None,
+        ports_out: None,
+        num_args: 3,
+        input_delaytype_fn: &|_| Some(DelayType::Stratum),
+        write_fn: &(|&WriteContextArgs { op_span, .. },
+                     &WriteIteratorArgs {
+                         ident,
+                         inputs,
+                         arguments,
+                         is_pull,
+                         ..
+                     }| {
+            assert!(is_pull);
+            let input = &inputs[0];
+            let groupfn = &arguments[0];
+            let initfn = &arguments[1];
+            let aggfn = &arguments[2];
+            let write_iterator = quote_spanned! {op_span=>
+                let #ident = #input.fold(HashMap::new(), |mut ht, nxt| {
+                    let e = ht.entry((#groupfn)(&nxt)).or_insert_with(#initfn);
+                    (#aggfn)(e, nxt);
+                    ht
+                }).into_iter();
             };
             OperatorWriteOutput {
                 write_iterator,

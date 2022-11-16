@@ -363,6 +363,33 @@ pub fn test_fold_sort() {
 }
 
 #[test]
+pub fn test_groupby() {
+    let (items_send, items_recv) = hydroflow::util::unbounded_channel::<(u32, Vec<u32>)>();
+
+    let mut df = hydroflow_syntax! {
+        recv_stream(items_recv)
+            -> groupby(|x: &(u32, Vec<u32>)| x.0, || vec![], |old: &mut Vec<u32>, mut x: (u32, Vec<u32>)| old.append(&mut x.1))
+            -> for_each(|v| print!("{:?}, ", v));
+    };
+
+    println!(
+        "{}",
+        df.serde_graph()
+            .expect("No graph found, maybe failed to parse.")
+            .to_mermaid()
+    );
+    df.run_available();
+
+    items_send.send((0, vec![1, 2])).unwrap();
+    items_send.send((0, vec![3, 4])).unwrap();
+    items_send.send((1, vec![1])).unwrap();
+    items_send.send((1, vec![1, 2])).unwrap();
+    df.run_available();
+
+    println!();
+}
+
+#[test]
 pub fn test_channel_minimal() {
     let (send, recv) = hydroflow::util::unbounded_channel::<usize>();
 
