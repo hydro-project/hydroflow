@@ -107,7 +107,7 @@ pub const IDENTITY_WRITE_FN: &'static dyn Fn(
     }
 });
 
-pub const OPERATORS: [OperatorConstraints; 24] = [
+pub const OPERATORS: [OperatorConstraints; 25] = [
     OperatorConstraints {
         name: "null",
         hard_range_inn: RANGE_ANY,
@@ -573,6 +573,35 @@ pub const OPERATORS: [OperatorConstraints; 24] = [
             let input = &inputs[0];
             let write_iterator = quote_spanned! {op_span=>
                 let #ident = #input.reduce(#arguments).into_iter();
+            };
+            OperatorWriteOutput {
+                write_iterator,
+                ..Default::default()
+            }
+        }),
+    },
+    OperatorConstraints {
+        name: "unique",
+        hard_range_inn: RANGE_1,
+        soft_range_inn: RANGE_1,
+        hard_range_out: RANGE_1,
+        soft_range_out: RANGE_1,
+        ports_inn: None,
+        ports_out: None,
+        num_args: 0,
+        input_delaytype_fn: &|_| Some(DelayType::Stratum),
+        write_fn: &(|&WriteContextArgs { op_span, .. },
+                     &WriteIteratorArgs {
+                         ident,
+                         inputs,
+                         arguments,
+                         is_pull,
+                         ..
+                     }| {
+            assert!(is_pull);
+            let input = &inputs[0];
+            let write_iterator = quote_spanned! {op_span=>
+                let #ident = #input.fold(HashSet::new(#arguments), |mut prev, nxt| {prev.insert(nxt); prev}).into_iter();
             };
             OperatorWriteOutput {
                 write_iterator,
