@@ -10,3 +10,7 @@ members = [
     "pusherator",
     "type_list",
 ]
+
+[profile.release]
+strip = true      # Strip symbols from the binary
+opt-level = "z"   # Optimize for size
