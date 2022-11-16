@@ -6,7 +6,6 @@ use crate::protocol::{CoordMsg, MsgType, SubordResponse};
 use crate::{GraphType, Opts};
 use hydroflow::hydroflow_syntax;
 use hydroflow::scheduled::graph::Hydroflow;
-use std::collections::HashMap;
 use std::net::SocketAddr;
 use tokio::io::AsyncBufReadExt;
 use tokio::net::UdpSocket;

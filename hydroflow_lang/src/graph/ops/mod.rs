@@ -603,7 +603,7 @@ pub const OPERATORS: [OperatorConstraints; 26] = [
             let initfn = &arguments[0];
             let aggfn = &arguments[1];
             let write_iterator = quote_spanned! {op_span=>
-                let #ident = #input.fold(HashMap::new(), |mut ht, nxt| {
+                let #ident = #input.fold(std::collections::HashMap::new(), |mut ht, nxt| {
                     #[allow(clippy::redundant_closure_call)]
                     let e = ht.entry(nxt.0).or_insert_with(#initfn);
                     #[allow(clippy::redundant_closure_call)]
@@ -638,7 +638,7 @@ pub const OPERATORS: [OperatorConstraints; 26] = [
             assert!(is_pull);
             let input = &inputs[0];
             let write_iterator = quote_spanned! {op_span=>
-                let #ident = #input.fold(HashSet::new(#arguments), |mut prev, nxt| {prev.insert(nxt); prev}).into_iter();
+                let #ident = #input.fold(std::collections::HashSet::new(#arguments), |mut prev, nxt| {prev.insert(nxt); prev}).into_iter();
             };
             OperatorWriteOutput {
                 write_iterator,

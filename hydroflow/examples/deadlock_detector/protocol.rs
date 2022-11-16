@@ -17,7 +17,7 @@ impl Message {
 
 // SimplePath is a path that is either acyclic, or ends in a loop.
 // Once it has a loop, it stops growing (and is detected as a cycle).
-#[derive(PartialEq, Eq, Clone, Serialize, Deserialize, Debug)]
+#[derive(PartialEq, Eq, Clone, Serialize, Deserialize, Debug, Default)]
 pub struct SimplePath<T>
 where
     T: Eq + Hash + Clone + Ord + Display + Debug + Copy,
@@ -68,17 +68,11 @@ where
         retval
     }
 
-    pub fn ordered(&self) -> Vec<T> {
-        self.ordered_from(*self.visited.iter().min().unwrap())
-    }
-
-    pub fn format(&self) -> String {
-        let min = *self.visited.iter().min().unwrap();
-        let path = match self.cycle() {
-            false => self.visited.clone(),
-            true => self.ordered(),
-        };
-        let sep_str: String = path.iter().map(|i: &T| format!("{} -> ", i)).collect();
-        format!("{}{:?}", sep_str, min)
+    pub fn canonical(&self) -> Vec<T> {
+        if self.cycle() {
+            self.ordered_from(*self.visited.iter().min().unwrap())
+        } else {
+            self.visited.clone()
+        }
     }
 }

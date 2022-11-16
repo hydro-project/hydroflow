@@ -1,9 +1,8 @@
-use crate::helpers::{deserialize_msg, gen_bool, parse_edge, serialize_msg};
+use crate::helpers::{deserialize_msg, format_cycle, gen_bool, parse_edge, serialize_msg};
 use crate::protocol::{Message, SimplePath};
 use crate::{GraphType, Opts};
 use hydroflow::hydroflow_syntax;
 use hydroflow::scheduled::graph::Hydroflow;
-use std::collections::HashMap;
 use std::convert::identity;
 use std::net::SocketAddr;
 use tokio::io::AsyncBufReadExt;
@@ -78,15 +77,11 @@ pub(crate) async fn run_detector(opts: Opts, peer_list: Vec<String>) {
         edges[3] -> map(|(from, to)| (from, to)) -> [1]new_paths;
         // stdio(from, to, path) :- new_paths(from, to, path)
         new_paths[0]
-          -> filter_map(|(from, to, path)| if from == to {Some(path)} else {None})
-          -> fold (HashMap::new(), |mut total, path| {
-             total.insert(path.ordered(), path);
-             total
-          })
-          -> flat_map(|m| m.into_values())
-          -> for_each(|path: SimplePath<u32>| {
-                println!("cycle found: {:?}", path.format());
-          });
+            -> filter_map(|(from, to, path): (u32, u32, SimplePath<u32>)| if from == to {Some(path.canonical())} else {None})
+            -> unique()
+            -> for_each(|path: Vec<u32>| {
+                    println!("path found: {}", format_cycle(path));
+               });
         // paths :- new_paths
         new_paths[1] -> [1]paths;
 
