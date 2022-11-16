@@ -3,7 +3,7 @@
 set -e
 
 if [ "$#" -ne 2 ]; then
-    echo "Usage: build_dist_release <target OS> <target architecture>"
+    echo "Usage: build_dist_release.sh <target OS> <target architecture>"
     exit 1
 fi
 
