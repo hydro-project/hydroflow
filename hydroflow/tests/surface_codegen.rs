@@ -368,7 +368,7 @@ pub fn test_groupby() {
 
     let mut df = hydroflow_syntax! {
         recv_stream(items_recv)
-            -> groupby(Vec::new(), |old: &mut Vec<u32>, mut x: Vec<u32>| old.append(&mut x))
+            -> groupby(Vec::new, |old: &mut Vec<u32>, mut x: Vec<u32>| old.append(&mut x))
             -> for_each(|v| print!("{:?}, ", v));
     };
 

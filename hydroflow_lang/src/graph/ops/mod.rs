@@ -600,12 +600,12 @@ pub const OPERATORS: [OperatorConstraints; 26] = [
                      }| {
             assert!(is_pull);
             let input = &inputs[0];
-            let initval = &arguments[0];
+            let initfn = &arguments[0];
             let aggfn = &arguments[1];
             let write_iterator = quote_spanned! {op_span=>
                 let #ident = #input.fold(HashMap::new(), |mut ht, nxt| {
-                    #[allow(clippy::or_fun_call)]
-                    let e = ht.entry(nxt.0).or_insert(#initval);
+                    #[allow(clippy::redundant_closure_call)]
+                    let e = ht.entry(nxt.0).or_insert_with(#initfn);
                     #[allow(clippy::redundant_closure_call)]
                     (#aggfn)(e, nxt.1);
                     ht
