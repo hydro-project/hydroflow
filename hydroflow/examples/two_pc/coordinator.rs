@@ -21,10 +21,6 @@ pub(crate) async fn run_coordinator(opts: Opts, subordinates: Vec<String>) {
     let reader = tokio::io::BufReader::new(tokio::io::stdin());
     let stdin_lines = LinesStream::new(reader.lines());
 
-    let extract_xid = |&(xid, _): &(u16, u32)| xid;
-    let zero = || 0;
-    let add_in = |old: &mut u32, (_, val): (u16, u32)| *old += val;
-
     let mut df: Hydroflow = hydroflow_syntax! {
         // fetch subordinates from file, convert ip:port to a SocketAddr, and tee
         subords = recv_iter(subordinates)
@@ -69,10 +65,7 @@ pub(crate) async fn run_coordinator(opts: Opts, subordinates: Vec<String>) {
         votes_chan[2] -> filter_map(is_subord_commit)
             -> map(|m:SubordResponse| (m.xid, 1)) -> [0]commit_buf;
         commit_buf
-            -> groupby(extract_xid, // extract group
-                       zero, // initialize aggregate
-                       add_in // absorb val into agg
-                      )
+            -> groupby(0, |old: &mut u32, val: u32| *old += val)
             -> commit_votes;
         commit_votes[0] -> next_epoch() -> [1]commit_buf;
 

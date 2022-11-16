@@ -588,7 +588,7 @@ pub const OPERATORS: [OperatorConstraints; 26] = [
         soft_range_out: RANGE_1,
         ports_inn: None,
         ports_out: None,
-        num_args: 3,
+        num_args: 2,
         input_delaytype_fn: &|_| Some(DelayType::Stratum),
         write_fn: &(|&WriteContextArgs { op_span, .. },
                      &WriteIteratorArgs {
@@ -600,13 +600,14 @@ pub const OPERATORS: [OperatorConstraints; 26] = [
                      }| {
             assert!(is_pull);
             let input = &inputs[0];
-            let groupfn = &arguments[0];
-            let initfn = &arguments[1];
-            let aggfn = &arguments[2];
+            let initval = &arguments[0];
+            let aggfn = &arguments[1];
             let write_iterator = quote_spanned! {op_span=>
                 let #ident = #input.fold(HashMap::new(), |mut ht, nxt| {
-                    let e = ht.entry((#groupfn)(&nxt)).or_insert_with(#initfn);
-                    (#aggfn)(e, nxt);
+                    #[allow(clippy::or_fun_call)]
+                    let e = ht.entry(nxt.0).or_insert(#initval);
+                    #[allow(clippy::redundant_closure_call)]
+                    (#aggfn)(e, nxt.1);
                     ht
                 }).into_iter();
             };

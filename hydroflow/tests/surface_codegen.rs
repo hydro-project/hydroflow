@@ -366,11 +366,9 @@ pub fn test_fold_sort() {
 pub fn test_groupby() {
     let (items_send, items_recv) = hydroflow::util::unbounded_channel::<(u32, Vec<u32>)>();
 
-    let key = |x: &(u32, Vec<u32>)| x.0;
-    let iter_agg = |old: &mut Vec<u32>, mut x: (u32, Vec<u32>)| old.append(&mut x.1);
     let mut df = hydroflow_syntax! {
         recv_stream(items_recv)
-            -> groupby(key, Vec::new, iter_agg)
+            -> groupby(Vec::new(), |old: &mut Vec<u32>, mut x: Vec<u32>| old.append(&mut x))
             -> for_each(|v| print!("{:?}, ", v));
     };
 
