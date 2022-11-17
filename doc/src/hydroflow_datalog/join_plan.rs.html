@@ -279,7 +279,28 @@
 <a href="#279" id="279">279</a>
 <a href="#280" id="280">280</a>
 <a href="#281" id="281">281</a>
-</pre><pre class="rust"><code><span class="kw">use </span>std::collections::{BTreeMap, HashMap};
+<a href="#282" id="282">282</a>
+<a href="#283" id="283">283</a>
+<a href="#284" id="284">284</a>
+<a href="#285" id="285">285</a>
+<a href="#286" id="286">286</a>
+<a href="#287" id="287">287</a>
+<a href="#288" id="288">288</a>
+<a href="#289" id="289">289</a>
+<a href="#290" id="290">290</a>
+<a href="#291" id="291">291</a>
+<a href="#292" id="292">292</a>
+<a href="#293" id="293">293</a>
+<a href="#294" id="294">294</a>
+<a href="#295" id="295">295</a>
+<a href="#296" id="296">296</a>
+<a href="#297" id="297">297</a>
+<a href="#298" id="298">298</a>
+<a href="#299" id="299">299</a>
+<a href="#300" id="300">300</a>
+<a href="#301" id="301">301</a>
+<a href="#302" id="302">302</a>
+</pre><pre class="rust"><code><span class="kw">use </span>std::collections::{btree_map::Entry, BTreeMap, HashMap};
 
 <span class="kw">use </span>hydroflow_lang::{
     graph::flat_graph::FlatGraph,
@@ -376,6 +397,57 @@
     ));
 }
 
+<span class="doccomment">/// Creates a mapping from variable names to the indices where that variable appears in `fields`.
+///
+/// Only return entries for variables that appear more than once. Those correspond to additional
+/// constraints: the relation is only true when the values at those indices are equal.
+///
+/// For example, `rel(a, b, a) := ...` requires that the values in the 0th and 2nd slots be the
+/// same, so we would return a map `{ &quot;a&quot; =&gt; [0, 2] }`. Note that since `b` is not repeated, it is
+/// not in the map.
+</span><span class="kw">fn </span>find_relation_local_constraints(
+    fields: <span class="kw-2">&amp;</span>[<span class="kw">crate</span>::grammar::datalog::Ident],
+) -&gt; BTreeMap&lt;String, Vec&lt;usize&gt;&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>indices_grouped_by_var = BTreeMap::new();
+    <span class="kw">for </span>(i, ident) <span class="kw">in </span>fields.iter().enumerate() {
+        <span class="kw">let </span>entry = indices_grouped_by_var
+            <span class="comment">// TODO(shadaj): Can we avoid cloning here?
+            </span>.entry(ident.name.clone())
+            .or_insert_with(Vec::new);
+        entry.push(i);
+    }
+
+    indices_grouped_by_var.retain(|<span class="kw">_</span>, v| v.len() &gt; <span class="number">1</span>);
+
+    indices_grouped_by_var
+}
+
+<span class="doccomment">/// Given a mapping from variable names to their repeated indices, builds a Rust expression that
+/// tests whether the values at those indices are equal for each variable.
+///
+/// For example, `rel(a, b, a, a, b)` would give us the map `{ &quot;a&quot; =&gt; [0, 2, 3], &quot;b&quot; =&gt; [1, 4] }`.
+/// Then we would want to generate the code `row.0 == row.2 &amp;&amp; row.0 == row.3 &amp;&amp; row.1 == row.4`.
+</span><span class="kw">fn </span>build_local_constraint_conditions(constraints: <span class="kw-2">&amp;</span>BTreeMap&lt;String, Vec&lt;usize&gt;&gt;) -&gt; syn::Expr {
+    constraints
+        .values()
+        .flat_map(|indices| {
+            <span class="kw">let </span>equal_indices = indices
+                .iter()
+                .map(|i| syn::Index::from(<span class="kw-2">*</span>i))
+                .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+
+            <span class="kw">let </span>first_index = <span class="kw-2">&amp;</span>equal_indices[<span class="number">0</span>];
+
+            equal_indices
+                .iter()
+                .skip(<span class="number">1</span>)
+                .map(|i| <span class="macro">parse_quote!</span>(row.#first_index == row.#i))
+                .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;()
+        })
+        .reduce(|a: syn::Expr, b| <span class="macro">parse_quote!</span>(#a &amp;&amp; #b))
+        .unwrap()
+}
+
 <span class="doccomment">/// Generates a Hydroflow pipeline that computes the output to a given [`JoinPlan`].
 </span><span class="kw">pub fn </span>expand_join_plan(
     <span class="comment">// The plan we are converting to a Hydroflow pipeline.
@@ -390,31 +462,19 @@
             <span class="kw">let </span><span class="kw-2">mut </span>variable_mapping = BTreeMap::new();
             <span class="kw">let </span><span class="kw-2">mut </span>row_types: Vec&lt;syn::Type&gt; = <span class="macro">vec!</span>[];
 
-            <span class="comment">// for each variable, a vec of all tuple indices that should equal that variable
-            // we only track variables with &gt;= 2 indices, since that is when we need to enforce constraints
-            </span><span class="kw">let </span><span class="kw-2">mut </span>local_constraints = BTreeMap::new();
+            <span class="kw">let </span>local_constraints = find_relation_local_constraints(<span class="kw-2">&amp;</span>target.fields);
 
             <span class="kw">for </span>(i, ident) <span class="kw">in </span>target.fields.iter().enumerate() {
                 row_types.push(<span class="macro">parse_quote!</span>(<span class="kw">_</span>));
+
                 <span class="kw">let </span>variable_ident = syn::Ident::new(<span class="kw-2">&amp;</span>ident.name, Span::call_site());
-
-                <span class="comment">// TODO(shadaj): is there something nicer than a clone here?
-                </span><span class="kw">match </span>variable_mapping.entry(variable_ident) {
-                    std::collections::btree_map::Entry::Vacant(e) =&gt; {
-                        e.insert(i);
-                    }
-
-                    std::collections::btree_map::Entry::Occupied(e) =&gt; {
-                        <span class="kw">let </span>constraint_entry = local_constraints
-                            .entry(e.key().clone())
-                            .or_insert_with(|| <span class="macro">vec!</span>[<span class="kw-2">*</span>e.get()]);
-                        constraint_entry.push(i);
-                    }
+                <span class="kw">if let </span>Entry::Vacant(e) = variable_mapping.entry(variable_ident) {
+                    e.insert(i);
                 }
             }
 
             <span class="comment">// Because this is a node corresponding to some Datalog relation, we need to tee from it.
-            </span><span class="kw">let </span>my_tee_index = tee_counter
+            </span><span class="kw">let </span>tee_index = tee_counter
                 .entry(target.name.name.clone())
                 .or_insert_with(|| <span class="number">0</span>..)
                 .next()
@@ -424,7 +484,7 @@
 
             <span class="kw">if </span>!local_constraints.is_empty() {
                 <span class="kw">let </span>relation_node = syn::Ident::new(<span class="kw-2">&amp;</span>target.name.name, Span::call_site());
-                <span class="kw">let </span>relation_idx = syn::LitInt::new(<span class="kw-2">&amp;</span>my_tee_index.to_string(), Span::call_site());
+                <span class="kw">let </span>relation_idx = syn::LitInt::new(<span class="kw-2">&amp;</span>tee_index.to_string(), Span::call_site());
 
                 <span class="kw">let </span>filter_node = syn::Ident::new(
                     <span class="kw-2">&amp;</span><span class="macro">format!</span>(
@@ -434,25 +494,7 @@
                     Span::call_site(),
                 );
 
-                <span class="kw">let </span>conditions = local_constraints
-                    .values()
-                    .map(|indices| {
-                        <span class="kw">let </span>equal_indices = indices
-                            .iter()
-                            .map(|i| syn::Index::from(<span class="kw-2">*</span>i))
-                            .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
-
-                        <span class="kw">let </span>first_index = <span class="kw-2">&amp;</span>equal_indices[<span class="number">0</span>];
-
-                        equal_indices
-                            .iter()
-                            .skip(<span class="number">1</span>)
-                            .map(|i| <span class="macro">parse_quote!</span>(row.#first_index == row.#i))
-                            .reduce(|a: syn::Expr, b| <span class="macro">parse_quote!</span>(#a &amp;&amp; #b))
-                            .unwrap()
-                    })
-                    .reduce(|a: syn::Expr, b| <span class="macro">parse_quote!</span>(#a &amp;&amp; #b))
-                    .unwrap();
+                <span class="kw">let </span>conditions = build_local_constraint_conditions(<span class="kw-2">&amp;</span>local_constraints);
 
                 flat_graph.add_statement(<span class="macro">parse_quote! </span>{
                     #filter_node = #relation_node [#relation_idx] -&gt; filter(|<span class="kw-2">&amp;</span>row: <span class="kw-2">&amp;</span>#row_type| #conditions)
@@ -467,7 +509,7 @@
             } <span class="kw">else </span>{
                 IntermediateJoinNode {
                     name: syn::Ident::new(<span class="kw-2">&amp;</span>target.name.name, Span::call_site()),
-                    tee_idx: <span class="prelude-val">Some</span>(my_tee_index),
+                    tee_idx: <span class="prelude-val">Some</span>(tee_index),
                     variable_mapping,
                     tuple_type: row_type,
                 }
@@ -483,9 +525,9 @@
                 .filter(|i| left_expanded.variable_mapping.contains_key(i))
                 .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
 
-            <span class="comment">// we start by defining the pipeline from the `join()` operator onwards
-            // the main logic here is to flatten the tuples from the left and right sides of the join
-            // into a single tuple that is used by downstream joins or the final output
+            <span class="comment">// We start by defining the pipeline from the `join()` operator onwards. The main logic
+            // here is to flatten the tuples from the left and right sides of the join into a
+            // single tuple that is used by downstream joins or the final output.
             </span><span class="kw">let </span><span class="kw-2">mut </span>flattened_tuple_elems: Vec&lt;syn::Expr&gt; = <span class="macro">vec!</span>[];
             <span class="kw">let </span><span class="kw-2">mut </span>flattened_mapping = BTreeMap::new();
 
