@@ -1,5 +1,5 @@
 {
-  "lastUpdate": 1668571259932,
+  "lastUpdate": 1668657391545,
   "repoUrl": "https://github.com/hydro-project/hydroflow",
   "entries": {
     "Benchmark": [
@@ -28535,6 +28535,82 @@
             "name": "reachability/hydroflow",
             "value": 3095714,
             "range": "± 19846",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Alex Rasmussen",
+            "username": "alexras",
+            "email": "535829+alexras@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "2230af8282ed9ddeb2a2e502a6e4737b9d0a2b0d",
+          "message": "Add a driver for the chat example (#237)\n\nClients can take messages in on stdin from any process, but in order to drive them autonomously we\r\nneed a reliable and continuous source of input that's less spammy than commands like 'yes'. This\r\ndiff adds a chat driver that spits out a random phrase every few seconds to serve as this driver.",
+          "timestamp": "2022-11-16T18:36:30Z",
+          "url": "https://github.com/hydro-project/hydroflow/commit/2230af8282ed9ddeb2a2e502a6e4737b9d0a2b0d"
+        },
+        "date": 1668657391537,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "arithmetic/hydroflow/compiled",
+            "value": 375620,
+            "range": "± 2215",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fan_in/hydroflow",
+            "value": 150187384,
+            "range": "± 723697",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fan_out/hydroflow/scheduled",
+            "value": 92220309,
+            "range": "± 442265",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fork_join/hydroflow",
+            "value": 9792168,
+            "range": "± 48017",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fork_join/hydroflow_builder",
+            "value": 31866737,
+            "range": "± 24469",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "identity/hydroflow",
+            "value": 37154475,
+            "range": "± 56671",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "identity/hydroflow/compiled",
+            "value": 14682001,
+            "range": "± 10766",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "reachability/hydroflow/scheduled",
+            "value": 2526826,
+            "range": "± 12430",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "reachability/hydroflow",
+            "value": 2587136,
+            "range": "± 3188",
             "unit": "ns/iter"
           }
         ]
