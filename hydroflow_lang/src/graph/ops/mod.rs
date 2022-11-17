@@ -604,7 +604,6 @@ pub const OPERATORS: [OperatorConstraints; 26] = [
             let aggfn = &arguments[1];
             let write_iterator = quote_spanned! {op_span=>
                 let #ident = #input.fold(std::collections::HashMap::new(), |mut ht, nxt| {
-                    #[allow(clippy::redundant_closure_call)]
                     let e = ht.entry(nxt.0).or_insert_with(#initfn);
                     #[allow(clippy::redundant_closure_call)]
                     (#aggfn)(e, nxt.1);
