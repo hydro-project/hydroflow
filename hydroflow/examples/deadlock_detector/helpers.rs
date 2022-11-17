@@ -1,7 +1,7 @@
 use regex::Regex;
 use serde::Serialize;
 use serde_json::json;
-use std::net::SocketAddr;
+use std::{fmt::Display, net::SocketAddr};
 use tokio_util::codec::LinesCodecError;
 
 pub fn serialize_msg<T>(msg: T) -> String
@@ -32,4 +32,12 @@ pub fn parse_edge(line: String) -> Option<(u32, u32)> {
         caps.get(1).unwrap().as_str().parse::<u32>().ok()?,
         caps.get(2).unwrap().as_str().parse::<u32>().ok()?,
     ));
+}
+
+pub fn format_cycle<T>(cycle: Vec<T>) -> String
+where
+    T: Display,
+{
+    let sep_str: String = cycle.iter().map(|i: &T| format!("{} -> ", i)).collect();
+    format!("{}{}", sep_str, cycle[0])
 }
