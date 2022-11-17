@@ -13,7 +13,8 @@ COPY . .
 RUN ./scripts/build_dist_release.sh ${TARGETOS} ${TARGETARCH}
 
 RUN mkdir -p xfer/examples
-RUN ls -dR target/*/examples/* | grep -vE '^.*/[a-z_]+\-.*$' | grep -vE '^.*\.d$' | xargs -I{} cp {} xfer/examples/
+RUN ls -dR target/*/release/examples/* | grep -vE '^.*/[a-z_]+\-.*$' | grep -vE '^.*\.d$' | xargs -I{} cp {} xfer/examples/
+RUN ls xfer/examples
 
 # Runtime stage
 FROM rust:slim
