@@ -1013,6 +1013,42 @@
 <a href="#1013" id="1013">1013</a>
 <a href="#1014" id="1014">1014</a>
 <a href="#1015" id="1015">1015</a>
+<a href="#1016" id="1016">1016</a>
+<a href="#1017" id="1017">1017</a>
+<a href="#1018" id="1018">1018</a>
+<a href="#1019" id="1019">1019</a>
+<a href="#1020" id="1020">1020</a>
+<a href="#1021" id="1021">1021</a>
+<a href="#1022" id="1022">1022</a>
+<a href="#1023" id="1023">1023</a>
+<a href="#1024" id="1024">1024</a>
+<a href="#1025" id="1025">1025</a>
+<a href="#1026" id="1026">1026</a>
+<a href="#1027" id="1027">1027</a>
+<a href="#1028" id="1028">1028</a>
+<a href="#1029" id="1029">1029</a>
+<a href="#1030" id="1030">1030</a>
+<a href="#1031" id="1031">1031</a>
+<a href="#1032" id="1032">1032</a>
+<a href="#1033" id="1033">1033</a>
+<a href="#1034" id="1034">1034</a>
+<a href="#1035" id="1035">1035</a>
+<a href="#1036" id="1036">1036</a>
+<a href="#1037" id="1037">1037</a>
+<a href="#1038" id="1038">1038</a>
+<a href="#1039" id="1039">1039</a>
+<a href="#1040" id="1040">1040</a>
+<a href="#1041" id="1041">1041</a>
+<a href="#1042" id="1042">1042</a>
+<a href="#1043" id="1043">1043</a>
+<a href="#1044" id="1044">1044</a>
+<a href="#1045" id="1045">1045</a>
+<a href="#1046" id="1046">1046</a>
+<a href="#1047" id="1047">1047</a>
+<a href="#1048" id="1048">1048</a>
+<a href="#1049" id="1049">1049</a>
+<a href="#1050" id="1050">1050</a>
+<a href="#1051" id="1051">1051</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::fmt::Display;
 <span class="kw">use </span>std::ops::{Bound, RangeBounds};
 
@@ -1122,7 +1158,7 @@
     }
 });
 
-<span class="kw">pub const </span>OPERATORS: [OperatorConstraints; <span class="number">25</span>] = [
+<span class="kw">pub const </span>OPERATORS: [OperatorConstraints; <span class="number">26</span>] = [
     OperatorConstraints {
         name: <span class="string">&quot;null&quot;</span>,
         hard_range_inn: RANGE_ANY,
@@ -1596,6 +1632,42 @@
         }),
     },
     OperatorConstraints {
+        name: <span class="string">&quot;groupby&quot;</span>,
+        hard_range_inn: RANGE_1,
+        soft_range_inn: RANGE_1,
+        hard_range_out: RANGE_1,
+        soft_range_out: RANGE_1,
+        ports_inn: <span class="prelude-val">None</span>,
+        ports_out: <span class="prelude-val">None</span>,
+        num_args: <span class="number">2</span>,
+        input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">Some</span>(DelayType::Stratum),
+        write_fn: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span>WriteContextArgs { op_span, .. },
+                     <span class="kw-2">&amp;</span>WriteIteratorArgs {
+                         ident,
+                         inputs,
+                         arguments,
+                         is_pull,
+                         ..
+                     }| {
+            <span class="macro">assert!</span>(is_pull);
+            <span class="kw">let </span>input = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>];
+            <span class="kw">let </span>initfn = <span class="kw-2">&amp;</span>arguments[<span class="number">0</span>];
+            <span class="kw">let </span>aggfn = <span class="kw-2">&amp;</span>arguments[<span class="number">1</span>];
+            <span class="kw">let </span>write_iterator = <span class="macro">quote_spanned! </span>{op_span=&gt;
+                <span class="kw">let </span>#ident = #input.fold(std::collections::HashMap::new(), |<span class="kw-2">mut </span>ht, nxt| {
+                    <span class="kw">let </span>e = ht.entry(nxt.<span class="number">0</span>).or_insert_with(#initfn);
+                    <span class="attr">#[allow(clippy::redundant_closure_call)]
+                    </span>(#aggfn)(e, nxt.<span class="number">1</span>);
+                    ht
+                }).into_iter();
+            };
+            OperatorWriteOutput {
+                write_iterator,
+                ..Default::default()
+            }
+        }),
+    },
+    OperatorConstraints {
         name: <span class="string">&quot;unique&quot;</span>,
         hard_range_inn: RANGE_1,
         soft_range_inn: RANGE_1,
@@ -1616,7 +1688,7 @@
             <span class="macro">assert!</span>(is_pull);
             <span class="kw">let </span>input = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>];
             <span class="kw">let </span>write_iterator = <span class="macro">quote_spanned! </span>{op_span=&gt;
-                <span class="kw">let </span>#ident = #input.fold(HashSet::new(#arguments), |<span class="kw-2">mut </span>prev, nxt| {prev.insert(nxt); prev}).into_iter();
+                <span class="kw">let </span>#ident = #input.fold(std::collections::HashSet::new(#arguments), |<span class="kw-2">mut </span>prev, nxt| {prev.insert(nxt); prev}).into_iter();
             };
             OperatorWriteOutput {
                 write_iterator,
