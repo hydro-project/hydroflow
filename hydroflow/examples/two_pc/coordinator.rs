@@ -6,7 +6,6 @@ use crate::protocol::{CoordMsg, MsgType, SubordResponse};
 use crate::{GraphType, Opts};
 use hydroflow::hydroflow_syntax;
 use hydroflow::scheduled::graph::Hydroflow;
-use std::collections::HashMap;
 use std::net::SocketAddr;
 use tokio::io::AsyncBufReadExt;
 use tokio::net::UdpSocket;
@@ -65,11 +64,7 @@ pub(crate) async fn run_coordinator(opts: Opts, subordinates: Vec<String>) {
         votes_chan[2] -> filter_map(is_subord_commit)
             -> map(|m:SubordResponse| (m.xid, 1)) -> [0]commit_buf;
         commit_buf
-            -> fold(HashMap::new(), |mut ht, (xid, addend)| {
-                    let e = ht.entry(xid).or_insert(0);
-                    *e += addend;
-                    ht})
-            -> flatten()
+            -> groupby(|| 0, |old: &mut u32, val: u32| *old += val)
             -> commit_votes;
         commit_votes[0] -> next_epoch() -> [1]commit_buf;
 
