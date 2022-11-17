@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{btree_map::Entry, BTreeMap, HashMap};
 
 use hydroflow_lang::{
     graph::flat_graph::FlatGraph,
@@ -95,6 +95,57 @@ fn emit_join_input_pipeline(
     ));
 }
 
+/// Creates a mapping from variable names to the indices where that variable appears in `fields`.
+///
+/// Only return entries for variables that appear more than once. Those correspond to additional
+/// constraints: the relation is only true when the values at those indices are equal.
+///
+/// For example, `rel(a, b, a) := ...` requires that the values in the 0th and 2nd slots be the
+/// same, so we would return a map `{ "a" => [0, 2] }`. Note that since `b` is not repeated, it is
+/// not in the map.
+fn find_relation_local_constraints(
+    fields: &[crate::grammar::datalog::Ident],
+) -> BTreeMap<String, Vec<usize>> {
+    let mut indices_grouped_by_var = BTreeMap::new();
+    for (i, ident) in fields.iter().enumerate() {
+        let entry = indices_grouped_by_var
+            // TODO(shadaj): Can we avoid cloning here?
+            .entry(ident.name.clone())
+            .or_insert_with(Vec::new);
+        entry.push(i);
+    }
+
+    indices_grouped_by_var.retain(|_, v| v.len() > 1);
+
+    indices_grouped_by_var
+}
+
+/// Given a mapping from variable names to their repeated indices, builds a Rust expression that
+/// tests whether the values at those indices are equal for each variable.
+///
+/// For example, `rel(a, b, a, a, b)` would give us the map `{ "a" => [0, 2, 3], "b" => [1, 4] }`.
+/// Then we would want to generate the code `row.0 == row.2 && row.0 == row.3 && row.1 == row.4`.
+fn build_local_constraint_conditions(constraints: &BTreeMap<String, Vec<usize>>) -> syn::Expr {
+    constraints
+        .values()
+        .flat_map(|indices| {
+            let equal_indices = indices
+                .iter()
+                .map(|i| syn::Index::from(*i))
+                .collect::<Vec<_>>();
+
+            let first_index = &equal_indices[0];
+
+            equal_indices
+                .iter()
+                .skip(1)
+                .map(|i| parse_quote!(row.#first_index == row.#i))
+                .collect::<Vec<_>>()
+        })
+        .reduce(|a: syn::Expr, b| parse_quote!(#a && #b))
+        .unwrap()
+}
+
 /// Generates a Hydroflow pipeline that computes the output to a given [`JoinPlan`].
 pub fn expand_join_plan(
     // The plan we are converting to a Hydroflow pipeline.
@@ -109,31 +160,19 @@ pub fn expand_join_plan(
             let mut variable_mapping = BTreeMap::new();
             let mut row_types: Vec<syn::Type> = vec![];
 
-            // for each variable, a vec of all tuple indices that should equal that variable
-            // we only track variables with >= 2 indices, since that is when we need to enforce constraints
-            let mut local_constraints = BTreeMap::new();
+            let local_constraints = find_relation_local_constraints(&target.fields);
 
             for (i, ident) in target.fields.iter().enumerate() {
                 row_types.push(parse_quote!(_));
+
                 let variable_ident = syn::Ident::new(&ident.name, Span::call_site());
-
-                // TODO(shadaj): is there something nicer than a clone here?
-                match variable_mapping.entry(variable_ident) {
-                    std::collections::btree_map::Entry::Vacant(e) => {
-                        e.insert(i);
-                    }
-
-                    std::collections::btree_map::Entry::Occupied(e) => {
-                        let constraint_entry = local_constraints
-                            .entry(e.key().clone())
-                            .or_insert_with(|| vec![*e.get()]);
-                        constraint_entry.push(i);
-                    }
+                if let Entry::Vacant(e) = variable_mapping.entry(variable_ident) {
+                    e.insert(i);
                 }
             }
 
             // Because this is a node corresponding to some Datalog relation, we need to tee from it.
-            let my_tee_index = tee_counter
+            let tee_index = tee_counter
                 .entry(target.name.name.clone())
                 .or_insert_with(|| 0..)
                 .next()
@@ -143,7 +182,7 @@ pub fn expand_join_plan(
 
             if !local_constraints.is_empty() {
                 let relation_node = syn::Ident::new(&target.name.name, Span::call_site());
-                let relation_idx = syn::LitInt::new(&my_tee_index.to_string(), Span::call_site());
+                let relation_idx = syn::LitInt::new(&tee_index.to_string(), Span::call_site());
 
                 let filter_node = syn::Ident::new(
                     &format!(
@@ -153,25 +192,7 @@ pub fn expand_join_plan(
                     Span::call_site(),
                 );
 
-                let conditions = local_constraints
-                    .values()
-                    .map(|indices| {
-                        let equal_indices = indices
-                            .iter()
-                            .map(|i| syn::Index::from(*i))
-                            .collect::<Vec<_>>();
-
-                        let first_index = &equal_indices[0];
-
-                        equal_indices
-                            .iter()
-                            .skip(1)
-                            .map(|i| parse_quote!(row.#first_index == row.#i))
-                            .reduce(|a: syn::Expr, b| parse_quote!(#a && #b))
-                            .unwrap()
-                    })
-                    .reduce(|a: syn::Expr, b| parse_quote!(#a && #b))
-                    .unwrap();
+                let conditions = build_local_constraint_conditions(&local_constraints);
 
                 flat_graph.add_statement(parse_quote! {
                     #filter_node = #relation_node [#relation_idx] -> filter(|&row: &#row_type| #conditions)
@@ -186,7 +207,7 @@ pub fn expand_join_plan(
             } else {
                 IntermediateJoinNode {
                     name: syn::Ident::new(&target.name.name, Span::call_site()),
-                    tee_idx: Some(my_tee_index),
+                    tee_idx: Some(tee_index),
                     variable_mapping,
                     tuple_type: row_type,
                 }
@@ -202,9 +223,9 @@ pub fn expand_join_plan(
                 .filter(|i| left_expanded.variable_mapping.contains_key(i))
                 .collect::<Vec<_>>();
 
-            // we start by defining the pipeline from the `join()` operator onwards
-            // the main logic here is to flatten the tuples from the left and right sides of the join
-            // into a single tuple that is used by downstream joins or the final output
+            // We start by defining the pipeline from the `join()` operator onwards. The main logic
+            // here is to flatten the tuples from the left and right sides of the join into a
+            // single tuple that is used by downstream joins or the final output.
             let mut flattened_tuple_elems: Vec<syn::Expr> = vec![];
             let mut flattened_mapping = BTreeMap::new();
 
