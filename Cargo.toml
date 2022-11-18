@@ -1,9 +1,10 @@
 [workspace]
 
 members = [
-    "hydroflow",
+    "hydroflow_internalmacro",
     "hydroflow_lang",
     "hydroflow_macro",
+    "hydroflow",
     "hydroflow_datalog",
     "benches",
     "relalg",

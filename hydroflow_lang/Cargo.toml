@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+hydroflow_internalmacro = { path = "../hydroflow_internalmacro" }
 proc-macro2 = "1.0.0"
 quote = "1.0.0"
 serde = "1.0.1"
