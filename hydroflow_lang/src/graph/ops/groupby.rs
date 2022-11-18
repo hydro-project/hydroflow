@@ -1,0 +1,44 @@
+use super::{
+    DelayType, OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs,
+    RANGE_1,
+};
+
+use quote::quote_spanned;
+
+#[hydroflow_internalmacro::operator_docgen]
+pub const GROUPBY: OperatorConstraints = OperatorConstraints {
+    name: "groupby",
+    hard_range_inn: RANGE_1,
+    soft_range_inn: RANGE_1,
+    hard_range_out: RANGE_1,
+    soft_range_out: RANGE_1,
+    ports_inn: None,
+    ports_out: None,
+    num_args: 2,
+    input_delaytype_fn: &|_| Some(DelayType::Stratum),
+    write_fn: &(|&WriteContextArgs { op_span, .. },
+                 &WriteIteratorArgs {
+                     ident,
+                     inputs,
+                     arguments,
+                     is_pull,
+                     ..
+                 }| {
+        assert!(is_pull);
+        let input = &inputs[0];
+        let initfn = &arguments[0];
+        let aggfn = &arguments[1];
+        let write_iterator = quote_spanned! {op_span=>
+            let #ident = #input.fold(std::collections::HashMap::new(), |mut ht, nxt| {
+                let e = ht.entry(nxt.0).or_insert_with(#initfn);
+                #[allow(clippy::redundant_closure_call)]
+                (#aggfn)(e, nxt.1);
+                ht
+            }).into_iter();
+        };
+        OperatorWriteOutput {
+            write_iterator,
+            ..Default::default()
+        }
+    }),
+};
