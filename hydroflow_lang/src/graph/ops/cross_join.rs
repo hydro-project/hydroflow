@@ -5,6 +5,18 @@ use super::{
 use quote::quote_spanned;
 use syn::parse_quote;
 
+/// > 2 input streams of type S and T, 1 output stream of type (S, T)
+///
+/// Forms the cross-join (Cartesian Product) of the items in the input streams, returning all tupled pairs.
+///
+/// ```hydroflow
+/// // should print all 4 pairs of emotion and animal
+/// my_join = cross_join();
+/// recv_iter(vec!["happy", "sad"]) -> [0]my_join;
+/// recv_iter(vec!["dog", "cat"]) -> [1]my_join;
+/// my_join -> for_each(|(v1, v2)| println!("({}, {})", v1, v2));
+/// ```
+
 #[hydroflow_internalmacro::operator_docgen]
 pub const CROSS_JOIN: OperatorConstraints = OperatorConstraints {
     name: "cross_join",

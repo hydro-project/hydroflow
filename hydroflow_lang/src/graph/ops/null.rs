@@ -4,6 +4,25 @@ use super::{
 
 use quote::quote_spanned;
 
+/// > unbounded number of input streams of any types, unbounded number of output streams of type `()`
+///
+/// As a source, generates nothing. As a sink, absorbs anything with no effect.
+///
+///
+/// ```hydroflow
+/// // should print `1, 2, 3, 4, 5, 6, a, b, c` across 9 lines
+///     let mut df = hydroflow_syntax! {
+///     null() -> for_each(|_: ()| panic!());
+///     recv_iter([1,2,3]) -> map(|i| println!("{}", i)) -> null();
+///     null_src = null();
+///     null_sink = null();
+///     null_src[0] -> for_each(|_: ()| panic!());
+///     null_src[1] -> for_each(|_: ()| panic!());
+///     recv_iter([4,5,6]) -> map(|i| println!("{}", i)) -> [0]null_sink;
+///     recv_iter(['a','b','c']) -> map(|i| println!("{}", i)) -> [1]null_sink;
+/// };
+/// ```
+
 #[hydroflow_internalmacro::operator_docgen]
 pub const NULL: OperatorConstraints = OperatorConstraints {
     name: "null",
