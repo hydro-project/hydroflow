@@ -1,0 +1,30 @@
+use super::{
+    OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, RANGE_0, RANGE_1,
+};
+
+use quote::quote_spanned;
+
+#[hydroflow_internalmacro::operator_docgen]
+pub const REPEAT_ITER: OperatorConstraints = OperatorConstraints {
+    name: "repeat_iter",
+    hard_range_inn: RANGE_0,
+    soft_range_inn: RANGE_0,
+    hard_range_out: RANGE_1,
+    soft_range_out: RANGE_1,
+    ports_inn: None,
+    ports_out: None,
+    num_args: 1,
+    input_delaytype_fn: &|_| None,
+    write_fn: &(|&WriteContextArgs { op_span, .. },
+                 &WriteIteratorArgs {
+                     ident, arguments, ..
+                 }| {
+        let write_iterator = quote_spanned! {op_span=>
+            let #ident = std::iter::IntoIterator::into_iter(#arguments);
+        };
+        OperatorWriteOutput {
+            write_iterator,
+            ..Default::default()
+        }
+    }),
+};
