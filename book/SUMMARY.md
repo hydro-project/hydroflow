@@ -17,6 +17,6 @@
   - [Rust Embedding](./surface_embedding.md)
   - [Flows](./surface_flows.md)
   - [Data Sources](./surface_data.md)
-  - [Operators](./surface_ops.md)
+  - [Operators](./surface_ops.gen.md)
 - [Architecture](./architecture.md)
   - [Subgraph In-Out Trees](./in-out_trees.md)

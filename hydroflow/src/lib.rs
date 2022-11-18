@@ -29,8 +29,8 @@ pub use hydroflow_macro::*;
 #[cfg(doctest)]
 mod booktest {
     macro_rules! booktest {
-        ($i:ident) => {
-            #[doc = include_str!(concat!("../../book/", stringify!($i), ".md"))]
+        ($i:ident $( $t:tt )*) => {
+            #[doc = include_str!(concat!("../../book/", stringify!($i), $( stringify!($t), )* ".md"))]
             mod $i {}
         };
     }
@@ -45,5 +45,5 @@ mod booktest {
     booktest!(surface_embedding);
     booktest!(surface_flows);
     booktest!(surface_data);
-    booktest!(surface_ops);
+    booktest!(surface_ops.gen);
 }
