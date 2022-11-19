@@ -1,1 +1,1 @@
-window.ALL_CRATES = ["hydroflow","hydroflow_datalog","hydroflow_lang","hydroflow_macro","pusherator","relalg","type_list"];
+window.ALL_CRATES = ["hydroflow","hydroflow_datalog","hydroflow_internalmacro","hydroflow_lang","hydroflow_macro","pusherator","relalg","type_list"];
