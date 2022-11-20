@@ -5,6 +5,27 @@ use super::{
 
 use quote::quote_spanned;
 
+/// > 1 input stream of type (K,V1), 1 output stream of type (K,V2).
+/// The output will have one tuple for each distinct K, with an accumulated value of type V2.
+///
+/// > Arguments: two Rust closures. The first generates an initial value per group. The second itself takes two arguments:
+/// an ‘accumulator’, and an element. The second closure returns the value that the accumulator should have for the next iteration.
+///
+/// A special case of `fold`, in the spirit of SQL's GROUP BY and aggregation constructs.
+/// The input is partitioned into groups by the first field, and for each group the values in the second field
+/// are accumulated via the closures in the arguments.
+
+///
+/// ```hydroflow
+/// let mut df = hydroflow_syntax! {
+///     recv_iter([("toy", 1), ("toy", 2), ("shoe", 11), ("shoe", 35), ("haberdashery", 7)])
+///      -> groupby(|| 0, |old: &mut u32, val: u32| *old += val)
+///      -> for_each(|(k, v)| println!("Total for group {} is {}", k, v));
+///  };
+///  df.run_available();
+///  ```
+///
+
 #[hydroflow_internalmacro::operator_docgen]
 pub const GROUPBY: OperatorConstraints = OperatorConstraints {
     name: "groupby",

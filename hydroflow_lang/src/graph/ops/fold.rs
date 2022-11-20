@@ -5,6 +5,25 @@ use super::{
 
 use quote::quote_spanned;
 
+/// > 1 input stream, 1 output stream
+///
+/// > Arguments: an initial value, and a closure which itself takes two arguments:
+/// an ‘accumulator’, and an element. The closure returns the value that the accumulator should have for the next iteration.
+///
+/// Akin to Rust's built-in fold operator. Folds every element into an accumulator by applying a closure,
+/// returning the final result.
+///
+/// ```hydroflow
+/// // should print `Reassembled vector [1,2,3,4,5]`
+///     recv_iter([1,2,3,4,5])
+///         -> fold(Vec::new(), |mut accum, elem| {
+///             accum.push(elem);
+///             accum
+///         })
+///         -> for_each(|e| println!("Ressembled vector {:?}", e));
+///     };
+/// ```
+
 #[hydroflow_internalmacro::operator_docgen]
 pub const FOLD: OperatorConstraints = OperatorConstraints {
     name: "fold",
