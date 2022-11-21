@@ -8,7 +8,6 @@ use quote::quote_spanned;
 /// Takes one stream as input and filters out any duplicate occurrences. The output
 /// contains all unique values from the input.
 ///
-///
 /// ```hydroflow
 /// // should print 1, 2, 3 (in any order)
 /// recv_iter(vec![1, 1, 2, 3, 2, 1, 3])

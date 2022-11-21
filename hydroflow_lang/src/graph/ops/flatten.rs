@@ -10,9 +10,9 @@ use quote::quote_spanned;
 /// The type of the input items must be iterable.
 ///
 /// ```hydroflow
-///    // should print the numbers 1-6 without any nesting
-///    recv_iter(vec![[1, 2], [3, 4], [5, 6]]) -> flatten()
-///    -> for_each(|x| println!("{}", x));
+/// // should print the numbers 1-6 without any nesting
+/// recv_iter(vec![[1, 2], [3, 4], [5, 6]]) -> flatten()
+/// -> for_each(|x| println!("{}", x));
 /// ```
 
 #[hydroflow_internalmacro::operator_docgen]
