@@ -5,6 +5,15 @@ use super::{
 
 use quote::quote_spanned;
 
+/// Takes a stream as input and produces a sorted version of the stream as output.
+///
+/// ```hydroflow
+/// // should print 1, 2, 3 (in order)
+/// recv_iter(vec![2, 3, 1])
+///     -> sort()
+///     -> for_each(|x| println!("{}", x));
+/// ```
+
 #[hydroflow_internalmacro::operator_docgen]
 pub const SORT: OperatorConstraints = OperatorConstraints {
     name: "sort",

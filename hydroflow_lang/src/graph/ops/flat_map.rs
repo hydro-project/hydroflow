@@ -9,9 +9,10 @@ use quote::quote_spanned;
 /// > Arguments: A Rust closure that handles an iterator
 ///
 /// For each item `i` passed in, treat `i` as an iterator and map the closure to that
-/// iterator to produce items one by one. the type of the input items must be iterable.
+/// iterator to produce items one by one. The type of the input items must be iterable.
 ///
 /// ```hydroflow
+/// // should print out each character of each word on a separate line
 /// recv_iter(vec!["hello", "world"]) -> flat_map(|x| x.chars())
 ///     -> for_each(|x| println!("{}", x));
 /// ```

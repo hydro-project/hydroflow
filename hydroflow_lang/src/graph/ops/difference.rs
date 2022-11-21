@@ -8,6 +8,20 @@ use super::{
 use quote::{quote_spanned, ToTokens};
 use syn::parse_quote;
 
+/// > 2 input streams of the same type T, 1 output stream of type T
+///
+/// Forms the set difference of the items in the input streams, returning items in the `pos`
+/// input that are not found in the `neg` input
+///
+///
+/// ```hydroflow
+/// // should print "elephant"
+/// diff = difference();
+/// recv_iter(vec!["dog", "cat", "elephant"]) -> [pos]diff;
+/// recv_iter(vec!["dog", "cat", "gorilla"]) -> [neg]diff;
+/// diff -> for_each(|v| println!("{}", v));
+/// ```
+
 #[hydroflow_internalmacro::operator_docgen]
 pub const DIFFERENCE: OperatorConstraints = OperatorConstraints {
     name: "difference",
