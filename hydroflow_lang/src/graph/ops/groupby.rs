@@ -17,12 +17,9 @@ use quote::quote_spanned;
 
 ///
 /// ```hydroflow
-/// let mut df = hydroflow_syntax! {
 ///     recv_iter([("toy", 1), ("toy", 2), ("shoe", 11), ("shoe", 35), ("haberdashery", 7)])
 ///      -> groupby(|| 0, |old: &mut u32, val: u32| *old += val)
 ///      -> for_each(|(k, v)| println!("Total for group {} is {}", k, v));
-///  };
-///  df.run_available();
 ///  ```
 ///
 

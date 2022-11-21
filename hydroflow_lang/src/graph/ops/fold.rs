@@ -21,7 +21,6 @@ use quote::quote_spanned;
 ///             accum
 ///         })
 ///         -> for_each(|e| println!("Ressembled vector {:?}", e));
-///     };
 /// ```
 
 #[hydroflow_internalmacro::operator_docgen]
