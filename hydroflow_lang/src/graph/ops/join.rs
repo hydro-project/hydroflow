@@ -10,6 +10,7 @@ use syn::parse_quote;
 /// Forms the equijoin of the tuples in the input streams by their first (key) attribute. Note that the result nests the 2nd input field (values) into a tuple in the 2nd output field.
 ///
 /// ```hydroflow
+/// // should print `(hello, (world, cleveland))`
 /// my_join = join();
 /// recv_iter(vec![("hello", "world"), ("stay", "gold")]) -> [0]my_join;
 /// recv_iter(vec![("hello", "cleveland")]) -> [1]my_join;

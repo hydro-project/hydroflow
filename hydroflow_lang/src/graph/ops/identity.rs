@@ -1,5 +1,15 @@
 use super::{OperatorConstraints, IDENTITY_WRITE_FN, RANGE_1};
 
+/// > 1 input stream of type T, 1 output stream of type T
+///
+/// For each item passed in, pass it out without any change.
+///
+/// ```hydroflow
+/// // should print "hello" and "world" on separate lines (in either order)
+/// recv_iter(vec!["hello", "world"]) -> identity()
+///     -> for_each(|x| println!("{}", x));
+/// ```
+///
 #[hydroflow_internalmacro::operator_docgen]
 pub const IDENTITY: OperatorConstraints = OperatorConstraints {
     name: "identity",
