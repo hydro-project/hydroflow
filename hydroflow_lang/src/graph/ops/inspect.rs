@@ -4,6 +4,16 @@ use super::{
 
 use quote::quote_spanned;
 
+/// > Arguments: A single closure `FnMut(&Item)`.
+///
+/// An operator which allows you to "inspect" each element of a stream without
+/// modifying it. The closure is called on a reference to each item. This is
+/// mainly useful for debugging as in the example below, and it is generally an
+/// anti-pattern to provide a closure with side effects.
+///
+/// ```hydroflow
+/// recv_iter([1, 2, 3, 4]) -> inspect(|&x| println!("{}", x)) -> null();
+/// ```
 #[hydroflow_internalmacro::operator_docgen]
 pub const INSPECT: OperatorConstraints = OperatorConstraints {
     name: "inspect",

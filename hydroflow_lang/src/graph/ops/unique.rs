@@ -14,7 +14,6 @@ use quote::quote_spanned;
 ///     -> unique()
 ///     -> for_each(|x| println!("{}", x));
 /// ```
-
 #[hydroflow_internalmacro::operator_docgen]
 pub const UNIQUE: OperatorConstraints = OperatorConstraints {
     name: "unique",

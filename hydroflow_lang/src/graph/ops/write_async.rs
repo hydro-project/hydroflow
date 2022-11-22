@@ -4,6 +4,13 @@ use super::{
 
 use quote::quote_spanned;
 
+/// > Arguments: An [`AsyncWrite`](https://docs.rs/tokio/latest/tokio/io/trait.AsyncWrite.html).
+///
+/// Consumes a stream of bytes (specifically `AsRef[u8]` items) by writing them
+/// to an [`AsyncWrite`](https://docs.rs/tokio/latest/tokio/io/trait.AsyncWrite.html)
+/// output.
+///
+/// Note this operator must be used within a Tokio runtime.
 #[hydroflow_internalmacro::operator_docgen]
 pub const WRITE_ASYNC: OperatorConstraints = OperatorConstraints {
     name: "write_async",
@@ -37,7 +44,7 @@ pub const WRITE_ASYNC: OperatorConstraints = OperatorConstraints {
                         write.write_all(bytes).await.expect("Error processing async write item.");
                     }
                 })
-                .expect("write_async() must be used within a tokio runtime");
+                .expect("write_async() must be used within a Tokio runtime");
         };
 
         let write_iterator = quote_spanned! {op_span=>

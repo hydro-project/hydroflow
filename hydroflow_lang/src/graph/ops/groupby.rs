@@ -20,8 +20,6 @@ use quote::quote_spanned;
 ///     -> groupby(|| 0, |old: &mut u32, val: u32| *old += val)
 ///     -> for_each(|(k, v)| println!("Total for group {} is {}", k, v));
 ///  ```
-///
-
 #[hydroflow_internalmacro::operator_docgen]
 pub const GROUPBY: OperatorConstraints = OperatorConstraints {
     name: "groupby",

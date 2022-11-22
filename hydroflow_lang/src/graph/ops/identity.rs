@@ -9,7 +9,6 @@ use super::{OperatorConstraints, IDENTITY_WRITE_FN, RANGE_1};
 /// recv_iter(vec!["hello", "world"]) -> identity()
 ///     -> for_each(|x| println!("{}", x));
 /// ```
-///
 #[hydroflow_internalmacro::operator_docgen]
 pub const IDENTITY: OperatorConstraints = OperatorConstraints {
     name: "identity",

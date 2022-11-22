@@ -22,7 +22,6 @@ use quote::quote_spanned;
 ///     })
 ///     -> for_each(|e| println!("Ressembled vector {:?}", e));
 /// ```
-
 #[hydroflow_internalmacro::operator_docgen]
 pub const FOLD: OperatorConstraints = OperatorConstraints {
     name: "fold",
