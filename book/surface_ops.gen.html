@@ -144,6 +144,26 @@ are based on the Rust equivalents for iterators; see the <a href="https://doc.ru
 <tr><td><span title="at least 0">at least 0</span></td><td><code>null()</code></td><td><span title="at least 0">at least 0</span></td></tr>
 </tbody></table>
 <!-- GENERATED "hydroflow_lang/src/graph/ops/null.rs" -->
+<blockquote>
+<p>unbounded number of input streams of any types, unbounded number of output streams of type <code>()</code></p>
+</blockquote>
+<p>As a source, generates nothing. As a sink, absorbs anything with no effect.</p>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
+</span>// should print `1, 2, 3, 4, 5, 6, a, b, c` across 9 lines
+null() -&gt; for_each(|_: ()| panic!());
+recv_iter([1,2,3]) -&gt; map(|i| println!(&quot;{}&quot;, i)) -&gt; null();
+null_src = null();
+null_sink = null();
+null_src[0] -&gt; for_each(|_: ()| panic!());
+// note: use `for_each()` (or `inspect()`) instead of this:
+recv_iter([4,5,6]) -&gt; map(|i| println!(&quot;{}&quot;, i)) -&gt; [0]null_sink;
+<span class="boring">};
+</span><span class="boring">__hf.run_available();
+</span><span class="boring">}
+</span></code></pre></pre>
 <h2 id="merge"><a class="header" href="#merge"><code>merge</code></a></h2>
 <table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
 <tr><td><span title="at least 0">at least 2</span></td><td><code>-&gt; merge() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
@@ -185,7 +205,8 @@ my_merge -&gt; map(|x| x.to_uppercase())
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
-</span>my_join = join();
+</span>// should print `(hello, (world, cleveland))`
+my_join = join();
 recv_iter(vec![(&quot;hello&quot;, &quot;world&quot;), (&quot;stay&quot;, &quot;gold&quot;)]) -&gt; [0]my_join;
 recv_iter(vec![(&quot;hello&quot;, &quot;cleveland&quot;)]) -&gt; [1]my_join;
 my_join -&gt; for_each(|(k, (v1, v2))| println!(&quot;({}, ({}, {}))&quot;, k, v1, v2));
@@ -201,6 +222,23 @@ my_join -&gt; for_each(|(k, (v1, v2))| println!(&quot;({}, ({}, {}))&quot;, k, v
 <p>Input port names: <code>0</code>, <code>1</code></p>
 </blockquote>
 <!-- GENERATED "hydroflow_lang/src/graph/ops/cross_join.rs" -->
+<blockquote>
+<p>2 input streams of type S and T, 1 output stream of type (S, T)</p>
+</blockquote>
+<p>Forms the cross-join (Cartesian Product) of the items in the input streams, returning all tupled pairs.</p>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
+</span>// should print all 4 pairs of emotion and animal
+my_join = cross_join();
+recv_iter(vec![&quot;happy&quot;, &quot;sad&quot;]) -&gt; [0]my_join;
+recv_iter(vec![&quot;dog&quot;, &quot;cat&quot;]) -&gt; [1]my_join;
+my_join -&gt; for_each(|(v1, v2)| println!(&quot;({}, {})&quot;, v1, v2));
+<span class="boring">};
+</span><span class="boring">__hf.run_available();
+</span><span class="boring">}
+</span></code></pre></pre>
 <h2 id="tee"><a class="header" href="#tee"><code>tee</code></a></h2>
 <table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; tee() -&gt;</code></td><td><span title="at least 0">at least 2</span></td></tr>
@@ -232,6 +270,21 @@ my_tee -&gt; for_each(|x: &amp;str| println!(&quot;{}&quot;, x));
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; identity() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
 </tbody></table>
 <!-- GENERATED "hydroflow_lang/src/graph/ops/identity.rs" -->
+<blockquote>
+<p>1 input stream of type T, 1 output stream of type T</p>
+</blockquote>
+<p>For each item passed in, pass it out without any change.</p>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
+</span>// should print &quot;hello&quot; and &quot;world&quot; on separate lines (in either order)
+recv_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; identity()
+    -&gt; for_each(|x| println!(&quot;{}&quot;, x));
+<span class="boring">};
+</span><span class="boring">__hf.run_available();
+</span><span class="boring">}
+</span></code></pre></pre>
 <h2 id="map"><a class="header" href="#map"><code>map</code></a></h2>
 <table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; map(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
@@ -271,12 +324,13 @@ For each item passed in, apply the closure to generate an item to emit.</p>
 <p>Arguments: A Rust closure that handles an iterator</p>
 </blockquote>
 <p>For each item <code>i</code> passed in, treat <code>i</code> as an iterator and map the closure to that
-iterator to produce items one by one. the type of the input items must be iterable.</p>
+iterator to produce items one by one. The type of the input items must be iterable.</p>
 <pre><pre class="playground"><code class="language-rust">
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
-</span>recv_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; flat_map(|x| x.chars())
+</span>// should print out each character of each word on a separate line
+recv_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; flat_map(|x| x.chars())
     -&gt; for_each(|x| println!(&quot;{}&quot;, x));
 <span class="boring">};
 </span><span class="boring">__hf.run_available();
@@ -287,6 +341,22 @@ iterator to produce items one by one. the type of the input items must be iterab
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; flatten() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
 </tbody></table>
 <!-- GENERATED "hydroflow_lang/src/graph/ops/flatten.rs" -->
+<blockquote>
+<p>1 input stream, 1 output stream</p>
+</blockquote>
+<p>For each item <code>i</code> passed in, treat <code>i</code> as an iterator and produce its items one by one.
+The type of the input items must be iterable.</p>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
+</span>// should print the numbers 1-6 without any nesting
+recv_iter(vec![[1, 2], [3, 4], [5, 6]]) -&gt; flatten()
+-&gt; for_each(|x| println!(&quot;{}&quot;, x));
+<span class="boring">};
+</span><span class="boring">__hf.run_available();
+</span><span class="boring">}
+</span></code></pre></pre>
 <h2 id="filter_map"><a class="header" href="#filter_map"><code>filter_map</code></a></h2>
 <table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; filter_map(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
@@ -331,26 +401,123 @@ Rust boolean closure passed in as an argument.</p>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; fold(A, B) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
 </tbody></table>
 <!-- GENERATED "hydroflow_lang/src/graph/ops/fold.rs" -->
+<blockquote>
+<p>1 input stream, 1 output stream</p>
+</blockquote>
+<blockquote>
+<p>Arguments: an initial value, and a closure which itself takes two arguments:
+an 'accumulator', and an element. The closure returns the value that the accumulator should have for the next iteration.</p>
+</blockquote>
+<p>Akin to Rust's built-in fold operator. Folds every element into an accumulator by applying a closure,
+returning the final result.</p>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
+</span>// should print `Reassembled vector [1,2,3,4,5]`
+recv_iter([1,2,3,4,5])
+    -&gt; fold(Vec::new(), |mut accum, elem| {
+        accum.push(elem);
+        accum
+    })
+    -&gt; for_each(|e| println!(&quot;Ressembled vector {:?}&quot;, e));
+<span class="boring">};
+</span><span class="boring">__hf.run_available();
+</span><span class="boring">}
+</span></code></pre></pre>
 <h2 id="reduce"><a class="header" href="#reduce"><code>reduce</code></a></h2>
 <table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; reduce(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
 </tbody></table>
 <!-- GENERATED "hydroflow_lang/src/graph/ops/reduce.rs" -->
+<blockquote>
+<p>1 input stream, 1 output stream</p>
+</blockquote>
+<blockquote>
+<p>Arguments: a closure which itself takes two arguments:
+an ‘accumulator’, and an element. The closure returns the value that the accumulator should have for the next iteration.</p>
+</blockquote>
+<p>Akin to Rust's built-in reduce operator. Folds every element into an accumulator by applying a closure,
+returning the final result.</p>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
+</span>// should print 120 (i.e., 1*2*3*4*5)
+recv_iter([1,2,3,4,5])
+    -&gt; reduce(|mut accum, elem| {
+        accum *= elem;
+        accum
+    })
+    -&gt; for_each(|e| println!(&quot;{}&quot;, e));
+<span class="boring">};
+</span><span class="boring">__hf.run_available();
+</span><span class="boring">}
+</span></code></pre></pre>
 <h2 id="groupby"><a class="header" href="#groupby"><code>groupby</code></a></h2>
 <table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; groupby(A, B) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
 </tbody></table>
 <!-- GENERATED "hydroflow_lang/src/graph/ops/groupby.rs" -->
+<blockquote>
+<p>1 input stream of type (K,V1), 1 output stream of type (K,V2).
+The output will have one tuple for each distinct K, with an accumulated value of type V2.</p>
+</blockquote>
+<blockquote>
+<p>Arguments: two Rust closures. The first generates an initial value per group. The second itself takes two arguments:
+an 'accumulator', and an element. The second closure returns the value that the accumulator should have for the next iteration.</p>
+</blockquote>
+<p>A special case of <code>fold</code>, in the spirit of SQL's GROUP BY and aggregation constructs.
+The input is partitioned into groups by the first field, and for each group the values in the second field
+are accumulated via the closures in the arguments.</p>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
+</span>recv_iter([(&quot;toy&quot;, 1), (&quot;toy&quot;, 2), (&quot;shoe&quot;, 11), (&quot;shoe&quot;, 35), (&quot;haberdashery&quot;, 7)])
+    -&gt; groupby(|| 0, |old: &amp;mut u32, val: u32| *old += val)
+    -&gt; for_each(|(k, v)| println!(&quot;Total for group {} is {}&quot;, k, v));
+<span class="boring">};
+</span><span class="boring">__hf.run_available();
+</span><span class="boring">}
+</span></code></pre></pre>
 <h2 id="unique"><a class="header" href="#unique"><code>unique</code></a></h2>
 <table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; unique() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
 </tbody></table>
 <!-- GENERATED "hydroflow_lang/src/graph/ops/unique.rs" -->
+<p>Takes one stream as input and filters out any duplicate occurrences. The output
+contains all unique values from the input.</p>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
+</span>// should print 1, 2, 3 (in any order)
+recv_iter(vec![1, 1, 2, 3, 2, 1, 3])
+    -&gt; unique()
+    -&gt; for_each(|x| println!(&quot;{}&quot;, x));
+<span class="boring">};
+</span><span class="boring">__hf.run_available();
+</span><span class="boring">}
+</span></code></pre></pre>
 <h2 id="sort"><a class="header" href="#sort"><code>sort</code></a></h2>
 <table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; sort() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
 </tbody></table>
 <!-- GENERATED "hydroflow_lang/src/graph/ops/sort.rs" -->
+<p>Takes a stream as input and produces a sorted version of the stream as output.</p>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
+</span>// should print 1, 2, 3 (in order)
+recv_iter(vec![2, 3, 1])
+    -&gt; sort()
+    -&gt; for_each(|x| println!(&quot;{}&quot;, x));
+<span class="boring">};
+</span><span class="boring">__hf.run_available();
+</span><span class="boring">}
+</span></code></pre></pre>
 <h2 id="recv_stream"><a class="header" href="#recv_stream"><code>recv_stream</code></a></h2>
 <table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
 <tr><td><span title="exactly 0">exactly 0</span></td><td><code>recv_stream(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
@@ -415,6 +582,24 @@ one by one.</p>
 <p>Input port names: <code>pos</code>, <code>neg</code></p>
 </blockquote>
 <!-- GENERATED "hydroflow_lang/src/graph/ops/difference.rs" -->
+<blockquote>
+<p>2 input streams of the same type T, 1 output stream of type T</p>
+</blockquote>
+<p>Forms the set difference of the items in the input streams, returning items in the <code>pos</code>
+input that are not found in the <code>neg</code> input</p>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
+</span>// should print &quot;elephant&quot;
+diff = difference();
+recv_iter(vec![&quot;dog&quot;, &quot;cat&quot;, &quot;elephant&quot;]) -&gt; [pos]diff;
+recv_iter(vec![&quot;dog&quot;, &quot;cat&quot;, &quot;gorilla&quot;]) -&gt; [neg]diff;
+diff -&gt; for_each(|v| println!(&quot;{}&quot;, v));
+<span class="boring">};
+</span><span class="boring">__hf.run_available();
+</span><span class="boring">}
+</span></code></pre></pre>
 <h2 id="next_stratum"><a class="header" href="#next_stratum"><code>next_stratum</code></a></h2>
 <table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; next_stratum() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
