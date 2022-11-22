@@ -3,7 +3,7 @@
 
 use proc_macro2::{Ident, Literal, Span};
 use quote::quote;
-use syn::parse_macro_input;
+use syn::{parse_macro_input, LitStr};
 
 use hydroflow_lang::graph::flat_graph::FlatGraph;
 use hydroflow_lang::parse::HfCode;
@@ -48,4 +48,23 @@ pub fn hydroflow_parser(input: proc_macro::TokenStream) -> proc_macro::TokenStre
     let lit1 = Literal::string(&*part_mermaid);
 
     quote! { println!("{}\n\n{}\n", #lit0, #lit1); }.into()
+}
+
+#[doc(hidden)]
+#[proc_macro]
+pub fn surface_booktest_operators(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    assert!(input.is_empty(), "Input must be empty");
+    let each = hydroflow_lang::graph::ops::OPERATORS.iter().map(|op| {
+        let op_ident = Ident::new(op.name, Span::call_site());
+        let op_filename = format!("../../book/docgen/{}.md", op.name);
+        let lit_filename = LitStr::new(&*op_filename, Span::call_site());
+        quote! {
+            #[doc = include_str!(#lit_filename)]
+            mod #op_ident {}
+        }
+    });
+    let out = quote! {
+        #( #each )*
+    };
+    out.into()
 }
