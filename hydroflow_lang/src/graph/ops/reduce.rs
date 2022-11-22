@@ -22,7 +22,6 @@ use quote::quote_spanned;
 ///     })
 ///     -> for_each(|e| println!("{}", e));
 /// ```
-
 #[hydroflow_internalmacro::operator_docgen]
 pub const REDUCE: OperatorConstraints = OperatorConstraints {
     name: "reduce",

@@ -4,6 +4,11 @@ use super::{
 
 use quote::quote_spanned;
 
+/// > Arguments: An [async `Sink`](https://docs.rs/futures/latest/futures/sink/trait.Sink.html).
+///
+/// Consumes items by sending them to an [async `Sink`](https://docs.rs/futures/latest/futures/sink/trait.Sink.html).
+///
+/// Note this operator must be used within a Tokio runtime.
 #[hydroflow_internalmacro::operator_docgen]
 pub const SINK_ASYNC: OperatorConstraints = OperatorConstraints {
     name: "sink_async",

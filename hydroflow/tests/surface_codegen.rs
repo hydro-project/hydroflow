@@ -211,6 +211,32 @@ pub fn test_flatten() {
 }
 
 #[test]
+pub fn test_next_epoch() {
+    let (inp_send, inp_recv) = hydroflow::util::unbounded_channel::<usize>();
+    let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
+    let mut flow = hydroflow::hydroflow_syntax! {
+        inp = recv_stream(inp_recv) -> tee();
+        diff = difference() -> for_each(|x| out_send.send(x).unwrap());
+        inp -> [pos]diff;
+        inp -> next_epoch() -> [neg]diff;
+    };
+
+    for x in [1, 2, 3, 4] {
+        inp_send.send(x).unwrap();
+    }
+    flow.run_epoch();
+
+    for x in [3, 4, 5, 6] {
+        inp_send.send(x).unwrap();
+    }
+    flow.run_epoch();
+
+    flow.run_available();
+    let out: Vec<_> = recv_into(&mut out_recv);
+    assert_eq!(&[1, 2, 3, 4, 5, 6], &*out);
+}
+
+#[test]
 pub fn test_reduce_sum() {
     let (items_send, items_recv) = hydroflow::util::unbounded_channel::<usize>();
 

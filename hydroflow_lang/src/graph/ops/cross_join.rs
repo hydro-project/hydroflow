@@ -16,7 +16,6 @@ use syn::parse_quote;
 /// recv_iter(vec!["dog", "cat"]) -> [1]my_join;
 /// my_join -> for_each(|(v1, v2)| println!("({}, {})", v1, v2));
 /// ```
-
 #[hydroflow_internalmacro::operator_docgen]
 pub const CROSS_JOIN: OperatorConstraints = OperatorConstraints {
     name: "cross_join",
