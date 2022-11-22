@@ -1,0 +1,52 @@
+#!/bin/bash
+
+set -e
+
+if [ "$#" -ne 2 ]; then
+    echo "Usage: build_dist_release.sh <target OS> <target architecture>"
+    exit 1
+fi
+
+TARGET_OS=$1
+TARGET_ARCH=$2
+
+case $TARGET_ARCH in
+  arm64)
+    RUST_TARGET_ARCH=aarch64
+  ;;
+  amd64)
+    RUST_TARGET_ARCH=x86_64
+    ;;
+  *)
+    echo "Unsupported architecture '${TARGET_ARCH}'"
+    exit 1
+    ;;
+esac
+
+case $TARGET_OS in
+  linux)
+    RUST_TARGET_OS=unknown-linux
+    RUST_TARGET_LIBS=gnu
+  ;;
+  macos)
+    RUST_TARGET_OS=apple
+    RUST_TARGET_LIBS=darwin
+  ;;
+  *)
+    echo "Unsupported OS '${TARGET_OS}'"
+    exit 1
+  ;;
+esac
+
+RUST_TARGET="${RUST_TARGET_ARCH}-${RUST_TARGET_OS}-${RUST_TARGET_LIBS}"
+
+echo "Attempting to (cross-)compile to target '${RUST_TARGET}'"
+
+rustup target add ${RUST_TARGET}
+
+if [ "${TARGET_OS}" == "linux" ]
+then
+  export RUSTFLAGS="-C linker=${RUST_TARGET_ARCH}-linux-gnu-gcc"
+fi
+
+cargo build --release --all-targets --target ${RUST_TARGET}
