@@ -10,6 +10,8 @@ use quote::quote_spanned;
 /// Takes the iterable object and delivers its elements downstream
 /// one by one.
 ///
+/// Note that all elements are emitted during the first epoch.
+///
 /// ```hydroflow
 ///     recv_iter(vec!["Hello", "World"])
 ///         -> for_each(|x| println!("{}", x));

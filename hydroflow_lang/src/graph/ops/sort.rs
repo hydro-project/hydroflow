@@ -13,7 +13,6 @@ use quote::quote_spanned;
 ///     -> sort()
 ///     -> for_each(|x| println!("{}", x));
 /// ```
-
 #[hydroflow_internalmacro::operator_docgen]
 pub const SORT: OperatorConstraints = OperatorConstraints {
     name: "sort",

@@ -9,6 +9,9 @@ use quote::quote_spanned;
 /// > Arguments: A Rust closure
 /// For each item passed in, apply the closure to generate an item to emit.
 ///
+/// If you do not want to modify the item stream and instead only want to view
+/// each item use the [`inspect`](#inspect) operator instead.
+///
 /// ```hydroflow
 /// recv_iter(vec!["hello", "world"]) -> map(|x| x.to_uppercase())
 ///     -> for_each(|x| println!("{}", x));
