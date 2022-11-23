@@ -3,7 +3,7 @@ FROM --platform=$BUILDPLATFORM rust:slim-buster AS build
 
 ARG TARGETOS TARGETARCH
 
-RUN apt-get update && apt-get install git
+RUN apt-get update && apt-get install -y git
 
 RUN /bin/bash -c "if [ "${TARGETARCH}" == "arm64" ]; then apt-get install -y gcc-aarch64-linux-gnu ; else apt-get install -y gcc-x86-64-linux-gnu ; fi"
 
