@@ -993,6 +993,8 @@ recv_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; identity()
 <p>Arguments: A Rust closure
 For each item passed in, apply the closure to generate an item to emit.</p>
 </blockquote>
+<p>If you do not want to modify the item stream and instead only want to view
+each item use the <a href="surface_ops.gen.html#inspect"><code>inspect</code></a> operator instead.</p>
 <pre><pre class="playground"><code class="language-rust">
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
@@ -1008,6 +1010,22 @@ For each item passed in, apply the closure to generate an item to emit.</p>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; inspect(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
 </tbody></table>
 <!-- GENERATED "hydroflow_lang/src/graph/ops/inspect.rs" -->
+<blockquote>
+<p>Arguments: A single closure <code>FnMut(&amp;Item)</code>.</p>
+</blockquote>
+<p>An operator which allows you to &quot;inspect&quot; each element of a stream without
+modifying it. The closure is called on a reference to each item. This is
+mainly useful for debugging as in the example below, and it is generally an
+anti-pattern to provide a closure with side effects.</p>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
+</span>recv_iter([1, 2, 3, 4]) -&gt; inspect(|&amp;x| println!(&quot;{}&quot;, x)) -&gt; null();
+<span class="boring">};
+</span><span class="boring">__hf.run_available();
+</span><span class="boring">}
+</span></code></pre></pre>
 <h2 id="flat_map"><a class="header" href="#flat_map"><code>flat_map</code></a></h2>
 <table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; flat_map(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
@@ -1255,6 +1273,7 @@ flow.run_available();
 Takes the iterable object and delivers its elements downstream
 one by one.</p>
 </blockquote>
+<p>Note that all elements are emitted during the first epoch.</p>
 <pre><pre class="playground"><code class="language-rust">
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
@@ -1281,8 +1300,9 @@ one by one.</p>
 <blockquote>
 <p>2 input streams of the same type T, 1 output stream of type T</p>
 </blockquote>
-<p>Forms the set difference of the items in the input streams, returning items in the <code>pos</code>
-input that are not found in the <code>neg</code> input</p>
+<p>For a given epoch, forms the set difference of the items in the input
+streams, returning items in the <code>pos</code> input that are not found in the
+<code>neg</code> input.</p>
 <pre><pre class="playground"><code class="language-rust">
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
@@ -1301,11 +1321,46 @@ diff -&gt; for_each(|v| println!(&quot;{}&quot;, v));
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; next_stratum() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
 </tbody></table>
 <!-- GENERATED "hydroflow_lang/src/graph/ops/next_stratum.rs" -->
+<p>Delays all elements which pass through to the next stratum (in the same
+epoch).</p>
 <h2 id="next_epoch"><a class="header" href="#next_epoch"><code>next_epoch</code></a></h2>
 <table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; next_epoch() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
 </tbody></table>
 <!-- GENERATED "hydroflow_lang/src/graph/ops/next_epoch.rs" -->
+<p>Delays all elements which pass through to the next epoch. In short,
+execution of a hydroflow graph runs as a sequence of distinct &quot;epochs&quot;.
+Non-monotonic operators compute their output in terms of each epoch so
+execution doesn't have to block, and it is up to the user to coordinate
+data between epoch executions to achieve the desired result.</p>
+<p>An epoch may be divided into multiple <em>strata</em>, see the <a href="surface_ops.gen.html#next_stratum"><code>next_stratum()</code></a>
+operator.</p>
+<p>In the example below <code>next_epoch()</code> is used alongside <code>difference()</code> to
+ignore any items in the current epoch that already appeared in the previous
+epoch.</p>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Outputs 1 2 3 4 5 6 (on separate lines).
+let (input_send, input_recv) = hydroflow::util::unbounded_channel::&lt;usize&gt;();
+let mut flow = hydroflow::hydroflow_syntax! {
+    inp = recv_stream(input_recv) -&gt; tee();
+    diff = difference() -&gt; for_each(|x| println!(&quot;{}&quot;, x));
+    inp -&gt; [pos]diff;
+    inp -&gt; next_epoch() -&gt; [neg]diff;
+};
+
+for x in [1, 2, 3, 4] {
+    input_send.send(x).unwrap();
+}
+flow.run_epoch();
+
+for x in [3, 4, 5, 6] {
+    input_send.send(x).unwrap();
+}
+flow.run_epoch();
+<span class="boring">}
+</span></code></pre></pre>
 <h2 id="for_each"><a class="header" href="#for_each"><code>for_each</code></a></h2>
 <table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; for_each(A)</code></td><td><span title="exactly 0">exactly 0</span></td></tr>
@@ -1334,11 +1389,23 @@ argument.</p>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; write_async(A)</code></td><td><span title="exactly 0">exactly 0</span></td></tr>
 </tbody></table>
 <!-- GENERATED "hydroflow_lang/src/graph/ops/write_async.rs" -->
+<blockquote>
+<p>Arguments: An <a href="https://docs.rs/tokio/latest/tokio/io/trait.AsyncWrite.html"><code>AsyncWrite</code></a>.</p>
+</blockquote>
+<p>Consumes a stream of bytes (specifically <code>AsRef[u8]</code> items) by writing them
+to an <a href="https://docs.rs/tokio/latest/tokio/io/trait.AsyncWrite.html"><code>AsyncWrite</code></a>
+output.</p>
+<p>Note this operator must be used within a Tokio runtime.</p>
 <h2 id="sink_async"><a class="header" href="#sink_async"><code>sink_async</code></a></h2>
 <table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; sink_async(A)</code></td><td><span title="exactly 0">exactly 0</span></td></tr>
 </tbody></table>
 <!-- GENERATED "hydroflow_lang/src/graph/ops/sink_async.rs" -->
+<blockquote>
+<p>Arguments: An <a href="https://docs.rs/futures/latest/futures/sink/trait.Sink.html">async <code>Sink</code></a>.</p>
+</blockquote>
+<p>Consumes items by sending them to an <a href="https://docs.rs/futures/latest/futures/sink/trait.Sink.html">async <code>Sink</code></a>.</p>
+<p>Note this operator must be used within a Tokio runtime.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="architecture"><a class="header" href="#architecture">Architecture</a></h1>
 <p>Hydroflow graphs are divided into two layers: the outer <em>scheduled layer</em> and
 inner <em>compiled layer</em>.</p>
