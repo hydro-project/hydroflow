@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import os
 import random
 import time
 
@@ -38,7 +39,7 @@ if __name__ == '__main__':
         '--word_source',
         '-w',
         help='where to get words from (default: %(default)s)',
-        default='/usr/share/dict/words'
+        default=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'web2a')
     )
 
     parser.add_argument(
