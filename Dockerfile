@@ -10,7 +10,9 @@ RUN /bin/bash -c "if [ "${TARGETARCH}" == "arm64" ]; then apt-get install -y gcc
 WORKDIR /usr/src/myapp
 COPY . .
 
-RUN ./scripts/build_dist_release.sh ${TARGETOS} ${TARGETARCH}
+RUN --mount=type=cache,target=/usr/src/myapp/target \
+    --mount=type=cache,target=/usr/local/cargo/registry \
+    ./scripts/build_dist_release.sh ${TARGETOS} ${TARGETARCH}
 
 RUN mkdir -p xfer/examples
 RUN ls -dR target/*/release/examples/* | grep -vE '^.*/[a-z_]+\-.*$' | grep -vE '^.*\.d$' | xargs -I{} cp {} xfer/examples/
