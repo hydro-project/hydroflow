@@ -1,10 +1,8 @@
-use super::{
-    OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, RANGE_ANY,
-};
+use super::{OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs};
 
 use quote::quote_spanned;
 
-/// > unbounded number of input streams of any types, unbounded number of output streams of type `()`
+/// > unbounded number of input streams of any type, unbounded number of output streams of any type.
 ///
 /// As a source, generates nothing. As a sink, absorbs anything with no effect.
 ///
@@ -21,10 +19,10 @@ use quote::quote_spanned;
 #[hydroflow_internalmacro::operator_docgen]
 pub const NULL: OperatorConstraints = OperatorConstraints {
     name: "null",
-    hard_range_inn: RANGE_ANY,
-    soft_range_inn: RANGE_ANY,
-    hard_range_out: RANGE_ANY,
-    soft_range_out: RANGE_ANY,
+    hard_range_inn: &(0..=1),
+    soft_range_inn: &(0..=1),
+    hard_range_out: &(0..=1),
+    soft_range_out: &(0..=1),
     ports_inn: None,
     ports_out: None,
     num_args: 0,
