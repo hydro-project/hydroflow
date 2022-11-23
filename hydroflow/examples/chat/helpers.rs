@@ -1,7 +1,7 @@
 use crate::protocol::Message;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::net::SocketAddr;
+use std::net::{ToSocketAddrs, SocketAddr};
 use tokio_util::codec::LinesCodecError;
 
 pub fn serialize_msg<T>(msg: T) -> String
@@ -51,4 +51,16 @@ pub fn connect_get_addr(m: Message) -> Option<SocketAddr> {
         Message::ConnectRequest { nickname: _, addr } => Some(addr),
         _ => None,
     }
+}
+
+pub fn resolve_ipv4_connection_addr(server_ip: String, server_port: u16) -> Option<SocketAddr> {
+    let addrs = format!("{}:{}", server_ip, server_port).to_socket_addrs().unwrap();
+
+    for addr in addrs {
+        if addr.is_ipv4() {
+            return Some(addr);
+        }
+    }
+
+    return None;
 }
