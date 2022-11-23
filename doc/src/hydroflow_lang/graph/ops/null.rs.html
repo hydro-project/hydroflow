@@ -53,15 +53,11 @@
 <a href="#53" id="53">53</a>
 <a href="#54" id="54">54</a>
 <a href="#55" id="55">55</a>
-<a href="#56" id="56">56</a>
-<a href="#57" id="57">57</a>
-</pre><pre class="rust"><code><span class="kw">use super</span>::{
-    OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, RANGE_ANY,
-};
+</pre><pre class="rust"><code><span class="kw">use super</span>::{OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs};
 
 <span class="kw">use </span>quote::quote_spanned;
 
-<span class="doccomment">/// &gt; unbounded number of input streams of any types, unbounded number of output streams of type `()`
+<span class="doccomment">/// &gt; unbounded number of input streams of any type, unbounded number of output streams of any type.
 ///
 /// As a source, generates nothing. As a sink, absorbs anything with no effect.
 ///
@@ -78,10 +74,10 @@
 </span><span class="attr">#[hydroflow_internalmacro::operator_docgen]
 </span><span class="kw">pub const </span>NULL: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;null&quot;</span>,
-    hard_range_inn: RANGE_ANY,
-    soft_range_inn: RANGE_ANY,
-    hard_range_out: RANGE_ANY,
-    soft_range_out: RANGE_ANY,
+    hard_range_inn: <span class="kw-2">&amp;</span>(<span class="number">0</span>..=<span class="number">1</span>),
+    soft_range_inn: <span class="kw-2">&amp;</span>(<span class="number">0</span>..=<span class="number">1</span>),
+    hard_range_out: <span class="kw-2">&amp;</span>(<span class="number">0</span>..=<span class="number">1</span>),
+    soft_range_out: <span class="kw-2">&amp;</span>(<span class="number">0</span>..=<span class="number">1</span>),
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">None</span>,
     num_args: <span class="number">0</span>,

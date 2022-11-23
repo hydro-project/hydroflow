@@ -837,11 +837,11 @@ Here we document each operators in more detail. Most of these operators
 are based on the Rust equivalents for iterators; see the <a href="https://doc.rust-lang.org/std/iter/trait.Iterator.html">Rust documentation</a>.</p>
 <h2 id="null"><a class="header" href="#null"><code>null</code></a></h2>
 <table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
-<tr><td><span title="at least 0">at least 0</span></td><td><code>null()</code></td><td><span title="at least 0">at least 0</span></td></tr>
+<tr><td><span title="at least 0 and at most 1">at least 0 and at most 1</span></td><td><code>null()</code></td><td><span title="at least 0 and at most 1">at least 0 and at most 1</span></td></tr>
 </tbody></table>
 <!-- GENERATED "hydroflow_lang/src/graph/ops/null.rs" -->
 <blockquote>
-<p>unbounded number of input streams of any types, unbounded number of output streams of type <code>()</code></p>
+<p>unbounded number of input streams of any type, unbounded number of output streams of any type.</p>
 </blockquote>
 <p>As a source, generates nothing. As a sink, absorbs anything with no effect.</p>
 <pre><pre class="playground"><code class="language-rust">
