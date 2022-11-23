@@ -14,6 +14,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
       - id: buildx
         name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -34,4 +36,6 @@ jobs:
           push: true
           secrets: |
             GIT_AUTH_TOKEN=${{ github.token }}
-          tags: ${{ github.repository_owner }}/hydroflow-examples:${{ github.sha }},${{ github.repository_owner }}/hydroflow-examples:latest
+          tags: |
+            ${{ github.repository_owner }}/hydroflow-examples:${{ github.sha }}
+            ${{ github.repository_owner }}/hydroflow-examples:latest
