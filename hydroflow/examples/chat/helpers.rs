@@ -54,7 +54,7 @@ pub fn connect_get_addr(m: Message) -> Option<SocketAddr> {
 }
 
 pub fn resolve_ipv4_connection_addr(server_ip: String, server_port: u16) -> Option<SocketAddr> {
-    let addrs = format!("{}:{}", server_ip, server_port)
+    let mut addrs = format!("{}:{}", server_ip, server_port)
         .to_socket_addrs()
         .unwrap();
 
