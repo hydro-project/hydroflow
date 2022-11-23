@@ -3,10 +3,8 @@
 
 use std::collections::{HashMap, HashSet};
 
-use hydroflow_lang::{
-    graph::flat_graph::FlatGraph,
-    parse::{ArrowConnector, IndexInt, Indexing, Pipeline, PipelineLink},
-};
+use hydroflow_lang::graph::flat_graph::FlatGraph;
+use hydroflow_lang::parse::{ArrowConnector, Pipeline, PipelineLink};
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, ToTokens};
 use syn::parse_quote;
@@ -175,13 +173,7 @@ fn generate_rule(
                 // if the output comes with a tee index, we must read with that
                 // this only happens when we are directly outputting a transformation
                 // of a single relation on the RHS
-                src: out_expanded.tee_idx.map(|i| Indexing {
-                    bracket_token: syn::token::Bracket::default(),
-                    index: hydroflow_lang::parse::PortIndex::Int(IndexInt {
-                        value: i,
-                        span: Span::call_site(),
-                    }),
-                }),
+                src: out_expanded.tee_idx.map(|i| parse_quote!([#i])),
                 arrow: parse_quote!(->),
                 dst: None,
             },

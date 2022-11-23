@@ -6,11 +6,11 @@ use quote::ToTokens;
 use slotmap::{Key, SecondaryMap, SlotMap};
 use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
-use syn::{Ident, Token};
+use syn::{Expr, Ident, Token};
 
 use crate::diagnostic::{Diagnostic, Level};
 use crate::graph::ops::{RangeTrait, OPERATORS};
-use crate::parse::{HfCode, HfStatement, Operator, Pipeline, PortIndex};
+use crate::parse::{HfCode, HfStatement, Operator, Pipeline};
 use crate::pretty_span::{PrettyRowCol, PrettySpan};
 
 use super::di_mul_graph::DiMulGraph;
@@ -263,9 +263,7 @@ impl FlatGraph {
 
                             fn emit_port_error<'a>(
                                 operator_span: Span,
-                                expected_ports_fn: Option<
-                                    &dyn Fn() -> Punctuated<PortIndex, Token![,]>,
-                                >,
+                                expected_ports_fn: Option<&dyn Fn() -> Punctuated<Expr, Token![,]>>,
                                 actual_ports_iter: impl Iterator<Item = &'a PortIndexValue>,
                                 input_output: &'static str,
                                 diagnostics: &mut Vec<Diagnostic>,

@@ -2,7 +2,7 @@ use std::collections::{btree_map::Entry, BTreeMap, HashMap};
 
 use hydroflow_lang::{
     graph::flat_graph::FlatGraph,
-    parse::{ArrowConnector, IndexInt, Indexing, Pipeline, PipelineLink, PortIndex},
+    parse::{ArrowConnector, Pipeline, PipelineLink},
 };
 use proc_macro2::Span;
 use syn::{self, parse_quote};
@@ -78,13 +78,7 @@ fn emit_join_input_pipeline(
         Pipeline::Link(PipelineLink {
             lhs: Box::new(parse_quote!(#source_name)),
             connector: ArrowConnector {
-                src: source_expanded.tee_idx.map(|i| Indexing {
-                    bracket_token: syn::token::Bracket::default(),
-                    index: PortIndex::Int(IndexInt {
-                        value: i,
-                        span: Span::call_site(),
-                    }),
-                }),
+                src: source_expanded.tee_idx.map(|i| parse_quote!([#i])),
                 arrow: parse_quote!(->),
                 dst: None,
             },

@@ -55,8 +55,8 @@ pub fn test_basic_merge() {
 
     let mut df = hydroflow_syntax! {
         m = merge() -> for_each(|v| out_send.send(v).unwrap());
-        recv_iter([1]) -> [0]m;
-        recv_iter([2]) -> [1]m;
+        recv_iter([1]) -> m;
+        recv_iter([2]) -> m;
     };
     df.run_available();
 
@@ -70,8 +70,8 @@ pub fn test_basic_tee() {
 
     let mut df = hydroflow_syntax! {
         t = recv_iter([1]) -> tee();
-        t[0] -> for_each(|v| out_send_a.send(format!("A {}", v)).unwrap());
-        t[1] -> for_each(|v| out_send_b.send(format!("B {}", v)).unwrap());
+        t -> for_each(|v| out_send_a.send(format!("A {}", v)).unwrap());
+        t -> for_each(|v| out_send_b.send(format!("B {}", v)).unwrap());
     };
     df.run_available();
 
@@ -79,6 +79,30 @@ pub fn test_basic_tee() {
     assert_eq!(2, out.len());
     assert!(out.contains(&"A 1".to_owned()));
     assert!(out.contains(&"B 1".to_owned()));
+}
+
+#[test]
+pub fn test_ports_merge() {
+    let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
+
+    let mut df = hydroflow_syntax! {
+        m = merge() -> for_each(|v| out_send.send(v).unwrap());
+        recv_iter([0]) -> [-10]m;
+        recv_iter([1]) -> [-101]m;
+        recv_iter([2]) -> [-9]m;
+        recv_iter([3]) -> [0]m;
+        recv_iter([4]) -> [019]m;
+        recv_iter([5]) -> [1]m;
+        recv_iter([6]) -> [10]m;
+        recv_iter([7]) -> [109]m;
+        recv_iter([8]) -> [19]m;
+    };
+    df.run_available();
+
+    assert_eq!(
+        (0..=8).collect::<Vec<_>>(),
+        recv_into::<Vec<_>, _>(&mut out_recv)
+    );
 }
 
 #[test]

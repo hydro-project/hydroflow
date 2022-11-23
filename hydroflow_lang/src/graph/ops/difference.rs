@@ -32,7 +32,7 @@ pub const DIFFERENCE: OperatorConstraints = OperatorConstraints {
     ports_out: None,
     num_args: 0,
     input_delaytype_fn: &|idx| match idx {
-        PortIndexValue::Path(path) if "neg" == path.to_token_stream().to_string() => {
+        PortIndexValue::Expr(expr) if "neg" == expr.to_token_stream().to_string() => {
             Some(DelayType::Stratum)
         }
         _else => None,

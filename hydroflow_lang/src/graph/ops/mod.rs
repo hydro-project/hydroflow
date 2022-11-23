@@ -7,8 +7,6 @@ use slotmap::Key;
 use syn::punctuated::Punctuated;
 use syn::{Expr, GenericArgument, Token};
 
-use crate::parse::PortIndex;
-
 use super::{GraphNodeId, GraphSubgraphId, PortIndexValue};
 
 mod cross_join;
@@ -61,9 +59,9 @@ pub struct OperatorConstraints {
     pub num_args: usize,
 
     /// What named or numbered input ports to expect?
-    pub ports_inn: Option<&'static dyn Fn() -> Punctuated<PortIndex, Token![,]>>,
+    pub ports_inn: Option<&'static dyn Fn() -> Punctuated<Expr, Token![,]>>,
     /// What named or numbered output ports to expect?
-    pub ports_out: Option<&'static dyn Fn() -> Punctuated<PortIndex, Token![,]>>,
+    pub ports_out: Option<&'static dyn Fn() -> Punctuated<Expr, Token![,]>>,
 
     /// Determines if this input must be preceeded by a stratum barrier.
     pub input_delaytype_fn: &'static dyn Fn(&PortIndexValue) -> Option<DelayType>,
