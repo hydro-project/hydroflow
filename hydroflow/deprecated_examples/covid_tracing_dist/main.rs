@@ -40,7 +40,6 @@ struct Opts {
 
 // TODO(justin): this trait kind of sucks but it's a placeholder.
 trait Encode {
-    #[allow(clippy::ptr_arg)]
     fn encode(&self, v: &mut Vec<u8>);
 }
 
