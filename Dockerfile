@@ -19,7 +19,7 @@ RUN ls -dR target/*/release/examples/* | grep -vE '^.*/[a-z_]+\-.*$' | grep -vE 
 RUN mkdir -p xfer/example_utils && cp hydroflow/example_utils/* xfer/example_utils/.
 
 # Runtime stage
-FROM rust:slim
+FROM rust:slim-buster
 
 RUN apt-get update && apt-get install -y python3
 WORKDIR /usr/src/myapp
