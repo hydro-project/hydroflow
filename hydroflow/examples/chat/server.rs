@@ -13,7 +13,8 @@ use tokio::net::UdpSocket;
 pub(crate) async fn run_server(opts: Opts) {
     // First, set up the socket
 
-    let server_addr = resolve_ipv4_connection_addr(opts.addr, opts.port).expect("Unable to bind to provided IP and port");
+    let server_addr = resolve_ipv4_connection_addr(opts.addr, opts.port)
+        .expect("Unable to bind to provided IP and port");
     let server_socket = UdpSocket::bind(server_addr).await.unwrap();
     let (outbound, inbound) = hydroflow::util::udp_lines(server_socket);
     println!("Listening on {}", server_addr);
