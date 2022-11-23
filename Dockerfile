@@ -10,9 +10,6 @@ RUN /bin/bash -c "if [ "${TARGETARCH}" == "arm64" ]; then apt-get install -y gcc
 WORKDIR /usr/src/myapp
 COPY . .
 
-# Workaround to an issue similar to the one encountered by pytorch in
-# https://github.com/pytorch/pytorch/issues/82174
-ENV CARGO_NET_GIT_FETCH_WITH_CLI true
 RUN --mount=type=cache,target=/usr/src/myapp/target \
     --mount=type=cache,target=/usr/local/cargo/registry \
     ./scripts/build_dist_release.sh ${TARGETOS} ${TARGETARCH}
