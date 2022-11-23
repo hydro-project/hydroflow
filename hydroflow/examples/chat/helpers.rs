@@ -58,5 +58,5 @@ pub fn resolve_ipv4_connection_addr(server_ip: String, server_port: u16) -> Opti
         .to_socket_addrs()
         .unwrap();
 
-    return addrs.find(|addr| addr.is_ipv4());
+    addrs.find(|addr| addr.is_ipv4())
 }
