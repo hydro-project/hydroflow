@@ -14,10 +14,13 @@ RUN ./scripts/build_dist_release.sh ${TARGETOS} ${TARGETARCH}
 
 RUN mkdir -p xfer/examples
 RUN ls -dR target/*/release/examples/* | grep -vE '^.*/[a-z_]+\-.*$' | grep -vE '^.*\.d$' | xargs -I{} cp {} xfer/examples/
-RUN ls xfer/examples
+RUN mkdir -p xfer/example_utils && cp hydroflow/example_utils/* xfer/example_utils/.
 
 # Runtime stage
 FROM rust:slim
 
+RUN apt-get update && apt-get install -y python3
 WORKDIR /usr/src/myapp
 COPY --from=build /usr/src/myapp/xfer/examples/* .
+RUN mkdir -p example_utils
+COPY --from=build /usr/src/myapp/xfer/example_utils/* ./example_utils/.
