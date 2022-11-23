@@ -1,12 +1,13 @@
 use chrono::prelude::*;
 use colored::Colorize;
 
-use crate::helpers::{deserialize_msg, is_chat_msg, is_connect_resp, serialize_msg};
+use crate::helpers::{
+    deserialize_msg, is_chat_msg, is_connect_resp, resolve_ipv4_connection_addr, serialize_msg,
+};
 use crate::protocol::Message;
 use crate::{GraphType, Opts};
 use chrono::Utc;
 use hydroflow::hydroflow_syntax;
-use std::net::SocketAddr;
 use tokio::io::AsyncBufReadExt;
 use tokio::net::UdpSocket;
 use tokio_stream::wrappers::LinesStream;
@@ -20,12 +21,17 @@ pub(crate) async fn run_client(opts: Opts) {
         .server_port
         .expect("Clients must specify --server-port");
 
-    let server_addr: SocketAddr = format!("{}:{}", server_ip, server_port).parse().unwrap();
+    let server_addr = resolve_ipv4_connection_addr(server_ip, server_port)
+        .expect("Unable to resolve server address");
+    println!("Attempting to connect to server at {}", server_addr);
 
-    let client_socket = UdpSocket::bind(format!("{}:{}", opts.addr, opts.port))
-        .await
-        .unwrap();
-    let client_addr = client_socket.local_addr().unwrap();
+    let client_addr = resolve_ipv4_connection_addr(opts.addr, opts.port)
+        .expect("Unable to resolve client address");
+
+    let client_socket = UdpSocket::bind(client_addr).await.unwrap();
+
+    println!("Client is bound to {}", client_addr);
+
     let (outbound, inbound) = hydroflow::util::udp_lines(client_socket);
 
     let reader = tokio::io::BufReader::new(tokio::io::stdin());
