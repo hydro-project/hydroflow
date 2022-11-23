@@ -13,10 +13,9 @@ pub trait PortList<S>: Variadic
 where
     S: Polarity,
 {
-    #[allow(clippy::ptr_arg)]
-    fn set_graph_meta<'a>(
+    fn set_graph_meta(
         &self,
-        handoffs: &'a mut [HandoffData],
+        handoffs: &mut [HandoffData],
         pred: Option<SubgraphId>,
         succ: Option<SubgraphId>,
         out_handoff_ids: &mut Vec<HandoffId>,
@@ -32,9 +31,9 @@ where
     H: Handoff,
     Rest: PortList<S>,
 {
-    fn set_graph_meta<'a>(
+    fn set_graph_meta(
         &self,
-        handoffs: &'a mut [HandoffData],
+        handoffs: &mut [HandoffData],
         pred: Option<SubgraphId>,
         succ: Option<SubgraphId>,
         out_handoff_ids: &mut Vec<HandoffId>,
@@ -74,9 +73,9 @@ impl<S> PortList<S> for ()
 where
     S: Polarity,
 {
-    fn set_graph_meta<'a>(
+    fn set_graph_meta(
         &self,
-        _handoffs: &'a mut [HandoffData],
+        _handoffs: &mut [HandoffData],
         _pred: Option<SubgraphId>,
         _succ: Option<SubgraphId>,
         _out_handoff_ids: &mut Vec<HandoffId>,
@@ -95,8 +94,7 @@ where
 {
     type Suffix: PortList<S>;
 
-    #[allow(clippy::needless_lifetimes)]
-    fn split_ctx<'a>(ctx: Self::Ctx<'a>) -> (A::Ctx<'a>, <Self::Suffix as PortList<S>>::Ctx<'a>);
+    fn split_ctx(ctx: Self::Ctx<'_>) -> (A::Ctx<'_>, <Self::Suffix as PortList<S>>::Ctx<'_>);
 }
 #[sealed]
 impl<S, H, T, U> PortListSplit<S, (Port<S, H>, U)> for (Port<S, H>, T)
@@ -108,12 +106,11 @@ where
 {
     type Suffix = T::Suffix;
 
-    #[allow(clippy::needless_lifetimes)]
-    fn split_ctx<'a>(
-        ctx: Self::Ctx<'a>,
+    fn split_ctx(
+        ctx: Self::Ctx<'_>,
     ) -> (
-        <(Port<S, H>, U) as PortList<S>>::Ctx<'a>,
-        <Self::Suffix as PortList<S>>::Ctx<'a>,
+        <(Port<S, H>, U) as PortList<S>>::Ctx<'_>,
+        <Self::Suffix as PortList<S>>::Ctx<'_>,
     ) {
         let (x, t) = ctx;
         let (u, v) = T::split_ctx(t);
@@ -128,8 +125,7 @@ where
 {
     type Suffix = T;
 
-    #[allow(clippy::needless_lifetimes)]
-    fn split_ctx<'a>(ctx: Self::Ctx<'a>) -> ((), T::Ctx<'a>) {
+    fn split_ctx(ctx: Self::Ctx<'_>) -> ((), T::Ctx<'_>) {
         ((), ctx)
     }
 }
