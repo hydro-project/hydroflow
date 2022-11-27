@@ -53,6 +53,17 @@ Hydroflow requires nightly Rust, but the repo is already configured for it via
 We can then open the repo in VS Code or IDE of your choice. `rust-analyzer`
 will provide inline type and error messages, code completion, etc.
 
+## mdBook Setup
+
+In order to make changes to this book and locally render it so you can quickly see the result, install mdbook and mdbook-mermaid.
+```bash
+cargo install mdbook mdbook-mermaid
+```
+The book can then be viewed locally with a web browser by running the following from the project root.
+```bash
+mdbook serve --open
+```
+
 ## Development
 
 The easiest way to try Hydroflow is with an "example", found in the
