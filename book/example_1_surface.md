@@ -47,9 +47,9 @@ pub fn main() {
         recv_iter(0..10) -> for_each(|n| println!("Hello {}", n));
     };
 ```
-The flow starts with a [`recv_iter`](./surface_ops.md#recv_iter) operator that emits the 
+The flow starts with a [`recv_iter`](./surface_ops.gen.md#recv_iter) operator that emits the 
 numbers 1 through 10, and passes them along the arrow `->` operator downstream to a 
-[`for_each`](./surface_ops.md#for_each) operator that invokes its closure argument to print each
+[`for_each`](./surface_ops.gen.md#for_each) operator that invokes its closure argument to print each
 item passed in.
 
 
