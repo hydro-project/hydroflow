@@ -1,8 +1,8 @@
 # Simple Example
 
 Lets build on the simplest example to explore some of the operators available
-in Hydroflow. You may be familiar with operators such as [`map(...)`](./surface_ops.md#map),
-[`filter(...)`](./surface_ops.md#filter), [`flat_map`(...)](./surface_ops.md#flat_map),
+in Hydroflow. You may be familiar with operators such as [`map(...)`](./surface_ops.gen.md#map),
+[`filter(...)`](./surface_ops.gen.md#filter), [`flat_map`(...)](./surface_ops.gen.md#flat_map),
 etc. from Rust iterators or from other programming languages, and these are
 also available in Hydroflow.
 
@@ -32,7 +32,7 @@ from `n` to `n+1`. We then call `-> flat_map()` to convert the ranges
 into a stream of the individual numbers which they contain.
 
 We can also express the same program with more aggressive use of combination operators like
-[`filter_map()`](./surface_ops.md#filtermap) and [`flat_map()`](./surface_ops.md#flatmap):
+[`filter_map()`](./surface_ops.gen.md#filtermap) and [`flat_map()`](./surface_ops.gen.md#flatmap):
 ```rust
 # use hydroflow::hydroflow_syntax;
  pub fn main() {
