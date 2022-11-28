@@ -93,7 +93,7 @@ and the stream of edges coming in:
 The Rust syntax `vec![0]` constructs a vector with a single element, `0`, which we iterate
 over using `recv_iter`.
 
-We then set up a [`join()`](./surface_ops.md#join) that we
+We then set up a [`join()`](./surface_ops.gen.md#join) that we
 name `my_join`, which acts like a SQL inner join. 
 First, note the syntax for passing data into a subflow with multiple inputs *prepends* 
 an input index (starting at `0`) in square brackets to the multi-input variable name or operator.  In this example we have `-> [0]my_join`
@@ -104,7 +104,7 @@ a little massaging of its inputs to work properly.
 The inputs must be of the form of a pair of elements `(K, V1)`
 and `(K, V2)`, and the operator joins them on equal keys `K` and produces an
 output of `(K, (V1, V2))` elements. In this case we only want to join on the key `v` and
-don't have any corresponding value, so we feed `origin` through a [`map()`](./surface_ops.md#map)
+don't have any corresponding value, so we feed `origin` through a [`map()`](./surface_ops.gen.md#map)
 to generate `(v, ())` elements as the first join input. 
 ```rust,ignore
     my_join = join() -> map(|(_x, (_y, z))| z);
