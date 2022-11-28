@@ -6,7 +6,7 @@ src = "book"
 title = "The Hydroflow Book"
 
 [build]
-build-dir = "target/book"
+build-dir = "target/mdbook"
 
 [preprocessor]
 
@@ -22,4 +22,4 @@ command = "mdbook-mermaid"
 additional-css = []
 additional-js = ["mermaid.min.js", "mermaid-init.js"]
 
-
+[output.linkcheck]
