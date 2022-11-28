@@ -1,9 +1,12 @@
 ---
 name: examples-container-build
 
-on:
-  push:
-    branches: [main]
+on: push
+
+# FIXME: replace on: block with this after it works on a branch
+# on:
+#   push:
+#     branches: [main]
 
 jobs:
   buildx:

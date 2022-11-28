@@ -23,6 +23,5 @@ FROM rust:slim-buster
 
 RUN apt-get update && apt-get install -y python3
 WORKDIR /usr/src/myapp
-COPY --from=build /usr/src/myapp/xfer/examples/* .
 RUN mkdir -p example_utils
-COPY --from=build /usr/src/myapp/xfer/example_utils/* ./example_utils/.
+COPY --from=build /usr/src/myapp/xfer/examples/* /usr/src/myapp/xfer/example_utils .
