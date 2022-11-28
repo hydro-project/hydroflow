@@ -26,7 +26,7 @@ The Rust `::<usize>` syntax is affectionately
 called the "turbofish" and is how type parameters (generic arguments) are
 supplied to generic types and functions. In this case it specifies that this tokio channel
 transmits `usize` items.
-The returned `example_recv` value can be chained via a [`recv_stream`](./surface_ops#example_recv) 
+The returned `example_recv` value can be used via a [`recv_stream`](./surface_ops.gen.md#recv_stream)
 to build a Hydroflow subgraph just like before. Here is the same program as before, but using the
 input channel:
 ```rust
