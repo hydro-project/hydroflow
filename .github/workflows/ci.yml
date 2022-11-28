@@ -125,9 +125,9 @@ jobs:
           RUSTDOCFLAGS: -Dwarnings
 
       - name: Install mdBook
-        run: curl -sSL https://github.com/rust-lang/mdBook/releases/download/v0.4.15/mdbook-v0.4.15-x86_64-unknown-linux-gnu.tar.gz | tar -xz
+        run: curl -sSL https://github.com/rust-lang/mdBook/releases/download/v0.4.21/mdbook-v0.4.21-x86_64-unknown-linux-gnu.tar.gz | tar -xz
       - name: Install mdbook-mermaid
-        run: curl -sSL https://github.com/badboy/mdbook-mermaid/releases/download/v0.10.0/mdbook-mermaid-v0.10.0-x86_64-unknown-linux-musl.tar.gz | tar -xz
+        run: curl -sSL https://github.com/badboy/mdbook-mermaid/releases/download/v0.12.1/mdbook-mermaid-v0.12.1-x86_64-unknown-linux-gnu.tar.gz | tar -xz
       - name: Install mdbook-linkcheck
         run: |
           curl -sSL https://github.com/Michael-F-Bryan/mdbook-linkcheck/releases/download/v0.7.7/mdbook-linkcheck.x86_64-unknown-linux-gnu.zip -o linkcheck.zip
