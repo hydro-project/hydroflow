@@ -2,11 +2,9 @@
 
 use std::hash::Hash;
 
-use proc_macro2::Span;
-use quote::ToTokens;
+use proc_macro2::{Span, TokenStream};
 use slotmap::new_key_type;
 use syn::spanned::Spanned;
-use syn::Expr;
 
 use crate::parse::{ArrowConnector, Operator};
 use crate::pretty_span::PrettySpan;
@@ -87,7 +85,7 @@ pub fn node_color(node: &Node, inn_degree: usize, out_degree: usize) -> Option<C
 /// Helper struct for port indices which keeps span information for elided ports.
 #[derive(Clone, Debug)]
 pub enum PortIndexValue {
-    Expr(Expr),
+    Tokens(TokenStream),
     Elided(Span),
 }
 impl PortIndexValue {
@@ -106,15 +104,15 @@ impl PortIndexValue {
         !matches!(self, Self::Elided(_))
     }
 }
-impl From<Expr> for PortIndexValue {
-    fn from(expr: Expr) -> Self {
-        Self::Expr(expr)
+impl From<TokenStream> for PortIndexValue {
+    fn from(tokens: TokenStream) -> Self {
+        Self::Tokens(tokens)
     }
 }
 impl Spanned for PortIndexValue {
     fn span(&self) -> Span {
         match self {
-            PortIndexValue::Expr(x) => x.span(),
+            PortIndexValue::Tokens(x) => x.span(),
             PortIndexValue::Elided(span) => *span,
         }
     }
@@ -122,7 +120,7 @@ impl Spanned for PortIndexValue {
 impl PartialEq for PortIndexValue {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (Self::Expr(l0), Self::Expr(r0)) => l0 == r0,
+            (Self::Tokens(l0), Self::Tokens(r0)) => l0.to_string() == r0.to_string(),
             (Self::Elided(_), Self::Elided(_)) => true,
             _else => false,
         }
@@ -132,10 +130,7 @@ impl Eq for PortIndexValue {}
 impl PartialOrd for PortIndexValue {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         match (self, other) {
-            (Self::Expr(s), Self::Expr(o)) => s
-                .to_token_stream()
-                .to_string()
-                .partial_cmp(&o.to_token_stream().to_string()),
+            (Self::Tokens(s), Self::Tokens(o)) => s.to_string().partial_cmp(&o.to_string()),
             (Self::Elided(_), Self::Elided(_)) => Some(std::cmp::Ordering::Equal),
             (_, Self::Elided(_)) => Some(std::cmp::Ordering::Less),
             (Self::Elided(_), _) => Some(std::cmp::Ordering::Greater),
@@ -145,16 +140,7 @@ impl PartialOrd for PortIndexValue {
 impl Ord for PortIndexValue {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         match (self, other) {
-            // (
-            //     Self::Expr(Expr::Lit(ExprLit { lit: lit_s, .. })),
-            //     Self::Expr(Expr::Lit(ExprLit { lit: lit_o, .. })),
-            // ) => {
-
-            // },
-            (Self::Expr(s), Self::Expr(o)) => s
-                .to_token_stream()
-                .to_string()
-                .cmp(&o.to_token_stream().to_string()),
+            (Self::Tokens(s), Self::Tokens(o)) => s.to_string().cmp(&o.to_string()),
             (Self::Elided(_), Self::Elided(_)) => std::cmp::Ordering::Equal,
             (_, Self::Elided(_)) => std::cmp::Ordering::Less,
             (Self::Elided(_), _) => std::cmp::Ordering::Greater,

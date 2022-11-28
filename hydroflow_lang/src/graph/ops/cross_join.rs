@@ -2,8 +2,7 @@ use super::{
     OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, RANGE_1,
 };
 
-use quote::quote_spanned;
-use syn::parse_quote;
+use quote::{quote, quote_spanned};
 
 /// > 2 input streams of type S and T, 1 output stream of type (S, T)
 ///
@@ -23,7 +22,7 @@ pub const CROSS_JOIN: OperatorConstraints = OperatorConstraints {
     soft_range_inn: &(2..=2),
     hard_range_out: RANGE_1,
     soft_range_out: RANGE_1,
-    ports_inn: Some(&(|| parse_quote! { 0, 1 })),
+    ports_inn: Some(&(|| vec![quote!(0), quote!(1)])),
     ports_out: None,
     num_args: 0,
     input_delaytype_fn: &|_| None,

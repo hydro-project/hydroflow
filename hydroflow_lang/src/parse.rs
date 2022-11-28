@@ -195,7 +195,7 @@ impl ToTokens for ArrowConnector {
 
 pub struct Indexing {
     pub bracket_token: Bracket,
-    pub index: Expr,
+    pub index: TokenStream,
 }
 impl Parse for Indexing {
     fn parse(input: ParseStream) -> syn::Result<Self> {

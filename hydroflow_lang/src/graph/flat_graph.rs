@@ -1,12 +1,11 @@
 use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet};
 
-use proc_macro2::Span;
+use proc_macro2::{Span, TokenStream};
 use quote::ToTokens;
 use slotmap::{Key, SecondaryMap, SlotMap};
-use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
-use syn::{Expr, Ident, Token};
+use syn::Ident;
 
 use crate::diagnostic::{Diagnostic, Level};
 use crate::graph::ops::{RangeTrait, OPERATORS};
@@ -263,7 +262,7 @@ impl FlatGraph {
 
                             fn emit_port_error<'a>(
                                 operator_span: Span,
-                                expected_ports_fn: Option<&dyn Fn() -> Punctuated<Expr, Token![,]>>,
+                                expected_ports_fn: Option<&dyn Fn() -> Vec<TokenStream>>,
                                 actual_ports_iter: impl Iterator<Item = &'a PortIndexValue>,
                                 input_output: &'static str,
                                 diagnostics: &mut Vec<Diagnostic>,

@@ -5,8 +5,7 @@ use super::{
     RANGE_1,
 };
 
-use quote::{quote_spanned, ToTokens};
-use syn::parse_quote;
+use quote::{quote, quote_spanned};
 
 /// > 2 input streams of the same type T, 1 output stream of type T
 ///
@@ -28,13 +27,11 @@ pub const DIFFERENCE: OperatorConstraints = OperatorConstraints {
     soft_range_inn: &(2..=2),
     hard_range_out: RANGE_1,
     soft_range_out: RANGE_1,
-    ports_inn: Some(&|| parse_quote! { pos, neg }),
+    ports_inn: Some(&|| vec![quote!(pos), quote!(neg)]),
     ports_out: None,
     num_args: 0,
     input_delaytype_fn: &|idx| match idx {
-        PortIndexValue::Expr(expr) if "neg" == expr.to_token_stream().to_string() => {
-            Some(DelayType::Stratum)
-        }
+        PortIndexValue::Tokens(tokens) if "neg" == tokens.to_string() => Some(DelayType::Stratum),
         _else => None,
     },
     write_fn: &(|wc @ &WriteContextArgs { root, op_span, .. },
