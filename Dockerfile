@@ -10,8 +10,7 @@ RUN /bin/bash -c "if [ "${TARGETARCH}" == "arm64" ]; then apt-get install -y gcc
 WORKDIR /usr/src/myapp
 COPY . .
 
-RUN --mount=type=cache,target=/usr/src/myapp/target \
-    --mount=type=cache,target=/usr/local/cargo/registry \
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
     ./scripts/build_dist_release.sh ${TARGETOS} ${TARGETARCH}
 
 RUN mkdir -p xfer/examples
@@ -23,5 +22,6 @@ FROM rust:slim-buster
 
 RUN apt-get update && apt-get install -y python3
 WORKDIR /usr/src/myapp
+COPY --from=build /usr/src/myapp/xfer/examples/* .
 RUN mkdir -p example_utils
-COPY --from=build /usr/src/myapp/xfer/examples/* /usr/src/myapp/xfer/example_utils .
+COPY --from=build /usr/src/myapp/xfer/example_utils/* ./example_utils/.
