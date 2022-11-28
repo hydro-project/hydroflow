@@ -1,6 +1,6 @@
 window.BENCHMARK_DATA = 
 {
-  "lastUpdate": 1669521282307,
+  "lastUpdate": 1669607507771,
   "repoUrl": "https://github.com/hydro-project/hydroflow",
   "entries": {
     "Benchmark": [
@@ -29372,6 +29372,82 @@ window.BENCHMARK_DATA =
             "name": "reachability/hydroflow",
             "value": 5386762,
             "range": "± 101588",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Alex Rasmussen",
+            "username": "alexras",
+            "email": "535829+alexras@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "dd3d9e16f9f4fa4ec1426430dd28e4af2a6f445a",
+          "message": "Allow the chat example to bind and connect to DNS names (#249)\n\n* Allow the chat example to bind and connect to DNS names\r\n\r\nIn many circumstances when testing chat in a distributed setting, we won't know the right IP address\r\nto either bind or connect to in advance. This diff allows the chat client and server to bind to\r\nDNS names, which (coupled with the distributed runtime's service discovery mechanism) should make it\r\neasier for clients and servers to find each other.\r\n\r\n* Fix formatting\r\n\r\n* Responding to code review feedback\r\n\r\n* Whoops, forgot to save\r\n\r\n* Remove unnecessary return statement",
+          "timestamp": "2022-11-23T22:16:10Z",
+          "url": "https://github.com/hydro-project/hydroflow/commit/dd3d9e16f9f4fa4ec1426430dd28e4af2a6f445a"
+        },
+        "date": 1669607507758,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "arithmetic/hydroflow/compiled",
+            "value": 730424,
+            "range": "± 30414",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fan_in/hydroflow",
+            "value": 363337644,
+            "range": "± 8405232",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fan_out/hydroflow/scheduled",
+            "value": 217302712,
+            "range": "± 5553707",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fork_join/hydroflow",
+            "value": 21079289,
+            "range": "± 826999",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fork_join/hydroflow_builder",
+            "value": 67337742,
+            "range": "± 3054012",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "identity/hydroflow",
+            "value": 114051665,
+            "range": "± 2880051",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "identity/hydroflow/compiled",
+            "value": 18176138,
+            "range": "± 477122",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "reachability/hydroflow/scheduled",
+            "value": 5586557,
+            "range": "± 158803",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "reachability/hydroflow",
+            "value": 5252748,
+            "range": "± 114158",
             "unit": "ns/iter"
           }
         ]
