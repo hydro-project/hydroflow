@@ -11,5 +11,6 @@ pub fn example() {
     };
 }
 ```
-The resulting `flow` object is of type `Hydroflow`; see the documentation on the 
-[Hydroflow Object](./hydroflow_object.md) for details on how to use the result.
+The resulting `flow` object is of type `Hydroflow`.
+<!-- TODO(mingwei): see the documentation on the
+[Hydroflow Object](./hydroflow_object.md) for details on how to use the result. -->
