@@ -49,4 +49,7 @@ then
   export RUSTFLAGS="-C linker=${RUST_TARGET_ARCH}-linux-gnu-gcc"
 fi
 
-cargo build --release --all-targets --target ${RUST_TARGET}
+# The CARGO_NET_GIT_FETCH_WITH_CLI="true" environment variable is a Workaround to an issue similar
+# to the one encountered by pytorch in https://github.com/pytorch/pytorch/issues/82174
+
+CARGO_NET_GIT_FETCH_WITH_CLI="true" cargo build --release --all-targets --target ${RUST_TARGET}
