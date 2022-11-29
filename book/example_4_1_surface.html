@@ -143,7 +143,7 @@ one of two cases: </p>
 <li>a neighbor of <code>origin</code> <em>or</em> </li>
 <li>a neighbor of some other node that is itself reachable from <code>origin</code>. </li>
 </ol>
-<p>It turns out this is a very small change to our Hydroflow program! It will also illustrate an operator, <a href="./surface_ops.html#tee"><code>tee()</code></a>,
+<p>It turns out this is a very small change to our Hydroflow program! It will also illustrate an operator, <a href="./surface_ops.gen.html#tee"><code>tee()</code></a>,
 which has multiple outputs.</p>
 <p>Essentially we want to take <em>all</em> the reached vertices we found in our graph neighbors program,
 and treat them recursively just as we treated <code>origin</code>.
@@ -217,7 +217,7 @@ Reached: 4
 Reached: 4
 </code></pre>
 <p>Let's review the significant changes here. First, in setting up the inputs we have the 
-addition of the <code>reached_vertices</code> variable, which uses the <a href="./surface_ops.html#merge">merge()</a> 
+addition of the <code>reached_vertices</code> variable, which uses the <a href="./surface_ops.gen.html#merge">merge()</a> 
 op to merge the output of two operators into one. 
 We route the <code>origin</code> node into it as one input right away:</p>
 <pre><code class="language-rust ignore">    reached_vertices = merge();
@@ -231,7 +231,7 @@ the joined output
 output to two places: to the original <code>for_each</code> from above to print output, and <em>also</em> 
 back to the <code>merge</code> operator we called <code>reached_vertices</code>.
 We feed the <code>join()</code> output 
-through a <code>map()</code> as before, and then we feed the result into a <a href="./surface_ops.html#tee"><code>tee()</code></a> operator,
+through a <code>map()</code> as before, and then we feed the result into a <a href="./surface_ops.gen.html#tee"><code>tee()</code></a> operator,
 which is the mirror image of <code>merge()</code>:  instead of merging many inputs to one output, 
 it copies one input to many different outputs.  Each input element is <em>cloned</em>, in Rust terms, and
 given to each of the outputs. The syntax for the outputs of <code>tee()</code> mirrors that of merge: we <em>append</em> 

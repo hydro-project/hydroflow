@@ -174,9 +174,9 @@ a mutable variable---we will be changing its status when we run it.</p>
         recv_iter(0..10) -&gt; for_each(|n| println!(&quot;Hello {}&quot;, n));
     };
 </code></pre>
-<p>The flow starts with a <a href="./surface_ops.html#recv_iter"><code>recv_iter</code></a> operator that emits the 
+<p>The flow starts with a <a href="./surface_ops.gen.html#recv_iter"><code>recv_iter</code></a> operator that emits the 
 numbers 1 through 10, and passes them along the arrow <code>-&gt;</code> operator downstream to a 
-<a href="./surface_ops.html#for_each"><code>for_each</code></a> operator that invokes its closure argument to print each
+<a href="./surface_ops.gen.html#for_each"><code>for_each</code></a> operator that invokes its closure argument to print each
 item passed in.</p>
 <p>Finally we run this flow via the <a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_available"><code>run_available()</code> method</a>.</p>
 <pre><code class="language-rust ignore">    flow.run_available();

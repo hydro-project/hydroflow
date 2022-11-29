@@ -161,8 +161,7 @@ pass it along a flow:</p>
 </code></pre>
 <p>To put this together, let's revisit our Hello, World example from above with data sent 
 in from outside the flow:</p>
-<pre><pre class="playground"><code class="language-rust">
-<span class="boring">#![allow(unused)]
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span><span class="boring">use hydroflow::hydroflow_syntax;
 </span>let (input_send, input_recv) = hydroflow::util::unbounded_channel::&lt;&amp;str&gt;();

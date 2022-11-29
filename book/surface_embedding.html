@@ -137,8 +137,7 @@
                         <h1 id="embedding-a-flow-in-rust"><a class="header" href="#embedding-a-flow-in-rust">Embedding a Flow in Rust</a></h1>
 <p>Hydroflow's surface syntax is typically used within a Rust program. (An interactive client and/or external language bindings are TBD.)</p>
 <p>The surface syntax is embedded into Rust via a macro as follows</p>
-<pre><pre class="playground"><code class="language-rust">
-<span class="boring">#![allow(unused)]
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>use hydroflow::hydroflow_syntax;
 
@@ -149,8 +148,9 @@ pub fn example() {
 }
 <span class="boring">}
 </span></code></pre></pre>
-<p>The resulting <code>flow</code> object is of type <code>Hydroflow</code>; see the documentation on the 
-<a href="./hydroflow_object.html">Hydroflow Object</a> for details on how to use the result.</p>
+<p>The resulting <code>flow</code> object is of type <code>Hydroflow</code>.</p>
+<!-- TODO(mingwei): see the documentation on the
+[Hydroflow Object](./hydroflow_object.md) for details on how to use the result. -->
 
                     </main>
 

@@ -156,7 +156,7 @@ think of it as a high-performance &quot;mailbox&quot; that any sender can fill w
 called the &quot;turbofish&quot; and is how type parameters (generic arguments) are
 supplied to generic types and functions. In this case it specifies that this tokio channel
 transmits <code>usize</code> items.
-The returned <code>example_recv</code> value can be chained via a <a href="./surface_ops#example_recv"><code>recv_stream</code></a> 
+The returned <code>example_recv</code> value can be used via a <a href="./surface_ops.gen.html#recv_stream"><code>recv_stream</code></a>
 to build a Hydroflow subgraph just like before. Here is the same program as before, but using the
 input channel:</p>
 <pre><pre class="playground"><code class="language-rust">use hydroflow::hydroflow_syntax;

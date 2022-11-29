@@ -136,8 +136,8 @@
                     <main>
                         <h1 id="simple-example"><a class="header" href="#simple-example">Simple Example</a></h1>
 <p>Lets build on the simplest example to explore some of the operators available
-in Hydroflow. You may be familiar with operators such as <a href="./surface_ops.html#map"><code>map(...)</code></a>,
-<a href="./surface_ops.html#filter"><code>filter(...)</code></a>, <a href="./surface_ops.html#flat_map"><code>flat_map</code>(...)</a>,
+in Hydroflow. You may be familiar with operators such as <a href="./surface_ops.gen.html#map"><code>map(...)</code></a>,
+<a href="./surface_ops.gen.html#filter"><code>filter(...)</code></a>, <a href="./surface_ops.gen.html#flat_map"><code>flat_map</code>(...)</a>,
 etc. from Rust iterators or from other programming languages, and these are
 also available in Hydroflow.</p>
 <pre><pre class="playground"><code class="language-rust">use hydroflow::hydroflow_syntax;
@@ -163,7 +163,7 @@ numbers which are greater than 10.</p>
 from <code>n</code> to <code>n+1</code>. We then call <code>-&gt; flat_map()</code> to convert the ranges
 into a stream of the individual numbers which they contain.</p>
 <p>We can also express the same program with more aggressive use of combination operators like
-<a href="./surface_ops.html#filtermap"><code>filter_map()</code></a> and <a href="./surface_ops.html#flatmap"><code>flat_map()</code></a>:</p>
+<a href="./surface_ops.gen.html#filtermap"><code>filter_map()</code></a> and <a href="./surface_ops.gen.html#flatmap"><code>flat_map()</code></a>:</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">use hydroflow::hydroflow_syntax;
 </span> pub fn main() {
     let mut flow = hydroflow_syntax! {

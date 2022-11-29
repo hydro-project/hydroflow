@@ -216,7 +216,7 @@ and the stream of edges coming in:</p>
 </code></pre>
 <p>The Rust syntax <code>vec![0]</code> constructs a vector with a single element, <code>0</code>, which we iterate
 over using <code>recv_iter</code>.</p>
-<p>We then set up a <a href="./surface_ops.html#join"><code>join()</code></a> that we
+<p>We then set up a <a href="./surface_ops.gen.html#join"><code>join()</code></a> that we
 name <code>my_join</code>, which acts like a SQL inner join. 
 First, note the syntax for passing data into a subflow with multiple inputs <em>prepends</em> 
 an input index (starting at <code>0</code>) in square brackets to the multi-input variable name or operator.  In this example we have <code>-&gt; [0]my_join</code>
@@ -226,7 +226,7 @@ a little massaging of its inputs to work properly.
 The inputs must be of the form of a pair of elements <code>(K, V1)</code>
 and <code>(K, V2)</code>, and the operator joins them on equal keys <code>K</code> and produces an
 output of <code>(K, (V1, V2))</code> elements. In this case we only want to join on the key <code>v</code> and
-don't have any corresponding value, so we feed <code>origin</code> through a <a href="./surface_ops.html#map"><code>map()</code></a>
+don't have any corresponding value, so we feed <code>origin</code> through a <a href="./surface_ops.gen.html#map"><code>map()</code></a>
 to generate <code>(v, ())</code> elements as the first join input. </p>
 <pre><code class="language-rust ignore">    my_join = join() -&gt; map(|(_x, (_y, z))| z);
     origin -&gt; map(|v| (v, ())) -&gt; [0]my_join;
