@@ -155,36 +155,45 @@ impl PartitionedGraph {
 
                             // TODO clean this up.
                             // Collect input arguments (predacessors).
-                            let mut input_edges: Vec<(GraphEdgeId, GraphNodeId)> =
-                                self.graph.predecessors(node_id).collect();
+                            let mut input_edges: Vec<(&PortIndexValue, GraphNodeId)> =
+                                self.graph.predecessors(node_id)
+                                    .map(|(edge_id, pred)| (&self.indices[edge_id].1, pred))
+                                    .collect();
                             // Ensure sorted by port index.
-                            input_edges
-                                .sort_unstable_by_key(|&(edge_id, _pred)| &self.indices[edge_id].1);
+                            input_edges.sort();
+
                             let inputs: Vec<Ident> = input_edges
-                                .into_iter()
-                                .map(|(_edge_id, pred)| self.node_id_as_ident(pred, true))
+                                .iter()
+                                .map(|&(_port, pred)| self.node_id_as_ident(pred, true))
                                 .collect();
+                            let input_ports: Vec<&PortIndexValue> = input_edges.into_iter().map(|(port, _pred)| port).collect();
 
                             // Collect output arguments (successors).
-                            let mut output_edges: Vec<(GraphEdgeId, GraphNodeId)> =
-                                self.graph.successors(node_id).collect();
+                            let mut output_edges: Vec<(&PortIndexValue, GraphNodeId)> =
+                                self.graph.successors(node_id)
+                                    .map(|(edge_id, succ)| (&self.indices[edge_id].0, succ))
+                                    .collect();
                             // Ensure sorted by port index.
-                            output_edges
-                                .sort_unstable_by_key(|&(edge_id, _succ)| &self.indices[edge_id].0);
+                            output_edges.sort();
+
                             let outputs: Vec<Ident> = output_edges
-                                .into_iter()
-                                .map(|(_edge_id, succ)| self.node_id_as_ident(succ, false))
+                                .iter()
+                                .map(|&(_port, succ)| self.node_id_as_ident(succ, false))
                                 .collect();
+                            let output_ports: Vec<&PortIndexValue> = output_edges.into_iter().map(|(port, _succ)| port).collect();
 
                             let is_pull = idx < pull_to_push_idx;
 
                             let iter_args = WriteIteratorArgs {
                                 ident: &ident,
+                                is_pull,
                                 inputs: &*inputs,
                                 outputs: &*outputs,
+                                input_ports: &*input_ports,
+                                output_ports: &*output_ports,
                                 type_arguments: op.type_arguments(),
                                 arguments: &op.args,
-                                is_pull,
+                                op_name: op_constraints.name,
                             };
 
                             let OperatorWriteOutput {

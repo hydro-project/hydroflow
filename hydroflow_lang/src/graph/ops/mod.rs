@@ -12,6 +12,7 @@ use crate::parse::PortIndex;
 use super::{GraphNodeId, GraphSubgraphId, PortIndexValue};
 
 mod cross_join;
+mod demux;
 mod difference;
 mod filter;
 mod filter_map;
@@ -155,6 +156,7 @@ pub const OPERATORS: &[OperatorConstraints] = &[
     next_stratum::NEXT_STRATUM,
     next_epoch::NEXT_EPOCH,
     for_each::FOR_EACH,
+    demux::DEMUX,
     write_async::WRITE_ASYNC,
     sink_async::SINK_ASYNC,
 ];
@@ -182,17 +184,25 @@ impl WriteContextArgs<'_> {
 pub struct WriteIteratorArgs<'a> {
     /// Ident the iterator or pullerator should be assigned to.
     pub ident: &'a Ident,
+    /// If a pull iterator (true) or pusherator (false) should be used.
+    pub is_pull: bool,
     /// Input operator idents (used for pull).
     pub inputs: &'a [Ident],
     /// Output operator idents (used for push).
     pub outputs: &'a [Ident],
+
+    /// Port values used as this operator's input.
+    pub input_ports: &'a [&'a PortIndexValue],
+    /// Port values used as this operator's output.
+    pub output_ports: &'a [&'a PortIndexValue],
+
     /// Unused: Operator type arguments.
     pub type_arguments: Option<&'a Punctuated<GenericArgument, Token![,]>>,
     /// Arguments provided by the user into the operator as arguments.
     /// I.e. the `a, b, c` in `-> my_op(a, b, c) -> `.
     pub arguments: &'a Punctuated<Expr, Token![,]>,
-    /// If a pull iterator (true) or pusherator (false) should be used.
-    pub is_pull: bool,
+    /// Name of the operator (will match [`OperatorConstraints::name`]).
+    pub op_name: &'static str,
 }
 
 pub trait RangeTrait<T>
