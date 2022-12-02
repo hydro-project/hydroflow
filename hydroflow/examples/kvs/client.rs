@@ -43,34 +43,10 @@ pub(crate) async fn run_client(opts: Opts) {
         recv_stream(stdin_lines)
             -> filter_map(|line| parse_command(line.unwrap(), client_addr))
             -> map(|msg| { (msg, server_addr) })
-            -> [0]outbound_chan;
+            -> outbound_chan;
 
         // print inbound msgs
         resps -> for_each(|m| println!("Got a Response: {:?}", m));
-
-        // // take stdin and send to server as a msg
-        // // the join serves to postpone msgs until the connection request is acked
-        // lines = recv_stream(stdin_lines)
-        //   -> map(|l| KVSMessage::ChatMsg {
-        //             nickname: opts.name.clone(),
-        //             message: l.unwrap(),
-        //             ts: Utc::now()}) -> null();
-
-        // // receive and print messages
-        // messages -> for_each(|m: KVSMessage| if let KVSMessage::ChatMsg{ nickname, message, ts } = m {
-        //         println!(
-        //             "{} {}: {}",
-        //             ts
-        //                 .with_timezone(&Local)
-        //                 .format("%b %-d, %-I:%M:%S")
-        //                 .to_string()
-        //                 .truecolor(126, 126, 126)
-        //                 .italic(),
-        //             nickname.green().italic(),
-        //             message,
-        //         );
-        // });
-
     };
 
     if let Some(graph) = opts.graph {

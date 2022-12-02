@@ -61,7 +61,7 @@ pub fn parse_command(line: String, client: SocketAddr) -> Option<KVSMessage> {
     let binding = caps.get(1).unwrap().as_str().to_uppercase();
     let cmdstr = binding.as_str();
     let args = caps.get(2).unwrap().as_str();
-    let cmd = match cmdstr {
+    match cmdstr {
         "PUT" => {
             let kv = args.split_once(',')?;
             Some(KVSMessage::Put {
@@ -75,7 +75,5 @@ pub fn parse_command(line: String, client: SocketAddr) -> Option<KVSMessage> {
             key: args.trim().to_string(),
         }),
         _ => None,
-    }?;
-
-    Some(cmd)
+    }
 }
