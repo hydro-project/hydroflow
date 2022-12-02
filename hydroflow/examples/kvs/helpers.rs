@@ -9,10 +9,7 @@ pub fn serialize_msg<T>(msg: T) -> String
 where
     T: Serialize + for<'a> Deserialize<'a> + Clone,
 {
-    let r = json!(msg);
-    let s = r.to_string();
-    let t = s;
-    t
+    json!(msg).to_string()
 }
 
 pub fn deserialize_msg<T>(msg: Result<(String, SocketAddr), LinesCodecError>) -> T
@@ -68,13 +65,13 @@ pub fn parse_command(line: String, client: SocketAddr) -> Option<KVSMessage> {
         "PUT" => {
             let kv = args.split_once(',')?;
             Some(KVSMessage::Put {
-                client: client,
+                client,
                 key: kv.0.trim().to_string(),
                 value: kv.1.trim().to_string(),
             })
         }
         "GET" => Some(KVSMessage::Get {
-            client: client,
+            client,
             key: args.trim().to_string(),
         }),
         _ => None,
