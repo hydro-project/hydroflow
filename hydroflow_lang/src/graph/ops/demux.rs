@@ -23,7 +23,7 @@ use syn::{parse_quote, ExprClosure};
 /// > trait to use the [`.give(...)` method](https://hydro-project.github.io/hydroflow/doc/pusherator/trait.Pusherator.html#tymethod.give).
 ///
 /// ```hydroflow
-/// demux = recv_iter(1..=100) -> demux(|v, tl!(fzbz, fizz, buzz, vals)|
+/// my_demux = recv_iter(1..=100) -> demux(|v, tl!(fzbz, fizz, buzz, vals)|
 ///     match (v % 3, v % 5) {
 ///         (0, 0) => fzbz.give(v),
 ///         (0, _) => fizz.give(v),
@@ -31,10 +31,10 @@ use syn::{parse_quote, ExprClosure};
 ///         (_, _) => vals.give(v),
 ///     }
 /// );
-/// demux[fzbz] -> for_each(|v| println!("{}: fizzbuzz", v));
-/// demux[fizz] -> for_each(|v| println!("{}: fizz", v));
-/// demux[buzz] -> for_each(|v| println!("{}: buzz", v));
-/// demux[vals] -> for_each(|v| println!("{}", v));
+/// my_demux[fzbz] -> for_each(|v| println!("{}: fizzbuzz", v));
+/// my_demux[fizz] -> for_each(|v| println!("{}: fizz", v));
+/// my_demux[buzz] -> for_each(|v| println!("{}: buzz", v));
+/// my_demux[vals] -> for_each(|v| println!("{}", v));
 /// ```
 #[hydroflow_internalmacro::operator_docgen]
 pub const DEMUX: OperatorConstraints = OperatorConstraints {

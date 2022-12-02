@@ -425,7 +425,7 @@ pub fn test_demux_1() {
     }
 
     let mut df = hydroflow_syntax! {
-        demux = recv_iter([
+        my_demux = recv_iter([
             Shape::Circle(5.0),
             Shape::Rectangle { width: 10.0, height: 8.0 },
             Shape::Square(9.0),
@@ -439,8 +439,8 @@ pub fn test_demux_1() {
 
         out = merge() -> for_each(|a| println!("area: {}", a));
 
-        demux[circ] -> map(|r| std::f64::consts::PI * r * r) -> out;
-        demux[rect] -> map(|(w, h)| w * h) -> out;
+        my_demux[circ] -> map(|r| std::f64::consts::PI * r * r) -> out;
+        my_demux[rect] -> map(|(w, h)| w * h) -> out;
     };
     df.run_available();
 }
@@ -448,7 +448,7 @@ pub fn test_demux_1() {
 #[test]
 pub fn test_demux_fizzbuzz_1() {
     let mut df = hydroflow_syntax! {
-        demux = recv_iter(1..=100)
+        my_demux = recv_iter(1..=100)
             -> demux(|v, tl!(fzbz, fizz, buzz, vals)|
                 match v {
                     v if 0 == v % 15 => fzbz.give(()),
@@ -457,10 +457,10 @@ pub fn test_demux_fizzbuzz_1() {
                     v => vals.give(v),
                 }
             );
-        demux[fzbz] -> for_each(|_| println!("fizzbuzz"));
-        demux[fizz] -> for_each(|_| println!("fizz"));
-        demux[buzz] -> for_each(|_| println!("buzz"));
-        demux[vals] -> for_each(|x| println!("{}", x));
+        my_demux[fzbz] -> for_each(|_| println!("fizzbuzz"));
+        my_demux[fizz] -> for_each(|_| println!("fizz"));
+        my_demux[buzz] -> for_each(|_| println!("buzz"));
+        my_demux[vals] -> for_each(|x| println!("{}", x));
     };
     df.run_available();
 }
@@ -468,7 +468,7 @@ pub fn test_demux_fizzbuzz_1() {
 #[test]
 pub fn test_demux_fizzbuzz_2() {
     let mut df = hydroflow_syntax! {
-        demux = recv_iter(1..=100)
+        my_demux = recv_iter(1..=100)
         -> demux(|v, tl!(fzbz, fizz, buzz, vals)|
             match (v % 3, v % 5) {
                 (0, 0) => fzbz.give(()),
@@ -477,10 +477,10 @@ pub fn test_demux_fizzbuzz_2() {
                 (_, _) => vals.give(v),
             }
         );
-        demux[fzbz] -> for_each(|_| println!("fizzbuzz"));
-        demux[fizz] -> for_each(|_| println!("fizz"));
-        demux[buzz] -> for_each(|_| println!("buzz"));
-        demux[vals] -> for_each(|x| println!("{}", x));
+        my_demux[fzbz] -> for_each(|_| println!("fizzbuzz"));
+        my_demux[fizz] -> for_each(|_| println!("fizz"));
+        my_demux[buzz] -> for_each(|_| println!("buzz"));
+        my_demux[vals] -> for_each(|x| println!("{}", x));
     };
     df.run_available();
 }
