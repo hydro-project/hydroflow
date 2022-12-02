@@ -1,5 +1,5 @@
 {
-  "lastUpdate": 1669866926647,
+  "lastUpdate": 1669952961552,
   "repoUrl": "https://github.com/hydro-project/hydroflow",
   "entries": {
     "Benchmark": [
@@ -29675,6 +29675,82 @@
             "name": "reachability/hydroflow",
             "value": 5917425,
             "range": "± 274177",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Alex Rasmussen",
+            "username": "alexras",
+            "email": "535829+alexras@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "978e282009ada6df8c0242d76c1f8cff087232f0",
+          "message": "CI workflow for multiplatform example container builds (#252)\n\nThis diff introduces a CI process that builds multi-platform example containers on every commit to main.",
+          "timestamp": "2022-11-29T19:41:40Z",
+          "url": "https://github.com/hydro-project/hydroflow/commit/978e282009ada6df8c0242d76c1f8cff087232f0"
+        },
+        "date": 1669952961538,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "arithmetic/hydroflow/compiled",
+            "value": 696481,
+            "range": "± 17333",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fan_in/hydroflow",
+            "value": 366477019,
+            "range": "± 8248958",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fan_out/hydroflow/scheduled",
+            "value": 225284779,
+            "range": "± 7057645",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fork_join/hydroflow",
+            "value": 23590421,
+            "range": "± 989679",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fork_join/hydroflow_builder",
+            "value": 71834891,
+            "range": "± 2117299",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "identity/hydroflow",
+            "value": 100908696,
+            "range": "± 4544437",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "identity/hydroflow/compiled",
+            "value": 19605029,
+            "range": "± 700448",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "reachability/hydroflow/scheduled",
+            "value": 6260730,
+            "range": "± 315493",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "reachability/hydroflow",
+            "value": 6183874,
+            "range": "± 299647",
             "unit": "ns/iter"
           }
         ]
