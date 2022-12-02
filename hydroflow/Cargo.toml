@@ -23,6 +23,9 @@ name = "two_pc"
 [[example]]
 name = "deadlock_detector"
 
+[[example]]
+name = "kvs"
+
 [dependencies]
 bincode = "1.3"
 byteorder = "1.4.3"
