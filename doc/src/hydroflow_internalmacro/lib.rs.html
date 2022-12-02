@@ -118,6 +118,8 @@
 <a href="#118" id="118">118</a>
 <a href="#119" id="119">119</a>
 <a href="#120" id="120">120</a>
+<a href="#121" id="121">121</a>
+<a href="#122" id="122">122</a>
 </pre><pre class="rust"><code><span class="attr">#![feature(proc_macro_diagnostic, proc_macro_span)]
 #![allow(clippy::explicit_auto_deref)]
 
@@ -234,6 +236,8 @@
 
 <span class="kw">const </span>DOCTEST_HYDROFLOW_PREFIX: <span class="kw-2">&amp;</span>str = <span class="string">&quot;\
 ```rust
+# #[allow(unused_imports)] use hydroflow::tl;
+# #[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 # let mut __hf = hydroflow::hydroflow_syntax! {&quot;</span>;
 <span class="kw">const </span>DOCTEST_HYDROFLOW_SUFFIX: <span class="kw-2">&amp;</span>str = <span class="string">&quot;\
 # };

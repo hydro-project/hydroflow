@@ -335,6 +335,15 @@
 <a href="#335" id="335">335</a>
 <a href="#336" id="336">336</a>
 <a href="#337" id="337">337</a>
+<a href="#338" id="338">338</a>
+<a href="#339" id="339">339</a>
+<a href="#340" id="340">340</a>
+<a href="#341" id="341">341</a>
+<a href="#342" id="342">342</a>
+<a href="#343" id="343">343</a>
+<a href="#344" id="344">344</a>
+<a href="#345" id="345">345</a>
+<a href="#346" id="346">346</a>
 </pre><pre class="rust"><code><span class="kw">use </span>proc_macro2::{Ident, Literal, Span, TokenStream};
 <span class="kw">use </span>quote::{quote, quote_spanned, ToTokens};
 <span class="kw">use </span>slotmap::{Key, SecondaryMap, SlotMap};
@@ -492,36 +501,45 @@
 
                             <span class="comment">// TODO clean this up.
                             // Collect input arguments (predacessors).
-                            </span><span class="kw">let </span><span class="kw-2">mut </span>input_edges: Vec&lt;(GraphEdgeId, GraphNodeId)&gt; =
-                                <span class="self">self</span>.graph.predecessors(node_id).collect();
+                            </span><span class="kw">let </span><span class="kw-2">mut </span>input_edges: Vec&lt;(<span class="kw-2">&amp;</span>PortIndexValue, GraphNodeId)&gt; =
+                                <span class="self">self</span>.graph.predecessors(node_id)
+                                    .map(|(edge_id, pred)| (<span class="kw-2">&amp;</span><span class="self">self</span>.indices[edge_id].<span class="number">1</span>, pred))
+                                    .collect();
                             <span class="comment">// Ensure sorted by port index.
-                            </span>input_edges
-                                .sort_unstable_by_key(|<span class="kw-2">&amp;</span>(edge_id, _pred)| <span class="kw-2">&amp;</span><span class="self">self</span>.indices[edge_id].<span class="number">1</span>);
+                            </span>input_edges.sort();
+
                             <span class="kw">let </span>inputs: Vec&lt;Ident&gt; = input_edges
-                                .into_iter()
-                                .map(|(_edge_id, pred)| <span class="self">self</span>.node_id_as_ident(pred, <span class="bool-val">true</span>))
+                                .iter()
+                                .map(|<span class="kw-2">&amp;</span>(_port, pred)| <span class="self">self</span>.node_id_as_ident(pred, <span class="bool-val">true</span>))
                                 .collect();
+                            <span class="kw">let </span>input_ports: Vec&lt;<span class="kw-2">&amp;</span>PortIndexValue&gt; = input_edges.into_iter().map(|(port, _pred)| port).collect();
 
                             <span class="comment">// Collect output arguments (successors).
-                            </span><span class="kw">let </span><span class="kw-2">mut </span>output_edges: Vec&lt;(GraphEdgeId, GraphNodeId)&gt; =
-                                <span class="self">self</span>.graph.successors(node_id).collect();
+                            </span><span class="kw">let </span><span class="kw-2">mut </span>output_edges: Vec&lt;(<span class="kw-2">&amp;</span>PortIndexValue, GraphNodeId)&gt; =
+                                <span class="self">self</span>.graph.successors(node_id)
+                                    .map(|(edge_id, succ)| (<span class="kw-2">&amp;</span><span class="self">self</span>.indices[edge_id].<span class="number">0</span>, succ))
+                                    .collect();
                             <span class="comment">// Ensure sorted by port index.
-                            </span>output_edges
-                                .sort_unstable_by_key(|<span class="kw-2">&amp;</span>(edge_id, _succ)| <span class="kw-2">&amp;</span><span class="self">self</span>.indices[edge_id].<span class="number">0</span>);
+                            </span>output_edges.sort();
+
                             <span class="kw">let </span>outputs: Vec&lt;Ident&gt; = output_edges
-                                .into_iter()
-                                .map(|(_edge_id, succ)| <span class="self">self</span>.node_id_as_ident(succ, <span class="bool-val">false</span>))
+                                .iter()
+                                .map(|<span class="kw-2">&amp;</span>(_port, succ)| <span class="self">self</span>.node_id_as_ident(succ, <span class="bool-val">false</span>))
                                 .collect();
+                            <span class="kw">let </span>output_ports: Vec&lt;<span class="kw-2">&amp;</span>PortIndexValue&gt; = output_edges.into_iter().map(|(port, _succ)| port).collect();
 
                             <span class="kw">let </span>is_pull = idx &lt; pull_to_push_idx;
 
                             <span class="kw">let </span>iter_args = WriteIteratorArgs {
                                 ident: <span class="kw-2">&amp;</span>ident,
+                                is_pull,
                                 inputs: <span class="kw-2">&amp;*</span>inputs,
                                 outputs: <span class="kw-2">&amp;*</span>outputs,
+                                input_ports: <span class="kw-2">&amp;*</span>input_ports,
+                                output_ports: <span class="kw-2">&amp;*</span>output_ports,
                                 type_arguments: op.type_arguments(),
                                 arguments: <span class="kw-2">&amp;</span>op.args,
-                                is_pull,
+                                op_name: op_constraints.name,
                             };
 
                             <span class="kw">let </span>OperatorWriteOutput {

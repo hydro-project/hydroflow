@@ -254,6 +254,16 @@
 <a href="#254" id="254">254</a>
 <a href="#255" id="255">255</a>
 <a href="#256" id="256">256</a>
+<a href="#257" id="257">257</a>
+<a href="#258" id="258">258</a>
+<a href="#259" id="259">259</a>
+<a href="#260" id="260">260</a>
+<a href="#261" id="261">261</a>
+<a href="#262" id="262">262</a>
+<a href="#263" id="263">263</a>
+<a href="#264" id="264">264</a>
+<a href="#265" id="265">265</a>
+<a href="#266" id="266">266</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::fmt::Display;
 <span class="kw">use </span>std::ops::{Bound, RangeBounds};
 
@@ -268,6 +278,7 @@
 <span class="kw">use super</span>::{GraphNodeId, GraphSubgraphId, PortIndexValue};
 
 <span class="kw">mod </span>cross_join;
+<span class="kw">mod </span>demux;
 <span class="kw">mod </span>difference;
 <span class="kw">mod </span>filter;
 <span class="kw">mod </span>filter_map;
@@ -411,6 +422,7 @@
     next_stratum::NEXT_STRATUM,
     next_epoch::NEXT_EPOCH,
     for_each::FOR_EACH,
+    demux::DEMUX,
     write_async::WRITE_ASYNC,
     sink_async::SINK_ASYNC,
 ];
@@ -438,17 +450,25 @@
 <span class="kw">pub struct </span>WriteIteratorArgs&lt;<span class="lifetime">&#39;a</span>&gt; {
     <span class="doccomment">/// Ident the iterator or pullerator should be assigned to.
     </span><span class="kw">pub </span>ident: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Ident,
+    <span class="doccomment">/// If a pull iterator (true) or pusherator (false) should be used.
+    </span><span class="kw">pub </span>is_pull: bool,
     <span class="doccomment">/// Input operator idents (used for pull).
     </span><span class="kw">pub </span>inputs: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[Ident],
     <span class="doccomment">/// Output operator idents (used for push).
     </span><span class="kw">pub </span>outputs: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[Ident],
+
+    <span class="doccomment">/// Port values used as this operator&#39;s input.
+    </span><span class="kw">pub </span>input_ports: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>PortIndexValue],
+    <span class="doccomment">/// Port values used as this operator&#39;s output.
+    </span><span class="kw">pub </span>output_ports: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>PortIndexValue],
+
     <span class="doccomment">/// Unused: Operator type arguments.
     </span><span class="kw">pub </span>type_arguments: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Punctuated&lt;GenericArgument, <span class="macro">Token!</span>[,]&gt;&gt;,
     <span class="doccomment">/// Arguments provided by the user into the operator as arguments.
     /// I.e. the `a, b, c` in `-&gt; my_op(a, b, c) -&gt; `.
     </span><span class="kw">pub </span>arguments: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Punctuated&lt;Expr, <span class="macro">Token!</span>[,]&gt;,
-    <span class="doccomment">/// If a pull iterator (true) or pusherator (false) should be used.
-    </span><span class="kw">pub </span>is_pull: bool,
+    <span class="doccomment">/// Name of the operator (will match [`OperatorConstraints::name`]).
+    </span><span class="kw">pub </span>op_name: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str,
 }
 
 <span class="kw">pub trait </span>RangeTrait&lt;T&gt;
