@@ -9,6 +9,7 @@
 #![feature(never_type)]
 #![feature(type_alias_impl_trait)]
 
+pub mod demux;
 pub mod filter;
 pub mod filter_map;
 pub mod flatten;
@@ -105,6 +106,19 @@ pub trait PusheratorBuild {
         Func: FnMut(Self::ItemOut),
     {
         self.push_to(for_each::ForEach::new(func))
+    }
+
+    fn demux<Func, Nexts>(
+        self,
+        func: Func,
+        nexts: Nexts,
+    ) -> Self::Output<demux::Demux<Func, Nexts, Self::ItemOut>>
+    where
+        Self: Sized,
+        Nexts: demux::PusheratorList,
+        Func: FnMut(Self::ItemOut, &mut Nexts),
+    {
+        self.push_to(demux::Demux::new(func, nexts))
     }
 }
 
