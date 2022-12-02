@@ -186,13 +186,14 @@ impl PartitionedGraph {
 
                             let iter_args = WriteIteratorArgs {
                                 ident: &ident,
+                                is_pull,
                                 inputs: &*inputs,
                                 outputs: &*outputs,
                                 input_ports: &*input_ports,
                                 output_ports: &*output_ports,
                                 type_arguments: op.type_arguments(),
                                 arguments: &op.args,
-                                is_pull,
+                                op_name: op_constraints.name,
                             };
 
                             let OperatorWriteOutput {

@@ -201,6 +201,8 @@ pub struct WriteIteratorArgs<'a> {
     /// Arguments provided by the user into the operator as arguments.
     /// I.e. the `a, b, c` in `-> my_op(a, b, c) -> `.
     pub arguments: &'a Punctuated<Expr, Token![,]>,
+    /// Name of the operator (will match [`OperatorConstraints::name`]).
+    pub op_name: &'static str,
 }
 
 pub trait RangeTrait<T>

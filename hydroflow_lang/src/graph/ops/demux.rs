@@ -53,20 +53,31 @@ pub const DEMUX: OperatorConstraints = OperatorConstraints {
                      outputs,
                      output_ports,
                      arguments,
+                     op_name,
                      is_pull,
                      ..
                  }| {
         assert!(!is_pull);
         let func = &arguments[0];
         let func: ExprClosure = parse_quote!(#func);
-        assert_eq!(2, func.inputs.len(), "Closure provided as second argument to `demux` must have a second input argument listing ports, `tl!(port_a, port_b, ...)`.");
+        assert_eq!(
+            2,
+            func.inputs.len(),
+            "Closure provided as second argument to `{}` must have a second \
+            input argument listing ports, `tl!(port_a, port_b, ...)`.",
+            op_name,
+        );
         let input_ports_str = func.inputs[1].to_token_stream().to_string();
 
+        // A list of indices representing the permutation needed to reorder the
+        // output port names to match how they appear in the `func` arguments.
         let mut sort_permute: Vec<_> = (0..outputs.len()).collect();
         sort_permute.sort_by_key(|&i| {
-            if let PortIndexValue::Path(expr_path) = output_ports[i] {
-                let port_needle = expr_path.to_token_stream().to_string();
-                input_ports_str.find(&*port_needle)
+            if let PortIndexValue::Path(port_expr) = output_ports[i] {
+                // Sort the index by the corresponding port's name location in
+                // the argument string.
+                let port_name = port_expr.to_token_stream().to_string();
+                input_ports_str.find(&*port_name)
             } else {
                 output_ports[i]
                     .span()
