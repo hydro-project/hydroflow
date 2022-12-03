@@ -1,8 +1,8 @@
-use crate::helpers::{
-    deserialize_msg, is_resp, parse_command, resolve_ipv4_connection_addr, serialize_msg,
-};
+use crate::helpers::{deserialize_msg, parse_command, resolve_ipv4_connection_addr, serialize_msg};
+use crate::protocol::KVSMessage;
 use crate::{GraphType, Opts};
 use hydroflow::hydroflow_syntax;
+use hydroflow::pusherator::Pusherator;
 use tokio::io::AsyncBufReadExt;
 use tokio::net::UdpSocket;
 use tokio_stream::wrappers::LinesStream;
@@ -36,8 +36,11 @@ pub(crate) async fn run_client(opts: Opts) {
     let mut hf = hydroflow_syntax! {
         // set up channels
         outbound_chan = map(|(m,a)| (serialize_msg(m), a)) -> sink_async(outbound);
-        inbound_chan = recv_stream(inbound) -> map(deserialize_msg);
-        resps = inbound_chan -> filter_map(is_resp);
+        inbound_chan = recv_stream(inbound) -> map(deserialize_msg) -> demux(|m, tl!(resps, errs)| match m {
+            KVSMessage::Response {..} => resps.give(m),
+            _ => errs.give(m),
+        });
+        inbound_chan[errs] -> for_each(|m| println!("Received unexpected message type: {:?}", m));
 
         // read in commands from stdin and forward to server
         recv_stream(stdin_lines)
@@ -46,7 +49,7 @@ pub(crate) async fn run_client(opts: Opts) {
             -> outbound_chan;
 
         // print inbound msgs
-        resps -> for_each(|m| println!("Got a Response: {:?}", m));
+        inbound_chan[resps] -> for_each(|m| println!("Got a Response: {:?}", m));
     };
 
     if let Some(graph) = opts.graph {

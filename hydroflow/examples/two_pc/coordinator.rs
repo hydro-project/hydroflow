@@ -1,10 +1,8 @@
-use crate::helpers::{
-    deserialize_msg, is_ackp2_msg, is_subord_abort, is_subord_commit, is_vote, parse_out,
-    serialize_msg,
-};
+use crate::helpers::{deserialize_msg, parse_out, serialize_msg};
 use crate::protocol::{CoordMsg, MsgType, SubordResponse};
 use crate::{GraphType, Opts};
 use hydroflow::hydroflow_syntax;
+use hydroflow::pusherator::Pusherator;
 use hydroflow::scheduled::graph::Hydroflow;
 use std::net::SocketAddr;
 use tokio::io::AsyncBufReadExt;
@@ -30,11 +28,18 @@ pub(crate) async fn run_coordinator(opts: Opts, subordinates: Vec<String>) {
         outbound_chan = tee();
         outbound_chan[0] -> map(|(m,a)| (serialize_msg(m), a)) -> sink_async(outbound);
         inbound_chan = recv_stream(inbound) -> map(deserialize_msg) -> tee();
-        votes_chan = inbound_chan[0] -> filter_map(is_vote) -> tee();
-        p2_ack_chan = inbound_chan[1] -> filter_map(is_ackp2_msg);
+        msgs = inbound_chan[0] ->  demux(|m:SubordResponse, tl!(commits, aborts, acks, endeds, errs)| match m.mtype {
+                    MsgType::Commit => commits.give(m),
+                    MsgType::Abort => aborts.give(m),
+                    MsgType::AckP2 {..} => acks.give(m),
+                    MsgType::Ended {..} => endeds.give(m),
+                    _ => errs.give(m),
+                });
+        msgs[errs] -> for_each(|m| println!("Received unexpected message type: {:?}", m));
+        msgs[endeds] -> null();
 
         // we log all messages (in this prototype we just print)
-        inbound_chan[2] -> for_each(|m| println!("Received {:?}", m));
+        inbound_chan[1] -> for_each(|m| println!("Received {:?}", m));
         outbound_chan[1] -> for_each(|(m, a)| println!("Sending {:?} to {:?}", m, a));
 
         // setup broadcast channel to all subords
@@ -53,15 +58,15 @@ pub(crate) async fn run_coordinator(opts: Opts, subordinates: Vec<String>) {
         // Phase 1 responses:
         // as soon as we get an abort message for P1, we start Phase 2 with Abort.
         // We'll respond to each abort message: this is redundant but correct (and monotone)
-        abort_vote = votes_chan[1] -> filter_map(is_subord_abort)
-            -> map(|m| CoordMsg{xid: m.xid, mtype: MsgType::Abort})
+        msgs[aborts]
+            -> map(|m: SubordResponse| CoordMsg{xid: m.xid, mtype: MsgType::Abort})
             -> [1]broadcast;
 
         // count commit votes
         // persistence done explicitly here!
         commit_buf = merge();
         commit_votes = tee();
-        votes_chan[2] -> filter_map(is_subord_commit)
+        msgs[commits]
             -> map(|m:SubordResponse| (m.xid, 1)) -> [0]commit_buf;
         commit_buf
             -> groupby(|| 0, |old: &mut u32, val: u32| *old += val)
@@ -78,7 +83,7 @@ pub(crate) async fn run_coordinator(opts: Opts, subordinates: Vec<String>) {
         committed -> map(|xid| CoordMsg{xid, mtype: MsgType::Commit}) -> [2]broadcast;
 
         // Handle p2 acknowledgments by sending an End message
-        p2_ack_chan -> map(|m:SubordResponse| CoordMsg{xid: m.xid, mtype: MsgType::End,})
+        msgs[acks]  -> map(|m:SubordResponse| CoordMsg{xid: m.xid, mtype: MsgType::End,})
                     -> [3]broadcast;
 
         // Handler for ended acknowledgments not necessary; we just print them
