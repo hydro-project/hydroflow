@@ -1,2 +1,6 @@
 [build]
-rustflags = ["-Zproc-macro-backtrace"]
+rustflags = [
+    "-Zproc-macro-backtrace",
+    # TODO(mingwei): Need rust-analyzer support:
+    "-Aclippy::uninlined-format-args",
+]
