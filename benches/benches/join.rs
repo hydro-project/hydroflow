@@ -1,6 +1,3 @@
-// TODO(mingwei): Need rust-analyzer support
-#![allow(clippy::uninlined_format_args)]
-
 use std::collections::HashMap;
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
