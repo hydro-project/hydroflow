@@ -24,10 +24,12 @@ We'll start out with the above boilerplate. Note that we've added a few things:
 that we will use as the type for our external inputs. 
 - the preceding line, `use serde::{Deserialize, Serialize};`, allows us to serialize/deserialize (serde) data.
 We will not use this in our example, but it's extremely common in distributed Hydroflow programs.
-- the #derive[...] line before that derives certain basic traits
+- the `#derive[...]` line before that derives certain basic traits
 we will need for any struct to work in Hydroflow.
+
 We could have skipped all three of these lines and simply used `usize` in place of `UsizeMessage` throughout this example. 
-But it's common in distributed programs that we will deal with I/O inputs that have more complex structure and require 
+We use a custom struct here because it's typical: distributed programs typically deal with 
+network inputs that have more complex structure and require 
 serde support.
 
 

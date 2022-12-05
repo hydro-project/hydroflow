@@ -18,15 +18,20 @@ pub fn main() {
     let (edges_send, edges_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
 
     let mut df = hydroflow_syntax! {
-        reached_vertices = merge() -> map(|v| (v, ()));
-        recv_iter(vec![0]) -> [0]reached_vertices;
+        // inputs: the origin vertex (node 0) and stream of input edges
+        origin = recv_iter(vec![0]);
+        stream_of_edges = recv_stream(edges_recv);
+        reached_vertices = merge();
+        origin -> [0]reached_vertices;
 
-        my_join_tee = join() -> map(|(_src, ((), dst))| dst) -> tee();
-        reached_vertices -> [0]my_join_tee;
-        recv_stream(edges_recv) -> [1]my_join_tee;
+        // the join
+        my_join_tee = join() -> flat_map(|(src, ((), dst))| [src, dst]) -> tee();
+        reached_vertices -> map(|v| (v, ())) -> [0]my_join_tee;
+        stream_of_edges -> [1]my_join_tee;
 
+        // the loop and the output
         my_join_tee[0] -> [1]reached_vertices;
-        my_join_tee[1] -> for_each(|x| println!("Reached: {}", x));
+        my_join_tee[1] -> unique() -> for_each(|x| println!("Reached: {}", x));
     };
 
     if let Some(graph) = opts.graph {
@@ -51,9 +56,12 @@ pub fn main() {
 
     println!("A");
 
-    edges_send.send((5, 10)).unwrap();
+    edges_send.send((0, 1)).unwrap();
+    edges_send.send((2, 4)).unwrap();
+    edges_send.send((3, 4)).unwrap();
+    edges_send.send((1, 2)).unwrap();
     edges_send.send((0, 3)).unwrap();
-    edges_send.send((3, 6)).unwrap();
+    edges_send.send((0, 3)).unwrap();
     df.run_available();
 
     println!("B");
@@ -64,7 +72,9 @@ pub fn main() {
     // A
     // Reached: 3
     // Reached: 6
+    // Reached: 0
     // B
+    // Reached: 6
     // Reached: 5
     // Reached: 10
 }

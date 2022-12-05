@@ -32,7 +32,7 @@ impl SerdeGraph {
                 write,
                 "    subgraph \"sg_{:?} stratum {:?}\"",
                 subgraph_id.data(),
-                stratum
+                stratum.unwrap()
             )?;
             for &node_id in node_ids.iter() {
                 if !self.handoffs.contains_key(node_id) {
