@@ -85,6 +85,8 @@ impl PartitionedGraph {
                 }
             });
 
+        let mut diagnostics = Vec::new();
+
         let subgraphs = self
             .subgraph_nodes
             .iter()
@@ -196,11 +198,14 @@ impl PartitionedGraph {
                                 op_name: op_constraints.name,
                             };
 
-                            let OperatorWriteOutput {
+                            let write_result = (op_constraints.write_fn)(&context_args, &iter_args, &mut diagnostics);
+                            let Ok(OperatorWriteOutput {
                                 write_prologue,
                                 write_iterator,
                                 write_iterator_after,
-                            } = (op_constraints.write_fn)(&context_args, &iter_args);
+                            }) = write_result else {
+                                continue;
+                            };
 
                             let required_trait = if is_pull {
                                 quote_spanned! {op_span=>
@@ -277,7 +282,7 @@ impl PartitionedGraph {
             });
 
         let serde_string = Literal::string(&*self.serde_string());
-        quote! {
+        let code = quote! {
             {
                 use #root::tl;
 
@@ -288,6 +293,13 @@ impl PartitionedGraph {
 
                 df
             }
+        };
+
+        diagnostics.iter().for_each(Diagnostic::emit);
+        if diagnostics.iter().any(Diagnostic::is_error) {
+            quote! { #root::scheduled::graph::Hydroflow::new() }
+        } else {
+            code
         }
     }
 

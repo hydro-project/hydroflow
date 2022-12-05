@@ -18,13 +18,14 @@ pub const REPEAT_ITER: OperatorConstraints = OperatorConstraints {
     write_fn: &(|&WriteContextArgs { op_span, .. },
                  &WriteIteratorArgs {
                      ident, arguments, ..
-                 }| {
+                 },
+                 _| {
         let write_iterator = quote_spanned! {op_span=>
             let #ident = std::iter::IntoIterator::into_iter(#arguments);
         };
-        OperatorWriteOutput {
+        Ok(OperatorWriteOutput {
             write_iterator,
             ..Default::default()
-        }
+        })
     }),
 };

@@ -31,7 +31,8 @@ pub const UNIQUE: OperatorConstraints = OperatorConstraints {
                      inputs,
                      is_pull,
                      ..
-                 }| {
+                 },
+                 _| {
         assert!(is_pull);
         let input = &inputs[0];
         let write_iterator = quote_spanned! {op_span=>
@@ -40,9 +41,9 @@ pub const UNIQUE: OperatorConstraints = OperatorConstraints {
                 |mut prev, nxt| {prev.insert(nxt); prev}
             ).into_iter();
         };
-        OperatorWriteOutput {
+        Ok(OperatorWriteOutput {
             write_iterator,
             ..Default::default()
-        }
+        })
     }),
 };

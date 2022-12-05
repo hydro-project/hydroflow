@@ -36,7 +36,8 @@ pub const TEE: OperatorConstraints = OperatorConstraints {
                      outputs,
                      is_pull,
                      ..
-                 }| {
+                 },
+                 _| {
         let write_iterator = if !is_pull {
             let tees = outputs
                 .iter()
@@ -56,9 +57,9 @@ pub const TEE: OperatorConstraints = OperatorConstraints {
                 let #ident = #input;
             }
         };
-        OperatorWriteOutput {
+        Ok(OperatorWriteOutput {
             write_iterator,
             ..Default::default()
-        }
+        })
     }),
 };

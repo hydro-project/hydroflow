@@ -7,6 +7,7 @@ use slotmap::Key;
 use syn::punctuated::Punctuated;
 use syn::{Expr, GenericArgument, Token};
 
+use crate::diagnostic::Diagnostic;
 use crate::parse::PortIndex;
 
 use super::{GraphNodeId, GraphSubgraphId, PortIndexValue};
@@ -70,8 +71,11 @@ pub struct OperatorConstraints {
     pub input_delaytype_fn: &'static dyn Fn(&PortIndexValue) -> Option<DelayType>,
 
     /// Emit code in multiple locations. See [`OperatorWriteOutput`].
-    pub write_fn:
-        &'static dyn Fn(&WriteContextArgs<'_>, &WriteIteratorArgs<'_>) -> OperatorWriteOutput,
+    pub write_fn: &'static dyn Fn(
+        &WriteContextArgs<'_>,
+        &WriteIteratorArgs<'_>,
+        &mut Vec<Diagnostic>,
+    ) -> Result<OperatorWriteOutput, ()>,
 }
 
 #[derive(Default)]
@@ -123,12 +127,13 @@ pub fn identity_write_iterator_fn(
 pub const IDENTITY_WRITE_FN: &'static dyn Fn(
     &WriteContextArgs<'_>,
     &WriteIteratorArgs<'_>,
-) -> OperatorWriteOutput = &(|write_context_args, write_iterator_args| {
+    &mut Vec<Diagnostic>,
+) -> Result<OperatorWriteOutput, ()> = &(|write_context_args, write_iterator_args, _| {
     let write_iterator = identity_write_iterator_fn(write_context_args, write_iterator_args);
-    OperatorWriteOutput {
+    Ok(OperatorWriteOutput {
         write_iterator,
         ..Default::default()
-    }
+    })
 });
 
 pub const OPERATORS: &[OperatorConstraints] = &[
@@ -162,9 +167,13 @@ pub const OPERATORS: &[OperatorConstraints] = &[
 ];
 
 pub struct WriteContextArgs<'a> {
+    /// `hydroflow` crate name for `use #root::something`.
     pub root: &'a TokenStream,
+    /// Subgraph ID in which this operator is contained.
     pub subgraph_id: GraphSubgraphId,
+    /// Node ID identifying this operator in the flat or partitioned graph meta-datastructure.
     pub node_id: GraphNodeId,
+    /// The source span of this operator.
     pub op_span: Span,
 }
 impl WriteContextArgs<'_> {

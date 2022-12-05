@@ -40,7 +40,8 @@ pub const FOLD: OperatorConstraints = OperatorConstraints {
                      arguments,
                      is_pull,
                      ..
-                 }| {
+                 },
+                 _| {
         assert!(is_pull);
         let input = &inputs[0];
         // TODO(mingwei): Issues if initial value is not copy.
@@ -48,9 +49,9 @@ pub const FOLD: OperatorConstraints = OperatorConstraints {
         let write_iterator = quote_spanned! {op_span=>
             let #ident = std::iter::once(#input.fold(#arguments));
         };
-        OperatorWriteOutput {
+        Ok(OperatorWriteOutput {
             write_iterator,
             ..Default::default()
-        }
+        })
     }),
 };
