@@ -34,7 +34,7 @@ Here are some good resources:
 
 ## VS Code Setup
 
-We recommend using VS Code with the `rust-anaylzer` extension (and NOT the
+We recommend using VS Code with the `rust-analyzer` extension (and NOT the
 `Rust` extension). To enable the pre-release version of `rust-analyzer`
 (required by some new nightly syntax we use, at least until 2022-03-14), click
 the "Switch to Pre-Release Version" button next to the uninstall button.
@@ -50,14 +50,14 @@ git clone git@github.com:hydro-project/hydroflow.git
 Hydroflow requires nightly Rust, but the repo is already configured for it via
 `rust-toolchain.toml`.
 
-We can then open the repo in VS Code or IDE of your choice. `rust-analyzer`
+We can then open the repo in VS Code or IDE of your choice. In VS Code, `rust-analyzer`
 will provide inline type and error messages, code completion, etc.
 
 ## Development
 
 The easiest way to try Hydroflow is with an "example", found in the
 [`hydroflow/examples` folder](https://github.com/hydro-project/hydroflow/tree/main/hydroflow/examples).
-These examples are include via the [`hydroflow/Cargo.toml` file](https://github.com/hydro-project/hydroflow/blob/main/hydroflow/Cargo.toml),
+These examples are included via the [`hydroflow/Cargo.toml` file](https://github.com/hydro-project/hydroflow/blob/main/hydroflow/Cargo.toml),
 so make sure to add your example there if you create a new one. The simplest
 example is [`graph_reachability`](https://github.com/hydro-project/hydroflow/blob/main/hydroflow/examples/graph_reachability/main.rs).
 

@@ -34,12 +34,12 @@ Although this is a trivial program, it's useful to go through it line by line.
 use hydroflow::hydroflow_syntax;
 ```
 This import gives you everything you need from hydroflow to write code with the 
-[_surface syntax_](./surface_syntax.md), which is the most common way to interact
+[_surface syntax_](./surface_syntax.md), which is the recommended way to interact
 with Hydroflow.
 
 Next, inside the main method we specify a flow by calling the 
 `hydroflow_syntax!` macro. We assign the resulting `Hydroflow` instance to
-a mutable variable---we will be changing its status when we run it.
+a mutable variable `flow`––mutable because we will be changing its status when we run it.
 ```rust,ignore
 # use hydroflow::hydroflow_syntax;
 pub fn main() {
@@ -47,8 +47,9 @@ pub fn main() {
         recv_iter(0..10) -> for_each(|n| println!("Hello {}", n));
     };
 ```
-The flow starts with a [`recv_iter`](./surface_ops.gen.md#recv_iter) operator that emits the 
-numbers 1 through 10, and passes them along the arrow `->` operator downstream to a 
+The flow starts with a [`recv_iter`](./surface_ops.gen.md#recv_iter) operator that takes the Rust
+iterator `0..10` and iterates it to emit the 
+numbers 0 through 9, and passes them along the arrow `->` operator downstream to a 
 [`for_each`](./surface_ops.gen.md#for_each) operator that invokes its closure argument to print each
 item passed in.
 
@@ -65,4 +66,4 @@ network ingress then more work might appear later. The [`run_epoch()`](https://h
 [`run_stratum()`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_stratum),
 [`run()`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run),
 and [`run_async()`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_async)
-methods provide other ways to execute the graph.
+methods provide other ways to control the graph execution.
