@@ -1,13 +1,12 @@
 use chrono::prelude::*;
 use colored::Colorize;
 
-use crate::helpers::{
-    deserialize_msg, is_chat_msg, is_connect_resp, resolve_ipv4_connection_addr, serialize_msg,
-};
+use crate::helpers::{deserialize_msg, resolve_ipv4_connection_addr, serialize_msg};
 use crate::protocol::Message;
 use crate::{GraphType, Opts};
 use chrono::Utc;
 use hydroflow::hydroflow_syntax;
+use hydroflow::pusherator::Pusherator;
 use tokio::io::AsyncBufReadExt;
 use tokio::net::UdpSocket;
 use tokio_stream::wrappers::LinesStream;
@@ -41,9 +40,16 @@ pub(crate) async fn run_client(opts: Opts) {
     let mut hf = hydroflow_syntax! {
         // set up channels
         outbound_chan = merge() -> map(|(m,a)| (serialize_msg(m), a)) -> sink_async(outbound);
-        inbound_chan = recv_stream(inbound) -> map(deserialize_msg) -> tee();
-        connect_acks = inbound_chan[0] -> filter_map(is_connect_resp) -> tee();
-        messages = inbound_chan[1] -> filter_map(is_chat_msg);
+        inbound_chan = recv_stream(inbound) -> map(deserialize_msg)
+            ->  demux(|m, tl!(acks, msgs, errs)|
+                    match m {
+                        Message::ConnectResponse => acks.give(m),
+                        Message::ChatMsg {..} => msgs.give(m),
+                        _ => errs.give(m),
+                    }
+                );
+        connect_acks = inbound_chan[acks] -> tee();
+        inbound_chan[errs] -> for_each(|m| println!("Received unexpected message type: {:?}", m));
 
         // send a single connection request on startup
         recv_iter([()]) -> map(|_m| (Message::ConnectRequest {
@@ -62,7 +68,7 @@ pub(crate) async fn run_client(opts: Opts) {
           -> [0]msg_send;
 
         // receive and print messages
-        messages -> for_each(|m: Message| if let Message::ChatMsg{ nickname, message, ts } = m {
+        inbound_chan[msgs] -> for_each(|m: Message| if let Message::ChatMsg{ nickname, message, ts } = m {
                 println!(
                     "{} {}: {}",
                     ts
@@ -78,7 +84,7 @@ pub(crate) async fn run_client(opts: Opts) {
 
         // handle connect ack
         connect_acks[0] -> for_each(|m: Message| println!("connected: {:?}", m));
-        connect_acks[1] -> filter_map(is_connect_resp) -> [1]msg_send;
+        connect_acks[1] -> [1]msg_send;
 
     };
 

@@ -1,9 +1,8 @@
-use crate::helpers::{
-    decide, deserialize_msg, is_coord_p2, is_end_msg, is_prepare_msg, serialize_msg,
-};
+use crate::helpers::{decide, deserialize_msg, serialize_msg};
 use crate::protocol::{CoordMsg, MsgType, SubordResponse};
 use crate::{GraphType, Opts};
 use hydroflow::hydroflow_syntax;
+use hydroflow::pusherator::Pusherator;
 use hydroflow::scheduled::graph::Hydroflow;
 use std::net::SocketAddr;
 use tokio::net::UdpSocket;
@@ -21,18 +20,23 @@ pub(crate) async fn run_subordinate(opts: Opts, coordinator: String) {
         outbound_chan = merge() -> tee();
         outbound_chan[0] -> map(|(m,a)| (serialize_msg(m), a)) -> sink_async(outbound);
         inbound_chan = recv_stream(inbound) -> map(deserialize_msg) -> tee();
-        prepare_chan = inbound_chan[0] -> filter_map(is_prepare_msg);
-        p2_chan = inbound_chan[1] -> filter_map(is_coord_p2);
-        end_chan = inbound_chan[2] -> filter_map(is_end_msg);
+        msgs = inbound_chan[0] ->  demux(|m:CoordMsg, tl!(prepares, p2, ends, errs)| match m.mtype {
+            MsgType::Prepare => prepares.give(m),
+            MsgType::Abort => p2.give(m),
+            MsgType::Commit => p2.give(m),
+            MsgType::End {..} => ends.give(m),
+            _ => errs.give(m),
+        });
+        msgs[errs] -> for_each(|m| println!("Received unexpected message type: {:?}", m));
 
         // we log all messages (in this prototype we just print)
-        inbound_chan[3] -> for_each(|m| println!("Received {:?}", m));
+        inbound_chan[1] -> for_each(|m| println!("Received {:?}", m));
         outbound_chan[1] -> for_each(|m| println!("Sending {:?}", m));
 
 
         // handle p1 message: choose vote and respond
         // in this prototype we choose randomly whether to abort via decide()
-        report_chan = prepare_chan -> map(|m: CoordMsg| (
+        report_chan = msgs[prepares] -> map(|m: CoordMsg| (
             SubordResponse{
                 xid: m.xid,
                 addr: my_addr.to_string(),
@@ -47,10 +51,10 @@ pub(crate) async fn run_subordinate(opts: Opts, coordinator: String) {
             addr: my_addr.to_string(),
             mtype: t,
         }, server_addr)) -> [1]outbound_chan;
-        p2_chan -> map(|m:CoordMsg| (m, MsgType::AckP2)) -> p2_response;
+        msgs[p2] -> map(|m:CoordMsg| (m, MsgType::AckP2)) -> p2_response;
 
         // handle end message: acknowledge (and print)
-        end_chan -> map(|m:CoordMsg| (SubordResponse{
+        msgs[ends] -> map(|m:CoordMsg| (SubordResponse{
             xid: m.xid,
             addr: my_addr.to_string(),
             mtype: MsgType::Ended,

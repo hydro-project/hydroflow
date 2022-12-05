@@ -21,31 +21,6 @@ where
     res.unwrap()
 }
 
-pub fn is_put(m: KVSMessage) -> Option<KVSMessage> {
-    match m {
-        KVSMessage::Put {
-            client: _,
-            key: _,
-            value: _,
-        } => Some(m),
-        _ => None,
-    }
-}
-
-pub fn is_get(m: KVSMessage) -> Option<KVSMessage> {
-    match m {
-        KVSMessage::Get { client: _, key: _ } => Some(m),
-        _ => None,
-    }
-}
-
-pub fn is_resp(m: KVSMessage) -> Option<KVSMessage> {
-    match m {
-        KVSMessage::Response { key: _, value: _ } => Some(m),
-        _ => None,
-    }
-}
-
 pub fn resolve_ipv4_connection_addr(server_ip: String, server_port: u16) -> Option<SocketAddr> {
     let mut addrs = format!("{}:{}", server_ip, server_port)
         .to_socket_addrs()
