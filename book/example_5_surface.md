@@ -1,7 +1,19 @@
-# Graph Un-Reachability
-Our next example builds on the previous by finding vertices that are _not_ reachable. To do this, we need to capture the set `all_vertices`, and use a [difference](./surface_ops.gen.md#difference) operator to form the difference between that set of vertices and `reachable_vertices`.
+# Graph Reachability
+To expand from graph neighbors to graph reachability, we want to find vertices that are connected not just to `origin`,
+but also to vertices reachable *transitively* from `origin`. Said differently, a vertex is reachable from `origin` if it is
+one of two cases: 
+1. a neighbor of `origin` *or* 
+2. a neighbor of some other vertex that is itself reachable from `origin`. 
 
-Essentially we want a flow like this:
+It turns out this is a very small change to our Hydroflow program! It will also illustrate an operator, [`tee()`](./surface_ops.gen.md#tee),
+which has multiple outputs.
+
+Essentially we want to take *all* the reached vertices we found in our graph neighbors program,
+and treat them recursively just as we treated `origin`.
+To do this in a language like Hydroflow, we introduce a cycle in the flow:
+we take the join output and have it
+flow back into the join input. The modified intuitive graph looks like this:
+
 ```mermaid
 graph TD
   subgraph sources
@@ -11,25 +23,23 @@ graph TD
     00[Origin Vertex]
     10[Reached Vertices]
     20("V ⨝ E")
+    40[Output]
 
     00 --> 10
     10 --> 20
     20 --> 10
 
     01 --> 20
+    20 --> 40
+    
   end
-  subgraph unreachable
-    15[All Vertices]
-    30(All - Reached)
-    01 ---> 15
-    15 --> 30
-    10 --> 30
-    30 --> 40
-   end
-40[Output]
 ```
+Note that we added a `Reached Vertices` node to `merge` the two inbound edges corresponding to our 
+two cases above. Similarly note that the join node `V ⨝ E` now has two _outbound_ edges; the sketch omits the operator 
+to copy (`tee`) the output along 
+two paths.
 
-This is a simple augmentation of our previous example. Here's the code:
+Now lets look at a modified version of our [graph neighbor](example_4_surface.md) code that implements this full program, including the loop as well as the `merge` and `tee`:
 
 ```rust
 # use hydroflow::hydroflow_syntax;
@@ -37,128 +47,115 @@ pub fn main() {
     // An edge in the input data = a pair of `usize` vertex IDs.
     let (pairs_send, pairs_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
 
-    let mut df = hydroflow_syntax! {
+    let mut flow = hydroflow_syntax! {
+        // inputs: the origin vertex (vertex 0) and stream of input edges
         origin = recv_iter(vec![0]);
-        stream_of_edges = recv_stream(pairs_recv) -> tee();
-        reached_vertices = merge()->tee();
+        stream_of_edges = recv_stream(pairs_recv);
+        reached_vertices = merge();
         origin -> [0]reached_vertices;
 
-        // the join for reachable vertices
-        my_join = join() -> flat_map(|(src, ((), dst))| [src, dst]);
-        reached_vertices[0] -> map(|v| (v, ())) -> [0]my_join;
-        stream_of_edges[1] -> [1]my_join;
+        // the join
+        my_join_tee = join() -> flat_map(|(src, ((), dst))| [src, dst]) -> tee();
+        reached_vertices -> map(|v| (v, ())) -> [0]my_join_tee;
+        stream_of_edges -> [1]my_join_tee;
 
-        // the loop
-        my_join -> [1]reached_vertices;
-
-        // the difference all_vertices - reached_vertices
-        all_vertices = stream_of_edges[0]
-          -> flat_map(|edge: (usize, usize)| [edge.0, edge.1])
-          -> unique() -> tee();
-        unreached_vertices = difference();
-        all_vertices[0] -> [pos]unreached_vertices;
-        reached_vertices[1] -> [neg]unreached_vertices;
-
-        // the output
-        all_vertices[1] -> unique() -> for_each(|v| println!("Received vertex: {}", v));
-        unreached_vertices -> for_each(|v| println!("unreached_vertices vertex: {}", v));
+        // the loop and the output
+        my_join_tee[0] -> [1]reached_vertices;
+        my_join_tee[1] -> unique() -> for_each(|x| println!("Reached: {}", x));
     };
 
-    if let Some(graph) = opts.graph {
-        let serde_graph = df
-            .serde_graph()
-            .expect("No graph found, maybe failed to parse.");
-        match graph {
-            GraphType::Mermaid => {
-                println!("{}", serde_graph.to_mermaid());
-            }
-            GraphType::Dot => {
-                println!("{}", serde_graph.to_dot())
-            }
-            GraphType::Json => {
-                unimplemented!();
-                // println!("{}", serde_graph.to_json())
-            }
-        }
-    }
-
-    pairs_send.send((5, 10)).unwrap();
+    println!(
+        "{}",
+        flow.serde_graph()
+            .expect("No graph found, maybe failed to parse.")
+            .to_mermaid()
+    );
+    pairs_send.send((0, 1)).unwrap();
+    pairs_send.send((2, 4)).unwrap();
+    pairs_send.send((3, 4)).unwrap();
+    pairs_send.send((1, 2)).unwrap();
     pairs_send.send((0, 3)).unwrap();
-    pairs_send.send((3, 6)).unwrap();
-    pairs_send.send((6, 5)).unwrap();
-    pairs_send.send((11, 12)).unwrap();
-    df.run_available();
+    pairs_send.send((0, 3)).unwrap();
+    flow.run_available();
 }
 ```
-Notice that we are now sending in some new pairs to test this code. The output should be:
+
+And now we get the full set of vertices reachable from `0`:
 ```txt
-Received vertex: 12
-Received vertex: 6
-Received vertex: 11
-Received vertex: 0
-Received vertex: 5
-Received vertex: 10
-Received vertex: 3
-unreached_vertices vertex: 12
-unreached_vertices vertex: 11
+Reached: 3
+Reached: 0
+Reached: 2
+Reached: 4
+Reached: 1
 ```
 
-Let's review the changes, all of which come at the end of the program. First, 
-we remove code to print `reached_vertices`. Then we define `all_vertices` to be
-the vertices that appear in any edge (using familiar `flat_map` code from the previous 
-examples.) In the last few lines, we wire up a 
-[difference](./surface_ops.gen.md#difference) operator
-to compute the difference between `all_vertices` and `reached_vertices`; note 
-how we wire up the `pos` and `neg` inputs to the `difference` operator! 
-Finally we print both `all_vertices` and `unreached_vertices`.
+Let's review the significant changes here. First, in setting up the inputs we have the 
+addition of the `reached_vertices` variable, which uses the [merge()](./surface_ops.gen.md#merge) 
+op to merge the output of two operators into one. 
+We route the `origin` vertex into it as one input right away:
+```rust,ignore
+    reached_vertices = merge();
+    origin -> [0]reached_vertices;
+```
+Note the square-bracket syntax for differentiating the multiple inputs to `merge()`
+is the same as that of `join()` (except that merge can have an unbounded number of inputs,
+whereas `join()` is defined to only have two.)
 
-The auto-generated mermaid looks like so:
+Now, `join()` is defined to only have one output. In our program, we want to copy 
+the joined output 
+output to two places: to the original `for_each` from above to print output, and *also* 
+back to the `merge` operator we called `reached_vertices`.
+We feed the `join()` output 
+through a `flat_map()` as before, and then we feed the result into a [`tee()`](./surface_ops.gen.md#tee) operator,
+which is the mirror image of `merge()`:  instead of merging many inputs to one output, 
+it copies one input to many different outputs.  Each input element is _cloned_, in Rust terms, and
+given to each of the outputs. The syntax for the outputs of `tee()` mirrors that of merge: we *append* 
+an output index in square brackets to the `tee` or variable. In this example we have
+`my_join_tee[0] ->` and `my_join_tee[1] ->`.
+
+Finally, we process the output of the `join` as passed through the `tee`.
+One branch pushes reached vertices back up into the `reached_vertices` variable (which begins with a `merge`), while the other
+prints out all the reached vertices as in the simple program.
+```rust,ignore
+        my_join_tee[0] -> [1]reached_vertices;
+        my_join_tee[1] -> for_each(|x| println!("Reached: {}", x));
+```
+Note the syntax for differentiating the *outputs* of a `tee()` is symmetric to that of `merge()`, 
+showing up to the right of the variable rather than the left.
+
+Below is the diagram rendered by [Mermaid](https://mermaid-js.github.io/) showing
+the structure of the full flow:
 ```mermaid
 flowchart TB
     subgraph "sg_1v1 stratum 0"
         1v1["1v1 <tt>op_1v1: recv_iter(vec! [0])</tt>"]
-        11v1["11v1 <tt>op_11v1: map(| v | (v, ()))</tt>"]
-        9v1["9v1 <tt>op_9v1: join()</tt>"]
-        10v1["10v1 <tt>op_10v1: flat_map(| (src, ((), dst)) | [src, dst])</tt>"]
-        4v1["4v1 <tt>op_4v1: merge()</tt>"]
-        5v1["5v1 <tt>op_5v1: tee()</tt>"]
+        2v1["2v1 <tt>op_2v1: recv_stream(edges_recv)</tt>"]
+        3v1["3v1 <tt>op_3v1: merge()</tt>"]
+        7v1["7v1 <tt>op_7v1: map(| v | (v, ()))</tt>"]
+        4v1["4v1 <tt>op_4v1: join()</tt>"]
+        5v1["5v1 <tt>op_5v1: flat_map(| (src, ((), dst)) | [src, dst])</tt>"]
+        6v1["6v1 <tt>op_6v1: tee()</tt>"]
     end
-    subgraph "sg_2v1 stratum 0"
-        2v1["2v1 <tt>op_2v1: recv_stream(pairs_recv)</tt>"]
-        3v1["3v1 <tt>op_3v1: tee()</tt>"]
-        7v1["7v1 <tt>op_7v1: flat_map(| edge : (usize, usize) | [edge.0, edge.1])</tt>"]
-        8v1["8v1 <tt>op_8v1: tee()</tt>"]
-        12v1["12v1 <tt>op_12v1: for_each(| v | println! (&quot;Received vertex: {}&quot;, v))</tt>"]
-    end
-    subgraph "sg_3v1 stratum 1"
-        6v1["6v1 <tt>op_6v1: difference()</tt>"]
-        13v1["13v1 <tt>op_13v1: for_each(| v | println! (&quot;unreached_vertices vertex: {}&quot;, v))</tt>"]
+    subgraph "sg_2v1 stratum 1"
+        8v1["8v1 <tt>op_8v1: unique()</tt>"]
+        9v1["9v1 <tt>op_9v1: for_each(| x | println! (&quot;Reached: {}&quot;, x))</tt>"]
     end
 
-    14v1{"handoff"}
-    15v1{"handoff"}
-    16v1{"handoff"}
-    17v1{"handoff"}
+    10v1{"handoff"}
+    11v1{"handoff"}
 
-    1v1-->4v1
-    2v1-->3v1
+    1v1-->3v1
+    2v1-->4v1
     3v1-->7v1
-    3v1-->15v1
     4v1-->5v1
-    5v1-->14v1
-    5v1-->17v1
-    6v1-->13v1
-    7v1-->8v1
-    8v1-->16v1
-    8v1-->12v1
-    9v1-->10v1
-    10v1-->4v1
-    11v1-->9v1
-    14v1-->11v1
-    15v1-->9v1
-    16v1-->6v1
-    17v1-->6v1
+    5v1-->6v1
+    6v1-->10v1
+    6v1-->11v1
+    7v1-->4v1
+    8v1-->9v1
+    10v1-->3v1
+    11v1-->8v1
 ```
-If you look carefully, you'll see two subgraphs labeled with `stratum 0`, and two with
-`stratum 1`. All the subgraphs labeled `stratum 0` are run first to completion, 
-and then all the subgraphs labeled `stratum 1` are run. This captures the requirements of the `unique` and `difference` operators used in the lower subgraphs.
+This is similar to the flow for graph neighbors, but has a few more operators that make it look
+more complex. In particular, it includes the `merge` and `tee` operators, and a cycle-forming back-edge 
+that passes through an auto-generated `handoff` operator. This `handoff` is not a stratum boundary (after all, it connects stratum 0 to itself!) Rather, it represents a compilation boundary: the compiled code that hydroflow generates is acyclic (as discussed in the [Architecture Chapter](./architecture.md)\), so these handoffs tell the runtime to iterate on the acyclic code of a stratum until there is no new output from the stratum.

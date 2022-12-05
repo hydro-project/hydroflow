@@ -13,8 +13,7 @@ struct Opts {
     graph: Option<GraphType>,
 }
 pub fn main() {
-    let mut opts = Opts::parse();
-    opts.graph = Some(GraphType::Mermaid);
+    let opts = Opts::parse();
     // An edge in the input data = a pair of `usize` vertex IDs.
     let (pairs_send, pairs_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
 
@@ -26,7 +25,7 @@ pub fn main() {
         origin -> [0]reached_vertices;
 
         all_vertices = stream_of_edges[0]
-          -> flat_map(|edge: (usize, usize)| [edge.0, edge.1])
+          -> flat_map(|(src, dst)| [src, dst])
           -> tee();
 
         // the join for reachable nodes
