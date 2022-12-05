@@ -1,11 +1,10 @@
 use crate::{GraphType, Opts};
 
-use crate::helpers::{
-    deserialize_msg, is_get, is_put, resolve_ipv4_connection_addr, serialize_msg,
-};
+use crate::helpers::{deserialize_msg, resolve_ipv4_connection_addr, serialize_msg};
 use crate::protocol::KVSMessage;
 
 use hydroflow::hydroflow_syntax;
+use hydroflow::pusherator::Pusherator;
 use hydroflow::scheduled::graph::Hydroflow;
 use std::net::SocketAddr;
 use tokio::net::UdpSocket;
@@ -23,9 +22,14 @@ pub(crate) async fn run_server(opts: Opts) {
     let mut df: Hydroflow = hydroflow_syntax! {
         // NW channels
         outbound_chan = merge() -> map(|(m,a)| (serialize_msg(m), a)) -> sink_async(outbound);
-        inbound_chan = recv_stream(inbound) -> map(deserialize_msg) -> tee();
-        puts = inbound_chan[0] -> filter_map(is_put) -> tee();
-        gets = inbound_chan[1] -> filter_map(is_get) -> tee();
+        inbound_chan = recv_stream(inbound) -> map(deserialize_msg) -> demux(|m, tl!(puts, gets, errs)| match m {
+            KVSMessage::Put {..} => puts.give(m),
+            KVSMessage::Get {..} => gets.give(m),
+            _ => errs.give(m),
+        });
+        puts = inbound_chan[puts] -> tee();
+        gets = inbound_chan[gets] -> tee();
+        inbound_chan[errs] -> for_each(|m| println!("Received unexpected message type: {:?}", m));
 
         puts[0] -> for_each(|m| println!("Got a Put: {:?}", m));
         gets[0] -> for_each(|m| println!("Got a Get: {:?}", m));
@@ -45,7 +49,7 @@ pub(crate) async fn run_server(opts: Opts) {
         parsed_puts[0] -> map(|(client, key, value): (SocketAddr, String, String)| (KVSMessage::Response{key, value}, client))
             -> [0]outbound_chan;
 
-        // join PUTs and GETs  by (key, client)
+        // join PUTs and GETs by key
         lookup = join()->tee();
         parsed_puts[1] -> map(|pp| (pp.1, pp.2)) -> [0]lookup;
         parsed_gets -> [1]lookup;
