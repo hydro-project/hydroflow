@@ -22,11 +22,8 @@ pub(crate) async fn run_client(opts: Opts) {
 
     let client_addr = resolve_ipv4_connection_addr(opts.addr, opts.port)
         .expect("Unable to resolve client address");
-
     let client_socket = UdpSocket::bind(client_addr).await.unwrap();
-
     println!("{:?} is bound to {}", opts.role, client_addr);
-
     let (outbound, inbound) = hydroflow::util::udp_lines(client_socket);
 
     let reader = tokio::io::BufReader::new(tokio::io::stdin());
