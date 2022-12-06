@@ -91,7 +91,7 @@ pub const DEMUX: OperatorConstraints = OperatorConstraints {
 
         // Port idents supplied via port connections in the surface syntax.
         let port_idents: Vec<_> = output_ports
-            .into_iter()
+            .iter()
             .filter_map(|&output_port| {
                 let PortIndexValue::Path(port_expr) = output_port else {
                     diagnostics.push(Diagnostic::spanned(

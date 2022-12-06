@@ -71,12 +71,14 @@ pub struct OperatorConstraints {
     pub input_delaytype_fn: &'static dyn Fn(&PortIndexValue) -> Option<DelayType>,
 
     /// Emit code in multiple locations. See [`OperatorWriteOutput`].
-    pub write_fn: &'static dyn Fn(
-        &WriteContextArgs<'_>,
-        &WriteIteratorArgs<'_>,
-        &mut Vec<Diagnostic>,
-    ) -> Result<OperatorWriteOutput, ()>,
+    pub write_fn: WriteFn,
 }
+
+pub type WriteFn = &'static dyn Fn(
+    &WriteContextArgs<'_>,
+    &WriteIteratorArgs<'_>,
+    &mut Vec<Diagnostic>,
+) -> Result<OperatorWriteOutput, ()>;
 
 #[derive(Default)]
 #[non_exhaustive]
@@ -124,11 +126,7 @@ pub fn identity_write_iterator_fn(
     }
 }
 
-pub const IDENTITY_WRITE_FN: &'static dyn Fn(
-    &WriteContextArgs<'_>,
-    &WriteIteratorArgs<'_>,
-    &mut Vec<Diagnostic>,
-) -> Result<OperatorWriteOutput, ()> = &(|write_context_args, write_iterator_args, _| {
+pub const IDENTITY_WRITE_FN: WriteFn = &(|write_context_args, write_iterator_args, _| {
     let write_iterator = identity_write_iterator_fn(write_context_args, write_iterator_args);
     Ok(OperatorWriteOutput {
         write_iterator,
