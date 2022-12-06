@@ -38,6 +38,7 @@ mod booktest {
     booktest!(example_3_surface);
     booktest!(example_4_surface);
     booktest!(example_5_surface);
+    booktest!(example_6_surface);
 
     booktest!(surface_syntax);
     booktest!(surface_embedding);

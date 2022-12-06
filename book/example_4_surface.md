@@ -1,4 +1,8 @@
 # Graph Neighbors
+> In this example we cover:
+> * Our first multi-input operator, [`join`](./surface_ops.gen.md#join)
+> * The [`unique`](./surface_ops.gen.md#unique) operator for removing duplicates from a stream
+> * A first exposure to the concepts of _strata_ and _epochs_
 
 So far all the operators we've used have one input and one output and therefore
 create a linear flow of operators. Let's now take a look at a Hydroflow program containing
@@ -13,7 +17,7 @@ naturally represented as a dataflow program.
 > **Note on terminology**: In each of the next few examples, we're going to write a Hydroflow program (a dataflow graph) to process data that itself represents some other graph! To avoid confusion, in these examples, we'll refer to the Hydroflow program as a "flow" or "program", and the data as a "graph" of "edges" and "vertices".
 
 To work our way up to graph reachability, we'll first start with a simple flow that finds
-graph *neighbors*: nodes that are just one hop away. 
+graph *neighbors*: vertices that are just one hop away. 
 
 Our first Hydroflow program will take
 our initial `origin` vertex as one input, and join it another input that streams in all the edges---this 
@@ -23,10 +27,11 @@ Here is an *intuitive* diagram of that dataflow program (we'll see complete, aut
 below):
 ```mermaid
 graph TD
-  subgraph simple version
-    00[Origin Vertex]
+  subgraph sources
     01[Stream of Edges]
-    
+  end
+  subgraph neighbors of origin
+    00[Origin Vertex]
     20("V ⨝ E")
     40[Output]
 
@@ -38,7 +43,7 @@ graph TD
   end
 ```
 
-Lets take a look at some hydroflow code that implements the program:
+Lets take a look at some Hydroflow code that implements the program:
 
 ```rust
 # use hydroflow::hydroflow_syntax;
@@ -47,17 +52,17 @@ pub fn main() {
     let (pairs_send, pairs_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
 
     let mut flow = hydroflow_syntax! {
-        // inputs: the origin vertex (node 0) and stream of input edges
+        // inputs: the origin vertex (vertex 0) and stream of input edges
         origin = recv_iter(vec![0]);
         stream_of_edges = recv_stream(pairs_recv);
 
         // the join
-        my_join = join() -> map(|(_x, (_y, z))| z);
+        my_join = join() -> flat_map(|(src, (_, dst))| [src, dst]);
         origin -> map(|v| (v, ())) -> [0]my_join;
         stream_of_edges -> [1]my_join;
 
         // the output
-        my_join -> for_each(|n| println!("Reached: {}", n));
+        my_join -> unique() -> for_each(|n| println!("Reached: {}", n));
     };
 
     println!(
@@ -78,8 +83,9 @@ pub fn main() {
 
 And the output:
 ```txt
-Reached: 1
+Reached: 0
 Reached: 3
+Reached: 1
 ```
 That looks right: the edges we "sent" into the flow that start at `0` are 
 `(0, 1)` and `(0, 3)`.
@@ -95,7 +101,7 @@ over using `recv_iter`.
 
 We then set up a [`join()`](./surface_ops.gen.md#join) that we
 name `my_join`, which acts like a SQL inner join. 
-First, note the syntax for passing data into a subflow with multiple inputs *prepends* 
+First, note the syntax for passing data into a subflow with multiple inputs requires us to *prepend* 
 an input index (starting at `0`) in square brackets to the multi-input variable name or operator.  In this example we have `-> [0]my_join`
 and `-> [1]my_join`.
 
@@ -111,39 +117,57 @@ to generate `(v, ())` elements as the first join input.
     origin -> map(|v| (v, ())) -> [0]my_join;
     stream_of_edges -> [1]my_join;
 ```
-The `stream_of_edges` are `(from, to)` pairs,
-so the join's output is `(from, ((), to))` where `to` are new neighbor
-vertices. So the `my_join` variable feeds the output of the join through a map to extract just the neighbor vertex.
+The `stream_of_edges` are `(src, dst)` pairs,
+so the join's output is `(src, ((), dst))` where `dst` are new neighbor
+vertices. So the `my_join` variable feeds the output of the join through a `flat_map` to extract the pairs into 2-item arrays, which are flattened to give us a list of all vertices reached.
 Finally we print the neighbor vertices as follows:
 ```rust,ignore
-    my_join -> for_each(|n| println!("Reached: {}", n));
+    my_join -> unique() -> for_each(|n| println!("Reached: {}", n));
 ```
+The [unique](./surface_ops.gen.md#unique) operator removes duplicates from the stream to make things more readable. Note that `unique` does not run in a streaming fashion, which we will talk about more [below](#strata-and-epochs).
+
 The remaining code runs the graph on example edge data. There's
-also some extra code there, particularly `flow.to_mermaid()` which lets us
+also some extra code there, particularly `flow.serde_graph().expect(...).to_mermaid()` which lets us
 generate a diagram rendered by [Mermaid](https://mermaid-js.github.io/) showing
 the structure of the graph:
 
 ```mermaid
 flowchart TB
-    subgraph "sg_1v1 stratum Some(0)"
+    subgraph "sg_1v1 stratum 0"
         1v1["1v1 <tt>op_1v1: recv_iter(vec! [0])</tt>"]
         2v1["2v1 <tt>op_2v1: recv_stream(pairs_recv)</tt>"]
         5v1["5v1 <tt>op_5v1: map(| v | (v, ()))</tt>"]
         3v1["3v1 <tt>op_3v1: join()</tt>"]
-        4v1["4v1 <tt>op_4v1: map(| (_x, (_y, z)) | z)</tt>"]
-        6v1["6v1 <tt>op_6v1: for_each(| n | println! (&quot;Reached: {}&quot;, n))</tt>"]
+        4v1["4v1 <tt>op_4v1: flat_map(| (src, (_, dst)) | [src, dst])</tt>"]
+    end
+    subgraph "sg_2v1 stratum 1"
+        6v1["6v1 <tt>op_6v1: unique()</tt>"]
+        7v1["7v1 <tt>op_7v1: for_each(| n | println! (&quot;Reached: {}&quot;, n))</tt>"]
     end
 
+    8v1{"handoff"}
 
     1v1-->5v1
     2v1-->3v1
     3v1-->4v1
-    4v1-->6v1
+    4v1-->8v1
     5v1-->3v1
+    6v1-->7v1
+    8v1-->6v1
 ```
 
-If you read the `pairs_send` calls in the code carefully, you'll see that the example data 
-has nodes (`2`, `4`) that are more than one hop away from `0`, which were
+Returning to the code, if you read the `pairs_send` calls carefully, you'll see that the example data 
+has vertices (`2`, `4`) that are more than one hop away from `0`, which were
 not output by our simple program. To extend this example to graph *reachability*, 
 we need to recurse: find neighbors of our neighbors, neighbors of our neighbors' neighbors, and so on. In Hydroflow,
-this is done by adding a loop to the flow, as we'll see [next](example_4_1_surface.md).
+this is done by adding a loop to the flow, as we'll see in our [next example](example_5_surface.md).
+## Strata and Epochs
+Before we proceed, note in the mermaid graph how Hydroflow separates the `unique` operator and its downstream dependencies into their own
+_stratum_ (plural: _strata_). The stratum boundary before `unique` ensures that all the values arrive before it executes, ensuring that all duplicates are eliminated. 
+
+Hydroflow runs each stratum
+in order, one at a time, ensuring all values are computed
+before moving on to the next stratum. Between strata we see a _handoff_, which logically buffers the 
+output of the first stratum, and delineates the separation of execution between the 2 strata.
+
+After all strata are run, Hydroflow returns to the first stratum; this begins the next _epoch_. This doesn't really matter for this example, but it is important for long-running Hydroflow services that accept input from the outside world.
