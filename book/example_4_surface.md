@@ -127,7 +127,7 @@ Finally we print the neighbor vertices as follows:
 The [unique](./surface_ops.gen.md#unique) operator removes duplicates from the stream to make things more readable. Note that `unique` does not run in a streaming fashion, which we will talk about more [below](#strata-and-epochs).
 
 The remaining code runs the graph on example edge data. There's
-also some extra code there, particularly `flow.to_mermaid()` which lets us
+also some extra code there, particularly `flow.serde_graph().expect(...).to_mermaid()` which lets us
 generate a diagram rendered by [Mermaid](https://mermaid-js.github.io/) showing
 the structure of the graph:
 

@@ -42,7 +42,7 @@ pub fn main() {
     // An edge in the input data = a pair of `usize` vertex IDs.
     let (pairs_send, pairs_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
 
-    let mut df = hydroflow_syntax! {
+    let mut flow = hydroflow_syntax! {
         origin = recv_iter(vec![0]);
         stream_of_edges = recv_stream(pairs_recv) -> tee();
         reached_vertices = merge()->tee();
@@ -68,30 +68,19 @@ pub fn main() {
         unreached_vertices -> for_each(|v| println!("unreached_vertices vertex: {}", v));
     };
 
-    if let Some(graph) = opts.graph {
-        let serde_graph = df
-            .serde_graph()
-            .expect("No graph found, maybe failed to parse.");
-        match graph {
-            GraphType::Mermaid => {
-                println!("{}", serde_graph.to_mermaid());
-            }
-            GraphType::Dot => {
-                println!("{}", serde_graph.to_dot())
-            }
-            GraphType::Json => {
-                unimplemented!();
-                // println!("{}", serde_graph.to_json())
-            }
-        }
-    }
+    println!(
+        "{}",
+        flow.serde_graph()
+            .expect("No graph found, maybe failed to parse.")
+            .to_mermaid()
+    );
 
     pairs_send.send((5, 10)).unwrap();
     pairs_send.send((0, 3)).unwrap();
     pairs_send.send((3, 6)).unwrap();
     pairs_send.send((6, 5)).unwrap();
     pairs_send.send((11, 12)).unwrap();
-    df.run_available();
+    flow.run_available();
 }
 ```
 Notice that we are now sending in some new pairs to test this code. The output should be:
