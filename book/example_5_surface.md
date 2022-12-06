@@ -34,8 +34,8 @@ graph TD
     
   end
 ```
-Note that we added a `Reached Vertices` node to `merge` the two inbound edges corresponding to our 
-two cases above. Similarly note that the join node `V ⨝ E` now has two _outbound_ edges; the sketch omits the operator 
+Note that we added a `Reached Vertices` box to the diagram to `merge` the two inbound edges corresponding to our 
+two cases above. Similarly note that the join box `V ⨝ E` now has two _outbound_ edges; the sketch omits the operator 
 to copy (`tee`) the output along 
 two paths.
 
@@ -45,7 +45,7 @@ Now lets look at a modified version of our [graph neighbor](example_4_surface.md
 # use hydroflow::hydroflow_syntax;
 pub fn main() {
     // An edge in the input data = a pair of `usize` vertex IDs.
-    let (pairs_send, pairs_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
+    let (pairs_send, pairs_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
 
     let mut flow = hydroflow_syntax! {
         // inputs: the origin vertex (vertex 0) and stream of input edges
@@ -158,4 +158,6 @@ flowchart TB
 ```
 This is similar to the flow for graph neighbors, but has a few more operators that make it look
 more complex. In particular, it includes the `merge` and `tee` operators, and a cycle-forming back-edge 
-that passes through an auto-generated `handoff` operator. This `handoff` is not a stratum boundary (after all, it connects stratum 0 to itself!) Rather, it represents a compilation boundary: the compiled code that hydroflow generates is acyclic (as discussed in the [Architecture Chapter](./architecture.md)\), so these handoffs tell the runtime to iterate on the acyclic code of a stratum until there is no new output from the stratum.
+that passes through an auto-generated `handoff` operator. This `handoff` is not a stratum boundary (after all, it connects stratum 0 to itself!) Rather, it represents a compilation boundary: the compiled code that Hydroflow generates is acyclic (as discussed in the [Architecture Chapter](./architecture.md)\), so these handoffs tell the runtime to iterate on the acyclic code of a stratum until there is no new output from the stratum.
+
+Meanwhile, note in the mermaid diagram that there is once again a stratum boundary between the stratum 0 with its recursive loop, and stratum 1 that computes `unique`. This means that Hydroflow will first run the loop continuously until all the transitive reached vertices are found, before moving on to compute the unique reached vertices.

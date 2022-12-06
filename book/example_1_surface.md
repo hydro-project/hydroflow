@@ -1,7 +1,13 @@
 # Simplest Example
 
+> In this example we will cover:
+> - How to embed a Hydroflow program spec inside Rust 
+> - How to execute the Hydroflow program
+> - Two simple Hydroflow operators: `recv_iter` and `for_each`
+
 Lets start out with the simplest possible Hydroflow program, which prints out
 the numbers in `0..10`.
+
 
 ```rust
 use hydroflow::hydroflow_syntax;
@@ -33,7 +39,7 @@ Although this is a trivial program, it's useful to go through it line by line.
 ```rust,ignore
 use hydroflow::hydroflow_syntax;
 ```
-This import gives you everything you need from hydroflow to write code with the 
+This import gives you everything you need from Hydroflow to write code with the 
 [_surface syntax_](./surface_syntax.md), which is the recommended way to interact
 with Hydroflow.
 
