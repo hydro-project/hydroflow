@@ -444,6 +444,7 @@
 <a href="#444" id="444">444</a>
 <a href="#445" id="445">445</a>
 <a href="#446" id="446">446</a>
+<a href="#447" id="447">447</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::borrow::Cow;
 <span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
 
@@ -533,11 +534,12 @@
                             new: <span class="kw-2">&amp;</span>PortIndexValue,
                             diagnostics: <span class="kw-2">&amp;mut </span>Vec&lt;Diagnostic&gt;,
                         ) {
-                            diagnostics.push(Diagnostic::spanned(
+                            <span class="comment">// TODO(mingwei): Use `MultiSpan` once `proc_macro2` supports it.
+                            </span>diagnostics.push(Diagnostic::spanned(
                                 old.span(),
                                 Level::Error,
                                 <span class="macro">format!</span>(
-                                    <span class="string">&quot;{} connection conflicts with below ({})&quot;</span>,
+                                    <span class="string">&quot;{} connection conflicts with below ({}) (1/2)&quot;</span>,
                                     inout,
                                     PrettySpan(new.span()),
                                 ),
@@ -546,7 +548,7 @@
                                 new.span(),
                                 Level::Error,
                                 <span class="macro">format!</span>(
-                                    <span class="string">&quot;{} connection conflicts with above ({})&quot;</span>,
+                                    <span class="string">&quot;{} connection conflicts with above ({}) (2/2)&quot;</span>,
                                     inout,
                                     PrettySpan(old.span()),
                                 ),

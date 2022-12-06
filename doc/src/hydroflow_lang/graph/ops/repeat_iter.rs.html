@@ -28,6 +28,7 @@
 <a href="#28" id="28">28</a>
 <a href="#29" id="29">29</a>
 <a href="#30" id="30">30</a>
+<a href="#31" id="31">31</a>
 </pre><pre class="rust"><code><span class="kw">use super</span>::{
     OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, RANGE_0, RANGE_1,
 };
@@ -48,14 +49,15 @@
     write_fn: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span>WriteContextArgs { op_span, .. },
                  <span class="kw-2">&amp;</span>WriteIteratorArgs {
                      ident, arguments, ..
-                 }| {
+                 },
+                 <span class="kw">_</span>| {
         <span class="kw">let </span>write_iterator = <span class="macro">quote_spanned! </span>{op_span=&gt;
             <span class="kw">let </span>#ident = std::iter::IntoIterator::into_iter(#arguments);
         };
-        OperatorWriteOutput {
+        <span class="prelude-val">Ok</span>(OperatorWriteOutput {
             write_iterator,
             ..Default::default()
-        }
+        })
     }),
 };
 </code></pre></div>

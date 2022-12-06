@@ -264,6 +264,13 @@
 <a href="#264" id="264">264</a>
 <a href="#265" id="265">265</a>
 <a href="#266" id="266">266</a>
+<a href="#267" id="267">267</a>
+<a href="#268" id="268">268</a>
+<a href="#269" id="269">269</a>
+<a href="#270" id="270">270</a>
+<a href="#271" id="271">271</a>
+<a href="#272" id="272">272</a>
+<a href="#273" id="273">273</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::fmt::Display;
 <span class="kw">use </span>std::ops::{Bound, RangeBounds};
 
@@ -273,6 +280,7 @@
 <span class="kw">use </span>syn::punctuated::Punctuated;
 <span class="kw">use </span>syn::{Expr, GenericArgument, Token};
 
+<span class="kw">use </span><span class="kw">crate</span>::diagnostic::Diagnostic;
 <span class="kw">use </span><span class="kw">crate</span>::parse::PortIndex;
 
 <span class="kw">use super</span>::{GraphNodeId, GraphSubgraphId, PortIndexValue};
@@ -336,9 +344,14 @@
     </span><span class="kw">pub </span>input_delaytype_fn: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span><span class="kw">dyn </span>Fn(<span class="kw-2">&amp;</span>PortIndexValue) -&gt; <span class="prelude-ty">Option</span>&lt;DelayType&gt;,
 
     <span class="doccomment">/// Emit code in multiple locations. See [`OperatorWriteOutput`].
-    </span><span class="kw">pub </span>write_fn:
-        <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span><span class="kw">dyn </span>Fn(<span class="kw-2">&amp;</span>WriteContextArgs&lt;<span class="lifetime">&#39;_</span>&gt;, <span class="kw-2">&amp;</span>WriteIteratorArgs&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; OperatorWriteOutput,
+    </span><span class="kw">pub </span>write_fn: WriteFn,
 }
+
+<span class="kw">pub type </span>WriteFn = <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span><span class="kw">dyn </span>Fn(
+    <span class="kw-2">&amp;</span>WriteContextArgs&lt;<span class="lifetime">&#39;_</span>&gt;,
+    <span class="kw-2">&amp;</span>WriteIteratorArgs&lt;<span class="lifetime">&#39;_</span>&gt;,
+    <span class="kw-2">&amp;mut </span>Vec&lt;Diagnostic&gt;,
+) -&gt; <span class="prelude-ty">Result</span>&lt;OperatorWriteOutput, ()&gt;;
 
 <span class="attr">#[derive(Default)]
 #[non_exhaustive]
@@ -386,15 +399,12 @@
     }
 }
 
-<span class="kw">pub const </span>IDENTITY_WRITE_FN: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span><span class="kw">dyn </span>Fn(
-    <span class="kw-2">&amp;</span>WriteContextArgs&lt;<span class="lifetime">&#39;_</span>&gt;,
-    <span class="kw-2">&amp;</span>WriteIteratorArgs&lt;<span class="lifetime">&#39;_</span>&gt;,
-) -&gt; OperatorWriteOutput = <span class="kw-2">&amp;</span>(|write_context_args, write_iterator_args| {
+<span class="kw">pub const </span>IDENTITY_WRITE_FN: WriteFn = <span class="kw-2">&amp;</span>(|write_context_args, write_iterator_args, <span class="kw">_</span>| {
     <span class="kw">let </span>write_iterator = identity_write_iterator_fn(write_context_args, write_iterator_args);
-    OperatorWriteOutput {
+    <span class="prelude-val">Ok</span>(OperatorWriteOutput {
         write_iterator,
         ..Default::default()
-    }
+    })
 });
 
 <span class="kw">pub const </span>OPERATORS: <span class="kw-2">&amp;</span>[OperatorConstraints] = <span class="kw-2">&amp;</span>[
@@ -428,10 +438,14 @@
 ];
 
 <span class="kw">pub struct </span>WriteContextArgs&lt;<span class="lifetime">&#39;a</span>&gt; {
-    <span class="kw">pub </span>root: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>TokenStream,
-    <span class="kw">pub </span>subgraph_id: GraphSubgraphId,
-    <span class="kw">pub </span>node_id: GraphNodeId,
-    <span class="kw">pub </span>op_span: Span,
+    <span class="doccomment">/// `hydroflow` crate name for `use #root::something`.
+    </span><span class="kw">pub </span>root: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>TokenStream,
+    <span class="doccomment">/// Subgraph ID in which this operator is contained.
+    </span><span class="kw">pub </span>subgraph_id: GraphSubgraphId,
+    <span class="doccomment">/// Node ID identifying this operator in the flat or partitioned graph meta-datastructure.
+    </span><span class="kw">pub </span>node_id: GraphNodeId,
+    <span class="doccomment">/// The source span of this operator.
+    </span><span class="kw">pub </span>op_span: Span,
 }
 <span class="kw">impl </span>WriteContextArgs&lt;<span class="lifetime">&#39;_</span>&gt; {
     <span class="kw">pub fn </span>make_ident(<span class="kw-2">&amp;</span><span class="self">self</span>, suffix: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str) -&gt; Ident {

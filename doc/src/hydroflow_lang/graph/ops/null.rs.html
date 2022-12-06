@@ -53,6 +53,7 @@
 <a href="#53" id="53">53</a>
 <a href="#54" id="54">54</a>
 <a href="#55" id="55">55</a>
+<a href="#56" id="56">56</a>
 </pre><pre class="rust"><code><span class="kw">use super</span>::{OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs};
 
 <span class="kw">use </span>quote::quote_spanned;
@@ -89,7 +90,8 @@
                      outputs,
                      is_pull,
                      ..
-                 }| {
+                 },
+                 <span class="kw">_</span>| {
         <span class="kw">let </span>write_iterator = <span class="kw">if </span>is_pull {
             <span class="macro">quote_spanned! </span>{op_span=&gt;
                 (#(#inputs.for_each(std::mem::drop)),<span class="kw-2">*</span>);
@@ -102,10 +104,10 @@
                 <span class="kw">let </span>#ident = #root::pusherator::for_each::ForEach::new(std::mem::drop);
             }
         };
-        OperatorWriteOutput {
+        <span class="prelude-val">Ok</span>(OperatorWriteOutput {
             write_iterator,
             ..Default::default()
-        }
+        })
     }),
 };
 </code></pre></div>

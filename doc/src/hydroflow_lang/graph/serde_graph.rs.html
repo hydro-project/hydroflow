@@ -211,7 +211,7 @@
                 write,
                 <span class="string">&quot;    subgraph \&quot;sg_{:?} stratum {:?}\&quot;&quot;</span>,
                 subgraph_id.data(),
-                stratum
+                stratum.unwrap()
             )<span class="question-mark">?</span>;
             <span class="kw">for </span><span class="kw-2">&amp;</span>node_id <span class="kw">in </span>node_ids.iter() {
                 <span class="kw">if </span>!<span class="self">self</span>.handoffs.contains_key(node_id) {

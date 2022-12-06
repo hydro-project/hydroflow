@@ -344,6 +344,18 @@
 <a href="#344" id="344">344</a>
 <a href="#345" id="345">345</a>
 <a href="#346" id="346">346</a>
+<a href="#347" id="347">347</a>
+<a href="#348" id="348">348</a>
+<a href="#349" id="349">349</a>
+<a href="#350" id="350">350</a>
+<a href="#351" id="351">351</a>
+<a href="#352" id="352">352</a>
+<a href="#353" id="353">353</a>
+<a href="#354" id="354">354</a>
+<a href="#355" id="355">355</a>
+<a href="#356" id="356">356</a>
+<a href="#357" id="357">357</a>
+<a href="#358" id="358">358</a>
 </pre><pre class="rust"><code><span class="kw">use </span>proc_macro2::{Ident, Literal, Span, TokenStream};
 <span class="kw">use </span>quote::{quote, quote_spanned, ToTokens};
 <span class="kw">use </span>slotmap::{Key, SecondaryMap, SlotMap};
@@ -430,6 +442,8 @@
                         df.make_edge::&lt;<span class="kw">_</span>, #root::scheduled::handoff::VecHandoff&lt;<span class="kw">_</span>&gt;&gt;(#hoff_name);
                 }
             });
+
+        <span class="kw">let </span><span class="kw-2">mut </span>diagnostics = Vec::new();
 
         <span class="kw">let </span>subgraphs = <span class="self">self
             </span>.subgraph_nodes
@@ -542,11 +556,14 @@
                                 op_name: op_constraints.name,
                             };
 
-                            <span class="kw">let </span>OperatorWriteOutput {
+                            <span class="kw">let </span>write_result = (op_constraints.write_fn)(<span class="kw-2">&amp;</span>context_args, <span class="kw-2">&amp;</span>iter_args, <span class="kw-2">&amp;mut </span>diagnostics);
+                            <span class="kw">let </span><span class="prelude-val">Ok</span>(OperatorWriteOutput {
                                 write_prologue,
                                 write_iterator,
                                 write_iterator_after,
-                            } = (op_constraints.write_fn)(<span class="kw-2">&amp;</span>context_args, <span class="kw-2">&amp;</span>iter_args);
+                            }) = write_result <span class="kw">else </span>{
+                                <span class="kw">continue</span>;
+                            };
 
                             <span class="kw">let </span>required_trait = <span class="kw">if </span>is_pull {
                                 <span class="macro">quote_spanned! </span>{op_span=&gt;
@@ -623,7 +640,7 @@
             });
 
         <span class="kw">let </span>serde_string = Literal::string(<span class="kw-2">&amp;*</span><span class="self">self</span>.serde_string());
-        <span class="macro">quote! </span>{
+        <span class="kw">let </span>code = <span class="macro">quote! </span>{
             {
                 <span class="kw">use </span>#root::tl;
 
@@ -634,6 +651,13 @@
 
                 df
             }
+        };
+
+        diagnostics.iter().for_each(Diagnostic::emit);
+        <span class="kw">if </span>diagnostics.iter().any(Diagnostic::is_error) {
+            <span class="macro">quote! </span>{ #root::scheduled::graph::Hydroflow::new() }
+        } <span class="kw">else </span>{
+            code
         }
     }
 

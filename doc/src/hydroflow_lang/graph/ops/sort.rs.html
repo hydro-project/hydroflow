@@ -44,6 +44,7 @@
 <a href="#44" id="44">44</a>
 <a href="#45" id="45">45</a>
 <a href="#46" id="46">46</a>
+<a href="#47" id="47">47</a>
 </pre><pre class="rust"><code><span class="kw">use super</span>::{
     DelayType, OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs,
     RANGE_1,
@@ -77,17 +78,18 @@
                      arguments,
                      is_pull,
                      ..
-                 }| {
+                 },
+                 <span class="kw">_</span>| {
         <span class="macro">assert!</span>(is_pull);
         <span class="kw">let </span>input = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>];
         <span class="kw">let </span>write_iterator = <span class="macro">quote_spanned! </span>{op_span=&gt;
             <span class="comment">// TODO(mingwei): unneccesary extra into_iter() then collect()
             </span><span class="kw">let </span>#ident = #input.collect::&lt;std::collections::BinaryHeap&lt;<span class="kw">_</span>&gt;&gt;(#arguments).into_sorted_vec().into_iter();
         };
-        OperatorWriteOutput {
+        <span class="prelude-val">Ok</span>(OperatorWriteOutput {
             write_iterator,
             ..Default::default()
-        }
+        })
     }),
 };
 </code></pre></div>

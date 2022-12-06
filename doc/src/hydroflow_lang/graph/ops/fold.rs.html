@@ -54,6 +54,7 @@
 <a href="#54" id="54">54</a>
 <a href="#55" id="55">55</a>
 <a href="#56" id="56">56</a>
+<a href="#57" id="57">57</a>
 </pre><pre class="rust"><code><span class="kw">use super</span>::{
     DelayType, OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs,
     RANGE_1,
@@ -96,7 +97,8 @@
                      arguments,
                      is_pull,
                      ..
-                 }| {
+                 },
+                 <span class="kw">_</span>| {
         <span class="macro">assert!</span>(is_pull);
         <span class="kw">let </span>input = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>];
         <span class="comment">// TODO(mingwei): Issues if initial value is not copy.
@@ -104,10 +106,10 @@
         </span><span class="kw">let </span>write_iterator = <span class="macro">quote_spanned! </span>{op_span=&gt;
             <span class="kw">let </span>#ident = std::iter::once(#input.fold(#arguments));
         };
-        OperatorWriteOutput {
+        <span class="prelude-val">Ok</span>(OperatorWriteOutput {
             write_iterator,
             ..Default::default()
-        }
+        })
     }),
 };
 </code></pre></div>

@@ -60,6 +60,7 @@
 <a href="#60" id="60">60</a>
 <a href="#61" id="61">61</a>
 <a href="#62" id="62">62</a>
+<a href="#63" id="63">63</a>
 </pre><pre class="rust"><code><span class="kw">use super</span>::{
     OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, RANGE_0, RANGE_1,
 };
@@ -87,7 +88,8 @@
     write_fn: <span class="kw-2">&amp;</span>(|wc @ <span class="kw-2">&amp;</span>WriteContextArgs { root, op_span, .. },
                  <span class="kw-2">&amp;</span>WriteIteratorArgs {
                      ident, arguments, ..
-                 }| {
+                 },
+                 <span class="kw">_</span>| {
         <span class="kw">let </span>async_write_arg = <span class="kw-2">&amp;</span>arguments[<span class="number">0</span>];
 
         <span class="kw">let </span>send_ident = wc.make_ident(<span class="string">&quot;item_send&quot;</span>);
@@ -115,11 +117,11 @@
             });
         };
 
-        OperatorWriteOutput {
+        <span class="prelude-val">Ok</span>(OperatorWriteOutput {
             write_prologue,
             write_iterator,
             ..Default::default()
-        }
+        })
     }),
 };
 </code></pre></div>

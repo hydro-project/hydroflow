@@ -49,6 +49,7 @@
 <a href="#49" id="49">49</a>
 <a href="#50" id="50">50</a>
 <a href="#51" id="51">51</a>
+<a href="#52" id="52">52</a>
 </pre><pre class="rust"><code><span class="kw">use super</span>::{
     OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, RANGE_1,
 };
@@ -82,7 +83,8 @@
                      arguments,
                      is_pull,
                      ..
-                 }| {
+                 },
+                 <span class="kw">_</span>| {
         <span class="kw">let </span>write_iterator = <span class="kw">if </span>is_pull {
             <span class="kw">let </span>input = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>];
             <span class="macro">quote_spanned! </span>{op_span=&gt;
@@ -94,10 +96,10 @@
                 <span class="kw">let </span>#ident = #root::pusherator::filter_map::FilterMap::new(#arguments, #output);
             }
         };
-        OperatorWriteOutput {
+        <span class="prelude-val">Ok</span>(OperatorWriteOutput {
             write_iterator,
             ..Default::default()
-        }
+        })
     }),
 };
 </code></pre></div>

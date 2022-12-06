@@ -76,7 +76,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">User Guide</li><li class="chapter-item expanded "><a href="quickstart.html"><strong aria-hidden="true">1.</strong> Quickstart</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="setup.html"><strong aria-hidden="true">1.1.</strong> Setup</a></li><li class="chapter-item expanded "><a href="example_1_surface.html"><strong aria-hidden="true">1.2.</strong> Simplest Example</a></li><li class="chapter-item expanded "><a href="example_2_surface.html"><strong aria-hidden="true">1.3.</strong> Simple Example</a></li><li class="chapter-item expanded "><a href="example_3_surface.html"><strong aria-hidden="true">1.4.</strong> A Example With Streaming Input</a></li><li class="chapter-item expanded "><a href="example_4_surface.html"><strong aria-hidden="true">1.5.</strong> Graph Neighbors</a></li><li class="chapter-item expanded "><a href="example_4_1_surface.html"><strong aria-hidden="true">1.6.</strong> Graph Reachability</a></li><li class="chapter-item expanded "><a href="example_5_surface.html"><strong aria-hidden="true">1.7.</strong> Graph Un-Reachability</a></li></ol></li><li class="chapter-item expanded "><a href="concepts.html"><strong aria-hidden="true">2.</strong> Concepts</a></li><li class="chapter-item expanded "><a href="surface_syntax.html"><strong aria-hidden="true">3.</strong> Syntax</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="surface_embedding.html"><strong aria-hidden="true">3.1.</strong> Rust Embedding</a></li><li class="chapter-item expanded "><a href="surface_flows.html"><strong aria-hidden="true">3.2.</strong> Flows</a></li><li class="chapter-item expanded "><a href="surface_data.html"><strong aria-hidden="true">3.3.</strong> Data Sources</a></li><li class="chapter-item expanded "><a href="surface_ops.gen.html"><strong aria-hidden="true">3.4.</strong> Operators</a></li></ol></li><li class="chapter-item expanded "><a href="architecture.html"><strong aria-hidden="true">4.</strong> Architecture</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="in-out_trees.html"><strong aria-hidden="true">4.1.</strong> Subgraph In-Out Trees</a></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">User Guide</li><li class="chapter-item expanded "><a href="quickstart.html"><strong aria-hidden="true">1.</strong> Quickstart</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="setup.html"><strong aria-hidden="true">1.1.</strong> Setup</a></li><li class="chapter-item expanded "><a href="example_1_surface.html"><strong aria-hidden="true">1.2.</strong> Simplest Example</a></li><li class="chapter-item expanded "><a href="example_2_surface.html"><strong aria-hidden="true">1.3.</strong> Simple Example</a></li><li class="chapter-item expanded "><a href="example_3_surface.html"><strong aria-hidden="true">1.4.</strong> A Example With Streaming Input</a></li><li class="chapter-item expanded "><a href="example_4_surface.html"><strong aria-hidden="true">1.5.</strong> Graph Neighbors</a></li><li class="chapter-item expanded "><a href="example_5_surface.html"><strong aria-hidden="true">1.6.</strong> Graph Reachability</a></li><li class="chapter-item expanded "><a href="example_6_surface.html"><strong aria-hidden="true">1.7.</strong> Graph Un-Reachability</a></li></ol></li><li class="chapter-item expanded "><a href="concepts.html"><strong aria-hidden="true">2.</strong> Concepts</a></li><li class="chapter-item expanded "><a href="surface_syntax.html"><strong aria-hidden="true">3.</strong> Syntax</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="surface_embedding.html"><strong aria-hidden="true">3.1.</strong> Rust Embedding</a></li><li class="chapter-item expanded "><a href="surface_flows.html"><strong aria-hidden="true">3.2.</strong> Flows</a></li><li class="chapter-item expanded "><a href="surface_data.html"><strong aria-hidden="true">3.3.</strong> Data Sources</a></li><li class="chapter-item expanded "><a href="surface_ops.gen.html"><strong aria-hidden="true">3.4.</strong> Operators</a></li></ol></li><li class="chapter-item expanded "><a href="architecture.html"><strong aria-hidden="true">4.</strong> Architecture</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="in-out_trees.html"><strong aria-hidden="true">4.1.</strong> Subgraph In-Out Trees</a></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -136,9 +136,15 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
-<p><a href="https://github.com/hydro-project/hydroflow">Hydroflow</a> is a dataflow runtime
-written in Rust, serving as the execution layer of the <a href="https://hydro-project.github.io/">Hydro stack</a>.
-This book teaches how to set up and get started with Hydroflow.</p>
+<p><a href="https://github.com/hydro-project/hydroflow">Hydroflow</a> is a compiler for low-latency 
+dataflow programs, written in Rust. Hydroflow is the runtime library for the 
+<a href="https://hydro-project.github.io/">Hydro Project</a>, which is under development
+as a complete compiler stack for distributed programming languages. </p>
+<p>Hydroflow provides a DSL—a <em>surface syntax</em>—embedded in Rust, which compiles to high-efficiency machine code. The Hydroflow DSL is the lowest level of the Hydro stack and 
+requires some knowledge of Rust to use. In time the Hydro Project 
+will deliver friendlier, higher-level languages that compile down to Hydroflow.</p>
+<h2 id="this-book"><a class="header" href="#this-book">This Book</a></h2>
+<p>This book will teach you how to set up your environment to get started with Hydroflow, and how to program in the Hydroflow surface syntax.</p>
 <p>Keep in mind that Hydroflow is under active development and is constantly
 changing. However this book is tested in CI so should always be up-to-date
 (though incomplete, for now).</p>
@@ -177,7 +183,7 @@ is a good way to learn Rust's ownership system and its
 implications.</li>
 </ul>
 <h2 id="vs-code-setup"><a class="header" href="#vs-code-setup">VS Code Setup</a></h2>
-<p>We recommend using VS Code with the <code>rust-anaylzer</code> extension (and NOT the
+<p>We recommend using VS Code with the <code>rust-analyzer</code> extension (and NOT the
 <code>Rust</code> extension). To enable the pre-release version of <code>rust-analyzer</code>
 (required by some new nightly syntax we use, at least until 2022-03-14), click
 the &quot;Switch to Pre-Release Version&quot; button next to the uninstall button.</p>
@@ -189,12 +195,12 @@ changes.</p>
 </code></pre>
 <p>Hydroflow requires nightly Rust, but the repo is already configured for it via
 <code>rust-toolchain.toml</code>.</p>
-<p>We can then open the repo in VS Code or IDE of your choice. <code>rust-analyzer</code>
+<p>We can then open the repo in VS Code or IDE of your choice. In VS Code, <code>rust-analyzer</code>
 will provide inline type and error messages, code completion, etc.</p>
 <h2 id="development"><a class="header" href="#development">Development</a></h2>
 <p>The easiest way to try Hydroflow is with an &quot;example&quot;, found in the
 <a href="https://github.com/hydro-project/hydroflow/tree/main/hydroflow/examples"><code>hydroflow/examples</code> folder</a>.
-These examples are include via the <a href="https://github.com/hydro-project/hydroflow/blob/main/hydroflow/Cargo.toml"><code>hydroflow/Cargo.toml</code> file</a>,
+These examples are included via the <a href="https://github.com/hydro-project/hydroflow/blob/main/hydroflow/Cargo.toml"><code>hydroflow/Cargo.toml</code> file</a>,
 so make sure to add your example there if you create a new one. The simplest
 example is <a href="https://github.com/hydro-project/hydroflow/blob/main/hydroflow/examples/graph_reachability/main.rs"><code>graph_reachability</code></a>.</p>
 <p>The Hydroflow repository is set up as a <a href="https://doc.rust-lang.org/book/ch14-03-cargo-workspaces.html">workspace</a>,
@@ -202,6 +208,14 @@ i.e. a repo containing a bunch of separate packages, <code>hydroflow</code> is j
 main one. So if you want to work in a proper separate cargo package, you can
 create one and add it into the <a href="https://github.com/hydro-project/hydroflow/blob/main/Cargo.toml">root <code>Cargo.toml</code></a>.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="simplest-example"><a class="header" href="#simplest-example">Simplest Example</a></h1>
+<blockquote>
+<p>In this example we will cover:</p>
+<ul>
+<li>How to embed a Hydroflow program spec inside Rust </li>
+<li>How to execute the Hydroflow program</li>
+<li>Two simple Hydroflow operators: <code>recv_iter</code> and <code>for_each</code></li>
+</ul>
+</blockquote>
 <p>Lets start out with the simplest possible Hydroflow program, which prints out
 the numbers in <code>0..10</code>.</p>
 <pre><pre class="playground"><code class="language-rust">use hydroflow::hydroflow_syntax;
@@ -229,20 +243,21 @@ Hello 9
 <p>Although this is a trivial program, it's useful to go through it line by line.</p>
 <pre><code class="language-rust ignore">use hydroflow::hydroflow_syntax;
 </code></pre>
-<p>This import gives you everything you need from hydroflow to write code with the 
-<a href="./surface_syntax.html"><em>surface syntax</em></a>, which is the most common way to interact
+<p>This import gives you everything you need from Hydroflow to write code with the 
+<a href="./surface_syntax.html"><em>surface syntax</em></a>, which is the recommended way to interact
 with Hydroflow.</p>
 <p>Next, inside the main method we specify a flow by calling the 
 <code>hydroflow_syntax!</code> macro. We assign the resulting <code>Hydroflow</code> instance to
-a mutable variable---we will be changing its status when we run it.</p>
+a mutable variable <code>flow</code>––mutable because we will be changing its status when we run it.</p>
 <pre><code class="language-rust ignore"><span class="boring">use hydroflow::hydroflow_syntax;
 </span>pub fn main() {
     let mut flow = hydroflow_syntax! {
         recv_iter(0..10) -&gt; for_each(|n| println!(&quot;Hello {}&quot;, n));
     };
 </code></pre>
-<p>The flow starts with a <a href="./surface_ops.gen.html#recv_iter"><code>recv_iter</code></a> operator that emits the 
-numbers 1 through 10, and passes them along the arrow <code>-&gt;</code> operator downstream to a 
+<p>The flow starts with a <a href="./surface_ops.gen.html#recv_iter"><code>recv_iter</code></a> operator that takes the Rust
+iterator <code>0..10</code> and iterates it to emit the 
+numbers 0 through 9, and passes them along the arrow <code>-&gt;</code> operator downstream to a 
 <a href="./surface_ops.gen.html#for_each"><code>for_each</code></a> operator that invokes its closure argument to print each
 item passed in.</p>
 <p>Finally we run this flow via the <a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_available"><code>run_available()</code> method</a>.</p>
@@ -256,11 +271,21 @@ network ingress then more work might appear later. The <a href="https://hydro-pr
 <a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_stratum"><code>run_stratum()</code></a>,
 <a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run"><code>run()</code></a>,
 and <a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_async"><code>run_async()</code></a>
-methods provide other ways to execute the graph.</p>
+methods provide other ways to control the graph execution.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="simple-example"><a class="header" href="#simple-example">Simple Example</a></h1>
+<blockquote>
+<p>In this example we will cover some additional standard Hydroflow operators:</p>
+<ul>
+<li><a href="./surface_ops.gen.html#map"><code>map</code></a></li>
+<li><a href="./surface_ops.gen.html#filter"><code>filter</code></a></li>
+<li><a href="./surface_ops.gen.html#flatten"><code>flatten</code></a></li>
+<li><a href="./surface_ops.gen.html#filter_map"><code>filter_map</code></a></li>
+<li><a href="./surface_ops.gen.html#flat_map"><code>flat_map</code></a></li>
+</ul>
+</blockquote>
 <p>Lets build on the simplest example to explore some of the operators available
 in Hydroflow. You may be familiar with operators such as <a href="./surface_ops.gen.html#map"><code>map(...)</code></a>,
-<a href="./surface_ops.gen.html#filter"><code>filter(...)</code></a>, <a href="./surface_ops.gen.html#flat_map"><code>flat_map</code>(...)</a>,
+<a href="./surface_ops.gen.html#filter"><code>filter(...)</code></a>, <a href="./surface_ops.gen.html#flatten"><code>flatten</code>(...)</a>,
 etc. from Rust iterators or from other programming languages, and these are
 also available in Hydroflow.</p>
 <pre><pre class="playground"><code class="language-rust">use hydroflow::hydroflow_syntax;
@@ -271,22 +296,38 @@ pub fn main() {
             -&gt; map(|n| n * n)
             -&gt; filter(|&amp;n| n &gt; 10)
             -&gt; map(|n| (n..=n+1))
-            -&gt; flat_map(|n| n)
+            -&gt; flatten()
             -&gt; for_each(|n| println!(&quot;Howdy {}&quot;, n));
     };
 
     flow.run_available();
 }
 </code></pre></pre>
+<p>Let's take this one operator at a time, starting after the <code>recv_iter</code> operator we saw in the previous example.</p>
+<ul>
+<li>
 <p><code>-&gt; map(|n| n * n)</code> transforms each element one-to-one as it flows through the subgraph.
-In this case, we square each number. Then <code>-&gt; filter()</code> only keeps any squared
-numbers which are greater than 10.</p>
-<p>The next <code>-&gt; map(|n| (n..=n+1))</code> uses standard Rust syntax to convert each number <code>n</code> into a
+In this case, we square each number. </p>
+</li>
+<li>
+<p>Next, <code>-&gt; filter(|&amp;n| n &gt; 10)</code> only keeps any squared numbers that are greater than 10.</p>
+</li>
+<li>
+<p>The subsequent <code>-&gt; map(|n| (n..=n+1))</code> uses standard Rust syntax to convert each number <code>n</code> into a
 <a href="https://doc.rust-lang.org/std/ops/struct.RangeInclusive.html"><code>RangeInclusive</code></a>
-from <code>n</code> to <code>n+1</code>. We then call <code>-&gt; flat_map()</code> to convert the ranges
+[<code>n</code>, <code>n+1</code>]. </p>
+</li>
+<li>
+<p>We then call <code>-&gt; flatten()</code> to convert the ranges back
 into a stream of the individual numbers which they contain.</p>
+</li>
+<li>
+<p>Finally we use the now-familiar <code>for_each</code> operator to print each number.</p>
+</li>
+</ul>
 <p>We can also express the same program with more aggressive use of combination operators like
-<a href="./surface_ops.gen.html#filtermap"><code>filter_map()</code></a> and <a href="./surface_ops.gen.html#flatmap"><code>flat_map()</code></a>:</p>
+<a href="./surface_ops.gen.html#filtermap"><code>filter_map()</code></a> and <a href="./surface_ops.gen.html#flat_map"><code>flat_map()</code></a>. Hydroflow will compile these down to the same
+machine code:</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">use hydroflow::hydroflow_syntax;
 </span> pub fn main() {
     let mut flow = hydroflow_syntax! {
@@ -322,7 +363,16 @@ G'day 81
 G'day 82
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="an-example-with-streaming-input"><a class="header" href="#an-example-with-streaming-input">An Example With Streaming Input</a></h1>
-<p>In this example we'll introduce the concept of handoffs and external inputs.</p>
+<blockquote>
+<p>In this example we will cover:</p>
+<ul>
+<li>the input <code>channel</code> concept, which streams data in from outside the Hydroflow spec</li>
+<li>the <a href="./surface_ops.gen.html#recv_stream"><code>recv_stream</code></a> operator that brings channel input into Hydroflow</li>
+<li>Rust syntax to programmatically send data to a (local) channel</li>
+</ul>
+</blockquote>
+<p>In our previous examples, data came from within the Hydroflow spec, via Rust iterators and the <a href="./surface_ops.gen.html#recv_iter"><code>recv_iter</code></a> operator. In most cases, however, data comes from outside the Hydroflow spec. In this example, we'll see a simple version of this idea, with data being generated on the same machine and sent into the channel programmatically via Rust.</p>
+<p>We start with a skeleton much like before:</p>
 <pre><pre class="playground"><code class="language-rust">use hydroflow::hydroflow_syntax;
 
 pub fn main() {
@@ -333,57 +383,56 @@ pub fn main() {
     hydroflow.run_available();
 }
 </code></pre></pre>
-<p>We'll start out with the above boilerplate. To add a new external input
-channel, we can use the <code>hydroflow::util::unbounded_channel()</code> function:</p>
+<p>To add a new external input
+channel, we can use the <code>hydroflow::util::unbounded_channel()</code> function in Rust before we declare the Hydroflow spec:</p>
 <pre><code class="language-rust  ignore">    let (input_example, example_recv) = hydroflow::util::unbounded_channel::&lt;usize&gt;();
 </code></pre>
-<p>This is a <a href="https://docs.rs/tokio/latest/tokio/sync/mpsc/fn.unbounded_channel.html">multiple-producer/single-consumer (<code>mpsc</code>) channel</a>, which is usually the appropriate choice for an inbound Hydroflow stream:
-think of it as a high-performance &quot;mailbox&quot; that any sender can fill with well-typed data.</p>
-<p>The Rust <code>::&lt;usize&gt;</code> syntax is affectionately
-called the &quot;turbofish&quot; and is how type parameters (generic arguments) are
+<p>Under the covers, this is a <a href="https://docs.rs/tokio/latest/tokio/sync/mpsc/fn.unbounded_channel.html">multiple-producer/single-consumer (<code>mpsc</code>) channel</a> provided by Rust's <a href="https://docs.rs/tokio/latest/tokio">tokio</a> library, which is usually the appropriate choice for an inbound Hydroflow stream.
+Think of it as a high-performance &quot;mailbox&quot; that any sender can fill with well-typed data.</p>
+<p>The Rust <code>::&lt;usize&gt;</code> syntax uses what is affectionately
+called the &quot;turbofish&quot;, which is how type parameters (generic arguments) are
 supplied to generic types and functions. In this case it specifies that this tokio channel
-transmits <code>usize</code> items.
+transmits items of type <code>usize</code>.
 The returned <code>example_recv</code> value can be used via a <a href="./surface_ops.gen.html#recv_stream"><code>recv_stream</code></a>
 to build a Hydroflow subgraph just like before. Here is the same program as before, but using the
 input channel:</p>
 <pre><pre class="playground"><code class="language-rust">use hydroflow::hydroflow_syntax;
 
 pub fn main() {
-// Create our channel input
-let (input_example, example_recv) = hydroflow::util::unbounded_channel::&lt;usize&gt;();
+   // Create our channel input
+    let (input_example, example_recv) = hydroflow::util::unbounded_channel::&lt;usize&gt;();
 
-let mut hydroflow = hydroflow_syntax! {
-    recv_stream(example_recv)
-    -&gt; filter_map(|n: usize| {
-        let n2 = n * n;
-        if n2 &gt; 10 {
-            Some(n2)
-        }
-        else {
-            None
-        }
-    })
-    -&gt; flat_map(|n| (n..=n+1))
-    -&gt; for_each(|n| println!(&quot;Ahoj {}&quot;, n))
-};
+    let mut flow = hydroflow_syntax! {
+         recv_stream(example_recv)
+        -&gt; filter_map(|n: usize| {
+            let n2 = n * n;
+            if n2 &gt; 10 {
+                Some(n2)
+            }
+            else {
+                None
+            }
+        })
+        -&gt; flat_map(|n| (n..=n+1))
+        -&gt; for_each(|n| println!(&quot;Ahoj {}&quot;, n))
+    };
 
-println!(&quot;A&quot;);
-input_example.send(0).unwrap();
-input_example.send(1).unwrap();
-input_example.send(2).unwrap();
-input_example.send(3).unwrap();
-input_example.send(4).unwrap();
-input_example.send(5).unwrap();
+    println!(&quot;A&quot;);
+    input_example.send(1).unwrap();
+    input_example.send(0).unwrap();
+    input_example.send(2).unwrap();
+    input_example.send(3).unwrap();
+    input_example.send(4).unwrap();
+    input_example.send(5).unwrap();
 
-hydroflow.run_available();
+    flow.run_available();
 
-println!(&quot;B&quot;);
-input_example.send(6).unwrap();
-input_example.send(7).unwrap();
-input_example.send(8).unwrap();
-input_example.send(9).unwrap();
-
-hydroflow.run_available();
+    println!(&quot;B&quot;);
+    input_example.send(6).unwrap();
+    input_example.send(7).unwrap();
+    input_example.send(8).unwrap();
+    input_example.send(9).unwrap();
+    flow.run_available();
 }
 </code></pre></pre>
 <pre><code class="language-txt">A
@@ -401,9 +450,19 @@ Ahoj 65
 Ahoj 81
 Ahoj 82
 </code></pre>
-<p>At the bottom we can see supplying inputs with the tokio <code>.send()</code> method; we call Rust's <code>.unwrap()</code> 
-method to ignore the error messages from <code>.send()</code> in this simple case. </p>
+<p>At the bottom we can see how to programatically supply <code>usize</code>-typed inputs with the tokio 
+<code>.send()</code> method.  We call Rust's <code>.unwrap()</code> method to ignore the error messages from 
+<code>.send()</code> in this simple case.  In later examples we'll see how to 
+allow for data coming in over a network.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="graph-neighbors"><a class="header" href="#graph-neighbors">Graph Neighbors</a></h1>
+<blockquote>
+<p>In this example we cover:</p>
+<ul>
+<li>Our first multi-input operator, <a href="./surface_ops.gen.html#join"><code>join</code></a></li>
+<li>The <a href="./surface_ops.gen.html#unique"><code>unique</code></a> operator for removing duplicates from a stream</li>
+<li>A first exposure to the concepts of <em>strata</em> and <em>epochs</em></li>
+</ul>
+</blockquote>
 <p>So far all the operators we've used have one input and one output and therefore
 create a linear flow of operators. Let's now take a look at a Hydroflow program containing
 an operator which has multiple inputs; in the following examples we'll extend this to
@@ -416,17 +475,18 @@ naturally represented as a dataflow program. </p>
 <p><strong>Note on terminology</strong>: In each of the next few examples, we're going to write a Hydroflow program (a dataflow graph) to process data that itself represents some other graph! To avoid confusion, in these examples, we'll refer to the Hydroflow program as a &quot;flow&quot; or &quot;program&quot;, and the data as a &quot;graph&quot; of &quot;edges&quot; and &quot;vertices&quot;.</p>
 </blockquote>
 <p>To work our way up to graph reachability, we'll first start with a simple flow that finds
-graph <em>neighbors</em>: nodes that are just one hop away. </p>
+graph <em>neighbors</em>: vertices that are just one hop away. </p>
 <p>Our first Hydroflow program will take
 our initial <code>origin</code> vertex as one input, and join it another input that streams in all the edges---this 
 join will stream out the vertices that are one hop (edge) away from the starting vertex. </p>
 <p>Here is an <em>intuitive</em> diagram of that dataflow program (we'll see complete, autogenerated Hydroflow diagrams
 below):</p>
 <pre class="mermaid">graph TD
-  subgraph simple version
-    00[Origin Vertex]
+  subgraph sources
     01[Stream of Edges]
-    
+  end
+  subgraph neighbors of origin
+    00[Origin Vertex]
     20(&quot;V ⨝ E&quot;)
     40[Output]
 
@@ -437,24 +497,24 @@ below):</p>
     
   end
 </pre>
-<p>Lets take a look at some hydroflow code that implements the program:</p>
+<p>Lets take a look at some Hydroflow code that implements the program:</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">use hydroflow::hydroflow_syntax;
 </span>pub fn main() {
     // An edge in the input data = a pair of `usize` vertex IDs.
     let (pairs_send, pairs_recv) = hydroflow::util::unbounded_channel::&lt;(usize, usize)&gt;();
 
     let mut flow = hydroflow_syntax! {
-        // inputs: the origin vertex (node 0) and stream of input edges
+        // inputs: the origin vertex (vertex 0) and stream of input edges
         origin = recv_iter(vec![0]);
         stream_of_edges = recv_stream(pairs_recv);
 
         // the join
-        my_join = join() -&gt; map(|(_x, (_y, z))| z);
+        my_join = join() -&gt; flat_map(|(src, (_, dst))| [src, dst]);
         origin -&gt; map(|v| (v, ())) -&gt; [0]my_join;
         stream_of_edges -&gt; [1]my_join;
 
         // the output
-        my_join -&gt; for_each(|n| println!(&quot;Reached: {}&quot;, n));
+        my_join -&gt; unique() -&gt; for_each(|n| println!(&quot;Reached: {}&quot;, n));
     };
 
     println!(
@@ -473,8 +533,9 @@ below):</p>
 }
 </code></pre></pre>
 <p>And the output:</p>
-<pre><code class="language-txt">Reached: 1
+<pre><code class="language-txt">Reached: 0
 Reached: 3
+Reached: 1
 </code></pre>
 <p>That looks right: the edges we &quot;sent&quot; into the flow that start at <code>0</code> are 
 <code>(0, 1)</code> and <code>(0, 3)</code>.</p>
@@ -487,7 +548,7 @@ and the stream of edges coming in:</p>
 over using <code>recv_iter</code>.</p>
 <p>We then set up a <a href="./surface_ops.gen.html#join"><code>join()</code></a> that we
 name <code>my_join</code>, which acts like a SQL inner join. 
-First, note the syntax for passing data into a subflow with multiple inputs <em>prepends</em> 
+First, note the syntax for passing data into a subflow with multiple inputs requires us to <em>prepend</em> 
 an input index (starting at <code>0</code>) in square brackets to the multi-input variable name or operator.  In this example we have <code>-&gt; [0]my_join</code>
 and <code>-&gt; [1]my_join</code>.</p>
 <p>Hydroflow's <code>join()</code> API requires
@@ -501,96 +562,118 @@ to generate <code>(v, ())</code> elements as the first join input. </p>
     origin -&gt; map(|v| (v, ())) -&gt; [0]my_join;
     stream_of_edges -&gt; [1]my_join;
 </code></pre>
-<p>The <code>stream_of_edges</code> are <code>(from, to)</code> pairs,
-so the join's output is <code>(from, ((), to))</code> where <code>to</code> are new neighbor
-vertices. So the <code>my_join</code> variable feeds the output of the join through a map to extract just the neighbor vertex.
+<p>The <code>stream_of_edges</code> are <code>(src, dst)</code> pairs,
+so the join's output is <code>(src, ((), dst))</code> where <code>dst</code> are new neighbor
+vertices. So the <code>my_join</code> variable feeds the output of the join through a <code>flat_map</code> to extract the pairs into 2-item arrays, which are flattened to give us a list of all vertices reached.
 Finally we print the neighbor vertices as follows:</p>
-<pre><code class="language-rust ignore">    my_join -&gt; for_each(|n| println!(&quot;Reached: {}&quot;, n));
+<pre><code class="language-rust ignore">    my_join -&gt; unique() -&gt; for_each(|n| println!(&quot;Reached: {}&quot;, n));
 </code></pre>
+<p>The <a href="./surface_ops.gen.html#unique">unique</a> operator removes duplicates from the stream to make things more readable. Note that <code>unique</code> does not run in a streaming fashion, which we will talk about more <a href="example_4_surface.html#strata-and-epochs">below</a>.</p>
 <p>The remaining code runs the graph on example edge data. There's
-also some extra code there, particularly <code>flow.to_mermaid()</code> which lets us
+also some extra code there, particularly <code>flow.serde_graph().expect(...).to_mermaid()</code> which lets us
 generate a diagram rendered by <a href="https://mermaid-js.github.io/">Mermaid</a> showing
 the structure of the graph:</p>
 <pre class="mermaid">flowchart TB
-    subgraph &quot;sg_1v1 stratum Some(0)&quot;
+    subgraph &quot;sg_1v1 stratum 0&quot;
         1v1[&quot;1v1 &lt;tt&gt;op_1v1: recv_iter(vec! [0])&lt;/tt&gt;&quot;]
         2v1[&quot;2v1 &lt;tt&gt;op_2v1: recv_stream(pairs_recv)&lt;/tt&gt;&quot;]
         5v1[&quot;5v1 &lt;tt&gt;op_5v1: map(| v | (v, ()))&lt;/tt&gt;&quot;]
         3v1[&quot;3v1 &lt;tt&gt;op_3v1: join()&lt;/tt&gt;&quot;]
-        4v1[&quot;4v1 &lt;tt&gt;op_4v1: map(| (_x, (_y, z)) | z)&lt;/tt&gt;&quot;]
-        6v1[&quot;6v1 &lt;tt&gt;op_6v1: for_each(| n | println! (&amp;quot;Reached: {}&amp;quot;, n))&lt;/tt&gt;&quot;]
+        4v1[&quot;4v1 &lt;tt&gt;op_4v1: flat_map(| (src, (_, dst)) | [src, dst])&lt;/tt&gt;&quot;]
+    end
+    subgraph &quot;sg_2v1 stratum 1&quot;
+        6v1[&quot;6v1 &lt;tt&gt;op_6v1: unique()&lt;/tt&gt;&quot;]
+        7v1[&quot;7v1 &lt;tt&gt;op_7v1: for_each(| n | println! (&amp;quot;Reached: {}&amp;quot;, n))&lt;/tt&gt;&quot;]
     end
 
+    8v1{&quot;handoff&quot;}
 
     1v1--&gt;5v1
     2v1--&gt;3v1
     3v1--&gt;4v1
-    4v1--&gt;6v1
+    4v1--&gt;8v1
     5v1--&gt;3v1
+    6v1--&gt;7v1
+    8v1--&gt;6v1
 </pre>
-<p>If you read the <code>pairs_send</code> calls in the code carefully, you'll see that the example data 
-has nodes (<code>2</code>, <code>4</code>) that are more than one hop away from <code>0</code>, which were
+<p>Returning to the code, if you read the <code>pairs_send</code> calls carefully, you'll see that the example data 
+has vertices (<code>2</code>, <code>4</code>) that are more than one hop away from <code>0</code>, which were
 not output by our simple program. To extend this example to graph <em>reachability</em>, 
 we need to recurse: find neighbors of our neighbors, neighbors of our neighbors' neighbors, and so on. In Hydroflow,
-this is done by adding a loop to the flow, as we'll see <a href="example_4_1_surface.html">next</a>.</p>
+this is done by adding a loop to the flow, as we'll see in our <a href="example_5_surface.html">next example</a>.</p>
+<h2 id="strata-and-epochs"><a class="header" href="#strata-and-epochs">Strata and Epochs</a></h2>
+<p>Before we proceed, note in the mermaid graph how Hydroflow separates the <code>unique</code> operator and its downstream dependencies into their own
+<em>stratum</em> (plural: <em>strata</em>). The stratum boundary before <code>unique</code> ensures that all the values arrive before it executes, ensuring that all duplicates are eliminated. </p>
+<p>Hydroflow runs each stratum
+in order, one at a time, ensuring all values are computed
+before moving on to the next stratum. Between strata we see a <em>handoff</em>, which logically buffers the 
+output of the first stratum, and delineates the separation of execution between the 2 strata.</p>
+<p>After all strata are run, Hydroflow returns to the first stratum; this begins the next <em>epoch</em>. This doesn't really matter for this example, but it is important for long-running Hydroflow services that accept input from the outside world.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="graph-reachability"><a class="header" href="#graph-reachability">Graph Reachability</a></h1>
-<!-- Note about monotonicity? -->
-<p>To expand from graph neighbors to graph reachability, we want to find nodes that are connected not just to <code>origin</code>,
-but also to nodes reachable <em>transitively</em> from <code>origin</code>. Said differently, a node is reachable from <code>origin</code> if it is
+<blockquote>
+<p>In this example we cover:</p>
+<ul>
+<li>Implementing a recursive algorithm (graph reachability) via cyclic dataflow</li>
+<li>Operators to merge data from multiple inputs (<a href="./surface_ops.gen.html#merge"><code>merge</code></a>), and send data to multiple outputs (<a href="./surface_ops.gen.html#tee"><code>tee</code></a>)</li>
+<li>An example of how a cyclic dataflow in one stratum executes to completion before starting the next stratum. </li>
+</ul>
+</blockquote>
+<p>To expand from graph neighbors to graph reachability, we want to find vertices that are connected not just to <code>origin</code>,
+but also to vertices reachable <em>transitively</em> from <code>origin</code>. Said differently, a vertex is reachable from <code>origin</code> if it is
 one of two cases: </p>
 <ol>
 <li>a neighbor of <code>origin</code> <em>or</em> </li>
-<li>a neighbor of some other node that is itself reachable from <code>origin</code>. </li>
+<li>a neighbor of some other vertex that is itself reachable from <code>origin</code>. </li>
 </ol>
-<p>It turns out this is a very small change to our Hydroflow program! It will also illustrate an operator, <a href="./surface_ops.gen.html#tee"><code>tee()</code></a>,
-which has multiple outputs.</p>
-<p>Essentially we want to take <em>all</em> the reached vertices we found in our graph neighbors program,
+<p>It turns out this is a very small change to our Hydroflow program! Essentially we want to take <em>all</em> the reached vertices we found in our graph neighbors program,
 and treat them recursively just as we treated <code>origin</code>.
 To do this in a language like Hydroflow, we introduce a cycle in the flow:
 we take the join output and have it
 flow back into the join input. The modified intuitive graph looks like this:</p>
 <pre class="mermaid">graph TD
-  subgraph recursive example
-    00[Origin Vertex]
+  subgraph sources
     01[Stream of Edges]
+  end
+  subgraph reachable from origin
+    00[Origin Vertex]
     10[Reached Vertices]
     20(&quot;V ⨝ E&quot;)
     40[Output]
 
     00 --&gt; 10
     10 --&gt; 20
-    20 ---&gt; 10
+    20 --&gt; 10
 
-    01 ---&gt; 20
+    01 --&gt; 20
     20 --&gt; 40
     
   end
 </pre>
-<p>Note that we added a <code>Reached Vertices</code> node to <code>merge</code> the two inbound edges corresponding to our 
-two cases above. Similarly note that the join node <code>V ⨝ E</code> now has two <em>outbound</em> edges; the sketch omits the operator 
-to copy (<code>tee</code>) the output along 
+<p>Note that we added a <code>Reached Vertices</code> box to the diagram to merge the two inbound edges corresponding to our 
+two cases above. Similarly note that the join box <code>V ⨝ E</code> now has two <em>outbound</em> edges; the sketch omits the operator 
+to copy (&quot;tee&quot;) the output along 
 two paths.</p>
-<p>Now lets look at a modified version of our <a href="example_4_surface.html">graph neighbor</a> code that implements this full program, including the loop as well as the <code>merge</code> and <code>tee</code>:</p>
+<p>Now lets look at a modified version of our <a href="example_4_surface.html">graph neighbor</a> code that implements this full program, including the loop as well as the Hydroflow <a href="./surface_ops.gen.html#merge"><code>merge</code></a> and <a href="./surface_ops.gen.html#tee"><code>tee</code></a>:</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">use hydroflow::hydroflow_syntax;
 </span>pub fn main() {
     // An edge in the input data = a pair of `usize` vertex IDs.
-    let (pairs_send, pairs_recv) = tokio::sync::mpsc::unbounded_channel::&lt;(usize, usize)&gt;();
+    let (pairs_send, pairs_recv) = hydroflow::util::unbounded_channel::&lt;(usize, usize)&gt;();
 
     let mut flow = hydroflow_syntax! {
-        // inputs: the origin vertex (node 0) and stream of input edges
+        // inputs: the origin vertex (vertex 0) and stream of input edges
         origin = recv_iter(vec![0]);
         stream_of_edges = recv_stream(pairs_recv);
         reached_vertices = merge();
         origin -&gt; [0]reached_vertices;
 
         // the join
-        my_join_tee = join() -&gt; map(|(_src, ((), dst))| dst) -&gt; tee();
+        my_join_tee = join() -&gt; flat_map(|(src, ((), dst))| [src, dst]) -&gt; tee();
         reached_vertices -&gt; map(|v| (v, ())) -&gt; [0]my_join_tee;
         stream_of_edges -&gt; [1]my_join_tee;
 
         // the loop and the output
         my_join_tee[0] -&gt; [1]reached_vertices;
-        my_join_tee[1] -&gt; for_each(|x| println!(&quot;Reached: {}&quot;, x));
+        my_join_tee[1] -&gt; unique() -&gt; for_each(|x| println!(&quot;Reached: {}&quot;, x));
     };
 
     println!(
@@ -609,16 +692,16 @@ two paths.</p>
 }
 </code></pre></pre>
 <p>And now we get the full set of vertices reachable from <code>0</code>:</p>
-<pre><code class="language-txt">Reached: 1
-Reached: 3
+<pre><code class="language-txt">Reached: 3
+Reached: 0
 Reached: 2
 Reached: 4
-Reached: 4
+Reached: 1
 </code></pre>
 <p>Let's review the significant changes here. First, in setting up the inputs we have the 
 addition of the <code>reached_vertices</code> variable, which uses the <a href="./surface_ops.gen.html#merge">merge()</a> 
 op to merge the output of two operators into one. 
-We route the <code>origin</code> node into it as one input right away:</p>
+We route the <code>origin</code> vertex into it as one input right away:</p>
 <pre><code class="language-rust ignore">    reached_vertices = merge();
     origin -&gt; [0]reached_vertices;
 </code></pre>
@@ -630,7 +713,7 @@ the joined output
 output to two places: to the original <code>for_each</code> from above to print output, and <em>also</em> 
 back to the <code>merge</code> operator we called <code>reached_vertices</code>.
 We feed the <code>join()</code> output 
-through a <code>map()</code> as before, and then we feed the result into a <a href="./surface_ops.gen.html#tee"><code>tee()</code></a> operator,
+through a <code>flat_map()</code> as before, and then we feed the result into a <a href="./surface_ops.gen.html#tee"><code>tee()</code></a> operator,
 which is the mirror image of <code>merge()</code>:  instead of merging many inputs to one output, 
 it copies one input to many different outputs.  Each input element is <em>cloned</em>, in Rust terms, and
 given to each of the outputs. The syntax for the outputs of <code>tee()</code> mirrors that of merge: we <em>append</em> 
@@ -644,37 +727,199 @@ prints out all the reached vertices as in the simple program.</p>
 </code></pre>
 <p>Note the syntax for differentiating the <em>outputs</em> of a <code>tee()</code> is symmetric to that of <code>merge()</code>, 
 showing up to the right of the variable rather than the left.</p>
-<p>Below is the diagram rendered by <a href="https://mermaid-js.github.io/">Mermaid</a> showing
+<p>Below is the diagram rendered by <a href="https://mermaid-js.github.io/">mermaid</a> showing
 the structure of the full flow:</p>
 <pre class="mermaid">flowchart TB
-    subgraph sg_4294967297
+    subgraph &quot;sg_1v1 stratum 0&quot;
         1v1[&quot;1v1 &lt;tt&gt;op_1v1: recv_iter(vec! [0])&lt;/tt&gt;&quot;]
-        2v1[&quot;2v1 &lt;tt&gt;op_2v1: merge()&lt;/tt&gt;&quot;]
-        3v1[&quot;3v1 &lt;tt&gt;op_3v1: map(| v | (v, ()))&lt;/tt&gt;&quot;]
-        7v1[&quot;7v1 &lt;tt&gt;op_7v1: recv_stream(pairs_recv)&lt;/tt&gt;&quot;]
+        2v1[&quot;2v1 &lt;tt&gt;op_2v1: recv_stream(edges_recv)&lt;/tt&gt;&quot;]
+        3v1[&quot;3v1 &lt;tt&gt;op_3v1: merge()&lt;/tt&gt;&quot;]
+        7v1[&quot;7v1 &lt;tt&gt;op_7v1: map(| v | (v, ()))&lt;/tt&gt;&quot;]
         4v1[&quot;4v1 &lt;tt&gt;op_4v1: join()&lt;/tt&gt;&quot;]
-        5v1[&quot;5v1 &lt;tt&gt;op_5v1: map(| (_src, ((), dst)) | dst)&lt;/tt&gt;&quot;]
+        5v1[&quot;5v1 &lt;tt&gt;op_5v1: flat_map(| (src, ((), dst)) | [src, dst])&lt;/tt&gt;&quot;]
         6v1[&quot;6v1 &lt;tt&gt;op_6v1: tee()&lt;/tt&gt;&quot;]
-        8v1[&quot;8v1 &lt;tt&gt;op_8v1: for_each(| x | println! (&amp;quot;Reached: {}&amp;quot;, x))&lt;/tt&gt;&quot;]
+    end
+    subgraph &quot;sg_2v1 stratum 1&quot;
+        8v1[&quot;8v1 &lt;tt&gt;op_8v1: unique()&lt;/tt&gt;&quot;]
+        9v1[&quot;9v1 &lt;tt&gt;op_9v1: for_each(| x | println! (&amp;quot;Reached: {}&amp;quot;, x))&lt;/tt&gt;&quot;]
     end
 
-    9v1{&quot;handoff&quot;}
+    10v1{&quot;handoff&quot;}
+    11v1{&quot;handoff&quot;}
 
-    1v1--&gt;2v1
-    2v1--&gt;3v1
-    3v1--&gt;4v1
+    1v1--&gt;3v1
+    2v1--&gt;4v1
+    3v1--&gt;7v1
     4v1--&gt;5v1
     5v1--&gt;6v1
-    6v1--&gt;9v1
-    6v1--&gt;8v1
+    6v1--&gt;10v1
+    6v1--&gt;11v1
     7v1--&gt;4v1
-    9v1--&gt;2v1
+    8v1--&gt;9v1
+    10v1--&gt;3v1
+    11v1--&gt;8v1
 </pre>
 <p>This is similar to the flow for graph neighbors, but has a few more operators that make it look
-more complex. In particular, it includes the <code>merge</code> and <code>tee</code> operators, and a back-edge 
-which passes through an auto-generated <code>handoff</code> operator. (<code>handoffs</code> are the way that Hydroflow's
-runtime breaks dataflow cycles to simplify execution internally.)</p>
+more complex. In particular, it includes the <code>merge</code> and <code>tee</code> operators, and a cycle-forming back-edge 
+that passes through an auto-generated <code>handoff</code> operator. This <code>handoff</code> is not a stratum boundary (after all, it connects stratum 0 to itself!) Rather, it represents a compilation boundary: the compiled code that Hydroflow generates is acyclic (as discussed in the <a href="./architecture.html">Architecture Chapter</a>), so these handoffs tell the runtime to iterate on the acyclic code of a stratum until there is no new output from the stratum.</p>
+<p>Meanwhile, note in the mermaid diagram that there is once again a stratum boundary between the stratum 0 with its recursive loop, and stratum 1 that computes <code>unique</code>. This means that Hydroflow will first run the loop continuously until all the transitive reached vertices are found, before moving on to compute the unique reached vertices.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="graph-un-reachability"><a class="header" href="#graph-un-reachability">Graph Un-Reachability</a></h1>
+<blockquote>
+<p>In this example we cover:</p>
+<ul>
+<li>Extending a program with additional downstream logic.</li>
+<li>Hydroflow's (<a href="./surface_ops.gen.html#merge"><code>difference</code></a>) operator</li>
+<li>Further examples of automatic stratification.</li>
+</ul>
+</blockquote>
+<p>Our next example builds on the previous by finding vertices that are <em>not</em> reachable. To do this, we need to capture the set <code>all_vertices</code>, and use a <a href="./surface_ops.gen.html#difference">difference</a> operator to form the difference between that set of vertices and <code>reachable_vertices</code>.</p>
+<p>Essentially we want a flow like this:</p>
+<pre class="mermaid">graph TD
+  subgraph sources
+    01[Stream of Edges]
+  end
+  subgraph reachable from origin
+    00[Origin Vertex]
+    10[Reached Vertices]
+    20(&quot;V ⨝ E&quot;)
+
+    00 --&gt; 10
+    10 --&gt; 20
+    20 --&gt; 10
+
+    01 --&gt; 20
+  end
+  subgraph unreachable
+    15[All Vertices]
+    30(All - Reached)
+    01 ---&gt; 15
+    15 --&gt; 30
+    10 --&gt; 30
+    30 --&gt; 40
+   end
+40[Output]
+</pre>
+<p>This is a simple augmentation of our previous example. Here's the code:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">use hydroflow::hydroflow_syntax;
+</span>pub fn main() {
+    // An edge in the input data = a pair of `usize` vertex IDs.
+    let (pairs_send, pairs_recv) = hydroflow::util::unbounded_channel::&lt;(usize, usize)&gt;();
+
+    let mut flow = hydroflow_syntax! {
+        origin = recv_iter(vec![0]);
+        stream_of_edges = recv_stream(pairs_recv) -&gt; tee();
+        reached_vertices = merge()-&gt;tee();
+        origin -&gt; [0]reached_vertices;
+
+        // the join for reachable vertices
+        my_join = join() -&gt; flat_map(|(src, ((), dst))| [src, dst]);
+        reached_vertices[0] -&gt; map(|v| (v, ())) -&gt; [0]my_join;
+        stream_of_edges[1] -&gt; [1]my_join;
+
+        // the loop
+        my_join -&gt; [1]reached_vertices;
+
+        // the difference all_vertices - reached_vertices
+        all_vertices = stream_of_edges[0]
+          -&gt; flat_map(|(src, dst)| [src, dst]) -&gt; tee();
+        unreached_vertices = difference();
+        all_vertices[0] -&gt; [pos]unreached_vertices;
+        reached_vertices[1] -&gt; [neg]unreached_vertices;
+
+        // the output
+        all_vertices[1] -&gt; unique() -&gt; for_each(|v| println!(&quot;Received vertex: {}&quot;, v));
+        unreached_vertices -&gt; for_each(|v| println!(&quot;unreached_vertices vertex: {}&quot;, v));
+    };
+
+    println!(
+        &quot;{}&quot;,
+        flow.serde_graph()
+            .expect(&quot;No graph found, maybe failed to parse.&quot;)
+            .to_mermaid()
+    );
+
+    pairs_send.send((5, 10)).unwrap();
+    pairs_send.send((0, 3)).unwrap();
+    pairs_send.send((3, 6)).unwrap();
+    pairs_send.send((6, 5)).unwrap();
+    pairs_send.send((11, 12)).unwrap();
+    flow.run_available();
+}
+</code></pre></pre>
+<p>Notice that we are now sending in some new pairs to test this code. The output should be:</p>
+<pre><code class="language-txt">Received vertex: 12
+Received vertex: 6
+Received vertex: 11
+Received vertex: 0
+Received vertex: 5
+Received vertex: 10
+Received vertex: 3
+unreached_vertices vertex: 12
+unreached_vertices vertex: 11
+</code></pre>
+<p>Let's review the changes, all of which come at the end of the program. First, 
+we remove code to print <code>reached_vertices</code>. Then we define <code>all_vertices</code> to be
+the vertices that appear in any edge (using familiar <code>flat_map</code> code from the previous 
+examples.) In the last few lines, we wire up a 
+<a href="./surface_ops.gen.html#difference">difference</a> operator
+to compute the difference between <code>all_vertices</code> and <code>reached_vertices</code>; note 
+how we wire up the <code>pos</code> and <code>neg</code> inputs to the <code>difference</code> operator! 
+Finally we print both <code>all_vertices</code> and <code>unreached_vertices</code>.</p>
+<p>The auto-generated mermaid looks like so:</p>
+<pre class="mermaid">flowchart TB
+    subgraph &quot;sg_1v1 stratum 0&quot;
+        1v1[&quot;1v1 &lt;tt&gt;op_1v1: recv_iter(vec! [0])&lt;/tt&gt;&quot;]
+        8v1[&quot;8v1 &lt;tt&gt;op_8v1: map(| v | (v, ()))&lt;/tt&gt;&quot;]
+        6v1[&quot;6v1 &lt;tt&gt;op_6v1: join()&lt;/tt&gt;&quot;]
+        7v1[&quot;7v1 &lt;tt&gt;op_7v1: flat_map(| (src, ((), dst)) | [src, dst])&lt;/tt&gt;&quot;]
+        4v1[&quot;4v1 &lt;tt&gt;op_4v1: merge()&lt;/tt&gt;&quot;]
+        5v1[&quot;5v1 &lt;tt&gt;op_5v1: tee()&lt;/tt&gt;&quot;]
+    end
+    subgraph &quot;sg_2v1 stratum 0&quot;
+        2v1[&quot;2v1 &lt;tt&gt;op_2v1: recv_stream(pairs_recv)&lt;/tt&gt;&quot;]
+        3v1[&quot;3v1 &lt;tt&gt;op_3v1: tee()&lt;/tt&gt;&quot;]
+        9v1[&quot;9v1 &lt;tt&gt;op_9v1: flat_map(| (src, dst) | [src, dst])&lt;/tt&gt;&quot;]
+        10v1[&quot;10v1 &lt;tt&gt;op_10v1: tee()&lt;/tt&gt;&quot;]
+    end
+    subgraph &quot;sg_3v1 stratum 1&quot;
+        12v1[&quot;12v1 &lt;tt&gt;op_12v1: unique()&lt;/tt&gt;&quot;]
+        13v1[&quot;13v1 &lt;tt&gt;op_13v1: for_each(| v | println! (&amp;quot;Received vertex: {}&amp;quot;, v))&lt;/tt&gt;&quot;]
+    end
+    subgraph &quot;sg_4v1 stratum 1&quot;
+        11v1[&quot;11v1 &lt;tt&gt;op_11v1: difference()&lt;/tt&gt;&quot;]
+        14v1[&quot;14v1 &lt;tt&gt;op_14v1: for_each(| v | println! (&amp;quot;unreached_vertices vertex: {}&amp;quot;, v))&lt;/tt&gt;&quot;]
+    end
+
+    15v1{&quot;handoff&quot;}
+    16v1{&quot;handoff&quot;}
+    17v1{&quot;handoff&quot;}
+    18v1{&quot;handoff&quot;}
+    19v1{&quot;handoff&quot;}
+
+    1v1--&gt;4v1
+    2v1--&gt;3v1
+    3v1--&gt;16v1
+    3v1--&gt;9v1
+    4v1--&gt;5v1
+    5v1--&gt;15v1
+    5v1--&gt;18v1
+    6v1--&gt;7v1
+    7v1--&gt;4v1
+    8v1--&gt;6v1
+    9v1--&gt;10v1
+    10v1--&gt;17v1
+    10v1--&gt;19v1
+    11v1--&gt;14v1
+    12v1--&gt;13v1
+    15v1--&gt;8v1
+    16v1--&gt;6v1
+    17v1--&gt;11v1
+    18v1--&gt;11v1
+    19v1--&gt;12v1
+</pre>
+<p>If you look carefully, you'll see two subgraphs labeled with <code>stratum 0</code>, and two with
+<code>stratum 1</code>. All the subgraphs labeled <code>stratum 0</code> are run first to completion, 
+and then all the subgraphs labeled <code>stratum 1</code> are run. This captures the requirements of the <code>unique</code> and <code>difference</code> operators used in the lower subgraphs: each has to wait for its full inputs before it can start producing output.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="concepts"><a class="header" href="#concepts">Concepts</a></h1>
 <h2 id="dataflow-and-networking"><a class="header" href="#dataflow-and-networking">Dataflow and Networking</a></h2>
 <p>Conventionally, dataflow systems provide a way to analyze and process data by
