@@ -1,4 +1,8 @@
 # Graph Un-Reachability
+> In this example we cover:
+> * Extending a program with additional downstream logic.
+> * Hydroflow's ([`difference`](./surface_ops.gen.md#merge)) operator
+
 Our next example builds on the previous by finding vertices that are _not_ reachable. To do this, we need to capture the set `all_vertices`, and use a [difference](./surface_ops.gen.md#difference) operator to form the difference between that set of vertices and `reachable_vertices`.
 
 Essentially we want a flow like this:
@@ -35,7 +39,7 @@ This is a simple augmentation of our previous example. Here's the code:
 # use hydroflow::hydroflow_syntax;
 pub fn main() {
     // An edge in the input data = a pair of `usize` vertex IDs.
-    let (pairs_send, pairs_recv) = tokio::sync::mpsc::unbounded_channel::<(usize, usize)>();
+    let (pairs_send, pairs_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
 
     let mut df = hydroflow_syntax! {
         origin = recv_iter(vec![0]);
@@ -116,48 +120,54 @@ The auto-generated mermaid looks like so:
 flowchart TB
     subgraph "sg_1v1 stratum 0"
         1v1["1v1 <tt>op_1v1: recv_iter(vec! [0])</tt>"]
-        11v1["11v1 <tt>op_11v1: map(| v | (v, ()))</tt>"]
-        9v1["9v1 <tt>op_9v1: join()</tt>"]
-        10v1["10v1 <tt>op_10v1: flat_map(| (src, ((), dst)) | [src, dst])</tt>"]
+        8v1["8v1 <tt>op_8v1: map(| v | (v, ()))</tt>"]
+        6v1["6v1 <tt>op_6v1: join()</tt>"]
+        7v1["7v1 <tt>op_7v1: flat_map(| (src, ((), dst)) | [src, dst])</tt>"]
         4v1["4v1 <tt>op_4v1: merge()</tt>"]
         5v1["5v1 <tt>op_5v1: tee()</tt>"]
     end
     subgraph "sg_2v1 stratum 0"
         2v1["2v1 <tt>op_2v1: recv_stream(pairs_recv)</tt>"]
         3v1["3v1 <tt>op_3v1: tee()</tt>"]
-        7v1["7v1 <tt>op_7v1: flat_map(| (src, dst) | [src, dst])</tt>"]
-        8v1["8v1 <tt>op_8v1: tee()</tt>"]
-        12v1["12v1 <tt>op_12v1: for_each(| v | println! (&quot;Received vertex: {}&quot;, v))</tt>"]
+        9v1["9v1 <tt>op_9v1: flat_map(| (src, dst) | [src, dst])</tt>"]
+        10v1["10v1 <tt>op_10v1: tee()</tt>"]
     end
     subgraph "sg_3v1 stratum 1"
-        6v1["6v1 <tt>op_6v1: difference()</tt>"]
-        13v1["13v1 <tt>op_13v1: for_each(| v | println! (&quot;unreached_vertices vertex: {}&quot;, v))</tt>"]
+        12v1["12v1 <tt>op_12v1: unique()</tt>"]
+        13v1["13v1 <tt>op_13v1: for_each(| v | println! (&quot;Received vertex: {}&quot;, v))</tt>"]
+    end
+    subgraph "sg_4v1 stratum 1"
+        11v1["11v1 <tt>op_11v1: difference()</tt>"]
+        14v1["14v1 <tt>op_14v1: for_each(| v | println! (&quot;unreached_vertices vertex: {}&quot;, v))</tt>"]
     end
 
-    14v1{"handoff"}
     15v1{"handoff"}
     16v1{"handoff"}
     17v1{"handoff"}
+    18v1{"handoff"}
+    19v1{"handoff"}
 
     1v1-->4v1
     2v1-->3v1
-    3v1-->7v1
-    3v1-->15v1
+    3v1-->16v1
+    3v1-->9v1
     4v1-->5v1
-    5v1-->14v1
-    5v1-->17v1
-    6v1-->13v1
-    7v1-->8v1
-    8v1-->16v1
-    8v1-->12v1
+    5v1-->15v1
+    5v1-->18v1
+    6v1-->7v1
+    7v1-->4v1
+    8v1-->6v1
     9v1-->10v1
-    10v1-->4v1
-    11v1-->9v1
-    14v1-->11v1
-    15v1-->9v1
+    10v1-->17v1
+    10v1-->19v1
+    11v1-->14v1
+    12v1-->13v1
+    15v1-->8v1
     16v1-->6v1
-    17v1-->6v1
+    17v1-->11v1
+    18v1-->11v1
+    19v1-->12v1
 ```
 If you look carefully, you'll see two subgraphs labeled with `stratum 0`, and two with
 `stratum 1`. All the subgraphs labeled `stratum 0` are run first to completion, 
-and then all the subgraphs labeled `stratum 1` are run. This captures the requirements of the `unique` and `difference` operators used in the lower subgraphs: both have to wait for their full inputs before they can start producing output.
+and then all the subgraphs labeled `stratum 1` are run. This captures the requirements of the `unique` and `difference` operators used in the lower subgraphs: each has to wait for its full inputs before it can start producing output.

@@ -1,14 +1,17 @@
 # Graph Reachability
+> In this example we cover:
+> * Implementing a recursive algorithm (graph reachability) via cyclic dataflow
+> * Operators to merge data from multiple inputs ([`merge`](./surface_ops.gen.md#merge)), and send data to multiple outputs ([`tee`](./surface_ops.gen.md#tee))
+> * An example of how a cyclic dataflow in one stratum executes to completion before starting the next stratum. 
+
+
 To expand from graph neighbors to graph reachability, we want to find vertices that are connected not just to `origin`,
 but also to vertices reachable *transitively* from `origin`. Said differently, a vertex is reachable from `origin` if it is
 one of two cases: 
 1. a neighbor of `origin` *or* 
 2. a neighbor of some other vertex that is itself reachable from `origin`. 
 
-It turns out this is a very small change to our Hydroflow program! It will also illustrate an operator, [`tee()`](./surface_ops.gen.md#tee),
-which has multiple outputs.
-
-Essentially we want to take *all* the reached vertices we found in our graph neighbors program,
+It turns out this is a very small change to our Hydroflow program! Essentially we want to take *all* the reached vertices we found in our graph neighbors program,
 and treat them recursively just as we treated `origin`.
 To do this in a language like Hydroflow, we introduce a cycle in the flow:
 we take the join output and have it
@@ -34,12 +37,12 @@ graph TD
     
   end
 ```
-Note that we added a `Reached Vertices` box to the diagram to `merge` the two inbound edges corresponding to our 
+Note that we added a `Reached Vertices` box to the diagram to merge the two inbound edges corresponding to our 
 two cases above. Similarly note that the join box `V ⨝ E` now has two _outbound_ edges; the sketch omits the operator 
-to copy (`tee`) the output along 
+to copy ("tee") the output along 
 two paths.
 
-Now lets look at a modified version of our [graph neighbor](example_4_surface.md) code that implements this full program, including the loop as well as the `merge` and `tee`:
+Now lets look at a modified version of our [graph neighbor](example_4_surface.md) code that implements this full program, including the loop as well as the Hydroflow [`merge`](./surface_ops.gen.md#merge) and [`tee`](./surface_ops.gen.md#tee):
 
 ```rust
 # use hydroflow::hydroflow_syntax;
@@ -123,7 +126,7 @@ prints out all the reached vertices as in the simple program.
 Note the syntax for differentiating the *outputs* of a `tee()` is symmetric to that of `merge()`, 
 showing up to the right of the variable rather than the left.
 
-Below is the diagram rendered by [Mermaid](https://mermaid-js.github.io/) showing
+Below is the diagram rendered by [mermaid](https://mermaid-js.github.io/) showing
 the structure of the full flow:
 ```mermaid
 flowchart TB

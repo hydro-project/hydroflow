@@ -1,4 +1,8 @@
 # Graph Neighbors
+> In this example we cover:
+> * Our first multi-input operator, [`join`](./surface_ops.gen.md#join)
+> * The [`unique`](./surface_ops.gen.md#unique) operator for removing duplicates from a stream
+> * A first exposure to the concepts of _strata_ and _epochs_
 
 So far all the operators we've used have one input and one output and therefore
 create a linear flow of operators. Let's now take a look at a Hydroflow program containing
