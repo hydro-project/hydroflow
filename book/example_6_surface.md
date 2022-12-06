@@ -2,6 +2,7 @@
 > In this example we cover:
 > * Extending a program with additional downstream logic.
 > * Hydroflow's ([`difference`](./surface_ops.gen.md#merge)) operator
+> * Further examples of automatic stratification.
 
 Our next example builds on the previous by finding vertices that are _not_ reachable. To do this, we need to capture the set `all_vertices`, and use a [difference](./surface_ops.gen.md#difference) operator to form the difference between that set of vertices and `reachable_vertices`.
 
