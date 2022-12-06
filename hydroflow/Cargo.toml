@@ -15,6 +15,9 @@ name = "chat"
 name = "graph_reachability"
 
 [[example]]
+name = "graph_unreachability"
+
+[[example]]
 name = "three_clique"
 
 [[example]]

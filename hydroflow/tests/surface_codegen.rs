@@ -774,3 +774,46 @@ async fn async_test() {
         })
         .await;
 }
+
+use serde::{Deserialize, Serialize};
+#[derive(PartialEq, Eq, Clone, Debug, Deserialize, Serialize)]
+pub struct UsizeMessage {
+    payload: usize,
+}
+#[test]
+pub fn simple_test() {
+    // Create our channel input
+    let (input_example, example_recv) = hydroflow::util::unbounded_channel::<UsizeMessage>();
+
+    let mut flow = hydroflow_syntax! {
+        recv_stream(example_recv)
+        -> filter_map(|n: UsizeMessage| {
+            let n2 = n.payload * n.payload;
+            if n2 > 10 {
+                Some(n2)
+            }
+            else {
+                None
+            }
+        })
+        -> flat_map(|n| (n..=n+1))
+        -> for_each(|n| println!("Ahoj {}", n))
+    };
+
+    println!("A");
+    input_example.send(UsizeMessage { payload: 1 }).unwrap();
+    input_example.send(UsizeMessage { payload: 0 }).unwrap();
+    input_example.send(UsizeMessage { payload: 2 }).unwrap();
+    input_example.send(UsizeMessage { payload: 3 }).unwrap();
+    input_example.send(UsizeMessage { payload: 4 }).unwrap();
+    input_example.send(UsizeMessage { payload: 5 }).unwrap();
+
+    flow.run_available();
+
+    println!("B");
+    input_example.send(UsizeMessage { payload: 6 }).unwrap();
+    input_example.send(UsizeMessage { payload: 7 }).unwrap();
+    input_example.send(UsizeMessage { payload: 8 }).unwrap();
+    input_example.send(UsizeMessage { payload: 9 }).unwrap();
+    flow.run_available();
+}
