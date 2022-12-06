@@ -38,7 +38,8 @@ pub const MERGE: OperatorConstraints = OperatorConstraints {
                      outputs,
                      is_pull,
                      ..
-                 }| {
+                 },
+                 _| {
         let write_iterator = if is_pull {
             let chains = inputs
                 .iter()
@@ -55,9 +56,9 @@ pub const MERGE: OperatorConstraints = OperatorConstraints {
                 let #ident = #output;
             }
         };
-        OperatorWriteOutput {
+        Ok(OperatorWriteOutput {
             write_iterator,
             ..Default::default()
-        }
+        })
     }),
 };

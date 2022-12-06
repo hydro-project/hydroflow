@@ -38,7 +38,8 @@ pub const GROUPBY: OperatorConstraints = OperatorConstraints {
                      arguments,
                      is_pull,
                      ..
-                 }| {
+                 },
+                 _| {
         assert!(is_pull);
         let input = &inputs[0];
         let initfn = &arguments[0];
@@ -51,9 +52,9 @@ pub const GROUPBY: OperatorConstraints = OperatorConstraints {
                 ht
             }).into_iter();
         };
-        OperatorWriteOutput {
+        Ok(OperatorWriteOutput {
             write_iterator,
             ..Default::default()
-        }
+        })
     }),
 };

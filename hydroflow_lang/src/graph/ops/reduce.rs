@@ -40,15 +40,16 @@ pub const REDUCE: OperatorConstraints = OperatorConstraints {
                      arguments,
                      is_pull,
                      ..
-                 }| {
+                 },
+                 _| {
         assert!(is_pull);
         let input = &inputs[0];
         let write_iterator = quote_spanned! {op_span=>
             let #ident = #input.reduce(#arguments).into_iter();
         };
-        OperatorWriteOutput {
+        Ok(OperatorWriteOutput {
             write_iterator,
             ..Default::default()
-        }
+        })
     }),
 };

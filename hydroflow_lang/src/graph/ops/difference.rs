@@ -38,7 +38,8 @@ pub const DIFFERENCE: OperatorConstraints = OperatorConstraints {
         _else => None,
     },
     write_fn: &(|wc @ &WriteContextArgs { root, op_span, .. },
-                 &WriteIteratorArgs { ident, inputs, .. }| {
+                 &WriteIteratorArgs { ident, inputs, .. },
+                 _| {
         let handle_ident = wc.make_ident("diffdata_handle");
         let write_prologue = quote_spanned! {op_span=>
             let #handle_ident = df.add_state(std::cell::RefCell::new(
@@ -60,10 +61,10 @@ pub const DIFFERENCE: OperatorConstraints = OperatorConstraints {
                 let #ident = #input_pos.filter(move |x| !#negset_ident.contains(x));
             }
         };
-        OperatorWriteOutput {
+        Ok(OperatorWriteOutput {
             write_prologue,
             write_iterator,
             ..Default::default()
-        }
+        })
     }),
 };

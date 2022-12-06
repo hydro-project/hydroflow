@@ -29,13 +29,14 @@ pub const FOR_EACH: OperatorConstraints = OperatorConstraints {
     write_fn: &(|&WriteContextArgs { root, op_span, .. },
                  &WriteIteratorArgs {
                      ident, arguments, ..
-                 }| {
+                 },
+                 _| {
         let write_iterator = quote_spanned! {op_span=>
             let #ident = #root::pusherator::for_each::ForEach::new(#arguments);
         };
-        OperatorWriteOutput {
+        Ok(OperatorWriteOutput {
             write_iterator,
             ..Default::default()
-        }
+        })
     }),
 };

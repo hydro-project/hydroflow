@@ -32,7 +32,8 @@ pub const FILTER: OperatorConstraints = OperatorConstraints {
                      arguments,
                      is_pull,
                      ..
-                 }| {
+                 },
+                 _| {
         let write_iterator = if is_pull {
             let input = &inputs[0];
             quote_spanned! {op_span=>
@@ -44,9 +45,9 @@ pub const FILTER: OperatorConstraints = OperatorConstraints {
                 let #ident = #root::pusherator::filter::Filter::new(#arguments, #output);
             }
         };
-        OperatorWriteOutput {
+        Ok(OperatorWriteOutput {
             write_iterator,
             ..Default::default()
-        }
+        })
     }),
 };

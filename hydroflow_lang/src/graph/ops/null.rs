@@ -34,7 +34,8 @@ pub const NULL: OperatorConstraints = OperatorConstraints {
                      outputs,
                      is_pull,
                      ..
-                 }| {
+                 },
+                 _| {
         let write_iterator = if is_pull {
             quote_spanned! {op_span=>
                 (#(#inputs.for_each(std::mem::drop)),*);
@@ -47,9 +48,9 @@ pub const NULL: OperatorConstraints = OperatorConstraints {
                 let #ident = #root::pusherator::for_each::ForEach::new(std::mem::drop);
             }
         };
-        OperatorWriteOutput {
+        Ok(OperatorWriteOutput {
             write_iterator,
             ..Default::default()
-        }
+        })
     }),
 };

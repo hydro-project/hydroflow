@@ -30,7 +30,8 @@ pub const RECV_ITER: OperatorConstraints = OperatorConstraints {
     write_fn: &(|wc @ &WriteContextArgs { op_span, .. },
                  &WriteIteratorArgs {
                      ident, arguments, ..
-                 }| {
+                 },
+                 _| {
         let iter_ident = wc.make_ident("iter");
         let write_prologue = quote_spanned! {op_span=>
             let mut #iter_ident = std::iter::IntoIterator::into_iter(#arguments);
@@ -38,10 +39,10 @@ pub const RECV_ITER: OperatorConstraints = OperatorConstraints {
         let write_iterator = quote_spanned! {op_span=>
             let #ident = #iter_ident.by_ref();
         };
-        OperatorWriteOutput {
+        Ok(OperatorWriteOutput {
             write_prologue,
             write_iterator,
             ..Default::default()
-        }
+        })
     }),
 };

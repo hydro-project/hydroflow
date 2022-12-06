@@ -28,7 +28,8 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
     num_args: 0,
     input_delaytype_fn: &|_| None,
     write_fn: &(|wc @ &WriteContextArgs { root, op_span, .. },
-                 &WriteIteratorArgs { ident, inputs, .. }| {
+                 &WriteIteratorArgs { ident, inputs, .. },
+                 _| {
         let joindata_ident = wc.make_ident("joindata");
         let write_prologue = quote_spanned! {op_span=>
             let mut #joindata_ident = Default::default();
@@ -40,10 +41,10 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
             let #ident = #root::compiled::pull::SymmetricHashJoin::new(#lhs, #rhs, &mut #joindata_ident);
         };
 
-        OperatorWriteOutput {
+        Ok(OperatorWriteOutput {
             write_prologue,
             write_iterator,
             ..Default::default()
-        }
+        })
     }),
 };

@@ -31,16 +31,17 @@ pub const SORT: OperatorConstraints = OperatorConstraints {
                      arguments,
                      is_pull,
                      ..
-                 }| {
+                 },
+                 _| {
         assert!(is_pull);
         let input = &inputs[0];
         let write_iterator = quote_spanned! {op_span=>
             // TODO(mingwei): unneccesary extra into_iter() then collect()
             let #ident = #input.collect::<std::collections::BinaryHeap<_>>(#arguments).into_sorted_vec().into_iter();
         };
-        OperatorWriteOutput {
+        Ok(OperatorWriteOutput {
             write_iterator,
             ..Default::default()
-        }
+        })
     }),
 };

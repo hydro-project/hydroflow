@@ -1,0 +1,25 @@
+error: Output port from `demux(..)` must be specified and must be a valid identifier.
+  --> tests/compile-fail/surface_demux_port_elided.rs:15:18
+   |
+15 |         my_demux -> for_each(std::mem::drop);
+   |                  ^^
+
+error: `demux(..)` closure argument `odds` missing corresponding output port.
+ --> tests/compile-fail/surface_demux_port_elided.rs:6:64
+  |
+6 |         my_demux = recv_iter(0..10) -> demux(|item, tl!(evens, odds)| {
+  |                                                                ^^^^
+
+warning: unused import: `hydroflow::pusherator::Pusherator`
+ --> tests/compile-fail/surface_demux_port_elided.rs:1:5
+  |
+1 | use hydroflow::pusherator::Pusherator;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `tl`
+ --> tests/compile-fail/surface_demux_port_elided.rs:2:35
+  |
+2 | use hydroflow::{hydroflow_syntax, tl};
+  |                                   ^^
