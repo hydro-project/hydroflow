@@ -87,11 +87,12 @@ impl FlatGraph {
                             new: &PortIndexValue,
                             diagnostics: &mut Vec<Diagnostic>,
                         ) {
+                            // TODO(mingwei): Use `MultiSpan` once `proc_macro2` supports it.
                             diagnostics.push(Diagnostic::spanned(
                                 old.span(),
                                 Level::Error,
                                 format!(
-                                    "{} connection conflicts with below ({})",
+                                    "{} connection conflicts with below ({}) (1/2)",
                                     inout,
                                     PrettySpan(new.span()),
                                 ),
@@ -100,7 +101,7 @@ impl FlatGraph {
                                 new.span(),
                                 Level::Error,
                                 format!(
-                                    "{} connection conflicts with above ({})",
+                                    "{} connection conflicts with above ({}) (2/2)",
                                     inout,
                                     PrettySpan(old.span()),
                                 ),

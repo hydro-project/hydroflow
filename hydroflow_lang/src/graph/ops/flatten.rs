@@ -32,7 +32,8 @@ pub const FLATTEN: OperatorConstraints = OperatorConstraints {
                      outputs,
                      is_pull,
                      ..
-                 }| {
+                 },
+                 _| {
         let write_iterator = if is_pull {
             let input = &inputs[0];
             quote_spanned! {op_span=>
@@ -44,9 +45,9 @@ pub const FLATTEN: OperatorConstraints = OperatorConstraints {
                 let #ident = #root::pusherator::flatten::Flatten::new(#output);
             }
         };
-        OperatorWriteOutput {
+        Ok(OperatorWriteOutput {
             write_iterator,
             ..Default::default()
-        }
+        })
     }),
 };

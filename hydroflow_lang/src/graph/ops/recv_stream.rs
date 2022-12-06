@@ -37,7 +37,8 @@ pub const RECV_STREAM: OperatorConstraints = OperatorConstraints {
     write_fn: &(|wc @ &WriteContextArgs { root, op_span, .. },
                  &WriteIteratorArgs {
                      ident, arguments, ..
-                 }| {
+                 },
+                 _| {
         let receiver = &arguments[0];
         let stream_ident = wc.make_ident("stream");
         let write_prologue = quote_spanned! {op_span=>
@@ -51,10 +52,10 @@ pub const RECV_STREAM: OperatorConstraints = OperatorConstraints {
                 }
             });
         };
-        OperatorWriteOutput {
+        Ok(OperatorWriteOutput {
             write_prologue,
             write_iterator,
             ..Default::default()
-        }
+        })
     }),
 };

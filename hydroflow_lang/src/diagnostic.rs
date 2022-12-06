@@ -42,3 +42,8 @@ impl Diagnostic {
         pm_diag.emit();
     }
 }
+impl From<syn::Error> for Diagnostic {
+    fn from(value: syn::Error) -> Self {
+        Self::spanned(value.span(), Level::Error, value.to_string())
+    }
+}

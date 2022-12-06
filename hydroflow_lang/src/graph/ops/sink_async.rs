@@ -23,7 +23,8 @@ pub const SINK_ASYNC: OperatorConstraints = OperatorConstraints {
     write_fn: &(|wc @ &WriteContextArgs { root, op_span, .. },
                  &WriteIteratorArgs {
                      ident, arguments, ..
-                 }| {
+                 },
+                 _| {
         let sink_arg = &arguments[0];
 
         let send_ident = wc.make_ident("item_send");
@@ -55,10 +56,10 @@ pub const SINK_ASYNC: OperatorConstraints = OperatorConstraints {
             });
         };
 
-        OperatorWriteOutput {
+        Ok(OperatorWriteOutput {
             write_prologue,
             write_iterator,
             ..Default::default()
-        }
+        })
     }),
 };
