@@ -38,11 +38,16 @@ pub(crate) async fn run_client(opts: Opts) {
 
         // take stdin and send to server as an Echo::Message
         lines = recv_stream(stdin_lines)
-          -> map(|l|    (EchoMsg{
+          -> map(|l|
+                    (
+                        EchoMsg{
                             nonce: TextNonce::new().to_string(),
                             payload: l.unwrap(),
-                            addr: client_addr},
-                        server_addr))
+                            addr: client_addr
+                        },
+                        server_addr,
+                    )
+                )
           -> outbound_chan;
 
         // receive and print messages

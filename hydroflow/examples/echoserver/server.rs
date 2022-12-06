@@ -25,7 +25,7 @@ pub(crate) async fn run_server(opts: Opts) {
 
         // Logic
         inbound_chan[0] -> for_each(|m| println!("Got {:?}", m));
-        inbound_chan[1] -> map(|EchoMsg{nonce, payload, addr}| (EchoResponse{nonce, payload, ts: Utc::now()}, addr))
+        inbound_chan[1] -> map(|EchoMsg { nonce, payload, addr }| (EchoResponse { nonce, payload, ts: Utc::now() }, addr))
             -> [0]outbound_chan;
     };
 
