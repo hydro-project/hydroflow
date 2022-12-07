@@ -1,5 +1,6 @@
 use super::{
-    OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, RANGE_1,
+    parse_single_lifetime, OperatorConstraints, OperatorWriteOutput, Persistence, WriteContextArgs,
+    WriteIteratorArgs, RANGE_1,
 };
 
 use quote::quote_spanned;
@@ -16,6 +17,46 @@ use syn::parse_quote;
 /// source_iter(vec![("hello", "cleveland")]) -> [1]my_join;
 /// my_join -> for_each(|(k, (v1, v2))| println!("({}, ({}, {}))", k, v1, v2));
 /// ```
+///
+/// `join` can also be provided with a single generic lifetime argument, either `'epoch` or
+/// `'static` to specify how join data persists. With `'epoch`, pairs will only be joined with
+/// corresponding pairs within the same epoch. With `'static`, pairs will be remembered across
+/// epochs and will be joined with pairs arriving in later epochs. When not explicitly specified
+/// persistence defaults to `static.
+///
+/// ```rustbook
+/// let (input_send, input_recv) = hydroflow::util::unbounded_channel::<(&str, &str)>();
+/// let mut flow = hydroflow::hydroflow_syntax! {
+///     my_join = join::<'epoch>();
+///     source_iter([("hello", "world")]) -> [0]my_join;
+///     source_stream(input_recv) -> [1]my_join;
+///     my_join -> for_each(|(k, (v1, v2))| println!("({}, ({}, {}))", k, v1, v2));
+/// };
+/// input_send.send(("hello", "oakland")).unwrap();
+/// flow.run_epoch();
+/// input_send.send(("hello", "san francisco")).unwrap();
+/// flow.run_epoch();
+/// ```
+/// Prints out "(hello, (world, oakland))" since `source_iter([("hello", "world")])` is only included
+/// in the first epoch, then forgotten.
+///
+/// ---
+///
+/// ```rustbook
+/// let (input_send, input_recv) = hydroflow::util::unbounded_channel::<(&str, &str)>();
+/// let mut flow = hydroflow::hydroflow_syntax! {
+///     my_join = join::<'static>();
+///     source_iter([("hello", "world")]) -> [0]my_join;
+///     source_stream(input_recv) -> [1]my_join;
+///     my_join -> for_each(|(k, (v1, v2))| println!("({}, ({}, {}))", k, v1, v2));
+/// };
+/// input_send.send(("hello", "oakland")).unwrap();
+/// flow.run_epoch();
+/// input_send.send(("hello", "san francisco")).unwrap();
+/// flow.run_epoch();
+/// ```
+/// Prints out "(hello, (world, oakland))" and "(hello, (world, san francisco))" since the inputs
+/// are peristed across epochs.
 #[hydroflow_internalmacro::operator_docgen]
 pub const JOIN: OperatorConstraints = OperatorConstraints {
     name: "join",
@@ -28,16 +69,45 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
     num_args: 0,
     input_delaytype_fn: &|_| None,
     write_fn: &(|wc @ &WriteContextArgs { root, op_span, .. },
-                 &WriteIteratorArgs { ident, inputs, .. },
-                 _| {
+                 wi @ &WriteIteratorArgs { ident, inputs, .. },
+                 diagnostics| {
+        let persistence = parse_single_lifetime(wi, diagnostics).unwrap_or(Persistence::Static);
+
         let joindata_ident = wc.make_ident("joindata");
+        let borrow_ident = wc.make_ident("joindata_borrow");
+        let (init, borrow) = match persistence {
+            Persistence::Epoch => (
+                quote_spanned! {op_span=>
+                    #root::lang::monotonic_map::MonotonicMap::new_init(
+                        #root::lang::clear::ClearDefault(
+                            #root::compiled::pull::JoinState::default()
+                        )
+                    )
+                },
+                quote_spanned! {op_span=>
+                    &mut #borrow_ident.try_insert_with(context.current_epoch(), Default::default).0
+                },
+            ),
+            Persistence::Static => (
+                quote_spanned! {op_span=>
+                    #root::compiled::pull::JoinState::default()
+                },
+                quote_spanned! {op_span=>
+                    &mut *#borrow_ident
+                },
+            ),
+        };
+
         let write_prologue = quote_spanned! {op_span=>
-            let mut #joindata_ident = Default::default();
+            let #joindata_ident = df.add_state(std::cell::RefCell::new(
+                #init
+            ));
         };
 
         let lhs = &inputs[0];
         let rhs = &inputs[1];
         let write_iterator = quote_spanned! {op_span=>
+            let mut #borrow_ident = context.state_ref(#joindata_ident).borrow_mut();
             let #ident = {
                 /// Limit error propagation by bounding locally, erasing output iterator type.
                 #[inline(always)]
@@ -55,7 +125,7 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
                 {
                     #root::compiled::pull::SymmetricHashJoin::new(lhs, rhs, state)
                 }
-                check_inputs(#lhs, #rhs, &mut #joindata_ident)
+                check_inputs(#lhs, #rhs, #borrow)
             };
         };
 

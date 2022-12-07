@@ -104,7 +104,12 @@ fn main() {
                     check_pivot_run(op_1v1, op_2v1);
                 },
             );
-            let mut sg_2v1_node_7v1_joindata = Default::default();
+            let sg_2v1_node_7v1_joindata = df
+                .add_state(
+                    std::cell::RefCell::new(
+                        hydroflow::compiled::pull::JoinState::default(),
+                    ),
+                );
             df.add_subgraph_stratified(
                 "Subgraph GraphSubgraphId(2v1)",
                 0,
@@ -135,6 +140,9 @@ fn main() {
                         }
                         check_op_10v1(op_10v1)
                     };
+                    let mut sg_2v1_node_7v1_joindata_borrow = context
+                        .state_ref(sg_2v1_node_7v1_joindata)
+                        .borrow_mut();
                     let op_7v1 = {
                         /// Limit error propagation by bounding locally, erasing output iterator type.
                         #[inline(always)]
@@ -160,7 +168,11 @@ fn main() {
                                 state,
                             )
                         }
-                        check_inputs(op_9v1, op_10v1, &mut sg_2v1_node_7v1_joindata)
+                        check_inputs(
+                            op_9v1,
+                            op_10v1,
+                            &mut *sg_2v1_node_7v1_joindata_borrow,
+                        )
                     };
                     let op_7v1 = {
                         #[inline(always)]
