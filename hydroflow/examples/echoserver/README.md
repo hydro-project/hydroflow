@@ -4,12 +4,12 @@ To run the example, open 2 terminals.
 
 In one terminal run the server like so:
 ```
-cargo run -p hydroflow --example echoserver -- --role "server" --server-addr localhost:12347
+cargo run -p hydroflow --example echoserver -- --role "server" --port 12347 --addr 127.0.0.1
 ```
 
 In another terminal run a client:
 ```
-cargo run -p hydroflow --example echoserver -- --role client --addr localhost:9090 --server-addr localhost:12347
+cargo run -p hydroflow --example echoserver -- --role client --port 9090 --addr 127.0.0.1 --server-port 12347 --server-addr 127.0.0.1
 
 If you type in the client terminal the message will be sent to the server, echo'd back to the client and printed with a checksum and server timestamp.
 
