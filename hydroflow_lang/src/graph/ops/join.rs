@@ -1,5 +1,8 @@
+use crate::diagnostic::{Diagnostic, Level};
+
 use super::{
-    OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, RANGE_1,
+    parse_persistence_lifetimes, OperatorConstraints, OperatorWriteOutput, Persistence,
+    WriteContextArgs, WriteIteratorArgs, RANGE_1,
 };
 
 use quote::quote_spanned;
@@ -16,6 +19,66 @@ use syn::parse_quote;
 /// source_iter(vec![("hello", "cleveland")]) -> [1]my_join;
 /// my_join -> for_each(|(k, (v1, v2))| println!("({}, ({}, {}))", k, v1, v2));
 /// ```
+///
+/// `join` can also be provided with one or two generic lifetime persistence arguments, either
+/// `'tick` or `'static`, to specify how join data persists. With `'tick`, pairs will only be
+/// joined with corresponding pairs within the same tick. With `'static`, pairs will be remembered
+/// across ticks and will be joined with pairs arriving in later ticks. When not explicitly
+/// specified persistence defaults to `static.
+///
+/// When two persistence arguments are supplied the first maps to port `0` and the second maps to
+/// port `1`.
+/// When a single persistence argument is supplied, it is applied to both input ports.
+/// When no persistence arguments are applied it defaults to `'static` for both.
+///
+/// The syntax is as follows:
+/// ```hydroflow,ignore
+/// join(); // Or
+/// join::<'static>();
+///
+/// join::<'epoch>();
+///
+/// join::<'static, 'epoch>();
+///
+/// join::<'epoch, 'static>();
+/// // etc.
+/// ```
+///
+/// ### Examples
+///
+/// ```rustbook
+/// let (input_send, input_recv) = hydroflow::util::unbounded_channel::<(&str, &str)>();
+/// let mut flow = hydroflow::hydroflow_syntax! {
+///     my_join = join::<'tick>();
+///     source_iter([("hello", "world")]) -> [0]my_join;
+///     source_stream(input_recv) -> [1]my_join;
+///     my_join -> for_each(|(k, (v1, v2))| println!("({}, ({}, {}))", k, v1, v2));
+/// };
+/// input_send.send(("hello", "oakland")).unwrap();
+/// flow.run_tick();
+/// input_send.send(("hello", "san francisco")).unwrap();
+/// flow.run_tick();
+/// ```
+/// Prints out `"(hello, (world, oakland))"` since `source_iter([("hello", "world")])` is only
+/// included in the first tick, then forgotten.
+///
+/// ---
+///
+/// ```rustbook
+/// let (input_send, input_recv) = hydroflow::util::unbounded_channel::<(&str, &str)>();
+/// let mut flow = hydroflow::hydroflow_syntax! {
+///     my_join = join::<'static>();
+///     source_iter([("hello", "world")]) -> [0]my_join;
+///     source_stream(input_recv) -> [1]my_join;
+///     my_join -> for_each(|(k, (v1, v2))| println!("({}, ({}, {}))", k, v1, v2));
+/// };
+/// input_send.send(("hello", "oakland")).unwrap();
+/// flow.run_tick();
+/// input_send.send(("hello", "san francisco")).unwrap();
+/// flow.run_tick();
+/// ```
+/// Prints out `"(hello, (world, oakland))"` and `"(hello, (world, san francisco))"` since the
+/// inputs are peristed across ticks.
 #[hydroflow_internalmacro::operator_docgen]
 pub const JOIN: OperatorConstraints = OperatorConstraints {
     name: "join",
@@ -28,23 +91,85 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
     num_args: 0,
     input_delaytype_fn: &|_| None,
     write_fn: &(|wc @ &WriteContextArgs { root, op_span, .. },
-                 &WriteIteratorArgs { ident, inputs, .. },
-                 _| {
-        let joindata_ident = wc.make_ident("joindata");
+                 wi @ &WriteIteratorArgs {
+                     ident,
+                     inputs,
+                     op_name,
+                     ..
+                 },
+                 diagnostics| {
+        let persistence = parse_persistence_lifetimes(wi, diagnostics);
+        let persistences = match *persistence {
+            [] => [Persistence::Static, Persistence::Static],
+            [a] => [a, a],
+            [a, b] => [a, b],
+            _ => {
+                diagnostics.push(Diagnostic::spanned(
+                    op_span,
+                    Level::Error,
+                    format!(
+                        "Operator `{}` expects zero, one, or two persistence lifetime generic arguments",
+                        op_name
+                    ),
+                ));
+                [Persistence::Static, Persistence::Static]
+            }
+        };
+        // TODO(mingwei): This is messy
+        let items = persistences
+            .zip(["lhs", "rhs"])
+            .map(|(persistence, side)| {
+                let joindata_ident = wc.make_ident(format!("joindata_{}", side));
+                let borrow_ident = wc.make_ident(format!("joindata_{}_borrow", side));
+                let (init, borrow) = match persistence {
+                    Persistence::Tick => (
+                        quote_spanned! {op_span=>
+                            #root::lang::monotonic_map::MonotonicMap::new_init(
+                                #root::lang::clear::ClearDefault(
+                                    #root::compiled::pull::HalfJoinState::default()
+                                )
+                            )
+                        },
+                        quote_spanned! {op_span=>
+                            &mut #borrow_ident.try_insert_with(context.current_tick(), Default::default).0
+                        },
+                    ),
+                    Persistence::Static => (
+                        quote_spanned! {op_span=>
+                            #root::compiled::pull::HalfJoinState::default()
+                        },
+                        quote_spanned! {op_span=>
+                            &mut #borrow_ident
+                        },
+                    ),
+                };
+                (joindata_ident, borrow_ident, init, borrow)
+            });
+        let [(lhs_joindata_ident, lhs_borrow_ident, lhs_init, lhs_borrow), (rhs_joindata_ident, rhs_borrow_ident, rhs_init, rhs_borrow)] =
+            items;
+
         let write_prologue = quote_spanned! {op_span=>
-            let mut #joindata_ident = Default::default();
+            let #lhs_joindata_ident = df.add_state(std::cell::RefCell::new(
+                #lhs_init
+            ));
+            let #rhs_joindata_ident = df.add_state(std::cell::RefCell::new(
+                #rhs_init
+            ));
         };
 
         let lhs = &inputs[0];
         let rhs = &inputs[1];
         let write_iterator = quote_spanned! {op_span=>
+            let mut #lhs_borrow_ident = context.state_ref(#lhs_joindata_ident).borrow_mut();
+            let mut #rhs_borrow_ident = context.state_ref(#rhs_joindata_ident).borrow_mut();
             let #ident = {
                 /// Limit error propagation by bounding locally, erasing output iterator type.
                 #[inline(always)]
                 fn check_inputs<'a, K, I1, V1, I2, V2>(
                     lhs: I1,
                     rhs: I2,
-                    state: &'a mut #root::compiled::pull::JoinState<K, V1, V2>,
+                    lhs_state: &'a mut #root::compiled::pull::HalfJoinState<K, V1, V2>,
+                    rhs_state: &'a mut #root::compiled::pull::HalfJoinState<K, V2, V1>,
                 ) -> impl 'a + Iterator<Item = (K, (V1, V2))>
                 where
                     K: Eq + std::hash::Hash + Clone,
@@ -53,9 +178,9 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
                     I1: 'a + Iterator<Item = (K, V1)>,
                     I2: 'a + Iterator<Item = (K, V2)>,
                 {
-                    #root::compiled::pull::SymmetricHashJoin::new(lhs, rhs, state)
+                    #root::compiled::pull::SymmetricHashJoin::new_from_mut(lhs, rhs, lhs_state, rhs_state)
                 }
-                check_inputs(#lhs, #rhs, &mut #joindata_ident)
+                check_inputs(#lhs, #rhs, #lhs_borrow, #rhs_borrow)
             };
         };
 
