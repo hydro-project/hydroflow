@@ -13,6 +13,14 @@ pub trait Clear {
 pub struct ClearDefault<T>(pub T)
 where
     T: Default;
+impl<T> Default for ClearDefault<T>
+where
+    T: Default,
+{
+    fn default() -> Self {
+        Self(Default::default())
+    }
+}
 impl<T> Clear for ClearDefault<T>
 where
     T: Default,
