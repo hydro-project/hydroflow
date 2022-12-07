@@ -10,10 +10,12 @@ use bytes::Bytes;
 use futures::stream::{SplitSink, SplitStream};
 use futures::Stream;
 use pin_project_lite::pin_project;
+use serde::{Deserialize, Serialize};
+use serde_json::json;
 use tokio::net::UdpSocket;
 use tokio_stream::wrappers::UnboundedReceiverStream;
 use tokio_util::codec::length_delimited::LengthDelimitedCodec;
-use tokio_util::codec::{Decoder, Encoder, LinesCodec};
+use tokio_util::codec::{Decoder, Encoder, LinesCodec, LinesCodecError};
 use tokio_util::udp::UdpFramed;
 
 pub fn unbounded_channel<T>() -> (
@@ -104,4 +106,18 @@ where
     C: FromIterator<T>,
 {
     std::iter::from_fn(|| recv.as_mut().try_recv().ok()).collect()
+}
+
+pub fn serialize_msg<T>(msg: T) -> String
+where
+    T: Serialize + for<'a> Deserialize<'a> + Clone,
+{
+    json!(msg).to_string()
+}
+
+pub fn deserialize_msg<T>(msg: Result<(String, SocketAddr), LinesCodecError>) -> T
+where
+    T: Serialize + for<'a> Deserialize<'a> + Clone,
+{
+    serde_json::from_str(&(msg.unwrap().0)).unwrap()
 }
