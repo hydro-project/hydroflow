@@ -63,7 +63,6 @@ criterion = { version = "0.3", features = [ "async_tokio" ] }
 futures = { version = "0.3" }
 itertools = "0.10.3"
 rand = "0.8.4"
-textnonce = "1.0.0"
 time = "0.3"
 tokio-stream = { version = "0.1.8", features = [ "io-util" ] }
 trybuild = "1.0.71"
