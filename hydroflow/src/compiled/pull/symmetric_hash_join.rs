@@ -1,100 +1,136 @@
 use std::collections::HashMap;
 
 #[derive(Debug)]
-pub struct JoinState<K, V1, V2> {
-    ltab: HashMap<K, Vec<V1>>,
-    rtab: HashMap<K, Vec<V2>>,
-    lbuffer: Option<(K, V1, Vec<V2>)>,
-    rbuffer: Option<(K, V2, Vec<V1>)>,
+pub struct HalfJoinState<Key, ValBuild, ValProbe> {
+    /// Table to probe, vec val contains all matches.
+    table: HashMap<Key, Vec<ValBuild>>,
+    /// Not-yet emitted matches. [`Option`] of the `Key`, other-side probe value, and index within
+    /// the corresponding `table[key]` vec.
+    current_matches: Option<(Key, ValProbe, usize)>,
 }
-
-impl<K, V1, V2> Default for JoinState<K, V1, V2> {
+impl<Key, ValBuild, ValProbe> Default for HalfJoinState<Key, ValBuild, ValProbe> {
     fn default() -> Self {
         Self {
-            ltab: HashMap::new(),
-            rtab: HashMap::new(),
-            lbuffer: None,
-            rbuffer: None,
+            table: HashMap::new(),
+            current_matches: None,
+        }
+    }
+}
+impl<Key, ValBuild, ValProbe> HalfJoinState<Key, ValBuild, ValProbe>
+where
+    Key: Clone + Eq + std::hash::Hash,
+    ValBuild: Clone + Eq,
+    ValProbe: Clone,
+{
+    fn pop_buffer(&mut self) -> Option<(Key, ValProbe, ValBuild)> {
+        let (k, v, idx) = self.current_matches.as_mut()?;
+        let vec = &self.table[k];
+        let result = (k.clone(), v.clone(), vec[*idx].clone());
+        *idx += 1;
+        if vec.len() <= *idx {
+            self.current_matches = None;
+        }
+        Some(result)
+    }
+
+    fn build(&mut self, k: Key, v: &ValBuild) -> bool {
+        let vec = self.table.entry(k).or_insert_with(Vec::new);
+        if !vec.contains(v) {
+            vec.push(v.clone());
+            return true;
+        }
+        false
+    }
+
+    fn probe(&mut self, k: Key, v: ValProbe) {
+        if self.table.contains_key(&k) {
+            self.current_matches = Some((k, v, 0));
         }
     }
 }
 
-pub struct SymmetricHashJoin<'a, K, I1, V1, I2, V2>
+pub type JoinState<Key, V1, V2> = (HalfJoinState<Key, V1, V2>, HalfJoinState<Key, V2, V1>);
+pub type JoinStateMut<'a, Key, V1, V2> = (
+    &'a mut HalfJoinState<Key, V1, V2>,
+    &'a mut HalfJoinState<Key, V2, V1>,
+);
+
+pub struct SymmetricHashJoin<'a, Key, I1, V1, I2, V2>
 where
-    K: Eq + std::hash::Hash + Clone,
+    Key: Eq + std::hash::Hash + Clone,
     V1: Eq + Clone,
     V2: Eq + Clone,
-    I1: Iterator<Item = (K, V1)>,
-    I2: Iterator<Item = (K, V2)>,
+    I1: Iterator<Item = (Key, V1)>,
+    I2: Iterator<Item = (Key, V2)>,
 {
     lhs: I1,
     rhs: I2,
-    state: &'a mut JoinState<K, V1, V2>,
+    state: JoinStateMut<'a, Key, V1, V2>,
 }
 
-impl<'a, K, I1, V1, I2, V2> Iterator for SymmetricHashJoin<'a, K, I1, V1, I2, V2>
+impl<'a, Key, I1, V1, I2, V2> Iterator for SymmetricHashJoin<'a, Key, I1, V1, I2, V2>
 where
-    K: Eq + std::hash::Hash + Clone,
+    Key: Eq + std::hash::Hash + Clone,
     V1: Eq + Clone,
     V2: Eq + Clone,
-    I1: Iterator<Item = (K, V1)>,
-    I2: Iterator<Item = (K, V2)>,
+    I1: Iterator<Item = (Key, V1)>,
+    I2: Iterator<Item = (Key, V2)>,
 {
-    type Item = (K, (V1, V2));
+    type Item = (Key, (V1, V2));
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
-            if let Some((k, v, vs)) = &mut self.state.lbuffer {
-                // TODO(justin): unnecessary clone (sometimes).
-                let result = (k.clone(), (v.clone(), vs.pop().unwrap()));
-                if vs.is_empty() {
-                    self.state.lbuffer = None;
-                }
-                return Some(result);
-            } else if let Some((k, v, vs)) = &mut self.state.rbuffer {
-                // TODO(justin): unnecessary clone (sometimes).
-                let result = (k.clone(), (vs.pop().unwrap(), v.clone()));
-                if vs.is_empty() {
-                    self.state.rbuffer = None;
-                }
-                return Some(result);
+            if let Some((k, v2, v1)) = self.state.0.pop_buffer() {
+                return Some((k, (v1, v2)));
+            }
+            if let Some((k, v1, v2)) = self.state.1.pop_buffer() {
+                return Some((k, (v1, v2)));
             }
 
             if let Some((k, v1)) = self.lhs.next() {
-                let vec = self.state.ltab.entry(k.clone()).or_insert_with(Vec::new);
-                if !vec.contains(&v1) {
-                    vec.push(v1.clone());
-                    if let Some(vs) = self.state.rtab.get(&k) {
-                        self.state.lbuffer = Some((k, v1, vs.clone()));
-                    }
+                if self.state.0.build(k.clone(), &v1) {
+                    self.state.1.probe(k, v1);
+                }
+                continue;
+            }
+            if let Some((k, v2)) = self.rhs.next() {
+                if self.state.1.build(k.clone(), &v2) {
+                    self.state.0.probe(k, v2);
                 }
                 continue;
             }
 
-            if let Some((k, v2)) = self.rhs.next() {
-                let vec = self.state.rtab.entry(k.clone()).or_insert_with(Vec::new);
-                if !vec.contains(&v2) {
-                    vec.push(v2.clone());
-                    if let Some(vs) = self.state.ltab.get(&k) {
-                        self.state.rbuffer = Some((k, v2, vs.clone()));
-                    }
-                }
-                continue;
-            }
             return None;
         }
     }
 }
-impl<'a, K, I1, V1, I2, V2> SymmetricHashJoin<'a, K, I1, V1, I2, V2>
+impl<'a, Key, I1, V1, I2, V2> SymmetricHashJoin<'a, Key, I1, V1, I2, V2>
 where
-    K: Eq + std::hash::Hash + Clone,
+    Key: Eq + std::hash::Hash + Clone,
     V1: Eq + Clone,
     V2: Eq + Clone,
-    I1: Iterator<Item = (K, V1)>,
-    I2: Iterator<Item = (K, V2)>,
+    I1: Iterator<Item = (Key, V1)>,
+    I2: Iterator<Item = (Key, V2)>,
 {
-    pub fn new(lhs: I1, rhs: I2, state: &'a mut JoinState<K, V1, V2>) -> Self {
-        Self { lhs, rhs, state }
+    pub fn new(lhs: I1, rhs: I2, state: &'a mut JoinState<Key, V1, V2>) -> Self {
+        Self {
+            lhs,
+            rhs,
+            state: (&mut state.0, &mut state.1),
+        }
+    }
+
+    pub fn new_from_mut(
+        lhs: I1,
+        rhs: I2,
+        state_lhs: &'a mut HalfJoinState<Key, V1, V2>,
+        state_rhs: &'a mut HalfJoinState<Key, V2, V1>,
+    ) -> Self {
+        Self {
+            lhs,
+            rhs,
+            state: (state_lhs, state_rhs),
+        }
     }
 }
 

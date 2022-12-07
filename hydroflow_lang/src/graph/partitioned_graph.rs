@@ -199,7 +199,7 @@ impl PartitionedGraph {
                                 outputs: &*outputs,
                                 input_ports: &*input_ports,
                                 output_ports: &*output_ports,
-                                type_arguments: op.type_arguments(),
+                                generic_args: op.type_arguments(),
                                 arguments: &op.args,
                                 op_name: op_constraints.name,
                             };
