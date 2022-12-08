@@ -47,8 +47,8 @@ pub const RECV_UDP: OperatorConstraints = OperatorConstraints {
                     .to_socket_addrs()
                     .unwrap();
                 let addr = addrs.find(|addr| addr.is_ipv4()).expect("Unable to resolve connection address");
-                let socket = tokio::net::UdpSocket::bind(addr).await.unwrap();
-                let (_outbound, inbound) = hydroflow::util::udp_lines(socket);
+                let socket = #root::tokio::net::UdpSocket::bind(addr).await.unwrap();
+                let (_outbound, inbound) = #root::util::udp_lines(socket);
                 Box::pin(inbound)
             };
         };

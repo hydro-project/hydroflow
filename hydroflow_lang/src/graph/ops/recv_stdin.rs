@@ -36,8 +36,8 @@ pub const RECV_STDIN: OperatorConstraints = OperatorConstraints {
         let write_prologue = quote_spanned! {op_span=>
             let mut #stream_ident = {
                 use tokio::io::AsyncBufReadExt;
-                let reader = tokio::io::BufReader::new(tokio::io::stdin());
-                let stdin_lines = tokio_stream::wrappers::LinesStream::new(reader.lines());
+                let reader = #root::tokio::io::BufReader::new(tokio::io::stdin());
+                let stdin_lines = #root::tokio_stream::wrappers::LinesStream::new(reader.lines());
                 Box::pin(stdin_lines)
             };
         };
