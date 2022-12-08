@@ -13,7 +13,7 @@ use quote::quote_spanned;
 ///
 /// ```rustbook
 /// let mut flow = hydroflow::hydroflow_syntax! {
-///     recv_stdin -> map(|x| x.to_uppercase())
+///     recv_stdin() -> map(|x| x.unwrap().to_uppercase())
 ///         -> for_each(|x| println!("{}", x));
 /// };
 /// flow.run_async();
@@ -35,8 +35,9 @@ pub const RECV_STDIN: OperatorConstraints = OperatorConstraints {
         let stream_ident = wc.make_ident("stream");
         let write_prologue = quote_spanned! {op_span=>
             let mut #stream_ident = {
+                use tokio::io::AsyncBufReadExt;
                 let reader = tokio::io::BufReader::new(tokio::io::stdin());
-                let stdin_lines = LinesStream::new(reader.lines());
+                let stdin_lines = tokio_stream::wrappers::LinesStream::new(reader.lines());
                 Box::pin(stdin_lines)
             };
         };

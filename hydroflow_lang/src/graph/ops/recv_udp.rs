@@ -9,14 +9,17 @@ use quote::quote_spanned;
 /// > Arguments: port number
 ///
 /// `recv_net` binds to a local network port and receives a Stream of serialized data from a remote sender,
-/// deserializes each element and emits each of the elements it receives downstream.
+/// and emits each of the elements it receives downstream.
 ///
 /// ```rustbook
-/// let mut flow = hydroflow::hydroflow_syntax! {
-///     recv_net(9000) -> map(|x| x.to_uppercase())
-///         -> for_each(|x| println!("{}", x));
-/// };
-/// flow.run_async();
+/// #[tokio::main]
+/// async fn main() {
+///     let mut flow = hydroflow::hydroflow_syntax! {
+///         recv_udp(9000) -> map(hydroflow::util::deserialize_msg) -> map(|x: String| x.to_uppercase())
+///             -> for_each(|x| println!("{}", x));
+///     };
+///     flow.run_async();
+/// }
 /// ```
 #[hydroflow_internalmacro::operator_docgen]
 pub const RECV_UDP: OperatorConstraints = OperatorConstraints {
@@ -39,11 +42,12 @@ pub const RECV_UDP: OperatorConstraints = OperatorConstraints {
         let write_prologue = quote_spanned! {op_span=>
             let mut #stream_ident = {
                 use std::net::ToSocketAddrs;
+
                 let mut addrs = format!("127.0.0.1:{}", #port)
                     .to_socket_addrs()
                     .unwrap();
                 let addr = addrs.find(|addr| addr.is_ipv4()).expect("Unable to resolve connection address");
-                let socket = UdpSocket::bind(addr).await.unwrap();
+                let socket = tokio::net::UdpSocket::bind(addr).await.unwrap();
                 let (_outbound, inbound) = hydroflow::util::udp_lines(socket);
                 Box::pin(inbound)
             };

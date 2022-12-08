@@ -1,7 +1,5 @@
 use std::net::SocketAddr;
-use tokio::io::AsyncBufReadExt;
 use tokio::net::UdpSocket;
-use tokio_stream::wrappers::LinesStream;
 
 use crate::protocol::{EchoMsg, EchoResponse};
 use crate::{GraphType, Opts};
