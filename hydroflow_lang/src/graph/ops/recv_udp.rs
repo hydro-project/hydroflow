@@ -8,7 +8,7 @@ use quote::quote_spanned;
 ///
 /// > Arguments: port number
 ///
-/// `recv_net` binds to a local network port and receives a Stream of serialized data from a remote sender,
+/// `recv_net` binds to a local network port (on 127.0.0.1) and receives a Stream of serialized data from a remote sender,
 /// and emits each of the elements it receives downstream.
 ///
 /// ```rustbook
@@ -55,7 +55,9 @@ pub const RECV_UDP: OperatorConstraints = OperatorConstraints {
         let write_iterator = quote_spanned! {op_span=>
             let #ident = std::iter::from_fn(|| {
                 match #root::futures::stream::Stream::poll_next(#stream_ident.as_mut(), &mut std::task::Context::from_waker(&context.waker())) {
-                    std::task::Poll::Ready(maybe) => maybe,
+                    std::task::Poll::Ready(Some(std::result::Result::Ok((payload, addr)))) => Some((#root::util::deserialize_simple(payload), addr)),
+                    std::task::Poll::Ready(Some(Err(_))) => None,
+                    std::task::Poll::Ready(None) => None,
                     std::task::Poll::Pending => None,
                 }
             });

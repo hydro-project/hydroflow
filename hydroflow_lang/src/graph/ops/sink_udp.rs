@@ -39,11 +39,11 @@ pub const SINK_UDP: OperatorConstraints = OperatorConstraints {
                     .to_socket_addrs()
                     .unwrap();
                 let addr = addrs.find(|addr| addr.is_ipv4()).expect("Unable to resolve connection address");
-                let socket = UdpSocket::bind(addr).await.unwrap();
+                let socket = #root::tokio::net::UdpSocket::bind(addr).await.unwrap();
                 let (outbound, _inbound) = hydroflow::util::udp_lines(socket);
                 outbound
             };
-            // TODO: Replace the code below with an invocation of sink_async()
+            // TODO: Replace the code below with a nested invocation of sink_async()
             let (#send_ident, #recv_ident) = #root::tokio::sync::mpsc::unbounded_channel();
             df
                 .spawn_task(async move {
@@ -51,10 +51,12 @@ pub const SINK_UDP: OperatorConstraints = OperatorConstraints {
 
                     let mut recv = #recv_ident;
                     let mut sink = #sink_ident;
-                    while let Some(item) = recv.recv().await {
+                    while let Some((payload, addr)) = recv.recv().await {
+                        let item = (#root::util::serialize_msg(payload), addr);
                         sink.feed(item).await.expect("Error processing async sink item.");
                         // Receive as many items synchronously as possible before flushing.
-                        while let Ok(item) = recv.try_recv() {
+                        while let Ok((payload, addr)) = recv.try_recv() {
+                            let item = (#root::util::serialize_msg(payload), addr);
                             sink.feed(item).await.expect("Error processing async sink item.");
                         }
                         sink.flush().await.expect("Failed to flush async sink.");

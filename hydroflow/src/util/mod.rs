@@ -115,6 +115,13 @@ where
     json!(msg).to_string()
 }
 
+pub fn deserialize_simple<T>(msg: String) -> T
+where
+    T: Serialize + for<'a> Deserialize<'a> + Clone,
+{
+    serde_json::from_str(&msg).unwrap()
+}
+
 pub fn deserialize_msg<T>(msg: Result<(String, SocketAddr), LinesCodecError>) -> T
 where
     T: Serialize + for<'a> Deserialize<'a> + Clone,

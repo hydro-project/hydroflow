@@ -38,12 +38,12 @@ pub const RECV_STDIN: OperatorConstraints = OperatorConstraints {
                 use tokio::io::AsyncBufReadExt;
                 let reader = #root::tokio::io::BufReader::new(tokio::io::stdin());
                 let stdin_lines = #root::tokio_stream::wrappers::LinesStream::new(reader.lines());
-                Box::pin(stdin_lines)
+                stdin_lines
             };
         };
         let write_iterator = quote_spanned! {op_span=>
             let #ident = std::iter::from_fn(|| {
-                match #root::futures::stream::Stream::poll_next(#stream_ident.as_mut(), &mut std::task::Context::from_waker(&context.waker())) {
+                match #root::futures::stream::Stream::poll_next(std::pin::Pin::new(&mut #stream_ident), &mut std::task::Context::from_waker(&context.waker())) {
                     std::task::Poll::Ready(maybe) => maybe,
                     std::task::Poll::Pending => None,
                 }
