@@ -19,13 +19,13 @@ use super::{
 
 fn find_barrier_crossers(
     nodes: &SlotMap<GraphNodeId, Node>,
-    indices: &SecondaryMap<GraphEdgeId, (PortIndexValue, PortIndexValue)>,
+    ports: &SecondaryMap<GraphEdgeId, (PortIndexValue, PortIndexValue)>,
     graph: &DiMulGraph<GraphNodeId, GraphEdgeId>,
 ) -> SecondaryMap<GraphEdgeId, DelayType> {
     graph
         .edges()
         .filter_map(|(edge_id, (_src, dst))| {
-            let (_src_idx, dst_idx) = &indices[edge_id];
+            let (_src_idx, dst_idx) = &ports[edge_id];
             if let Node::Operator(dst_operator) = &nodes[dst] {
                 let dst_name = &*dst_operator.name_string();
                 OPERATORS
@@ -157,7 +157,7 @@ fn make_subgraph_collect(
 /// the DelayType data.
 fn make_subgraphs(
     nodes: &mut SlotMap<GraphNodeId, Node>,
-    indices: &mut SecondaryMap<GraphEdgeId, (PortIndexValue, PortIndexValue)>,
+    ports: &mut SecondaryMap<GraphEdgeId, (PortIndexValue, PortIndexValue)>,
     graph: &mut DiMulGraph<GraphNodeId, GraphEdgeId>,
     barrier_crossers: &mut SecondaryMap<GraphEdgeId, DelayType>,
 ) -> (
@@ -184,7 +184,7 @@ fn make_subgraphs(
         }
 
         let (_node_id, out_edge_id) =
-            insert_intermediate_node(nodes, indices, graph, Node::Handoff, edge_id);
+            insert_intermediate_node(nodes, ports, graph, Node::Handoff, edge_id);
 
         // Update barrier_crossers for inserted node.
         if let Some(delay_type) = barrier_crossers.remove(edge_id) {
@@ -260,7 +260,7 @@ fn can_connect_colorize(
 
 fn find_subgraph_strata(
     nodes: &mut SlotMap<GraphNodeId, Node>,
-    indices: &mut SecondaryMap<GraphEdgeId, (PortIndexValue, PortIndexValue)>,
+    ports: &mut SecondaryMap<GraphEdgeId, (PortIndexValue, PortIndexValue)>,
     graph: &mut DiMulGraph<GraphNodeId, GraphEdgeId>,
     node_subgraph: &mut SecondaryMap<GraphNodeId, GraphSubgraphId>,
     subgraph_nodes: &mut SlotMap<GraphSubgraphId, Vec<GraphNodeId>>,
@@ -371,14 +371,14 @@ fn find_subgraph_strata(
                     // Before: A (src) -> H -> B (dst)
                     let (new_node_id, new_edge_id) = insert_intermediate_node(
                         nodes,
-                        indices,
+                        ports,
                         graph,
                         Node::Operator(parse_quote! { identity() }),
                         edge_id,
                     );
                     // Intermediate: A (src) -> H -> X -> B (dst)
                     let (_hoff_node_id, _hoff_edge_id) =
-                        insert_intermediate_node(nodes, indices, graph, Node::Handoff, new_edge_id);
+                        insert_intermediate_node(nodes, ports, graph, Node::Handoff, new_edge_id);
 
                     // Set stratum numbers.
                     let new_subgraph_id = subgraph_nodes.insert(vec![new_node_id]);
@@ -390,7 +390,7 @@ fn find_subgraph_strata(
                 // Any negative edges which go onto the same or previous stratum are bad.
                 // Indicates an unbroken negative cycle.
                 if dst_stratum <= src_stratum {
-                    let (_src_idx, dst_idx) = &indices[edge_id];
+                    let (_src_idx, dst_idx) = &ports[edge_id];
                     return Err(Diagnostic::spanned(dst_idx.span(), Level::Error, "Negative edge creates a negative cycle which must be broken with a `next_epoch()` operator."));
                 }
             }
@@ -451,19 +451,19 @@ impl TryFrom<FlatGraph> for PartitionedGraph {
         let FlatGraph {
             mut nodes,
             mut graph,
-            ports: mut indices,
+            mut ports,
             ..
         } = flat_graph;
 
         // Pairs of node IDs which cross stratums or epochs and therefore cannot be in the same subgraph.
-        let mut barrier_crossers = find_barrier_crossers(&nodes, &indices, &graph);
+        let mut barrier_crossers = find_barrier_crossers(&nodes, &ports, &graph);
 
         let (mut node_subgraph, mut subgraph_nodes) =
-            make_subgraphs(&mut nodes, &mut indices, &mut graph, &mut barrier_crossers);
+            make_subgraphs(&mut nodes, &mut ports, &mut graph, &mut barrier_crossers);
 
         let subgraph_stratum = find_subgraph_strata(
             &mut nodes,
-            &mut indices,
+            &mut ports,
             &mut graph,
             &mut node_subgraph,
             &mut subgraph_nodes,
@@ -476,7 +476,7 @@ impl TryFrom<FlatGraph> for PartitionedGraph {
         Ok(PartitionedGraph {
             nodes,
             graph,
-            indices,
+            ports,
             node_subgraph,
 
             subgraph_nodes,
@@ -495,7 +495,7 @@ impl TryFrom<FlatGraph> for PartitionedGraph {
 /// Returns the ID of X & ID of edge OUT of X.
 fn insert_intermediate_node(
     nodes: &mut SlotMap<GraphNodeId, Node>,
-    indices: &mut SecondaryMap<GraphEdgeId, (PortIndexValue, PortIndexValue)>,
+    ports: &mut SecondaryMap<GraphEdgeId, (PortIndexValue, PortIndexValue)>,
     graph: &mut DiMulGraph<GraphNodeId, GraphEdgeId>,
     node: Node,
     edge_id: GraphEdgeId,
@@ -504,9 +504,9 @@ fn insert_intermediate_node(
     let node_id = nodes.insert(node);
     let (e0, e1) = graph.insert_intermediate_node(node_id, edge_id).unwrap();
 
-    let (src_idx, dst_idx) = indices.remove(edge_id).unwrap();
-    indices.insert(e0, (src_idx, PortIndexValue::Elided(span)));
-    indices.insert(e1, (PortIndexValue::Elided(span), dst_idx));
+    let (src_idx, dst_idx) = ports.remove(edge_id).unwrap();
+    ports.insert(e0, (src_idx, PortIndexValue::Elided(span)));
+    ports.insert(e1, (PortIndexValue::Elided(span), dst_idx));
 
     (node_id, e1)
 }
