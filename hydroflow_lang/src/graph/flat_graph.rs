@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::collections::btree_map::Entry;
 use std::collections::{BTreeMap, BTreeSet};
 
 use proc_macro2::Span;
@@ -55,10 +56,36 @@ impl FlatGraph {
 
     /// Add a single [`HfStatement`] line to this `FlatGraph`.
     pub fn add_statement(&mut self, stmt: HfStatement) {
+        let stmt_span = stmt.span();
         match stmt {
             HfStatement::Named(named) => {
                 let ends = self.add_pipeline(named.pipeline);
-                self.names.insert(named.name, ends);
+                match self.names.entry(named.name) {
+                    Entry::Vacant(vacant_entry) => {
+                        vacant_entry.insert(ends);
+                    }
+                    Entry::Occupied(occupied_entry) => {
+                        let prev_conflict = occupied_entry.key();
+                        self.diagnostics.push(Diagnostic::spanned(
+                            stmt_span,
+                            Level::Error,
+                            format!(
+                                "Name assignment to `{}` conflicts with existing assignment: {} (1/2)",
+                                prev_conflict,
+                                PrettySpan(prev_conflict.span())
+                            ),
+                        ));
+                        self.diagnostics.push(Diagnostic::spanned(
+                            prev_conflict.span(),
+                            Level::Error,
+                            format!(
+                                "Existing assignment to `{}` conflicts with later assignment: {} (2/2)",
+                                prev_conflict,
+                                PrettySpan(stmt_span),
+                            ),
+                        ));
+                    }
+                }
             }
             HfStatement::Pipeline(pipeline) => {
                 self.add_pipeline(pipeline);
