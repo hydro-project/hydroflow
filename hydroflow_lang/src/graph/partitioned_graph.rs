@@ -19,7 +19,7 @@ pub struct PartitionedGraph {
     /// Graph
     pub(crate) graph: DiMulGraph<GraphNodeId, GraphEdgeId>,
     /// Input and output port for each edge.
-    pub(crate) indices: SecondaryMap<GraphEdgeId, (PortIndexValue, PortIndexValue)>,
+    pub(crate) ports: SecondaryMap<GraphEdgeId, (PortIndexValue, PortIndexValue)>,
     /// Which subgraph each node belongs to.
     pub(crate) node_subgraph: SecondaryMap<GraphNodeId, GraphSubgraphId>,
 
@@ -159,7 +159,7 @@ impl PartitionedGraph {
                             // Collect input arguments (predacessors).
                             let mut input_edges: Vec<(&PortIndexValue, GraphNodeId)> =
                                 self.graph.predecessors(node_id)
-                                    .map(|(edge_id, pred)| (&self.indices[edge_id].1, pred))
+                                    .map(|(edge_id, pred)| (&self.ports[edge_id].1, pred))
                                     .collect();
                             // Ensure sorted by port index.
                             input_edges.sort();
@@ -173,7 +173,7 @@ impl PartitionedGraph {
                             // Collect output arguments (successors).
                             let mut output_edges: Vec<(&PortIndexValue, GraphNodeId)> =
                                 self.graph.successors(node_id)
-                                    .map(|(edge_id, succ)| (&self.indices[edge_id].0, succ))
+                                    .map(|(edge_id, succ)| (&self.ports[edge_id].0, succ))
                                     .collect();
                             // Ensure sorted by port index.
                             output_edges.sort();
