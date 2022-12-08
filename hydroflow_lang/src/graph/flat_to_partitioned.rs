@@ -451,7 +451,7 @@ impl TryFrom<FlatGraph> for PartitionedGraph {
         let FlatGraph {
             mut nodes,
             mut graph,
-            mut indices,
+            ports: mut indices,
             ..
         } = flat_graph;
 

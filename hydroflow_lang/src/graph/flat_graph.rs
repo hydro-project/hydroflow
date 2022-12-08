@@ -30,12 +30,12 @@ pub struct FlatGraph {
     /// Graph
     pub(crate) graph: DiMulGraph<GraphNodeId, GraphEdgeId>,
     /// Input and output port for each edge.
-    pub(crate) indices: SecondaryMap<GraphEdgeId, (PortIndexValue, PortIndexValue)>,
+    pub(crate) ports: SecondaryMap<GraphEdgeId, (PortIndexValue, PortIndexValue)>,
     /// Spanned error/warning/etc diagnostics to emit.
     pub(crate) diagnostics: Vec<Diagnostic>,
 
     /// Variable names, used as [`HfStatement::Named`] are added.
-    names: BTreeMap<Ident, Ports>,
+    names: BTreeMap<Ident, Ends>,
 }
 
 impl FlatGraph {
@@ -57,8 +57,8 @@ impl FlatGraph {
     pub fn add_statement(&mut self, stmt: HfStatement) {
         match stmt {
             HfStatement::Named(named) => {
-                let ports = self.add_pipeline(named.pipeline);
-                self.names.insert(named.name, ports);
+                let ends = self.add_pipeline(named.pipeline);
+                self.names.insert(named.name, ends);
             }
             HfStatement::Pipeline(pipeline) => {
                 self.add_pipeline(pipeline);
@@ -66,17 +66,17 @@ impl FlatGraph {
         }
     }
 
-    /// Helper: Add a pipeline, i.e. `a -> b -> c`. Return the input and output port for it.
-    fn add_pipeline(&mut self, pipeline: Pipeline) -> Ports {
+    /// Helper: Add a pipeline, i.e. `a -> b -> c`. Return the input and output ends for it.
+    fn add_pipeline(&mut self, pipeline: Pipeline) -> Ends {
         match pipeline {
             Pipeline::Paren(pipeline_paren) => self.add_pipeline(*pipeline_paren.pipeline),
             Pipeline::Link(pipeline_link) => {
                 // Add the nested LHS and RHS of this link.
-                let lhs_ports = self.add_pipeline(*pipeline_link.lhs);
+                let lhs_ends = self.add_pipeline(*pipeline_link.lhs);
                 let connector = pipeline_link.connector;
-                let rhs_ports = self.add_pipeline(*pipeline_link.rhs);
+                let rhs_ends = self.add_pipeline(*pipeline_link.rhs);
 
-                if let (Some(src), Some(dst)) = (lhs_ports.out, rhs_ports.inn) {
+                if let (Some(src), Some(dst)) = (lhs_ends.out, rhs_ends.inn) {
                     let (src_port, dst_port) = PortIndexValue::from_arrow_connector(connector);
 
                     {
@@ -113,11 +113,11 @@ impl FlatGraph {
                             for conflicting_edge in self
                                 .graph
                                 .successor_edges(src)
-                                .filter(|&e| self.indices[e].0 == src_port)
+                                .filter(|&e| self.ports[e].0 == src_port)
                             {
                                 emit_conflict(
                                     "Output",
-                                    &self.indices[conflicting_edge].0,
+                                    &self.ports[conflicting_edge].0,
                                     &src_port,
                                     &mut self.diagnostics,
                                 );
@@ -129,11 +129,11 @@ impl FlatGraph {
                             for conflicting_edge in self
                                 .graph
                                 .predecessor_edges(dst)
-                                .filter(|&e| self.indices[e].1 == dst_port)
+                                .filter(|&e| self.ports[e].1 == dst_port)
                             {
                                 emit_conflict(
                                     "Input",
-                                    &self.indices[conflicting_edge].1,
+                                    &self.ports[conflicting_edge].1,
                                     &dst_port,
                                     &mut self.diagnostics,
                                 );
@@ -142,12 +142,12 @@ impl FlatGraph {
                     }
 
                     let e = self.graph.insert_edge(src, dst);
-                    self.indices.insert(e, (src_port, dst_port));
+                    self.ports.insert(e, (src_port, dst_port));
                 }
 
-                Ports {
-                    inn: lhs_ports.inn,
-                    out: rhs_ports.out,
+                Ends {
+                    inn: lhs_ends.inn,
+                    out: rhs_ends.out,
                 }
             }
             Pipeline::Name(ident) => self.names.get(&ident).copied().unwrap_or_else(|| {
@@ -156,14 +156,14 @@ impl FlatGraph {
                     Level::Error,
                     format!("Cannot find name `{}`", ident),
                 ));
-                Ports {
+                Ends {
                     inn: None,
                     out: None,
                 }
             }),
             Pipeline::Operator(operator) => {
                 let key = self.nodes.insert(Node::Operator(operator));
-                Ports {
+                Ends {
                     inn: Some(key),
                     out: Some(key),
                 }
@@ -338,7 +338,7 @@ impl FlatGraph {
                                 op_constraints.ports_inn,
                                 self.graph
                                     .predecessor_edges(node_key)
-                                    .map(|edge_id| &self.indices[edge_id].1),
+                                    .map(|edge_id| &self.ports[edge_id].1),
                                 "input",
                                 &mut self.diagnostics,
                             );
@@ -347,7 +347,7 @@ impl FlatGraph {
                                 op_constraints.ports_out,
                                 self.graph
                                     .successor_edges(node_key)
-                                    .map(|edge_id| &self.indices[edge_id].0),
+                                    .map(|edge_id| &self.ports[edge_id].0),
                                 "output",
                                 &mut self.diagnostics,
                             );
@@ -441,7 +441,7 @@ impl FlatGraph {
 }
 
 #[derive(Clone, Copy, Debug)]
-struct Ports {
+struct Ends {
     inn: Option<GraphNodeId>,
     out: Option<GraphNodeId>,
 }
