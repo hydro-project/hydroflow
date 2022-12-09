@@ -12,7 +12,7 @@ use hydroflow::hydroflow_syntax;
 
 pub fn test_hello_world() {
     let mut df = hydroflow_syntax! {
-        recv_iter(vec!["hello", "world"])
+        source_iter(vec!["hello", "world"])
             -> map(|x| x.to_uppercase()) -> for_each(|x| println!("{}", x));
     };
     df.run_available();

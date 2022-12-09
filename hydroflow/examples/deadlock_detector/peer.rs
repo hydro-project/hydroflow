@@ -20,13 +20,13 @@ pub(crate) async fn run_detector(opts: Opts, peer_list: Vec<String>) {
 
     let mut df: Hydroflow = hydroflow_syntax! {
         // fetch peers from file, convert ip:port to a SocketAddr, and tee
-        peers = recv_iter(peer_list)
+        peers = source_iter(peer_list)
             -> map(|s| s.parse::<SocketAddr>().unwrap())
             -> tee();
 
         // set up channels
-        outbound_chan = map(|(m,a)| (serialize_msg(m), a)) -> sink_async(outbound);
-        inbound_chan = recv_stream(inbound) -> map(deserialize_msg::<Message>);
+        outbound_chan = map(|(m,a)| (serialize_msg(m), a)) -> dest_sink(outbound);
+        inbound_chan = source_stream(inbound) -> map(deserialize_msg::<Message>);
 
         // setup gossip channel to all peers. gen_bool chooses True with the odds passed in.
         gossip_join = cross_join()
@@ -36,9 +36,9 @@ pub(crate) async fn run_detector(opts: Opts, peer_list: Vec<String>) {
         peers[2] -> for_each(|s| println!("Peer: {:?}", s));
 
         // prompt for input
-        recv_iter([()]) -> for_each(|_s| println!("Type in an edge as a tuple of two integers (x,y): "));
+        source_iter([()]) -> for_each(|_s| println!("Type in an edge as a tuple of two integers (x,y): "));
         // read in edges from stdin
-        new_edges = recv_stream(stdin_lines)
+        new_edges = source_stream(stdin_lines)
             -> filter_map(|line| {
                 parse_edge(line.unwrap())});
 

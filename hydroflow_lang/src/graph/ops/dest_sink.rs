@@ -4,25 +4,17 @@ use super::{
 
 use quote::quote_spanned;
 
-/// > Arguments: A [serializing async `Sink`](https://docs.rs/futures/latest/futures/sink/trait.Sink.html).
+/// > Arguments: An [async `Sink`](https://docs.rs/futures/latest/futures/sink/trait.Sink.html).
 ///
-/// Consumes (payload, addr) pairs by serializing the payload and sending the resulting pair to an [async `Sink`](https://docs.rs/futures/latest/futures/sink/trait.Sink.html).
+/// Consumes items by sending them to an [async `Sink`](https://docs.rs/futures/latest/futures/sink/trait.Sink.html).
+///
+/// This handles a stream of individual items, of an arbitrary type, whereas [`dest_asyncwrite`](#dest_asyncwrite)
+/// handles streams of bytes.
 ///
 /// Note this operator must be used within a Tokio runtime.
-/// ```rustbook
-/// async fn serde_out() {
-///     let (outbound, inbound) = hydroflow::util::bind_udp_socket("localhost:9000".into()).await;
-///     let remote = hydroflow::util::ipv4_resolve("localhost:9001".into());
-///     let mut flow = hydroflow::hydroflow_syntax! {
-///         recv_iter(vec![("hello".to_string(), 1), ("world".to_string(), 2)])
-///             -> map (|m| (m, remote)) -> sink_async_serde(outbound);
-///     };
-///     flow.run_available();
-/// }
-/// ```
 #[hydroflow_internalmacro::operator_docgen]
-pub const SINK_ASYNC_SERDE: OperatorConstraints = OperatorConstraints {
-    name: "sink_async_serde",
+pub const DEST_SINK: OperatorConstraints = OperatorConstraints {
+    name: "dest_sink",
     hard_range_inn: RANGE_1,
     soft_range_inn: RANGE_1,
     hard_range_out: RANGE_0,
@@ -49,18 +41,16 @@ pub const SINK_ASYNC_SERDE: OperatorConstraints = OperatorConstraints {
 
                     let mut recv = #recv_ident;
                     let mut sink = #sink_arg;
-                    while let Some((payload, addr)) = recv.recv().await {
-                        let item = (#root::util::serialize_msg(payload), addr);
+                    while let Some(item) = recv.recv().await {
                         sink.feed(item).await.expect("Error processing async sink item.");
                         // Receive as many items synchronously as possible before flushing.
-                        while let Ok((payload, addr)) = recv.try_recv() {
-                            let item = (#root::util::serialize_msg(payload), addr);
+                        while let Ok(item) = recv.try_recv() {
                             sink.feed(item).await.expect("Error processing async sink item.");
                         }
                         sink.flush().await.expect("Failed to flush async sink.");
                     }
                 })
-                .expect("sink_async() must be used within a tokio runtime");
+                .expect("dest_sink() must be used within a tokio runtime");
         };
 
         let write_iterator = quote_spanned! {op_span=>

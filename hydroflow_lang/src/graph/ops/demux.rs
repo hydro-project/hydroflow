@@ -27,7 +27,7 @@ use syn::{Expr, Pat};
 /// > trait to use the [`.give(...)` method](https://hydro-project.github.io/hydroflow/doc/pusherator/trait.Pusherator.html#tymethod.give).
 ///
 /// ```hydroflow
-/// my_demux = recv_iter(1..=100) -> demux(|v, tl!(fzbz, fizz, buzz, vals)|
+/// my_demux = source_iter(1..=100) -> demux(|v, tl!(fzbz, fizz, buzz, vals)|
 ///     match (v % 3, v % 5) {
 ///         (0, 0) => fzbz.give(v),
 ///         (0, _) => fizz.give(v),

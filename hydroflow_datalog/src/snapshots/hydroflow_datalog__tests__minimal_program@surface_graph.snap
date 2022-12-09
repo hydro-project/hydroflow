@@ -6,7 +6,7 @@ expression: graph.surface_syntax_string()
 2v1 = tee ();
 3v1 = merge ();
 4v1 = tee ();
-5v1 = recv_stream (input);
+5v1 = source_stream (input);
 6v1 = for_each (| v | out . send (v) . unwrap ());
 7v1 = map (| row : (_ , _ ,) | (row . 1 , row . 0 ,));
 

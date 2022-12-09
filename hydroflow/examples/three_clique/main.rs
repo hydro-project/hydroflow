@@ -20,7 +20,7 @@ pub fn main() {
     let (edges_send, edges_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
 
     let mut df = hydroflow_syntax! {
-        edges = recv_stream(edges_recv) -> tee();
+        edges = source_stream(edges_recv) -> tee();
 
         // set up the two joins
         // edge_pairs((z,x), y) :- edges(x,y), edges(y,z)

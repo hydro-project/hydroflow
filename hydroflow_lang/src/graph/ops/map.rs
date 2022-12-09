@@ -13,7 +13,7 @@ use quote::quote_spanned;
 /// each item use the [`inspect`](#inspect) operator instead.
 ///
 /// ```hydroflow
-/// recv_iter(vec!["hello", "world"]) -> map(|x| x.to_uppercase())
+/// source_iter(vec!["hello", "world"]) -> map(|x| x.to_uppercase())
 ///     -> for_each(|x| println!("{}", x));
 /// ```
 #[hydroflow_internalmacro::operator_docgen]

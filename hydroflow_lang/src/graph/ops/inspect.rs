@@ -12,7 +12,7 @@ use quote::quote_spanned;
 /// anti-pattern to provide a closure with side effects.
 ///
 /// ```hydroflow
-/// recv_iter([1, 2, 3, 4]) -> inspect(|&x| println!("{}", x)) -> null();
+/// source_iter([1, 2, 3, 4]) -> inspect(|&x| println!("{}", x)) -> null();
 /// ```
 #[hydroflow_internalmacro::operator_docgen]
 pub const INSPECT: OperatorConstraints = OperatorConstraints {

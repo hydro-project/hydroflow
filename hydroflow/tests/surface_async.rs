@@ -29,11 +29,11 @@ pub async fn test_echo_udp() -> Result<(), Box<dyn Error>> {
         let (seen_send, seen_recv) = hydroflow::util::unbounded_channel();
 
         let mut df: Hydroflow = hydroflow_syntax! {
-            recv = recv_stream(udp_recv)
+            recv = source_stream(udp_recv)
                 -> map(|r| r.unwrap())
                 -> tee();
             // Echo
-            recv[0] -> sink_async(udp_send);
+            recv[0] -> dest_sink(udp_send);
             // Testing
             recv[1] -> map(|(s, _addr)| s) -> for_each(|s| seen_send.send(s).unwrap());
         };
@@ -63,14 +63,14 @@ pub async fn test_echo_udp() -> Result<(), Box<dyn Error>> {
         let (seen_send, seen_recv) = hydroflow::util::unbounded_channel();
 
         let mut df = hydroflow_syntax! {
-            recv = recv_stream(recv_udp)
+            recv = source_stream(recv_udp)
                 -> map(|r| r.unwrap())
                 -> tee();
             recv[0] -> for_each(|x| println!("client A recv: {:?}", x));
             recv[1] -> map(|(s, _addr)| s) -> for_each(|s| seen_send.send(s).unwrap());
 
             // Sending
-            recv_iter([ "Hello", "World" ]) -> map(|s| (s.to_owned(), server_addr)) -> sink_async(send_udp);
+            source_iter([ "Hello", "World" ]) -> map(|s| (s.to_owned(), server_addr)) -> dest_sink(send_udp);
         };
 
         tokio::select! {
@@ -94,14 +94,14 @@ pub async fn test_echo_udp() -> Result<(), Box<dyn Error>> {
         let (seen_send, seen_recv) = hydroflow::util::unbounded_channel();
 
         let mut df = hydroflow_syntax! {
-            recv = recv_stream(recv_udp)
+            recv = source_stream(recv_udp)
                 -> map(|r| r.unwrap())
                 -> tee();
             recv[0] -> for_each(|x| println!("client B recv: {:?}", x));
             recv[1] -> map(|(s, _addr)| s) -> for_each(|s| seen_send.send(s).unwrap());
 
             // Sending
-            recv_iter([ "Raise", "Count" ]) -> map(|s| (s.to_owned(), server_addr)) -> sink_async(send_udp);
+            source_iter([ "Raise", "Count" ]) -> map(|s| (s.to_owned(), server_addr)) -> dest_sink(send_udp);
         };
 
         tokio::select! {
@@ -142,10 +142,10 @@ pub async fn test_echo_tcp() -> Result<(), Box<dyn Error>> {
         let (seen_send, seen_recv) = hydroflow::util::unbounded_channel();
 
         let mut df: Hydroflow = hydroflow_syntax! {
-            rev = recv_stream(lines_recv)
+            rev = source_stream(lines_recv)
                 -> map(|x| x.unwrap())
                 -> tee();
-            rev[0] -> map(|s| format!("{}\n", s)) -> write_async(server_send);
+            rev[0] -> map(|s| format!("{}\n", s)) -> dest_asyncwrite(server_send);
             rev[1] -> for_each(|s| seen_send.send(s).unwrap());
         };
 
@@ -172,14 +172,14 @@ pub async fn test_echo_tcp() -> Result<(), Box<dyn Error>> {
         let (seen_send, seen_recv) = hydroflow::util::unbounded_channel();
 
         let mut df = hydroflow_syntax! {
-            recv = recv_stream(lines_recv)
+            recv = source_stream(lines_recv)
                 -> map(|x| x.unwrap())
                 -> tee();
 
             recv[0] -> for_each(|s| println!("echo {}", s));
             recv[1] -> for_each(|s| seen_send.send(s).unwrap());
 
-            recv_iter([ "Hello\n", "World\n" ]) -> write_async(client_send);
+            source_iter([ "Hello\n", "World\n" ]) -> dest_asyncwrite(client_send);
         };
 
         println!("Client running!");
@@ -213,7 +213,7 @@ pub async fn test_echo() {
     let stdout_lines = tokio::io::stdout();
 
     let mut df: Hydroflow = hydroflow_syntax! {
-        recv_stream(lines_recv) -> map(|line| line + "\n") -> write_async(stdout_lines);
+        source_stream(lines_recv) -> map(|line| line + "\n") -> dest_asyncwrite(stdout_lines);
     };
 
     println!(
@@ -246,10 +246,10 @@ pub async fn test_futures_stream_sink() -> Result<(), Box<dyn Error>> {
     let (seen_send, seen_recv) = hydroflow::util::unbounded_channel();
 
     let mut df = hydroflow_syntax! {
-        recv = recv_stream(recv) -> tee();
+        recv = source_stream(recv) -> tee();
         recv[0] -> map(|x| x + 1)
             -> filter(|&x| x < MAX)
-            -> sink_async(send);
+            -> dest_sink(send);
         recv[1] -> for_each(|x| seen_send.send(x).unwrap());
     };
 

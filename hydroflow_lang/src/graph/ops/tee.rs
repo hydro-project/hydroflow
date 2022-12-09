@@ -11,7 +11,7 @@ use quote::{quote_spanned, ToTokens};
 /// > Note: Downstream operators may need explicit type annotations.
 ///
 /// ```hydroflow
-/// my_tee = recv_iter(vec!["Hello", "World"]) -> tee();
+/// my_tee = source_iter(vec!["Hello", "World"]) -> tee();
 /// my_tee -> map(|x: &str| x.to_uppercase())
 ///     -> for_each(|x| println!("{}", x));
 /// my_tee -> map(|x: &str| x.to_lowercase())

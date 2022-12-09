@@ -4,14 +4,18 @@ use super::{
 
 use quote::quote_spanned;
 
-/// > Arguments: An [async `Sink`](https://docs.rs/futures/latest/futures/sink/trait.Sink.html).
+/// > Arguments: An [`AsyncWrite`](https://docs.rs/tokio/latest/tokio/io/trait.AsyncWrite.html).
 ///
-/// Consumes items by sending them to an [async `Sink`](https://docs.rs/futures/latest/futures/sink/trait.Sink.html).
+/// Consumes a stream of bytes (specifically `AsRef[u8]` items) by writing them
+/// to an [`AsyncWrite`](https://docs.rs/tokio/latest/tokio/io/trait.AsyncWrite.html)
+/// output.
+///
+/// This handles a stream of bytes, whereas [`dest_sink`](#dest_sink) handles individual items of an arbitrary type.
 ///
 /// Note this operator must be used within a Tokio runtime.
 #[hydroflow_internalmacro::operator_docgen]
-pub const SINK_ASYNC: OperatorConstraints = OperatorConstraints {
-    name: "sink_async",
+pub const DEST_ASYNCWRITE: OperatorConstraints = OperatorConstraints {
+    name: "dest_asyncwrite",
     hard_range_inn: RANGE_1,
     soft_range_inn: RANGE_1,
     hard_range_out: RANGE_0,
@@ -25,7 +29,7 @@ pub const SINK_ASYNC: OperatorConstraints = OperatorConstraints {
                      ident, arguments, ..
                  },
                  _| {
-        let sink_arg = &arguments[0];
+        let async_write_arg = &arguments[0];
 
         let send_ident = wc.make_ident("item_send");
         let recv_ident = wc.make_ident("item_recv");
@@ -34,20 +38,16 @@ pub const SINK_ASYNC: OperatorConstraints = OperatorConstraints {
             let (#send_ident, #recv_ident) = #root::tokio::sync::mpsc::unbounded_channel();
             df
                 .spawn_task(async move {
-                    use #root::futures::sink::SinkExt;
+                    use #root::tokio::io::AsyncWriteExt;
 
                     let mut recv = #recv_ident;
-                    let mut sink = #sink_arg;
+                    let mut write = #async_write_arg;
                     while let Some(item) = recv.recv().await {
-                        sink.feed(item).await.expect("Error processing async sink item.");
-                        // Receive as many items synchronously as possible before flushing.
-                        while let Ok(item) = recv.try_recv() {
-                            sink.feed(item).await.expect("Error processing async sink item.");
-                        }
-                        sink.flush().await.expect("Failed to flush async sink.");
+                        let bytes = std::convert::AsRef::<[u8]>::as_ref(&item);
+                        write.write_all(bytes).await.expect("Error processing async write item.");
                     }
                 })
-                .expect("sink_async() must be used within a tokio runtime");
+                .expect("dest_asyncwrite() must be used within a Tokio runtime");
         };
 
         let write_iterator = quote_spanned! {op_span=>

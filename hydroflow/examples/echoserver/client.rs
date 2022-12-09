@@ -16,11 +16,11 @@ pub(crate) async fn run_client(
 
     let mut flow = hydroflow_syntax! {
         // take stdin and send to server as an Echo::Message
-        lines = recv_stdin() -> map(|l| (EchoMsg{ payload: l.unwrap(), ts: Utc::now(), }, server_addr) )
-            -> sink_async_serde(outbound);
+        lines = source_stdin() -> map(|l| (EchoMsg{ payload: l.unwrap(), ts: Utc::now(), }, server_addr) )
+            -> dest_sink_serde(outbound);
 
         // receive and print messages
-        recv_stream_serde(inbound) -> for_each(|(m, _a): (EchoMsg, SocketAddr) | println!("{:?}", m));
+        source_stream_serde(inbound) -> for_each(|(m, _a): (EchoMsg, SocketAddr) | println!("{:?}", m));
     };
 
     if let Some(graph) = graph {

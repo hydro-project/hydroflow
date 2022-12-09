@@ -14,6 +14,9 @@ use super::{GraphNodeId, GraphSubgraphId, PortIndexValue};
 
 mod cross_join;
 mod demux;
+mod dest_asyncwrite;
+mod dest_sink;
+mod dest_sink_serde;
 mod difference;
 mod filter;
 mod filter_map;
@@ -30,18 +33,15 @@ mod merge;
 mod next_epoch;
 mod next_stratum;
 mod null;
-mod recv_iter;
-mod recv_stdin;
-mod recv_stream;
-mod recv_stream_serde;
 mod reduce;
 mod repeat_iter;
-mod sink_async;
-mod sink_async_serde;
 mod sort;
+mod source_iter;
+mod source_stdin;
+mod source_stream;
+mod source_stream_serde;
 mod tee;
 mod unique;
-mod write_async;
 
 #[derive(Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Debug)]
 pub enum DelayType {
@@ -155,19 +155,19 @@ pub const OPERATORS: &[OperatorConstraints] = &[
     groupby::GROUPBY,
     unique::UNIQUE,
     sort::SORT,
-    recv_iter::RECV_ITER,
-    recv_stdin::RECV_STDIN,
-    recv_stream::RECV_STREAM,
-    recv_stream_serde::RECV_STREAM_SERDE,
+    source_iter::SOURCE_ITER,
+    source_stdin::SOURCE_STDIN,
+    source_stream::SOURCE_STREAM,
+    source_stream_serde::SOURCE_STREAM_SERDE,
     repeat_iter::REPEAT_ITER,
     difference::DIFFERENCE,
     next_stratum::NEXT_STRATUM,
     next_epoch::NEXT_EPOCH,
     for_each::FOR_EACH,
     demux::DEMUX,
-    write_async::WRITE_ASYNC,
-    sink_async::SINK_ASYNC,
-    sink_async_serde::SINK_ASYNC_SERDE,
+    dest_asyncwrite::DEST_ASYNCWRITE,
+    dest_sink::DEST_SINK,
+    dest_sink_serde::DEST_SINK_SERDE,
 ];
 
 pub struct WriteContextArgs<'a> {

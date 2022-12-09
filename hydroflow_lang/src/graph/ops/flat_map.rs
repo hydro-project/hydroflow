@@ -13,7 +13,7 @@ use quote::quote_spanned;
 ///
 /// ```hydroflow
 /// // should print out each character of each word on a separate line
-/// recv_iter(vec!["hello", "world"]) -> flat_map(|x| x.chars())
+/// source_iter(vec!["hello", "world"]) -> flat_map(|x| x.chars())
 ///     -> for_each(|x| println!("{}", x));
 /// ```
 #[hydroflow_internalmacro::operator_docgen]
