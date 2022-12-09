@@ -271,6 +271,12 @@
 <a href="#271" id="271">271</a>
 <a href="#272" id="272">272</a>
 <a href="#273" id="273">273</a>
+<a href="#274" id="274">274</a>
+<a href="#275" id="275">275</a>
+<a href="#276" id="276">276</a>
+<a href="#277" id="277">277</a>
+<a href="#278" id="278">278</a>
+<a href="#279" id="279">279</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::fmt::Display;
 <span class="kw">use </span>std::ops::{Bound, RangeBounds};
 
@@ -304,10 +310,13 @@
 <span class="kw">mod </span>next_stratum;
 <span class="kw">mod </span>null;
 <span class="kw">mod </span>recv_iter;
+<span class="kw">mod </span>recv_stdin;
 <span class="kw">mod </span>recv_stream;
+<span class="kw">mod </span>recv_stream_serde;
 <span class="kw">mod </span>reduce;
 <span class="kw">mod </span>repeat_iter;
 <span class="kw">mod </span>sink_async;
+<span class="kw">mod </span>sink_async_serde;
 <span class="kw">mod </span>sort;
 <span class="kw">mod </span>tee;
 <span class="kw">mod </span>unique;
@@ -425,8 +434,10 @@
     groupby::GROUPBY,
     unique::UNIQUE,
     sort::SORT,
-    recv_stream::RECV_STREAM,
     recv_iter::RECV_ITER,
+    recv_stdin::RECV_STDIN,
+    recv_stream::RECV_STREAM,
+    recv_stream_serde::RECV_STREAM_SERDE,
     repeat_iter::REPEAT_ITER,
     difference::DIFFERENCE,
     next_stratum::NEXT_STRATUM,
@@ -435,6 +446,7 @@
     demux::DEMUX,
     write_async::WRITE_ASYNC,
     sink_async::SINK_ASYNC,
+    sink_async_serde::SINK_ASYNC_SERDE,
 ];
 
 <span class="kw">pub struct </span>WriteContextArgs&lt;<span class="lifetime">&#39;a</span>&gt; {

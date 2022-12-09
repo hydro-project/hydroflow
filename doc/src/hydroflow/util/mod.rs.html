@@ -105,6 +105,48 @@
 <a href="#105" id="105">105</a>
 <a href="#106" id="106">106</a>
 <a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
+<a href="#109" id="109">109</a>
+<a href="#110" id="110">110</a>
+<a href="#111" id="111">111</a>
+<a href="#112" id="112">112</a>
+<a href="#113" id="113">113</a>
+<a href="#114" id="114">114</a>
+<a href="#115" id="115">115</a>
+<a href="#116" id="116">116</a>
+<a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
+<a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a>
+<a href="#121" id="121">121</a>
+<a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
+<a href="#124" id="124">124</a>
+<a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
 </pre><pre class="rust"><code><span class="doccomment">//! Helper utilities for the Hydroflow surface syntax.
 
 </span><span class="kw">use </span>std::future::Future;
@@ -113,15 +155,22 @@
 <span class="kw">use </span>std::pin::Pin;
 <span class="kw">use </span>std::task::{Context, Poll};
 
+<span class="kw">use </span>bincode;
 <span class="kw">use </span>bytes::Bytes;
 <span class="kw">use </span>futures::stream::{SplitSink, SplitStream};
 <span class="kw">use </span>futures::Stream;
 <span class="kw">use </span>pin_project_lite::pin_project;
+<span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>tokio::net::UdpSocket;
 <span class="kw">use </span>tokio_stream::wrappers::UnboundedReceiverStream;
 <span class="kw">use </span>tokio_util::codec::length_delimited::LengthDelimitedCodec;
-<span class="kw">use </span>tokio_util::codec::{Decoder, Encoder, LinesCodec};
+<span class="kw">use </span>tokio_util::codec::{Decoder, Encoder, LinesCodec, LinesCodecError};
 <span class="kw">use </span>tokio_util::udp::UdpFramed;
+
+<span class="kw">pub type </span>UdpFramedSink&lt;Codec, Item&gt; = SplitSink&lt;UdpFramed&lt;Codec&gt;, (Item, SocketAddr)&gt;;
+<span class="kw">pub type </span>UdpFramedStream&lt;Codec&gt; = SplitStream&lt;UdpFramed&lt;Codec&gt;&gt;;
+<span class="kw">pub type </span>UdpSink = UdpFramedSink&lt;LengthDelimitedCodec, Bytes&gt;;
+<span class="kw">pub type </span>UdpStream = UdpFramedStream&lt;LengthDelimitedCodec&gt;;
 
 <span class="kw">pub fn </span>unbounded_channel&lt;T&gt;() -&gt; (
     tokio::sync::mpsc::UnboundedSender&lt;T&gt;,
@@ -131,9 +180,6 @@
     <span class="kw">let </span>recv = tokio_stream::wrappers::UnboundedReceiverStream::new(recv);
     (send, recv)
 }
-
-<span class="kw">pub type </span>UdpFramedSink&lt;Codec, Item&gt; = SplitSink&lt;UdpFramed&lt;Codec&gt;, (Item, SocketAddr)&gt;;
-<span class="kw">pub type </span>UdpFramedStream&lt;Codec&gt; = SplitStream&lt;UdpFramed&lt;Codec&gt;&gt;;
 
 <span class="kw">pub fn </span>udp_framed&lt;Codec, Item&gt;(
     socket: UdpSocket,
@@ -146,12 +192,7 @@
     futures::stream::StreamExt::split(framed)
 }
 
-<span class="kw">pub fn </span>udp_bytes(
-    socket: UdpSocket,
-) -&gt; (
-    UdpFramedSink&lt;LengthDelimitedCodec, Bytes&gt;,
-    UdpFramedStream&lt;LengthDelimitedCodec&gt;,
-) {
+<span class="kw">pub fn </span>udp_bytes(socket: UdpSocket) -&gt; (UdpSink, UdpStream) {
     udp_framed(socket, LengthDelimitedCodec::new())
 }
 
@@ -212,5 +253,48 @@
 {
     std::iter::from_fn(|| recv.as_mut().try_recv().ok()).collect()
 }
+
+<span class="kw">pub fn </span>serialize_msg&lt;T&gt;(msg: T) -&gt; bytes::Bytes
+<span class="kw">where
+    </span>T: Serialize + <span class="kw">for</span>&lt;<span class="lifetime">&#39;a</span>&gt; Deserialize&lt;<span class="lifetime">&#39;a</span>&gt; + Clone,
+{
+    bytes::Bytes::from(bincode::serialize(<span class="kw-2">&amp;</span>msg).unwrap())
+}
+
+<span class="kw">pub fn </span>deserialize_simple&lt;T&gt;(msg: bytes::BytesMut) -&gt; T
+<span class="kw">where
+    </span>T: Serialize + <span class="kw">for</span>&lt;<span class="lifetime">&#39;a</span>&gt; Deserialize&lt;<span class="lifetime">&#39;a</span>&gt; + Clone,
+{
+    bincode::deserialize(<span class="kw-2">&amp;</span>msg).unwrap()
+}
+
+<span class="kw">pub fn </span>deserialize_msg&lt;T&gt;(msg: <span class="prelude-ty">Result</span>&lt;(bytes::BytesMut, SocketAddr), LinesCodecError&gt;) -&gt; T
+<span class="kw">where
+    </span>T: Serialize + <span class="kw">for</span>&lt;<span class="lifetime">&#39;a</span>&gt; Deserialize&lt;<span class="lifetime">&#39;a</span>&gt; + Clone,
+{
+    bincode::deserialize(<span class="kw-2">&amp;</span>(msg.unwrap().<span class="number">0</span>)).unwrap()
+}
+
+<span class="kw">pub fn </span>ipv4_resolve(addr: String) -&gt; SocketAddr {
+    <span class="kw">use </span>std::net::ToSocketAddrs;
+    <span class="kw">let </span><span class="kw-2">mut </span>addrs = addr.to_socket_addrs().unwrap();
+    addrs
+        .find(|addr| addr.is_ipv4())
+        .expect(<span class="string">&quot;Unable to resolve connection address&quot;</span>)
+}
+
+<span class="kw">pub async fn </span>bind_udp_socket_addr(addr: SocketAddr) -&gt; (UdpSink, UdpStream) {
+    <span class="kw">let </span>socket = tokio::net::UdpSocket::bind(addr).<span class="kw">await</span>.unwrap();
+    udp_bytes(socket)
+}
+
+<span class="kw">pub async fn </span>bind_udp_socket(addr_string: String) -&gt; (UdpSink, UdpStream) {
+    <span class="kw">let </span>addr = ipv4_resolve(addr_string);
+    bind_udp_socket_addr(addr).<span class="kw">await
+</span>}
+
+<span class="kw">pub async fn </span>bind_local_udp_socket(port: u16) -&gt; (UdpSink, UdpStream) {
+    bind_udp_socket(<span class="macro">format!</span>(<span class="string">&quot;127.0.0.1:{}&quot;</span>, port)).<span class="kw">await
+</span>}
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="hydroflow" data-themes="" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (7632db0e8 2022-12-08)" data-search-js="search-444266647c4dba98.js" data-settings-js="settings-bebeae96e00e4617.js" data-settings-css="settings-af96d9e2fc13e081.css" ></div></body></html>

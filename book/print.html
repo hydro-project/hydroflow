@@ -1495,6 +1495,53 @@ recv_iter(vec![2, 3, 1])
 </span><span class="boring">__hf.run_available();
 </span><span class="boring">}
 </span></code></pre></pre>
+<h2 id="recv_iter-1"><a class="header" href="#recv_iter-1"><code>recv_iter</code></a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
+<tr><td><span title="exactly 0">exactly 0</span></td><td><code>recv_iter(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
+</tbody></table>
+</div><!-- GENERATED "hydroflow_lang/src/graph/ops/recv_iter.rs" -->
+<blockquote>
+<p>0 input streams, 1 output stream</p>
+</blockquote>
+<blockquote>
+<p>Arguments: An iterable Rust object.
+Takes the iterable object and delivers its elements downstream
+one by one.</p>
+</blockquote>
+<p>Note that all elements are emitted during the first epoch.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
+</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
+</span>    recv_iter(vec![&quot;Hello&quot;, &quot;World&quot;])
+        -&gt; for_each(|x| println!(&quot;{}&quot;, x));
+<span class="boring">};
+</span><span class="boring">__hf.run_available();
+</span><span class="boring">}
+</span></code></pre></pre>
+<h2 id="recv_stdin"><a class="header" href="#recv_stdin"><code>recv_stdin</code></a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
+<tr><td><span title="exactly 0">exactly 0</span></td><td><code>recv_stdin() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
+</tbody></table>
+</div><!-- GENERATED "hydroflow_lang/src/graph/ops/recv_stdin.rs" -->
+<blockquote>
+<p>0 input streams, 1 output stream</p>
+</blockquote>
+<blockquote>
+<p>Arguments: port number</p>
+</blockquote>
+<p><code>recv_stdin</code> receives a Stream of lines from stdin
+and emits each of the elements it receives downstream.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let mut flow = hydroflow::hydroflow_syntax! {
+    recv_stdin() -&gt; map(|x| x.unwrap().to_uppercase())
+        -&gt; for_each(|x| println!(&quot;{}&quot;, x));
+};
+flow.run_async();
+<span class="boring">}
+</span></code></pre></pre>
 <h2 id="recv_stream-1"><a class="header" href="#recv_stream-1"><code>recv_stream</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
 <tr><td><span title="exactly 0">exactly 0</span></td><td><code>recv_stream(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
@@ -1522,30 +1569,31 @@ input_send.send(&quot;World&quot;).unwrap();
 flow.run_available();
 <span class="boring">}
 </span></code></pre></pre>
-<h2 id="recv_iter-1"><a class="header" href="#recv_iter-1"><code>recv_iter</code></a></h2>
+<h2 id="recv_stream_serde"><a class="header" href="#recv_stream_serde"><code>recv_stream_serde</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
-<tr><td><span title="exactly 0">exactly 0</span></td><td><code>recv_iter(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
+<tr><td><span title="exactly 0">exactly 0</span></td><td><code>recv_stream_serde(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
 </tbody></table>
-</div><!-- GENERATED "hydroflow_lang/src/graph/ops/recv_iter.rs" -->
+</div><!-- GENERATED "hydroflow_lang/src/graph/ops/recv_stream_serde.rs" -->
 <blockquote>
 <p>0 input streams, 1 output stream</p>
 </blockquote>
 <blockquote>
-<p>Arguments: An iterable Rust object.
-Takes the iterable object and delivers its elements downstream
-one by one.</p>
+<p>Arguments: <a href="https://docs.rs/futures/latest/futures/stream/trait.Stream.html"><code>Stream</code></a></p>
 </blockquote>
-<p>Note that all elements are emitted during the first epoch.</p>
+<p>Given a <a href="https://docs.rs/futures/latest/futures/stream/trait.Stream.html"><code>Stream</code></a>
+of (serialized payload, addr) pairs, deserializes the payload and emits each of the
+elements it receives downstream.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
-</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
-</span>    recv_iter(vec![&quot;Hello&quot;, &quot;World&quot;])
-        -&gt; for_each(|x| println!(&quot;{}&quot;, x));
-<span class="boring">};
-</span><span class="boring">__hf.run_available();
-</span><span class="boring">}
+</span>async fn serde_in() {
+    let (outbound, inbound) = hydroflow::util::bind_udp_socket(&quot;localhost:9000&quot;.into()).await;
+    let mut flow = hydroflow::hydroflow_syntax! {
+        recv_stream_serde(inbound) -&gt; map(|(x, a): (String, std::net::SocketAddr)| x.to_uppercase())
+            -&gt; for_each(|x| println!(&quot;{}&quot;, x));
+    };
+    flow.run_available();
+}
+<span class="boring">}
 </span></code></pre></pre>
 <h2 id="repeat_iter"><a class="header" href="#repeat_iter"><code>repeat_iter</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
@@ -1711,6 +1759,29 @@ output.</p>
 </blockquote>
 <p>Consumes items by sending them to an <a href="https://docs.rs/futures/latest/futures/sink/trait.Sink.html">async <code>Sink</code></a>.</p>
 <p>Note this operator must be used within a Tokio runtime.</p>
+<h2 id="sink_async_serde"><a class="header" href="#sink_async_serde"><code>sink_async_serde</code></a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
+<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; sink_async_serde(A)</code></td><td><span title="exactly 0">exactly 0</span></td></tr>
+</tbody></table>
+</div><!-- GENERATED "hydroflow_lang/src/graph/ops/sink_async_serde.rs" -->
+<blockquote>
+<p>Arguments: A <a href="https://docs.rs/futures/latest/futures/sink/trait.Sink.html">serializing async <code>Sink</code></a>.</p>
+</blockquote>
+<p>Consumes (payload, addr) pairs by serializing the payload and sending the resulting pair to an <a href="https://docs.rs/futures/latest/futures/sink/trait.Sink.html">async <code>Sink</code></a>.</p>
+<p>Note this operator must be used within a Tokio runtime.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>async fn serde_out() {
+    let (outbound, inbound) = hydroflow::util::bind_udp_socket(&quot;localhost:9000&quot;.into()).await;
+    let remote = hydroflow::util::ipv4_resolve(&quot;localhost:9001&quot;.into());
+    let mut flow = hydroflow::hydroflow_syntax! {
+        recv_iter(vec![(&quot;hello&quot;.to_string(), 1), (&quot;world&quot;.to_string(), 2)])
+            -&gt; map (|m| (m, remote)) -&gt; sink_async_serde(outbound);
+    };
+    flow.run_available();
+}
+<span class="boring">}
+</span></code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="architecture"><a class="header" href="#architecture">Architecture</a></h1>
 <p>Hydroflow graphs are divided into two layers: the outer <em>scheduled layer</em> and
 inner <em>compiled layer</em>.</p>
