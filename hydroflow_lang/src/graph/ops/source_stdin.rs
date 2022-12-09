@@ -8,19 +8,19 @@ use quote::quote_spanned;
 ///
 /// > Arguments: port number
 ///
-/// `recv_stdin` receives a Stream of lines from stdin
+/// `source_stdin` receives a Stream of lines from stdin
 /// and emits each of the elements it receives downstream.
 ///
 /// ```rustbook
 /// let mut flow = hydroflow::hydroflow_syntax! {
-///     recv_stdin() -> map(|x| x.unwrap().to_uppercase())
+///     source_stdin() -> map(|x| x.unwrap().to_uppercase())
 ///         -> for_each(|x| println!("{}", x));
 /// };
 /// flow.run_async();
 /// ```
 #[hydroflow_internalmacro::operator_docgen]
-pub const RECV_STDIN: OperatorConstraints = OperatorConstraints {
-    name: "recv_stdin",
+pub const SOURCE_STDIN: OperatorConstraints = OperatorConstraints {
+    name: "source_stdin",
     hard_range_inn: RANGE_0,
     soft_range_inn: RANGE_0,
     hard_range_out: RANGE_1,

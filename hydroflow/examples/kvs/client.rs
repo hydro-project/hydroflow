@@ -24,7 +24,7 @@ pub(crate) async fn run_client(
         inbound_chan[errs] -> for_each(|m| println!("Received unexpected message type: {:?}", m));
 
         // read in commands from stdin and forward to server
-        recv_stdin()
+        source_stdin()
             -> filter_map(|line| parse_command(line.unwrap()))
             -> map(|msg| { (msg, server_addr) })
             -> outbound_chan;

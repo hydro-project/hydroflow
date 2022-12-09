@@ -45,7 +45,7 @@ pub(crate) async fn run_coordinator(
 
         // Phase 1 initiate:
         // Given a transaction commit request from stdio, broadcast a Prepare to subordinates
-        recv_stdin()
+        source_stdin()
             -> filter_map(|l: Result<std::string::String, std::io::Error>| parse_out(l.unwrap()))
             -> map(|xid| CoordMsg{xid, mtype: MsgType::Prepare})
             -> [0]broadcast;

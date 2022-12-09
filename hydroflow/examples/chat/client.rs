@@ -57,7 +57,7 @@ pub(crate) async fn run_client(
         // take stdin and send to server as a msg
         // the join serves to buffer msgs until the connection request is acked
         msg_send = cross_join() -> map(|(msg, _)| (msg, server_addr)) -> [1]outbound_chan;
-        lines = recv_stdin()
+        lines = source_stdin()
           -> map(|l| Message::ChatMsg {
                     nickname: name.clone(),
                     message: l.unwrap(),
