@@ -42,6 +42,7 @@ mod source_stream;
 mod source_stream_serde;
 mod tee;
 mod unique;
+mod unzip;
 
 #[derive(Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Debug)]
 pub enum DelayType {
@@ -143,6 +144,7 @@ pub const OPERATORS: &[OperatorConstraints] = &[
     join::JOIN,
     cross_join::CROSS_JOIN,
     tee::TEE,
+    unzip::UNZIP,
     identity::IDENTITY,
     map::MAP,
     inspect::INSPECT,
