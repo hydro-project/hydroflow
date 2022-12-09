@@ -12,8 +12,8 @@ use quote::quote_spanned;
 ///
 /// Note this operator must be used within a Tokio runtime.
 #[hydroflow_internalmacro::operator_docgen]
-pub const WRITE_ASYNC: OperatorConstraints = OperatorConstraints {
-    name: "write_async",
+pub const DEST_ASYNCWRITE: OperatorConstraints = OperatorConstraints {
+    name: "dest_asyncwrite",
     hard_range_inn: RANGE_1,
     soft_range_inn: RANGE_1,
     hard_range_out: RANGE_0,
@@ -45,7 +45,7 @@ pub const WRITE_ASYNC: OperatorConstraints = OperatorConstraints {
                         write.write_all(bytes).await.expect("Error processing async write item.");
                     }
                 })
-                .expect("write_async() must be used within a Tokio runtime");
+                .expect("dest_asyncwrite() must be used within a Tokio runtime");
         };
 
         let write_iterator = quote_spanned! {op_span=>

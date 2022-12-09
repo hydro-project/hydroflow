@@ -14,7 +14,9 @@ use super::{GraphNodeId, GraphSubgraphId, PortIndexValue};
 
 mod cross_join;
 mod demux;
+mod dest_asyncwrite;
 mod dest_sink;
+mod dest_sink_serde;
 mod difference;
 mod filter;
 mod filter_map;
@@ -33,7 +35,6 @@ mod next_stratum;
 mod null;
 mod reduce;
 mod repeat_iter;
-mod dest_sink_serde;
 mod sort;
 mod source_iter;
 mod source_stdin;
@@ -41,7 +42,6 @@ mod source_stream;
 mod source_stream_serde;
 mod tee;
 mod unique;
-mod write_async;
 
 #[derive(Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Debug)]
 pub enum DelayType {
@@ -165,7 +165,7 @@ pub const OPERATORS: &[OperatorConstraints] = &[
     next_epoch::NEXT_EPOCH,
     for_each::FOR_EACH,
     demux::DEMUX,
-    write_async::WRITE_ASYNC,
+    dest_asyncwrite::DEST_ASYNCWRITE,
     dest_sink::DEST_SINK,
     dest_sink_serde::DEST_SINK_SERDE,
 ];
