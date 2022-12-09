@@ -20,7 +20,7 @@ pub(crate) async fn run_client(
             -> sink_async_serde(outbound);
 
         // receive and print messages
-        recv_stream_serde(inbound) -> for_each(|(m, _a): (EchoMsg, SocketAddr) | println!("{:?}", m));
+        source_stream_serde(inbound) -> for_each(|(m, _a): (EchoMsg, SocketAddr) | println!("{:?}", m));
     };
 
     if let Some(graph) = graph {

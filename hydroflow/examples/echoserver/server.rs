@@ -11,7 +11,7 @@ pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, graph: Opt
 
     let mut flow: Hydroflow = hydroflow_syntax! {
         // Inbound channel sharing
-        inbound_chan = recv_stream_serde(inbound) -> tee();
+        inbound_chan = source_stream_serde(inbound) -> tee();
 
         // Logic
         inbound_chan[0] -> for_each(|(m, a): (EchoMsg, SocketAddr)| println!("Got {:?} from {:?}", m, a));

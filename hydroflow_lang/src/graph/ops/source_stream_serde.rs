@@ -16,15 +16,15 @@ use quote::quote_spanned;
 /// async fn serde_in() {
 ///     let (outbound, inbound) = hydroflow::util::bind_udp_socket("localhost:9000".into()).await;
 ///     let mut flow = hydroflow::hydroflow_syntax! {
-///         recv_stream_serde(inbound) -> map(|(x, a): (String, std::net::SocketAddr)| x.to_uppercase())
+///         source_stream_serde(inbound) -> map(|(x, a): (String, std::net::SocketAddr)| x.to_uppercase())
 ///             -> for_each(|x| println!("{}", x));
 ///     };
 ///     flow.run_available();
 /// }
 /// ```
 #[hydroflow_internalmacro::operator_docgen]
-pub const RECV_STREAM_SERDE: OperatorConstraints = OperatorConstraints {
-    name: "recv_stream_serde",
+pub const SOURCE_STREAM_SERDE: OperatorConstraints = OperatorConstraints {
+    name: "source_stream_serde",
     hard_range_inn: RANGE_0,
     soft_range_inn: RANGE_0,
     hard_range_out: RANGE_1,

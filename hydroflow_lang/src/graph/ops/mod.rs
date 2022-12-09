@@ -30,15 +30,15 @@ mod merge;
 mod next_epoch;
 mod next_stratum;
 mod null;
-mod source_iter;
-mod source_stdin;
-mod source_stream;
-mod recv_stream_serde;
 mod reduce;
 mod repeat_iter;
 mod sink_async;
 mod sink_async_serde;
 mod sort;
+mod source_iter;
+mod source_stdin;
+mod source_stream;
+mod source_stream_serde;
 mod tee;
 mod unique;
 mod write_async;
@@ -158,7 +158,7 @@ pub const OPERATORS: &[OperatorConstraints] = &[
     source_iter::SOURCE_ITER,
     source_stdin::SOURCE_STDIN,
     source_stream::SOURCE_STREAM,
-    recv_stream_serde::RECV_STREAM_SERDE,
+    source_stream_serde::SOURCE_STREAM_SERDE,
     repeat_iter::REPEAT_ITER,
     difference::DIFFERENCE,
     next_stratum::NEXT_STRATUM,

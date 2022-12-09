@@ -13,7 +13,7 @@ pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, graph: Opt
     let mut df: Hydroflow = hydroflow_syntax! {
         // NW channels
         outbound_chan = merge() -> sink_async_serde(outbound);
-        inbound_chan = recv_stream_serde(inbound)
+        inbound_chan = source_stream_serde(inbound)
             ->  demux(|(m, a), tl!(members, msgs, errs)|
                     match m {
                         Message::ConnectRequest => members.give(a),
