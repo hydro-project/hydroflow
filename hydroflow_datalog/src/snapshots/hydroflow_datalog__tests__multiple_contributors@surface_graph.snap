@@ -8,8 +8,8 @@ expression: graph.surface_syntax_string()
 4v1 = tee ();
 5v1 = merge ();
 6v1 = tee ();
-7v1 = recv_stream (in1);
-8v1 = recv_stream (in2);
+7v1 = source_stream (in1);
+8v1 = source_stream (in2);
 9v1 = for_each (| v | out . send (v) . unwrap ());
 10v1 = map (| row : (_ , _ ,) | (row . 0 , row . 1 ,));
 11v1 = map (| row : (_ , _ ,) | (row . 1 , row . 0 ,));

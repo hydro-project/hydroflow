@@ -8,7 +8,7 @@ pub fn test_parser_basic() {
 
         my_join = (join() -> map(|(_src, ((), dst))| dst) -> tee());
         (reached_vertices -> [0]my_join);
-        (recv_stream(/*(v, v) edges*/ _) -> [1]my_join);
+        (source_stream(/*(v, v) edges*/ _) -> [1]my_join);
 
         (my_join[0] -> [1]reached_vertices);
         (my_join[1] -> for_each(|x| println!("Reached: {}", x)));

@@ -19,7 +19,7 @@ pub fn main() {
 
     let mut df = hydroflow_syntax! {
         origin = source_iter(vec![0]);
-        stream_of_edges = recv_stream(pairs_recv) -> tee();
+        stream_of_edges = source_stream(pairs_recv) -> tee();
         reached_vertices = merge()->tee();
         unreached_vertices = difference();
         origin -> [0]reached_vertices;

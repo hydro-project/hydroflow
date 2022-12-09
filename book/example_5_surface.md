@@ -53,7 +53,7 @@ pub fn main() {
     let mut flow = hydroflow_syntax! {
         // inputs: the origin vertex (vertex 0) and stream of input edges
         origin = source_iter(vec![0]);
-        stream_of_edges = recv_stream(pairs_recv);
+        stream_of_edges = source_stream(pairs_recv);
         reached_vertices = merge();
         origin -> [0]reached_vertices;
 
@@ -132,7 +132,7 @@ the structure of the full flow:
 flowchart TB
     subgraph "sg_1v1 stratum 0"
         1v1["1v1 <tt>op_1v1: source_iter(vec! [0])</tt>"]
-        2v1["2v1 <tt>op_2v1: recv_stream(edges_recv)</tt>"]
+        2v1["2v1 <tt>op_2v1: source_stream(edges_recv)</tt>"]
         3v1["3v1 <tt>op_3v1: merge()</tt>"]
         7v1["7v1 <tt>op_7v1: map(| v | (v, ()))</tt>"]
         4v1["4v1 <tt>op_4v1: join()</tt>"]

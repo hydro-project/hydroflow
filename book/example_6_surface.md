@@ -44,7 +44,7 @@ pub fn main() {
 
     let mut flow = hydroflow_syntax! {
         origin = source_iter(vec![0]);
-        stream_of_edges = recv_stream(pairs_recv) -> tee();
+        stream_of_edges = source_stream(pairs_recv) -> tee();
         reached_vertices = merge()->tee();
         origin -> [0]reached_vertices;
 
@@ -117,7 +117,7 @@ flowchart TB
         5v1["5v1 <tt>op_5v1: tee()</tt>"]
     end
     subgraph "sg_2v1 stratum 0"
-        2v1["2v1 <tt>op_2v1: recv_stream(pairs_recv)</tt>"]
+        2v1["2v1 <tt>op_2v1: source_stream(pairs_recv)</tt>"]
         3v1["3v1 <tt>op_3v1: tee()</tt>"]
         9v1["9v1 <tt>op_9v1: flat_map(| (src, dst) | [src, dst])</tt>"]
         10v1["10v1 <tt>op_10v1: tee()</tt>"]

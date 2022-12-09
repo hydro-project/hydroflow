@@ -29,7 +29,7 @@ pub async fn test_echo_udp() -> Result<(), Box<dyn Error>> {
         let (seen_send, seen_recv) = hydroflow::util::unbounded_channel();
 
         let mut df: Hydroflow = hydroflow_syntax! {
-            recv = recv_stream(udp_recv)
+            recv = source_stream(udp_recv)
                 -> map(|r| r.unwrap())
                 -> tee();
             // Echo
@@ -63,7 +63,7 @@ pub async fn test_echo_udp() -> Result<(), Box<dyn Error>> {
         let (seen_send, seen_recv) = hydroflow::util::unbounded_channel();
 
         let mut df = hydroflow_syntax! {
-            recv = recv_stream(recv_udp)
+            recv = source_stream(recv_udp)
                 -> map(|r| r.unwrap())
                 -> tee();
             recv[0] -> for_each(|x| println!("client A recv: {:?}", x));
@@ -94,7 +94,7 @@ pub async fn test_echo_udp() -> Result<(), Box<dyn Error>> {
         let (seen_send, seen_recv) = hydroflow::util::unbounded_channel();
 
         let mut df = hydroflow_syntax! {
-            recv = recv_stream(recv_udp)
+            recv = source_stream(recv_udp)
                 -> map(|r| r.unwrap())
                 -> tee();
             recv[0] -> for_each(|x| println!("client B recv: {:?}", x));
@@ -142,7 +142,7 @@ pub async fn test_echo_tcp() -> Result<(), Box<dyn Error>> {
         let (seen_send, seen_recv) = hydroflow::util::unbounded_channel();
 
         let mut df: Hydroflow = hydroflow_syntax! {
-            rev = recv_stream(lines_recv)
+            rev = source_stream(lines_recv)
                 -> map(|x| x.unwrap())
                 -> tee();
             rev[0] -> map(|s| format!("{}\n", s)) -> write_async(server_send);
@@ -172,7 +172,7 @@ pub async fn test_echo_tcp() -> Result<(), Box<dyn Error>> {
         let (seen_send, seen_recv) = hydroflow::util::unbounded_channel();
 
         let mut df = hydroflow_syntax! {
-            recv = recv_stream(lines_recv)
+            recv = source_stream(lines_recv)
                 -> map(|x| x.unwrap())
                 -> tee();
 
@@ -213,7 +213,7 @@ pub async fn test_echo() {
     let stdout_lines = tokio::io::stdout();
 
     let mut df: Hydroflow = hydroflow_syntax! {
-        recv_stream(lines_recv) -> map(|line| line + "\n") -> write_async(stdout_lines);
+        source_stream(lines_recv) -> map(|line| line + "\n") -> write_async(stdout_lines);
     };
 
     println!(
@@ -246,7 +246,7 @@ pub async fn test_futures_stream_sink() -> Result<(), Box<dyn Error>> {
     let (seen_send, seen_recv) = hydroflow::util::unbounded_channel();
 
     let mut df = hydroflow_syntax! {
-        recv = recv_stream(recv) -> tee();
+        recv = source_stream(recv) -> tee();
         recv[0] -> map(|x| x + 1)
             -> filter(|&x| x < MAX)
             -> sink_async(send);

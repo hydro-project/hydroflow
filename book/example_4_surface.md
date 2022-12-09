@@ -54,7 +54,7 @@ pub fn main() {
     let mut flow = hydroflow_syntax! {
         // inputs: the origin vertex (vertex 0) and stream of input edges
         origin = source_iter(vec![0]);
-        stream_of_edges = recv_stream(pairs_recv);
+        stream_of_edges = source_stream(pairs_recv);
 
         // the join
         my_join = join() -> flat_map(|(src, (_, dst))| [src, dst]);
@@ -94,7 +94,7 @@ As for the code itself, we start out with the origin vertex, `0`,
 and the stream of edges coming in:
 ```rust,ignore
     origin = source_iter(vec![0]);
-    stream_of_edges = recv_stream(pairs_recv);
+    stream_of_edges = source_stream(pairs_recv);
 ```
 The Rust syntax `vec![0]` constructs a vector with a single element, `0`, which we iterate
 over using `source_iter`.
@@ -135,7 +135,7 @@ the structure of the graph:
 flowchart TB
     subgraph "sg_1v1 stratum 0"
         1v1["1v1 <tt>op_1v1: source_iter(vec! [0])</tt>"]
-        2v1["2v1 <tt>op_2v1: recv_stream(pairs_recv)</tt>"]
+        2v1["2v1 <tt>op_2v1: source_stream(pairs_recv)</tt>"]
         5v1["5v1 <tt>op_5v1: map(| v | (v, ()))</tt>"]
         3v1["3v1 <tt>op_3v1: join()</tt>"]
         4v1["4v1 <tt>op_4v1: flat_map(| (src, (_, dst)) | [src, dst])</tt>"]
