@@ -6,7 +6,7 @@ use super::{OperatorConstraints, IDENTITY_WRITE_FN, RANGE_1};
 ///
 /// ```hydroflow
 /// // should print "hello" and "world" on separate lines (in either order)
-/// recv_iter(vec!["hello", "world"]) -> identity()
+/// source_iter(vec!["hello", "world"]) -> identity()
 ///     -> for_each(|x| println!("{}", x));
 /// ```
 #[hydroflow_internalmacro::operator_docgen]

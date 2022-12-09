@@ -1,14 +1,14 @@
 error: Unexpected input port. Expected one of: `0`, `1`
- --> tests/compile-fail/surface_port_join.rs:6:37
+ --> tests/compile-fail/surface_port_join.rs:6:39
   |
-6 |         recv_iter([(1, 1), (2, 2)]) -> j;
-  |                                     ^^
+6 |         source_iter([(1, 1), (2, 2)]) -> j;
+  |                                       ^^
 
 error: Unexpected input port. Expected one of: `0`, `1`
- --> tests/compile-fail/surface_port_join.rs:7:37
+ --> tests/compile-fail/surface_port_join.rs:7:39
   |
-7 |         recv_iter([(3, 3), (4, 4)]) -> j;
-  |                                     ^^
+7 |         source_iter([(3, 3), (4, 4)]) -> j;
+  |                                       ^^
 
 error: Missing expected input port(s): `0`, `1`.
  --> tests/compile-fail/surface_port_join.rs:5:13

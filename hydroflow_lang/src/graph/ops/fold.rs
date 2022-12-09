@@ -15,7 +15,7 @@ use quote::quote_spanned;
 ///
 /// ```hydroflow
 /// // should print `Reassembled vector [1,2,3,4,5]`
-/// recv_iter([1,2,3,4,5])
+/// source_iter([1,2,3,4,5])
 ///     -> fold(Vec::new(), |mut accum, elem| {
 ///         accum.push(elem);
 ///         accum

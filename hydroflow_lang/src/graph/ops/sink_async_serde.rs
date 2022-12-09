@@ -14,7 +14,7 @@ use quote::quote_spanned;
 ///     let (outbound, inbound) = hydroflow::util::bind_udp_socket("localhost:9000".into()).await;
 ///     let remote = hydroflow::util::ipv4_resolve("localhost:9001".into());
 ///     let mut flow = hydroflow::hydroflow_syntax! {
-///         recv_iter(vec![("hello".to_string(), 1), ("world".to_string(), 2)])
+///         source_iter(vec![("hello".to_string(), 1), ("world".to_string(), 2)])
 ///             -> map (|m| (m, remote)) -> sink_async_serde(outbound);
 ///     };
 ///     flow.run_available();

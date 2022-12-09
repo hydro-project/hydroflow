@@ -10,7 +10,7 @@ use quote::quote_spanned;
 ///
 /// ```hydroflow
 /// // should print 1, 2, 3 (in any order)
-/// recv_iter(vec![1, 1, 2, 3, 2, 1, 3])
+/// source_iter(vec![1, 1, 2, 3, 2, 1, 3])
 ///     -> unique()
 ///     -> for_each(|x| println!("{}", x));
 /// ```

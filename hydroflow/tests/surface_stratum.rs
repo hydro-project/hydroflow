@@ -23,8 +23,8 @@ pub fn test_difference_a() {
 
     let mut df: Hydroflow = hydroflow_syntax! {
         a = difference();
-        recv_iter([1, 2, 3, 4]) -> [pos]a;
-        recv_iter([1, 3, 5, 7]) -> [neg]a;
+        source_iter([1, 2, 3, 4]) -> [pos]a;
+        source_iter([1, 3, 5, 7]) -> [neg]a;
         a -> for_each(|x| output_inner.borrow_mut().push(x));
     };
     df.run_available();
@@ -81,7 +81,7 @@ pub fn test_epoch_loop_1() {
     // E.g. it would spin forever in a single infinite tick/epoch.
     let mut df: Hydroflow = hydroflow_syntax! {
         a = merge() -> tee();
-        recv_iter([1, 3]) -> [0]a;
+        source_iter([1, 3]) -> [0]a;
         a[0] -> next_epoch() -> map(|x| 2 * x) -> [1]a;
         a[1] -> for_each(|x| output_inner.borrow_mut().push(x));
     };
@@ -108,7 +108,7 @@ pub fn test_epoch_loop_2() {
 
     let mut df: Hydroflow = hydroflow_syntax! {
         a = merge() -> tee();
-        recv_iter([1, 3]) -> [0]a;
+        source_iter([1, 3]) -> [0]a;
         a[0] -> next_epoch() -> next_epoch() -> map(|x| 2 * x) -> [1]a;
         a[1] -> for_each(|x| output_inner.borrow_mut().push(x));
     };
@@ -138,7 +138,7 @@ pub fn test_epoch_loop_3() {
 
     let mut df: Hydroflow = hydroflow_syntax! {
         a = merge() -> tee();
-        recv_iter([1, 3]) -> [0]a;
+        source_iter([1, 3]) -> [0]a;
         a[0] -> next_epoch() -> next_epoch() -> next_epoch() -> map(|x| 2 * x) -> [1]a;
         a[1] -> for_each(|x| output_inner.borrow_mut().push(x));
     };
@@ -171,7 +171,7 @@ pub fn test_surface_syntax_graph_unreachability() {
     #[allow(clippy::map_identity)]
     let mut df = hydroflow_syntax! {
         reached_vertices = merge() -> map(|v| (v, ()));
-        recv_iter(vec![0]) -> [0]reached_vertices;
+        source_iter(vec![0]) -> [0]reached_vertices;
 
         edges = recv_stream(pairs_recv) -> tee();
 
@@ -222,8 +222,8 @@ pub fn test_subgraph_stratum_consolidation() {
         b = merge() -> tee();
         c = merge() -> tee();
         d = merge() -> for_each(|x| output_inner.borrow_mut().push(x));
-        recv_iter([0]) -> [0]a[0] -> [0]b[0] -> [0]c[0] -> [0]d;
-        recv_iter([1]) -> [1]a[1] -> [1]b[1] -> [1]c[1] -> [1]d;
+        source_iter([0]) -> [0]a[0] -> [0]b[0] -> [0]c[0] -> [0]d;
+        source_iter([1]) -> [1]a[1] -> [1]b[1] -> [1]c[1] -> [1]d;
     };
     println!("{}", df.serde_graph().unwrap().to_mermaid());
 

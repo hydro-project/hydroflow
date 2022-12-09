@@ -28,7 +28,7 @@ pub fn test_basic_2() {
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
 
     let mut df = hydroflow_syntax! {
-        recv_iter([1]) -> for_each(|v| out_send.send(v).unwrap());
+        source_iter([1]) -> for_each(|v| out_send.send(v).unwrap());
     };
     df.run_available();
 
@@ -40,7 +40,7 @@ pub fn test_basic_3() {
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
 
     let mut df = hydroflow_syntax! {
-        recv_iter([1]) -> map(|v| v + 1) -> for_each(|v| out_send.send(v).unwrap());
+        source_iter([1]) -> map(|v| v + 1) -> for_each(|v| out_send.send(v).unwrap());
     };
     df.run_available();
 
@@ -53,8 +53,8 @@ pub fn test_basic_merge() {
 
     let mut df = hydroflow_syntax! {
         m = merge() -> for_each(|v| out_send.send(v).unwrap());
-        recv_iter([1]) -> [0]m;
-        recv_iter([2]) -> [1]m;
+        source_iter([1]) -> [0]m;
+        source_iter([2]) -> [1]m;
     };
     df.run_available();
 
@@ -67,7 +67,7 @@ pub fn test_basic_tee() {
     let out_send_b = out_send_a.clone();
 
     let mut df = hydroflow_syntax! {
-        t = recv_iter([1]) -> tee();
+        t = source_iter([1]) -> tee();
         t[0] -> for_each(|v| out_send_a.send(format!("A {}", v)).unwrap());
         t[1] -> for_each(|v| out_send_b.send(format!("B {}", v)).unwrap());
     };
@@ -88,7 +88,7 @@ pub fn test_basic_inspect_null() {
     let seen_inner = Rc::clone(&seen);
 
     let mut df = hydroflow_syntax! {
-        recv_iter([1, 2, 3, 4]) -> inspect(|&x| seen_inner.borrow_mut().push(x)) -> null();
+        source_iter([1, 2, 3, 4]) -> inspect(|&x| seen_inner.borrow_mut().push(x)) -> null();
     };
     df.run_available();
 
@@ -100,7 +100,7 @@ pub fn test_basic_inspect_null() {
 pub fn test_large_diamond() {
     #[allow(clippy::map_identity)]
     let mut df: Hydroflow = hydroflow_syntax! {
-        t = recv_iter([1]) -> tee();
+        t = source_iter([1]) -> tee();
         j = merge() -> for_each(|x| println!("{}", x));
         t[0] -> map(std::convert::identity) -> map(std::convert::identity) -> [0]j;
         t[1] -> map(std::convert::identity) -> map(std::convert::identity) -> [1]j;
@@ -137,13 +137,13 @@ pub fn test_recv_expr() {
 pub fn test_join_order() {
     let _df_good = hydroflow_syntax! {
         yikes = join() -> for_each(|m: ((), (u32, String))| println!("{:?}", m));
-        recv_iter([0,1,2]) -> map(|i| ((), i)) -> [0]yikes;
-        recv_iter(["a".to_string(),"b".to_string(),"c".to_string()]) -> map(|s| ((), s)) -> [1]yikes;
+        source_iter([0,1,2]) -> map(|i| ((), i)) -> [0]yikes;
+        source_iter(["a".to_string(),"b".to_string(),"c".to_string()]) -> map(|s| ((), s)) -> [1]yikes;
     };
     let _df_bad = hydroflow_syntax! {
         yikes = join() -> for_each(|m: ((), (u32, String))| println!("{:?}", m));
-        recv_iter(["a".to_string(),"b".to_string(),"c".to_string()]) -> map(|s| ((), s)) -> [1]yikes;
-        recv_iter([0,1,2]) -> map(|i| ((), i)) -> [0]yikes;
+        source_iter(["a".to_string(),"b".to_string(),"c".to_string()]) -> map(|s| ((), s)) -> [1]yikes;
+        source_iter([0,1,2]) -> map(|i| ((), i)) -> [0]yikes;
     };
 }
 
@@ -153,8 +153,8 @@ pub fn test_cross_join() {
 
     let mut df = hydroflow_syntax! {
         cj = cross_join() -> for_each(|v| out_send.send(v).unwrap());
-        recv_iter([1, 2, 3]) -> [0]cj;
-        recv_iter(["a", "b", "c"]) -> [1]cj;
+        source_iter([1, 2, 3]) -> [0]cj;
+        source_iter(["a", "b", "c"]) -> [1]cj;
     };
     df.run_available();
 
@@ -172,7 +172,7 @@ pub fn test_flatten() {
     // test pull
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<(u8, u8)>();
     let mut df_pull = hydroflow_syntax! {
-        recv_iter([(1,1), (1,2), (2,3), (2,4)])
+        source_iter([(1,1), (1,2), (2,3), (2,4)])
         -> fold(HashMap::<u8,u8>::new(), |mut ht, t:(u8,u8)| {
                 let e = ht.entry(t.0).or_insert(0);
                 *e += t.1;
@@ -190,7 +190,7 @@ pub fn test_flatten() {
     // test push
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<(u8, u8)>();
     let mut df_push = hydroflow_syntax! {
-        datagen = recv_iter([(1,2), (1,2), (2,4), (2,4)]) -> tee();
+        datagen = source_iter([(1,2), (1,2), (2,4), (2,4)]) -> tee();
         datagen[0] -> fold(HashMap::<u8,u8>::new(), |mut ht, t:(u8,u8)| {
                 let e = ht.entry(t.0).or_insert(0);
                 *e += t.1;
@@ -422,7 +422,7 @@ pub fn test_demux_1() {
     }
 
     let mut df = hydroflow_syntax! {
-        my_demux = recv_iter([
+        my_demux = source_iter([
             Shape::Circle(5.0),
             Shape::Rectangle { width: 10.0, height: 8.0 },
             Shape::Square(9.0),
@@ -445,7 +445,7 @@ pub fn test_demux_1() {
 #[test]
 pub fn test_demux_fizzbuzz_1() {
     let mut df = hydroflow_syntax! {
-        my_demux = recv_iter(1..=100)
+        my_demux = source_iter(1..=100)
             -> demux(|v, tl!(fzbz, fizz, buzz, vals)|
                 match v {
                     v if 0 == v % 15 => fzbz.give(()),
@@ -465,7 +465,7 @@ pub fn test_demux_fizzbuzz_1() {
 #[test]
 pub fn test_demux_fizzbuzz_2() {
     let mut df = hydroflow_syntax! {
-        my_demux = recv_iter(1..=100)
+        my_demux = source_iter(1..=100)
         -> demux(|v, tl!(fzbz, fizz, buzz, vals)|
             match (v % 3, v % 5) {
                 (0, 0) => fzbz.give(()),
@@ -487,7 +487,7 @@ pub fn test_channel_minimal() {
     let (send, recv) = hydroflow::util::unbounded_channel::<usize>();
 
     let mut df1 = hydroflow_syntax! {
-        recv_iter([1, 2, 3]) -> for_each(|x| { send.send(x).unwrap(); })
+        source_iter([1, 2, 3]) -> for_each(|x| { send.send(x).unwrap(); })
     };
 
     let mut df2 = hydroflow_syntax! {
@@ -508,7 +508,7 @@ pub fn test_surface_syntax_reachability_generated() {
 
     let mut df: Hydroflow = hydroflow_syntax! {
         reached_vertices = merge() -> map(|v| (v, ()));
-        recv_iter(vec![0]) -> [0]reached_vertices;
+        source_iter(vec![0]) -> [0]reached_vertices;
 
         my_join_tee = join() -> map(|(_src, ((), dst))| dst) -> tee();
         reached_vertices -> [0]my_join_tee;
@@ -713,7 +713,7 @@ pub fn test_reduce() {
 
     let mut df = hydroflow_syntax! {
         reached_vertices = merge() -> map(|v| (v, ()));
-        recv_iter(vec![0]) -> [0]reached_vertices;
+        source_iter(vec![0]) -> [0]reached_vertices;
 
         my_join_tee = join() -> map(|(_src, ((), dst))| dst) -> tee();
         reached_vertices -> [0]my_join_tee;

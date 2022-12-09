@@ -15,7 +15,7 @@ pub(crate) async fn run_coordinator(
 ) {
     let mut df: Hydroflow = hydroflow_syntax! {
         // fetch subordinates from file, convert ip:port to a SocketAddr, and tee
-        subords = recv_iter(subordinates)
+        subords = source_iter(subordinates)
             -> map(|s| s.parse::<SocketAddr>().unwrap())
             -> tee();
 

@@ -30,7 +30,6 @@ mod merge;
 mod next_epoch;
 mod next_stratum;
 mod null;
-mod recv_iter;
 mod recv_stdin;
 mod recv_stream;
 mod recv_stream_serde;
@@ -39,6 +38,7 @@ mod repeat_iter;
 mod sink_async;
 mod sink_async_serde;
 mod sort;
+mod source_iter;
 mod tee;
 mod unique;
 mod write_async;
@@ -155,7 +155,7 @@ pub const OPERATORS: &[OperatorConstraints] = &[
     groupby::GROUPBY,
     unique::UNIQUE,
     sort::SORT,
-    recv_iter::RECV_ITER,
+    source_iter::SOURCE_ITER,
     recv_stdin::RECV_STDIN,
     recv_stream::RECV_STREAM,
     recv_stream_serde::RECV_STREAM_SERDE,

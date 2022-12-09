@@ -52,7 +52,7 @@ pub(crate) async fn run_client(
         inbound_chan[errs] -> for_each(|m| println!("Received unexpected message type: {:?}", m));
 
         // send a single connection request on startup
-        recv_iter([()]) -> map(|_m| (Message::ConnectRequest, server_addr)) -> [0]outbound_chan;
+        source_iter([()]) -> map(|_m| (Message::ConnectRequest, server_addr)) -> [0]outbound_chan;
 
         // take stdin and send to server as a msg
         // the join serves to buffer msgs until the connection request is acked

@@ -20,7 +20,7 @@ pub(crate) async fn run_detector(opts: Opts, peer_list: Vec<String>) {
 
     let mut df: Hydroflow = hydroflow_syntax! {
         // fetch peers from file, convert ip:port to a SocketAddr, and tee
-        peers = recv_iter(peer_list)
+        peers = source_iter(peer_list)
             -> map(|s| s.parse::<SocketAddr>().unwrap())
             -> tee();
 
@@ -36,7 +36,7 @@ pub(crate) async fn run_detector(opts: Opts, peer_list: Vec<String>) {
         peers[2] -> for_each(|s| println!("Peer: {:?}", s));
 
         // prompt for input
-        recv_iter([()]) -> for_each(|_s| println!("Type in an edge as a tuple of two integers (x,y): "));
+        source_iter([()]) -> for_each(|_s| println!("Type in an edge as a tuple of two integers (x,y): "));
         // read in edges from stdin
         new_edges = recv_stream(stdin_lines)
             -> filter_map(|line| {

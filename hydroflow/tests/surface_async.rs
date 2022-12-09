@@ -70,7 +70,7 @@ pub async fn test_echo_udp() -> Result<(), Box<dyn Error>> {
             recv[1] -> map(|(s, _addr)| s) -> for_each(|s| seen_send.send(s).unwrap());
 
             // Sending
-            recv_iter([ "Hello", "World" ]) -> map(|s| (s.to_owned(), server_addr)) -> sink_async(send_udp);
+            source_iter([ "Hello", "World" ]) -> map(|s| (s.to_owned(), server_addr)) -> sink_async(send_udp);
         };
 
         tokio::select! {
@@ -101,7 +101,7 @@ pub async fn test_echo_udp() -> Result<(), Box<dyn Error>> {
             recv[1] -> map(|(s, _addr)| s) -> for_each(|s| seen_send.send(s).unwrap());
 
             // Sending
-            recv_iter([ "Raise", "Count" ]) -> map(|s| (s.to_owned(), server_addr)) -> sink_async(send_udp);
+            source_iter([ "Raise", "Count" ]) -> map(|s| (s.to_owned(), server_addr)) -> sink_async(send_udp);
         };
 
         tokio::select! {
@@ -179,7 +179,7 @@ pub async fn test_echo_tcp() -> Result<(), Box<dyn Error>> {
             recv[0] -> for_each(|s| println!("echo {}", s));
             recv[1] -> for_each(|s| seen_send.send(s).unwrap());
 
-            recv_iter([ "Hello\n", "World\n" ]) -> write_async(client_send);
+            source_iter([ "Hello\n", "World\n" ]) -> write_async(client_send);
         };
 
         println!("Client running!");

@@ -18,7 +18,7 @@ pub fn main() {
     let (pairs_send, pairs_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
 
     let mut df = hydroflow_syntax! {
-        origin = recv_iter(vec![0]);
+        origin = source_iter(vec![0]);
         stream_of_edges = recv_stream(pairs_recv) -> tee();
         reached_vertices = merge()->tee();
         unreached_vertices = difference();

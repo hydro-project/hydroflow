@@ -4,7 +4,7 @@
 > - the [`recv_stream`](./surface_ops.gen.md#recv_stream) operator that brings channel input into Hydroflow
 > - Rust syntax to programmatically send data to a (local) channel
 
-In our previous examples, data came from within the Hydroflow spec, via Rust iterators and the [`recv_iter`](./surface_ops.gen.md#recv_iter) operator. In most cases, however, data comes from outside the Hydroflow spec. In this example, we'll see a simple version of this idea, with data being generated on the same machine and sent into the channel programmatically via Rust.
+In our previous examples, data came from within the Hydroflow spec, via Rust iterators and the [`source_iter`](./surface_ops.gen.md#source_iter) operator. In most cases, however, data comes from outside the Hydroflow spec. In this example, we'll see a simple version of this idea, with data being generated on the same machine and sent into the channel programmatically via Rust.
 
 We start with a skeleton much like before:
 

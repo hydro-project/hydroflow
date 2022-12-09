@@ -13,7 +13,7 @@ fn test_degenerate_merge() {
     let output_inner = Rc::clone(&output);
 
     let mut df: Hydroflow = hydroflow_syntax! {
-        recv_iter([1, 2, 3]) -> merge() -> for_each(|x| output_inner.borrow_mut().push(x));
+        source_iter([1, 2, 3]) -> merge() -> for_each(|x| output_inner.borrow_mut().push(x));
     };
     df.run_available();
 
@@ -36,7 +36,7 @@ fn test_degenerate_tee() {
     let output_inner = Rc::clone(&output);
 
     let mut df: Hydroflow = hydroflow_syntax! {
-        recv_iter([1, 2, 3]) -> tee() -> for_each(|x| output_inner.borrow_mut().push(x));
+        source_iter([1, 2, 3]) -> tee() -> for_each(|x| output_inner.borrow_mut().push(x));
     };
     df.run_available();
 
@@ -50,7 +50,7 @@ fn test_empty_tee() {
     let output_inner = Rc::clone(&output);
 
     let mut df: Hydroflow = hydroflow_syntax! {
-        recv_iter([1, 2, 3]) -> map(|x| { output_inner.borrow_mut().push(x); x }) -> tee();
+        source_iter([1, 2, 3]) -> map(|x| { output_inner.borrow_mut().push(x); x }) -> tee();
     };
     df.run_available();
 
@@ -70,7 +70,7 @@ pub fn test_warped_diamond() {
         init = join() -> for_each(|(n, (a, b))| {
             println!("DEBUG ({:?}, ({:?}, {:?}))", n, a, b);
         });
-        new_node = recv_iter([1, 2, 3]) -> tee();
+        new_node = source_iter([1, 2, 3]) -> tee();
         // add self
         new_node[0] -> map(|n| (n, 'a')) -> [0]nodes;
         // join peers against active nodes
@@ -91,14 +91,14 @@ pub fn test_warped_diamond_2() {
         init = join() -> for_each(|(n, (a, b))| {
             println!("DEBUG ({:?}, ({:?}, {:?}))", n, a, b);
         });
-        new_node = recv_iter([1, 2, 3]) -> tee();
+        new_node = source_iter([1, 2, 3]) -> tee();
         // add self
         new_node[0] -> map(|n| (n, 'a')) -> [0]nodes;
         // join peers against active nodes
         nodes -> [0]init;
         new_node[1] -> map(|n| (n, 'b')) -> [1]init;
 
-        ntwk = recv_iter([4, 5, 6]) -> tee();
+        ntwk = source_iter([4, 5, 6]) -> tee();
     };
     df.run_available();
 }

@@ -2,12 +2,12 @@
 Any useful flow requires us to define sources of data, either generated computationally or received from 
 and outside environment via I/O.
 
-## `recv_iter`
-A flow can receive data from a Rust collection object via the `recv_iter` operator, which takes the 
+## `source_iter`
+A flow can receive data from a Rust collection object via the `source_iter` operator, which takes the 
 iterable collection as an argument and passes the items down the flow. 
 For example, here we iterate through a vector of `usize` items and push them down the flow:
 ```rust,ignore
-    recv_iter(vec![0, 1]) -> ...
+    source_iter(vec![0, 1]) -> ...
 ```
 The Hello, World example above uses this construct.
 
