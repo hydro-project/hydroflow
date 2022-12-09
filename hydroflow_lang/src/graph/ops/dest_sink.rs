@@ -8,6 +8,9 @@ use quote::quote_spanned;
 ///
 /// Consumes items by sending them to an [async `Sink`](https://docs.rs/futures/latest/futures/sink/trait.Sink.html).
 ///
+/// This handles a stream of individual items, of an arbitrary type, whereas [`dest_asyncwrite`](#dest_asyncwrite)
+/// handles streams of bytes.
+///
 /// Note this operator must be used within a Tokio runtime.
 #[hydroflow_internalmacro::operator_docgen]
 pub const DEST_SINK: OperatorConstraints = OperatorConstraints {

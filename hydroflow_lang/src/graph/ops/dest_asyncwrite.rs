@@ -10,6 +10,8 @@ use quote::quote_spanned;
 /// to an [`AsyncWrite`](https://docs.rs/tokio/latest/tokio/io/trait.AsyncWrite.html)
 /// output.
 ///
+/// This handles a stream of bytes, whereas [`dest_sink`](#dest_sink) handles individual items of an arbitrary type.
+///
 /// Note this operator must be used within a Tokio runtime.
 #[hydroflow_internalmacro::operator_docgen]
 pub const DEST_ASYNCWRITE: OperatorConstraints = OperatorConstraints {
