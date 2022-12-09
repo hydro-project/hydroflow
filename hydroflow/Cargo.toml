@@ -50,7 +50,7 @@ serde_json = "1"
 slotmap = "1.0"
 static_assertions = "1.1.0"
 tokio = { version = "1.16", features = [ "full" ] }
-tokio-stream = { version = "0.1.10" }
+tokio-stream = { version = "0.1.10", features = [ "io-util" ] }
 tokio-util = { version = "0.7.4", features = [ "net", "codec" ] }
 tuple_list = "0.1"
 type_list = { path = "../type_list" }
@@ -65,7 +65,6 @@ itertools = "0.10.3"
 rand = "0.8.4"
 textnonce = "1.0.0"
 time = "0.3"
-tokio-stream = { version = "0.1.8", features = [ "io-util" ] }
 trybuild = "1.0.71"
 hdrhistogram = "7"
 zipf = "7.0.0"

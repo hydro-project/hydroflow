@@ -1,25 +1,24 @@
-use crate::helpers::{decide, deserialize_msg, serialize_msg};
+use std::net::SocketAddr;
+
+use crate::helpers::decide;
 use crate::protocol::{CoordMsg, MsgType, SubordResponse};
-use crate::{GraphType, Opts};
+use crate::GraphType;
 use hydroflow::hydroflow_syntax;
 use hydroflow::pusherator::Pusherator;
 use hydroflow::scheduled::graph::Hydroflow;
-use std::net::SocketAddr;
-use tokio::net::UdpSocket;
+use hydroflow::util::{UdpSink, UdpStream};
 
-pub(crate) async fn run_subordinate(opts: Opts, coordinator: String) {
-    // setup message send/recv ports
-    let socket = UdpSocket::bind(("127.0.0.1", opts.port)).await.unwrap();
-    let my_addr = socket.local_addr().unwrap();
-    let (outbound, inbound) = hydroflow::util::udp_lines(socket);
-    println!("Coordinator: {}", coordinator);
-    let server_addr = coordinator.trim().parse::<SocketAddr>().unwrap();
-
+pub(crate) async fn run_subordinate(
+    outbound: UdpSink,
+    inbound: UdpStream,
+    server_addr: SocketAddr,
+    graph: Option<GraphType>,
+) {
     let mut df: Hydroflow = hydroflow_syntax! {
          // set up channels
         outbound_chan = merge() -> tee();
-        outbound_chan[0] -> map(|(m,a)| (serialize_msg(m), a)) -> sink_async(outbound);
-        inbound_chan = recv_stream(inbound) -> map(deserialize_msg) -> tee();
+        outbound_chan[0] -> sink_async_serde(outbound);
+        inbound_chan = recv_stream_serde(inbound) -> map(|(m, _a)| m) -> tee();
         msgs = inbound_chan[0] ->  demux(|m:CoordMsg, tl!(prepares, p2, ends, errs)| match m.mtype {
             MsgType::Prepare => prepares.give(m),
             MsgType::Abort => p2.give(m),
@@ -39,7 +38,6 @@ pub(crate) async fn run_subordinate(opts: Opts, coordinator: String) {
         report_chan = msgs[prepares] -> map(|m: CoordMsg| (
             SubordResponse{
                 xid: m.xid,
-                addr: my_addr.to_string(),
                 mtype: if decide(67) {MsgType::Commit} else {MsgType::Abort}
             },
             server_addr));
@@ -48,7 +46,6 @@ pub(crate) async fn run_subordinate(opts: Opts, coordinator: String) {
         // handle p2 message: acknowledge (and print)
         p2_response = map(|(m, t)| (SubordResponse{
             xid: m.xid,
-            addr: my_addr.to_string(),
             mtype: t,
         }, server_addr)) -> [1]outbound_chan;
         msgs[p2] -> map(|m:CoordMsg| (m, MsgType::AckP2)) -> p2_response;
@@ -56,14 +53,13 @@ pub(crate) async fn run_subordinate(opts: Opts, coordinator: String) {
         // handle end message: acknowledge (and print)
         msgs[ends] -> map(|m:CoordMsg| (SubordResponse{
             xid: m.xid,
-            addr: my_addr.to_string(),
             mtype: MsgType::Ended,
         }, server_addr)) -> [2]outbound_chan;
 
 
     };
 
-    if let Some(graph) = opts.graph {
+    if let Some(graph) = graph {
         let serde_graph = df
             .serde_graph()
             .expect("No graph found, maybe failed to parse.");
