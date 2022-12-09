@@ -5,7 +5,6 @@ use hydroflow::util::{bind_udp_socket, ipv4_resolve};
 use server::run_server;
 
 mod client;
-mod helpers;
 mod protocol;
 mod server;
 
