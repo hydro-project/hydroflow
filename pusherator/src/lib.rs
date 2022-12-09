@@ -18,9 +18,9 @@ pub mod inspect;
 pub mod map;
 pub mod partition;
 pub mod pivot;
-pub mod split;
 pub mod switch;
 pub mod tee;
+pub mod unzip;
 
 use std::marker::PhantomData;
 
@@ -82,13 +82,13 @@ pub trait PusheratorBuild {
         tee::TeeBuild::new(self, next1)
     }
 
-    fn split<Next1, Item2>(self, next1: Next1) -> split::SplitBuild<Self, Next1>
+    fn unzip<Next1, Item2>(self, next1: Next1) -> unzip::UnzipBuild<Self, Next1>
     where
         Self: Sized,
         Self: PusheratorBuild<ItemOut = (Next1::Item, Item2)>,
         Next1: Pusherator,
     {
-        split::SplitBuild::new(self, next1)
+        unzip::UnzipBuild::new(self, next1)
     }
 
     fn switch<Next1, Item2>(self, next1: Next1) -> switch::SwitchBuild<Self, Next1>

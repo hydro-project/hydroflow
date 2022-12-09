@@ -134,6 +134,24 @@ pub fn test_recv_expr() {
 }
 
 #[test]
+pub fn test_unzip() {
+    let (send0, mut recv0) = hydroflow::util::unbounded_channel::<&'static str>();
+    let (send1, mut recv1) = hydroflow::util::unbounded_channel::<&'static str>();
+    let mut df = hydroflow_syntax! {
+        my_unzip = source_iter(vec![("Hello", "Foo"), ("World", "Bar")]) -> unzip();
+        my_unzip[0] -> for_each(|v| send0.send(v).unwrap());
+        my_unzip[1] -> for_each(|v| send1.send(v).unwrap());
+    };
+
+    df.run_available();
+
+    let out0: Vec<_> = recv_into(&mut recv0);
+    assert_eq!(&["Hello", "World"], &*out0);
+    let out1: Vec<_> = recv_into(&mut recv1);
+    assert_eq!(&["Foo", "Bar"], &*out1);
+}
+
+#[test]
 pub fn test_join_order() {
     let _df_good = hydroflow_syntax! {
         yikes = join() -> for_each(|m: ((), (u32, String))| println!("{:?}", m));
