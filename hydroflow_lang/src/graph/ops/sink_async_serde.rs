@@ -60,7 +60,7 @@ pub const SINK_ASYNC_SERDE: OperatorConstraints = OperatorConstraints {
                         sink.flush().await.expect("Failed to flush async sink.");
                     }
                 })
-                .expect("sink_async() must be used within a tokio runtime");
+                .expect("dest_sink() must be used within a tokio runtime");
         };
 
         let write_iterator = quote_spanned! {op_span=>

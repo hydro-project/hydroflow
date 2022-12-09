@@ -10,8 +10,8 @@ use quote::quote_spanned;
 ///
 /// Note this operator must be used within a Tokio runtime.
 #[hydroflow_internalmacro::operator_docgen]
-pub const SINK_ASYNC: OperatorConstraints = OperatorConstraints {
-    name: "sink_async",
+pub const DEST_SINK: OperatorConstraints = OperatorConstraints {
+    name: "dest_sink",
     hard_range_inn: RANGE_1,
     soft_range_inn: RANGE_1,
     hard_range_out: RANGE_0,
@@ -47,7 +47,7 @@ pub const SINK_ASYNC: OperatorConstraints = OperatorConstraints {
                         sink.flush().await.expect("Failed to flush async sink.");
                     }
                 })
-                .expect("sink_async() must be used within a tokio runtime");
+                .expect("dest_sink() must be used within a tokio runtime");
         };
 
         let write_iterator = quote_spanned! {op_span=>

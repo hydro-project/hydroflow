@@ -33,7 +33,7 @@ pub async fn test_echo_udp() -> Result<(), Box<dyn Error>> {
                 -> map(|r| r.unwrap())
                 -> tee();
             // Echo
-            recv[0] -> sink_async(udp_send);
+            recv[0] -> dest_sink(udp_send);
             // Testing
             recv[1] -> map(|(s, _addr)| s) -> for_each(|s| seen_send.send(s).unwrap());
         };
@@ -70,7 +70,7 @@ pub async fn test_echo_udp() -> Result<(), Box<dyn Error>> {
             recv[1] -> map(|(s, _addr)| s) -> for_each(|s| seen_send.send(s).unwrap());
 
             // Sending
-            source_iter([ "Hello", "World" ]) -> map(|s| (s.to_owned(), server_addr)) -> sink_async(send_udp);
+            source_iter([ "Hello", "World" ]) -> map(|s| (s.to_owned(), server_addr)) -> dest_sink(send_udp);
         };
 
         tokio::select! {
@@ -101,7 +101,7 @@ pub async fn test_echo_udp() -> Result<(), Box<dyn Error>> {
             recv[1] -> map(|(s, _addr)| s) -> for_each(|s| seen_send.send(s).unwrap());
 
             // Sending
-            source_iter([ "Raise", "Count" ]) -> map(|s| (s.to_owned(), server_addr)) -> sink_async(send_udp);
+            source_iter([ "Raise", "Count" ]) -> map(|s| (s.to_owned(), server_addr)) -> dest_sink(send_udp);
         };
 
         tokio::select! {
@@ -249,7 +249,7 @@ pub async fn test_futures_stream_sink() -> Result<(), Box<dyn Error>> {
         recv = source_stream(recv) -> tee();
         recv[0] -> map(|x| x + 1)
             -> filter(|&x| x < MAX)
-            -> sink_async(send);
+            -> dest_sink(send);
         recv[1] -> for_each(|x| seen_send.send(x).unwrap());
     };
 

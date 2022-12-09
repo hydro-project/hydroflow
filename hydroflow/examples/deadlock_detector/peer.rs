@@ -25,7 +25,7 @@ pub(crate) async fn run_detector(opts: Opts, peer_list: Vec<String>) {
             -> tee();
 
         // set up channels
-        outbound_chan = map(|(m,a)| (serialize_msg(m), a)) -> sink_async(outbound);
+        outbound_chan = map(|(m,a)| (serialize_msg(m), a)) -> dest_sink(outbound);
         inbound_chan = source_stream(inbound) -> map(deserialize_msg::<Message>);
 
         // setup gossip channel to all peers. gen_bool chooses True with the odds passed in.
