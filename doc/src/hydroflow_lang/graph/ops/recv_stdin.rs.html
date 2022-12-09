@@ -93,8 +93,8 @@
         <span class="kw">let </span>stream_ident = wc.make_ident(<span class="string">&quot;stream&quot;</span>);
         <span class="kw">let </span>write_prologue = <span class="macro">quote_spanned! </span>{op_span=&gt;
             <span class="kw">let </span><span class="kw-2">mut </span>#stream_ident = {
-                <span class="kw">use </span>tokio::io::AsyncBufReadExt;
-                <span class="kw">let </span>reader = #root::tokio::io::BufReader::new(tokio::io::stdin());
+                <span class="kw">use </span>#root::tokio::io::AsyncBufReadExt;
+                <span class="kw">let </span>reader = #root::tokio::io::BufReader::new(#root::tokio::io::stdin());
                 <span class="kw">let </span>stdin_lines = #root::tokio_stream::wrappers::LinesStream::new(reader.lines());
                 stdin_lines
             };
