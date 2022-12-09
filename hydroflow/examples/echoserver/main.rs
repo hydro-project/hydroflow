@@ -1,7 +1,7 @@
-#![feature(fmt_internals, print_internals)]
 use clap::{ArgEnum, Parser};
 use client::run_client;
 use hydroflow::tokio;
+use hydroflow::util::{bind_udp_socket, ipv4_resolve};
 use server::run_server;
 
 mod client;
@@ -36,15 +36,16 @@ struct Opts {
 #[tokio::main]
 async fn main() {
     let opts = Opts::parse();
+    let server_addr = ipv4_resolve(opts.server_addr.clone());
 
-    // get server_addr
-    println!("Server address: {}", opts.server_addr);
     match opts.role {
         Role::Client => {
-            run_client(opts).await;
+            let (outbound, inbound) = bind_udp_socket(opts.addr.clone().unwrap()).await;
+            run_client(outbound, inbound, server_addr).await;
         }
         Role::Server => {
-            run_server(opts).await;
+            let (outbound, inbound) = bind_udp_socket(opts.server_addr.clone()).await;
+            run_server(outbound, inbound).await;
         }
     }
 }

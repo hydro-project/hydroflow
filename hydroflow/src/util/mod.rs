@@ -18,6 +18,11 @@ use tokio_util::codec::length_delimited::LengthDelimitedCodec;
 use tokio_util::codec::{Decoder, Encoder, LinesCodec, LinesCodecError};
 use tokio_util::udp::UdpFramed;
 
+pub type UdpFramedSink<Codec, Item> = SplitSink<UdpFramed<Codec>, (Item, SocketAddr)>;
+pub type UdpFramedStream<Codec> = SplitStream<UdpFramed<Codec>>;
+pub type UdpSink = UdpFramedSink<LengthDelimitedCodec, Bytes>;
+pub type UdpStream = UdpFramedStream<LengthDelimitedCodec>;
+
 pub fn unbounded_channel<T>() -> (
     tokio::sync::mpsc::UnboundedSender<T>,
     tokio_stream::wrappers::UnboundedReceiverStream<T>,
@@ -26,9 +31,6 @@ pub fn unbounded_channel<T>() -> (
     let recv = tokio_stream::wrappers::UnboundedReceiverStream::new(recv);
     (send, recv)
 }
-
-pub type UdpFramedSink<Codec, Item> = SplitSink<UdpFramed<Codec>, (Item, SocketAddr)>;
-pub type UdpFramedStream<Codec> = SplitStream<UdpFramed<Codec>>;
 
 pub fn udp_framed<Codec, Item>(
     socket: UdpSocket,
@@ -41,12 +43,7 @@ where
     futures::stream::StreamExt::split(framed)
 }
 
-pub fn udp_bytes(
-    socket: UdpSocket,
-) -> (
-    UdpFramedSink<LengthDelimitedCodec, Bytes>,
-    UdpFramedStream<LengthDelimitedCodec>,
-) {
+pub fn udp_bytes(socket: UdpSocket) -> (UdpSink, UdpStream) {
     udp_framed(socket, LengthDelimitedCodec::new())
 }
 
@@ -137,31 +134,16 @@ pub fn ipv4_resolve(addr: String) -> SocketAddr {
         .expect("Unable to resolve connection address")
 }
 
-pub async fn bind_udp_socket_addr(
-    addr: SocketAddr,
-) -> (
-    UdpFramedSink<LengthDelimitedCodec, Bytes>,
-    UdpFramedStream<LengthDelimitedCodec>,
-) {
+pub async fn bind_udp_socket_addr(addr: SocketAddr) -> (UdpSink, UdpStream) {
     let socket = tokio::net::UdpSocket::bind(addr).await.unwrap();
     udp_bytes(socket)
 }
 
-pub async fn bind_udp_socket(
-    addr_string: String,
-) -> (
-    UdpFramedSink<LengthDelimitedCodec, Bytes>,
-    UdpFramedStream<LengthDelimitedCodec>,
-) {
+pub async fn bind_udp_socket(addr_string: String) -> (UdpSink, UdpStream) {
     let addr = ipv4_resolve(addr_string);
     bind_udp_socket_addr(addr).await
 }
 
-pub async fn bind_local_udp_socket(
-    port: u16,
-) -> (
-    UdpFramedSink<LengthDelimitedCodec, Bytes>,
-    UdpFramedStream<LengthDelimitedCodec>,
-) {
+pub async fn bind_local_udp_socket(port: u16) -> (UdpSink, UdpStream) {
     bind_udp_socket(format!("127.0.0.1:{}", port)).await
 }

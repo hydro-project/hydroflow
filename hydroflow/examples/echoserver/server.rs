@@ -1,22 +1,17 @@
-use crate::Opts;
 use chrono::prelude::*;
 use std::net::SocketAddr;
 
 use crate::protocol::EchoMsg;
 use hydroflow::hydroflow_syntax;
 use hydroflow::scheduled::graph::Hydroflow;
-use hydroflow::util::bind_udp_socket;
+use hydroflow::util::{UdpSink, UdpStream};
 
-pub(crate) async fn run_server(opts: Opts) {
-    println!("Listening on {}", opts.server_addr);
-    let (outbound, inbound) = bind_udp_socket(opts.server_addr).await;
-
-    println!("{:?} live!", opts.role);
+pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream) {
+    println!("Server live!");
 
     let mut flow: Hydroflow = hydroflow_syntax! {
         // Inbound channel sharing
-        socket = recv_stream_serde(inbound);
-        inbound_chan = socket -> tee();
+        inbound_chan = recv_stream_serde(inbound) -> tee();
 
         // Logic
         inbound_chan[0] -> for_each(|(m, a): (EchoMsg, SocketAddr)| println!("Got {:?} from {:?}", m, a));
