@@ -14,6 +14,8 @@ pub mod util;
 pub use bytes;
 pub use futures;
 pub use pusherator;
+pub use serde;
+pub use serde_json;
 pub use static_assertions;
 pub use tokio;
 pub use tokio_stream;
