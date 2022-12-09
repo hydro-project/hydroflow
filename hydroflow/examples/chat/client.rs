@@ -65,7 +65,7 @@ pub(crate) async fn run_client(
           -> [0]msg_send;
 
         // receive and print messages
-        inbound_chan[msgs] -> for_each(|m: Message| pretty_print_msg(m));
+        inbound_chan[msgs] -> for_each(pretty_print_msg);
 
         // handle connect ack
         inbound_chan[acks] -> [1]msg_send;

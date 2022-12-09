@@ -48,7 +48,7 @@ async fn main() {
             let server_str = format!(
                 "{}:{}",
                 opts.server_addr.clone().unwrap(),
-                opts.server_port.clone().unwrap()
+                opts.server_port.unwrap()
             );
             println!(
                 "Client is bound to {}, connecting to Server at {}",
