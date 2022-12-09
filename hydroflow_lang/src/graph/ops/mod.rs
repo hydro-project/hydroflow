@@ -33,11 +33,11 @@ mod null;
 mod recv_iter;
 mod recv_stdin;
 mod recv_stream;
-mod recv_udp;
+mod recv_stream_serde;
 mod reduce;
 mod repeat_iter;
 mod sink_async;
-mod sink_udp;
+mod sink_async_serde;
 mod sort;
 mod tee;
 mod unique;
@@ -158,7 +158,7 @@ pub const OPERATORS: &[OperatorConstraints] = &[
     recv_iter::RECV_ITER,
     recv_stdin::RECV_STDIN,
     recv_stream::RECV_STREAM,
-    recv_udp::RECV_UDP,
+    recv_stream_serde::RECV_STREAM_SERDE,
     repeat_iter::REPEAT_ITER,
     difference::DIFFERENCE,
     next_stratum::NEXT_STRATUM,
@@ -167,7 +167,7 @@ pub const OPERATORS: &[OperatorConstraints] = &[
     demux::DEMUX,
     write_async::WRITE_ASYNC,
     sink_async::SINK_ASYNC,
-    sink_udp::SINK_UDP,
+    sink_async_serde::SINK_ASYNC_SERDE,
 ];
 
 pub struct WriteContextArgs<'a> {

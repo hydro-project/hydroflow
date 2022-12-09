@@ -6,24 +6,25 @@ use quote::quote_spanned;
 
 /// > 0 input streams, 1 output stream
 ///
-/// > Arguments: port number
+/// > Arguments: [`Stream`](https://docs.rs/futures/latest/futures/stream/trait.Stream.html)
 ///
-/// `recv_net` binds to a local network port (on 127.0.0.1) and receives a Stream of serialized data from a remote sender,
-/// and emits each of the elements it receives downstream.
+/// Given a [`Stream`](https://docs.rs/futures/latest/futures/stream/trait.Stream.html)
+/// of (serialized payload, addr) pairs, deserializes the payload and emits each of the
+/// elements it receives downstream.
 ///
 /// ```rustbook
-/// #[tokio::main]
-/// async fn main() {
+/// async fn serde_in() {
+///     let (outbound, inbound) = hydroflow::util::bind_udp_socket("localhost:9000".into()).await;
 ///     let mut flow = hydroflow::hydroflow_syntax! {
-///         recv_udp(9000) -> map(hydroflow::util::deserialize_msg) -> map(|x: String| x.to_uppercase())
+///         recv_stream_serde(inbound) -> map(|(x, a): (String, std::net::SocketAddr)| x.to_uppercase())
 ///             -> for_each(|x| println!("{}", x));
 ///     };
-///     flow.run_async();
+///     flow.run_available();
 /// }
 /// ```
 #[hydroflow_internalmacro::operator_docgen]
-pub const RECV_UDP: OperatorConstraints = OperatorConstraints {
-    name: "recv_udp",
+pub const RECV_STREAM_SERDE: OperatorConstraints = OperatorConstraints {
+    name: "recv_stream_serde",
     hard_range_inn: RANGE_0,
     soft_range_inn: RANGE_0,
     hard_range_out: RANGE_1,
@@ -37,20 +38,10 @@ pub const RECV_UDP: OperatorConstraints = OperatorConstraints {
                      ident, arguments, ..
                  },
                  _| {
-        let port = &arguments[0];
+        let receiver = &arguments[0];
         let stream_ident = wc.make_ident("stream");
         let write_prologue = quote_spanned! {op_span=>
-            let mut #stream_ident = {
-                use std::net::ToSocketAddrs;
-
-                let mut addrs = format!("127.0.0.1:{}", #port)
-                    .to_socket_addrs()
-                    .unwrap();
-                let addr = addrs.find(|addr| addr.is_ipv4()).expect("Unable to resolve connection address");
-                let socket = #root::tokio::net::UdpSocket::bind(addr).await.unwrap();
-                let (_outbound, inbound) = #root::util::udp_lines(socket);
-                Box::pin(inbound)
-            };
+            let mut #stream_ident = Box::pin(#receiver);
         };
         let write_iterator = quote_spanned! {op_span=>
             let #ident = std::iter::from_fn(|| {
