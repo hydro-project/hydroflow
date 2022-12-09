@@ -13,12 +13,12 @@ use quote::quote_spanned;
 /// Note that all elements are emitted during the first epoch.
 ///
 /// ```hydroflow
-///     recv_iter(vec!["Hello", "World"])
+///     source_iter(vec!["Hello", "World"])
 ///         -> for_each(|x| println!("{}", x));
 /// ```
 #[hydroflow_internalmacro::operator_docgen]
-pub const RECV_ITER: OperatorConstraints = OperatorConstraints {
-    name: "recv_iter",
+pub const SOURCE_ITER: OperatorConstraints = OperatorConstraints {
+    name: "source_iter",
     hard_range_inn: RANGE_0,
     soft_range_inn: RANGE_0,
     hard_range_out: RANGE_1,

@@ -40,8 +40,8 @@ pub(crate) async fn run_client(
 
     let mut hf = hydroflow_syntax! {
         // set up channels
-        outbound_chan = merge() -> sink_async_serde(outbound);
-        inbound_chan = recv_stream_serde(inbound) -> map(|(m, _)| m)
+        outbound_chan = merge() -> dest_sink_serde(outbound);
+        inbound_chan = source_stream_serde(inbound) -> map(|(m, _)| m)
             ->  demux(|m, tl!(acks, msgs, errs)|
                     match m {
                         Message::ConnectResponse => acks.give(m),
@@ -52,12 +52,12 @@ pub(crate) async fn run_client(
         inbound_chan[errs] -> for_each(|m| println!("Received unexpected message type: {:?}", m));
 
         // send a single connection request on startup
-        recv_iter([()]) -> map(|_m| (Message::ConnectRequest, server_addr)) -> [0]outbound_chan;
+        source_iter([()]) -> map(|_m| (Message::ConnectRequest, server_addr)) -> [0]outbound_chan;
 
         // take stdin and send to server as a msg
         // the join serves to buffer msgs until the connection request is acked
         msg_send = cross_join() -> map(|(msg, _)| (msg, server_addr)) -> [1]outbound_chan;
-        lines = recv_stdin()
+        lines = source_stdin()
           -> map(|l| Message::ChatMsg {
                     nickname: name.clone(),
                     message: l.unwrap(),

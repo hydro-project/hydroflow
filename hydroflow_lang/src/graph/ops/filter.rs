@@ -10,7 +10,7 @@ use quote::quote_spanned;
 /// > TODO: Why does filter's closure expect a reference and other ops like map do not?
 ///
 /// ```hydroflow
-/// recv_iter(vec!["hello", "world"]) -> filter(|x| x.starts_with('w'))
+/// source_iter(vec!["hello", "world"]) -> filter(|x| x.starts_with('w'))
 ///     -> for_each(|x| println!("{}", x));
 /// ```
 #[hydroflow_internalmacro::operator_docgen]

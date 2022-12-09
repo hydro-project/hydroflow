@@ -12,7 +12,7 @@ use quote::quote_spanned;
 /// argument.
 ///
 /// ```hydroflow
-///     recv_iter(vec!["Hello", "World"])
+///     source_iter(vec!["Hello", "World"])
 ///         -> for_each(|x| println!("{}", x));
 /// ```
 #[hydroflow_internalmacro::operator_docgen]

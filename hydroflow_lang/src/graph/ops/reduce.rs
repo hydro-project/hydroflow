@@ -15,7 +15,7 @@ use quote::quote_spanned;
 ///
 /// ```hydroflow
 /// // should print 120 (i.e., 1*2*3*4*5)
-/// recv_iter([1,2,3,4,5])
+/// source_iter([1,2,3,4,5])
 ///     -> reduce(|mut accum, elem| {
 ///         accum *= elem;
 ///         accum

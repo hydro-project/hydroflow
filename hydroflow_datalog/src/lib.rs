@@ -66,7 +66,7 @@ fn gen_hydroflow_graph(literal: proc_macro2::Literal) -> FlatGraph {
         let name = syn::Ident::new(&target.name, Span::call_site());
 
         flat_graph.add_statement(parse_quote! {
-            recv_stream(#target_ident) -> [#my_merge_index_lit] #name
+            source_stream(#target_ident) -> [#my_merge_index_lit] #name
         });
     }
 

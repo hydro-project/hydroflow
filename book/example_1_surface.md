@@ -3,7 +3,7 @@
 > In this example we will cover:
 > - How to embed a Hydroflow program spec inside Rust 
 > - How to execute the Hydroflow program
-> - Two simple Hydroflow operators: `recv_iter` and `for_each`
+> - Two simple Hydroflow operators: `source_iter` and `for_each`
 
 Lets start out with the simplest possible Hydroflow program, which prints out
 the numbers in `0..10`.
@@ -14,7 +14,7 @@ use hydroflow::hydroflow_syntax;
 
 pub fn main() {
     let mut flow = hydroflow_syntax! {
-        recv_iter(0..10) -> for_each(|n| println!("Hello {}", n));
+        source_iter(0..10) -> for_each(|n| println!("Hello {}", n));
     };
 
     flow.run_available();
@@ -50,10 +50,10 @@ a mutable variable `flow`––mutable because we will be changing its status wh
 # use hydroflow::hydroflow_syntax;
 pub fn main() {
     let mut flow = hydroflow_syntax! {
-        recv_iter(0..10) -> for_each(|n| println!("Hello {}", n));
+        source_iter(0..10) -> for_each(|n| println!("Hello {}", n));
     };
 ```
-The flow starts with a [`recv_iter`](./surface_ops.gen.md#recv_iter) operator that takes the Rust
+The flow starts with a [`source_iter`](./surface_ops.gen.md#source_iter) operator that takes the Rust
 iterator `0..10` and iterates it to emit the 
 numbers 0 through 9, and passes them along the arrow `->` operator downstream to a 
 [`for_each`](./surface_ops.gen.md#for_each) operator that invokes its closure argument to print each

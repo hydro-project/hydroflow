@@ -17,7 +17,7 @@ use hydroflow::hydroflow_syntax;
 
 pub fn main() {
     let mut flow = hydroflow_syntax! {
-        recv_iter(0..10)
+        source_iter(0..10)
             -> map(|n| n * n)
             -> filter(|&n| n > 10)
             -> map(|n| (n..=n+1))
@@ -28,7 +28,7 @@ pub fn main() {
     flow.run_available();
 }
 ```
-Let's take this one operator at a time, starting after the `recv_iter` operator we saw in the previous example.
+Let's take this one operator at a time, starting after the `source_iter` operator we saw in the previous example.
 
 - `-> map(|n| n * n)` transforms each element one-to-one as it flows through the subgraph.
 In this case, we square each number. 
@@ -50,7 +50,7 @@ machine code:
 # use hydroflow::hydroflow_syntax;
  pub fn main() {
     let mut flow = hydroflow_syntax! {
-        recv_iter(0..10)
+        source_iter(0..10)
         -> filter_map(|n| {
             let n2 = n * n;
             if n2 > 10 {

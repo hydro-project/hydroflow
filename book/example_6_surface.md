@@ -43,8 +43,8 @@ pub fn main() {
     let (pairs_send, pairs_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
 
     let mut flow = hydroflow_syntax! {
-        origin = recv_iter(vec![0]);
-        stream_of_edges = recv_stream(pairs_recv) -> tee();
+        origin = source_iter(vec![0]);
+        stream_of_edges = source_stream(pairs_recv) -> tee();
         reached_vertices = merge()->tee();
         origin -> [0]reached_vertices;
 
@@ -109,7 +109,7 @@ The auto-generated mermaid looks like so:
 ```mermaid
 flowchart TB
     subgraph "sg_1v1 stratum 0"
-        1v1["1v1 <tt>op_1v1: recv_iter(vec! [0])</tt>"]
+        1v1["1v1 <tt>op_1v1: source_iter(vec! [0])</tt>"]
         8v1["8v1 <tt>op_8v1: map(| v | (v, ()))</tt>"]
         6v1["6v1 <tt>op_6v1: join()</tt>"]
         7v1["7v1 <tt>op_7v1: flat_map(| (src, ((), dst)) | [src, dst])</tt>"]
@@ -117,7 +117,7 @@ flowchart TB
         5v1["5v1 <tt>op_5v1: tee()</tt>"]
     end
     subgraph "sg_2v1 stratum 0"
-        2v1["2v1 <tt>op_2v1: recv_stream(pairs_recv)</tt>"]
+        2v1["2v1 <tt>op_2v1: source_stream(pairs_recv)</tt>"]
         3v1["3v1 <tt>op_3v1: tee()</tt>"]
         9v1["9v1 <tt>op_9v1: flat_map(| (src, dst) | [src, dst])</tt>"]
         10v1["10v1 <tt>op_10v1: tee()</tt>"]

@@ -15,14 +15,14 @@ pub(crate) async fn run_coordinator(
 ) {
     let mut df: Hydroflow = hydroflow_syntax! {
         // fetch subordinates from file, convert ip:port to a SocketAddr, and tee
-        subords = recv_iter(subordinates)
+        subords = source_iter(subordinates)
             -> map(|s| s.parse::<SocketAddr>().unwrap())
             -> tee();
 
         // set up channels
         outbound_chan = tee();
-        outbound_chan[0] -> sink_async_serde(outbound);
-        inbound_chan = recv_stream_serde(inbound) -> map(|(m, _a)| m) -> tee();
+        outbound_chan[0] -> dest_sink_serde(outbound);
+        inbound_chan = source_stream_serde(inbound) -> map(|(m, _a)| m) -> tee();
         msgs = inbound_chan[0] ->  demux(|m:SubordResponse, tl!(commits, aborts, acks, endeds, errs)| match m.mtype {
                     MsgType::Commit => commits.give(m),
                     MsgType::Abort => aborts.give(m),
@@ -45,7 +45,7 @@ pub(crate) async fn run_coordinator(
 
         // Phase 1 initiate:
         // Given a transaction commit request from stdio, broadcast a Prepare to subordinates
-        recv_stdin()
+        source_stdin()
             -> filter_map(|l: Result<std::string::String, std::io::Error>| parse_out(l.unwrap()))
             -> map(|xid| CoordMsg{xid, mtype: MsgType::Prepare})
             -> [0]broadcast;

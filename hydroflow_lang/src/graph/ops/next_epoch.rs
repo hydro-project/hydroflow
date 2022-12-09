@@ -16,7 +16,7 @@ use super::{DelayType, OperatorConstraints, IDENTITY_WRITE_FN, RANGE_1};
 /// // Outputs 1 2 3 4 5 6 (on separate lines).
 /// let (input_send, input_recv) = hydroflow::util::unbounded_channel::<usize>();
 /// let mut flow = hydroflow::hydroflow_syntax! {
-///     inp = recv_stream(input_recv) -> tee();
+///     inp = source_stream(input_recv) -> tee();
 ///     diff = difference() -> for_each(|x| println!("{}", x));
 ///     inp -> [pos]diff;
 ///     inp -> next_epoch() -> [neg]diff;

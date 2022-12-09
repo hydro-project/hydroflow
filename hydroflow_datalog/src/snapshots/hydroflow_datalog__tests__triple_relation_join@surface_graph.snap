@@ -10,9 +10,9 @@ expression: graph.surface_syntax_string()
 6v1 = tee ();
 7v1 = merge ();
 8v1 = tee ();
-9v1 = recv_stream (in1);
-10v1 = recv_stream (in2);
-11v1 = recv_stream (in3);
+9v1 = source_stream (in1);
+10v1 = source_stream (in2);
+11v1 = source_stream (in3);
 12v1 = for_each (| v | out . send (v) . unwrap ());
 13v1 = join ();
 14v1 = map (| kv : ((_ ,) , ((_ , _ ,) , (_ , _ ,))) | (kv . 1 . 0 . 0 , kv . 1 . 0 . 1 , kv . 1 . 1 . 1 ,));

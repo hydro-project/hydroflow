@@ -5,10 +5,10 @@ error: Output port from `demux(..)` must be specified and must be a valid identi
    |                  ^^
 
 error: `demux(..)` closure argument `odds` missing corresponding output port.
- --> tests/compile-fail/surface_demux_port_elided.rs:6:64
+ --> tests/compile-fail/surface_demux_port_elided.rs:6:66
   |
-6 |         my_demux = recv_iter(0..10) -> demux(|item, tl!(evens, odds)| {
-  |                                                                ^^^^
+6 |         my_demux = source_iter(0..10) -> demux(|item, tl!(evens, odds)| {
+  |                                                                  ^^^^
 
 warning: unused import: `hydroflow::pusherator::Pusherator`
  --> tests/compile-fail/surface_demux_port_elided.rs:1:5

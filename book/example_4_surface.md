@@ -53,8 +53,8 @@ pub fn main() {
 
     let mut flow = hydroflow_syntax! {
         // inputs: the origin vertex (vertex 0) and stream of input edges
-        origin = recv_iter(vec![0]);
-        stream_of_edges = recv_stream(pairs_recv);
+        origin = source_iter(vec![0]);
+        stream_of_edges = source_stream(pairs_recv);
 
         // the join
         my_join = join() -> flat_map(|(src, (_, dst))| [src, dst]);
@@ -93,11 +93,11 @@ That looks right: the edges we "sent" into the flow that start at `0` are
 As for the code itself, we start out with the origin vertex, `0`,
 and the stream of edges coming in:
 ```rust,ignore
-    origin = recv_iter(vec![0]);
-    stream_of_edges = recv_stream(pairs_recv);
+    origin = source_iter(vec![0]);
+    stream_of_edges = source_stream(pairs_recv);
 ```
 The Rust syntax `vec![0]` constructs a vector with a single element, `0`, which we iterate
-over using `recv_iter`.
+over using `source_iter`.
 
 We then set up a [`join()`](./surface_ops.gen.md#join) that we
 name `my_join`, which acts like a SQL inner join. 
@@ -134,8 +134,8 @@ the structure of the graph:
 ```mermaid
 flowchart TB
     subgraph "sg_1v1 stratum 0"
-        1v1["1v1 <tt>op_1v1: recv_iter(vec! [0])</tt>"]
-        2v1["2v1 <tt>op_2v1: recv_stream(pairs_recv)</tt>"]
+        1v1["1v1 <tt>op_1v1: source_iter(vec! [0])</tt>"]
+        2v1["2v1 <tt>op_2v1: source_stream(pairs_recv)</tt>"]
         5v1["5v1 <tt>op_5v1: map(| v | (v, ()))</tt>"]
         3v1["3v1 <tt>op_3v1: join()</tt>"]
         4v1["4v1 <tt>op_4v1: flat_map(| (src, (_, dst)) | [src, dst])</tt>"]

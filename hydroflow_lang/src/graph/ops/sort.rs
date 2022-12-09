@@ -9,7 +9,7 @@ use quote::quote_spanned;
 ///
 /// ```hydroflow
 /// // should print 1, 2, 3 (in order)
-/// recv_iter(vec![2, 3, 1])
+/// source_iter(vec![2, 3, 1])
 ///     -> sort()
 ///     -> for_each(|x| println!("{}", x));
 /// ```
