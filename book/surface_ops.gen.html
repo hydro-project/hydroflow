@@ -155,12 +155,12 @@ are based on the Rust equivalents for iterators; see the <a href="https://doc.ru
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>// should print `1, 2, 3, 4, 5, 6, a, b, c` across 9 lines
 null() -&gt; for_each(|_: ()| panic!());
-recv_iter([1,2,3]) -&gt; map(|i| println!(&quot;{}&quot;, i)) -&gt; null();
+source_iter([1,2,3]) -&gt; map(|i| println!(&quot;{}&quot;, i)) -&gt; null();
 null_src = null();
 null_sink = null();
 null_src[0] -&gt; for_each(|_: ()| panic!());
 // note: use `for_each()` (or `inspect()`) instead of this:
-recv_iter([4,5,6]) -&gt; map(|i| println!(&quot;{}&quot;, i)) -&gt; [0]null_sink;
+source_iter([4,5,6]) -&gt; map(|i| println!(&quot;{}&quot;, i)) -&gt; [0]null_sink;
 <span class="boring">};
 </span><span class="boring">__hf.run_available();
 </span><span class="boring">}
@@ -182,9 +182,9 @@ a variable to reference its multiple input ports across statements.</p>
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>my_merge = merge();
-recv_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; my_merge;
-recv_iter(vec![&quot;stay&quot;, &quot;gold&quot;]) -&gt; my_merge;
-recv_iter(vec![&quot;don\'t&quot;, &quot;give&quot;, &quot;up&quot;]) -&gt; my_merge;
+source_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; my_merge;
+source_iter(vec![&quot;stay&quot;, &quot;gold&quot;]) -&gt; my_merge;
+source_iter(vec![&quot;don\'t&quot;, &quot;give&quot;, &quot;up&quot;]) -&gt; my_merge;
 my_merge -&gt; map(|x| x.to_uppercase())
     -&gt; for_each(|x| println!(&quot;{}&quot;, x));
 <span class="boring">};
@@ -211,8 +211,8 @@ my_merge -&gt; map(|x| x.to_uppercase())
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>// should print `(hello, (world, cleveland))`
 my_join = join();
-recv_iter(vec![(&quot;hello&quot;, &quot;world&quot;), (&quot;stay&quot;, &quot;gold&quot;)]) -&gt; [0]my_join;
-recv_iter(vec![(&quot;hello&quot;, &quot;cleveland&quot;)]) -&gt; [1]my_join;
+source_iter(vec![(&quot;hello&quot;, &quot;world&quot;), (&quot;stay&quot;, &quot;gold&quot;)]) -&gt; [0]my_join;
+source_iter(vec![(&quot;hello&quot;, &quot;cleveland&quot;)]) -&gt; [1]my_join;
 my_join -&gt; for_each(|(k, (v1, v2))| println!(&quot;({}, ({}, {}))&quot;, k, v1, v2));
 <span class="boring">};
 </span><span class="boring">__hf.run_available();
@@ -238,8 +238,8 @@ my_join -&gt; for_each(|(k, (v1, v2))| println!(&quot;({}, ({}, {}))&quot;, k, v
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>// should print all 4 pairs of emotion and animal
 my_join = cross_join();
-recv_iter(vec![&quot;happy&quot;, &quot;sad&quot;]) -&gt; [0]my_join;
-recv_iter(vec![&quot;dog&quot;, &quot;cat&quot;]) -&gt; [1]my_join;
+source_iter(vec![&quot;happy&quot;, &quot;sad&quot;]) -&gt; [0]my_join;
+source_iter(vec![&quot;dog&quot;, &quot;cat&quot;]) -&gt; [1]my_join;
 my_join -&gt; for_each(|(v1, v2)| println!(&quot;({}, {})&quot;, v1, v2));
 <span class="boring">};
 </span><span class="boring">__hf.run_available();
@@ -262,12 +262,38 @@ my_join -&gt; for_each(|(v1, v2)| println!(&quot;({}, {})&quot;, v1, v2));
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
-</span>my_tee = recv_iter(vec![&quot;Hello&quot;, &quot;World&quot;]) -&gt; tee();
+</span>my_tee = source_iter(vec![&quot;Hello&quot;, &quot;World&quot;]) -&gt; tee();
 my_tee -&gt; map(|x: &amp;str| x.to_uppercase())
     -&gt; for_each(|x| println!(&quot;{}&quot;, x));
 my_tee -&gt; map(|x: &amp;str| x.to_lowercase())
     -&gt; for_each(|x| println!(&quot;{}&quot;, x));
 my_tee -&gt; for_each(|x: &amp;str| println!(&quot;{}&quot;, x));
+<span class="boring">};
+</span><span class="boring">__hf.run_available();
+</span><span class="boring">}
+</span></code></pre></pre>
+<h2 id="unzip"><a class="header" href="#unzip"><code>unzip</code></a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
+<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; unzip() -&gt;</code></td><td><span title="exactly 2">exactly 2</span></td></tr>
+</tbody></table>
+</div>
+<blockquote>
+<p>Output port names: <code>0</code>, <code>1</code></p>
+</blockquote>
+<!-- GENERATED "hydroflow_lang/src/graph/ops/unzip.rs" -->
+<blockquote>
+<p>1 input stream of pair tuples <code>(A, B)</code>, 2 output streams</p>
+</blockquote>
+<p>Takes the input stream of pairs and unzips each one, delivers each item to
+its corresponding side.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
+</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
+</span>my_unzip = source_iter(vec![(&quot;Hello&quot;, &quot;Foo&quot;), (&quot;World&quot;, &quot;Bar&quot;)]) -&gt; unzip();
+my_unzip[0] -&gt; for_each(|x| println!(&quot;0: {}&quot;, x)); // Hello World
+my_unzip[1] -&gt; for_each(|x| println!(&quot;1: {}&quot;, x)); // Foo Bar
 <span class="boring">};
 </span><span class="boring">__hf.run_available();
 </span><span class="boring">}
@@ -287,7 +313,7 @@ my_tee -&gt; for_each(|x: &amp;str| println!(&quot;{}&quot;, x));
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>// should print &quot;hello&quot; and &quot;world&quot; on separate lines (in either order)
-recv_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; identity()
+source_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; identity()
     -&gt; for_each(|x| println!(&quot;{}&quot;, x));
 <span class="boring">};
 </span><span class="boring">__hf.run_available();
@@ -312,7 +338,7 @@ each item use the <a href="#inspect"><code>inspect</code></a> operator instead.<
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
-</span>recv_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; map(|x| x.to_uppercase())
+</span>source_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; map(|x| x.to_uppercase())
     -&gt; for_each(|x| println!(&quot;{}&quot;, x));
 <span class="boring">};
 </span><span class="boring">__hf.run_available();
@@ -335,7 +361,7 @@ anti-pattern to provide a closure with side effects.</p>
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
-</span>recv_iter([1, 2, 3, 4]) -&gt; inspect(|&amp;x| println!(&quot;{}&quot;, x)) -&gt; null();
+</span>source_iter([1, 2, 3, 4]) -&gt; inspect(|&amp;x| println!(&quot;{}&quot;, x)) -&gt; null();
 <span class="boring">};
 </span><span class="boring">__hf.run_available();
 </span><span class="boring">}
@@ -359,7 +385,7 @@ iterator to produce items one by one. The type of the input items must be iterab
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>// should print out each character of each word on a separate line
-recv_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; flat_map(|x| x.chars())
+source_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; flat_map(|x| x.chars())
     -&gt; for_each(|x| println!(&quot;{}&quot;, x));
 <span class="boring">};
 </span><span class="boring">__hf.run_available();
@@ -381,7 +407,7 @@ The type of the input items must be iterable.</p>
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>// should print the numbers 1-6 without any nesting
-recv_iter(vec![[1, 2], [3, 4], [5, 6]]) -&gt; flatten()
+source_iter(vec![[1, 2], [3, 4], [5, 6]]) -&gt; flatten()
 -&gt; for_each(|x| println!(&quot;{}&quot;, x));
 <span class="boring">};
 </span><span class="boring">__hf.run_available();
@@ -401,7 +427,7 @@ recv_iter(vec![[1, 2], [3, 4], [5, 6]]) -&gt; flatten()
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
-</span>recv_iter(vec![&quot;1&quot;, &quot;hello&quot;, &quot;world&quot;, &quot;2&quot;]) -&gt; filter_map(|s| s.parse().ok())
+</span>source_iter(vec![&quot;1&quot;, &quot;hello&quot;, &quot;world&quot;, &quot;2&quot;]) -&gt; filter_map(|s| s.parse().ok())
     -&gt; for_each(|x: usize| println!(&quot;{}&quot;, x));
 <span class="boring">};
 </span><span class="boring">__hf.run_available();
@@ -422,7 +448,7 @@ Rust boolean closure passed in as an argument.</p>
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
-</span>recv_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; filter(|x| x.starts_with('w'))
+</span>source_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; filter(|x| x.starts_with('w'))
     -&gt; for_each(|x| println!(&quot;{}&quot;, x));
 <span class="boring">};
 </span><span class="boring">__hf.run_available();
@@ -448,7 +474,7 @@ returning the final result.</p>
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>// should print `Reassembled vector [1,2,3,4,5]`
-recv_iter([1,2,3,4,5])
+source_iter([1,2,3,4,5])
     -&gt; fold(Vec::new(), |mut accum, elem| {
         accum.push(elem);
         accum
@@ -478,7 +504,7 @@ returning the final result.</p>
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>// should print 120 (i.e., 1*2*3*4*5)
-recv_iter([1,2,3,4,5])
+source_iter([1,2,3,4,5])
     -&gt; reduce(|mut accum, elem| {
         accum *= elem;
         accum
@@ -509,7 +535,7 @@ are accumulated via the closures in the arguments.</p>
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
-</span>recv_iter([(&quot;toy&quot;, 1), (&quot;toy&quot;, 2), (&quot;shoe&quot;, 11), (&quot;shoe&quot;, 35), (&quot;haberdashery&quot;, 7)])
+</span>source_iter([(&quot;toy&quot;, 1), (&quot;toy&quot;, 2), (&quot;shoe&quot;, 11), (&quot;shoe&quot;, 35), (&quot;haberdashery&quot;, 7)])
     -&gt; groupby(|| 0, |old: &amp;mut u32, val: u32| *old += val)
     -&gt; for_each(|(k, v)| println!(&quot;Total for group {} is {}&quot;, k, v));
 <span class="boring">};
@@ -529,7 +555,7 @@ contains all unique values from the input.</p>
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>// should print 1, 2, 3 (in any order)
-recv_iter(vec![1, 1, 2, 3, 2, 1, 3])
+source_iter(vec![1, 1, 2, 3, 2, 1, 3])
     -&gt; unique()
     -&gt; for_each(|x| println!(&quot;{}&quot;, x));
 <span class="boring">};
@@ -548,18 +574,18 @@ recv_iter(vec![1, 1, 2, 3, 2, 1, 3])
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>// should print 1, 2, 3 (in order)
-recv_iter(vec![2, 3, 1])
+source_iter(vec![2, 3, 1])
     -&gt; sort()
     -&gt; for_each(|x| println!(&quot;{}&quot;, x));
 <span class="boring">};
 </span><span class="boring">__hf.run_available();
 </span><span class="boring">}
 </span></code></pre></pre>
-<h2 id="recv_iter"><a class="header" href="#recv_iter"><code>recv_iter</code></a></h2>
+<h2 id="source_iter"><a class="header" href="#source_iter"><code>source_iter</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
-<tr><td><span title="exactly 0">exactly 0</span></td><td><code>recv_iter(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
+<tr><td><span title="exactly 0">exactly 0</span></td><td><code>source_iter(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
 </tbody></table>
-</div><!-- GENERATED "hydroflow_lang/src/graph/ops/recv_iter.rs" -->
+</div><!-- GENERATED "hydroflow_lang/src/graph/ops/source_iter.rs" -->
 <blockquote>
 <p>0 input streams, 1 output stream</p>
 </blockquote>
@@ -574,39 +600,39 @@ one by one.</p>
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
-</span>    recv_iter(vec![&quot;Hello&quot;, &quot;World&quot;])
+</span>    source_iter(vec![&quot;Hello&quot;, &quot;World&quot;])
         -&gt; for_each(|x| println!(&quot;{}&quot;, x));
 <span class="boring">};
 </span><span class="boring">__hf.run_available();
 </span><span class="boring">}
 </span></code></pre></pre>
-<h2 id="recv_stdin"><a class="header" href="#recv_stdin"><code>recv_stdin</code></a></h2>
+<h2 id="source_stdin"><a class="header" href="#source_stdin"><code>source_stdin</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
-<tr><td><span title="exactly 0">exactly 0</span></td><td><code>recv_stdin() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
+<tr><td><span title="exactly 0">exactly 0</span></td><td><code>source_stdin() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
 </tbody></table>
-</div><!-- GENERATED "hydroflow_lang/src/graph/ops/recv_stdin.rs" -->
+</div><!-- GENERATED "hydroflow_lang/src/graph/ops/source_stdin.rs" -->
 <blockquote>
 <p>0 input streams, 1 output stream</p>
 </blockquote>
 <blockquote>
 <p>Arguments: port number</p>
 </blockquote>
-<p><code>recv_stdin</code> receives a Stream of lines from stdin
+<p><code>source_stdin</code> receives a Stream of lines from stdin
 and emits each of the elements it receives downstream.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>let mut flow = hydroflow::hydroflow_syntax! {
-    recv_stdin() -&gt; map(|x| x.unwrap().to_uppercase())
+    source_stdin() -&gt; map(|x| x.unwrap().to_uppercase())
         -&gt; for_each(|x| println!(&quot;{}&quot;, x));
 };
 flow.run_async();
 <span class="boring">}
 </span></code></pre></pre>
-<h2 id="recv_stream"><a class="header" href="#recv_stream"><code>recv_stream</code></a></h2>
+<h2 id="source_stream"><a class="header" href="#source_stream"><code>source_stream</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
-<tr><td><span title="exactly 0">exactly 0</span></td><td><code>recv_stream(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
+<tr><td><span title="exactly 0">exactly 0</span></td><td><code>source_stream(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
 </tbody></table>
-</div><!-- GENERATED "hydroflow_lang/src/graph/ops/recv_stream.rs" -->
+</div><!-- GENERATED "hydroflow_lang/src/graph/ops/source_stream.rs" -->
 <blockquote>
 <p>0 input streams, 1 output stream</p>
 </blockquote>
@@ -614,14 +640,14 @@ flow.run_async();
 <p>Arguments: The receive end of a tokio channel</p>
 </blockquote>
 <p>Given a <a href="https://docs.rs/futures/latest/futures/stream/trait.Stream.html"><code>Stream</code></a>
-created in Rust code, <code>recv_stream</code>
+created in Rust code, <code>source_stream</code>
 is passed the receive endpoint of the channel and emits each of the
 elements it receives downstream.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>let (input_send, input_recv) = hydroflow::util::unbounded_channel::&lt;&amp;str&gt;();
 let mut flow = hydroflow::hydroflow_syntax! {
-    recv_stream(input_recv) -&gt; map(|x| x.to_uppercase())
+    source_stream(input_recv) -&gt; map(|x| x.to_uppercase())
         -&gt; for_each(|x| println!(&quot;{}&quot;, x));
 };
 input_send.send(&quot;Hello&quot;).unwrap();
@@ -629,11 +655,11 @@ input_send.send(&quot;World&quot;).unwrap();
 flow.run_available();
 <span class="boring">}
 </span></code></pre></pre>
-<h2 id="recv_stream_serde"><a class="header" href="#recv_stream_serde"><code>recv_stream_serde</code></a></h2>
+<h2 id="source_stream_serde"><a class="header" href="#source_stream_serde"><code>source_stream_serde</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
-<tr><td><span title="exactly 0">exactly 0</span></td><td><code>recv_stream_serde(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
+<tr><td><span title="exactly 0">exactly 0</span></td><td><code>source_stream_serde(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
 </tbody></table>
-</div><!-- GENERATED "hydroflow_lang/src/graph/ops/recv_stream_serde.rs" -->
+</div><!-- GENERATED "hydroflow_lang/src/graph/ops/source_stream_serde.rs" -->
 <blockquote>
 <p>0 input streams, 1 output stream</p>
 </blockquote>
@@ -648,7 +674,7 @@ elements it receives downstream.</p>
 </span>async fn serde_in() {
     let (outbound, inbound) = hydroflow::util::bind_udp_socket(&quot;localhost:9000&quot;.into()).await;
     let mut flow = hydroflow::hydroflow_syntax! {
-        recv_stream_serde(inbound) -&gt; map(|(x, a): (String, std::net::SocketAddr)| x.to_uppercase())
+        source_stream_serde(inbound) -&gt; map(|(x, a): (String, std::net::SocketAddr)| x.to_uppercase())
             -&gt; for_each(|x| println!(&quot;{}&quot;, x));
     };
     flow.run_available();
@@ -682,8 +708,8 @@ streams, returning items in the <code>pos</code> input that are not found in the
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>// should print &quot;elephant&quot;
 diff = difference();
-recv_iter(vec![&quot;dog&quot;, &quot;cat&quot;, &quot;elephant&quot;]) -&gt; [pos]diff;
-recv_iter(vec![&quot;dog&quot;, &quot;cat&quot;, &quot;gorilla&quot;]) -&gt; [neg]diff;
+source_iter(vec![&quot;dog&quot;, &quot;cat&quot;, &quot;elephant&quot;]) -&gt; [pos]diff;
+source_iter(vec![&quot;dog&quot;, &quot;cat&quot;, &quot;gorilla&quot;]) -&gt; [neg]diff;
 diff -&gt; for_each(|v| println!(&quot;{}&quot;, v));
 <span class="boring">};
 </span><span class="boring">__hf.run_available();
@@ -716,7 +742,7 @@ epoch.</p>
 </span>// Outputs 1 2 3 4 5 6 (on separate lines).
 let (input_send, input_recv) = hydroflow::util::unbounded_channel::&lt;usize&gt;();
 let mut flow = hydroflow::hydroflow_syntax! {
-    inp = recv_stream(input_recv) -&gt; tee();
+    inp = source_stream(input_recv) -&gt; tee();
     diff = difference() -&gt; for_each(|x| println!(&quot;{}&quot;, x));
     inp -&gt; [pos]diff;
     inp -&gt; next_epoch() -&gt; [neg]diff;
@@ -751,7 +777,7 @@ argument.</p>
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
-</span>    recv_iter(vec![&quot;Hello&quot;, &quot;World&quot;])
+</span>    source_iter(vec![&quot;Hello&quot;, &quot;World&quot;])
         -&gt; for_each(|x| println!(&quot;{}&quot;, x));
 <span class="boring">};
 </span><span class="boring">__hf.run_available();
@@ -781,7 +807,7 @@ trait to use the <a href="https://hydro-project.github.io/hydroflow/doc/pusherat
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
-</span>my_demux = recv_iter(1..=100) -&gt; demux(|v, tl!(fzbz, fizz, buzz, vals)|
+</span>my_demux = source_iter(1..=100) -&gt; demux(|v, tl!(fzbz, fizz, buzz, vals)|
     match (v % 3, v % 5) {
         (0, 0) =&gt; fzbz.give(v),
         (0, _) =&gt; fizz.give(v),
@@ -797,33 +823,36 @@ my_demux[vals] -&gt; for_each(|v| println!(&quot;{}&quot;, v));
 </span><span class="boring">__hf.run_available();
 </span><span class="boring">}
 </span></code></pre></pre>
-<h2 id="write_async"><a class="header" href="#write_async"><code>write_async</code></a></h2>
+<h2 id="dest_asyncwrite"><a class="header" href="#dest_asyncwrite"><code>dest_asyncwrite</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
-<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; write_async(A)</code></td><td><span title="exactly 0">exactly 0</span></td></tr>
+<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; dest_asyncwrite(A)</code></td><td><span title="exactly 0">exactly 0</span></td></tr>
 </tbody></table>
-</div><!-- GENERATED "hydroflow_lang/src/graph/ops/write_async.rs" -->
+</div><!-- GENERATED "hydroflow_lang/src/graph/ops/dest_asyncwrite.rs" -->
 <blockquote>
 <p>Arguments: An <a href="https://docs.rs/tokio/latest/tokio/io/trait.AsyncWrite.html"><code>AsyncWrite</code></a>.</p>
 </blockquote>
 <p>Consumes a stream of bytes (specifically <code>AsRef[u8]</code> items) by writing them
 to an <a href="https://docs.rs/tokio/latest/tokio/io/trait.AsyncWrite.html"><code>AsyncWrite</code></a>
 output.</p>
+<p>This handles a stream of bytes, whereas <a href="#dest_sink"><code>dest_sink</code></a> handles individual items of an arbitrary type.</p>
 <p>Note this operator must be used within a Tokio runtime.</p>
-<h2 id="sink_async"><a class="header" href="#sink_async"><code>sink_async</code></a></h2>
+<h2 id="dest_sink"><a class="header" href="#dest_sink"><code>dest_sink</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
-<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; sink_async(A)</code></td><td><span title="exactly 0">exactly 0</span></td></tr>
+<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; dest_sink(A)</code></td><td><span title="exactly 0">exactly 0</span></td></tr>
 </tbody></table>
-</div><!-- GENERATED "hydroflow_lang/src/graph/ops/sink_async.rs" -->
+</div><!-- GENERATED "hydroflow_lang/src/graph/ops/dest_sink.rs" -->
 <blockquote>
 <p>Arguments: An <a href="https://docs.rs/futures/latest/futures/sink/trait.Sink.html">async <code>Sink</code></a>.</p>
 </blockquote>
 <p>Consumes items by sending them to an <a href="https://docs.rs/futures/latest/futures/sink/trait.Sink.html">async <code>Sink</code></a>.</p>
+<p>This handles a stream of individual items, of an arbitrary type, whereas <a href="#dest_asyncwrite"><code>dest_asyncwrite</code></a>
+handles streams of bytes.</p>
 <p>Note this operator must be used within a Tokio runtime.</p>
-<h2 id="sink_async_serde"><a class="header" href="#sink_async_serde"><code>sink_async_serde</code></a></h2>
+<h2 id="dest_sink_serde"><a class="header" href="#dest_sink_serde"><code>dest_sink_serde</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
-<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; sink_async_serde(A)</code></td><td><span title="exactly 0">exactly 0</span></td></tr>
+<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; dest_sink_serde(A)</code></td><td><span title="exactly 0">exactly 0</span></td></tr>
 </tbody></table>
-</div><!-- GENERATED "hydroflow_lang/src/graph/ops/sink_async_serde.rs" -->
+</div><!-- GENERATED "hydroflow_lang/src/graph/ops/dest_sink_serde.rs" -->
 <blockquote>
 <p>Arguments: A <a href="https://docs.rs/futures/latest/futures/sink/trait.Sink.html">serializing async <code>Sink</code></a>.</p>
 </blockquote>
@@ -835,8 +864,8 @@ output.</p>
     let (outbound, inbound) = hydroflow::util::bind_udp_socket(&quot;localhost:9000&quot;.into()).await;
     let remote = hydroflow::util::ipv4_resolve(&quot;localhost:9001&quot;.into());
     let mut flow = hydroflow::hydroflow_syntax! {
-        recv_iter(vec![(&quot;hello&quot;.to_string(), 1), (&quot;world&quot;.to_string(), 2)])
-            -&gt; map (|m| (m, remote)) -&gt; sink_async_serde(outbound);
+        source_iter(vec![(&quot;hello&quot;.to_string(), 1), (&quot;world&quot;.to_string(), 2)])
+            -&gt; map (|m| (m, remote)) -&gt; dest_sink_serde(outbound);
     };
     flow.run_available();
 }

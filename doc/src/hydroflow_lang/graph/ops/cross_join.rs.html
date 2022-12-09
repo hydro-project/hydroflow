@@ -65,8 +65,8 @@
 /// ```hydroflow
 /// // should print all 4 pairs of emotion and animal
 /// my_join = cross_join();
-/// recv_iter(vec![&quot;happy&quot;, &quot;sad&quot;]) -&gt; [0]my_join;
-/// recv_iter(vec![&quot;dog&quot;, &quot;cat&quot;]) -&gt; [1]my_join;
+/// source_iter(vec![&quot;happy&quot;, &quot;sad&quot;]) -&gt; [0]my_join;
+/// source_iter(vec![&quot;dog&quot;, &quot;cat&quot;]) -&gt; [1]my_join;
 /// my_join -&gt; for_each(|(v1, v2)| println!(&quot;({}, {})&quot;, v1, v2));
 /// ```
 </span><span class="attr">#[hydroflow_internalmacro::operator_docgen]

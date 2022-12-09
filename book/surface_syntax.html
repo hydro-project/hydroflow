@@ -147,7 +147,7 @@ for most uses. If you want lower-level access you can work with the <code>Core A
 
 pub fn test_hello_world() {
     let mut df = hydroflow_syntax! {
-        recv_iter(vec![&quot;hello&quot;, &quot;world&quot;])
+        source_iter(vec![&quot;hello&quot;, &quot;world&quot;])
             -&gt; map(|x| x.to_uppercase()) -&gt; for_each(|x| println!(&quot;{}&quot;, x));
     };
     df.run_available();

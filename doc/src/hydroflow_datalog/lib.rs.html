@@ -437,7 +437,7 @@
         <span class="kw">let </span>name = syn::Ident::new(<span class="kw-2">&amp;</span>target.name, Span::call_site());
 
         flat_graph.add_statement(<span class="macro">parse_quote! </span>{
-            recv_stream(#target_ident) -&gt; [#my_merge_index_lit] #name
+            source_stream(#target_ident) -&gt; [#my_merge_index_lit] #name
         });
     }
 

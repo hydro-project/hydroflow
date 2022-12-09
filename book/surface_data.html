@@ -137,14 +137,14 @@
                         <h1 id="data-sources-and-sinks-in-rust"><a class="header" href="#data-sources-and-sinks-in-rust">Data Sources and Sinks in Rust</a></h1>
 <p>Any useful flow requires us to define sources of data, either generated computationally or received from 
 and outside environment via I/O.</p>
-<h2 id="recv_iter"><a class="header" href="#recv_iter"><code>recv_iter</code></a></h2>
-<p>A flow can receive data from a Rust collection object via the <code>recv_iter</code> operator, which takes the 
+<h2 id="source_iter"><a class="header" href="#source_iter"><code>source_iter</code></a></h2>
+<p>A flow can receive data from a Rust collection object via the <code>source_iter</code> operator, which takes the 
 iterable collection as an argument and passes the items down the flow. 
 For example, here we iterate through a vector of <code>usize</code> items and push them down the flow:</p>
-<pre><code class="language-rust ignore">    recv_iter(vec![0, 1]) -&gt; ...
+<pre><code class="language-rust ignore">    source_iter(vec![0, 1]) -&gt; ...
 </code></pre>
 <p>The Hello, World example above uses this construct.</p>
-<h2 id="recv_stream"><a class="header" href="#recv_stream"><code>recv_stream</code></a></h2>
+<h2 id="source_stream"><a class="header" href="#source_stream"><code>source_stream</code></a></h2>
 <p>More commonly, a flow should handle external data coming in asynchronously from a <a href="https://tokio.rs/tokio/tutorial"><em>Tokio</em> runtime</a>.
 One way to do this is with <em>channels</em> that allow Rust code to send data into the Hydroflow inputs.
 The code below creates a channel for data of (Rust) type <code>(usize, usize)</code>:</p>
@@ -155,9 +155,9 @@ Now in Rust we can now push data into the channel. E.g. for testing we can do
 it explicitly as follows:</p>
 <pre><code class="language-rust ignore">    input_send.send((0, 1)).unwrap()
 </code></pre>
-<p>And in our Hydroflow syntax we can receive the data from the channel using the <code>recv_stream</code> syntax and
+<p>And in our Hydroflow syntax we can receive the data from the channel using the <code>source_stream</code> syntax and
 pass it along a flow:</p>
-<pre><code class="language-rust ignore">    recv_stream(input_recv) -&gt; ...
+<pre><code class="language-rust ignore">    source_stream(input_recv) -&gt; ...
 </code></pre>
 <p>To put this together, let's revisit our Hello, World example from above with data sent 
 in from outside the flow:</p>
@@ -166,7 +166,7 @@ in from outside the flow:</p>
 </span><span class="boring">use hydroflow::hydroflow_syntax;
 </span>let (input_send, input_recv) = hydroflow::util::unbounded_channel::&lt;&amp;str&gt;();
 let mut flow = hydroflow_syntax! {
-    recv_stream(input_recv) -&gt; map(|x| x.to_uppercase())
+    source_stream(input_recv) -&gt; map(|x| x.to_uppercase())
         -&gt; for_each(|x| println!(&quot;{}&quot;, x));
 };
 input_send.send(&quot;Hello&quot;).unwrap();

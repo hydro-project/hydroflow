@@ -177,8 +177,8 @@
     let (pairs_send, pairs_recv) = hydroflow::util::unbounded_channel::&lt;(usize, usize)&gt;();
 
     let mut flow = hydroflow_syntax! {
-        origin = recv_iter(vec![0]);
-        stream_of_edges = recv_stream(pairs_recv) -&gt; tee();
+        origin = source_iter(vec![0]);
+        stream_of_edges = source_stream(pairs_recv) -&gt; tee();
         reached_vertices = merge()-&gt;tee();
         origin -&gt; [0]reached_vertices;
 
@@ -239,7 +239,7 @@ Finally we print both <code>all_vertices</code> and <code>unreached_vertices</co
 <p>The auto-generated mermaid looks like so:</p>
 <pre class="mermaid">flowchart TB
     subgraph &quot;sg_1v1 stratum 0&quot;
-        1v1[&quot;1v1 &lt;tt&gt;op_1v1: recv_iter(vec! [0])&lt;/tt&gt;&quot;]
+        1v1[&quot;1v1 &lt;tt&gt;op_1v1: source_iter(vec! [0])&lt;/tt&gt;&quot;]
         8v1[&quot;8v1 &lt;tt&gt;op_8v1: map(| v | (v, ()))&lt;/tt&gt;&quot;]
         6v1[&quot;6v1 &lt;tt&gt;op_6v1: join()&lt;/tt&gt;&quot;]
         7v1[&quot;7v1 &lt;tt&gt;op_7v1: flat_map(| (src, ((), dst)) | [src, dst])&lt;/tt&gt;&quot;]
@@ -247,7 +247,7 @@ Finally we print both <code>all_vertices</code> and <code>unreached_vertices</co
         5v1[&quot;5v1 &lt;tt&gt;op_5v1: tee()&lt;/tt&gt;&quot;]
     end
     subgraph &quot;sg_2v1 stratum 0&quot;
-        2v1[&quot;2v1 &lt;tt&gt;op_2v1: recv_stream(pairs_recv)&lt;/tt&gt;&quot;]
+        2v1[&quot;2v1 &lt;tt&gt;op_2v1: source_stream(pairs_recv)&lt;/tt&gt;&quot;]
         3v1[&quot;3v1 &lt;tt&gt;op_3v1: tee()&lt;/tt&gt;&quot;]
         9v1[&quot;9v1 &lt;tt&gt;op_9v1: flat_map(| (src, dst) | [src, dst])&lt;/tt&gt;&quot;]
         10v1[&quot;10v1 &lt;tt&gt;op_10v1: tee()&lt;/tt&gt;&quot;]

@@ -185,8 +185,8 @@ below):</p>
 
     let mut flow = hydroflow_syntax! {
         // inputs: the origin vertex (vertex 0) and stream of input edges
-        origin = recv_iter(vec![0]);
-        stream_of_edges = recv_stream(pairs_recv);
+        origin = source_iter(vec![0]);
+        stream_of_edges = source_stream(pairs_recv);
 
         // the join
         my_join = join() -&gt; flat_map(|(src, (_, dst))| [src, dst]);
@@ -221,11 +221,11 @@ Reached: 1
 <code>(0, 1)</code> and <code>(0, 3)</code>.</p>
 <p>As for the code itself, we start out with the origin vertex, <code>0</code>,
 and the stream of edges coming in:</p>
-<pre><code class="language-rust ignore">    origin = recv_iter(vec![0]);
-    stream_of_edges = recv_stream(pairs_recv);
+<pre><code class="language-rust ignore">    origin = source_iter(vec![0]);
+    stream_of_edges = source_stream(pairs_recv);
 </code></pre>
 <p>The Rust syntax <code>vec![0]</code> constructs a vector with a single element, <code>0</code>, which we iterate
-over using <code>recv_iter</code>.</p>
+over using <code>source_iter</code>.</p>
 <p>We then set up a <a href="./surface_ops.gen.html#join"><code>join()</code></a> that we
 name <code>my_join</code>, which acts like a SQL inner join. 
 First, note the syntax for passing data into a subflow with multiple inputs requires us to <em>prepend</em> 
@@ -255,8 +255,8 @@ generate a diagram rendered by <a href="https://mermaid-js.github.io/">Mermaid</
 the structure of the graph:</p>
 <pre class="mermaid">flowchart TB
     subgraph &quot;sg_1v1 stratum 0&quot;
-        1v1[&quot;1v1 &lt;tt&gt;op_1v1: recv_iter(vec! [0])&lt;/tt&gt;&quot;]
-        2v1[&quot;2v1 &lt;tt&gt;op_2v1: recv_stream(pairs_recv)&lt;/tt&gt;&quot;]
+        1v1[&quot;1v1 &lt;tt&gt;op_1v1: source_iter(vec! [0])&lt;/tt&gt;&quot;]
+        2v1[&quot;2v1 &lt;tt&gt;op_2v1: source_stream(pairs_recv)&lt;/tt&gt;&quot;]
         5v1[&quot;5v1 &lt;tt&gt;op_5v1: map(| v | (v, ()))&lt;/tt&gt;&quot;]
         3v1[&quot;3v1 &lt;tt&gt;op_3v1: join()&lt;/tt&gt;&quot;]
         4v1[&quot;4v1 &lt;tt&gt;op_4v1: flat_map(| (src, (_, dst)) | [src, dst])&lt;/tt&gt;&quot;]

@@ -63,7 +63,7 @@
 /// &gt; TODO: Why does filter&#39;s closure expect a reference and other ops like map do not?
 ///
 /// ```hydroflow
-/// recv_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; filter(|x| x.starts_with(&#39;w&#39;))
+/// source_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; filter(|x| x.starts_with(&#39;w&#39;))
 ///     -&gt; for_each(|x| println!(&quot;{}&quot;, x));
 /// ```
 </span><span class="attr">#[hydroflow_internalmacro::operator_docgen]

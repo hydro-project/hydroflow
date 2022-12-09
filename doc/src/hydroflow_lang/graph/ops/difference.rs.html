@@ -87,8 +87,8 @@
 /// ```hydroflow
 /// // should print &quot;elephant&quot;
 /// diff = difference();
-/// recv_iter(vec![&quot;dog&quot;, &quot;cat&quot;, &quot;elephant&quot;]) -&gt; [pos]diff;
-/// recv_iter(vec![&quot;dog&quot;, &quot;cat&quot;, &quot;gorilla&quot;]) -&gt; [neg]diff;
+/// source_iter(vec![&quot;dog&quot;, &quot;cat&quot;, &quot;elephant&quot;]) -&gt; [pos]diff;
+/// source_iter(vec![&quot;dog&quot;, &quot;cat&quot;, &quot;gorilla&quot;]) -&gt; [neg]diff;
 /// diff -&gt; for_each(|v| println!(&quot;{}&quot;, v));
 /// ```
 </span><span class="attr">#[hydroflow_internalmacro::operator_docgen]

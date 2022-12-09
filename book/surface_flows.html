@@ -136,15 +136,15 @@
                     <main>
                         <h1 id="flow-syntax"><a class="header" href="#flow-syntax">Flow Syntax</a></h1>
 <p>Flows consist of named <em>operators</em> that are connected via flow <em>edges</em> denoted by <code>-&gt;</code>. The example below
-uses the <a href="./surface_ops.gen.html#recv_iter"><code>recv_iter</code></a> operator to generate two strings from a Rust <code>vec</code>, the 
+uses the <a href="./surface_ops.gen.html#source_iter"><code>source_iter</code></a> operator to generate two strings from a Rust <code>vec</code>, the 
 <a href="./surface_ops.gen.html#map"><code>map</code></a> operator to apply some Rust code to uppercase each string, and the <a href="./surface_ops.gen.html#for_each"><code>for_each</code></a> 
 operator to print each string to stdout.</p>
-<pre><code class="language-rust ignore">recv_iter(vec![&quot;Hello&quot;, &quot;world&quot;]) 
+<pre><code class="language-rust ignore">source_iter(vec![&quot;Hello&quot;, &quot;world&quot;]) 
     -&gt; map(|x| x.to_uppercase()) -&gt; for_each(|x| println!(&quot;{}&quot;, x));
 </code></pre>
 <p>Flows can be assigned to variable names for convenience. E.g, the above can be rewritten as follows:</p>
 <pre><code class="language-rust ignore">upper_print = map(|x| x.to_uppercase()) -&gt; for_each(|x| println!(&quot;{}&quot;, x));
-recv_iter(vec![&quot;Hello&quot;, &quot;world&quot;]) -&gt; upper_print;
+source_iter(vec![&quot;Hello&quot;, &quot;world&quot;]) -&gt; upper_print;
 </code></pre>
 <h2 id="operators-with-multiple-ports"><a class="header" href="#operators-with-multiple-ports">Operators with Multiple Ports</a></h2>
 <p>Some operators have more than one input <em>port</em> that can be referenced by <code>-&gt;</code>. For example <a href="./surface_ops.gen.html#merge"><code>merge</code></a> 
@@ -154,7 +154,7 @@ which has an arbitrary number of outputs. </p>
 in square brackets before the operator name (e.g. <code>[0]merge(...)</code> and <code>[1]merge(...)</code>). We 
 distinguish output ports by an <em>indexing suffix</em> (e.g. <code>tee[0]</code>). </p>
 <p>Here is an example that tees one flow into two, handles each separately, and then merges them to print out the contents in both lowercase and uppercase:</p>
-<pre><code class="language-rust ignore">source = recv_iter(vec![&quot;Hello&quot;, &quot;world&quot;]) -&gt; tee();
+<pre><code class="language-rust ignore">source = source_iter(vec![&quot;Hello&quot;, &quot;world&quot;]) -&gt; tee();
 print = merge() -&gt; for_each(|x| println!(&quot;{}&quot;, x));
 source[0] -&gt; map(|x: &amp;str| x.to_uppercase()) -&gt; [0]print;
 source[1] -&gt; map(|x: &amp;str| x.to_lowercase()) -&gt; [1]print;
@@ -167,7 +167,7 @@ source[1] -&gt; map(|x: &amp;str| x.to_lowercase()) -&gt; [1]print;
         4v1[&quot;4v1 &lt;tt&gt;op_4v1: for_each(| x | println! (&amp;quot;{}&amp;quot;, x))&lt;/tt&gt;&quot;]
     end
     subgraph Compiled Component 1
-        1v1[&quot;1v1 &lt;tt&gt;op_1v1: recv_iter(vec! [&amp;quot;Hello&amp;quot;, &amp;quot;world&amp;quot;])&lt;/tt&gt;&quot;]
+        1v1[&quot;1v1 &lt;tt&gt;op_1v1: source_iter(vec! [&amp;quot;Hello&amp;quot;, &amp;quot;world&amp;quot;])&lt;/tt&gt;&quot;]
         2v1[&quot;2v1 &lt;tt&gt;op_2v1: tee()&lt;/tt&gt;&quot;]
         5v1[&quot;5v1 &lt;tt&gt;op_5v1: map(| x : &amp;amp; str | x.to_uppercase())&lt;/tt&gt;&quot;]
         6v1[&quot;6v1 &lt;tt&gt;op_6v1: map(| x : &amp;amp; str | x.to_lowercase())&lt;/tt&gt;&quot;]

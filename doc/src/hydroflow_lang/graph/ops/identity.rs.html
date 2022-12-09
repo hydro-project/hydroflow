@@ -30,7 +30,7 @@
 ///
 /// ```hydroflow
 /// // should print &quot;hello&quot; and &quot;world&quot; on separate lines (in either order)
-/// recv_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; identity()
+/// source_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; identity()
 ///     -&gt; for_each(|x| println!(&quot;{}&quot;, x));
 /// ```
 </span><span class="attr">#[hydroflow_internalmacro::operator_docgen]

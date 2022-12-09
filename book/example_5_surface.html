@@ -186,8 +186,8 @@ two paths.</p>
 
     let mut flow = hydroflow_syntax! {
         // inputs: the origin vertex (vertex 0) and stream of input edges
-        origin = recv_iter(vec![0]);
-        stream_of_edges = recv_stream(pairs_recv);
+        origin = source_iter(vec![0]);
+        stream_of_edges = source_stream(pairs_recv);
         reached_vertices = merge();
         origin -&gt; [0]reached_vertices;
 
@@ -256,8 +256,8 @@ showing up to the right of the variable rather than the left.</p>
 the structure of the full flow:</p>
 <pre class="mermaid">flowchart TB
     subgraph &quot;sg_1v1 stratum 0&quot;
-        1v1[&quot;1v1 &lt;tt&gt;op_1v1: recv_iter(vec! [0])&lt;/tt&gt;&quot;]
-        2v1[&quot;2v1 &lt;tt&gt;op_2v1: recv_stream(edges_recv)&lt;/tt&gt;&quot;]
+        1v1[&quot;1v1 &lt;tt&gt;op_1v1: source_iter(vec! [0])&lt;/tt&gt;&quot;]
+        2v1[&quot;2v1 &lt;tt&gt;op_2v1: source_stream(edges_recv)&lt;/tt&gt;&quot;]
         3v1[&quot;3v1 &lt;tt&gt;op_3v1: merge()&lt;/tt&gt;&quot;]
         7v1[&quot;7v1 &lt;tt&gt;op_7v1: map(| v | (v, ()))&lt;/tt&gt;&quot;]
         4v1[&quot;4v1 &lt;tt&gt;op_4v1: join()&lt;/tt&gt;&quot;]

@@ -76,7 +76,7 @@
 /// are accumulated via the closures in the arguments.
 ///
 /// ```hydroflow
-/// recv_iter([(&quot;toy&quot;, 1), (&quot;toy&quot;, 2), (&quot;shoe&quot;, 11), (&quot;shoe&quot;, 35), (&quot;haberdashery&quot;, 7)])
+/// source_iter([(&quot;toy&quot;, 1), (&quot;toy&quot;, 2), (&quot;shoe&quot;, 11), (&quot;shoe&quot;, 35), (&quot;haberdashery&quot;, 7)])
 ///     -&gt; groupby(|| 0, |old: &amp;mut u32, val: u32| *old += val)
 ///     -&gt; for_each(|(k, v)| println!(&quot;Total for group {} is {}&quot;, k, v));
 ///  ```

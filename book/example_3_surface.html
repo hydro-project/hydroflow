@@ -139,11 +139,11 @@
 <p>In this example we will cover:</p>
 <ul>
 <li>the input <code>channel</code> concept, which streams data in from outside the Hydroflow spec</li>
-<li>the <a href="./surface_ops.gen.html#recv_stream"><code>recv_stream</code></a> operator that brings channel input into Hydroflow</li>
+<li>the <a href="./surface_ops.gen.html#source_stream"><code>source_stream</code></a> operator that brings channel input into Hydroflow</li>
 <li>Rust syntax to programmatically send data to a (local) channel</li>
 </ul>
 </blockquote>
-<p>In our previous examples, data came from within the Hydroflow spec, via Rust iterators and the <a href="./surface_ops.gen.html#recv_iter"><code>recv_iter</code></a> operator. In most cases, however, data comes from outside the Hydroflow spec. In this example, we'll see a simple version of this idea, with data being generated on the same machine and sent into the channel programmatically via Rust.</p>
+<p>In our previous examples, data came from within the Hydroflow spec, via Rust iterators and the <a href="./surface_ops.gen.html#source_iter"><code>source_iter</code></a> operator. In most cases, however, data comes from outside the Hydroflow spec. In this example, we'll see a simple version of this idea, with data being generated on the same machine and sent into the channel programmatically via Rust.</p>
 <p>We start with a skeleton much like before:</p>
 <pre><pre class="playground"><code class="language-rust">use hydroflow::hydroflow_syntax;
 
@@ -165,7 +165,7 @@ Think of it as a high-performance &quot;mailbox&quot; that any sender can fill w
 called the &quot;turbofish&quot;, which is how type parameters (generic arguments) are
 supplied to generic types and functions. In this case it specifies that this tokio channel
 transmits items of type <code>usize</code>.
-The returned <code>example_recv</code> value can be used via a <a href="./surface_ops.gen.html#recv_stream"><code>recv_stream</code></a>
+The returned <code>example_recv</code> value can be used via a <a href="./surface_ops.gen.html#source_stream"><code>source_stream</code></a>
 to build a Hydroflow subgraph just like before. Here is the same program as before, but using the
 input channel:</p>
 <pre><pre class="playground"><code class="language-rust">use hydroflow::hydroflow_syntax;
@@ -175,7 +175,7 @@ pub fn main() {
     let (input_example, example_recv) = hydroflow::util::unbounded_channel::&lt;usize&gt;();
 
     let mut flow = hydroflow_syntax! {
-         recv_stream(example_recv)
+         source_stream(example_recv)
         -&gt; filter_map(|n: usize| {
             let n2 = n * n;
             if n2 &gt; 10 {

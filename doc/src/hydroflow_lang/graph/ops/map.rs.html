@@ -69,7 +69,7 @@
 /// each item use the [`inspect`](#inspect) operator instead.
 ///
 /// ```hydroflow
-/// recv_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; map(|x| x.to_uppercase())
+/// source_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; map(|x| x.to_uppercase())
 ///     -&gt; for_each(|x| println!(&quot;{}&quot;, x));
 /// ```
 </span><span class="attr">#[hydroflow_internalmacro::operator_docgen]

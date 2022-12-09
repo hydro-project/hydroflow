@@ -63,7 +63,7 @@
 /// // Outputs 1 2 3 4 5 6 (on separate lines).
 /// let (input_send, input_recv) = hydroflow::util::unbounded_channel::&lt;usize&gt;();
 /// let mut flow = hydroflow::hydroflow_syntax! {
-///     inp = recv_stream(input_recv) -&gt; tee();
+///     inp = source_stream(input_recv) -&gt; tee();
 ///     diff = difference() -&gt; for_each(|x| println!(&quot;{}&quot;, x));
 ///     inp -&gt; [pos]diff;
 ///     inp -&gt; next_epoch() -&gt; [neg]diff;

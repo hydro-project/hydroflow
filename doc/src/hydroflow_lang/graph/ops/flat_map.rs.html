@@ -72,7 +72,7 @@
 ///
 /// ```hydroflow
 /// // should print out each character of each word on a separate line
-/// recv_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; flat_map(|x| x.chars())
+/// source_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; flat_map(|x| x.chars())
 ///     -&gt; for_each(|x| println!(&quot;{}&quot;, x));
 /// ```
 </span><span class="attr">#[hydroflow_internalmacro::operator_docgen]

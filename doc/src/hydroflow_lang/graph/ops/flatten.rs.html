@@ -64,7 +64,7 @@
 ///
 /// ```hydroflow
 /// // should print the numbers 1-6 without any nesting
-/// recv_iter(vec![[1, 2], [3, 4], [5, 6]]) -&gt; flatten()
+/// source_iter(vec![[1, 2], [3, 4], [5, 6]]) -&gt; flatten()
 /// -&gt; for_each(|x| println!(&quot;{}&quot;, x));
 /// ```
 </span><span class="attr">#[hydroflow_internalmacro::operator_docgen]

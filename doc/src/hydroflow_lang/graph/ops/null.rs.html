@@ -65,12 +65,12 @@
 /// ```hydroflow
 /// // should print `1, 2, 3, 4, 5, 6, a, b, c` across 9 lines
 /// null() -&gt; for_each(|_: ()| panic!());
-/// recv_iter([1,2,3]) -&gt; map(|i| println!(&quot;{}&quot;, i)) -&gt; null();
+/// source_iter([1,2,3]) -&gt; map(|i| println!(&quot;{}&quot;, i)) -&gt; null();
 /// null_src = null();
 /// null_sink = null();
 /// null_src[0] -&gt; for_each(|_: ()| panic!());
 /// // note: use `for_each()` (or `inspect()`) instead of this:
-/// recv_iter([4,5,6]) -&gt; map(|i| println!(&quot;{}&quot;, i)) -&gt; [0]null_sink;
+/// source_iter([4,5,6]) -&gt; map(|i| println!(&quot;{}&quot;, i)) -&gt; [0]null_sink;
 /// ```
 </span><span class="attr">#[hydroflow_internalmacro::operator_docgen]
 </span><span class="kw">pub const </span>NULL: OperatorConstraints = OperatorConstraints {

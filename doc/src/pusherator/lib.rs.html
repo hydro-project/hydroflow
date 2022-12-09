@@ -351,9 +351,9 @@
 <span class="kw">pub mod </span>map;
 <span class="kw">pub mod </span>partition;
 <span class="kw">pub mod </span>pivot;
-<span class="kw">pub mod </span>split;
 <span class="kw">pub mod </span>switch;
 <span class="kw">pub mod </span>tee;
+<span class="kw">pub mod </span>unzip;
 
 <span class="kw">use </span>std::marker::PhantomData;
 
@@ -415,13 +415,13 @@
         tee::TeeBuild::new(<span class="self">self</span>, next1)
     }
 
-    <span class="kw">fn </span>split&lt;Next1, Item2&gt;(<span class="self">self</span>, next1: Next1) -&gt; split::SplitBuild&lt;<span class="self">Self</span>, Next1&gt;
+    <span class="kw">fn </span>unzip&lt;Next1, Item2&gt;(<span class="self">self</span>, next1: Next1) -&gt; unzip::UnzipBuild&lt;<span class="self">Self</span>, Next1&gt;
     <span class="kw">where
         </span><span class="self">Self</span>: Sized,
         <span class="self">Self</span>: PusheratorBuild&lt;ItemOut = (Next1::Item, Item2)&gt;,
         Next1: Pusherator,
     {
-        split::SplitBuild::new(<span class="self">self</span>, next1)
+        unzip::UnzipBuild::new(<span class="self">self</span>, next1)
     }
 
     <span class="kw">fn </span>switch&lt;Next1, Item2&gt;(<span class="self">self</span>, next1: Next1) -&gt; switch::SwitchBuild&lt;<span class="self">Self</span>, Next1&gt;

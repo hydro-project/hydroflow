@@ -61,7 +61,7 @@
 /// An operator that both filters and maps. It yields only the items for which the supplied closure returns `Some(value)`.
 ///
 /// ```hydroflow
-/// recv_iter(vec![&quot;1&quot;, &quot;hello&quot;, &quot;world&quot;, &quot;2&quot;]) -&gt; filter_map(|s| s.parse().ok())
+/// source_iter(vec![&quot;1&quot;, &quot;hello&quot;, &quot;world&quot;, &quot;2&quot;]) -&gt; filter_map(|s| s.parse().ok())
 ///     -&gt; for_each(|x: usize| println!(&quot;{}&quot;, x));
 /// ```
 </span><span class="attr">#[hydroflow_internalmacro::operator_docgen]

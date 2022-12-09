@@ -76,7 +76,7 @@
 /// &gt; Note: Downstream operators may need explicit type annotations.
 ///
 /// ```hydroflow
-/// my_tee = recv_iter(vec![&quot;Hello&quot;, &quot;World&quot;]) -&gt; tee();
+/// my_tee = source_iter(vec![&quot;Hello&quot;, &quot;World&quot;]) -&gt; tee();
 /// my_tee -&gt; map(|x: &amp;str| x.to_uppercase())
 ///     -&gt; for_each(|x| println!(&quot;{}&quot;, x));
 /// my_tee -&gt; map(|x: &amp;str| x.to_lowercase())

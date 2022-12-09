@@ -140,7 +140,7 @@
 <ul>
 <li>How to embed a Hydroflow program spec inside Rust </li>
 <li>How to execute the Hydroflow program</li>
-<li>Two simple Hydroflow operators: <code>recv_iter</code> and <code>for_each</code></li>
+<li>Two simple Hydroflow operators: <code>source_iter</code> and <code>for_each</code></li>
 </ul>
 </blockquote>
 <p>Lets start out with the simplest possible Hydroflow program, which prints out
@@ -149,7 +149,7 @@ the numbers in <code>0..10</code>.</p>
 
 pub fn main() {
     let mut flow = hydroflow_syntax! {
-        recv_iter(0..10) -&gt; for_each(|n| println!(&quot;Hello {}&quot;, n));
+        source_iter(0..10) -&gt; for_each(|n| println!(&quot;Hello {}&quot;, n));
     };
 
     flow.run_available();
@@ -179,10 +179,10 @@ a mutable variable <code>flow</code>––mutable because we will be changing it
 <pre><code class="language-rust ignore"><span class="boring">use hydroflow::hydroflow_syntax;
 </span>pub fn main() {
     let mut flow = hydroflow_syntax! {
-        recv_iter(0..10) -&gt; for_each(|n| println!(&quot;Hello {}&quot;, n));
+        source_iter(0..10) -&gt; for_each(|n| println!(&quot;Hello {}&quot;, n));
     };
 </code></pre>
-<p>The flow starts with a <a href="./surface_ops.gen.html#recv_iter"><code>recv_iter</code></a> operator that takes the Rust
+<p>The flow starts with a <a href="./surface_ops.gen.html#source_iter"><code>source_iter</code></a> operator that takes the Rust
 iterator <code>0..10</code> and iterates it to emit the 
 numbers 0 through 9, and passes them along the arrow <code>-&gt;</code> operator downstream to a 
 <a href="./surface_ops.gen.html#for_each"><code>for_each</code></a> operator that invokes its closure argument to print each
