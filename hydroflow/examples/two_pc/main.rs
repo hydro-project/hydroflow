@@ -1,6 +1,7 @@
 use clap::{ArgEnum, Parser};
 use coordinator::run_coordinator;
 use hydroflow::tokio;
+use hydroflow::util::{bind_udp_socket, ipv4_resolve};
 use serde::Deserialize;
 use subordinate::run_subordinate;
 
@@ -36,8 +37,6 @@ struct Opts {
     #[clap(arg_enum, long)]
     role: Role,
     #[clap(long)]
-    port: u16,
-    #[clap(long)]
     addr: String,
     #[clap(arg_enum, long)]
     graph: Option<GraphType>,
@@ -69,10 +68,15 @@ async fn main() {
     let coordinator = read_addresses_from_file(path).unwrap().coordinator;
     match opts.role {
         Role::Coordinator => {
-            run_coordinator(opts, subordinates).await;
+            let (outbound, inbound) = bind_udp_socket(opts.addr.clone()).await;
+            run_coordinator(outbound, inbound, subordinates, opts.graph.clone()).await;
         }
         Role::Subordinate => {
-            run_subordinate(opts, coordinator).await;
+            let (outbound, inbound) = bind_udp_socket(opts.addr.clone()).await;
+            println!("Coordinator: {}", coordinator);
+            let server_addr = ipv4_resolve(coordinator.trim().into());
+
+            run_subordinate(outbound, inbound, server_addr, opts.graph.clone()).await;
         }
     }
 }

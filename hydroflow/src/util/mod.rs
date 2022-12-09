@@ -6,15 +6,22 @@ use std::net::SocketAddr;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
+use bincode;
 use bytes::Bytes;
 use futures::stream::{SplitSink, SplitStream};
 use futures::Stream;
 use pin_project_lite::pin_project;
+use serde::{Deserialize, Serialize};
 use tokio::net::UdpSocket;
 use tokio_stream::wrappers::UnboundedReceiverStream;
 use tokio_util::codec::length_delimited::LengthDelimitedCodec;
-use tokio_util::codec::{Decoder, Encoder, LinesCodec};
+use tokio_util::codec::{Decoder, Encoder, LinesCodec, LinesCodecError};
 use tokio_util::udp::UdpFramed;
+
+pub type UdpFramedSink<Codec, Item> = SplitSink<UdpFramed<Codec>, (Item, SocketAddr)>;
+pub type UdpFramedStream<Codec> = SplitStream<UdpFramed<Codec>>;
+pub type UdpSink = UdpFramedSink<LengthDelimitedCodec, Bytes>;
+pub type UdpStream = UdpFramedStream<LengthDelimitedCodec>;
 
 pub fn unbounded_channel<T>() -> (
     tokio::sync::mpsc::UnboundedSender<T>,
@@ -24,9 +31,6 @@ pub fn unbounded_channel<T>() -> (
     let recv = tokio_stream::wrappers::UnboundedReceiverStream::new(recv);
     (send, recv)
 }
-
-pub type UdpFramedSink<Codec, Item> = SplitSink<UdpFramed<Codec>, (Item, SocketAddr)>;
-pub type UdpFramedStream<Codec> = SplitStream<UdpFramed<Codec>>;
 
 pub fn udp_framed<Codec, Item>(
     socket: UdpSocket,
@@ -39,12 +43,7 @@ where
     futures::stream::StreamExt::split(framed)
 }
 
-pub fn udp_bytes(
-    socket: UdpSocket,
-) -> (
-    UdpFramedSink<LengthDelimitedCodec, Bytes>,
-    UdpFramedStream<LengthDelimitedCodec>,
-) {
+pub fn udp_bytes(socket: UdpSocket) -> (UdpSink, UdpStream) {
     udp_framed(socket, LengthDelimitedCodec::new())
 }
 
@@ -104,4 +103,47 @@ where
     C: FromIterator<T>,
 {
     std::iter::from_fn(|| recv.as_mut().try_recv().ok()).collect()
+}
+
+pub fn serialize_msg<T>(msg: T) -> bytes::Bytes
+where
+    T: Serialize + for<'a> Deserialize<'a> + Clone,
+{
+    bytes::Bytes::from(bincode::serialize(&msg).unwrap())
+}
+
+pub fn deserialize_simple<T>(msg: bytes::BytesMut) -> T
+where
+    T: Serialize + for<'a> Deserialize<'a> + Clone,
+{
+    bincode::deserialize(&msg).unwrap()
+}
+
+pub fn deserialize_msg<T>(msg: Result<(bytes::BytesMut, SocketAddr), LinesCodecError>) -> T
+where
+    T: Serialize + for<'a> Deserialize<'a> + Clone,
+{
+    bincode::deserialize(&(msg.unwrap().0)).unwrap()
+}
+
+pub fn ipv4_resolve(addr: String) -> SocketAddr {
+    use std::net::ToSocketAddrs;
+    let mut addrs = addr.to_socket_addrs().unwrap();
+    addrs
+        .find(|addr| addr.is_ipv4())
+        .expect("Unable to resolve connection address")
+}
+
+pub async fn bind_udp_socket_addr(addr: SocketAddr) -> (UdpSink, UdpStream) {
+    let socket = tokio::net::UdpSocket::bind(addr).await.unwrap();
+    udp_bytes(socket)
+}
+
+pub async fn bind_udp_socket(addr_string: String) -> (UdpSink, UdpStream) {
+    let addr = ipv4_resolve(addr_string);
+    bind_udp_socket_addr(addr).await
+}
+
+pub async fn bind_local_udp_socket(port: u16) -> (UdpSink, UdpStream) {
+    bind_udp_socket(format!("127.0.0.1:{}", port)).await
 }

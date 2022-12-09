@@ -1,10 +1,10 @@
 use clap::{ArgEnum, Parser};
 use client::run_client;
 use hydroflow::tokio;
+use hydroflow::util::{bind_udp_socket, ipv4_resolve};
 use server::run_server;
 
 mod client;
-mod helpers;
 mod protocol;
 mod server;
 
@@ -25,13 +25,9 @@ struct Opts {
     #[clap(arg_enum, long)]
     role: Role,
     #[clap(long)]
-    port: u16,
+    addr: Option<String>,
     #[clap(long)]
-    addr: String,
-    #[clap(long)]
-    server_addr: Option<String>,
-    #[clap(long)]
-    server_port: Option<u16>,
+    server_addr: String,
     #[clap(arg_enum, long)]
     graph: Option<GraphType>,
 }
@@ -39,13 +35,16 @@ struct Opts {
 #[tokio::main]
 async fn main() {
     let opts = Opts::parse();
+    let server_addr = ipv4_resolve(opts.server_addr.clone());
 
     match opts.role {
         Role::Client => {
-            run_client(opts).await;
+            let (outbound, inbound) = bind_udp_socket(opts.addr.clone().unwrap()).await;
+            run_client(outbound, inbound, server_addr, opts.graph.clone()).await;
         }
         Role::Server => {
-            run_server(opts).await;
+            let (outbound, inbound) = bind_udp_socket(opts.server_addr.clone()).await;
+            run_server(outbound, inbound, opts.graph.clone()).await;
         }
     }
 }
