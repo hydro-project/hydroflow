@@ -40,7 +40,7 @@ pub(crate) async fn run_client(
 
     let mut hf = hydroflow_syntax! {
         // set up channels
-        outbound_chan = merge() -> sink_async_serde(outbound);
+        outbound_chan = merge() -> dest_sink_serde(outbound);
         inbound_chan = source_stream_serde(inbound) -> map(|(m, _)| m)
             ->  demux(|m, tl!(acks, msgs, errs)|
                     match m {

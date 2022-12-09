@@ -16,7 +16,7 @@ pub(crate) async fn run_client(
 
     let mut hf = hydroflow_syntax! {
         // set up channels
-        outbound_chan = sink_async_serde(outbound);
+        outbound_chan = dest_sink_serde(outbound);
         inbound_chan = source_stream_serde(inbound) -> map(|(m, _a)| m) -> demux(|m, tl!(resps, errs)| match m {
             KVSMessage::Response {..} => resps.give(m),
             _ => errs.give(m),

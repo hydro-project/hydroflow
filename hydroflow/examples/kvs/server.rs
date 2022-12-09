@@ -12,7 +12,7 @@ pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, graph: Opt
 
     let mut df: Hydroflow = hydroflow_syntax! {
         // NW channels
-        outbound_chan = merge() -> sink_async_serde(outbound);
+        outbound_chan = merge() -> dest_sink_serde(outbound);
         inbound_chan = source_stream_serde(inbound)
             -> demux(|(m, a), tl!(puts, gets, errs)| match m {
                     KVSMessage::Put {..} => puts.give((m, a)),

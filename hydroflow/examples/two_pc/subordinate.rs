@@ -17,7 +17,7 @@ pub(crate) async fn run_subordinate(
     let mut df: Hydroflow = hydroflow_syntax! {
          // set up channels
         outbound_chan = merge() -> tee();
-        outbound_chan[0] -> sink_async_serde(outbound);
+        outbound_chan[0] -> dest_sink_serde(outbound);
         inbound_chan = source_stream_serde(inbound) -> map(|(m, _a)| m) -> tee();
         msgs = inbound_chan[0] ->  demux(|m:CoordMsg, tl!(prepares, p2, ends, errs)| match m.mtype {
             MsgType::Prepare => prepares.give(m),

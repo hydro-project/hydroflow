@@ -17,7 +17,7 @@ pub(crate) async fn run_client(
     let mut flow = hydroflow_syntax! {
         // take stdin and send to server as an Echo::Message
         lines = source_stdin() -> map(|l| (EchoMsg{ payload: l.unwrap(), ts: Utc::now(), }, server_addr) )
-            -> sink_async_serde(outbound);
+            -> dest_sink_serde(outbound);
 
         // receive and print messages
         source_stream_serde(inbound) -> for_each(|(m, _a): (EchoMsg, SocketAddr) | println!("{:?}", m));

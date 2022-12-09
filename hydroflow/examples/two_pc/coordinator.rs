@@ -21,7 +21,7 @@ pub(crate) async fn run_coordinator(
 
         // set up channels
         outbound_chan = tee();
-        outbound_chan[0] -> sink_async_serde(outbound);
+        outbound_chan[0] -> dest_sink_serde(outbound);
         inbound_chan = source_stream_serde(inbound) -> map(|(m, _a)| m) -> tee();
         msgs = inbound_chan[0] ->  demux(|m:SubordResponse, tl!(commits, aborts, acks, endeds, errs)| match m.mtype {
                     MsgType::Commit => commits.give(m),

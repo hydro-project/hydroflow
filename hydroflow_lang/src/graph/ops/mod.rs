@@ -33,7 +33,7 @@ mod next_stratum;
 mod null;
 mod reduce;
 mod repeat_iter;
-mod sink_async_serde;
+mod dest_sink_serde;
 mod sort;
 mod source_iter;
 mod source_stdin;
@@ -167,7 +167,7 @@ pub const OPERATORS: &[OperatorConstraints] = &[
     demux::DEMUX,
     write_async::WRITE_ASYNC,
     dest_sink::DEST_SINK,
-    sink_async_serde::SINK_ASYNC_SERDE,
+    dest_sink_serde::DEST_SINK_SERDE,
 ];
 
 pub struct WriteContextArgs<'a> {

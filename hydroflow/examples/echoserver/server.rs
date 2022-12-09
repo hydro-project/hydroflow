@@ -16,7 +16,7 @@ pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, graph: Opt
         // Logic
         inbound_chan[0] -> for_each(|(m, a): (EchoMsg, SocketAddr)| println!("Got {:?} from {:?}", m, a));
         inbound_chan[1] -> map(|(EchoMsg { payload, .. }, addr)| (EchoMsg { payload, ts: Utc::now() }, addr))
-            -> sink_async_serde(outbound);
+            -> dest_sink_serde(outbound);
     };
     if let Some(graph) = graph {
         let serde_graph = flow

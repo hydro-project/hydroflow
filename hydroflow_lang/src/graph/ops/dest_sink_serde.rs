@@ -15,14 +15,14 @@ use quote::quote_spanned;
 ///     let remote = hydroflow::util::ipv4_resolve("localhost:9001".into());
 ///     let mut flow = hydroflow::hydroflow_syntax! {
 ///         source_iter(vec![("hello".to_string(), 1), ("world".to_string(), 2)])
-///             -> map (|m| (m, remote)) -> sink_async_serde(outbound);
+///             -> map (|m| (m, remote)) -> dest_sink_serde(outbound);
 ///     };
 ///     flow.run_available();
 /// }
 /// ```
 #[hydroflow_internalmacro::operator_docgen]
-pub const SINK_ASYNC_SERDE: OperatorConstraints = OperatorConstraints {
-    name: "sink_async_serde",
+pub const DEST_SINK_SERDE: OperatorConstraints = OperatorConstraints {
+    name: "dest_sink_serde",
     hard_range_inn: RANGE_1,
     soft_range_inn: RANGE_1,
     hard_range_out: RANGE_0,
