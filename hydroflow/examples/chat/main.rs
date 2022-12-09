@@ -1,10 +1,10 @@
 use clap::{ArgEnum, Parser};
 use client::run_client;
 use hydroflow::tokio;
+use hydroflow::util::{bind_udp_socket, ipv4_resolve};
 use server::run_server;
 
 mod client;
-mod helpers;
 mod protocol;
 mod server;
 
@@ -44,10 +44,33 @@ async fn main() {
 
     match opts.role {
         Role::Client => {
-            run_client(opts).await;
+            let client_str = format!("{}:{}", opts.addr.clone(), opts.port.clone());
+            let server_str = format!(
+                "{}:{}",
+                opts.server_addr.clone().unwrap(),
+                opts.server_port.clone().unwrap()
+            );
+            println!(
+                "Client is bound to {}, connecting to Server at {}",
+                client_str.clone(),
+                server_str.clone()
+            );
+            let (outbound, inbound) = bind_udp_socket(client_str.clone()).await;
+            run_client(
+                outbound,
+                inbound,
+                ipv4_resolve(server_str.clone()),
+                opts.name.clone(),
+                opts.graph.clone(),
+            )
+            .await;
         }
         Role::Server => {
-            run_server(opts).await;
+            let server_str = format!("{}:{}", opts.addr.clone(), opts.port.clone());
+            let (outbound, inbound) = bind_udp_socket(server_str.clone()).await;
+            println!("Listening on {}", server_str);
+
+            run_server(outbound, inbound, opts.graph.clone()).await;
         }
     }
 }

@@ -1,23 +1,18 @@
-use crate::helpers::{deserialize_msg, parse_out, serialize_msg};
+use crate::helpers::parse_out;
 use crate::protocol::{CoordMsg, MsgType, SubordResponse};
-use crate::{GraphType, Opts};
+use crate::GraphType;
 use hydroflow::hydroflow_syntax;
 use hydroflow::pusherator::Pusherator;
 use hydroflow::scheduled::graph::Hydroflow;
+use hydroflow::util::{UdpSink, UdpStream};
 use std::net::SocketAddr;
-use tokio::io::AsyncBufReadExt;
-use tokio::net::UdpSocket;
-use tokio_stream::wrappers::LinesStream;
 
-pub(crate) async fn run_coordinator(opts: Opts, subordinates: Vec<String>) {
-    // setup message send/recv ports
-    let server_socket = UdpSocket::bind(("127.0.0.1", opts.port)).await.unwrap();
-    let (outbound, inbound) = hydroflow::util::udp_lines(server_socket);
-
-    // We provide a command line for users to type a Transaction ID (integer) to commit.
-    let reader = tokio::io::BufReader::new(tokio::io::stdin());
-    let stdin_lines = LinesStream::new(reader.lines());
-
+pub(crate) async fn run_coordinator(
+    outbound: UdpSink,
+    inbound: UdpStream,
+    subordinates: Vec<String>,
+    graph: Option<GraphType>,
+) {
     let mut df: Hydroflow = hydroflow_syntax! {
         // fetch subordinates from file, convert ip:port to a SocketAddr, and tee
         subords = recv_iter(subordinates)
@@ -26,8 +21,8 @@ pub(crate) async fn run_coordinator(opts: Opts, subordinates: Vec<String>) {
 
         // set up channels
         outbound_chan = tee();
-        outbound_chan[0] -> map(|(m,a)| (serialize_msg(m), a)) -> sink_async(outbound);
-        inbound_chan = recv_stream(inbound) -> map(deserialize_msg) -> tee();
+        outbound_chan[0] -> sink_async_serde(outbound);
+        inbound_chan = recv_stream_serde(inbound) -> map(|(m, _a)| m) -> tee();
         msgs = inbound_chan[0] ->  demux(|m:SubordResponse, tl!(commits, aborts, acks, endeds, errs)| match m.mtype {
                     MsgType::Commit => commits.give(m),
                     MsgType::Abort => aborts.give(m),
@@ -50,7 +45,7 @@ pub(crate) async fn run_coordinator(opts: Opts, subordinates: Vec<String>) {
 
         // Phase 1 initiate:
         // Given a transaction commit request from stdio, broadcast a Prepare to subordinates
-        recv_stream(stdin_lines)
+        recv_stdin()
             -> filter_map(|l: Result<std::string::String, std::io::Error>| parse_out(l.unwrap()))
             -> map(|xid| CoordMsg{xid, mtype: MsgType::Prepare})
             -> [0]broadcast;
@@ -89,7 +84,7 @@ pub(crate) async fn run_coordinator(opts: Opts, subordinates: Vec<String>) {
         // Handler for ended acknowledgments not necessary; we just print them
     };
 
-    if let Some(graph) = opts.graph {
+    if let Some(graph) = graph {
         let serde_graph = df
             .serde_graph()
             .expect("No graph found, maybe failed to parse.");

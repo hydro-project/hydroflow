@@ -1,35 +1,7 @@
 use crate::protocol::KVSMessage;
 use regex::Regex;
-use serde::{Deserialize, Serialize};
-use serde_json::json;
-use std::net::{SocketAddr, ToSocketAddrs};
-use tokio_util::codec::LinesCodecError;
 
-pub fn serialize_msg<T>(msg: T) -> String
-where
-    T: Serialize + for<'a> Deserialize<'a> + Clone,
-{
-    json!(msg).to_string()
-}
-
-pub fn deserialize_msg<T>(msg: Result<(String, SocketAddr), LinesCodecError>) -> T
-where
-    T: Serialize + for<'a> Deserialize<'a> + Clone,
-{
-    let body = msg.unwrap().0;
-    let res = serde_json::from_str(&body);
-    res.unwrap()
-}
-
-pub fn resolve_ipv4_connection_addr(server_ip: String, server_port: u16) -> Option<SocketAddr> {
-    let mut addrs = format!("{}:{}", server_ip, server_port)
-        .to_socket_addrs()
-        .unwrap();
-
-    addrs.find(|addr| addr.is_ipv4())
-}
-
-pub fn parse_command(line: String, client: SocketAddr) -> Option<KVSMessage> {
+pub fn parse_command(line: String) -> Option<KVSMessage> {
     let re = Regex::new(r"([A-z]+)\s+(.+)").unwrap();
     let caps = re.captures(line.as_str())?;
 
@@ -40,13 +12,11 @@ pub fn parse_command(line: String, client: SocketAddr) -> Option<KVSMessage> {
         "PUT" => {
             let kv = args.split_once(',')?;
             Some(KVSMessage::Put {
-                client,
                 key: kv.0.trim().to_string(),
                 value: kv.1.trim().to_string(),
             })
         }
         "GET" => Some(KVSMessage::Get {
-            client,
             key: args.trim().to_string(),
         }),
         _ => None,

@@ -41,11 +41,11 @@ async fn main() {
     match opts.role {
         Role::Client => {
             let (outbound, inbound) = bind_udp_socket(opts.addr.clone().unwrap()).await;
-            run_client(outbound, inbound, server_addr).await;
+            run_client(outbound, inbound, server_addr, opts.graph.clone()).await;
         }
         Role::Server => {
             let (outbound, inbound) = bind_udp_socket(opts.server_addr.clone()).await;
-            run_server(outbound, inbound).await;
+            run_server(outbound, inbound, opts.graph.clone()).await;
         }
     }
 }
