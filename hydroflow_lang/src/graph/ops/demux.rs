@@ -159,8 +159,12 @@ pub const DEMUX: OperatorConstraints = OperatorConstraints {
         let sorted_outputs = sort_permute.iter().map(|&i| &outputs[i]);
 
         let write_iterator = quote_spanned! {op_span=>
-            let #ident = #root::pusherator::demux::Demux::new(#func, #root::tl!( #( #sorted_outputs ),* ));
+            let #ident = {
+                #[allow(unused_imports)] use #root::pusherator::Pusherator;
+                #root::pusherator::demux::Demux::new(#func, #root::tl!( #( #sorted_outputs ),* ))
+            };
         };
+
         Ok(OperatorWriteOutput {
             write_iterator,
             ..Default::default()

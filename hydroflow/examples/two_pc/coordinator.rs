@@ -2,7 +2,6 @@ use crate::helpers::parse_out;
 use crate::protocol::{CoordMsg, MsgType, SubordResponse};
 use crate::GraphType;
 use hydroflow::hydroflow_syntax;
-use hydroflow::pusherator::Pusherator;
 use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::util::{UdpSink, UdpStream};
 use std::net::SocketAddr;

@@ -2,7 +2,6 @@ use crate::helpers::parse_command;
 use crate::protocol::KVSMessage;
 use crate::GraphType;
 use hydroflow::hydroflow_syntax;
-use hydroflow::pusherator::Pusherator;
 use hydroflow::util::{UdpSink, UdpStream};
 use std::net::SocketAddr;
 
