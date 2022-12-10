@@ -4,7 +4,6 @@ use crate::helpers::decide;
 use crate::protocol::{CoordMsg, MsgType, SubordResponse};
 use crate::GraphType;
 use hydroflow::hydroflow_syntax;
-use hydroflow::pusherator::Pusherator;
 use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::util::{UdpSink, UdpStream};
 

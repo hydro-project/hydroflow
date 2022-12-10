@@ -5,7 +5,6 @@ use crate::protocol::Message;
 use crate::GraphType;
 use chrono::Utc;
 use hydroflow::hydroflow_syntax;
-use hydroflow::pusherator::Pusherator;
 use hydroflow::util::{UdpSink, UdpStream};
 use std::net::SocketAddr;
 
