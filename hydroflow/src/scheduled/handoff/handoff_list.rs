@@ -1,9 +1,9 @@
 use ref_cast::RefCast;
 use sealed::sealed;
+use variadics::Variadic;
 
 use crate::scheduled::graph::HandoffData;
 use crate::scheduled::port::{Polarity, Port, PortCtx};
-use crate::scheduled::type_list::Variadic;
 use crate::scheduled::{HandoffId, SubgraphId};
 
 use super::Handoff;
