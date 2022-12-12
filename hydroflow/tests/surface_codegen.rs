@@ -3,7 +3,6 @@ use std::collections::{HashMap, HashSet};
 use hydroflow::hydroflow_syntax;
 use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::util::recv_into;
-use pusherator::Pusherator;
 use tokio::task::LocalSet;
 
 // TODO(mingwei): custom operators? How to handle in syntax? How to handle state?

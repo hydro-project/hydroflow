@@ -3,7 +3,6 @@ use crate::GraphType;
 use crate::protocol::KVSMessage;
 
 use hydroflow::hydroflow_syntax;
-use hydroflow::pusherator::Pusherator;
 use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::util::{UdpSink, UdpStream};
 
