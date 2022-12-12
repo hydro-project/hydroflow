@@ -13,7 +13,6 @@ use futures::Stream;
 use pin_project_lite::pin_project;
 use serde::{Deserialize, Serialize};
 use tokio::net::UdpSocket;
-use tokio_stream::wrappers::UnboundedReceiverStream;
 use tokio_util::codec::length_delimited::LengthDelimitedCodec;
 use tokio_util::codec::{Decoder, Encoder, LinesCodec, LinesCodecError};
 use tokio_util::udp::UdpFramed;
@@ -100,11 +99,22 @@ where
 }
 
 /// Receives available items in an `UnboundedReceiverStream` into a `FromIterator` collection.
-pub fn recv_into<C, T>(recv: &mut UnboundedReceiverStream<T>) -> C
+pub fn recv_into<C, S>(stream: S) -> C
 where
-    C: FromIterator<T>,
+    C: FromIterator<S::Item>,
+    S: Stream,
 {
-    std::iter::from_fn(|| recv.as_mut().try_recv().ok()).collect()
+    let mut stream = Box::pin(stream);
+    std::iter::from_fn(|| {
+        match stream
+            .as_mut()
+            .poll_next(&mut Context::from_waker(futures::task::noop_waker_ref()))
+        {
+            Poll::Ready(opt) => opt,
+            Poll::Pending => None,
+        }
+    })
+    .collect()
 }
 
 pub fn serialize_msg<T>(msg: T) -> bytes::Bytes

@@ -6,6 +6,7 @@ use std::net::{Ipv4Addr, SocketAddr};
 use std::time::Duration;
 
 use hydroflow::scheduled::graph::Hydroflow;
+use hydroflow::util::recv_into;
 use hydroflow::{hydroflow_syntax, rassert, rassert_eq};
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::net::{TcpListener, TcpStream, UdpSocket};
@@ -262,4 +263,107 @@ pub async fn test_futures_stream_sink() -> Result<(), Box<dyn Error>> {
     rassert_eq!(&std::array::from_fn::<_, MAX, _>(|i| i), &*seen)?;
 
     Ok(())
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn asynctest_dest_sink_bounded_channel() {
+    // This is for testing. Don't actually use unbounded channels, as their input will end up
+    // buffered regardless. Instead use `-> for_each(|x| { send.send(x).unwrap(); })` with an
+    // unbounded channel sender `send`.
+    let (send, recv) = tokio::sync::mpsc::channel::<usize>(5);
+    let send = tokio_util::sync::PollSender::new(send);
+    let mut recv = tokio_stream::wrappers::ReceiverStream::new(recv);
+
+    let mut flow = hydroflow_syntax! {
+        source_iter(0..10) -> dest_sink(send);
+    };
+    tokio::time::timeout(std::time::Duration::from_secs(1), flow.run_async())
+        .await
+        .expect_err("Expected time out");
+
+    // Only 5 elemts received due to buffer size
+    let out: Vec<_> = recv_into(&mut recv);
+    assert_eq!(&[0, 1, 2, 3, 4], &*out);
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn asynctest_dest_sink_duplex() {
+    use bytes::Bytes;
+    use tokio::io::AsyncReadExt;
+    use tokio_util::codec;
+
+    // Like a channel, but for a stream of bytes instead of discrete objects.
+    let (asyncwrite, mut asyncread) = tokio::io::duplex(256);
+    // Now instead handle discrete byte lists by length-encoding them.
+    let mut sink = codec::LengthDelimitedCodec::builder()
+        .length_field_length(1)
+        .new_write(asyncwrite);
+
+    let mut flow = hydroflow_syntax! {
+        source_iter([
+            Bytes::from_static(b"hello"),
+            Bytes::from_static(b"world"),
+        ]) -> dest_sink(&mut sink);
+    };
+    tokio::time::timeout(std::time::Duration::from_secs(1), flow.run_async())
+        .await
+        .expect_err("Expected time out");
+
+    let mut buf = Vec::<u8>::new();
+    asyncread.read_buf(&mut buf).await.unwrap();
+    // `\x05` is length prefix of "5".
+    assert_eq!(b"\x05hello\x05world", &*buf);
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn asynctest_dest_asyncwrite_duplex() {
+    use tokio::io::AsyncReadExt;
+
+    // Like a channel, but for a stream of bytes instead of discrete objects.
+    // This could be an output file, network port, stdout, etc.
+    let (asyncwrite, mut asyncread) = tokio::io::duplex(256);
+
+    let mut flow = hydroflow_syntax! {
+        source_iter([
+            "hello",
+            "world",
+        ]) -> dest_asyncwrite(asyncwrite);
+    };
+    tokio::time::timeout(std::time::Duration::from_secs(1), flow.run_async())
+        .await
+        .expect_err("Expected time out");
+
+    let mut buf = Vec::<u8>::new();
+    asyncread.read_buf(&mut buf).await.unwrap();
+    // `\x05` is length prefix of "5".
+    assert_eq!(b"helloworld", &*buf);
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn asynctest_source_stream() {
+    LocalSet::new()
+        .run_until(async {
+            let (a_send, a_recv) = hydroflow::util::unbounded_channel::<usize>();
+            let (b_send, b_recv) = hydroflow::util::unbounded_channel::<usize>();
+
+            tokio::task::spawn_local(async move {
+                let mut flow = hydroflow_syntax! {
+                    source_stream(a_recv) -> for_each(|x| { b_send.send(x).unwrap(); });
+                };
+                flow.run_async().await.unwrap();
+            });
+            tokio::task::spawn_local(async move {
+                let mut flow = hydroflow_syntax! {
+                    source_stream(b_recv) -> for_each(|x| println!("{}", x));
+                };
+                flow.run_async().await.unwrap();
+            });
+
+            a_send.send(1).unwrap();
+            a_send.send(2).unwrap();
+            a_send.send(3).unwrap();
+
+            tokio::task::yield_now().await;
+        })
+        .await;
 }

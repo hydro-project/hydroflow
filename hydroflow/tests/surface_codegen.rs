@@ -3,7 +3,6 @@ use std::collections::{HashMap, HashSet};
 use hydroflow::hydroflow_syntax;
 use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::util::recv_into;
-use tokio::task::LocalSet;
 
 // TODO(mingwei): custom operators? How to handle in syntax? How to handle state?
 
@@ -761,35 +760,6 @@ pub fn test_reduce() {
     pairs_send.send((0, 3)).unwrap();
     pairs_send.send((0, 3)).unwrap();
     df.run_available();
-}
-
-#[tokio::test(flavor = "current_thread")]
-async fn async_test() {
-    LocalSet::new()
-        .run_until(async {
-            let (a_send, a_recv) = hydroflow::util::unbounded_channel::<usize>();
-            let (b_send, b_recv) = hydroflow::util::unbounded_channel::<usize>();
-
-            tokio::task::spawn_local(async move {
-                let mut flow = hydroflow_syntax! {
-                    source_stream(a_recv) -> for_each(|x| { b_send.send(x).unwrap(); });
-                };
-                flow.run_async().await.unwrap();
-            });
-            tokio::task::spawn_local(async move {
-                let mut flow = hydroflow_syntax! {
-                    source_stream(b_recv) -> for_each(|x| println!("{}", x));
-                };
-                flow.run_async().await.unwrap();
-            });
-
-            a_send.send(1).unwrap();
-            a_send.send(2).unwrap();
-            a_send.send(3).unwrap();
-
-            tokio::task::yield_now().await;
-        })
-        .await;
 }
 
 use serde::{Deserialize, Serialize};
