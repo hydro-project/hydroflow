@@ -12,6 +12,37 @@ use quote::quote_spanned;
 /// handles streams of bytes.
 ///
 /// Note this operator must be used within a Tokio runtime.
+///
+/// ```rustbook
+/// #[tokio::test]
+/// async fn test_dest_sink() {
+///     use bytes::Bytes;
+///     use tokio::io::AsyncReadExt;
+///     use tokio_util::codec;
+///
+///     // Like a channel, but for a stream of bytes instead of discrete objects.
+///     let (asyncwrite, mut asyncread) = tokio::io::duplex(256);
+///     // Now instead handle discrete byte lists by length-encoding them.
+///     let mut sink = codec::LengthDelimitedCodec::builder()
+///         .length_field_length(1)
+///         .new_write(asyncwrite);
+///
+///     let mut flow = hydroflow::hydroflow_syntax! {
+///         source_iter([
+///             Bytes::from_static(b"hello"),
+///             Bytes::from_static(b"world"),
+///         ]) -> dest_sink(&mut sink);
+///     };
+///     tokio::time::timeout(std::time::Duration::from_secs(1), flow.run_async())
+///         .await
+///         .expect_err("Expected time out");
+///
+///     let mut buf = Vec::<u8>::new();
+///     asyncread.read_buf(&mut buf).await.unwrap();
+///     // `\x05` is length prefix of "5".
+///     assert_eq!(b"\x05hello\x05world", &*buf);
+/// }
+/// ```
 #[hydroflow_internalmacro::operator_docgen]
 pub const DEST_SINK: OperatorConstraints = OperatorConstraints {
     name: "dest_sink",
@@ -39,8 +70,8 @@ pub const DEST_SINK: OperatorConstraints = OperatorConstraints {
                 .spawn_task(async move {
                     use #root::futures::sink::SinkExt;
 
-                    let mut recv = #recv_ident;
-                    let mut sink = #sink_arg;
+                    #[allow(unused_mut)] let mut recv = #recv_ident;
+                    #[allow(unused_mut)] let mut sink = #sink_arg;
                     while let Some(item) = recv.recv().await {
                         sink.feed(item).await.expect("Error processing async sink item.");
                         // Receive as many items synchronously as possible before flushing.
