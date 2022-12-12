@@ -13,6 +13,32 @@ use quote::quote_spanned;
 /// This handles a stream of bytes, whereas [`dest_sink`](#dest_sink) handles individual items of an arbitrary type.
 ///
 /// Note this operator must be used within a Tokio runtime.
+///
+/// ```rustbook
+/// #[tokio::test]
+/// async fn test_dest_asyncwrite() {
+///     use tokio::io::AsyncReadExt;
+///
+///     // Like a channel, but for a stream of bytes instead of discrete objects.
+///     // This could be an output file, network port, stdout, etc.
+///     let (asyncwrite, mut asyncread) = tokio::io::duplex(256);
+///
+///     let mut flow = hydroflow_syntax! {
+///         source_iter([
+///             "hello",
+///             "world",
+///         ]) -> dest_asyncwrite(asyncwrite);
+///     };
+///     tokio::time::timeout(std::time::Duration::from_secs(1), flow.run_async())
+///         .await
+///         .expect_err("Expected time out");
+///
+///     let mut buf = Vec::<u8>::new();
+///     asyncread.read_buf(&mut buf).await.unwrap();
+///     // `\x05` is length prefix of "5".
+///     assert_eq!(b"helloworld", &*buf);
+/// }
+/// ```
 #[hydroflow_internalmacro::operator_docgen]
 pub const DEST_ASYNCWRITE: OperatorConstraints = OperatorConstraints {
     name: "dest_asyncwrite",
@@ -40,8 +66,8 @@ pub const DEST_ASYNCWRITE: OperatorConstraints = OperatorConstraints {
                 .spawn_task(async move {
                     use #root::tokio::io::AsyncWriteExt;
 
-                    let mut recv = #recv_ident;
-                    let mut write = #async_write_arg;
+                    #[allow(unused_mut)] let mut recv = #recv_ident;
+                    #[allow(unused_mut)] let mut write = #async_write_arg;
                     while let Some(item) = recv.recv().await {
                         let bytes = std::convert::AsRef::<[u8]>::as_ref(&item);
                         write.write_all(bytes).await.expect("Error processing async write item.");
