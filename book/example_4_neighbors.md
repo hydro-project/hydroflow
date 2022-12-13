@@ -160,7 +160,7 @@ Returning to the code, if you read the `pairs_send` calls carefully, you'll see 
 has vertices (`2`, `4`) that are more than one hop away from `0`, which were
 not output by our simple program. To extend this example to graph *reachability*, 
 we need to recurse: find neighbors of our neighbors, neighbors of our neighbors' neighbors, and so on. In Hydroflow,
-this is done by adding a loop to the flow, as we'll see in our [next example](example_5_surface.md).
+this is done by adding a loop to the flow, as we'll see in our [next example](example_5_reachability.md).
 ## Strata and Epochs
 Before we proceed, note in the mermaid graph how Hydroflow separates the `unique` operator and its downstream dependencies into their own
 _stratum_ (plural: _strata_). The stratum boundary before `unique` ensures that all the values arrive before it executes, ensuring that all duplicates are eliminated. 

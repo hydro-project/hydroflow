@@ -71,6 +71,7 @@ pub(crate) async fn run_client(
 
     };
 
+    // optionally print the dataflow graph
     if let Some(graph) = graph {
         let serde_graph = hf
             .serde_graph()
@@ -84,9 +85,9 @@ pub(crate) async fn run_client(
             }
             GraphType::Json => {
                 unimplemented!();
-                // println!("{}", serde_graph.to_json())
             }
         }
     }
+
     hf.run_async().await.unwrap();
 }
