@@ -1,9 +1,9 @@
 use hydroflow::pusherator::Pusherator;
-use hydroflow::{hydroflow_syntax, tl};
+use hydroflow::{hydroflow_syntax, var_args};
 
 fn main() {
     let mut df = hydroflow_syntax! {
-        my_demux = source_iter(0..10) -> demux(|item, tl!(a, b, c)| {
+        my_demux = source_iter(0..10) -> demux(|item, var_args!(a, b, c)| {
             match item % 3 {
                 0 => a.give(item),
                 1 => b.give(item),
