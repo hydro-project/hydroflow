@@ -269,9 +269,9 @@ impl PartitionedGraph {
                     df.add_subgraph_stratified(
                         #hoff_name,
                         #stratum,
-                        tl!( #( #recv_ports ),* ),
-                        tl!( #( #send_ports ),* ),
-                        move |context, tl!( #( #recv_ports ),* ), tl!( #( #send_ports ),* )| {
+                        var_expr!( #( #recv_ports ),* ),
+                        var_expr!( #( #send_ports ),* ),
+                        move |context, var_args!( #( #recv_ports ),* ), var_args!( #( #send_ports ),* )| {
                             #( #recv_port_code )*
                             #( #send_port_code )*
                             #( #subgraph_op_iter_code )*
@@ -284,7 +284,7 @@ impl PartitionedGraph {
         let serde_string = Literal::string(&*self.serde_string());
         let code = quote! {
             {
-                use #root::tl;
+                use #root::{var_expr, var_args};
 
                 let mut df = #root::scheduled::graph::Hydroflow::new_with_graph(#serde_string);
 

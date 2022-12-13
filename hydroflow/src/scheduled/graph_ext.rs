@@ -51,9 +51,9 @@ macro_rules! subgraph_ext {
             let mut subgraph = subgraph;
             self.add_subgraph(
                 name,
-                crate::tl!($($recv_param),*),
-                crate::tl!($($send_param),*),
-                move |ctx, crate::tl!($($recv_param),*), crate::tl!($($send_param),*)|
+                crate::var_expr!($($recv_param),*),
+                crate::var_expr!($($send_param),*),
+                move |ctx, crate::var_args!($($recv_param),*), crate::var_args!($($send_param),*)|
                     (subgraph)(ctx, $($recv_param,)* $($send_param),*),
             )
         }

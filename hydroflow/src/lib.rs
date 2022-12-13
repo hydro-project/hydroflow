@@ -20,7 +20,7 @@ pub use static_assertions;
 pub use tokio;
 pub use tokio_stream;
 pub use tokio_util;
-pub use variadics::{self, tl, tt};
+pub use variadics::{self, var_args, var_expr, var_type};
 
 mod declarative_macro;
 pub use declarative_macro::*;

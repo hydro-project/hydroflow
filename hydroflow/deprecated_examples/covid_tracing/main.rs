@@ -10,7 +10,7 @@ use hydroflow::pusherator::{InputBuild, IteratorToPusherator, PusheratorBuild};
 use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::scheduled::graph_ext::GraphExt;
 use hydroflow::scheduled::handoff::VecHandoff;
-use hydroflow::tl;
+use hydroflow::var_expr;
 
 use rand::Rng;
 
@@ -46,11 +46,11 @@ fn main() {
 
     df.add_subgraph(
         "main",
-        tl!(contacts_recv, diagnosed_recv, loop_recv),
-        tl!(notifs_send, loop_send),
+        var_expr!(contacts_recv, diagnosed_recv, loop_recv),
+        var_expr!(notifs_send, loop_send),
         move |context,
-              tl!(contacts_recv, diagnosed_recv, loop_recv),
-              tl!(notifs_send, loop_send)| {
+              var_expr!(contacts_recv, diagnosed_recv, loop_recv),
+              var_expr!(notifs_send, loop_send)| {
             let looped = loop_recv
                 .take_inner()
                 .into_iter()
@@ -96,9 +96,9 @@ fn main() {
 
     df.add_subgraph(
         "join people and notifs",
-        tl!(people_recv, notifs_recv),
-        tl!(),
-        move |_ctx, tl!(peoples, exposures), ()| {
+        var_expr!(people_recv, notifs_recv),
+        var_expr!(),
+        move |_ctx, var_expr!(peoples, exposures), ()| {
             let exposures = exposures.take_inner().into_iter();
             let peoples = peoples.take_inner().into_iter();
 

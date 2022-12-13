@@ -1,17 +1,13 @@
-use std::{
-    cell::{Cell, RefCell},
-    collections::{HashMap, HashSet},
-    rc::Rc,
-    sync::mpsc,
-};
+use std::cell::{Cell, RefCell};
+use std::collections::{HashMap, HashSet};
+use std::rc::Rc;
+use std::sync::mpsc;
 
-use hydroflow::scheduled::{
-    graph::Hydroflow,
-    graph_ext::GraphExt,
-    handoff::VecHandoff,
-    port::{RecvCtx, SendCtx},
-};
-use hydroflow::tl;
+use hydroflow::scheduled::graph::Hydroflow;
+use hydroflow::scheduled::graph_ext::GraphExt;
+use hydroflow::scheduled::handoff::VecHandoff;
+use hydroflow::scheduled::port::{RecvCtx, SendCtx};
+use hydroflow::{var_args, var_expr};
 
 #[test]
 fn map_filter() {
@@ -29,9 +25,9 @@ fn map_filter() {
     let data = [1, 2, 3, 4];
     df.add_subgraph(
         "source",
-        tl!(),
-        tl!(source),
-        move |_ctx, tl!(), tl!(send)| {
+        var_expr!(),
+        var_expr!(source),
+        move |_ctx, var_args!(), var_args!(send)| {
             for x in data.into_iter() {
                 send.give(Some(x));
             }
@@ -40,9 +36,9 @@ fn map_filter() {
 
     df.add_subgraph(
         "map",
-        tl!(map_in),
-        tl!(map_out),
-        |_ctx, tl!(recv), tl!(send)| {
+        var_expr!(map_in),
+        var_expr!(map_out),
+        |_ctx, var_args!(recv), var_args!(send)| {
             for x in recv.take_inner().into_iter() {
                 send.give(Some(3 * x + 1));
             }
@@ -51,9 +47,9 @@ fn map_filter() {
 
     df.add_subgraph(
         "filter",
-        tl!(filter_in),
-        tl!(filter_out),
-        |_ctx, tl!(recv), tl!(send)| {
+        var_expr!(filter_in),
+        var_expr!(filter_out),
+        |_ctx, var_args!(recv), var_args!(send)| {
             for x in recv.take_inner().into_iter() {
                 if x % 2 == 0 {
                     send.give(Some(x));
@@ -64,11 +60,16 @@ fn map_filter() {
 
     let outputs = Rc::new(RefCell::new(Vec::new()));
     let inner_outputs = outputs.clone();
-    df.add_subgraph("sink", tl!(sink), tl!(), move |_ctx, tl!(recv), tl!()| {
-        for x in recv.take_inner().into_iter() {
-            (*inner_outputs).borrow_mut().push(x);
-        }
-    });
+    df.add_subgraph(
+        "sink",
+        var_expr!(sink),
+        var_expr!(),
+        move |_ctx, var_args!(recv), var_args!()| {
+            for x in recv.take_inner().into_iter() {
+                (*inner_outputs).borrow_mut().push(x);
+            }
+        },
+    );
 
     df.run_available();
 

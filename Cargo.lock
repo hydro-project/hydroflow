@@ -2106,12 +2106,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tuple_list"
-version = "0.1.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "141fb9f71ee586d956d7d6e4d5a9ef8e946061188520140f7591b668841d502e"
-
-[[package]]
 name = "unicode-bidi"
 version = "0.3.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2171,9 +2165,6 @@ checksum = "5190c9442dcdaf0ddd50f37420417d219ae5261bbf5db120d0f9bab996c9cba1"
 [[package]]
 name = "variadics"
 version = "0.1.0"
-dependencies = [
- "tuple_list",
-]
 
 [[package]]
 name = "vec_map"

@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 
 use super::Pusherator;
 
-variadics::variadic! {
+variadics::variadic_trait! {
     /// A variadic list of Pusherators.
     pub variadic<T> PusheratorList where T: Pusherator {}
 }
