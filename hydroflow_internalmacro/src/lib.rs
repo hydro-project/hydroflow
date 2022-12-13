@@ -114,7 +114,7 @@ fn operator_docgen_internal(item: &ItemConst) -> Result<(), Box<dyn Error>> {
 
 const DOCTEST_HYDROFLOW_PREFIX: &str = "\
 ```rust
-# #[allow(unused_imports)] use hydroflow::tl;
+# #[allow(unused_imports)] use hydroflow::{var_args, var_expr};
 # #[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 # let mut __hf = hydroflow::hydroflow_syntax! {";
 const DOCTEST_HYDROFLOW_SUFFIX: &str = "\

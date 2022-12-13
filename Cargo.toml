@@ -9,7 +9,7 @@ members = [
     "benches",
     "relalg",
     "pusherator",
-    "type_list",
+    "variadics",
 ]
 
 [profile.release]

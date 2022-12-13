@@ -12,7 +12,6 @@ pub mod query;
 pub mod reactor;
 pub mod state;
 pub(crate) mod subgraph;
-pub mod type_list;
 pub mod util;
 
 /// A subgraph's ID. Invalid if used in a different [`graph::Hydroflow`]
