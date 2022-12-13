@@ -9,7 +9,7 @@ cargo run -p hydroflow --example echoserver -- --role "server" --server-addr loc
 
 In another terminal run a client:
 ```
-cargo run -p hydroflow --example echoserver -- --role client --addr localhost:9090 --server-addr localhost:12347
+cargo run -p hydroflow --example echoserver -- --role client --client-addr localhost:9090 --server-addr localhost:12347
 ```
 
 If you type in the client terminal the message will be sent to the server, echo'd back to the client and printed with a checksum and server timestamp.

@@ -1,12 +1,12 @@
-use chrono::prelude::*;
-use colored::Colorize;
-
 use crate::protocol::Message;
-use crate::GraphType;
-use chrono::Utc;
+use chrono::prelude::*;
 use hydroflow::hydroflow_syntax;
 use hydroflow::util::{UdpSink, UdpStream};
 use std::net::SocketAddr;
+
+use crate::GraphType;
+use chrono::Utc;
+use colored::Colorize;
 
 fn pretty_print_msg(msg: Message) {
     if let Message::ChatMsg {
@@ -54,7 +54,7 @@ pub(crate) async fn run_client(
         source_iter([()]) -> map(|_m| (Message::ConnectRequest, server_addr)) -> [0]outbound_chan;
 
         // take stdin and send to server as a msg
-        // the join serves to buffer msgs until the connection request is acked
+        // the cross_join serves to buffer msgs until the connection request is acked
         msg_send = cross_join() -> map(|(msg, _)| (msg, server_addr)) -> [1]outbound_chan;
         lines = source_stdin()
           -> map(|l| Message::ChatMsg {
@@ -62,13 +62,10 @@ pub(crate) async fn run_client(
                     message: l.unwrap(),
                     ts: Utc::now()})
           -> [0]msg_send;
+        inbound_chan[acks] -> [1]msg_send;
 
         // receive and print messages
         inbound_chan[msgs] -> for_each(pretty_print_msg);
-
-        // handle connect ack
-        inbound_chan[acks] -> [1]msg_send;
-
     };
 
     // optionally print the dataflow graph
