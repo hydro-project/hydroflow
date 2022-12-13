@@ -42,7 +42,7 @@ two cases above. Similarly note that the join box `V ⨝ E` now has two _outboun
 to copy ("tee") the output along 
 two paths.
 
-Now lets look at a modified version of our [graph neighbor](example_4_surface.md) code that implements this full program, including the loop as well as the Hydroflow [`merge`](./surface_ops.gen.md#merge) and [`tee`](./surface_ops.gen.md#tee):
+Now lets look at a modified version of our [graph neighbor](example_4_neighbors.md) code that implements this full program, including the loop as well as the Hydroflow [`merge`](./surface_ops.gen.md#merge) and [`tee`](./surface_ops.gen.md#tee):
 
 ```rust
 # use hydroflow::hydroflow_syntax;

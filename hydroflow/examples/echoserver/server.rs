@@ -1,12 +1,11 @@
 use crate::protocol::EchoMsg;
-use crate::GraphType;
 use chrono::prelude::*;
 use hydroflow::hydroflow_syntax;
 use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::util::{UdpSink, UdpStream};
 use std::net::SocketAddr;
 
-pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, graph: Option<GraphType>) {
+pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream) {
     println!("Server live!");
 
     let mut flow: Hydroflow = hydroflow_syntax! {
@@ -18,22 +17,7 @@ pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, graph: Opt
         inbound_chan[1] -> map(|(EchoMsg { payload, .. }, addr)| (EchoMsg { payload, ts: Utc::now() }, addr))
             -> dest_sink_serde(outbound);
     };
-    if let Some(graph) = graph {
-        let serde_graph = flow
-            .serde_graph()
-            .expect("No graph found, maybe failed to parse.");
-        match graph {
-            GraphType::Mermaid => {
-                println!("{}", serde_graph.to_mermaid());
-            }
-            GraphType::Dot => {
-                println!("{}", serde_graph.to_dot())
-            }
-            GraphType::Json => {
-                unimplemented!();
-                // println!("{}", serde_graph.to_json())
-            }
-        }
-    }
-    flow.run_async().await.unwrap();
+
+    // run the server
+    flow.run_async().await;
 }
