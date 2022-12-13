@@ -443,7 +443,7 @@ pub fn test_demux_1() {
             Shape::Circle(5.0),
             Shape::Rectangle { width: 10.0, height: 8.0 },
             Shape::Square(9.0),
-        ]) -> demux(|shape, tl!(circ, rect)| {
+        ]) -> demux(|shape, var_args!(circ, rect)| {
             match shape {
                 Shape::Circle(radius) => circ.give(radius),
                 Shape::Rectangle { width, height } => rect.give((width, height)),
@@ -463,7 +463,7 @@ pub fn test_demux_1() {
 pub fn test_demux_fizzbuzz_1() {
     let mut df = hydroflow_syntax! {
         my_demux = source_iter(1..=100)
-            -> demux(|v, tl!(fzbz, fizz, buzz, vals)|
+            -> demux(|v, var_args!(fzbz, fizz, buzz, vals)|
                 match v {
                     v if 0 == v % 15 => fzbz.give(()),
                     v if 0 == v % 3 => fizz.give(()),
@@ -483,7 +483,7 @@ pub fn test_demux_fizzbuzz_1() {
 pub fn test_demux_fizzbuzz_2() {
     let mut df = hydroflow_syntax! {
         my_demux = source_iter(1..=100)
-        -> demux(|v, tl!(fzbz, fizz, buzz, vals)|
+        -> demux(|v, var_args!(fzbz, fizz, buzz, vals)|
             match (v % 3, v % 5) {
                 (0, 0) => fzbz.give(()),
                 (0, _) => fizz.give(()),

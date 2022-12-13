@@ -136,9 +136,9 @@ where
 /// ```ignore
 /// type MyHandoffList = (VecHandoff<usize>, (VecHandoff<String>, (TeeingHandoff<u32>, ())));
 /// ```
-/// The [`tl!`](crate::tl) (tuple list) macro simplifies usage of this kind:
+/// The [`var_expr!`](variadics::var_expr) macro simplifies usage of this kind:
 /// ```ignore
-/// type MyHandoffList = tl!(VecHandoff<usize>, VecHandoff<String>, TeeingHandoff<u32>);
+/// type MyHandoffList = var_expr!(VecHandoff<usize>, VecHandoff<String>, TeeingHandoff<u32>);
 /// ```
 #[sealed]
 pub trait HandoffList: Variadic {}

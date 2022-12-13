@@ -5,7 +5,7 @@ use hydroflow::lang::collections::Iter;
 use hydroflow::pusherator::{InputBuild, IteratorToPusherator, PusheratorBuild};
 use hydroflow::scheduled::graph_ext::GraphExt;
 use hydroflow::scheduled::{graph::Hydroflow, handoff::VecHandoff, net::Message};
-use hydroflow::tl;
+use hydroflow::var_expr;
 use hydroflow::tokio::net::TcpStream;
 
 pub(crate) async fn run_tracker(opts: Opts) {
@@ -23,9 +23,9 @@ pub(crate) async fn run_tracker(opts: Opts) {
 
     df.add_subgraph(
         "network demux",
-        tl!(network_in),
-        tl!(contacts, diagnoses),
-        move |_ctx, tl!(recv), tl!(send1, send2)| {
+        var_expr!(network_in),
+        var_expr!(contacts, diagnoses),
+        move |_ctx, var_expr!(recv), var_expr!(send1, send2)| {
             for message in recv.take_inner() {
                 let Message { address, batch } = message;
                 match address {
@@ -51,9 +51,9 @@ pub(crate) async fn run_tracker(opts: Opts) {
     let mut exposed_contacts = Default::default();
     df.add_subgraph(
         "main",
-        tl!(contacts_in, diagnosed_in, loop_in),
-        tl!(notifs_out, loop_out),
-        move |_ctx, tl!(contacts_recv, diagnosed_recv, loop_recv), tl!(notifs_send, loop_send)| {
+        var_expr!(contacts_in, diagnosed_in, loop_in),
+        var_expr!(notifs_out, loop_out),
+        move |_ctx, var_expr!(contacts_recv, diagnosed_recv, loop_recv), var_expr!(notifs_send, loop_send)| {
             let looped = loop_recv
                 .take_inner()
                 .into_iter()

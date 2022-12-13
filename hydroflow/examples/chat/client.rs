@@ -41,7 +41,7 @@ pub(crate) async fn run_client(
         // set up channels
         outbound_chan = merge() -> dest_sink_serde(outbound);
         inbound_chan = source_stream_serde(inbound) -> map(|(m, _)| m)
-            ->  demux(|m, tl!(acks, msgs, errs)|
+            ->  demux(|m, var_args!(acks, msgs, errs)|
                     match m {
                         Message::ConnectResponse => acks.give(m),
                         Message::ChatMsg {..} => msgs.give(m),

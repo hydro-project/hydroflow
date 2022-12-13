@@ -15,7 +15,7 @@ use syn::{Expr, Pat};
 
 // TODO(mingwei): Preprocess rustdoc links in mdbook or in the `operator_docgen` macro.
 /// > Arguments: A Rust closure, the first argument is a received item and the
-/// > second argument is a [`tl!` tuple list](https://hydro-project.github.io/hydroflow/doc/hydroflow/macro.tl.html)
+/// > second argument is a [`var_args!` tuple list](https://hydro-project.github.io/hydroflow/doc/hydroflow/macro.var_args.html)
 /// > where each item name is an output port.
 ///
 /// Takes the input stream and allows the user to determine what elemnt(s) to
@@ -23,11 +23,11 @@ use syn::{Expr, Pat};
 ///
 /// > Note: Downstream operators may need explicit type annotations.
 ///
-/// > Note: Import the [`Pusherator`](https://hydro-project.github.io/hydroflow/doc/pusherator/trait.Pusherator.html)
-/// > trait to use the [`.give(...)` method](https://hydro-project.github.io/hydroflow/doc/pusherator/trait.Pusherator.html#tymethod.give).
+/// > Note: The [`Pusherator`](https://hydro-project.github.io/hydroflow/doc/pusherator/trait.Pusherator.html)
+/// > trait is automatically imported to enable the [`.give(...)` method](https://hydro-project.github.io/hydroflow/doc/pusherator/trait.Pusherator.html#tymethod.give).
 ///
 /// ```hydroflow
-/// my_demux = source_iter(1..=100) -> demux(|v, tl!(fzbz, fizz, buzz, vals)|
+/// my_demux = source_iter(1..=100) -> demux(|v, var_args!(fzbz, fizz, buzz, vals)|
 ///     match (v % 3, v % 5) {
 ///         (0, 0) => fzbz.give(v),
 ///         (0, _) => fizz.give(v),
@@ -78,7 +78,7 @@ pub const DEMUX: OperatorConstraints = OperatorConstraints {
                 Level::Error,
                 &*format!(
                     "Closure provided as second argument to `{}` must have a second \
-            input argument listing ports, `tl!(port_a, port_b, ...)`.",
+                    input argument listing ports, `var_args!(port_a, port_b, ...)`.",
                     op_name
                 ),
             ));
@@ -161,7 +161,7 @@ pub const DEMUX: OperatorConstraints = OperatorConstraints {
         let write_iterator = quote_spanned! {op_span=>
             let #ident = {
                 #[allow(unused_imports)] use #root::pusherator::Pusherator;
-                #root::pusherator::demux::Demux::new(#func, #root::tl!( #( #sorted_outputs ),* ))
+                #root::pusherator::demux::Demux::new(#func, #root::var_expr!( #( #sorted_outputs ),* ))
             };
         };
 

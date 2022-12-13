@@ -5,12 +5,12 @@ use std::time::Duration;
 use hydroflow::compiled::pull::SymmetricHashJoin;
 use hydroflow::lang::collections::Iter;
 use hydroflow::pusherator::{IteratorToPusherator, PusheratorBuild};
-use hydroflow::scheduled::{handoff::VecHandoff, net::Message};
+use hydroflow::scheduled::graph::Hydroflow;
+use hydroflow::scheduled::graph_ext::GraphExt;
+use hydroflow::scheduled::handoff::VecHandoff;
+use hydroflow::scheduled::net::Message;
 use hydroflow::tokio::net::TcpListener;
-use hydroflow::{
-    scheduled::{graph::Hydroflow, graph_ext::GraphExt},
-    tl,
-};
+use hydroflow::var_expr;
 use rand::Rng;
 
 pub(crate) async fn run_database(opts: Opts) {
@@ -132,9 +132,9 @@ pub(crate) async fn run_database(opts: Opts) {
     let mut join_state = Default::default();
     df.add_subgraph(
         "join people and notifs",
-        tl!(notif_sink, people_recv),
-        tl!(),
-        move |_ctx, tl!(notifs, people), tl!()| {
+        var_expr!(notif_sink, people_recv),
+        var_expr!(),
+        move |_ctx, var_expr!(notifs, people), var_expr!()| {
             let pivot = SymmetricHashJoin::new(
                 notifs.take_inner().into_iter(),
                 people.take_inner().into_iter(),
