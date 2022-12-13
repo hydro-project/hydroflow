@@ -17,14 +17,15 @@ accept strings from the command line, send them to the echo server, and print re
 Full code for this example can be found in `hydroflow/hydroflow/examples/echoserver`. This example can 
 serve as a template for many networked Hydroflow services.  
 
-Generally the directory structure we're advocating is:
+Generally the directory structure we'll use will be as follows:
 ```txt
-project/README.md       # documentation
-project/main.rs         # main function
-project/protocol.rs     # message types exchanged between roles
-project/helpers.rs      # helper functions used by all roles
-project/roleA.rs        # service definition for role A
-project/roleB.rs        # service definition for role B
+project/README.md           # documentation
+project/Cargo.toml          # package and dependency info
+project/src/main.rs         # main function
+project/src/protocol.rs     # message types exchanged between roles
+project/src/helpers.rs      # helper functions used by all roles
+project/src/<roleA>.rs      # service definition for role A (e.g. server)
+project/src/<roleB>.rs      # service definition for role B (e.g. client)
 ```
 In this example, the roles we'll be using are `Client` and `Server`, but you can imagine different roles depending on the structure of your service or application.
 
@@ -75,9 +76,9 @@ async fn main() {
     let opts = Opts::parse();
 ```
 
-After parsing the command line arguments, we get into invoking the client or server code. Before we do so, we set up some Rust-based networking. Specifically, in both cases we will need to allocate a UDP socket that is used for both sending and receiving messages. We do this by calling the async `bind_udp_socket` function, which is defined in `hydroflow/src/net.rs`. It is an async `future`, so requires appending `.await`; the function returns a pair of type `(UdpSink, UdpSource)`. These are the types that we'll use in Hydroflow to send and receive messages. (Note: your IDE might expand out the `UdpSink` and `UdpSource` traits to their more verbose definitions. This is fine; you can ignore for now.)
+After parsing the command line arguments, we get into invoking the client or server code. Before we do so, we set up some Rust-based networking. Specifically, in both cases we will need to allocate a UDP socket that is used for both sending and receiving messages. We do this by calling the async `bind_udp_socket` function, which is defined in the `hydroflow/src/util` module. As an async function it returns a `Future`, so requires appending `.await`; the function returns a pair of type `(UdpSink, UdpSource)`. These are the types that we'll use in Hydroflow to send and receive messages. (Note: your IDE might expand out the `UdpSink` and `UdpSource` traits to their more verbose definitions. This is fine; you can ignore for now.)
 
-For the server case, all that's left is to invoke `run_server` and pass it the network information. Note that the server is also an asynchronous program, so we append `.await` to that call as well. The program will block on this call until the server is done (which should only happen when it fails).
+For the server case, all that's left is to invoke `run_server` and pass it the network information. Note that the server is also asynchronous, so we append `.await` to that call as well. The program will block on this call until the server is done (which should only happen when it fails).
 ```rust,ignore
     // depending on the role, pass in arguments to the right function
     match opts.role {
@@ -89,7 +90,7 @@ For the server case, all that's left is to invoke `run_server` and pass it the n
         }
 ```
 
-In the client case, we need one more piece of information passed down: the address of the server. We get this by calling the `ipv4_resolve` function, which is also defined in `src/net.rs`. This function takes a string and returns a `SocketAddr` type, which is the type that the `UdpSink` and `UdpSource` traits expect. Invoking `run_client` is similar to the server case, except that we pass in the server address as well.
+In the client case, we need one more piece of information passed down: the address of the server. We get this by calling the `ipv4_resolve` function, which is also defined in the `hydroflow/src/util` module. This function takes a string and returns a `SocketAddr` type, which is the address/port structure that  `UdpSink` and `UdpSource` will use. Invoking `run_client` is similar to the server case, except that we pass in the server address as well.
 ```rust,ignore
         Role::Client => {
             // resolve the server's IP address
@@ -104,7 +105,7 @@ In the client case, we need one more piece of information passed down: the addre
 ```
 
 ## protocol.rs
-As a design pattern, it is natural in distributed Hydroflow programs to define various message types in a `protocol.rs` file with structures shared for use by all the Hydroflow logic across roles. In this simple example, we define only one message type: `EchoMsg`, and a simple struct with two fields: `payload` and `ts` (timestamp). The `payload` field is a string, and the `ts` field is a `DateTime<Utc>`, which is a type from the [`chrono`](https://docs.rs/chrono/latest/chrono/) crate. Note the various derived traits on `EchoMsg` -- these are required for structs that we send over the network.
+As a design pattern, it is natural in distributed Hydroflow programs to define various message types in a `protocol.rs` file with structures shared for use by all the Hydroflow logic across roles. In this simple example, we define only one message type: `EchoMsg`, and a simple struct with two fields: `payload` and `ts` (timestamp). The `payload` field is a string, and the `ts` field is a `DateTime<Utc>`, which is a type from the [`chrono`](https://docs.rs/chrono/latest/chrono/) crate. Note the various derived traits on `EchoMsg`—specifically `Serialize` and `Deserialize`—these are required for structs that we send over the network.
 
 ```rust,ignore
 #[derive(PartialEq, Clone, Serialize, Deserialize, Debug)]
