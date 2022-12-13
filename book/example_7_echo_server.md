@@ -119,7 +119,7 @@ Things get interesting when we look at the `run_server` function. This function 
 
 After printing a cheery message, we get the surface syntax for the server, consisting of three short pipelines:
 
-```rust
+```rust,ignore
 use crate::protocol::EchoMsg;
 use chrono::prelude::*;
 use hydroflow::hydroflow_syntax;
@@ -171,14 +171,17 @@ pub(crate) async fn run_client(outbound: UdpSink, inbound: UdpStream, server_add
     println!("Attempting to connect to server at {:?}", server_addr);
     println!("Client live!");
 
-let mut flow = hydroflow_syntax! {
-    // take stdin and send to server as an Echo::Message
-    source_stdin() -> map(|l| (EchoMsg{ payload: l.unwrap(), ts: Utc::now(), }, server_addr) )
-        -> dest_sink_serde(outbound);
+    let mut flow = hydroflow_syntax! {
+        // take stdin and send to server as an Echo::Message
+        source_stdin() -> map(|l| (EchoMsg{ payload: l.unwrap(), ts: Utc::now(), }, server_addr) )
+            -> dest_sink_serde(outbound);
 
-    // receive and print messages
-    source_stream_serde(inbound) -> for_each(|(m, _a): (EchoMsg, SocketAddr) | println!("{:?}", m));
-};
+        // receive and print messages
+        source_stream_serde(inbound) -> for_each(|(m, _a): (EchoMsg, SocketAddr) | println!("{:?}", m));
+    };
+
+    flow.run_async().await.unwrap();
+}
 ```
 
 ## Running the example

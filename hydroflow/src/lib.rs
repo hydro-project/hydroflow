@@ -35,12 +35,13 @@ mod booktest {
         };
     }
 
-    booktest!(example_1_surface);
-    booktest!(example_2_surface);
-    booktest!(example_3_surface);
-    booktest!(example_4_surface);
-    booktest!(example_5_surface);
-    booktest!(example_6_surface);
+    booktest!(example_1_simplest);
+    booktest!(example_2_simple);
+    booktest!(example_3_stream);
+    booktest!(example_4_neighbors);
+    booktest!(example_5_reachability);
+    booktest!(example_6_unreachability);
+    booktest!(example_7_echo_server);
 
     booktest!(surface_syntax);
     booktest!(surface_embedding);
