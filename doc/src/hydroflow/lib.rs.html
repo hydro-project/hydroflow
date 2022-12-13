@@ -51,6 +51,7 @@
 <a href="#51" id="51">51</a>
 <a href="#52" id="52">52</a>
 <a href="#53" id="53">53</a>
+<a href="#54" id="54">54</a>
 </pre><pre class="rust"><code><span class="attr">#![feature(never_type)]
 #![feature(type_alias_impl_trait)]
 #![allow(type_alias_bounds)]
@@ -88,12 +89,13 @@
         };
     }
 
-    <span class="macro">booktest!</span>(example_1_surface);
-    <span class="macro">booktest!</span>(example_2_surface);
-    <span class="macro">booktest!</span>(example_3_surface);
-    <span class="macro">booktest!</span>(example_4_surface);
-    <span class="macro">booktest!</span>(example_5_surface);
-    <span class="macro">booktest!</span>(example_6_surface);
+    <span class="macro">booktest!</span>(example_1_simplest);
+    <span class="macro">booktest!</span>(example_2_simple);
+    <span class="macro">booktest!</span>(example_3_stream);
+    <span class="macro">booktest!</span>(example_4_neighbors);
+    <span class="macro">booktest!</span>(example_5_reachability);
+    <span class="macro">booktest!</span>(example_6_unreachability);
+    <span class="macro">booktest!</span>(example_7_echo_server);
 
     <span class="macro">booktest!</span>(surface_syntax);
     <span class="macro">booktest!</span>(surface_embedding);

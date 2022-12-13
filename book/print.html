@@ -76,7 +76,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">User Guide</li><li class="chapter-item expanded "><a href="quickstart.html"><strong aria-hidden="true">1.</strong> Quickstart</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="setup.html"><strong aria-hidden="true">1.1.</strong> Setup</a></li><li class="chapter-item expanded "><a href="example_1_surface.html"><strong aria-hidden="true">1.2.</strong> Simplest Example</a></li><li class="chapter-item expanded "><a href="example_2_surface.html"><strong aria-hidden="true">1.3.</strong> Simple Example</a></li><li class="chapter-item expanded "><a href="example_3_surface.html"><strong aria-hidden="true">1.4.</strong> A Example With Streaming Input</a></li><li class="chapter-item expanded "><a href="example_4_surface.html"><strong aria-hidden="true">1.5.</strong> Graph Neighbors</a></li><li class="chapter-item expanded "><a href="example_5_surface.html"><strong aria-hidden="true">1.6.</strong> Graph Reachability</a></li><li class="chapter-item expanded "><a href="example_6_surface.html"><strong aria-hidden="true">1.7.</strong> Graph Un-Reachability</a></li></ol></li><li class="chapter-item expanded "><a href="concepts.html"><strong aria-hidden="true">2.</strong> Concepts</a></li><li class="chapter-item expanded "><a href="surface_syntax.html"><strong aria-hidden="true">3.</strong> Syntax</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="surface_embedding.html"><strong aria-hidden="true">3.1.</strong> Rust Embedding</a></li><li class="chapter-item expanded "><a href="surface_flows.html"><strong aria-hidden="true">3.2.</strong> Flows</a></li><li class="chapter-item expanded "><a href="surface_data.html"><strong aria-hidden="true">3.3.</strong> Data Sources</a></li><li class="chapter-item expanded "><a href="surface_ops.gen.html"><strong aria-hidden="true">3.4.</strong> Operators</a></li></ol></li><li class="chapter-item expanded "><a href="architecture.html"><strong aria-hidden="true">4.</strong> Architecture</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="in-out_trees.html"><strong aria-hidden="true">4.1.</strong> Subgraph In-Out Trees</a></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">User Guide</li><li class="chapter-item expanded "><a href="quickstart.html"><strong aria-hidden="true">1.</strong> Quickstart</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="setup.html"><strong aria-hidden="true">1.1.</strong> Setup</a></li><li class="chapter-item expanded "><a href="example_1_simplest.html"><strong aria-hidden="true">1.2.</strong> Simplest Example</a></li><li class="chapter-item expanded "><a href="example_2_simple.html"><strong aria-hidden="true">1.3.</strong> Simple Example</a></li><li class="chapter-item expanded "><a href="example_3_stream.html"><strong aria-hidden="true">1.4.</strong> A Example With Streaming Input</a></li><li class="chapter-item expanded "><a href="example_4_neighbors.html"><strong aria-hidden="true">1.5.</strong> Graph Neighbors</a></li><li class="chapter-item expanded "><a href="example_5_reachability.html"><strong aria-hidden="true">1.6.</strong> Graph Reachability</a></li><li class="chapter-item expanded "><a href="example_6_unreachability.html"><strong aria-hidden="true">1.7.</strong> Graph Un-Reachability</a></li><li class="chapter-item expanded "><a href="example_7_echo_server.html"><strong aria-hidden="true">1.8.</strong> Networked Services 1: EchoServer</a></li></ol></li><li class="chapter-item expanded "><a href="concepts.html"><strong aria-hidden="true">2.</strong> Concepts</a></li><li class="chapter-item expanded "><a href="surface_syntax.html"><strong aria-hidden="true">3.</strong> Syntax</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="surface_embedding.html"><strong aria-hidden="true">3.1.</strong> Rust Embedding</a></li><li class="chapter-item expanded "><a href="surface_flows.html"><strong aria-hidden="true">3.2.</strong> Flows</a></li><li class="chapter-item expanded "><a href="surface_data.html"><strong aria-hidden="true">3.3.</strong> Data Sources</a></li><li class="chapter-item expanded "><a href="surface_ops.gen.html"><strong aria-hidden="true">3.4.</strong> Operators</a></li></ol></li><li class="chapter-item expanded "><a href="architecture.html"><strong aria-hidden="true">4.</strong> Architecture</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="in-out_trees.html"><strong aria-hidden="true">4.1.</strong> Subgraph In-Out Trees</a></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -568,7 +568,7 @@ vertices. So the <code>my_join</code> variable feeds the output of the join thro
 Finally we print the neighbor vertices as follows:</p>
 <pre><code class="language-rust ignore">    my_join -&gt; unique() -&gt; for_each(|n| println!(&quot;Reached: {}&quot;, n));
 </code></pre>
-<p>The <a href="./surface_ops.gen.html#unique">unique</a> operator removes duplicates from the stream to make things more readable. Note that <code>unique</code> does not run in a streaming fashion, which we will talk about more <a href="example_4_surface.html#strata-and-epochs">below</a>.</p>
+<p>The <a href="./surface_ops.gen.html#unique">unique</a> operator removes duplicates from the stream to make things more readable. Note that <code>unique</code> does not run in a streaming fashion, which we will talk about more <a href="example_4_neighbors.html#strata-and-epochs">below</a>.</p>
 <p>The remaining code runs the graph on example edge data. There's
 also some extra code there, particularly <code>flow.serde_graph().expect(...).to_mermaid()</code> which lets us
 generate a diagram rendered by <a href="https://mermaid-js.github.io/">Mermaid</a> showing
@@ -600,7 +600,7 @@ the structure of the graph:</p>
 has vertices (<code>2</code>, <code>4</code>) that are more than one hop away from <code>0</code>, which were
 not output by our simple program. To extend this example to graph <em>reachability</em>, 
 we need to recurse: find neighbors of our neighbors, neighbors of our neighbors' neighbors, and so on. In Hydroflow,
-this is done by adding a loop to the flow, as we'll see in our <a href="example_5_surface.html">next example</a>.</p>
+this is done by adding a loop to the flow, as we'll see in our <a href="example_5_reachability.html">next example</a>.</p>
 <h2 id="strata-and-epochs"><a class="header" href="#strata-and-epochs">Strata and Epochs</a></h2>
 <p>Before we proceed, note in the mermaid graph how Hydroflow separates the <code>unique</code> operator and its downstream dependencies into their own
 <em>stratum</em> (plural: <em>strata</em>). The stratum boundary before <code>unique</code> ensures that all the values arrive before it executes, ensuring that all duplicates are eliminated. </p>
@@ -653,7 +653,7 @@ flow back into the join input. The modified intuitive graph looks like this:</p>
 two cases above. Similarly note that the join box <code>V ⨝ E</code> now has two <em>outbound</em> edges; the sketch omits the operator 
 to copy (&quot;tee&quot;) the output along 
 two paths.</p>
-<p>Now lets look at a modified version of our <a href="example_4_surface.html">graph neighbor</a> code that implements this full program, including the loop as well as the Hydroflow <a href="./surface_ops.gen.html#merge"><code>merge</code></a> and <a href="./surface_ops.gen.html#tee"><code>tee</code></a>:</p>
+<p>Now lets look at a modified version of our <a href="example_4_neighbors.html">graph neighbor</a> code that implements this full program, including the loop as well as the Hydroflow <a href="./surface_ops.gen.html#merge"><code>merge</code></a> and <a href="./surface_ops.gen.html#tee"><code>tee</code></a>:</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">use hydroflow::hydroflow_syntax;
 </span>pub fn main() {
     // An edge in the input data = a pair of `usize` vertex IDs.
@@ -920,6 +920,180 @@ Finally we print both <code>all_vertices</code> and <code>unreached_vertices</co
 <p>If you look carefully, you'll see two subgraphs labeled with <code>stratum 0</code>, and two with
 <code>stratum 1</code>. All the subgraphs labeled <code>stratum 0</code> are run first to completion, 
 and then all the subgraphs labeled <code>stratum 1</code> are run. This captures the requirements of the <code>unique</code> and <code>difference</code> operators used in the lower subgraphs: each has to wait for its full inputs before it can start producing output.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="networked-services-1-echoserver"><a class="header" href="#networked-services-1-echoserver">Networked Services 1: EchoServer</a></h1>
+<blockquote>
+<p>In this example we cover:</p>
+<ul>
+<li>A standard project template for building networked Hydroflow services.</li>
+<li>Rust's <code>clap</code> crate for command-line options</li>
+<li>Defining message types</li>
+<li>Using network sources and sinks with built-in serde.</li>
+<li>The <code>source_stdin</code> source</li>
+<li>Long-running services via <code>run_async</code></li>
+</ul>
+</blockquote>
+<p>Our examples up to now have been simple single-node programs, to get us comfortable with Hydroflow's
+surface syntax. But the whole point of Hydroflow is to help us write distributed programs or services that run on a cluster of machines!</p>
+<p>In this example we'll build the &quot;hello, world&quot; of distributed systems -- a simple echo server. It will listen on a UDP port,
+and send back a copy of any message it receives, with a timestamp. We will also build a client to 
+accept strings from the command line, send them to the echo server, and print responses.</p>
+<p>Full code for this example can be found in <code>hydroflow/hydroflow/examples/echoserver</code>. This example can 
+serve as a template for many networked Hydroflow services.</p>
+<p>Generally the directory structure we'll use will be as follows:</p>
+<pre><code class="language-txt">project/README.md           # documentation
+project/Cargo.toml          # package and dependency info
+project/src/main.rs         # main function
+project/src/protocol.rs     # message types exchanged between roles
+project/src/helpers.rs      # helper functions used by all roles
+project/src/&lt;roleA&gt;.rs      # service definition for role A (e.g. server)
+project/src/&lt;roleB&gt;.rs      # service definition for role B (e.g. client)
+</code></pre>
+<p>In this example, the roles we'll be using are <code>Client</code> and <code>Server</code>, but you can imagine different roles depending on the structure of your service or application.</p>
+<h2 id="mainrs"><a class="header" href="#mainrs">main.rs</a></h2>
+<p>We start with a <code>main</code> function that parses command-line options, and invokes the appropriate
+role-specific service.
+After a prelude of imports, we start by defining an <code>enum</code> for the <code>Role</code>s that the service supports. </p>
+<pre><code class="language-rust  ignore">use clap::{ArgEnum, Parser};
+use client::run_client;
+use hydroflow::tokio;
+use hydroflow::util::{bind_udp_socket, ipv4_resolve};
+use server::run_server;
+
+mod client;
+mod protocol;
+mod server;
+
+#[derive(Clone, ArgEnum, Debug)]
+enum Role {
+    Client,
+    Server,
+}
+</code></pre>
+<p>Following that, we use Rust's <a href="https://docs.rs/clap/latest/clap/"><code>clap</code></a> (Command Line Argument Parser) crate to parse command-line options:</p>
+<pre><code class="language-rust ignore">#[derive(Parser, Debug)]
+struct Opts {
+    #[clap(arg_enum, long)]
+    role: Role,
+    #[clap(long)]
+    addr: Option&lt;String&gt;,
+    #[clap(long)]
+    server_addr: String,
+}
+</code></pre>
+<p>This sets up 3 command-line options: <code>role</code>, <code>addr</code>, and <code>server_addr</code>. The <code>addr</code> option is optional, but the <code>role</code> and <code>server_addr</code> options are required. The <code>clap</code> crate will parse the command-line options and populate the <code>Opts</code> struct with the values.</p>
+<p>This brings us to the <code>main</code> function itself. It is prefaced by a <code>#[tokio::main]</code> attribute, which is a macro that sets up the tokio runtime. This is necessary because Hydroflow uses the tokio runtime for asynchronous execution.</p>
+<pre><code class="language-rust ignore">#[tokio::main]
+async fn main() {
+    // parse command line arguments
+    let opts = Opts::parse();
+</code></pre>
+<p>After parsing the command line arguments, we get into invoking the client or server code. Before we do so, we set up some Rust-based networking. Specifically, in both cases we will need to allocate a UDP socket that is used for both sending and receiving messages. We do this by calling the async <code>bind_udp_socket</code> function, which is defined in the <code>hydroflow/src/util</code> module. As an async function it returns a <code>Future</code>, so requires appending <code>.await</code>; the function returns a pair of type <code>(UdpSink, UdpSource)</code>. These are the types that we'll use in Hydroflow to send and receive messages. (Note: your IDE might expand out the <code>UdpSink</code> and <code>UdpSource</code> traits to their more verbose definitions. This is fine; you can ignore for now.)</p>
+<p>For the server case, all that's left is to invoke <code>run_server</code> and pass it the network information. Note that the server is also asynchronous, so we append <code>.await</code> to that call as well. The program will block on this call until the server is done (which should only happen when it fails).</p>
+<pre><code class="language-rust ignore">    // depending on the role, pass in arguments to the right function
+    match opts.role {
+        Role::Server =&gt; {
+            // allocate `outbound` and `inbound` sockets
+            let (outbound, inbound) = bind_udp_socket(opts.server_addr.clone()).await;
+            // run the server
+            run_server(outbound, inbound, opts.graph.clone()).await;
+        }
+</code></pre>
+<p>In the client case, we need one more piece of information passed down: the address of the server. We get this by calling the <code>ipv4_resolve</code> function, which is also defined in the <code>hydroflow/src/util</code> module. This function takes a string and returns a <code>SocketAddr</code> type, which is the address/port structure that  <code>UdpSink</code> and <code>UdpSource</code> will use. Invoking <code>run_client</code> is similar to the server case, except that we pass in the server address as well.</p>
+<pre><code class="language-rust ignore">        Role::Client =&gt; {
+            // resolve the server's IP address
+            let server_addr = ipv4_resolve(opts.server_addr.clone());
+            // allocate `outbound` and `inbound` sockets
+            let (outbound, inbound) = bind_udp_socket(opts.addr.clone().unwrap()).await;
+            // run the client
+            run_client(outbound, inbound, server_addr).await;
+        }
+    }
+}
+</code></pre>
+<h2 id="protocolrs"><a class="header" href="#protocolrs">protocol.rs</a></h2>
+<p>As a design pattern, it is natural in distributed Hydroflow programs to define various message types in a <code>protocol.rs</code> file with structures shared for use by all the Hydroflow logic across roles. In this simple example, we define only one message type: <code>EchoMsg</code>, and a simple struct with two fields: <code>payload</code> and <code>ts</code> (timestamp). The <code>payload</code> field is a string, and the <code>ts</code> field is a <code>DateTime&lt;Utc&gt;</code>, which is a type from the <a href="https://docs.rs/chrono/latest/chrono/"><code>chrono</code></a> crate. Note the various derived traits on <code>EchoMsg</code>—specifically <code>Serialize</code> and <code>Deserialize</code>—these are required for structs that we send over the network.</p>
+<pre><code class="language-rust ignore">#[derive(PartialEq, Clone, Serialize, Deserialize, Debug)]
+pub struct EchoMsg {
+    pub payload: String,
+    pub ts: DateTime&lt;Utc&gt;,
+}
+</code></pre>
+<h1 id="serverrs"><a class="header" href="#serverrs">server.rs</a></h1>
+<p>Things get interesting when we look at the <code>run_server</code> function. This function is the main entry point for the server. It takes as arguments the <code>outbound</code> and <code>inbound</code> sockets, and the <code>graph</code> type. The <code>outbound</code> and <code>inbound</code> sockets are the same ones that we allocated in <code>main.rs</code>. The <code>graph</code> type is an enum that we defined in <code>main.rs</code>, and is used to control whether Hydroflow emits a dataflow diagram.</p>
+<p>After printing a cheery message, we get the surface syntax for the server, consisting of three short pipelines:</p>
+<pre><code class="language-rust ignore">use crate::protocol::EchoMsg;
+use chrono::prelude::*;
+use hydroflow::hydroflow_syntax;
+use hydroflow::scheduled::graph::Hydroflow;
+use hydroflow::util::{UdpSink, UdpStream};
+use std::net::SocketAddr;
+
+pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream) {
+    println!(&quot;Server live!&quot;);
+
+
+   let mut flow: Hydroflow = hydroflow_syntax! {
+        // Inbound channel sharing
+        inbound_chan = source_stream_serde(inbound) -&gt; tee();
+
+        // Logic
+        inbound_chan[0] -&gt; for_each(|(m, a): (EchoMsg, SocketAddr)| println!(&quot;Got {:?} from {:?}&quot;, m, a));
+        inbound_chan[1] -&gt; map(|(EchoMsg { payload, .. }, addr)| (EchoMsg { payload, ts: Utc::now() }, addr))
+            -&gt; dest_sink_serde(outbound);
+    };
+</code></pre>
+<p>Lets take these one at a time. </p>
+<p>The first pipeline, <code>inbound_chan</code> uses a source operator we have not seen before, <a href="./surface_ops.gen.html#source_stream_serde"><code>source_stream_serde()</code></a>. This is a streaming source like <code>source_stream</code>, but for network streams. It takes a <code>UdpSource</code> as an argument, and has a particular output type: a stream of <code>(T, SocketAddr)</code> pairs where <code>T</code> is some type that implements the <code>Serialize</code> and <code>Deserialize</code> traits, and <code>SocketAddr</code> is the network address of the sender of the item. In this case, <code>T</code> is <code>EchoMsg</code>, which we defined in <code>protocol.rs</code>, and the <code>SocketAddr</code> is the address of the client that sent the message. We pipe the result into a <code>tee()</code> for reuse.</p>
+<p>The second pipeline is a simple <code>for_each</code> to print the messages received at the server.</p>
+<p>The third and final pipeline constructs a response <code>EchoMsg</code> with the local timestamp copied in. It then pipes the result into a sink operator we have not seen before, <a href="./surface_ops.gen.html#dest_sink_serde"><code>dest_sink_serde()</code></a>. This is a sink operator like <code>dest_sink</code>, but for network streams. It takes a <code>UdpSink</code> as an argument, and requires a particular input type: a stream of <code>(T, SocketAddr)</code> pairs where <code>T</code> is some type that implements the <code>Serialize</code> and <code>Deserialize</code> traits, and <code>SocketAddr</code> is the network address of the destination. In this case, <code>T</code> is once again <code>EchoMsg</code>, and the <code>SocketAddr</code> is the address of the client that sent the original message.</p>
+<p>The remaining line of code runs the server. The <code>run_async()</code> function is a method on the <code>Hydroflow</code> type. It is an async function, so we append <code>.await</code> to the call. The program will block on this call until the server is done.</p>
+<pre><code class="language-rust ignore">    // run the server
+    flow.run_async().await;
+}
+</code></pre>
+<h2 id="clientrs"><a class="header" href="#clientrs">client.rs</a></h2>
+<p>The client is as simple as the server, consisting only of two pipelines. The first uses another new source operator <a href="./surface_ops.gen.html#source_stdin"><code>source_stdin()</code></a>, which does what you might expect: streams lines of text as they arrive from <code>stdin</code> (i.e. as they are typed into a terminal). It then uses a <code>map</code> to construct an <code>EchoMsg</code> with the current timestamp. The result is piped into a sink operator <a href="./surface_ops.gen.html#dest_sink_serde"><code>dest_sink_serde()</code></a>, which sends the message to the server. The second operator is a <code>for_each</code> that prints the messages echoed back from the server.</p>
+<pre><code class="language-rust ignore">use crate::protocol::EchoMsg;
+use chrono::prelude::*;
+use hydroflow::hydroflow_syntax;
+use hydroflow::util::{UdpSink, UdpStream};
+use std::net::SocketAddr;
+
+pub(crate) async fn run_client(outbound: UdpSink, inbound: UdpStream, server_addr: SocketAddr) {
+    println!(&quot;Attempting to connect to server at {:?}&quot;, server_addr);
+    println!(&quot;Client live!&quot;);
+
+    let mut flow = hydroflow_syntax! {
+        // take stdin and send to server as an Echo::Message
+        source_stdin() -&gt; map(|l| (EchoMsg{ payload: l.unwrap(), ts: Utc::now(), }, server_addr) )
+            -&gt; dest_sink_serde(outbound);
+
+        // receive and print messages
+        source_stream_serde(inbound) -&gt; for_each(|(m, _a): (EchoMsg, SocketAddr) | println!(&quot;{:?}&quot;, m));
+    };
+
+    flow.run_async().await.unwrap();
+}
+</code></pre>
+<h2 id="running-the-example"><a class="header" href="#running-the-example">Running the example</a></h2>
+<p>As described in <code>hydroflow/hydroflow/example/echoserver/README.md</code>, we can run the server in one terminal, and the client in another. The server will print the messages it receives, and the client will print the messages it receives back from the server. The client and servers' `--server-addr' arguments need to match or this won't work!</p>
+<p>Fire up the server in terminal 1:</p>
+<pre><code class="language-console">% cargo run -p hydroflow --example echoserver -- --role server --server-addr localhost:12347
+</code></pre>
+<p>Then start the client in terminal 2 and type some messages!</p>
+<pre><code class="language-console">% cargo run -p hydroflow --example echoserver -- --role client --addr localhost:9090 --server-addr localhost:12347
+Attempting to connect to server at 127.0.0.1:12347
+Client live!
+This is a test 
+EchoMsg { payload: &quot;This is a test&quot;, ts: 2022-12-12T23:42:13.053293Z }
+This is the rest!
+EchoMsg { payload: &quot;This is the rest!&quot;, ts: 2022-12-12T23:42:20.181371Z }
+</code></pre>
+<p>And have a look back at the server console!</p>
+<pre><code class="language-console">Server live!
+Got EchoMsg { payload: &quot;This is a test&quot;, ts: 2022-12-12T23:42:13.049499Z } from 127.0.0.1:9090
+Got EchoMsg { payload: &quot;This is the rest!&quot;, ts: 2022-12-12T23:42:20.179337Z } from 127.0.0.1:9090
+</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="concepts"><a class="header" href="#concepts">Concepts</a></h1>
 <h2 id="dataflow-and-networking"><a class="header" href="#dataflow-and-networking">Dataflow and Networking</a></h2>
 <p>Conventionally, dataflow systems provide a way to analyze and process data by
