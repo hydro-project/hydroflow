@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 
 use hydroflow::hydroflow_syntax;
 use hydroflow::scheduled::graph::Hydroflow;
-use hydroflow::util::recv_into;
+use hydroflow::util::collect_ready;
 
 // TODO(mingwei): custom operators? How to handle in syntax? How to handle state?
 
@@ -30,7 +30,7 @@ pub fn test_basic_2() {
     };
     df.run_available();
 
-    assert_eq!(&[1], &*recv_into::<Vec<_>, _>(&mut out_recv));
+    assert_eq!(&[1], &*collect_ready::<Vec<_>, _>(&mut out_recv));
 }
 
 #[test]
@@ -42,7 +42,7 @@ pub fn test_basic_3() {
     };
     df.run_available();
 
-    assert_eq!(&[2], &*recv_into::<Vec<_>, _>(&mut out_recv));
+    assert_eq!(&[2], &*collect_ready::<Vec<_>, _>(&mut out_recv));
 }
 
 #[test]
@@ -56,7 +56,7 @@ pub fn test_basic_merge() {
     };
     df.run_available();
 
-    assert_eq!(&[1, 2], &*recv_into::<Vec<_>, _>(&mut out_recv));
+    assert_eq!(&[1, 2], &*collect_ready::<Vec<_>, _>(&mut out_recv));
 }
 
 #[test]
@@ -71,7 +71,7 @@ pub fn test_basic_tee() {
     };
     df.run_available();
 
-    let out: HashSet<_> = recv_into(&mut out_recv);
+    let out: HashSet<_> = collect_ready(&mut out_recv);
     assert_eq!(2, out.len());
     assert!(out.contains(&"A 1".to_owned()));
     assert!(out.contains(&"B 1".to_owned()));
@@ -143,9 +143,9 @@ pub fn test_unzip() {
 
     df.run_available();
 
-    let out0: Vec<_> = recv_into(&mut recv0);
+    let out0: Vec<_> = collect_ready(&mut recv0);
     assert_eq!(&["Hello", "World"], &*out0);
-    let out1: Vec<_> = recv_into(&mut recv1);
+    let out1: Vec<_> = collect_ready(&mut recv1);
     assert_eq!(&["Foo", "Bar"], &*out1);
 }
 
@@ -174,7 +174,7 @@ pub fn test_cross_join() {
     };
     df.run_available();
 
-    let out: HashSet<_> = recv_into(&mut out_recv);
+    let out: HashSet<_> = collect_ready(&mut out_recv);
     assert_eq!(3 * 3, out.len());
     for n in [1, 2, 3] {
         for c in ["a", "b", "c"] {
@@ -198,7 +198,7 @@ pub fn test_flatten() {
     };
     df_pull.run_available();
 
-    let out: HashSet<_> = recv_into(&mut out_recv);
+    let out: HashSet<_> = collect_ready(&mut out_recv);
     for pair in [(1, 3), (2, 7)] {
         assert!(out.contains(&pair));
     }
@@ -218,7 +218,7 @@ pub fn test_flatten() {
 
     df_push.run_available();
 
-    let out: HashSet<_> = recv_into(&mut out_recv);
+    let out: HashSet<_> = collect_ready(&mut out_recv);
     for pair in [(1, 4), (2, 8)] {
         assert!(out.contains(&pair));
     }
@@ -246,7 +246,7 @@ pub fn test_next_epoch() {
     flow.run_epoch();
 
     flow.run_available();
-    let out: Vec<_> = recv_into(&mut out_recv);
+    let out: Vec<_> = collect_ready(&mut out_recv);
     assert_eq!(&[1, 2, 3, 4, 5, 6], &*out);
 }
 
