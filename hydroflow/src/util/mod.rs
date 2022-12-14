@@ -21,11 +21,11 @@ pub fn unbounded_channel<T>() -> (
     (send, recv)
 }
 
-/// Collects the immediately available items into a `FromIterator` collection.
+/// Collects the immediately available items from the `Stream` into a `FromIterator` collection.
 ///
-/// This consumes the stream, use [`futures::StreamExt::by_ref()`] if you want
+/// This consumes the stream, use [`futures::StreamExt::by_ref()`] (or just `&mut ...`) if you want
 /// to retain ownership of your stream.
-pub fn recv_into<C, S>(stream: S) -> C
+pub fn collect_ready<C, S>(stream: S) -> C
 where
     C: FromIterator<S::Item>,
     S: Stream,
