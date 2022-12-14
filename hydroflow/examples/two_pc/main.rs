@@ -1,4 +1,4 @@
-use clap::{ArgEnum, Parser};
+use clap::{Parser, ValueEnum};
 use coordinator::run_coordinator;
 use hydroflow::tokio;
 use hydroflow::util::{bind_udp_bytes, ipv4_resolve};
@@ -8,6 +8,7 @@ use subordinate::run_subordinate;
 use std::error::Error;
 use std::fs::File;
 use std::io::BufReader;
+use std::net::SocketAddr;
 use std::path::Path;
 
 mod coordinator;
@@ -17,13 +18,13 @@ mod subordinate;
 
 /// This is a remedial 2PC implementation.
 
-#[derive(Clone, ArgEnum, Debug)]
+#[derive(Clone, ValueEnum, Debug)]
 enum Role {
     Coordinator,
     Subordinate,
 }
 
-#[derive(Clone, ArgEnum, Debug)]
+#[derive(Clone, ValueEnum, Debug)]
 enum GraphType {
     Mermaid,
     Dot,
@@ -34,11 +35,11 @@ enum GraphType {
 struct Opts {
     #[clap(long)]
     path: String,
-    #[clap(arg_enum, long)]
+    #[clap(value_enum, long)]
     role: Role,
-    #[clap(long)]
-    addr: String,
-    #[clap(arg_enum, long)]
+    #[clap(long, value_parser = ipv4_resolve)]
+    addr: SocketAddr,
+    #[clap(value_enum, long)]
     graph: Option<GraphType>,
 }
 
@@ -66,7 +67,7 @@ async fn main() {
     let path = Path::new(&opts.path);
     let subordinates = read_addresses_from_file(path).unwrap().subordinates;
     let coordinator = read_addresses_from_file(path).unwrap().coordinator;
-    let addr = ipv4_resolve(opts.addr.clone());
+    let addr = opts.addr;
 
     match opts.role {
         Role::Coordinator => {
@@ -76,7 +77,7 @@ async fn main() {
         Role::Subordinate => {
             let (outbound, inbound) = bind_udp_bytes(addr).await;
             println!("Coordinator: {}", coordinator);
-            let server_addr = ipv4_resolve(coordinator.trim().into());
+            let server_addr = ipv4_resolve(coordinator.trim()).unwrap();
 
             run_subordinate(outbound, inbound, server_addr, opts.graph.clone()).await;
         }

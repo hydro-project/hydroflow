@@ -1,8 +1,10 @@
 /// This is a remedial distributed deadlock (cycle) detector
-use clap::{ArgEnum, Parser};
+use clap::{Parser, ValueEnum};
 use hydroflow::tokio;
+use hydroflow::util::ipv4_resolve;
 use peer::run_detector;
 use serde::Deserialize;
+use std::net::SocketAddr;
 
 use std::error::Error;
 use std::fs::File;
@@ -13,7 +15,7 @@ mod helpers;
 mod peer;
 mod protocol;
 
-#[derive(Clone, ArgEnum, Debug)]
+#[derive(Clone, ValueEnum, Debug)]
 enum GraphType {
     Mermaid,
     Dot,
@@ -26,9 +28,9 @@ struct Opts {
     path: String,
     #[clap(long)]
     port: u16,
-    #[clap(long)]
-    addr: String,
-    #[clap(arg_enum, long)]
+    #[clap(long, value_parser = ipv4_resolve)]
+    addr: Option<SocketAddr>,
+    #[clap(value_enum, long)]
     graph: Option<GraphType>,
 }
 
