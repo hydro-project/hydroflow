@@ -43,7 +43,6 @@ futures = { version = "0.3", optional = true }
 hydroflow_datalog = { optional = true, path = "../hydroflow_datalog" }
 hydroflow_lang = { path = "../hydroflow_lang" }
 hydroflow_macro = { optional = true, path = "../hydroflow_macro" }
-pin-project-lite = "0.2.9"
 pusherator = { path = "../pusherator" }
 ref-cast = "1.0"
 regex = "1"

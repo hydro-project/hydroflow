@@ -14,7 +14,6 @@ use super::{GraphNodeId, GraphSubgraphId, PortIndexValue};
 
 mod cross_join;
 mod demux;
-mod dest_asyncwrite;
 mod dest_sink;
 mod dest_sink_serde;
 mod difference;
@@ -167,7 +166,6 @@ pub const OPERATORS: &[OperatorConstraints] = &[
     next_epoch::NEXT_EPOCH,
     for_each::FOR_EACH,
     demux::DEMUX,
-    dest_asyncwrite::DEST_ASYNCWRITE,
     dest_sink::DEST_SINK,
     dest_sink_serde::DEST_SINK_SERDE,
 ];
