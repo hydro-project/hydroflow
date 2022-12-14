@@ -5,7 +5,7 @@
 > * One-time bootstrapping pipelines
 > * A "gated buffer" pattern via `cross_join` with a single-object input.
 
-Our previous [echo server](./example_7_echo_server.md) example was admittedly simplistic.  In this example, we'll build something a bit more useful: a simple chat server. The server will again support two roles: a `Client` and a `Server`. `Clients` will register their presence with the `Server`, which maintains a list of clients. Each `Client` sends messages to the `Server`, which will then broadcast those messages to all other clients. 
+Our previous [echo server](./example_7_echo_server.md) example was admittedly simplistic.  In this example, we'll build something a bit more useful: a simple chat server. We will again have two roles: a `Client` and a `Server`. `Clients` will register their presence with the `Server`, which maintains a list of clients. Each `Client` sends messages to the `Server`, which will then broadcast those messages to all other clients. 
 
 ## main.rs
 The `main.rs` file here is very similar to that of the echo server, just with two new command-line arguments: one for a "nickname" in the chatroom, and another optional argument for printing a dataflow graph if desired.
@@ -85,8 +85,7 @@ async fn main() {
 ```
 
 ## protocol.rs
-Our protocol file here defines three message types. Note how we use a single Rust `enum` to represent all varieties of message types; this allows us to merge `Message`s of different types into a single 
-outbound Rust network channel. We will
+Our protocol file here defines three message types. Note how we use a single Rust `enum` to represent all varieties of message types; this allows us to handle `Message`s of different types with a single  Rust network channel. We will
 use the `demux` operator to separate out these different message types on the receiving end. 
 
 The `ConnectRequest` and `ConnectResponse` messages have no payload; 
@@ -153,7 +152,7 @@ pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, graph: Opt
 The remainder of the server consists of two independent pipelines. The first pipeline is one line long, 
 and is responsible for acknowledging requests from `clients`: it takes the address of the incoming `Message::ConnectRequest` 
 and sends a `ConnectResponse` back to that address. The second pipeline is responsible for broadcasting 
-all chat messages to all clients. This all-to-all pairing corresponds to the notion of a "cross-product"
+all chat messages to all clients. This all-to-all pairing corresponds to the notion of a cartesian product
 or `[cross_join](./surface_ops.gen.md#cross_join)` in Hydroflow. The `cross_join` operator takes two input 
 channels and produces a single output channel with a tuple for each pair of inputs, in this case it produces
 `(Message, SocketAddr)` pairs. Conveniently, that is exactly the structure needed for sending to the `outbound_chan` sink!

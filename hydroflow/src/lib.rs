@@ -42,6 +42,7 @@ mod booktest {
     booktest!(example_5_reachability);
     booktest!(example_6_unreachability);
     booktest!(example_7_echo_server);
+    booktest!(example_8_chat_server);
 
     booktest!(surface_syntax);
     booktest!(surface_embedding);
