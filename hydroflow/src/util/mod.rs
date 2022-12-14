@@ -128,12 +128,17 @@ where
     bincode::deserialize(&(msg.unwrap().0)).unwrap()
 }
 
-pub fn ipv4_resolve(addr: String) -> SocketAddr {
+pub fn ipv4_resolve(addr: &str) -> Result<SocketAddr, std::io::Error> {
     use std::net::ToSocketAddrs;
-    let mut addrs = addr.to_socket_addrs().unwrap();
-    addrs
-        .find(|addr| addr.is_ipv4())
-        .expect("Unable to resolve connection address")
+    let mut addrs = addr.to_socket_addrs()?;
+    let result = addrs.find(|addr| addr.is_ipv4());
+    match result {
+        Some(addr) => Ok(addr),
+        None => Err(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            "Unable to resolve IPv4 address",
+        )),
+    }
 }
 
 pub async fn bind_udp_bytes(addr: SocketAddr) -> (UdpSink, UdpStream) {
