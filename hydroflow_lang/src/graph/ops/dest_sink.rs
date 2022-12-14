@@ -7,41 +7,76 @@ use quote::quote_spanned;
 /// > Arguments: An [async `Sink`](https://docs.rs/futures/latest/futures/sink/trait.Sink.html).
 ///
 /// Consumes items by sending them to an [async `Sink`](https://docs.rs/futures/latest/futures/sink/trait.Sink.html).
-///
-/// This handles a stream of individual items, of an arbitrary type, whereas [`dest_asyncwrite`](#dest_asyncwrite)
-/// handles streams of bytes.
+/// A `Sink` is a thing into which values can be sent, asynchronously. For example, sending items
+/// into a bounded channel.
 ///
 /// Note this operator must be used within a Tokio runtime.
 ///
 /// ```rustbook
-/// #[tokio::test]
-/// async fn test_dest_sink() {
-///     use bytes::Bytes;
-///     use tokio::io::AsyncReadExt;
-///     use tokio_util::codec;
+/// # #[tokio::main]
+/// # async fn main() {
+/// // In this example we use a _bounded_ channel for our `Sink`. This is for demonstration only,
+/// // instead you should use [`hydroflow::util::unbounded_channel`]. A bounded channel results in
+/// // `Hydroflow` buffering items internally instead of within the channel. (We can't use
+/// // unbounded here since unbounded channels are synchonous to write to and therefore not
+/// // `Sink`s.)
+/// let (send, recv) = tokio::sync::mpsc::channel::<usize>(5);
+/// // `PollSender` adapts the send half of the bounded channel into a `Sink`.
+/// let send = tokio_util::sync::PollSender::new(send);
 ///
-///     // Like a channel, but for a stream of bytes instead of discrete objects.
-///     let (asyncwrite, mut asyncread) = tokio::io::duplex(256);
-///     // Now instead handle discrete byte lists by length-encoding them.
-///     let mut sink = codec::LengthDelimitedCodec::builder()
-///         .length_field_length(1)
-///         .new_write(asyncwrite);
+/// let mut flow = hydroflow::hydroflow_syntax! {
+///     source_iter(0..10) -> dest_sink(send);
+/// };
+/// // Call `run_async()` to allow async events to propegate, run for one second.
+/// tokio::time::timeout(std::time::Duration::from_secs(1), flow.run_async())
+///     .await
+///     .expect_err("Expected time out");
 ///
-///     let mut flow = hydroflow::hydroflow_syntax! {
-///         source_iter([
-///             Bytes::from_static(b"hello"),
-///             Bytes::from_static(b"world"),
-///         ]) -> dest_sink(&mut sink);
-///     };
-///     tokio::time::timeout(std::time::Duration::from_secs(1), flow.run_async())
-///         .await
-///         .expect_err("Expected time out");
+/// let mut recv = tokio_stream::wrappers::ReceiverStream::new(recv);
+/// // Only 5 elements received due to buffer size
+/// let out: Vec<_> = hydroflow::util::recv_into(&mut recv);
+/// assert_eq!(&[0, 1, 2, 3, 4], &*out);
+/// # }
+/// ```
 ///
-///     let mut buf = Vec::<u8>::new();
-///     asyncread.read_buf(&mut buf).await.unwrap();
-///     // `\x05` is length prefix of "5".
-///     assert_eq!(b"\x05hello\x05world", &*buf);
-/// }
+/// `Sink` is different from [`AsyncWrite`](https://docs.rs/futures/latest/futures/io/trait.AsyncWrite.html).
+/// Instead of discrete values we send arbitrary streams of bytes into an `AsyncWrite` value. For
+/// example, writings a stream of bytes to a file, a socket, or stdout.
+///
+/// To handle those situations we can use a codec from [`tokio_util::codec`](crate::tokio_util::codec).
+/// These specify ways in which the byte stream is broken into individual items, such as with
+/// newlines or with length delineation.
+///
+/// If we only want to write a stream of bytes without delineation we can use the [`BytesCodec`](crate::tokio_util::codec::BytesCodec).
+///
+/// In this example we use a [`duplex`](crate::tokio::io::duplex) as our `AsyncWrite` with a
+/// `BytesCodec`.
+///
+/// ```rustbook
+/// # #[tokio::main]
+/// # async fn main() {
+/// use bytes::Bytes;
+/// use tokio::io::AsyncReadExt;
+///
+/// // Like a channel, but for a stream of bytes instead of discrete objects.
+/// let (asyncwrite, mut asyncread) = tokio::io::duplex(256);
+/// // Now instead handle discrete byte strings by length-encoding them.
+/// let mut sink = tokio_util::codec::FramedWrite::new(asyncwrite, tokio_util::codec::BytesCodec::new());
+///
+/// let mut flow = hydroflow::hydroflow_syntax! {
+///     source_iter([
+///         Bytes::from_static(b"hello"),
+///         Bytes::from_static(b"world"),
+///     ]) -> dest_sink(&mut sink);
+/// };
+/// tokio::time::timeout(std::time::Duration::from_secs(1), flow.run_async())
+///     .await
+///     .expect_err("Expected time out");
+///
+/// let mut buf = Vec::<u8>::new();
+/// asyncread.read_buf(&mut buf).await.unwrap();
+/// assert_eq!(b"helloworld", &*buf);
+/// # }
 /// ```
 #[hydroflow_internalmacro::operator_docgen]
 pub const DEST_SINK: OperatorConstraints = OperatorConstraints {
@@ -72,14 +107,31 @@ pub const DEST_SINK: OperatorConstraints = OperatorConstraints {
 
                     #[allow(unused_mut)] let mut recv = #recv_ident;
                     #[allow(unused_mut)] let mut sink = #sink_arg;
-                    while let Some(item) = recv.recv().await {
-                        sink.feed(item).await.expect("Error processing async sink item.");
-                        // Receive as many items synchronously as possible before flushing.
-                        while let Ok(item) = recv.try_recv() {
-                            sink.feed(item).await.expect("Error processing async sink item.");
+
+                    /// Function is needed so `Item` is so no ambiguity for what `Item` is used
+                    /// when calling `.flush()`.
+                    #[inline(always)]
+                    async fn feed_flush<Item, Sink>(
+                        mut recv: #root::tokio::sync::mpsc::UnboundedReceiver<Item>,
+                        mut sink: Sink,
+                    ) where
+                        Sink: ::std::marker::Unpin + #root::futures::sink::Sink<Item>,
+                        Sink::Error: ::std::fmt::Debug,
+                    {
+                        use #root::futures::sink::SinkExt;
+                        while let Some(item) = recv.recv().await {
+                            sink.feed(item)
+                                .await
+                                .expect("Error processing async sink item.");
+                            while let Ok(item) = recv.try_recv() {
+                                sink.feed(item)
+                                    .await
+                                    .expect("Error processing async sink item.");
+                            }
+                            sink.flush().await.expect("Failed to flush sink.");
                         }
-                        sink.flush().await.expect("Failed to flush async sink.");
                     }
+                    feed_flush(recv, sink).await;
                 })
                 .expect("dest_sink() must be used within a tokio runtime");
         };
