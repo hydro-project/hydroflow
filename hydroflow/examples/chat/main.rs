@@ -27,13 +27,9 @@ struct Opts {
     #[clap(arg_enum, long)]
     role: Role,
     #[clap(long)]
-    port: u16,
+    client_addr: Option<String>,
     #[clap(long)]
-    addr: String,
-    #[clap(long)]
-    server_addr: Option<String>,
-    #[clap(long)]
-    server_port: Option<u16>,
+    server_addr: String,
     #[clap(arg_enum, long)]
     graph: Option<GraphType>,
 }
@@ -41,21 +37,17 @@ struct Opts {
 #[tokio::main]
 async fn main() {
     let opts = Opts::parse();
+    let server_str = opts.server_addr.clone();
 
     match opts.role {
         Role::Client => {
-            let client_str = format!("{}:{}", opts.addr.clone(), opts.port.clone());
-            let server_str = format!(
-                "{}:{}",
-                opts.server_addr.clone().unwrap(),
-                opts.server_port.unwrap()
-            );
+            let client_str = opts.client_addr.clone().unwrap();
             println!(
                 "Client is bound to {}, connecting to Server at {}",
                 client_str.clone(),
                 server_str.clone()
             );
-            let (outbound, inbound) = bind_udp_socket(client_str.clone()).await;
+            let (outbound, inbound) = bind_udp_socket(client_str).await;
             run_client(
                 outbound,
                 inbound,
@@ -66,9 +58,8 @@ async fn main() {
             .await;
         }
         Role::Server => {
-            let server_str = format!("{}:{}", opts.addr.clone(), opts.port.clone());
-            let (outbound, inbound) = bind_udp_socket(server_str.clone()).await;
-            println!("Listening on {}", server_str);
+            println!("Listening on {}", server_str.clone());
+            let (outbound, inbound) = bind_udp_socket(server_str).await;
 
             run_server(outbound, inbound, opts.graph.clone()).await;
         }

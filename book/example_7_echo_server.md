@@ -108,6 +108,9 @@ In the client case, we need one more piece of information passed down: the addre
 As a design pattern, it is natural in distributed Hydroflow programs to define various message types in a `protocol.rs` file with structures shared for use by all the Hydroflow logic across roles. In this simple example, we define only one message type: `EchoMsg`, and a simple struct with two fields: `payload` and `ts` (timestamp). The `payload` field is a string, and the `ts` field is a `DateTime<Utc>`, which is a type from the [`chrono`](https://docs.rs/chrono/latest/chrono/) crate. Note the various derived traits on `EchoMsg`—specifically `Serialize` and `Deserialize`—these are required for structs that we send over the network.
 
 ```rust,ignore
+use chrono::prelude::*;
+use serde::{Deserialize, Serialize};
+
 #[derive(PartialEq, Clone, Serialize, Deserialize, Debug)]
 pub struct EchoMsg {
     pub payload: String,
