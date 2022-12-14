@@ -7,7 +7,7 @@ use std::time::Duration;
 
 use bytes::Bytes;
 use hydroflow::scheduled::graph::Hydroflow;
-use hydroflow::util::{recv_into, tcp_lines};
+use hydroflow::util::{collect_ready, tcp_lines};
 use hydroflow::{hydroflow_syntax, rassert, rassert_eq};
 use tokio::net::{TcpListener, TcpStream, UdpSocket};
 use tokio::task::LocalSet;
@@ -44,7 +44,7 @@ pub async fn test_echo_udp() -> Result<(), Box<dyn Error>> {
             _ = tokio::time::sleep(Duration::from_secs(1)) => (),
         };
 
-        let seen: HashSet<_> = recv_into(seen_recv);
+        let seen: HashSet<_> = collect_ready(seen_recv);
         rassert_eq!(4, seen.len())?;
         rassert!(seen.contains("Hello"))?;
         rassert!(seen.contains("World"))?;
@@ -79,7 +79,7 @@ pub async fn test_echo_udp() -> Result<(), Box<dyn Error>> {
             _ = tokio::time::sleep(Duration::from_secs(1)) => (),
         };
 
-        let seen: Vec<_> = recv_into(seen_recv);
+        let seen: Vec<_> = collect_ready(seen_recv);
         rassert_eq!(&["Hello".to_owned(), "World".to_owned()], &*seen)?;
 
         Ok(()) as Result<(), Box<dyn Error>>
@@ -110,7 +110,7 @@ pub async fn test_echo_udp() -> Result<(), Box<dyn Error>> {
             _ = tokio::time::sleep(Duration::from_secs(1)) => (),
         };
 
-        let seen: Vec<_> = recv_into(seen_recv);
+        let seen: Vec<_> = collect_ready(seen_recv);
         rassert_eq!(&["Raise".to_owned(), "Count".to_owned()], &*seen)?;
 
         Ok(()) as Result<(), Box<dyn Error>>
@@ -153,7 +153,7 @@ pub async fn test_echo_tcp() -> Result<(), Box<dyn Error>> {
             .await
             .expect_err("Expected time out");
 
-        let seen: Vec<_> = recv_into(seen_recv);
+        let seen: Vec<_> = collect_ready(seen_recv);
         rassert_eq!(&["Hello".to_owned(), "World".to_owned()], &*seen)?;
 
         Ok(()) as Result<(), Box<dyn Error>>
@@ -188,7 +188,7 @@ pub async fn test_echo_tcp() -> Result<(), Box<dyn Error>> {
             .await
             .expect_err("Expected time out");
 
-        let seen: Vec<_> = recv_into(seen_recv);
+        let seen: Vec<_> = collect_ready(seen_recv);
         rassert_eq!(&["Hello".to_owned(), "World".to_owned()], &*seen)?;
 
         Ok(()) as Result<(), Box<dyn Error>>
@@ -255,7 +255,7 @@ pub async fn test_futures_stream_sink() -> Result<(), Box<dyn Error>> {
         _ = tokio::time::sleep(Duration::from_secs(1)) => (),
     };
 
-    let seen: Vec<_> = recv_into(seen_recv);
+    let seen: Vec<_> = collect_ready(seen_recv);
     rassert_eq!(&std::array::from_fn::<_, MAX, _>(|i| i), &*seen)?;
 
     Ok(())
@@ -278,7 +278,7 @@ async fn asynctest_dest_sink_bounded_channel() {
         .expect_err("Expected time out");
 
     // Only 5 elemts received due to buffer size
-    let out: Vec<_> = recv_into(&mut recv);
+    let out: Vec<_> = collect_ready(&mut recv);
     assert_eq!(&[0, 1, 2, 3, 4], &*out);
 }
 

@@ -34,7 +34,7 @@ use quote::quote_spanned;
 ///
 /// let mut recv = tokio_stream::wrappers::ReceiverStream::new(recv);
 /// // Only 5 elements received due to buffer size
-/// let out: Vec<_> = hydroflow::util::recv_into(&mut recv);
+/// let out: Vec<_> = hydroflow::util::collect_ready(&mut recv);
 /// assert_eq!(&[0, 1, 2, 3, 4], &*out);
 /// # }
 /// ```
