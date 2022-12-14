@@ -1,89 +1,16 @@
 error[E0271]: expected `impl Iterator<Item = {integer}>` to be an iterator that yields `({integer}, _)`, but it yields `{integer}`
  --> tests/compile-fail/surface_join_badtypes.rs:7:9
   |
-4 |       let mut df = hydroflow_syntax! {
-  |  __________________-
-5 | |         j = join() -> for_each(std::mem::drop);
-6 | |         source_iter(0..10) -> map(|x| (x, x)) -> [0]j;
-7 | |         source_iter(0..10) -> [1]j;
-  | |         ^^^^^^^^^^^^^^^^^^ expected tuple, found integer
-8 | |     };
-  | |_____- required by a bound introduced by this call
+5 |         j = join() -> for_each(std::mem::drop);
+  |             ------ required by a bound introduced by this call
+6 |         source_iter(0..10) -> map(|x| (x, x)) -> [0]j;
+7 |         source_iter(0..10) -> [1]j;
+  |         ^^^^^^^^^^^^^^^^^^ expected tuple, found integer
   |
   = note: expected tuple `({integer}, _)`
               found type `{integer}`
-note: required by a bound in `SymmetricHashJoin::<'a, K, I1, V1, I2, V2>::new`
- --> src/compiled/pull/symmetric_hash_join.rs
-  |
-  |     I2: Iterator<Item = (K, V2)>,
-  |                  ^^^^^^^^^^^^^^ required by this bound in `SymmetricHashJoin::<'a, K, I1, V1, I2, V2>::new`
-
-error[E0271]: expected `impl Iterator<Item = {integer}>` to be an iterator that yields `({integer}, _)`, but it yields `{integer}`
- --> tests/compile-fail/surface_join_badtypes.rs:4:18
-  |
-4 |     let mut df = hydroflow_syntax! {
-  |                  ^ expected tuple, found integer
-  |
-  = note: expected tuple `({integer}, _)`
-              found type `{integer}`
-note: required by a bound in `SymmetricHashJoin`
- --> src/compiled/pull/symmetric_hash_join.rs
-  |
-  |     I2: Iterator<Item = (K, V2)>,
-  |                  ^^^^^^^^^^^^^^ required by this bound in `SymmetricHashJoin`
-  = note: this error originates in the macro `hydroflow_syntax` (in Nightly builds, run with -Z macro-backtrace for more info)
-
-error[E0271]: expected `impl Iterator<Item = {integer}>` to be an iterator that yields `({integer}, _)`, but it yields `{integer}`
- --> tests/compile-fail/surface_join_badtypes.rs:4:18
-  |
-4 |       let mut df = hydroflow_syntax! {
-  |  __________________^
-5 | |         j = join() -> for_each(std::mem::drop);
-6 | |         source_iter(0..10) -> map(|x| (x, x)) -> [0]j;
-7 | |         source_iter(0..10) -> [1]j;
-8 | |     };
-  | |_____^ expected tuple, found integer
-  |
-  = note: expected tuple `({integer}, _)`
-              found type `{integer}`
-note: required by a bound in `SymmetricHashJoin`
- --> src/compiled/pull/symmetric_hash_join.rs
-  |
-  |     I2: Iterator<Item = (K, V2)>,
-  |                  ^^^^^^^^^^^^^^ required by this bound in `SymmetricHashJoin`
-  = note: this error originates in the macro `hydroflow_syntax` (in Nightly builds, run with -Z macro-backtrace for more info)
-
-error[E0271]: expected `impl Iterator<Item = {integer}>` to be an iterator that yields `({integer}, _)`, but it yields `{integer}`
+note: required by a bound in `check_inputs`
  --> tests/compile-fail/surface_join_badtypes.rs:5:13
   |
 5 |         j = join() -> for_each(std::mem::drop);
-  |             ^^^^^^ expected tuple, found integer
-  |
-  = note: expected tuple `({integer}, _)`
-              found type `{integer}`
-  = note: required for `SymmetricHashJoin<'_, {integer}, impl Iterator<Item = ({integer}, {integer})>, {integer}, impl Iterator<Item = {integer}>, _>` to implement `Iterator`
-note: required by a bound in `check_iterator`
- --> tests/compile-fail/surface_join_badtypes.rs:4:18
-  |
-4 |       let mut df = hydroflow_syntax! {
-  |  __________________^
-5 | |         j = join() -> for_each(std::mem::drop);
-6 | |         source_iter(0..10) -> map(|x| (x, x)) -> [0]j;
-7 | |         source_iter(0..10) -> [1]j;
-8 | |     };
-  | |_____^ required by this bound in `check_iterator`
-  = note: this error originates in the macro `hydroflow_syntax` (in Nightly builds, run with -Z macro-backtrace for more info)
-
-error[E0271]: expected `impl Iterator<Item = {integer}>` to be an iterator that yields `({integer}, _)`, but it yields `{integer}`
- --> tests/compile-fail/surface_join_badtypes.rs:5:13
-  |
-5 |         j = join() -> for_each(std::mem::drop);
-  |             ^^^^^^ expected tuple, found integer
-  |
-  = note: expected tuple `({integer}, _)`
-              found type `{integer}`
-note: required by a bound in `SymmetricHashJoin`
- --> src/compiled/pull/symmetric_hash_join.rs
-  |
-  |     I2: Iterator<Item = (K, V2)>,
-  |                  ^^^^^^^^^^^^^^ required by this bound in `SymmetricHashJoin`
+  |             ^^^^^^ required by this bound in `check_inputs`
