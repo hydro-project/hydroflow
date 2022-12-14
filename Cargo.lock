@@ -792,7 +792,6 @@ dependencies = [
  "hydroflow_lang",
  "hydroflow_macro",
  "itertools",
- "pin-project-lite",
  "pusherator",
  "rand 0.8.5",
  "ref-cast",

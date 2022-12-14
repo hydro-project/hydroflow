@@ -5,13 +5,13 @@ use std::error::Error;
 use std::net::{Ipv4Addr, SocketAddr};
 use std::time::Duration;
 
+use bytes::Bytes;
 use hydroflow::scheduled::graph::Hydroflow;
-use hydroflow::util::recv_into;
+use hydroflow::util::{recv_into, tcp_lines};
 use hydroflow::{hydroflow_syntax, rassert, rassert_eq};
-use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::net::{TcpListener, TcpStream, UdpSocket};
 use tokio::task::LocalSet;
-use tokio_stream::wrappers::LinesStream;
+use tokio_util::codec::{BytesCodec, FramedWrite, LinesCodec};
 
 #[tokio::test]
 pub async fn test_echo_udp() -> Result<(), Box<dyn Error>> {
@@ -44,7 +44,7 @@ pub async fn test_echo_udp() -> Result<(), Box<dyn Error>> {
             _ = tokio::time::sleep(Duration::from_secs(1)) => (),
         };
 
-        let seen: HashSet<_> = hydroflow::util::collect_ready(seen_recv).await;
+        let seen: HashSet<_> = recv_into(seen_recv);
         rassert_eq!(4, seen.len())?;
         rassert!(seen.contains("Hello"))?;
         rassert!(seen.contains("World"))?;
@@ -79,7 +79,7 @@ pub async fn test_echo_udp() -> Result<(), Box<dyn Error>> {
             _ = tokio::time::sleep(Duration::from_secs(1)) => (),
         };
 
-        let seen: Vec<_> = hydroflow::util::collect_ready(seen_recv).await;
+        let seen: Vec<_> = recv_into(seen_recv);
         rassert_eq!(&["Hello".to_owned(), "World".to_owned()], &*seen)?;
 
         Ok(()) as Result<(), Box<dyn Error>>
@@ -110,7 +110,7 @@ pub async fn test_echo_udp() -> Result<(), Box<dyn Error>> {
             _ = tokio::time::sleep(Duration::from_secs(1)) => (),
         };
 
-        let seen: Vec<_> = hydroflow::util::collect_ready(seen_recv).await;
+        let seen: Vec<_> = recv_into(seen_recv);
         rassert_eq!(&["Raise".to_owned(), "Count".to_owned()], &*seen)?;
 
         Ok(()) as Result<(), Box<dyn Error>>
@@ -135,27 +135,25 @@ pub async fn test_echo_tcp() -> Result<(), Box<dyn Error>> {
     // Server:
     let serv = local.spawn_local(async move {
         let (server_stream, _) = listener.accept().await?;
-        let (server_recv, server_send) = server_stream.into_split();
-        let lines_recv = LinesStream::new(BufReader::new(server_recv).lines());
+        let (server_send, server_recv) = tcp_lines(server_stream);
 
         println!("Server accepted connection!");
 
         let (seen_send, seen_recv) = hydroflow::util::unbounded_channel();
 
         let mut df: Hydroflow = hydroflow_syntax! {
-            rev = source_stream(lines_recv)
+            rev = source_stream(server_recv)
                 -> map(|x| x.unwrap())
                 -> tee();
-            rev[0] -> map(|s| format!("{}\n", s)) -> dest_asyncwrite(server_send);
+            rev[0] -> dest_sink(server_send);
             rev[1] -> for_each(|s| seen_send.send(s).unwrap());
         };
 
-        tokio::select! {
-            _ = df.run_async() => (),
-            _ = tokio::time::sleep(Duration::from_secs(1)) => (),
-        };
+        tokio::time::timeout(Duration::from_secs(1), df.run_async())
+            .await
+            .expect_err("Expected time out");
 
-        let seen: Vec<_> = hydroflow::util::collect_ready(seen_recv).await;
+        let seen: Vec<_> = recv_into(seen_recv);
         rassert_eq!(&["Hello".to_owned(), "World".to_owned()], &*seen)?;
 
         Ok(()) as Result<(), Box<dyn Error>>
@@ -164,33 +162,33 @@ pub async fn test_echo_tcp() -> Result<(), Box<dyn Error>> {
     // Client:
     let client = local.spawn_local(async move {
         let client_stream = TcpStream::connect(addr).await?;
+        let (client_send, client_recv) = tcp_lines(client_stream);
 
         println!("Client connected!");
-
-        let (client_recv, client_send) = client_stream.into_split();
-        let lines_recv = LinesStream::new(BufReader::new(client_recv).lines());
 
         let (seen_send, seen_recv) = hydroflow::util::unbounded_channel();
 
         let mut df = hydroflow_syntax! {
-            recv = source_stream(lines_recv)
+            recv = source_stream(client_recv)
                 -> map(|x| x.unwrap())
                 -> tee();
 
             recv[0] -> for_each(|s| println!("echo {}", s));
             recv[1] -> for_each(|s| seen_send.send(s).unwrap());
 
-            source_iter([ "Hello\n", "World\n" ]) -> dest_asyncwrite(client_send);
+            source_iter([
+                "Hello",
+                "World",
+            ]) -> dest_sink(client_send);
         };
 
         println!("Client running!");
 
-        tokio::select! {
-            _ = df.run_async() => (),
-            _ = tokio::time::sleep(Duration::from_secs(1)) => (),
-        };
+        tokio::time::timeout(Duration::from_secs(1), df.run_async())
+            .await
+            .expect_err("Expected time out");
 
-        let seen: Vec<_> = hydroflow::util::collect_ready(seen_recv).await;
+        let seen: Vec<_> = recv_into(seen_recv);
         rassert_eq!(&["Hello".to_owned(), "World".to_owned()], &*seen)?;
 
         Ok(()) as Result<(), Box<dyn Error>>
@@ -208,13 +206,11 @@ pub async fn test_echo() {
     // An edge in the input data = a pair of `usize` vertex IDs.
     let (lines_send, lines_recv) = hydroflow::util::unbounded_channel::<String>();
 
-    //use tokio::io::{AsyncBufReadExt, BufReader};
-    // use tokio_stream::wrappers::LinesStream;
-    // let stdin_lines = LinesStream::new(BufReader::new(tokio::io::stdin()).lines());
-    let stdout_lines = tokio::io::stdout();
+    // LinesCodec separates each line from `lines_recv` with `\n`.
+    let stdout_lines = FramedWrite::new(tokio::io::stdout(), LinesCodec::new());
 
     let mut df: Hydroflow = hydroflow_syntax! {
-        source_stream(lines_recv) -> map(|line| line + "\n") -> dest_asyncwrite(stdout_lines);
+        source_stream(lines_recv) -> dest_sink(stdout_lines);
     };
 
     println!(
@@ -259,7 +255,7 @@ pub async fn test_futures_stream_sink() -> Result<(), Box<dyn Error>> {
         _ = tokio::time::sleep(Duration::from_secs(1)) => (),
     };
 
-    let seen: Vec<_> = hydroflow::util::collect_ready(seen_recv).await;
+    let seen: Vec<_> = recv_into(seen_recv);
     rassert_eq!(&std::array::from_fn::<_, MAX, _>(|i| i), &*seen)?;
 
     Ok(())
@@ -267,9 +263,9 @@ pub async fn test_futures_stream_sink() -> Result<(), Box<dyn Error>> {
 
 #[tokio::test(flavor = "current_thread")]
 async fn asynctest_dest_sink_bounded_channel() {
-    // This is for testing. Don't actually use unbounded channels, as their input will end up
-    // buffered regardless. Instead use `-> for_each(|x| { send.send(x).unwrap(); })` with an
-    // unbounded channel sender `send`.
+    // In this example we use a _bounded_ channel for our `Sink`. This is for demonstration only,
+    // instead you should use [`hydroflow::util::unbounded_channel`]. A bounded channel results in
+    // `Hydroflow` buffering items internally instead of within the channel.
     let (send, recv) = tokio::sync::mpsc::channel::<usize>(5);
     let send = tokio_util::sync::PollSender::new(send);
     let mut recv = tokio_stream::wrappers::ReceiverStream::new(recv);
@@ -296,6 +292,7 @@ async fn asynctest_dest_sink_duplex() {
     let (asyncwrite, mut asyncread) = tokio::io::duplex(256);
     // Now instead handle discrete byte lists by length-encoding them.
     let mut sink = codec::LengthDelimitedCodec::builder()
+        // Use 1 byte len field (max 255) so we don't have to worry about endianness.
         .length_field_length(1)
         .new_write(asyncwrite);
 
@@ -322,12 +319,13 @@ async fn asynctest_dest_asyncwrite_duplex() {
     // Like a channel, but for a stream of bytes instead of discrete objects.
     // This could be an output file, network port, stdout, etc.
     let (asyncwrite, mut asyncread) = tokio::io::duplex(256);
+    let sink = FramedWrite::new(asyncwrite, BytesCodec::new());
 
     let mut flow = hydroflow_syntax! {
         source_iter([
-            "hello",
-            "world",
-        ]) -> dest_asyncwrite(asyncwrite);
+            Bytes::from_static("hello".as_bytes()),
+            Bytes::from_static("world".as_bytes()),
+        ]) -> dest_sink(sink);
     };
     tokio::time::timeout(std::time::Duration::from_secs(1), flow.run_async())
         .await
