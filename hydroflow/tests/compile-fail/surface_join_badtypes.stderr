@@ -1,0 +1,197 @@
+error[E0271]: expected `&mut std::ops::Range<{integer}>` to be an iterator that yields `({integer}, _)`, but it yields `{integer}`
+ --> tests/compile-fail/surface_join_badtypes.rs:7:9
+  |
+4 |       let mut df = hydroflow_syntax! {
+  |  __________________-
+5 | |         j = join() -> for_each(std::mem::drop);
+6 | |         source_iter(0..10) -> map(|x| (x, x)) -> [0]j;
+7 | |         source_iter(0..10) -> [1]j;
+  | |         ^^^^^^^^^^^^^^^^^^ expected tuple, found integer
+8 | |     };
+  | |_____- required by a bound introduced by this call
+  |
+  = note: expected tuple `({integer}, _)`
+              found type `{integer}`
+note: required by a bound in `SymmetricHashJoin::<'a, K, I1, V1, I2, V2>::new`
+ --> src/compiled/pull/symmetric_hash_join.rs
+  |
+  |     I2: Iterator<Item = (K, V2)>,
+  |                  ^^^^^^^^^^^^^^ required by this bound in `SymmetricHashJoin::<'a, K, I1, V1, I2, V2>::new`
+
+error[E0271]: expected `&mut std::ops::Range<{integer}>` to be an iterator that yields `({integer}, _)`, but it yields `{integer}`
+ --> tests/compile-fail/surface_join_badtypes.rs:4:18
+  |
+4 |     let mut df = hydroflow_syntax! {
+  |                  ^ expected tuple, found integer
+  |
+  = note: expected tuple `({integer}, _)`
+              found type `{integer}`
+note: required by a bound in `SymmetricHashJoin`
+ --> src/compiled/pull/symmetric_hash_join.rs
+  |
+  |     I2: Iterator<Item = (K, V2)>,
+  |                  ^^^^^^^^^^^^^^ required by this bound in `SymmetricHashJoin`
+  = note: this error originates in the macro `hydroflow_syntax` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0271]: expected `&mut std::ops::Range<{integer}>` to be an iterator that yields `({integer}, _)`, but it yields `{integer}`
+ --> tests/compile-fail/surface_join_badtypes.rs:4:18
+  |
+4 |       let mut df = hydroflow_syntax! {
+  |  __________________^
+5 | |         j = join() -> for_each(std::mem::drop);
+6 | |         source_iter(0..10) -> map(|x| (x, x)) -> [0]j;
+7 | |         source_iter(0..10) -> [1]j;
+8 | |     };
+  | |_____^ expected tuple, found integer
+  |
+  = note: expected tuple `({integer}, _)`
+              found type `{integer}`
+note: required by a bound in `SymmetricHashJoin`
+ --> src/compiled/pull/symmetric_hash_join.rs
+  |
+  |     I2: Iterator<Item = (K, V2)>,
+  |                  ^^^^^^^^^^^^^^ required by this bound in `SymmetricHashJoin`
+  = note: this error originates in the macro `hydroflow_syntax` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0271]: expected `&mut std::ops::Range<{integer}>` to be an iterator that yields `({integer}, _)`, but it yields `{integer}`
+ --> tests/compile-fail/surface_join_badtypes.rs:4:18
+  |
+4 |       let mut df = hydroflow_syntax! {
+  |  __________________^
+5 | |         j = join() -> for_each(std::mem::drop);
+6 | |         source_iter(0..10) -> map(|x| (x, x)) -> [0]j;
+7 | |         source_iter(0..10) -> [1]j;
+8 | |     };
+  | |     ^
+  | |     |
+  | |_____expected tuple, found integer
+  |       required by a bound introduced by this call
+  |
+  = note: expected tuple `({integer}, _)`
+              found type `{integer}`
+  = note: required for `SymmetricHashJoin<'_, {integer}, Map<&mut Range<{integer}>, ...>, ..., ..., ...>` to implement `Iterator`
+  = note: the full type name has been written to '$WORKSPACE/target/tests/target/x86_64-pc-windows-msvc/debug/deps/$CRATE-b7daa85f2623c188.long-type-3527905848320863428.txt'
+note: required by a bound in `main::{closure#0}::{closure#4}::assert_var_impl`
+ --> tests/compile-fail/surface_join_badtypes.rs:4:18
+  |
+4 |       let mut df = hydroflow_syntax! {
+  |  __________________^
+5 | |         j = join() -> for_each(std::mem::drop);
+6 | |         source_iter(0..10) -> map(|x| (x, x)) -> [0]j;
+7 | |         source_iter(0..10) -> [1]j;
+8 | |     };
+  | |_____^ required by this bound in `assert_var_impl`
+  = note: this error originates in the macro `hydroflow::assert_var_impl` which comes from the expansion of the macro `hydroflow_syntax` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0271]: expected `&mut std::ops::Range<{integer}>` to be an iterator that yields `({integer}, _)`, but it yields `{integer}`
+ --> tests/compile-fail/surface_join_badtypes.rs:4:18
+  |
+4 |       let mut df = hydroflow_syntax! {
+  |  __________________^
+5 | |         j = join() -> for_each(std::mem::drop);
+6 | |         source_iter(0..10) -> map(|x| (x, x)) -> [0]j;
+7 | |         source_iter(0..10) -> [1]j;
+8 | |     };
+  | |_____^ expected tuple, found integer
+  |
+  = note: expected tuple `({integer}, _)`
+              found type `{integer}`
+note: required by a bound in `SymmetricHashJoin`
+ --> src/compiled/pull/symmetric_hash_join.rs
+  |
+  |     I2: Iterator<Item = (K, V2)>,
+  |                  ^^^^^^^^^^^^^^ required by this bound in `SymmetricHashJoin`
+  = note: this error originates in the macro `hydroflow::assert_var_impl` which comes from the expansion of the macro `hydroflow_syntax` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0271]: expected `&mut std::ops::Range<{integer}>` to be an iterator that yields `({integer}, _)`, but it yields `{integer}`
+ --> tests/compile-fail/surface_join_badtypes.rs:4:18
+  |
+4 |       let mut df = hydroflow_syntax! {
+  |  __________________^
+5 | |         j = join() -> for_each(std::mem::drop);
+6 | |         source_iter(0..10) -> map(|x| (x, x)) -> [0]j;
+7 | |         source_iter(0..10) -> [1]j;
+8 | |     };
+  | |_____^ expected integer, found tuple
+  |
+  = note: expected type `{integer}`
+            found tuple `({integer}, _)`
+  = note: required for `SymmetricHashJoin<'_, {integer}, Map<&mut Range<{integer}>, ...>, ..., ..., ...>` to implement `Iterator`
+  = note: the full type name has been written to '$WORKSPACE/target/tests/target/x86_64-pc-windows-msvc/debug/deps/$CRATE-b7daa85f2623c188.long-type-6605895013123845615.txt'
+  = note: this error originates in the macro `hydroflow_syntax` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0271]: expected `&mut std::ops::Range<{integer}>` to be an iterator that yields `({integer}, _)`, but it yields `{integer}`
+ --> tests/compile-fail/surface_join_badtypes.rs:5:13
+  |
+4 |       let mut df = hydroflow_syntax! {
+  |  __________________-
+5 | |         j = join() -> for_each(std::mem::drop);
+  | |             ^^^^^^ expected tuple, found integer
+6 | |         source_iter(0..10) -> map(|x| (x, x)) -> [0]j;
+7 | |         source_iter(0..10) -> [1]j;
+8 | |     };
+  | |_____- required by a bound introduced by this call
+  |
+  = note: expected tuple `({integer}, _)`
+              found type `{integer}`
+  = note: required for `SymmetricHashJoin<'_, {integer}, Map<&mut Range<{integer}>, ...>, ..., ..., ...>` to implement `Iterator`
+  = note: the full type name has been written to '$WORKSPACE/target/tests/target/x86_64-pc-windows-msvc/debug/deps/$CRATE-b7daa85f2623c188.long-type-6605895013123845615.txt'
+note: required by a bound in `Pivot::<I, P>::new`
+ --> $WORKSPACE/pusherator/src/pivot.rs
+  |
+  |     I: Iterator,
+  |        ^^^^^^^^ required by this bound in `Pivot::<I, P>::new`
+
+error[E0271]: expected `&mut std::ops::Range<{integer}>` to be an iterator that yields `({integer}, _)`, but it yields `{integer}`
+ --> tests/compile-fail/surface_join_badtypes.rs:4:18
+  |
+4 |     let mut df = hydroflow_syntax! {
+  |                  ^ expected tuple, found integer
+  |
+  = note: expected tuple `({integer}, _)`
+              found type `{integer}`
+  = note: required for `SymmetricHashJoin<'_, {integer}, Map<&mut Range<{integer}>, ...>, ..., ..., ...>` to implement `Iterator`
+  = note: the full type name has been written to '$WORKSPACE/target/tests/target/x86_64-pc-windows-msvc/debug/deps/$CRATE-b7daa85f2623c188.long-type-6605895013123845615.txt'
+note: required by a bound in `Pivot`
+ --> $WORKSPACE/pusherator/src/pivot.rs
+  |
+  |     I: Iterator,
+  |        ^^^^^^^^ required by this bound in `Pivot`
+  = note: this error originates in the macro `hydroflow_syntax` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0271]: expected `&mut std::ops::Range<{integer}>` to be an iterator that yields `({integer}, _)`, but it yields `{integer}`
+ --> tests/compile-fail/surface_join_badtypes.rs:4:18
+  |
+4 |       let mut df = hydroflow_syntax! {
+  |  __________________^
+5 | |         j = join() -> for_each(std::mem::drop);
+6 | |         source_iter(0..10) -> map(|x| (x, x)) -> [0]j;
+7 | |         source_iter(0..10) -> [1]j;
+8 | |     };
+  | |_____^ expected tuple, found integer
+  |
+  = note: expected tuple `({integer}, _)`
+              found type `{integer}`
+  = note: required for `SymmetricHashJoin<'_, {integer}, Map<&mut Range<{integer}>, ...>, ..., ..., ...>` to implement `Iterator`
+  = note: the full type name has been written to '$WORKSPACE/target/tests/target/x86_64-pc-windows-msvc/debug/deps/$CRATE-b7daa85f2623c188.long-type-6605895013123845615.txt'
+note: required by a bound in `Pivot`
+ --> $WORKSPACE/pusherator/src/pivot.rs
+  |
+  |     I: Iterator,
+  |        ^^^^^^^^ required by this bound in `Pivot`
+  = note: this error originates in the macro `hydroflow_syntax` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0599]: the method `run` exists for struct `Pivot<SymmetricHashJoin<'_, {integer}, std::iter::Map<&mut std::ops::Range<{integer}>, [closure@$DIR/tests/compile-fail/surface_join_badtypes.rs:6:35: 6:38]>, {integer}, &mut std::ops::Range<{integer}>, _>, hydroflow::pusherator::for_each::ForEach<fn(({integer}, ({integer}, _))) {std::mem::drop::<({integer}, ({integer}, _))>}, ({integer}, ({integer}, _))>>`, but its trait bounds were not satisfied
+ --> tests/compile-fail/surface_join_badtypes.rs:5:13
+  |
+5 |         j = join() -> for_each(std::mem::drop);
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ method cannot be called on `Pivot<SymmetricHashJoin<'_, {integer}, std::iter::Map<&mut std::ops::Range<{integer}>, [closure@$DIR/tests/compile-fail/surface_join_badtypes.rs:6:35: 6:38]>, {integer}, &mut std::ops::Range<{integer}>, _>, hydroflow::pusherator::for_each::ForEach<fn(({integer}, ({integer}, _))) {std::mem::drop::<({integer}, ({integer}, _))>}, ({integer}, ({integer}, _))>>` due to unsatisfied trait bounds
+  |
+ ::: src/compiled/pull/symmetric_hash_join.rs
+  |
+  | pub struct SymmetricHashJoin<'a, K, I1, V1, I2, V2>
+  | --------------------------------------------------- doesn't satisfy `_: Iterator`
+  |
+  = note: the following trait bounds were not satisfied:
+          `SymmetricHashJoin<'_, {integer}, std::iter::Map<&mut std::ops::Range<{integer}>, [closure@$DIR/tests/compile-fail/surface_join_badtypes.rs:6:35: 6:38]>, {integer}, &mut std::ops::Range<{integer}>, _>: Iterator`
+          `<&mut std::ops::Range<{integer}> as Iterator>::Item = ({integer}, _)`

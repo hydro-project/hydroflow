@@ -1,0 +1,5 @@
+error[E0610]: `{integer}` is a primitive type and therefore doesn't have fields
+ --> tests/compile-fail/surface_group_by_badtype_int.rs:6:16
+  |
+6 |             -> group_by(|| 0, |old: &mut u32, val: u32| *old += val)
+  |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
