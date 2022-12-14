@@ -89,11 +89,33 @@ fn main() {
                     let op_9v1 = check_iterator(op_9v1);
                     let op_10v1 = hoff_13v1_recv.map(|v: (_, _)| ((v.1, v.0), v));
                     let op_10v1 = check_iterator(op_10v1);
-                    let op_7v1 = hydroflow::compiled::pull::SymmetricHashJoin::new(
-                        op_9v1,
-                        op_10v1,
-                        &mut sg_2v1_node_7v1_joindata,
-                    );
+                    let op_7v1 = {
+                        /// Limit error propagation by bounding locally, erasing output iterator type.
+                        #[inline(always)]
+                        fn check_inputs<'a, K, I1, V1, I2, V2>(
+                            lhs: I1,
+                            rhs: I2,
+                            state: &'a mut hydroflow::compiled::pull::JoinState<
+                                K,
+                                V1,
+                                V2,
+                            >,
+                        ) -> impl 'a + Iterator<Item = (K, (V1, V2))>
+                        where
+                            K: Eq + std::hash::Hash + Clone,
+                            V1: Eq + Clone,
+                            V2: Eq + Clone,
+                            I1: 'a + Iterator<Item = (K, V1)>,
+                            I2: 'a + Iterator<Item = (K, V2)>,
+                        {
+                            hydroflow::compiled::pull::SymmetricHashJoin::new(
+                                lhs,
+                                rhs,
+                                state,
+                            )
+                        }
+                        check_inputs(op_9v1, op_10v1, &mut sg_2v1_node_7v1_joindata)
+                    };
                     let op_7v1 = check_iterator(op_7v1);
                     let op_8v1 = op_7v1
                         .map(|kv: ((_, _), ((_, _), (_, _)))| (kv.1.0.0, kv.1.0.1));

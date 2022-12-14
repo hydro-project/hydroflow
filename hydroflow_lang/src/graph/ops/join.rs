@@ -38,7 +38,25 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
         let lhs = &inputs[0];
         let rhs = &inputs[1];
         let write_iterator = quote_spanned! {op_span=>
-            let #ident = #root::compiled::pull::SymmetricHashJoin::new(#lhs, #rhs, &mut #joindata_ident);
+            let #ident = {
+                /// Limit error propagation by bounding locally, erasing output iterator type.
+                #[inline(always)]
+                fn check_inputs<'a, K, I1, V1, I2, V2>(
+                    lhs: I1,
+                    rhs: I2,
+                    state: &'a mut #root::compiled::pull::JoinState<K, V1, V2>,
+                ) -> impl 'a + Iterator<Item = (K, (V1, V2))>
+                where
+                    K: Eq + std::hash::Hash + Clone,
+                    V1: Eq + Clone,
+                    V2: Eq + Clone,
+                    I1: 'a + Iterator<Item = (K, V1)>,
+                    I2: 'a + Iterator<Item = (K, V2)>,
+                {
+                    #root::compiled::pull::SymmetricHashJoin::new(lhs, rhs, state)
+                }
+                check_inputs(#lhs, #rhs, &mut #joindata_ident)
+            };
         };
 
         Ok(OperatorWriteOutput {
