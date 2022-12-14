@@ -11,6 +11,9 @@ use super::ops::{OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, OPERA
 use super::serde_graph::SerdeGraph;
 use super::{node_color, Color, GraphEdgeId, GraphNodeId, GraphSubgraphId, Node, PortIndexValue};
 
+const CHECK_ITERATOR: &str = "check_iterator";
+const CHECK_PUSHERATOR: &str = "check_pusherator";
+
 #[derive(Default)]
 #[allow(dead_code)] // TODO(mingwei): remove when no longer needed.
 pub struct PartitionedGraph {
@@ -207,17 +210,10 @@ impl PartitionedGraph {
                                 continue;
                             };
 
-                            let required_trait = if is_pull {
-                                quote_spanned! {op_span=>
-                                    std::iter::Iterator
-                                }
-                            } else {
-                                quote_spanned! {op_span=>
-                                    #root::pusherator::Pusherator
-                                }
-                            };
+                            let check_fn = if is_pull { CHECK_ITERATOR } else { CHECK_PUSHERATOR };
+                            let check_fn = Ident::new(check_fn, op_span);
                             let iter_type_guard = quote_spanned! {op_span=>
-                                #root::assert_var_impl!(#ident: #required_trait);
+                                let #ident = #check_fn(#ident);
                             };
 
                             op_prologue_code.push(write_prologue);
@@ -281,10 +277,29 @@ impl PartitionedGraph {
                 }
             });
 
+        let check_iterator_ident = Ident::new(CHECK_ITERATOR, Span::call_site());
+        let check_pusherator_ident = Ident::new(CHECK_PUSHERATOR, Span::call_site());
         let serde_string = Literal::string(&*self.serde_string());
         let code = quote! {
             {
                 use #root::{var_expr, var_args};
+
+                #[allow(unused)]
+                #[inline(always)]
+                fn #check_iterator_ident<Iter, Item>(iterator: Iter) -> impl ::std::iter::Iterator<Item = Item>
+                where
+                    Iter: ::std::iter::Iterator<Item = Item>,
+                {
+                    iterator
+                }
+                #[allow(unused)]
+                #[inline(always)]
+                fn #check_pusherator_ident<Push, Item>(pusherator: Push) -> impl #root::pusherator::Pusherator<Item = Item>
+                where
+                    Push: #root::pusherator::Pusherator<Item = Item>,
+                {
+                    pusherator
+                }
 
                 let mut df = #root::scheduled::graph::Hydroflow::new_with_graph(#serde_string);
 
