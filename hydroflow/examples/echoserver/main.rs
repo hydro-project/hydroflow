@@ -19,7 +19,7 @@ struct Opts {
     #[clap(arg_enum, long)]
     role: Role,
     #[clap(long)]
-    addr: Option<String>,
+    client_addr: Option<String>,
     #[clap(long)]
     server_addr: String,
 }
@@ -41,7 +41,7 @@ async fn main() {
             // resolve the server's IP address
             let server_addr = ipv4_resolve(opts.server_addr.clone());
             // allocate `outbound` and `inbound` sockets
-            let (outbound, inbound) = bind_udp_socket(opts.addr.clone().unwrap()).await;
+            let (outbound, inbound) = bind_udp_socket(opts.client_addr.clone().unwrap()).await;
             // run the client
             run_client(outbound, inbound, server_addr).await;
         }

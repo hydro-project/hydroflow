@@ -13,6 +13,7 @@
   - [Graph Reachability](./example_5_reachability.md)
   - [Graph Un-Reachability](./example_6_unreachability.md)
   - [Networked Services 1: EchoServer](./example_7_echo_server.md)
+  - [Networked Services 2: ChatServer](./example_8_chat_server.md)
 - [Concepts](./concepts.md)
 - [Syntax](./surface_syntax.md)
   - [Rust Embedding](./surface_embedding.md)
