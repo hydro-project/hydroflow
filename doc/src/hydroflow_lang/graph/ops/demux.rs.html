@@ -216,7 +216,7 @@
 
 <span class="comment">// TODO(mingwei): Preprocess rustdoc links in mdbook or in the `operator_docgen` macro.
 </span><span class="doccomment">/// &gt; Arguments: A Rust closure, the first argument is a received item and the
-/// &gt; second argument is a [`tl!` tuple list](https://hydro-project.github.io/hydroflow/doc/hydroflow/macro.tl.html)
+/// &gt; second argument is a [`var_args!` tuple list](https://hydro-project.github.io/hydroflow/doc/hydroflow/macro.var_args.html)
 /// &gt; where each item name is an output port.
 ///
 /// Takes the input stream and allows the user to determine what elemnt(s) to
@@ -224,11 +224,11 @@
 ///
 /// &gt; Note: Downstream operators may need explicit type annotations.
 ///
-/// &gt; Note: Import the [`Pusherator`](https://hydro-project.github.io/hydroflow/doc/pusherator/trait.Pusherator.html)
-/// &gt; trait to use the [`.give(...)` method](https://hydro-project.github.io/hydroflow/doc/pusherator/trait.Pusherator.html#tymethod.give).
+/// &gt; Note: The [`Pusherator`](https://hydro-project.github.io/hydroflow/doc/pusherator/trait.Pusherator.html)
+/// &gt; trait is automatically imported to enable the [`.give(...)` method](https://hydro-project.github.io/hydroflow/doc/pusherator/trait.Pusherator.html#tymethod.give).
 ///
 /// ```hydroflow
-/// my_demux = source_iter(1..=100) -&gt; demux(|v, tl!(fzbz, fizz, buzz, vals)|
+/// my_demux = source_iter(1..=100) -&gt; demux(|v, var_args!(fzbz, fizz, buzz, vals)|
 ///     match (v % 3, v % 5) {
 ///         (0, 0) =&gt; fzbz.give(v),
 ///         (0, _) =&gt; fizz.give(v),
@@ -279,7 +279,7 @@
                 Level::Error,
                 <span class="kw-2">&amp;*</span><span class="macro">format!</span>(
                     <span class="string">&quot;Closure provided as second argument to `{}` must have a second \
-            input argument listing ports, `tl!(port_a, port_b, ...)`.&quot;</span>,
+                    input argument listing ports, `var_args!(port_a, port_b, ...)`.&quot;</span>,
                     op_name
                 ),
             ));
@@ -362,7 +362,7 @@
         <span class="kw">let </span>write_iterator = <span class="macro">quote_spanned! </span>{op_span=&gt;
             <span class="kw">let </span>#ident = {
                 <span class="attr">#[allow(unused_imports)] </span><span class="kw">use </span>#root::pusherator::Pusherator;
-                #root::pusherator::demux::Demux::new(#func, #<span class="macro">root::tl!</span>( #( #sorted_outputs ),* ))
+                #root::pusherator::demux::Demux::new(#func, #<span class="macro">root::var_expr!</span>( #( #sorted_outputs ),* ))
             };
         };
 

@@ -76,7 +76,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">User Guide</li><li class="chapter-item expanded "><a href="quickstart.html"><strong aria-hidden="true">1.</strong> Quickstart</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="setup.html"><strong aria-hidden="true">1.1.</strong> Setup</a></li><li class="chapter-item expanded "><a href="example_1_simplest.html"><strong aria-hidden="true">1.2.</strong> Simplest Example</a></li><li class="chapter-item expanded "><a href="example_2_simple.html"><strong aria-hidden="true">1.3.</strong> Simple Example</a></li><li class="chapter-item expanded "><a href="example_3_stream.html"><strong aria-hidden="true">1.4.</strong> A Example With Streaming Input</a></li><li class="chapter-item expanded "><a href="example_4_neighbors.html"><strong aria-hidden="true">1.5.</strong> Graph Neighbors</a></li><li class="chapter-item expanded "><a href="example_5_reachability.html"><strong aria-hidden="true">1.6.</strong> Graph Reachability</a></li><li class="chapter-item expanded "><a href="example_6_unreachability.html"><strong aria-hidden="true">1.7.</strong> Graph Un-Reachability</a></li><li class="chapter-item expanded "><a href="example_7_echo_server.html"><strong aria-hidden="true">1.8.</strong> Networked Services 1: EchoServer</a></li></ol></li><li class="chapter-item expanded "><a href="concepts.html"><strong aria-hidden="true">2.</strong> Concepts</a></li><li class="chapter-item expanded "><a href="surface_syntax.html"><strong aria-hidden="true">3.</strong> Syntax</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="surface_embedding.html"><strong aria-hidden="true">3.1.</strong> Rust Embedding</a></li><li class="chapter-item expanded "><a href="surface_flows.html"><strong aria-hidden="true">3.2.</strong> Flows</a></li><li class="chapter-item expanded "><a href="surface_data.html"><strong aria-hidden="true">3.3.</strong> Data Sources</a></li><li class="chapter-item expanded "><a href="surface_ops.gen.html"><strong aria-hidden="true">3.4.</strong> Operators</a></li></ol></li><li class="chapter-item expanded "><a href="architecture.html"><strong aria-hidden="true">4.</strong> Architecture</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="in-out_trees.html"><strong aria-hidden="true">4.1.</strong> Subgraph In-Out Trees</a></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">User Guide</li><li class="chapter-item expanded "><a href="quickstart.html"><strong aria-hidden="true">1.</strong> Quickstart</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="setup.html"><strong aria-hidden="true">1.1.</strong> Setup</a></li><li class="chapter-item expanded "><a href="example_1_simplest.html"><strong aria-hidden="true">1.2.</strong> Simplest Example</a></li><li class="chapter-item expanded "><a href="example_2_simple.html"><strong aria-hidden="true">1.3.</strong> Simple Example</a></li><li class="chapter-item expanded "><a href="example_3_stream.html"><strong aria-hidden="true">1.4.</strong> A Example With Streaming Input</a></li><li class="chapter-item expanded "><a href="example_4_neighbors.html"><strong aria-hidden="true">1.5.</strong> Graph Neighbors</a></li><li class="chapter-item expanded "><a href="example_5_reachability.html"><strong aria-hidden="true">1.6.</strong> Graph Reachability</a></li><li class="chapter-item expanded "><a href="example_6_unreachability.html"><strong aria-hidden="true">1.7.</strong> Graph Un-Reachability</a></li><li class="chapter-item expanded "><a href="example_7_echo_server.html"><strong aria-hidden="true">1.8.</strong> Networked Services 1: EchoServer</a></li><li class="chapter-item expanded "><a href="example_8_chat_server.html"><strong aria-hidden="true">1.9.</strong> Networked Services 2: ChatServer</a></li></ol></li><li class="chapter-item expanded "><a href="concepts.html"><strong aria-hidden="true">2.</strong> Concepts</a></li><li class="chapter-item expanded "><a href="surface_syntax.html"><strong aria-hidden="true">3.</strong> Syntax</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="surface_embedding.html"><strong aria-hidden="true">3.1.</strong> Rust Embedding</a></li><li class="chapter-item expanded "><a href="surface_flows.html"><strong aria-hidden="true">3.2.</strong> Flows</a></li><li class="chapter-item expanded "><a href="surface_data.html"><strong aria-hidden="true">3.3.</strong> Data Sources</a></li><li class="chapter-item expanded "><a href="surface_ops.gen.html"><strong aria-hidden="true">3.4.</strong> Operators</a></li></ol></li><li class="chapter-item expanded "><a href="architecture.html"><strong aria-hidden="true">4.</strong> Architecture</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="in-out_trees.html"><strong aria-hidden="true">4.1.</strong> Subgraph In-Out Trees</a></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -1012,7 +1012,10 @@ async fn main() {
 </code></pre>
 <h2 id="protocolrs"><a class="header" href="#protocolrs">protocol.rs</a></h2>
 <p>As a design pattern, it is natural in distributed Hydroflow programs to define various message types in a <code>protocol.rs</code> file with structures shared for use by all the Hydroflow logic across roles. In this simple example, we define only one message type: <code>EchoMsg</code>, and a simple struct with two fields: <code>payload</code> and <code>ts</code> (timestamp). The <code>payload</code> field is a string, and the <code>ts</code> field is a <code>DateTime&lt;Utc&gt;</code>, which is a type from the <a href="https://docs.rs/chrono/latest/chrono/"><code>chrono</code></a> crate. Note the various derived traits on <code>EchoMsg</code>—specifically <code>Serialize</code> and <code>Deserialize</code>—these are required for structs that we send over the network.</p>
-<pre><code class="language-rust ignore">#[derive(PartialEq, Clone, Serialize, Deserialize, Debug)]
+<pre><code class="language-rust ignore">use chrono::prelude::*;
+use serde::{Deserialize, Serialize};
+
+#[derive(PartialEq, Clone, Serialize, Deserialize, Debug)]
 pub struct EchoMsg {
     pub payload: String,
     pub ts: DateTime&lt;Utc&gt;,
@@ -1093,6 +1096,417 @@ EchoMsg { payload: &quot;This is the rest!&quot;, ts: 2022-12-12T23:42:20.181371
 <pre><code class="language-console">Server live!
 Got EchoMsg { payload: &quot;This is a test&quot;, ts: 2022-12-12T23:42:13.049499Z } from 127.0.0.1:9090
 Got EchoMsg { payload: &quot;This is the rest!&quot;, ts: 2022-12-12T23:42:20.179337Z } from 127.0.0.1:9090
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="networked-services-2-chat-server"><a class="header" href="#networked-services-2-chat-server">Networked Services 2: Chat Server</a></h1>
+<blockquote>
+<p>In this example we cover:</p>
+<ul>
+<li>Multiple message types and the <code>demux</code> operator.</li>
+<li>A broadcast pattern via the <code>cross_join</code> operator.</li>
+<li>One-time bootstrapping pipelines</li>
+<li>A &quot;gated buffer&quot; pattern via <code>cross_join</code> with a single-object input.</li>
+</ul>
+</blockquote>
+<p>Our previous <a href="./example_7_echo_server.html">echo server</a> example was admittedly simplistic.  In this example, we'll build something a bit more useful: a simple chat server. We will again have two roles: a <code>Client</code> and a <code>Server</code>. <code>Clients</code> will register their presence with the <code>Server</code>, which maintains a list of clients. Each <code>Client</code> sends messages to the <code>Server</code>, which will then broadcast those messages to all other clients. </p>
+<h2 id="mainrs-1"><a class="header" href="#mainrs-1">main.rs</a></h2>
+<p>The <code>main.rs</code> file here is very similar to that of the echo server, just with two new command-line arguments: one for a &quot;nickname&quot; in the chatroom, and another optional argument for printing a dataflow graph if desired.</p>
+<pre><code class="language-rust  ignore">use clap::{ArgEnum, Parser};
+use client::run_client;
+use hydroflow::tokio;
+use hydroflow::util::{bind_udp_socket, ipv4_resolve};
+use server::run_server;
+
+mod client;
+mod protocol;
+mod server;
+
+#[derive(Clone, ArgEnum, Debug)]
+enum Role {
+    Client,
+    Server,
+}
+#[derive(Clone, ArgEnum, Debug)]
+enum GraphType {
+    Mermaid,
+    Dot,
+    Json,
+}
+
+#[derive(Parser, Debug)]
+struct Opts {
+    #[clap(long)]
+    name: String,
+    #[clap(arg_enum, long)]
+    role: Role,
+    #[clap(long)]
+    port: u16,
+    #[clap(long)]
+    addr: String,
+    #[clap(long)]
+    server_addr: Option&lt;String&gt;,
+    #[clap(long)]
+    server_port: Option&lt;u16&gt;,
+    #[clap(arg_enum, long)]
+    graph: Option&lt;GraphType&gt;,
+}
+
+#[tokio::main]
+async fn main() {
+    let opts = Opts::parse();
+    let server_str = opts.server_addr.clone();
+
+    match opts.role {
+        Role::Client =&gt; {
+            let client_str = opts.client_addr.clone().unwrap();
+            println!(
+                &quot;Client is bound to {}, connecting to Server at {}&quot;,
+                client_str.clone(),
+                server_str.clone()
+            );
+            let (outbound, inbound) = bind_udp_socket(client_str).await;
+            run_client(
+                outbound,
+                inbound,
+                ipv4_resolve(server_str.clone()),
+                opts.name.clone(),
+                opts.graph.clone(),
+            )
+            .await;
+        }
+        Role::Server =&gt; {
+            println!(&quot;Listening on {}&quot;, server_str.clone());
+            let (outbound, inbound) = bind_udp_socket(server_str).await;
+
+            run_server(outbound, inbound, opts.graph.clone()).await;
+        }
+    }
+}
+</code></pre>
+<h2 id="protocolrs-1"><a class="header" href="#protocolrs-1">protocol.rs</a></h2>
+<p>Our protocol file here defines three message types. Note how we use a single Rust <code>enum</code> to represent all varieties of message types; this allows us to handle <code>Message</code>s of different types with a single  Rust network channel. We will
+use the <code>demux</code> operator to separate out these different message types on the receiving end. </p>
+<p>The <code>ConnectRequest</code> and <code>ConnectResponse</code> messages have no payload; 
+the address of the sender and the type of the message will be sufficient information. The <code>ChatMsg</code> message type has a <code>nickname</code> field, a <code>message</code> field, and a <code>ts</code> 
+field for the timestamp. Once again we use the <code>chrono</code> crate to represent timestamps.</p>
+<pre><code class="language-rust ignore">use chrono::prelude::*;
+use serde::{Deserialize, Serialize};
+
+#[derive(PartialEq, Eq, Clone, Serialize, Deserialize, Debug)]
+pub enum Message {
+    ConnectRequest,
+    ConnectResponse,
+    ChatMsg {
+        nickname: String,
+        message: String,
+        ts: DateTime&lt;Utc&gt;,
+    },
+}
+</code></pre>
+<h2 id="serverrs-1"><a class="header" href="#serverrs-1">server.rs</a></h2>
+<p>The chat server is nearly as simple as the echo server. The main differences are (a) we need to handle multiple message types, 
+(b) we need to keep track of the list of clients, and (c) we need to broadcast messages to all clients. </p>
+<p>After a short prelude, we have the Hydroflow code near the top of <code>run_server()</code>. It begins by defining <code>outbound_chan</code> as a <code>merge</code>d destination sink for network messages. Then we get to the
+more interesting <code>inbound_chan</code> definition. </p>
+<p>The <code>inbound</code> channel is a source stream that will carry many
+types of <code>Message</code>s. We use the <code>[demux](./surface_ops.gen.md#demux)</code> operator to partition the stream objects into three channels. The <code>clients</code> channel 
+will carry the addresses of clients that have connected to the server. The <code>msgs</code> channel will carry the <code>ChatMsg</code> messages that clients send to the server. 
+The <code>errs</code> channel will carry any other messages that clients send to the server. Note the structure of the <code>demux</code> operator: it takes a closure on 
+<code>(Message, SocketAddr)</code> pairs, and a variadic tuple of output channel names—in this case <code>clients</code>, <code>msgs</code>, and <code>errs</code>. The closure is basically a big
+Rust pattern <a href="https://doc.rust-lang.org/book/ch06-02-match.html"><code>match</code></a>, with one arm for each output channel name given in the variadic tuple. Note 
+that the different output channels can have different-typed messages!</p>
+<pre><code class="language-rust  ignore">use crate::GraphType;
+use hydroflow::util::{UdpSink, UdpStream};
+
+use crate::protocol::Message;
+
+use hydroflow::hydroflow_syntax;
+use hydroflow::scheduled::graph::Hydroflow;
+
+pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, graph: Option&lt;GraphType&gt;) {
+    println!(&quot;Server live!&quot;);
+
+    let mut df: Hydroflow = hydroflow_syntax! {
+        // NW channels
+        outbound_chan = merge() -&gt; dest_sink_serde(outbound);
+        inbound_chan = source_stream_serde(inbound)
+            -&gt;  demux(|(msg, addr), tl!(clients, msgs, errs)|
+                    match msg {
+                        Message::ConnectRequest =&gt; clients.give(addr),
+                        Message::ChatMsg {..} =&gt; msgs.give(msg),
+                        _ =&gt; errs.give(msg),
+                    }
+                );
+        clients = inbound_chan[clients] -&gt; tee();
+        inbound_chan[errs] -&gt; for_each(|m| println!(&quot;Received unexpected message type: {:?}&quot;, m));
+</code></pre>
+<p>The remainder of the server consists of two independent pipelines. The first pipeline is one line long, 
+and is responsible for acknowledging requests from <code>clients</code>: it takes the address of the incoming <code>Message::ConnectRequest</code> 
+and sends a <code>ConnectResponse</code> back to that address. The second pipeline is responsible for broadcasting 
+all chat messages to all clients. This all-to-all pairing corresponds to the notion of a cartesian product
+or <code>[cross_join](./surface_ops.gen.md#cross_join)</code> in Hydroflow. The <code>cross_join</code> operator takes two input 
+channels and produces a single output channel with a tuple for each pair of inputs, in this case it produces
+<code>(Message, SocketAddr)</code> pairs. Conveniently, that is exactly the structure needed for sending to the <code>outbound_chan</code> sink!
+We call the cross-join pipeline <code>broadcast</code> because it effectively broadcasts all messages to all clients.</p>
+<p>Finally, the server closes with the Rust code to optionally print the dataflow graph.</p>
+<pre><code class="language-rust  ignore">       // Pipeline 1: Acknowledge client connections
+        clients[0] -&gt; map(|addr| (Message::ConnectResponse, addr)) -&gt; [0]outbound_chan;
+
+        // Pipeline 2: Broadcast messages to all clients
+        broadcast = cross_join() -&gt; [1]outbound_chan;
+        inbound_chan[msgs] -&gt; [0]broadcast;
+        clients[1] -&gt; [1]broadcast;
+    };
+
+    if let Some(graph) = graph {
+        let serde_graph = df
+            .serde_graph()
+            .expect(&quot;No graph found, maybe failed to parse.&quot;);
+        match graph {
+            GraphType::Mermaid =&gt; {
+                println!(&quot;{}&quot;, serde_graph.to_mermaid());
+            }
+            GraphType::Dot =&gt; {
+                println!(&quot;{}&quot;, serde_graph.to_dot())
+            }
+            GraphType::Json =&gt; {
+                unimplemented!();
+                // println!(&quot;{}&quot;, serde_graph.to_json())
+            }
+        }
+    }
+
+    df.run_async().await.unwrap();
+}
+</code></pre>
+<p>The mermaid graph for the server is below. The three branches of the <code>demux</code> are very clear toward the top. Note also the <code>tee</code> of the <code>clients</code> channel
+for both <code>ClientResponse</code> and broadcasting, and the <code>merge</code> of all outbound messages into <code>dest_sink_serde</code>.</p>
+<pre class="mermaid">flowchart TB
+    subgraph &quot;sg_1v1 stratum 0&quot;
+        7v1[&quot;7v1 &lt;tt&gt;op_7v1: map(| addr | (Message :: ConnectResponse, addr))&lt;/tt&gt;&quot;]
+        8v1[&quot;8v1 &lt;tt&gt;op_8v1: cross_join()&lt;/tt&gt;&quot;]
+        1v1[&quot;1v1 &lt;tt&gt;op_1v1: merge()&lt;/tt&gt;&quot;]
+        2v1[&quot;2v1 &lt;tt&gt;op_2v1: dest_sink_serde(outbound)&lt;/tt&gt;&quot;]
+    end
+    subgraph &quot;sg_2v1 stratum 0&quot;
+        3v1[&quot;3v1 &lt;tt&gt;op_3v1: source_stream_serde(inbound)&lt;/tt&gt;&quot;]
+        4v1[&quot;4v1 &lt;tt&gt;op_4v1: demux(| (m, a), tl! (clients, msgs, errs) | match m&lt;br&gt;{&lt;br&gt;    Message :: ConnectRequest =&amp;gt; clients.give(a), Message :: ChatMsg { .. } =&amp;gt;&lt;br&gt;    msgs.give(m), _ =&amp;gt; errs.give(m),&lt;br&gt;})&lt;/tt&gt;&quot;]
+        5v1[&quot;5v1 &lt;tt&gt;op_5v1: tee()&lt;/tt&gt;&quot;]
+        6v1[&quot;6v1 &lt;tt&gt;op_6v1: for_each(| m | println! (&amp;quot;Received unexpected message type: {:?}&amp;quot;, m))&lt;/tt&gt;&quot;]
+    end
+
+    9v1{&quot;handoff&quot;}
+    10v1{&quot;handoff&quot;}
+    11v1{&quot;handoff&quot;}
+
+    1v1--&gt;2v1
+    3v1--&gt;4v1
+    4v1--&gt;5v1
+    4v1--&gt;6v1
+    4v1--&gt;10v1
+    5v1--&gt;9v1
+    5v1--&gt;11v1
+    7v1--&gt;1v1
+    8v1--&gt;1v1
+    9v1--&gt;7v1
+    10v1--&gt;8v1
+    11v1--&gt;8v1
+</pre>
+<h2 id="clientrs-1"><a class="header" href="#clientrs-1">client.rs</a></h2>
+<p>The chat client is not very different from the echo server client, with two small additions and two 
+new design patterns. The additions are 
+(1) it has a Rust helper routine <code>pretty_print_msg</code> for formatting output, and (2) it sends a
+<code>ConnectRequest</code> message to the server upon invocation. The new design patterns are (a) a pipeline that runs once 
+as a &quot;bootstrap&quot; in the first epoch, and (b) the use of
+<code>cross_join</code> as a &quot;gated buffer&quot; to postpone sending messages.</p>
+<p>The prelude of the file is the same as the echo server client, with the addition of three crates for 
+handling dataflow graph display, <code>chrono</code> timestamps and <code>colored</code> output. This is followed by the 
+<code>pretty_print_msg</code> function, which is fairly self-explanatory.</p>
+<pre><code class="language-rust ignore">use crate::protocol::Message;
+use chrono::prelude::*;
+use hydroflow::hydroflow_syntax;
+use hydroflow::util::{UdpSink, UdpStream};
+use std::net::SocketAddr;
+
+use crate::GraphType;
+use chrono::Utc;
+use colored::Colorize;
+
+fn pretty_print_msg(msg: Message) {
+    if let Message::ChatMsg {
+        nickname,
+        message,
+        ts,
+    } = msg
+    {
+        println!(
+            &quot;{} {}: {}&quot;,
+            ts.with_timezone(&amp;Local)
+                .format(&quot;%b %-d, %-I:%M:%S&quot;)
+                .to_string()
+                .truecolor(126, 126, 126)
+                .italic(),
+            nickname.green().italic(),
+            message,
+        );
+    }
+}
+</code></pre>
+<p>This brings us to the <code>run_client</code> function. As in <code>run_server</code> we begin with a standard pattern of a <code>merge</code>d <code>outbound_chan</code>, 
+and a <code>demux</code>ed <code>inbound_chan</code>. The client handles only two inbound <code>Message</code> types: <code>Message::ConnectResponse</code> and <code>Message::ChatMsg</code>.</p>
+<pre><code class="language-rust ignore">pub(crate) async fn run_client(
+    outbound: UdpSink,
+    inbound: UdpStream,
+    server_addr: SocketAddr,
+    name: String,
+    graph: Option&lt;GraphType&gt;,
+) {
+    println!(&quot;Client live!&quot;);
+
+    let mut hf = hydroflow_syntax! {
+        // set up channels
+        outbound_chan = merge() -&gt; dest_sink_serde(outbound);
+        inbound_chan = source_stream_serde(inbound) -&gt; map(|(m, _)| m)
+            -&gt;  demux(|m, tl!(acks, msgs, errs)|
+                    match m {
+                        Message::ConnectResponse =&gt; acks.give(m),
+                        Message::ChatMsg {..} =&gt; msgs.give(m),
+                        _ =&gt; errs.give(m),
+                    }
+                );
+        inbound_chan[errs] -&gt; for_each(|m| println!(&quot;Received unexpected message type: {:?}&quot;, m));
+</code></pre>
+<p>The core logic of the client consists of three dataflow pipelines shown below. </p>
+<ol>
+<li>
+<p>The first pipeline is the &quot;bootstrap&quot; alluded to above.
+It starts with <code>source_iter</code> operator on a single, opaque &quot;unit&quot; (<code>()</code>) value. This value is available when the client begins, which means 
+this pipeline runs immediately on startup, and generates a single <code>ConnectRequest</code> message which is sent to the server.</p>
+</li>
+<li>
+<p>The second pipeline reads from <code>source_stdin</code> and sends messages to the server. It differs from our echo-server example in the use of a <code>cross_join</code>
+with <code>inbound_chan[acks]</code>. In principle, this cross-join is like that of the server: it forms pairs between all messages and all servers that send a <code>ConnectResponse</code> ack. 
+In principle that means that the client is broadcasting each message to all servers.
+In practice, however, the client establishes at most one connection to a server. Hence over time, this pipeline starts with zero <code>ConnectResponse</code>s and is sending no messages; 
+subsequently it receives a single <code>ConnectResponse</code> and starts sending messages. The <code>cross_join</code> is thus effectively a buffer for messages, and a &quot;gate&quot; on that buffer that opens 
+when the client receives its sole <code>ConnectResponse</code>.</p>
+</li>
+<li>
+<p>The final pipeline simple pretty-prints the messages received from the server.</p>
+</li>
+</ol>
+<pre><code class="language-rust ignore">        // send a single connection request on startup
+        source_iter([()]) -&gt; map(|_m| (Message::ConnectRequest, server_addr)) -&gt; [0]outbound_chan;
+
+        // take stdin and send to server as a msg
+        // the join serves to buffer msgs until the connection request is acked
+        msg_send = cross_join() -&gt; map(|(msg, _)| (msg, server_addr)) -&gt; [1]outbound_chan;
+        lines = source_stdin()
+          -&gt; map(|l| Message::ChatMsg {
+                    nickname: name.clone(),
+                    message: l.unwrap(),
+                    ts: Utc::now()})
+          -&gt; [0]msg_send;
+        inbound_chan[acks] -&gt; [1]msg_send;
+
+        // receive and print messages
+        inbound_chan[msgs] -&gt; for_each(pretty_print_msg);
+    };
+
+    // optionally print the dataflow graph
+    if let Some(graph) = graph {
+        let serde_graph = hf
+            .serde_graph()
+            .expect(&quot;No graph found, maybe failed to parse.&quot;);
+        match graph {
+            GraphType::Mermaid =&gt; {
+                println!(&quot;{}&quot;, serde_graph.to_mermaid());
+            }
+            GraphType::Dot =&gt; {
+                println!(&quot;{}&quot;, serde_graph.to_dot())
+            }
+            GraphType::Json =&gt; {
+                unimplemented!();
+            }
+        }
+    }
+
+    hf.run_async().await.unwrap();
+}
+</code></pre>
+<p>The client's mermaid graph looks a bit different than the server's, mostly because it routes some data to
+the screen rather than to an outbound network channel.</p>
+<pre class="mermaid">flowchart TB
+    subgraph &quot;sg_1v1 stratum 0&quot;
+        7v1[&quot;7v1 &lt;tt&gt;op_7v1: source_iter([()])&lt;/tt&gt;&quot;]
+        8v1[&quot;8v1 &lt;tt&gt;op_8v1: map(| _m | (Message :: ConnectRequest, server_addr))&lt;/tt&gt;&quot;]
+        11v1[&quot;11v1 &lt;tt&gt;op_11v1: source_stdin()&lt;/tt&gt;&quot;]
+        12v1[&quot;12v1 &lt;tt&gt;op_12v1: map(| l | Message :: ChatMsg&lt;br&gt;{ nickname : name.clone(), message : l.unwrap(), ts : Utc :: now() })&lt;/tt&gt;&quot;]
+        9v1[&quot;9v1 &lt;tt&gt;op_9v1: cross_join()&lt;/tt&gt;&quot;]
+        10v1[&quot;10v1 &lt;tt&gt;op_10v1: map(| (msg, _) | (msg, server_addr))&lt;/tt&gt;&quot;]
+        1v1[&quot;1v1 &lt;tt&gt;op_1v1: merge()&lt;/tt&gt;&quot;]
+        2v1[&quot;2v1 &lt;tt&gt;op_2v1: dest_sink_serde(outbound)&lt;/tt&gt;&quot;]
+    end
+    subgraph &quot;sg_2v1 stratum 0&quot;
+        3v1[&quot;3v1 &lt;tt&gt;op_3v1: source_stream_serde(inbound)&lt;/tt&gt;&quot;]
+        4v1[&quot;4v1 &lt;tt&gt;op_4v1: map(| (m, _) | m)&lt;/tt&gt;&quot;]
+        5v1[&quot;5v1 &lt;tt&gt;op_5v1: demux(| m, tl! (acks, msgs, errs) | match m&lt;br&gt;{&lt;br&gt;    Message :: ConnectResponse =&amp;gt; acks.give(m), Message :: ChatMsg { .. } =&amp;gt;&lt;br&gt;    msgs.give(m), _ =&amp;gt; errs.give(m),&lt;br&gt;})&lt;/tt&gt;&quot;]
+        6v1[&quot;6v1 &lt;tt&gt;op_6v1: for_each(| m | println! (&amp;quot;Received unexpected message type: {:?}&amp;quot;, m))&lt;/tt&gt;&quot;]
+        13v1[&quot;13v1 &lt;tt&gt;op_13v1: for_each(pretty_print_msg)&lt;/tt&gt;&quot;]
+    end
+
+    14v1{&quot;handoff&quot;}
+
+    1v1--&gt;2v1
+    3v1--&gt;4v1
+    4v1--&gt;5v1
+    5v1--&gt;6v1
+    5v1--&gt;14v1
+    5v1--&gt;13v1
+    7v1--&gt;8v1
+    8v1--&gt;1v1
+    9v1--&gt;10v1
+    10v1--&gt;1v1
+    11v1--&gt;12v1
+    12v1--&gt;9v1
+    14v1--&gt;9v1
+</pre>
+<h2 id="running-the-example-1"><a class="header" href="#running-the-example-1">Running the example</a></h2>
+<p>As described in <code>hydroflow/hydroflow/example/chat/README.md</code>, we can run the server in one terminal, and run clients in additional terminals.
+The client and server need to agree on <code>server-addr</code> or this won't work!</p>
+<p>Fire up the server in terminal 1:</p>
+<pre><code class="language-console">cargo run -p hydroflow --example chat -- --name &quot;_&quot; --role server --server-addr 127.0.0.1:12347
+% ```
+
+Start client &quot;alice&quot; in terminal 2 and type some messages, and you'll see them 
+echoed back to you. This will appear in colored fonts in most terminals
+(but unfortunately not in this markdown-based book!)
+```html
+% cargo run -p hydroflow --example chat -- --name &quot;alice&quot; --role client --client-addr 127.0.0.1:9090 --server-addr 127.0.0.1:12347
+Client is bound to 127.0.0.1:9090, connecting to Server at 127.0.0.1:12347
+Client live!
+Hello (hello hello) ... is there anybody in here?
+Dec 13, 12:04:34 alice: Hello (hello hello) ... is there anybody in here?
+Just nod if you can hear me.
+Dec 13, 12:04:58 alice: Just nod if you can hear me.
+Is there anyone home?
+Dec 13, 12:05:01 alice: Is there anyone home?
+</code></pre>
+<p>Now start client &quot;bob&quot; in terminal 3, and notice how he instantly receives the backlog of Alice's messages from the server's <code>cross_join</code>. 
+(The messages may not be printed in the same order as they were timestamped! The <code>cross_join</code> operator is not guaranteed to preserve order, nor
+is the udp network. Fixing these issues requires extra client logic that we leave as an exercise to the reader.)</p>
+<pre><code class="language-console">% cargo run -p hydroflow --example chat -- --name &quot;bob&quot; --role client --client-addr 127.0.0.1:9091 --server-addr 127.0.0.1:12347
+Client is bound to 127.0.0.1:9091, connecting to Server at 127.0.0.1:12347
+Client live!
+Dec 13, 12:05:01 alice: Is there anyone home?
+Dec 13, 12:04:58 alice: Just nod if you can hear me.
+Dec 13, 12:04:34 alice: Hello (hello hello) ... is there anybody in here?
+</code></pre>
+<p>Now in terminal 3, Bob can respond:</p>
+<pre><code class="language-console">*nods*
+Dec 13, 12:05:05 bob: *nods*
+</code></pre>
+<p>and if we go back to terminal 2 we can see that Alice gets the message too:</p>
+<pre><code class="language-console">Dec 13, 12:05:05 bob: *nods*
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="concepts"><a class="header" href="#concepts">Concepts</a></h1>
 <h2 id="dataflow-and-networking"><a class="header" href="#dataflow-and-networking">Dataflow and Networking</a></h2>
@@ -1264,7 +1678,7 @@ are based on the Rust equivalents for iterators; see the <a href="https://doc.ru
 <p>As a source, generates nothing. As a sink, absorbs anything with no effect.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>// should print `1, 2, 3, 4, 5, 6, a, b, c` across 9 lines
@@ -1292,7 +1706,7 @@ source_iter([4,5,6]) -&gt; map(|i| println!(&quot;{}&quot;, i)) -&gt; [0]null_si
 a variable to reference its multiple input ports across statements.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>my_merge = merge();
@@ -1320,7 +1734,7 @@ my_merge -&gt; map(|x| x.to_uppercase())
 <p>Forms the equijoin of the tuples in the input streams by their first (key) attribute. Note that the result nests the 2nd input field (values) into a tuple in the 2nd output field.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>// should print `(hello, (world, cleveland))`
@@ -1347,7 +1761,7 @@ my_join -&gt; for_each(|(k, (v1, v2))| println!(&quot;({}, ({}, {}))&quot;, k, v
 <p>Forms the cross-join (Cartesian Product) of the items in the input streams, returning all tupled pairs.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>// should print all 4 pairs of emotion and animal
@@ -1373,7 +1787,7 @@ my_join -&gt; for_each(|(v1, v2)| println!(&quot;({}, {})&quot;, v1, v2));
 </blockquote>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>my_tee = source_iter(vec![&quot;Hello&quot;, &quot;World&quot;]) -&gt; tee();
@@ -1402,7 +1816,7 @@ my_tee -&gt; for_each(|x: &amp;str| println!(&quot;{}&quot;, x));
 its corresponding side.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>my_unzip = source_iter(vec![(&quot;Hello&quot;, &quot;Foo&quot;), (&quot;World&quot;, &quot;Bar&quot;)]) -&gt; unzip();
@@ -1423,7 +1837,7 @@ my_unzip[1] -&gt; for_each(|x| println!(&quot;1: {}&quot;, x)); // Foo Bar
 <p>For each item passed in, pass it out without any change.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>// should print &quot;hello&quot; and &quot;world&quot; on separate lines (in either order)
@@ -1449,7 +1863,7 @@ For each item passed in, apply the closure to generate an item to emit.</p>
 each item use the <a href="surface_ops.gen.html#inspect"><code>inspect</code></a> operator instead.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>source_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; map(|x| x.to_uppercase())
@@ -1472,7 +1886,7 @@ mainly useful for debugging as in the example below, and it is generally an
 anti-pattern to provide a closure with side effects.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>source_iter([1, 2, 3, 4]) -&gt; inspect(|&amp;x| println!(&quot;{}&quot;, x)) -&gt; null();
@@ -1495,7 +1909,7 @@ anti-pattern to provide a closure with side effects.</p>
 iterator to produce items one by one. The type of the input items must be iterable.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>// should print out each character of each word on a separate line
@@ -1517,7 +1931,7 @@ source_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; flat_map(|x| x.cha
 The type of the input items must be iterable.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>// should print the numbers 1-6 without any nesting
@@ -1538,7 +1952,7 @@ source_iter(vec![[1, 2], [3, 4], [5, 6]]) -&gt; flatten()
 <p>An operator that both filters and maps. It yields only the items for which the supplied closure returns <code>Some(value)</code>.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>source_iter(vec![&quot;1&quot;, &quot;hello&quot;, &quot;world&quot;, &quot;2&quot;]) -&gt; filter_map(|s| s.parse().ok())
@@ -1559,7 +1973,7 @@ Rust boolean closure passed in as an argument.</p>
 </blockquote>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>source_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; filter(|x| x.starts_with('w'))
@@ -1584,7 +1998,7 @@ an 'accumulator', and an element. The closure returns the value that the accumul
 returning the final result.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>// should print `Reassembled vector [1,2,3,4,5]`
@@ -1614,7 +2028,7 @@ an ‘accumulator’, and an element. The closure returns the value that the acc
 returning the final result.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>// should print 120 (i.e., 1*2*3*4*5)
@@ -1646,7 +2060,7 @@ The input is partitioned into groups by the first field, and for each group the 
 are accumulated via the closures in the arguments.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>source_iter([(&quot;toy&quot;, 1), (&quot;toy&quot;, 2), (&quot;shoe&quot;, 11), (&quot;shoe&quot;, 35), (&quot;haberdashery&quot;, 7)])
@@ -1665,7 +2079,7 @@ are accumulated via the closures in the arguments.</p>
 contains all unique values from the input.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>// should print 1, 2, 3 (in any order)
@@ -1684,7 +2098,7 @@ source_iter(vec![1, 1, 2, 3, 2, 1, 3])
 <p>Takes a stream as input and produces a sorted version of the stream as output.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>// should print 1, 2, 3 (in order)
@@ -1711,7 +2125,7 @@ one by one.</p>
 <p>Note that all elements are emitted during the first epoch.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>    source_iter(vec![&quot;Hello&quot;, &quot;World&quot;])
@@ -1817,7 +2231,7 @@ streams, returning items in the <code>pos</code> input that are not found in the
 <code>neg</code> input.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>// should print &quot;elephant&quot;
@@ -1888,7 +2302,7 @@ flow.run_epoch();
 argument.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>    source_iter(vec![&quot;Hello&quot;, &quot;World&quot;])
@@ -1904,7 +2318,7 @@ argument.</p>
 </div><!-- GENERATED "hydroflow_lang/src/graph/ops/demux.rs" -->
 <blockquote>
 <p>Arguments: A Rust closure, the first argument is a received item and the
-second argument is a <a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/macro.tl.html"><code>tl!</code> tuple list</a>
+second argument is a <a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/macro.var_args.html"><code>var_args!</code> tuple list</a>
 where each item name is an output port.</p>
 </blockquote>
 <p>Takes the input stream and allows the user to determine what elemnt(s) to
@@ -1913,15 +2327,15 @@ deliver to any number of output streams.</p>
 <p>Note: Downstream operators may need explicit type annotations.</p>
 </blockquote>
 <blockquote>
-<p>Note: Import the <a href="https://hydro-project.github.io/hydroflow/doc/pusherator/trait.Pusherator.html"><code>Pusherator</code></a>
-trait to use the <a href="https://hydro-project.github.io/hydroflow/doc/pusherator/trait.Pusherator.html#tymethod.give"><code>.give(...)</code> method</a>.</p>
+<p>Note: The <a href="https://hydro-project.github.io/hydroflow/doc/pusherator/trait.Pusherator.html"><code>Pusherator</code></a>
+trait is automatically imported to enable the <a href="https://hydro-project.github.io/hydroflow/doc/pusherator/trait.Pusherator.html#tymethod.give"><code>.give(...)</code> method</a>.</p>
 </blockquote>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
-</span>my_demux = source_iter(1..=100) -&gt; demux(|v, tl!(fzbz, fizz, buzz, vals)|
+</span>my_demux = source_iter(1..=100) -&gt; demux(|v, var_args!(fzbz, fizz, buzz, vals)|
     match (v % 3, v % 5) {
         (0, 0) =&gt; fzbz.give(v),
         (0, _) =&gt; fizz.give(v),

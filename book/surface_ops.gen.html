@@ -75,7 +75,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">User Guide</li><li class="chapter-item expanded "><a href="quickstart.html"><strong aria-hidden="true">1.</strong> Quickstart</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="setup.html"><strong aria-hidden="true">1.1.</strong> Setup</a></li><li class="chapter-item expanded "><a href="example_1_simplest.html"><strong aria-hidden="true">1.2.</strong> Simplest Example</a></li><li class="chapter-item expanded "><a href="example_2_simple.html"><strong aria-hidden="true">1.3.</strong> Simple Example</a></li><li class="chapter-item expanded "><a href="example_3_stream.html"><strong aria-hidden="true">1.4.</strong> A Example With Streaming Input</a></li><li class="chapter-item expanded "><a href="example_4_neighbors.html"><strong aria-hidden="true">1.5.</strong> Graph Neighbors</a></li><li class="chapter-item expanded "><a href="example_5_reachability.html"><strong aria-hidden="true">1.6.</strong> Graph Reachability</a></li><li class="chapter-item expanded "><a href="example_6_unreachability.html"><strong aria-hidden="true">1.7.</strong> Graph Un-Reachability</a></li><li class="chapter-item expanded "><a href="example_7_echo_server.html"><strong aria-hidden="true">1.8.</strong> Networked Services 1: EchoServer</a></li></ol></li><li class="chapter-item expanded "><a href="concepts.html"><strong aria-hidden="true">2.</strong> Concepts</a></li><li class="chapter-item expanded "><a href="surface_syntax.html"><strong aria-hidden="true">3.</strong> Syntax</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="surface_embedding.html"><strong aria-hidden="true">3.1.</strong> Rust Embedding</a></li><li class="chapter-item expanded "><a href="surface_flows.html"><strong aria-hidden="true">3.2.</strong> Flows</a></li><li class="chapter-item expanded "><a href="surface_data.html"><strong aria-hidden="true">3.3.</strong> Data Sources</a></li><li class="chapter-item expanded "><a href="surface_ops.gen.html" class="active"><strong aria-hidden="true">3.4.</strong> Operators</a></li></ol></li><li class="chapter-item expanded "><a href="architecture.html"><strong aria-hidden="true">4.</strong> Architecture</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="in-out_trees.html"><strong aria-hidden="true">4.1.</strong> Subgraph In-Out Trees</a></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">User Guide</li><li class="chapter-item expanded "><a href="quickstart.html"><strong aria-hidden="true">1.</strong> Quickstart</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="setup.html"><strong aria-hidden="true">1.1.</strong> Setup</a></li><li class="chapter-item expanded "><a href="example_1_simplest.html"><strong aria-hidden="true">1.2.</strong> Simplest Example</a></li><li class="chapter-item expanded "><a href="example_2_simple.html"><strong aria-hidden="true">1.3.</strong> Simple Example</a></li><li class="chapter-item expanded "><a href="example_3_stream.html"><strong aria-hidden="true">1.4.</strong> A Example With Streaming Input</a></li><li class="chapter-item expanded "><a href="example_4_neighbors.html"><strong aria-hidden="true">1.5.</strong> Graph Neighbors</a></li><li class="chapter-item expanded "><a href="example_5_reachability.html"><strong aria-hidden="true">1.6.</strong> Graph Reachability</a></li><li class="chapter-item expanded "><a href="example_6_unreachability.html"><strong aria-hidden="true">1.7.</strong> Graph Un-Reachability</a></li><li class="chapter-item expanded "><a href="example_7_echo_server.html"><strong aria-hidden="true">1.8.</strong> Networked Services 1: EchoServer</a></li><li class="chapter-item expanded "><a href="example_8_chat_server.html"><strong aria-hidden="true">1.9.</strong> Networked Services 2: ChatServer</a></li></ol></li><li class="chapter-item expanded "><a href="concepts.html"><strong aria-hidden="true">2.</strong> Concepts</a></li><li class="chapter-item expanded "><a href="surface_syntax.html"><strong aria-hidden="true">3.</strong> Syntax</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="surface_embedding.html"><strong aria-hidden="true">3.1.</strong> Rust Embedding</a></li><li class="chapter-item expanded "><a href="surface_flows.html"><strong aria-hidden="true">3.2.</strong> Flows</a></li><li class="chapter-item expanded "><a href="surface_data.html"><strong aria-hidden="true">3.3.</strong> Data Sources</a></li><li class="chapter-item expanded "><a href="surface_ops.gen.html" class="active"><strong aria-hidden="true">3.4.</strong> Operators</a></li></ol></li><li class="chapter-item expanded "><a href="architecture.html"><strong aria-hidden="true">4.</strong> Architecture</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="in-out_trees.html"><strong aria-hidden="true">4.1.</strong> Subgraph In-Out Trees</a></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -150,7 +150,7 @@ are based on the Rust equivalents for iterators; see the <a href="https://doc.ru
 <p>As a source, generates nothing. As a sink, absorbs anything with no effect.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>// should print `1, 2, 3, 4, 5, 6, a, b, c` across 9 lines
@@ -178,7 +178,7 @@ source_iter([4,5,6]) -&gt; map(|i| println!(&quot;{}&quot;, i)) -&gt; [0]null_si
 a variable to reference its multiple input ports across statements.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>my_merge = merge();
@@ -206,7 +206,7 @@ my_merge -&gt; map(|x| x.to_uppercase())
 <p>Forms the equijoin of the tuples in the input streams by their first (key) attribute. Note that the result nests the 2nd input field (values) into a tuple in the 2nd output field.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>// should print `(hello, (world, cleveland))`
@@ -233,7 +233,7 @@ my_join -&gt; for_each(|(k, (v1, v2))| println!(&quot;({}, ({}, {}))&quot;, k, v
 <p>Forms the cross-join (Cartesian Product) of the items in the input streams, returning all tupled pairs.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>// should print all 4 pairs of emotion and animal
@@ -259,7 +259,7 @@ my_join -&gt; for_each(|(v1, v2)| println!(&quot;({}, {})&quot;, v1, v2));
 </blockquote>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>my_tee = source_iter(vec![&quot;Hello&quot;, &quot;World&quot;]) -&gt; tee();
@@ -288,7 +288,7 @@ my_tee -&gt; for_each(|x: &amp;str| println!(&quot;{}&quot;, x));
 its corresponding side.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>my_unzip = source_iter(vec![(&quot;Hello&quot;, &quot;Foo&quot;), (&quot;World&quot;, &quot;Bar&quot;)]) -&gt; unzip();
@@ -309,7 +309,7 @@ my_unzip[1] -&gt; for_each(|x| println!(&quot;1: {}&quot;, x)); // Foo Bar
 <p>For each item passed in, pass it out without any change.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>// should print &quot;hello&quot; and &quot;world&quot; on separate lines (in either order)
@@ -335,7 +335,7 @@ For each item passed in, apply the closure to generate an item to emit.</p>
 each item use the <a href="#inspect"><code>inspect</code></a> operator instead.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>source_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; map(|x| x.to_uppercase())
@@ -358,7 +358,7 @@ mainly useful for debugging as in the example below, and it is generally an
 anti-pattern to provide a closure with side effects.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>source_iter([1, 2, 3, 4]) -&gt; inspect(|&amp;x| println!(&quot;{}&quot;, x)) -&gt; null();
@@ -381,7 +381,7 @@ anti-pattern to provide a closure with side effects.</p>
 iterator to produce items one by one. The type of the input items must be iterable.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>// should print out each character of each word on a separate line
@@ -403,7 +403,7 @@ source_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; flat_map(|x| x.cha
 The type of the input items must be iterable.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>// should print the numbers 1-6 without any nesting
@@ -424,7 +424,7 @@ source_iter(vec![[1, 2], [3, 4], [5, 6]]) -&gt; flatten()
 <p>An operator that both filters and maps. It yields only the items for which the supplied closure returns <code>Some(value)</code>.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>source_iter(vec![&quot;1&quot;, &quot;hello&quot;, &quot;world&quot;, &quot;2&quot;]) -&gt; filter_map(|s| s.parse().ok())
@@ -445,7 +445,7 @@ Rust boolean closure passed in as an argument.</p>
 </blockquote>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>source_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; filter(|x| x.starts_with('w'))
@@ -470,7 +470,7 @@ an 'accumulator', and an element. The closure returns the value that the accumul
 returning the final result.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>// should print `Reassembled vector [1,2,3,4,5]`
@@ -500,7 +500,7 @@ an ‘accumulator’, and an element. The closure returns the value that the acc
 returning the final result.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>// should print 120 (i.e., 1*2*3*4*5)
@@ -532,7 +532,7 @@ The input is partitioned into groups by the first field, and for each group the 
 are accumulated via the closures in the arguments.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>source_iter([(&quot;toy&quot;, 1), (&quot;toy&quot;, 2), (&quot;shoe&quot;, 11), (&quot;shoe&quot;, 35), (&quot;haberdashery&quot;, 7)])
@@ -551,7 +551,7 @@ are accumulated via the closures in the arguments.</p>
 contains all unique values from the input.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>// should print 1, 2, 3 (in any order)
@@ -570,7 +570,7 @@ source_iter(vec![1, 1, 2, 3, 2, 1, 3])
 <p>Takes a stream as input and produces a sorted version of the stream as output.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>// should print 1, 2, 3 (in order)
@@ -597,7 +597,7 @@ one by one.</p>
 <p>Note that all elements are emitted during the first epoch.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>    source_iter(vec![&quot;Hello&quot;, &quot;World&quot;])
@@ -703,7 +703,7 @@ streams, returning items in the <code>pos</code> input that are not found in the
 <code>neg</code> input.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>// should print &quot;elephant&quot;
@@ -774,7 +774,7 @@ flow.run_epoch();
 argument.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>    source_iter(vec![&quot;Hello&quot;, &quot;World&quot;])
@@ -790,7 +790,7 @@ argument.</p>
 </div><!-- GENERATED "hydroflow_lang/src/graph/ops/demux.rs" -->
 <blockquote>
 <p>Arguments: A Rust closure, the first argument is a received item and the
-second argument is a <a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/macro.tl.html"><code>tl!</code> tuple list</a>
+second argument is a <a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/macro.var_args.html"><code>var_args!</code> tuple list</a>
 where each item name is an output port.</p>
 </blockquote>
 <p>Takes the input stream and allows the user to determine what elemnt(s) to
@@ -799,15 +799,15 @@ deliver to any number of output streams.</p>
 <p>Note: Downstream operators may need explicit type annotations.</p>
 </blockquote>
 <blockquote>
-<p>Note: Import the <a href="https://hydro-project.github.io/hydroflow/doc/pusherator/trait.Pusherator.html"><code>Pusherator</code></a>
-trait to use the <a href="https://hydro-project.github.io/hydroflow/doc/pusherator/trait.Pusherator.html#tymethod.give"><code>.give(...)</code> method</a>.</p>
+<p>Note: The <a href="https://hydro-project.github.io/hydroflow/doc/pusherator/trait.Pusherator.html"><code>Pusherator</code></a>
+trait is automatically imported to enable the <a href="https://hydro-project.github.io/hydroflow/doc/pusherator/trait.Pusherator.html#tymethod.give"><code>.give(...)</code> method</a>.</p>
 </blockquote>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::tl;
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
-</span>my_demux = source_iter(1..=100) -&gt; demux(|v, tl!(fzbz, fizz, buzz, vals)|
+</span>my_demux = source_iter(1..=100) -&gt; demux(|v, var_args!(fzbz, fizz, buzz, vals)|
     match (v % 3, v % 5) {
         (0, 0) =&gt; fzbz.give(v),
         (0, _) =&gt; fizz.give(v),

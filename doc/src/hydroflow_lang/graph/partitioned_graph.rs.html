@@ -627,9 +627,9 @@
                     df.add_subgraph_stratified(
                         #hoff_name,
                         #stratum,
-                        <span class="macro">tl!</span>( #( #recv_ports ),* ),
-                        <span class="macro">tl!</span>( #( #send_ports ),* ),
-                        <span class="kw">move </span>|context, <span class="macro">tl!</span>( #( #recv_ports ),* ), <span class="macro">tl!</span>( #( #send_ports ),* )| {
+                        <span class="macro">var_expr!</span>( #( #recv_ports ),* ),
+                        <span class="macro">var_expr!</span>( #( #send_ports ),* ),
+                        <span class="kw">move </span>|context, <span class="macro">var_args!</span>( #( #recv_ports ),* ), <span class="macro">var_args!</span>( #( #send_ports ),* )| {
                             #( #recv_port_code )*
                             #( #send_port_code )*
                             #( #subgraph_op_iter_code )*
@@ -642,7 +642,7 @@
         <span class="kw">let </span>serde_string = Literal::string(<span class="kw-2">&amp;*</span><span class="self">self</span>.serde_string());
         <span class="kw">let </span>code = <span class="macro">quote! </span>{
             {
-                <span class="kw">use </span>#root::tl;
+                <span class="kw">use </span>#root::{var_expr, var_args};
 
                 <span class="kw">let </span><span class="kw-2">mut </span>df = #root::scheduled::graph::Hydroflow::new_with_graph(#serde_string);
 

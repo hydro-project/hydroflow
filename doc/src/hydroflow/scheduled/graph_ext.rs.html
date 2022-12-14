@@ -260,9 +260,9 @@
             <span class="kw">let </span><span class="kw-2">mut </span>subgraph = subgraph;
             <span class="self">self</span>.add_subgraph(
                 name,
-                <span class="macro">crate::tl!</span>($(<span class="macro-nonterminal">$recv_param</span>),<span class="kw-2">*</span>),
-                <span class="macro">crate::tl!</span>($(<span class="macro-nonterminal">$send_param</span>),<span class="kw-2">*</span>),
-                <span class="kw">move </span>|ctx, <span class="macro">crate::tl!</span>($(<span class="macro-nonterminal">$recv_param</span>),<span class="kw-2">*</span>), <span class="macro">crate::tl!</span>($(<span class="macro-nonterminal">$send_param</span>),<span class="kw-2">*</span>)|
+                <span class="macro">crate::var_expr!</span>($(<span class="macro-nonterminal">$recv_param</span>),<span class="kw-2">*</span>),
+                <span class="macro">crate::var_expr!</span>($(<span class="macro-nonterminal">$send_param</span>),<span class="kw-2">*</span>),
+                <span class="kw">move </span>|ctx, <span class="macro">crate::var_args!</span>($(<span class="macro-nonterminal">$recv_param</span>),<span class="kw-2">*</span>), <span class="macro">crate::var_args!</span>($(<span class="macro-nonterminal">$send_param</span>),<span class="kw-2">*</span>)|
                     (subgraph)(ctx, $(<span class="macro-nonterminal">$recv_param</span>,)* $(<span class="macro-nonterminal">$send_param</span>),<span class="kw-2">*</span>),
             )
         }
