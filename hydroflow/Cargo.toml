@@ -59,7 +59,7 @@ variadics = { path = "../variadics" }
 
 [dev-dependencies]
 chrono = { version = "0.4.20", features = [ "serde" ], default-features = false }
-clap = { version = "3.0.14", features = [ "derive" ] }
+clap = { version = "4.0.29", features = [ "derive" ] }
 colored = "2.0"
 criterion = { version = "0.3", features = [ "async_tokio" ] }
 futures = { version = "0.3" }

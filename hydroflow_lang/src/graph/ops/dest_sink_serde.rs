@@ -11,9 +11,9 @@ use quote::quote_spanned;
 /// Note this operator must be used within a Tokio runtime.
 /// ```rustbook
 /// async fn serde_out() {
-///     let addr = hydroflow::util::ipv4_resolve("localhost:9000".into());
+///     let addr = hydroflow::util::ipv4_resolve("localhost:9000".into()).unwrap();
 ///     let (outbound, inbound) = hydroflow::util::bind_udp_bytes(addr).await;
-///     let remote = hydroflow::util::ipv4_resolve("localhost:9001".into());
+///     let remote = hydroflow::util::ipv4_resolve("localhost:9001".into()).unwrap();
 ///     let mut flow = hydroflow::hydroflow_syntax! {
 ///         source_iter(vec![("hello".to_string(), 1), ("world".to_string(), 2)])
 ///             -> map (|m| (m, remote)) -> dest_sink_serde(outbound);

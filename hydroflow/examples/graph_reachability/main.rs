@@ -1,7 +1,7 @@
-use clap::{ArgEnum, Parser};
+use clap::{Parser, ValueEnum};
 use hydroflow::hydroflow_syntax;
 
-#[derive(Parser, Debug, Clone, ArgEnum)]
+#[derive(Parser, Debug, Clone, ValueEnum)]
 enum GraphType {
     Mermaid,
     Dot,
@@ -9,7 +9,7 @@ enum GraphType {
 }
 #[derive(Parser, Debug)]
 struct Opts {
-    #[clap(arg_enum, long)]
+    #[clap(value_enum, long)]
     graph: Option<GraphType>,
 }
 pub fn main() {

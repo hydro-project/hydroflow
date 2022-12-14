@@ -1,15 +1,16 @@
-use clap::{ArgEnum, Parser};
+use clap::{Parser, ValueEnum};
 use client::run_client;
 use hydroflow::tokio;
 use hydroflow::util::{bind_udp_lines, ipv4_resolve};
 use server::run_server;
+use std::net::SocketAddr;
 
 mod client;
 mod helpers;
 mod protocol;
 mod server;
 
-#[derive(Clone, ArgEnum, Debug)]
+#[derive(Clone, ValueEnum, Debug)]
 enum Role {
     Client,
     Server,
@@ -17,19 +18,19 @@ enum Role {
 
 #[derive(Parser, Debug)]
 struct Opts {
-    #[clap(arg_enum, long)]
+    #[clap(value_enum, long)]
     role: Role,
-    #[clap(long)]
-    client_addr: Option<String>,
-    #[clap(long)]
-    server_addr: String,
+    #[clap(long, value_parser = ipv4_resolve)]
+    client_addr: Option<SocketAddr>,
+    #[clap(long, value_parser = ipv4_resolve)]
+    server_addr: Option<SocketAddr>,
 }
 
 #[tokio::main]
 async fn main() {
     // parse command line arguments
     let opts = Opts::parse();
-    let server_addr = ipv4_resolve(opts.server_addr.clone());
+    let server_addr = opts.server_addr.unwrap();
 
     // depending on the role, pass in arguments to the right function
     match opts.role {
@@ -40,7 +41,7 @@ async fn main() {
         }
         Role::Client => {
             // resolve the server's IP address
-            let client_addr = ipv4_resolve(opts.client_addr.clone().unwrap());
+            let client_addr = opts.client_addr.unwrap();
             // allocate `outbound` and `inbound` sockets
             let (outbound, inbound) = bind_udp_lines(client_addr).await;
             // run the client
