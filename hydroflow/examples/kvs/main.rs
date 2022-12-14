@@ -1,7 +1,7 @@
 use clap::{ArgEnum, Parser};
 use client::run_client;
 use hydroflow::tokio;
-use hydroflow::util::{bind_udp_socket, ipv4_resolve};
+use hydroflow::util::{bind_udp_bytes, ipv4_resolve};
 use server::run_server;
 
 mod client;
@@ -36,10 +36,11 @@ struct Opts {
 #[tokio::main]
 async fn main() {
     let opts = Opts::parse();
+    let addr = ipv4_resolve(opts.addr.clone());
 
     match opts.role {
         Role::Client => {
-            let (outbound, inbound) = bind_udp_socket(opts.addr.clone()).await;
+            let (outbound, inbound) = bind_udp_bytes(addr).await;
             println!("Client is bound to {}", opts.addr.clone());
             println!(
                 "Attempting to connect to server at {}",
@@ -49,7 +50,7 @@ async fn main() {
             run_client(outbound, inbound, server_addr, opts.graph.clone()).await;
         }
         Role::Server => {
-            let (outbound, inbound) = bind_udp_socket(opts.addr.clone()).await;
+            let (outbound, inbound) = bind_udp_bytes(addr).await;
             println!("Listening on {}", opts.addr.clone());
             run_server(outbound, inbound, opts.graph.clone()).await;
         }
