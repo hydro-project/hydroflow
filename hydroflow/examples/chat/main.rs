@@ -1,7 +1,7 @@
 use clap::{ArgEnum, Parser};
 use client::run_client;
 use hydroflow::tokio;
-use hydroflow::util::{bind_udp_socket, ipv4_resolve};
+use hydroflow::util::{bind_udp_bytes, ipv4_resolve};
 use server::run_server;
 
 mod client;
@@ -47,7 +47,8 @@ async fn main() {
                 client_str.clone(),
                 server_str.clone()
             );
-            let (outbound, inbound) = bind_udp_socket(client_str).await;
+            let client_addr = ipv4_resolve(client_str);
+            let (outbound, inbound) = bind_udp_bytes(client_addr).await;
             run_client(
                 outbound,
                 inbound,
@@ -59,7 +60,8 @@ async fn main() {
         }
         Role::Server => {
             println!("Listening on {}", server_str.clone());
-            let (outbound, inbound) = bind_udp_socket(server_str).await;
+            let server_addr = ipv4_resolve(server_str);
+            let (outbound, inbound) = bind_udp_bytes(server_addr).await;
 
             run_server(outbound, inbound, opts.graph.clone()).await;
         }

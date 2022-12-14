@@ -12,6 +12,9 @@ macros = [ "hydroflow_macro", "hydroflow_datalog" ]
 name = "echoserver"
 
 [[example]]
+name = "echo_serde_json"
+
+[[example]]
 name = "chat"
 
 [[example]]

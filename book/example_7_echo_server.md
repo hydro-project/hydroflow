@@ -38,7 +38,7 @@ After a prelude of imports, we start by defining an `enum` for the `Role`s that 
 use clap::{ArgEnum, Parser};
 use client::run_client;
 use hydroflow::tokio;
-use hydroflow::util::{bind_udp_socket, ipv4_resolve};
+use hydroflow::util::{bind_udp_bytes, ipv4_resolve};
 use server::run_server;
 
 mod client;
@@ -74,9 +74,10 @@ This brings us to the `main` function itself. It is prefaced by a `#[tokio::main
 async fn main() {
     // parse command line arguments
     let opts = Opts::parse();
+    let server_addr = ipv4_resolve(opts.server_addr.clone());
 ```
 
-After parsing the command line arguments, we get into invoking the client or server code. Before we do so, we set up some Rust-based networking. Specifically, in both cases we will need to allocate a UDP socket that is used for both sending and receiving messages. We do this by calling the async `bind_udp_socket` function, which is defined in the `hydroflow/src/util` module. As an async function it returns a `Future`, so requires appending `.await`; the function returns a pair of type `(UdpSink, UdpSource)`. These are the types that we'll use in Hydroflow to send and receive messages. (Note: your IDE might expand out the `UdpSink` and `UdpSource` traits to their more verbose definitions. This is fine; you can ignore for now.)
+After parsing the command line arguments and resolving the server address, we get into invoking the client or server code. Before we do so, we set up some Rust-based networking. Specifically, in both cases we will need to allocate a UDP socket that is used for both sending and receiving messages. We do this by calling the async `bind_udp_bytes` function, which is defined in the `hydroflow/src/util` module. As an async function it returns a `Future`, so requires appending `.await`; the function returns a pair of type `(UdpSink, UdpSource)`. These are the types that we'll use in Hydroflow to send and receive messages. (Note: your IDE might expand out the `UdpSink` and `UdpSource` traits to their more verbose definitions. This is fine; you can ignore for now.)
 
 For the server case, all that's left is to invoke `run_server` and pass it the network information. Note that the server is also asynchronous, so we append `.await` to that call as well. The program will block on this call until the server is done (which should only happen when it fails).
 ```rust,ignore
@@ -84,9 +85,8 @@ For the server case, all that's left is to invoke `run_server` and pass it the n
     match opts.role {
         Role::Server => {
             // allocate `outbound` and `inbound` sockets
-            let (outbound, inbound) = bind_udp_socket(opts.server_addr.clone()).await;
-            // run the server
-            run_server(outbound, inbound, opts.graph.clone()).await;
+            let (outbound, inbound) = bind_udp_bytes(server_addr).await;
+            run_server(outbound, inbound).await;
         }
 ```
 
@@ -94,9 +94,9 @@ In the client case, we need one more piece of information passed down: the addre
 ```rust,ignore
         Role::Client => {
             // resolve the server's IP address
-            let server_addr = ipv4_resolve(opts.server_addr.clone());
+            let client_addr = ipv4_resolve(opts.client_addr.clone().unwrap());
             // allocate `outbound` and `inbound` sockets
-            let (outbound, inbound) = bind_udp_socket(opts.addr.clone().unwrap()).await;
+            let (outbound, inbound) = bind_udp_bytes(client_addr).await;
             // run the client
             run_client(outbound, inbound, server_addr).await;
         }

@@ -1,10 +1,11 @@
 use clap::{ArgEnum, Parser};
 use client::run_client;
 use hydroflow::tokio;
-use hydroflow::util::{bind_udp_bytes, ipv4_resolve};
+use hydroflow::util::{bind_udp_lines, ipv4_resolve};
 use server::run_server;
 
 mod client;
+mod helpers;
 mod protocol;
 mod server;
 
@@ -34,14 +35,14 @@ async fn main() {
     match opts.role {
         Role::Server => {
             // allocate `outbound` and `inbound` sockets
-            let (outbound, inbound) = bind_udp_bytes(server_addr).await;
+            let (outbound, inbound) = bind_udp_lines(server_addr).await;
             run_server(outbound, inbound).await;
         }
         Role::Client => {
             // resolve the server's IP address
             let client_addr = ipv4_resolve(opts.client_addr.clone().unwrap());
             // allocate `outbound` and `inbound` sockets
-            let (outbound, inbound) = bind_udp_bytes(client_addr).await;
+            let (outbound, inbound) = bind_udp_lines(client_addr).await;
             // run the client
             run_client(outbound, inbound, server_addr).await;
         }

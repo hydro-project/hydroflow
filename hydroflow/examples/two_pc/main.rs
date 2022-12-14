@@ -1,7 +1,7 @@
 use clap::{ArgEnum, Parser};
 use coordinator::run_coordinator;
 use hydroflow::tokio;
-use hydroflow::util::{bind_udp_socket, ipv4_resolve};
+use hydroflow::util::{bind_udp_bytes, ipv4_resolve};
 use serde::Deserialize;
 use subordinate::run_subordinate;
 
@@ -66,13 +66,15 @@ async fn main() {
     let path = Path::new(&opts.path);
     let subordinates = read_addresses_from_file(path).unwrap().subordinates;
     let coordinator = read_addresses_from_file(path).unwrap().coordinator;
+    let addr = ipv4_resolve(opts.addr.clone());
+
     match opts.role {
         Role::Coordinator => {
-            let (outbound, inbound) = bind_udp_socket(opts.addr.clone()).await;
+            let (outbound, inbound) = bind_udp_bytes(addr).await;
             run_coordinator(outbound, inbound, subordinates, opts.graph.clone()).await;
         }
         Role::Subordinate => {
-            let (outbound, inbound) = bind_udp_socket(opts.addr.clone()).await;
+            let (outbound, inbound) = bind_udp_bytes(addr).await;
             println!("Coordinator: {}", coordinator);
             let server_addr = ipv4_resolve(coordinator.trim().into());
 

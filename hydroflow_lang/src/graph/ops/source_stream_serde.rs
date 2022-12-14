@@ -14,7 +14,8 @@ use quote::quote_spanned;
 ///
 /// ```rustbook
 /// async fn serde_in() {
-///     let (outbound, inbound) = hydroflow::util::bind_udp_socket("localhost:9000".into()).await;
+///     let addr = hydroflow::util::ipv4_resolve("localhost:9000".into());
+///     let (outbound, inbound) = hydroflow::util::bind_udp_bytes(addr).await;
 ///     let mut flow = hydroflow::hydroflow_syntax! {
 ///         source_stream_serde(inbound) -> map(|(x, a): (String, std::net::SocketAddr)| x.to_uppercase())
 ///             -> for_each(|x| println!("{}", x));

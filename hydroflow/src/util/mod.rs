@@ -22,6 +22,8 @@ pub type UdpFramedSink<Codec, Item> = SplitSink<UdpFramed<Codec>, (Item, SocketA
 pub type UdpFramedStream<Codec> = SplitStream<UdpFramed<Codec>>;
 pub type UdpSink = UdpFramedSink<LengthDelimitedCodec, Bytes>;
 pub type UdpStream = UdpFramedStream<LengthDelimitedCodec>;
+pub type UdpLinesSink = UdpFramedSink<LinesCodec, String>;
+pub type UdpLinesStream = UdpFramedStream<LinesCodec>;
 
 pub fn unbounded_channel<T>() -> (
     tokio::sync::mpsc::UnboundedSender<T>,
@@ -134,16 +136,12 @@ pub fn ipv4_resolve(addr: String) -> SocketAddr {
         .expect("Unable to resolve connection address")
 }
 
-pub async fn bind_udp_socket_addr(addr: SocketAddr) -> (UdpSink, UdpStream) {
+pub async fn bind_udp_bytes(addr: SocketAddr) -> (UdpSink, UdpStream) {
     let socket = tokio::net::UdpSocket::bind(addr).await.unwrap();
     udp_bytes(socket)
 }
 
-pub async fn bind_udp_socket(addr_string: String) -> (UdpSink, UdpStream) {
-    let addr = ipv4_resolve(addr_string);
-    bind_udp_socket_addr(addr).await
-}
-
-pub async fn bind_local_udp_socket(port: u16) -> (UdpSink, UdpStream) {
-    bind_udp_socket(format!("127.0.0.1:{}", port)).await
+pub async fn bind_udp_lines(addr: SocketAddr) -> (UdpLinesSink, UdpLinesStream) {
+    let socket = tokio::net::UdpSocket::bind(addr).await.unwrap();
+    udp_lines(socket)
 }
