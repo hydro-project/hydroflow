@@ -1,0 +1,11 @@
+error[E0609]: no field `0` on type `std::option::Option<{integer}>`
+ --> tests/compile-fail/surface_group_by_badtype_option.rs:6:16
+  |
+6 |             -> group_by(|| 0, |old: &mut u32, val: u32| *old += val)
+  |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0609]: no field `1` on type `std::option::Option<{integer}>`
+ --> tests/compile-fail/surface_group_by_badtype_option.rs:6:16
+  |
+6 |             -> group_by(|| 0, |old: &mut u32, val: u32| *old += val)
+  |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
