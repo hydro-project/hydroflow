@@ -20,14 +20,8 @@ error[E0271]: expected `impl Iterator<Item = char>` to be an iterator that yield
   |             ^^^^^^^ expected integer, found `char`
   |
   = note: required for `std::iter::Chain<impl Iterator<Item = {integer}>, impl Iterator<Item = char>>` to implement `Iterator`
-note: required by a bound in `check_iterator`
- --> tests/compile-fail/surface_merge_badtypes.rs:4:18
+note: required by a bound in `check_op_1v1`
+ --> tests/compile-fail/surface_merge_badtypes.rs:5:13
   |
-4 |       let mut df = hydroflow_syntax! {
-  |  __________________^
-5 | |         m = merge() -> for_each(std::mem::drop);
-6 | |         source_iter(0..10) -> m;
-7 | |         source_iter("hello".chars()) -> m;
-8 | |     };
-  | |_____^ required by this bound in `check_iterator`
-  = note: this error originates in the macro `hydroflow_syntax` (in Nightly builds, run with -Z macro-backtrace for more info)
+5 |         m = merge() -> for_each(std::mem::drop);
+  |             ^^^^^^^ required by this bound in `check_op_1v1`
