@@ -23,7 +23,7 @@ mod flat_map;
 mod flatten;
 mod fold;
 mod for_each;
-mod groupby;
+mod group_by;
 mod identity;
 mod inspect;
 mod join;
@@ -35,6 +35,7 @@ mod null;
 mod reduce;
 mod repeat_iter;
 mod sort;
+mod sort_by;
 mod source_iter;
 mod source_stdin;
 mod source_stream;
@@ -153,9 +154,10 @@ pub const OPERATORS: &[OperatorConstraints] = &[
     filter::FILTER,
     fold::FOLD,
     reduce::REDUCE,
-    groupby::GROUPBY,
+    group_by::GROUPBY,
     unique::UNIQUE,
     sort::SORT,
+    sort_by::SORTBY,
     source_iter::SOURCE_ITER,
     source_stdin::SOURCE_STDIN,
     source_stream::SOURCE_STREAM,

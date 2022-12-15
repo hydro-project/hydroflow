@@ -63,7 +63,7 @@ pub(crate) async fn run_coordinator(
         msgs[commits]
             -> map(|m:SubordResponse| (m.xid, 1)) -> [0]commit_buf;
         commit_buf
-            -> groupby(|| 0, |old: &mut u32, val: u32| *old += val)
+            -> group_by(|| 0, |old: &mut u32, val: u32| *old += val)
             -> commit_votes;
         commit_votes[0] -> next_epoch() -> [1]commit_buf;
 
