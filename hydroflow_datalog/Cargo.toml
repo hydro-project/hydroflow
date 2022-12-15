@@ -21,4 +21,5 @@ rust-sitter-tool = "0.1.2"
 
 [dev-dependencies]
 insta = "1.7.1"
+prettyplease = "0.1.21"
 tempfile = "3.2.0"
