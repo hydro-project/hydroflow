@@ -25,7 +25,7 @@ pub const SORTBY: OperatorConstraints = OperatorConstraints {
     ports_out: None,
     num_args: 1,
     input_delaytype_fn: &|_| Some(DelayType::Stratum),
-    write_fn: &(|&WriteContextArgs { op_span, .. },
+    write_fn: &(|&WriteContextArgs { root, op_span, .. },
                  &WriteIteratorArgs {
                      ident,
                      inputs,
@@ -38,9 +38,7 @@ pub const SORTBY: OperatorConstraints = OperatorConstraints {
         let input = &inputs[0];
         let write_iterator = quote_spanned! {op_span=>
             let mut tmp = #input.collect::<Vec<_>>();
-            // TODO: remove the clone as shown in addendum here: https://stackoverflow.com/questions/56105305/how-to-sort-a-vec-of-structs-by-a-string-field
-            #[allow(clippy::clone_on_copy)]
-            tmp.sort_unstable_by_key(#arguments.clone());
+            #root::util::sort_unstable_by_key_hrtb(&mut tmp, #arguments);
             let #ident = tmp.into_iter();
         };
         Ok(OperatorWriteOutput {
