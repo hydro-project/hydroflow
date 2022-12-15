@@ -34,6 +34,7 @@ We start with a `main` function that parses command-line options, and invokes th
 role-specific service.
 After a prelude of imports, we start by defining an `enum` for the `Role`s that the service supports. 
 
+```rust,ignore
 use clap::{Parser, ValueEnum};
 use client::run_client;
 use hydroflow::tokio;
