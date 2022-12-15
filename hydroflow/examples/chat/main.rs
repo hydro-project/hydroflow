@@ -42,12 +42,16 @@ async fn main() {
 
     match opts.role {
         Role::Client => {
-            let client_addr = opts.client_addr.unwrap();
+            // allocate `outbound` sink and `inbound` stream
+            let client_addr = opts
+                .client_addr
+                .unwrap_or_else(|| ipv4_resolve("localhost:0").unwrap());
+            let (outbound, inbound, client_addr) = bind_udp_bytes(client_addr).await;
+
             println!(
                 "Client is bound to {:?}, connecting to Server at {:?}",
                 client_addr, server_addr
             );
-            let (outbound, inbound) = bind_udp_bytes(client_addr).await;
             run_client(
                 outbound,
                 inbound,
@@ -59,7 +63,7 @@ async fn main() {
         }
         Role::Server => {
             println!("Listening on {:?}", server_addr);
-            let (outbound, inbound) = bind_udp_bytes(server_addr).await;
+            let (outbound, inbound, _) = bind_udp_bytes(server_addr).await;
 
             run_server(outbound, inbound, opts.graph.clone()).await;
         }

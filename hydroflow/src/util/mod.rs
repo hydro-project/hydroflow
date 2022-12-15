@@ -43,27 +43,18 @@ where
     .collect()
 }
 
-pub fn serialize_msg<T>(msg: T) -> bytes::Bytes
+pub fn serialize_to_bytes<T>(msg: T) -> bytes::Bytes
 where
     T: Serialize + for<'a> Deserialize<'a> + Clone,
 {
     bytes::Bytes::from(bincode::serialize(&msg).unwrap())
 }
 
-pub fn deserialize_simple<T>(msg: bytes::BytesMut) -> T
+pub fn deserialize_from_bytes<T>(msg: bytes::BytesMut) -> T
 where
     T: Serialize + for<'a> Deserialize<'a> + Clone,
 {
     bincode::deserialize(&msg).unwrap()
-}
-
-pub fn deserialize_msg<T>(
-    msg: Result<(bytes::BytesMut, SocketAddr), tokio_util::codec::LinesCodecError>,
-) -> T
-where
-    T: Serialize + for<'a> Deserialize<'a> + Clone,
-{
-    bincode::deserialize(&(msg.unwrap().0)).unwrap()
 }
 
 pub fn ipv4_resolve(addr: &str) -> Result<SocketAddr, std::io::Error> {
@@ -79,12 +70,12 @@ pub fn ipv4_resolve(addr: &str) -> Result<SocketAddr, std::io::Error> {
     }
 }
 
-pub async fn bind_udp_bytes(addr: SocketAddr) -> (UdpSink, UdpStream) {
+pub async fn bind_udp_bytes(addr: SocketAddr) -> (UdpSink, UdpStream, SocketAddr) {
     let socket = tokio::net::UdpSocket::bind(addr).await.unwrap();
     udp_bytes(socket)
 }
 
-pub async fn bind_udp_lines(addr: SocketAddr) -> (UdpLinesSink, UdpLinesStream) {
+pub async fn bind_udp_lines(addr: SocketAddr) -> (UdpLinesSink, UdpLinesStream, SocketAddr) {
     let socket = tokio::net::UdpSocket::bind(addr).await.unwrap();
     udp_lines(socket)
 }
