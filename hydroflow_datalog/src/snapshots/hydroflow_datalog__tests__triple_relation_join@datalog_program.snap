@@ -6,26 +6,6 @@ fn main() {
     {
         {
             use hydroflow::{var_expr, var_args};
-            #[allow(unused)]
-            #[inline(always)]
-            fn check_iterator<Iter, Item>(
-                iterator: Iter,
-            ) -> impl ::std::iter::Iterator<Item = Item>
-            where
-                Iter: ::std::iter::Iterator<Item = Item>,
-            {
-                iterator
-            }
-            #[allow(unused)]
-            #[inline(always)]
-            fn check_pusherator<Push, Item>(
-                pusherator: Push,
-            ) -> impl hydroflow::pusherator::Pusherator<Item = Item>
-            where
-                Push: hydroflow::pusherator::Pusherator<Item = Item>,
-            {
-                pusherator
-            }
             let mut df = hydroflow::scheduled::graph::Hydroflow::new_with_graph(
                 "{\"nodes\":[{\"value\":null,\"version\":0},{\"value\":\"op_1v1: merge ()\",\"version\":1},{\"value\":\"op_2v1: tee ()\",\"version\":1},{\"value\":\"op_3v1: merge ()\",\"version\":1},{\"value\":\"op_4v1: tee ()\",\"version\":1},{\"value\":\"op_5v1: merge ()\",\"version\":1},{\"value\":\"op_6v1: tee ()\",\"version\":1},{\"value\":\"op_7v1: merge ()\",\"version\":1},{\"value\":\"op_8v1: tee ()\",\"version\":1},{\"value\":\"op_9v1: source_stream (in1)\",\"version\":1},{\"value\":\"op_10v1: source_stream (in2)\",\"version\":1},{\"value\":\"op_11v1: source_stream (in3)\",\"version\":1},{\"value\":\"op_12v1: for_each (| v | out . send (v) . unwrap ())\",\"version\":1},{\"value\":\"op_13v1: join ()\",\"version\":1},{\"value\":\"op_14v1: map (| kv : ((_ ,) , ((_ , _ ,) , (_ , _ ,))) | (kv . 1 . 0 . 0 , kv . 1 . 0 . 1 , kv . 1 . 1 . 1 ,))\",\"version\":1},{\"value\":\"op_15v1: map (| v : (_ , _ ,) | ((v . 1 ,) , v))\",\"version\":1},{\"value\":\"op_16v1: map (| v : (_ , _ ,) | ((v . 0 ,) , v))\",\"version\":1},{\"value\":\"op_17v1: join ()\",\"version\":1},{\"value\":\"op_18v1: map (| kv : ((_ ,) , ((_ , _ , _ ,) , (_ , _ ,))) | (kv . 1 . 0 . 0 , kv . 1 . 0 . 1 , kv . 1 . 0 . 2 , kv . 1 . 1 . 1 ,))\",\"version\":1},{\"value\":\"op_19v1: map (| v : (_ , _ , _ ,) | ((v . 2 ,) , v))\",\"version\":1},{\"value\":\"op_20v1: map (| v : (_ , _ ,) | ((v . 0 ,) , v))\",\"version\":1},{\"value\":\"op_21v1: map (| row : (_ , _ , _ , _ ,) | (row . 3 , row . 2 , row . 1 , row . 0 ,))\",\"version\":1}],\"edges\":[{\"value\":null,\"version\":0},{\"value\":[{\"idx\":2,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":15,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":4,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":16,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":6,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":20,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":8,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":12,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":1,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":3,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":5,\"version\":1}],\"version\":1},{\"value\":null,\"version\":0},{\"value\":[{\"idx\":14,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":19,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":13,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":13,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":18,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":21,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":17,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":17,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":7,\"version\":1}],\"version\":1}],\"handoffs\":[{\"value\":null,\"version\":0}],\"subgraph_nodes\":[{\"value\":null,\"version\":0},{\"value\":[{\"idx\":9,\"version\":1},{\"idx\":1,\"version\":1},{\"idx\":2,\"version\":1},{\"idx\":10,\"version\":1},{\"idx\":3,\"version\":1},{\"idx\":4,\"version\":1},{\"idx\":11,\"version\":1},{\"idx\":5,\"version\":1},{\"idx\":6,\"version\":1},{\"idx\":15,\"version\":1},{\"idx\":16,\"version\":1},{\"idx\":13,\"version\":1},{\"idx\":14,\"version\":1},{\"idx\":19,\"version\":1},{\"idx\":20,\"version\":1},{\"idx\":17,\"version\":1},{\"idx\":18,\"version\":1},{\"idx\":21,\"version\":1},{\"idx\":7,\"version\":1},{\"idx\":8,\"version\":1},{\"idx\":12,\"version\":1}],\"version\":1}],\"subgraph_stratum\":[{\"value\":null,\"version\":0},{\"value\":0,\"version\":1}]}\n",
             );
@@ -49,11 +29,38 @@ fn main() {
                             std::task::Poll::Pending => None,
                         }
                     });
-                    let op_9v1 = check_iterator(op_9v1);
+                    let op_9v1 = {
+                        #[inline(always)]
+                        pub fn check_op_9v1<
+                            Input: ::std::iter::Iterator<Item = Item>,
+                            Item,
+                        >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            input
+                        }
+                        check_op_9v1(op_9v1)
+                    };
                     let op_1v1 = op_9v1;
-                    let op_1v1 = check_iterator(op_1v1);
+                    let op_1v1 = {
+                        #[inline(always)]
+                        pub fn check_op_1v1<
+                            Input: ::std::iter::Iterator<Item = Item>,
+                            Item,
+                        >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            input
+                        }
+                        check_op_1v1(op_1v1)
+                    };
                     let op_2v1 = op_1v1;
-                    let op_2v1 = check_iterator(op_2v1);
+                    let op_2v1 = {
+                        #[inline(always)]
+                        pub fn check_op_2v1<
+                            Input: ::std::iter::Iterator<Item = Item>,
+                            Item,
+                        >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            input
+                        }
+                        check_op_2v1(op_2v1)
+                    };
                     let op_10v1 = std::iter::from_fn(|| {
                         match hydroflow::futures::stream::Stream::poll_next(
                             sg_1v1_node_10v1_stream.as_mut(),
@@ -63,11 +70,38 @@ fn main() {
                             std::task::Poll::Pending => None,
                         }
                     });
-                    let op_10v1 = check_iterator(op_10v1);
+                    let op_10v1 = {
+                        #[inline(always)]
+                        pub fn check_op_10v1<
+                            Input: ::std::iter::Iterator<Item = Item>,
+                            Item,
+                        >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            input
+                        }
+                        check_op_10v1(op_10v1)
+                    };
                     let op_3v1 = op_10v1;
-                    let op_3v1 = check_iterator(op_3v1);
+                    let op_3v1 = {
+                        #[inline(always)]
+                        pub fn check_op_3v1<
+                            Input: ::std::iter::Iterator<Item = Item>,
+                            Item,
+                        >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            input
+                        }
+                        check_op_3v1(op_3v1)
+                    };
                     let op_4v1 = op_3v1;
-                    let op_4v1 = check_iterator(op_4v1);
+                    let op_4v1 = {
+                        #[inline(always)]
+                        pub fn check_op_4v1<
+                            Input: ::std::iter::Iterator<Item = Item>,
+                            Item,
+                        >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            input
+                        }
+                        check_op_4v1(op_4v1)
+                    };
                     let op_11v1 = std::iter::from_fn(|| {
                         match hydroflow::futures::stream::Stream::poll_next(
                             sg_1v1_node_11v1_stream.as_mut(),
@@ -77,15 +111,60 @@ fn main() {
                             std::task::Poll::Pending => None,
                         }
                     });
-                    let op_11v1 = check_iterator(op_11v1);
+                    let op_11v1 = {
+                        #[inline(always)]
+                        pub fn check_op_11v1<
+                            Input: ::std::iter::Iterator<Item = Item>,
+                            Item,
+                        >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            input
+                        }
+                        check_op_11v1(op_11v1)
+                    };
                     let op_5v1 = op_11v1;
-                    let op_5v1 = check_iterator(op_5v1);
+                    let op_5v1 = {
+                        #[inline(always)]
+                        pub fn check_op_5v1<
+                            Input: ::std::iter::Iterator<Item = Item>,
+                            Item,
+                        >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            input
+                        }
+                        check_op_5v1(op_5v1)
+                    };
                     let op_6v1 = op_5v1;
-                    let op_6v1 = check_iterator(op_6v1);
+                    let op_6v1 = {
+                        #[inline(always)]
+                        pub fn check_op_6v1<
+                            Input: ::std::iter::Iterator<Item = Item>,
+                            Item,
+                        >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            input
+                        }
+                        check_op_6v1(op_6v1)
+                    };
                     let op_15v1 = op_2v1.map(|v: (_, _)| ((v.1,), v));
-                    let op_15v1 = check_iterator(op_15v1);
+                    let op_15v1 = {
+                        #[inline(always)]
+                        pub fn check_op_15v1<
+                            Input: ::std::iter::Iterator<Item = Item>,
+                            Item,
+                        >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            input
+                        }
+                        check_op_15v1(op_15v1)
+                    };
                     let op_16v1 = op_4v1.map(|v: (_, _)| ((v.0,), v));
-                    let op_16v1 = check_iterator(op_16v1);
+                    let op_16v1 = {
+                        #[inline(always)]
+                        pub fn check_op_16v1<
+                            Input: ::std::iter::Iterator<Item = Item>,
+                            Item,
+                        >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            input
+                        }
+                        check_op_16v1(op_16v1)
+                    };
                     let op_13v1 = {
                         /// Limit error propagation by bounding locally, erasing output iterator type.
                         #[inline(always)]
@@ -113,18 +192,54 @@ fn main() {
                         }
                         check_inputs(op_15v1, op_16v1, &mut sg_1v1_node_13v1_joindata)
                     };
-                    let op_13v1 = check_iterator(op_13v1);
+                    let op_13v1 = {
+                        #[inline(always)]
+                        pub fn check_op_13v1<
+                            Input: ::std::iter::Iterator<Item = Item>,
+                            Item,
+                        >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            input
+                        }
+                        check_op_13v1(op_13v1)
+                    };
                     let op_14v1 = op_13v1
                         .map(|kv: ((_,), ((_, _), (_, _)))| (
                             kv.1.0.0,
                             kv.1.0.1,
                             kv.1.1.1,
                         ));
-                    let op_14v1 = check_iterator(op_14v1);
+                    let op_14v1 = {
+                        #[inline(always)]
+                        pub fn check_op_14v1<
+                            Input: ::std::iter::Iterator<Item = Item>,
+                            Item,
+                        >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            input
+                        }
+                        check_op_14v1(op_14v1)
+                    };
                     let op_19v1 = op_14v1.map(|v: (_, _, _)| ((v.2,), v));
-                    let op_19v1 = check_iterator(op_19v1);
+                    let op_19v1 = {
+                        #[inline(always)]
+                        pub fn check_op_19v1<
+                            Input: ::std::iter::Iterator<Item = Item>,
+                            Item,
+                        >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            input
+                        }
+                        check_op_19v1(op_19v1)
+                    };
                     let op_20v1 = op_6v1.map(|v: (_, _)| ((v.0,), v));
-                    let op_20v1 = check_iterator(op_20v1);
+                    let op_20v1 = {
+                        #[inline(always)]
+                        pub fn check_op_20v1<
+                            Input: ::std::iter::Iterator<Item = Item>,
+                            Item,
+                        >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            input
+                        }
+                        check_op_20v1(op_20v1)
+                    };
                     let op_17v1 = {
                         /// Limit error propagation by bounding locally, erasing output iterator type.
                         #[inline(always)]
@@ -152,7 +267,16 @@ fn main() {
                         }
                         check_inputs(op_19v1, op_20v1, &mut sg_1v1_node_17v1_joindata)
                     };
-                    let op_17v1 = check_iterator(op_17v1);
+                    let op_17v1 = {
+                        #[inline(always)]
+                        pub fn check_op_17v1<
+                            Input: ::std::iter::Iterator<Item = Item>,
+                            Item,
+                        >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            input
+                        }
+                        check_op_17v1(op_17v1)
+                    };
                     let op_18v1 = op_17v1
                         .map(|kv: ((_,), ((_, _, _), (_, _)))| (
                             kv.1.0.0,
@@ -160,18 +284,65 @@ fn main() {
                             kv.1.0.2,
                             kv.1.1.1,
                         ));
-                    let op_18v1 = check_iterator(op_18v1);
+                    let op_18v1 = {
+                        #[inline(always)]
+                        pub fn check_op_18v1<
+                            Input: ::std::iter::Iterator<Item = Item>,
+                            Item,
+                        >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            input
+                        }
+                        check_op_18v1(op_18v1)
+                    };
                     let op_21v1 = op_18v1
                         .map(|row: (_, _, _, _)| (row.3, row.2, row.1, row.0));
-                    let op_21v1 = check_iterator(op_21v1);
+                    let op_21v1 = {
+                        #[inline(always)]
+                        pub fn check_op_21v1<
+                            Input: ::std::iter::Iterator<Item = Item>,
+                            Item,
+                        >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            input
+                        }
+                        check_op_21v1(op_21v1)
+                    };
                     let op_7v1 = op_21v1;
-                    let op_7v1 = check_iterator(op_7v1);
+                    let op_7v1 = {
+                        #[inline(always)]
+                        pub fn check_op_7v1<
+                            Input: ::std::iter::Iterator<Item = Item>,
+                            Item,
+                        >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            input
+                        }
+                        check_op_7v1(op_7v1)
+                    };
                     let op_8v1 = op_7v1;
-                    let op_8v1 = check_iterator(op_8v1);
+                    let op_8v1 = {
+                        #[inline(always)]
+                        pub fn check_op_8v1<
+                            Input: ::std::iter::Iterator<Item = Item>,
+                            Item,
+                        >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            input
+                        }
+                        check_op_8v1(op_8v1)
+                    };
                     let op_12v1 = hydroflow::pusherator::for_each::ForEach::new(|v| {
                         out.send(v).unwrap()
                     });
-                    let op_12v1 = check_pusherator(op_12v1);
+                    let op_12v1 = {
+                        #[inline(always)]
+                        pub fn check_op_12v1<
+                            Input: hydroflow::pusherator::Pusherator<Item = Item>,
+                            Item,
+                        >(
+                            input: Input,
+                        ) -> impl hydroflow::pusherator::Pusherator<Item = Item> {
+                            input
+                        }
+                        check_op_12v1(op_12v1)
+                    };
                     hydroflow::pusherator::pivot::Pivot::new(op_8v1, op_12v1).run();
                 },
             );
