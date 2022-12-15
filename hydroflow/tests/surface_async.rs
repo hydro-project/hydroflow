@@ -291,7 +291,7 @@ async fn asynctest_dest_sink_duplex() {
     // Like a channel, but for a stream of bytes instead of discrete objects.
     let (asyncwrite, mut asyncread) = tokio::io::duplex(256);
     // Now instead handle discrete byte lists by length-encoding them.
-    let mut sink = codec::LengthDelimitedCodec::builder()
+    let sink = codec::LengthDelimitedCodec::builder()
         // Use 1 byte len field (max 255) so we don't have to worry about endianness.
         .length_field_length(1)
         .new_write(asyncwrite);
@@ -300,7 +300,7 @@ async fn asynctest_dest_sink_duplex() {
         source_iter([
             Bytes::from_static(b"hello"),
             Bytes::from_static(b"world"),
-        ]) -> dest_sink(&mut sink);
+        ]) -> dest_sink(sink);
     };
     tokio::time::timeout(std::time::Duration::from_secs(1), flow.run_async())
         .await

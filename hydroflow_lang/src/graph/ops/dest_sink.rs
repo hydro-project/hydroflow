@@ -61,13 +61,13 @@ use quote::quote_spanned;
 /// // Like a channel, but for a stream of bytes instead of discrete objects.
 /// let (asyncwrite, mut asyncread) = tokio::io::duplex(256);
 /// // Now instead handle discrete byte strings by length-encoding them.
-/// let mut sink = tokio_util::codec::FramedWrite::new(asyncwrite, tokio_util::codec::BytesCodec::new());
+/// let sink = tokio_util::codec::FramedWrite::new(asyncwrite, tokio_util::codec::BytesCodec::new());
 ///
 /// let mut flow = hydroflow::hydroflow_syntax! {
 ///     source_iter([
 ///         Bytes::from_static(b"hello"),
 ///         Bytes::from_static(b"world"),
-///     ]) -> dest_sink(&mut sink);
+///     ]) -> dest_sink(sink);
 /// };
 /// tokio::time::timeout(std::time::Duration::from_secs(1), flow.run_async())
 ///     .await
@@ -101,39 +101,33 @@ pub const DEST_SINK: OperatorConstraints = OperatorConstraints {
 
         let write_prologue = quote_spanned! {op_span=>
             let (#send_ident, #recv_ident) = #root::tokio::sync::mpsc::unbounded_channel();
-            df
-                .spawn_task(async move {
-                    use #root::futures::sink::SinkExt;
-
-                    #[allow(unused_mut)] let mut recv = #recv_ident;
-                    #[allow(unused_mut)] let mut sink = #sink_arg;
-
-                    /// Function is needed so `Item` is so no ambiguity for what `Item` is used
-                    /// when calling `.flush()`.
-                    #[inline(always)]
-                    async fn feed_flush<Item, Sink>(
-                        mut recv: #root::tokio::sync::mpsc::UnboundedReceiver<Item>,
-                        mut sink: Sink,
-                    ) where
-                        Sink: ::std::marker::Unpin + #root::futures::sink::Sink<Item>,
-                        Sink::Error: ::std::fmt::Debug,
-                    {
-                        use #root::futures::sink::SinkExt;
-                        while let Some(item) = recv.recv().await {
+            {
+                /// Function is needed so `Item` is so no ambiguity for what `Item` is used
+                /// when calling `.flush()`.
+                async fn sink_feed_flush<Sink, Item>(
+                    mut recv: #root::tokio::sync::mpsc::UnboundedReceiver<Item>,
+                    mut sink: Sink,
+                ) where
+                    Sink: ::std::marker::Unpin + #root::futures::Sink<Item>,
+                    Sink::Error: ::std::fmt::Debug,
+                {
+                    use #root::futures::SinkExt;
+                    while let Some(item) = recv.recv().await {
+                        sink.feed(item)
+                            .await
+                            .expect("Error processing async sink item.");
+                        while let Ok(item) = recv.try_recv() {
                             sink.feed(item)
                                 .await
                                 .expect("Error processing async sink item.");
-                            while let Ok(item) = recv.try_recv() {
-                                sink.feed(item)
-                                    .await
-                                    .expect("Error processing async sink item.");
-                            }
-                            sink.flush().await.expect("Failed to flush sink.");
                         }
+                        sink.flush().await.expect("Failed to flush sink.");
                     }
-                    feed_flush(recv, sink).await;
-                })
-                .expect("dest_sink() must be used within a tokio runtime");
+                }
+                df
+                    .spawn_task(sink_feed_flush(#recv_ident, #sink_arg))
+                    .expect("dest_sink() must be used within a tokio runtime");
+            }
         };
 
         let write_iterator = quote_spanned! {op_span=>
