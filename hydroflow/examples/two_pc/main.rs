@@ -71,11 +71,11 @@ async fn main() {
 
     match opts.role {
         Role::Coordinator => {
-            let (outbound, inbound) = bind_udp_bytes(addr).await;
+            let (outbound, inbound, _) = bind_udp_bytes(addr).await;
             run_coordinator(outbound, inbound, subordinates, opts.graph.clone()).await;
         }
         Role::Subordinate => {
-            let (outbound, inbound) = bind_udp_bytes(addr).await;
+            let (outbound, inbound, _) = bind_udp_bytes(addr).await;
             println!("Coordinator: {}", coordinator);
             let server_addr = ipv4_resolve(coordinator.trim()).unwrap();
 

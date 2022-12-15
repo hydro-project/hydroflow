@@ -41,7 +41,7 @@ async fn main() {
 
     match opts.role {
         Role::Client => {
-            let (outbound, inbound) = bind_udp_bytes(addr).await;
+            let (outbound, inbound, _) = bind_udp_bytes(addr).await;
             println!("Client is bound to {:?}", addr);
             println!("Attempting to connect to server at {:?}", opts.server_addr);
             run_client(
@@ -53,7 +53,7 @@ async fn main() {
             .await;
         }
         Role::Server => {
-            let (outbound, inbound) = bind_udp_bytes(addr).await;
+            let (outbound, inbound, _) = bind_udp_bytes(addr).await;
             println!("Listening on {:?}", opts.addr.unwrap());
             run_server(outbound, inbound, opts.graph.clone()).await;
         }

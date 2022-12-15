@@ -70,12 +70,12 @@ pub fn ipv4_resolve(addr: &str) -> Result<SocketAddr, std::io::Error> {
     }
 }
 
-pub async fn bind_udp_bytes(addr: SocketAddr) -> (UdpSink, UdpStream) {
+pub async fn bind_udp_bytes(addr: SocketAddr) -> (UdpSink, UdpStream, SocketAddr) {
     let socket = tokio::net::UdpSocket::bind(addr).await.unwrap();
     udp_bytes(socket)
 }
 
-pub async fn bind_udp_lines(addr: SocketAddr) -> (UdpLinesSink, UdpLinesStream) {
+pub async fn bind_udp_lines(addr: SocketAddr) -> (UdpLinesSink, UdpLinesStream, SocketAddr) {
     let socket = tokio::net::UdpSocket::bind(addr).await.unwrap();
     udp_lines(socket)
 }

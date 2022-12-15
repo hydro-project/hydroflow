@@ -12,7 +12,7 @@ use quote::quote_spanned;
 /// ```rustbook
 /// async fn serde_out() {
 ///     let addr = hydroflow::util::ipv4_resolve("localhost:9000".into()).unwrap();
-///     let (outbound, inbound) = hydroflow::util::bind_udp_bytes(addr).await;
+///     let (outbound, inbound, _) = hydroflow::util::bind_udp_bytes(addr).await;
 ///     let remote = hydroflow::util::ipv4_resolve("localhost:9001".into()).unwrap();
 ///     let mut flow = hydroflow::hydroflow_syntax! {
 ///         source_iter(vec![("hello".to_string(), 1), ("world".to_string(), 2)])

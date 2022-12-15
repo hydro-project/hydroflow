@@ -35,14 +35,21 @@ async fn main() {
     match opts.role {
         Role::Server => {
             // allocate `outbound` and `inbound` sockets
-            let (outbound, inbound) = bind_udp_bytes(server_addr).await;
+            let (outbound, inbound, _) = bind_udp_bytes(server_addr).await;
+            println!("Listening on {:?}", server_addr);
             run_server(outbound, inbound).await;
         }
         Role::Client => {
-            // resolve the server's IP address
-            let client_addr = opts.client_addr.unwrap();
-            // allocate `outbound` and `inbound` sockets
-            let (outbound, inbound) = bind_udp_bytes(client_addr).await;
+            // allocate `outbound` sink and `inbound` stream
+            let client_addr = match opts.client_addr {
+                Some(addr) => addr,
+                None => ipv4_resolve(format!("localhost:{}", 0).as_str()).unwrap(),
+            };
+            let (outbound, inbound, client_addr) = bind_udp_bytes(client_addr).await;
+            println!(
+                "Client is bound to {:?}, connecting to Server at {:?}",
+                client_addr, server_addr
+            );
             // run the client
             run_client(outbound, inbound, server_addr).await;
         }
