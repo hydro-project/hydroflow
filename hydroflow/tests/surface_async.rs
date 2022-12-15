@@ -24,7 +24,7 @@ pub async fn test_echo_udp() -> Result<(), Box<dyn Error>> {
     // Server:
     let serv = local.spawn_local(async {
         let socket = server_socket;
-        let (udp_send, udp_recv) = hydroflow::util::udp_lines(socket);
+        let (udp_send, udp_recv, _) = hydroflow::util::udp_lines(socket);
         println!("Server live!");
 
         let (seen_send, seen_recv) = hydroflow::util::unbounded_channel();
@@ -59,7 +59,7 @@ pub async fn test_echo_udp() -> Result<(), Box<dyn Error>> {
         let socket = UdpSocket::bind((Ipv4Addr::UNSPECIFIED, 0))
             .await
             .unwrap();
-        let (send_udp, recv_udp) = hydroflow::util::udp_lines(socket);
+        let (send_udp, recv_udp, _) = hydroflow::util::udp_lines(socket);
 
         let (seen_send, seen_recv) = hydroflow::util::unbounded_channel();
 
@@ -90,7 +90,7 @@ pub async fn test_echo_udp() -> Result<(), Box<dyn Error>> {
         let socket = UdpSocket::bind((Ipv4Addr::UNSPECIFIED, 0))
             .await
             .unwrap();
-        let (send_udp, recv_udp) = hydroflow::util::udp_lines(socket);
+        let (send_udp, recv_udp, _) = hydroflow::util::udp_lines(socket);
 
         let (seen_send, seen_recv) = hydroflow::util::unbounded_channel();
 

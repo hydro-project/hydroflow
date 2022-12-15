@@ -15,7 +15,7 @@ use quote::quote_spanned;
 /// ```rustbook
 /// async fn serde_in() {
 ///     let addr = hydroflow::util::ipv4_resolve("localhost:9000".into()).unwrap();
-///     let (outbound, inbound) = hydroflow::util::bind_udp_bytes(addr).await;
+///     let (outbound, inbound, _) = hydroflow::util::bind_udp_bytes(addr).await;
 ///     let mut flow = hydroflow::hydroflow_syntax! {
 ///         source_stream_serde(inbound) -> map(|(x, a): (String, std::net::SocketAddr)| x.to_uppercase())
 ///             -> for_each(|x| println!("{}", x));
@@ -47,7 +47,7 @@ pub const SOURCE_STREAM_SERDE: OperatorConstraints = OperatorConstraints {
         let write_iterator = quote_spanned! {op_span=>
             let #ident = std::iter::from_fn(|| {
                 match #root::futures::stream::Stream::poll_next(#stream_ident.as_mut(), &mut std::task::Context::from_waker(&context.waker())) {
-                    std::task::Poll::Ready(Some(std::result::Result::Ok((payload, addr)))) => Some((#root::util::deserialize_simple(payload), addr)),
+                    std::task::Poll::Ready(Some(std::result::Result::Ok((payload, addr)))) => Some((#root::util::deserialize_from_bytes(payload), addr)),
                     std::task::Poll::Ready(Some(Err(_))) => None,
                     std::task::Poll::Ready(None) => None,
                     std::task::Poll::Pending => None,

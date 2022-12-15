@@ -12,7 +12,7 @@ use quote::quote_spanned;
 /// ```rustbook
 /// async fn serde_out() {
 ///     let addr = hydroflow::util::ipv4_resolve("localhost:9000".into()).unwrap();
-///     let (outbound, inbound) = hydroflow::util::bind_udp_bytes(addr).await;
+///     let (outbound, inbound, _) = hydroflow::util::bind_udp_bytes(addr).await;
 ///     let remote = hydroflow::util::ipv4_resolve("localhost:9001".into()).unwrap();
 ///     let mut flow = hydroflow::hydroflow_syntax! {
 ///         source_iter(vec![("hello".to_string(), 1), ("world".to_string(), 2)])
@@ -51,11 +51,11 @@ pub const DEST_SINK_SERDE: OperatorConstraints = OperatorConstraints {
                     let mut recv = #recv_ident;
                     let mut sink = #sink_arg;
                     while let Some((payload, addr)) = recv.recv().await {
-                        let item = (#root::util::serialize_msg(payload), addr);
+                        let item = (#root::util::serialize_to_bytes(payload), addr);
                         sink.feed(item).await.expect("Error processing async sink item.");
                         // Receive as many items synchronously as possible before flushing.
                         while let Ok((payload, addr)) = recv.try_recv() {
-                            let item = (#root::util::serialize_msg(payload), addr);
+                            let item = (#root::util::serialize_to_bytes(payload), addr);
                             sink.feed(item).await.expect("Error processing async sink item.");
                         }
                         sink.flush().await.expect("Failed to flush async sink.");

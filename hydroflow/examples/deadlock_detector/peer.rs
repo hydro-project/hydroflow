@@ -12,7 +12,7 @@ use tokio_stream::wrappers::LinesStream;
 pub(crate) async fn run_detector(opts: Opts, peer_list: Vec<String>) {
     // setup message send/recv ports
     let server_socket = UdpSocket::bind(("127.0.0.1", opts.port)).await.unwrap();
-    let (outbound, inbound) = hydroflow::util::udp_lines(server_socket);
+    let (outbound, inbound, _) = hydroflow::util::udp_lines(server_socket);
 
     // We provide a command line for users to type waits-for edges (u32,u32).
     let reader = tokio::io::BufReader::new(tokio::io::stdin());

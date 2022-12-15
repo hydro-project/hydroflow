@@ -9,12 +9,12 @@ cargo run -p hydroflow --example chat -- --name "_" --role server --server-addr 
 
 In another terminal run the first client:
 ```
-cargo run -p hydroflow --example chat -- --name "alice" --role client --client-addr 127.0.0.1:9090 --server-addr 127.0.0.1:12347
+cargo run -p hydroflow --example chat -- --name "alice" --role client --server-addr 127.0.0.1:12347
 ```
 
 In the third terminal run the second client:
 ```
-cargo run -p hydroflow --example chat -- --name "bob" --role client --client-addr 127.0.0.1:9091 --server-addr 127.0.0.1:12347
+cargo run -p hydroflow --example chat -- --name "bob" --role --server-addr 127.0.0.1:12347
 ```
 
 If you type in the client terminals the messages should appear everywhere.
