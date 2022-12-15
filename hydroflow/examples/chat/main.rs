@@ -28,9 +28,9 @@ struct Opts {
     #[clap(value_enum, long)]
     role: Role,
     #[clap(long, value_parser = ipv4_resolve)]
-    client_addr: Option<SocketAddr>,
+    addr: Option<SocketAddr>,
     #[clap(long, value_parser = ipv4_resolve)]
-    server_addr: SocketAddr,
+    server_addr: Option<SocketAddr>,
     #[clap(value_enum, long)]
     graph: Option<GraphType>,
 }
@@ -38,34 +38,21 @@ struct Opts {
 #[tokio::main]
 async fn main() {
     let opts = Opts::parse();
-    let server_addr = opts.server_addr;
+    // if no addr was provided, we ask the OS to assign a local port by passing in "localhost:0"
+    let addr = opts
+        .addr
+        .unwrap_or_else(|| ipv4_resolve("localhost:0").unwrap());
+
+    // allocate `outbound` sink and `inbound` stream
+    let (outbound, inbound, addr) = bind_udp_bytes(addr).await;
+    println!("Listening on {:?}", addr);
 
     match opts.role {
         Role::Client => {
-            // allocate `outbound` sink and `inbound` stream
-            let client_addr = opts
-                .client_addr
-                .unwrap_or_else(|| ipv4_resolve("localhost:0").unwrap());
-            let (outbound, inbound, client_addr) = bind_udp_bytes(client_addr).await;
-
-            println!(
-                "Client is bound to {:?}, connecting to Server at {:?}",
-                client_addr, server_addr
-            );
-            run_client(
-                outbound,
-                inbound,
-                server_addr,
-                opts.name.clone(),
-                opts.graph.clone(),
-            )
-            .await;
+            run_client(outbound, inbound, opts).await;
         }
         Role::Server => {
-            println!("Listening on {:?}", server_addr);
-            let (outbound, inbound, _) = bind_udp_bytes(server_addr).await;
-
-            run_server(outbound, inbound, opts.graph.clone()).await;
+            run_server(outbound, inbound, opts).await;
         }
     }
 }

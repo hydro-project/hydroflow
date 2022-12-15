@@ -5,17 +5,20 @@ use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::util::{UdpSink, UdpStream};
 use std::net::SocketAddr;
 
-pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream) {
+pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, _opts: crate::Opts) {
     println!("Server live!");
 
     let mut flow: Hydroflow = hydroflow_syntax! {
-        // Inbound channel sharing
+        // Define a shared inbound channel
         inbound_chan = source_stream_serde(inbound) -> tee();
 
-        // Logic
-        inbound_chan[0] -> for_each(|(m, a): (EchoMsg, SocketAddr)| println!("Got {:?} from {:?}", m, a));
-        inbound_chan[1] -> map(|(EchoMsg { payload, .. }, addr)| (EchoMsg { payload, ts: Utc::now() }, addr))
-            -> dest_sink_serde(outbound);
+        // Print all messages for debugging purposes
+        inbound_chan[0]
+            -> for_each(|(msg, addr): (EchoMsg, SocketAddr)| println!("{}: Got {:?} from {:?}", Utc::now(), msg, addr));
+
+        // Echo back the Echo messages with updated timestamp
+        inbound_chan[1]
+            -> map(|(EchoMsg {payload, ..}, addr)| (EchoMsg { payload, ts: Utc::now() }, addr) ) -> dest_sink_serde(outbound);
     };
 
     // run the server

@@ -4,7 +4,7 @@ To run the example, open 3 terminals.
 
 In one terminal run the server like so:
 ```
-cargo run -p hydroflow --example chat -- --name "_" --role server --server-addr 127.0.0.1:12347
+cargo run -p hydroflow --example chat -- --name "_" --role server --addr 127.0.0.1:12347
 ```
 
 In another terminal run the first client:
@@ -14,7 +14,7 @@ cargo run -p hydroflow --example chat -- --name "alice" --role client --server-a
 
 In the third terminal run the second client:
 ```
-cargo run -p hydroflow --example chat -- --name "bob" --role --server-addr 127.0.0.1:12347
+cargo run -p hydroflow --example chat -- --name "bob" --role client --server-addr 127.0.0.1:12347
 ```
 
 If you type in the client terminals the messages should appear everywhere.
