@@ -25,7 +25,7 @@ pub fn hydroflow_syntax(input: proc_macro::TokenStream) -> proc_macro::TokenStre
     let flat_graph = FlatGraph::from_hfcode(input);
     if !flat_graph.emit_diagnostics() {
         match flat_graph.into_partitioned_graph() {
-            Ok(part_graph) => return part_graph.as_code(root).into(),
+            Ok(part_graph) => return part_graph.as_code(root, true).into(),
             Err(diagnostic) => diagnostic.emit(),
         }
     }

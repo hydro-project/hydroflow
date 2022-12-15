@@ -105,7 +105,7 @@ fn hydroflow_graph_to_program(flat_graph: FlatGraph, root: TokenStream) -> syn::
     let code_tokens = flat_graph
         .into_partitioned_graph()
         .expect("failed to partition")
-        .as_code(root);
+        .as_code(root, true);
 
     syn::parse_quote!({
         #code_tokens

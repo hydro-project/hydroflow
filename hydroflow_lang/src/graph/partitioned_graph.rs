@@ -1,5 +1,5 @@
-use proc_macro2::{Ident, Literal, Span, TokenStream};
-use quote::{quote, quote_spanned, ToTokens};
+use proc_macro2::{Ident, Literal, TokenStream};
+use quote::{format_ident, quote, quote_spanned, ToTokens};
 use slotmap::{Key, SecondaryMap, SlotMap};
 use syn::spanned::Spanned;
 
@@ -10,9 +10,6 @@ use super::flat_graph::FlatGraph;
 use super::ops::{OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, OPERATORS};
 use super::serde_graph::SerdeGraph;
 use super::{node_color, Color, GraphEdgeId, GraphNodeId, GraphSubgraphId, Node, PortIndexValue};
-
-const CHECK_ITERATOR: &str = "check_iterator";
-const CHECK_PUSHERATOR: &str = "check_pusherator";
 
 #[derive(Default)]
 #[allow(dead_code)] // TODO(mingwei): remove when no longer needed.
@@ -72,7 +69,7 @@ impl PartitionedGraph {
         Ident::new(&*name, span)
     }
 
-    pub fn as_code(&self, root: TokenStream) -> TokenStream {
+    pub fn as_code(&self, root: TokenStream, include_type_guards: bool) -> TokenStream {
         let handoffs = self
             .nodes
             .iter()
@@ -212,15 +209,28 @@ impl PartitionedGraph {
                                 continue;
                             };
 
-                            let check_fn = if is_pull { CHECK_ITERATOR } else { CHECK_PUSHERATOR };
-                            let check_fn = Ident::new(check_fn, op_span);
-                            let iter_type_guard = quote_spanned! {op_span=>
-                                let #ident = #check_fn(#ident);
-                            };
-
                             op_prologue_code.push(write_prologue);
                             subgraph_op_iter_code.push(write_iterator);
-                            subgraph_op_iter_code.push(iter_type_guard);
+                            if include_type_guards {
+                                let fn_ident = format_ident!("check_{}", ident, span = op_span);
+                                let pull_push_trait = if is_pull {
+                                    quote_spanned! {op_span=>
+                                        ::std::iter::Iterator<Item = Item>
+                                    }
+                                } else {
+                                    quote_spanned! {op_span=>
+                                        #root::pusherator::Pusherator<Item = Item>
+                                    }
+                                };
+                                let iter_type_guard = quote_spanned! {op_span=>
+                                    let #ident = {
+                                        #[inline(always)]
+                                        pub fn #fn_ident<Input: #pull_push_trait, Item>(input: Input) -> impl #pull_push_trait { input }
+                                        #fn_ident( #ident )
+                                    };
+                                };
+                                subgraph_op_iter_code.push(iter_type_guard);
+                            }
                             subgraph_op_iter_after_code.push(write_iterator_after);
                         }
                     }
@@ -279,29 +289,10 @@ impl PartitionedGraph {
                 }
             });
 
-        let check_iterator_ident = Ident::new(CHECK_ITERATOR, Span::call_site());
-        let check_pusherator_ident = Ident::new(CHECK_PUSHERATOR, Span::call_site());
         let serde_string = Literal::string(&*self.serde_string());
         let code = quote! {
             {
                 use #root::{var_expr, var_args};
-
-                #[allow(unused)]
-                #[inline(always)]
-                fn #check_iterator_ident<Iter, Item>(iterator: Iter) -> impl ::std::iter::Iterator<Item = Item>
-                where
-                    Iter: ::std::iter::Iterator<Item = Item>,
-                {
-                    iterator
-                }
-                #[allow(unused)]
-                #[inline(always)]
-                fn #check_pusherator_ident<Push, Item>(pusherator: Push) -> impl #root::pusherator::Pusherator<Item = Item>
-                where
-                    Push: #root::pusherator::Pusherator<Item = Item>,
-                {
-                    pusherator
-                }
 
                 let mut df = #root::scheduled::graph::Hydroflow::new_with_graph(#serde_string);
 
