@@ -39,6 +39,7 @@ pub const SORTBY: OperatorConstraints = OperatorConstraints {
         let write_iterator = quote_spanned! {op_span=>
             let mut tmp = #input.collect::<Vec<_>>();
             // TODO: remove the clone as shown in addendum here: https://stackoverflow.com/questions/56105305/how-to-sort-a-vec-of-structs-by-a-string-field
+            #[allow(clippy::clone_on_copy)]
             tmp.sort_unstable_by_key(#arguments.clone());
             let #ident = tmp.into_iter();
         };
