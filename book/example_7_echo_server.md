@@ -179,13 +179,7 @@ use std::net::SocketAddr;
 
 pub(crate) async fn run_client(outbound: UdpSink, inbound: UdpStream, opts: Opts) {
     // server_addr is required for client
-    let server_addr = match opts.server_addr {
-        Some(addr) => {
-            println!("Connecting to server at {:?}", addr);
-            addr
-        }
-        None => panic!("Client requires a server address"),
-    };
+    let server_addr = opts.server_addr.expect("Client requires a server address");
     println!("Client live!");
 
     let mut flow = hydroflow_syntax! {

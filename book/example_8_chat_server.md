@@ -264,13 +264,7 @@ and a `demux`ed `inbound_chan`. The client handles only two inbound `Message` ty
 ```rust,ignore
 pub(crate) async fn run_client(outbound: UdpSink, inbound: UdpStream, opts: Opts) {
     // server_addr is required for client
-    let server_addr = match opts.server_addr {
-        Some(addr) => {
-            println!("Connecting to server at {:?}", addr);
-            addr
-        }
-        None => panic!("Client requires a server address"),
-    };
+    let server_addr = opts.server_addr.expect("Client requires a server address");
     println!("Client live!");
 
     let mut hf = hydroflow_syntax! {
@@ -289,7 +283,7 @@ pub(crate) async fn run_client(outbound: UdpSink, inbound: UdpStream, opts: Opts
 The core logic of the client consists of three dataflow pipelines shown below. 
 
 1. The first pipeline is the "bootstrap" alluded to above.
-It starts with `source_iter` operator that operates over a single, opaque "unit" (`()`) value. This value is available when the client begins, which means 
+It starts with `source_iter` operator that emits a single, opaque "unit" (`()`) value. This value is available when the client begins, which means 
 this pipeline runs once, immediately on startup, and generates a single `ConnectRequest` message which is sent to the server.
 
 2. The second pipeline reads from `source_stdin` and sends messages to the server. It differs from our echo-server example in the use of a `cross_join`
@@ -302,7 +296,7 @@ when the client receives its sole `ConnectResponse`.
 3. The final pipeline simple pretty-prints the messages received from the server.
 
 ```rust,ignore
-       // send a single connection request on startup
+        // send a single connection request on startup
         source_iter([()]) -> map(|_m| (Message::ConnectRequest, server_addr)) -> [0]outbound_chan;
 
         // take stdin and send to server as a msg
