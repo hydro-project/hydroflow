@@ -51,11 +51,11 @@ pub const DEST_SINK_SERDE: OperatorConstraints = OperatorConstraints {
                     let mut recv = #recv_ident;
                     let mut sink = #sink_arg;
                     while let Some((payload, addr)) = recv.recv().await {
-                        let item = (#root::util::serialize_msg(payload), addr);
+                        let item = (#root::util::serialize_to_bytes(payload), addr);
                         sink.feed(item).await.expect("Error processing async sink item.");
                         // Receive as many items synchronously as possible before flushing.
                         while let Ok((payload, addr)) = recv.try_recv() {
-                            let item = (#root::util::serialize_msg(payload), addr);
+                            let item = (#root::util::serialize_to_bytes(payload), addr);
                             sink.feed(item).await.expect("Error processing async sink item.");
                         }
                         sink.flush().await.expect("Failed to flush async sink.");
