@@ -251,7 +251,15 @@ fn main() {
                         }
                         check_op_9v1(op_9v1)
                     };
-                    hydroflow::pusherator::pivot::Pivot::new(op_6v1, op_9v1).run();
+                    #[inline(always)]
+                    fn check_pivot_run<
+                        Pull: ::std::iter::Iterator<Item = Item>,
+                        Push: hydroflow::pusherator::Pusherator<Item = Item>,
+                        Item,
+                    >(pull: Pull, push: Push) {
+                        hydroflow::pusherator::pivot::Pivot::new(pull, push).run();
+                    }
+                    check_pivot_run(op_6v1, op_9v1);
                 },
             );
             df
