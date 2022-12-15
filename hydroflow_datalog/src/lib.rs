@@ -211,39 +211,10 @@ pub fn datalog(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
 
 #[cfg(test)]
 mod tests {
-    use std::fs::File;
-    use std::io::{Read, Write};
-    use std::process::Command;
-
-    use quote::ToTokens;
     use syn::parse_quote;
-    use tempfile::tempdir;
 
     use super::gen_hydroflow_graph;
     use super::hydroflow_graph_to_program;
-
-    fn rustfmt_code(code: &str) -> String {
-        let dir = tempdir().unwrap();
-        let file_path = dir.path().join("temp.rs");
-        let mut file = File::create(file_path.clone()).unwrap();
-
-        writeln!(file, "{}", code).unwrap();
-        drop(file);
-
-        Command::new("rustfmt")
-            .arg(file_path.to_str().unwrap())
-            .spawn()
-            .unwrap()
-            .wait()
-            .unwrap();
-
-        let mut file = File::open(file_path).unwrap();
-        let mut data = String::new();
-        file.read_to_string(&mut data).unwrap();
-        drop(file);
-        dir.close().unwrap();
-        data
-    }
 
     macro_rules! test_snapshots {
         ($program:literal) => {
@@ -256,7 +227,7 @@ mod tests {
             // Have to make a new graph as the above closure borrows.
             let graph2 = gen_hydroflow_graph(parse_quote!($program));
             let out = &hydroflow_graph_to_program(graph2, quote::quote! { hydroflow });
-            let wrapped: syn::Item = parse_quote! {
+            let wrapped: syn::File = parse_quote! {
                 fn main() {
                     #out
                 }
@@ -264,7 +235,7 @@ mod tests {
 
             insta::with_settings!({snapshot_suffix => "datalog_program"}, {
                 insta::assert_display_snapshot!(
-                    rustfmt_code(&wrapped.to_token_stream().to_string())
+                    prettyplease::unparse(&wrapped)
                 );
             });
         };
