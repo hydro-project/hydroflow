@@ -150,7 +150,7 @@
 <pre><code class="language-rust  ignore">use clap::{ArgEnum, Parser};
 use client::run_client;
 use hydroflow::tokio;
-use hydroflow::util::{bind_udp_socket, ipv4_resolve};
+use hydroflow::util::{bind_udp_bytes, ipv4_resolve};
 use server::run_server;
 
 mod client;
@@ -212,7 +212,7 @@ async fn main() {
         }
         Role::Server =&gt; {
             println!(&quot;Listening on {}&quot;, server_str.clone());
-            let (outbound, inbound) = bind_udp_socket(server_str).await;
+            let (outbound, inbound) = bind_udp_bytes(server_str).await;
 
             run_server(outbound, inbound, opts.graph.clone()).await;
         }

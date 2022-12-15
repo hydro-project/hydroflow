@@ -76,6 +76,7 @@
 <a href="#76" id="76">76</a>
 <a href="#77" id="77">77</a>
 <a href="#78" id="78">78</a>
+<a href="#79" id="79">79</a>
 </pre><pre class="rust"><code><span class="kw">use super</span>::{
     OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, RANGE_0, RANGE_1,
 };
@@ -89,8 +90,9 @@
 /// Note this operator must be used within a Tokio runtime.
 /// ```rustbook
 /// async fn serde_out() {
-///     let (outbound, inbound) = hydroflow::util::bind_udp_socket(&quot;localhost:9000&quot;.into()).await;
-///     let remote = hydroflow::util::ipv4_resolve(&quot;localhost:9001&quot;.into());
+///     let addr = hydroflow::util::ipv4_resolve(&quot;localhost:9000&quot;.into()).unwrap();
+///     let (outbound, inbound) = hydroflow::util::bind_udp_bytes(addr).await;
+///     let remote = hydroflow::util::ipv4_resolve(&quot;localhost:9001&quot;.into()).unwrap();
 ///     let mut flow = hydroflow::hydroflow_syntax! {
 ///         source_iter(vec![(&quot;hello&quot;.to_string(), 1), (&quot;world&quot;.to_string(), 2)])
 ///             -&gt; map (|m| (m, remote)) -&gt; dest_sink_serde(outbound);

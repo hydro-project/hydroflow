@@ -170,7 +170,7 @@ After a prelude of imports, we start by defining an <code>enum</code> for the <c
 <pre><code class="language-rust  ignore">use clap::{ArgEnum, Parser};
 use client::run_client;
 use hydroflow::tokio;
-use hydroflow::util::{bind_udp_socket, ipv4_resolve};
+use hydroflow::util::{bind_udp_bytes, ipv4_resolve};
 use server::run_server;
 
 mod client;
@@ -200,24 +200,24 @@ struct Opts {
 async fn main() {
     // parse command line arguments
     let opts = Opts::parse();
+    let server_addr = ipv4_resolve(opts.server_addr.clone());
 </code></pre>
-<p>After parsing the command line arguments, we get into invoking the client or server code. Before we do so, we set up some Rust-based networking. Specifically, in both cases we will need to allocate a UDP socket that is used for both sending and receiving messages. We do this by calling the async <code>bind_udp_socket</code> function, which is defined in the <code>hydroflow/src/util</code> module. As an async function it returns a <code>Future</code>, so requires appending <code>.await</code>; the function returns a pair of type <code>(UdpSink, UdpSource)</code>. These are the types that we'll use in Hydroflow to send and receive messages. (Note: your IDE might expand out the <code>UdpSink</code> and <code>UdpSource</code> traits to their more verbose definitions. This is fine; you can ignore for now.)</p>
+<p>After parsing the command line arguments and resolving the server address, we get into invoking the client or server code. Before we do so, we set up some Rust-based networking. Specifically, in both cases we will need to allocate a UDP socket that is used for both sending and receiving messages. We do this by calling the async <code>bind_udp_bytes</code> function, which is defined in the <code>hydroflow/src/util</code> module. As an async function it returns a <code>Future</code>, so requires appending <code>.await</code>; the function returns a pair of type <code>(UdpSink, UdpSource)</code>. These are the types that we'll use in Hydroflow to send and receive messages. (Note: your IDE might expand out the <code>UdpSink</code> and <code>UdpSource</code> traits to their more verbose definitions. This is fine; you can ignore for now.)</p>
 <p>For the server case, all that's left is to invoke <code>run_server</code> and pass it the network information. Note that the server is also asynchronous, so we append <code>.await</code> to that call as well. The program will block on this call until the server is done (which should only happen when it fails).</p>
 <pre><code class="language-rust ignore">    // depending on the role, pass in arguments to the right function
     match opts.role {
         Role::Server =&gt; {
             // allocate `outbound` and `inbound` sockets
-            let (outbound, inbound) = bind_udp_socket(opts.server_addr.clone()).await;
-            // run the server
-            run_server(outbound, inbound, opts.graph.clone()).await;
+            let (outbound, inbound) = bind_udp_bytes(server_addr).await;
+            run_server(outbound, inbound).await;
         }
 </code></pre>
 <p>In the client case, we need one more piece of information passed down: the address of the server. We get this by calling the <code>ipv4_resolve</code> function, which is also defined in the <code>hydroflow/src/util</code> module. This function takes a string and returns a <code>SocketAddr</code> type, which is the address/port structure that  <code>UdpSink</code> and <code>UdpSource</code> will use. Invoking <code>run_client</code> is similar to the server case, except that we pass in the server address as well.</p>
 <pre><code class="language-rust ignore">        Role::Client =&gt; {
             // resolve the server's IP address
-            let server_addr = ipv4_resolve(opts.server_addr.clone());
+            let client_addr = ipv4_resolve(opts.client_addr.clone().unwrap());
             // allocate `outbound` and `inbound` sockets
-            let (outbound, inbound) = bind_udp_socket(opts.addr.clone().unwrap()).await;
+            let (outbound, inbound) = bind_udp_bytes(client_addr).await;
             // run the client
             run_client(outbound, inbound, server_addr).await;
         }

@@ -60,6 +60,7 @@
 <a href="#60" id="60">60</a>
 <a href="#61" id="61">61</a>
 <a href="#62" id="62">62</a>
+<a href="#63" id="63">63</a>
 </pre><pre class="rust"><code><span class="kw">use super</span>::{
     OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, RANGE_0, RANGE_1,
 };
@@ -76,7 +77,8 @@
 ///
 /// ```rustbook
 /// async fn serde_in() {
-///     let (outbound, inbound) = hydroflow::util::bind_udp_socket(&quot;localhost:9000&quot;.into()).await;
+///     let addr = hydroflow::util::ipv4_resolve(&quot;localhost:9000&quot;.into()).unwrap();
+///     let (outbound, inbound) = hydroflow::util::bind_udp_bytes(addr).await;
 ///     let mut flow = hydroflow::hydroflow_syntax! {
 ///         source_stream_serde(inbound) -&gt; map(|(x, a): (String, std::net::SocketAddr)| x.to_uppercase())
 ///             -&gt; for_each(|x| println!(&quot;{}&quot;, x));

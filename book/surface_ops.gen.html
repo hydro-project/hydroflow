@@ -672,7 +672,8 @@ elements it receives downstream.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>async fn serde_in() {
-    let (outbound, inbound) = hydroflow::util::bind_udp_socket(&quot;localhost:9000&quot;.into()).await;
+    let addr = hydroflow::util::ipv4_resolve(&quot;localhost:9000&quot;.into()).unwrap();
+    let (outbound, inbound) = hydroflow::util::bind_udp_bytes(addr).await;
     let mut flow = hydroflow::hydroflow_syntax! {
         source_stream_serde(inbound) -&gt; map(|(x, a): (String, std::net::SocketAddr)| x.to_uppercase())
             -&gt; for_each(|x| println!(&quot;{}&quot;, x));
@@ -823,19 +824,6 @@ my_demux[vals] -&gt; for_each(|v| println!(&quot;{}&quot;, v));
 </span><span class="boring">__hf.run_available();
 </span><span class="boring">}
 </span></code></pre></pre>
-<h2 id="dest_asyncwrite"><a class="header" href="#dest_asyncwrite"><code>dest_asyncwrite</code></a></h2>
-<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
-<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; dest_asyncwrite(A)</code></td><td><span title="exactly 0">exactly 0</span></td></tr>
-</tbody></table>
-</div><!-- GENERATED "hydroflow_lang/src/graph/ops/dest_asyncwrite.rs" -->
-<blockquote>
-<p>Arguments: An <a href="https://docs.rs/tokio/latest/tokio/io/trait.AsyncWrite.html"><code>AsyncWrite</code></a>.</p>
-</blockquote>
-<p>Consumes a stream of bytes (specifically <code>AsRef[u8]</code> items) by writing them
-to an <a href="https://docs.rs/tokio/latest/tokio/io/trait.AsyncWrite.html"><code>AsyncWrite</code></a>
-output.</p>
-<p>This handles a stream of bytes, whereas <a href="#dest_sink"><code>dest_sink</code></a> handles individual items of an arbitrary type.</p>
-<p>Note this operator must be used within a Tokio runtime.</p>
 <h2 id="dest_sink"><a class="header" href="#dest_sink"><code>dest_sink</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; dest_sink(A)</code></td><td><span title="exactly 0">exactly 0</span></td></tr>
@@ -844,10 +832,69 @@ output.</p>
 <blockquote>
 <p>Arguments: An <a href="https://docs.rs/futures/latest/futures/sink/trait.Sink.html">async <code>Sink</code></a>.</p>
 </blockquote>
-<p>Consumes items by sending them to an <a href="https://docs.rs/futures/latest/futures/sink/trait.Sink.html">async <code>Sink</code></a>.</p>
-<p>This handles a stream of individual items, of an arbitrary type, whereas <a href="#dest_asyncwrite"><code>dest_asyncwrite</code></a>
-handles streams of bytes.</p>
+<p>Consumes items by sending them to an <a href="https://docs.rs/futures/latest/futures/sink/trait.Sink.html">async <code>Sink</code></a>.
+A <code>Sink</code> is a thing into which values can be sent, asynchronously. For example, sending items
+into a bounded channel.</p>
 <p>Note this operator must be used within a Tokio runtime.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#[tokio::main]
+</span><span class="boring">async fn main() {
+</span>// In this example we use a _bounded_ channel for our `Sink`. This is for demonstration only,
+// instead you should use [`hydroflow::util::unbounded_channel`]. A bounded channel results in
+// `Hydroflow` buffering items internally instead of within the channel. (We can't use
+// unbounded here since unbounded channels are synchonous to write to and therefore not
+// `Sink`s.)
+let (send, recv) = tokio::sync::mpsc::channel::&lt;usize&gt;(5);
+// `PollSender` adapts the send half of the bounded channel into a `Sink`.
+let send = tokio_util::sync::PollSender::new(send);
+
+let mut flow = hydroflow::hydroflow_syntax! {
+    source_iter(0..10) -&gt; dest_sink(send);
+};
+// Call `run_async()` to allow async events to propegate, run for one second.
+tokio::time::timeout(std::time::Duration::from_secs(1), flow.run_async())
+    .await
+    .expect_err(&quot;Expected time out&quot;);
+
+let mut recv = tokio_stream::wrappers::ReceiverStream::new(recv);
+// Only 5 elements received due to buffer size
+let out: Vec&lt;_&gt; = hydroflow::util::collect_ready(&amp;mut recv);
+assert_eq!(&amp;[0, 1, 2, 3, 4], &amp;*out);
+<span class="boring">}
+</span></code></pre></pre>
+<p><code>Sink</code> is different from <a href="https://docs.rs/futures/latest/futures/io/trait.AsyncWrite.html"><code>AsyncWrite</code></a>.
+Instead of discrete values we send arbitrary streams of bytes into an <code>AsyncWrite</code> value. For
+example, writings a stream of bytes to a file, a socket, or stdout.</p>
+<p>To handle those situations we can use a codec from <a href="crate::tokio_util::codec"><code>tokio_util::codec</code></a>.
+These specify ways in which the byte stream is broken into individual items, such as with
+newlines or with length delineation.</p>
+<p>If we only want to write a stream of bytes without delineation we can use the <a href="crate::tokio_util::codec::BytesCodec"><code>BytesCodec</code></a>.</p>
+<p>In this example we use a <a href="crate::tokio::io::duplex"><code>duplex</code></a> as our <code>AsyncWrite</code> with a
+<code>BytesCodec</code>.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#[tokio::main]
+</span><span class="boring">async fn main() {
+</span>use bytes::Bytes;
+use tokio::io::AsyncReadExt;
+
+// Like a channel, but for a stream of bytes instead of discrete objects.
+let (asyncwrite, mut asyncread) = tokio::io::duplex(256);
+// Now instead handle discrete byte strings by length-encoding them.
+let mut sink = tokio_util::codec::FramedWrite::new(asyncwrite, tokio_util::codec::BytesCodec::new());
+
+let mut flow = hydroflow::hydroflow_syntax! {
+    source_iter([
+        Bytes::from_static(b&quot;hello&quot;),
+        Bytes::from_static(b&quot;world&quot;),
+    ]) -&gt; dest_sink(&amp;mut sink);
+};
+tokio::time::timeout(std::time::Duration::from_secs(1), flow.run_async())
+    .await
+    .expect_err(&quot;Expected time out&quot;);
+
+let mut buf = Vec::&lt;u8&gt;::new();
+asyncread.read_buf(&amp;mut buf).await.unwrap();
+assert_eq!(b&quot;helloworld&quot;, &amp;*buf);
+<span class="boring">}
+</span></code></pre></pre>
 <h2 id="dest_sink_serde"><a class="header" href="#dest_sink_serde"><code>dest_sink_serde</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; dest_sink_serde(A)</code></td><td><span title="exactly 0">exactly 0</span></td></tr>
@@ -861,8 +908,9 @@ handles streams of bytes.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>async fn serde_out() {
-    let (outbound, inbound) = hydroflow::util::bind_udp_socket(&quot;localhost:9000&quot;.into()).await;
-    let remote = hydroflow::util::ipv4_resolve(&quot;localhost:9001&quot;.into());
+    let addr = hydroflow::util::ipv4_resolve(&quot;localhost:9000&quot;.into()).unwrap();
+    let (outbound, inbound) = hydroflow::util::bind_udp_bytes(addr).await;
+    let remote = hydroflow::util::ipv4_resolve(&quot;localhost:9001&quot;.into()).unwrap();
     let mut flow = hydroflow::hydroflow_syntax! {
         source_iter(vec![(&quot;hello&quot;.to_string(), 1), (&quot;world&quot;.to_string(), 2)])
             -&gt; map (|m| (m, remote)) -&gt; dest_sink_serde(outbound);
