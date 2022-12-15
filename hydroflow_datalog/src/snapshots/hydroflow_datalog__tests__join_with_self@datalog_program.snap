@@ -55,7 +55,18 @@ fn main() {
                         }
                         check_op_5v1(op_5v1)
                     };
-                    let op_1v1 = op_5v1;
+                    let op_1v1 = {
+                        #[allow(unused)]
+                        #[inline(always)]
+                        fn check_inputs<
+                            A: ::std::iter::Iterator<Item = Item>,
+                            B: ::std::iter::Iterator<Item = Item>,
+                            Item,
+                        >(a: A, b: B) -> impl ::std::iter::Iterator<Item = Item> {
+                            a.chain(b)
+                        }
+                        op_5v1
+                    };
                     let op_1v1 = {
                         #[inline(always)]
                         pub fn check_op_1v1<
@@ -176,7 +187,18 @@ fn main() {
                         }
                         check_op_11v1(op_11v1)
                     };
-                    let op_3v1 = op_11v1;
+                    let op_3v1 = {
+                        #[allow(unused)]
+                        #[inline(always)]
+                        fn check_inputs<
+                            A: ::std::iter::Iterator<Item = Item>,
+                            B: ::std::iter::Iterator<Item = Item>,
+                            Item,
+                        >(a: A, b: B) -> impl ::std::iter::Iterator<Item = Item> {
+                            a.chain(b)
+                        }
+                        op_11v1
+                    };
                     let op_3v1 = {
                         #[inline(always)]
                         pub fn check_op_3v1<

@@ -44,10 +44,17 @@ pub const MERGE: OperatorConstraints = OperatorConstraints {
             let chains = inputs
                 .iter()
                 .map(|i| i.to_token_stream())
-                .reduce(|a, b| quote_spanned! {op_span=> #a.chain(#b) })
+                .reduce(|a, b| quote_spanned! {op_span=> check_inputs(#a, #b) })
                 .unwrap_or_else(|| quote_spanned! {op_span=> std::iter::empty() });
             quote_spanned! {op_span=>
-                let #ident = #chains;
+                let #ident = {
+                    #[allow(unused)]
+                    #[inline(always)]
+                    fn check_inputs<A: ::std::iter::Iterator<Item = Item>, B: ::std::iter::Iterator<Item = Item>, Item>(a: A, b: B) -> impl ::std::iter::Iterator<Item = Item> {
+                        a.chain(b)
+                    }
+                    #chains
+                };
             }
         } else {
             assert_eq!(1, outputs.len());
