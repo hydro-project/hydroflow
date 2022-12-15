@@ -43,10 +43,9 @@ async fn main() {
     match opts.role {
         Role::Client => {
             // allocate `outbound` sink and `inbound` stream
-            let client_addr = match opts.client_addr {
-                Some(addr) => addr,
-                None => ipv4_resolve(format!("localhost:{}", 0).as_str()).unwrap(),
-            };
+            let client_addr = opts
+                .client_addr
+                .unwrap_or_else(|| ipv4_resolve("localhost:0").unwrap());
             let (outbound, inbound, client_addr) = bind_udp_bytes(client_addr).await;
 
             println!(
