@@ -91,7 +91,7 @@
 /// ```rustbook
 /// async fn serde_out() {
 ///     let addr = hydroflow::util::ipv4_resolve(&quot;localhost:9000&quot;.into()).unwrap();
-///     let (outbound, inbound) = hydroflow::util::bind_udp_bytes(addr).await;
+///     let (outbound, inbound, _) = hydroflow::util::bind_udp_bytes(addr).await;
 ///     let remote = hydroflow::util::ipv4_resolve(&quot;localhost:9001&quot;.into()).unwrap();
 ///     let mut flow = hydroflow::hydroflow_syntax! {
 ///         source_iter(vec![(&quot;hello&quot;.to_string(), 1), (&quot;world&quot;.to_string(), 2)])
@@ -130,11 +130,11 @@
                     <span class="kw">let </span><span class="kw-2">mut </span>recv = #recv_ident;
                     <span class="kw">let </span><span class="kw-2">mut </span>sink = #sink_arg;
                     <span class="kw">while let </span><span class="prelude-val">Some</span>((payload, addr)) = recv.recv().<span class="kw">await </span>{
-                        <span class="kw">let </span>item = (#root::util::serialize_msg(payload), addr);
+                        <span class="kw">let </span>item = (#root::util::serialize_to_bytes(payload), addr);
                         sink.feed(item).<span class="kw">await</span>.expect(<span class="string">&quot;Error processing async sink item.&quot;</span>);
                         <span class="comment">// Receive as many items synchronously as possible before flushing.
                         </span><span class="kw">while let </span><span class="prelude-val">Ok</span>((payload, addr)) = recv.try_recv() {
-                            <span class="kw">let </span>item = (#root::util::serialize_msg(payload), addr);
+                            <span class="kw">let </span>item = (#root::util::serialize_to_bytes(payload), addr);
                             sink.feed(item).<span class="kw">await</span>.expect(<span class="string">&quot;Error processing async sink item.&quot;</span>);
                         }
                         sink.flush().<span class="kw">await</span>.expect(<span class="string">&quot;Failed to flush async sink.&quot;</span>);

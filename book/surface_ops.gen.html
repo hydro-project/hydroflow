@@ -673,7 +673,7 @@ elements it receives downstream.</p>
 </span><span class="boring">fn main() {
 </span>async fn serde_in() {
     let addr = hydroflow::util::ipv4_resolve(&quot;localhost:9000&quot;.into()).unwrap();
-    let (outbound, inbound) = hydroflow::util::bind_udp_bytes(addr).await;
+    let (outbound, inbound, _) = hydroflow::util::bind_udp_bytes(addr).await;
     let mut flow = hydroflow::hydroflow_syntax! {
         source_stream_serde(inbound) -&gt; map(|(x, a): (String, std::net::SocketAddr)| x.to_uppercase())
             -&gt; for_each(|x| println!(&quot;{}&quot;, x));
@@ -909,7 +909,7 @@ assert_eq!(b&quot;helloworld&quot;, &amp;*buf);
 </span><span class="boring">fn main() {
 </span>async fn serde_out() {
     let addr = hydroflow::util::ipv4_resolve(&quot;localhost:9000&quot;.into()).unwrap();
-    let (outbound, inbound) = hydroflow::util::bind_udp_bytes(addr).await;
+    let (outbound, inbound, _) = hydroflow::util::bind_udp_bytes(addr).await;
     let remote = hydroflow::util::ipv4_resolve(&quot;localhost:9001&quot;.into()).unwrap();
     let mut flow = hydroflow::hydroflow_syntax! {
         source_iter(vec![(&quot;hello&quot;.to_string(), 1), (&quot;world&quot;.to_string(), 2)])
