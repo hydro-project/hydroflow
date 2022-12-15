@@ -1,11 +1,9 @@
 use crate::protocol::Message;
+use crate::{GraphType, Opts};
 use chrono::prelude::*;
 use hydroflow::hydroflow_syntax;
 use hydroflow::util::{UdpSink, UdpStream};
-use std::net::SocketAddr;
 
-use crate::GraphType;
-use chrono::Utc;
 use colored::Colorize;
 
 fn pretty_print_msg(msg: Message) {
@@ -28,13 +26,15 @@ fn pretty_print_msg(msg: Message) {
     }
 }
 
-pub(crate) async fn run_client(
-    outbound: UdpSink,
-    inbound: UdpStream,
-    server_addr: SocketAddr,
-    name: String,
-    graph: Option<GraphType>,
-) {
+pub(crate) async fn run_client(outbound: UdpSink, inbound: UdpStream, opts: Opts) {
+    // server_addr is required for client
+    let server_addr = match opts.server_addr {
+        Some(addr) => {
+            println!("Connecting to server at {:?}", addr);
+            addr
+        }
+        None => panic!("Client requires a server address"),
+    };
     println!("Client live!");
 
     let mut hf = hydroflow_syntax! {
@@ -58,7 +58,7 @@ pub(crate) async fn run_client(
         msg_send = cross_join() -> map(|(msg, _)| (msg, server_addr)) -> [1]outbound_chan;
         lines = source_stdin()
           -> map(|l| Message::ChatMsg {
-                    nickname: name.clone(),
+                    nickname: opts.name.clone(),
                     message: l.unwrap(),
                     ts: Utc::now()})
           -> [0]msg_send;
@@ -69,7 +69,7 @@ pub(crate) async fn run_client(
     };
 
     // optionally print the dataflow graph
-    if let Some(graph) = graph {
+    if let Some(graph) = opts.graph {
         let serde_graph = hf
             .serde_graph()
             .expect("No graph found, maybe failed to parse.");

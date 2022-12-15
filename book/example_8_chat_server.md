@@ -8,25 +8,26 @@
 Our previous [echo server](./example_7_echo_server.md) example was admittedly simplistic.  In this example, we'll build something a bit more useful: a simple chat server. We will again have two roles: a `Client` and a `Server`. `Clients` will register their presence with the `Server`, which maintains a list of clients. Each `Client` sends messages to the `Server`, which will then broadcast those messages to all other clients. 
 
 ## main.rs
-The `main.rs` file here is very similar to that of the echo server, just with two new command-line arguments: one for a "nickname" in the chatroom, and another optional argument for printing a dataflow graph if desired.
+The `main.rs` file here is very similar to that of the echo server, just with two new command-line arguments: one called `name` for a "nickname" in the chatroom, and another optional argument `graph` for printing a dataflow graph if desired.
 
 ```rust, ignore
-use clap::{ArgEnum, Parser};
+use clap::{Parser, ValueEnum};
 use client::run_client;
 use hydroflow::tokio;
 use hydroflow::util::{bind_udp_bytes, ipv4_resolve};
 use server::run_server;
+use std::net::SocketAddr;
 
 mod client;
 mod protocol;
 mod server;
 
-#[derive(Clone, ArgEnum, Debug)]
+#[derive(Clone, ValueEnum, Debug)]
 enum Role {
     Client,
     Server,
 }
-#[derive(Clone, ArgEnum, Debug)]
+#[derive(Clone, ValueEnum, Debug)]
 enum GraphType {
     Mermaid,
     Dot,
@@ -37,56 +38,41 @@ enum GraphType {
 struct Opts {
     #[clap(long)]
     name: String,
-    #[clap(arg_enum, long)]
+    #[clap(value_enum, long)]
     role: Role,
-    #[clap(long)]
-    port: u16,
-    #[clap(long)]
-    addr: String,
-    #[clap(long)]
-    server_addr: Option<String>,
-    #[clap(long)]
-    server_port: Option<u16>,
-    #[clap(arg_enum, long)]
+    #[clap(long, value_parser = ipv4_resolve)]
+    client_addr: Option<SocketAddr>,
+    #[clap(long, value_parser = ipv4_resolve)]
+    server_addr: Option<SocketAddr>,
+    #[clap(value_enum, long)]
     graph: Option<GraphType>,
 }
 
 #[tokio::main]
 async fn main() {
     let opts = Opts::parse();
-    let server_str = opts.server_addr.clone();
+    // if no addr was provided, we ask the OS to assign a local port by passing in "localhost:0"
+    let addr = opts
+        .addr
+        .unwrap_or_else(|| ipv4_resolve("localhost:0").unwrap());
+
+    // allocate `outbound` sink and `inbound` stream
+    let (outbound, inbound, addr) = bind_udp_bytes(addr).await;
+    println!("Listening on {:?}", addr);
 
     match opts.role {
         Role::Client => {
-            let client_str = opts.client_addr.clone().unwrap();
-            println!(
-                "Client is bound to {}, connecting to Server at {}",
-                client_str.clone(),
-                server_str.clone()
-            );
-            let (outbound, inbound) = bind_udp_socket(client_str).await;
-            run_client(
-                outbound,
-                inbound,
-                ipv4_resolve(server_str.clone()),
-                opts.name.clone(),
-                opts.graph.clone(),
-            )
-            .await;
+            run_client(outbound, inbound, opts).await;
         }
         Role::Server => {
-            println!("Listening on {}", server_str.clone());
-            let (outbound, inbound) = bind_udp_bytes(server_str).await;
-
-            run_server(outbound, inbound, opts.graph.clone()).await;
+            run_server(outbound, inbound, opts).await;
         }
     }
 }
 ```
 
 ## protocol.rs
-Our protocol file here defines three message types. Note how we use a single Rust `enum` to represent all varieties of message types; this allows us to handle `Message`s of different types with a single  Rust network channel. We will
-use the `demux` operator to separate out these different message types on the receiving end. 
+Our protocol file here expands upon what we saw with the echoserver by defining multiple message types. Note how we use a single Rust `enum` to represent all varieties of message types; this allows us to handle `Message`s of different types with a single  Rust network channel. We will use the `demux` operator to separate out these different message types on the receiving end. 
 
 The `ConnectRequest` and `ConnectResponse` messages have no payload; 
 the address of the sender and the type of the message will be sufficient information. The `ChatMsg` message type has a `nickname` field, a `message` field, and a `ts` 
@@ -118,12 +104,12 @@ The `inbound` channel is a source stream that will carry many
 types of `Message`s. We use the `[demux](./surface_ops.gen.md#demux)` operator to partition the stream objects into three channels. The `clients` channel 
 will carry the addresses of clients that have connected to the server. The `msgs` channel will carry the `ChatMsg` messages that clients send to the server. 
 The `errs` channel will carry any other messages that clients send to the server. Note the structure of the `demux` operator: it takes a closure on 
-`(Message, SocketAddr)` pairs, and a variadic tuple of output channel names—in this case `clients`, `msgs`, and `errs`. The closure is basically a big
+`(Message, SocketAddr)` pairs, and a variadic tuple (`var_args!`) of output channel names—in this case `clients`, `msgs`, and `errs`. The closure is basically a big
 Rust pattern [`match`](https://doc.rust-lang.org/book/ch06-02-match.html), with one arm for each output channel name given in the variadic tuple. Note 
-that the different output channels can have different-typed messages!
+that the different output channels can have different-typed messages! Note also that we destructure the incoming `Message` types into tuples of fields, to avoid having to write boilerplate code for each message type in every downstream pipeline.
 
 ```rust, ignore
-use crate::GraphType;
+use crate::{GraphType, Opts};
 use hydroflow::util::{UdpSink, UdpStream};
 
 use crate::protocol::Message;
@@ -131,14 +117,14 @@ use crate::protocol::Message;
 use hydroflow::hydroflow_syntax;
 use hydroflow::scheduled::graph::Hydroflow;
 
-pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, graph: Option<GraphType>) {
+pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, opts: Opts) {
     println!("Server live!");
 
     let mut df: Hydroflow = hydroflow_syntax! {
-        // NW channels
+        // Define shared inbound and outbound channels
         outbound_chan = merge() -> dest_sink_serde(outbound);
         inbound_chan = source_stream_serde(inbound)
-            ->  demux(|(msg, addr), tl!(clients, msgs, errs)|
+            ->  demux(|(msg, addr), var_args!(clients, msgs, errs)|
                     match msg {
                         Message::ConnectRequest => clients.give(addr),
                         Message::ChatMsg {..} => msgs.give(msg),
@@ -158,7 +144,7 @@ channels and produces a single output channel with a tuple for each pair of inpu
 `(Message, SocketAddr)` pairs. Conveniently, that is exactly the structure needed for sending to the `outbound_chan` sink!
 We call the cross-join pipeline `broadcast` because it effectively broadcasts all messages to all clients.
 
-Finally, the server closes with the Rust code to optionally print the dataflow graph.
+Finally, the file ends with the Rust code to optionally print the dataflow graphand then start the server.
 
 ```rust, ignore
        // Pipeline 1: Acknowledge client connections
@@ -205,7 +191,7 @@ flowchart TB
     end
     subgraph "sg_2v1 stratum 0"
         3v1["3v1 <tt>op_3v1: source_stream_serde(inbound)</tt>"]
-        4v1["4v1 <tt>op_4v1: demux(| (m, a), tl! (clients, msgs, errs) | match m<br>{<br>    Message :: ConnectRequest =&gt; clients.give(a), Message :: ChatMsg { .. } =&gt;<br>    msgs.give(m), _ =&gt; errs.give(m),<br>})</tt>"]
+        4v1["4v1 <tt>op_4v1: demux(| (msg, addr), var_args! (clients, msgs, errs) | match msg<br>{<br>    Message :: ConnectRequest =&gt; clients.give(addr), Message :: ChatMsg { .. }<br>    =&gt; msgs.give(msg), _ =&gt; errs.give(msg),<br>})</tt>"]
         5v1["5v1 <tt>op_5v1: tee()</tt>"]
         6v1["6v1 <tt>op_6v1: for_each(| m | println! (&quot;Received unexpected message type: {:?}&quot;, m))</tt>"]
     end
@@ -232,22 +218,20 @@ flowchart TB
 The chat client is not very different from the echo server client, with two small additions and two 
 new design patterns. The additions are 
 (1) it has a Rust helper routine `pretty_print_msg` for formatting output, and (2) it sends a
-`ConnectRequest` message to the server upon invocation. The new design patterns are (a) a pipeline that runs once 
+`ConnectRequest` message to the server upon invocation. The new design patterns are (a) a degenerate `source_iter` pipeline that runs once 
 as a "bootstrap" in the first epoch, and (b) the use of
 `cross_join` as a "gated buffer" to postpone sending messages.
 
-The prelude of the file is the same as the echo server client, with the addition of three crates for 
-handling dataflow graph display, `chrono` timestamps and `colored` output. This is followed by the 
-`pretty_print_msg` function, which is fairly self-explanatory.
+The prelude of the file is almost the same as the echo server client, with the addition of a crate for 
+handling `colored` text output. This is followed by the `pretty_print_msg` function, which is fairly self-explanatory.
 
 ```rust,ignore
 use crate::protocol::Message;
+use crate::{GraphType, Opts};
 use chrono::prelude::*;
 use hydroflow::hydroflow_syntax;
 use hydroflow::util::{UdpSink, UdpStream};
-use std::net::SocketAddr;
 
-use crate::GraphType;
 use chrono::Utc;
 use colored::Colorize;
 
@@ -272,25 +256,28 @@ fn pretty_print_msg(msg: Message) {
 }
 ```
 
-This brings us to the `run_client` function. As in `run_server` we begin with a standard pattern of a `merge`d `outbound_chan`, 
+This brings us to the `run_client` function. As in `run_server` we begin by ensuring the server address 
+is supplied. We then have the hydroflow code starting with a standard pattern of a `merge`d `outbound_chan`, 
 and a `demux`ed `inbound_chan`. The client handles only two inbound `Message` types: `Message::ConnectResponse` and `Message::ChatMsg`.
 
  
 ```rust,ignore
-pub(crate) async fn run_client(
-    outbound: UdpSink,
-    inbound: UdpStream,
-    server_addr: SocketAddr,
-    name: String,
-    graph: Option<GraphType>,
-) {
+pub(crate) async fn run_client(outbound: UdpSink, inbound: UdpStream, opts: Opts) {
+    // server_addr is required for client
+    let server_addr = match opts.server_addr {
+        Some(addr) => {
+            println!("Connecting to server at {:?}", addr);
+            addr
+        }
+        None => panic!("Client requires a server address"),
+    };
     println!("Client live!");
 
     let mut hf = hydroflow_syntax! {
         // set up channels
         outbound_chan = merge() -> dest_sink_serde(outbound);
         inbound_chan = source_stream_serde(inbound) -> map(|(m, _)| m)
-            ->  demux(|m, tl!(acks, msgs, errs)|
+            ->  demux(|m, var_args!(acks, msgs, errs)|
                     match m {
                         Message::ConnectResponse => acks.give(m),
                         Message::ChatMsg {..} => msgs.give(m),
@@ -302,8 +289,8 @@ pub(crate) async fn run_client(
 The core logic of the client consists of three dataflow pipelines shown below. 
 
 1. The first pipeline is the "bootstrap" alluded to above.
-It starts with `source_iter` operator on a single, opaque "unit" (`()`) value. This value is available when the client begins, which means 
-this pipeline runs immediately on startup, and generates a single `ConnectRequest` message which is sent to the server.
+It starts with `source_iter` operator that operates over a single, opaque "unit" (`()`) value. This value is available when the client begins, which means 
+this pipeline runs once, immediately on startup, and generates a single `ConnectRequest` message which is sent to the server.
 
 2. The second pipeline reads from `source_stdin` and sends messages to the server. It differs from our echo-server example in the use of a `cross_join`
 with `inbound_chan[acks]`. In principle, this cross-join is like that of the server: it forms pairs between all messages and all servers that send a `ConnectResponse` ack. 
@@ -315,15 +302,15 @@ when the client receives its sole `ConnectResponse`.
 3. The final pipeline simple pretty-prints the messages received from the server.
 
 ```rust,ignore
-        // send a single connection request on startup
+       // send a single connection request on startup
         source_iter([()]) -> map(|_m| (Message::ConnectRequest, server_addr)) -> [0]outbound_chan;
 
         // take stdin and send to server as a msg
-        // the join serves to buffer msgs until the connection request is acked
+        // the cross_join serves to buffer msgs until the connection request is acked
         msg_send = cross_join() -> map(|(msg, _)| (msg, server_addr)) -> [1]outbound_chan;
         lines = source_stdin()
           -> map(|l| Message::ChatMsg {
-                    nickname: name.clone(),
+                    nickname: opts.name.clone(),
                     message: l.unwrap(),
                     ts: Utc::now()})
           -> [0]msg_send;
@@ -334,7 +321,7 @@ when the client receives its sole `ConnectResponse`.
     };
 
     // optionally print the dataflow graph
-    if let Some(graph) = graph {
+    if let Some(graph) = opts.graph {
         let serde_graph = hf
             .serde_graph()
             .expect("No graph found, maybe failed to parse.");
@@ -363,7 +350,7 @@ flowchart TB
         7v1["7v1 <tt>op_7v1: source_iter([()])</tt>"]
         8v1["8v1 <tt>op_8v1: map(| _m | (Message :: ConnectRequest, server_addr))</tt>"]
         11v1["11v1 <tt>op_11v1: source_stdin()</tt>"]
-        12v1["12v1 <tt>op_12v1: map(| l | Message :: ChatMsg<br>{ nickname : name.clone(), message : l.unwrap(), ts : Utc :: now() })</tt>"]
+        12v1["12v1 <tt>op_12v1: map(| l | Message :: ChatMsg<br>{ nickname : opts.name.clone(), message : l.unwrap(), ts : Utc :: now() })</tt>"]
         9v1["9v1 <tt>op_9v1: cross_join()</tt>"]
         10v1["10v1 <tt>op_10v1: map(| (msg, _) | (msg, server_addr))</tt>"]
         1v1["1v1 <tt>op_1v1: merge()</tt>"]
@@ -372,7 +359,7 @@ flowchart TB
     subgraph "sg_2v1 stratum 0"
         3v1["3v1 <tt>op_3v1: source_stream_serde(inbound)</tt>"]
         4v1["4v1 <tt>op_4v1: map(| (m, _) | m)</tt>"]
-        5v1["5v1 <tt>op_5v1: demux(| m, tl! (acks, msgs, errs) | match m<br>{<br>    Message :: ConnectResponse =&gt; acks.give(m), Message :: ChatMsg { .. } =&gt;<br>    msgs.give(m), _ =&gt; errs.give(m),<br>})</tt>"]
+        5v1["5v1 <tt>op_5v1: demux(| m, var_args! (acks, msgs, errs) | match m<br>{<br>    Message :: ConnectResponse =&gt; acks.give(m), Message :: ChatMsg { .. } =&gt;<br>    msgs.give(m), _ =&gt; errs.give(m),<br>})</tt>"]
         6v1["6v1 <tt>op_6v1: for_each(| m | println! (&quot;Received unexpected message type: {:?}&quot;, m))</tt>"]
         13v1["13v1 <tt>op_13v1: for_each(pretty_print_msg)</tt>"]
     end
@@ -407,8 +394,9 @@ Start client "alice" in terminal 2 and type some messages, and you'll see them
 echoed back to you. This will appear in colored fonts in most terminals
 (but unfortunately not in this markdown-based book!)
 ```html
-% cargo run -p hydroflow --example chat -- --name "alice" --role client --client-addr 127.0.0.1:9090 --server-addr 127.0.0.1:12347
-Client is bound to 127.0.0.1:9090, connecting to Server at 127.0.0.1:12347
+% cargo run -p hydroflow --example chat -- --name "alice" --role client --server-addr 127.0.0.1:12347
+Listening on 127.0.0.1:50617
+Connecting to server at 127.0.0.1:12347
 Client live!
 Hello (hello hello) ... is there anybody in here?
 Dec 13, 12:04:34 alice: Hello (hello hello) ... is there anybody in here?
@@ -422,8 +410,9 @@ Now start client "bob" in terminal 3, and notice how he instantly receives the b
 (The messages may not be printed in the same order as they were timestamped! The `cross_join` operator is not guaranteed to preserve order, nor
 is the udp network. Fixing these issues requires extra client logic that we leave as an exercise to the reader.)
 ```console
-% cargo run -p hydroflow --example chat -- --name "bob" --role client --client-addr 127.0.0.1:9091 --server-addr 127.0.0.1:12347
-Client is bound to 127.0.0.1:9091, connecting to Server at 127.0.0.1:12347
+% cargo run -p hydroflow --example chat -- --name "bob" --role client --server-addr 127.0.0.1:12347
+Listening on 127.0.0.1:63018
+Connecting to server at 127.0.0.1:12347
 Client live!
 Dec 13, 12:05:01 alice: Is there anyone home?
 Dec 13, 12:04:58 alice: Just nod if you can hear me.

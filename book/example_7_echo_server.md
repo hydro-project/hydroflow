@@ -34,18 +34,19 @@ We start with a `main` function that parses command-line options, and invokes th
 role-specific service.
 After a prelude of imports, we start by defining an `enum` for the `Role`s that the service supports. 
 
-```rust, ignore
-use clap::{ArgEnum, Parser};
+use clap::{Parser, ValueEnum};
 use client::run_client;
 use hydroflow::tokio;
 use hydroflow::util::{bind_udp_bytes, ipv4_resolve};
 use server::run_server;
+use std::net::SocketAddr;
 
 mod client;
+mod helpers;
 mod protocol;
 mod server;
 
-#[derive(Clone, ArgEnum, Debug)]
+#[derive(Clone, ValueEnum, Debug)]
 enum Role {
     Client,
     Server,
@@ -57,15 +58,15 @@ Following that, we use Rust's [`clap`](https://docs.rs/clap/latest/clap/) (Comma
 ```rust,ignore
 #[derive(Parser, Debug)]
 struct Opts {
-    #[clap(arg_enum, long)]
+    #[clap(value_enum, long)]
     role: Role,
-    #[clap(long)]
-    addr: Option<String>,
-    #[clap(long)]
-    server_addr: String,
+    #[clap(long, value_parser = ipv4_resolve)]
+    addr: Option<SocketAddr>,
+    #[clap(long, value_parser = ipv4_resolve)]
+    server_addr: Option<SocketAddr>,
 }
 ```
-This sets up 3 command-line options: `role`, `addr`, and `server_addr`. The `addr` option is optional, but the `role` and `server_addr` options are required. The `clap` crate will parse the command-line options and populate the `Opts` struct with the values.
+This sets up 3 command-line flags: `role`, `addr`, and `server_addr`. The `addr` and `server_addr` flags are optional, but the `role` and `server_addr` options are required. The `clap` crate will parse the command-line options and populate the `Opts` struct with the values.
 
 This brings us to the `main` function itself. It is prefaced by a `#[tokio::main]` attribute, which is a macro that sets up the tokio runtime. This is necessary because Hydroflow uses the tokio runtime for asynchronous execution.  
 
@@ -74,31 +75,26 @@ This brings us to the `main` function itself. It is prefaced by a `#[tokio::main
 async fn main() {
     // parse command line arguments
     let opts = Opts::parse();
-    let server_addr = ipv4_resolve(opts.server_addr.clone());
+    // if no addr was provided, we ask the OS to assign a local port by passing in "localhost:0"
+    let addr = opts
+        .addr
+        .unwrap_or_else(|| ipv4_resolve("localhost:0").unwrap());
+
+    // allocate `outbound` sink and `inbound` stream
+    let (outbound, inbound, addr) = bind_udp_bytes(addr).await;
+    println!("Listening on {:?}", addr);
 ```
 
-After parsing the command line arguments and resolving the server address, we get into invoking the client or server code. Before we do so, we set up some Rust-based networking. Specifically, in both cases we will need to allocate a UDP socket that is used for both sending and receiving messages. We do this by calling the async `bind_udp_bytes` function, which is defined in the `hydroflow/src/util` module. As an async function it returns a `Future`, so requires appending `.await`; the function returns a pair of type `(UdpSink, UdpSource)`. These are the types that we'll use in Hydroflow to send and receive messages. (Note: your IDE might expand out the `UdpSink` and `UdpSource` traits to their more verbose definitions. This is fine; you can ignore for now.)
+After parsing the command line arguments we set up some Rust-based networking. Specifically, for either client or server roles we will need to allocate a UDP socket that is used for both sending and receiving messages. We do this by calling the async `bind_udp_bytes` function, which is defined in the `hydroflow/src/util` module. As an async function it returns a `Future`, so requires appending `.await`; the function returns a triple of type `(UdpSink, UdpSource, SocketAddr)`. The first two are the types that we'll use in Hydroflow to send and receive messages. (Note: your IDE might expand out the `UdpSink` and `UdpSource` traits to their more verbose definitions. This is fine; you can ignore for now.) The SocketAddr is there in case you specified port 0 in your `addr` argument, in which case this return value tells you what port the OS has assigned for you.
 
-For the server case, all that's left is to invoke `run_server` and pass it the network information. Note that the server is also asynchronous, so we append `.await` to that call as well. The program will block on this call until the server is done (which should only happen when it fails).
+All that's left is to fire up the code for the appropriate role!
 ```rust,ignore
-    // depending on the role, pass in arguments to the right function
     match opts.role {
         Role::Server => {
-            // allocate `outbound` and `inbound` sockets
-            let (outbound, inbound) = bind_udp_bytes(server_addr).await;
-            run_server(outbound, inbound).await;
+            run_server(outbound, inbound, opts).await;
         }
-```
-
-In the client case, we need one more piece of information passed down: the address of the server. We get this by calling the `ipv4_resolve` function, which is also defined in the `hydroflow/src/util` module. This function takes a string and returns a `SocketAddr` type, which is the address/port structure that  `UdpSink` and `UdpSource` will use. Invoking `run_client` is similar to the server case, except that we pass in the server address as well.
-```rust,ignore
         Role::Client => {
-            // resolve the server's IP address
-            let client_addr = ipv4_resolve(opts.client_addr.clone().unwrap());
-            // allocate `outbound` and `inbound` sockets
-            let (outbound, inbound) = bind_udp_bytes(client_addr).await;
-            // run the client
-            run_client(outbound, inbound, server_addr).await;
+            run_client(outbound, inbound, opts).await;
         }
     }
 }
@@ -119,9 +115,9 @@ pub struct EchoMsg {
 ```
 
 # server.rs
-Things get interesting when we look at the `run_server` function. This function is the main entry point for the server. It takes as arguments the `outbound` and `inbound` sockets, and the `graph` type. The `outbound` and `inbound` sockets are the same ones that we allocated in `main.rs`. The `graph` type is an enum that we defined in `main.rs`, and is used to control whether Hydroflow emits a dataflow diagram.
+Things get interesting when we look at the `run_server` function. This function is the main entry point for the server. It takes as arguments the `outbound` and `inbound` sockets from `main`, and the `Opts` (which are ignored). 
 
-After printing a cheery message, we get the surface syntax for the server, consisting of three short pipelines:
+After printing a cheery message, we get into the Hydroflow code for the server, consisting of three short pipelines.
 
 ```rust,ignore
 use crate::protocol::EchoMsg;
@@ -131,57 +127,104 @@ use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::util::{UdpSink, UdpStream};
 use std::net::SocketAddr;
 
-pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream) {
+pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, _opts: crate::Opts) {
     println!("Server live!");
 
-
-   let mut flow: Hydroflow = hydroflow_syntax! {
-        // Inbound channel sharing
+    let mut flow: Hydroflow = hydroflow_syntax! {
+        // Define a shared inbound channel
         inbound_chan = source_stream_serde(inbound) -> tee();
 
-        // Logic
-        inbound_chan[0] -> for_each(|(m, a): (EchoMsg, SocketAddr)| println!("Got {:?} from {:?}", m, a));
-        inbound_chan[1] -> map(|(EchoMsg { payload, .. }, addr)| (EchoMsg { payload, ts: Utc::now() }, addr))
-            -> dest_sink_serde(outbound);
+        // Print all messages for debugging purposes
+        inbound_chan[0]
+            -> for_each(|(msg, addr): (EchoMsg, SocketAddr)| println!("{}: Got {:?} from {:?}", Utc::now(), msg, addr));
+
+        // Echo back the Echo messages with updated timestamp
+        inbound_chan[1]
+            -> map(|(EchoMsg {payload, ..}, addr)| (EchoMsg { payload, ts: Utc::now() }, addr) ) -> dest_sink_serde(outbound);
     };
+
+    // run the server
+    flow.run_async().await;
+}
 ```
 Lets take these one at a time. 
 
-The first pipeline, `inbound_chan` uses a source operator we have not seen before, [`source_stream_serde()`](./surface_ops.gen.md#source_stream_serde). This is a streaming source like `source_stream`, but for network streams. It takes a `UdpSource` as an argument, and has a particular output type: a stream of `(T, SocketAddr)` pairs where `T` is some type that implements the `Serialize` and `Deserialize` traits, and `SocketAddr` is the network address of the sender of the item. In this case, `T` is `EchoMsg`, which we defined in `protocol.rs`, and the `SocketAddr` is the address of the client that sent the message. We pipe the result into a `tee()` for reuse.
+The first pipeline, `inbound_chan` uses a source operator we have not seen before, [`source_stream_serde()`](./surface_ops.gen.md#source_stream_serde). This is a streaming source like `source_stream`, but for network streams. It takes a `UdpSource` as an argument, and has a particular output type: a stream of `(T, SocketAddr)` pairs where `T` is some type that implements the `Serialize` and `Deserialize` traits (together known as "serde"), and `SocketAddr` is the network address of the sender of the item. In this case, `T` is `EchoMsg`, which we defined in `protocol.rs`, and the `SocketAddr` is the address of the client that sent the message. We pipe the result into a `tee()` for reuse.
 
 The second pipeline is a simple `for_each` to print the messages received at the server.
 
 The third and final pipeline constructs a response `EchoMsg` with the local timestamp copied in. It then pipes the result into a sink operator we have not seen before, [`dest_sink_serde()`](./surface_ops.gen.md#dest_sink_serde). This is a sink operator like `dest_sink`, but for network streams. It takes a `UdpSink` as an argument, and requires a particular input type: a stream of `(T, SocketAddr)` pairs where `T` is some type that implements the `Serialize` and `Deserialize` traits, and `SocketAddr` is the network address of the destination. In this case, `T` is once again `EchoMsg`, and the `SocketAddr` is the address of the client that sent the original message.
 
 The remaining line of code runs the server. The `run_async()` function is a method on the `Hydroflow` type. It is an async function, so we append `.await` to the call. The program will block on this call until the server is done.
-
-```rust,ignore
-    // run the server
-    flow.run_async().await;
-}
-```
-
 ## client.rs
-The client is as simple as the server, consisting only of two pipelines. The first uses another new source operator [`source_stdin()`](./surface_ops.gen.md#source_stdin), which does what you might expect: streams lines of text as they arrive from `stdin` (i.e. as they are typed into a terminal). It then uses a `map` to construct an `EchoMsg` with the current timestamp. The result is piped into a sink operator [`dest_sink_serde()`](./surface_ops.gen.md#dest_sink_serde), which sends the message to the server. The second operator is a `for_each` that prints the messages echoed back from the server.
+The client begins by making sure the user specified a server address at the command line. After printing a message to the terminal, it constructs a hydroflow graph.
+
+Again, we start the hydroflow code defining shared inbound and outbound channels. The code here is simplified compared
+to the server because the `inbound_chan` and `outbound_chan` are each referenced only once, so they do not require `tee` or `merge` operators, respectively (they have been commented out).
+
+The `inbound_chan` drives a pipeline that prints messages to the screen. 
+
+Only the last pipeline is novel for us by now. It uses another new source operator [`source_stdin()`](./surface_ops.gen.md#source_stdin), which does what you might expect: it streams lines of text as they arrive from `stdin` (i.e. as they are typed into a terminal). It then uses a `map` to construct an `EchoMsg` with each line of text and the current timestamp. The result is piped into a sink operator [`dest_sink_serde()`](./surface_ops.gen.md#dest_sink_serde), which sends the message to the server.
+
+The client logic ends by launching the flow graph with `flow.run_async().await.unwrap()`.
 
 ```rust,ignore
 use crate::protocol::EchoMsg;
+use crate::Opts;
 use chrono::prelude::*;
 use hydroflow::hydroflow_syntax;
 use hydroflow::util::{UdpSink, UdpStream};
 use std::net::SocketAddr;
 
-pub(crate) async fn run_client(outbound: UdpSink, inbound: UdpStream, server_addr: SocketAddr) {
-    println!("Attempting to connect to server at {:?}", server_addr);
+pub(crate) async fn run_client(outbound: UdpSink, inbound: UdpStream, opts: Opts) {
+    // server_addr is required for client
+    let server_addr = match opts.server_addr {
+        Some(addr) => {
+            println!("Connecting to server at {:?}", addr);
+            addr
+        }
+        None => panic!("Client requires a server address"),
+    };
     println!("Client live!");
 
     let mut flow = hydroflow_syntax! {
-        // take stdin and send to server as an Echo::Message
-        source_stdin() -> map(|l| (EchoMsg{ payload: l.unwrap(), ts: Utc::now(), }, server_addr) )
-            -> dest_sink_serde(outbound);
+        // Define shared inbound and outbound channels
+        inbound_chan = source_stream_serde(inbound)
+            // -> tee() // commented out since we only use this once in the client template
+        ;
+        outbound_chan = // merge() ->  // commented out since we only use this once in the client template
+            dest_sink_serde(outbound);
 
-        // receive and print messages
-        source_stream_serde(inbound) -> for_each(|(m, _a): (EchoMsg, SocketAddr) | println!("{:?}", m));
+        // Print all messages for debugging purposes
+        inbound_chan
+            -> for_each(|(m, a): (EchoMsg, SocketAddr)| println!("{}: Got {:?} from {:?}", Utc::now(), m, a));
+
+        // take stdin and send to server as an Message::Echo
+        source_stdin() -> map(|l| (EchoMsg{ payload: l.unwrap(), ts: Utc::now(), }, server_addr) )
+            -> outbound_chan;
+    };
+
+    flow.run_async().await.unwrap();
+}
+```
+
+
+
+```rust,ignore
+        // Define shared inbound and outbound channels
+        inbound_chan = source_stream_serde(inbound)
+            // -> tee() // commented out since we only use this once in the client template
+        ;
+        outbound_chan = // merge() ->  // commented out since we only use this once in the client template
+            dest_sink_serde(outbound);
+
+        // Print all messages for debugging purposes
+        inbound_chan[1]
+            -> for_each(|(m, a): (Message, SocketAddr)| println!("{}: Got {:?} from {:?}", Utc::now(), m, a));
+
+        // take stdin and send to server as an Message::Echo
+        source_stdin() -> map(|l| (Message::Echo{ payload: l.unwrap(), ts: Utc::now(), }, server_addr) )
+            -> outbound_chan;
     };
 
     flow.run_async().await.unwrap();
@@ -193,23 +236,25 @@ As described in `hydroflow/hydroflow/example/echoserver/README.md`, we can run t
 
 Fire up the server in terminal 1:
 ```console
-% cargo run -p hydroflow --example echoserver -- --role server --server-addr localhost:12347
+% cargo run -p hydroflow --example echoserver -- --role server --addr localhost:12347
 ```
 
 Then start the client in terminal 2 and type some messages!
 ```console
-% cargo run -p hydroflow --example echoserver -- --role client --addr localhost:9090 --server-addr localhost:12347
-Attempting to connect to server at 127.0.0.1:12347
+% cargo run -p hydroflow --example echoserver -- --role client --server-addr localhost:12347
+Listening on 127.0.0.1:54532
+Connecting to server at 127.0.0.1:12347
 Client live!
-This is a test 
-EchoMsg { payload: "This is a test", ts: 2022-12-12T23:42:13.053293Z }
-This is the rest!
-EchoMsg { payload: "This is the rest!", ts: 2022-12-12T23:42:20.181371Z }
+This is a test
+2022-12-15 05:40:11.258052 UTC: Got Echo { payload: "This is a test", ts: 2022-12-15T05:40:11.257145Z } from 127.0.0.1:12347
+This is the rest
+2022-12-15 05:40:14.025216 UTC: Got Echo { payload: "This is the rest", ts: 2022-12-15T05:40:14.023577Z } from 127.0.0.1:12347
 ```
 
 And have a look back at the server console!
 ```console
+Listening on 127.0.0.1:12347
 Server live!
-Got EchoMsg { payload: "This is a test", ts: 2022-12-12T23:42:13.049499Z } from 127.0.0.1:9090
-Got EchoMsg { payload: "This is the rest!", ts: 2022-12-12T23:42:20.179337Z } from 127.0.0.1:9090
+2022-12-15 05:40:11.256640 UTC: Got Echo { payload: "This is a test", ts: 2022-12-15T05:40:11.254207Z } from 127.0.0.1:54532
+2022-12-15 05:40:14.023363 UTC: Got Echo { payload: "This is the rest", ts: 2022-12-15T05:40:14.020897Z } from 127.0.0.1:54532
 ```
