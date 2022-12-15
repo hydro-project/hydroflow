@@ -1,50 +1,20 @@
 error[E0271]: type mismatch resolving `<impl Pusherator<Item = (bytes::Bytes, SocketAddr)> as Pusherator>::Item == bytes::Bytes`
   --> tests/compile-fail/surface_dest_sink_baditem.rs:14:16
    |
-11 |       let mut df = hydroflow_syntax! {
-   |  __________________-
-12 | |         source_iter(0..10)
-13 | |             -> map(|i| bytes::Bytes::from_static(&b"hello world!"[i..(i + 2)]))
+13 |               -> map(|i| bytes::Bytes::from_static(&b"hello world!"[i..(i + 2)]))
+   |  ________________-
 14 | |             -> dest_sink(outbound);
-   | |                ^^^^^^^^^^^^^^^^^^^ expected struct `Bytes`, found tuple
-15 | |     };
-   | |_____- required by a bound introduced by this call
+   | |                ^^^^^^^^^^^^^^^^^^-
+   | |________________|_________________|
+   |                  |                 required by a bound introduced by this call
+   |                  expected struct `Bytes`, found tuple
    |
    = note: expected struct `bytes::Bytes`
                found tuple `(bytes::Bytes, SocketAddr)`
-note: required by a bound in `Pivot::<I, P>::new`
-  --> $WORKSPACE/pusherator/src/pivot.rs
-   |
-   |     P: Pusherator<Item = I::Item>,
-   |                   ^^^^^^^^^^^^^^ required by this bound in `Pivot::<I, P>::new`
-
-error[E0271]: type mismatch resolving `<impl Pusherator<Item = (bytes::Bytes, SocketAddr)> as Pusherator>::Item == bytes::Bytes`
-  --> tests/compile-fail/surface_dest_sink_baditem.rs:11:18
-   |
-11 |       let mut df = hydroflow_syntax! {
-   |  __________________^
-12 | |         source_iter(0..10)
-13 | |             -> map(|i| bytes::Bytes::from_static(&b"hello world!"[i..(i + 2)]))
-14 | |             -> dest_sink(outbound);
-15 | |     };
-   | |_____^ expected struct `Bytes`, found tuple
-   |
-   = note: expected struct `bytes::Bytes`
-               found tuple `(bytes::Bytes, SocketAddr)`
-note: required by a bound in `Pivot`
-  --> $WORKSPACE/pusherator/src/pivot.rs
-   |
-   |     P: Pusherator<Item = I::Item>,
-   |                   ^^^^^^^^^^^^^^ required by this bound in `Pivot`
-   = note: this error originates in the macro `hydroflow_syntax` (in Nightly builds, run with -Z macro-backtrace for more info)
-
-error[E0599]: the method `run` exists for struct `Pivot<impl Iterator<Item = bytes::Bytes>, impl Pusherator<Item = (bytes::Bytes, SocketAddr)>>`, but its trait bounds were not satisfied
+note: required by a bound in `check_pivot_run`
   --> tests/compile-fail/surface_dest_sink_baditem.rs:13:16
    |
 13 |               -> map(|i| bytes::Bytes::from_static(&b"hello world!"[i..(i + 2)]))
    |  ________________^
 14 | |             -> dest_sink(outbound);
-   | |__________________________________^ method cannot be called on `Pivot<impl Iterator<Item = bytes::Bytes>, impl Pusherator<Item = (bytes::Bytes, SocketAddr)>>` due to unsatisfied trait bounds
-   |
-   = note: the following trait bounds were not satisfied:
-           `<impl Pusherator<Item = (bytes::Bytes, SocketAddr)> as Pusherator>::Item = bytes::Bytes`
+   | |__________________________________^ required by this bound in `check_pivot_run`
