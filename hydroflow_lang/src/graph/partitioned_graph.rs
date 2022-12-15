@@ -262,7 +262,11 @@ impl PartitionedGraph {
                             .join(push_ident.span())
                             .unwrap_or_else(|| push_ident.span());
                         subgraph_op_iter_code.push(quote_spanned! {pivot_span=>
-                            #root::pusherator::pivot::Pivot::new(#pull_ident, #push_ident).run();
+                            #[inline(always)]
+                            fn check_pivot_run<Pull: ::std::iter::Iterator<Item = Item>, Push: #root::pusherator::Pusherator<Item = Item>, Item>(pull: Pull, push: Push) {
+                                #root::pusherator::pivot::Pivot::new(pull, push).run();
+                            }
+                            check_pivot_run(#pull_ident, #push_ident);
                         });
                     }
                 };
