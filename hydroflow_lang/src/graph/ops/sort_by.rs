@@ -15,7 +15,7 @@ use quote::quote_spanned;
 ///     -> for_each(|x| println!("{:?}", x));
 /// ```
 #[hydroflow_internalmacro::operator_docgen]
-pub const SORTBY: OperatorConstraints = OperatorConstraints {
+pub const SORT_BY: OperatorConstraints = OperatorConstraints {
     name: "sort_by",
     hard_range_inn: RANGE_1,
     soft_range_inn: RANGE_1,
