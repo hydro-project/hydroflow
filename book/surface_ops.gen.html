@@ -514,11 +514,11 @@ source_iter([1,2,3,4,5])
 </span><span class="boring">__hf.run_available();
 </span><span class="boring">}
 </span></code></pre></pre>
-<h2 id="groupby"><a class="header" href="#groupby"><code>groupby</code></a></h2>
+<h2 id="group_by"><a class="header" href="#group_by"><code>group_by</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
-<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; groupby(A, B) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
+<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; group_by(A, B) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
 </tbody></table>
-</div><!-- GENERATED "hydroflow_lang/src/graph/ops/groupby.rs" -->
+</div><!-- GENERATED "hydroflow_lang/src/graph/ops/group_by.rs" -->
 <blockquote>
 <p>1 input stream of type (K,V1), 1 output stream of type (K,V2).
 The output will have one tuple for each distinct K, with an accumulated value of type V2.</p>
@@ -536,7 +536,7 @@ are accumulated via the closures in the arguments.</p>
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>source_iter([(&quot;toy&quot;, 1), (&quot;toy&quot;, 2), (&quot;shoe&quot;, 11), (&quot;shoe&quot;, 35), (&quot;haberdashery&quot;, 7)])
-    -&gt; groupby(|| 0, |old: &amp;mut u32, val: u32| *old += val)
+    -&gt; group_by(|| 0, |old: &amp;mut u32, val: u32| *old += val)
     -&gt; for_each(|(k, v)| println!(&quot;Total for group {} is {}&quot;, k, v));
 <span class="boring">};
 </span><span class="boring">__hf.run_available();
@@ -577,6 +577,26 @@ source_iter(vec![1, 1, 2, 3, 2, 1, 3])
 source_iter(vec![2, 3, 1])
     -&gt; sort()
     -&gt; for_each(|x| println!(&quot;{}&quot;, x));
+<span class="boring">};
+</span><span class="boring">__hf.run_available();
+</span><span class="boring">}
+</span></code></pre></pre>
+<h2 id="sort_by"><a class="header" href="#sort_by"><code>sort_by</code></a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
+<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; sort_by(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
+</tbody></table>
+</div><!-- GENERATED "hydroflow_lang/src/graph/ops/sort_by.rs" -->
+<p>Takes a stream as input and produces a version of the stream as output
+sorted according to the key extracted by the closure.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
+</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
+</span>// should print (1, 'z'), (2, 'y'), (3, 'x') (in order)
+source_iter(vec![(2, 'y'), (3, 'x'), (1, 'z')])
+    -&gt; sort_by(|(k, _v)| k)
+    -&gt; for_each(|x| println!(&quot;{:?}&quot;, x));
 <span class="boring">};
 </span><span class="boring">__hf.run_available();
 </span><span class="boring">}
