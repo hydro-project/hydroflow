@@ -388,7 +388,7 @@ impl FlatGraph {
                         }
                     }
                 }
-                Node::Handoff => todo!("Node::Handoff"),
+                Node::Handoff { .. } => todo!("Node::Handoff"),
             }
         }
     }
@@ -413,7 +413,7 @@ impl FlatGraph {
                 Node::Operator(op) => {
                     writeln!(write, "{:?} = {};", key.data(), op.to_token_stream())?;
                 }
-                Node::Handoff => unimplemented!("HANDOFF IN FLAT GRAPH."),
+                Node::Handoff { .. } => unimplemented!("HANDOFF IN FLAT GRAPH."),
             }
         }
         writeln!(write)?;
@@ -450,7 +450,7 @@ impl FlatGraph {
                         .replace('"', "&quot;")
                         .replace('\n', "<br>"),
                 ),
-                Node::Handoff => writeln!(write, r#"    {:?}{{"handoff"}}"#, key.data()),
+                Node::Handoff { .. } => writeln!(write, r#"    {:?}{{"handoff"}}"#, key.data()),
             }?;
         }
         writeln!(write)?;

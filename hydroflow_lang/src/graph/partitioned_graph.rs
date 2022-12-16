@@ -54,7 +54,7 @@ impl PartitionedGraph {
     pub fn node_id_as_string(&self, node_id: GraphNodeId, is_pred: bool) -> String {
         match &self.nodes[node_id] {
             Node::Operator(_) => format!("op_{:?}", node_id.data()),
-            Node::Handoff => format!(
+            Node::Handoff { .. } => format!(
                 "hoff_{:?}_{}",
                 node_id.data(),
                 if is_pred { "recv" } else { "send" }
@@ -64,23 +64,25 @@ impl PartitionedGraph {
 
     pub fn node_id_as_ident(&self, node_id: GraphNodeId, is_pred: bool) -> Ident {
         let name = self.node_id_as_string(node_id, is_pred);
-        Ident::new(&*name, self.nodes[node_id].span())
+        let span = match (is_pred, &self.nodes[node_id]) {
+            (_, Node::Operator(operator)) => operator.span(),
+            (true, &Node::Handoff { src_span, .. }) => src_span,
+            (false, &Node::Handoff { dst_span, .. }) => dst_span,
+        };
+        Ident::new(&*name, span)
     }
 
     pub fn as_code(&self, root: TokenStream) -> TokenStream {
         let handoffs = self
             .nodes
             .iter()
-            .filter(|(_node_id, node)| matches!(node, Node::Handoff))
-            .map(|(node_id, _node)| {
-                let ident_send = Ident::new(
-                    &*format!("hoff_{:?}_send", node_id.data()),
-                    Span::call_site(),
-                );
-                let ident_recv = Ident::new(
-                    &*format!("hoff_{:?}_recv", node_id.data()),
-                    Span::call_site(),
-                );
+            .filter_map(|(node_id, node)| match node {
+                Node::Operator(_) => None,
+                &Node::Handoff { src_span, dst_span } => Some((node_id, (src_span, dst_span))),
+            })
+            .map(|(node_id, (src_span, dst_span))| {
+                let ident_send = Ident::new(&*format!("hoff_{:?}_send", node_id.data()), dst_span);
+                let ident_recv = Ident::new(&*format!("hoff_{:?}_recv", node_id.data()), src_span);
                 let hoff_name = Literal::string(&*format!("handoff {:?}", node_id));
                 quote! {
                     let (#ident_send, #ident_recv) =
@@ -138,7 +140,7 @@ impl PartitionedGraph {
                         let node = &self.nodes[node_id];
                         let op = match node {
                             Node::Operator(op) => op,
-                            Node::Handoff => unreachable!("Handoffs are not part of subgraphs."),
+                            Node::Handoff { .. } => unreachable!("Handoffs are not part of subgraphs."),
                         };
 
                         let op_span = node.span();
@@ -326,7 +328,7 @@ impl PartitionedGraph {
                 Node::Operator(operator) => {
                     operator.to_token_stream().to_string()
                 }
-                Node::Handoff => {
+                Node::Handoff { .. } => {
                     "handoff".to_string()
                 }
             }
@@ -341,10 +343,10 @@ impl PartitionedGraph {
             g.nodes.insert(dst, self.node_to_txt(dst));
 
             // add handoffs
-            if let Node::Handoff = &self.nodes[src] {
+            if let Node::Handoff { .. } = &self.nodes[src] {
                 g.handoffs.insert(src, true);
             }
-            if let Node::Handoff = &self.nodes[dst] {
+            if let Node::Handoff { .. } = &self.nodes[dst] {
                 g.handoffs.insert(dst, true);
             }
 
