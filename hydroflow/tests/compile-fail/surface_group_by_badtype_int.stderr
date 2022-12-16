@@ -1,5 +1,15 @@
-error[E0610]: `{integer}` is a primitive type and therefore doesn't have fields
+error[E0271]: expected `std::collections::vec_deque::IntoIter<{integer}>` to be an iterator that yields `(_, _)`, but it yields `{integer}`
+ --> tests/compile-fail/surface_group_by_badtype_int.rs:5:9
+  |
+5 |         source_iter(0..1)
+  |         ^^^^^^^^^^^^^^^^^ expected tuple, found integer
+6 |             -> group_by(|| 0, |old: &mut u32, val: u32| *old += val)
+  |                ----------------------------------------------------- required by a bound introduced by this call
+  |
+  = note: expected tuple `(_, _)`
+              found type `{integer}`
+note: required by a bound in `check_input`
  --> tests/compile-fail/surface_group_by_badtype_int.rs:6:16
   |
 6 |             -> group_by(|| 0, |old: &mut u32, val: u32| *old += val)
-  |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `check_input`
