@@ -403,12 +403,12 @@ pub fn test_fold_sort() {
 }
 
 #[test]
-pub fn test_groupby() {
+pub fn test_group_by() {
     let (items_send, items_recv) = hydroflow::util::unbounded_channel::<(u32, Vec<u32>)>();
 
     let mut df = hydroflow_syntax! {
         source_stream(items_recv)
-            -> groupby(Vec::new, |old: &mut Vec<u32>, mut x: Vec<u32>| old.append(&mut x))
+            -> group_by(Vec::new, |old: &mut Vec<u32>, mut x: Vec<u32>| old.append(&mut x))
             -> for_each(|v| print!("{:?}, ", v));
     };
 
@@ -427,6 +427,57 @@ pub fn test_groupby() {
     df.run_available();
 
     println!();
+}
+
+#[test]
+pub fn test_sort_by() {
+    let mut df = hydroflow_syntax! {
+        source_iter(vec!((2, 'y'), (3, 'x'), (1, 'z')))
+            -> sort_by(|(k, _v)| k)
+            -> for_each(|v| println!("{:?}", v));
+    };
+
+    println!(
+        "{}",
+        df.serde_graph()
+            .expect("No graph found, maybe failed to parse.")
+            .to_mermaid()
+    );
+    df.run_available();
+    println!();
+}
+
+#[test]
+fn sort_by_owned() {
+    #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
+    struct Dummy {
+        x: String,
+        y: i8,
+    }
+
+    let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<Dummy>();
+
+    let dummies: Vec<Dummy> = vec![
+        Dummy {
+            x: "a".to_string(),
+            y: 2,
+        },
+        Dummy {
+            x: "b".to_string(),
+            y: 1,
+        },
+    ];
+    let mut dummies_saved = dummies.clone();
+
+    let mut df = hydroflow_syntax! {
+        source_iter(dummies) -> sort_by(|d| &d.x) -> for_each(|d| out_send.send(d).unwrap());
+    };
+    df.run_available();
+    let results = collect_ready::<Vec<_>, _>(&mut out_recv);
+    dummies_saved.sort_unstable_by(|d1, d2| d1.y.cmp(&d2.y));
+    assert_ne!(&dummies_saved, &*results);
+    dummies_saved.sort_unstable_by(|d1, d2| d1.x.cmp(&d2.x));
+    assert_eq!(&dummies_saved, &*results);
 }
 
 #[test]
@@ -760,47 +811,4 @@ pub fn test_reduce() {
     pairs_send.send((0, 3)).unwrap();
     pairs_send.send((0, 3)).unwrap();
     df.run_available();
-}
-
-use serde::{Deserialize, Serialize};
-#[derive(PartialEq, Eq, Clone, Debug, Deserialize, Serialize)]
-pub struct UsizeMessage {
-    payload: usize,
-}
-#[test]
-pub fn simple_test() {
-    // Create our channel input
-    let (input_example, example_recv) = hydroflow::util::unbounded_channel::<UsizeMessage>();
-
-    let mut flow = hydroflow_syntax! {
-        source_stream(example_recv)
-        -> filter_map(|n: UsizeMessage| {
-            let n2 = n.payload * n.payload;
-            if n2 > 10 {
-                Some(n2)
-            }
-            else {
-                None
-            }
-        })
-        -> flat_map(|n| (n..=n+1))
-        -> for_each(|n| println!("Ahoj {}", n))
-    };
-
-    println!("A");
-    input_example.send(UsizeMessage { payload: 1 }).unwrap();
-    input_example.send(UsizeMessage { payload: 0 }).unwrap();
-    input_example.send(UsizeMessage { payload: 2 }).unwrap();
-    input_example.send(UsizeMessage { payload: 3 }).unwrap();
-    input_example.send(UsizeMessage { payload: 4 }).unwrap();
-    input_example.send(UsizeMessage { payload: 5 }).unwrap();
-
-    flow.run_available();
-
-    println!("B");
-    input_example.send(UsizeMessage { payload: 6 }).unwrap();
-    input_example.send(UsizeMessage { payload: 7 }).unwrap();
-    input_example.send(UsizeMessage { payload: 8 }).unwrap();
-    input_example.send(UsizeMessage { payload: 9 }).unwrap();
-    flow.run_available();
 }

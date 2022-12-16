@@ -17,12 +17,12 @@ use quote::quote_spanned;
 ///
 /// ```hydroflow
 /// source_iter([("toy", 1), ("toy", 2), ("shoe", 11), ("shoe", 35), ("haberdashery", 7)])
-///     -> groupby(|| 0, |old: &mut u32, val: u32| *old += val)
+///     -> group_by(|| 0, |old: &mut u32, val: u32| *old += val)
 ///     -> for_each(|(k, v)| println!("Total for group {} is {}", k, v));
 ///  ```
 #[hydroflow_internalmacro::operator_docgen]
-pub const GROUPBY: OperatorConstraints = OperatorConstraints {
-    name: "groupby",
+pub const GROUP_BY: OperatorConstraints = OperatorConstraints {
+    name: "group_by",
     hard_range_inn: RANGE_1,
     soft_range_inn: RANGE_1,
     hard_range_out: RANGE_1,

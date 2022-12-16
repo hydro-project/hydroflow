@@ -91,7 +91,7 @@ const BATCH_C: &[Employee] = &[
 /// Uses the core API.
 /// SQL: SELECT department FROM employees WHERE 20_000 <= SUM(salary) GROUP BY department
 #[test]
-fn groupby_monotonic_core() {
+fn group_by_monotonic_core() {
     let mut hf = Hydroflow::new();
 
     let (source_send, source_recv) = hf.make_edge::<_, VecHandoff<Employee>>("source handoff");
@@ -145,7 +145,7 @@ fn groupby_monotonic_core() {
 // /// Uses the surface (builder) API.
 // /// SQL: SELECT department FROM employees WHERE 20_000 <= SUM(salary) GROUP BY department
 // #[test]
-// fn groupby_monotonic_surface() {
+// fn group_by_monotonic_surface() {
 //     use hydroflow::builder::prelude::*;
 
 //     let mut hf_builder = HydroflowBuilder::new();
@@ -197,7 +197,7 @@ fn groupby_monotonic_core() {
 // /// Takes in BATCH_A in the first epoch, then BATCH_B *and* BATCH_C in the second epoch.
 // /// SQL (per batch): SELECT department, name, salary FROM employees WHERE salary = MAX(salary) GROUP BY department
 // #[test]
-// fn groupby_nonmon_surface() {
+// fn group_by_nonmon_surface() {
 //     use hydroflow::builder::prelude::*;
 
 //     let mut hf_builder = HydroflowBuilder::new();
