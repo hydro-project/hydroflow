@@ -9,8 +9,10 @@ cd <myproject>
 cargo build
 ```
 
-## Launching the Template Application
-The template application assumes that there are distinct "roles" (classes of service) that can be launched via the same executable. 
+## Introducing the Template Application
+The template application is a Hydroflow-centric, long-running distributed application (service). As
+shipped, it assumes that there are distinct "roles" 
+(classes of service) that can be launched via the same executable. 
 By default, the application provides a `server` and `client` role; these are easily overridden in the `Opts` struct in `src/main.rs`.
 Command line arguments allow you to launch with a specific role (`--role`) and an address to bind to (`--addr`). 
 If you don't wish to choose an address or port number, you can simply omit the `--addr` argument and the service 
@@ -20,14 +22,6 @@ a separate project for each executable.
 By default, the application also allows you to optionally specify the address of a remote server (`--server-addr`) and 
 a type of dataflow graph to be emitted (`--graph`); 
 these can be removed from the `Opts` struct in `src/main.rs` if they are not needed. 
-
-
-To launch a service instance manually, it is sufficient to run the following command:
-```console
-% cargo run -- --role <role>
-```
-where `<role>` is the role of the service (e.g. `server` or `client`). In our client-server setup, 
-the client role must also be provided with the address of the server to connect to (`--server-addr`).
 
 For testing its usually helpful to run multiple instances in separate terminals.
 Once your code seems to be working correctly, the [hydroplane](https://github.com/hydro-project/hydroplane) project 
