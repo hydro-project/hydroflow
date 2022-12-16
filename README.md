@@ -1,6 +1,15 @@
-This is a template for a Rust project that uses [Hydroflow](http://github.com/hydro-project/hydroflow) for distributed services.
+## Getting Started
+This is a template for a Rust project that uses [Hydroflow](http://github.com/hydro-project/hydroflow) for distributed services. To install, simply run 
+```bash
+cargo generate hydro-project/hydroflow-template
+```
+You will be prompted to name your project. Once the command completes, you can cd into the project and build the template.
+```bash
+cd <myproject>
+cargo build
+```
 
-## Launching
+## Launching the Template Application
 The template assumes that there are distinct "roles" (classes of service) that can be launched via the same executable. 
 By default, the template provides a `server` and `client` role; these are easily overridden in the `Opts` struct in `src/main.rs`.
 Command line arguments allow you to launch with a specific role (`--role`) and an address to bind to (`--addr`). 
