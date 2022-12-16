@@ -191,7 +191,7 @@ impl WriteContextArgs<'_> {
                 self.node_id.data(),
                 suffix
             ),
-            Span::call_site(),
+            self.op_span,
         )
     }
 }
