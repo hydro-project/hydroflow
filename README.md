@@ -10,14 +10,14 @@ cargo build
 ```
 
 ## Launching the Template Application
-The template assumes that there are distinct "roles" (classes of service) that can be launched via the same executable. 
-By default, the template provides a `server` and `client` role; these are easily overridden in the `Opts` struct in `src/main.rs`.
+The template application assumes that there are distinct "roles" (classes of service) that can be launched via the same executable. 
+By default, the application provides a `server` and `client` role; these are easily overridden in the `Opts` struct in `src/main.rs`.
 Command line arguments allow you to launch with a specific role (`--role`) and an address to bind to (`--addr`). 
 If you don't wish to choose an address or port number, you can simply omit the `--addr` argument and the service 
 will bind to a random port on localhost. If you want separate executables, you can use this template multiple times to generate
 a separate project for each executable.
 
-By default, the template also allows you to optionally specify the address of a remote server (`--server-addr`) and 
+By default, the application also allows you to optionally specify the address of a remote server (`--server-addr`) and 
 a type of dataflow graph to be emitted (`--graph`); 
 these can be removed from the `Opts` struct in `src/main.rs` if they are not needed. 
 
@@ -33,7 +33,7 @@ For testing its usually helpful to run multiple instances in separate terminals.
 Once your code seems to be working correctly, the [hydroplane](https://github.com/hydro-project/hydroplane) project 
 provides a framework for launching and managing multiple instances of a service either locally or in a distributed environment.
 
-### Launching the Unmodified Template Project
+### Launching the Unmodified Template Application
 The provided code implements an echo server and client. To run it unmodified, open 2 terminals.
 
 In one terminal run the server like so:
@@ -49,7 +49,7 @@ The client listens on stdin, and sends (newline-delimited) messages that it rece
 The client also prints any messages it receives to stdout.
 Meanwhile, the server waits for messages, which it echoes back to the sender. 
 
-The template also includes an optional command-line argument to print out a dataflow graph of the hydroflow code.
+The application also includes an optional command-line argument to print out a dataflow graph of the hydroflow code.
 Adding the `--graph <graph_type>` flag to the end of the command lines above will print out a node-and-edge diagram of the chosen service. 
 Supported values for `<graph_type>` include [mermaid](https://mermaid-js.github.io/) and [dot](https://graphviz.org/doc/info/lang.html).
 
@@ -65,13 +65,13 @@ src/<role>.rs       - The code for a service with the given role. Default files 
 
 The `src/main.rs` file is where the command-line arguments are parsed and the appropriate service is launched.
 It also contains the `Opts` struct, which uses the [clap](https://docs.rs/clap/latest/clap/) crate to 
-specify the command-line arguments that are accepted by the template.
+specify the command-line arguments that are accepted by the application.
 It is possible to change the command-line arguments by modifying the `Opts` struct.
 Before launching the service, the `main` function binds to the specified address and prints out the address that was bound to.
 
 The `src/protocol` file contains the enum `Message`, which can include messages with very different structures. 
 The `Message` must provide the `Serialize` and `Deserialize` traits, which are used by the [serde](https://docs.serde.rs/serde/) crate.
-In the template, the `Message` enum includes an `Echo` message that has a (`String`) payload and timestamp; it also includes
+In the application, the `Message` enum includes an `Echo` message that has a (`String`) payload and timestamp; it also includes
 `Heartbeat` and `HeartbeatAck` messages that carry no information other than their type. (Messages are delivered with the sender 
 address attached, so these empty message types can be useful.) 
 
@@ -89,7 +89,7 @@ Each service file also includes code to generate the dataflow graph for the serv
 The ASCII spec for the graph is printed to stdout on launch.
 
 ## Communication Patterns
-No particular communication pattern is assumed by Hydroflow. The unmodified template is designed to be used in a "star topology": 
+No particular communication pattern is assumed by Hydroflow. The unmodified template application is designed to be used in a "star topology": 
 multiple independent clients talking to a single server. However, the template can be easily modified to support other topologies. 
 Additional examples are provided in the [hydroflow](https://github.com/hydro-project/hydroflow) repository in the `hydroflow/examples` directory.
 
