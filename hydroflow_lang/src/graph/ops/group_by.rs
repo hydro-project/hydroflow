@@ -45,12 +45,16 @@ pub const GROUP_BY: OperatorConstraints = OperatorConstraints {
         let initfn = &arguments[0];
         let aggfn = &arguments[1];
         let write_iterator = quote_spanned! {op_span=>
-            let #ident = #input.fold(std::collections::HashMap::new(), |mut ht, nxt| {
-                let e = ht.entry(nxt.0).or_insert_with(#initfn);
-                #[allow(clippy::redundant_closure_call)]
-                (#aggfn)(e, nxt.1);
-                ht
-            }).into_iter();
+            let #ident = {
+                #[inline(always)]
+                fn check_input<Iter: ::std::iter::Iterator<Item = (A, B)>, A, B>(iter: Iter) -> impl ::std::iter::Iterator<Item = (A, B)> { iter }
+                check_input(#input).fold(::std::collections::HashMap::new(), |mut ht, nxt| {
+                    let e = ht.entry(nxt.0).or_insert_with(#initfn);
+                    #[allow(clippy::redundant_closure_call)]
+                    (#aggfn)(e, nxt.1);
+                    ht
+                }).into_iter()
+            };
         };
         Ok(OperatorWriteOutput {
             write_iterator,
