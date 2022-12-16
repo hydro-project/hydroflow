@@ -121,12 +121,12 @@ fn make_subgraph_collect(
     let topo_sort = graph_algorithms::topo_sort(
         nodes
             .iter()
-            .filter(|&(_, node)| !matches!(node, Node::Handoff))
+            .filter(|&(_, node)| !matches!(node, Node::Handoff { .. }))
             .map(|(node_id, _)| node_id),
         |v| {
             graph
                 .predecessor_nodes(v)
-                .filter(|&pred| !matches!(nodes[pred], Node::Handoff))
+                .filter(|&pred| !matches!(nodes[pred], Node::Handoff { .. }))
         },
     );
 
@@ -176,15 +176,20 @@ fn make_subgraphs(
 
     // Insert handoffs between subgraphs (or on subgraph self-loop edges)
     for edge_id in handoff_edges {
-        let (src, dst) = graph.edge(edge_id).unwrap();
+        let (src_id, dst_id) = graph.edge(edge_id).unwrap();
 
         // Already has a handoff, no need to insert one.
-        if matches!(nodes[src], Node::Handoff) || matches!(nodes[dst], Node::Handoff) {
+        let src_node = &nodes[src_id];
+        let dst_node = &nodes[dst_id];
+        if matches!(src_node, Node::Handoff { .. }) || matches!(dst_node, Node::Handoff { .. }) {
             continue;
         }
 
-        let (_node_id, out_edge_id) =
-            insert_intermediate_node(nodes, ports, graph, Node::Handoff, edge_id);
+        let hoff = Node::Handoff {
+            src_span: src_node.span(),
+            dst_span: dst_node.span(),
+        };
+        let (_node_id, out_edge_id) = insert_intermediate_node(nodes, ports, graph, hoff, edge_id);
 
         // Update barrier_crossers for inserted node.
         if let Some(delay_type) = barrier_crossers.remove(edge_id) {
@@ -281,7 +286,7 @@ fn find_subgraph_strata(
         Default::default();
 
     for (node_id, node) in nodes.iter() {
-        if matches!(node, Node::Handoff) {
+        if matches!(node, Node::Handoff { .. }) {
             assert_eq!(1, graph.successors(node_id).count());
             let (succ_edge, succ) = graph.successors(node_id).next().unwrap();
 
@@ -369,16 +374,23 @@ fn find_subgraph_strata(
                     // of the epoch and therefore delays the data until the next epoch.
 
                     // Before: A (src) -> H -> B (dst)
+                    // Then add intermediate identity:
                     let (new_node_id, new_edge_id) = insert_intermediate_node(
                         nodes,
                         ports,
                         graph,
+                        // TODO(mingwei): Proper span w/ `parse_quote_spanned!`?
                         Node::Operator(parse_quote! { identity() }),
                         edge_id,
                     );
-                    // Intermediate: A (src) -> H -> X -> B (dst)
+                    // Intermediate: A (src) -> H -> ID -> B (dst)
+                    let hoff = Node::Handoff {
+                        src_span: Span::call_site(), // TODO(mingwei): Proper spanning?
+                        dst_span: Span::call_site(),
+                    };
                     let (_hoff_node_id, _hoff_edge_id) =
-                        insert_intermediate_node(nodes, ports, graph, Node::Handoff, new_edge_id);
+                        insert_intermediate_node(nodes, ports, graph, hoff, new_edge_id);
+                    // After: A (src) -> H -> ID -> H' -> B (dst)
 
                     // Set stratum numbers.
                     let new_subgraph_id = subgraph_nodes.insert(vec![new_node_id]);
@@ -425,13 +437,13 @@ fn find_subgraph_handoffs(
         let (src_node, dst_node) = (&nodes[src], &nodes[dst]);
         match (src_node, dst_node) {
             (Node::Operator(_), Node::Operator(_)) => {}
-            (Node::Operator(_), Node::Handoff) => {
+            (Node::Operator(_), Node::Handoff { .. }) => {
                 subgraph_send_handoffs[node_subgraph[src]].push(dst);
             }
-            (Node::Handoff, Node::Operator(_)) => {
+            (Node::Handoff { .. }, Node::Operator(_)) => {
                 subgraph_recv_handoffs[node_subgraph[dst]].push(src);
             }
-            (Node::Handoff, Node::Handoff) => {
+            (Node::Handoff { .. }, Node::Handoff { .. }) => {
                 Span::call_site().unwrap().error(format!(
                     "Internal Error: Consecutive handoffs {:?} -> {:?}",
                     src.data(),
