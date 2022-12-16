@@ -33,13 +33,13 @@ new_key_type! {
 
 pub enum Node {
     Operator(Operator),
-    Handoff,
+    Handoff { src_span: Span, dst_span: Span },
 }
 impl Spanned for Node {
     fn span(&self) -> Span {
         match self {
             Node::Operator(op) => op.span(),
-            Node::Handoff => Span::call_site(),
+            &Node::Handoff { src_span, dst_span } => src_span.join(dst_span).unwrap_or(src_span),
         }
     }
 }
@@ -49,7 +49,7 @@ impl std::fmt::Debug for Node {
             Self::Operator(operator) => {
                 write!(f, "Node::Operator({} span)", PrettySpan(operator.span()))
             }
-            Self::Handoff => write!(f, "Node::Handoff"),
+            Self::Handoff { .. } => write!(f, "Node::Handoff"),
         }
     }
 }
@@ -80,7 +80,7 @@ pub fn node_color(node: &Node, inn_degree: usize, out_degree: usize) -> Option<C
                 _both_unary => None,
             },
         },
-        Node::Handoff => Some(Color::Hoff),
+        Node::Handoff { .. } => Some(Color::Hoff),
     }
 }
 
