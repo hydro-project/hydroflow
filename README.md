@@ -41,7 +41,7 @@ In another terminal run a client like so:
 ```
 The client listens on stdin, and sends (newline-delimited) messages that it receives to the server.
 The client also prints any messages it receives to stdout.
-Meanwhile, the server waits for messages, which it echoes back to the sender. 
+Meanwhile, the server waits for messages, which it echoes back to the sender and prints out locally. 
 
 The application also includes an optional command-line argument to print out a dataflow graph of the hydroflow code.
 Adding the `--graph <graph_type>` flag to the end of the command lines above will print out a node-and-edge diagram of the chosen service. 
