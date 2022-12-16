@@ -339,16 +339,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug integration test 'groupby'",
+            "name": "Debug integration test 'group_by'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--test=groupby",
+                    "--test=group_by",
                     "--package=hydroflow"
                 ],
                 "filter": {
-                    "name": "groupby",
+                    "name": "group_by",
                     "kind": "test"
                 }
             },
