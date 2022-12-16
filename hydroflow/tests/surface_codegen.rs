@@ -448,7 +448,6 @@ pub fn test_sort_by() {
 }
 
 #[test]
-#[allow(dead_code)]
 fn sort_by_owned() {
     #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
     struct Dummy {
