@@ -10,24 +10,8 @@ error[E0277]: `{integer}` is not an iterator
   = help: the trait `Iterator` is not implemented for `{integer}`
   = note: if you want to iterate between `start` until a value `end`, use the exclusive range syntax `start..end` or the inclusive range syntax `start..=end`
   = note: required for `{integer}` to implement `IntoIterator`
-
-error[E0689]: can't call method `by_ref` on ambiguous numeric type `{integer}`
+note: required by a bound in `check_iter`
  --> tests/compile-fail/surface_source_iter_badtype.rs:5:9
   |
 5 |         source_iter(5) -> for_each(std::mem::drop);
-  |         ^^^^^^^^^^^^^^
-  |
-help: you must specify a type for this binding, like `i32`
-  |
-5 |         source_iter(5): i32 -> for_each(std::mem::drop);
-  |                       +++++
-
-error[E0277]: `{integer}` is not an iterator
- --> tests/compile-fail/surface_source_iter_badtype.rs:5:9
-  |
-5 |         source_iter(5) -> for_each(std::mem::drop);
-  |         ^^^^^^^^^^^^^^ `{integer}` is not an iterator
-  |
-  = help: the trait `Iterator` is not implemented for `{integer}`
-  = note: if you want to iterate between `start` until a value `end`, use the exclusive range syntax `start..end` or the inclusive range syntax `start..=end`
-  = note: required for `{integer}` to implement `IntoIterator`
+  |         ^^^^^^^^^^^^^^ required by this bound in `check_iter`

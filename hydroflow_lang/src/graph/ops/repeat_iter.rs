@@ -21,7 +21,13 @@ pub const REPEAT_ITER: OperatorConstraints = OperatorConstraints {
                  },
                  _| {
         let write_iterator = quote_spanned! {op_span=>
-            let #ident = std::iter::IntoIterator::into_iter(#arguments);
+            let mut #ident = {
+                #[inline(always)]
+                fn check_iter<IntoIter: ::std::iter::IntoIterator<Item = Item>, Item>(into_iter: IntoIter) -> impl ::std::iter::Iterator<Item = Item> {
+                    ::std::iter::IntoIterator::into_iter(into_iter)
+                }
+                check_iter(#arguments)
+            };
         };
         Ok(OperatorWriteOutput {
             write_iterator,
