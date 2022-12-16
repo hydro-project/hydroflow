@@ -13,7 +13,7 @@ use quote::quote_spanned;
 /// Note this operator must be used within a Tokio runtime.
 ///
 /// ```rustbook
-/// # #[tokio::main]
+/// # #[tokio::main(flavor = "current_thread")]
 /// # async fn main() {
 /// // In this example we use a _bounded_ channel for our `Sink`. This is for demonstration only,
 /// // instead you should use [`hydroflow::util::unbounded_channel`]. A bounded channel results in
@@ -33,7 +33,9 @@ use quote::quote_spanned;
 ///     .expect_err("Expected time out");
 ///
 /// let mut recv = tokio_stream::wrappers::ReceiverStream::new(recv);
-/// // Only 5 elements received due to buffer size
+/// // Only 5 elements received due to buffer size.
+/// // (Note that if we were using a multi-threaded executor instead of `current_thread` it would
+/// // be possible for more items to be added as they're removed, resulting in >5 collected.)
 /// let out: Vec<_> = hydroflow::util::collect_ready(&mut recv);
 /// assert_eq!(&[0, 1, 2, 3, 4], &*out);
 /// # }
