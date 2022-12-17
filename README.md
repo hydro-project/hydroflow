@@ -16,7 +16,7 @@ See the [setup section of the book](https://hydro-project.github.io/hydroflow/bo
 cargo install mdbook mdbook-mermaid mdbook-linkcheck
 ```
 The book can then be viewed locally with a web browser by running the following from the project root.
-```bash, igore
+```bash, ignore
 mdbook serve --open
 ```
 
@@ -24,12 +24,12 @@ mdbook serve --open
 We provide a `cargo-generate` template for you to get started from a simple working example.
 
 To install `cargo-generate`, run the following:
-```bash
+```bash, ignore
 cargo install cargo-generate
 ```
 
 Then run 
-```bash
+```bash, ignore
 cargo generate gh:hydro-project/hydroflow-template
 ```
 and you will get a well-formed Hydroflow/Rust project to use as a starting point. It provides a simple Echo Server and Client, and advice
@@ -42,7 +42,6 @@ The `hydroflow/examples` subdirectory of this repository includes a number of ex
 To make running these examples in the cloud easier, we've created a Docker image that contains compiled versions of those examples. The image is defined in the `Dockerfile` in the same directory as this README.
 
 If you want to build the examples container locally, you can run
-
 ```
 docker build -t hydroflow-examples .
 ```
