@@ -2,7 +2,7 @@ error[E0271]: expected `std::collections::vec_deque::IntoIter<std::option::Optio
  --> tests/compile-fail/surface_group_by_badtype_option.rs:5:9
   |
 5 |         source_iter([ Some(5), None, Some(12) ])
-  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected tuple, found enum `Option`
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected tuple, found enum `std::option::Option`
 6 |             -> group_by(|| 0, |old: &mut u32, val: u32| *old += val)
   |                ----------------------------------------------------- required by a bound introduced by this call
   |
