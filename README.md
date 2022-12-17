@@ -9,16 +9,27 @@ Read the [Hydroflow Book](https://hydro-project.github.io/hydroflow/book/).
 ## Dev Setup
 See the [setup section of the book](https://hydro-project.github.io/hydroflow/book/setup.html).
 
+## mdBook Setup
+
+[The Hydroflow Book](https://hydro-project.github.io/hydroflow/book/) is generated using [mdBook](https://rust-lang.github.io/mdBook/). To install `mdbook` and dependencies:
+```bash, ignore
+cargo install mdbook mdbook-mermaid mdbook-linkcheck
+```
+The book can then be viewed locally with a web browser by running the following from the project root.
+```bash, ignore
+mdbook serve --open
+```
+
 ## Start with a Template Program
 We provide a `cargo-generate` template for you to get started from a simple working example.
 
 To install `cargo-generate`, run the following:
-```bash
+```bash, ignore
 cargo install cargo-generate
 ```
 
 Then run 
-```bash
+```bash, ignore
 cargo generate gh:hydro-project/hydroflow-template
 ```
 and you will get a well-formed Hydroflow/Rust project to use as a starting point. It provides a simple Echo Server and Client, and advice
@@ -31,7 +42,6 @@ The `hydroflow/examples` subdirectory of this repository includes a number of ex
 To make running these examples in the cloud easier, we've created a Docker image that contains compiled versions of those examples. The image is defined in the `Dockerfile` in the same directory as this README.
 
 If you want to build the examples container locally, you can run
-
 ```
 docker build -t hydroflow-examples .
 ```
@@ -42,13 +52,3 @@ The `scripts/multiplatform-docker-build.sh <image name>` script will build both 
 
 Example binaries are located in `/usr/src/myapp`.
 
-## mdBook Setup
-
-[The Hydroflow Book](https://hydro-project.github.io/hydroflow/book/) is generated using [mdBook](https://rust-lang.github.io/mdBook/). To install `mdbook` and dependencies:
-```bash
-cargo install mdbook mdbook-mermaid mdbook-linkcheck
-```
-The book can then be viewed locally with a web browser by running the following from the project root.
-```bash
-mdbook serve --open
-```
