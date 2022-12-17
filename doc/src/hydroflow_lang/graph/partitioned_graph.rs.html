@@ -356,8 +356,20 @@
 <a href="#356" id="356">356</a>
 <a href="#357" id="357">357</a>
 <a href="#358" id="358">358</a>
-</pre><pre class="rust"><code><span class="kw">use </span>proc_macro2::{Ident, Literal, Span, TokenStream};
-<span class="kw">use </span>quote::{quote, quote_spanned, ToTokens};
+<a href="#359" id="359">359</a>
+<a href="#360" id="360">360</a>
+<a href="#361" id="361">361</a>
+<a href="#362" id="362">362</a>
+<a href="#363" id="363">363</a>
+<a href="#364" id="364">364</a>
+<a href="#365" id="365">365</a>
+<a href="#366" id="366">366</a>
+<a href="#367" id="367">367</a>
+<a href="#368" id="368">368</a>
+<a href="#369" id="369">369</a>
+<a href="#370" id="370">370</a>
+</pre><pre class="rust"><code><span class="kw">use </span>proc_macro2::{Ident, Literal, TokenStream};
+<span class="kw">use </span>quote::{format_ident, quote, quote_spanned, ToTokens};
 <span class="kw">use </span>slotmap::{Key, SecondaryMap, SlotMap};
 <span class="kw">use </span>syn::spanned::Spanned;
 
@@ -409,7 +421,7 @@
     <span class="kw">pub fn </span>node_id_as_string(<span class="kw-2">&amp;</span><span class="self">self</span>, node_id: GraphNodeId, is_pred: bool) -&gt; String {
         <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.nodes[node_id] {
             Node::Operator(<span class="kw">_</span>) =&gt; <span class="macro">format!</span>(<span class="string">&quot;op_{:?}&quot;</span>, node_id.data()),
-            Node::Handoff =&gt; <span class="macro">format!</span>(
+            Node::Handoff { .. } =&gt; <span class="macro">format!</span>(
                 <span class="string">&quot;hoff_{:?}_{}&quot;</span>,
                 node_id.data(),
                 <span class="kw">if </span>is_pred { <span class="string">&quot;recv&quot; </span>} <span class="kw">else </span>{ <span class="string">&quot;send&quot; </span>}
@@ -419,23 +431,25 @@
 
     <span class="kw">pub fn </span>node_id_as_ident(<span class="kw-2">&amp;</span><span class="self">self</span>, node_id: GraphNodeId, is_pred: bool) -&gt; Ident {
         <span class="kw">let </span>name = <span class="self">self</span>.node_id_as_string(node_id, is_pred);
-        Ident::new(<span class="kw-2">&amp;*</span>name, <span class="self">self</span>.nodes[node_id].span())
+        <span class="kw">let </span>span = <span class="kw">match </span>(is_pred, <span class="kw-2">&amp;</span><span class="self">self</span>.nodes[node_id]) {
+            (<span class="kw">_</span>, Node::Operator(operator)) =&gt; operator.span(),
+            (<span class="bool-val">true</span>, <span class="kw-2">&amp;</span>Node::Handoff { src_span, .. }) =&gt; src_span,
+            (<span class="bool-val">false</span>, <span class="kw-2">&amp;</span>Node::Handoff { dst_span, .. }) =&gt; dst_span,
+        };
+        Ident::new(<span class="kw-2">&amp;*</span>name, span)
     }
 
-    <span class="kw">pub fn </span>as_code(<span class="kw-2">&amp;</span><span class="self">self</span>, root: TokenStream) -&gt; TokenStream {
+    <span class="kw">pub fn </span>as_code(<span class="kw-2">&amp;</span><span class="self">self</span>, root: TokenStream, include_type_guards: bool) -&gt; TokenStream {
         <span class="kw">let </span>handoffs = <span class="self">self
             </span>.nodes
             .iter()
-            .filter(|(_node_id, node)| <span class="macro">matches!</span>(node, Node::Handoff))
-            .map(|(node_id, _node)| {
-                <span class="kw">let </span>ident_send = Ident::new(
-                    <span class="kw-2">&amp;*</span><span class="macro">format!</span>(<span class="string">&quot;hoff_{:?}_send&quot;</span>, node_id.data()),
-                    Span::call_site(),
-                );
-                <span class="kw">let </span>ident_recv = Ident::new(
-                    <span class="kw-2">&amp;*</span><span class="macro">format!</span>(<span class="string">&quot;hoff_{:?}_recv&quot;</span>, node_id.data()),
-                    Span::call_site(),
-                );
+            .filter_map(|(node_id, node)| <span class="kw">match </span>node {
+                Node::Operator(<span class="kw">_</span>) =&gt; <span class="prelude-val">None</span>,
+                <span class="kw-2">&amp;</span>Node::Handoff { src_span, dst_span } =&gt; <span class="prelude-val">Some</span>((node_id, (src_span, dst_span))),
+            })
+            .map(|(node_id, (src_span, dst_span))| {
+                <span class="kw">let </span>ident_send = Ident::new(<span class="kw-2">&amp;*</span><span class="macro">format!</span>(<span class="string">&quot;hoff_{:?}_send&quot;</span>, node_id.data()), dst_span);
+                <span class="kw">let </span>ident_recv = Ident::new(<span class="kw-2">&amp;*</span><span class="macro">format!</span>(<span class="string">&quot;hoff_{:?}_recv&quot;</span>, node_id.data()), src_span);
                 <span class="kw">let </span>hoff_name = Literal::string(<span class="kw-2">&amp;*</span><span class="macro">format!</span>(<span class="string">&quot;handoff {:?}&quot;</span>, node_id));
                 <span class="macro">quote! </span>{
                     <span class="kw">let </span>(#ident_send, #ident_recv) =
@@ -493,7 +507,7 @@
                         <span class="kw">let </span>node = <span class="kw-2">&amp;</span><span class="self">self</span>.nodes[node_id];
                         <span class="kw">let </span>op = <span class="kw">match </span>node {
                             Node::Operator(op) =&gt; op,
-                            Node::Handoff =&gt; <span class="macro">unreachable!</span>(<span class="string">&quot;Handoffs are not part of subgraphs.&quot;</span>),
+                            Node::Handoff { .. } =&gt; <span class="macro">unreachable!</span>(<span class="string">&quot;Handoffs are not part of subgraphs.&quot;</span>),
                         };
 
                         <span class="kw">let </span>op_span = node.span();
@@ -565,22 +579,28 @@
                                 <span class="kw">continue</span>;
                             };
 
-                            <span class="kw">let </span>required_trait = <span class="kw">if </span>is_pull {
-                                <span class="macro">quote_spanned! </span>{op_span=&gt;
-                                    std::iter::Iterator
-                                }
-                            } <span class="kw">else </span>{
-                                <span class="macro">quote_spanned! </span>{op_span=&gt;
-                                    #root::pusherator::Pusherator
-                                }
-                            };
-                            <span class="kw">let </span>iter_type_guard = <span class="macro">quote_spanned! </span>{op_span=&gt;
-                                #<span class="macro">root::assert_var_impl!</span>(#ident: #required_trait);
-                            };
-
                             op_prologue_code.push(write_prologue);
                             subgraph_op_iter_code.push(write_iterator);
-                            subgraph_op_iter_code.push(iter_type_guard);
+                            <span class="kw">if </span>include_type_guards {
+                                <span class="kw">let </span>fn_ident = <span class="macro">format_ident!</span>(<span class="string">&quot;check_{}&quot;</span>, ident, span = op_span);
+                                <span class="kw">let </span>pull_push_trait = <span class="kw">if </span>is_pull {
+                                    <span class="macro">quote_spanned! </span>{op_span=&gt;
+                                        ::std::iter::Iterator&lt;Item = Item&gt;
+                                    }
+                                } <span class="kw">else </span>{
+                                    <span class="macro">quote_spanned! </span>{op_span=&gt;
+                                        #root::pusherator::Pusherator&lt;Item = Item&gt;
+                                    }
+                                };
+                                <span class="kw">let </span>iter_type_guard = <span class="macro">quote_spanned! </span>{op_span=&gt;
+                                    <span class="kw">let </span>#ident = {
+                                        <span class="attr">#[inline(always)]
+                                        </span><span class="kw">pub fn </span>#fn_ident&lt;Input: #pull_push_trait, Item&gt;(input: Input) -&gt; <span class="kw">impl </span>#pull_push_trait { input }
+                                        #fn_ident( #ident )
+                                    };
+                                };
+                                subgraph_op_iter_code.push(iter_type_guard);
+                            }
                             subgraph_op_iter_after_code.push(write_iterator_after);
                         }
                     }
@@ -612,7 +632,11 @@
                             .join(push_ident.span())
                             .unwrap_or_else(|| push_ident.span());
                         subgraph_op_iter_code.push(<span class="macro">quote_spanned! </span>{pivot_span=&gt;
-                            #root::pusherator::pivot::Pivot::new(#pull_ident, #push_ident).run();
+                            <span class="attr">#[inline(always)]
+                            </span><span class="kw">fn </span>check_pivot_run&lt;Pull: ::std::iter::Iterator&lt;Item = Item&gt;, Push: #root::pusherator::Pusherator&lt;Item = Item&gt;, Item&gt;(pull: Pull, push: Push) {
+                                #root::pusherator::pivot::Pivot::new(pull, push).run();
+                            }
+                            check_pivot_run(#pull_ident, #push_ident);
                         });
                     }
                 };
@@ -669,7 +693,7 @@
                 Node::Operator(operator) =&gt; {
                     operator.to_token_stream().to_string()
                 }
-                Node::Handoff =&gt; {
+                Node::Handoff { .. } =&gt; {
                     <span class="string">&quot;handoff&quot;</span>.to_string()
                 }
             }
@@ -684,10 +708,10 @@
             g.nodes.insert(dst, <span class="self">self</span>.node_to_txt(dst));
 
             <span class="comment">// add handoffs
-            </span><span class="kw">if let </span>Node::Handoff = <span class="kw-2">&amp;</span><span class="self">self</span>.nodes[src] {
+            </span><span class="kw">if let </span>Node::Handoff { .. } = <span class="kw-2">&amp;</span><span class="self">self</span>.nodes[src] {
                 g.handoffs.insert(src, <span class="bool-val">true</span>);
             }
-            <span class="kw">if let </span>Node::Handoff = <span class="kw-2">&amp;</span><span class="self">self</span>.nodes[dst] {
+            <span class="kw">if let </span>Node::Handoff { .. } = <span class="kw-2">&amp;</span><span class="self">self</span>.nodes[dst] {
                 g.handoffs.insert(dst, <span class="bool-val">true</span>);
             }
 

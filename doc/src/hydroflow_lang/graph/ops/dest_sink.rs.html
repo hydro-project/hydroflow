@@ -145,10 +145,6 @@
 <a href="#145" id="145">145</a>
 <a href="#146" id="146">146</a>
 <a href="#147" id="147">147</a>
-<a href="#148" id="148">148</a>
-<a href="#149" id="149">149</a>
-<a href="#150" id="150">150</a>
-<a href="#151" id="151">151</a>
 </pre><pre class="rust"><code><span class="kw">use super</span>::{
     OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, RANGE_0, RANGE_1,
 };
@@ -164,7 +160,7 @@
 /// Note this operator must be used within a Tokio runtime.
 ///
 /// ```rustbook
-/// # #[tokio::main]
+/// # #[tokio::main(flavor = &quot;current_thread&quot;)]
 /// # async fn main() {
 /// // In this example we use a _bounded_ channel for our `Sink`. This is for demonstration only,
 /// // instead you should use [`hydroflow::util::unbounded_channel`]. A bounded channel results in
@@ -184,7 +180,9 @@
 ///     .expect_err(&quot;Expected time out&quot;);
 ///
 /// let mut recv = tokio_stream::wrappers::ReceiverStream::new(recv);
-/// // Only 5 elements received due to buffer size
+/// // Only 5 elements received due to buffer size.
+/// // (Note that if we were using a multi-threaded executor instead of `current_thread` it would
+/// // be possible for more items to be added as they&#39;re removed, resulting in &gt;5 collected.)
 /// let out: Vec&lt;_&gt; = hydroflow::util::collect_ready(&amp;mut recv);
 /// assert_eq!(&amp;[0, 1, 2, 3, 4], &amp;*out);
 /// # }
@@ -212,13 +210,13 @@
 /// // Like a channel, but for a stream of bytes instead of discrete objects.
 /// let (asyncwrite, mut asyncread) = tokio::io::duplex(256);
 /// // Now instead handle discrete byte strings by length-encoding them.
-/// let mut sink = tokio_util::codec::FramedWrite::new(asyncwrite, tokio_util::codec::BytesCodec::new());
+/// let sink = tokio_util::codec::FramedWrite::new(asyncwrite, tokio_util::codec::BytesCodec::new());
 ///
 /// let mut flow = hydroflow::hydroflow_syntax! {
 ///     source_iter([
 ///         Bytes::from_static(b&quot;hello&quot;),
 ///         Bytes::from_static(b&quot;world&quot;),
-///     ]) -&gt; dest_sink(&amp;mut sink);
+///     ]) -&gt; dest_sink(sink);
 /// };
 /// tokio::time::timeout(std::time::Duration::from_secs(1), flow.run_async())
 ///     .await
@@ -252,39 +250,33 @@
 
         <span class="kw">let </span>write_prologue = <span class="macro">quote_spanned! </span>{op_span=&gt;
             <span class="kw">let </span>(#send_ident, #recv_ident) = #root::tokio::sync::mpsc::unbounded_channel();
-            df
-                .spawn_task(<span class="kw">async move </span>{
-                    <span class="kw">use </span>#root::futures::sink::SinkExt;
-
-                    <span class="attr">#[allow(unused_mut)] </span><span class="kw">let </span><span class="kw-2">mut </span>recv = #recv_ident;
-                    <span class="attr">#[allow(unused_mut)] </span><span class="kw">let </span><span class="kw-2">mut </span>sink = #sink_arg;
-
-                    <span class="doccomment">/// Function is needed so `Item` is so no ambiguity for what `Item` is used
-                    /// when calling `.flush()`.
-                    </span><span class="attr">#[inline(always)]
-                    </span><span class="kw">async fn </span>feed_flush&lt;Item, Sink&gt;(
-                        <span class="kw-2">mut </span>recv: #root::tokio::sync::mpsc::UnboundedReceiver&lt;Item&gt;,
-                        <span class="kw-2">mut </span>sink: Sink,
-                    ) <span class="kw">where
-                        </span>Sink: ::std::marker::Unpin + #root::futures::sink::Sink&lt;Item&gt;,
-                        Sink::Error: ::std::fmt::Debug,
-                    {
-                        <span class="kw">use </span>#root::futures::sink::SinkExt;
-                        <span class="kw">while let </span><span class="prelude-val">Some</span>(item) = recv.recv().<span class="kw">await </span>{
+            {
+                <span class="doccomment">/// Function is needed so `Item` is so no ambiguity for what `Item` is used
+                /// when calling `.flush()`.
+                </span><span class="kw">async fn </span>sink_feed_flush&lt;Sink, Item&gt;(
+                    <span class="kw-2">mut </span>recv: #root::tokio::sync::mpsc::UnboundedReceiver&lt;Item&gt;,
+                    <span class="kw-2">mut </span>sink: Sink,
+                ) <span class="kw">where
+                    </span>Sink: ::std::marker::Unpin + #root::futures::Sink&lt;Item&gt;,
+                    Sink::Error: ::std::fmt::Debug,
+                {
+                    <span class="kw">use </span>#root::futures::SinkExt;
+                    <span class="kw">while let </span><span class="prelude-val">Some</span>(item) = recv.recv().<span class="kw">await </span>{
+                        sink.feed(item)
+                            .<span class="kw">await
+                            </span>.expect(<span class="string">&quot;Error processing async sink item.&quot;</span>);
+                        <span class="kw">while let </span><span class="prelude-val">Ok</span>(item) = recv.try_recv() {
                             sink.feed(item)
                                 .<span class="kw">await
                                 </span>.expect(<span class="string">&quot;Error processing async sink item.&quot;</span>);
-                            <span class="kw">while let </span><span class="prelude-val">Ok</span>(item) = recv.try_recv() {
-                                sink.feed(item)
-                                    .<span class="kw">await
-                                    </span>.expect(<span class="string">&quot;Error processing async sink item.&quot;</span>);
-                            }
-                            sink.flush().<span class="kw">await</span>.expect(<span class="string">&quot;Failed to flush sink.&quot;</span>);
                         }
+                        sink.flush().<span class="kw">await</span>.expect(<span class="string">&quot;Failed to flush sink.&quot;</span>);
                     }
-                    feed_flush(recv, sink).<span class="kw">await</span>;
-                })
-                .expect(<span class="string">&quot;dest_sink() must be used within a tokio runtime&quot;</span>);
+                }
+                df
+                    .spawn_task(sink_feed_flush(#recv_ident, #sink_arg))
+                    .expect(<span class="string">&quot;dest_sink() must be used within a tokio runtime&quot;</span>);
+            }
         };
 
         <span class="kw">let </span>write_iterator = <span class="macro">quote_spanned! </span>{op_span=&gt;

@@ -62,6 +62,13 @@
 <a href="#62" id="62">62</a>
 <a href="#63" id="63">63</a>
 <a href="#64" id="64">64</a>
+<a href="#65" id="65">65</a>
+<a href="#66" id="66">66</a>
+<a href="#67" id="67">67</a>
+<a href="#68" id="68">68</a>
+<a href="#69" id="69">69</a>
+<a href="#70" id="70">70</a>
+<a href="#71" id="71">71</a>
 </pre><pre class="rust"><code><span class="kw">use super</span>::{
     OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, RANGE_1,
     RANGE_ANY,
@@ -108,10 +115,17 @@
             <span class="kw">let </span>chains = inputs
                 .iter()
                 .map(|i| i.to_token_stream())
-                .reduce(|a, b| <span class="macro">quote_spanned! </span>{op_span=&gt; #a.chain(#b) })
+                .reduce(|a, b| <span class="macro">quote_spanned! </span>{op_span=&gt; check_inputs(#a, #b) })
                 .unwrap_or_else(|| <span class="macro">quote_spanned! </span>{op_span=&gt; std::iter::empty() });
             <span class="macro">quote_spanned! </span>{op_span=&gt;
-                <span class="kw">let </span>#ident = #chains;
+                <span class="kw">let </span>#ident = {
+                    <span class="attr">#[allow(unused)]
+                    #[inline(always)]
+                    </span><span class="kw">fn </span>check_inputs&lt;A: ::std::iter::Iterator&lt;Item = Item&gt;, B: ::std::iter::Iterator&lt;Item = Item&gt;, Item&gt;(a: A, b: B) -&gt; <span class="kw">impl </span>::std::iter::Iterator&lt;Item = Item&gt; {
+                        a.chain(b)
+                    }
+                    #chains
+                };
             }
         } <span class="kw">else </span>{
             <span class="macro">assert_eq!</span>(<span class="number">1</span>, outputs.len());

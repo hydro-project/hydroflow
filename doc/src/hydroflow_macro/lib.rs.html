@@ -95,7 +95,7 @@
     <span class="kw">let </span>flat_graph = FlatGraph::from_hfcode(input);
     <span class="kw">if </span>!flat_graph.emit_diagnostics() {
         <span class="kw">match </span>flat_graph.into_partitioned_graph() {
-            <span class="prelude-val">Ok</span>(part_graph) =&gt; <span class="kw">return </span>part_graph.as_code(root).into(),
+            <span class="prelude-val">Ok</span>(part_graph) =&gt; <span class="kw">return </span>part_graph.as_code(root, <span class="bool-val">true</span>).into(),
             <span class="prelude-val">Err</span>(diagnostic) =&gt; diagnostic.emit(),
         }
     }

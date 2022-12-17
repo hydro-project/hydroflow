@@ -202,13 +202,13 @@
 
 <span class="kw">pub enum </span>Node {
     Operator(Operator),
-    Handoff,
+    Handoff { src_span: Span, dst_span: Span },
 }
 <span class="kw">impl </span>Spanned <span class="kw">for </span>Node {
     <span class="kw">fn </span>span(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Span {
         <span class="kw">match </span><span class="self">self </span>{
             Node::Operator(op) =&gt; op.span(),
-            Node::Handoff =&gt; Span::call_site(),
+            <span class="kw-2">&amp;</span>Node::Handoff { src_span, dst_span } =&gt; src_span.join(dst_span).unwrap_or(src_span),
         }
     }
 }
@@ -218,7 +218,7 @@
             <span class="self">Self</span>::Operator(operator) =&gt; {
                 <span class="macro">write!</span>(f, <span class="string">&quot;Node::Operator({} span)&quot;</span>, PrettySpan(operator.span()))
             }
-            <span class="self">Self</span>::Handoff =&gt; <span class="macro">write!</span>(f, <span class="string">&quot;Node::Handoff&quot;</span>),
+            <span class="self">Self</span>::Handoff { .. } =&gt; <span class="macro">write!</span>(f, <span class="string">&quot;Node::Handoff&quot;</span>),
         }
     }
 }
@@ -249,7 +249,7 @@
                 </span>_both_unary =&gt; <span class="prelude-val">None</span>,
             },
         },
-        Node::Handoff =&gt; <span class="prelude-val">Some</span>(Color::Hoff),
+        Node::Handoff { .. } =&gt; <span class="prelude-val">Some</span>(Color::Hoff),
     }
 }
 

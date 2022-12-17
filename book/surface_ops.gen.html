@@ -856,7 +856,7 @@ my_demux[vals] -&gt; for_each(|v| println!(&quot;{}&quot;, v));
 A <code>Sink</code> is a thing into which values can be sent, asynchronously. For example, sending items
 into a bounded channel.</p>
 <p>Note this operator must be used within a Tokio runtime.</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#[tokio::main]
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#[tokio::main(flavor = &quot;current_thread&quot;)]
 </span><span class="boring">async fn main() {
 </span>// In this example we use a _bounded_ channel for our `Sink`. This is for demonstration only,
 // instead you should use [`hydroflow::util::unbounded_channel`]. A bounded channel results in
@@ -876,7 +876,9 @@ tokio::time::timeout(std::time::Duration::from_secs(1), flow.run_async())
     .expect_err(&quot;Expected time out&quot;);
 
 let mut recv = tokio_stream::wrappers::ReceiverStream::new(recv);
-// Only 5 elements received due to buffer size
+// Only 5 elements received due to buffer size.
+// (Note that if we were using a multi-threaded executor instead of `current_thread` it would
+// be possible for more items to be added as they're removed, resulting in &gt;5 collected.)
 let out: Vec&lt;_&gt; = hydroflow::util::collect_ready(&amp;mut recv);
 assert_eq!(&amp;[0, 1, 2, 3, 4], &amp;*out);
 <span class="boring">}
@@ -898,13 +900,13 @@ use tokio::io::AsyncReadExt;
 // Like a channel, but for a stream of bytes instead of discrete objects.
 let (asyncwrite, mut asyncread) = tokio::io::duplex(256);
 // Now instead handle discrete byte strings by length-encoding them.
-let mut sink = tokio_util::codec::FramedWrite::new(asyncwrite, tokio_util::codec::BytesCodec::new());
+let sink = tokio_util::codec::FramedWrite::new(asyncwrite, tokio_util::codec::BytesCodec::new());
 
 let mut flow = hydroflow::hydroflow_syntax! {
     source_iter([
         Bytes::from_static(b&quot;hello&quot;),
         Bytes::from_static(b&quot;world&quot;),
-    ]) -&gt; dest_sink(&amp;mut sink);
+    ]) -&gt; dest_sink(sink);
 };
 tokio::time::timeout(std::time::Duration::from_secs(1), flow.run_async())
     .await

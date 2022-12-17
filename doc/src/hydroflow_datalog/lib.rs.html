@@ -447,7 +447,7 @@
     <span class="kw">let </span>code_tokens = flat_graph
         .into_partitioned_graph()
         .expect(<span class="string">&quot;failed to partition&quot;</span>)
-        .as_code(root);
+        .as_code(root, <span class="bool-val">true</span>);
 
     <span class="macro">syn::parse_quote!</span>({
         #code_tokens

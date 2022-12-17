@@ -862,7 +862,7 @@
                         }
                     }
                 }
-                Node::Handoff =&gt; <span class="macro">todo!</span>(<span class="string">&quot;Node::Handoff&quot;</span>),
+                Node::Handoff { .. } =&gt; <span class="macro">todo!</span>(<span class="string">&quot;Node::Handoff&quot;</span>),
             }
         }
     }
@@ -887,7 +887,7 @@
                 Node::Operator(op) =&gt; {
                     <span class="macro">writeln!</span>(write, <span class="string">&quot;{:?} = {};&quot;</span>, key.data(), op.to_token_stream())<span class="question-mark">?</span>;
                 }
-                Node::Handoff =&gt; <span class="macro">unimplemented!</span>(<span class="string">&quot;HANDOFF IN FLAT GRAPH.&quot;</span>),
+                Node::Handoff { .. } =&gt; <span class="macro">unimplemented!</span>(<span class="string">&quot;HANDOFF IN FLAT GRAPH.&quot;</span>),
             }
         }
         <span class="macro">writeln!</span>(write)<span class="question-mark">?</span>;
@@ -924,7 +924,7 @@
                         .replace(<span class="string">&#39;&quot;&#39;</span>, <span class="string">&quot;&amp;quot;&quot;</span>)
                         .replace(<span class="string">&#39;\n&#39;</span>, <span class="string">&quot;&lt;br&gt;&quot;</span>),
                 ),
-                Node::Handoff =&gt; <span class="macro">writeln!</span>(write, <span class="string">r#&quot;    {:?}{{&quot;handoff&quot;}}&quot;#</span>, key.data()),
+                Node::Handoff { .. } =&gt; <span class="macro">writeln!</span>(write, <span class="string">r#&quot;    {:?}{{&quot;handoff&quot;}}&quot;#</span>, key.data()),
             }<span class="question-mark">?</span>;
         }
         <span class="macro">writeln!</span>(write)<span class="question-mark">?</span>;

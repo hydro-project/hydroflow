@@ -510,6 +510,18 @@
 <a href="#510" id="510">510</a>
 <a href="#511" id="511">511</a>
 <a href="#512" id="512">512</a>
+<a href="#513" id="513">513</a>
+<a href="#514" id="514">514</a>
+<a href="#515" id="515">515</a>
+<a href="#516" id="516">516</a>
+<a href="#517" id="517">517</a>
+<a href="#518" id="518">518</a>
+<a href="#519" id="519">519</a>
+<a href="#520" id="520">520</a>
+<a href="#521" id="521">521</a>
+<a href="#522" id="522">522</a>
+<a href="#523" id="523">523</a>
+<a href="#524" id="524">524</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
 
 <span class="kw">use </span>proc_macro2::Span;
@@ -633,12 +645,12 @@
     </span><span class="kw">let </span>topo_sort = graph_algorithms::topo_sort(
         nodes
             .iter()
-            .filter(|<span class="kw-2">&amp;</span>(<span class="kw">_</span>, node)| !<span class="macro">matches!</span>(node, Node::Handoff))
+            .filter(|<span class="kw-2">&amp;</span>(<span class="kw">_</span>, node)| !<span class="macro">matches!</span>(node, Node::Handoff { .. }))
             .map(|(node_id, <span class="kw">_</span>)| node_id),
         |v| {
             graph
                 .predecessor_nodes(v)
-                .filter(|<span class="kw-2">&amp;</span>pred| !<span class="macro">matches!</span>(nodes[pred], Node::Handoff))
+                .filter(|<span class="kw-2">&amp;</span>pred| !<span class="macro">matches!</span>(nodes[pred], Node::Handoff { .. }))
         },
     );
 
@@ -688,15 +700,20 @@
 
     <span class="comment">// Insert handoffs between subgraphs (or on subgraph self-loop edges)
     </span><span class="kw">for </span>edge_id <span class="kw">in </span>handoff_edges {
-        <span class="kw">let </span>(src, dst) = graph.edge(edge_id).unwrap();
+        <span class="kw">let </span>(src_id, dst_id) = graph.edge(edge_id).unwrap();
 
         <span class="comment">// Already has a handoff, no need to insert one.
-        </span><span class="kw">if </span><span class="macro">matches!</span>(nodes[src], Node::Handoff) || <span class="macro">matches!</span>(nodes[dst], Node::Handoff) {
+        </span><span class="kw">let </span>src_node = <span class="kw-2">&amp;</span>nodes[src_id];
+        <span class="kw">let </span>dst_node = <span class="kw-2">&amp;</span>nodes[dst_id];
+        <span class="kw">if </span><span class="macro">matches!</span>(src_node, Node::Handoff { .. }) || <span class="macro">matches!</span>(dst_node, Node::Handoff { .. }) {
             <span class="kw">continue</span>;
         }
 
-        <span class="kw">let </span>(_node_id, out_edge_id) =
-            insert_intermediate_node(nodes, ports, graph, Node::Handoff, edge_id);
+        <span class="kw">let </span>hoff = Node::Handoff {
+            src_span: src_node.span(),
+            dst_span: dst_node.span(),
+        };
+        <span class="kw">let </span>(_node_id, out_edge_id) = insert_intermediate_node(nodes, ports, graph, hoff, edge_id);
 
         <span class="comment">// Update barrier_crossers for inserted node.
         </span><span class="kw">if let </span><span class="prelude-val">Some</span>(delay_type) = barrier_crossers.remove(edge_id) {
@@ -793,7 +810,7 @@
         Default::default();
 
     <span class="kw">for </span>(node_id, node) <span class="kw">in </span>nodes.iter() {
-        <span class="kw">if </span><span class="macro">matches!</span>(node, Node::Handoff) {
+        <span class="kw">if </span><span class="macro">matches!</span>(node, Node::Handoff { .. }) {
             <span class="macro">assert_eq!</span>(<span class="number">1</span>, graph.successors(node_id).count());
             <span class="kw">let </span>(succ_edge, succ) = graph.successors(node_id).next().unwrap();
 
@@ -881,18 +898,25 @@
                     // of the epoch and therefore delays the data until the next epoch.
 
                     // Before: A (src) -&gt; H -&gt; B (dst)
+                    // Then add intermediate identity:
                     </span><span class="kw">let </span>(new_node_id, new_edge_id) = insert_intermediate_node(
                         nodes,
                         ports,
                         graph,
-                        Node::Operator(<span class="macro">parse_quote! </span>{ identity() }),
+                        <span class="comment">// TODO(mingwei): Proper span w/ `parse_quote_spanned!`?
+                        </span>Node::Operator(<span class="macro">parse_quote! </span>{ identity() }),
                         edge_id,
                     );
-                    <span class="comment">// Intermediate: A (src) -&gt; H -&gt; X -&gt; B (dst)
-                    </span><span class="kw">let </span>(_hoff_node_id, _hoff_edge_id) =
-                        insert_intermediate_node(nodes, ports, graph, Node::Handoff, new_edge_id);
+                    <span class="comment">// Intermediate: A (src) -&gt; H -&gt; ID -&gt; B (dst)
+                    </span><span class="kw">let </span>hoff = Node::Handoff {
+                        src_span: Span::call_site(), <span class="comment">// TODO(mingwei): Proper spanning?
+                        </span>dst_span: Span::call_site(),
+                    };
+                    <span class="kw">let </span>(_hoff_node_id, _hoff_edge_id) =
+                        insert_intermediate_node(nodes, ports, graph, hoff, new_edge_id);
+                    <span class="comment">// After: A (src) -&gt; H -&gt; ID -&gt; H&#39; -&gt; B (dst)
 
-                    <span class="comment">// Set stratum numbers.
+                    // Set stratum numbers.
                     </span><span class="kw">let </span>new_subgraph_id = subgraph_nodes.insert(<span class="macro">vec!</span>[new_node_id]);
                     subgraph_stratum.insert(new_subgraph_id, max_stratum);
                     node_subgraph.insert(new_node_id, new_subgraph_id);
@@ -937,13 +961,13 @@
         <span class="kw">let </span>(src_node, dst_node) = (<span class="kw-2">&amp;</span>nodes[src], <span class="kw-2">&amp;</span>nodes[dst]);
         <span class="kw">match </span>(src_node, dst_node) {
             (Node::Operator(<span class="kw">_</span>), Node::Operator(<span class="kw">_</span>)) =&gt; {}
-            (Node::Operator(<span class="kw">_</span>), Node::Handoff) =&gt; {
+            (Node::Operator(<span class="kw">_</span>), Node::Handoff { .. }) =&gt; {
                 subgraph_send_handoffs[node_subgraph[src]].push(dst);
             }
-            (Node::Handoff, Node::Operator(<span class="kw">_</span>)) =&gt; {
+            (Node::Handoff { .. }, Node::Operator(<span class="kw">_</span>)) =&gt; {
                 subgraph_recv_handoffs[node_subgraph[dst]].push(src);
             }
-            (Node::Handoff, Node::Handoff) =&gt; {
+            (Node::Handoff { .. }, Node::Handoff { .. }) =&gt; {
                 Span::call_site().unwrap().error(<span class="macro">format!</span>(
                     <span class="string">&quot;Internal Error: Consecutive handoffs {:?} -&gt; {:?}&quot;</span>,
                     src.data(),
