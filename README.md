@@ -12,11 +12,11 @@ See the [setup section of the book](https://hydro-project.github.io/hydroflow/bo
 ## mdBook Setup
 
 [The Hydroflow Book](https://hydro-project.github.io/hydroflow/book/) is generated using [mdBook](https://rust-lang.github.io/mdBook/). To install `mdbook` and dependencies:
-```bash
+```bash, ignore
 cargo install mdbook mdbook-mermaid mdbook-linkcheck
 ```
 The book can then be viewed locally with a web browser by running the following from the project root.
-```bash
+```bash, igore
 mdbook serve --open
 ```
 
