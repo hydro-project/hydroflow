@@ -8,7 +8,7 @@
 Our previous [echo server](./example_7_echo_server.md) example was admittedly simplistic.  In this example, we'll build something a bit more useful: a simple chat server. We will again have two roles: a `Client` and a `Server`. `Clients` will register their presence with the `Server`, which maintains a list of clients. Each `Client` sends messages to the `Server`, which will then broadcast those messages to all other clients. 
 
 ## main.rs
-The `main.rs` file here is very similar to that of the echo server, just with two new command-line arguments: one called `name` for a "nickname" in the chatroom, and another optional argument `graph` for printing a dataflow graph if desired.
+The `main.rs` file here is very similar to that of the echo server, just with two new command-line arguments: one called `name` for a "nickname" in the chatroom, and another optional argument `graph` for printing a dataflow graph if desired. To follow along, you can copy the contents of this file into the `src/main.rs` file of your template.
 
 ```rust, ignore
 use clap::{Parser, ValueEnum};
@@ -72,11 +72,8 @@ async fn main() {
 ```
 
 ## protocol.rs
-Our protocol file here expands upon what we saw with the echoserver by defining multiple message types. Note how we use a single Rust `enum` to represent all varieties of message types; this allows us to handle `Message`s of different types with a single  Rust network channel. We will use the `demux` operator to separate out these different message types on the receiving end. 
-
-The `ConnectRequest` and `ConnectResponse` messages have no payload; 
-the address of the sender and the type of the message will be sufficient information. The `ChatMsg` message type has a `nickname` field, a `message` field, and a `ts` 
-field for the timestamp. Once again we use the `chrono` crate to represent timestamps.
+Our protocol file here expands upon what we saw with the echoserver by defining multiple message types. 
+Replace the template contents of `src/protocol.rs` with the following:
 ```rust,ignore
 use chrono::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -93,20 +90,17 @@ pub enum Message {
 }
 ```
 
+Note how we use a single Rust `enum` to represent all varieties of message types; this allows us to handle `Message`s of different types with a single  Rust network channel. We will use the [`demux`](./surface_ops.gen.md#demux) operator to separate out these different message types on the receiving end. 
+
+The `ConnectRequest` and `ConnectResponse` messages have no payload; 
+the address of the sender and the type of the message will be sufficient information. The `ChatMsg` message type has a `nickname` field, a `message` field, and a `ts` 
+field for the timestamp. Once again we use the `chrono` crate to represent timestamps.
+
 ## server.rs
 The chat server is nearly as simple as the echo server. The main differences are (a) we need to handle multiple message types, 
 (b) we need to keep track of the list of clients, and (c) we need to broadcast messages to all clients. 
 
-After a short prelude, we have the Hydroflow code near the top of `run_server()`. It begins by defining `outbound_chan` as a `merge`d destination sink for network messages. Then we get to the
-more interesting `inbound_chan` definition. 
-
-The `inbound` channel is a source stream that will carry many
-types of `Message`s. We use the `[demux](./surface_ops.gen.md#demux)` operator to partition the stream objects into three channels. The `clients` channel 
-will carry the addresses of clients that have connected to the server. The `msgs` channel will carry the `ChatMsg` messages that clients send to the server. 
-The `errs` channel will carry any other messages that clients send to the server. Note the structure of the `demux` operator: it takes a closure on 
-`(Message, SocketAddr)` pairs, and a variadic tuple (`var_args!`) of output channel names—in this case `clients`, `msgs`, and `errs`. The closure is basically a big
-Rust pattern [`match`](https://doc.rust-lang.org/book/ch06-02-match.html), with one arm for each output channel name given in the variadic tuple. Note 
-that the different output channels can have different-typed messages! Note also that we destructure the incoming `Message` types into tuples of fields, to avoid having to write boilerplate code for each message type in every downstream pipeline.
+To follow along, replace the contents of `src/server.rs` with the code below:
 
 ```rust, ignore
 use crate::{GraphType, Opts};
@@ -135,17 +129,23 @@ pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, opts: Opts
         inbound_chan[errs] -> for_each(|m| println!("Received unexpected message type: {:?}", m));
 ```
 
-The remainder of the server consists of two independent pipelines. The first pipeline is one line long, 
-and is responsible for acknowledging requests from `clients`: it takes the address of the incoming `Message::ConnectRequest` 
-and sends a `ConnectResponse` back to that address. The second pipeline is responsible for broadcasting 
-all chat messages to all clients. This all-to-all pairing corresponds to the notion of a cartesian product
-or `[cross_join](./surface_ops.gen.md#cross_join)` in Hydroflow. The `cross_join` operator takes two input 
-channels and produces a single output channel with a tuple for each pair of inputs, in this case it produces
-`(Message, SocketAddr)` pairs. Conveniently, that is exactly the structure needed for sending to the `outbound_chan` sink!
-We call the cross-join pipeline `broadcast` because it effectively broadcasts all messages to all clients.
+After a short prelude, we have the Hydroflow code near the top of `run_server()`. It begins by defining `outbound_chan` as a `merge`d destination sink for network messages. Then we get to the
+more interesting `inbound_chan` definition. 
 
-Finally, the file ends with the Rust code to optionally print the dataflow graphand then start the server.
+The `inbound` channel is a source stream that will carry many
+types of `Message`s. We use the [`demux`](./surface_ops.gen.md#demux) operator to partition the stream objects into three channels. The `clients` channel 
+will carry the addresses of clients that have connected to the server. The `msgs` channel will carry the `ChatMsg` messages that clients send to the server. 
+The `errs` channel will carry any other messages that clients send to the server. 
 
+Note the structure of the `demux` operator: it takes a closure on 
+`(Message, SocketAddr)` pairs, and a variadic tuple (`var_args!`) of output channel names—in this case `clients`, `msgs`, and `errs`. The closure is basically a big
+Rust pattern [`match`](https://doc.rust-lang.org/book/ch06-02-match.html), with one arm for each output channel name given in the variadic tuple. Note 
+that the different output channels can have different-typed messages! Note also that we destructure the incoming `Message` types into tuples of fields. (If we didn't we'd either have to write boilerplate code for each message type in every downstream pipeline, or face Rust's dreaded [refutable pattern](https://doc.rust-lang.org/book/ch18-02-refutability.html) error!)
+
+
+
+The remainder of the server consists of two independent pipelines, the code to print out the flow graph,
+and the code to run the flow graph. To follow along, paste the following into the bottom of your `src/server.rs` file:
 ```rust, ignore
        // Pipeline 1: Acknowledge client connections
         clients[0] -> map(|addr| (Message::ConnectResponse, addr)) -> [0]outbound_chan;
@@ -177,6 +177,16 @@ Finally, the file ends with the Rust code to optionally print the dataflow graph
     df.run_async().await.unwrap();
 }
 ```
+
+The first pipeline is one line long, 
+and is responsible for acknowledging requests from `clients`: it takes the address of the incoming `Message::ConnectRequest` 
+and sends a `ConnectResponse` back to that address. The second pipeline is responsible for broadcasting 
+all chat messages to all clients. This all-to-all pairing corresponds to the notion of a cartesian product
+or `[cross_join](./surface_ops.gen.md#cross_join)` in Hydroflow. The `cross_join` operator takes two input 
+channels and produces a single output channel with a tuple for each pair of inputs, in this case it produces
+`(Message, SocketAddr)` pairs. Conveniently, that is exactly the structure needed for sending to the `outbound_chan` sink!
+We call the cross-join pipeline `broadcast` because it effectively broadcasts all messages to all clients.
+
 
 The mermaid graph for the server is below. The three branches of the `demux` are very clear toward the top. Note also the `tee` of the `clients` channel
 for both `ClientResponse` and broadcasting, and the `merge` of all outbound messages into `dest_sink_serde`.
@@ -215,15 +225,16 @@ flowchart TB
 ```
 
 ## client.rs
-The chat client is not very different from the echo server client, with two small additions and two 
-new design patterns. The additions are 
-(1) it has a Rust helper routine `pretty_print_msg` for formatting output, and (2) it sends a
-`ConnectRequest` message to the server upon invocation. The new design patterns are (a) a degenerate `source_iter` pipeline that runs once 
-as a "bootstrap" in the first epoch, and (b) the use of
-`cross_join` as a "gated buffer" to postpone sending messages.
+The chat client is not very different from the echo server client, with two new design patterns:
+ 1. a degenerate `source_iter` pipeline that runs once 
+as a "bootstrap" in the first epoch
+ 2. the use of `cross_join` as a "gated buffer" to postpone sending messages.
+
+We also include a Rust helper routine `pretty_print_msg` for formatting output.
 
 The prelude of the file is almost the same as the echo server client, with the addition of a crate for 
-handling `colored` text output. This is followed by the `pretty_print_msg` function, which is fairly self-explanatory.
+handling `colored` text output. This is followed by the `pretty_print_msg` function, which is fairly self-explanatory. 
+To follow along, start by replacing the contents of `src/client.rs` with the following:
 
 ```rust,ignore
 use crate::protocol::Message;
@@ -260,7 +271,7 @@ This brings us to the `run_client` function. As in `run_server` we begin by ensu
 is supplied. We then have the hydroflow code starting with a standard pattern of a `merge`d `outbound_chan`, 
 and a `demux`ed `inbound_chan`. The client handles only two inbound `Message` types: `Message::ConnectResponse` and `Message::ChatMsg`.
 
- 
+Paste the following to the bottom of `src/client.rs`:
 ```rust,ignore
 pub(crate) async fn run_client(outbound: UdpSink, inbound: UdpStream, opts: Opts) {
     // server_addr is required for client
@@ -280,20 +291,8 @@ pub(crate) async fn run_client(outbound: UdpSink, inbound: UdpStream, opts: Opts
                 );
         inbound_chan[errs] -> for_each(|m| println!("Received unexpected message type: {:?}", m));
 ```
-The core logic of the client consists of three dataflow pipelines shown below. 
-
-1. The first pipeline is the "bootstrap" alluded to above.
-It starts with `source_iter` operator that emits a single, opaque "unit" (`()`) value. This value is available when the client begins, which means 
-this pipeline runs once, immediately on startup, and generates a single `ConnectRequest` message which is sent to the server.
-
-2. The second pipeline reads from `source_stdin` and sends messages to the server. It differs from our echo-server example in the use of a `cross_join`
-with `inbound_chan[acks]`. In principle, this cross-join is like that of the server: it forms pairs between all messages and all servers that send a `ConnectResponse` ack. 
-In principle that means that the client is broadcasting each message to all servers.
-In practice, however, the client establishes at most one connection to a server. Hence over time, this pipeline starts with zero `ConnectResponse`s and is sending no messages; 
-subsequently it receives a single `ConnectResponse` and starts sending messages. The `cross_join` is thus effectively a buffer for messages, and a "gate" on that buffer that opens 
-when the client receives its sole `ConnectResponse`.
-
-3. The final pipeline simple pretty-prints the messages received from the server.
+The core logic of the client consists of three dataflow pipelines shown below. Paste this into the
+bottom of your `src/client.rs` file.
 
 ```rust,ignore
         // send a single connection request on startup
@@ -313,7 +312,23 @@ when the client receives its sole `ConnectResponse`.
         // receive and print messages
         inbound_chan[msgs] -> for_each(pretty_print_msg);
     };
+```
 
+1. The first pipeline is the "bootstrap" alluded to above.
+It starts with `source_iter` operator that emits a single, opaque "unit" (`()`) value. This value is available when the client begins, which means 
+this pipeline runs once, immediately on startup, and generates a single `ConnectRequest` message which is sent to the server.
+
+2. The second pipeline reads from `source_stdin` and sends messages to the server. It differs from our echo-server example in the use of a `cross_join`
+with `inbound_chan[acks]`. In principle, this cross-join is like that of the server: it forms pairs between all messages and all servers that send a `ConnectResponse` ack. 
+In principle that means that the client is broadcasting each message to all servers.
+In practice, however, the client establishes at most one connection to a server. Hence over time, this pipeline starts with zero `ConnectResponse`s and is sending no messages; 
+subsequently it receives a single `ConnectResponse` and starts sending messages. The `cross_join` is thus effectively a buffer for messages, and a "gate" on that buffer that opens 
+when the client receives its sole `ConnectResponse`.
+
+3. The final pipeline simple pretty-prints the messages received from the server.
+
+Finish up the file by pasting the code below for optionally generating the graph and running the flow:
+```rust,ignore
     // optionally print the dataflow graph
     if let Some(graph) = opts.graph {
         let serde_graph = hf
