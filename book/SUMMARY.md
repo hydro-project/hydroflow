@@ -23,3 +23,4 @@
 - [Architecture](./architecture.md)
   - [Subgraph In-Out Trees](./in-out_trees.md)
 - [TODO](./todo.md)
+- [On Time and Space](./time.md)
