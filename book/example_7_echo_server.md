@@ -3,7 +3,8 @@
 > * The standard project template for networked Hydroflow services.
 > * Rust's `clap` crate for command-line options
 > * Defining message types
-> * Network sources and sinks with built-in serde (`source_stream_serde`, `dest_sink_serde`)
+> * Destination operators (e.g. for sending data to a network)
+> * Network sources and dests with built-in serde (`source_stream_serde`, `dest_sink_serde`)
 > * The `source_stdin` source
 > * Long-running services via `run_async`
 
@@ -162,7 +163,7 @@ The first pipeline, `inbound_chan` uses a source operator we have not seen befor
 
 The second pipeline is a simple `for_each` to print the messages received at the server.
 
-The third and final pipeline constructs a response `EchoMsg` with the local timestamp copied in. It then pipes the result into a sink operator we have not seen before, [`dest_sink_serde()`](./surface_ops.gen.md#dest_sink_serde). This is a sink operator like `dest_sink`, but for network streams. It takes a `UdpSink` as an argument, and requires a particular input type: a stream of `(T, SocketAddr)` pairs where `T` is some type that implements the `Serialize` and `Deserialize` traits, and `SocketAddr` is the network address of the destination. In this case, `T` is once again `EchoMsg`, and the `SocketAddr` is the address of the client that sent the original message.
+The third and final pipeline constructs a response `EchoMsg` with the local timestamp copied in. It then pipes the result into a `dest_XXX` operator—the first that we've seen!  A dest is the opposite of a `source_XXX` operator: it can go at the end of a pipeline and sends data out on a tokio channel. The specific operator used here is [`dest_sink_serde()`](./surface_ops.gen.md#dest_sink_serde). This is a dest operator like `dest_sink`, but for network streams. It takes a `UdpSink` as an argument, and requires a particular input type: a stream of `(T, SocketAddr)` pairs where `T` is some type that implements the `Serialize` and `Deserialize` traits, and `SocketAddr` is the network address of the destination. In this case, `T` is once again `EchoMsg`, and the `SocketAddr` is the address of the client that sent the original message.
 
 The remaining line of code runs the server. The `run_async()` function is a method on the `Hydroflow` type. It is an async function, so we append `.await` to the call. The program will block on this call until the server is terminated.
 ## client.rs

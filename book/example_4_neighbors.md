@@ -168,7 +168,15 @@ flowchart TB
     6v1-->7v1
     8v1-->6v1
 ```
-> Strata and Handoffs: The mermaid diagram for this program shows two boxes labeled with a "stratum" (plural: "strata") number, connected by a "handoff" operator. You can ignore these for now; we'll talk about them in more detail in [time](time.md).
+Before we proceed, note in the mermaid graph how Hydroflow separates the `unique` operator and its downstream dependencies into their own
+_stratum_ (plural: _strata_). The stratum boundary before `unique` ensures that all the values are generated before `unique` executes, ensuring that all duplicates are eliminated. 
+
+Hydroflow runs each stratum
+in order, one at a time, ensuring all values are computed
+before moving on to the next stratum. Between strata we see a _handoff_, which logically buffers the 
+output of the first stratum, and delineates the separation of execution between the 2 strata.
+
+After all strata are run, Hydroflow returns to the first stratum; this begins the next _epoch_. This doesn't really matter for this example, but it is important for long-running Hydroflow services that accept input from the outside world. More on this topic in the chapter on [time](./time.md).
 
 Returning to the code, if you read the `pairs_send` calls carefully, you'll see that the example data 
 has vertices (`2`, `4`) that are more than one hop away from `0`, which were

@@ -24,3 +24,6 @@
   - [Subgraph In-Out Trees](./in-out_trees.md)
 - [TODO](./todo.md)
 - [On Time and Space](./time.md)
+- [State and Lifetimes](./state.md)
+- [Debugging](./debugging.md)
+- [Error Handling](./error_handling.md)
