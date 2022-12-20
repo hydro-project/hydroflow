@@ -171,7 +171,7 @@ fn main() {
                         check_inputs(
                             op_9v1,
                             op_10v1,
-                            &mut *sg_2v1_node_7v1_joindata_borrow,
+                            &mut sg_2v1_node_7v1_joindata_borrow,
                         )
                     };
                     let op_7v1 = {

@@ -239,7 +239,7 @@ fn main() {
                         check_inputs(
                             op_15v1,
                             op_16v1,
-                            &mut *sg_1v1_node_13v1_joindata_borrow,
+                            &mut sg_1v1_node_13v1_joindata_borrow,
                         )
                     };
                     let op_13v1 = {
@@ -321,7 +321,7 @@ fn main() {
                         check_inputs(
                             op_19v1,
                             op_20v1,
-                            &mut *sg_1v1_node_17v1_joindata_borrow,
+                            &mut sg_1v1_node_17v1_joindata_borrow,
                         )
                     };
                     let op_17v1 = {

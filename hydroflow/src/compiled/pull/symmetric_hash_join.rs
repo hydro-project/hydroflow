@@ -1,23 +1,52 @@
 use std::collections::HashMap;
 
 #[derive(Debug)]
-pub struct JoinState<K, V1, V2> {
-    ltab: HashMap<K, Vec<V1>>,
-    rtab: HashMap<K, Vec<V2>>,
-    lbuffer: Option<(K, V1, Vec<V2>)>,
-    rbuffer: Option<(K, V2, Vec<V1>)>,
+pub struct HalfJoinState<K, VBuild, VProbe> {
+    table: HashMap<K, Vec<VBuild>>,
+    buffer: Option<(K, VProbe, usize)>,
 }
-
-impl<K, V1, V2> Default for JoinState<K, V1, V2> {
+impl<K, VBuild, VProbe> Default for HalfJoinState<K, VBuild, VProbe> {
     fn default() -> Self {
         Self {
-            ltab: HashMap::new(),
-            rtab: HashMap::new(),
-            lbuffer: None,
-            rbuffer: None,
+            table: HashMap::new(),
+            buffer: None,
         }
     }
 }
+impl<K, VBuild, VProbe> HalfJoinState<K, VBuild, VProbe>
+where
+    K: Clone + Eq + std::hash::Hash,
+    VBuild: Clone + Eq,
+    VProbe: Clone,
+{
+    fn pop_buffer(&mut self) -> Option<(K, VProbe, VBuild)> {
+        let (k, v, idx) = self.buffer.as_mut()?;
+        let row = &self.table[k];
+        let result = (k.clone(), v.clone(), row[*idx].clone());
+        *idx += 1;
+        if row.len() <= *idx {
+            self.buffer = None;
+        }
+        Some(result)
+    }
+
+    fn build(&mut self, k: K, v: &VBuild) -> bool {
+        let vec = self.table.entry(k).or_insert_with(Vec::new);
+        if !vec.contains(v) {
+            vec.push(v.clone());
+            return true;
+        }
+        false
+    }
+
+    fn probe(&mut self, k: K, v: VProbe) {
+        if self.table.contains_key(&k) {
+            self.buffer = Some((k, v, 0));
+        }
+    }
+}
+
+pub type JoinState<K, V1, V2> = (HalfJoinState<K, V1, V2>, HalfJoinState<K, V2, V1>);
 
 pub struct SymmetricHashJoin<'a, K, I1, V1, I2, V2>
 where
@@ -44,43 +73,26 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
-            if let Some((k, v, vs)) = &mut self.state.lbuffer {
-                // TODO(justin): unnecessary clone (sometimes).
-                let result = (k.clone(), (v.clone(), vs.pop().unwrap()));
-                if vs.is_empty() {
-                    self.state.lbuffer = None;
-                }
-                return Some(result);
-            } else if let Some((k, v, vs)) = &mut self.state.rbuffer {
-                // TODO(justin): unnecessary clone (sometimes).
-                let result = (k.clone(), (vs.pop().unwrap(), v.clone()));
-                if vs.is_empty() {
-                    self.state.rbuffer = None;
-                }
-                return Some(result);
+            if let Some((k, v2, v1)) = self.state.0.pop_buffer() {
+                return Some((k, (v1, v2)));
+            }
+            if let Some((k, v1, v2)) = self.state.1.pop_buffer() {
+                return Some((k, (v1, v2)));
             }
 
             if let Some((k, v1)) = self.lhs.next() {
-                let vec = self.state.ltab.entry(k.clone()).or_insert_with(Vec::new);
-                if !vec.contains(&v1) {
-                    vec.push(v1.clone());
-                    if let Some(vs) = self.state.rtab.get(&k) {
-                        self.state.lbuffer = Some((k, v1, vs.clone()));
-                    }
+                if self.state.0.build(k.clone(), &v1) {
+                    self.state.1.probe(k, v1);
+                }
+                continue;
+            }
+            if let Some((k, v2)) = self.rhs.next() {
+                if self.state.1.build(k.clone(), &v2) {
+                    self.state.0.probe(k, v2);
                 }
                 continue;
             }
 
-            if let Some((k, v2)) = self.rhs.next() {
-                let vec = self.state.rtab.entry(k.clone()).or_insert_with(Vec::new);
-                if !vec.contains(&v2) {
-                    vec.push(v2.clone());
-                    if let Some(vs) = self.state.ltab.get(&k) {
-                        self.state.rbuffer = Some((k, v2, vs.clone()));
-                    }
-                }
-                continue;
-            }
             return None;
         }
     }

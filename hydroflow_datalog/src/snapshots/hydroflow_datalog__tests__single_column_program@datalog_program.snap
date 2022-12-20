@@ -180,7 +180,7 @@ fn main() {
                         check_inputs(
                             op_12v1,
                             op_13v1,
-                            &mut *sg_1v1_node_10v1_joindata_borrow,
+                            &mut sg_1v1_node_10v1_joindata_borrow,
                         )
                     };
                     let op_10v1 = {

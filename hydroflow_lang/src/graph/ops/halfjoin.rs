@@ -8,7 +8,12 @@ use syn::parse_quote;
 
 /// > 2 input streams of type <(K, V1)> and <(K, V2)>, 1 output stream of type <(K, (V1, V2))>
 ///
-/// Forms the equijoin of the tuples in the input streams by their first (key) attribute. Note that the result nests the 2nd input field (values) into a tuple in the 2nd output field.
+/// Forms the "streaming half-join" of the tuples in the input streams by their first (key)
+/// attribute. Similar to [`join`](#join), but only the first input stream is stored.
+/// TODO:MINGWEI ELABORATE
+///
+/// Note that the result nests the 2nd input field (values) into a tuple in the 2nd
+/// output field.
 ///
 /// ```hydroflow
 /// // should print `(hello, (world, cleveland))`
@@ -93,7 +98,7 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
                     #root::compiled::pull::JoinState::default()
                 },
                 quote_spanned! {op_span=>
-                    &mut #borrow_ident
+                    &mut *#borrow_ident
                 },
             ),
         };
