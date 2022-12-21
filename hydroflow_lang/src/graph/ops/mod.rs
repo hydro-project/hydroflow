@@ -50,6 +50,7 @@ pub enum DelayType {
     Tick,
 }
 
+#[derive(Clone)]
 pub struct OperatorConstraints {
     /// Operator's name.
     pub name: &'static str,
