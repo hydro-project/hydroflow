@@ -76,7 +76,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">User Guide</li><li class="chapter-item expanded "><a href="quickstart.html"><strong aria-hidden="true">1.</strong> Quickstart</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="setup.html"><strong aria-hidden="true">1.1.</strong> Setup</a></li><li class="chapter-item expanded "><a href="example_1_simplest.html"><strong aria-hidden="true">1.2.</strong> Simplest Example</a></li><li class="chapter-item expanded "><a href="example_2_simple.html"><strong aria-hidden="true">1.3.</strong> Simple Example</a></li><li class="chapter-item expanded "><a href="example_3_stream.html"><strong aria-hidden="true">1.4.</strong> A Example With Streaming Input</a></li><li class="chapter-item expanded "><a href="example_4_neighbors.html"><strong aria-hidden="true">1.5.</strong> Graph Neighbors</a></li><li class="chapter-item expanded "><a href="example_5_reachability.html"><strong aria-hidden="true">1.6.</strong> Graph Reachability</a></li><li class="chapter-item expanded "><a href="example_6_unreachability.html"><strong aria-hidden="true">1.7.</strong> Graph Un-Reachability</a></li><li class="chapter-item expanded "><a href="example_7_echo_server.html"><strong aria-hidden="true">1.8.</strong> Networked Services 1: EchoServer</a></li><li class="chapter-item expanded "><a href="example_8_chat_server.html"><strong aria-hidden="true">1.9.</strong> Networked Services 2: ChatServer</a></li></ol></li><li class="chapter-item expanded "><a href="concepts.html"><strong aria-hidden="true">2.</strong> Concepts</a></li><li class="chapter-item expanded "><a href="surface_syntax.html"><strong aria-hidden="true">3.</strong> Syntax</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="surface_embedding.html"><strong aria-hidden="true">3.1.</strong> Rust Embedding</a></li><li class="chapter-item expanded "><a href="surface_flows.html"><strong aria-hidden="true">3.2.</strong> Flows</a></li><li class="chapter-item expanded "><a href="surface_data.html"><strong aria-hidden="true">3.3.</strong> Data Sources</a></li><li class="chapter-item expanded "><a href="surface_ops.gen.html"><strong aria-hidden="true">3.4.</strong> Operators</a></li></ol></li><li class="chapter-item expanded "><a href="architecture.html"><strong aria-hidden="true">4.</strong> Architecture</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="in-out_trees.html"><strong aria-hidden="true">4.1.</strong> Subgraph In-Out Trees</a></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">User Guide</li><li class="chapter-item expanded "><a href="quickstart.html"><strong aria-hidden="true">1.</strong> Quickstart</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="setup.html"><strong aria-hidden="true">1.1.</strong> Setup</a></li><li class="chapter-item expanded "><a href="example_1_simplest.html"><strong aria-hidden="true">1.2.</strong> Simplest Example</a></li><li class="chapter-item expanded "><a href="example_2_simple.html"><strong aria-hidden="true">1.3.</strong> Simple Example</a></li><li class="chapter-item expanded "><a href="example_3_stream.html"><strong aria-hidden="true">1.4.</strong> A Example With Streaming Input</a></li><li class="chapter-item expanded "><a href="example_4_neighbors.html"><strong aria-hidden="true">1.5.</strong> Graph Neighbors</a></li><li class="chapter-item expanded "><a href="example_5_reachability.html"><strong aria-hidden="true">1.6.</strong> Graph Reachability</a></li><li class="chapter-item expanded "><a href="example_6_unreachability.html"><strong aria-hidden="true">1.7.</strong> Graph Un-Reachability</a></li><li class="chapter-item expanded "><a href="example_7_echo_server.html"><strong aria-hidden="true">1.8.</strong> Networked Services 1: EchoServer</a></li><li class="chapter-item expanded "><a href="example_8_chat_server.html"><strong aria-hidden="true">1.9.</strong> Networked Services 2: ChatServer</a></li></ol></li><li class="chapter-item expanded "><a href="concepts.html"><strong aria-hidden="true">2.</strong> Concepts</a></li><li class="chapter-item expanded "><a href="surface_syntax.html"><strong aria-hidden="true">3.</strong> Syntax</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="surface_embedding.html"><strong aria-hidden="true">3.1.</strong> Rust Embedding</a></li><li class="chapter-item expanded "><a href="surface_flows.html"><strong aria-hidden="true">3.2.</strong> Flows</a></li><li class="chapter-item expanded "><a href="surface_data.html"><strong aria-hidden="true">3.3.</strong> Data Sources</a></li><li class="chapter-item expanded "><a href="surface_ops.gen.html"><strong aria-hidden="true">3.4.</strong> Operators</a></li></ol></li><li class="chapter-item expanded "><a href="architecture.html"><strong aria-hidden="true">4.</strong> Architecture</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="in-out_trees.html"><strong aria-hidden="true">4.1.</strong> Subgraph In-Out Trees</a></li></ol></li><li class="chapter-item expanded "><a href="todo.html"><strong aria-hidden="true">5.</strong> TODO</a></li><li class="chapter-item expanded "><a href="time.html"><strong aria-hidden="true">6.</strong> On Time and Space</a></li><li class="chapter-item expanded "><a href="state.html"><strong aria-hidden="true">7.</strong> State and Lifetimes</a></li><li class="chapter-item expanded "><a href="debugging.html"><strong aria-hidden="true">8.</strong> Debugging</a></li><li class="chapter-item expanded "><a href="error_handling.html"><strong aria-hidden="true">9.</strong> Error Handling</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -159,7 +159,8 @@ usage, even if you are not familiar with Rust development.</p>
 <p>First you will need to install Rust. We recommend the conventional installation
 method, <code>rustup</code>, which allows you to easily manage and update Rust versions.</p>
 <p><a href="https://www.rust-lang.org/tools/install"><strong>Install Rust</strong></a></p>
-<p>This will install <code>rustup</code> and the Rust package manager <code>cargo</code> (and the
+<p>The link in the previous line will take you to the Rust website that shows you how to
+install <code>rustup</code> and the Rust package manager <code>cargo</code> (and the
 internally-used <code>rustc</code> compiler). <code>cargo</code> is Rust's main development tool,
 used for building, running, and testing Rust code.</p>
 <p>The following <code>cargo</code> commands will come in handy:</p>
@@ -182,23 +183,63 @@ Here are some good resources:</p>
 is a good way to learn Rust's ownership system and its
 implications.</li>
 </ul>
+<p>In this book we will be using the Hydroflow template generator, which we recommend
+as a starting point for your Hydroflow projects. For this purpose you
+will need to install the <code>cargo-generate</code> tool:</p>
+<pre><code class="language-bash">cargo install cargo-generate
+</code></pre>
 <h2 id="vs-code-setup"><a class="header" href="#vs-code-setup">VS Code Setup</a></h2>
 <p>We recommend using VS Code with the <code>rust-analyzer</code> extension (and NOT the
 <code>Rust</code> extension). To enable the pre-release version of <code>rust-analyzer</code>
 (required by some new nightly syntax we use, at least until 2022-03-14), click
 the &quot;Switch to Pre-Release Version&quot; button next to the uninstall button.</p>
-<h2 id="hydroflow-setup"><a class="header" href="#hydroflow-setup">Hydroflow Setup</a></h2>
-<p>The easiest way to get started with Hydroflow is to clone and work in the
-repository directly. You should fork the repository if you want to push your
+<h2 id="setting-up-a-hydroflow-project"><a class="header" href="#setting-up-a-hydroflow-project">Setting up a Hydroflow Project</a></h2>
+<p>The easiest way to get started with Hydroflow is to begin with a template project. 
+Create a directory where you'd like to put that project, direct your terminal there and run:</p>
+<pre><code class="language-bash">cargo generate hydro-project/hydroflow-template
+</code></pre>
+<p>You will be prompted to name your project. The <code>cargo generate</code> command will create a subdirectory 
+with the relevant files and folders. </p>
+<p>As part of generating the project, the <code>hydroflow</code> library will be downloaded as a dependency.
+You can then open the project in VS Code or IDE of your choice, or
+you can simply build the template project with <code>cargo build</code>.</p>
+<pre><code class="language-bash">cd &lt;project name&gt;
+cargo build
+</code></pre>
+<p>This should return successfully.</p>
+<p>The template provides a simple working example of a Hydroflow program.
+As a sort of &quot;hello, world&quot; of distributed systems, it implements an &quot;echo server&quot; that
+simply echoes back the messages you sent it; it also implements a client to test the server. 
+We will replace the code in that example with our own, but it's a good idea to run it first to make sure everything is working.</p>
+<pre><code class="language-console">% cargo run -- --role server
+Listening on 127.0.0.1:&lt;port&gt;
+Server live!
+</code></pre>
+<p>Take note of the server's port number, and in a separate terminal, run the client:</p>
+<pre><code class="language-console">% cd &lt;project name&gt;
+% cargo run -- --role client --server-addr 127.0.0.1:&lt;port&gt;
+Listening on 127.0.0.1:&lt;client_port&gt;
+Connecting to server at 127.0.0.1:&lt;port&gt;
+Client live!
+</code></pre>
+<p>Now you can type strings in the client, which are sent to the server, echo'ed back, and printed at the client. E.g.:</p>
+<pre><code class="language-console">Hello!
+2022-12-20 18:51:50.181647 UTC: Got Echo { payload: &quot;Hello!&quot;, ts: 2022-12-20T18:51:50.180874Z } from 127.0.0.1:61065
+</code></pre>
+<h2 id="alternative-checking-out-the-hydroflow-repository"><a class="header" href="#alternative-checking-out-the-hydroflow-repository">Alternative: Checking out the Hydroflow Repository</a></h2>
+<p>This book will assume you are using the template project, but some
+Rust experts may want to get started with Hydroflow by cloning and working in the
+repository directly. 
+You should fork the repository if you want to push your
 changes.</p>
+<p>To clone the repo, run:</p>
 <pre><code class="language-bash">git clone git@github.com:hydro-project/hydroflow.git
 </code></pre>
 <p>Hydroflow requires nightly Rust, but the repo is already configured for it via
 <code>rust-toolchain.toml</code>.</p>
 <p>We can then open the repo in VS Code or IDE of your choice. In VS Code, <code>rust-analyzer</code>
 will provide inline type and error messages, code completion, etc.</p>
-<h2 id="development"><a class="header" href="#development">Development</a></h2>
-<p>The easiest way to try Hydroflow is with an &quot;example&quot;, found in the
+<p>To work with the repository, it's best to start with an &quot;example&quot;, found in the
 <a href="https://github.com/hydro-project/hydroflow/tree/main/hydroflow/examples"><code>hydroflow/examples</code> folder</a>.
 These examples are included via the <a href="https://github.com/hydro-project/hydroflow/blob/main/hydroflow/Cargo.toml"><code>hydroflow/Cargo.toml</code> file</a>,
 so make sure to add your example there if you create a new one. The simplest
@@ -211,13 +252,27 @@ create one and add it into the <a href="https://github.com/hydro-project/hydrofl
 <blockquote>
 <p>In this example we will cover:</p>
 <ul>
-<li>How to embed a Hydroflow program spec inside Rust </li>
-<li>How to execute the Hydroflow program</li>
-<li>Two simple Hydroflow operators: <code>source_iter</code> and <code>for_each</code></li>
+<li>Modifying the Hydroflow template project</li>
+<li>How Hydroflow program specs are embedded inside Rust </li>
+<li>How to execute a simple Hydroflow program</li>
+<li>Two Hydroflow operators: <code>source_iter</code> and <code>for_each</code></li>
 </ul>
 </blockquote>
 <p>Lets start out with the simplest possible Hydroflow program, which prints out
 the numbers in <code>0..10</code>.</p>
+<p>Create a clean template project:</p>
+<pre><code class="language-console">% cargo generate hydro-project/hydroflow-template
+⚠️   Favorite `hydro-project/hydroflow-template` not found in config, using it as a git repository: https://github.com/hydro-project/hydroflow-template.git
+🤷   Project Name: simple
+🔧   Destination: /Users/jmh/code/sussudio/simple ...
+🔧   project-name: simple ...
+🔧   Generating template ...
+[ 1/11]   Done: .gitignore                                                      [ 2/11]   Done: Cargo.lock                                                      [ 3/11]   Done: Cargo.toml                                                      [ 4/11]   Done: README.md                                                       [ 5/11]   Done: rust-toolchain.toml                                             [ 6/11]   Done: src/client.rs                                                   [ 7/11]   Done: src/helpers.rs                                                  [ 8/11]   Done: src/main.rs                                                     [ 9/11]   Done: src/protocol.rs                                                 [10/11]   Done: src/server.rs                                                   [11/11]   Done: src                                                             🔧   Moving generated files into: `&lt;dir&gt;/simple`...
+💡   Initializing a fresh Git repository
+✨   Done! New project created &lt;dir&gt;/simple
+</code></pre>
+<p>Change directory into the resulting <code>simple</code> folder or open it in your IDE. Then edit the <code>src/main.rs</code> file, replacing 
+<em>all</em> of its contents with the following code:</p>
 <pre><pre class="playground"><code class="language-rust">use hydroflow::hydroflow_syntax;
 
 pub fn main() {
@@ -228,8 +283,9 @@ pub fn main() {
     flow.run_available();
 }
 </code></pre></pre>
-<p>And the output:</p>
-<pre><code class="language-txt">Hello 0
+<p>And then run the program:</p>
+<pre><code class="language-console">% cargo run
+Hello 0
 Hello 1
 Hello 2
 Hello 3
@@ -240,12 +296,12 @@ Hello 7
 Hello 8
 Hello 9
 </code></pre>
+<h2 id="understanding-the-code"><a class="header" href="#understanding-the-code">Understanding the Code</a></h2>
 <p>Although this is a trivial program, it's useful to go through it line by line.</p>
 <pre><code class="language-rust ignore">use hydroflow::hydroflow_syntax;
 </code></pre>
-<p>This import gives you everything you need from Hydroflow to write code with the 
-<a href="./surface_syntax.html"><em>surface syntax</em></a>, which is the recommended way to interact
-with Hydroflow.</p>
+<p>This import gives you everything you need from Hydroflow to write code with Hydroflow's 
+<a href="./surface_syntax.html"><em>surface syntax</em></a>.</p>
 <p>Next, inside the main method we specify a flow by calling the 
 <code>hydroflow_syntax!</code> macro. We assign the resulting <code>Hydroflow</code> instance to
 a mutable variable <code>flow</code>––mutable because we will be changing its status when we run it.</p>
@@ -255,23 +311,26 @@ a mutable variable <code>flow</code>––mutable because we will be changing it
         source_iter(0..10) -&gt; for_each(|n| println!(&quot;Hello {}&quot;, n));
     };
 </code></pre>
-<p>The flow starts with a <a href="./surface_ops.gen.html#source_iter"><code>source_iter</code></a> operator that takes the Rust
+<p>Hydroflow surface syntax defines a &quot;flow&quot; consisting of <em>operators</em> connected via <code>-&gt;</code> arrows.
+This simplest example uses a simple two-step linear flow.
+It starts with a <a href="./surface_ops.gen.html#source_iter"><code>source_iter</code></a> operator that takes the Rust
 iterator <code>0..10</code> and iterates it to emit the 
-numbers 0 through 9, and passes them along the arrow <code>-&gt;</code> operator downstream to a 
+numbers 0 through 9. That operators then passes those numbers along the <code>-&gt;</code> arrow downstream to a 
 <a href="./surface_ops.gen.html#for_each"><code>for_each</code></a> operator that invokes its closure argument to print each
 item passed in.</p>
-<p>Finally we run this flow via the <a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_available"><code>run_available()</code> method</a>.</p>
+<p>The Hydroflow surface syntax is merely a <em>specification</em>; it does not actually do anything
+until we run it.
+We run the flow from within Rust via the <a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_available"><code>run_available()</code> method</a>.</p>
 <pre><code class="language-rust ignore">    flow.run_available();
 }
 </code></pre>
 <p>Note that <code>run_available()</code> runs the Hydroflow graph until no more work is immediately
-available. In this case running the graph drains the iterator completely, so no
-more work will ever be available. But once we add in external inputs such as
-network ingress then more work might appear later. The <a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_epoch"><code>run_epoch()</code></a>,
-<a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_stratum"><code>run_stratum()</code></a>,
-<a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run"><code>run()</code></a>,
-and <a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_async"><code>run_async()</code></a>
-methods provide other ways to control the graph execution.</p>
+available. In this example flow, running the graph drains the iterator completely, so no
+more work will <em>ever</em> be available. In future examples we will use external inputs such as
+network ingress, in which case more work might appear at any time. </p>
+<h3 id="a-note-on-project-structure"><a class="header" href="#a-note-on-project-structure">A Note on Project Structure</a></h3>
+<p>The template project is intended to be a starting point for your own Hydroflow project, and you can add files and directories as you see fit. The only requirement is that the <code>src/main.rs</code> file exists and contains a <code>main()</code> function.</p>
+<p>In this simplest example we did not use a number of the files in the template: notably everything in the <code>src/</code> subdirectory other than <code>src/main.rs</code>. If you'd like to delete those extraneous files you can do so, but it's not necessary. </p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="simple-example"><a class="header" href="#simple-example">Simple Example</a></h1>
 <blockquote>
 <p>In this example we will cover some additional standard Hydroflow operators:</p>
@@ -288,6 +347,7 @@ in Hydroflow. You may be familiar with operators such as <a href="./surface_ops.
 <a href="./surface_ops.gen.html#filter"><code>filter(...)</code></a>, <a href="./surface_ops.gen.html#flatten"><code>flatten</code>(...)</a>,
 etc. from Rust iterators or from other programming languages, and these are
 also available in Hydroflow.</p>
+<p>In your <code>simple</code> project, replace the contents of <code>src/main.rs</code> with the following:</p>
 <pre><pre class="playground"><code class="language-rust">use hydroflow::hydroflow_syntax;
 
 pub fn main() {
@@ -325,11 +385,29 @@ into a stream of the individual numbers which they contain.</p>
 <p>Finally we use the now-familiar <code>for_each</code> operator to print each number.</p>
 </li>
 </ul>
+<p>Now let's run the program:</p>
+<pre><code class="language-console">% cargo run
+&lt;build output&gt;
+Howdy 16
+Howdy 17
+Howdy 25
+Howdy 26
+Howdy 36
+Howdy 37
+Howdy 49
+Howdy 50
+Howdy 64
+Howdy 65
+Howdy 81
+Howdy 82
+</code></pre>
+<h2 id="rewriting-with-combination-operators"><a class="header" href="#rewriting-with-combination-operators">Rewriting with Combination Operators</a></h2>
 <p>We can also express the same program with more aggressive use of combination operators like
 <a href="./surface_ops.gen.html#filtermap"><code>filter_map()</code></a> and <a href="./surface_ops.gen.html#flat_map"><code>flat_map()</code></a>. Hydroflow will compile these down to the same
-machine code:</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">use hydroflow::hydroflow_syntax;
-</span> pub fn main() {
+machine code.</p>
+<p>Replace the contents of <code>src/main.rs</code> with the following:</p>
+<pre><pre class="playground"><code class="language-rust">use hydroflow::hydroflow_syntax;
+ pub fn main() {
     let mut flow = hydroflow_syntax! {
         source_iter(0..10)
         -&gt; filter_map(|n| {
@@ -349,7 +427,9 @@ machine code:</p>
 }
 </code></pre></pre>
 <p>Results:</p>
-<pre><code class="language-txt">G'day 16
+<pre><code class="language-console">% cargo run
+&lt;build output&gt;
+G'day 16
 G'day 17
 G'day 25
 G'day 26
@@ -372,7 +452,7 @@ G'day 82
 </ul>
 </blockquote>
 <p>In our previous examples, data came from within the Hydroflow spec, via Rust iterators and the <a href="./surface_ops.gen.html#source_iter"><code>source_iter</code></a> operator. In most cases, however, data comes from outside the Hydroflow spec. In this example, we'll see a simple version of this idea, with data being generated on the same machine and sent into the channel programmatically via Rust.</p>
-<p>We start with a skeleton much like before:</p>
+<p>For discussion, we start with a skeleton much like before:</p>
 <pre><pre class="playground"><code class="language-rust">use hydroflow::hydroflow_syntax;
 
 pub fn main() {
@@ -394,8 +474,9 @@ called the &quot;turbofish&quot;, which is how type parameters (generic argument
 supplied to generic types and functions. In this case it specifies that this tokio channel
 transmits items of type <code>usize</code>.
 The returned <code>example_recv</code> value can be used via a <a href="./surface_ops.gen.html#source_stream"><code>source_stream</code></a>
-to build a Hydroflow subgraph just like before. Here is the same program as before, but using the
-input channel:</p>
+to build a Hydroflow subgraph just like before. </p>
+<p>Here is the same program as before, but using the
+input channel. Back in the <code>simple</code> project, replace the contents of <code>src/main.rs</code> with the following:</p>
 <pre><pre class="playground"><code class="language-rust">use hydroflow::hydroflow_syntax;
 
 pub fn main() {
@@ -414,7 +495,7 @@ pub fn main() {
             }
         })
         -&gt; flat_map(|n| (n..=n+1))
-        -&gt; for_each(|n| println!(&quot;Ahoj {}&quot;, n))
+        -&gt; for_each(|n| println!(&quot;Ahoy, {}&quot;, n))
     };
 
     println!(&quot;A&quot;);
@@ -435,22 +516,24 @@ pub fn main() {
     flow.run_available();
 }
 </code></pre></pre>
-<pre><code class="language-txt">A
-Ahoj 16
-Ahoj 17
-Ahoj 25
-Ahoj 26
+<pre><code class="language-console">% cargo run
+&lt;build output&gt;
+A
+Ahoy, 16
+Ahoy, 17
+Ahoy, 25
+Ahoy, 26
 B
-Ahoj 36
-Ahoj 37
-Ahoj 49
-Ahoj 50
-Ahoj 64
-Ahoj 65
-Ahoj 81
-Ahoj 82
+Ahoy, 36
+Ahoy, 37
+Ahoy, 49
+Ahoy, 50
+Ahoy, 64
+Ahoy, 65
+Ahoy, 81
+Ahoy, 82
 </code></pre>
-<p>At the bottom we can see how to programatically supply <code>usize</code>-typed inputs with the tokio 
+<p>At the bottom of <code>main.rs</code> we can see how to programatically supply <code>usize</code>-typed inputs with the tokio 
 <code>.send()</code> method.  We call Rust's <code>.unwrap()</code> method to ignore the error messages from 
 <code>.send()</code> in this simple case.  In later examples we'll see how to 
 allow for data coming in over a network.</p>
@@ -458,7 +541,9 @@ allow for data coming in over a network.</p>
 <blockquote>
 <p>In this example we cover:</p>
 <ul>
+<li>Assigning sub-flows to variables</li>
 <li>Our first multi-input operator, <a href="./surface_ops.gen.html#join"><code>join</code></a></li>
+<li>Indexing multi-input operators by prepending a bracket expression</li>
 <li>The <a href="./surface_ops.gen.html#unique"><code>unique</code></a> operator for removing duplicates from a stream</li>
 <li>A first exposure to the concepts of <em>strata</em> and <em>epochs</em></li>
 </ul>
@@ -497,9 +582,11 @@ below):</p>
     
   end
 </pre>
-<p>Lets take a look at some Hydroflow code that implements the program:</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">use hydroflow::hydroflow_syntax;
-</span>pub fn main() {
+<p>Lets take a look at some Hydroflow code that implements the program. In your <code>simple</code> project,
+replace the contents of <code>src/main.rs</code> with the following:</p>
+<pre><pre class="playground"><code class="language-rust">use hydroflow::hydroflow_syntax;
+
+pub fn main() {
     // An edge in the input data = a pair of `usize` vertex IDs.
     let (pairs_send, pairs_recv) = hydroflow::util::unbounded_channel::&lt;(usize, usize)&gt;();
 
@@ -532,15 +619,24 @@ below):</p>
     flow.run_available();
 }
 </code></pre></pre>
-<p>And the output:</p>
-<pre><code class="language-txt">Reached: 0
+<p>Run the program and focus on the last three lines of output, which come from <code>flow.run_available()</code>:</p>
+<pre><code class="language-console">% cargo run
+&lt;build output&gt;
+&lt;graph output&gt;
+Reached: 0
 Reached: 3
 Reached: 1
 </code></pre>
 <p>That looks right: the edges we &quot;sent&quot; into the flow that start at <code>0</code> are 
 <code>(0, 1)</code> and <code>(0, 3)</code>.</p>
-<p>As for the code itself, we start out with the origin vertex, <code>0</code>,
-and the stream of edges coming in:</p>
+<blockquote>
+<p>Note: When you run the program you may see the lines printed out in a different order. That's OK; the flow we're defining here is producing a <code>set</code> of nodes, so the order in which they are printed out is not specified. The <a href="./surface_ops.gen.html#sort_by"><code>sort_by</code></a> operator can be used to sort the output of a flow.</p>
+</blockquote>
+<h2 id="examining-the-hydroflow-code"><a class="header" href="#examining-the-hydroflow-code">Examining the Hydroflow Code</a></h2>
+<p>In the code, we want to start out with the origin vertex, <code>0</code>,
+and the stream of edges coming in. Because this flow is a bit more complex
+than our earlier examples, we break it down into named &quot;subflows&quot;, assigning them variable
+names that we can reuse. Here we specify two subflows, <code>origin</code> and <code>stream_of_edges</code>:</p>
 <pre><code class="language-rust ignore">    origin = source_iter(vec![0]);
     stream_of_edges = source_stream(pairs_recv);
 </code></pre>
@@ -569,10 +665,11 @@ Finally we print the neighbor vertices as follows:</p>
 <pre><code class="language-rust ignore">    my_join -&gt; unique() -&gt; for_each(|n| println!(&quot;Reached: {}&quot;, n));
 </code></pre>
 <p>The <a href="./surface_ops.gen.html#unique">unique</a> operator removes duplicates from the stream to make things more readable. Note that <code>unique</code> does not run in a streaming fashion, which we will talk about more <a href="example_4_neighbors.html#strata-and-epochs">below</a>.</p>
-<p>The remaining code runs the graph on example edge data. There's
-also some extra code there, particularly <code>flow.serde_graph().expect(...).to_mermaid()</code> which lets us
+<p>There's
+also some extra code here, <code>flow.serde_graph().expect(...).to_mermaid()</code>, which tells
+Hydroflow to
 generate a diagram rendered by <a href="https://mermaid-js.github.io/">Mermaid</a> showing
-the structure of the graph:</p>
+the structure of the graph, and print it to stdout. You can copy that text and paste it into the <a href="https://mermaid-js.github.io/mermaid-live-editor/">Mermaid Live Editor</a> to see the graph, which should look as follows:</p>
 <pre class="mermaid">flowchart TB
     subgraph &quot;sg_1v1 stratum 0&quot;
         1v1[&quot;1v1 &lt;tt&gt;op_1v1: source_iter(vec! [0])&lt;/tt&gt;&quot;]
@@ -596,25 +693,25 @@ the structure of the graph:</p>
     6v1--&gt;7v1
     8v1--&gt;6v1
 </pre>
+<p>Before we proceed, note in the mermaid graph how Hydroflow separates the <code>unique</code> operator and its downstream dependencies into their own
+<em>stratum</em> (plural: <em>strata</em>). The stratum boundary before <code>unique</code> ensures that all the values are generated before <code>unique</code> executes, ensuring that all duplicates are eliminated. </p>
+<p>Hydroflow runs each stratum
+in order, one at a time, ensuring all values are computed
+before moving on to the next stratum. Between strata we see a <em>handoff</em>, which logically buffers the 
+output of the first stratum, and delineates the separation of execution between the 2 strata.</p>
+<p>After all strata are run, Hydroflow returns to the first stratum; this begins the next <em>epoch</em>. This doesn't really matter for this example, but it is important for long-running Hydroflow services that accept input from the outside world. More on this topic in the chapter on <a href="./time.html">time</a>.</p>
 <p>Returning to the code, if you read the <code>pairs_send</code> calls carefully, you'll see that the example data 
 has vertices (<code>2</code>, <code>4</code>) that are more than one hop away from <code>0</code>, which were
 not output by our simple program. To extend this example to graph <em>reachability</em>, 
 we need to recurse: find neighbors of our neighbors, neighbors of our neighbors' neighbors, and so on. In Hydroflow,
 this is done by adding a loop to the flow, as we'll see in our <a href="example_5_reachability.html">next example</a>.</p>
-<h2 id="strata-and-epochs"><a class="header" href="#strata-and-epochs">Strata and Epochs</a></h2>
-<p>Before we proceed, note in the mermaid graph how Hydroflow separates the <code>unique</code> operator and its downstream dependencies into their own
-<em>stratum</em> (plural: <em>strata</em>). The stratum boundary before <code>unique</code> ensures that all the values arrive before it executes, ensuring that all duplicates are eliminated. </p>
-<p>Hydroflow runs each stratum
-in order, one at a time, ensuring all values are computed
-before moving on to the next stratum. Between strata we see a <em>handoff</em>, which logically buffers the 
-output of the first stratum, and delineates the separation of execution between the 2 strata.</p>
-<p>After all strata are run, Hydroflow returns to the first stratum; this begins the next <em>epoch</em>. This doesn't really matter for this example, but it is important for long-running Hydroflow services that accept input from the outside world.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="graph-reachability"><a class="header" href="#graph-reachability">Graph Reachability</a></h1>
 <blockquote>
 <p>In this example we cover:</p>
 <ul>
 <li>Implementing a recursive algorithm (graph reachability) via cyclic dataflow</li>
 <li>Operators to merge data from multiple inputs (<a href="./surface_ops.gen.html#merge"><code>merge</code></a>), and send data to multiple outputs (<a href="./surface_ops.gen.html#tee"><code>tee</code></a>)</li>
+<li>Indexing multi-output operators by appending a bracket expression</li>
 <li>An example of how a cyclic dataflow in one stratum executes to completion before starting the next stratum. </li>
 </ul>
 </blockquote>
@@ -653,9 +750,11 @@ flow back into the join input. The modified intuitive graph looks like this:</p>
 two cases above. Similarly note that the join box <code>V ⨝ E</code> now has two <em>outbound</em> edges; the sketch omits the operator 
 to copy (&quot;tee&quot;) the output along 
 two paths.</p>
-<p>Now lets look at a modified version of our <a href="example_4_neighbors.html">graph neighbor</a> code that implements this full program, including the loop as well as the Hydroflow <a href="./surface_ops.gen.html#merge"><code>merge</code></a> and <a href="./surface_ops.gen.html#tee"><code>tee</code></a>:</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">use hydroflow::hydroflow_syntax;
-</span>pub fn main() {
+<p>Now lets look at a modified version of our <a href="example_4_neighbors.html">graph neighbor</a> code that implements this full program, including the loop as well as the Hydroflow <a href="./surface_ops.gen.html#merge"><code>merge</code></a> and <a href="./surface_ops.gen.html#tee"><code>tee</code></a>.
+Modify src/main.rs to look like this:</p>
+<pre><pre class="playground"><code class="language-rust">use hydroflow::hydroflow_syntax;
+
+pub fn main() {
     // An edge in the input data = a pair of `usize` vertex IDs.
     let (pairs_send, pairs_recv) = hydroflow::util::unbounded_channel::&lt;(usize, usize)&gt;();
 
@@ -692,12 +791,16 @@ two paths.</p>
 }
 </code></pre></pre>
 <p>And now we get the full set of vertices reachable from <code>0</code>:</p>
-<pre><code class="language-txt">Reached: 3
+<pre><code class="language-console">% cargo run
+&lt;build output&gt;
+&lt;graph output&gt;
+Reached: 3
 Reached: 0
 Reached: 2
 Reached: 4
 Reached: 1
 </code></pre>
+<h2 id="examining-the-hydroflow-code-1"><a class="header" href="#examining-the-hydroflow-code-1">Examining the Hydroflow Code</a></h2>
 <p>Let's review the significant changes here. First, in setting up the inputs we have the 
 addition of the <code>reached_vertices</code> variable, which uses the <a href="./surface_ops.gen.html#merge">merge()</a> 
 op to merge the output of two operators into one. 
@@ -768,7 +871,7 @@ that passes through an auto-generated <code>handoff</code> operator. This <code>
 <p>In this example we cover:</p>
 <ul>
 <li>Extending a program with additional downstream logic.</li>
-<li>Hydroflow's (<a href="./surface_ops.gen.html#merge"><code>difference</code></a>) operator</li>
+<li>Hydroflow's (<a href="./surface_ops.gen.html#difference"><code>difference</code></a>) operator</li>
 <li>Further examples of automatic stratification.</li>
 </ul>
 </blockquote>
@@ -799,9 +902,10 @@ that passes through an auto-generated <code>handoff</code> operator. This <code>
    end
 40[Output]
 </pre>
-<p>This is a simple augmentation of our previous example. Here's the code:</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">use hydroflow::hydroflow_syntax;
-</span>pub fn main() {
+<p>This is a simple augmentation of our previous example. Replace the contents of <code>src/main.rs</code> with the following:</p>
+<pre><pre class="playground"><code class="language-rust">use hydroflow::hydroflow_syntax;
+
+pub fn main() {
     // An edge in the input data = a pair of `usize` vertex IDs.
     let (pairs_send, pairs_recv) = hydroflow::util::unbounded_channel::&lt;(usize, usize)&gt;();
 
@@ -847,7 +951,10 @@ that passes through an auto-generated <code>handoff</code> operator. This <code>
 }
 </code></pre></pre>
 <p>Notice that we are now sending in some new pairs to test this code. The output should be:</p>
-<pre><code class="language-txt">Received vertex: 12
+<pre><code class="language-console">% cargo run
+&lt;build output&gt;
+&lt;graph output&gt;
+Received vertex: 12
 Received vertex: 6
 Received vertex: 11
 Received vertex: 0
@@ -924,22 +1031,28 @@ and then all the subgraphs labeled <code>stratum 1</code> are run. This captures
 <blockquote>
 <p>In this example we cover:</p>
 <ul>
-<li>A standard project template for building networked Hydroflow services.</li>
+<li>The standard project template for networked Hydroflow services.</li>
 <li>Rust's <code>clap</code> crate for command-line options</li>
 <li>Defining message types</li>
-<li>Using network sources and sinks with built-in serde.</li>
+<li>Destination operators (e.g. for sending data to a network)</li>
+<li>Network sources and dests with built-in serde (<code>source_stream_serde</code>, <code>dest_sink_serde</code>)</li>
 <li>The <code>source_stdin</code> source</li>
 <li>Long-running services via <code>run_async</code></li>
 </ul>
 </blockquote>
 <p>Our examples up to now have been simple single-node programs, to get us comfortable with Hydroflow's
 surface syntax. But the whole point of Hydroflow is to help us write distributed programs or services that run on a cluster of machines!</p>
-<p>In this example we'll build the &quot;hello, world&quot; of distributed systems -- a simple echo server. It will listen on a UDP port,
-and send back a copy of any message it receives, with a timestamp. We will also build a client to 
+<p>In this example we'll study the &quot;hello, world&quot; of distributed systems -- a simple echo server. It will listen on a UDP port,
+and send back a copy of any message it receives, with a timestamp. We will also look at a client to 
 accept strings from the command line, send them to the echo server, and print responses.</p>
-<p>Full code for this example can be found in <code>hydroflow/hydroflow/examples/echoserver</code>. This example can 
-serve as a template for many networked Hydroflow services.</p>
-<p>Generally the directory structure we'll use will be as follows:</p>
+<p>We will use a fresh <code>hydroflow-template</code> project template to get started. Change to the directory where you'd like to put your project, and once again run:</p>
+<pre><code class="language-bash">cargo generate hydro-project/hydroflow-template
+</code></pre>
+<p>Then change directory into the resulting project.</p>
+<p>The <code>README.md</code> for the template project is a good place to start. It contains a brief overview of the project structure, and how to build and run the example. Here we'll spend more time learning from the code.</p>
+<h2 id="hydroflow-project-structure"><a class="header" href="#hydroflow-project-structure">Hydroflow Project Structure</a></h2>
+<p>The Hydroflow template project auto-generates this example for us. If you prefer, you can find the source in the <code>examples/echo_server</code> directory of the Hydroflow repository.</p>
+<p>The directory structure encouraged by the template is as follows:</p>
 <pre><code class="language-txt">project/README.md           # documentation
 project/Cargo.toml          # package and dependency info
 project/src/main.rs         # main function
@@ -948,11 +1061,11 @@ project/src/helpers.rs      # helper functions used by all roles
 project/src/&lt;roleA&gt;.rs      # service definition for role A (e.g. server)
 project/src/&lt;roleB&gt;.rs      # service definition for role B (e.g. client)
 </code></pre>
-<p>In this example, the roles we'll be using are <code>Client</code> and <code>Server</code>, but you can imagine different roles depending on the structure of your service or application.</p>
+<p>In the default example, the roles we use are <code>Client</code> and <code>Server</code>, but you can imagine different roles depending on the structure of your service or application.</p>
 <h2 id="mainrs"><a class="header" href="#mainrs">main.rs</a></h2>
 <p>We start with a <code>main</code> function that parses command-line options, and invokes the appropriate
 role-specific service.
-After a prelude of imports, we start by defining an <code>enum</code> for the <code>Role</code>s that the service supports. </p>
+After a prelude of imports, we start by defining a Rust <code>enum</code> for the <code>Role</code>s that the service supports. </p>
 <pre><code class="language-rust ignore">use clap::{Parser, ValueEnum};
 use client::run_client;
 use hydroflow::tokio;
@@ -982,8 +1095,8 @@ struct Opts {
     server_addr: Option&lt;SocketAddr&gt;,
 }
 </code></pre>
-<p>This sets up 3 command-line flags: <code>role</code>, <code>addr</code>, and <code>server_addr</code>. The <code>addr</code> and <code>server_addr</code> flags are optional, but the <code>role</code> and <code>server_addr</code> options are required. The <code>clap</code> crate will parse the command-line options and populate the <code>Opts</code> struct with the values.</p>
-<p>This brings us to the <code>main</code> function itself. It is prefaced by a <code>#[tokio::main]</code> attribute, which is a macro that sets up the tokio runtime. This is necessary because Hydroflow uses the tokio runtime for asynchronous execution.</p>
+<p>This sets up 3 command-line flags: <code>role</code>, <code>addr</code>, and <code>server_addr</code>. Note how the <code>addr</code> and <code>server_addr</code> flags are made optional via wrapping in a Rust <code>Option</code>; by contrast, the <code>role</code> and <code>server_addr</code> options are required. The <code>clap</code> crate will parse the command-line options and populate the <code>Opts</code> struct with the values. <code>clap</code> handles parsing the command line strings into the associated Rust types --  the <code>value_parser</code> attribute tells <code>clap</code> to use Hydroflow's <code>ipv4_resolve</code> helper function to parse a string like &quot;127.0.0.1:6552&quot; into a <code>SocketAddr</code>.</p>
+<p>This brings us to the <code>main</code> function itself. It is prefaced by a <code>#[tokio::main]</code> attribute, which is a macro that sets up the tokio runtime. This is necessary because Hydroflow uses the tokio runtime for asynchronous execution as a service.</p>
 <pre><code class="language-rust ignore">#[tokio::main]
 async fn main() {
     // parse command line arguments
@@ -997,7 +1110,7 @@ async fn main() {
     let (outbound, inbound, addr) = bind_udp_bytes(addr).await;
     println!(&quot;Listening on {:?}&quot;, addr);
 </code></pre>
-<p>After parsing the command line arguments we set up some Rust-based networking. Specifically, for either client or server roles we will need to allocate a UDP socket that is used for both sending and receiving messages. We do this by calling the async <code>bind_udp_bytes</code> function, which is defined in the <code>hydroflow/src/util</code> module. As an async function it returns a <code>Future</code>, so requires appending <code>.await</code>; the function returns a triple of type <code>(UdpSink, UdpSource, SocketAddr)</code>. The first two are the types that we'll use in Hydroflow to send and receive messages. (Note: your IDE might expand out the <code>UdpSink</code> and <code>UdpSource</code> traits to their more verbose definitions. This is fine; you can ignore for now.) The SocketAddr is there in case you specified port 0 in your <code>addr</code> argument, in which case this return value tells you what port the OS has assigned for you.</p>
+<p>After parsing the command line arguments we set up some Rust-based networking. Specifically, for either client or server roles we will need to allocate a UDP socket that is used for both sending and receiving messages. We do this by calling the async <code>bind_udp_bytes</code> function, which is defined in the <code>hydroflow/src/util</code> module. As an async function it returns a <code>Future</code>, so requires appending <code>.await</code>; the function returns a triple of type <code>(UdpSink, UdpSource, SocketAddr)</code>. The first two are the types that we'll use in Hydroflow to send and receive messages, respectively. (Note: your IDE might expand out the <code>UdpSink</code> and <code>UdpSource</code> traits to their more verbose definitions. That is fine; you can ignore those.) The SocketAddr is there in case you specified port 0 in your <code>addr</code> argument, in which case this return value tells you what port the OS has assigned for you.</p>
 <p>All that's left is to fire up the code for the appropriate role!</p>
 <pre><code class="language-rust ignore">    match opts.role {
         Role::Server =&gt; {
@@ -1050,11 +1163,11 @@ pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, _opts: cra
     flow.run_async().await;
 }
 </code></pre>
-<p>Lets take these one at a time. </p>
+<p>Lets take the Hydroflow code one statement at a time. </p>
 <p>The first pipeline, <code>inbound_chan</code> uses a source operator we have not seen before, <a href="./surface_ops.gen.html#source_stream_serde"><code>source_stream_serde()</code></a>. This is a streaming source like <code>source_stream</code>, but for network streams. It takes a <code>UdpSource</code> as an argument, and has a particular output type: a stream of <code>(T, SocketAddr)</code> pairs where <code>T</code> is some type that implements the <code>Serialize</code> and <code>Deserialize</code> traits (together known as &quot;serde&quot;), and <code>SocketAddr</code> is the network address of the sender of the item. In this case, <code>T</code> is <code>EchoMsg</code>, which we defined in <code>protocol.rs</code>, and the <code>SocketAddr</code> is the address of the client that sent the message. We pipe the result into a <code>tee()</code> for reuse.</p>
 <p>The second pipeline is a simple <code>for_each</code> to print the messages received at the server.</p>
-<p>The third and final pipeline constructs a response <code>EchoMsg</code> with the local timestamp copied in. It then pipes the result into a sink operator we have not seen before, <a href="./surface_ops.gen.html#dest_sink_serde"><code>dest_sink_serde()</code></a>. This is a sink operator like <code>dest_sink</code>, but for network streams. It takes a <code>UdpSink</code> as an argument, and requires a particular input type: a stream of <code>(T, SocketAddr)</code> pairs where <code>T</code> is some type that implements the <code>Serialize</code> and <code>Deserialize</code> traits, and <code>SocketAddr</code> is the network address of the destination. In this case, <code>T</code> is once again <code>EchoMsg</code>, and the <code>SocketAddr</code> is the address of the client that sent the original message.</p>
-<p>The remaining line of code runs the server. The <code>run_async()</code> function is a method on the <code>Hydroflow</code> type. It is an async function, so we append <code>.await</code> to the call. The program will block on this call until the server is done.</p>
+<p>The third and final pipeline constructs a response <code>EchoMsg</code> with the local timestamp copied in. It then pipes the result into a <code>dest_XXX</code> operator—the first that we've seen!  A dest is the opposite of a <code>source_XXX</code> operator: it can go at the end of a pipeline and sends data out on a tokio channel. The specific operator used here is <a href="./surface_ops.gen.html#dest_sink_serde"><code>dest_sink_serde()</code></a>. This is a dest operator like <code>dest_sink</code>, but for network streams. It takes a <code>UdpSink</code> as an argument, and requires a particular input type: a stream of <code>(T, SocketAddr)</code> pairs where <code>T</code> is some type that implements the <code>Serialize</code> and <code>Deserialize</code> traits, and <code>SocketAddr</code> is the network address of the destination. In this case, <code>T</code> is once again <code>EchoMsg</code>, and the <code>SocketAddr</code> is the address of the client that sent the original message.</p>
+<p>The remaining line of code runs the server. The <code>run_async()</code> function is a method on the <code>Hydroflow</code> type. It is an async function, so we append <code>.await</code> to the call. The program will block on this call until the server is terminated.</p>
 <h2 id="clientrs"><a class="header" href="#clientrs">client.rs</a></h2>
 <p>The client begins by making sure the user specified a server address at the command line. After printing a message to the terminal, it constructs a hydroflow graph.</p>
 <p>Again, we start the hydroflow code defining shared inbound and outbound channels. The code here is simplified compared
@@ -1094,27 +1207,8 @@ pub(crate) async fn run_client(outbound: UdpSink, inbound: UdpStream, opts: Opts
     flow.run_async().await.unwrap();
 }
 </code></pre>
-<pre><code class="language-rust ignore">        // Define shared inbound and outbound channels
-        inbound_chan = source_stream_serde(inbound)
-            // -&gt; tee() // commented out since we only use this once in the client template
-        ;
-        outbound_chan = // merge() -&gt;  // commented out since we only use this once in the client template
-            dest_sink_serde(outbound);
-
-        // Print all messages for debugging purposes
-        inbound_chan[1]
-            -&gt; for_each(|(m, a): (Message, SocketAddr)| println!(&quot;{}: Got {:?} from {:?}&quot;, Utc::now(), m, a));
-
-        // take stdin and send to server as an Message::Echo
-        source_stdin() -&gt; map(|l| (Message::Echo{ payload: l.unwrap(), ts: Utc::now(), }, server_addr) )
-            -&gt; outbound_chan;
-    };
-
-    flow.run_async().await.unwrap();
-}
-</code></pre>
 <h2 id="running-the-example"><a class="header" href="#running-the-example">Running the example</a></h2>
-<p>As described in <code>hydroflow/hydroflow/example/echoserver/README.md</code>, we can run the server in one terminal, and the client in another. The server will print the messages it receives, and the client will print the messages it receives back from the server. The client and servers' `--server-addr' arguments need to match or this won't work!</p>
+<p>As described in the <code>README.md</code> file, we can run the server in one terminal, and the client in another. The server will print the messages it receives, and the client will print the messages it receives back from the server. The client and servers' `--server-addr' arguments need to match or this won't work!</p>
 <p>Fire up the server in terminal 1:</p>
 <pre><code class="language-console">% cargo run -p hydroflow --example echoserver -- --role server --addr localhost:12347
 </code></pre>
@@ -1146,7 +1240,7 @@ Server live!
 </blockquote>
 <p>Our previous <a href="./example_7_echo_server.html">echo server</a> example was admittedly simplistic.  In this example, we'll build something a bit more useful: a simple chat server. We will again have two roles: a <code>Client</code> and a <code>Server</code>. <code>Clients</code> will register their presence with the <code>Server</code>, which maintains a list of clients. Each <code>Client</code> sends messages to the <code>Server</code>, which will then broadcast those messages to all other clients. </p>
 <h2 id="mainrs-1"><a class="header" href="#mainrs-1">main.rs</a></h2>
-<p>The <code>main.rs</code> file here is very similar to that of the echo server, just with two new command-line arguments: one called <code>name</code> for a &quot;nickname&quot; in the chatroom, and another optional argument <code>graph</code> for printing a dataflow graph if desired.</p>
+<p>The <code>main.rs</code> file here is very similar to that of the echo server, just with two new command-line arguments: one called <code>name</code> for a &quot;nickname&quot; in the chatroom, and another optional argument <code>graph</code> for printing a dataflow graph if desired. To follow along, you can copy the contents of this file into the <code>src/main.rs</code> file of your template.</p>
 <pre><code class="language-rust  ignore">use clap::{Parser, ValueEnum};
 use client::run_client;
 use hydroflow::tokio;
@@ -1207,10 +1301,8 @@ async fn main() {
 }
 </code></pre>
 <h2 id="protocolrs-1"><a class="header" href="#protocolrs-1">protocol.rs</a></h2>
-<p>Our protocol file here expands upon what we saw with the echoserver by defining multiple message types. Note how we use a single Rust <code>enum</code> to represent all varieties of message types; this allows us to handle <code>Message</code>s of different types with a single  Rust network channel. We will use the <code>demux</code> operator to separate out these different message types on the receiving end. </p>
-<p>The <code>ConnectRequest</code> and <code>ConnectResponse</code> messages have no payload; 
-the address of the sender and the type of the message will be sufficient information. The <code>ChatMsg</code> message type has a <code>nickname</code> field, a <code>message</code> field, and a <code>ts</code> 
-field for the timestamp. Once again we use the <code>chrono</code> crate to represent timestamps.</p>
+<p>Our protocol file here expands upon what we saw with the echoserver by defining multiple message types. 
+Replace the template contents of <code>src/protocol.rs</code> with the following:</p>
 <pre><code class="language-rust ignore">use chrono::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -1225,18 +1317,14 @@ pub enum Message {
     },
 }
 </code></pre>
+<p>Note how we use a single Rust <code>enum</code> to represent all varieties of message types; this allows us to handle <code>Message</code>s of different types with a single  Rust network channel. We will use the <a href="./surface_ops.gen.html#demux"><code>demux</code></a> operator to separate out these different message types on the receiving end. </p>
+<p>The <code>ConnectRequest</code> and <code>ConnectResponse</code> messages have no payload; 
+the address of the sender and the type of the message will be sufficient information. The <code>ChatMsg</code> message type has a <code>nickname</code> field, a <code>message</code> field, and a <code>ts</code> 
+field for the timestamp. Once again we use the <code>chrono</code> crate to represent timestamps.</p>
 <h2 id="serverrs-1"><a class="header" href="#serverrs-1">server.rs</a></h2>
 <p>The chat server is nearly as simple as the echo server. The main differences are (a) we need to handle multiple message types, 
 (b) we need to keep track of the list of clients, and (c) we need to broadcast messages to all clients. </p>
-<p>After a short prelude, we have the Hydroflow code near the top of <code>run_server()</code>. It begins by defining <code>outbound_chan</code> as a <code>merge</code>d destination sink for network messages. Then we get to the
-more interesting <code>inbound_chan</code> definition. </p>
-<p>The <code>inbound</code> channel is a source stream that will carry many
-types of <code>Message</code>s. We use the <code>[demux](./surface_ops.gen.md#demux)</code> operator to partition the stream objects into three channels. The <code>clients</code> channel 
-will carry the addresses of clients that have connected to the server. The <code>msgs</code> channel will carry the <code>ChatMsg</code> messages that clients send to the server. 
-The <code>errs</code> channel will carry any other messages that clients send to the server. Note the structure of the <code>demux</code> operator: it takes a closure on 
-<code>(Message, SocketAddr)</code> pairs, and a variadic tuple (<code>var_args!</code>) of output channel names—in this case <code>clients</code>, <code>msgs</code>, and <code>errs</code>. The closure is basically a big
-Rust pattern <a href="https://doc.rust-lang.org/book/ch06-02-match.html"><code>match</code></a>, with one arm for each output channel name given in the variadic tuple. Note 
-that the different output channels can have different-typed messages! Note also that we destructure the incoming <code>Message</code> types into tuples of fields, to avoid having to write boilerplate code for each message type in every downstream pipeline.</p>
+<p>To follow along, replace the contents of <code>src/server.rs</code> with the code below:</p>
 <pre><code class="language-rust  ignore">use crate::{GraphType, Opts};
 use hydroflow::util::{UdpSink, UdpStream};
 
@@ -1262,15 +1350,18 @@ pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, opts: Opts
         clients = inbound_chan[clients] -&gt; tee();
         inbound_chan[errs] -&gt; for_each(|m| println!(&quot;Received unexpected message type: {:?}&quot;, m));
 </code></pre>
-<p>The remainder of the server consists of two independent pipelines. The first pipeline is one line long, 
-and is responsible for acknowledging requests from <code>clients</code>: it takes the address of the incoming <code>Message::ConnectRequest</code> 
-and sends a <code>ConnectResponse</code> back to that address. The second pipeline is responsible for broadcasting 
-all chat messages to all clients. This all-to-all pairing corresponds to the notion of a cartesian product
-or <code>[cross_join](./surface_ops.gen.md#cross_join)</code> in Hydroflow. The <code>cross_join</code> operator takes two input 
-channels and produces a single output channel with a tuple for each pair of inputs, in this case it produces
-<code>(Message, SocketAddr)</code> pairs. Conveniently, that is exactly the structure needed for sending to the <code>outbound_chan</code> sink!
-We call the cross-join pipeline <code>broadcast</code> because it effectively broadcasts all messages to all clients.</p>
-<p>Finally, the file ends with the Rust code to optionally print the dataflow graphand then start the server.</p>
+<p>After a short prelude, we have the Hydroflow code near the top of <code>run_server()</code>. It begins by defining <code>outbound_chan</code> as a <code>merge</code>d destination sink for network messages. Then we get to the
+more interesting <code>inbound_chan</code> definition. </p>
+<p>The <code>inbound</code> channel is a source stream that will carry many
+types of <code>Message</code>s. We use the <a href="./surface_ops.gen.html#demux"><code>demux</code></a> operator to partition the stream objects into three channels. The <code>clients</code> channel 
+will carry the addresses of clients that have connected to the server. The <code>msgs</code> channel will carry the <code>ChatMsg</code> messages that clients send to the server. 
+The <code>errs</code> channel will carry any other messages that clients send to the server. </p>
+<p>Note the structure of the <code>demux</code> operator: it takes a closure on 
+<code>(Message, SocketAddr)</code> pairs, and a variadic tuple (<code>var_args!</code>) of output channel names—in this case <code>clients</code>, <code>msgs</code>, and <code>errs</code>. The closure is basically a big
+Rust pattern <a href="https://doc.rust-lang.org/book/ch06-02-match.html"><code>match</code></a>, with one arm for each output channel name given in the variadic tuple. Note 
+that the different output channels can have different-typed messages! Note also that we destructure the incoming <code>Message</code> types into tuples of fields. (If we didn't we'd either have to write boilerplate code for each message type in every downstream pipeline, or face Rust's dreaded <a href="https://doc.rust-lang.org/book/ch18-02-refutability.html">refutable pattern</a> error!)</p>
+<p>The remainder of the server consists of two independent pipelines, the code to print out the flow graph,
+and the code to run the flow graph. To follow along, paste the following into the bottom of your <code>src/server.rs</code> file:</p>
 <pre><code class="language-rust  ignore">       // Pipeline 1: Acknowledge client connections
         clients[0] -&gt; map(|addr| (Message::ConnectResponse, addr)) -&gt; [0]outbound_chan;
 
@@ -1301,6 +1392,14 @@ We call the cross-join pipeline <code>broadcast</code> because it effectively br
     df.run_async().await.unwrap();
 }
 </code></pre>
+<p>The first pipeline is one line long, 
+and is responsible for acknowledging requests from <code>clients</code>: it takes the address of the incoming <code>Message::ConnectRequest</code> 
+and sends a <code>ConnectResponse</code> back to that address. The second pipeline is responsible for broadcasting 
+all chat messages to all clients. This all-to-all pairing corresponds to the notion of a cartesian product
+or <code>[cross_join](./surface_ops.gen.md#cross_join)</code> in Hydroflow. The <code>cross_join</code> operator takes two input 
+channels and produces a single output channel with a tuple for each pair of inputs, in this case it produces
+<code>(Message, SocketAddr)</code> pairs. Conveniently, that is exactly the structure needed for sending to the <code>outbound_chan</code> sink!
+We call the cross-join pipeline <code>broadcast</code> because it effectively broadcasts all messages to all clients.</p>
 <p>The mermaid graph for the server is below. The three branches of the <code>demux</code> are very clear toward the top. Note also the <code>tee</code> of the <code>clients</code> channel
 for both <code>ClientResponse</code> and broadcasting, and the <code>merge</code> of all outbound messages into <code>dest_sink_serde</code>.</p>
 <pre class="mermaid">flowchart TB
@@ -1335,14 +1434,16 @@ for both <code>ClientResponse</code> and broadcasting, and the <code>merge</code
     11v1--&gt;8v1
 </pre>
 <h2 id="clientrs-1"><a class="header" href="#clientrs-1">client.rs</a></h2>
-<p>The chat client is not very different from the echo server client, with two small additions and two 
-new design patterns. The additions are 
-(1) it has a Rust helper routine <code>pretty_print_msg</code> for formatting output, and (2) it sends a
-<code>ConnectRequest</code> message to the server upon invocation. The new design patterns are (a) a degenerate <code>source_iter</code> pipeline that runs once 
-as a &quot;bootstrap&quot; in the first epoch, and (b) the use of
-<code>cross_join</code> as a &quot;gated buffer&quot; to postpone sending messages.</p>
+<p>The chat client is not very different from the echo server client, with two new design patterns:</p>
+<ol>
+<li>a degenerate <code>source_iter</code> pipeline that runs once 
+as a &quot;bootstrap&quot; in the first epoch</li>
+<li>the use of <code>cross_join</code> as a &quot;gated buffer&quot; to postpone sending messages.</li>
+</ol>
+<p>We also include a Rust helper routine <code>pretty_print_msg</code> for formatting output.</p>
 <p>The prelude of the file is almost the same as the echo server client, with the addition of a crate for 
-handling <code>colored</code> text output. This is followed by the <code>pretty_print_msg</code> function, which is fairly self-explanatory.</p>
+handling <code>colored</code> text output. This is followed by the <code>pretty_print_msg</code> function, which is fairly self-explanatory. 
+To follow along, start by replacing the contents of <code>src/client.rs</code> with the following:</p>
 <pre><code class="language-rust ignore">use crate::protocol::Message;
 use crate::{GraphType, Opts};
 use chrono::prelude::*;
@@ -1375,6 +1476,7 @@ fn pretty_print_msg(msg: Message) {
 <p>This brings us to the <code>run_client</code> function. As in <code>run_server</code> we begin by ensuring the server address 
 is supplied. We then have the hydroflow code starting with a standard pattern of a <code>merge</code>d <code>outbound_chan</code>, 
 and a <code>demux</code>ed <code>inbound_chan</code>. The client handles only two inbound <code>Message</code> types: <code>Message::ConnectResponse</code> and <code>Message::ChatMsg</code>.</p>
+<p>Paste the following to the bottom of <code>src/client.rs</code>:</p>
 <pre><code class="language-rust ignore">pub(crate) async fn run_client(outbound: UdpSink, inbound: UdpStream, opts: Opts) {
     // server_addr is required for client
     let server_addr = opts.server_addr.expect(&quot;Client requires a server address&quot;);
@@ -1393,7 +1495,26 @@ and a <code>demux</code>ed <code>inbound_chan</code>. The client handles only tw
                 );
         inbound_chan[errs] -&gt; for_each(|m| println!(&quot;Received unexpected message type: {:?}&quot;, m));
 </code></pre>
-<p>The core logic of the client consists of three dataflow pipelines shown below. </p>
+<p>The core logic of the client consists of three dataflow pipelines shown below. Paste this into the
+bottom of your <code>src/client.rs</code> file.</p>
+<pre><code class="language-rust ignore">        // send a single connection request on startup
+        source_iter([()]) -&gt; map(|_m| (Message::ConnectRequest, server_addr)) -&gt; [0]outbound_chan;
+
+        // take stdin and send to server as a msg
+        // the cross_join serves to buffer msgs until the connection request is acked
+        msg_send = cross_join() -&gt; map(|(msg, _)| (msg, server_addr)) -&gt; [1]outbound_chan;
+        lines = source_stdin()
+          -&gt; map(|l| Message::ChatMsg {
+                    nickname: opts.name.clone(),
+                    message: l.unwrap(),
+                    ts: Utc::now()})
+          -&gt; [0]msg_send;
+        inbound_chan[acks] -&gt; [1]msg_send;
+
+        // receive and print messages
+        inbound_chan[msgs] -&gt; for_each(pretty_print_msg);
+    };
+</code></pre>
 <ol>
 <li>
 <p>The first pipeline is the &quot;bootstrap&quot; alluded to above.
@@ -1412,25 +1533,8 @@ when the client receives its sole <code>ConnectResponse</code>.</p>
 <p>The final pipeline simple pretty-prints the messages received from the server.</p>
 </li>
 </ol>
-<pre><code class="language-rust ignore">        // send a single connection request on startup
-        source_iter([()]) -&gt; map(|_m| (Message::ConnectRequest, server_addr)) -&gt; [0]outbound_chan;
-
-        // take stdin and send to server as a msg
-        // the cross_join serves to buffer msgs until the connection request is acked
-        msg_send = cross_join() -&gt; map(|(msg, _)| (msg, server_addr)) -&gt; [1]outbound_chan;
-        lines = source_stdin()
-          -&gt; map(|l| Message::ChatMsg {
-                    nickname: opts.name.clone(),
-                    message: l.unwrap(),
-                    ts: Utc::now()})
-          -&gt; [0]msg_send;
-        inbound_chan[acks] -&gt; [1]msg_send;
-
-        // receive and print messages
-        inbound_chan[msgs] -&gt; for_each(pretty_print_msg);
-    };
-
-    // optionally print the dataflow graph
+<p>Finish up the file by pasting the code below for optionally generating the graph and running the flow:</p>
+<pre><code class="language-rust ignore">    // optionally print the dataflow graph
     if let Some(graph) = opts.graph {
         let serde_graph = hf
             .serde_graph()
@@ -2605,6 +2709,132 @@ handoff with itself; this forms a loop.</p>
 </div>
 <p>In the example partitioning above, some nodes have been split into multiple and
 labelled with suffixes to make the pivots and handoffs more explicit.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="todo"><a class="header" href="#todo">TODO</a></h1>
+<h2 id="concepts-1"><a class="header" href="#concepts-1">Concepts</a></h2>
+<ul>
+<li>Big Picture Architecture: A low-level framework. Threads (actors) communicating async via channels. No global constructs in Hydroflow. No SPMD assumptions.</li>
+<li>Hydroflow and Rust: how do they go together?
+<ul>
+<li>State, control, scoping</li>
+</ul>
+</li>
+<li>Time
+<ul>
+<li>The Hydroflow event loop and Ticks. local clock</li>
+<li>Assembling a global vector clock</li>
+</ul>
+</li>
+<li>Fix points and Strata</li>
+<li>State over time
+<ul>
+<li>lifetimes</li>
+<li>explicit deletion</li>
+</ul>
+</li>
+<li>Coordination tricks?
+<ul>
+<li>End-of-stream to Distributed EOS?</li>
+</ul>
+</li>
+</ul>
+<h2 id="docs"><a class="header" href="#docs">Docs</a></h2>
+<ul>
+<li><code>Hydroflow</code> trait and its methods</li>
+<li>Review the ops docs</li>
+</ul>
+<h2 id="whats-covered-in-examples"><a class="header" href="#whats-covered-in-examples">What's covered in examples</a></h2>
+<ul>
+<li>
+<p>Concepts covered</p>
+<ul>
+<li>cargo generate for templating</li>
+<li>Hydroflow program specs embedded in Rust</li>
+<li>Tokio Channels and how to use them in Hydroflow
+<ul>
+<li>Network sources and sinks (source_stream)</li>
+<li>Built-in serde (source_stream_serde, dest_sink_serde)</li>
+</ul>
+</li>
+<li>Hydroflow syntax: operators, -&gt;, variables, indexing multi-input/output operators</li>
+<li>running Hydroflow via <code>run_available</code> and <code>run_async</code></li>
+<li>Recursion via cyclic dataflow</li>
+<li>Fixpoints and Strata</li>
+<li>Template structure: clap, message types</li>
+<li>source_stdin</li>
+<li>Messages and <code>demux</code></li>
+<li>broadcast pattern</li>
+<li>gated buffer pattern</li>
+<li>bootstrapping pipelines</li>
+</ul>
+</li>
+<li>
+<p>Operators covered</p>
+<ul>
+<li>cross_join</li>
+<li>demux</li>
+<li>dest_sink_serde</li>
+<li>difference</li>
+<li>filter</li>
+<li>filter_map</li>
+<li>flatten</li>
+<li>flat_map</li>
+<li>for_each</li>
+<li>join</li>
+<li>map</li>
+<li>merge</li>
+<li>source_iter</li>
+<li>source_stdin</li>
+<li>source_stream</li>
+<li>source_stream_serde</li>
+<li>tee</li>
+<li>unique</li>
+</ul>
+</li>
+<li>
+<p>Operators not discussed</p>
+<ul>
+<li>dest_sink</li>
+<li>identity</li>
+<li>repeat_iter</li>
+<li>unzip</li>
+<li><em>fold</em> -- add to chapter on <a href="state.html">state</a></li>
+<li><em>reduce</em> -- add to chapter on <a href="state.html">state</a></li>
+<li><em>group_by</em> -- add to chapter on <a href="state.html">state</a></li>
+<li><em>sort</em> -- add to chapter on <a href="state.html">state</a></li>
+<li><em>sort_by</em> -- add to chapter on <a href="state.html">state</a></li>
+<li><em>next_stratum</em> -- add to chapter on <a href="time.html">time</a></li>
+<li><em>next_epoch</em> -- add to chapter on <a href="time.html">time</a></li>
+<li><em>inspect</em> -- add to chapter on <a href="debugging.html">debugging</a></li>
+<li><em>null</em> -- add to chapter on <a href="debugging.html">debugging</a></li>
+</ul>
+</li>
+</ul>
+<h2 id="how-tos"><a class="header" href="#how-tos">How-Tos</a></h2>
+<ul>
+<li>A partitioned Service</li>
+<li>A replicated Service</li>
+<li>Interfacing with external data</li>
+<li>Interfacing with external services</li>
+</ul>
+<h2 id="odds-and-ends-taken-out-of-other-chapters"><a class="header" href="#odds-and-ends-taken-out-of-other-chapters">Odds and ends taken out of other chapters</a></h2>
+<ul>
+<li>
+<p><strong>Document the methods on the <code>hydroflow</code> trait</strong> -- especially the run methods.</p>
+<ul>
+<li>The <a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_epoch"><code>run_epoch()</code></a>, <a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_stratum"><code>run_stratum()</code></a>, <a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run"><code>run()</code></a>, and <a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_async"><code>run_async()</code></a> methods provide other ways to control the graph execution.</li>
+</ul>
+</li>
+<li>
+<p><strong>Strata and Epochs</strong> -- explain the concept of strata and epochs, and how they relate to the <code>run_epoch()</code> and <code>run_stratum()</code> methods.</p>
+</li>
+<li>
+<p><strong>Make sure <code>src/examples/echoserver</code> is the same as the template project</strong> -- or better, find a way to do that via github actions or a github submodule</p>
+</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="modeling-time-in-hydroflow"><a class="header" href="#modeling-time-in-hydroflow">Modeling Time in Hydroflow</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="state-and-lifetimes"><a class="header" href="#state-and-lifetimes">State and Lifetimes</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="debugging"><a class="header" href="#debugging">Debugging</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="error-handling"><a class="header" href="#error-handling">Error Handling</a></h1>
 
                     </main>
 

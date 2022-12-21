@@ -75,7 +75,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">User Guide</li><li class="chapter-item expanded "><a href="quickstart.html"><strong aria-hidden="true">1.</strong> Quickstart</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="setup.html"><strong aria-hidden="true">1.1.</strong> Setup</a></li><li class="chapter-item expanded "><a href="example_1_simplest.html"><strong aria-hidden="true">1.2.</strong> Simplest Example</a></li><li class="chapter-item expanded "><a href="example_2_simple.html"><strong aria-hidden="true">1.3.</strong> Simple Example</a></li><li class="chapter-item expanded "><a href="example_3_stream.html"><strong aria-hidden="true">1.4.</strong> A Example With Streaming Input</a></li><li class="chapter-item expanded "><a href="example_4_neighbors.html"><strong aria-hidden="true">1.5.</strong> Graph Neighbors</a></li><li class="chapter-item expanded "><a href="example_5_reachability.html"><strong aria-hidden="true">1.6.</strong> Graph Reachability</a></li><li class="chapter-item expanded "><a href="example_6_unreachability.html"><strong aria-hidden="true">1.7.</strong> Graph Un-Reachability</a></li><li class="chapter-item expanded "><a href="example_7_echo_server.html" class="active"><strong aria-hidden="true">1.8.</strong> Networked Services 1: EchoServer</a></li><li class="chapter-item expanded "><a href="example_8_chat_server.html"><strong aria-hidden="true">1.9.</strong> Networked Services 2: ChatServer</a></li></ol></li><li class="chapter-item expanded "><a href="concepts.html"><strong aria-hidden="true">2.</strong> Concepts</a></li><li class="chapter-item expanded "><a href="surface_syntax.html"><strong aria-hidden="true">3.</strong> Syntax</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="surface_embedding.html"><strong aria-hidden="true">3.1.</strong> Rust Embedding</a></li><li class="chapter-item expanded "><a href="surface_flows.html"><strong aria-hidden="true">3.2.</strong> Flows</a></li><li class="chapter-item expanded "><a href="surface_data.html"><strong aria-hidden="true">3.3.</strong> Data Sources</a></li><li class="chapter-item expanded "><a href="surface_ops.gen.html"><strong aria-hidden="true">3.4.</strong> Operators</a></li></ol></li><li class="chapter-item expanded "><a href="architecture.html"><strong aria-hidden="true">4.</strong> Architecture</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="in-out_trees.html"><strong aria-hidden="true">4.1.</strong> Subgraph In-Out Trees</a></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">User Guide</li><li class="chapter-item expanded "><a href="quickstart.html"><strong aria-hidden="true">1.</strong> Quickstart</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="setup.html"><strong aria-hidden="true">1.1.</strong> Setup</a></li><li class="chapter-item expanded "><a href="example_1_simplest.html"><strong aria-hidden="true">1.2.</strong> Simplest Example</a></li><li class="chapter-item expanded "><a href="example_2_simple.html"><strong aria-hidden="true">1.3.</strong> Simple Example</a></li><li class="chapter-item expanded "><a href="example_3_stream.html"><strong aria-hidden="true">1.4.</strong> A Example With Streaming Input</a></li><li class="chapter-item expanded "><a href="example_4_neighbors.html"><strong aria-hidden="true">1.5.</strong> Graph Neighbors</a></li><li class="chapter-item expanded "><a href="example_5_reachability.html"><strong aria-hidden="true">1.6.</strong> Graph Reachability</a></li><li class="chapter-item expanded "><a href="example_6_unreachability.html"><strong aria-hidden="true">1.7.</strong> Graph Un-Reachability</a></li><li class="chapter-item expanded "><a href="example_7_echo_server.html" class="active"><strong aria-hidden="true">1.8.</strong> Networked Services 1: EchoServer</a></li><li class="chapter-item expanded "><a href="example_8_chat_server.html"><strong aria-hidden="true">1.9.</strong> Networked Services 2: ChatServer</a></li></ol></li><li class="chapter-item expanded "><a href="concepts.html"><strong aria-hidden="true">2.</strong> Concepts</a></li><li class="chapter-item expanded "><a href="surface_syntax.html"><strong aria-hidden="true">3.</strong> Syntax</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="surface_embedding.html"><strong aria-hidden="true">3.1.</strong> Rust Embedding</a></li><li class="chapter-item expanded "><a href="surface_flows.html"><strong aria-hidden="true">3.2.</strong> Flows</a></li><li class="chapter-item expanded "><a href="surface_data.html"><strong aria-hidden="true">3.3.</strong> Data Sources</a></li><li class="chapter-item expanded "><a href="surface_ops.gen.html"><strong aria-hidden="true">3.4.</strong> Operators</a></li></ol></li><li class="chapter-item expanded "><a href="architecture.html"><strong aria-hidden="true">4.</strong> Architecture</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="in-out_trees.html"><strong aria-hidden="true">4.1.</strong> Subgraph In-Out Trees</a></li></ol></li><li class="chapter-item expanded "><a href="todo.html"><strong aria-hidden="true">5.</strong> TODO</a></li><li class="chapter-item expanded "><a href="time.html"><strong aria-hidden="true">6.</strong> On Time and Space</a></li><li class="chapter-item expanded "><a href="state.html"><strong aria-hidden="true">7.</strong> State and Lifetimes</a></li><li class="chapter-item expanded "><a href="debugging.html"><strong aria-hidden="true">8.</strong> Debugging</a></li><li class="chapter-item expanded "><a href="error_handling.html"><strong aria-hidden="true">9.</strong> Error Handling</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -138,22 +138,28 @@
 <blockquote>
 <p>In this example we cover:</p>
 <ul>
-<li>A standard project template for building networked Hydroflow services.</li>
+<li>The standard project template for networked Hydroflow services.</li>
 <li>Rust's <code>clap</code> crate for command-line options</li>
 <li>Defining message types</li>
-<li>Using network sources and sinks with built-in serde.</li>
+<li>Destination operators (e.g. for sending data to a network)</li>
+<li>Network sources and dests with built-in serde (<code>source_stream_serde</code>, <code>dest_sink_serde</code>)</li>
 <li>The <code>source_stdin</code> source</li>
 <li>Long-running services via <code>run_async</code></li>
 </ul>
 </blockquote>
 <p>Our examples up to now have been simple single-node programs, to get us comfortable with Hydroflow's
 surface syntax. But the whole point of Hydroflow is to help us write distributed programs or services that run on a cluster of machines!</p>
-<p>In this example we'll build the &quot;hello, world&quot; of distributed systems -- a simple echo server. It will listen on a UDP port,
-and send back a copy of any message it receives, with a timestamp. We will also build a client to 
+<p>In this example we'll study the &quot;hello, world&quot; of distributed systems -- a simple echo server. It will listen on a UDP port,
+and send back a copy of any message it receives, with a timestamp. We will also look at a client to 
 accept strings from the command line, send them to the echo server, and print responses.</p>
-<p>Full code for this example can be found in <code>hydroflow/hydroflow/examples/echoserver</code>. This example can 
-serve as a template for many networked Hydroflow services.</p>
-<p>Generally the directory structure we'll use will be as follows:</p>
+<p>We will use a fresh <code>hydroflow-template</code> project template to get started. Change to the directory where you'd like to put your project, and once again run:</p>
+<pre><code class="language-bash">cargo generate hydro-project/hydroflow-template
+</code></pre>
+<p>Then change directory into the resulting project.</p>
+<p>The <code>README.md</code> for the template project is a good place to start. It contains a brief overview of the project structure, and how to build and run the example. Here we'll spend more time learning from the code.</p>
+<h2 id="hydroflow-project-structure"><a class="header" href="#hydroflow-project-structure">Hydroflow Project Structure</a></h2>
+<p>The Hydroflow template project auto-generates this example for us. If you prefer, you can find the source in the <code>examples/echo_server</code> directory of the Hydroflow repository.</p>
+<p>The directory structure encouraged by the template is as follows:</p>
 <pre><code class="language-txt">project/README.md           # documentation
 project/Cargo.toml          # package and dependency info
 project/src/main.rs         # main function
@@ -162,11 +168,11 @@ project/src/helpers.rs      # helper functions used by all roles
 project/src/&lt;roleA&gt;.rs      # service definition for role A (e.g. server)
 project/src/&lt;roleB&gt;.rs      # service definition for role B (e.g. client)
 </code></pre>
-<p>In this example, the roles we'll be using are <code>Client</code> and <code>Server</code>, but you can imagine different roles depending on the structure of your service or application.</p>
+<p>In the default example, the roles we use are <code>Client</code> and <code>Server</code>, but you can imagine different roles depending on the structure of your service or application.</p>
 <h2 id="mainrs"><a class="header" href="#mainrs">main.rs</a></h2>
 <p>We start with a <code>main</code> function that parses command-line options, and invokes the appropriate
 role-specific service.
-After a prelude of imports, we start by defining an <code>enum</code> for the <code>Role</code>s that the service supports. </p>
+After a prelude of imports, we start by defining a Rust <code>enum</code> for the <code>Role</code>s that the service supports. </p>
 <pre><code class="language-rust ignore">use clap::{Parser, ValueEnum};
 use client::run_client;
 use hydroflow::tokio;
@@ -196,8 +202,8 @@ struct Opts {
     server_addr: Option&lt;SocketAddr&gt;,
 }
 </code></pre>
-<p>This sets up 3 command-line flags: <code>role</code>, <code>addr</code>, and <code>server_addr</code>. The <code>addr</code> and <code>server_addr</code> flags are optional, but the <code>role</code> and <code>server_addr</code> options are required. The <code>clap</code> crate will parse the command-line options and populate the <code>Opts</code> struct with the values.</p>
-<p>This brings us to the <code>main</code> function itself. It is prefaced by a <code>#[tokio::main]</code> attribute, which is a macro that sets up the tokio runtime. This is necessary because Hydroflow uses the tokio runtime for asynchronous execution.</p>
+<p>This sets up 3 command-line flags: <code>role</code>, <code>addr</code>, and <code>server_addr</code>. Note how the <code>addr</code> and <code>server_addr</code> flags are made optional via wrapping in a Rust <code>Option</code>; by contrast, the <code>role</code> and <code>server_addr</code> options are required. The <code>clap</code> crate will parse the command-line options and populate the <code>Opts</code> struct with the values. <code>clap</code> handles parsing the command line strings into the associated Rust types --  the <code>value_parser</code> attribute tells <code>clap</code> to use Hydroflow's <code>ipv4_resolve</code> helper function to parse a string like &quot;127.0.0.1:6552&quot; into a <code>SocketAddr</code>.</p>
+<p>This brings us to the <code>main</code> function itself. It is prefaced by a <code>#[tokio::main]</code> attribute, which is a macro that sets up the tokio runtime. This is necessary because Hydroflow uses the tokio runtime for asynchronous execution as a service.</p>
 <pre><code class="language-rust ignore">#[tokio::main]
 async fn main() {
     // parse command line arguments
@@ -211,7 +217,7 @@ async fn main() {
     let (outbound, inbound, addr) = bind_udp_bytes(addr).await;
     println!(&quot;Listening on {:?}&quot;, addr);
 </code></pre>
-<p>After parsing the command line arguments we set up some Rust-based networking. Specifically, for either client or server roles we will need to allocate a UDP socket that is used for both sending and receiving messages. We do this by calling the async <code>bind_udp_bytes</code> function, which is defined in the <code>hydroflow/src/util</code> module. As an async function it returns a <code>Future</code>, so requires appending <code>.await</code>; the function returns a triple of type <code>(UdpSink, UdpSource, SocketAddr)</code>. The first two are the types that we'll use in Hydroflow to send and receive messages. (Note: your IDE might expand out the <code>UdpSink</code> and <code>UdpSource</code> traits to their more verbose definitions. This is fine; you can ignore for now.) The SocketAddr is there in case you specified port 0 in your <code>addr</code> argument, in which case this return value tells you what port the OS has assigned for you.</p>
+<p>After parsing the command line arguments we set up some Rust-based networking. Specifically, for either client or server roles we will need to allocate a UDP socket that is used for both sending and receiving messages. We do this by calling the async <code>bind_udp_bytes</code> function, which is defined in the <code>hydroflow/src/util</code> module. As an async function it returns a <code>Future</code>, so requires appending <code>.await</code>; the function returns a triple of type <code>(UdpSink, UdpSource, SocketAddr)</code>. The first two are the types that we'll use in Hydroflow to send and receive messages, respectively. (Note: your IDE might expand out the <code>UdpSink</code> and <code>UdpSource</code> traits to their more verbose definitions. That is fine; you can ignore those.) The SocketAddr is there in case you specified port 0 in your <code>addr</code> argument, in which case this return value tells you what port the OS has assigned for you.</p>
 <p>All that's left is to fire up the code for the appropriate role!</p>
 <pre><code class="language-rust ignore">    match opts.role {
         Role::Server =&gt; {
@@ -264,11 +270,11 @@ pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, _opts: cra
     flow.run_async().await;
 }
 </code></pre>
-<p>Lets take these one at a time. </p>
+<p>Lets take the Hydroflow code one statement at a time. </p>
 <p>The first pipeline, <code>inbound_chan</code> uses a source operator we have not seen before, <a href="./surface_ops.gen.html#source_stream_serde"><code>source_stream_serde()</code></a>. This is a streaming source like <code>source_stream</code>, but for network streams. It takes a <code>UdpSource</code> as an argument, and has a particular output type: a stream of <code>(T, SocketAddr)</code> pairs where <code>T</code> is some type that implements the <code>Serialize</code> and <code>Deserialize</code> traits (together known as &quot;serde&quot;), and <code>SocketAddr</code> is the network address of the sender of the item. In this case, <code>T</code> is <code>EchoMsg</code>, which we defined in <code>protocol.rs</code>, and the <code>SocketAddr</code> is the address of the client that sent the message. We pipe the result into a <code>tee()</code> for reuse.</p>
 <p>The second pipeline is a simple <code>for_each</code> to print the messages received at the server.</p>
-<p>The third and final pipeline constructs a response <code>EchoMsg</code> with the local timestamp copied in. It then pipes the result into a sink operator we have not seen before, <a href="./surface_ops.gen.html#dest_sink_serde"><code>dest_sink_serde()</code></a>. This is a sink operator like <code>dest_sink</code>, but for network streams. It takes a <code>UdpSink</code> as an argument, and requires a particular input type: a stream of <code>(T, SocketAddr)</code> pairs where <code>T</code> is some type that implements the <code>Serialize</code> and <code>Deserialize</code> traits, and <code>SocketAddr</code> is the network address of the destination. In this case, <code>T</code> is once again <code>EchoMsg</code>, and the <code>SocketAddr</code> is the address of the client that sent the original message.</p>
-<p>The remaining line of code runs the server. The <code>run_async()</code> function is a method on the <code>Hydroflow</code> type. It is an async function, so we append <code>.await</code> to the call. The program will block on this call until the server is done.</p>
+<p>The third and final pipeline constructs a response <code>EchoMsg</code> with the local timestamp copied in. It then pipes the result into a <code>dest_XXX</code> operator—the first that we've seen!  A dest is the opposite of a <code>source_XXX</code> operator: it can go at the end of a pipeline and sends data out on a tokio channel. The specific operator used here is <a href="./surface_ops.gen.html#dest_sink_serde"><code>dest_sink_serde()</code></a>. This is a dest operator like <code>dest_sink</code>, but for network streams. It takes a <code>UdpSink</code> as an argument, and requires a particular input type: a stream of <code>(T, SocketAddr)</code> pairs where <code>T</code> is some type that implements the <code>Serialize</code> and <code>Deserialize</code> traits, and <code>SocketAddr</code> is the network address of the destination. In this case, <code>T</code> is once again <code>EchoMsg</code>, and the <code>SocketAddr</code> is the address of the client that sent the original message.</p>
+<p>The remaining line of code runs the server. The <code>run_async()</code> function is a method on the <code>Hydroflow</code> type. It is an async function, so we append <code>.await</code> to the call. The program will block on this call until the server is terminated.</p>
 <h2 id="clientrs"><a class="header" href="#clientrs">client.rs</a></h2>
 <p>The client begins by making sure the user specified a server address at the command line. After printing a message to the terminal, it constructs a hydroflow graph.</p>
 <p>Again, we start the hydroflow code defining shared inbound and outbound channels. The code here is simplified compared
@@ -308,27 +314,8 @@ pub(crate) async fn run_client(outbound: UdpSink, inbound: UdpStream, opts: Opts
     flow.run_async().await.unwrap();
 }
 </code></pre>
-<pre><code class="language-rust ignore">        // Define shared inbound and outbound channels
-        inbound_chan = source_stream_serde(inbound)
-            // -&gt; tee() // commented out since we only use this once in the client template
-        ;
-        outbound_chan = // merge() -&gt;  // commented out since we only use this once in the client template
-            dest_sink_serde(outbound);
-
-        // Print all messages for debugging purposes
-        inbound_chan[1]
-            -&gt; for_each(|(m, a): (Message, SocketAddr)| println!(&quot;{}: Got {:?} from {:?}&quot;, Utc::now(), m, a));
-
-        // take stdin and send to server as an Message::Echo
-        source_stdin() -&gt; map(|l| (Message::Echo{ payload: l.unwrap(), ts: Utc::now(), }, server_addr) )
-            -&gt; outbound_chan;
-    };
-
-    flow.run_async().await.unwrap();
-}
-</code></pre>
 <h2 id="running-the-example"><a class="header" href="#running-the-example">Running the example</a></h2>
-<p>As described in <code>hydroflow/hydroflow/example/echoserver/README.md</code>, we can run the server in one terminal, and the client in another. The server will print the messages it receives, and the client will print the messages it receives back from the server. The client and servers' `--server-addr' arguments need to match or this won't work!</p>
+<p>As described in the <code>README.md</code> file, we can run the server in one terminal, and the client in another. The server will print the messages it receives, and the client will print the messages it receives back from the server. The client and servers' `--server-addr' arguments need to match or this won't work!</p>
 <p>Fire up the server in terminal 1:</p>
 <pre><code class="language-console">% cargo run -p hydroflow --example echoserver -- --role server --addr localhost:12347
 </code></pre>

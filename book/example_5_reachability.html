@@ -75,7 +75,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">User Guide</li><li class="chapter-item expanded "><a href="quickstart.html"><strong aria-hidden="true">1.</strong> Quickstart</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="setup.html"><strong aria-hidden="true">1.1.</strong> Setup</a></li><li class="chapter-item expanded "><a href="example_1_simplest.html"><strong aria-hidden="true">1.2.</strong> Simplest Example</a></li><li class="chapter-item expanded "><a href="example_2_simple.html"><strong aria-hidden="true">1.3.</strong> Simple Example</a></li><li class="chapter-item expanded "><a href="example_3_stream.html"><strong aria-hidden="true">1.4.</strong> A Example With Streaming Input</a></li><li class="chapter-item expanded "><a href="example_4_neighbors.html"><strong aria-hidden="true">1.5.</strong> Graph Neighbors</a></li><li class="chapter-item expanded "><a href="example_5_reachability.html" class="active"><strong aria-hidden="true">1.6.</strong> Graph Reachability</a></li><li class="chapter-item expanded "><a href="example_6_unreachability.html"><strong aria-hidden="true">1.7.</strong> Graph Un-Reachability</a></li><li class="chapter-item expanded "><a href="example_7_echo_server.html"><strong aria-hidden="true">1.8.</strong> Networked Services 1: EchoServer</a></li><li class="chapter-item expanded "><a href="example_8_chat_server.html"><strong aria-hidden="true">1.9.</strong> Networked Services 2: ChatServer</a></li></ol></li><li class="chapter-item expanded "><a href="concepts.html"><strong aria-hidden="true">2.</strong> Concepts</a></li><li class="chapter-item expanded "><a href="surface_syntax.html"><strong aria-hidden="true">3.</strong> Syntax</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="surface_embedding.html"><strong aria-hidden="true">3.1.</strong> Rust Embedding</a></li><li class="chapter-item expanded "><a href="surface_flows.html"><strong aria-hidden="true">3.2.</strong> Flows</a></li><li class="chapter-item expanded "><a href="surface_data.html"><strong aria-hidden="true">3.3.</strong> Data Sources</a></li><li class="chapter-item expanded "><a href="surface_ops.gen.html"><strong aria-hidden="true">3.4.</strong> Operators</a></li></ol></li><li class="chapter-item expanded "><a href="architecture.html"><strong aria-hidden="true">4.</strong> Architecture</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="in-out_trees.html"><strong aria-hidden="true">4.1.</strong> Subgraph In-Out Trees</a></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">User Guide</li><li class="chapter-item expanded "><a href="quickstart.html"><strong aria-hidden="true">1.</strong> Quickstart</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="setup.html"><strong aria-hidden="true">1.1.</strong> Setup</a></li><li class="chapter-item expanded "><a href="example_1_simplest.html"><strong aria-hidden="true">1.2.</strong> Simplest Example</a></li><li class="chapter-item expanded "><a href="example_2_simple.html"><strong aria-hidden="true">1.3.</strong> Simple Example</a></li><li class="chapter-item expanded "><a href="example_3_stream.html"><strong aria-hidden="true">1.4.</strong> A Example With Streaming Input</a></li><li class="chapter-item expanded "><a href="example_4_neighbors.html"><strong aria-hidden="true">1.5.</strong> Graph Neighbors</a></li><li class="chapter-item expanded "><a href="example_5_reachability.html" class="active"><strong aria-hidden="true">1.6.</strong> Graph Reachability</a></li><li class="chapter-item expanded "><a href="example_6_unreachability.html"><strong aria-hidden="true">1.7.</strong> Graph Un-Reachability</a></li><li class="chapter-item expanded "><a href="example_7_echo_server.html"><strong aria-hidden="true">1.8.</strong> Networked Services 1: EchoServer</a></li><li class="chapter-item expanded "><a href="example_8_chat_server.html"><strong aria-hidden="true">1.9.</strong> Networked Services 2: ChatServer</a></li></ol></li><li class="chapter-item expanded "><a href="concepts.html"><strong aria-hidden="true">2.</strong> Concepts</a></li><li class="chapter-item expanded "><a href="surface_syntax.html"><strong aria-hidden="true">3.</strong> Syntax</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="surface_embedding.html"><strong aria-hidden="true">3.1.</strong> Rust Embedding</a></li><li class="chapter-item expanded "><a href="surface_flows.html"><strong aria-hidden="true">3.2.</strong> Flows</a></li><li class="chapter-item expanded "><a href="surface_data.html"><strong aria-hidden="true">3.3.</strong> Data Sources</a></li><li class="chapter-item expanded "><a href="surface_ops.gen.html"><strong aria-hidden="true">3.4.</strong> Operators</a></li></ol></li><li class="chapter-item expanded "><a href="architecture.html"><strong aria-hidden="true">4.</strong> Architecture</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="in-out_trees.html"><strong aria-hidden="true">4.1.</strong> Subgraph In-Out Trees</a></li></ol></li><li class="chapter-item expanded "><a href="todo.html"><strong aria-hidden="true">5.</strong> TODO</a></li><li class="chapter-item expanded "><a href="time.html"><strong aria-hidden="true">6.</strong> On Time and Space</a></li><li class="chapter-item expanded "><a href="state.html"><strong aria-hidden="true">7.</strong> State and Lifetimes</a></li><li class="chapter-item expanded "><a href="debugging.html"><strong aria-hidden="true">8.</strong> Debugging</a></li><li class="chapter-item expanded "><a href="error_handling.html"><strong aria-hidden="true">9.</strong> Error Handling</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -140,6 +140,7 @@
 <ul>
 <li>Implementing a recursive algorithm (graph reachability) via cyclic dataflow</li>
 <li>Operators to merge data from multiple inputs (<a href="./surface_ops.gen.html#merge"><code>merge</code></a>), and send data to multiple outputs (<a href="./surface_ops.gen.html#tee"><code>tee</code></a>)</li>
+<li>Indexing multi-output operators by appending a bracket expression</li>
 <li>An example of how a cyclic dataflow in one stratum executes to completion before starting the next stratum. </li>
 </ul>
 </blockquote>
@@ -178,9 +179,11 @@ flow back into the join input. The modified intuitive graph looks like this:</p>
 two cases above. Similarly note that the join box <code>V ⨝ E</code> now has two <em>outbound</em> edges; the sketch omits the operator 
 to copy (&quot;tee&quot;) the output along 
 two paths.</p>
-<p>Now lets look at a modified version of our <a href="example_4_neighbors.html">graph neighbor</a> code that implements this full program, including the loop as well as the Hydroflow <a href="./surface_ops.gen.html#merge"><code>merge</code></a> and <a href="./surface_ops.gen.html#tee"><code>tee</code></a>:</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">use hydroflow::hydroflow_syntax;
-</span>pub fn main() {
+<p>Now lets look at a modified version of our <a href="example_4_neighbors.html">graph neighbor</a> code that implements this full program, including the loop as well as the Hydroflow <a href="./surface_ops.gen.html#merge"><code>merge</code></a> and <a href="./surface_ops.gen.html#tee"><code>tee</code></a>.
+Modify src/main.rs to look like this:</p>
+<pre><pre class="playground"><code class="language-rust">use hydroflow::hydroflow_syntax;
+
+pub fn main() {
     // An edge in the input data = a pair of `usize` vertex IDs.
     let (pairs_send, pairs_recv) = hydroflow::util::unbounded_channel::&lt;(usize, usize)&gt;();
 
@@ -217,12 +220,16 @@ two paths.</p>
 }
 </code></pre></pre>
 <p>And now we get the full set of vertices reachable from <code>0</code>:</p>
-<pre><code class="language-txt">Reached: 3
+<pre><code class="language-console">% cargo run
+&lt;build output&gt;
+&lt;graph output&gt;
+Reached: 3
 Reached: 0
 Reached: 2
 Reached: 4
 Reached: 1
 </code></pre>
+<h2 id="examining-the-hydroflow-code"><a class="header" href="#examining-the-hydroflow-code">Examining the Hydroflow Code</a></h2>
 <p>Let's review the significant changes here. First, in setting up the inputs we have the 
 addition of the <code>reached_vertices</code> variable, which uses the <a href="./surface_ops.gen.html#merge">merge()</a> 
 op to merge the output of two operators into one. 

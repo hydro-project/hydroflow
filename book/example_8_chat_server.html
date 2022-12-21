@@ -75,7 +75,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">User Guide</li><li class="chapter-item expanded "><a href="quickstart.html"><strong aria-hidden="true">1.</strong> Quickstart</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="setup.html"><strong aria-hidden="true">1.1.</strong> Setup</a></li><li class="chapter-item expanded "><a href="example_1_simplest.html"><strong aria-hidden="true">1.2.</strong> Simplest Example</a></li><li class="chapter-item expanded "><a href="example_2_simple.html"><strong aria-hidden="true">1.3.</strong> Simple Example</a></li><li class="chapter-item expanded "><a href="example_3_stream.html"><strong aria-hidden="true">1.4.</strong> A Example With Streaming Input</a></li><li class="chapter-item expanded "><a href="example_4_neighbors.html"><strong aria-hidden="true">1.5.</strong> Graph Neighbors</a></li><li class="chapter-item expanded "><a href="example_5_reachability.html"><strong aria-hidden="true">1.6.</strong> Graph Reachability</a></li><li class="chapter-item expanded "><a href="example_6_unreachability.html"><strong aria-hidden="true">1.7.</strong> Graph Un-Reachability</a></li><li class="chapter-item expanded "><a href="example_7_echo_server.html"><strong aria-hidden="true">1.8.</strong> Networked Services 1: EchoServer</a></li><li class="chapter-item expanded "><a href="example_8_chat_server.html" class="active"><strong aria-hidden="true">1.9.</strong> Networked Services 2: ChatServer</a></li></ol></li><li class="chapter-item expanded "><a href="concepts.html"><strong aria-hidden="true">2.</strong> Concepts</a></li><li class="chapter-item expanded "><a href="surface_syntax.html"><strong aria-hidden="true">3.</strong> Syntax</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="surface_embedding.html"><strong aria-hidden="true">3.1.</strong> Rust Embedding</a></li><li class="chapter-item expanded "><a href="surface_flows.html"><strong aria-hidden="true">3.2.</strong> Flows</a></li><li class="chapter-item expanded "><a href="surface_data.html"><strong aria-hidden="true">3.3.</strong> Data Sources</a></li><li class="chapter-item expanded "><a href="surface_ops.gen.html"><strong aria-hidden="true">3.4.</strong> Operators</a></li></ol></li><li class="chapter-item expanded "><a href="architecture.html"><strong aria-hidden="true">4.</strong> Architecture</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="in-out_trees.html"><strong aria-hidden="true">4.1.</strong> Subgraph In-Out Trees</a></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">User Guide</li><li class="chapter-item expanded "><a href="quickstart.html"><strong aria-hidden="true">1.</strong> Quickstart</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="setup.html"><strong aria-hidden="true">1.1.</strong> Setup</a></li><li class="chapter-item expanded "><a href="example_1_simplest.html"><strong aria-hidden="true">1.2.</strong> Simplest Example</a></li><li class="chapter-item expanded "><a href="example_2_simple.html"><strong aria-hidden="true">1.3.</strong> Simple Example</a></li><li class="chapter-item expanded "><a href="example_3_stream.html"><strong aria-hidden="true">1.4.</strong> A Example With Streaming Input</a></li><li class="chapter-item expanded "><a href="example_4_neighbors.html"><strong aria-hidden="true">1.5.</strong> Graph Neighbors</a></li><li class="chapter-item expanded "><a href="example_5_reachability.html"><strong aria-hidden="true">1.6.</strong> Graph Reachability</a></li><li class="chapter-item expanded "><a href="example_6_unreachability.html"><strong aria-hidden="true">1.7.</strong> Graph Un-Reachability</a></li><li class="chapter-item expanded "><a href="example_7_echo_server.html"><strong aria-hidden="true">1.8.</strong> Networked Services 1: EchoServer</a></li><li class="chapter-item expanded "><a href="example_8_chat_server.html" class="active"><strong aria-hidden="true">1.9.</strong> Networked Services 2: ChatServer</a></li></ol></li><li class="chapter-item expanded "><a href="concepts.html"><strong aria-hidden="true">2.</strong> Concepts</a></li><li class="chapter-item expanded "><a href="surface_syntax.html"><strong aria-hidden="true">3.</strong> Syntax</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="surface_embedding.html"><strong aria-hidden="true">3.1.</strong> Rust Embedding</a></li><li class="chapter-item expanded "><a href="surface_flows.html"><strong aria-hidden="true">3.2.</strong> Flows</a></li><li class="chapter-item expanded "><a href="surface_data.html"><strong aria-hidden="true">3.3.</strong> Data Sources</a></li><li class="chapter-item expanded "><a href="surface_ops.gen.html"><strong aria-hidden="true">3.4.</strong> Operators</a></li></ol></li><li class="chapter-item expanded "><a href="architecture.html"><strong aria-hidden="true">4.</strong> Architecture</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="in-out_trees.html"><strong aria-hidden="true">4.1.</strong> Subgraph In-Out Trees</a></li></ol></li><li class="chapter-item expanded "><a href="todo.html"><strong aria-hidden="true">5.</strong> TODO</a></li><li class="chapter-item expanded "><a href="time.html"><strong aria-hidden="true">6.</strong> On Time and Space</a></li><li class="chapter-item expanded "><a href="state.html"><strong aria-hidden="true">7.</strong> State and Lifetimes</a></li><li class="chapter-item expanded "><a href="debugging.html"><strong aria-hidden="true">8.</strong> Debugging</a></li><li class="chapter-item expanded "><a href="error_handling.html"><strong aria-hidden="true">9.</strong> Error Handling</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -146,7 +146,7 @@
 </blockquote>
 <p>Our previous <a href="./example_7_echo_server.html">echo server</a> example was admittedly simplistic.  In this example, we'll build something a bit more useful: a simple chat server. We will again have two roles: a <code>Client</code> and a <code>Server</code>. <code>Clients</code> will register their presence with the <code>Server</code>, which maintains a list of clients. Each <code>Client</code> sends messages to the <code>Server</code>, which will then broadcast those messages to all other clients. </p>
 <h2 id="mainrs"><a class="header" href="#mainrs">main.rs</a></h2>
-<p>The <code>main.rs</code> file here is very similar to that of the echo server, just with two new command-line arguments: one called <code>name</code> for a &quot;nickname&quot; in the chatroom, and another optional argument <code>graph</code> for printing a dataflow graph if desired.</p>
+<p>The <code>main.rs</code> file here is very similar to that of the echo server, just with two new command-line arguments: one called <code>name</code> for a &quot;nickname&quot; in the chatroom, and another optional argument <code>graph</code> for printing a dataflow graph if desired. To follow along, you can copy the contents of this file into the <code>src/main.rs</code> file of your template.</p>
 <pre><code class="language-rust  ignore">use clap::{Parser, ValueEnum};
 use client::run_client;
 use hydroflow::tokio;
@@ -207,10 +207,8 @@ async fn main() {
 }
 </code></pre>
 <h2 id="protocolrs"><a class="header" href="#protocolrs">protocol.rs</a></h2>
-<p>Our protocol file here expands upon what we saw with the echoserver by defining multiple message types. Note how we use a single Rust <code>enum</code> to represent all varieties of message types; this allows us to handle <code>Message</code>s of different types with a single  Rust network channel. We will use the <code>demux</code> operator to separate out these different message types on the receiving end. </p>
-<p>The <code>ConnectRequest</code> and <code>ConnectResponse</code> messages have no payload; 
-the address of the sender and the type of the message will be sufficient information. The <code>ChatMsg</code> message type has a <code>nickname</code> field, a <code>message</code> field, and a <code>ts</code> 
-field for the timestamp. Once again we use the <code>chrono</code> crate to represent timestamps.</p>
+<p>Our protocol file here expands upon what we saw with the echoserver by defining multiple message types. 
+Replace the template contents of <code>src/protocol.rs</code> with the following:</p>
 <pre><code class="language-rust ignore">use chrono::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -225,18 +223,14 @@ pub enum Message {
     },
 }
 </code></pre>
+<p>Note how we use a single Rust <code>enum</code> to represent all varieties of message types; this allows us to handle <code>Message</code>s of different types with a single  Rust network channel. We will use the <a href="./surface_ops.gen.html#demux"><code>demux</code></a> operator to separate out these different message types on the receiving end. </p>
+<p>The <code>ConnectRequest</code> and <code>ConnectResponse</code> messages have no payload; 
+the address of the sender and the type of the message will be sufficient information. The <code>ChatMsg</code> message type has a <code>nickname</code> field, a <code>message</code> field, and a <code>ts</code> 
+field for the timestamp. Once again we use the <code>chrono</code> crate to represent timestamps.</p>
 <h2 id="serverrs"><a class="header" href="#serverrs">server.rs</a></h2>
 <p>The chat server is nearly as simple as the echo server. The main differences are (a) we need to handle multiple message types, 
 (b) we need to keep track of the list of clients, and (c) we need to broadcast messages to all clients. </p>
-<p>After a short prelude, we have the Hydroflow code near the top of <code>run_server()</code>. It begins by defining <code>outbound_chan</code> as a <code>merge</code>d destination sink for network messages. Then we get to the
-more interesting <code>inbound_chan</code> definition. </p>
-<p>The <code>inbound</code> channel is a source stream that will carry many
-types of <code>Message</code>s. We use the <code>[demux](./surface_ops.gen.md#demux)</code> operator to partition the stream objects into three channels. The <code>clients</code> channel 
-will carry the addresses of clients that have connected to the server. The <code>msgs</code> channel will carry the <code>ChatMsg</code> messages that clients send to the server. 
-The <code>errs</code> channel will carry any other messages that clients send to the server. Note the structure of the <code>demux</code> operator: it takes a closure on 
-<code>(Message, SocketAddr)</code> pairs, and a variadic tuple (<code>var_args!</code>) of output channel names—in this case <code>clients</code>, <code>msgs</code>, and <code>errs</code>. The closure is basically a big
-Rust pattern <a href="https://doc.rust-lang.org/book/ch06-02-match.html"><code>match</code></a>, with one arm for each output channel name given in the variadic tuple. Note 
-that the different output channels can have different-typed messages! Note also that we destructure the incoming <code>Message</code> types into tuples of fields, to avoid having to write boilerplate code for each message type in every downstream pipeline.</p>
+<p>To follow along, replace the contents of <code>src/server.rs</code> with the code below:</p>
 <pre><code class="language-rust  ignore">use crate::{GraphType, Opts};
 use hydroflow::util::{UdpSink, UdpStream};
 
@@ -262,15 +256,18 @@ pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, opts: Opts
         clients = inbound_chan[clients] -&gt; tee();
         inbound_chan[errs] -&gt; for_each(|m| println!(&quot;Received unexpected message type: {:?}&quot;, m));
 </code></pre>
-<p>The remainder of the server consists of two independent pipelines. The first pipeline is one line long, 
-and is responsible for acknowledging requests from <code>clients</code>: it takes the address of the incoming <code>Message::ConnectRequest</code> 
-and sends a <code>ConnectResponse</code> back to that address. The second pipeline is responsible for broadcasting 
-all chat messages to all clients. This all-to-all pairing corresponds to the notion of a cartesian product
-or <code>[cross_join](./surface_ops.gen.md#cross_join)</code> in Hydroflow. The <code>cross_join</code> operator takes two input 
-channels and produces a single output channel with a tuple for each pair of inputs, in this case it produces
-<code>(Message, SocketAddr)</code> pairs. Conveniently, that is exactly the structure needed for sending to the <code>outbound_chan</code> sink!
-We call the cross-join pipeline <code>broadcast</code> because it effectively broadcasts all messages to all clients.</p>
-<p>Finally, the file ends with the Rust code to optionally print the dataflow graphand then start the server.</p>
+<p>After a short prelude, we have the Hydroflow code near the top of <code>run_server()</code>. It begins by defining <code>outbound_chan</code> as a <code>merge</code>d destination sink for network messages. Then we get to the
+more interesting <code>inbound_chan</code> definition. </p>
+<p>The <code>inbound</code> channel is a source stream that will carry many
+types of <code>Message</code>s. We use the <a href="./surface_ops.gen.html#demux"><code>demux</code></a> operator to partition the stream objects into three channels. The <code>clients</code> channel 
+will carry the addresses of clients that have connected to the server. The <code>msgs</code> channel will carry the <code>ChatMsg</code> messages that clients send to the server. 
+The <code>errs</code> channel will carry any other messages that clients send to the server. </p>
+<p>Note the structure of the <code>demux</code> operator: it takes a closure on 
+<code>(Message, SocketAddr)</code> pairs, and a variadic tuple (<code>var_args!</code>) of output channel names—in this case <code>clients</code>, <code>msgs</code>, and <code>errs</code>. The closure is basically a big
+Rust pattern <a href="https://doc.rust-lang.org/book/ch06-02-match.html"><code>match</code></a>, with one arm for each output channel name given in the variadic tuple. Note 
+that the different output channels can have different-typed messages! Note also that we destructure the incoming <code>Message</code> types into tuples of fields. (If we didn't we'd either have to write boilerplate code for each message type in every downstream pipeline, or face Rust's dreaded <a href="https://doc.rust-lang.org/book/ch18-02-refutability.html">refutable pattern</a> error!)</p>
+<p>The remainder of the server consists of two independent pipelines, the code to print out the flow graph,
+and the code to run the flow graph. To follow along, paste the following into the bottom of your <code>src/server.rs</code> file:</p>
 <pre><code class="language-rust  ignore">       // Pipeline 1: Acknowledge client connections
         clients[0] -&gt; map(|addr| (Message::ConnectResponse, addr)) -&gt; [0]outbound_chan;
 
@@ -301,6 +298,14 @@ We call the cross-join pipeline <code>broadcast</code> because it effectively br
     df.run_async().await.unwrap();
 }
 </code></pre>
+<p>The first pipeline is one line long, 
+and is responsible for acknowledging requests from <code>clients</code>: it takes the address of the incoming <code>Message::ConnectRequest</code> 
+and sends a <code>ConnectResponse</code> back to that address. The second pipeline is responsible for broadcasting 
+all chat messages to all clients. This all-to-all pairing corresponds to the notion of a cartesian product
+or <code>[cross_join](./surface_ops.gen.md#cross_join)</code> in Hydroflow. The <code>cross_join</code> operator takes two input 
+channels and produces a single output channel with a tuple for each pair of inputs, in this case it produces
+<code>(Message, SocketAddr)</code> pairs. Conveniently, that is exactly the structure needed for sending to the <code>outbound_chan</code> sink!
+We call the cross-join pipeline <code>broadcast</code> because it effectively broadcasts all messages to all clients.</p>
 <p>The mermaid graph for the server is below. The three branches of the <code>demux</code> are very clear toward the top. Note also the <code>tee</code> of the <code>clients</code> channel
 for both <code>ClientResponse</code> and broadcasting, and the <code>merge</code> of all outbound messages into <code>dest_sink_serde</code>.</p>
 <pre class="mermaid">flowchart TB
@@ -335,14 +340,16 @@ for both <code>ClientResponse</code> and broadcasting, and the <code>merge</code
     11v1--&gt;8v1
 </pre>
 <h2 id="clientrs"><a class="header" href="#clientrs">client.rs</a></h2>
-<p>The chat client is not very different from the echo server client, with two small additions and two 
-new design patterns. The additions are 
-(1) it has a Rust helper routine <code>pretty_print_msg</code> for formatting output, and (2) it sends a
-<code>ConnectRequest</code> message to the server upon invocation. The new design patterns are (a) a degenerate <code>source_iter</code> pipeline that runs once 
-as a &quot;bootstrap&quot; in the first epoch, and (b) the use of
-<code>cross_join</code> as a &quot;gated buffer&quot; to postpone sending messages.</p>
+<p>The chat client is not very different from the echo server client, with two new design patterns:</p>
+<ol>
+<li>a degenerate <code>source_iter</code> pipeline that runs once 
+as a &quot;bootstrap&quot; in the first epoch</li>
+<li>the use of <code>cross_join</code> as a &quot;gated buffer&quot; to postpone sending messages.</li>
+</ol>
+<p>We also include a Rust helper routine <code>pretty_print_msg</code> for formatting output.</p>
 <p>The prelude of the file is almost the same as the echo server client, with the addition of a crate for 
-handling <code>colored</code> text output. This is followed by the <code>pretty_print_msg</code> function, which is fairly self-explanatory.</p>
+handling <code>colored</code> text output. This is followed by the <code>pretty_print_msg</code> function, which is fairly self-explanatory. 
+To follow along, start by replacing the contents of <code>src/client.rs</code> with the following:</p>
 <pre><code class="language-rust ignore">use crate::protocol::Message;
 use crate::{GraphType, Opts};
 use chrono::prelude::*;
@@ -375,6 +382,7 @@ fn pretty_print_msg(msg: Message) {
 <p>This brings us to the <code>run_client</code> function. As in <code>run_server</code> we begin by ensuring the server address 
 is supplied. We then have the hydroflow code starting with a standard pattern of a <code>merge</code>d <code>outbound_chan</code>, 
 and a <code>demux</code>ed <code>inbound_chan</code>. The client handles only two inbound <code>Message</code> types: <code>Message::ConnectResponse</code> and <code>Message::ChatMsg</code>.</p>
+<p>Paste the following to the bottom of <code>src/client.rs</code>:</p>
 <pre><code class="language-rust ignore">pub(crate) async fn run_client(outbound: UdpSink, inbound: UdpStream, opts: Opts) {
     // server_addr is required for client
     let server_addr = opts.server_addr.expect(&quot;Client requires a server address&quot;);
@@ -393,7 +401,26 @@ and a <code>demux</code>ed <code>inbound_chan</code>. The client handles only tw
                 );
         inbound_chan[errs] -&gt; for_each(|m| println!(&quot;Received unexpected message type: {:?}&quot;, m));
 </code></pre>
-<p>The core logic of the client consists of three dataflow pipelines shown below. </p>
+<p>The core logic of the client consists of three dataflow pipelines shown below. Paste this into the
+bottom of your <code>src/client.rs</code> file.</p>
+<pre><code class="language-rust ignore">        // send a single connection request on startup
+        source_iter([()]) -&gt; map(|_m| (Message::ConnectRequest, server_addr)) -&gt; [0]outbound_chan;
+
+        // take stdin and send to server as a msg
+        // the cross_join serves to buffer msgs until the connection request is acked
+        msg_send = cross_join() -&gt; map(|(msg, _)| (msg, server_addr)) -&gt; [1]outbound_chan;
+        lines = source_stdin()
+          -&gt; map(|l| Message::ChatMsg {
+                    nickname: opts.name.clone(),
+                    message: l.unwrap(),
+                    ts: Utc::now()})
+          -&gt; [0]msg_send;
+        inbound_chan[acks] -&gt; [1]msg_send;
+
+        // receive and print messages
+        inbound_chan[msgs] -&gt; for_each(pretty_print_msg);
+    };
+</code></pre>
 <ol>
 <li>
 <p>The first pipeline is the &quot;bootstrap&quot; alluded to above.
@@ -412,25 +439,8 @@ when the client receives its sole <code>ConnectResponse</code>.</p>
 <p>The final pipeline simple pretty-prints the messages received from the server.</p>
 </li>
 </ol>
-<pre><code class="language-rust ignore">        // send a single connection request on startup
-        source_iter([()]) -&gt; map(|_m| (Message::ConnectRequest, server_addr)) -&gt; [0]outbound_chan;
-
-        // take stdin and send to server as a msg
-        // the cross_join serves to buffer msgs until the connection request is acked
-        msg_send = cross_join() -&gt; map(|(msg, _)| (msg, server_addr)) -&gt; [1]outbound_chan;
-        lines = source_stdin()
-          -&gt; map(|l| Message::ChatMsg {
-                    nickname: opts.name.clone(),
-                    message: l.unwrap(),
-                    ts: Utc::now()})
-          -&gt; [0]msg_send;
-        inbound_chan[acks] -&gt; [1]msg_send;
-
-        // receive and print messages
-        inbound_chan[msgs] -&gt; for_each(pretty_print_msg);
-    };
-
-    // optionally print the dataflow graph
+<p>Finish up the file by pasting the code below for optionally generating the graph and running the flow:</p>
+<pre><code class="language-rust ignore">    // optionally print the dataflow graph
     if let Some(graph) = opts.graph {
         let serde_graph = hf
             .serde_graph()

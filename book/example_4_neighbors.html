@@ -75,7 +75,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">User Guide</li><li class="chapter-item expanded "><a href="quickstart.html"><strong aria-hidden="true">1.</strong> Quickstart</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="setup.html"><strong aria-hidden="true">1.1.</strong> Setup</a></li><li class="chapter-item expanded "><a href="example_1_simplest.html"><strong aria-hidden="true">1.2.</strong> Simplest Example</a></li><li class="chapter-item expanded "><a href="example_2_simple.html"><strong aria-hidden="true">1.3.</strong> Simple Example</a></li><li class="chapter-item expanded "><a href="example_3_stream.html"><strong aria-hidden="true">1.4.</strong> A Example With Streaming Input</a></li><li class="chapter-item expanded "><a href="example_4_neighbors.html" class="active"><strong aria-hidden="true">1.5.</strong> Graph Neighbors</a></li><li class="chapter-item expanded "><a href="example_5_reachability.html"><strong aria-hidden="true">1.6.</strong> Graph Reachability</a></li><li class="chapter-item expanded "><a href="example_6_unreachability.html"><strong aria-hidden="true">1.7.</strong> Graph Un-Reachability</a></li><li class="chapter-item expanded "><a href="example_7_echo_server.html"><strong aria-hidden="true">1.8.</strong> Networked Services 1: EchoServer</a></li><li class="chapter-item expanded "><a href="example_8_chat_server.html"><strong aria-hidden="true">1.9.</strong> Networked Services 2: ChatServer</a></li></ol></li><li class="chapter-item expanded "><a href="concepts.html"><strong aria-hidden="true">2.</strong> Concepts</a></li><li class="chapter-item expanded "><a href="surface_syntax.html"><strong aria-hidden="true">3.</strong> Syntax</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="surface_embedding.html"><strong aria-hidden="true">3.1.</strong> Rust Embedding</a></li><li class="chapter-item expanded "><a href="surface_flows.html"><strong aria-hidden="true">3.2.</strong> Flows</a></li><li class="chapter-item expanded "><a href="surface_data.html"><strong aria-hidden="true">3.3.</strong> Data Sources</a></li><li class="chapter-item expanded "><a href="surface_ops.gen.html"><strong aria-hidden="true">3.4.</strong> Operators</a></li></ol></li><li class="chapter-item expanded "><a href="architecture.html"><strong aria-hidden="true">4.</strong> Architecture</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="in-out_trees.html"><strong aria-hidden="true">4.1.</strong> Subgraph In-Out Trees</a></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">User Guide</li><li class="chapter-item expanded "><a href="quickstart.html"><strong aria-hidden="true">1.</strong> Quickstart</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="setup.html"><strong aria-hidden="true">1.1.</strong> Setup</a></li><li class="chapter-item expanded "><a href="example_1_simplest.html"><strong aria-hidden="true">1.2.</strong> Simplest Example</a></li><li class="chapter-item expanded "><a href="example_2_simple.html"><strong aria-hidden="true">1.3.</strong> Simple Example</a></li><li class="chapter-item expanded "><a href="example_3_stream.html"><strong aria-hidden="true">1.4.</strong> A Example With Streaming Input</a></li><li class="chapter-item expanded "><a href="example_4_neighbors.html" class="active"><strong aria-hidden="true">1.5.</strong> Graph Neighbors</a></li><li class="chapter-item expanded "><a href="example_5_reachability.html"><strong aria-hidden="true">1.6.</strong> Graph Reachability</a></li><li class="chapter-item expanded "><a href="example_6_unreachability.html"><strong aria-hidden="true">1.7.</strong> Graph Un-Reachability</a></li><li class="chapter-item expanded "><a href="example_7_echo_server.html"><strong aria-hidden="true">1.8.</strong> Networked Services 1: EchoServer</a></li><li class="chapter-item expanded "><a href="example_8_chat_server.html"><strong aria-hidden="true">1.9.</strong> Networked Services 2: ChatServer</a></li></ol></li><li class="chapter-item expanded "><a href="concepts.html"><strong aria-hidden="true">2.</strong> Concepts</a></li><li class="chapter-item expanded "><a href="surface_syntax.html"><strong aria-hidden="true">3.</strong> Syntax</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="surface_embedding.html"><strong aria-hidden="true">3.1.</strong> Rust Embedding</a></li><li class="chapter-item expanded "><a href="surface_flows.html"><strong aria-hidden="true">3.2.</strong> Flows</a></li><li class="chapter-item expanded "><a href="surface_data.html"><strong aria-hidden="true">3.3.</strong> Data Sources</a></li><li class="chapter-item expanded "><a href="surface_ops.gen.html"><strong aria-hidden="true">3.4.</strong> Operators</a></li></ol></li><li class="chapter-item expanded "><a href="architecture.html"><strong aria-hidden="true">4.</strong> Architecture</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="in-out_trees.html"><strong aria-hidden="true">4.1.</strong> Subgraph In-Out Trees</a></li></ol></li><li class="chapter-item expanded "><a href="todo.html"><strong aria-hidden="true">5.</strong> TODO</a></li><li class="chapter-item expanded "><a href="time.html"><strong aria-hidden="true">6.</strong> On Time and Space</a></li><li class="chapter-item expanded "><a href="state.html"><strong aria-hidden="true">7.</strong> State and Lifetimes</a></li><li class="chapter-item expanded "><a href="debugging.html"><strong aria-hidden="true">8.</strong> Debugging</a></li><li class="chapter-item expanded "><a href="error_handling.html"><strong aria-hidden="true">9.</strong> Error Handling</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -138,7 +138,9 @@
 <blockquote>
 <p>In this example we cover:</p>
 <ul>
+<li>Assigning sub-flows to variables</li>
 <li>Our first multi-input operator, <a href="./surface_ops.gen.html#join"><code>join</code></a></li>
+<li>Indexing multi-input operators by prepending a bracket expression</li>
 <li>The <a href="./surface_ops.gen.html#unique"><code>unique</code></a> operator for removing duplicates from a stream</li>
 <li>A first exposure to the concepts of <em>strata</em> and <em>epochs</em></li>
 </ul>
@@ -177,9 +179,11 @@ below):</p>
     
   end
 </pre>
-<p>Lets take a look at some Hydroflow code that implements the program:</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">use hydroflow::hydroflow_syntax;
-</span>pub fn main() {
+<p>Lets take a look at some Hydroflow code that implements the program. In your <code>simple</code> project,
+replace the contents of <code>src/main.rs</code> with the following:</p>
+<pre><pre class="playground"><code class="language-rust">use hydroflow::hydroflow_syntax;
+
+pub fn main() {
     // An edge in the input data = a pair of `usize` vertex IDs.
     let (pairs_send, pairs_recv) = hydroflow::util::unbounded_channel::&lt;(usize, usize)&gt;();
 
@@ -212,15 +216,24 @@ below):</p>
     flow.run_available();
 }
 </code></pre></pre>
-<p>And the output:</p>
-<pre><code class="language-txt">Reached: 0
+<p>Run the program and focus on the last three lines of output, which come from <code>flow.run_available()</code>:</p>
+<pre><code class="language-console">% cargo run
+&lt;build output&gt;
+&lt;graph output&gt;
+Reached: 0
 Reached: 3
 Reached: 1
 </code></pre>
 <p>That looks right: the edges we &quot;sent&quot; into the flow that start at <code>0</code> are 
 <code>(0, 1)</code> and <code>(0, 3)</code>.</p>
-<p>As for the code itself, we start out with the origin vertex, <code>0</code>,
-and the stream of edges coming in:</p>
+<blockquote>
+<p>Note: When you run the program you may see the lines printed out in a different order. That's OK; the flow we're defining here is producing a <code>set</code> of nodes, so the order in which they are printed out is not specified. The <a href="./surface_ops.gen.html#sort_by"><code>sort_by</code></a> operator can be used to sort the output of a flow.</p>
+</blockquote>
+<h2 id="examining-the-hydroflow-code"><a class="header" href="#examining-the-hydroflow-code">Examining the Hydroflow Code</a></h2>
+<p>In the code, we want to start out with the origin vertex, <code>0</code>,
+and the stream of edges coming in. Because this flow is a bit more complex
+than our earlier examples, we break it down into named &quot;subflows&quot;, assigning them variable
+names that we can reuse. Here we specify two subflows, <code>origin</code> and <code>stream_of_edges</code>:</p>
 <pre><code class="language-rust ignore">    origin = source_iter(vec![0]);
     stream_of_edges = source_stream(pairs_recv);
 </code></pre>
@@ -249,10 +262,11 @@ Finally we print the neighbor vertices as follows:</p>
 <pre><code class="language-rust ignore">    my_join -&gt; unique() -&gt; for_each(|n| println!(&quot;Reached: {}&quot;, n));
 </code></pre>
 <p>The <a href="./surface_ops.gen.html#unique">unique</a> operator removes duplicates from the stream to make things more readable. Note that <code>unique</code> does not run in a streaming fashion, which we will talk about more <a href="#strata-and-epochs">below</a>.</p>
-<p>The remaining code runs the graph on example edge data. There's
-also some extra code there, particularly <code>flow.serde_graph().expect(...).to_mermaid()</code> which lets us
+<p>There's
+also some extra code here, <code>flow.serde_graph().expect(...).to_mermaid()</code>, which tells
+Hydroflow to
 generate a diagram rendered by <a href="https://mermaid-js.github.io/">Mermaid</a> showing
-the structure of the graph:</p>
+the structure of the graph, and print it to stdout. You can copy that text and paste it into the <a href="https://mermaid-js.github.io/mermaid-live-editor/">Mermaid Live Editor</a> to see the graph, which should look as follows:</p>
 <pre class="mermaid">flowchart TB
     subgraph &quot;sg_1v1 stratum 0&quot;
         1v1[&quot;1v1 &lt;tt&gt;op_1v1: source_iter(vec! [0])&lt;/tt&gt;&quot;]
@@ -276,19 +290,18 @@ the structure of the graph:</p>
     6v1--&gt;7v1
     8v1--&gt;6v1
 </pre>
+<p>Before we proceed, note in the mermaid graph how Hydroflow separates the <code>unique</code> operator and its downstream dependencies into their own
+<em>stratum</em> (plural: <em>strata</em>). The stratum boundary before <code>unique</code> ensures that all the values are generated before <code>unique</code> executes, ensuring that all duplicates are eliminated. </p>
+<p>Hydroflow runs each stratum
+in order, one at a time, ensuring all values are computed
+before moving on to the next stratum. Between strata we see a <em>handoff</em>, which logically buffers the 
+output of the first stratum, and delineates the separation of execution between the 2 strata.</p>
+<p>After all strata are run, Hydroflow returns to the first stratum; this begins the next <em>epoch</em>. This doesn't really matter for this example, but it is important for long-running Hydroflow services that accept input from the outside world. More on this topic in the chapter on <a href="./time.html">time</a>.</p>
 <p>Returning to the code, if you read the <code>pairs_send</code> calls carefully, you'll see that the example data 
 has vertices (<code>2</code>, <code>4</code>) that are more than one hop away from <code>0</code>, which were
 not output by our simple program. To extend this example to graph <em>reachability</em>, 
 we need to recurse: find neighbors of our neighbors, neighbors of our neighbors' neighbors, and so on. In Hydroflow,
 this is done by adding a loop to the flow, as we'll see in our <a href="example_5_reachability.html">next example</a>.</p>
-<h2 id="strata-and-epochs"><a class="header" href="#strata-and-epochs">Strata and Epochs</a></h2>
-<p>Before we proceed, note in the mermaid graph how Hydroflow separates the <code>unique</code> operator and its downstream dependencies into their own
-<em>stratum</em> (plural: <em>strata</em>). The stratum boundary before <code>unique</code> ensures that all the values arrive before it executes, ensuring that all duplicates are eliminated. </p>
-<p>Hydroflow runs each stratum
-in order, one at a time, ensuring all values are computed
-before moving on to the next stratum. Between strata we see a <em>handoff</em>, which logically buffers the 
-output of the first stratum, and delineates the separation of execution between the 2 strata.</p>
-<p>After all strata are run, Hydroflow returns to the first stratum; this begins the next <em>epoch</em>. This doesn't really matter for this example, but it is important for long-running Hydroflow services that accept input from the outside world.</p>
 
                     </main>
 

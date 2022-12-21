@@ -75,7 +75,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">User Guide</li><li class="chapter-item expanded "><a href="quickstart.html"><strong aria-hidden="true">1.</strong> Quickstart</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="setup.html"><strong aria-hidden="true">1.1.</strong> Setup</a></li><li class="chapter-item expanded "><a href="example_1_simplest.html"><strong aria-hidden="true">1.2.</strong> Simplest Example</a></li><li class="chapter-item expanded "><a href="example_2_simple.html"><strong aria-hidden="true">1.3.</strong> Simple Example</a></li><li class="chapter-item expanded "><a href="example_3_stream.html" class="active"><strong aria-hidden="true">1.4.</strong> A Example With Streaming Input</a></li><li class="chapter-item expanded "><a href="example_4_neighbors.html"><strong aria-hidden="true">1.5.</strong> Graph Neighbors</a></li><li class="chapter-item expanded "><a href="example_5_reachability.html"><strong aria-hidden="true">1.6.</strong> Graph Reachability</a></li><li class="chapter-item expanded "><a href="example_6_unreachability.html"><strong aria-hidden="true">1.7.</strong> Graph Un-Reachability</a></li><li class="chapter-item expanded "><a href="example_7_echo_server.html"><strong aria-hidden="true">1.8.</strong> Networked Services 1: EchoServer</a></li><li class="chapter-item expanded "><a href="example_8_chat_server.html"><strong aria-hidden="true">1.9.</strong> Networked Services 2: ChatServer</a></li></ol></li><li class="chapter-item expanded "><a href="concepts.html"><strong aria-hidden="true">2.</strong> Concepts</a></li><li class="chapter-item expanded "><a href="surface_syntax.html"><strong aria-hidden="true">3.</strong> Syntax</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="surface_embedding.html"><strong aria-hidden="true">3.1.</strong> Rust Embedding</a></li><li class="chapter-item expanded "><a href="surface_flows.html"><strong aria-hidden="true">3.2.</strong> Flows</a></li><li class="chapter-item expanded "><a href="surface_data.html"><strong aria-hidden="true">3.3.</strong> Data Sources</a></li><li class="chapter-item expanded "><a href="surface_ops.gen.html"><strong aria-hidden="true">3.4.</strong> Operators</a></li></ol></li><li class="chapter-item expanded "><a href="architecture.html"><strong aria-hidden="true">4.</strong> Architecture</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="in-out_trees.html"><strong aria-hidden="true">4.1.</strong> Subgraph In-Out Trees</a></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">User Guide</li><li class="chapter-item expanded "><a href="quickstart.html"><strong aria-hidden="true">1.</strong> Quickstart</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="setup.html"><strong aria-hidden="true">1.1.</strong> Setup</a></li><li class="chapter-item expanded "><a href="example_1_simplest.html"><strong aria-hidden="true">1.2.</strong> Simplest Example</a></li><li class="chapter-item expanded "><a href="example_2_simple.html"><strong aria-hidden="true">1.3.</strong> Simple Example</a></li><li class="chapter-item expanded "><a href="example_3_stream.html" class="active"><strong aria-hidden="true">1.4.</strong> A Example With Streaming Input</a></li><li class="chapter-item expanded "><a href="example_4_neighbors.html"><strong aria-hidden="true">1.5.</strong> Graph Neighbors</a></li><li class="chapter-item expanded "><a href="example_5_reachability.html"><strong aria-hidden="true">1.6.</strong> Graph Reachability</a></li><li class="chapter-item expanded "><a href="example_6_unreachability.html"><strong aria-hidden="true">1.7.</strong> Graph Un-Reachability</a></li><li class="chapter-item expanded "><a href="example_7_echo_server.html"><strong aria-hidden="true">1.8.</strong> Networked Services 1: EchoServer</a></li><li class="chapter-item expanded "><a href="example_8_chat_server.html"><strong aria-hidden="true">1.9.</strong> Networked Services 2: ChatServer</a></li></ol></li><li class="chapter-item expanded "><a href="concepts.html"><strong aria-hidden="true">2.</strong> Concepts</a></li><li class="chapter-item expanded "><a href="surface_syntax.html"><strong aria-hidden="true">3.</strong> Syntax</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="surface_embedding.html"><strong aria-hidden="true">3.1.</strong> Rust Embedding</a></li><li class="chapter-item expanded "><a href="surface_flows.html"><strong aria-hidden="true">3.2.</strong> Flows</a></li><li class="chapter-item expanded "><a href="surface_data.html"><strong aria-hidden="true">3.3.</strong> Data Sources</a></li><li class="chapter-item expanded "><a href="surface_ops.gen.html"><strong aria-hidden="true">3.4.</strong> Operators</a></li></ol></li><li class="chapter-item expanded "><a href="architecture.html"><strong aria-hidden="true">4.</strong> Architecture</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="in-out_trees.html"><strong aria-hidden="true">4.1.</strong> Subgraph In-Out Trees</a></li></ol></li><li class="chapter-item expanded "><a href="todo.html"><strong aria-hidden="true">5.</strong> TODO</a></li><li class="chapter-item expanded "><a href="time.html"><strong aria-hidden="true">6.</strong> On Time and Space</a></li><li class="chapter-item expanded "><a href="state.html"><strong aria-hidden="true">7.</strong> State and Lifetimes</a></li><li class="chapter-item expanded "><a href="debugging.html"><strong aria-hidden="true">8.</strong> Debugging</a></li><li class="chapter-item expanded "><a href="error_handling.html"><strong aria-hidden="true">9.</strong> Error Handling</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -144,7 +144,7 @@
 </ul>
 </blockquote>
 <p>In our previous examples, data came from within the Hydroflow spec, via Rust iterators and the <a href="./surface_ops.gen.html#source_iter"><code>source_iter</code></a> operator. In most cases, however, data comes from outside the Hydroflow spec. In this example, we'll see a simple version of this idea, with data being generated on the same machine and sent into the channel programmatically via Rust.</p>
-<p>We start with a skeleton much like before:</p>
+<p>For discussion, we start with a skeleton much like before:</p>
 <pre><pre class="playground"><code class="language-rust">use hydroflow::hydroflow_syntax;
 
 pub fn main() {
@@ -166,8 +166,9 @@ called the &quot;turbofish&quot;, which is how type parameters (generic argument
 supplied to generic types and functions. In this case it specifies that this tokio channel
 transmits items of type <code>usize</code>.
 The returned <code>example_recv</code> value can be used via a <a href="./surface_ops.gen.html#source_stream"><code>source_stream</code></a>
-to build a Hydroflow subgraph just like before. Here is the same program as before, but using the
-input channel:</p>
+to build a Hydroflow subgraph just like before. </p>
+<p>Here is the same program as before, but using the
+input channel. Back in the <code>simple</code> project, replace the contents of <code>src/main.rs</code> with the following:</p>
 <pre><pre class="playground"><code class="language-rust">use hydroflow::hydroflow_syntax;
 
 pub fn main() {
@@ -186,7 +187,7 @@ pub fn main() {
             }
         })
         -&gt; flat_map(|n| (n..=n+1))
-        -&gt; for_each(|n| println!(&quot;Ahoj {}&quot;, n))
+        -&gt; for_each(|n| println!(&quot;Ahoy, {}&quot;, n))
     };
 
     println!(&quot;A&quot;);
@@ -207,22 +208,24 @@ pub fn main() {
     flow.run_available();
 }
 </code></pre></pre>
-<pre><code class="language-txt">A
-Ahoj 16
-Ahoj 17
-Ahoj 25
-Ahoj 26
+<pre><code class="language-console">% cargo run
+&lt;build output&gt;
+A
+Ahoy, 16
+Ahoy, 17
+Ahoy, 25
+Ahoy, 26
 B
-Ahoj 36
-Ahoj 37
-Ahoj 49
-Ahoj 50
-Ahoj 64
-Ahoj 65
-Ahoj 81
-Ahoj 82
+Ahoy, 36
+Ahoy, 37
+Ahoy, 49
+Ahoy, 50
+Ahoy, 64
+Ahoy, 65
+Ahoy, 81
+Ahoy, 82
 </code></pre>
-<p>At the bottom we can see how to programatically supply <code>usize</code>-typed inputs with the tokio 
+<p>At the bottom of <code>main.rs</code> we can see how to programatically supply <code>usize</code>-typed inputs with the tokio 
 <code>.send()</code> method.  We call Rust's <code>.unwrap()</code> method to ignore the error messages from 
 <code>.send()</code> in this simple case.  In later examples we'll see how to 
 allow for data coming in over a network.</p>
