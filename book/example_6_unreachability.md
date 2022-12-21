@@ -1,7 +1,7 @@
 # Graph Un-Reachability
 > In this example we cover:
 > * Extending a program with additional downstream logic.
-> * Hydroflow's ([`difference`](./surface_ops.gen.md#merge)) operator
+> * Hydroflow's ([`difference`](./surface_ops.gen.md#difference)) operator
 > * Further examples of automatic stratification.
 
 Our next example builds on the previous by finding vertices that are _not_ reachable. To do this, we need to capture the set `all_vertices`, and use a [difference](./surface_ops.gen.md#difference) operator to form the difference between that set of vertices and `reachable_vertices`.
@@ -34,10 +34,11 @@ graph TD
 40[Output]
 ```
 
-This is a simple augmentation of our previous example. Here's the code:
+This is a simple augmentation of our previous example. Replace the contents of `src/main.rs` with the following:
 
 ```rust
-# use hydroflow::hydroflow_syntax;
+use hydroflow::hydroflow_syntax;
+
 pub fn main() {
     // An edge in the input data = a pair of `usize` vertex IDs.
     let (pairs_send, pairs_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
@@ -84,7 +85,10 @@ pub fn main() {
 }
 ```
 Notice that we are now sending in some new pairs to test this code. The output should be:
-```txt
+```console
+% cargo run
+<build output>
+<graph output>
 Received vertex: 12
 Received vertex: 6
 Received vertex: 11

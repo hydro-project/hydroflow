@@ -6,7 +6,7 @@
 
 In our previous examples, data came from within the Hydroflow spec, via Rust iterators and the [`source_iter`](./surface_ops.gen.md#source_iter) operator. In most cases, however, data comes from outside the Hydroflow spec. In this example, we'll see a simple version of this idea, with data being generated on the same machine and sent into the channel programmatically via Rust.
 
-We start with a skeleton much like before:
+For discussion, we start with a skeleton much like before:
 
 ```rust
 use hydroflow::hydroflow_syntax;
@@ -33,8 +33,10 @@ called the "turbofish", which is how type parameters (generic arguments) are
 supplied to generic types and functions. In this case it specifies that this tokio channel
 transmits items of type `usize`.
 The returned `example_recv` value can be used via a [`source_stream`](./surface_ops.gen.md#source_stream)
-to build a Hydroflow subgraph just like before. Here is the same program as before, but using the
-input channel:
+to build a Hydroflow subgraph just like before. 
+
+Here is the same program as before, but using the
+input channel. Back in the `simple` project, replace the contents of `src/main.rs` with the following:
 ```rust
 use hydroflow::hydroflow_syntax;
 
@@ -54,7 +56,7 @@ pub fn main() {
             }
         })
         -> flat_map(|n| (n..=n+1))
-        -> for_each(|n| println!("Ahoj {}", n))
+        -> for_each(|n| println!("Ahoy, {}", n))
     };
 
     println!("A");
@@ -75,23 +77,25 @@ pub fn main() {
     flow.run_available();
 }
 ```
-```txt
+```console
+% cargo run
+<build output>
 A
-Ahoj 16
-Ahoj 17
-Ahoj 25
-Ahoj 26
+Ahoy, 16
+Ahoy, 17
+Ahoy, 25
+Ahoy, 26
 B
-Ahoj 36
-Ahoj 37
-Ahoj 49
-Ahoj 50
-Ahoj 64
-Ahoj 65
-Ahoj 81
-Ahoj 82
+Ahoy, 36
+Ahoy, 37
+Ahoy, 49
+Ahoy, 50
+Ahoy, 64
+Ahoy, 65
+Ahoy, 81
+Ahoy, 82
 ```
-At the bottom we can see how to programatically supply `usize`-typed inputs with the tokio 
+At the bottom of `main.rs` we can see how to programatically supply `usize`-typed inputs with the tokio 
 `.send()` method.  We call Rust's `.unwrap()` method to ignore the error messages from 
 `.send()` in this simple case.  In later examples we'll see how to 
 allow for data coming in over a network.
