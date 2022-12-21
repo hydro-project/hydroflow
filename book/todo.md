@@ -83,7 +83,7 @@
     - Also `run_available()` `next_stratum()` and `recv_events` are important
 - More generally, document the **Core API**
 
-- **Strata and ticks** -- explain the concept of strata and ticks, and how they relate to the `run_tick()` and `run_stratum()` methods.
+- **Strata and Ticks** -- explain the concept of strata and ticks, and how they relate to the `run_tick()` and `run_stratum()` methods.
 
 - **Make sure `src/examples/echoserver` is the same as the template project** -- or better, find a way to do that via github actions or a github submodule
 

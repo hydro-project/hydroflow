@@ -171,6 +171,7 @@ flowchart TB
 Before we proceed, note in the mermaid graph how Hydroflow separates the `unique` operator and its downstream dependencies into their own
 _stratum_ (plural: _strata_). The stratum boundary before `unique` ensures that all the values are generated before `unique` executes, ensuring that all duplicates are eliminated. 
 
+## Strata and Ticks
 Hydroflow runs each stratum
 in order, one at a time, ensuring all values are computed
 before moving on to the next stratum. Between strata we see a _handoff_, which logically buffers the 
