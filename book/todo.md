@@ -15,7 +15,7 @@
     - End-of-stream to Distributed EOS?
 
 ## Docs
-- `Hydroflow` trait and its methods
+- `hydroflow` struct and its methods
 - Review the ops docs
 
 ## What's covered in examples
@@ -78,10 +78,20 @@
 - Interfacing with external services
 
 ## Odds and ends taken out of other chapters
-- **Document the methods on the `hydroflow` trait** -- especially the run methods.
+- **Document the methods on the `hydroflow` struct** -- especially the run methods.
     -  The [`run_epoch()`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_epoch), [`run_stratum()`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_stratum), [`run()`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run), and [`run_async()`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_async) methods provide other ways to control the graph execution.
+    - Also `run_available()` `next_stratum()` and `recv_events` are important
+- More generally, document the **Core API**
 
 - **Strata and Epochs** -- explain the concept of strata and epochs, and how they relate to the `run_epoch()` and `run_stratum()` methods.
 
 - **Make sure `src/examples/echoserver` is the same as the template project** -- or better, find a way to do that via github actions or a github submodule
 
+## More Examples
+- Illustrate `'static` and `'epoch` lifetimes (KVS)
+- Illustrate partitioning and replication (KVS)
+- Illustrate the `next_stratum` operator for atomicity (eg Bloom's upsert `<+-` operator)
+- Illustrate ordered streams (need `zip` operator ... what's the example?)
+- Actor model implementation (Borrow an Akka or Ray Actors example?)
+- Futures emulation? (Borrow a Ray example)
+- Illustrate external storage source and sink (e.g. for WAL of KVS)
