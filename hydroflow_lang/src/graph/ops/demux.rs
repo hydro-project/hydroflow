@@ -5,7 +5,8 @@ use crate::graph::PortIndexValue;
 use crate::pretty_span::PrettySpan;
 
 use super::{
-    OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, RANGE_1,
+    OperatorConstraints, OperatorWriteOutput, PortListSpec, WriteContextArgs, WriteIteratorArgs,
+    RANGE_1,
 };
 
 use proc_macro2::{Ident, TokenTree};
@@ -15,7 +16,7 @@ use syn::{Expr, Pat};
 
 // TODO(mingwei): Preprocess rustdoc links in mdbook or in the `operator_docgen` macro.
 /// > Arguments: A Rust closure, the first argument is a received item and the
-/// > second argument is a [`var_args!` tuple list](https://hydro-project.github.io/hydroflow/doc/hydroflow/macro.var_args.html)
+/// > second argument is a variadic [`var_args!` tuple list](https://hydro-project.github.io/hydroflow/doc/hydroflow/macro.var_args.html)
 /// > where each item name is an output port.
 ///
 /// Takes the input stream and allows the user to determine what elemnt(s) to
@@ -48,7 +49,7 @@ pub const DEMUX: OperatorConstraints = OperatorConstraints {
     hard_range_out: &(2..),
     soft_range_out: &(2..),
     ports_inn: None,
-    ports_out: None,
+    ports_out: Some(&(|| PortListSpec::Variadic)),
     num_args: 1,
     input_delaytype_fn: &|_| None,
     write_fn: &(|&WriteContextArgs { root, op_span, .. },

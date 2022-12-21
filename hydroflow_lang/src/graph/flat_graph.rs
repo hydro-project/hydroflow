@@ -5,13 +5,12 @@ use std::collections::{BTreeMap, BTreeSet};
 use proc_macro2::Span;
 use quote::ToTokens;
 use slotmap::{Key, SecondaryMap, SlotMap};
-use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
-use syn::{Ident, Token};
+use syn::Ident;
 
 use crate::diagnostic::{Diagnostic, Level};
-use crate::graph::ops::{RangeTrait, OPERATORS};
-use crate::parse::{HfCode, HfStatement, Operator, Pipeline, PortIndex};
+use crate::graph::ops::{PortListSpec, RangeTrait, OPERATORS};
+use crate::parse::{HfCode, HfStatement, Operator, Pipeline};
 use crate::pretty_span::{PrettyRowCol, PrettySpan};
 
 use super::di_mul_graph::DiMulGraph;
@@ -291,18 +290,19 @@ impl FlatGraph {
 
                             fn emit_port_error<'a>(
                                 operator_span: Span,
-                                expected_ports_fn: Option<
-                                    &dyn Fn() -> Punctuated<PortIndex, Token![,]>,
-                                >,
+                                expected_ports_fn: Option<&dyn Fn() -> PortListSpec>,
                                 actual_ports_iter: impl Iterator<Item = &'a PortIndexValue>,
                                 input_output: &'static str,
                                 diagnostics: &mut Vec<Diagnostic>,
                             ) {
                                 let Some(expected_ports_fn) = expected_ports_fn else {
-                                    return
+                                    return;
                                 };
-                                let expected_ports: Vec<_> =
-                                    (expected_ports_fn)().into_iter().collect();
+                                let PortListSpec::Fixed(expected_ports) = (expected_ports_fn)() else {
+                                    // Separate check inside of `demux` special case.
+                                    return;
+                                };
+                                let expected_ports: Vec<_> = expected_ports.into_iter().collect();
 
                                 // Reject unexpected ports.
                                 let ports: BTreeSet<_> = actual_ports_iter
