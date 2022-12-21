@@ -1,4 +1,4 @@
-error: Negative edge creates a negative cycle which must be broken with a `next_epoch()` operator.
+error: Negative edge creates a negative cycle which must be broken with a `next_tick()` operator.
  --> tests/compile-fail/surface_negative_loop.rs:7:18
   |
 7 |         diff -> [neg]diff;

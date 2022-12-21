@@ -44,7 +44,7 @@ impl Default for Hydroflow {
             event_queue_send,
 
             current_stratum: 0,
-            current_epoch: 0,
+            current_tick: 0,
 
             subgraph_id: SubgraphId(0),
 
@@ -91,9 +91,9 @@ impl Hydroflow {
         Reactor::new(self.context.event_queue_send.clone())
     }
 
-    // Gets the current epoch (local time) count.
-    pub fn current_epoch(&self) -> usize {
-        self.context.current_epoch
+    // Gets the current tick (local time) count.
+    pub fn current_tick(&self) -> usize {
+        self.context.current_tick
     }
 
     // Gets the current stratum nubmer.
@@ -101,10 +101,10 @@ impl Hydroflow {
         self.context.current_stratum
     }
 
-    /// Runs the dataflow until the next epoch begins.
-    pub fn run_epoch(&mut self) {
-        let epoch = self.current_epoch();
-        while self.next_stratum() && epoch == self.current_epoch() {
+    /// Runs the dataflow until the next tick begins.
+    pub fn run_tick(&mut self) {
+        let tick = self.current_tick();
+        while self.next_stratum() && tick == self.current_tick() {
             self.run_stratum();
         }
     }
@@ -168,7 +168,7 @@ impl Hydroflow {
             self.context.current_stratum += 1;
             if self.context.current_stratum >= self.stratum_queues.len() {
                 self.context.current_stratum = 0;
-                self.context.current_epoch += 1;
+                self.context.current_tick += 1;
             }
             // After incrementing, exit if we made a full loop around the strata.
             if old_stratum == self.context.current_stratum {
@@ -184,7 +184,7 @@ impl Hydroflow {
     /// TODO(mingwei): Currently blockes forever, no notion of "completion."
     pub fn run(&mut self) -> Option<!> {
         loop {
-            self.run_epoch();
+            self.run_tick();
             self.recv_events()?;
         }
     }

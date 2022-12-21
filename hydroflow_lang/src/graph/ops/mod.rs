@@ -29,8 +29,8 @@ mod inspect;
 mod join;
 mod map;
 mod merge;
-mod next_epoch;
 mod next_stratum;
+mod next_tick;
 mod null;
 mod reduce;
 mod repeat_iter;
@@ -47,7 +47,7 @@ mod unzip;
 #[derive(Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Debug)]
 pub enum DelayType {
     Stratum,
-    Epoch,
+    Tick,
 }
 
 pub struct OperatorConstraints {
@@ -165,7 +165,7 @@ pub const OPERATORS: &[OperatorConstraints] = &[
     repeat_iter::REPEAT_ITER,
     difference::DIFFERENCE,
     next_stratum::NEXT_STRATUM,
-    next_epoch::NEXT_EPOCH,
+    next_tick::NEXT_TICK,
     for_each::FOR_EACH,
     demux::DEMUX,
     dest_sink::DEST_SINK,

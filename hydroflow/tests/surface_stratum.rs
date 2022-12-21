@@ -33,7 +33,7 @@ pub fn test_difference_a() {
 }
 
 /// More complex different test.
-/// Take the difference of each epoch of items and subtract the previous epoch's items.
+/// Take the difference of each tick of items and subtract the previous tick's items.
 #[test]
 pub fn test_difference_b() -> Result<(), SendError<&'static str>> {
     let (inp_send, inp_recv) = hydroflow::util::unbounded_channel::<&'static str>();
@@ -45,7 +45,7 @@ pub fn test_difference_b() -> Result<(), SendError<&'static str>> {
         a = difference();
         source_stream(inp_recv) -> [pos]a;
         b = a -> tee();
-        b[0] -> next_epoch() -> [neg]a;
+        b[0] -> next_tick() -> [neg]a;
         b[1] -> for_each(|x| output_inner.borrow_mut().push(x));
     };
 
@@ -54,110 +54,110 @@ pub fn test_difference_b() -> Result<(), SendError<&'static str>> {
     inp_send.send("01")?;
     inp_send.send("02")?;
     inp_send.send("03")?;
-    df.run_epoch();
+    df.run_tick();
     assert_eq!(&["01", "02", "03"], &*output.take());
 
     inp_send.send("02")?;
     inp_send.send("11")?;
     inp_send.send("12")?;
-    df.run_epoch();
+    df.run_tick();
     assert_eq!(&["11", "12"], &*output.take());
 
     inp_send.send("02")?;
     inp_send.send("11")?;
     inp_send.send("12")?;
-    df.run_epoch();
+    df.run_tick();
     assert_eq!(&["02"], &*output.take());
 
     Ok(())
 }
 
 #[test]
-pub fn test_epoch_loop_1() {
+pub fn test_tick_loop_1() {
     let output = <Rc<RefCell<Vec<usize>>>>::default();
     let output_inner = Rc::clone(&output);
 
-    // Without `next_epoch()` this would be "unsafe" although legal.
-    // E.g. it would spin forever in a single infinite tick/epoch.
+    // Without `next_tick()` this would be "unsafe" although legal.
+    // E.g. it would spin forever in a single infinite tick/tick.
     let mut df: Hydroflow = hydroflow_syntax! {
         a = merge() -> tee();
         source_iter([1, 3]) -> [0]a;
-        a[0] -> next_epoch() -> map(|x| 2 * x) -> [1]a;
+        a[0] -> next_tick() -> map(|x| 2 * x) -> [1]a;
         a[1] -> for_each(|x| output_inner.borrow_mut().push(x));
     };
 
     println!("{}", df.serde_graph().unwrap().to_mermaid());
 
-    df.run_epoch();
+    df.run_tick();
     assert_eq!(&[1, 3], &*output.take());
 
-    df.run_epoch();
+    df.run_tick();
     assert_eq!(&[2, 6], &*output.take());
 
-    df.run_epoch();
+    df.run_tick();
     assert_eq!(&[4, 12], &*output.take());
 
-    df.run_epoch();
+    df.run_tick();
     assert_eq!(&[8, 24], &*output.take());
 }
 
 #[test]
-pub fn test_epoch_loop_2() {
+pub fn test_tick_loop_2() {
     let output = <Rc<RefCell<Vec<usize>>>>::default();
     let output_inner = Rc::clone(&output);
 
     let mut df: Hydroflow = hydroflow_syntax! {
         a = merge() -> tee();
         source_iter([1, 3]) -> [0]a;
-        a[0] -> next_epoch() -> next_epoch() -> map(|x| 2 * x) -> [1]a;
+        a[0] -> next_tick() -> next_tick() -> map(|x| 2 * x) -> [1]a;
         a[1] -> for_each(|x| output_inner.borrow_mut().push(x));
     };
 
     println!("{}", df.serde_graph().unwrap().to_mermaid());
 
-    df.run_epoch();
+    df.run_tick();
     assert_eq!(&[1, 3], &*output.take());
 
-    df.run_epoch();
+    df.run_tick();
     assert!(output.take().is_empty());
 
-    df.run_epoch();
+    df.run_tick();
     assert_eq!(&[2, 6], &*output.take());
 
-    df.run_epoch();
+    df.run_tick();
     assert!(output.take().is_empty());
 
-    df.run_epoch();
+    df.run_tick();
     assert_eq!(&[4, 12], &*output.take());
 }
 
 #[test]
-pub fn test_epoch_loop_3() {
+pub fn test_tick_loop_3() {
     let output = <Rc<RefCell<Vec<usize>>>>::default();
     let output_inner = Rc::clone(&output);
 
     let mut df: Hydroflow = hydroflow_syntax! {
         a = merge() -> tee();
         source_iter([1, 3]) -> [0]a;
-        a[0] -> next_epoch() -> next_epoch() -> next_epoch() -> map(|x| 2 * x) -> [1]a;
+        a[0] -> next_tick() -> next_tick() -> next_tick() -> map(|x| 2 * x) -> [1]a;
         a[1] -> for_each(|x| output_inner.borrow_mut().push(x));
     };
 
     println!("{}", df.serde_graph().unwrap().to_mermaid());
 
-    df.run_epoch();
+    df.run_tick();
     assert_eq!(&[1, 3], &*output.take());
 
-    df.run_epoch();
+    df.run_tick();
     assert!(output.take().is_empty());
 
-    df.run_epoch();
+    df.run_tick();
     assert!(output.take().is_empty());
 
-    df.run_epoch();
+    df.run_tick();
     assert_eq!(&[2, 6], &*output.take());
 
-    df.run_epoch();
+    df.run_tick();
     assert!(output.take().is_empty());
 }
 

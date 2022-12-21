@@ -1,7 +1,7 @@
 use super::{DelayType, OperatorConstraints, IDENTITY_WRITE_FN, RANGE_1};
 
 /// Delays all elements which pass through to the next stratum (in the same
-/// epoch).
+/// tick).
 #[hydroflow_internalmacro::operator_docgen]
 pub const NEXT_STRATUM: OperatorConstraints = OperatorConstraints {
     name: "next_stratum",

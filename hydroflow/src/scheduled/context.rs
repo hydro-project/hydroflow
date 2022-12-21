@@ -24,7 +24,7 @@ pub struct Context {
     // TODO(mingwei): as long as this is here, it's impossible to know when all work is done.
     pub(crate) event_queue_send: UnboundedSender<SubgraphId>,
 
-    pub(crate) current_epoch: usize,
+    pub(crate) current_tick: usize,
     pub(crate) current_stratum: usize,
 
     /// The SubgraphId of the currently running operator. When this context is
@@ -36,9 +36,9 @@ pub struct Context {
     pub(crate) task_join_handles: Vec<JoinHandle<()>>,
 }
 impl Context {
-    /// Gets the current epoch (local time) count.
-    pub fn current_epoch(&self) -> usize {
-        self.current_epoch
+    /// Gets the current tick (local time) count.
+    pub fn current_tick(&self) -> usize {
+        self.current_tick
     }
 
     /// Gets the current stratum nubmer.

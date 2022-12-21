@@ -193,8 +193,8 @@ fn group_by_monotonic_core() {
 //     assert_eq!(&["sales", "accounting", "engineering"], &**output.borrow());
 // }
 
-// /// Non-monotonic barrier. Per epoch, for each department find the highest paid employee.
-// /// Takes in BATCH_A in the first epoch, then BATCH_B *and* BATCH_C in the second epoch.
+// /// Non-monotonic barrier. Per tick, for each department find the highest paid employee.
+// /// Takes in BATCH_A in the first tick, then BATCH_B *and* BATCH_C in the second tick.
 // /// SQL (per batch): SELECT department, name, salary FROM employees WHERE salary = MAX(salary) GROUP BY department
 // #[test]
 // fn group_by_nonmon_surface() {
@@ -255,12 +255,12 @@ fn group_by_monotonic_core() {
 //     input.give(Iter(BATCH_A.iter().cloned()));
 //     input.flush();
 //     hf.run_stratum();
-//     assert_eq!((0, 0), (hf.current_epoch(), hf.current_stratum()));
+//     assert_eq!((0, 0), (hf.current_tick(), hf.current_stratum()));
 
 //     assert_eq!(0, output.borrow().len());
 
 //     hf.run_available();
-//     assert_eq!((1, 1), (hf.current_epoch(), hf.current_stratum()));
+//     assert_eq!((1, 1), (hf.current_tick(), hf.current_stratum()));
 
 //     assert_eq!(
 //         &[
@@ -276,14 +276,14 @@ fn group_by_monotonic_core() {
 //     input.flush();
 
 //     hf.run_stratum();
-//     assert_eq!((1, 1), (hf.current_epoch(), hf.current_stratum()));
+//     assert_eq!((1, 1), (hf.current_tick(), hf.current_stratum()));
 
 //     // Give BATCH_C and run all to completion.
 //     input.give(Iter(BATCH_C.iter().cloned()));
 //     input.flush();
 
 //     hf.run_available();
-//     assert_eq!((3, 1), (hf.current_epoch(), hf.current_stratum()));
+//     assert_eq!((3, 1), (hf.current_tick(), hf.current_stratum()));
 
 //     // Second batch has 7+3 = 10 items.
 //     assert_eq!(
