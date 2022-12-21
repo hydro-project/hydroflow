@@ -225,25 +225,25 @@ pub fn test_flatten() {
 }
 
 #[test]
-pub fn test_next_epoch() {
+pub fn test_next_tick() {
     let (inp_send, inp_recv) = hydroflow::util::unbounded_channel::<usize>();
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
     let mut flow = hydroflow::hydroflow_syntax! {
         inp = source_stream(inp_recv) -> tee();
         diff = difference() -> for_each(|x| out_send.send(x).unwrap());
         inp -> [pos]diff;
-        inp -> next_epoch() -> [neg]diff;
+        inp -> next_tick() -> [neg]diff;
     };
 
     for x in [1, 2, 3, 4] {
         inp_send.send(x).unwrap();
     }
-    flow.run_epoch();
+    flow.run_tick();
 
     for x in [3, 4, 5, 6] {
         inp_send.send(x).unwrap();
     }
-    flow.run_epoch();
+    flow.run_tick();
 
     flow.run_available();
     let out: Vec<_> = collect_ready(&mut out_recv);

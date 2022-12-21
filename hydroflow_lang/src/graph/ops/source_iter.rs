@@ -10,7 +10,7 @@ use quote::quote_spanned;
 /// Takes the iterable object and delivers its elements downstream
 /// one by one.
 ///
-/// Note that all elements are emitted during the first epoch.
+/// Note that all elements are emitted during the first tick.
 ///
 /// ```hydroflow
 ///     source_iter(vec!["Hello", "World"])

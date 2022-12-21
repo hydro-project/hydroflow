@@ -227,7 +227,7 @@ flowchart TB
 ## client.rs
 The chat client is not very different from the echo server client, with two new design patterns:
  1. a degenerate `source_iter` pipeline that runs once 
-as a "bootstrap" in the first epoch
+as a "bootstrap" in the first tick
  2. the use of `cross_join` as a "gated buffer" to postpone sending messages.
 
 We also include a Rust helper routine `pretty_print_msg` for formatting output.

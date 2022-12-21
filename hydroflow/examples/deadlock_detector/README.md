@@ -7,7 +7,7 @@ cycles are printed to stdio in canonical order (starting with the lowest node id
 
 Some comments:
 1. This is a purely monotonic, streaming implementation that will report cycles as it finds them.
-2. Each local node runs transitive closure from scratch every epoch; there is currently no materialization of paths.
+2. Each local node runs transitive closure from scratch every tick; there is currently no materialization of paths.
 3. You can add waits-for edges, but you cannot (currently) delete them.
 4. Many networking topologies would work. We chose to implement a peer-to-peer architecture with random gossip for this example. Each message is sent to each node with a fixed probability. Because it's peer-to-peer, every node will eventually learn about and emit each cycle. This was an arbitrary design choice. A more natural coordinator-subordinate architecture would likely make sense, but would be quite similar to the 2PC example.
 5. We have not implemented termination detection (which is non-monotone) so this will run until you interrupt it.

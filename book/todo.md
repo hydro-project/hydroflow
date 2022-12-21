@@ -67,7 +67,7 @@
     - *sort* -- add to chapter on [state](state.md)
     - *sort_by* -- add to chapter on [state](state.md)
     - *next_stratum* -- add to chapter on [time](time.md)
-    - *next_epoch* -- add to chapter on [time](time.md)
+    - *next_tick* -- add to chapter on [time](time.md)
     - *inspect* -- add to chapter on [debugging](debugging.md)
     - *null* -- add to chapter on [debugging](debugging.md)
 
@@ -79,16 +79,16 @@
 
 ## Odds and ends taken out of other chapters
 - **Document the methods on the `hydroflow` struct** -- especially the run methods.
-    -  The [`run_epoch()`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_epoch), [`run_stratum()`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_stratum), [`run()`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run), and [`run_async()`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_async) methods provide other ways to control the graph execution.
+    -  The [`run_tick()`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_tick), [`run_stratum()`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_stratum), [`run()`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run), and [`run_async()`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_async) methods provide other ways to control the graph execution.
     - Also `run_available()` `next_stratum()` and `recv_events` are important
 - More generally, document the **Core API**
 
-- **Strata and Epochs** -- explain the concept of strata and epochs, and how they relate to the `run_epoch()` and `run_stratum()` methods.
+- **Strata and ticks** -- explain the concept of strata and ticks, and how they relate to the `run_tick()` and `run_stratum()` methods.
 
 - **Make sure `src/examples/echoserver` is the same as the template project** -- or better, find a way to do that via github actions or a github submodule
 
 ## More Examples
-- Illustrate `'static` and `'epoch` lifetimes (KVS)
+- Illustrate `'static` and `'tick` lifetimes (KVS)
 - Illustrate partitioning and replication (KVS)
 - Illustrate the `next_stratum` operator for atomicity (eg Bloom's upsert `<+-` operator)
 - Illustrate ordered streams (need `zip` operator ... what's the example?)

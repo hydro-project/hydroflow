@@ -14,7 +14,7 @@ Important to note is that positive (monotonic) loops are easy. They can be run u
 
 This is the traditional way Stratified Datalog programs are executed. We partition the graph into an ordered set of *strata*. We execute one stratum (singular of strata) at a time, to fixed point, then continue onto the next stratum. In this way, by carefully controlling the execution order and getting to fixed points, we can avoid retracting any facts.
 
-This also works with a global loop with negation: once we completely the final stratum we return to the first. We can count the number of global loops as the *epoch*, and can use it as our local Lamport time. There is some extra consideration for buffering external events coming in, but won’t be hard to implement (see below).
+This also works with a global loop with negation: once we completely the final stratum we return to the first. We can count the number of global loops as the *tick*, and can use it as our local Lamport time. There is some extra consideration for buffering external events coming in, but won’t be hard to implement (see below).
 
 **Requirements:**
 
@@ -48,11 +48,11 @@ The current scheduler cannot handle strata because:
 
 We can solve both of the above problems with one mechanism. We assume each subgraph has a known single stratum number. Instead of running subgraphs in arbitrary order, run the subgraphs in a single stratum. When each stratum reaches fixed point (no more work), continue to the next stratum, in order.
 
-This clearly solves (1), but it also indirectly solves (2). Any handoff which crosses strata will accumulate all values from the earlier stratum. Then when the later stratum runs we know the handoff we’re pulling from has received all values from the previous stratum’s run — *it is complete*. **Important**: we also need to ensure the handoff is also completely emptied each when the later stratum is run, otherwise we may see values from previous epochs which have been left behind.
+This clearly solves (1), but it also indirectly solves (2). Any handoff which crosses strata will accumulate all values from the earlier stratum. Then when the later stratum runs we know the handoff we’re pulling from has received all values from the previous stratum’s run — *it is complete*. **Important**: we also need to ensure the handoff is also completely emptied each when the later stratum is run, otherwise we may see values from previous ticks which have been left behind.
 
 ## Implementation
 
-Implementation should actually be very straightforward. We swap out the simple FIFO queue for either (1) a priority queue (ordered by `epoch, strata`) or (2) a simple map or vec with stratum number keys/indices and FIFO queue values. Option (2) should perform better since we have a fixed number of strata.
+Implementation should actually be very straightforward. We swap out the simple FIFO queue for either (1) a priority queue (ordered by `tick, strata`) or (2) a simple map or vec with stratum number keys/indices and FIFO queue values. Option (2) should perform better since we have a fixed number of strata.
 
 ## External Events
 

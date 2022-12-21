@@ -4,7 +4,7 @@
 > * Our first multi-input operator, [`join`](./surface_ops.gen.md#join)
 > * Indexing multi-input operators by prepending a bracket expression
 > * The [`unique`](./surface_ops.gen.md#unique) operator for removing duplicates from a stream
-> * A first exposure to the concepts of _strata_ and _epochs_
+> * A first exposure to the concepts of _strata_ and _ticks_
 
 So far all the operators we've used have one input and one output and therefore
 create a linear flow of operators. Let's now take a look at a Hydroflow program containing
@@ -136,7 +136,7 @@ Finally we print the neighbor vertices as follows:
 ```rust,ignore
     my_join -> unique() -> for_each(|n| println!("Reached: {}", n));
 ```
-The [unique](./surface_ops.gen.md#unique) operator removes duplicates from the stream to make things more readable. Note that `unique` does not run in a streaming fashion, which we will talk about more [below](#strata-and-epochs).
+The [unique](./surface_ops.gen.md#unique) operator removes duplicates from the stream to make things more readable. Note that `unique` does not run in a streaming fashion, which we will talk about more [below](#strata-and-ticks).
 
 There's
 also some extra code here, `flow.serde_graph().expect(...).to_mermaid()`, which tells
@@ -176,7 +176,7 @@ in order, one at a time, ensuring all values are computed
 before moving on to the next stratum. Between strata we see a _handoff_, which logically buffers the 
 output of the first stratum, and delineates the separation of execution between the 2 strata.
 
-After all strata are run, Hydroflow returns to the first stratum; this begins the next _epoch_. This doesn't really matter for this example, but it is important for long-running Hydroflow services that accept input from the outside world. More on this topic in the chapter on [time](./time.md).
+After all strata are run, Hydroflow returns to the first stratum; this begins the next _tick_. This doesn't really matter for this example, but it is important for long-running Hydroflow services that accept input from the outside world. More on this topic in the chapter on [time](./time.md).
 
 Returning to the code, if you read the `pairs_send` calls carefully, you'll see that the example data 
 has vertices (`2`, `4`) that are more than one hop away from `0`, which were

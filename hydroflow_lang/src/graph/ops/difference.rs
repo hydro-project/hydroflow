@@ -10,7 +10,7 @@ use syn::parse_quote;
 
 /// > 2 input streams of the same type T, 1 output stream of type T
 ///
-/// For a given epoch, forms the set difference of the items in the input
+/// For a given tick, forms the set difference of the items in the input
 /// streams, returning items in the `pos` input that are not found in the
 /// `neg` input.
 ///
@@ -55,7 +55,7 @@ pub const DIFFERENCE: OperatorConstraints = OperatorConstraints {
             quote_spanned! {op_span=>
                 let mut #borrow_ident = context.state_ref(#handle_ident).borrow_mut();
                 let #negset_ident = #borrow_ident
-                    .try_insert_with((context.current_epoch(), context.current_stratum()), || {
+                    .try_insert_with((context.current_tick(), context.current_stratum()), || {
                         #input_neg.collect()
                     });
                 let #ident = #input_pos.filter(move |x| !#negset_ident.contains(x));

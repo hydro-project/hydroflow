@@ -65,7 +65,7 @@ pub(crate) async fn run_coordinator(
         commit_buf
             -> group_by(|| 0, |old: &mut u32, val: u32| *old += val)
             -> commit_votes;
-        commit_votes[0] -> next_epoch() -> [1]commit_buf;
+        commit_votes[0] -> next_tick() -> [1]commit_buf;
 
         // count subordinates
         subord_total = subords[0] -> fold(0, |a,_b| a+1); // -> for_each(|n| println!("There are {} subordinates.", n));

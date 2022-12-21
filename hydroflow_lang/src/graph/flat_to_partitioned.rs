@@ -272,16 +272,16 @@ fn find_subgraph_strata(
     barrier_crossers: &SecondaryMap<GraphEdgeId, DelayType>,
 ) -> Result<SecondaryMap<GraphSubgraphId, usize>, Diagnostic> {
     // Determine subgraphs's stratum number.
-    // Find SCCs ignoring `next_epoch()` edges, then do TopoSort on the resulting DAG.
+    // Find SCCs ignoring `next_tick()` edges, then do TopoSort on the resulting DAG.
     // (Cycles on cross-stratum negative edges are an error.)
 
     // Generate a subgraph graph. I.e. each node is a subgraph.
-    // Edges are connections between subgraphs, ignoring epoch-crossers.
+    // Edges are connections between subgraphs, ignoring tick-crossers.
     // TODO: use DiMulGraph here?
     let mut subgraph_preds: BTreeMap<GraphSubgraphId, Vec<GraphSubgraphId>> = Default::default();
     let mut subgraph_succs: BTreeMap<GraphSubgraphId, Vec<GraphSubgraphId>> = Default::default();
 
-    // Negative (next stratum) connections between subgraphs. (Ignore `next_epoch()` connections).
+    // Negative (next stratum) connections between subgraphs. (Ignore `next_tick()` connections).
     let mut subgraph_negative_connections: BTreeSet<(GraphSubgraphId, GraphSubgraphId)> =
         Default::default();
 
@@ -290,8 +290,8 @@ fn find_subgraph_strata(
             assert_eq!(1, graph.successors(node_id).count());
             let (succ_edge, succ) = graph.successors(node_id).next().unwrap();
 
-            // Ignore Epoch edges.
-            if Some(&DelayType::Epoch) == barrier_crossers.get(succ_edge) {
+            // Ignore tick edges.
+            if Some(&DelayType::Tick) == barrier_crossers.get(succ_edge) {
                 continue;
             }
 
@@ -354,8 +354,8 @@ fn find_subgraph_strata(
         );
     }
 
-    // Re-introduce the `next_epoch()` edges, ensuring they actually go to the next epoch.
-    let max_stratum = subgraph_stratum.values().cloned().max().unwrap_or(0) + 1; // Used for `next_epoch()` delayer subgraphs.
+    // Re-introduce the `next_tick()` edges, ensuring they actually go to the next tick.
+    let max_stratum = subgraph_stratum.values().cloned().max().unwrap_or(0) + 1; // Used for `next_tick()` delayer subgraphs.
     for (edge_id, &delay_type) in barrier_crossers.iter() {
         let (hoff, dst) = graph.edge(edge_id).unwrap();
         assert_eq!(1, graph.predecessor_nodes(hoff).count());
@@ -366,12 +366,12 @@ fn find_subgraph_strata(
         let src_stratum = subgraph_stratum[src_sg];
         let dst_stratum = subgraph_stratum[dst_sg];
         match delay_type {
-            DelayType::Epoch => {
-                // If epoch edge goes foreward in stratum, need to buffer.
+            DelayType::Tick => {
+                // If tick edge goes foreward in stratum, need to buffer.
                 // (TODO(mingwei): could use a different kind of handoff.)
                 if src_stratum <= dst_stratum {
                     // We inject a new subgraph between the src/dst which runs as the last stratum
-                    // of the epoch and therefore delays the data until the next epoch.
+                    // of the tick and therefore delays the data until the next tick.
 
                     // Before: A (src) -> H -> B (dst)
                     // Then add intermediate identity:
@@ -403,7 +403,7 @@ fn find_subgraph_strata(
                 // Indicates an unbroken negative cycle.
                 if dst_stratum <= src_stratum {
                     let (_src_idx, dst_idx) = &ports[edge_id];
-                    return Err(Diagnostic::spanned(dst_idx.span(), Level::Error, "Negative edge creates a negative cycle which must be broken with a `next_epoch()` operator."));
+                    return Err(Diagnostic::spanned(dst_idx.span(), Level::Error, "Negative edge creates a negative cycle which must be broken with a `next_tick()` operator."));
                 }
             }
         }
@@ -467,7 +467,7 @@ impl TryFrom<FlatGraph> for PartitionedGraph {
             ..
         } = flat_graph;
 
-        // Pairs of node IDs which cross stratums or epochs and therefore cannot be in the same subgraph.
+        // Pairs of node IDs which cross stratums or ticks and therefore cannot be in the same subgraph.
         let mut barrier_crossers = find_barrier_crossers(&nodes, &ports, &graph);
 
         let (mut node_subgraph, mut subgraph_nodes) =
