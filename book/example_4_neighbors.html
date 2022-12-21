@@ -142,7 +142,7 @@
 <li>Our first multi-input operator, <a href="./surface_ops.gen.html#join"><code>join</code></a></li>
 <li>Indexing multi-input operators by prepending a bracket expression</li>
 <li>The <a href="./surface_ops.gen.html#unique"><code>unique</code></a> operator for removing duplicates from a stream</li>
-<li>A first exposure to the concepts of <em>strata</em> and <em>epochs</em></li>
+<li>A first exposure to the concepts of <em>strata</em> and <em>ticks</em></li>
 </ul>
 </blockquote>
 <p>So far all the operators we've used have one input and one output and therefore
@@ -261,7 +261,7 @@ vertices. So the <code>my_join</code> variable feeds the output of the join thro
 Finally we print the neighbor vertices as follows:</p>
 <pre><code class="language-rust ignore">    my_join -&gt; unique() -&gt; for_each(|n| println!(&quot;Reached: {}&quot;, n));
 </code></pre>
-<p>The <a href="./surface_ops.gen.html#unique">unique</a> operator removes duplicates from the stream to make things more readable. Note that <code>unique</code> does not run in a streaming fashion, which we will talk about more <a href="#strata-and-epochs">below</a>.</p>
+<p>The <a href="./surface_ops.gen.html#unique">unique</a> operator removes duplicates from the stream to make things more readable. Note that <code>unique</code> does not run in a streaming fashion, which we will talk about more <a href="#strata-and-ticks">below</a>.</p>
 <p>There's
 also some extra code here, <code>flow.serde_graph().expect(...).to_mermaid()</code>, which tells
 Hydroflow to
@@ -292,11 +292,12 @@ the structure of the graph, and print it to stdout. You can copy that text and p
 </pre>
 <p>Before we proceed, note in the mermaid graph how Hydroflow separates the <code>unique</code> operator and its downstream dependencies into their own
 <em>stratum</em> (plural: <em>strata</em>). The stratum boundary before <code>unique</code> ensures that all the values are generated before <code>unique</code> executes, ensuring that all duplicates are eliminated. </p>
+<h2 id="strata-and-ticks"><a class="header" href="#strata-and-ticks">Strata and Ticks</a></h2>
 <p>Hydroflow runs each stratum
 in order, one at a time, ensuring all values are computed
 before moving on to the next stratum. Between strata we see a <em>handoff</em>, which logically buffers the 
 output of the first stratum, and delineates the separation of execution between the 2 strata.</p>
-<p>After all strata are run, Hydroflow returns to the first stratum; this begins the next <em>epoch</em>. This doesn't really matter for this example, but it is important for long-running Hydroflow services that accept input from the outside world. More on this topic in the chapter on <a href="./time.html">time</a>.</p>
+<p>After all strata are run, Hydroflow returns to the first stratum; this begins the next <em>tick</em>. This doesn't really matter for this example, but it is important for long-running Hydroflow services that accept input from the outside world. More on this topic in the chapter on <a href="./time.html">time</a>.</p>
 <p>Returning to the code, if you read the <code>pairs_send</code> calls carefully, you'll see that the example data 
 has vertices (<code>2</code>, <code>4</code>) that are more than one hop away from <code>0</code>, which were
 not output by our simple program. To extend this example to graph <em>reachability</em>, 

@@ -18,7 +18,7 @@
 </pre><pre class="rust"><code><span class="kw">use super</span>::{DelayType, OperatorConstraints, IDENTITY_WRITE_FN, RANGE_1};
 
 <span class="doccomment">/// Delays all elements which pass through to the next stratum (in the same
-/// epoch).
+/// tick).
 </span><span class="attr">#[hydroflow_internalmacro::operator_docgen]
 </span><span class="kw">pub const </span>NEXT_STRATUM: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;next_stratum&quot;</span>,

@@ -607,7 +607,7 @@
             event_queue_send,
 
             current_stratum: <span class="number">0</span>,
-            current_epoch: <span class="number">0</span>,
+            current_tick: <span class="number">0</span>,
 
             subgraph_id: SubgraphId(<span class="number">0</span>),
 
@@ -654,9 +654,9 @@
         Reactor::new(<span class="self">self</span>.context.event_queue_send.clone())
     }
 
-    <span class="comment">// Gets the current epoch (local time) count.
-    </span><span class="kw">pub fn </span>current_epoch(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
-        <span class="self">self</span>.context.current_epoch
+    <span class="comment">// Gets the current tick (local time) count.
+    </span><span class="kw">pub fn </span>current_tick(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        <span class="self">self</span>.context.current_tick
     }
 
     <span class="comment">// Gets the current stratum nubmer.
@@ -664,10 +664,10 @@
         <span class="self">self</span>.context.current_stratum
     }
 
-    <span class="doccomment">/// Runs the dataflow until the next epoch begins.
-    </span><span class="kw">pub fn </span>run_epoch(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-        <span class="kw">let </span>epoch = <span class="self">self</span>.current_epoch();
-        <span class="kw">while </span><span class="self">self</span>.next_stratum() &amp;&amp; epoch == <span class="self">self</span>.current_epoch() {
+    <span class="doccomment">/// Runs the dataflow until the next tick begins.
+    </span><span class="kw">pub fn </span>run_tick(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="kw">let </span>tick = <span class="self">self</span>.current_tick();
+        <span class="kw">while </span><span class="self">self</span>.next_stratum() &amp;&amp; tick == <span class="self">self</span>.current_tick() {
             <span class="self">self</span>.run_stratum();
         }
     }
@@ -731,7 +731,7 @@
             </span><span class="self">self</span>.context.current_stratum += <span class="number">1</span>;
             <span class="kw">if </span><span class="self">self</span>.context.current_stratum &gt;= <span class="self">self</span>.stratum_queues.len() {
                 <span class="self">self</span>.context.current_stratum = <span class="number">0</span>;
-                <span class="self">self</span>.context.current_epoch += <span class="number">1</span>;
+                <span class="self">self</span>.context.current_tick += <span class="number">1</span>;
             }
             <span class="comment">// After incrementing, exit if we made a full loop around the strata.
             </span><span class="kw">if </span>old_stratum == <span class="self">self</span>.context.current_stratum {
@@ -747,7 +747,7 @@
     /// TODO(mingwei): Currently blockes forever, no notion of &quot;completion.&quot;
     </span><span class="kw">pub fn </span>run(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;!&gt; {
         <span class="kw">loop </span>{
-            <span class="self">self</span>.run_epoch();
+            <span class="self">self</span>.run_tick();
             <span class="self">self</span>.recv_events()<span class="question-mark">?</span>;
         }
     }

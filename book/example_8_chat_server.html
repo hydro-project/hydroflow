@@ -343,7 +343,7 @@ for both <code>ClientResponse</code> and broadcasting, and the <code>merge</code
 <p>The chat client is not very different from the echo server client, with two new design patterns:</p>
 <ol>
 <li>a degenerate <code>source_iter</code> pipeline that runs once 
-as a &quot;bootstrap&quot; in the first epoch</li>
+as a &quot;bootstrap&quot; in the first tick</li>
 <li>the use of <code>cross_join</code> as a &quot;gated buffer&quot; to postpone sending messages.</li>
 </ol>
 <p>We also include a Rust helper routine <code>pretty_print_msg</code> for formatting output.</p>

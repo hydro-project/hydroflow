@@ -164,7 +164,7 @@
 </ul>
 <h2 id="docs"><a class="header" href="#docs">Docs</a></h2>
 <ul>
-<li><code>Hydroflow</code> trait and its methods</li>
+<li><code>hydroflow</code> struct and its methods</li>
 <li>Review the ops docs</li>
 </ul>
 <h2 id="whats-covered-in-examples"><a class="header" href="#whats-covered-in-examples">What's covered in examples</a></h2>
@@ -228,7 +228,7 @@
 <li><em>sort</em> -- add to chapter on <a href="state.html">state</a></li>
 <li><em>sort_by</em> -- add to chapter on <a href="state.html">state</a></li>
 <li><em>next_stratum</em> -- add to chapter on <a href="time.html">time</a></li>
-<li><em>next_epoch</em> -- add to chapter on <a href="time.html">time</a></li>
+<li><em>next_tick</em> -- add to chapter on <a href="time.html">time</a></li>
 <li><em>inspect</em> -- add to chapter on <a href="debugging.html">debugging</a></li>
 <li><em>null</em> -- add to chapter on <a href="debugging.html">debugging</a></li>
 </ul>
@@ -244,17 +244,31 @@
 <h2 id="odds-and-ends-taken-out-of-other-chapters"><a class="header" href="#odds-and-ends-taken-out-of-other-chapters">Odds and ends taken out of other chapters</a></h2>
 <ul>
 <li>
-<p><strong>Document the methods on the <code>hydroflow</code> trait</strong> -- especially the run methods.</p>
+<p><strong>Document the methods on the <code>hydroflow</code> struct</strong> -- especially the run methods.</p>
 <ul>
-<li>The <a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_epoch"><code>run_epoch()</code></a>, <a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_stratum"><code>run_stratum()</code></a>, <a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run"><code>run()</code></a>, and <a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_async"><code>run_async()</code></a> methods provide other ways to control the graph execution.</li>
+<li>The <a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_tick"><code>run_tick()</code></a>, <a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_stratum"><code>run_stratum()</code></a>, <a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run"><code>run()</code></a>, and <a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_async"><code>run_async()</code></a> methods provide other ways to control the graph execution.</li>
+<li>Also <code>run_available()</code> <code>next_stratum()</code> and <code>recv_events</code> are important</li>
 </ul>
 </li>
 <li>
-<p><strong>Strata and Epochs</strong> -- explain the concept of strata and epochs, and how they relate to the <code>run_epoch()</code> and <code>run_stratum()</code> methods.</p>
+<p>More generally, document the <strong>Core API</strong></p>
+</li>
+<li>
+<p><strong>Strata and Ticks</strong> -- explain the concept of strata and ticks, and how they relate to the <code>run_tick()</code> and <code>run_stratum()</code> methods.</p>
 </li>
 <li>
 <p><strong>Make sure <code>src/examples/echoserver</code> is the same as the template project</strong> -- or better, find a way to do that via github actions or a github submodule</p>
 </li>
+</ul>
+<h2 id="more-examples"><a class="header" href="#more-examples">More Examples</a></h2>
+<ul>
+<li>Illustrate <code>'static</code> and <code>'tick</code> lifetimes (KVS)</li>
+<li>Illustrate partitioning and replication (KVS)</li>
+<li>Illustrate the <code>next_stratum</code> operator for atomicity (eg Bloom's upsert <code>&lt;+-</code> operator)</li>
+<li>Illustrate ordered streams (need <code>zip</code> operator ... what's the example?)</li>
+<li>Actor model implementation (Borrow an Akka or Ray Actors example?)</li>
+<li>Futures emulation? (Borrow a Ray example)</li>
+<li>Illustrate external storage source and sink (e.g. for WAL of KVS)</li>
 </ul>
 
                     </main>

@@ -160,7 +160,7 @@
     <span class="comment">// TODO(mingwei): as long as this is here, it&#39;s impossible to know when all work is done.
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) event_queue_send: UnboundedSender&lt;SubgraphId&gt;,
 
-    <span class="kw">pub</span>(<span class="kw">crate</span>) current_epoch: usize,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) current_tick: usize,
     <span class="kw">pub</span>(<span class="kw">crate</span>) current_stratum: usize,
 
     <span class="doccomment">/// The SubgraphId of the currently running operator. When this context is
@@ -172,9 +172,9 @@
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) task_join_handles: Vec&lt;JoinHandle&lt;()&gt;&gt;,
 }
 <span class="kw">impl </span>Context {
-    <span class="doccomment">/// Gets the current epoch (local time) count.
-    </span><span class="kw">pub fn </span>current_epoch(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
-        <span class="self">self</span>.current_epoch
+    <span class="doccomment">/// Gets the current tick (local time) count.
+    </span><span class="kw">pub fn </span>current_tick(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        <span class="self">self</span>.current_tick
     }
 
     <span class="doccomment">/// Gets the current stratum nubmer.

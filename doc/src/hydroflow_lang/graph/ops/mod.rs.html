@@ -310,8 +310,8 @@
 <span class="kw">mod </span>join;
 <span class="kw">mod </span>map;
 <span class="kw">mod </span>merge;
-<span class="kw">mod </span>next_epoch;
 <span class="kw">mod </span>next_stratum;
+<span class="kw">mod </span>next_tick;
 <span class="kw">mod </span>null;
 <span class="kw">mod </span>reduce;
 <span class="kw">mod </span>repeat_iter;
@@ -328,7 +328,7 @@
 <span class="attr">#[derive(Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Debug)]
 </span><span class="kw">pub enum </span>DelayType {
     Stratum,
-    Epoch,
+    Tick,
 }
 
 <span class="kw">pub struct </span>OperatorConstraints {
@@ -446,7 +446,7 @@
     repeat_iter::REPEAT_ITER,
     difference::DIFFERENCE,
     next_stratum::NEXT_STRATUM,
-    next_epoch::NEXT_EPOCH,
+    next_tick::NEXT_TICK,
     for_each::FOR_EACH,
     demux::DEMUX,
     dest_sink::DEST_SINK,

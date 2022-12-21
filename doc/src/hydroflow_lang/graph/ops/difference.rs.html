@@ -80,7 +80,7 @@
 
 <span class="doccomment">/// &gt; 2 input streams of the same type T, 1 output stream of type T
 ///
-/// For a given epoch, forms the set difference of the items in the input
+/// For a given tick, forms the set difference of the items in the input
 /// streams, returning items in the `pos` input that are not found in the
 /// `neg` input.
 ///
@@ -125,7 +125,7 @@
             <span class="macro">quote_spanned! </span>{op_span=&gt;
                 <span class="kw">let </span><span class="kw-2">mut </span>#borrow_ident = context.state_ref(#handle_ident).borrow_mut();
                 <span class="kw">let </span>#negset_ident = #borrow_ident
-                    .try_insert_with((context.current_epoch(), context.current_stratum()), || {
+                    .try_insert_with((context.current_tick(), context.current_stratum()), || {
                         #input_neg.collect()
                     });
                 <span class="kw">let </span>#ident = #input_pos.filter(<span class="kw">move </span>|x| !#negset_ident.contains(x));

@@ -614,7 +614,7 @@ source_iter(vec![(2, 'y'), (3, 'x'), (1, 'z')])
 Takes the iterable object and delivers its elements downstream
 one by one.</p>
 </blockquote>
-<p>Note that all elements are emitted during the first epoch.</p>
+<p>Note that all elements are emitted during the first tick.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
@@ -719,7 +719,7 @@ elements it receives downstream.</p>
 <blockquote>
 <p>2 input streams of the same type T, 1 output stream of type T</p>
 </blockquote>
-<p>For a given epoch, forms the set difference of the items in the input
+<p>For a given tick, forms the set difference of the items in the input
 streams, returning items in the <code>pos</code> input that are not found in the
 <code>neg</code> input.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
@@ -742,22 +742,22 @@ diff -&gt; for_each(|v| println!(&quot;{}&quot;, v));
 </tbody></table>
 </div><!-- GENERATED "hydroflow_lang/src/graph/ops/next_stratum.rs" -->
 <p>Delays all elements which pass through to the next stratum (in the same
-epoch).</p>
-<h2 id="next_epoch"><a class="header" href="#next_epoch"><code>next_epoch</code></a></h2>
+tick).</p>
+<h2 id="next_tick"><a class="header" href="#next_tick"><code>next_tick</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
-<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; next_epoch() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
+<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; next_tick() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
 </tbody></table>
-</div><!-- GENERATED "hydroflow_lang/src/graph/ops/next_epoch.rs" -->
-<p>Delays all elements which pass through to the next epoch. In short,
-execution of a hydroflow graph runs as a sequence of distinct &quot;epochs&quot;.
-Non-monotonic operators compute their output in terms of each epoch so
+</div><!-- GENERATED "hydroflow_lang/src/graph/ops/next_tick.rs" -->
+<p>Delays all elements which pass through to the next tick. In short,
+execution of a hydroflow graph runs as a sequence of distinct &quot;ticks&quot;.
+Non-monotonic operators compute their output in terms of each tick so
 execution doesn't have to block, and it is up to the user to coordinate
-data between epoch executions to achieve the desired result.</p>
-<p>An epoch may be divided into multiple <em>strata</em>, see the <a href="#next_stratum"><code>next_stratum()</code></a>
+data between tick executions to achieve the desired result.</p>
+<p>An tick may be divided into multiple <em>strata</em>, see the <a href="#next_stratum"><code>next_stratum()</code></a>
 operator.</p>
-<p>In the example below <code>next_epoch()</code> is used alongside <code>difference()</code> to
-ignore any items in the current epoch that already appeared in the previous
-epoch.</p>
+<p>In the example below <code>next_tick()</code> is used alongside <code>difference()</code> to
+ignore any items in the current tick that already appeared in the previous
+tick.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>// Outputs 1 2 3 4 5 6 (on separate lines).
@@ -766,18 +766,18 @@ let mut flow = hydroflow::hydroflow_syntax! {
     inp = source_stream(input_recv) -&gt; tee();
     diff = difference() -&gt; for_each(|x| println!(&quot;{}&quot;, x));
     inp -&gt; [pos]diff;
-    inp -&gt; next_epoch() -&gt; [neg]diff;
+    inp -&gt; next_tick() -&gt; [neg]diff;
 };
 
 for x in [1, 2, 3, 4] {
     input_send.send(x).unwrap();
 }
-flow.run_epoch();
+flow.run_tick();
 
 for x in [3, 4, 5, 6] {
     input_send.send(x).unwrap();
 }
-flow.run_epoch();
+flow.run_tick();
 <span class="boring">}
 </span></code></pre></pre>
 <h2 id="for_each"><a class="header" href="#for_each"><code>for_each</code></a></h2>

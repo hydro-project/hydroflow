@@ -796,16 +796,16 @@
     barrier_crossers: <span class="kw-2">&amp;</span>SecondaryMap&lt;GraphEdgeId, DelayType&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;SecondaryMap&lt;GraphSubgraphId, usize&gt;, Diagnostic&gt; {
     <span class="comment">// Determine subgraphs&#39;s stratum number.
-    // Find SCCs ignoring `next_epoch()` edges, then do TopoSort on the resulting DAG.
+    // Find SCCs ignoring `next_tick()` edges, then do TopoSort on the resulting DAG.
     // (Cycles on cross-stratum negative edges are an error.)
 
     // Generate a subgraph graph. I.e. each node is a subgraph.
-    // Edges are connections between subgraphs, ignoring epoch-crossers.
+    // Edges are connections between subgraphs, ignoring tick-crossers.
     // TODO: use DiMulGraph here?
     </span><span class="kw">let </span><span class="kw-2">mut </span>subgraph_preds: BTreeMap&lt;GraphSubgraphId, Vec&lt;GraphSubgraphId&gt;&gt; = Default::default();
     <span class="kw">let </span><span class="kw-2">mut </span>subgraph_succs: BTreeMap&lt;GraphSubgraphId, Vec&lt;GraphSubgraphId&gt;&gt; = Default::default();
 
-    <span class="comment">// Negative (next stratum) connections between subgraphs. (Ignore `next_epoch()` connections).
+    <span class="comment">// Negative (next stratum) connections between subgraphs. (Ignore `next_tick()` connections).
     </span><span class="kw">let </span><span class="kw-2">mut </span>subgraph_negative_connections: BTreeSet&lt;(GraphSubgraphId, GraphSubgraphId)&gt; =
         Default::default();
 
@@ -814,8 +814,8 @@
             <span class="macro">assert_eq!</span>(<span class="number">1</span>, graph.successors(node_id).count());
             <span class="kw">let </span>(succ_edge, succ) = graph.successors(node_id).next().unwrap();
 
-            <span class="comment">// Ignore Epoch edges.
-            </span><span class="kw">if </span><span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>DelayType::Epoch) == barrier_crossers.get(succ_edge) {
+            <span class="comment">// Ignore tick edges.
+            </span><span class="kw">if </span><span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>DelayType::Tick) == barrier_crossers.get(succ_edge) {
                 <span class="kw">continue</span>;
             }
 
@@ -878,8 +878,8 @@
         );
     }
 
-    <span class="comment">// Re-introduce the `next_epoch()` edges, ensuring they actually go to the next epoch.
-    </span><span class="kw">let </span>max_stratum = subgraph_stratum.values().cloned().max().unwrap_or(<span class="number">0</span>) + <span class="number">1</span>; <span class="comment">// Used for `next_epoch()` delayer subgraphs.
+    <span class="comment">// Re-introduce the `next_tick()` edges, ensuring they actually go to the next tick.
+    </span><span class="kw">let </span>max_stratum = subgraph_stratum.values().cloned().max().unwrap_or(<span class="number">0</span>) + <span class="number">1</span>; <span class="comment">// Used for `next_tick()` delayer subgraphs.
     </span><span class="kw">for </span>(edge_id, <span class="kw-2">&amp;</span>delay_type) <span class="kw">in </span>barrier_crossers.iter() {
         <span class="kw">let </span>(hoff, dst) = graph.edge(edge_id).unwrap();
         <span class="macro">assert_eq!</span>(<span class="number">1</span>, graph.predecessor_nodes(hoff).count());
@@ -890,12 +890,12 @@
         <span class="kw">let </span>src_stratum = subgraph_stratum[src_sg];
         <span class="kw">let </span>dst_stratum = subgraph_stratum[dst_sg];
         <span class="kw">match </span>delay_type {
-            DelayType::Epoch =&gt; {
-                <span class="comment">// If epoch edge goes foreward in stratum, need to buffer.
+            DelayType::Tick =&gt; {
+                <span class="comment">// If tick edge goes foreward in stratum, need to buffer.
                 // (TODO(mingwei): could use a different kind of handoff.)
                 </span><span class="kw">if </span>src_stratum &lt;= dst_stratum {
                     <span class="comment">// We inject a new subgraph between the src/dst which runs as the last stratum
-                    // of the epoch and therefore delays the data until the next epoch.
+                    // of the tick and therefore delays the data until the next tick.
 
                     // Before: A (src) -&gt; H -&gt; B (dst)
                     // Then add intermediate identity:
@@ -927,7 +927,7 @@
                 // Indicates an unbroken negative cycle.
                 </span><span class="kw">if </span>dst_stratum &lt;= src_stratum {
                     <span class="kw">let </span>(_src_idx, dst_idx) = <span class="kw-2">&amp;</span>ports[edge_id];
-                    <span class="kw">return </span><span class="prelude-val">Err</span>(Diagnostic::spanned(dst_idx.span(), Level::Error, <span class="string">&quot;Negative edge creates a negative cycle which must be broken with a `next_epoch()` operator.&quot;</span>));
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(Diagnostic::spanned(dst_idx.span(), Level::Error, <span class="string">&quot;Negative edge creates a negative cycle which must be broken with a `next_tick()` operator.&quot;</span>));
                 }
             }
         }
@@ -991,7 +991,7 @@
             ..
         } = flat_graph;
 
-        <span class="comment">// Pairs of node IDs which cross stratums or epochs and therefore cannot be in the same subgraph.
+        <span class="comment">// Pairs of node IDs which cross stratums or ticks and therefore cannot be in the same subgraph.
         </span><span class="kw">let </span><span class="kw-2">mut </span>barrier_crossers = find_barrier_crossers(<span class="kw-2">&amp;</span>nodes, <span class="kw-2">&amp;</span>ports, <span class="kw-2">&amp;</span>graph);
 
         <span class="kw">let </span>(<span class="kw-2">mut </span>node_subgraph, <span class="kw-2">mut </span>subgraph_nodes) =
