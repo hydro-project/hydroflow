@@ -139,85 +139,6 @@
 <p>In our previous examples we made use of some of Hydroflow's built-in operators.
 Here we document each operators in more detail. Most of these operators
 are based on the Rust equivalents for iterators; see the <a href="https://doc.rust-lang.org/std/iter/trait.Iterator.html">Rust documentation</a>.</p>
-<h2 id="null"><a class="header" href="#null"><code>null</code></a></h2>
-<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
-<tr><td><span title="at least 0 and at most 1">at least 0 and at most 1</span></td><td><code>null()</code></td><td><span title="at least 0 and at most 1">at least 0 and at most 1</span></td></tr>
-</tbody></table>
-</div><!-- GENERATED "hydroflow_lang/src/graph/ops/null.rs" -->
-<blockquote>
-<p>unbounded number of input streams of any type, unbounded number of output streams of any type.</p>
-</blockquote>
-<p>As a source, generates nothing. As a sink, absorbs anything with no effect.</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
-</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
-</span>// should print `1, 2, 3, 4, 5, 6, a, b, c` across 9 lines
-null() -&gt; for_each(|_: ()| panic!());
-source_iter([1,2,3]) -&gt; map(|i| println!(&quot;{}&quot;, i)) -&gt; null();
-null_src = null();
-null_sink = null();
-null_src[0] -&gt; for_each(|_: ()| panic!());
-// note: use `for_each()` (or `inspect()`) instead of this:
-source_iter([4,5,6]) -&gt; map(|i| println!(&quot;{}&quot;, i)) -&gt; [0]null_sink;
-<span class="boring">};
-</span><span class="boring">__hf.run_available();
-</span><span class="boring">}
-</span></code></pre></pre>
-<h2 id="merge"><a class="header" href="#merge"><code>merge</code></a></h2>
-<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
-<tr><td><span title="at least 0">at least 2</span></td><td><code>-&gt; merge() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
-</tbody></table>
-</div><!-- GENERATED "hydroflow_lang/src/graph/ops/merge.rs" -->
-<blockquote>
-<p><em>n</em> input streams of the same type, 1 output stream of the same type</p>
-</blockquote>
-<p>Merges an arbitrary number of input streams into a single stream. Each input sequence is a subsequence of the output, but no guarantee is given on how the inputs are interleaved.</p>
-<p>Since <code>merge</code> has multiple input streams, it needs to be assigned to
-a variable to reference its multiple input ports across statements.</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
-</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
-</span>my_merge = merge();
-source_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; my_merge;
-source_iter(vec![&quot;stay&quot;, &quot;gold&quot;]) -&gt; my_merge;
-source_iter(vec![&quot;don\'t&quot;, &quot;give&quot;, &quot;up&quot;]) -&gt; my_merge;
-my_merge -&gt; map(|x| x.to_uppercase())
-    -&gt; for_each(|x| println!(&quot;{}&quot;, x));
-<span class="boring">};
-</span><span class="boring">__hf.run_available();
-</span><span class="boring">}
-</span></code></pre></pre>
-<h2 id="join"><a class="header" href="#join"><code>join</code></a></h2>
-<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
-<tr><td><span title="exactly 2">exactly 2</span></td><td><code>-&gt; join() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
-</tbody></table>
-</div>
-<blockquote>
-<p>Input port names: <code>0</code>, <code>1</code></p>
-</blockquote>
-<!-- GENERATED "hydroflow_lang/src/graph/ops/join.rs" -->
-<blockquote>
-<p>2 input streams of type &lt;(K, V1)&gt; and &lt;(K, V2)&gt;, 1 output stream of type &lt;(K, (V1, V2))&gt;</p>
-</blockquote>
-<p>Forms the equijoin of the tuples in the input streams by their first (key) attribute. Note that the result nests the 2nd input field (values) into a tuple in the 2nd output field.</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
-</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
-</span>// should print `(hello, (world, cleveland))`
-my_join = join();
-source_iter(vec![(&quot;hello&quot;, &quot;world&quot;), (&quot;stay&quot;, &quot;gold&quot;)]) -&gt; [0]my_join;
-source_iter(vec![(&quot;hello&quot;, &quot;cleveland&quot;)]) -&gt; [1]my_join;
-my_join -&gt; for_each(|(k, (v1, v2))| println!(&quot;({}, ({}, {}))&quot;, k, v1, v2));
-<span class="boring">};
-</span><span class="boring">__hf.run_available();
-</span><span class="boring">}
-</span></code></pre></pre>
 <h2 id="cross_join"><a class="header" href="#cross_join"><code>cross_join</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
 <tr><td><span title="exactly 2">exactly 2</span></td><td><code>-&gt; cross_join() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
@@ -241,565 +162,6 @@ my_join = cross_join();
 source_iter(vec![&quot;happy&quot;, &quot;sad&quot;]) -&gt; [0]my_join;
 source_iter(vec![&quot;dog&quot;, &quot;cat&quot;]) -&gt; [1]my_join;
 my_join -&gt; for_each(|(v1, v2)| println!(&quot;({}, {})&quot;, v1, v2));
-<span class="boring">};
-</span><span class="boring">__hf.run_available();
-</span><span class="boring">}
-</span></code></pre></pre>
-<h2 id="tee"><a class="header" href="#tee"><code>tee</code></a></h2>
-<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
-<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; tee() -&gt;</code></td><td><span title="at least 0">at least 2</span></td></tr>
-</tbody></table>
-</div><!-- GENERATED "hydroflow_lang/src/graph/ops/tee.rs" -->
-<blockquote>
-<p>1 input stream, <em>n</em> output streams</p>
-</blockquote>
-<p>Takes the input stream and delivers a copy of each item to each output.</p>
-<blockquote>
-<p>Note: Downstream operators may need explicit type annotations.</p>
-</blockquote>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
-</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
-</span>my_tee = source_iter(vec![&quot;Hello&quot;, &quot;World&quot;]) -&gt; tee();
-my_tee -&gt; map(|x: &amp;str| x.to_uppercase())
-    -&gt; for_each(|x| println!(&quot;{}&quot;, x));
-my_tee -&gt; map(|x: &amp;str| x.to_lowercase())
-    -&gt; for_each(|x| println!(&quot;{}&quot;, x));
-my_tee -&gt; for_each(|x: &amp;str| println!(&quot;{}&quot;, x));
-<span class="boring">};
-</span><span class="boring">__hf.run_available();
-</span><span class="boring">}
-</span></code></pre></pre>
-<h2 id="unzip"><a class="header" href="#unzip"><code>unzip</code></a></h2>
-<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
-<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; unzip() -&gt;</code></td><td><span title="exactly 2">exactly 2</span></td></tr>
-</tbody></table>
-</div>
-<blockquote>
-<p>Output port names: <code>0</code>, <code>1</code></p>
-</blockquote>
-<!-- GENERATED "hydroflow_lang/src/graph/ops/unzip.rs" -->
-<blockquote>
-<p>1 input stream of pair tuples <code>(A, B)</code>, 2 output streams</p>
-</blockquote>
-<p>Takes the input stream of pairs and unzips each one, delivers each item to
-its corresponding side.</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
-</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
-</span>my_unzip = source_iter(vec![(&quot;Hello&quot;, &quot;Foo&quot;), (&quot;World&quot;, &quot;Bar&quot;)]) -&gt; unzip();
-my_unzip[0] -&gt; for_each(|x| println!(&quot;0: {}&quot;, x)); // Hello World
-my_unzip[1] -&gt; for_each(|x| println!(&quot;1: {}&quot;, x)); // Foo Bar
-<span class="boring">};
-</span><span class="boring">__hf.run_available();
-</span><span class="boring">}
-</span></code></pre></pre>
-<h2 id="identity"><a class="header" href="#identity"><code>identity</code></a></h2>
-<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
-<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; identity() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
-</tbody></table>
-</div><!-- GENERATED "hydroflow_lang/src/graph/ops/identity.rs" -->
-<blockquote>
-<p>1 input stream of type T, 1 output stream of type T</p>
-</blockquote>
-<p>For each item passed in, pass it out without any change.</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
-</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
-</span>// should print &quot;hello&quot; and &quot;world&quot; on separate lines (in either order)
-source_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; identity()
-    -&gt; for_each(|x| println!(&quot;{}&quot;, x));
-<span class="boring">};
-</span><span class="boring">__hf.run_available();
-</span><span class="boring">}
-</span></code></pre></pre>
-<h2 id="map"><a class="header" href="#map"><code>map</code></a></h2>
-<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
-<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; map(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
-</tbody></table>
-</div><!-- GENERATED "hydroflow_lang/src/graph/ops/map.rs" -->
-<blockquote>
-<p>1 input stream, 1 output stream</p>
-</blockquote>
-<blockquote>
-<p>Arguments: A Rust closure
-For each item passed in, apply the closure to generate an item to emit.</p>
-</blockquote>
-<p>If you do not want to modify the item stream and instead only want to view
-each item use the <a href="#inspect"><code>inspect</code></a> operator instead.</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
-</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
-</span>source_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; map(|x| x.to_uppercase())
-    -&gt; for_each(|x| println!(&quot;{}&quot;, x));
-<span class="boring">};
-</span><span class="boring">__hf.run_available();
-</span><span class="boring">}
-</span></code></pre></pre>
-<h2 id="inspect"><a class="header" href="#inspect"><code>inspect</code></a></h2>
-<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
-<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; inspect(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
-</tbody></table>
-</div><!-- GENERATED "hydroflow_lang/src/graph/ops/inspect.rs" -->
-<blockquote>
-<p>Arguments: A single closure <code>FnMut(&amp;Item)</code>.</p>
-</blockquote>
-<p>An operator which allows you to &quot;inspect&quot; each element of a stream without
-modifying it. The closure is called on a reference to each item. This is
-mainly useful for debugging as in the example below, and it is generally an
-anti-pattern to provide a closure with side effects.</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
-</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
-</span>source_iter([1, 2, 3, 4]) -&gt; inspect(|&amp;x| println!(&quot;{}&quot;, x)) -&gt; null();
-<span class="boring">};
-</span><span class="boring">__hf.run_available();
-</span><span class="boring">}
-</span></code></pre></pre>
-<h2 id="flat_map"><a class="header" href="#flat_map"><code>flat_map</code></a></h2>
-<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
-<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; flat_map(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
-</tbody></table>
-</div><!-- GENERATED "hydroflow_lang/src/graph/ops/flat_map.rs" -->
-<blockquote>
-<p>1 input stream, 1 output stream</p>
-</blockquote>
-<blockquote>
-<p>Arguments: A Rust closure that handles an iterator</p>
-</blockquote>
-<p>For each item <code>i</code> passed in, treat <code>i</code> as an iterator and map the closure to that
-iterator to produce items one by one. The type of the input items must be iterable.</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
-</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
-</span>// should print out each character of each word on a separate line
-source_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; flat_map(|x| x.chars())
-    -&gt; for_each(|x| println!(&quot;{}&quot;, x));
-<span class="boring">};
-</span><span class="boring">__hf.run_available();
-</span><span class="boring">}
-</span></code></pre></pre>
-<h2 id="flatten"><a class="header" href="#flatten"><code>flatten</code></a></h2>
-<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
-<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; flatten() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
-</tbody></table>
-</div><!-- GENERATED "hydroflow_lang/src/graph/ops/flatten.rs" -->
-<blockquote>
-<p>1 input stream, 1 output stream</p>
-</blockquote>
-<p>For each item <code>i</code> passed in, treat <code>i</code> as an iterator and produce its items one by one.
-The type of the input items must be iterable.</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
-</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
-</span>// should print the numbers 1-6 without any nesting
-source_iter(vec![[1, 2], [3, 4], [5, 6]]) -&gt; flatten()
--&gt; for_each(|x| println!(&quot;{}&quot;, x));
-<span class="boring">};
-</span><span class="boring">__hf.run_available();
-</span><span class="boring">}
-</span></code></pre></pre>
-<h2 id="filter_map"><a class="header" href="#filter_map"><code>filter_map</code></a></h2>
-<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
-<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; filter_map(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
-</tbody></table>
-</div><!-- GENERATED "hydroflow_lang/src/graph/ops/filter_map.rs" -->
-<blockquote>
-<p>1 input stream, 1 output stream</p>
-</blockquote>
-<p>An operator that both filters and maps. It yields only the items for which the supplied closure returns <code>Some(value)</code>.</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
-</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
-</span>source_iter(vec![&quot;1&quot;, &quot;hello&quot;, &quot;world&quot;, &quot;2&quot;]) -&gt; filter_map(|s| s.parse().ok())
-    -&gt; for_each(|x: usize| println!(&quot;{}&quot;, x));
-<span class="boring">};
-</span><span class="boring">__hf.run_available();
-</span><span class="boring">}
-</span></code></pre></pre>
-<h2 id="filter"><a class="header" href="#filter"><code>filter</code></a></h2>
-<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
-<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; filter(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
-</tbody></table>
-</div><!-- GENERATED "hydroflow_lang/src/graph/ops/filter.rs" -->
-<p>Filter outputs a subsequence of the items it receives at its input, according to a
-Rust boolean closure passed in as an argument.</p>
-<blockquote>
-<p>TODO: Why does filter's closure expect a reference and other ops like map do not?</p>
-</blockquote>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
-</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
-</span>source_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; filter(|x| x.starts_with('w'))
-    -&gt; for_each(|x| println!(&quot;{}&quot;, x));
-<span class="boring">};
-</span><span class="boring">__hf.run_available();
-</span><span class="boring">}
-</span></code></pre></pre>
-<h2 id="fold"><a class="header" href="#fold"><code>fold</code></a></h2>
-<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
-<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; fold(A, B) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
-</tbody></table>
-</div><!-- GENERATED "hydroflow_lang/src/graph/ops/fold.rs" -->
-<blockquote>
-<p>1 input stream, 1 output stream</p>
-</blockquote>
-<blockquote>
-<p>Arguments: an initial value, and a closure which itself takes two arguments:
-an 'accumulator', and an element. The closure returns the value that the accumulator should have for the next iteration.</p>
-</blockquote>
-<p>Akin to Rust's built-in fold operator. Folds every element into an accumulator by applying a closure,
-returning the final result.</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
-</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
-</span>// should print `Reassembled vector [1,2,3,4,5]`
-source_iter([1,2,3,4,5])
-    -&gt; fold(Vec::new(), |mut accum, elem| {
-        accum.push(elem);
-        accum
-    })
-    -&gt; for_each(|e| println!(&quot;Ressembled vector {:?}&quot;, e));
-<span class="boring">};
-</span><span class="boring">__hf.run_available();
-</span><span class="boring">}
-</span></code></pre></pre>
-<h2 id="reduce"><a class="header" href="#reduce"><code>reduce</code></a></h2>
-<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
-<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; reduce(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
-</tbody></table>
-</div><!-- GENERATED "hydroflow_lang/src/graph/ops/reduce.rs" -->
-<blockquote>
-<p>1 input stream, 1 output stream</p>
-</blockquote>
-<blockquote>
-<p>Arguments: a closure which itself takes two arguments:
-an ‘accumulator’, and an element. The closure returns the value that the accumulator should have for the next iteration.</p>
-</blockquote>
-<p>Akin to Rust's built-in reduce operator. Folds every element into an accumulator by applying a closure,
-returning the final result.</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
-</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
-</span>// should print 120 (i.e., 1*2*3*4*5)
-source_iter([1,2,3,4,5])
-    -&gt; reduce(|mut accum, elem| {
-        accum *= elem;
-        accum
-    })
-    -&gt; for_each(|e| println!(&quot;{}&quot;, e));
-<span class="boring">};
-</span><span class="boring">__hf.run_available();
-</span><span class="boring">}
-</span></code></pre></pre>
-<h2 id="group_by"><a class="header" href="#group_by"><code>group_by</code></a></h2>
-<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
-<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; group_by(A, B) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
-</tbody></table>
-</div><!-- GENERATED "hydroflow_lang/src/graph/ops/group_by.rs" -->
-<blockquote>
-<p>1 input stream of type (K,V1), 1 output stream of type (K,V2).
-The output will have one tuple for each distinct K, with an accumulated value of type V2.</p>
-</blockquote>
-<blockquote>
-<p>Arguments: two Rust closures. The first generates an initial value per group. The second itself takes two arguments:
-an 'accumulator', and an element. The second closure returns the value that the accumulator should have for the next iteration.</p>
-</blockquote>
-<p>A special case of <code>fold</code>, in the spirit of SQL's GROUP BY and aggregation constructs.
-The input is partitioned into groups by the first field, and for each group the values in the second field
-are accumulated via the closures in the arguments.</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
-</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
-</span>source_iter([(&quot;toy&quot;, 1), (&quot;toy&quot;, 2), (&quot;shoe&quot;, 11), (&quot;shoe&quot;, 35), (&quot;haberdashery&quot;, 7)])
-    -&gt; group_by(|| 0, |old: &amp;mut u32, val: u32| *old += val)
-    -&gt; for_each(|(k, v)| println!(&quot;Total for group {} is {}&quot;, k, v));
-<span class="boring">};
-</span><span class="boring">__hf.run_available();
-</span><span class="boring">}
-</span></code></pre></pre>
-<h2 id="unique"><a class="header" href="#unique"><code>unique</code></a></h2>
-<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
-<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; unique() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
-</tbody></table>
-</div><!-- GENERATED "hydroflow_lang/src/graph/ops/unique.rs" -->
-<p>Takes one stream as input and filters out any duplicate occurrences. The output
-contains all unique values from the input.</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
-</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
-</span>// should print 1, 2, 3 (in any order)
-source_iter(vec![1, 1, 2, 3, 2, 1, 3])
-    -&gt; unique()
-    -&gt; for_each(|x| println!(&quot;{}&quot;, x));
-<span class="boring">};
-</span><span class="boring">__hf.run_available();
-</span><span class="boring">}
-</span></code></pre></pre>
-<h2 id="sort"><a class="header" href="#sort"><code>sort</code></a></h2>
-<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
-<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; sort() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
-</tbody></table>
-</div><!-- GENERATED "hydroflow_lang/src/graph/ops/sort.rs" -->
-<p>Takes a stream as input and produces a sorted version of the stream as output.</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
-</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
-</span>// should print 1, 2, 3 (in order)
-source_iter(vec![2, 3, 1])
-    -&gt; sort()
-    -&gt; for_each(|x| println!(&quot;{}&quot;, x));
-<span class="boring">};
-</span><span class="boring">__hf.run_available();
-</span><span class="boring">}
-</span></code></pre></pre>
-<h2 id="sort_by"><a class="header" href="#sort_by"><code>sort_by</code></a></h2>
-<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
-<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; sort_by(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
-</tbody></table>
-</div><!-- GENERATED "hydroflow_lang/src/graph/ops/sort_by.rs" -->
-<p>Takes a stream as input and produces a version of the stream as output
-sorted according to the key extracted by the closure.</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
-</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
-</span>// should print (1, 'z'), (2, 'y'), (3, 'x') (in order)
-source_iter(vec![(2, 'y'), (3, 'x'), (1, 'z')])
-    -&gt; sort_by(|(k, _v)| k)
-    -&gt; for_each(|x| println!(&quot;{:?}&quot;, x));
-<span class="boring">};
-</span><span class="boring">__hf.run_available();
-</span><span class="boring">}
-</span></code></pre></pre>
-<h2 id="source_iter"><a class="header" href="#source_iter"><code>source_iter</code></a></h2>
-<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
-<tr><td><span title="exactly 0">exactly 0</span></td><td><code>source_iter(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
-</tbody></table>
-</div><!-- GENERATED "hydroflow_lang/src/graph/ops/source_iter.rs" -->
-<blockquote>
-<p>0 input streams, 1 output stream</p>
-</blockquote>
-<blockquote>
-<p>Arguments: An iterable Rust object.
-Takes the iterable object and delivers its elements downstream
-one by one.</p>
-</blockquote>
-<p>Note that all elements are emitted during the first tick.</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
-</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
-</span>    source_iter(vec![&quot;Hello&quot;, &quot;World&quot;])
-        -&gt; for_each(|x| println!(&quot;{}&quot;, x));
-<span class="boring">};
-</span><span class="boring">__hf.run_available();
-</span><span class="boring">}
-</span></code></pre></pre>
-<h2 id="source_stdin"><a class="header" href="#source_stdin"><code>source_stdin</code></a></h2>
-<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
-<tr><td><span title="exactly 0">exactly 0</span></td><td><code>source_stdin() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
-</tbody></table>
-</div><!-- GENERATED "hydroflow_lang/src/graph/ops/source_stdin.rs" -->
-<blockquote>
-<p>0 input streams, 1 output stream</p>
-</blockquote>
-<blockquote>
-<p>Arguments: port number</p>
-</blockquote>
-<p><code>source_stdin</code> receives a Stream of lines from stdin
-and emits each of the elements it receives downstream.</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>let mut flow = hydroflow::hydroflow_syntax! {
-    source_stdin() -&gt; map(|x| x.unwrap().to_uppercase())
-        -&gt; for_each(|x| println!(&quot;{}&quot;, x));
-};
-flow.run_async();
-<span class="boring">}
-</span></code></pre></pre>
-<h2 id="source_stream"><a class="header" href="#source_stream"><code>source_stream</code></a></h2>
-<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
-<tr><td><span title="exactly 0">exactly 0</span></td><td><code>source_stream(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
-</tbody></table>
-</div><!-- GENERATED "hydroflow_lang/src/graph/ops/source_stream.rs" -->
-<blockquote>
-<p>0 input streams, 1 output stream</p>
-</blockquote>
-<blockquote>
-<p>Arguments: The receive end of a tokio channel</p>
-</blockquote>
-<p>Given a <a href="https://docs.rs/futures/latest/futures/stream/trait.Stream.html"><code>Stream</code></a>
-created in Rust code, <code>source_stream</code>
-is passed the receive endpoint of the channel and emits each of the
-elements it receives downstream.</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>let (input_send, input_recv) = hydroflow::util::unbounded_channel::&lt;&amp;str&gt;();
-let mut flow = hydroflow::hydroflow_syntax! {
-    source_stream(input_recv) -&gt; map(|x| x.to_uppercase())
-        -&gt; for_each(|x| println!(&quot;{}&quot;, x));
-};
-input_send.send(&quot;Hello&quot;).unwrap();
-input_send.send(&quot;World&quot;).unwrap();
-flow.run_available();
-<span class="boring">}
-</span></code></pre></pre>
-<h2 id="source_stream_serde"><a class="header" href="#source_stream_serde"><code>source_stream_serde</code></a></h2>
-<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
-<tr><td><span title="exactly 0">exactly 0</span></td><td><code>source_stream_serde(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
-</tbody></table>
-</div><!-- GENERATED "hydroflow_lang/src/graph/ops/source_stream_serde.rs" -->
-<blockquote>
-<p>0 input streams, 1 output stream</p>
-</blockquote>
-<blockquote>
-<p>Arguments: <a href="https://docs.rs/futures/latest/futures/stream/trait.Stream.html"><code>Stream</code></a></p>
-</blockquote>
-<p>Given a <a href="https://docs.rs/futures/latest/futures/stream/trait.Stream.html"><code>Stream</code></a>
-of (serialized payload, addr) pairs, deserializes the payload and emits each of the
-elements it receives downstream.</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>async fn serde_in() {
-    let addr = hydroflow::util::ipv4_resolve(&quot;localhost:9000&quot;.into()).unwrap();
-    let (outbound, inbound, _) = hydroflow::util::bind_udp_bytes(addr).await;
-    let mut flow = hydroflow::hydroflow_syntax! {
-        source_stream_serde(inbound) -&gt; map(|(x, a): (String, std::net::SocketAddr)| x.to_uppercase())
-            -&gt; for_each(|x| println!(&quot;{}&quot;, x));
-    };
-    flow.run_available();
-}
-<span class="boring">}
-</span></code></pre></pre>
-<h2 id="repeat_iter"><a class="header" href="#repeat_iter"><code>repeat_iter</code></a></h2>
-<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
-<tr><td><span title="exactly 0">exactly 0</span></td><td><code>repeat_iter(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
-</tbody></table>
-</div><!-- GENERATED "hydroflow_lang/src/graph/ops/repeat_iter.rs" -->
-<h2 id="difference"><a class="header" href="#difference"><code>difference</code></a></h2>
-<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
-<tr><td><span title="exactly 2">exactly 2</span></td><td><code>-&gt; difference() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
-</tbody></table>
-</div>
-<blockquote>
-<p>Input port names: <code>pos</code>, <code>neg</code></p>
-</blockquote>
-<!-- GENERATED "hydroflow_lang/src/graph/ops/difference.rs" -->
-<blockquote>
-<p>2 input streams of the same type T, 1 output stream of type T</p>
-</blockquote>
-<p>For a given tick, forms the set difference of the items in the input
-streams, returning items in the <code>pos</code> input that are not found in the
-<code>neg</code> input.</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
-</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
-</span>// should print &quot;elephant&quot;
-diff = difference();
-source_iter(vec![&quot;dog&quot;, &quot;cat&quot;, &quot;elephant&quot;]) -&gt; [pos]diff;
-source_iter(vec![&quot;dog&quot;, &quot;cat&quot;, &quot;gorilla&quot;]) -&gt; [neg]diff;
-diff -&gt; for_each(|v| println!(&quot;{}&quot;, v));
-<span class="boring">};
-</span><span class="boring">__hf.run_available();
-</span><span class="boring">}
-</span></code></pre></pre>
-<h2 id="next_stratum"><a class="header" href="#next_stratum"><code>next_stratum</code></a></h2>
-<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
-<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; next_stratum() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
-</tbody></table>
-</div><!-- GENERATED "hydroflow_lang/src/graph/ops/next_stratum.rs" -->
-<p>Delays all elements which pass through to the next stratum (in the same
-tick).</p>
-<h2 id="next_tick"><a class="header" href="#next_tick"><code>next_tick</code></a></h2>
-<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
-<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; next_tick() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
-</tbody></table>
-</div><!-- GENERATED "hydroflow_lang/src/graph/ops/next_tick.rs" -->
-<p>Delays all elements which pass through to the next tick. In short,
-execution of a hydroflow graph runs as a sequence of distinct &quot;ticks&quot;.
-Non-monotonic operators compute their output in terms of each tick so
-execution doesn't have to block, and it is up to the user to coordinate
-data between tick executions to achieve the desired result.</p>
-<p>An tick may be divided into multiple <em>strata</em>, see the <a href="#next_stratum"><code>next_stratum()</code></a>
-operator.</p>
-<p>In the example below <code>next_tick()</code> is used alongside <code>difference()</code> to
-ignore any items in the current tick that already appeared in the previous
-tick.</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>// Outputs 1 2 3 4 5 6 (on separate lines).
-let (input_send, input_recv) = hydroflow::util::unbounded_channel::&lt;usize&gt;();
-let mut flow = hydroflow::hydroflow_syntax! {
-    inp = source_stream(input_recv) -&gt; tee();
-    diff = difference() -&gt; for_each(|x| println!(&quot;{}&quot;, x));
-    inp -&gt; [pos]diff;
-    inp -&gt; next_tick() -&gt; [neg]diff;
-};
-
-for x in [1, 2, 3, 4] {
-    input_send.send(x).unwrap();
-}
-flow.run_tick();
-
-for x in [3, 4, 5, 6] {
-    input_send.send(x).unwrap();
-}
-flow.run_tick();
-<span class="boring">}
-</span></code></pre></pre>
-<h2 id="for_each"><a class="header" href="#for_each"><code>for_each</code></a></h2>
-<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
-<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; for_each(A)</code></td><td><span title="exactly 0">exactly 0</span></td></tr>
-</tbody></table>
-</div><!-- GENERATED "hydroflow_lang/src/graph/ops/for_each.rs" -->
-<blockquote>
-<p>1 input stream, 0 output streams</p>
-</blockquote>
-<blockquote>
-<p>Arguments: a Rust closure</p>
-</blockquote>
-<p>Iterates through a stream passing each element to the closure in the
-argument.</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
-</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
-</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
-</span>    source_iter(vec![&quot;Hello&quot;, &quot;World&quot;])
-        -&gt; for_each(|x| println!(&quot;{}&quot;, x));
 <span class="boring">};
 </span><span class="boring">__hf.run_available();
 </span><span class="boring">}
@@ -940,6 +302,644 @@ assert_eq!(b&quot;helloworld&quot;, &amp;*buf);
     flow.run_available();
 }
 <span class="boring">}
+</span></code></pre></pre>
+<h2 id="difference"><a class="header" href="#difference"><code>difference</code></a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
+<tr><td><span title="exactly 2">exactly 2</span></td><td><code>-&gt; difference() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
+</tbody></table>
+</div>
+<blockquote>
+<p>Input port names: <code>pos</code>, <code>neg</code></p>
+</blockquote>
+<!-- GENERATED "hydroflow_lang/src/graph/ops/difference.rs" -->
+<blockquote>
+<p>2 input streams of the same type T, 1 output stream of type T</p>
+</blockquote>
+<p>For a given tick, forms the set difference of the items in the input
+streams, returning items in the <code>pos</code> input that are not found in the
+<code>neg</code> input.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
+</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
+</span>// should print &quot;elephant&quot;
+diff = difference();
+source_iter(vec![&quot;dog&quot;, &quot;cat&quot;, &quot;elephant&quot;]) -&gt; [pos]diff;
+source_iter(vec![&quot;dog&quot;, &quot;cat&quot;, &quot;gorilla&quot;]) -&gt; [neg]diff;
+diff -&gt; for_each(|v| println!(&quot;{}&quot;, v));
+<span class="boring">};
+</span><span class="boring">__hf.run_available();
+</span><span class="boring">}
+</span></code></pre></pre>
+<h2 id="filter"><a class="header" href="#filter"><code>filter</code></a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
+<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; filter(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
+</tbody></table>
+</div><!-- GENERATED "hydroflow_lang/src/graph/ops/filter.rs" -->
+<p>Filter outputs a subsequence of the items it receives at its input, according to a
+Rust boolean closure passed in as an argument.</p>
+<blockquote>
+<p>TODO: Why does filter's closure expect a reference and other ops like map do not?</p>
+</blockquote>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
+</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
+</span>source_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; filter(|x| x.starts_with('w'))
+    -&gt; for_each(|x| println!(&quot;{}&quot;, x));
+<span class="boring">};
+</span><span class="boring">__hf.run_available();
+</span><span class="boring">}
+</span></code></pre></pre>
+<h2 id="filter_map"><a class="header" href="#filter_map"><code>filter_map</code></a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
+<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; filter_map(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
+</tbody></table>
+</div><!-- GENERATED "hydroflow_lang/src/graph/ops/filter_map.rs" -->
+<blockquote>
+<p>1 input stream, 1 output stream</p>
+</blockquote>
+<p>An operator that both filters and maps. It yields only the items for which the supplied closure returns <code>Some(value)</code>.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
+</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
+</span>source_iter(vec![&quot;1&quot;, &quot;hello&quot;, &quot;world&quot;, &quot;2&quot;]) -&gt; filter_map(|s| s.parse().ok())
+    -&gt; for_each(|x: usize| println!(&quot;{}&quot;, x));
+<span class="boring">};
+</span><span class="boring">__hf.run_available();
+</span><span class="boring">}
+</span></code></pre></pre>
+<h2 id="flat_map"><a class="header" href="#flat_map"><code>flat_map</code></a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
+<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; flat_map(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
+</tbody></table>
+</div><!-- GENERATED "hydroflow_lang/src/graph/ops/flat_map.rs" -->
+<blockquote>
+<p>1 input stream, 1 output stream</p>
+</blockquote>
+<blockquote>
+<p>Arguments: A Rust closure that handles an iterator</p>
+</blockquote>
+<p>For each item <code>i</code> passed in, treat <code>i</code> as an iterator and map the closure to that
+iterator to produce items one by one. The type of the input items must be iterable.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
+</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
+</span>// should print out each character of each word on a separate line
+source_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; flat_map(|x| x.chars())
+    -&gt; for_each(|x| println!(&quot;{}&quot;, x));
+<span class="boring">};
+</span><span class="boring">__hf.run_available();
+</span><span class="boring">}
+</span></code></pre></pre>
+<h2 id="flatten"><a class="header" href="#flatten"><code>flatten</code></a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
+<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; flatten() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
+</tbody></table>
+</div><!-- GENERATED "hydroflow_lang/src/graph/ops/flatten.rs" -->
+<blockquote>
+<p>1 input stream, 1 output stream</p>
+</blockquote>
+<p>For each item <code>i</code> passed in, treat <code>i</code> as an iterator and produce its items one by one.
+The type of the input items must be iterable.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
+</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
+</span>// should print the numbers 1-6 without any nesting
+source_iter(vec![[1, 2], [3, 4], [5, 6]]) -&gt; flatten()
+-&gt; for_each(|x| println!(&quot;{}&quot;, x));
+<span class="boring">};
+</span><span class="boring">__hf.run_available();
+</span><span class="boring">}
+</span></code></pre></pre>
+<h2 id="fold"><a class="header" href="#fold"><code>fold</code></a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
+<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; fold(A, B) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
+</tbody></table>
+</div><!-- GENERATED "hydroflow_lang/src/graph/ops/fold.rs" -->
+<blockquote>
+<p>1 input stream, 1 output stream</p>
+</blockquote>
+<blockquote>
+<p>Arguments: an initial value, and a closure which itself takes two arguments:
+an 'accumulator', and an element. The closure returns the value that the accumulator should have for the next iteration.</p>
+</blockquote>
+<p>Akin to Rust's built-in fold operator. Folds every element into an accumulator by applying a closure,
+returning the final result.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
+</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
+</span>// should print `Reassembled vector [1,2,3,4,5]`
+source_iter([1,2,3,4,5])
+    -&gt; fold(Vec::new(), |mut accum, elem| {
+        accum.push(elem);
+        accum
+    })
+    -&gt; for_each(|e| println!(&quot;Ressembled vector {:?}&quot;, e));
+<span class="boring">};
+</span><span class="boring">__hf.run_available();
+</span><span class="boring">}
+</span></code></pre></pre>
+<h2 id="for_each"><a class="header" href="#for_each"><code>for_each</code></a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
+<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; for_each(A)</code></td><td><span title="exactly 0">exactly 0</span></td></tr>
+</tbody></table>
+</div><!-- GENERATED "hydroflow_lang/src/graph/ops/for_each.rs" -->
+<blockquote>
+<p>1 input stream, 0 output streams</p>
+</blockquote>
+<blockquote>
+<p>Arguments: a Rust closure</p>
+</blockquote>
+<p>Iterates through a stream passing each element to the closure in the
+argument.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
+</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
+</span>    source_iter(vec![&quot;Hello&quot;, &quot;World&quot;])
+        -&gt; for_each(|x| println!(&quot;{}&quot;, x));
+<span class="boring">};
+</span><span class="boring">__hf.run_available();
+</span><span class="boring">}
+</span></code></pre></pre>
+<h2 id="group_by"><a class="header" href="#group_by"><code>group_by</code></a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
+<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; group_by(A, B) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
+</tbody></table>
+</div><!-- GENERATED "hydroflow_lang/src/graph/ops/group_by.rs" -->
+<blockquote>
+<p>1 input stream of type (K,V1), 1 output stream of type (K,V2).
+The output will have one tuple for each distinct K, with an accumulated value of type V2.</p>
+</blockquote>
+<blockquote>
+<p>Arguments: two Rust closures. The first generates an initial value per group. The second itself takes two arguments:
+an 'accumulator', and an element. The second closure returns the value that the accumulator should have for the next iteration.</p>
+</blockquote>
+<p>A special case of <code>fold</code>, in the spirit of SQL's GROUP BY and aggregation constructs.
+The input is partitioned into groups by the first field, and for each group the values in the second field
+are accumulated via the closures in the arguments.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
+</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
+</span>source_iter([(&quot;toy&quot;, 1), (&quot;toy&quot;, 2), (&quot;shoe&quot;, 11), (&quot;shoe&quot;, 35), (&quot;haberdashery&quot;, 7)])
+    -&gt; group_by(|| 0, |old: &amp;mut u32, val: u32| *old += val)
+    -&gt; for_each(|(k, v)| println!(&quot;Total for group {} is {}&quot;, k, v));
+<span class="boring">};
+</span><span class="boring">__hf.run_available();
+</span><span class="boring">}
+</span></code></pre></pre>
+<h2 id="identity"><a class="header" href="#identity"><code>identity</code></a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
+<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; identity() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
+</tbody></table>
+</div><!-- GENERATED "hydroflow_lang/src/graph/ops/identity.rs" -->
+<blockquote>
+<p>1 input stream of type T, 1 output stream of type T</p>
+</blockquote>
+<p>For each item passed in, pass it out without any change.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
+</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
+</span>// should print &quot;hello&quot; and &quot;world&quot; on separate lines (in either order)
+source_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; identity()
+    -&gt; for_each(|x| println!(&quot;{}&quot;, x));
+<span class="boring">};
+</span><span class="boring">__hf.run_available();
+</span><span class="boring">}
+</span></code></pre></pre>
+<h2 id="inspect"><a class="header" href="#inspect"><code>inspect</code></a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
+<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; inspect(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
+</tbody></table>
+</div><!-- GENERATED "hydroflow_lang/src/graph/ops/inspect.rs" -->
+<blockquote>
+<p>Arguments: A single closure <code>FnMut(&amp;Item)</code>.</p>
+</blockquote>
+<p>An operator which allows you to &quot;inspect&quot; each element of a stream without
+modifying it. The closure is called on a reference to each item. This is
+mainly useful for debugging as in the example below, and it is generally an
+anti-pattern to provide a closure with side effects.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
+</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
+</span>source_iter([1, 2, 3, 4]) -&gt; inspect(|&amp;x| println!(&quot;{}&quot;, x)) -&gt; null();
+<span class="boring">};
+</span><span class="boring">__hf.run_available();
+</span><span class="boring">}
+</span></code></pre></pre>
+<h2 id="join"><a class="header" href="#join"><code>join</code></a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
+<tr><td><span title="exactly 2">exactly 2</span></td><td><code>-&gt; join() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
+</tbody></table>
+</div>
+<blockquote>
+<p>Input port names: <code>0</code>, <code>1</code></p>
+</blockquote>
+<!-- GENERATED "hydroflow_lang/src/graph/ops/join.rs" -->
+<blockquote>
+<p>2 input streams of type &lt;(K, V1)&gt; and &lt;(K, V2)&gt;, 1 output stream of type &lt;(K, (V1, V2))&gt;</p>
+</blockquote>
+<p>Forms the equijoin of the tuples in the input streams by their first (key) attribute. Note that the result nests the 2nd input field (values) into a tuple in the 2nd output field.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
+</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
+</span>// should print `(hello, (world, cleveland))`
+my_join = join();
+source_iter(vec![(&quot;hello&quot;, &quot;world&quot;), (&quot;stay&quot;, &quot;gold&quot;)]) -&gt; [0]my_join;
+source_iter(vec![(&quot;hello&quot;, &quot;cleveland&quot;)]) -&gt; [1]my_join;
+my_join -&gt; for_each(|(k, (v1, v2))| println!(&quot;({}, ({}, {}))&quot;, k, v1, v2));
+<span class="boring">};
+</span><span class="boring">__hf.run_available();
+</span><span class="boring">}
+</span></code></pre></pre>
+<h2 id="map"><a class="header" href="#map"><code>map</code></a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
+<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; map(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
+</tbody></table>
+</div><!-- GENERATED "hydroflow_lang/src/graph/ops/map.rs" -->
+<blockquote>
+<p>1 input stream, 1 output stream</p>
+</blockquote>
+<blockquote>
+<p>Arguments: A Rust closure
+For each item passed in, apply the closure to generate an item to emit.</p>
+</blockquote>
+<p>If you do not want to modify the item stream and instead only want to view
+each item use the <a href="#inspect"><code>inspect</code></a> operator instead.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
+</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
+</span>source_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; map(|x| x.to_uppercase())
+    -&gt; for_each(|x| println!(&quot;{}&quot;, x));
+<span class="boring">};
+</span><span class="boring">__hf.run_available();
+</span><span class="boring">}
+</span></code></pre></pre>
+<h2 id="merge"><a class="header" href="#merge"><code>merge</code></a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
+<tr><td><span title="at least 0">at least 2</span></td><td><code>-&gt; merge() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
+</tbody></table>
+</div><!-- GENERATED "hydroflow_lang/src/graph/ops/merge.rs" -->
+<blockquote>
+<p><em>n</em> input streams of the same type, 1 output stream of the same type</p>
+</blockquote>
+<p>Merges an arbitrary number of input streams into a single stream. Each input sequence is a subsequence of the output, but no guarantee is given on how the inputs are interleaved.</p>
+<p>Since <code>merge</code> has multiple input streams, it needs to be assigned to
+a variable to reference its multiple input ports across statements.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
+</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
+</span>my_merge = merge();
+source_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; my_merge;
+source_iter(vec![&quot;stay&quot;, &quot;gold&quot;]) -&gt; my_merge;
+source_iter(vec![&quot;don\'t&quot;, &quot;give&quot;, &quot;up&quot;]) -&gt; my_merge;
+my_merge -&gt; map(|x| x.to_uppercase())
+    -&gt; for_each(|x| println!(&quot;{}&quot;, x));
+<span class="boring">};
+</span><span class="boring">__hf.run_available();
+</span><span class="boring">}
+</span></code></pre></pre>
+<h2 id="next_stratum"><a class="header" href="#next_stratum"><code>next_stratum</code></a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
+<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; next_stratum() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
+</tbody></table>
+</div><!-- GENERATED "hydroflow_lang/src/graph/ops/next_stratum.rs" -->
+<p>Delays all elements which pass through to the next stratum (in the same
+tick).</p>
+<h2 id="next_tick"><a class="header" href="#next_tick"><code>next_tick</code></a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
+<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; next_tick() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
+</tbody></table>
+</div><!-- GENERATED "hydroflow_lang/src/graph/ops/next_tick.rs" -->
+<p>Delays all elements which pass through to the next tick. In short,
+execution of a hydroflow graph runs as a sequence of distinct &quot;ticks&quot;.
+Non-monotonic operators compute their output in terms of each tick so
+execution doesn't have to block, and it is up to the user to coordinate
+data between tick executions to achieve the desired result.</p>
+<p>An tick may be divided into multiple <em>strata</em>, see the <a href="#next_stratum"><code>next_stratum()</code></a>
+operator.</p>
+<p>In the example below <code>next_tick()</code> is used alongside <code>difference()</code> to
+ignore any items in the current tick that already appeared in the previous
+tick.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Outputs 1 2 3 4 5 6 (on separate lines).
+let (input_send, input_recv) = hydroflow::util::unbounded_channel::&lt;usize&gt;();
+let mut flow = hydroflow::hydroflow_syntax! {
+    inp = source_stream(input_recv) -&gt; tee();
+    diff = difference() -&gt; for_each(|x| println!(&quot;{}&quot;, x));
+    inp -&gt; [pos]diff;
+    inp -&gt; next_tick() -&gt; [neg]diff;
+};
+
+for x in [1, 2, 3, 4] {
+    input_send.send(x).unwrap();
+}
+flow.run_tick();
+
+for x in [3, 4, 5, 6] {
+    input_send.send(x).unwrap();
+}
+flow.run_tick();
+<span class="boring">}
+</span></code></pre></pre>
+<h2 id="null"><a class="header" href="#null"><code>null</code></a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
+<tr><td><span title="at least 0 and at most 1">at least 0 and at most 1</span></td><td><code>null()</code></td><td><span title="at least 0 and at most 1">at least 0 and at most 1</span></td></tr>
+</tbody></table>
+</div><!-- GENERATED "hydroflow_lang/src/graph/ops/null.rs" -->
+<blockquote>
+<p>unbounded number of input streams of any type, unbounded number of output streams of any type.</p>
+</blockquote>
+<p>As a source, generates nothing. As a sink, absorbs anything with no effect.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
+</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
+</span>// should print `1, 2, 3, 4, 5, 6, a, b, c` across 9 lines
+null() -&gt; for_each(|_: ()| panic!());
+source_iter([1,2,3]) -&gt; map(|i| println!(&quot;{}&quot;, i)) -&gt; null();
+null_src = null();
+null_sink = null();
+null_src[0] -&gt; for_each(|_: ()| panic!());
+// note: use `for_each()` (or `inspect()`) instead of this:
+source_iter([4,5,6]) -&gt; map(|i| println!(&quot;{}&quot;, i)) -&gt; [0]null_sink;
+<span class="boring">};
+</span><span class="boring">__hf.run_available();
+</span><span class="boring">}
+</span></code></pre></pre>
+<h2 id="reduce"><a class="header" href="#reduce"><code>reduce</code></a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
+<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; reduce(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
+</tbody></table>
+</div><!-- GENERATED "hydroflow_lang/src/graph/ops/reduce.rs" -->
+<blockquote>
+<p>1 input stream, 1 output stream</p>
+</blockquote>
+<blockquote>
+<p>Arguments: a closure which itself takes two arguments:
+an ‘accumulator’, and an element. The closure returns the value that the accumulator should have for the next iteration.</p>
+</blockquote>
+<p>Akin to Rust's built-in reduce operator. Folds every element into an accumulator by applying a closure,
+returning the final result.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
+</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
+</span>// should print 120 (i.e., 1*2*3*4*5)
+source_iter([1,2,3,4,5])
+    -&gt; reduce(|mut accum, elem| {
+        accum *= elem;
+        accum
+    })
+    -&gt; for_each(|e| println!(&quot;{}&quot;, e));
+<span class="boring">};
+</span><span class="boring">__hf.run_available();
+</span><span class="boring">}
+</span></code></pre></pre>
+<h2 id="repeat_iter"><a class="header" href="#repeat_iter"><code>repeat_iter</code></a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
+<tr><td><span title="exactly 0">exactly 0</span></td><td><code>repeat_iter(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
+</tbody></table>
+</div><!-- GENERATED "hydroflow_lang/src/graph/ops/repeat_iter.rs" -->
+<h2 id="sort"><a class="header" href="#sort"><code>sort</code></a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
+<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; sort() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
+</tbody></table>
+</div><!-- GENERATED "hydroflow_lang/src/graph/ops/sort.rs" -->
+<p>Takes a stream as input and produces a sorted version of the stream as output.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
+</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
+</span>// should print 1, 2, 3 (in order)
+source_iter(vec![2, 3, 1])
+    -&gt; sort()
+    -&gt; for_each(|x| println!(&quot;{}&quot;, x));
+<span class="boring">};
+</span><span class="boring">__hf.run_available();
+</span><span class="boring">}
+</span></code></pre></pre>
+<h2 id="sort_by"><a class="header" href="#sort_by"><code>sort_by</code></a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
+<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; sort_by(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
+</tbody></table>
+</div><!-- GENERATED "hydroflow_lang/src/graph/ops/sort_by.rs" -->
+<p>Takes a stream as input and produces a version of the stream as output
+sorted according to the key extracted by the closure.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
+</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
+</span>// should print (1, 'z'), (2, 'y'), (3, 'x') (in order)
+source_iter(vec![(2, 'y'), (3, 'x'), (1, 'z')])
+    -&gt; sort_by(|(k, _v)| k)
+    -&gt; for_each(|x| println!(&quot;{:?}&quot;, x));
+<span class="boring">};
+</span><span class="boring">__hf.run_available();
+</span><span class="boring">}
+</span></code></pre></pre>
+<h2 id="source_iter"><a class="header" href="#source_iter"><code>source_iter</code></a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
+<tr><td><span title="exactly 0">exactly 0</span></td><td><code>source_iter(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
+</tbody></table>
+</div><!-- GENERATED "hydroflow_lang/src/graph/ops/source_iter.rs" -->
+<blockquote>
+<p>0 input streams, 1 output stream</p>
+</blockquote>
+<blockquote>
+<p>Arguments: An iterable Rust object.
+Takes the iterable object and delivers its elements downstream
+one by one.</p>
+</blockquote>
+<p>Note that all elements are emitted during the first tick.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
+</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
+</span>    source_iter(vec![&quot;Hello&quot;, &quot;World&quot;])
+        -&gt; for_each(|x| println!(&quot;{}&quot;, x));
+<span class="boring">};
+</span><span class="boring">__hf.run_available();
+</span><span class="boring">}
+</span></code></pre></pre>
+<h2 id="source_stdin"><a class="header" href="#source_stdin"><code>source_stdin</code></a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
+<tr><td><span title="exactly 0">exactly 0</span></td><td><code>source_stdin() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
+</tbody></table>
+</div><!-- GENERATED "hydroflow_lang/src/graph/ops/source_stdin.rs" -->
+<blockquote>
+<p>0 input streams, 1 output stream</p>
+</blockquote>
+<blockquote>
+<p>Arguments: port number</p>
+</blockquote>
+<p><code>source_stdin</code> receives a Stream of lines from stdin
+and emits each of the elements it receives downstream.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let mut flow = hydroflow::hydroflow_syntax! {
+    source_stdin() -&gt; map(|x| x.unwrap().to_uppercase())
+        -&gt; for_each(|x| println!(&quot;{}&quot;, x));
+};
+flow.run_async();
+<span class="boring">}
+</span></code></pre></pre>
+<h2 id="source_stream"><a class="header" href="#source_stream"><code>source_stream</code></a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
+<tr><td><span title="exactly 0">exactly 0</span></td><td><code>source_stream(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
+</tbody></table>
+</div><!-- GENERATED "hydroflow_lang/src/graph/ops/source_stream.rs" -->
+<blockquote>
+<p>0 input streams, 1 output stream</p>
+</blockquote>
+<blockquote>
+<p>Arguments: The receive end of a tokio channel</p>
+</blockquote>
+<p>Given a <a href="https://docs.rs/futures/latest/futures/stream/trait.Stream.html"><code>Stream</code></a>
+created in Rust code, <code>source_stream</code>
+is passed the receive endpoint of the channel and emits each of the
+elements it receives downstream.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let (input_send, input_recv) = hydroflow::util::unbounded_channel::&lt;&amp;str&gt;();
+let mut flow = hydroflow::hydroflow_syntax! {
+    source_stream(input_recv) -&gt; map(|x| x.to_uppercase())
+        -&gt; for_each(|x| println!(&quot;{}&quot;, x));
+};
+input_send.send(&quot;Hello&quot;).unwrap();
+input_send.send(&quot;World&quot;).unwrap();
+flow.run_available();
+<span class="boring">}
+</span></code></pre></pre>
+<h2 id="source_stream_serde"><a class="header" href="#source_stream_serde"><code>source_stream_serde</code></a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
+<tr><td><span title="exactly 0">exactly 0</span></td><td><code>source_stream_serde(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
+</tbody></table>
+</div><!-- GENERATED "hydroflow_lang/src/graph/ops/source_stream_serde.rs" -->
+<blockquote>
+<p>0 input streams, 1 output stream</p>
+</blockquote>
+<blockquote>
+<p>Arguments: <a href="https://docs.rs/futures/latest/futures/stream/trait.Stream.html"><code>Stream</code></a></p>
+</blockquote>
+<p>Given a <a href="https://docs.rs/futures/latest/futures/stream/trait.Stream.html"><code>Stream</code></a>
+of (serialized payload, addr) pairs, deserializes the payload and emits each of the
+elements it receives downstream.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>async fn serde_in() {
+    let addr = hydroflow::util::ipv4_resolve(&quot;localhost:9000&quot;.into()).unwrap();
+    let (outbound, inbound, _) = hydroflow::util::bind_udp_bytes(addr).await;
+    let mut flow = hydroflow::hydroflow_syntax! {
+        source_stream_serde(inbound) -&gt; map(|(x, a): (String, std::net::SocketAddr)| x.to_uppercase())
+            -&gt; for_each(|x| println!(&quot;{}&quot;, x));
+    };
+    flow.run_available();
+}
+<span class="boring">}
+</span></code></pre></pre>
+<h2 id="tee"><a class="header" href="#tee"><code>tee</code></a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
+<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; tee() -&gt;</code></td><td><span title="at least 0">at least 2</span></td></tr>
+</tbody></table>
+</div><!-- GENERATED "hydroflow_lang/src/graph/ops/tee.rs" -->
+<blockquote>
+<p>1 input stream, <em>n</em> output streams</p>
+</blockquote>
+<p>Takes the input stream and delivers a copy of each item to each output.</p>
+<blockquote>
+<p>Note: Downstream operators may need explicit type annotations.</p>
+</blockquote>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
+</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
+</span>my_tee = source_iter(vec![&quot;Hello&quot;, &quot;World&quot;]) -&gt; tee();
+my_tee -&gt; map(|x: &amp;str| x.to_uppercase())
+    -&gt; for_each(|x| println!(&quot;{}&quot;, x));
+my_tee -&gt; map(|x: &amp;str| x.to_lowercase())
+    -&gt; for_each(|x| println!(&quot;{}&quot;, x));
+my_tee -&gt; for_each(|x: &amp;str| println!(&quot;{}&quot;, x));
+<span class="boring">};
+</span><span class="boring">__hf.run_available();
+</span><span class="boring">}
+</span></code></pre></pre>
+<h2 id="unique"><a class="header" href="#unique"><code>unique</code></a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
+<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; unique() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
+</tbody></table>
+</div><!-- GENERATED "hydroflow_lang/src/graph/ops/unique.rs" -->
+<p>Takes one stream as input and filters out any duplicate occurrences. The output
+contains all unique values from the input.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
+</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
+</span>// should print 1, 2, 3 (in any order)
+source_iter(vec![1, 1, 2, 3, 2, 1, 3])
+    -&gt; unique()
+    -&gt; for_each(|x| println!(&quot;{}&quot;, x));
+<span class="boring">};
+</span><span class="boring">__hf.run_available();
+</span><span class="boring">}
+</span></code></pre></pre>
+<h2 id="unzip"><a class="header" href="#unzip"><code>unzip</code></a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
+<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; unzip() -&gt;</code></td><td><span title="exactly 2">exactly 2</span></td></tr>
+</tbody></table>
+</div>
+<blockquote>
+<p>Output port names: <code>0</code>, <code>1</code></p>
+</blockquote>
+<!-- GENERATED "hydroflow_lang/src/graph/ops/unzip.rs" -->
+<blockquote>
+<p>1 input stream of pair tuples <code>(A, B)</code>, 2 output streams</p>
+</blockquote>
+<p>Takes the input stream of pairs and unzips each one, delivers each item to
+its corresponding side.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
+</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
+</span>my_unzip = source_iter(vec![(&quot;Hello&quot;, &quot;Foo&quot;), (&quot;World&quot;, &quot;Bar&quot;)]) -&gt; unzip();
+my_unzip[0] -&gt; for_each(|x| println!(&quot;0: {}&quot;, x)); // Hello World
+my_unzip[1] -&gt; for_each(|x| println!(&quot;1: {}&quot;, x)); // Foo Bar
+<span class="boring">};
+</span><span class="boring">__hf.run_available();
+</span><span class="boring">}
 </span></code></pre></pre>
 
                     </main>
