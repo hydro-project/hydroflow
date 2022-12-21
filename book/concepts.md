@@ -1,6 +1,7 @@
 # Concepts
 
-## Dataflow and Networking
+## Hydroflow: A DSL and a Runtime Library
+### Dataflow and Networking
 
 Conventionally, dataflow systems provide a way to analyze and process data by
 chaining functions (operators) together into pipelines. But with a change of
@@ -20,7 +21,14 @@ As development continues we will provide more utilities for common networking
 use cases, but for now expect some manual management of IP addresses and
 sockets.
 
-## Lattices
+### Models of Parallelism
+### WIP: Lattices at the Core
 
-## Strata
+## Architecture and Execution Model
+### Per-Tick: Fix Points and Strata
+
+### Across Ticks: Time and State
+
+## A Note: Time, Distributed Systems and Hydroflow
+## 
 
