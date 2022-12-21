@@ -44,7 +44,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         file!().replace(std::path::MAIN_SEPARATOR, "/")
     )?;
     writeln!(write, "{}", PREFIX)?;
-    let mut ops = OPERATORS.to_vec();
+    let mut ops: Vec<_> = OPERATORS.iter().collect();
     ops.sort_by_key(|op| op.name);
     for op in ops {
         writeln!(write, "## `{}`", op.name)?;
