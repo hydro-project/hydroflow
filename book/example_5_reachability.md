@@ -2,6 +2,7 @@
 > In this example we cover:
 > * Implementing a recursive algorithm (graph reachability) via cyclic dataflow
 > * Operators to merge data from multiple inputs ([`merge`](./surface_ops.gen.md#merge)), and send data to multiple outputs ([`tee`](./surface_ops.gen.md#tee))
+> * Indexing multi-output operators by appending a bracket expression
 > * An example of how a cyclic dataflow in one stratum executes to completion before starting the next stratum. 
 
 
@@ -42,10 +43,12 @@ two cases above. Similarly note that the join box `V ⨝ E` now has two _outboun
 to copy ("tee") the output along 
 two paths.
 
-Now lets look at a modified version of our [graph neighbor](example_4_neighbors.md) code that implements this full program, including the loop as well as the Hydroflow [`merge`](./surface_ops.gen.md#merge) and [`tee`](./surface_ops.gen.md#tee):
+Now lets look at a modified version of our [graph neighbor](example_4_neighbors.md) code that implements this full program, including the loop as well as the Hydroflow [`merge`](./surface_ops.gen.md#merge) and [`tee`](./surface_ops.gen.md#tee).
+Modify src/main.rs to look like this:
 
 ```rust
-# use hydroflow::hydroflow_syntax;
+use hydroflow::hydroflow_syntax;
+
 pub fn main() {
     // An edge in the input data = a pair of `usize` vertex IDs.
     let (pairs_send, pairs_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
@@ -84,7 +87,10 @@ pub fn main() {
 ```
 
 And now we get the full set of vertices reachable from `0`:
-```txt
+```console
+% cargo run
+<build output>
+<graph output>
 Reached: 3
 Reached: 0
 Reached: 2
@@ -92,6 +98,7 @@ Reached: 4
 Reached: 1
 ```
 
+## Examining the Hydroflow Code
 Let's review the significant changes here. First, in setting up the inputs we have the 
 addition of the `reached_vertices` variable, which uses the [merge()](./surface_ops.gen.md#merge) 
 op to merge the output of two operators into one. 

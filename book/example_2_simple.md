@@ -12,6 +12,7 @@ in Hydroflow. You may be familiar with operators such as [`map(...)`](./surface_
 etc. from Rust iterators or from other programming languages, and these are
 also available in Hydroflow.
 
+In your `simple` project, replace the contents of `src/main.rs` with the following:
 ```rust
 use hydroflow::hydroflow_syntax;
 
@@ -43,11 +44,32 @@ into a stream of the individual numbers which they contain.
 
 - Finally we use the now-familiar `for_each` operator to print each number.
 
+Now let's run the program:
+```console
+% cargo run
+<build output>
+Howdy 16
+Howdy 17
+Howdy 25
+Howdy 26
+Howdy 36
+Howdy 37
+Howdy 49
+Howdy 50
+Howdy 64
+Howdy 65
+Howdy 81
+Howdy 82
+```
+
+## Rewriting with Combination Operators
 We can also express the same program with more aggressive use of combination operators like
 [`filter_map()`](./surface_ops.gen.md#filtermap) and [`flat_map()`](./surface_ops.gen.md#flat_map). Hydroflow will compile these down to the same
-machine code:
+machine code.
+
+Replace the contents of `src/main.rs` with the following:
 ```rust
-# use hydroflow::hydroflow_syntax;
+use hydroflow::hydroflow_syntax;
  pub fn main() {
     let mut flow = hydroflow_syntax! {
         source_iter(0..10)
@@ -69,7 +91,9 @@ machine code:
 ```
 
 Results:
-```txt
+```console
+% cargo run
+<build output>
 G'day 16
 G'day 17
 G'day 25

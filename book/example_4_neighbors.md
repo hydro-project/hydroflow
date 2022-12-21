@@ -1,6 +1,8 @@
 # Graph Neighbors
 > In this example we cover:
+> * Assigning sub-flows to variables
 > * Our first multi-input operator, [`join`](./surface_ops.gen.md#join)
+> * Indexing multi-input operators by prepending a bracket expression
 > * The [`unique`](./surface_ops.gen.md#unique) operator for removing duplicates from a stream
 > * A first exposure to the concepts of _strata_ and _epochs_
 
@@ -43,10 +45,12 @@ graph TD
   end
 ```
 
-Lets take a look at some Hydroflow code that implements the program:
+Lets take a look at some Hydroflow code that implements the program. In your `simple` project,
+replace the contents of `src/main.rs` with the following:
 
 ```rust
-# use hydroflow::hydroflow_syntax;
+use hydroflow::hydroflow_syntax;
+
 pub fn main() {
     // An edge in the input data = a pair of `usize` vertex IDs.
     let (pairs_send, pairs_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
@@ -81,8 +85,11 @@ pub fn main() {
 }
 ```
 
-And the output:
-```txt
+Run the program and focus on the last three lines of output, which come from `flow.run_available()`:
+```console
+% cargo run
+<build output>
+<graph output>
 Reached: 0
 Reached: 3
 Reached: 1
@@ -90,8 +97,13 @@ Reached: 1
 That looks right: the edges we "sent" into the flow that start at `0` are 
 `(0, 1)` and `(0, 3)`.
 
-As for the code itself, we start out with the origin vertex, `0`,
-and the stream of edges coming in:
+> Note: When you run the program you may see the lines printed out in a different order. That's OK; the flow we're defining here is producing a `set` of nodes, so the order in which they are printed out is not specified. The [`sort_by`](./surface_ops.gen.md#sort_by) operator can be used to sort the output of a flow.
+
+## Examining the Hydroflow Code
+In the code, we want to start out with the origin vertex, `0`,
+and the stream of edges coming in. Because this flow is a bit more complex
+than our earlier examples, we break it down into named "subflows", assigning them variable
+names that we can reuse. Here we specify two subflows, `origin` and `stream_of_edges`:
 ```rust,ignore
     origin = source_iter(vec![0]);
     stream_of_edges = source_stream(pairs_recv);
@@ -126,10 +138,11 @@ Finally we print the neighbor vertices as follows:
 ```
 The [unique](./surface_ops.gen.md#unique) operator removes duplicates from the stream to make things more readable. Note that `unique` does not run in a streaming fashion, which we will talk about more [below](#strata-and-epochs).
 
-The remaining code runs the graph on example edge data. There's
-also some extra code there, particularly `flow.serde_graph().expect(...).to_mermaid()` which lets us
+There's
+also some extra code here, `flow.serde_graph().expect(...).to_mermaid()`, which tells
+Hydroflow to
 generate a diagram rendered by [Mermaid](https://mermaid-js.github.io/) showing
-the structure of the graph:
+the structure of the graph, and print it to stdout. You can copy that text and paste it into the [Mermaid Live Editor](https://mermaid-js.github.io/mermaid-live-editor/) to see the graph, which should look as follows:
 
 ```mermaid
 flowchart TB
@@ -155,19 +168,19 @@ flowchart TB
     6v1-->7v1
     8v1-->6v1
 ```
-
-Returning to the code, if you read the `pairs_send` calls carefully, you'll see that the example data 
-has vertices (`2`, `4`) that are more than one hop away from `0`, which were
-not output by our simple program. To extend this example to graph *reachability*, 
-we need to recurse: find neighbors of our neighbors, neighbors of our neighbors' neighbors, and so on. In Hydroflow,
-this is done by adding a loop to the flow, as we'll see in our [next example](example_5_reachability.md).
-## Strata and Epochs
 Before we proceed, note in the mermaid graph how Hydroflow separates the `unique` operator and its downstream dependencies into their own
-_stratum_ (plural: _strata_). The stratum boundary before `unique` ensures that all the values arrive before it executes, ensuring that all duplicates are eliminated. 
+_stratum_ (plural: _strata_). The stratum boundary before `unique` ensures that all the values are generated before `unique` executes, ensuring that all duplicates are eliminated. 
 
 Hydroflow runs each stratum
 in order, one at a time, ensuring all values are computed
 before moving on to the next stratum. Between strata we see a _handoff_, which logically buffers the 
 output of the first stratum, and delineates the separation of execution between the 2 strata.
 
-After all strata are run, Hydroflow returns to the first stratum; this begins the next _epoch_. This doesn't really matter for this example, but it is important for long-running Hydroflow services that accept input from the outside world.
+After all strata are run, Hydroflow returns to the first stratum; this begins the next _epoch_. This doesn't really matter for this example, but it is important for long-running Hydroflow services that accept input from the outside world. More on this topic in the chapter on [time](./time.md).
+
+Returning to the code, if you read the `pairs_send` calls carefully, you'll see that the example data 
+has vertices (`2`, `4`) that are more than one hop away from `0`, which were
+not output by our simple program. To extend this example to graph *reachability*, 
+we need to recurse: find neighbors of our neighbors, neighbors of our neighbors' neighbors, and so on. In Hydroflow,
+this is done by adding a loop to the flow, as we'll see in our [next example](example_5_reachability.md).
+
