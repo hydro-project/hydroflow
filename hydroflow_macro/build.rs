@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 
 use quote::ToTokens;
 
-use hydroflow_lang::graph::ops::OPERATORS;
+use hydroflow_lang::graph::ops::{PortListSpec, OPERATORS};
 
 const FILENAME: &str = "surface_ops.gen.md";
 
@@ -58,8 +58,10 @@ fn main() -> Result<(), Box<dyn Error>> {
             op.soft_range_inn.human_string(),
             if op.soft_range_inn.contains(&0) {
                 ""
-            } else {
+            } else if op.soft_range_inn.contains(&1) {
                 "-> "
+            } else {
+                "-> [<input_port>]"
             },
             op.name,
             ('A'..)
@@ -70,8 +72,10 @@ fn main() -> Result<(), Box<dyn Error>> {
                 .unwrap_or(""),
             if op.soft_range_out.contains(&0) {
                 ""
-            } else {
+            } else if op.soft_range_out.contains(&1) {
                 " ->"
+            } else {
+                "[<output_port>] ->"
             },
             op.hard_range_out.human_string(),
             op.soft_range_out.human_string(),
@@ -79,28 +83,40 @@ fn main() -> Result<(), Box<dyn Error>> {
         writeln!(write)?;
 
         if let Some(f) = op.ports_inn {
-            writeln!(
-                write,
-                "> Input port names: {}  ",
-                (f)()
-                    .into_iter()
-                    .map(|idx| format!("`{}`, ", idx.into_token_stream()))
-                    .collect::<String>()
-                    .strip_suffix(", ")
-                    .unwrap_or("&lt;EMPTY&gt;")
-            )?;
+            match (f)() {
+                PortListSpec::Fixed(port_names) => writeln!(
+                    write,
+                    "> Input port names: {}  ",
+                    port_names
+                        .into_iter()
+                        .map(|idx| format!("`{}`, ", idx.into_token_stream()))
+                        .collect::<String>()
+                        .strip_suffix(", ")
+                        .unwrap_or("&lt;EMPTY&gt;")
+                )?,
+                PortListSpec::Variadic => writeln!(
+                    write,
+                    "> Input port names: Variadic, as specified in arguments."
+                )?,
+            }
         }
         if let Some(f) = op.ports_out {
-            writeln!(
-                write,
-                "> Output port names: {}  ",
-                (f)()
-                    .into_iter()
-                    .map(|idx| format!("`{}`, ", idx.into_token_stream()))
-                    .collect::<String>()
-                    .strip_suffix(", ")
-                    .unwrap_or("&lt;EMPTY&gt;")
-            )?;
+            match (f)() {
+                PortListSpec::Fixed(port_names) => writeln!(
+                    write,
+                    "> Output port names: {}  ",
+                    port_names
+                        .into_iter()
+                        .map(|idx| format!("`{}`, ", idx.into_token_stream()))
+                        .collect::<String>()
+                        .strip_suffix(", ")
+                        .unwrap_or("&lt;EMPTY&gt;")
+                )?,
+                PortListSpec::Variadic => writeln!(
+                    write,
+                    "> Output port names: Variadic, as specified in arguments."
+                )?,
+            }
         }
         writeln!(write)?;
 
