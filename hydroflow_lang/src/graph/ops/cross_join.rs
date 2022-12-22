@@ -23,7 +23,7 @@ pub const CROSS_JOIN: OperatorConstraints = OperatorConstraints {
     soft_range_inn: &(2..=2),
     hard_range_out: RANGE_1,
     soft_range_out: RANGE_1,
-    ports_inn: Some(&(|| parse_quote! { 0, 1 })),
+    ports_inn: Some(&(|| super::PortListSpec::Fixed(parse_quote! { 0, 1 }))),
     ports_out: None,
     num_args: 0,
     input_delaytype_fn: &|_| None,
