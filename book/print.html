@@ -1800,7 +1800,7 @@ Here we document each operators in more detail. Most of these operators
 are based on the Rust equivalents for iterators; see the <a href="https://doc.rust-lang.org/std/iter/trait.Iterator.html">Rust documentation</a>.</p>
 <h2 id="cross_join"><a class="header" href="#cross_join"><code>cross_join</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
-<tr><td><span title="exactly 2">exactly 2</span></td><td><code>-&gt; cross_join() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
+<tr><td><span title="exactly 2">exactly 2</span></td><td><code>-&gt; [&lt;input_port&gt;]cross_join() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
 </tbody></table>
 </div>
 <blockquote>
@@ -1827,12 +1827,16 @@ my_join -&gt; for_each(|(v1, v2)| println!(&quot;({}, {})&quot;, v1, v2));
 </span></code></pre></pre>
 <h2 id="demux"><a class="header" href="#demux"><code>demux</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
-<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; demux(A) -&gt;</code></td><td><span title="at least 2">at least 2</span></td></tr>
+<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; demux(A)[&lt;output_port&gt;] -&gt;</code></td><td><span title="at least 2">at least 2</span></td></tr>
 </tbody></table>
-</div><!-- GENERATED "hydroflow_lang/src/graph/ops/demux.rs" -->
+</div>
+<blockquote>
+<p>Output port names: Variadic, as specified in arguments.</p>
+</blockquote>
+<!-- GENERATED "hydroflow_lang/src/graph/ops/demux.rs" -->
 <blockquote>
 <p>Arguments: A Rust closure, the first argument is a received item and the
-second argument is a <a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/macro.var_args.html"><code>var_args!</code> tuple list</a>
+second argument is a variadic <a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/macro.var_args.html"><code>var_args!</code> tuple list</a>
 where each item name is an output port.</p>
 </blockquote>
 <p>Takes the input stream and allows the user to determine what elemnt(s) to
@@ -1964,7 +1968,7 @@ assert_eq!(b&quot;helloworld&quot;, &amp;*buf);
 </span></code></pre></pre>
 <h2 id="difference"><a class="header" href="#difference"><code>difference</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
-<tr><td><span title="exactly 2">exactly 2</span></td><td><code>-&gt; difference() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
+<tr><td><span title="exactly 2">exactly 2</span></td><td><code>-&gt; [&lt;input_port&gt;]difference() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
 </tbody></table>
 </div>
 <blockquote>
@@ -2206,7 +2210,7 @@ anti-pattern to provide a closure with side effects.</p>
 </span></code></pre></pre>
 <h2 id="join"><a class="header" href="#join"><code>join</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
-<tr><td><span title="exactly 2">exactly 2</span></td><td><code>-&gt; join() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
+<tr><td><span title="exactly 2">exactly 2</span></td><td><code>-&gt; [&lt;input_port&gt;]join() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
 </tbody></table>
 </div>
 <blockquote>
@@ -2258,7 +2262,7 @@ each item use the <a href="surface_ops.gen.html#inspect"><code>inspect</code></a
 </span></code></pre></pre>
 <h2 id="merge"><a class="header" href="#merge"><code>merge</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
-<tr><td><span title="at least 0">at least 2</span></td><td><code>-&gt; merge() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
+<tr><td><span title="at least 0">at least 2</span></td><td><code>-&gt; [&lt;input_port&gt;]merge() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td></tr>
 </tbody></table>
 </div><!-- GENERATED "hydroflow_lang/src/graph/ops/merge.rs" -->
 <blockquote>
@@ -2529,7 +2533,7 @@ elements it receives downstream.</p>
 </span></code></pre></pre>
 <h2 id="tee"><a class="header" href="#tee"><code>tee</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
-<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; tee() -&gt;</code></td><td><span title="at least 0">at least 2</span></td></tr>
+<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; tee()[&lt;output_port&gt;] -&gt;</code></td><td><span title="at least 0">at least 2</span></td></tr>
 </tbody></table>
 </div><!-- GENERATED "hydroflow_lang/src/graph/ops/tee.rs" -->
 <blockquote>
@@ -2576,7 +2580,7 @@ source_iter(vec![1, 1, 2, 3, 2, 1, 3])
 </span></code></pre></pre>
 <h2 id="unzip"><a class="header" href="#unzip"><code>unzip</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th></tr></thead><tbody>
-<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; unzip() -&gt;</code></td><td><span title="exactly 2">exactly 2</span></td></tr>
+<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; unzip()[&lt;output_port&gt;] -&gt;</code></td><td><span title="exactly 2">exactly 2</span></td></tr>
 </tbody></table>
 </div>
 <blockquote>
