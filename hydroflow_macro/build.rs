@@ -9,8 +9,6 @@ use std::path::{Path, PathBuf};
 use quote::ToTokens;
 
 use hydroflow_lang::graph::ops::{DelayType, PortListSpec, OPERATORS};
-use hydroflow_lang::graph::PortIndexValue;
-use hydroflow_lang::parse::PortIndex;
 
 const FILENAME: &str = "surface_ops.gen.md";
 
@@ -87,20 +85,24 @@ fn main() -> Result<(), Box<dyn Error>> {
         if let Some(f) = op.ports_inn {
             input_str_maybe = Some(match (f)() {
                 PortListSpec::Fixed(port_names) => {
-                    port_names.iter().for_each(|port| {
-                        let port_ix = match port.clone() {
-                            PortIndex::Int(x) => PortIndexValue::Int(x),
-                            PortIndex::Path(x) => PortIndexValue::Path(x),
-                        };
-                        if let Some(DelayType::Stratum) = (op.input_delaytype_fn)(&port_ix) {
-                            blocking = true;
-                        }
-                    });
                     format!(
                         "> Input port names: {}  ",
                         port_names
                             .into_iter()
-                            .map(|idx| format!("`{}`, ", idx.into_token_stream()))
+                            .map(|idx| {
+                                let port_ix = idx.clone().into();
+                                let flow_str = if Some(DelayType::Stratum)
+                                    == (op.input_delaytype_fn)(&port_ix)
+                                {
+                                    blocking = true;
+                                    "blocking"
+                                } else {
+                                    "streaming"
+                                };
+                                let idx_str =
+                                    format!("`{}` ({}), ", idx.into_token_stream(), flow_str);
+                                format!("{}", idx_str)
+                            })
                             .collect::<String>()
                             .strip_suffix(", ")
                             .unwrap_or("&lt;EMPTY&gt;")
