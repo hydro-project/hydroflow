@@ -21,7 +21,7 @@ Hydroflow is a library that can be used in any Rust program. It includes two mai
 2. A domain-specific language (DSL) for specifying dataflow programs. (The Hydroflow *surface syntax*.) 
 
 Hydroflow's surface syntax must be embedded in a Rust program; the Rust compiler takes that Hydroflow syntax and 
-compiles it into an efficient binary executable we call a Hydroflow *spinner*.
+compiles it into an efficient binary executable. We call a running Hydroflow binary a *spinner*.
 
 In typical usage, a developer writes a spinner as a single-threaded Rust program that is mostly composed of 
 Hydroflow surface syntax. Each spinner is typically responsible for a single 
@@ -34,7 +34,7 @@ which send and receive flows of data to each other.
 > Higher-level languages are being built on top of Hydroflow to generate 
 > distributed code in the form of multiple spinners. 
 > Meanwhile, you can use Hydroflow to write your own distributed code, by writing individual spinners that work together, 
-> and deploying them with a tool like [Hydroplane](https://github.com/hydro-project/hydroplane). See the [Hydro Ecosystem](./ecosystem.md) for more on this.
+> and deploying them manually or with a tool like [Hydroplane](https://github.com/hydro-project/hydroplane). See the [Hydro Ecosystem](./ecosystem.md) for more on this.
 
 ### So how might a human write distributed systems with Hydroflow?
 As an illustration of how you can work at the Hydroflow layer, consider the 
@@ -45,7 +45,19 @@ If you run that binary with the argument `--role client` it will start a spinner
 forwards chat messages from stdin to the server, and prints out messages sent by the server. As a distributed system, the chat 
 service would typically consist of many client spinners and a single server spinner.
 
-Note that this is an example of an extremely simple distributed system in a "star" or "hub-and spokes" topology: the multiple client spinners are completely independent of each other, and each talks only with the central server spinner. **A figure here would be nice**. If we wanted something more interesting, we could consider deploying a cluster of multiple server spinners, say for fault tolerance or geo-distribution. We'd need to change the code to take advantage of the many servers in a correct and reliable manner. But that's a topic for another section; for now, let's stay focused on the basics. 
+Note that this is an example of an extremely simple distributed system in a "star" or "hub-and spokes" topology: the multiple client spinners are completely independent of each other, and each talks only with the central server spinner. 
+
+```mermaid
+graph TD;
+    Client1---S((Server));
+    Client2---S;
+    Client3---S;
+    S---Client4;
+    S---Client5;
+    S---Client6;
+```
+
+ If we wanted something more interesting, we could consider deploying a cluster of multiple server spinners, say for fault tolerance or geo-distribution. We'd need to change the code to take advantage of the many servers in a correct and reliable manner. But that's a topic for another section; for now, let's stay focused on the basics. 
 
 ## The Life and Times of a Hydroflow Spinner
 Like most reactive services, we can envision a Hydroflow spinner running as an unbounded loop that is managed 
@@ -60,7 +72,7 @@ The spinner's main loop works as follows:
 3. Advance the local clock before starting the next tick.
 
 The spinner's main loop is shown in the following diagram:
-**Diagram goes here**
+**TODO**
 
 In sum, an individual spinner advances sequentially through logical time; in each tick of its clock it ingests a batch of data from its inbound channels, executes the Hydroflow spec, and sends any outbound data to its outbound channels.
 ### Blocking Operators, Ticks and Strata
