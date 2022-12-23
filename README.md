@@ -6,20 +6,6 @@ See the [Github Pages index](https://hydro-project.github.io/hydroflow/) for mor
 
 Read the [Hydroflow Book](https://hydro-project.github.io/hydroflow/book/).
 
-## Dev Setup
-See the [setup section of the book](https://hydro-project.github.io/hydroflow/book/setup.html).
-
-## mdBook Setup
-
-[The Hydroflow Book](https://hydro-project.github.io/hydroflow/book/) is generated using [mdBook](https://rust-lang.github.io/mdBook/). To install `mdbook` and dependencies:
-```bash, ignore
-cargo install mdbook mdbook-mermaid mdbook-linkcheck
-```
-The book can then be viewed locally with a web browser by running the following from the project root.
-```bash, ignore
-mdbook serve --open
-```
-
 ## Start with a Template Program
 We provide a `cargo-generate` template for you to get started from a simple working example.
 
@@ -52,3 +38,17 @@ The `scripts/multiplatform-docker-build.sh <image name>` script will build both 
 
 Example binaries are located in `/usr/src/myapp`.
 
+## Dev Setup
+
+See the [setup section of the book](https://hydro-project.github.io/hydroflow/book/setup.html).
+
+### mdBook Setup
+
+[The Hydroflow Book](https://hydro-project.github.io/hydroflow/book/) is generated using [mdBook](https://rust-lang.github.io/mdBook/). To install `mdbook` and dependencies:
+```bash, ignore
+cargo install mdbook mdbook-mermaid mdbook-linkcheck
+```
+The book can then be viewed locally with a web browser by running the following from the project root.
+```bash, ignore
+mdbook serve --open
+```
