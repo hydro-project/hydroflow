@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 
 use quote::ToTokens;
 
-use hydroflow_lang::graph::ops::{PortListSpec, OPERATORS};
+use hydroflow_lang::graph::ops::{DelayType, PortListSpec, OPERATORS};
 
 const FILENAME: &str = "surface_ops.gen.md";
 
@@ -49,10 +49,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     for op in ops {
         writeln!(write, "## `{}`", op.name)?;
 
-        writeln!(write, "| Inputs | Syntax | Outputs |")?;
-        writeln!(write, "| ------ | ------ | ------- |")?;
-        writeln!(
-            write,
+        writeln!(write, "| Inputs | Syntax | Outputs | Flow |")?;
+        writeln!(write, "| ------ | ------ | ------- | ---- |")?;
+        let metadata_str = format!(
             "| <span title={:?}>{}</span> | `{}{}({}){}` | <span title={:?}>{}</span> |",
             op.hard_range_inn.human_string(),
             op.soft_range_inn.human_string(),
@@ -79,31 +78,43 @@ fn main() -> Result<(), Box<dyn Error>> {
             },
             op.hard_range_out.human_string(),
             op.soft_range_out.human_string(),
-        )?;
-        writeln!(write)?;
+        );
 
+        let mut blocking = false;
+        let mut input_str_maybe = None;
         if let Some(f) = op.ports_inn {
-            match (f)() {
-                PortListSpec::Fixed(port_names) => writeln!(
-                    write,
-                    "> Input port names: {}  ",
-                    port_names
-                        .into_iter()
-                        .map(|idx| format!("`{}`, ", idx.into_token_stream()))
-                        .collect::<String>()
-                        .strip_suffix(", ")
-                        .unwrap_or("&lt;EMPTY&gt;")
-                )?,
-                PortListSpec::Variadic => writeln!(
-                    write,
-                    "> Input port names: Variadic, as specified in arguments."
-                )?,
-            }
+            input_str_maybe = Some(match (f)() {
+                PortListSpec::Fixed(port_names) => {
+                    format!(
+                        "> Input port names: {}  ",
+                        port_names
+                            .into_iter()
+                            .map(|idx| {
+                                let port_ix = idx.clone().into();
+                                let flow_str = if Some(DelayType::Stratum)
+                                    == (op.input_delaytype_fn)(&port_ix)
+                                {
+                                    blocking = true;
+                                    "blocking"
+                                } else {
+                                    "streaming"
+                                };
+                                format!("`{}` ({}), ", idx.into_token_stream(), flow_str)
+                            })
+                            .collect::<String>()
+                            .strip_suffix(", ")
+                            .unwrap_or("&lt;EMPTY&gt;")
+                    )
+                }
+                PortListSpec::Variadic => {
+                    "> Input port names: Variadic, as specified in arguments.".to_string()
+                }
+            })
         }
+        let mut output_str_maybe = None;
         if let Some(f) = op.ports_out {
-            match (f)() {
-                PortListSpec::Fixed(port_names) => writeln!(
-                    write,
+            output_str_maybe = Some(match (f)() {
+                PortListSpec::Fixed(port_names) => format!(
                     "> Output port names: {}  ",
                     port_names
                         .into_iter()
@@ -111,12 +122,20 @@ fn main() -> Result<(), Box<dyn Error>> {
                         .collect::<String>()
                         .strip_suffix(", ")
                         .unwrap_or("&lt;EMPTY&gt;")
-                )?,
-                PortListSpec::Variadic => writeln!(
-                    write,
-                    "> Output port names: Variadic, as specified in arguments."
-                )?,
-            }
+                ),
+                PortListSpec::Variadic => {
+                    "> Output port names: Variadic, as specified in arguments.".to_string()
+                }
+            })
+        }
+        let flow_str = if blocking { "Blocking" } else { "Streaming" };
+        writeln!(write, "{}{} |", metadata_str, flow_str)?;
+        writeln!(write)?;
+        if let Some(input_str) = input_str_maybe {
+            writeln!(write, "{}", input_str)?;
+        }
+        if let Some(output_str) = output_str_maybe {
+            writeln!(write, "{}", output_str)?;
         }
         writeln!(write)?;
 
