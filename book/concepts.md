@@ -138,6 +138,7 @@ Hydroflow uses the monotonicity property to determine whether an operator should
 
 Monotonicity turns out to be particularly important for distributed systems. In particular, if all your spinners are fully monotone across ticks, then they can run in parallel without any coordination—they will always stream correct prefixes of the final outputs, and eventually will deliver the complete output. 
 
+## Hydroflow: A DSL and a Runtime Library
 ### Dataflow and Networking
 
 Conventionally, dataflow systems provide a way to analyze and process data by
@@ -161,7 +162,11 @@ sockets.
 ### Models of Parallelism
 ### WIP: Lattices at the Core
 
+## Architecture and Execution Model
+### Per-Tick: Fix Points and Strata
+
 ### Across Ticks: Time and State
 
 ## A Note: Time, Distributed Systems and Hydroflow
 ## 
+
