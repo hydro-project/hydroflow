@@ -165,5 +165,3 @@ sockets.
 
 ## A Note: Time, Distributed Systems and Hydroflow
 ## 
-
-[spinner]: cell
