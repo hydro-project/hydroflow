@@ -15,6 +15,8 @@
   - [Networked Services 1: EchoServer](./example_7_echo_server.md)
   - [Networked Services 2: ChatServer](./example_8_chat_server.md)
 - [Concepts](./concepts.md)
+  - [Life and Times of Hydroflow](./life_and_times.md)
+  - [Blocking Ops and Stratification](./stratification.md)
 - [The Hydro Ecosystem](./ecosystem.md)
 - [Syntax](./surface_syntax.md)
   - [Rust Embedding](./surface_embedding.md)
@@ -28,3 +30,4 @@
 - [State and Lifetimes](./state.md)
 - [Debugging](./debugging.md)
 - [Error Handling](./error_handling.md)
+- [FAQ](./faq.md)

@@ -75,7 +75,7 @@ Hydroflow surface syntax defines a "flow" consisting of *operators* connected vi
 This simplest example uses a simple two-step linear flow.
 It starts with a [`source_iter`](./surface_ops.gen.md#source_iter) operator that takes the Rust
 iterator `0..10` and iterates it to emit the 
-numbers 0 through 9. That operators then passes those numbers along the `->` arrow downstream to a 
+numbers 0 through 9. That operator then passes those numbers along the `->` arrow downstream to a 
 [`for_each`](./surface_ops.gen.md#for_each) operator that invokes its closure argument to print each
 item passed in.
 
@@ -84,7 +84,6 @@ until we run it.
 We run the flow from within Rust via the [`run_available()` method](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_available).
 ```rust,ignore
     flow.run_available();
-}
 ```
 Note that `run_available()` runs the Hydroflow graph until no more work is immediately
 available. In this example flow, running the graph drains the iterator completely, so no
@@ -94,4 +93,4 @@ network ingress, in which case more work might appear at any time.
 ### A Note on Project Structure
 The template project is intended to be a starting point for your own Hydroflow project, and you can add files and directories as you see fit. The only requirement is that the `src/main.rs` file exists and contains a `main()` function.
 
-In this simplest example we did not use a number of the files in the template: notably everything in the `src/` subdirectory other than `src/main.rs`. If you'd like to delete those extraneous files you can do so, but it's not necessary. 
+In this simplest example we did not use a number of the files in the template: notably everything in the `src/` subdirectory other than `src/main.rs`. If you'd like to delete those extraneous files you can do so, but it's not necessary, and we'll use them in subsequent examples. 
