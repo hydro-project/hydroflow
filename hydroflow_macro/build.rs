@@ -99,9 +99,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                                 } else {
                                     "streaming"
                                 };
-                                let idx_str =
-                                    format!("`{}` ({}), ", idx.into_token_stream(), flow_str);
-                                format!("{}", idx_str)
+                                format!("`{}` ({}), ", idx.into_token_stream(), flow_str)
                             })
                             .collect::<String>()
                             .strip_suffix(", ")
@@ -109,7 +107,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     )
                 }
                 PortListSpec::Variadic => {
-                    format!("> Input port names: Variadic, as specified in arguments.")
+                    "> Input port names: Variadic, as specified in arguments.".to_string()
                 }
             })
         }
@@ -126,7 +124,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                         .unwrap_or("&lt;EMPTY&gt;")
                 ),
                 PortListSpec::Variadic => {
-                    format!("> Output port names: Variadic, as specified in arguments.")
+                    "> Output port names: Variadic, as specified in arguments.".to_string()
                 }
             })
         }
