@@ -177,7 +177,7 @@ in order, one at a time, ensuring all values are computed
 before moving on to the next stratum. Between strata we see a _handoff_, which logically buffers the 
 output of the first stratum, and delineates the separation of execution between the 2 strata.
 
-After all strata are run, Hydroflow returns to the first stratum; this begins the next _tick_. This doesn't really matter for this example, but it is important for long-running Hydroflow services that accept input from the outside world. More on this topic in the chapter on [time](./time.md).
+After all strata are run, Hydroflow returns to the first stratum; this begins the next _tick_. This doesn't really matter for this example, but it is important for long-running Hydroflow services that accept input from the outside world. More on this topic in the chapter on [time](./life_and_times.md).
 
 Returning to the code, if you read the `pairs_send` calls carefully, you'll see that the example data 
 has vertices (`2`, `4`) that are more than one hop away from `0`, which were
