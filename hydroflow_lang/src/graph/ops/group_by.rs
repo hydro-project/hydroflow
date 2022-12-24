@@ -1,9 +1,10 @@
 use super::{
-    parse_persistence_lifetimes, DelayType, OperatorConstraints, OperatorWriteOutput, Persistence,
-    WriteContextArgs, WriteIteratorArgs, RANGE_1,
+    parse_generic_types, parse_persistence_lifetimes, DelayType, OperatorConstraints,
+    OperatorWriteOutput, Persistence, WriteContextArgs, WriteIteratorArgs, RANGE_1,
 };
 
 use quote::quote_spanned;
+use syn::spanned::Spanned;
 
 use crate::diagnostic::{Diagnostic, Level};
 
@@ -24,6 +25,9 @@ use crate::diagnostic::{Diagnostic, Level};
 /// aggregated with pairs arriving in later ticks. When not explicitly specified persistence
 /// defaults to `static.
 ///
+/// `group_by` can also be provided with two type arguments, the key and value type. This is
+/// required when using `'static` persistence if the compiler cannot infer the types.
+///
 /// ```hydroflow
 /// source_iter([("toy", 1), ("toy", 2), ("shoe", 11), ("shoe", 35), ("haberdashery", 7)])
 ///     -> group_by(|| 0, |old: &mut u32, val: u32| *old += val)
@@ -35,7 +39,7 @@ use crate::diagnostic::{Diagnostic, Level};
 /// let (input_send, input_recv) = hydroflow::util::unbounded_channel::<(&str, &str)>();
 /// let mut flow = hydroflow::hydroflow_syntax! {
 ///     source_stream(input_recv)
-///         -> group_by::<'tick>(|| String::new(), |old: &mut String, val: &str| {
+///         -> group_by::<'tick, &str, String>(String::new, |old: &mut _, val| {
 ///             *old += val;
 ///             *old += ", ";
 ///         })
@@ -67,6 +71,7 @@ pub const GROUP_BY: OperatorConstraints = OperatorConstraints {
                  wi @ &WriteIteratorArgs {
                      ident,
                      inputs,
+                     generic_args,
                      arguments,
                      is_pull,
                      op_name,
@@ -75,13 +80,15 @@ pub const GROUP_BY: OperatorConstraints = OperatorConstraints {
                  diagnostics| {
         assert!(is_pull);
 
+        let generics_span = generic_args.map(Spanned::span).unwrap_or(op_span);
+
         let persistence = parse_persistence_lifetimes(wi, diagnostics);
         let persistence = match *persistence {
             [] => Persistence::Static,
             [a] => a,
             _ => {
                 diagnostics.push(Diagnostic::spanned(
-                    op_span,
+                    generics_span,
                     Level::Error,
                     format!(
                         "Operator `{}` expects zero or one persistence lifetime generic arguments",
@@ -91,6 +98,16 @@ pub const GROUP_BY: OperatorConstraints = OperatorConstraints {
                 Persistence::Static
             }
         };
+
+        let mut generic_type_args = parse_generic_types(wi);
+        if !generic_type_args.is_empty() && 2 != generic_type_args.len() {
+            diagnostics.push(Diagnostic::spanned(
+                generics_span,
+                Level::Error,
+                format!("Operator `{}` expects zero or two type arguments", op_name),
+            ));
+            generic_type_args.clear();
+        }
 
         let input = &inputs[0];
         let initfn = &arguments[0];
@@ -104,9 +121,9 @@ pub const GROUP_BY: OperatorConstraints = OperatorConstraints {
                     let #ident = {
                         #[inline(always)]
                         fn check_input<Iter: ::std::iter::Iterator<Item = (A, B)>, A, B>(iter: Iter) -> impl ::std::iter::Iterator<Item = (A, B)> { iter }
-                        check_input(#input).fold(::std::collections::HashMap::new(), |mut ht, (key, val)| {
-                            let entry = ht.entry(key).or_insert_with(#initfn);
-                            #[allow(clippy::redundant_closure_call)] (#aggfn)(entry, val);
+                        check_input(#input).fold(::std::collections::HashMap::<#( #generic_type_args ),*>::new(), |mut ht, kv| {
+                            let entry = ht.entry(kv.0).or_insert_with(#initfn);
+                            #[allow(clippy::redundant_closure_call)] (#aggfn)(entry, kv.1);
                             ht
                         }).into_iter()
                     };
@@ -114,7 +131,7 @@ pub const GROUP_BY: OperatorConstraints = OperatorConstraints {
             ),
             Persistence::Static => (
                 quote_spanned! {op_span=>
-                    let #groupbydata_ident = df.add_state(::std::cell::RefCell::new(::std::collections::HashMap::new()));
+                    let #groupbydata_ident = df.add_state(::std::cell::RefCell::new(::std::collections::HashMap::<#( #generic_type_args ),*>::new()));
                 },
                 quote_spanned! {op_span=>
                     let #ident = {
@@ -123,16 +140,16 @@ pub const GROUP_BY: OperatorConstraints = OperatorConstraints {
                         fn check_input<Iter: ::std::iter::Iterator<Item = (A, B)>, A: ::std::clone::Clone, B: ::std::clone::Clone>(iter: Iter)
                             -> impl ::std::iter::Iterator<Item = (A, B)> { iter }
                         let mut any = false;
-                        for (key, val) in check_input(#input) {
+                        for kv in check_input(#input) {
                             any = true;
-                            let entry = ht.entry(key).or_insert_with(#initfn);
-                            #[allow(clippy::redundant_closure_call)] (#aggfn)(entry, val);
+                            let entry = ht.entry(kv.0).or_insert_with(#initfn);
+                            #[allow(clippy::redundant_closure_call)] (#aggfn)(entry, kv.1);
                         }
                         ::std::iter::IntoIterator::into_iter(
                             if any {
                                 // TODO(mingwei): extra collect here, could be avoided by keeping the `BorrowMut` alive (risky?).
                                 ht.iter()
-                                    .map(#[allow(clippy::clone_on_copy)] |(k, v)| (k.clone(), v.clone()))
+                                    .map(#[allow(clippy::clone_on_copy, clippy::clone_double_ref)] |(k, v)| (k.clone(), v.clone()))
                                     .collect::<::std::vec::Vec::<_>>()
                             }
                             else {

@@ -12,3 +12,6 @@ serde = "1.0.1"
 serde_json = "1.0.8"
 slotmap = { version = "1.0.6", features = ["serde"] }
 syn = { version = "1.0.0", features = [ "extra-traits", "full", "parsing" ] }
+
+[dev-dependencies]
+prettyplease = "0.1.22"
