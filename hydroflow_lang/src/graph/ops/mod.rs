@@ -6,7 +6,7 @@ use quote::quote_spanned;
 use slotmap::Key;
 use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
-use syn::{Expr, GenericArgument, Token};
+use syn::{Expr, GenericArgument, Token, Type};
 
 use crate::diagnostic::{Diagnostic, Level};
 use crate::parse::PortIndex;
@@ -292,12 +292,32 @@ pub enum Persistence {
     Static,
 }
 
+pub fn parse_generic_types<'a>(
+    &WriteIteratorArgs { generic_args, .. }: &WriteIteratorArgs<'a>,
+) -> Vec<&'a Type> {
+    if let Some(generic_args) = generic_args {
+        generic_args
+            .iter()
+            .skip_while(|generic_arg| matches!(generic_arg, GenericArgument::Lifetime(_)))
+            .map_while(|generic_arg| {
+                if let GenericArgument::Type(ty) = generic_arg {
+                    Some(ty)
+                } else {
+                    None
+                }
+            })
+            .collect()
+    } else {
+        Vec::new()
+    }
+}
+
 pub fn parse_persistence_lifetimes(
     &WriteIteratorArgs { generic_args, .. }: &WriteIteratorArgs,
     diagnostics: &mut Vec<Diagnostic>,
 ) -> Vec<Persistence> {
     if let Some(generic_args) = generic_args {
-        return generic_args
+        generic_args
             .iter()
             .map_while(|generic_arg| {
                 if let GenericArgument::Lifetime(lifetime) = generic_arg {
@@ -317,7 +337,8 @@ pub fn parse_persistence_lifetimes(
                     None
                 }
             })
-            .collect();
+            .collect()
+    } else {
+        Vec::new()
     }
-    Vec::new()
 }

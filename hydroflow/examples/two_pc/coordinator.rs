@@ -57,22 +57,16 @@ pub(crate) async fn run_coordinator(
             -> [1]broadcast;
 
         // count commit votes
-        // persistence done explicitly here!
-        commit_buf = merge();
-        commit_votes = tee();
-        msgs[commits]
-            -> map(|m:SubordResponse| (m.xid, 1)) -> [0]commit_buf;
-        commit_buf
-            -> group_by(|| 0, |old: &mut u32, val: u32| *old += val)
-            -> commit_votes;
-        commit_votes[0] -> next_tick() -> [1]commit_buf;
+        commit_votes = msgs[commits]
+            -> map(|m: SubordResponse| (m.xid, 1))
+            -> group_by::<'static, u16, u32>(|| 0, |acc: &mut _, val| *acc += val);
 
         // count subordinates
         subord_total = subords[0] -> fold(0, |a,_b| a+1); // -> for_each(|n| println!("There are {} subordinates.", n));
 
         // If commit_votes for this xid is the same as all_votes, send a P2 Commit message
         committed = join() -> map(|(_c, (xid, ()))| xid);
-        commit_votes[1] -> map(|(xid, c)| (c, xid)) -> [0]committed;
+        commit_votes -> map(|(xid, c)| (c, xid)) -> [0]committed;
         subord_total -> map(|c| (c, ())) -> [1]committed;
         committed -> map(|xid| CoordMsg{xid, mtype: MsgType::Commit}) -> [2]broadcast;
 
