@@ -1,22 +1,52 @@
 # TODO
 
 ## Concepts
-- Big Picture Architecture: A low-level framework. Threads (actors) communicating async via channels. No global constructs in Hydroflow. No SPMD assumptions.
-- Hydroflow and Rust: how do they go together?
+- p1 (Mingwei) Hydroflow and Rust: how do they go together?
     - State, control, scoping
-- Time
-    - The Hydroflow event loop and Ticks. local clock
-    - Assembling a global vector clock
-- Fix points and Strata
-- State over time
+- p1 State over time
     - lifetimes
     - explicit deletion
-- Coordination tricks?
+- p3 Coordination tricks?
     - End-of-stream to Distributed EOS?
 
 ## Docs
-- `hydroflow` struct and its methods
-- Review the ops docs
+- p1 `hydroflow` struct and its methods
+- p2 Review the ops docs
+
+## Operators not discussed
+    - dest_sink
+    - identity
+    - repeat_iter
+    - unzip
+    - p1 *fold* -- add to chapter on [state](state.md)
+    - p1 *reduce* -- add to chapter on [state](state.md)
+    - p1 *group_by* -- add to chapter on [state](state.md)
+    - p3 *sort_by* -- add to chapter on [state](state.md)
+    - p2 *next_stratum* -- add to chapter on [time](time.md)
+    - p2 *next_tick* -- add to chapter on [time](time.md)
+    - p2 *inspect* -- add to chapter on [debugging](debugging.md)
+    - p2 *null* -- add to chapter on [debugging](debugging.md)
+
+## How-Tos and Examples
+- p1 Lamport clocks
+- p2 Vector clocks
+- p2 A partitioned Service
+- p2 A replicated Service
+- p2 Interfacing with external data
+- p2 Interfacing with external services
+- p1 Illustrate `'static` and `'tick` lifetimes (KVS)
+- p3 Illustrate the `next_stratum` operator for atomicity (eg Bloom's upsert `<+-` operator)
+- p3 Illustrate ordered streams (need `zip` operator ... what's the example?)
+- p3 Actor model implementation (Borrow an Akka or Ray Actors example?)
+- p3 Futures emulation? (Borrow a Ray example)
+- p2 Illustrate external storage source and sink (e.g. for WAL of KVS)
+
+## Odds and ends taken out of other chapters
+- **Document the methods on the `hydroflow` struct** -- especially the run methods.
+    -  The [`run_tick()`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_tick), [`run_stratum()`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_stratum), [`run()`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run), and [`run_async()`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_async) methods provide other ways to control the graph execution.
+    - Also `run_available()` `next_stratum()` and `recv_events` are important
+
+- **Make sure `src/examples/echoserver` is the same as the template project** -- or better, find a way to do that via github actions or a github submodule
 
 ## What's covered in examples
 - Concepts covered
@@ -55,43 +85,3 @@
     - source_stream_serde
     - tee
     - unique
-
-- Operators not discussed
-    - dest_sink
-    - identity
-    - repeat_iter
-    - unzip
-    - *fold* -- add to chapter on [state](state.md)
-    - *reduce* -- add to chapter on [state](state.md)
-    - *group_by* -- add to chapter on [state](state.md)
-    - *sort* -- add to chapter on [state](state.md)
-    - *sort_by* -- add to chapter on [state](state.md)
-    - *next_stratum* -- add to chapter on [time](time.md)
-    - *next_tick* -- add to chapter on [time](time.md)
-    - *inspect* -- add to chapter on [debugging](debugging.md)
-    - *null* -- add to chapter on [debugging](debugging.md)
-
-## How-Tos
-- A partitioned Service
-- A replicated Service
-- Interfacing with external data
-- Interfacing with external services
-
-## Odds and ends taken out of other chapters
-- **Document the methods on the `hydroflow` struct** -- especially the run methods.
-    -  The [`run_tick()`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_tick), [`run_stratum()`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_stratum), [`run()`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run), and [`run_async()`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_async) methods provide other ways to control the graph execution.
-    - Also `run_available()` `next_stratum()` and `recv_events` are important
-- More generally, document the **Core API**
-
-- **Strata and Ticks** -- explain the concept of strata and ticks, and how they relate to the `run_tick()` and `run_stratum()` methods.
-
-- **Make sure `src/examples/echoserver` is the same as the template project** -- or better, find a way to do that via github actions or a github submodule
-
-## More Examples
-- Illustrate `'static` and `'tick` lifetimes (KVS)
-- Illustrate partitioning and replication (KVS)
-- Illustrate the `next_stratum` operator for atomicity (eg Bloom's upsert `<+-` operator)
-- Illustrate ordered streams (need `zip` operator ... what's the example?)
-- Actor model implementation (Borrow an Akka or Ray Actors example?)
-- Futures emulation? (Borrow a Ray example)
-- Illustrate external storage source and sink (e.g. for WAL of KVS)
