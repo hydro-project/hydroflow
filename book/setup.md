@@ -69,12 +69,17 @@ The template provides a simple working example of a Hydroflow program.
 As a sort of "hello, world" of distributed systems, it implements an "echo server" that
 simply echoes back the messages you sent it; it also implements a client to test the server. 
 We will replace the code in that example with our own, but it's a good idea to run it first to make sure everything is working.
+
+> We call a running Hydroflow binary a *spinner*.
+
+Start by running a spinner for the server:
 ```console
 % cargo run -- --role server
 Listening on 127.0.0.1:<port>
 Server live!
 ```
-Take note of the server's port number, and in a separate terminal, run the client:
+
+Take note of the server's port number, and in a separate terminal, start a client spinner:
 ```console
 % cd <project name>
 % cargo run -- --role client --server-addr 127.0.0.1:<port>
@@ -103,16 +108,17 @@ git clone git@github.com:hydro-project/hydroflow.git
 Hydroflow requires nightly Rust, but the repo is already configured for it via
 `rust-toolchain.toml`.
 
-We can then open the repo in VS Code or IDE of your choice. In VS Code, `rust-analyzer`
+You can then open the repo in VS Code or IDE of your choice. In VS Code, `rust-analyzer`
 will provide inline type and error messages, code completion, etc.
 
 To work with the repository, it's best to start with an "example", found in the
 [`hydroflow/examples` folder](https://github.com/hydro-project/hydroflow/tree/main/hydroflow/examples).
 These examples are included via the [`hydroflow/Cargo.toml` file](https://github.com/hydro-project/hydroflow/blob/main/hydroflow/Cargo.toml),
 so make sure to add your example there if you create a new one. The simplest
-example is [`graph_reachability`](https://github.com/hydro-project/hydroflow/blob/main/hydroflow/examples/graph_reachability/main.rs).
+example is the [`echo server`](https://github.com/hydro-project/hydroflow/blob/main/hydroflow/examples/echoserver/main.rs).
 
 The Hydroflow repository is set up as a [workspace](https://doc.rust-lang.org/book/ch14-03-cargo-workspaces.html),
 i.e. a repo containing a bunch of separate packages, `hydroflow` is just the
 main one. So if you want to work in a proper separate cargo package, you can
-create one and add it into the [root `Cargo.toml`](https://github.com/hydro-project/hydroflow/blob/main/Cargo.toml).
+create one and add it into the [root `Cargo.toml`](https://github.com/hydro-project/hydroflow/blob/main/Cargo.toml),
+much like the [provided template](https://github.com/hydro-project/hydroflow-template/blob/main/Cargo.toml).

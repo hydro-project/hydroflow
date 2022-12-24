@@ -31,15 +31,15 @@ pub fn main() {
 ```
 Let's take this one operator at a time, starting after the `source_iter` operator we saw in the previous example.
 
-- `-> map(|n| n * n)` transforms each element one-to-one as it flows through the subgraph.
+- `-> map(|n| n * n)` transforms each element individually as it flows through the subgraph.
 In this case, we square each number. 
-- Next, `-> filter(|&n| n > 10)` only keeps any squared numbers that are greater than 10.
+- Next, `-> filter(|&n| n > 10)` only passes along squared numbers that are greater than 10.
 
 - The subsequent `-> map(|n| (n..=n+1))` uses standard Rust syntax to convert each number `n` into a
 [`RangeInclusive`](https://doc.rust-lang.org/std/ops/struct.RangeInclusive.html)
 \[`n`, `n+1`\]. 
 
-- We then call `-> flatten()` to convert the ranges back
+- The `-> flatten()` operator converts the ranges back
 into a stream of the individual numbers which they contain.
 
 - Finally we use the now-familiar `for_each` operator to print each number.
@@ -62,8 +62,8 @@ Howdy 81
 Howdy 82
 ```
 
-## Rewriting with Combination Operators
-We can also express the same program with more aggressive use of combination operators like
+## Rewriting with Composite Operators
+We can also express the same program with more aggressive use of composite operators like
 [`filter_map()`](./surface_ops.gen.md#filtermap) and [`flat_map()`](./surface_ops.gen.md#flat_map). Hydroflow will compile these down to the same
 machine code.
 
