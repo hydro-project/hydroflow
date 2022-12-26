@@ -9,7 +9,7 @@ use super::{
     RANGE_1,
 };
 
-use proc_macro2::{Ident, TokenStream, TokenTree};
+use proc_macro2::{Ident, TokenTree};
 use quote::{quote, quote_spanned, ToTokens};
 use syn::spanned::Spanned;
 use syn::{Expr, Pat};
@@ -173,16 +173,12 @@ pub const DEMUX: OperatorConstraints = OperatorConstraints {
     }),
 };
 
-pub fn extract_closure_tokens(arg2: &Pat) -> TokenStream {
-    if let Pat::Macro(pat_macro) = arg2 {
+fn extract_closure_idents(arg2: &Pat) -> HashMap<Ident, usize> {
+    let tokens = if let Pat::Macro(pat_macro) = arg2 {
         pat_macro.mac.tokens.clone()
     } else {
         arg2.to_token_stream()
-    }
-}
-
-fn extract_closure_idents(arg2: &Pat) -> HashMap<Ident, usize> {
-    let tokens = extract_closure_tokens(arg2);
+    };
 
     let mut idents = HashMap::new();
     let mut stack: Vec<_> = tokens.into_iter().collect();
