@@ -44,17 +44,15 @@ fn find_subgraph_unionfind(
     nodes: &SlotMap<GraphNodeId, Node>,
     graph: &DiMulGraph<GraphNodeId, GraphEdgeId>,
     barrier_crossers: &SecondaryMap<GraphEdgeId, DelayType>,
+    node_color_map: &mut SecondaryMap<GraphNodeId, Option<Color>>,
 ) -> (UnionFind<GraphNodeId>, BTreeSet<GraphEdgeId>) {
     // Pre-calculate node colors.
-    let mut node_color: SecondaryMap<GraphNodeId, Option<Color>> = nodes
-        .keys()
-        .map(|node_id| {
-            let inn_degree = graph.degree_in(node_id);
-            let out_degree = graph.degree_out(node_id);
-            let op_color = node_color(&nodes[node_id], inn_degree, out_degree);
-            (node_id, op_color)
-        })
-        .collect();
+    nodes.keys().for_each(|node_id| {
+        let inn_degree = graph.degree_in(node_id);
+        let out_degree = graph.degree_out(node_id);
+        let op_color = node_color(&nodes[node_id], inn_degree, out_degree);
+        node_color_map[node_id] = op_color;
+    });
 
     let mut subgraph_unionfind: UnionFind<GraphNodeId> = UnionFind::with_capacity(nodes.len());
     // Will contain all edges which are handoffs. Starts out with all edges and
@@ -91,7 +89,7 @@ fn find_subgraph_unionfind(
                 continue;
             }
 
-            if can_connect_colorize(&mut node_color, src, dst) {
+            if can_connect_colorize(node_color_map, src, dst) {
                 // At this point we have selected this edge and its src & dst to be
                 // within a single subgraph.
                 subgraph_unionfind.union(src, dst);
@@ -160,6 +158,7 @@ fn make_subgraphs(
     ports: &mut SecondaryMap<GraphEdgeId, (PortIndexValue, PortIndexValue)>,
     graph: &mut DiMulGraph<GraphNodeId, GraphEdgeId>,
     barrier_crossers: &mut SecondaryMap<GraphEdgeId, DelayType>,
+    node_color: &mut SecondaryMap<GraphNodeId, Option<Color>>,
 ) -> (
     SecondaryMap<GraphNodeId, GraphSubgraphId>,
     SlotMap<GraphSubgraphId, Vec<GraphNodeId>>,
@@ -172,7 +171,7 @@ fn make_subgraphs(
     graph.assert_valid();
 
     let (subgraph_unionfind, handoff_edges) =
-        find_subgraph_unionfind(nodes, graph, barrier_crossers);
+        find_subgraph_unionfind(nodes, graph, barrier_crossers, node_color);
 
     // Insert handoffs between subgraphs (or on subgraph self-loop edges)
     for edge_id in handoff_edges {
@@ -469,9 +468,23 @@ impl TryFrom<FlatGraph> for PartitionedGraph {
 
         // Pairs of node IDs which cross stratums or ticks and therefore cannot be in the same subgraph.
         let mut barrier_crossers = find_barrier_crossers(&nodes, &ports, &graph);
+        let mut node_color = nodes
+            .keys()
+            .map(|node_id| {
+                let inn_degree = graph.degree_in(node_id);
+                let out_degree = graph.degree_out(node_id);
+                let op_color = node_color(&nodes[node_id], inn_degree, out_degree);
+                (node_id, op_color)
+            })
+            .collect();
 
-        let (mut node_subgraph, mut subgraph_nodes) =
-            make_subgraphs(&mut nodes, &mut ports, &mut graph, &mut barrier_crossers);
+        let (mut node_subgraph, mut subgraph_nodes) = make_subgraphs(
+            &mut nodes,
+            &mut ports,
+            &mut graph,
+            &mut barrier_crossers,
+            &mut node_color,
+        );
 
         let subgraph_stratum = find_subgraph_strata(
             &mut nodes,
@@ -495,6 +508,7 @@ impl TryFrom<FlatGraph> for PartitionedGraph {
             subgraph_stratum,
             subgraph_recv_handoffs,
             subgraph_send_handoffs,
+            node_color_map: node_color,
         })
     }
 }
