@@ -46,14 +46,6 @@ fn find_subgraph_unionfind(
     barrier_crossers: &SecondaryMap<GraphEdgeId, DelayType>,
     node_color_map: &mut SecondaryMap<GraphNodeId, Option<Color>>,
 ) -> (UnionFind<GraphNodeId>, BTreeSet<GraphEdgeId>) {
-    // Pre-calculate node colors.
-    nodes.keys().for_each(|node_id| {
-        let inn_degree = graph.degree_in(node_id);
-        let out_degree = graph.degree_out(node_id);
-        let op_color = node_color(&nodes[node_id], inn_degree, out_degree);
-        node_color_map[node_id] = op_color;
-    });
-
     let mut subgraph_unionfind: UnionFind<GraphNodeId> = UnionFind::with_capacity(nodes.len());
     // Will contain all edges which are handoffs. Starts out with all edges and
     // we remove from this set as we construct subgraphs.
