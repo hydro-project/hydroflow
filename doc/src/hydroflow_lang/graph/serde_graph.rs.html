@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydroflow_lang/src/graph/serde_graph.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>serde_graph.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-1f7d512b176f0f72.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-124a1ca42af929b6.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-e9bf0babdb577010.css" id="mainThemeStyle"><link rel="stylesheet" id="themeStyle" href="../../../static.files/light-76b292ff51febc48.css"><link rel="stylesheet" disabled href="../../../static.files/dark-e337ab595a667ca1.css"><link rel="stylesheet" disabled href="../../../static.files/ayu-40f4c2ddda9cf0e9.css"><script id="default-settings" ></script><script src="../../../static.files/storage-d43fa987303ecbbb.js"></script><script defer src="../../../static.files/source-script-ea63cb6500f71309.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../static.files/main-4a084badb5778746.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../hydroflow_lang/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-5ec35bf9ca753509.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydroflow_lang/src/graph/serde_graph.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>serde_graph.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-1f7d512b176f0f72.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-124a1ca42af929b6.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-b07ed6aaa412307b.css" id="mainThemeStyle"><link rel="stylesheet" id="themeStyle" href="../../../static.files/light-d695502c06d5afea.css"><link rel="stylesheet" disabled href="../../../static.files/dark-aa222ca57e08648b.css"><link rel="stylesheet" disabled href="../../../static.files/ayu-4eb006a26ee168b0.css"><script id="default-settings" ></script><script src="../../../static.files/storage-d43fa987303ecbbb.js"></script><script defer src="../../../static.files/source-script-ea63cb6500f71309.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../static.files/main-4a084badb5778746.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../hydroflow_lang/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-5ec35bf9ca753509.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -177,18 +177,84 @@
 <a href="#177" id="177">177</a>
 <a href="#178" id="178">178</a>
 <a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a>
+<a href="#199" id="199">199</a>
+<a href="#200" id="200">200</a>
+<a href="#201" id="201">201</a>
+<a href="#202" id="202">202</a>
+<a href="#203" id="203">203</a>
+<a href="#204" id="204">204</a>
+<a href="#205" id="205">205</a>
+<a href="#206" id="206">206</a>
+<a href="#207" id="207">207</a>
+<a href="#208" id="208">208</a>
+<a href="#209" id="209">209</a>
+<a href="#210" id="210">210</a>
+<a href="#211" id="211">211</a>
+<a href="#212" id="212">212</a>
+<a href="#213" id="213">213</a>
+<a href="#214" id="214">214</a>
+<a href="#215" id="215">215</a>
+<a href="#216" id="216">216</a>
+<a href="#217" id="217">217</a>
+<a href="#218" id="218">218</a>
+<a href="#219" id="219">219</a>
+<a href="#220" id="220">220</a>
+<a href="#221" id="221">221</a>
+<a href="#222" id="222">222</a>
+<a href="#223" id="223">223</a>
+<a href="#224" id="224">224</a>
+<a href="#225" id="225">225</a>
+<a href="#226" id="226">226</a>
+<a href="#227" id="227">227</a>
+<a href="#228" id="228">228</a>
+<a href="#229" id="229">229</a>
+<a href="#230" id="230">230</a>
+<a href="#231" id="231">231</a>
+<a href="#232" id="232">232</a>
+<a href="#233" id="233">233</a>
+<a href="#234" id="234">234</a>
+<a href="#235" id="235">235</a>
 </pre><pre class="rust"><code><span class="kw">use </span>slotmap::{Key, SecondaryMap, SlotMap, SparseSecondaryMap};
 
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 
-<span class="kw">use super</span>::{GraphNodeId, GraphSubgraphId};
+<span class="kw">use super</span>::{Color, GraphNodeId, GraphSubgraphId};
+
+<span class="kw">use </span>regex::Regex;
+
+<span class="attr">#[derive(Default, Serialize, Deserialize)]
+</span><span class="kw">pub struct </span>SerdeEdge {
+    <span class="kw">pub </span>src: GraphNodeId,
+    <span class="kw">pub </span>dst: GraphNodeId,
+    <span class="kw">pub </span>blocking: bool,
+    <span class="kw">pub </span>label: <span class="prelude-ty">Option</span>&lt;String&gt;,
+}
 
 <span class="attr">#[derive(Default, Serialize, Deserialize)]
 #[allow(dead_code)] </span><span class="comment">// TODO(mingwei): remove when no longer needed.
 </span><span class="kw">pub struct </span>SerdeGraph {
     <span class="comment">// TODO(jmh): this structure has no way to maintain the index/order of incoming edges
     </span><span class="kw">pub </span>nodes: SecondaryMap&lt;GraphNodeId, String&gt;,
-    <span class="kw">pub </span>edges: SecondaryMap&lt;GraphNodeId, Vec&lt;GraphNodeId&gt;&gt;,
+    <span class="kw">pub </span>edges: SecondaryMap&lt;GraphNodeId, Vec&lt;SerdeEdge&gt;&gt;,
     <span class="kw">pub </span>handoffs: SparseSecondaryMap&lt;GraphNodeId, bool&gt;,
     <span class="kw">pub </span>subgraph_nodes: SlotMap&lt;GraphSubgraphId, Vec&lt;GraphNodeId&gt;&gt;,
     <span class="kw">pub </span>subgraph_stratum: SecondaryMap&lt;GraphSubgraphId, usize&gt;,
@@ -205,6 +271,8 @@
 
     <span class="kw">pub fn </span>write_mermaid(<span class="kw-2">&amp;</span><span class="self">self</span>, write: <span class="kw-2">&amp;mut </span><span class="kw">impl </span>std::fmt::Write) -&gt; std::fmt::Result {
         <span class="macro">writeln!</span>(write, <span class="string">&quot;flowchart TB&quot;</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>re = Regex::new(<span class="string">r&quot;\[(Push|Pull|Hoff)\]&quot;</span>).unwrap();
+
         <span class="kw">for </span>(subgraph_id, node_ids) <span class="kw">in </span><span class="self">self</span>.subgraph_nodes.iter() {
             <span class="kw">let </span>stratum = <span class="self">self</span>.subgraph_stratum.get(subgraph_id);
             <span class="macro">writeln!</span>(
@@ -215,10 +283,32 @@
             )<span class="question-mark">?</span>;
             <span class="kw">for </span><span class="kw-2">&amp;</span>node_id <span class="kw">in </span>node_ids.iter() {
                 <span class="kw">if </span>!<span class="self">self</span>.handoffs.contains_key(node_id) {
-                    <span class="macro">writeln!</span>(
-                        write,
-                        <span class="string">r#&quot;        {id:?}[&quot;{id:?} &lt;tt&gt;{code}&lt;/tt&gt;&quot;]&quot;#</span>,
+                    <span class="kw">let </span>mode_str = <span class="kw">match </span>re.captures(<span class="self">self</span>.nodes.get(node_id).unwrap()) {
+                        <span class="prelude-val">Some</span>(caps) =&gt; {
+                            <span class="kw">let </span>mode_match = caps.get(<span class="number">1</span>);
+                            <span class="kw">if let </span><span class="prelude-val">Some</span>(mode_str) = mode_match {
+                                mode_str.as_str()
+                            } <span class="kw">else </span>{
+                                <span class="string">&quot;&quot;
+                            </span>}
+                        }
+                        <span class="prelude-val">None </span>=&gt; <span class="string">&quot;&quot;</span>,
+                    };
+                    <span class="kw">let </span>mode = <span class="kw">match </span>mode_str {
+                        <span class="string">&quot;Push&quot; </span>=&gt; Color::Push,
+                        <span class="string">&quot;Pull&quot; </span>=&gt; Color::Pull,
+                        <span class="kw">_ </span>=&gt; Color::Hoff,
+                    };
+
+                    <span class="kw">let </span>label = <span class="macro">format!</span>(
+                        <span class="comment">// write,
+                        </span><span class="string">r#&quot;        {id:?}{lbracket}&quot;({id:?}) &lt;tt&gt;{code}&lt;/tt&gt;&quot;{rbracket}&quot;#</span>,
                         id = node_id.data(),
+                        lbracket = <span class="kw">match </span>mode {
+                            Color::Push =&gt; <span class="string">r&quot;[\&quot;</span>,
+                            Color::Pull =&gt; <span class="string">r&quot;[/&quot;</span>,
+                            <span class="kw">_ </span>=&gt; <span class="string">&quot;[&quot;</span>,
+                        },
                         code = <span class="self">self
                             </span>.nodes
                             .get(node_id)
@@ -229,7 +319,14 @@
                             .replace(<span class="string">&#39;&gt;&#39;</span>, <span class="string">&quot;&amp;gt;&quot;</span>)
                             .replace(<span class="string">&#39;&quot;&#39;</span>, <span class="string">&quot;&amp;quot;&quot;</span>)
                             .replace(<span class="string">&#39;\n&#39;</span>, <span class="string">&quot;&lt;br&gt;&quot;</span>),
-                    )<span class="question-mark">?</span>;
+                        rbracket = <span class="kw">match </span>mode {
+                            Color::Push =&gt; <span class="string">r&quot;/]&quot;</span>,
+                            Color::Pull =&gt; <span class="string">r&quot;\]&quot;</span>,
+                            <span class="kw">_ </span>=&gt; <span class="string">&quot;]&quot;</span>,
+                        }
+                    );
+                    <span class="kw">let </span>label = re.replace(label.as_str(), <span class="string">&quot;&quot;</span>);
+                    <span class="macro">writeln!</span>(write, <span class="string">&quot;{}&quot;</span>, label)<span class="question-mark">?</span>;
                 }
             }
             <span class="macro">writeln!</span>(write, <span class="string">&quot;    end&quot;</span>)<span class="question-mark">?</span>;
@@ -242,8 +339,23 @@
         }
         <span class="macro">writeln!</span>(write)<span class="question-mark">?</span>;
         <span class="kw">for </span>(src, dests) <span class="kw">in </span><span class="self">self</span>.edges.iter() {
-            <span class="kw">for </span>dst <span class="kw">in </span>dests {
-                <span class="macro">writeln!</span>(write, <span class="string">&quot;    {:?}--&gt;{:?}&quot;</span>, src.data(), dst.data())<span class="question-mark">?</span>;
+            <span class="kw">for </span>edge <span class="kw">in </span>dests {
+                <span class="macro">writeln!</span>(
+                    write,
+                    <span class="string">&quot;{:?}{}{}{:?}&quot;</span>,
+                    src.data(),
+                    <span class="kw">if let </span><span class="prelude-val">Some</span>(label) = <span class="kw-2">&amp;</span>edge.label {
+                        <span class="kw">if </span>edge.blocking {
+                            <span class="macro">format!</span>(<span class="string">&quot;== {}&quot;</span>, label)
+                        } <span class="kw">else </span>{
+                            <span class="macro">format!</span>(<span class="string">&quot;-- {}&quot;</span>, label)
+                        }
+                    } <span class="kw">else </span>{
+                        <span class="string">&quot;&quot;</span>.to_string()
+                    },
+                    <span class="kw">if </span>edge.blocking { <span class="string">&quot;===o&quot; </span>} <span class="kw">else </span>{ <span class="string">&quot;---&gt;&quot; </span>},
+                    edge.dst.data()
+                )<span class="question-mark">?</span>;
             }
         }
         <span class="prelude-val">Ok</span>(())
@@ -329,10 +441,10 @@
             )<span class="question-mark">?</span>;
             <span class="kw">let </span>empty = <span class="macro">vec!</span>[];
             <span class="kw">for </span><span class="kw-2">&amp;</span>src <span class="kw">in </span>nodes {
-                <span class="kw">let </span>dests = <span class="self">self</span>.edges.get(src).unwrap_or(<span class="kw-2">&amp;</span>empty);
-                <span class="kw">for </span><span class="kw-2">&amp;</span>dst <span class="kw">in </span>dests {
-                    <span class="kw">if </span>!<span class="self">self</span>.handoffs.contains_key(src) &amp;&amp; !<span class="self">self</span>.handoffs.contains_key(dst) {
-                        write_dot_edge(src, dst, tab, w)<span class="question-mark">?</span>;
+                <span class="kw">let </span>edges = <span class="self">self</span>.edges.get(src).unwrap_or(<span class="kw-2">&amp;</span>empty);
+                <span class="kw">for </span>edge <span class="kw">in </span>edges {
+                    <span class="kw">if </span>!<span class="self">self</span>.handoffs.contains_key(src) &amp;&amp; !<span class="self">self</span>.handoffs.contains_key(edge.dst) {
+                        write_dot_edge(src, edge.dst, tab, w)<span class="question-mark">?</span>;
                     }
                 }
             }
@@ -343,10 +455,10 @@
         }
 
         <span class="comment">//write out edges adjacent to handoffs outside the clusters
-        </span><span class="kw">for </span>(src, dests) <span class="kw">in </span><span class="self">self</span>.edges.iter() {
-            <span class="kw">for </span><span class="kw-2">&amp;</span>dst <span class="kw">in </span>dests {
-                <span class="kw">if </span><span class="self">self</span>.handoffs.contains_key(src) || <span class="self">self</span>.handoffs.contains_key(dst) {
-                    write_dot_edge(src, dst, tab, w)<span class="question-mark">?</span>;
+        </span><span class="kw">for </span>(src, edges) <span class="kw">in </span><span class="self">self</span>.edges.iter() {
+            <span class="kw">for </span>edge <span class="kw">in </span>edges {
+                <span class="kw">if </span><span class="self">self</span>.handoffs.contains_key(src) || <span class="self">self</span>.handoffs.contains_key(edge.dst) {
+                    write_dot_edge(src, edge.dst, tab, w)<span class="question-mark">?</span>;
                 }
             }
         }
@@ -357,4 +469,4 @@
     }
 }
 </code></pre></div>
-</section></main><div id="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="hydroflow_lang" data-themes="" data-resource-suffix="" data-rustdoc-version="1.68.0-nightly (8dfb33954 2022-12-25)" data-search-js="search-181581080540673f.js" data-settings-js="settings-bebeae96e00e4617.js" data-settings-css="settings-58836c674e2f7bd2.css" ></div></body></html>
+</section></main><div id="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="hydroflow_lang" data-themes="" data-resource-suffix="" data-rustdoc-version="1.68.0-nightly (88c58e3c2 2022-12-26)" data-search-js="search-181581080540673f.js" data-settings-js="settings-bebeae96e00e4617.js" data-settings-css="settings-58836c674e2f7bd2.css" ></div></body></html>
