@@ -2,14 +2,24 @@ use slotmap::{Key, SecondaryMap, SlotMap, SparseSecondaryMap};
 
 use serde::{Deserialize, Serialize};
 
-use super::{GraphNodeId, GraphSubgraphId};
+use super::{Color, GraphNodeId, GraphSubgraphId};
+
+use regex::Regex;
+
+#[derive(Default, Serialize, Deserialize)]
+pub struct SerdeEdge {
+    pub src: GraphNodeId,
+    pub dst: GraphNodeId,
+    pub blocking: bool,
+    pub label: Option<String>,
+}
 
 #[derive(Default, Serialize, Deserialize)]
 #[allow(dead_code)] // TODO(mingwei): remove when no longer needed.
 pub struct SerdeGraph {
     // TODO(jmh): this structure has no way to maintain the index/order of incoming edges
     pub nodes: SecondaryMap<GraphNodeId, String>,
-    pub edges: SecondaryMap<GraphNodeId, Vec<GraphNodeId>>,
+    pub edges: SecondaryMap<GraphNodeId, Vec<SerdeEdge>>,
     pub handoffs: SparseSecondaryMap<GraphNodeId, bool>,
     pub subgraph_nodes: SlotMap<GraphSubgraphId, Vec<GraphNodeId>>,
     pub subgraph_stratum: SecondaryMap<GraphSubgraphId, usize>,
@@ -26,6 +36,8 @@ impl SerdeGraph {
 
     pub fn write_mermaid(&self, write: &mut impl std::fmt::Write) -> std::fmt::Result {
         writeln!(write, "flowchart TB")?;
+        let re = Regex::new(r"\[(Push|Pull|Hoff)\]").unwrap();
+
         for (subgraph_id, node_ids) in self.subgraph_nodes.iter() {
             let stratum = self.subgraph_stratum.get(subgraph_id);
             writeln!(
@@ -36,10 +48,32 @@ impl SerdeGraph {
             )?;
             for &node_id in node_ids.iter() {
                 if !self.handoffs.contains_key(node_id) {
-                    writeln!(
-                        write,
-                        r#"        {id:?}["{id:?} <tt>{code}</tt>"]"#,
+                    let mode_str = match re.captures(self.nodes.get(node_id).unwrap()) {
+                        Some(caps) => {
+                            let mode_match = caps.get(1);
+                            if let Some(mode_str) = mode_match {
+                                mode_str.as_str()
+                            } else {
+                                ""
+                            }
+                        }
+                        None => "",
+                    };
+                    let mode = match mode_str {
+                        "Push" => Color::Push,
+                        "Pull" => Color::Pull,
+                        _ => Color::Hoff,
+                    };
+
+                    let label = format!(
+                        // write,
+                        r#"        {id:?}{lbracket}"({id:?}) <tt>{code}</tt>"{rbracket}"#,
                         id = node_id.data(),
+                        lbracket = match mode {
+                            Color::Push => r"[\",
+                            Color::Pull => r"[/",
+                            _ => "[",
+                        },
                         code = self
                             .nodes
                             .get(node_id)
@@ -50,7 +84,14 @@ impl SerdeGraph {
                             .replace('>', "&gt;")
                             .replace('"', "&quot;")
                             .replace('\n', "<br>"),
-                    )?;
+                        rbracket = match mode {
+                            Color::Push => r"/]",
+                            Color::Pull => r"\]",
+                            _ => "]",
+                        }
+                    );
+                    let label = re.replace(label.as_str(), "");
+                    writeln!(write, "{}", label)?;
                 }
             }
             writeln!(write, "    end")?;
@@ -63,8 +104,23 @@ impl SerdeGraph {
         }
         writeln!(write)?;
         for (src, dests) in self.edges.iter() {
-            for dst in dests {
-                writeln!(write, "    {:?}-->{:?}", src.data(), dst.data())?;
+            for edge in dests {
+                writeln!(
+                    write,
+                    "{:?}{}{}{:?}",
+                    src.data(),
+                    if let Some(label) = &edge.label {
+                        if edge.blocking {
+                            format!("== {}", label)
+                        } else {
+                            format!("-- {}", label)
+                        }
+                    } else {
+                        "".to_string()
+                    },
+                    if edge.blocking { "===o" } else { "--->" },
+                    edge.dst.data()
+                )?;
             }
         }
         Ok(())
@@ -150,10 +206,10 @@ impl SerdeGraph {
             )?;
             let empty = vec![];
             for &src in nodes {
-                let dests = self.edges.get(src).unwrap_or(&empty);
-                for &dst in dests {
-                    if !self.handoffs.contains_key(src) && !self.handoffs.contains_key(dst) {
-                        write_dot_edge(src, dst, tab, w)?;
+                let edges = self.edges.get(src).unwrap_or(&empty);
+                for edge in edges {
+                    if !self.handoffs.contains_key(src) && !self.handoffs.contains_key(edge.dst) {
+                        write_dot_edge(src, edge.dst, tab, w)?;
                     }
                 }
             }
@@ -164,10 +220,10 @@ impl SerdeGraph {
         }
 
         //write out edges adjacent to handoffs outside the clusters
-        for (src, dests) in self.edges.iter() {
-            for &dst in dests {
-                if self.handoffs.contains_key(src) || self.handoffs.contains_key(dst) {
-                    write_dot_edge(src, dst, tab, w)?;
+        for (src, edges) in self.edges.iter() {
+            for edge in edges {
+                if self.handoffs.contains_key(src) || self.handoffs.contains_key(edge.dst) {
+                    write_dot_edge(src, edge.dst, tab, w)?;
                 }
             }
         }

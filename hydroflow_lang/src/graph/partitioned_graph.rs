@@ -7,8 +7,8 @@ use crate::diagnostic::Diagnostic;
 
 use super::di_mul_graph::DiMulGraph;
 use super::flat_graph::FlatGraph;
-use super::ops::{OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, OPERATORS};
-use super::serde_graph::SerdeGraph;
+use super::ops::{DelayType, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, OPERATORS};
+use super::serde_graph::{SerdeEdge, SerdeGraph};
 use super::{node_color, Color, GraphEdgeId, GraphNodeId, GraphSubgraphId, Node, PortIndexValue};
 
 #[derive(Default)]
@@ -31,6 +31,8 @@ pub struct PartitionedGraph {
     pub(crate) subgraph_recv_handoffs: SecondaryMap<GraphSubgraphId, Vec<GraphNodeId>>,
     /// Which handoffs go out of each subgraph.
     pub(crate) subgraph_send_handoffs: SecondaryMap<GraphSubgraphId, Vec<GraphNodeId>>,
+    /// The modality of each non-handoff node (Push or Pull)
+    pub(crate) node_color_map: SecondaryMap<GraphNodeId, Option<Color>>,
 }
 impl PartitionedGraph {
     pub fn new() -> Self {
@@ -317,8 +319,16 @@ impl PartitionedGraph {
 
     pub fn node_to_txt(&self, node_id: GraphNodeId) -> String {
         format!(
-            "{}: {}",
-            self.node_id_as_string(node_id, false),
+            "[{:?}] {}",
+            if self.node_color_map.contains_key(node_id) {
+                if let Some(color) = self.node_color_map[node_id] {
+                    color
+                } else {
+                    Color::Hoff
+                }
+            } else {
+                Color::Hoff
+            },
             match &self.nodes[node_id] {
                 Node::Operator(operator) => {
                     operator.to_token_stream().to_string()
@@ -332,7 +342,7 @@ impl PartitionedGraph {
     pub fn to_serde_graph(&self) -> SerdeGraph {
         // TODO(mingwei): Double initialization of SerdeGraph fields.
         let mut g = SerdeGraph::new();
-        for (_edge_id, (src, dst)) in self.graph.edges() {
+        for (edge_id, (src, dst)) in self.graph.edges() {
             // add nodes
             g.nodes.insert(src, self.node_to_txt(src));
             g.nodes.insert(dst, self.node_to_txt(dst));
@@ -346,12 +356,56 @@ impl PartitionedGraph {
             }
 
             // add edges
+            let mut blocking = false;
+            let the_ports = &self.ports[edge_id];
+            if let Node::Operator(dest_op) = &self.nodes[dst] {
+                let op_name = &*dest_op.name_string();
+                let op_constraints = OPERATORS
+                    .iter()
+                    .find(|op| op_name == op.name)
+                    .unwrap_or_else(|| panic!("Failed to find op: {}", op_name));
+                if let Some(delay) = (op_constraints.input_delaytype_fn)(&the_ports.1) {
+                    if delay == DelayType::Stratum {
+                        blocking = true;
+                    }
+                }
+            }
+            let src_label = match &the_ports.0 {
+                PortIndexValue::Path(path) => Some(path.to_token_stream().to_string()),
+                PortIndexValue::Int(index) => Some(index.value.to_string()),
+                _ => None,
+            };
+            let dst_label = match &the_ports.1 {
+                PortIndexValue::Path(path) => Some(path.to_token_stream().to_string()),
+                PortIndexValue::Int(index) => Some(index.value.to_string()),
+                _ => None,
+            };
+            let label = match (src_label, dst_label) {
+                (Some(l1), Some(l2)) => Some(format!("{} ~ {}", l1, l2)),
+                (Some(l1), None) => Some(l1),
+                (None, Some(l2)) => Some(l2),
+                (None, None) => None,
+            };
+
             match g.edges.get_mut(src) {
                 Some(e) => {
-                    e.push(dst);
+                    e.push(SerdeEdge {
+                        src,
+                        dst,
+                        blocking,
+                        label,
+                    });
                 }
                 None => {
-                    g.edges.insert(src, vec![dst]);
+                    g.edges.insert(
+                        src,
+                        vec![SerdeEdge {
+                            src,
+                            dst,
+                            blocking,
+                            label,
+                        }],
+                    );
                 }
             }
 
