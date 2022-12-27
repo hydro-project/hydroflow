@@ -38,7 +38,11 @@
                     "kind": "example"
                 }
             },
-            "args": [],
+            "args": [
+                "--name=_",
+                "--role=server",
+                "--graph=mermaid"
+            ],
             "cwd": "${workspaceFolder}"
         },
         {
