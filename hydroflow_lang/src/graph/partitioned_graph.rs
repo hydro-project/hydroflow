@@ -1,6 +1,6 @@
 use proc_macro2::{Ident, Literal, TokenStream};
 use quote::{format_ident, quote, quote_spanned, ToTokens};
-use slotmap::{Key, SecondaryMap, SlotMap};
+use slotmap::{Key, SecondaryMap, SlotMap, SparseSecondaryMap};
 use syn::spanned::Spanned;
 
 use crate::diagnostic::Diagnostic;
@@ -34,7 +34,7 @@ pub struct PartitionedGraph {
     /// Internal handoffs
     pub(crate) subgraph_internal_handoffs: SecondaryMap<GraphSubgraphId, Vec<GraphNodeId>>,
     /// The modality of each non-handoff node (Push or Pull)
-    pub(crate) node_color_map: SecondaryMap<GraphNodeId, Option<Color>>,
+    pub(crate) node_color_map: SparseSecondaryMap<GraphNodeId, Color>,
 }
 impl PartitionedGraph {
     pub fn new() -> Self {
@@ -320,26 +320,10 @@ impl PartitionedGraph {
     }
 
     pub fn node_to_txt(&self, node_id: GraphNodeId) -> String {
-        format!(
-            "[{:?}] {}",
-            if self.node_color_map.contains_key(node_id) {
-                if let Some(color) = self.node_color_map[node_id] {
-                    color
-                } else {
-                    Color::Hoff
-                }
-            } else {
-                Color::Hoff
-            },
-            match &self.nodes[node_id] {
-                Node::Operator(operator) => {
-                    operator.to_token_stream().to_string()
-                }
-                Node::Handoff { .. } => {
-                    "handoff".to_string()
-                }
-            }
-        )
+        match &self.nodes[node_id] {
+            Node::Operator(operator) => operator.to_token_stream().to_string(),
+            Node::Handoff { .. } => "handoff".to_string(),
+        }
     }
     pub fn to_serde_graph(&self) -> SerdeGraph {
         // TODO(mingwei): Double initialization of SerdeGraph fields.
@@ -419,6 +403,7 @@ impl PartitionedGraph {
             g.subgraph_nodes = self.subgraph_nodes.clone();
             g.subgraph_stratum = self.subgraph_stratum.clone();
             g.subgraph_internal_handoffs = self.subgraph_internal_handoffs.clone();
+            g.node_color_map = self.node_color_map.clone();
         }
         g
     }

@@ -4,6 +4,7 @@ use std::hash::Hash;
 
 use proc_macro2::Span;
 use quote::ToTokens;
+use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
 use syn::spanned::Spanned;
 use syn::ExprPath;
@@ -54,7 +55,7 @@ impl std::fmt::Debug for Node {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum Color {
     /// Pull (green)
     Pull,

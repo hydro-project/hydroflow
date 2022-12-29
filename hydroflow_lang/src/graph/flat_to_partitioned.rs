@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use proc_macro2::Span;
-use slotmap::{Key, SecondaryMap, SlotMap};
+use slotmap::{Key, SecondaryMap, SlotMap, SparseSecondaryMap};
 use syn::parse_quote;
 use syn::spanned::Spanned;
 
@@ -44,7 +44,7 @@ fn find_subgraph_unionfind(
     nodes: &SlotMap<GraphNodeId, Node>,
     graph: &DiMulGraph<GraphNodeId, GraphEdgeId>,
     barrier_crossers: &SecondaryMap<GraphEdgeId, DelayType>,
-    node_color_map: &mut SecondaryMap<GraphNodeId, Option<Color>>,
+    node_color_map: &mut SparseSecondaryMap<GraphNodeId, Color>,
 ) -> (UnionFind<GraphNodeId>, BTreeSet<GraphEdgeId>) {
     let mut subgraph_unionfind: UnionFind<GraphNodeId> = UnionFind::with_capacity(nodes.len());
     // Will contain all edges which are handoffs. Starts out with all edges and
@@ -150,7 +150,7 @@ fn make_subgraphs(
     ports: &mut SecondaryMap<GraphEdgeId, (PortIndexValue, PortIndexValue)>,
     graph: &mut DiMulGraph<GraphNodeId, GraphEdgeId>,
     barrier_crossers: &mut SecondaryMap<GraphEdgeId, DelayType>,
-    node_color: &mut SecondaryMap<GraphNodeId, Option<Color>>,
+    node_color: &mut SparseSecondaryMap<GraphNodeId, Color>,
 ) -> (
     SecondaryMap<GraphNodeId, GraphSubgraphId>,
     SlotMap<GraphSubgraphId, Vec<GraphNodeId>>,
@@ -201,7 +201,7 @@ fn make_subgraphs(
 ///
 /// Returns if `src` and `dst` can be in the same subgraph.
 fn can_connect_colorize(
-    node_color: &mut SecondaryMap<GraphNodeId, Option<Color>>,
+    node_color: &mut SparseSecondaryMap<GraphNodeId, Color>,
     src: GraphNodeId,
     dst: GraphNodeId,
 ) -> bool {
@@ -209,28 +209,28 @@ fn can_connect_colorize(
     // Push -> Push
     // Pull -> [Computation] -> Push
     // Push -> [Handoff] -> Pull
-    let can_connect = match (node_color[src], node_color[dst]) {
+    let can_connect = match (node_color.get(src), node_color.get(dst)) {
         // Linear chain, can't connect because it may cause future conflicts.
         // But if it doesn't in the _future_ we can connect it (once either/both ends are determined).
         (None, None) => false,
 
         // Infer left side.
         (None, Some(Color::Pull | Color::Comp)) => {
-            node_color[src] = Some(Color::Pull);
+            node_color.insert(src, Color::Pull);
             true
         }
         (None, Some(Color::Push | Color::Hoff)) => {
-            node_color[src] = Some(Color::Push);
+            node_color.insert(src, Color::Push);
             true
         }
 
         // Infer right side.
         (Some(Color::Pull | Color::Hoff), None) => {
-            node_color[dst] = Some(Color::Pull);
+            node_color.insert(dst, Color::Pull);
             true
         }
         (Some(Color::Comp | Color::Push), None) => {
-            node_color[dst] = Some(Color::Push);
+            node_color.insert(dst, Color::Push);
             true
         }
 
@@ -468,6 +468,8 @@ impl TryFrom<FlatGraph> for PartitionedGraph {
                 let op_color = node_color(&nodes[node_id], inn_degree, out_degree);
                 (node_id, op_color)
             })
+            .filter(|(_node_id, op_color)| op_color.is_some())
+            .map(|(node_id, op_color)| (node_id, op_color.unwrap()))
             .collect();
 
         let (mut node_subgraph, mut subgraph_nodes) = make_subgraphs(

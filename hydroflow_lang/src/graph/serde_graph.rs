@@ -4,8 +4,6 @@ use serde::{Deserialize, Serialize};
 
 use super::{Color, GraphNodeId, GraphSubgraphId};
 
-use regex::Regex;
-
 #[derive(Default, Serialize, Deserialize, Clone)]
 pub struct SerdeEdge {
     pub src: GraphNodeId,
@@ -18,6 +16,7 @@ pub struct SerdeEdge {
 #[allow(dead_code)] // TODO(mingwei): remove when no longer needed.
 pub struct SerdeGraph {
     pub nodes: SecondaryMap<GraphNodeId, String>,
+    pub node_color_map: SparseSecondaryMap<GraphNodeId, Color>,
     pub edges: SecondaryMap<GraphNodeId, Vec<SerdeEdge>>,
     pub barrier_handoffs: SparseSecondaryMap<GraphNodeId, bool>,
     pub subgraph_nodes: SlotMap<GraphSubgraphId, Vec<GraphNodeId>>,
@@ -37,7 +36,6 @@ impl SerdeGraph {
 
     pub fn write_mermaid(&self, write: &mut impl std::fmt::Write) -> std::fmt::Result {
         let mut tab: usize = 0;
-        let re = Regex::new(r"\[(Push|Pull|Hoff)\] ").unwrap();
 
         fn write_mermaid_prelude(write: &mut impl std::fmt::Write) -> std::fmt::Result {
             // intro
@@ -53,27 +51,14 @@ impl SerdeGraph {
         }
         fn write_mermaid_node(
             node_id: GraphNodeId,
+            node_color_map: &SparseSecondaryMap<GraphNodeId, Color>,
             text: &str,
             tab: usize,
-            re: &Regex,
             write: &mut impl std::fmt::Write,
         ) -> std::fmt::Result {
-            let mode_str = match re.captures(text) {
-                Some(caps) => {
-                    let mode_match = caps.get(1);
-                    if let Some(mode_str) = mode_match {
-                        mode_str.as_str()
-                    } else {
-                        ""
-                    }
-                }
-                None => "",
-            };
-            let mode = match mode_str {
-                "Push" => Color::Push,
-                "Pull" => Color::Pull,
-                "Hoff" => Color::Hoff,
-                _ => Color::Comp,
+            let mode = match node_color_map.get(node_id) {
+                Some(color) => *color,
+                None => Color::Comp,
             };
 
             let class_str = match mode {
@@ -105,7 +90,6 @@ impl SerdeGraph {
                 },
                 t = tab,
             );
-            let label = re.replace(label.as_str(), "");
             writeln!(write, "{}", label)?;
             Ok(())
         }
@@ -173,13 +157,25 @@ impl SerdeGraph {
 
             // write out nodes
             for &node_id in node_ids.iter() {
-                write_mermaid_node(node_id, self.nodes.get(node_id).unwrap(), tab, &re, write)?;
+                write_mermaid_node(
+                    node_id,
+                    &self.node_color_map,
+                    self.nodes.get(node_id).unwrap(),
+                    tab,
+                    write,
+                )?;
             }
             // write out internal handoffs
             let empty = vec![];
             if let Some(hoffs) = self.subgraph_internal_handoffs.get(subgraph_id) {
                 for hoff in hoffs.iter() {
-                    write_mermaid_node(*hoff, self.nodes.get(*hoff).unwrap(), tab, &re, write)?;
+                    write_mermaid_node(
+                        *hoff,
+                        &self.node_color_map,
+                        self.nodes.get(*hoff).unwrap(),
+                        tab,
+                        write,
+                    )?;
                     // write out internal handoff edges
                     for edge in self.edges.get(*hoff).unwrap_or(&empty) {
                         write_mermaid_edge(*hoff, edge, tab, write)?;
@@ -207,7 +203,13 @@ impl SerdeGraph {
             for edge in edges {
                 if self.barrier_handoffs.contains_key(src) {
                     // write out handoff
-                    write_mermaid_node(src, self.nodes.get(src).unwrap(), tab, &re, write)?;
+                    write_mermaid_node(
+                        src,
+                        &self.node_color_map,
+                        self.nodes.get(src).unwrap(),
+                        tab,
+                        write,
+                    )?;
                     // write out edge
                     write_mermaid_edge(src, edge, tab, write)?;
                 } else if self.barrier_handoffs.contains_key(edge.dst) {
@@ -228,7 +230,6 @@ impl SerdeGraph {
 
     pub fn write_dot(&self, w: &mut impl std::fmt::Write) -> std::fmt::Result {
         // intro
-        let re = Regex::new(r"\[(Push|Pull|Hoff)\] ").unwrap();
         let mut tab: usize = 4;
 
         fn write_dot_prelude(write: &mut impl std::fmt::Write) -> std::fmt::Result {
@@ -242,29 +243,15 @@ impl SerdeGraph {
 
         fn write_dot_node(
             node_id: GraphNodeId,
+            node_color_map: &SparseSecondaryMap<GraphNodeId, Color>,
             text: &str,
-            re: &Regex,
             tab: usize,
             w: &mut impl std::fmt::Write,
         ) -> std::fmt::Result {
             let nm = text.replace('"', "\\\"").replace('\n', "\\l");
-            let nm = re.replace(nm.as_str(), "");
-            let mode_str = match re.captures(text) {
-                Some(caps) => {
-                    let mode_match = caps.get(1);
-                    if let Some(mode_str) = mode_match {
-                        mode_str.as_str()
-                    } else {
-                        ""
-                    }
-                }
-                None => "",
-            };
-            let mode = match mode_str {
-                "Push" => Color::Push,
-                "Pull" => Color::Pull,
-                "Hoff" => Color::Hoff,
-                _ => Color::Comp,
+            let mode = match node_color_map.get(node_id) {
+                Some(color) => *color,
+                None => Color::Hoff,
             };
             let label = format!("n{:?}", node_id.data());
             let shape_str = match mode {
@@ -374,14 +361,20 @@ impl SerdeGraph {
             // write out nodes
             for &node_id in node_ids.iter() {
                 // write out node
-                write_dot_node(node_id, self.nodes.get(node_id).unwrap(), &re, tab, w)?;
+                write_dot_node(
+                    node_id,
+                    &self.node_color_map,
+                    self.nodes.get(node_id).unwrap(),
+                    tab,
+                    w,
+                )?;
             }
             // write out internal handoffs
             let empty = vec![];
             if let Some(hoffs) = self.subgraph_internal_handoffs.get(subgraph_id) {
                 for hoff in hoffs {
                     let text = self.nodes.get(*hoff).unwrap();
-                    write_dot_node(*hoff, text, &re, tab, w)?;
+                    write_dot_node(*hoff, &self.node_color_map, text, tab, w)?;
                     // write out internal handoff edges
                     for edge in self.edges.get(*hoff).unwrap_or(&empty) {
                         write_dot_edge(*hoff, edge, tab, w)?;
@@ -410,7 +403,7 @@ impl SerdeGraph {
                 if self.barrier_handoffs.contains_key(src) {
                     // write out handoff
                     let text = self.nodes.get(src).unwrap();
-                    write_dot_node(src, text, &re, tab, w)?;
+                    write_dot_node(src, &self.node_color_map, text, tab, w)?;
                     // write out edge
                     write_dot_edge(src, edge, tab, w)?;
                 } else if self.barrier_handoffs.contains_key(edge.dst) {
