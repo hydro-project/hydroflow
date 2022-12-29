@@ -25,31 +25,31 @@ Hydroflow is a library that can be used in any Rust program. It includes two mai
 Hydroflow's surface syntax must be embedded in a Rust program; the Rust compiler takes that Hydroflow syntax and 
 compiles it into an efficient binary executable. 
 
-> We call a running Hydroflow binary a *spinner*.
+> We call a running Hydroflow binary a *transducer*.
 
-In typical usage, a developer writes a spinner as a single-threaded Rust program that is mostly composed of 
-Hydroflow surface syntax. Each spinner is typically responsible for a single 
-"node" (a machine, or a core) in a distributed system composed of many such spinners,
+In typical usage, a developer writes a transducer as a single-threaded Rust program that is mostly composed of 
+Hydroflow surface syntax. Each transducer is typically responsible for a single 
+"node" (a machine, or a core) in a distributed system composed of many such transducers,
 which send and receive flows of data to each other.
 
-> Hydroflow itself does not generate distributed code. It is a library for specifying the spinners (individual nodes) that 
+> Hydroflow itself does not generate distributed code. It is a library for specifying the transducers (individual nodes) that 
 > participate in a distributed system. 
 >
 > In the [Hydro Project](https://hydro.run), higher-level languages are being built on top of Hydroflow to generate 
-> distributed code in the form of multiple spinners. 
-> Meanwhile, you can use Hydroflow to write your own distributed code, by writing individual spinners that work together, 
+> distributed code in the form of multiple transducers. 
+> Meanwhile, you can use Hydroflow to write your own distributed code, by writing individual transducers that work together, 
 > and deploying them manually or with a tool like [Hydroplane](https://github.com/hydro-project/hydroplane). See the [Hydro Ecosystem](./ecosystem.md) for more on this.
 
 ### So how might a human write distributed systems with Hydroflow?
 As an illustration of how you can work at the Hydroflow layer, consider the 
 [Chat Server example](./example_8_chat_server.md). If you run that binary
-with the command-line argument `--role server` it will start a single spinner that is responsible for a chat server: receiving
+with the command-line argument `--role server` it will start a single transducer that is responsible for a chat server: receiving
 membership requests and messages from clients, and forwarding messages from individual clients to all other clients.
-If you run that binary with the argument `--role client` it will start a spinner that is responsible for a chat client, which 
+If you run that binary with the argument `--role client` it will start a transducer that is responsible for a chat client, which 
 forwards chat messages from stdin to the server, and prints out messages sent by the server. As a distributed system, the chat 
-service would typically consist of many client spinners and a single server spinner.
+service would typically consist of many client transducers and a single server transducer.
 
-Note that this is an example of an extremely simple distributed system in a "star" or "hub-and spokes" topology: the multiple client spinners are completely independent of each other, and each talks only with the central server spinner. 
+Note that this is an example of an extremely simple distributed system in a "star" or "hub-and spokes" topology: the multiple client transducers are completely independent of each other, and each talks only with the central server transducer. 
 
 <div align="center">
 
@@ -65,7 +65,7 @@ graph TD;
 ```
 </div>
 
- If we wanted something more interesting, we could consider deploying a cluster of multiple server spinners, say for fault tolerance or geo-distribution, perhaps like this: 
+ If we wanted something more interesting, we could consider deploying a cluster of multiple server transducers, say for fault tolerance or geo-distribution, perhaps like this: 
  
  <div align="center">
 

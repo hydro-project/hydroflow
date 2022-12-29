@@ -51,12 +51,12 @@ use hydroflow::hydroflow_syntax;
 
 pub fn main() {
     // An edge in the input data = a pair of `usize` vertex IDs.
-    let (pairs_send, pairs_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (edges_send, edges_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
 
     let mut flow = hydroflow_syntax! {
         // inputs: the origin vertex (vertex 0) and stream of input edges
         origin = source_iter(vec![0]);
-        stream_of_edges = source_stream(pairs_recv);
+        stream_of_edges = source_stream(edges_recv);
         reached_vertices = merge();
         origin -> [0]reached_vertices;
 
@@ -76,12 +76,12 @@ pub fn main() {
             .expect("No graph found, maybe failed to parse.")
             .to_mermaid()
     );
-    pairs_send.send((0, 1)).unwrap();
-    pairs_send.send((2, 4)).unwrap();
-    pairs_send.send((3, 4)).unwrap();
-    pairs_send.send((1, 2)).unwrap();
-    pairs_send.send((0, 3)).unwrap();
-    pairs_send.send((0, 3)).unwrap();
+    edges_send.send((0, 1)).unwrap();
+    edges_send.send((2, 4)).unwrap();
+    edges_send.send((3, 4)).unwrap();
+    edges_send.send((1, 2)).unwrap();
+    edges_send.send((0, 3)).unwrap();
+    edges_send.send((0, 3)).unwrap();
     flow.run_available();
 }
 ```
@@ -136,38 +136,39 @@ showing up to the right of the variable rather than the left.
 Below is the diagram rendered by [mermaid](https://mermaid-js.github.io/) showing
 the structure of the full flow:
 ```mermaid
-flowchart TB
-    subgraph "sg_1v1 stratum 0"
-        1v1["1v1 <tt>op_1v1: source_iter(vec! [0])</tt>"]
-        2v1["2v1 <tt>op_2v1: source_stream(edges_recv)</tt>"]
-        3v1["3v1 <tt>op_3v1: merge()</tt>"]
-        7v1["7v1 <tt>op_7v1: map(| v | (v, ()))</tt>"]
-        4v1["4v1 <tt>op_4v1: join()</tt>"]
-        5v1["5v1 <tt>op_5v1: flat_map(| (src, ((), dst)) | [src, dst])</tt>"]
-        6v1["6v1 <tt>op_6v1: tee()</tt>"]
-    end
-    subgraph "sg_2v1 stratum 1"
-        8v1["8v1 <tt>op_8v1: unique()</tt>"]
-        9v1["9v1 <tt>op_9v1: for_each(| x | println! (&quot;Reached: {}&quot;, x))</tt>"]
-    end
-
-    10v1{"handoff"}
-    11v1{"handoff"}
-
-    1v1-->3v1
-    2v1-->4v1
-    3v1-->7v1
-    4v1-->5v1
-    5v1-->6v1
-    6v1-->10v1
-    6v1-->11v1
-    7v1-->4v1
-    8v1-->9v1
-    10v1-->3v1
-    11v1-->8v1
+flowchart TD
+classDef pullClass fill:#02f,color:#fff,stroke:#000
+classDef pushClass fill:#ff0,stroke:#000
+linkStyle default stroke:#aaa,stroke-width:4px,color:red,font-size:1.5em;
+subgraph "sg_1v1 stratum 0"
+    1v1[\"(1v1) <tt>source_iter(vec! [0])</tt>"/]:::pullClass
+    2v1[\"(2v1) <tt>source_stream(edges_recv)</tt>"/]:::pullClass
+    3v1[\"(3v1) <tt>merge()</tt>"/]:::pullClass
+    7v1[\"(7v1) <tt>map(| v | (v, ()))</tt>"/]:::pullClass
+    4v1[\"(4v1) <tt>join()</tt>"/]:::pullClass
+    5v1[/"(5v1) <tt>flat_map(| (src, ((), dst)) | [src, dst])</tt>"\]:::pushClass
+    6v1[/"(6v1) <tt>tee()</tt>"\]:::pushClass
+    10v1["(10v1) <tt>handoff</tt>"]:::otherClass
+    10v1--1--->3v1
+    1v1--0--->3v1
+    2v1--1--->4v1
+    3v1--->7v1
+    7v1--0--->4v1
+    4v1--->5v1
+    5v1--->6v1
+    6v1--0--->10v1
+end
+subgraph "sg_2v1 stratum 1"
+    8v1[/"(8v1) <tt>unique()</tt>"\]:::pushClass
+    9v1[/"(9v1) <tt>for_each(| x | println! (&quot;Reached: {}&quot;, x))</tt>"\]:::pushClass
+    8v1--->9v1
+end
+6v1--1--->11v1
+11v1["(11v1) <tt>handoff</tt>"]:::otherClass
+11v1===o8v1
 ```
 This is similar to the flow for graph neighbors, but has a few more operators that make it look
 more complex. In particular, it includes the `merge` and `tee` operators, and a cycle-forming back-edge 
-that passes through an auto-generated `handoff` operator. This `handoff` is not a stratum boundary (after all, it connects stratum 0 to itself!) Rather, it represents a compilation boundary: the compiled code that Hydroflow generates is acyclic (as discussed in the [Architecture Chapter](./architecture.md)\), so these handoffs tell the runtime to iterate on the acyclic code of a stratum until there is no new output from the stratum.
+that passes through an auto-generated `handoff` operator. This `handoff` is not a stratum boundary (after all, it connects stratum 0 to itself!) It simply enforces the rule that a push producer and a pull consumer must be separated by a `handoff`. 
 
-Meanwhile, note in the mermaid diagram that there is once again a stratum boundary between the stratum 0 with its recursive loop, and stratum 1 that computes `unique`. This means that Hydroflow will first run the loop continuously until all the transitive reached vertices are found, before moving on to compute the unique reached vertices.
+Meanwhile, note that there is once again a stratum boundary between the stratum 0 with its recursive loop, and stratum 1 that computes `unique`, with the blocking input. This means that Hydroflow will first run the loop of stratum 0 repeatedly until all the transitive reached vertices are found, before moving on to compute the unique reached vertices.

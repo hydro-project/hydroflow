@@ -70,16 +70,16 @@ As a sort of "hello, world" of distributed systems, it implements an "echo serve
 simply echoes back the messages you sent it; it also implements a client to test the server. 
 We will replace the code in that example with our own, but it's a good idea to run it first to make sure everything is working.
 
-> We call a running Hydroflow binary a *spinner*.
+> We call a running Hydroflow binary a *transducer*.
 
-Start by running a spinner for the server:
+Start by running a transducer for the server:
 ```console
 % cargo run -- --role server
 Listening on 127.0.0.1:<port>
 Server live!
 ```
 
-Take note of the server's port number, and in a separate terminal, start a client spinner:
+Take note of the server's port number, and in a separate terminal, start a client transducer:
 ```console
 % cd <project name>
 % cargo run -- --role client --server-addr 127.0.0.1:<port>

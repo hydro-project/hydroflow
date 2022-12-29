@@ -192,36 +192,37 @@ The mermaid graph for the server is below. The three branches of the `demux` are
 for both `ClientResponse` and broadcasting, and the `merge` of all outbound messages into `dest_sink_serde`.
 
 ```mermaid
-flowchart TB
-    subgraph "sg_1v1 stratum 0"
-        7v1["7v1 <tt>op_7v1: map(| addr | (Message :: ConnectResponse, addr))</tt>"]
-        8v1["8v1 <tt>op_8v1: cross_join()</tt>"]
-        1v1["1v1 <tt>op_1v1: merge()</tt>"]
-        2v1["2v1 <tt>op_2v1: dest_sink_serde(outbound)</tt>"]
-    end
-    subgraph "sg_2v1 stratum 0"
-        3v1["3v1 <tt>op_3v1: source_stream_serde(inbound)</tt>"]
-        4v1["4v1 <tt>op_4v1: demux(| (msg, addr), var_args! (clients, msgs, errs) | match msg<br>{<br>    Message :: ConnectRequest =&gt; clients.give(addr), Message :: ChatMsg { .. }<br>    =&gt; msgs.give(msg), _ =&gt; errs.give(msg),<br>})</tt>"]
-        5v1["5v1 <tt>op_5v1: tee()</tt>"]
-        6v1["6v1 <tt>op_6v1: for_each(| m | println! (&quot;Received unexpected message type: {:?}&quot;, m))</tt>"]
-    end
-
-    9v1{"handoff"}
-    10v1{"handoff"}
-    11v1{"handoff"}
-
-    1v1-->2v1
-    3v1-->4v1
-    4v1-->5v1
-    4v1-->6v1
-    4v1-->10v1
-    5v1-->9v1
-    5v1-->11v1
-    7v1-->1v1
-    8v1-->1v1
-    9v1-->7v1
-    10v1-->8v1
-    11v1-->8v1
+flowchart TD
+classDef pullClass fill:#02f,color:#fff,stroke:#000
+classDef pushClass fill:#ff0,stroke:#000
+linkStyle default stroke:#aaa,stroke-width:4px,color:red,font-size:1.5em;
+subgraph "sg_1v1 stratum 0"
+    7v1[\"(7v1) <tt>map(| addr | (Message :: ConnectResponse, addr))</tt>"/]:::pullClass
+    8v1[\"(8v1) <tt>cross_join()</tt>"/]:::pullClass
+    1v1[\"(1v1) <tt>merge()</tt>"/]:::pullClass
+    2v1[/"(2v1) <tt>dest_sink_serde(outbound)</tt>"\]:::pushClass
+    7v1--0--->1v1
+    8v1--1--->1v1
+    1v1--->2v1
+end
+subgraph "sg_2v1 stratum 0"
+    3v1[\"(3v1) <tt>source_stream_serde(inbound)</tt>"/]:::pullClass
+    4v1[/"(4v1) <tt>demux(| (msg, addr), var_args! (clients, msgs, errs) | match msg<br>{<br>    Message :: ConnectRequest =&gt; clients.give(addr), Message :: ChatMsg { .. }<br>    =&gt; msgs.give(msg), _ =&gt; errs.give(msg),<br>})</tt>"\]:::pushClass
+    5v1[/"(5v1) <tt>tee()</tt>"\]:::pushClass
+    6v1[/"(6v1) <tt>for_each(| m | println! (&quot;Received unexpected message type: {:?}&quot;, m))</tt>"\]:::pushClass
+    3v1--->4v1
+    4v1--clients--->5v1
+    4v1--errs--->6v1
+end
+4v1--msgs--->10v1
+5v1--0--->9v1
+5v1--1--->11v1
+9v1["(9v1) <tt>handoff</tt>"]:::otherClass
+9v1--->7v1
+10v1["(10v1) <tt>handoff</tt>"]:::otherClass
+10v1--0--->8v1
+11v1["(11v1) <tt>handoff</tt>"]:::otherClass
+11v1--1--->8v1
 ```
 
 ## client.rs
@@ -354,40 +355,41 @@ Finish up the file by pasting the code below for optionally generating the graph
 The client's mermaid graph looks a bit different than the server's, mostly because it routes some data to
 the screen rather than to an outbound network channel.
 ```mermaid
-flowchart TB
-    subgraph "sg_1v1 stratum 0"
-        7v1["7v1 <tt>op_7v1: source_iter([()])</tt>"]
-        8v1["8v1 <tt>op_8v1: map(| _m | (Message :: ConnectRequest, server_addr))</tt>"]
-        11v1["11v1 <tt>op_11v1: source_stdin()</tt>"]
-        12v1["12v1 <tt>op_12v1: map(| l | Message :: ChatMsg<br>{ nickname : opts.name.clone(), message : l.unwrap(), ts : Utc :: now() })</tt>"]
-        9v1["9v1 <tt>op_9v1: cross_join()</tt>"]
-        10v1["10v1 <tt>op_10v1: map(| (msg, _) | (msg, server_addr))</tt>"]
-        1v1["1v1 <tt>op_1v1: merge()</tt>"]
-        2v1["2v1 <tt>op_2v1: dest_sink_serde(outbound)</tt>"]
-    end
-    subgraph "sg_2v1 stratum 0"
-        3v1["3v1 <tt>op_3v1: source_stream_serde(inbound)</tt>"]
-        4v1["4v1 <tt>op_4v1: map(| (m, _) | m)</tt>"]
-        5v1["5v1 <tt>op_5v1: demux(| m, var_args! (acks, msgs, errs) | match m<br>{<br>    Message :: ConnectResponse =&gt; acks.give(m), Message :: ChatMsg { .. } =&gt;<br>    msgs.give(m), _ =&gt; errs.give(m),<br>})</tt>"]
-        6v1["6v1 <tt>op_6v1: for_each(| m | println! (&quot;Received unexpected message type: {:?}&quot;, m))</tt>"]
-        13v1["13v1 <tt>op_13v1: for_each(pretty_print_msg)</tt>"]
-    end
-
-    14v1{"handoff"}
-
-    1v1-->2v1
-    3v1-->4v1
-    4v1-->5v1
-    5v1-->6v1
-    5v1-->14v1
-    5v1-->13v1
-    7v1-->8v1
-    8v1-->1v1
-    9v1-->10v1
-    10v1-->1v1
-    11v1-->12v1
-    12v1-->9v1
-    14v1-->9v1
+flowchart TD
+classDef pullClass fill:#02f,color:#fff,stroke:#000
+classDef pushClass fill:#ff0,stroke:#000
+linkStyle default stroke:#aaa,stroke-width:4px,color:red,font-size:1.5em;
+subgraph "sg_1v1 stratum 0"
+    7v1[\"(7v1) <tt>source_iter([()])</tt>"/]:::pullClass
+    8v1[\"(8v1) <tt>map(| _m | (Message :: ConnectRequest, server_addr))</tt>"/]:::pullClass
+    11v1[\"(11v1) <tt>source_stdin()</tt>"/]:::pullClass
+    12v1[\"(12v1) <tt>map(| l | Message :: ChatMsg<br>{ nickname : opts.name.clone(), message : l.unwrap(), ts : Utc :: now() })</tt>"/]:::pullClass
+    9v1[\"(9v1) <tt>cross_join()</tt>"/]:::pullClass
+    10v1[\"(10v1) <tt>map(| (msg, _) | (msg, server_addr))</tt>"/]:::pullClass
+    1v1[\"(1v1) <tt>merge()</tt>"/]:::pullClass
+    2v1[/"(2v1) <tt>dest_sink_serde(outbound)</tt>"\]:::pushClass
+    7v1--->8v1
+    8v1--0--->1v1
+    11v1--->12v1
+    12v1--0--->9v1
+    9v1--->10v1
+    10v1--1--->1v1
+    1v1--->2v1
+end
+subgraph "sg_2v1 stratum 0"
+    3v1[\"(3v1) <tt>source_stream_serde(inbound)</tt>"/]:::pullClass
+    4v1[/"(4v1) <tt>map(| (m, _) | m)</tt>"\]:::pushClass
+    5v1[/"(5v1) <tt>demux(| m, var_args! (acks, msgs, errs) | match m<br>{<br>    Message :: ConnectResponse =&gt; acks.give(m), Message :: ChatMsg { .. } =&gt;<br>    msgs.give(m), _ =&gt; errs.give(m),<br>})</tt>"\]:::pushClass
+    6v1[/"(6v1) <tt>for_each(| m | println! (&quot;Received unexpected message type: {:?}&quot;, m))</tt>"\]:::pushClass
+    13v1[/"(13v1) <tt>for_each(pretty_print_msg)</tt>"\]:::pushClass
+    3v1--->4v1
+    4v1--->5v1
+    5v1--errs--->6v1
+    5v1--msgs--->13v1
+end
+5v1--acks--->14v1
+14v1["(14v1) <tt>handoff</tt>"]:::otherClass
+14v1--1--->9v1
 ```
 
 ## Running the example
