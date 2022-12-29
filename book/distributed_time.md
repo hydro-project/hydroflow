@@ -14,7 +14,7 @@ This has the desirable property of respecting a reasonable distributed "happens-
 That is, Lamport timestamps track not only the order of events on a single node, they also ensure that the timestamps on events reflect distributed ordering. Suppose that node `source` wants to send a message to node `dest`, and node source has current clock value *T_source*. The events that precede that message on node `source` have smaller timestamps. In addition, consider an event at node `dest` that follows the receipt of that message. That event must have a timestamp greater than *T_source*, and hence all the events on node `source` that preceded the sending of the message have lower timestamps than the events on node `dest` following the receipt of the message. This is the distributed "happens-before" relation.
 
 ## Hydroflow Time
-As a built-in primitive, Hydroflow defines time only for a single spinner, as a sequence of ticks. Each tick captures Hydroflow's notion of an "event" as the atomic ingestion of a *batch of events*, followed by a fixpoint computation over that batch. *TODO: is it possible to limit batch size to 1?* 
+As a built-in primitive, Hydroflow defines time only for a single transducer, as a sequence of ticks. Each tick captures Hydroflow's notion of an "event" as the atomic ingestion of a *batch of events*, followed by a fixpoint computation over that batch. *TODO: is it possible to limit batch size to 1?* 
 
 Thus the main difference between Hydroflow events and Lamport events are:
 
