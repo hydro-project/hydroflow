@@ -1,11 +1,12 @@
 # Streaming, Blocking and Stratification
-Many Hydroflow operators (e.g. `map`, `filter` and `join`) work in a streaming fashion. Streaming operators process data as it arrives, generating outputs in the midst of processing inputs. If you restrict yourself to operators that work in this streaming fashion, then your spinner may start sending data across the network mid-tick, even while it is still consuming the data in the input batch.
+Many Hydroflow operators (e.g. `map`, `filter` and `join`) work in a streaming fashion. Streaming operators process data as it arrives, generating outputs in the midst of processing inputs. If you restrict yourself to operators that work in this streaming fashion, then your transducer may start sending data across the network mid-tick, even while it is still consuming the data in the input batch.
 
 But some operators are blocking, and must wait for all their input data to arrive before they can produce any output data. For example, a `sort` operator must wait for all its input data to arrive before it can produce a single output value. (After all, the lowest value may be the last to arrive!)
 
-The [`difference`](./surface_ops.gen.md#difference) operator is a mixed example. Like a set difference, it outputs all the items from its `pos` input that do not appear in its `neg` input. The `pos` input is streaming, and the `neg` input is blocking. Blocking on the `neg` input ensures that if the operator streams an output from the `pos` input, it will never need to retract that output.
+## Examples of Blocking Operators
+As an example, consider the `sort` operator. It must wait for all the input data to arrive before it can produce any output data---after all, the lowest value may be the last to arrive! 
 
-This should raise questions in your mind. What do we mean by "all the input data" in a long-running service? We don't want to wait until the end of time, which is one reason we break time up into discrete "ticks" at each spinner. So when we say that a blocking operator waits for "all the input data", we mean "all the input data in the current tick".
+This should raise questions in your mind. What do we mean by "all the input data" in a long-running service? We don't want to wait until the end of time—this is one reason we break time up into discrete "ticks" at each transducer. So when we say that a blocking operator waits for "all the input data", we mean "all the input data in the current tick".
 
 Consider the simple statement below, which receives data from a network source each tick, sorts that tick's worth of data, and prints it to stdout:
 ```rust,ignore
@@ -35,8 +36,10 @@ flowchart LR
 
 At compile time, the Hydroflow spec is *stratified*: partitioned into subflows, where each subflow is assigned a stratum number. Subsequently at runtime, each tick executes the strata one-by-one in ascending order of stratum number. In the example above, the `source_stream_serde` operator is in stratum 0, and the `sort` and `for_each` operators are in stratum 1. The runtime executes the `source_stream_serde` operator first, buffering output in the Handoff. The `sort` operator will not receive any data until the `source_stream_serde` operator has finished executing. When stratum 0 is complete, the subflow in stratum 1 is scheduled and executes the `sort` and `for_each` operators to complete the tick. 
 
+The [`difference`](./surface_ops.gen.md#difference) operator is a mixed example. Like a set difference, it outputs all the items from its `pos` input that do not appear in its `neg` input. The `pos` input is streaming, and the `neg` input is blocking. Blocking on the `neg` input ensures that if the operator streams an output from the `pos` input, it will never need to retract that output.
 
-This allows us to refine our understanding of the Hydroflow spinner loop:
+
+This allows us to refine our understanding of the Hydroflow transducer loop:
 1. Ingest a batch of data from one or more inbound channels, deliver them to the appropriate `source_xxx` operators in the Hydroflow spec.
 2. For each stratum \[0..n\] in the Hydroflow spec, run the stratum to fixpoint, placing any outputs into handoffs or outbound channels. 
 3. Advance the local clock before starting the next tick.
@@ -51,7 +54,7 @@ The Hydroflow compiler performs stratification via static analysis of the Hydrof
 
 Given the acyclicity test, any legal Hydroflow program consists of a directed acyclic graph (DAG) of strata and handoffs. The strata are numbered in ascending order by assigning stratum number 0 to the "leaves" of the DAG (strata with no upstream operators), and then ensuring that each stratum is assigned a number that is one larger than any of its upstream strata.
 
-As a Hydroflow operator executes, it is running on a particular spinner, in a particular tick, in a particular stratum. 
+As a Hydroflow operator executes, it is running on a particular transducer, in a particular tick, in a particular stratum. 
 
 
 ### Determining whether an operator should block: Monotonicity
@@ -66,4 +69,4 @@ By contrast, consider the output of a blocking operator like `difference`. The o
 Hydroflow uses the monotonicity property to determine whether an operator should block. If an operator is monotone with
 respect to an input, that input is streaming. If an operator is non-monotone, it is blocking.
 
-Monotonicity turns out to be particularly important for distributed systems. In particular, if all your spinners are fully monotone across ticks, then they can run in parallel without any coordination—they will always stream correct prefixes of the final outputs, and eventually will deliver the complete output. This is the positive direction of the [CALM Theorem](https://cacm.acm.org/magazines/2020/9/246941-keeping-calm/fulltext).
+Monotonicity turns out to be particularly important for distributed systems. In particular, if all your transducers are fully monotone across ticks, then they can run in parallel without any coordination—they will always stream correct prefixes of the final outputs, and eventually will deliver the complete output. This is the positive direction of the [CALM Theorem](https://cacm.acm.org/magazines/2020/9/246941-keeping-calm/fulltext).

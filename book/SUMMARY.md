@@ -1,9 +1,6 @@
 # Summary
 
-[Introduction](index.md)
-
-# User Guide
-
+- [Introduction](index.md)
 - [Quickstart](./quickstart.md)
   - [Setup](./setup.md)
   - [Simplest Example](./example_1_simplest.md)
@@ -19,6 +16,8 @@
   - [Blocking Ops and Stratification](./stratification.md)
   - [Distributed Time](./distributed_time.md)
 - [The Hydro Ecosystem](./ecosystem.md)
+# User Guide
+
 - [Syntax](./surface_syntax.md)
   - [Rust Embedding](./surface_embedding.md)
   - [Flows](./surface_flows.md)
