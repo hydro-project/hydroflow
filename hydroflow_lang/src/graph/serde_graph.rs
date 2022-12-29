@@ -93,7 +93,6 @@ impl SerdeGraph {
                     _ => "[",
                 },
                 code = text
-                    .clone()
                     .replace('&', "&amp;")
                     .replace('<', "&lt;")
                     .replace('>', "&gt;")
@@ -243,7 +242,7 @@ impl SerdeGraph {
 
         fn write_dot_node(
             node_id: GraphNodeId,
-            text: &String,
+            text: &str,
             re: &Regex,
             tab: usize,
             w: &mut impl std::fmt::Write,
@@ -320,8 +319,8 @@ impl SerdeGraph {
                 "",
                 src.data(),
                 edge.dst.data(),
-                if properties.len() > 0 {
-                    format!(" [{}]", properties.join(", ")).to_string()
+                if !properties.is_empty() {
+                    format!(" [{}]", properties.join(", "))
                 } else {
                     "".to_string()
                 },

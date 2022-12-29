@@ -497,7 +497,7 @@ impl TryFrom<FlatGraph> for PartitionedGraph {
         let mut dest_map = SecondaryMap::new();
         graph.edges.iter().for_each(|e| {
             let (_, (_src, dest)) = e;
-            dest_map.insert(dest.clone(), e);
+            dest_map.insert(*dest, e);
         });
         // iterate through edges, find internal handoffs and their inbound/outbound edges
         for e in graph.edges() {
