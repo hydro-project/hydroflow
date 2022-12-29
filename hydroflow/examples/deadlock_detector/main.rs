@@ -1,10 +1,8 @@
 /// This is a remedial distributed deadlock (cycle) detector
 use clap::{Parser, ValueEnum};
 use hydroflow::tokio;
-use hydroflow::util::ipv4_resolve;
 use peer::run_detector;
 use serde::Deserialize;
-use std::net::SocketAddr;
 
 use std::error::Error;
 use std::fs::File;
@@ -28,8 +26,8 @@ struct Opts {
     path: String,
     #[clap(long)]
     port: u16,
-    #[clap(long, value_parser = ipv4_resolve)]
-    addr: Option<SocketAddr>,
+    #[clap(long)]
+    addr: String,
     #[clap(value_enum, long)]
     graph: Option<GraphType>,
 }
