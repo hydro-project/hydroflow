@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydroflow_lang/src/graph/flat_to_partitioned.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>flat_to_partitioned.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-1f7d512b176f0f72.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-124a1ca42af929b6.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-b07ed6aaa412307b.css" id="mainThemeStyle"><link rel="stylesheet" id="themeStyle" href="../../../static.files/light-d695502c06d5afea.css"><link rel="stylesheet" disabled href="../../../static.files/dark-aa222ca57e08648b.css"><link rel="stylesheet" disabled href="../../../static.files/ayu-d5b7bae5e01694db.css"><script id="default-settings" ></script><script src="../../../static.files/storage-d43fa987303ecbbb.js"></script><script defer src="../../../static.files/source-script-ea63cb6500f71309.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../static.files/main-4a084badb5778746.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../hydroflow_lang/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-5ec35bf9ca753509.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydroflow_lang/src/graph/flat_to_partitioned.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>flat_to_partitioned.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-1f7d512b176f0f72.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-124a1ca42af929b6.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-749885d589dd4e13.css" id="mainThemeStyle"><link rel="stylesheet" id="themeStyle" href="../../../static.files/light-d695502c06d5afea.css"><link rel="stylesheet" disabled href="../../../static.files/dark-aa222ca57e08648b.css"><link rel="stylesheet" disabled href="../../../static.files/ayu-d5b7bae5e01694db.css"><script id="default-settings" ></script><script src="../../../static.files/storage-d43fa987303ecbbb.js"></script><script defer src="../../../static.files/source-script-ea63cb6500f71309.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../static.files/main-4a084badb5778746.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../hydroflow_lang/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-5ec35bf9ca753509.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -528,10 +528,45 @@
 <a href="#528" id="528">528</a>
 <a href="#529" id="529">529</a>
 <a href="#530" id="530">530</a>
+<a href="#531" id="531">531</a>
+<a href="#532" id="532">532</a>
+<a href="#533" id="533">533</a>
+<a href="#534" id="534">534</a>
+<a href="#535" id="535">535</a>
+<a href="#536" id="536">536</a>
+<a href="#537" id="537">537</a>
+<a href="#538" id="538">538</a>
+<a href="#539" id="539">539</a>
+<a href="#540" id="540">540</a>
+<a href="#541" id="541">541</a>
+<a href="#542" id="542">542</a>
+<a href="#543" id="543">543</a>
+<a href="#544" id="544">544</a>
+<a href="#545" id="545">545</a>
+<a href="#546" id="546">546</a>
+<a href="#547" id="547">547</a>
+<a href="#548" id="548">548</a>
+<a href="#549" id="549">549</a>
+<a href="#550" id="550">550</a>
+<a href="#551" id="551">551</a>
+<a href="#552" id="552">552</a>
+<a href="#553" id="553">553</a>
+<a href="#554" id="554">554</a>
+<a href="#555" id="555">555</a>
+<a href="#556" id="556">556</a>
+<a href="#557" id="557">557</a>
+<a href="#558" id="558">558</a>
+<a href="#559" id="559">559</a>
+<a href="#560" id="560">560</a>
+<a href="#561" id="561">561</a>
+<a href="#562" id="562">562</a>
+<a href="#563" id="563">563</a>
+<a href="#564" id="564">564</a>
+<a href="#565" id="565">565</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
 
 <span class="kw">use </span>proc_macro2::Span;
-<span class="kw">use </span>slotmap::{Key, SecondaryMap, SlotMap};
+<span class="kw">use </span>slotmap::{Key, SecondaryMap, SlotMap, SparseSecondaryMap};
 <span class="kw">use </span>syn::parse_quote;
 <span class="kw">use </span>syn::spanned::Spanned;
 
@@ -574,7 +609,7 @@
     nodes: <span class="kw-2">&amp;</span>SlotMap&lt;GraphNodeId, Node&gt;,
     graph: <span class="kw-2">&amp;</span>DiMulGraph&lt;GraphNodeId, GraphEdgeId&gt;,
     barrier_crossers: <span class="kw-2">&amp;</span>SecondaryMap&lt;GraphEdgeId, DelayType&gt;,
-    node_color_map: <span class="kw-2">&amp;mut </span>SecondaryMap&lt;GraphNodeId, <span class="prelude-ty">Option</span>&lt;Color&gt;&gt;,
+    node_color_map: <span class="kw-2">&amp;mut </span>SparseSecondaryMap&lt;GraphNodeId, Color&gt;,
 ) -&gt; (UnionFind&lt;GraphNodeId&gt;, BTreeSet&lt;GraphEdgeId&gt;) {
     <span class="kw">let </span><span class="kw-2">mut </span>subgraph_unionfind: UnionFind&lt;GraphNodeId&gt; = UnionFind::with_capacity(nodes.len());
     <span class="comment">// Will contain all edges which are handoffs. Starts out with all edges and
@@ -680,7 +715,7 @@
     ports: <span class="kw-2">&amp;mut </span>SecondaryMap&lt;GraphEdgeId, (PortIndexValue, PortIndexValue)&gt;,
     graph: <span class="kw-2">&amp;mut </span>DiMulGraph&lt;GraphNodeId, GraphEdgeId&gt;,
     barrier_crossers: <span class="kw-2">&amp;mut </span>SecondaryMap&lt;GraphEdgeId, DelayType&gt;,
-    node_color: <span class="kw-2">&amp;mut </span>SecondaryMap&lt;GraphNodeId, <span class="prelude-ty">Option</span>&lt;Color&gt;&gt;,
+    node_color: <span class="kw-2">&amp;mut </span>SparseSecondaryMap&lt;GraphNodeId, Color&gt;,
 ) -&gt; (
     SecondaryMap&lt;GraphNodeId, GraphSubgraphId&gt;,
     SlotMap&lt;GraphSubgraphId, Vec&lt;GraphNodeId&gt;&gt;,
@@ -731,7 +766,7 @@
 ///
 /// Returns if `src` and `dst` can be in the same subgraph.
 </span><span class="kw">fn </span>can_connect_colorize(
-    node_color: <span class="kw-2">&amp;mut </span>SecondaryMap&lt;GraphNodeId, <span class="prelude-ty">Option</span>&lt;Color&gt;&gt;,
+    node_color: <span class="kw-2">&amp;mut </span>SparseSecondaryMap&lt;GraphNodeId, Color&gt;,
     src: GraphNodeId,
     dst: GraphNodeId,
 ) -&gt; bool {
@@ -739,28 +774,28 @@
     // Push -&gt; Push
     // Pull -&gt; [Computation] -&gt; Push
     // Push -&gt; [Handoff] -&gt; Pull
-    </span><span class="kw">let </span>can_connect = <span class="kw">match </span>(node_color[src], node_color[dst]) {
+    </span><span class="kw">let </span>can_connect = <span class="kw">match </span>(node_color.get(src), node_color.get(dst)) {
         <span class="comment">// Linear chain, can&#39;t connect because it may cause future conflicts.
         // But if it doesn&#39;t in the _future_ we can connect it (once either/both ends are determined).
         </span>(<span class="prelude-val">None</span>, <span class="prelude-val">None</span>) =&gt; <span class="bool-val">false</span>,
 
         <span class="comment">// Infer left side.
         </span>(<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(Color::Pull | Color::Comp)) =&gt; {
-            node_color[src] = <span class="prelude-val">Some</span>(Color::Pull);
+            node_color.insert(src, Color::Pull);
             <span class="bool-val">true
         </span>}
         (<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(Color::Push | Color::Hoff)) =&gt; {
-            node_color[src] = <span class="prelude-val">Some</span>(Color::Push);
+            node_color.insert(src, Color::Push);
             <span class="bool-val">true
         </span>}
 
         <span class="comment">// Infer right side.
         </span>(<span class="prelude-val">Some</span>(Color::Pull | Color::Hoff), <span class="prelude-val">None</span>) =&gt; {
-            node_color[dst] = <span class="prelude-val">Some</span>(Color::Pull);
+            node_color.insert(dst, Color::Pull);
             <span class="bool-val">true
         </span>}
         (<span class="prelude-val">Some</span>(Color::Comp | Color::Push), <span class="prelude-val">None</span>) =&gt; {
-            node_color[dst] = <span class="prelude-val">Some</span>(Color::Push);
+            node_color.insert(dst, Color::Push);
             <span class="bool-val">true
         </span>}
 
@@ -998,6 +1033,8 @@
                 <span class="kw">let </span>op_color = node_color(<span class="kw-2">&amp;</span>nodes[node_id], inn_degree, out_degree);
                 (node_id, op_color)
             })
+            .filter(|(_node_id, op_color)| op_color.is_some())
+            .map(|(node_id, op_color)| (node_id, op_color.unwrap()))
             .collect();
 
         <span class="kw">let </span>(<span class="kw-2">mut </span>node_subgraph, <span class="kw-2">mut </span>subgraph_nodes) = make_subgraphs(
@@ -1020,6 +1057,38 @@
         <span class="kw">let </span>(subgraph_recv_handoffs, subgraph_send_handoffs) =
             find_subgraph_handoffs(<span class="kw-2">&amp;</span>nodes, <span class="kw-2">&amp;</span>graph, <span class="kw-2">&amp;</span>node_subgraph, <span class="kw-2">&amp;</span>subgraph_nodes);
 
+        <span class="kw">let </span><span class="kw-2">mut </span>subgraph_internal_handoffs: SecondaryMap&lt;GraphSubgraphId, Vec&lt;GraphNodeId&gt;&gt; =
+            SecondaryMap::new();
+
+        <span class="comment">// build a SecondaryMap from edges.dst to edges to find inbound edges of a node
+        </span><span class="kw">let </span><span class="kw-2">mut </span>dest_map = SecondaryMap::new();
+        graph.edges.iter().for_each(|e| {
+            <span class="kw">let </span>(<span class="kw">_</span>, (_src, dest)) = e;
+            dest_map.insert(<span class="kw-2">*</span>dest, e);
+        });
+        <span class="comment">// iterate through edges, find internal handoffs and their inbound/outbound edges
+        </span><span class="kw">for </span>e <span class="kw">in </span>graph.edges() {
+            <span class="kw">let </span>(src, dst) = e.<span class="number">1</span>;
+            <span class="kw">if let </span>Node::Handoff { .. } = nodes[src] {
+                <span class="kw">if let </span><span class="prelude-val">Some</span>((<span class="kw">_</span>, (inbound_src, _inbound_dest))) = dest_map.get(src) {
+                    <span class="comment">// Found an inbound edge to this handoff. Check if it&#39;s in the same subgraph as dst
+                    </span><span class="kw">if let </span><span class="prelude-val">Some</span>(inbound_src_subgraph) = node_subgraph.get(<span class="kw-2">*</span>inbound_src) {
+                        <span class="kw">if let </span><span class="prelude-val">Some</span>(dst_subgraph) = node_subgraph.get(dst) {
+                            <span class="kw">if </span>inbound_src_subgraph == dst_subgraph {
+                                <span class="comment">// Found an internal handoff
+                                </span><span class="kw">if let </span>Node::Handoff { .. } = nodes[src] {
+                                    subgraph_internal_handoffs
+                                        .entry(<span class="kw-2">*</span>inbound_src_subgraph)
+                                        .unwrap()
+                                        .or_insert(Vec::new())
+                                        .push(src);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
         <span class="prelude-val">Ok</span>(PartitionedGraph {
             nodes,
             graph,
@@ -1030,6 +1099,7 @@
             subgraph_stratum,
             subgraph_recv_handoffs,
             subgraph_send_handoffs,
+            subgraph_internal_handoffs,
             node_color_map: node_color,
         })
     }
@@ -1059,4 +1129,4 @@
     (node_id, e1)
 }
 </code></pre></div>
-</section></main><div id="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="hydroflow_lang" data-themes="" data-resource-suffix="" data-rustdoc-version="1.68.0-nightly (92c1937a9 2022-12-27)" data-search-js="search-181581080540673f.js" data-settings-js="settings-bebeae96e00e4617.js" data-settings-css="settings-58836c674e2f7bd2.css" ></div></body></html>
+</section></main><div id="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="hydroflow_lang" data-themes="" data-resource-suffix="" data-rustdoc-version="1.68.0-nightly (270c94e48 2022-12-28)" data-search-js="search-181581080540673f.js" data-settings-js="settings-bebeae96e00e4617.js" data-settings-css="settings-58836c674e2f7bd2.css" ></div></body></html>
