@@ -490,6 +490,38 @@ impl TryFrom<FlatGraph> for PartitionedGraph {
         let (subgraph_recv_handoffs, subgraph_send_handoffs) =
             find_subgraph_handoffs(&nodes, &graph, &node_subgraph, &subgraph_nodes);
 
+        let mut subgraph_internal_handoffs: SecondaryMap<GraphSubgraphId, Vec<GraphNodeId>> =
+            SecondaryMap::new();
+
+        // build a SecondaryMap from edges.dst to edges to find inbound edges of a node
+        let mut dest_map = SecondaryMap::new();
+        graph.edges.iter().for_each(|e| {
+            let (_, (_src, dest)) = e;
+            dest_map.insert(dest.clone(), e);
+        });
+        // iterate through edges, find internal handoffs and their inbound/outbound edges
+        for e in graph.edges() {
+            let (src, dst) = e.1;
+            if let Node::Handoff { .. } = nodes[src] {
+                if let Some((_, (inbound_src, _inbound_dest))) = dest_map.get(src) {
+                    // Found an inbound edge to this handoff. Check if it's in the same subgraph as dst
+                    if let Some(inbound_src_subgraph) = node_subgraph.get(*inbound_src) {
+                        if let Some(dst_subgraph) = node_subgraph.get(dst) {
+                            if inbound_src_subgraph == dst_subgraph {
+                                // Found an internal handoff
+                                if let Node::Handoff { .. } = nodes[src] {
+                                    subgraph_internal_handoffs
+                                        .entry(*inbound_src_subgraph)
+                                        .unwrap()
+                                        .or_insert(Vec::new())
+                                        .push(src);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
         Ok(PartitionedGraph {
             nodes,
             graph,
@@ -500,6 +532,7 @@ impl TryFrom<FlatGraph> for PartitionedGraph {
             subgraph_stratum,
             subgraph_recv_handoffs,
             subgraph_send_handoffs,
+            subgraph_internal_handoffs,
             node_color_map: node_color,
         })
     }
