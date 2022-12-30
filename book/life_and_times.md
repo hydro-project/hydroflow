@@ -1,5 +1,6 @@
 # The Life and Times of a Hydroflow Transducer
-Time is a fundamental concept in many distributed systems. Hydroflow's model of time is very simple.
+Time is a fundamental concept in many distributed systems. Hydroflow's model of time is very simple, but 
+also powerful enough to serve as a building block for more complex models of time.
 
 Like most reactive services, we can envision a Hydroflow transducer running as an unbounded loop that is managed 
 by the runtime library. Each iteration of the transducer's loop is called a *tick*. Associated with the transducer is 
@@ -17,14 +18,17 @@ The transducer's main loop is shown in the following diagram:
 ```mermaid
 %%{init: {'theme':'neutral'}}%%
 flowchart LR
-    network>events and messages fa:fa-telegram]--->buffer[[buffer]]--->ingest
-    subgraph transducer[Hydroflow Loop]
-        ingest>ingest a batch of data]--->loop(((Run Hydroflow Spec to Fixpoint fa:fa-cog)))--->stream[stream outputs fa:fa-telegram]--->clock((advance clock fa:fa-clock-o))--->ingest
+    subgraph external[External]
+        network>"messages\n& events"\nfa:fa-telegram]-->buffer[[buffer]]
+    end
+    subgraph transducer[Transducer Loop]
+         buffer-->ingest>ingest a batch\nof data]-->loop(((run Hydroflow\nspec to fixpoint\nfa:fa-cog)))-->stream[stream out\nmsgs & events\nfa:fa-telegram]-->clock((advance\nclock\nfa:fa-clock-o))-- new tick! -->ingest
     end
     style stream fill:#0fa,stroke:#aaa,stroke-width:2px,stroke-dasharray: 5 5
     style loop fill:#0fa
     style clock fill:#f00
     style ingest fill:#f00
+    linkStyle 5 stroke:red,stroke-width:4px,color:red;
 ```
 
 In sum, an individual transducer advances sequentially through logical time; in each tick of its clock it ingests a batch of data from its inbound channels, executes the Hydroflow spec, and sends any outbound data to its outbound channels.

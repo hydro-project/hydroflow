@@ -192,6 +192,7 @@ The mermaid graph for the server is below. The three branches of the `demux` are
 for both `ClientResponse` and broadcasting, and the `merge` of all outbound messages into `dest_sink_serde`.
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'clusterBkg':'#ddd'}}}%%
 flowchart TD
 classDef pullClass fill:#02f,color:#fff,stroke:#000
 classDef pushClass fill:#ff0,stroke:#000
@@ -355,6 +356,7 @@ Finish up the file by pasting the code below for optionally generating the graph
 The client's mermaid graph looks a bit different than the server's, mostly because it routes some data to
 the screen rather than to an outbound network channel.
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'clusterBkg':'#ddd'}}}%%
 flowchart TD
 classDef pullClass fill:#02f,color:#fff,stroke:#000
 classDef pushClass fill:#ff0,stroke:#000
