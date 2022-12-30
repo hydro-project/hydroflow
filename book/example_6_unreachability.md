@@ -111,6 +111,7 @@ Finally we print both `all_vertices` and `unreached_vertices`.
 
 The auto-generated mermaid looks like so:
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'clusterBkg':'#ddd'}}}%%
 flowchart TD
 classDef pullClass fill:#02f,color:#fff,stroke:#000
 classDef pushClass fill:#ff0,stroke:#000

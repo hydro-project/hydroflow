@@ -68,7 +68,7 @@ fn benchmark_timely(c: &mut Criterion) {
                     .concat(&stream)
                     .flat_map(move |x| edges.get(&x).cloned().into_iter().flatten())
                     .filter(move |x| seen.insert(*x));
-                stream_out.clone().connect_loop(handle);
+                stream_out.connect_loop(handle);
 
                 stream_out.capture()
             });

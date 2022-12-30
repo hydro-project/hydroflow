@@ -4,6 +4,7 @@
 > * Our first multi-input operator, [`join`](./surface_ops.gen.md#join)
 > * Indexing multi-input operators by prepending a bracket expression
 > * The [`unique`](./surface_ops.gen.md#unique) operator for removing duplicates from a stream
+> * Visualizing hydroflow code via `flow.serde_graph().to_mermaid()`
 > * A first exposure to the concepts of _strata_ and _ticks_
 
 So far all the operators we've used have one input and one output and therefore
@@ -11,17 +12,19 @@ create a linear flow of operators. Let's now take a look at a Hydroflow program 
 an operator which has multiple inputs; in the following examples we'll extend this to
 multiple outputs.
 
-To motivate this, we'll build a simple flow-based algorithm for the problem of *graph neighbors*. 
+To motivate this, we are going to start out on a little project of building a flow-based algorithm 
+for the problem of *graph reachability*. 
 Given an abstract graph—represented as data in the form of a streaming list of edges—which 
 vertices can be reached from a vertex passed in as the `origin`? It turns out this is fairly 
 naturally represented as a dataflow program. 
 
 > **Note on terminology**: In each of the next few examples, we're going to write a Hydroflow program (a dataflow graph) to process data that itself represents some other graph! To avoid confusion, in these examples, we'll refer to the Hydroflow program as a "flow" or "program", and the data as a "graph" of "edges" and "vertices".
 
-To work our way up to graph reachability, we'll first start with a simple flow that finds
-graph *neighbors*: vertices that are just one hop away. 
+## But First: Graph Neighbors
+Graph reachability exercises a bunch of concepts at once, so we'll start here with a simpler flow that 
+finds graph *neighbors*: vertices that are just one hop away. 
 
-Our first Hydroflow program will take
+Our graph neighbors Hydroflow program will take
 our initial `origin` vertex as one input, and join it another input that streams in all the edges—this 
 join will stream out the vertices that are one hop (edge) away from the starting vertex. 
 
@@ -113,6 +116,12 @@ over using `source_iter`.
 
 We then set up a [`join()`](./surface_ops.gen.md#join) that we
 name `my_join`, which acts like a SQL inner join. 
+```rust,ignore
+    // the join
+    my_join = join() -> flat_map(|(src, (_, dst))| [src, dst]);
+    origin -> map(|v| (v, ())) -> [0]my_join;
+    stream_of_edges -> [1]my_join;
+```
 First, note the syntax for passing data into a subflow with multiple inputs requires us to *prepend* 
 an input index (starting at `0`) in square brackets to the multi-input variable name or operator.  In this example we have `-> [0]my_join`
 and `-> [1]my_join`.
@@ -124,11 +133,7 @@ and `(K, V2)`, and the operator joins them on equal keys `K` and produces an
 output of `(K, (V1, V2))` elements. In this case we only want to join on the key `v` and
 don't have any corresponding value, so we feed `origin` through a [`map()`](./surface_ops.gen.md#map)
 to generate `(v, ())` elements as the first join input. 
-```rust,ignore
-    my_join = join() -> map(|(_x, (_y, z))| z);
-    origin -> map(|v| (v, ())) -> [0]my_join;
-    stream_of_edges -> [1]my_join;
-```
+
 The `stream_of_edges` are `(src, dst)` pairs,
 so the join's output is `(src, ((), dst))` where `dst` are new neighbor
 vertices. So the `my_join` variable feeds the output of the join through a `flat_map` to extract the pairs into 2-item arrays, which are flattened to give us a list of all vertices reached.
@@ -145,6 +150,7 @@ generate a diagram rendered by [Mermaid](https://mermaid-js.github.io/) showing
 the structure of the graph, and print it to stdout. You can copy that text and paste it into the [Mermaid Live Editor](https://mermaid-js.github.io/mermaid-live-editor/) to see the graph, which should look as follows:
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'clusterBkg':'#ddd'}}}%%
 flowchart TD
 classDef pullClass fill:#02f,color:#fff,stroke:#000
 classDef pushClass fill:#ff0,stroke:#000
