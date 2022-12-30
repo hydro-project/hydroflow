@@ -20,6 +20,8 @@ pub fn main() {
 }
 ```
 
+**TODO:** Make the following less intimidating to users who are not Tokio experts.
+
 To add a new external input
 channel, we can use the `hydroflow::util::unbounded_channel()` function in Rust before we declare the Hydroflow spec:
 ```rust, ignore

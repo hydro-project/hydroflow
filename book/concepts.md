@@ -10,12 +10,12 @@ But in case you want a preview of the Hydroflow goodies, here are the main theme
 produce the same results if you deploy on a single machine or replicate on a distributed cluster of machines?)  
 2. **Local Efficiency**: Hydroflow compiles your dataflow programs into efficient, low-latency, single-threaded executables.
 
-> Type system checks are not yet implemented, but they are coming soon!
+Taken together, Hydroflow provides a high-efficiency substrate on which to build powerful languages for distributed computing.
 
-More on these topics below.
+> Hydroflow's type system checks are not yet implemented, but they are coming soon!
 
 ## Hydroflow: A Runtime Library and a DSL in Rust
-Let's skip the fanfare and keep things simple: what *is* Hydroflow?
+Setting fanfare aside, what *is* Hydroflow?
 
 Hydroflow is a library that can be used in any Rust program. It includes two main components:
 

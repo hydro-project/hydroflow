@@ -136,6 +136,7 @@ showing up to the right of the variable rather than the left.
 Below is the diagram rendered by [mermaid](https://mermaid-js.github.io/) showing
 the structure of the full flow:
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'clusterBkg':'#ddd'}}}%%
 flowchart TD
 classDef pullClass fill:#02f,color:#fff,stroke:#000
 classDef pushClass fill:#ff0,stroke:#000
