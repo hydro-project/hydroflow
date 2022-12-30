@@ -39,6 +39,10 @@ impl SerdeGraph {
 
         fn write_mermaid_prelude(write: &mut impl std::fmt::Write) -> std::fmt::Result {
             // intro
+            writeln!(
+                write,
+                r"%%{{init: {{'theme': 'base', 'themeVariables': {{'clusterBkg':'#ddd'}}}}}}%%"
+            )?;
             writeln!(write, "flowchart TD")?;
             writeln!(write, "classDef pullClass fill:#02f,color:#fff,stroke:#000")?;
             writeln!(write, "classDef pushClass fill:#ff0,stroke:#000")?;
