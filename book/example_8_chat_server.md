@@ -327,7 +327,7 @@ In practice, however, the client establishes at most one connection to a server.
 subsequently it receives a single `ConnectResponse` and starts sending messages. The `cross_join` is thus effectively a buffer for messages, and a "gate" on that buffer that opens 
 when the client receives its sole `ConnectResponse`.
 
-3. The final pipeline simple pretty-prints the messages received from the server.
+3. The final pipeline simply pretty-prints the messages received from the server.
 
 Finish up the file by pasting the code below for optionally generating the graph and running the flow:
 ```rust,ignore
@@ -400,13 +400,13 @@ The client and server need to agree on `server-addr` or this won't work!
 
 Fire up the server in terminal 1:
 ```console
-cargo run -p hydroflow --example chat -- --name "_" --role server --server-addr 127.0.0.1:12347
-% ```
+% cargo run -p hydroflow --example chat -- --name "_" --role server --server-addr 127.0.0.1:12347
+```
 
 Start client "alice" in terminal 2 and type some messages, and you'll see them 
 echoed back to you. This will appear in colored fonts in most terminals
 (but unfortunately not in this markdown-based book!)
-```html
+```console
 % cargo run -p hydroflow --example chat -- --name "alice" --role client --server-addr 127.0.0.1:12347
 Listening on 127.0.0.1:50617
 Connecting to server at 127.0.0.1:12347
