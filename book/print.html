@@ -1427,7 +1427,7 @@ and the code to run the flow graph. To follow along, paste the following into th
 and is responsible for acknowledging requests from <code>clients</code>: it takes the address of the incoming <code>Message::ConnectRequest</code> 
 and sends a <code>ConnectResponse</code> back to that address. The second pipeline is responsible for broadcasting 
 all chat messages to all clients. This all-to-all pairing corresponds to the notion of a cartesian product
-or <code>[cross_join](./surface_ops.gen.md#cross_join)</code> in Hydroflow. The <code>cross_join</code> operator takes two input 
+or <a href="./surface_ops.gen.html#cross_join"><code>cross_join</code></a> in Hydroflow. The <code>cross_join</code> operator takes two input 
 channels and produces a single output channel with a tuple for each pair of inputs, in this case it produces
 <code>(Message, SocketAddr)</code> pairs. Conveniently, that is exactly the structure needed for sending to the <code>outbound_chan</code> sink!
 We call the cross-join pipeline <code>broadcast</code> because it effectively broadcasts all messages to all clients.</p>
