@@ -431,8 +431,8 @@ this pipeline runs once, immediately on startup, and generates a single <code>Co
 </li>
 <li>
 <p>The second pipeline reads from <code>source_stdin</code> and sends messages to the server. It differs from our echo-server example in the use of a <code>cross_join</code>
-with <code>inbound_chan[acks]</code>. In principle, this cross-join is like that of the server: it forms pairs between all messages and all servers that send a <code>ConnectResponse</code> ack. 
-In principle that means that the client is broadcasting each message to all servers.
+with <code>inbound_chan[acks]</code>. This cross-join is similar to that of the server: it forms pairs between all messages and all servers that send a <code>ConnectResponse</code> ack. 
+In principle this means that the client is broadcasting each message to all servers.
 In practice, however, the client establishes at most one connection to a server. Hence over time, this pipeline starts with zero <code>ConnectResponse</code>s and is sending no messages; 
 subsequently it receives a single <code>ConnectResponse</code> and starts sending messages. The <code>cross_join</code> is thus effectively a buffer for messages, and a &quot;gate&quot; on that buffer that opens 
 when the client receives its sole <code>ConnectResponse</code>.</p>
