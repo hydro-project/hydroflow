@@ -1563,7 +1563,7 @@ subsequently it receives a single <code>ConnectResponse</code> and starts sendin
 when the client receives its sole <code>ConnectResponse</code>.</p>
 </li>
 <li>
-<p>The final pipeline simple pretty-prints the messages received from the server.</p>
+<p>The final pipeline simply pretty-prints the messages received from the server.</p>
 </li>
 </ol>
 <p>Finish up the file by pasting the code below for optionally generating the graph and running the flow:</p>
@@ -1631,14 +1631,12 @@ end
 <p>As described in <code>hydroflow/hydroflow/example/chat/README.md</code>, we can run the server in one terminal, and run clients in additional terminals.
 The client and server need to agree on <code>server-addr</code> or this won't work!</p>
 <p>Fire up the server in terminal 1:</p>
-<pre><code class="language-console">cargo run -p hydroflow --example chat -- --name &quot;_&quot; --role server --server-addr 127.0.0.1:12347
-% ```
-
-Start client &quot;alice&quot; in terminal 2 and type some messages, and you'll see them 
+<pre><code class="language-console">% cargo run -p hydroflow --example chat -- --name &quot;_&quot; --role server --server-addr 127.0.0.1:12347
+</code></pre>
+<p>Start client &quot;alice&quot; in terminal 2 and type some messages, and you'll see them 
 echoed back to you. This will appear in colored fonts in most terminals
-(but unfortunately not in this markdown-based book!)
-```html
-% cargo run -p hydroflow --example chat -- --name &quot;alice&quot; --role client --server-addr 127.0.0.1:12347
+(but unfortunately not in this markdown-based book!)</p>
+<pre><code class="language-console">% cargo run -p hydroflow --example chat -- --name &quot;alice&quot; --role client --server-addr 127.0.0.1:12347
 Listening on 127.0.0.1:50617
 Connecting to server at 127.0.0.1:12347
 Client live!
