@@ -321,8 +321,8 @@ It starts with `source_iter` operator that emits a single, opaque "unit" (`()`) 
 this pipeline runs once, immediately on startup, and generates a single `ConnectRequest` message which is sent to the server.
 
 2. The second pipeline reads from `source_stdin` and sends messages to the server. It differs from our echo-server example in the use of a `cross_join`
-with `inbound_chan[acks]`. In principle, this cross-join is like that of the server: it forms pairs between all messages and all servers that send a `ConnectResponse` ack. 
-In principle that means that the client is broadcasting each message to all servers.
+with `inbound_chan[acks]`. This cross-join is similar to that of the server: it forms pairs between all messages and all servers that send a `ConnectResponse` ack. 
+In principle this means that the client is broadcasting each message to all servers.
 In practice, however, the client establishes at most one connection to a server. Hence over time, this pipeline starts with zero `ConnectResponse`s and is sending no messages; 
 subsequently it receives a single `ConnectResponse` and starts sending messages. The `cross_join` is thus effectively a buffer for messages, and a "gate" on that buffer that opens 
 when the client receives its sole `ConnectResponse`.
