@@ -182,7 +182,7 @@ The first pipeline is one line long,
 and is responsible for acknowledging requests from `clients`: it takes the address of the incoming `Message::ConnectRequest` 
 and sends a `ConnectResponse` back to that address. The second pipeline is responsible for broadcasting 
 all chat messages to all clients. This all-to-all pairing corresponds to the notion of a cartesian product
-or `[cross_join](./surface_ops.gen.md#cross_join)` in Hydroflow. The `cross_join` operator takes two input 
+or [`cross_join`](./surface_ops.gen.md#cross_join) in Hydroflow. The `cross_join` operator takes two input 
 channels and produces a single output channel with a tuple for each pair of inputs, in this case it produces
 `(Message, SocketAddr)` pairs. Conveniently, that is exactly the structure needed for sending to the `outbound_chan` sink!
 We call the cross-join pipeline `broadcast` because it effectively broadcasts all messages to all clients.
