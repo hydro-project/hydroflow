@@ -43,3 +43,5 @@ input_send.send("Hello").unwrap();
 input_send.send("World").unwrap();
 flow.run_available();
 ```
+
+TODO: add source_stream_serde
