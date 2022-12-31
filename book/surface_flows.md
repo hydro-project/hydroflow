@@ -62,4 +62,4 @@ these details unless you are interested in low-level performance tuning; they ar
 of [in-out trees](./in-out_trees.md). 
 
 ### A note on assigning flows with multiple ports
-> *WARNING*: _Need to document the port numbers for variables assigned to tree- or dag-shaped flows_
+> *TODO*: _Need to document the port numbers for variables assigned to tree- or dag-shaped flows_
