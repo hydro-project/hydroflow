@@ -76,7 +76,7 @@ struct Opts {
     server_addr: Option<SocketAddr>,
 }
 ```
-This sets up 3 command-line flags: `role`, `addr`, and `server_addr`. Note how the `addr` and `server_addr` flags are made optional via wrapping in a Rust `Option`; by contrast, the `role` and `server_addr` options are required. The `clap` crate will parse the command-line options and populate the `Opts` struct with the values. `clap` handles parsing the command line strings into the associated Rust types --  the `value_parser` attribute tells `clap` to use Hydroflow's `ipv4_resolve` helper function to parse a string like "127.0.0.1:6552" into a `SocketAddr`.
+This sets up 3 command-line flags: `role`, `addr`, and `server_addr`. Note how the `addr` and `server_addr` flags are made optional via wrapping in a Rust `Option`; by contrast, the `role` option is required. The `clap` crate will parse the command-line options and populate the `Opts` struct with the values. `clap` handles parsing the command line strings into the associated Rust types --  the `value_parser` attribute tells `clap` to use Hydroflow's `ipv4_resolve` helper function to parse a string like "127.0.0.1:6552" into a `SocketAddr`.
 
 This brings us to the `main` function itself. It is prefaced by a `#[tokio::main]` attribute, which is a macro that sets up the tokio runtime. This is necessary because Hydroflow uses the tokio runtime for asynchronous execution as a service.  
 
