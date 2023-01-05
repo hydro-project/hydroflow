@@ -171,9 +171,16 @@ jobs:
     if: |
       needs.pre_job.outputs.should_skip != 'true' &&
       (
-        github.event_name == 'schedule' ||
-        (github.event_name == 'workflow_dispatch' && github.event.inputs.should_bench == 'true') ||
-        (github.event_name == 'push' && contains(github.event.head_commit.message, '[ci-bench]'))
+        github.event_name == 'schedule'
+        || (github.event_name == 'workflow_dispatch' && github.event.inputs.should_bench == 'true')
+        || (github.event_name == 'push' && contains(github.event.head_commit.message, '[ci-bench]'))
+        || (
+          github.event_name == 'pull_request'
+          && (
+            contains(github.event.pull_request.title, '[ci-bench]')
+            || contains(github.event.pull_request.body, '[ci-bench]')
+          )
+        )
       )
     runs-on: ubuntu-latest
     env:
@@ -226,6 +233,8 @@ jobs:
         run: node --input-type=module -e "$(curl -sSL https://raw.githubusercontent.com/benchmark-action/github-action-benchmark/master/src/default_index_html.ts) console.log(DEFAULT_INDEX_HTML)" > "$WWW_DIR/bench/index.html"
 
       - name: Push to gh-pages
+        # Do not deploy PRs, only benchmark main branch.
+        if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
         shell: bash
         run: |
           cp -r .github/gh-pages/* .github/gh-pages/.gitignore "$WWW_DIR/"
