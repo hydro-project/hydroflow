@@ -3,14 +3,22 @@
 pub struct PrettySpan(pub proc_macro2::Span);
 impl std::fmt::Display for PrettySpan {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let span = self.0.unwrap();
-        write!(
-            f,
-            "{}:{}:{}",
-            span.source_file().path().display(),
-            span.start().line,
-            span.start().column
-        )
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            let span = self.0.unwrap();
+            write!(
+                f,
+                "{}:{}:{}",
+                span.source_file().path().display(),
+                span.start().line,
+                span.start().column
+            )
+        }
+
+        #[cfg(target_arch = "wasm32")]
+        {
+            write!(f, "unknown")
+        }
     }
 }
 
@@ -18,7 +26,15 @@ impl std::fmt::Display for PrettySpan {
 pub struct PrettyRowCol(pub proc_macro2::Span);
 impl std::fmt::Display for PrettyRowCol {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let span = self.0.unwrap();
-        write!(f, "{}:{}", span.start().line, span.start().column)
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            let span = self.0.unwrap();
+            write!(f, "{}:{}", span.start().line, span.start().column)
+        }
+
+        #[cfg(target_arch = "wasm32")]
+        {
+            write!(f, "unknown")
+        }
     }
 }

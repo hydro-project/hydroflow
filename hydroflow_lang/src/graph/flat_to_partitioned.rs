@@ -435,6 +435,7 @@ fn find_subgraph_handoffs(
                 subgraph_recv_handoffs[node_subgraph[dst]].push(src);
             }
             (Node::Handoff { .. }, Node::Handoff { .. }) => {
+                #[cfg(not(target_arch = "wasm32"))]
                 Span::call_site().unwrap().error(format!(
                     "Internal Error: Consecutive handoffs {:?} -> {:?}",
                     src.data(),

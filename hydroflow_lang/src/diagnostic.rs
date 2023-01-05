@@ -33,13 +33,16 @@ impl Diagnostic {
         self.level.is_error()
     }
     pub fn emit(&self) {
-        let pm_diag = match self.level {
-            Level::Error => self.span.unwrap().error(&*self.message),
-            Level::Warning => self.span.unwrap().warning(&*self.message),
-            Level::Note => self.span.unwrap().note(&*self.message),
-            Level::Help => self.span.unwrap().help(&*self.message),
-        };
-        pm_diag.emit();
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            let pm_diag = match self.level {
+                Level::Error => self.span.unwrap().error(&*self.message),
+                Level::Warning => self.span.unwrap().warning(&*self.message),
+                Level::Note => self.span.unwrap().note(&*self.message),
+                Level::Help => self.span.unwrap().help(&*self.message),
+            };
+            pm_diag.emit();
+        }
     }
 }
 impl From<syn::Error> for Diagnostic {
