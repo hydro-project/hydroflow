@@ -9,7 +9,7 @@ diagnostics = []
 
 [dependencies]
 hydroflow_internalmacro = { path = "../hydroflow_internalmacro" }
-proc-macro2 = { version = "1.0.0", features = ["proc-macro", "span-locations"] }
+proc-macro2 = { version = "1.0.0", features = ["span-locations"] }
 quote = "1.0.0"
 regex = "1.7.0"
 serde = "1.0.1"
