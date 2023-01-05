@@ -66,8 +66,136 @@
 <a href="#66" id="66">66</a>
 <a href="#67" id="67">67</a>
 <a href="#68" id="68">68</a>
-</pre><pre class="rust"><code><span class="kw">use super</span>::{
-    OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, RANGE_1,
+<a href="#69" id="69">69</a>
+<a href="#70" id="70">70</a>
+<a href="#71" id="71">71</a>
+<a href="#72" id="72">72</a>
+<a href="#73" id="73">73</a>
+<a href="#74" id="74">74</a>
+<a href="#75" id="75">75</a>
+<a href="#76" id="76">76</a>
+<a href="#77" id="77">77</a>
+<a href="#78" id="78">78</a>
+<a href="#79" id="79">79</a>
+<a href="#80" id="80">80</a>
+<a href="#81" id="81">81</a>
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
+<a href="#86" id="86">86</a>
+<a href="#87" id="87">87</a>
+<a href="#88" id="88">88</a>
+<a href="#89" id="89">89</a>
+<a href="#90" id="90">90</a>
+<a href="#91" id="91">91</a>
+<a href="#92" id="92">92</a>
+<a href="#93" id="93">93</a>
+<a href="#94" id="94">94</a>
+<a href="#95" id="95">95</a>
+<a href="#96" id="96">96</a>
+<a href="#97" id="97">97</a>
+<a href="#98" id="98">98</a>
+<a href="#99" id="99">99</a>
+<a href="#100" id="100">100</a>
+<a href="#101" id="101">101</a>
+<a href="#102" id="102">102</a>
+<a href="#103" id="103">103</a>
+<a href="#104" id="104">104</a>
+<a href="#105" id="105">105</a>
+<a href="#106" id="106">106</a>
+<a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
+<a href="#109" id="109">109</a>
+<a href="#110" id="110">110</a>
+<a href="#111" id="111">111</a>
+<a href="#112" id="112">112</a>
+<a href="#113" id="113">113</a>
+<a href="#114" id="114">114</a>
+<a href="#115" id="115">115</a>
+<a href="#116" id="116">116</a>
+<a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
+<a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a>
+<a href="#121" id="121">121</a>
+<a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
+<a href="#124" id="124">124</a>
+<a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
+<a href="#166" id="166">166</a>
+<a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
+
+<span class="kw">use super</span>::{
+    parse_persistence_lifetimes, OperatorConstraints, OperatorWriteOutput, Persistence,
+    WriteContextArgs, WriteIteratorArgs, RANGE_1,
 };
 
 <span class="kw">use </span>quote::quote_spanned;
@@ -84,6 +212,66 @@
 /// source_iter(vec![(&quot;hello&quot;, &quot;cleveland&quot;)]) -&gt; [1]my_join;
 /// my_join -&gt; for_each(|(k, (v1, v2))| println!(&quot;({}, ({}, {}))&quot;, k, v1, v2));
 /// ```
+///
+/// `join` can also be provided with one or two generic lifetime persistence arguments, either
+/// `&#39;tick` or `&#39;static`, to specify how join data persists. With `&#39;tick`, pairs will only be
+/// joined with corresponding pairs within the same tick. With `&#39;static`, pairs will be remembered
+/// across ticks and will be joined with pairs arriving in later ticks. When not explicitly
+/// specified persistence defaults to `static.
+///
+/// When two persistence arguments are supplied the first maps to port `0` and the second maps to
+/// port `1`.
+/// When a single persistence argument is supplied, it is applied to both input ports.
+/// When no persistence arguments are applied it defaults to `&#39;static` for both.
+///
+/// The syntax is as follows:
+/// ```hydroflow,ignore
+/// join(); // Or
+/// join::&lt;&#39;static&gt;();
+///
+/// join::&lt;&#39;epoch&gt;();
+///
+/// join::&lt;&#39;static, &#39;epoch&gt;();
+///
+/// join::&lt;&#39;epoch, &#39;static&gt;();
+/// // etc.
+/// ```
+///
+/// ### Examples
+///
+/// ```rustbook
+/// let (input_send, input_recv) = hydroflow::util::unbounded_channel::&lt;(&amp;str, &amp;str)&gt;();
+/// let mut flow = hydroflow::hydroflow_syntax! {
+///     my_join = join::&lt;&#39;tick&gt;();
+///     source_iter([(&quot;hello&quot;, &quot;world&quot;)]) -&gt; [0]my_join;
+///     source_stream(input_recv) -&gt; [1]my_join;
+///     my_join -&gt; for_each(|(k, (v1, v2))| println!(&quot;({}, ({}, {}))&quot;, k, v1, v2));
+/// };
+/// input_send.send((&quot;hello&quot;, &quot;oakland&quot;)).unwrap();
+/// flow.run_tick();
+/// input_send.send((&quot;hello&quot;, &quot;san francisco&quot;)).unwrap();
+/// flow.run_tick();
+/// ```
+/// Prints out `&quot;(hello, (world, oakland))&quot;` since `source_iter([(&quot;hello&quot;, &quot;world&quot;)])` is only
+/// included in the first tick, then forgotten.
+///
+/// ---
+///
+/// ```rustbook
+/// let (input_send, input_recv) = hydroflow::util::unbounded_channel::&lt;(&amp;str, &amp;str)&gt;();
+/// let mut flow = hydroflow::hydroflow_syntax! {
+///     my_join = join::&lt;&#39;static&gt;();
+///     source_iter([(&quot;hello&quot;, &quot;world&quot;)]) -&gt; [0]my_join;
+///     source_stream(input_recv) -&gt; [1]my_join;
+///     my_join -&gt; for_each(|(k, (v1, v2))| println!(&quot;({}, ({}, {}))&quot;, k, v1, v2));
+/// };
+/// input_send.send((&quot;hello&quot;, &quot;oakland&quot;)).unwrap();
+/// flow.run_tick();
+/// input_send.send((&quot;hello&quot;, &quot;san francisco&quot;)).unwrap();
+/// flow.run_tick();
+/// ```
+/// Prints out `&quot;(hello, (world, oakland))&quot;` and `&quot;(hello, (world, san francisco))&quot;` since the
+/// inputs are peristed across ticks.
 </span><span class="attr">#[hydroflow_internalmacro::operator_docgen]
 </span><span class="kw">pub const </span>JOIN: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;join&quot;</span>,
@@ -96,23 +284,85 @@
     num_args: <span class="number">0</span>,
     input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">None</span>,
     write_fn: <span class="kw-2">&amp;</span>(|wc @ <span class="kw-2">&amp;</span>WriteContextArgs { root, op_span, .. },
-                 <span class="kw-2">&amp;</span>WriteIteratorArgs { ident, inputs, .. },
-                 <span class="kw">_</span>| {
-        <span class="kw">let </span>joindata_ident = wc.make_ident(<span class="string">&quot;joindata&quot;</span>);
+                 wi @ <span class="kw-2">&amp;</span>WriteIteratorArgs {
+                     ident,
+                     inputs,
+                     op_name,
+                     ..
+                 },
+                 diagnostics| {
+        <span class="kw">let </span>persistence = parse_persistence_lifetimes(wi, diagnostics);
+        <span class="kw">let </span>persistences = <span class="kw">match </span><span class="kw-2">*</span>persistence {
+            [] =&gt; [Persistence::Static, Persistence::Static],
+            [a] =&gt; [a, a],
+            [a, b] =&gt; [a, b],
+            <span class="kw">_ </span>=&gt; {
+                diagnostics.push(Diagnostic::spanned(
+                    op_span,
+                    Level::Error,
+                    <span class="macro">format!</span>(
+                        <span class="string">&quot;Operator `{}` expects zero, one, or two persistence lifetime generic arguments&quot;</span>,
+                        op_name
+                    ),
+                ));
+                [Persistence::Static, Persistence::Static]
+            }
+        };
+        <span class="comment">// TODO(mingwei): This is messy
+        </span><span class="kw">let </span>items = persistences
+            .zip([<span class="string">&quot;lhs&quot;</span>, <span class="string">&quot;rhs&quot;</span>])
+            .map(|(persistence, side)| {
+                <span class="kw">let </span>joindata_ident = wc.make_ident(<span class="macro">format!</span>(<span class="string">&quot;joindata_{}&quot;</span>, side));
+                <span class="kw">let </span>borrow_ident = wc.make_ident(<span class="macro">format!</span>(<span class="string">&quot;joindata_{}_borrow&quot;</span>, side));
+                <span class="kw">let </span>(init, borrow) = <span class="kw">match </span>persistence {
+                    Persistence::Tick =&gt; (
+                        <span class="macro">quote_spanned! </span>{op_span=&gt;
+                            #root::lang::monotonic_map::MonotonicMap::new_init(
+                                #root::lang::clear::ClearDefault(
+                                    #root::compiled::pull::HalfJoinState::default()
+                                )
+                            )
+                        },
+                        <span class="macro">quote_spanned! </span>{op_span=&gt;
+                            <span class="kw-2">&amp;mut </span>#borrow_ident.try_insert_with(context.current_tick(), Default::default).<span class="number">0
+                        </span>},
+                    ),
+                    Persistence::Static =&gt; (
+                        <span class="macro">quote_spanned! </span>{op_span=&gt;
+                            #root::compiled::pull::HalfJoinState::default()
+                        },
+                        <span class="macro">quote_spanned! </span>{op_span=&gt;
+                            <span class="kw-2">&amp;mut </span>#borrow_ident
+                        },
+                    ),
+                };
+                (joindata_ident, borrow_ident, init, borrow)
+            });
+        <span class="kw">let </span>[(lhs_joindata_ident, lhs_borrow_ident, lhs_init, lhs_borrow), (rhs_joindata_ident, rhs_borrow_ident, rhs_init, rhs_borrow)] =
+            items;
+
         <span class="kw">let </span>write_prologue = <span class="macro">quote_spanned! </span>{op_span=&gt;
-            <span class="kw">let </span><span class="kw-2">mut </span>#joindata_ident = Default::default();
+            <span class="kw">let </span>#lhs_joindata_ident = df.add_state(std::cell::RefCell::new(
+                #lhs_init
+            ));
+            <span class="kw">let </span>#rhs_joindata_ident = df.add_state(std::cell::RefCell::new(
+                #rhs_init
+            ));
         };
 
         <span class="kw">let </span>lhs = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>];
         <span class="kw">let </span>rhs = <span class="kw-2">&amp;</span>inputs[<span class="number">1</span>];
         <span class="kw">let </span>write_iterator = <span class="macro">quote_spanned! </span>{op_span=&gt;
+            <span class="kw">let </span><span class="kw-2">mut </span>#lhs_borrow_ident = context.state_ref(#lhs_joindata_ident).borrow_mut();
+            <span class="kw">let </span><span class="kw-2">mut </span>#rhs_borrow_ident = context.state_ref(#rhs_joindata_ident).borrow_mut();
             <span class="kw">let </span>#ident = {
                 <span class="doccomment">/// Limit error propagation by bounding locally, erasing output iterator type.
                 </span><span class="attr">#[inline(always)]
                 </span><span class="kw">fn </span>check_inputs&lt;<span class="lifetime">&#39;a</span>, K, I1, V1, I2, V2&gt;(
                     lhs: I1,
                     rhs: I2,
-                    state: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>#root::compiled::pull::JoinState&lt;K, V1, V2&gt;,
+                    lhs_state: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>#root::compiled::pull::HalfJoinState&lt;K, V1, V2&gt;,
+                    rhs_state: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>#root::compiled::pull::HalfJoinState&lt;K, V2, V1&gt;,
                 ) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;a </span>+ Iterator&lt;Item = (K, (V1, V2))&gt;
                 <span class="kw">where
                     </span>K: Eq + std::hash::Hash + Clone,
@@ -121,9 +371,9 @@
                     I1: <span class="lifetime">&#39;a </span>+ Iterator&lt;Item = (K, V1)&gt;,
                     I2: <span class="lifetime">&#39;a </span>+ Iterator&lt;Item = (K, V2)&gt;,
                 {
-                    #root::compiled::pull::SymmetricHashJoin::new(lhs, rhs, state)
+                    #root::compiled::pull::SymmetricHashJoin::new_from_mut(lhs, rhs, lhs_state, rhs_state)
                 }
-                check_inputs(#lhs, #rhs, <span class="kw-2">&amp;mut </span>#joindata_ident)
+                check_inputs(#lhs, #rhs, #lhs_borrow, #rhs_borrow)
             };
         };
 

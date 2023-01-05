@@ -2155,12 +2155,20 @@ argument.</p>
 The output will have one tuple for each distinct K, with an accumulated value of type V2.</p>
 </blockquote>
 <blockquote>
-<p>Arguments: two Rust closures. The first generates an initial value per group. The second itself takes two arguments:
-an 'accumulator', and an element. The second closure returns the value that the accumulator should have for the next iteration.</p>
+<p>Arguments: two Rust closures. The first generates an initial value per group. The second
+itself takes two arguments: an 'accumulator', and an element. The second closure returns the
+value that the accumulator should have for the next iteration.</p>
 </blockquote>
-<p>A special case of <code>fold</code>, in the spirit of SQL's GROUP BY and aggregation constructs.
-The input is partitioned into groups by the first field, and for each group the values in the second field
-are accumulated via the closures in the arguments.</p>
+<p>A special case of <code>fold</code>, in the spirit of SQL's GROUP BY and aggregation constructs. The input
+is partitioned into groups by the first field, and for each group the values in the second
+field are accumulated via the closures in the arguments.</p>
+<p><code>group_by</code> can also be provided with one generic lifetime persistence argument, either
+<code>'tick</code> or <code>'static</code>, to specify how data persists. With <code>'tick</code>, values will only be collected
+within the same tick. With <code>'static</code>, values will be remembered across ticks and will be
+aggregated with pairs arriving in later ticks. When not explicitly specified persistence
+defaults to `static.</p>
+<p><code>group_by</code> can also be provided with two type arguments, the key and value type. This is
+required when using <code>'static</code> persistence if the compiler cannot infer the types.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
@@ -2172,6 +2180,30 @@ are accumulated via the closures in the arguments.</p>
 <span class="boring">};
 </span><span class="boring">__hf.run_available();
 </span><span class="boring">}
+</span></code></pre></pre>
+<p>Example using <code>'tick</code> persistence:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let (input_send, input_recv) = hydroflow::util::unbounded_channel::&lt;(&amp;str, &amp;str)&gt;();
+let mut flow = hydroflow::hydroflow_syntax! {
+    source_stream(input_recv)
+        -&gt; group_by::&lt;'tick, &amp;str, String&gt;(String::new, |old: &amp;mut _, val| {
+            *old += val;
+            *old += &quot;, &quot;;
+        })
+        -&gt; for_each(|(k, v)| println!(&quot;({:?}, {:?})&quot;, k, v));
+};
+
+input_send.send((&quot;hello&quot;, &quot;oakland&quot;)).unwrap();
+input_send.send((&quot;hello&quot;, &quot;berkeley&quot;)).unwrap();
+input_send.send((&quot;hello&quot;, &quot;san francisco&quot;)).unwrap();
+flow.run_available();
+// (&quot;hello&quot;, &quot;oakland, berkeley, san francisco, &quot;)
+
+input_send.send((&quot;hello&quot;, &quot;palo alto&quot;)).unwrap();
+flow.run_available();
+// (&quot;hello&quot;, &quot;palo alto, &quot;)
+<span class="boring">}
 </span></code></pre></pre>
 <h2 id="identity"><a class="header" href="#identity"><code>identity</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
@@ -2243,6 +2275,62 @@ my_join -&gt; for_each(|(k, (v1, v2))| println!(&quot;({}, ({}, {}))&quot;, k, v
 </span><span class="boring">__hf.run_available();
 </span><span class="boring">}
 </span></code></pre></pre>
+<p><code>join</code> can also be provided with one or two generic lifetime persistence arguments, either
+<code>'tick</code> or <code>'static</code>, to specify how join data persists. With <code>'tick</code>, pairs will only be
+joined with corresponding pairs within the same tick. With <code>'static</code>, pairs will be remembered
+across ticks and will be joined with pairs arriving in later ticks. When not explicitly
+specified persistence defaults to `static.</p>
+<p>When two persistence arguments are supplied the first maps to port <code>0</code> and the second maps to
+port <code>1</code>.
+When a single persistence argument is supplied, it is applied to both input ports.
+When no persistence arguments are applied it defaults to <code>'static</code> for both.</p>
+<p>The syntax is as follows:</p>
+<pre><code class="language-hydroflow ignore">join(); // Or
+join::&lt;'static&gt;();
+
+join::&lt;'epoch&gt;();
+
+join::&lt;'static, 'epoch&gt;();
+
+join::&lt;'epoch, 'static&gt;();
+// etc.
+</code></pre>
+<h3 id="examples"><a class="header" href="#examples">Examples</a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let (input_send, input_recv) = hydroflow::util::unbounded_channel::&lt;(&amp;str, &amp;str)&gt;();
+let mut flow = hydroflow::hydroflow_syntax! {
+    my_join = join::&lt;'tick&gt;();
+    source_iter([(&quot;hello&quot;, &quot;world&quot;)]) -&gt; [0]my_join;
+    source_stream(input_recv) -&gt; [1]my_join;
+    my_join -&gt; for_each(|(k, (v1, v2))| println!(&quot;({}, ({}, {}))&quot;, k, v1, v2));
+};
+input_send.send((&quot;hello&quot;, &quot;oakland&quot;)).unwrap();
+flow.run_tick();
+input_send.send((&quot;hello&quot;, &quot;san francisco&quot;)).unwrap();
+flow.run_tick();
+<span class="boring">}
+</span></code></pre></pre>
+<p>Prints out <code>&quot;(hello, (world, oakland))&quot;</code> since <code>source_iter([(&quot;hello&quot;, &quot;world&quot;)])</code> is only
+included in the first tick, then forgotten.</p>
+<hr />
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let (input_send, input_recv) = hydroflow::util::unbounded_channel::&lt;(&amp;str, &amp;str)&gt;();
+let mut flow = hydroflow::hydroflow_syntax! {
+    my_join = join::&lt;'static&gt;();
+    source_iter([(&quot;hello&quot;, &quot;world&quot;)]) -&gt; [0]my_join;
+    source_stream(input_recv) -&gt; [1]my_join;
+    my_join -&gt; for_each(|(k, (v1, v2))| println!(&quot;({}, ({}, {}))&quot;, k, v1, v2));
+};
+input_send.send((&quot;hello&quot;, &quot;oakland&quot;)).unwrap();
+flow.run_tick();
+input_send.send((&quot;hello&quot;, &quot;san francisco&quot;)).unwrap();
+flow.run_tick();
+<span class="boring">}
+</span></code></pre></pre>
+<p>Prints out <code>&quot;(hello, (world, oakland))&quot;</code> and <code>&quot;(hello, (world, san francisco))&quot;</code> since the
+inputs are peristed across ticks.</p>
 <h2 id="map"><a class="header" href="#map"><code>map</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; map(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
