@@ -7,8 +7,10 @@ edition = "2021"
 path = "src/lib.rs"
 
 [features]
-default = [ "diagnostics" ]
+default = [ "diagnostics", "tree-sitter-standard" ]
 diagnostics = [ "hydroflow_lang/diagnostics" ]
+tree-sitter-standard = [ "rust-sitter/tree-sitter-standard", "rust-sitter-tool/build-parsers-standard" ]
+tree-sitter-c2rust = [ "rust-sitter/tree-sitter-c2rust", "rust-sitter-tool/build-parsers-c2rust" ]
 
 [dependencies]
 quote = "1.0.0"
@@ -16,11 +18,11 @@ slotmap = "1.0.6"
 syn = { version = "1.0.0", features = [ "parsing", "extra-traits" ] }
 proc-macro2 = "1.0.27"
 proc-macro-crate = "1.1.0"
-rust-sitter = "0.1.2"
+rust-sitter = { git = "https://github.com/hydro-project/rust-sitter", branch = "mess-with-wasm", default-features = false }
 hydroflow_lang = { path = "../hydroflow_lang", default-features = false }
 
 [build-dependencies]
-rust-sitter-tool = "0.1.2"
+rust-sitter-tool = { git = "https://github.com/hydro-project/rust-sitter", branch = "mess-with-wasm", default-features = false }
 
 [dev-dependencies]
 insta = "1.7.1"

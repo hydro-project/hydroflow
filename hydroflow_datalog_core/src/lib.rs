@@ -15,10 +15,12 @@ use grammar::datalog::*;
 use join_plan::*;
 use util::Counter;
 
-pub fn gen_hydroflow_graph(literal: proc_macro2::Literal) -> FlatGraph {
+pub fn gen_hydroflow_graph(
+    literal: proc_macro2::Literal,
+) -> Result<FlatGraph, Vec<rust_sitter::errors::ParseError>> {
     let str_node: syn::LitStr = parse_quote!(#literal);
     let actual_str = str_node.value();
-    let program: Program = grammar::datalog::parse(&actual_str).unwrap();
+    let program: Program = grammar::datalog::parse(&actual_str)?;
 
     let mut inputs = Vec::new();
     let mut outputs = Vec::new();
@@ -97,7 +99,7 @@ pub fn gen_hydroflow_graph(literal: proc_macro2::Literal) -> FlatGraph {
         );
     }
 
-    flat_graph
+    Ok(flat_graph)
 }
 
 pub fn hydroflow_graph_to_program(flat_graph: FlatGraph, root: TokenStream) -> syn::Stmt {
@@ -195,14 +197,14 @@ mod tests {
 
     macro_rules! test_snapshots {
         ($program:literal) => {
-            let graph = gen_hydroflow_graph(parse_quote!($program));
+            let graph = gen_hydroflow_graph(parse_quote!($program)).unwrap();
 
             insta::with_settings!({snapshot_suffix => "surface_graph"}, {
                 insta::assert_display_snapshot!(graph.surface_syntax_string());
             });
 
             // Have to make a new graph as the above closure borrows.
-            let graph2 = gen_hydroflow_graph(parse_quote!($program));
+            let graph2 = gen_hydroflow_graph(parse_quote!($program)).unwrap();
             let out = &hydroflow_graph_to_program(graph2, quote::quote! { hydroflow });
             let wrapped: syn::File = parse_quote! {
                 fn main() {
