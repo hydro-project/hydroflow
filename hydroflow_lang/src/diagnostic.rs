@@ -16,9 +16,9 @@ impl Level {
 
 #[derive(Debug, Clone)]
 pub struct Diagnostic {
-    span: Span,
-    level: Level,
-    message: String,
+    pub span: Span,
+    pub level: Level,
+    pub message: String,
 }
 impl Diagnostic {
     pub fn spanned(span: Span, level: Level, message: impl Into<String>) -> Self {
@@ -33,7 +33,7 @@ impl Diagnostic {
         self.level.is_error()
     }
     pub fn emit(&self) {
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(feature = "diagnostics")]
         {
             let pm_diag = match self.level {
                 Level::Error => self.span.unwrap().error(&*self.message),
