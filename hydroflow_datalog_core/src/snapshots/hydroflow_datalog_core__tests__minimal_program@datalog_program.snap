@@ -1,5 +1,5 @@
 ---
-source: hydroflow_datalog/src/lib.rs
+source: hydroflow_datalog_core/src/lib.rs
 expression: "prettyplease::unparse(&wrapped)"
 ---
 fn main() {

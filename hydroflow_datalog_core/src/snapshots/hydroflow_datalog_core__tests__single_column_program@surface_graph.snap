@@ -1,5 +1,5 @@
 ---
-source: hydroflow_datalog/src/lib.rs
+source: hydroflow_datalog_core/src/lib.rs
 expression: graph.surface_syntax_string()
 ---
 1v1 = merge ();

@@ -832,6 +832,17 @@ dependencies = [
 name = "hydroflow_datalog"
 version = "0.1.0"
 dependencies = [
+ "hydroflow_datalog_core",
+ "proc-macro-crate",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "hydroflow_datalog_core"
+version = "0.1.0"
+dependencies = [
  "hydroflow_lang",
  "insta",
  "prettyplease",
