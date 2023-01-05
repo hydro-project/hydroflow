@@ -49,3 +49,7 @@ harness = false
 [[bench]]
 name = "reachability"
 harness = false
+
+[[bench]]
+name = "micro_ops"
+harness = false
