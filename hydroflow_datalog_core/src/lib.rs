@@ -1,6 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use hydroflow_lang::{
+    diagnostic::{Diagnostic, Level},
     graph::flat_graph::FlatGraph,
     parse::{ArrowConnector, IndexInt, Indexing, Pipeline, PipelineLink},
 };
@@ -17,10 +18,10 @@ use util::Counter;
 
 pub fn gen_hydroflow_graph(
     literal: proc_macro2::Literal,
-) -> Result<FlatGraph, Vec<rust_sitter::errors::ParseError>> {
+) -> Result<FlatGraph, (Vec<rust_sitter::errors::ParseError>, Vec<Diagnostic>)> {
     let str_node: syn::LitStr = parse_quote!(#literal);
     let actual_str = str_node.value();
-    let program: Program = grammar::datalog::parse(&actual_str)?;
+    let program: Program = grammar::datalog::parse(&actual_str).map_err(|e| (e, vec![]))?;
 
     let mut inputs = Vec::new();
     let mut outputs = Vec::new();
@@ -89,6 +90,7 @@ pub fn gen_hydroflow_graph(
     }
 
     let mut next_join_idx = 0..;
+    let mut diagnostics = Vec::new();
     for rule in rules {
         generate_rule(
             rule,
@@ -96,10 +98,15 @@ pub fn gen_hydroflow_graph(
             &mut tee_counter,
             &mut merge_counter,
             &mut next_join_idx,
+            &mut diagnostics,
         );
     }
 
-    Ok(flat_graph)
+    if !diagnostics.is_empty() {
+        Err((vec![], diagnostics))
+    } else {
+        Ok(flat_graph)
+    }
 }
 
 pub fn hydroflow_graph_to_program(flat_graph: FlatGraph, root: TokenStream) -> syn::Stmt {
@@ -119,6 +126,7 @@ fn generate_rule(
     tee_counter: &mut HashMap<String, Counter>,
     merge_counter: &mut HashMap<String, Counter>,
     next_join_idx: &mut Counter,
+    diagnostics: &mut Vec<Diagnostic>,
 ) {
     let target = &rule.target.name;
     let target_ident = syn::Ident::new(&target.name, Span::call_site());
@@ -139,13 +147,20 @@ fn generate_rule(
         .fields
         .iter()
         .map(|field| {
-            let col = out_expanded
+            if let Some(col) = out_expanded
                 .variable_mapping
                 .get(&syn::Ident::new(&field.name, Span::call_site()))
-                .unwrap();
-            let source_col_idx = syn::Index::from(*col);
-
-            parse_quote!(row.#source_col_idx)
+            {
+                let source_col_idx = syn::Index::from(*col);
+                parse_quote!(row.#source_col_idx)
+            } else {
+                diagnostics.push(Diagnostic::spanned(
+                    Span::call_site(),
+                    Level::Error,
+                    format!("Could not find column {} in RHS of rule", field.name),
+                ));
+                parse_quote!(())
+            }
         })
         .collect::<Vec<syn::Expr>>();
 
