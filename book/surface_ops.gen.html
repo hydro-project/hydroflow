@@ -151,7 +151,8 @@ are based on the Rust equivalents for iterators; see the <a href="https://doc.ru
 <blockquote>
 <p>2 input streams of type S and T, 1 output stream of type (S, T)</p>
 </blockquote>
-<p>Forms the cross-join (Cartesian Product) of the items in the input streams, returning all tupled pairs.</p>
+<p>Forms the cross-join (Cartesian product) of the items in the input streams, returning all
+tupled pairs.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
@@ -166,6 +167,25 @@ my_join -&gt; for_each(|(v1, v2)| println!(&quot;({}, {})&quot;, v1, v2));
 </span><span class="boring">__hf.run_available();
 </span><span class="boring">}
 </span></code></pre></pre>
+<p><code>cross_join</code> can also be provided with one or two generic lifetime persistence arguments
+in the same was as <a href="#join"><code>join</code></a>, see <a href="#join"><code>join</code>'s documentation</a> for more info.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let (input_send, input_recv) = hydroflow::util::unbounded_channel::&lt;&amp;str&gt;();
+let mut flow = hydroflow::hydroflow_syntax! {
+    my_join = cross_join::&lt;'tick&gt;();
+    source_iter([&quot;hello&quot;, &quot;bye&quot;]) -&gt; [0]my_join;
+    source_stream(input_recv) -&gt; [1]my_join;
+    my_join -&gt; for_each(|(s, t)| println!(&quot;({}, {})&quot;, s, t));
+};
+input_send.send(&quot;oakland&quot;).unwrap();
+flow.run_tick();
+input_send.send(&quot;san francisco&quot;).unwrap();
+flow.run_tick();
+<span class="boring">}
+</span></code></pre></pre>
+<p>Prints only <code>&quot;(hello, oakland)&quot;</code> and <code>&quot;(bye, oakland)&quot;</code>. The <code>source_iter</code> is only included in
+the first tick, then forgotten.</p>
 <h2 id="demux"><a class="header" href="#demux"><code>demux</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; demux(A)[&lt;output_port&gt;] -&gt;</code></td><td><span title="at least 2">at least 2</span></td><td>Streaming</td></tr>
@@ -839,6 +859,32 @@ source_iter(vec![2, 3, 1])
 </span><span class="boring">__hf.run_available();
 </span><span class="boring">}
 </span></code></pre></pre>
+<p><code>sort</code> can also be provided with one generic lifetime persistence argument, either
+<code>'tick</code> or <code>'static</code>, to specify how data persists. The default is <code>'tick</code>. With <code>'tick</code> only
+the values will only be collected within a single tick will be sorted and emitted. With
+<code>'static</code>, values will be remembered across ticks and will be repeatedly emitted each tick (in
+order).</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let (input_send, input_recv) = hydroflow::util::unbounded_channel::&lt;usize&gt;();
+let mut flow = hydroflow::hydroflow_syntax! {
+    source_stream(input_recv)
+        -&gt; sort::&lt;'static&gt;()
+        -&gt; for_each(|n| println!(&quot;{}&quot;, n));
+};
+
+input_send.send(6).unwrap();
+input_send.send(3).unwrap();
+input_send.send(4).unwrap();
+flow.run_available();
+// 3, 4, 6
+
+input_send.send(1).unwrap();
+input_send.send(7).unwrap();
+flow.run_available();
+// 1, 3, 4, 6, 7
+<span class="boring">}
+</span></code></pre></pre>
 <h2 id="sort_by"><a class="header" href="#sort_by"><code>sort_by</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; sort_by(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -1006,6 +1052,34 @@ source_iter(vec![1, 1, 2, 3, 2, 1, 3])
 <span class="boring">};
 </span><span class="boring">__hf.run_available();
 </span><span class="boring">}
+</span></code></pre></pre>
+<p><code>unique</code> can also be provided with one generic lifetime persistence argument, either
+<code>'tick</code> or <code>'static</code>, to specify how data persists. The default is <code>'static</code>.
+With <code>'tick</code>, uniqueness is only considered within the current tick, so across multiple ticks
+duplicate values may be emitted.
+With <code>'static</code>, values will be remembered across ticks and no duplicates will ever be emitted.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let (input_send, input_recv) = hydroflow::util::unbounded_channel::&lt;usize&gt;();
+let mut flow = hydroflow::hydroflow_syntax! {
+    source_stream(input_recv)
+        -&gt; unique::&lt;'tick&gt;()
+        -&gt; for_each(|n| println!(&quot;{}&quot;, n));
+};
+
+input_send.send(3).unwrap();
+input_send.send(3).unwrap();
+input_send.send(4).unwrap();
+input_send.send(3).unwrap();
+flow.run_available();
+// 3, 4
+
+input_send.send(3).unwrap();
+input_send.send(5).unwrap();
+flow.run_available();
+// 3, 5
+// Note: 3 is emitted again.
+<span class="boring">}
 </span></code></pre></pre>
 <h2 id="unzip"><a class="header" href="#unzip"><code>unzip</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>

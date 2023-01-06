@@ -51,16 +51,27 @@
 <a href="#51" id="51">51</a>
 <a href="#52" id="52">52</a>
 <a href="#53" id="53">53</a>
-</pre><pre class="rust"><code><span class="kw">use super</span>::{
-    OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, RANGE_1,
-};
+<a href="#54" id="54">54</a>
+<a href="#55" id="55">55</a>
+<a href="#56" id="56">56</a>
+<a href="#57" id="57">57</a>
+<a href="#58" id="58">58</a>
+<a href="#59" id="59">59</a>
+<a href="#60" id="60">60</a>
+<a href="#61" id="61">61</a>
+<a href="#62" id="62">62</a>
+<a href="#63" id="63">63</a>
+<a href="#64" id="64">64</a>
+<a href="#65" id="65">65</a>
+</pre><pre class="rust"><code><span class="kw">use super</span>::{OperatorConstraints, WriteContextArgs, WriteIteratorArgs, RANGE_1};
 
 <span class="kw">use </span>quote::quote_spanned;
 <span class="kw">use </span>syn::parse_quote;
 
 <span class="doccomment">/// &gt; 2 input streams of type S and T, 1 output stream of type (S, T)
 ///
-/// Forms the cross-join (Cartesian Product) of the items in the input streams, returning all tupled pairs.
+/// Forms the cross-join (Cartesian product) of the items in the input streams, returning all
+/// tupled pairs.
 ///
 /// ```hydroflow
 /// // should print all 4 pairs of emotion and animal
@@ -69,6 +80,25 @@
 /// source_iter(vec![&quot;dog&quot;, &quot;cat&quot;]) -&gt; [1]my_join;
 /// my_join -&gt; for_each(|(v1, v2)| println!(&quot;({}, {})&quot;, v1, v2));
 /// ```
+///
+/// `cross_join` can also be provided with one or two generic lifetime persistence arguments
+/// in the same was as [`join`](#join), see [`join`&#39;s documentation](#join) for more info.
+///
+/// ```rustbook
+/// let (input_send, input_recv) = hydroflow::util::unbounded_channel::&lt;&amp;str&gt;();
+/// let mut flow = hydroflow::hydroflow_syntax! {
+///     my_join = cross_join::&lt;&#39;tick&gt;();
+///     source_iter([&quot;hello&quot;, &quot;bye&quot;]) -&gt; [0]my_join;
+///     source_stream(input_recv) -&gt; [1]my_join;
+///     my_join -&gt; for_each(|(s, t)| println!(&quot;({}, {})&quot;, s, t));
+/// };
+/// input_send.send(&quot;oakland&quot;).unwrap();
+/// flow.run_tick();
+/// input_send.send(&quot;san francisco&quot;).unwrap();
+/// flow.run_tick();
+/// ```
+/// Prints only `&quot;(hello, oakland)&quot;` and `&quot;(bye, oakland)&quot;`. The `source_iter` is only included in
+/// the first tick, then forgotten.
 </span><span class="attr">#[hydroflow_internalmacro::operator_docgen]
 </span><span class="kw">pub const </span>CROSS_JOIN: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;cross_join&quot;</span>,
@@ -80,28 +110,22 @@
     ports_out: <span class="prelude-val">None</span>,
     num_args: <span class="number">0</span>,
     input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">None</span>,
-    write_fn: <span class="kw-2">&amp;</span>(|wc @ <span class="kw-2">&amp;</span>WriteContextArgs { root, op_span, .. },
-                 <span class="kw-2">&amp;</span>WriteIteratorArgs { ident, inputs, .. },
-                 <span class="kw">_</span>| {
-        <span class="kw">let </span>joindata_ident = wc.make_ident(<span class="string">&quot;joindata&quot;</span>);
-        <span class="kw">let </span>write_prologue = <span class="macro">quote_spanned! </span>{op_span=&gt;
-            <span class="kw">let </span><span class="kw-2">mut </span>#joindata_ident = Default::default();
-        };
+    write_fn: <span class="kw-2">&amp;</span>(|wc @ <span class="kw-2">&amp;</span>WriteContextArgs { op_span, .. },
+                 wi @ <span class="kw-2">&amp;</span>WriteIteratorArgs { ident, inputs, .. },
+                 diagnostics| {
+        <span class="kw">let </span><span class="kw-2">mut </span>output = (<span class="kw">super</span>::join::JOIN.write_fn)(wc, wi, diagnostics)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>lhs = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>];
         <span class="kw">let </span>rhs = <span class="kw-2">&amp;</span>inputs[<span class="number">1</span>];
-        <span class="kw">let </span>write_iterator = <span class="macro">quote_spanned! </span>{op_span=&gt;
+        <span class="kw">let </span>write_iterator = output.write_iterator;
+        output.write_iterator = <span class="macro">quote_spanned!</span>(op_span=&gt;
             <span class="kw">let </span>#lhs = #lhs.map(|a| ((), a));
             <span class="kw">let </span>#rhs = #rhs.map(|b| ((), b));
-            <span class="kw">let </span>#ident = #root::compiled::pull::SymmetricHashJoin::new(#lhs, #rhs, <span class="kw-2">&amp;mut </span>#joindata_ident);
+            #write_iterator
             <span class="kw">let </span>#ident = #ident.map(|((), (a, b))| (a, b));
-        };
+        );
 
-        <span class="prelude-val">Ok</span>(OperatorWriteOutput {
-            write_prologue,
-            write_iterator,
-            ..Default::default()
-        })
+        <span class="prelude-val">Ok</span>(output)
     }),
 };
 </code></pre></div>
