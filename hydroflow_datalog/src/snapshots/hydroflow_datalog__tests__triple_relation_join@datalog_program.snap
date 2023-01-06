@@ -12,8 +12,30 @@ fn main() {
             let mut sg_1v1_node_9v1_stream = Box::pin(in1);
             let mut sg_1v1_node_10v1_stream = Box::pin(in2);
             let mut sg_1v1_node_11v1_stream = Box::pin(in3);
-            let mut sg_1v1_node_13v1_joindata = Default::default();
-            let mut sg_1v1_node_17v1_joindata = Default::default();
+            let sg_1v1_node_13v1_joindata_lhs = df
+                .add_state(
+                    std::cell::RefCell::new(
+                        hydroflow::compiled::pull::HalfJoinState::default(),
+                    ),
+                );
+            let sg_1v1_node_13v1_joindata_rhs = df
+                .add_state(
+                    std::cell::RefCell::new(
+                        hydroflow::compiled::pull::HalfJoinState::default(),
+                    ),
+                );
+            let sg_1v1_node_17v1_joindata_lhs = df
+                .add_state(
+                    std::cell::RefCell::new(
+                        hydroflow::compiled::pull::HalfJoinState::default(),
+                    ),
+                );
+            let sg_1v1_node_17v1_joindata_rhs = df
+                .add_state(
+                    std::cell::RefCell::new(
+                        hydroflow::compiled::pull::HalfJoinState::default(),
+                    ),
+                );
             df.add_subgraph_stratified(
                 "Subgraph GraphSubgraphId(1v1)",
                 0,
@@ -198,16 +220,27 @@ fn main() {
                         }
                         check_op_16v1(op_16v1)
                     };
+                    let mut sg_1v1_node_13v1_joindata_lhs_borrow = context
+                        .state_ref(sg_1v1_node_13v1_joindata_lhs)
+                        .borrow_mut();
+                    let mut sg_1v1_node_13v1_joindata_rhs_borrow = context
+                        .state_ref(sg_1v1_node_13v1_joindata_rhs)
+                        .borrow_mut();
                     let op_13v1 = {
                         /// Limit error propagation by bounding locally, erasing output iterator type.
                         #[inline(always)]
                         fn check_inputs<'a, K, I1, V1, I2, V2>(
                             lhs: I1,
                             rhs: I2,
-                            state: &'a mut hydroflow::compiled::pull::JoinState<
+                            lhs_state: &'a mut hydroflow::compiled::pull::HalfJoinState<
                                 K,
                                 V1,
                                 V2,
+                            >,
+                            rhs_state: &'a mut hydroflow::compiled::pull::HalfJoinState<
+                                K,
+                                V2,
+                                V1,
                             >,
                         ) -> impl 'a + Iterator<Item = (K, (V1, V2))>
                         where
@@ -217,13 +250,19 @@ fn main() {
                             I1: 'a + Iterator<Item = (K, V1)>,
                             I2: 'a + Iterator<Item = (K, V2)>,
                         {
-                            hydroflow::compiled::pull::SymmetricHashJoin::new(
+                            hydroflow::compiled::pull::SymmetricHashJoin::new_from_mut(
                                 lhs,
                                 rhs,
-                                state,
+                                lhs_state,
+                                rhs_state,
                             )
                         }
-                        check_inputs(op_15v1, op_16v1, &mut sg_1v1_node_13v1_joindata)
+                        check_inputs(
+                            op_15v1,
+                            op_16v1,
+                            &mut sg_1v1_node_13v1_joindata_lhs_borrow,
+                            &mut sg_1v1_node_13v1_joindata_rhs_borrow,
+                        )
                     };
                     let op_13v1 = {
                         #[inline(always)]
@@ -273,16 +312,27 @@ fn main() {
                         }
                         check_op_20v1(op_20v1)
                     };
+                    let mut sg_1v1_node_17v1_joindata_lhs_borrow = context
+                        .state_ref(sg_1v1_node_17v1_joindata_lhs)
+                        .borrow_mut();
+                    let mut sg_1v1_node_17v1_joindata_rhs_borrow = context
+                        .state_ref(sg_1v1_node_17v1_joindata_rhs)
+                        .borrow_mut();
                     let op_17v1 = {
                         /// Limit error propagation by bounding locally, erasing output iterator type.
                         #[inline(always)]
                         fn check_inputs<'a, K, I1, V1, I2, V2>(
                             lhs: I1,
                             rhs: I2,
-                            state: &'a mut hydroflow::compiled::pull::JoinState<
+                            lhs_state: &'a mut hydroflow::compiled::pull::HalfJoinState<
                                 K,
                                 V1,
                                 V2,
+                            >,
+                            rhs_state: &'a mut hydroflow::compiled::pull::HalfJoinState<
+                                K,
+                                V2,
+                                V1,
                             >,
                         ) -> impl 'a + Iterator<Item = (K, (V1, V2))>
                         where
@@ -292,13 +342,19 @@ fn main() {
                             I1: 'a + Iterator<Item = (K, V1)>,
                             I2: 'a + Iterator<Item = (K, V2)>,
                         {
-                            hydroflow::compiled::pull::SymmetricHashJoin::new(
+                            hydroflow::compiled::pull::SymmetricHashJoin::new_from_mut(
                                 lhs,
                                 rhs,
-                                state,
+                                lhs_state,
+                                rhs_state,
                             )
                         }
-                        check_inputs(op_19v1, op_20v1, &mut sg_1v1_node_17v1_joindata)
+                        check_inputs(
+                            op_19v1,
+                            op_20v1,
+                            &mut sg_1v1_node_17v1_joindata_lhs_borrow,
+                            &mut sg_1v1_node_17v1_joindata_rhs_borrow,
+                        )
                     };
                     let op_17v1 = {
                         #[inline(always)]

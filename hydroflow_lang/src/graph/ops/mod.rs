@@ -5,9 +5,10 @@ use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote_spanned;
 use slotmap::Key;
 use syn::punctuated::Punctuated;
-use syn::{Expr, GenericArgument, Token};
+use syn::spanned::Spanned;
+use syn::{Expr, GenericArgument, Token, Type};
 
-use crate::diagnostic::Diagnostic;
+use crate::diagnostic::{Diagnostic, Level};
 use crate::parse::PortIndex;
 
 use super::{GraphNodeId, GraphSubgraphId, PortIndexValue};
@@ -188,13 +189,13 @@ pub struct WriteContextArgs<'a> {
     pub op_span: Span,
 }
 impl WriteContextArgs<'_> {
-    pub fn make_ident(&self, suffix: &'static str) -> Ident {
+    pub fn make_ident(&self, suffix: impl AsRef<str>) -> Ident {
         Ident::new(
             &*format!(
                 "sg_{:?}_node_{:?}_{}",
                 self.subgraph_id.data(),
                 self.node_id.data(),
-                suffix
+                suffix.as_ref(),
             ),
             self.op_span,
         )
@@ -216,8 +217,8 @@ pub struct WriteIteratorArgs<'a> {
     /// Port values used as this operator's output.
     pub output_ports: &'a [&'a PortIndexValue],
 
-    /// Unused: Operator type arguments.
-    pub type_arguments: Option<&'a Punctuated<GenericArgument, Token![,]>>,
+    /// Operator generic (type or lifetime) arguments.
+    pub generic_args: Option<&'a Punctuated<GenericArgument, Token![,]>>,
     /// Arguments provided by the user into the operator as arguments.
     /// I.e. the `a, b, c` in `-> my_op(a, b, c) -> `.
     pub arguments: &'a Punctuated<Expr, Token![,]>,
@@ -282,5 +283,62 @@ where
         T: PartialOrd<T>,
     {
         self.contains(item)
+    }
+}
+
+#[derive(Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Debug)]
+pub enum Persistence {
+    Tick,
+    Static,
+}
+
+pub fn parse_generic_types<'a>(
+    &WriteIteratorArgs { generic_args, .. }: &WriteIteratorArgs<'a>,
+) -> Vec<&'a Type> {
+    if let Some(generic_args) = generic_args {
+        generic_args
+            .iter()
+            .skip_while(|generic_arg| matches!(generic_arg, GenericArgument::Lifetime(_)))
+            .map_while(|generic_arg| {
+                if let GenericArgument::Type(ty) = generic_arg {
+                    Some(ty)
+                } else {
+                    None
+                }
+            })
+            .collect()
+    } else {
+        Vec::new()
+    }
+}
+
+pub fn parse_persistence_lifetimes(
+    &WriteIteratorArgs { generic_args, .. }: &WriteIteratorArgs,
+    diagnostics: &mut Vec<Diagnostic>,
+) -> Vec<Persistence> {
+    if let Some(generic_args) = generic_args {
+        generic_args
+            .iter()
+            .map_while(|generic_arg| {
+                if let GenericArgument::Lifetime(lifetime) = generic_arg {
+                    match &*lifetime.ident.to_string() {
+                        "static" => Some(Persistence::Static),
+                        "tick" => Some(Persistence::Tick),
+                        _ => {
+                                diagnostics.push(Diagnostic::spanned(
+                                generic_arg.span(),
+                                Level::Error,
+                                format!("Unknown lifetime generic argument `'{}`, expected `'epoch` or `'static`.", lifetime.ident),
+                            ));
+                            None
+                        }
+                    }
+                } else {
+                    None
+                }
+            })
+            .collect()
+    } else {
+        Vec::new()
     }
 }

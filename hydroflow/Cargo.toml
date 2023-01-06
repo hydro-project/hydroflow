@@ -60,7 +60,7 @@ variadics = { path = "../variadics" }
 chrono = { version = "0.4.20", features = [ "serde" ], default-features = false }
 clap = { version = "4.0.29", features = [ "derive" ] }
 colored = "2.0"
-criterion = { version = "0.3", features = [ "async_tokio" ] }
+criterion = { version = "0.4", features = [ "async_tokio", "html_reports" ] }
 futures = { version = "0.3" }
 itertools = "0.10.3"
 rand = "0.8.4"
