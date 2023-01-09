@@ -1,4 +1,5 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use hydroflow::hydroflow_syntax;
 use hydroflow::lang::collections::Iter;
 use hydroflow::scheduled::query::Query as Q;
 use timely::dataflow::operators::{Concatenate, Inspect, ToStream};
@@ -30,6 +31,46 @@ fn benchmark_hydroflow(c: &mut Criterion) {
             });
 
             q.run_available();
+        })
+    });
+}
+
+fn benchmark_hydroflow_surface(c: &mut Criterion) {
+    assert!(NUM_OPS == 20); // This benchmark is hardcoded for 20 ops, so assert that NUM_OPS is 20.
+    c.bench_function("fan_in/hydroflow/surface", |b| {
+        b.iter(|| {
+            let mut df = hydroflow_syntax! {
+
+                my_merge = merge();
+
+                source_iter(0..NUM_INTS) -> my_merge;
+                source_iter(0..NUM_INTS) -> my_merge;
+                source_iter(0..NUM_INTS) -> my_merge;
+                source_iter(0..NUM_INTS) -> my_merge;
+                source_iter(0..NUM_INTS) -> my_merge;
+
+                source_iter(0..NUM_INTS) -> my_merge;
+                source_iter(0..NUM_INTS) -> my_merge;
+                source_iter(0..NUM_INTS) -> my_merge;
+                source_iter(0..NUM_INTS) -> my_merge;
+                source_iter(0..NUM_INTS) -> my_merge;
+
+                source_iter(0..NUM_INTS) -> my_merge;
+                source_iter(0..NUM_INTS) -> my_merge;
+                source_iter(0..NUM_INTS) -> my_merge;
+                source_iter(0..NUM_INTS) -> my_merge;
+                source_iter(0..NUM_INTS) -> my_merge;
+
+                source_iter(0..NUM_INTS) -> my_merge;
+                source_iter(0..NUM_INTS) -> my_merge;
+                source_iter(0..NUM_INTS) -> my_merge;
+                source_iter(0..NUM_INTS) -> my_merge;
+                source_iter(0..NUM_INTS) -> my_merge;
+
+                my_merge -> for_each(|x| { black_box(x); });
+            };
+
+            df.run_available();
         })
     });
 }
@@ -78,6 +119,7 @@ fn benchmark_for_loops(c: &mut Criterion) {
 criterion_group!(
     fan_in_dataflow,
     benchmark_hydroflow,
+    benchmark_hydroflow_surface,
     benchmark_timely,
     benchmark_iters,
     benchmark_for_loops,

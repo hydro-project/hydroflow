@@ -6,6 +6,7 @@ use std::rc::Rc;
 use criterion::{criterion_group, criterion_main, Criterion};
 use differential_dataflow::input::Input;
 use differential_dataflow::operators::{Iterate, Join, Threshold};
+use hydroflow::hydroflow_syntax;
 use hydroflow::scheduled::graph_ext::GraphExt;
 
 lazy_static::lazy_static! {
@@ -287,11 +288,87 @@ fn benchmark_hydroflow(c: &mut Criterion) {
     });
 }
 
+fn benchmark_hydroflow_surface_cheating(c: &mut Criterion) {
+    c.bench_function("reachability/hydroflow/surface_cheating", |b| {
+        b.iter_batched(
+            || {
+                let reachable_verts = Rc::new(RefCell::new(HashSet::new()));
+
+                let df = {
+                    let reachable_inner = reachable_verts.clone();
+
+                    hydroflow_syntax! {
+                        origin = source_iter([1]);
+                        reached_vertices = merge();
+                        origin -> reached_vertices;
+
+                        my_cheaty_join = reached_vertices -> filter_map(|v| EDGES.get(&v)) -> flatten() -> map(|&v| v);
+                        my_cheaty_join -> filter(|&v| reachable_inner.borrow_mut().insert(v)) -> reached_vertices;
+                    }
+                };
+
+                (df, reachable_verts)
+            },
+            |(mut df, reachable_verts)| {
+                df.run_available();
+                assert_eq!(&*reachable_verts.borrow(), &*REACHABLE);
+            },
+            criterion::BatchSize::LargeInput,
+        );
+    });
+}
+
+fn benchmark_hydroflow_surface(c: &mut Criterion) {
+    c.bench_function("reachability/hydroflow/surface", |b| {
+        let edges: Vec<_> = EDGES
+            .iter()
+            .map(|(&k, v)| v.iter().map(move |v| (k, *v)))
+            .flatten()
+            .collect();
+
+        b.iter_batched(
+            || {
+                let reachable_verts = Rc::new(RefCell::new(HashSet::new()));
+
+                let df = {
+                    let edges = edges.clone();
+                    let reachable_inner = reachable_verts.clone();
+
+                    hydroflow_syntax! {
+                        origin = source_iter(vec![1]);
+                        stream_of_edges = source_iter(edges);
+                        reached_vertices = merge();
+                        origin -> reached_vertices;
+
+                        my_join_tee = join() -> flat_map(|(src, ((), dst))| [src, dst]) -> tee();
+                        reached_vertices -> map(|v| (v, ())) -> [0]my_join_tee;
+                        stream_of_edges -> [1]my_join_tee;
+
+                        my_join_tee -> reached_vertices;
+                        my_join_tee -> for_each(|x| {
+                            reachable_inner.borrow_mut().insert(x);
+                        })
+                    }
+                };
+
+                (df, reachable_verts)
+            },
+            |(mut df, reachable_verts)| {
+                df.run_available();
+                assert_eq!(&*reachable_verts.borrow(), &*REACHABLE);
+            },
+            criterion::BatchSize::LargeInput,
+        );
+    });
+}
+
 criterion_group!(
     reachability,
     benchmark_timely,
     benchmark_differential,
     benchmark_hydroflow_scheduled,
     benchmark_hydroflow,
+    benchmark_hydroflow_surface,
+    benchmark_hydroflow_surface_cheating,
 );
 criterion_main!(reachability);

@@ -4,6 +4,7 @@ use hydroflow::lang::collections::Iter;
 // use hydroflow::scheduled::handoff::TeeingHandoff;
 use hydroflow::scheduled::query::Query as Q;
 // use hydroflow::scheduled::Hydroflow;
+use hydroflow::hydroflow_syntax;
 use timely::dataflow::operators::{Map, ToStream};
 
 const NUM_OPS: usize = 20;
@@ -25,6 +26,45 @@ fn benchmark_hydroflow_scheduled(c: &mut Criterion) {
             }
 
             q.run_available();
+        })
+    });
+}
+
+fn benchmark_hydroflow_surface(c: &mut Criterion) {
+    assert!(NUM_OPS == 20); // This benchmark is hardcoded for 20 ops, so assert that NUM_OPS is 20.
+    c.bench_function("fan_out/hydroflow/surface", |b| {
+        b.iter(|| {
+            let mut df = hydroflow_syntax! {
+                my_tee = tee();
+
+                source_iter(black_box(0..NUM_INTS)) -> my_tee;
+
+                my_tee -> for_each(|x| { black_box(x); });
+                my_tee -> for_each(|x| { black_box(x); });
+                my_tee -> for_each(|x| { black_box(x); });
+                my_tee -> for_each(|x| { black_box(x); });
+                my_tee -> for_each(|x| { black_box(x); });
+
+                my_tee -> for_each(|x| { black_box(x); });
+                my_tee -> for_each(|x| { black_box(x); });
+                my_tee -> for_each(|x| { black_box(x); });
+                my_tee -> for_each(|x| { black_box(x); });
+                my_tee -> for_each(|x| { black_box(x); });
+
+                my_tee -> for_each(|x| { black_box(x); });
+                my_tee -> for_each(|x| { black_box(x); });
+                my_tee -> for_each(|x| { black_box(x); });
+                my_tee -> for_each(|x| { black_box(x); });
+                my_tee -> for_each(|x| { black_box(x); });
+
+                my_tee -> for_each(|x| { black_box(x); });
+                my_tee -> for_each(|x| { black_box(x); });
+                my_tee -> for_each(|x| { black_box(x); });
+                my_tee -> for_each(|x| { black_box(x); });
+                my_tee -> for_each(|x| { black_box(x); });
+            };
+
+            df.run_available();
         })
     });
 }
@@ -89,6 +129,7 @@ fn benchmark_sol(c: &mut Criterion) {
 criterion_group!(
     fan_out_dataflow,
     benchmark_hydroflow_scheduled,
+    benchmark_hydroflow_surface,
     // benchmark_hydroflow_teer,
     benchmark_timely,
     benchmark_sol,
