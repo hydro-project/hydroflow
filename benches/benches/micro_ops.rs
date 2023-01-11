@@ -186,8 +186,11 @@ fn ops(c: &mut Criterion) {
                 let dist = Uniform::new(0, 100);
                 let input0: Vec<usize> = (0..NUM_INTS).map(|_| dist.sample(&mut rng)).collect();
 
-                hydroflow_syntax! {
-                    source_iter(black_box(input0)) -> fold(0, |accum, elem| { accum + elem }) -> for_each(|x| { black_box(x); });
+                #[allow(clippy::unnecessary_fold)]
+                {
+                    hydroflow_syntax! {
+                        source_iter(black_box(input0)) -> fold(0, |accum, elem| { accum + elem }) -> for_each(|x| { black_box(x); });
+                    }
                 }
             },
             |df| {
