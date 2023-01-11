@@ -288,6 +288,7 @@ fn benchmark_hydroflow(c: &mut Criterion) {
     });
 }
 
+#[allow(clippy::map_clone)]
 fn benchmark_hydroflow_surface_cheating(c: &mut Criterion) {
     c.bench_function("reachability/hydroflow/surface_cheating", |b| {
         b.iter_batched(
@@ -305,6 +306,7 @@ fn benchmark_hydroflow_surface_cheating(c: &mut Criterion) {
                         my_cheaty_join = reached_vertices -> filter_map(|v| EDGES.get(&v)) -> flatten() -> map(|&v| v);
                         my_cheaty_join -> filter(|&v| reachable_inner.borrow_mut().insert(v)) -> reached_vertices;
                     }
+                    
                 };
 
                 (df, reachable_verts)
@@ -322,8 +324,7 @@ fn benchmark_hydroflow_surface(c: &mut Criterion) {
     c.bench_function("reachability/hydroflow/surface", |b| {
         let edges: Vec<_> = EDGES
             .iter()
-            .map(|(&k, v)| v.iter().map(move |v| (k, *v)))
-            .flatten()
+            .flat_map(|(&k, v)| v.iter().map(move |v| (k, *v)))
             .collect();
 
         b.iter_batched(

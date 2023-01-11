@@ -1,6 +1,7 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use hydroflow::hydroflow_syntax;
 use hydroflow::scheduled::graph_ext::GraphExt;
+use static_assertions::const_assert;
 use std::sync::mpsc::channel;
 use std::thread;
 use timely::dataflow::operators::{Inspect, Map, ToStream};
@@ -186,33 +187,33 @@ fn benchmark_hydroflow(c: &mut Criterion) {
 }
 
 fn benchmark_hydroflow_surface(c: &mut Criterion) {
-    assert!(NUM_OPS == 20); // This benchmark is hardcoded for 20 ops, so assert that NUM_OPS is 20.
+    const_assert!(NUM_OPS == 20); // This benchmark is hardcoded for 20 ops, so assert that NUM_OPS is 20.
     c.bench_function("identity/hydroflow/surface", |b| {
         b.iter(|| {
             let mut df = hydroflow_syntax! {
                 source_iter(black_box(0..NUM_INTS))
 
-                -> map(|x| black_box(x))
-                -> map(|x| black_box(x))
-                -> map(|x| black_box(x))
-                -> map(|x| black_box(x))
-                -> map(|x| black_box(x))
-                -> map(|x| black_box(x))
-                -> map(|x| black_box(x))
-                -> map(|x| black_box(x))
-                -> map(|x| black_box(x))
-                -> map(|x| black_box(x))
+                -> map(black_box)
+                -> map(black_box)
+                -> map(black_box)
+                -> map(black_box)
+                -> map(black_box)
+                -> map(black_box)
+                -> map(black_box)
+                -> map(black_box)
+                -> map(black_box)
+                -> map(black_box)
 
-                -> map(|x| black_box(x))
-                -> map(|x| black_box(x))
-                -> map(|x| black_box(x))
-                -> map(|x| black_box(x))
-                -> map(|x| black_box(x))
-                -> map(|x| black_box(x))
-                -> map(|x| black_box(x))
-                -> map(|x| black_box(x))
-                -> map(|x| black_box(x))
-                -> map(|x| black_box(x))
+                -> map(black_box)
+                -> map(black_box)
+                -> map(black_box)
+                -> map(black_box)
+                -> map(black_box)
+                -> map(black_box)
+                -> map(black_box)
+                -> map(black_box)
+                -> map(black_box)
+                -> map(black_box)
 
                 -> for_each(|x| { black_box(x); });
             };

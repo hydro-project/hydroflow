@@ -5,6 +5,7 @@ use hydroflow::lang::collections::Iter;
 use hydroflow::scheduled::query::Query as Q;
 // use hydroflow::scheduled::Hydroflow;
 use hydroflow::hydroflow_syntax;
+use static_assertions::const_assert;
 use timely::dataflow::operators::{Map, ToStream};
 
 const NUM_OPS: usize = 20;
@@ -31,7 +32,7 @@ fn benchmark_hydroflow_scheduled(c: &mut Criterion) {
 }
 
 fn benchmark_hydroflow_surface(c: &mut Criterion) {
-    assert!(NUM_OPS == 20); // This benchmark is hardcoded for 20 ops, so assert that NUM_OPS is 20.
+    const_assert!(NUM_OPS == 20); // This benchmark is hardcoded for 20 ops, so assert that NUM_OPS is 20.
     c.bench_function("fan_out/hydroflow/surface", |b| {
         b.iter(|| {
             let mut df = hydroflow_syntax! {
