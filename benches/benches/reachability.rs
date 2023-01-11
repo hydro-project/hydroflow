@@ -306,7 +306,6 @@ fn benchmark_hydroflow_surface_cheating(c: &mut Criterion) {
                         my_cheaty_join = reached_vertices -> filter_map(|v| EDGES.get(&v)) -> flatten() -> map(|&v| v);
                         my_cheaty_join -> filter(|&v| reachable_inner.borrow_mut().insert(v)) -> reached_vertices;
                     }
-                    
                 };
 
                 (df, reachable_verts)
