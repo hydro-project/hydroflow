@@ -5,9 +5,9 @@ It then outputs a graph in the DOT format, which can be rendered with Graphviz -
 
 There are multiple implementations to choose from, via the `--impl` flag:
 - A `minimal` implementation is nothing more than a set of (child, parent) edges. The Hydroflow code here does essentially nothing beyond collecting edges and outputting them. No ordering is produced.
-- A 'datalog` implementation based on a [talk by Martin Kleppman](https://speakerdeck.com/ept/data-structures-as-queries-expressing-crdts-using-datalog). Kleppman's dataflow has been hand-compiled to Hydroflow, rule-by-rule.
-- A 'datalog_agg` implementation that modifies Kleppman's code for Datalog-with-aggregation, again hand-compiled to Hydroflow
-- A 'adjacency' implementation that builds an adjacency list in Hydroflow to reduce the number of aggregation passes. *This is the default if you do not specify the `--impl` flag.*
+- A `datalog` implementation based on a [talk by Martin Kleppman](https://speakerdeck.com/ept/data-structures-as-queries-expressing-crdts-using-datalog). Kleppman's dataflow has been hand-compiled to Hydroflow, rule-by-rule.
+- A `datalog_agg` implementation that modifies Kleppman's code for Datalog-with-aggregation, again hand-compiled to Hydroflow
+- An `adjacency` implementation that builds an adjacency list in Hydroflow to reduce the number of aggregation passes. *This is the default if you do not specify the `--impl` flag.*
 
 To run:
 ```
