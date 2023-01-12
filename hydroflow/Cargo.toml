@@ -24,6 +24,9 @@ name = "graph_reachability"
 name = "graph_unreachability"
 
 [[example]]
+name = "rga"
+
+[[example]]
 name = "three_clique"
 
 [[example]]
