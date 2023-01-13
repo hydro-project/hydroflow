@@ -28,10 +28,10 @@ pub fn parse_edge(line: String) -> Option<(u32, u32)> {
     let re = Regex::new(r"\((\d+),\s*(\d+)\)").unwrap();
     let caps = re.captures(line.as_str())?;
 
-    return Some((
+    Some((
         caps.get(1).unwrap().as_str().parse::<u32>().ok()?,
         caps.get(2).unwrap().as_str().parse::<u32>().ok()?,
-    ));
+    ))
 }
 
 pub fn format_cycle<T>(cycle: Vec<T>) -> String
