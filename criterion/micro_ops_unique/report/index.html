@@ -118,39 +118,39 @@
                         <tbody>
                             <tr>
                                 <td>Slope</td>
-                                <td class="ci-bound">547.67 µs</td>
-                                <td>547.84 µs</td>
-                                <td class="ci-bound">548.02 µs</td>
+                                <td class="ci-bound">554.73 µs</td>
+                                <td>554.81 µs</td>
+                                <td class="ci-bound">554.88 µs</td>
                             </tr>
                             <tr>
                                 <td>R&#xb2;</td>
-                                <td class="ci-bound">0.9997677</td>
-                                <td>0.9997812</td>
-                                <td class="ci-bound">0.9997670</td>
+                                <td class="ci-bound">0.9999491</td>
+                                <td>0.9999516</td>
+                                <td class="ci-bound">0.9999489</td>
                             </tr>
                             <tr>
                                 <td>Mean</td>
-                                <td class="ci-bound">547.69 µs</td>
-                                <td>547.87 µs</td>
-                                <td class="ci-bound">548.07 µs</td>
+                                <td class="ci-bound">554.64 µs</td>
+                                <td>554.75 µs</td>
+                                <td class="ci-bound">554.86 µs</td>
                             </tr>
                             <tr>
                                 <td title="Standard Deviation">Std. Dev.</td>
-                                <td class="ci-bound">775.02 ns</td>
-                                <td>976.28 ns</td>
-                                <td class="ci-bound">1.1881 µs</td>
+                                <td class="ci-bound">433.63 ns</td>
+                                <td>574.71 ns</td>
+                                <td class="ci-bound">721.70 ns</td>
                             </tr>
                             <tr>
                                 <td>Median</td>
-                                <td class="ci-bound">547.62 µs</td>
-                                <td>547.74 µs</td>
-                                <td class="ci-bound">547.96 µs</td>
+                                <td class="ci-bound">554.66 µs</td>
+                                <td>554.76 µs</td>
+                                <td class="ci-bound">554.83 µs</td>
                             </tr>
                             <tr>
                                 <td title="Median Absolute Deviation">MAD</td>
-                                <td class="ci-bound">494.17 ns</td>
-                                <td>782.10 ns</td>
-                                <td class="ci-bound">1.0704 µs</td>
+                                <td class="ci-bound">331.95 ns</td>
+                                <td>428.74 ns</td>
+                                <td class="ci-bound">548.39 ns</td>
                             </tr>
                         </tbody>
                     </table>
@@ -192,6 +192,82 @@
                         documentation</a> for more details on the additional statistics.</p>
             </section>
         </div>
+        <section class="plots">
+            <h3>Change Since Previous Benchmark</h3>
+            <div class="relative">
+                <table width="100%">
+                    <tbody>
+                        <tr>
+                            <td>
+                                <a href="both/pdf.svg">
+                                    <img src="relative_pdf_small.svg" alt="PDF Comparison" width="450"
+                                        height="300" />
+                                </a>
+                            </td>
+                            <td>
+                                <a href="both/regression.svg">
+                                    <img src="relative_regression_small.svg" alt="Regression Comparison" width="450"
+                                        height="300" />
+                                </a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        <section class="stats">
+            <div class="additional_stats">
+                <h4>Additional Statistics:</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th title="0.95 confidence level" class="ci-bound">Lower bound</th>
+                            <th>Estimate</th>
+                            <th title="0.95 confidence level" class="ci-bound">Upper bound</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Change in time</td>
+                            <td class="ci-bound">+1.2155%</td>
+                            <td>+1.2560%</td>
+                            <td class="ci-bound">+1.2972%</td>
+                            <td>(p = 0.00 &lt;
+                                0.05)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                Performance has regressed.
+            </div>
+            <div class="additional_plots">
+                <h4>Additional Plots:</h4>
+                <ul>
+                    
+                    <li>
+                        <a href="change/mean.svg">Change in mean</a>
+                    </li>
+                    <li>
+                        <a href="change/median.svg">Change in median</a>
+                    </li>
+                    <li>
+                        <a href="change/t-test.svg">T-Test</a>
+                    </li>
+                </ul>
+            </div>
+        </section>
+        <section class="explanation">
+            <h4>Understanding this report:</h4>
+            <p>The plot on the left shows the probability of the function taking a certain amount of time. The red
+                curve represents the saved measurements from the last time this benchmark was run, while the blue curve
+                shows the measurements from this run. The lines represent the mean time per iteration. Click on the
+                plot for a larger view.</p>
+            <p>The plot on the right shows the two regressions. Again, the red line represents the previous measurement
+                while the blue line shows the current measurement.</p>
+            <p>See <a href="https://bheisler.github.io/criterion.rs/book/user_guide/command_line_output.html#change">the
+                    documentation</a> for more details on the additional statistics.</p>
+        </section>
     </div>
     <div id="footer">
         <p>This report was generated by
