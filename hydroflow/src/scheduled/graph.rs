@@ -103,8 +103,9 @@ impl Hydroflow {
 
     /// Runs the dataflow until the next tick begins.
     pub fn run_tick(&mut self) {
-        let tick = self.current_tick();
-        while self.next_stratum() && tick == self.current_tick() {
+        // While work is immediately available *on the current tick*.
+        while self.next_stratum(true) {
+            // Do any work (this also receives events).
             self.run_stratum();
         }
     }
@@ -113,8 +114,8 @@ impl Hydroflow {
     /// If the dataflow contains loops this method may run forever.
     pub fn run_available(&mut self) {
         // While work is immediately available.
-        while self.next_stratum() {
-            // And do any work (this also receives events).
+        while self.next_stratum(false) {
+            // Do any work (this also receives events).
             self.run_stratum();
         }
     }
@@ -154,8 +155,12 @@ impl Hydroflow {
     }
 
     /// Go to the next stratum which has work available, possibly the current stratum.
-    /// Return true if more work is available, otherwise false if no work is immediately available on any strata.
-    pub fn next_stratum(&mut self) -> bool {
+    /// Return true if more work is available, otherwise false if no work is immediately
+    /// available on any strata.
+    ///
+    /// If `current_tick_only` is set to `true`, will only return `true` if work is immediately
+    /// available on the *current tick*.
+    pub fn next_stratum(&mut self, current_tick_only: bool) -> bool {
         self.try_recv_events();
 
         let old_stratum = self.context.current_stratum;
@@ -169,6 +174,9 @@ impl Hydroflow {
             if self.context.current_stratum >= self.stratum_queues.len() {
                 self.context.current_stratum = 0;
                 self.context.current_tick += 1;
+                if current_tick_only {
+                    return false;
+                }
             }
             // After incrementing, exit if we made a full loop around the strata.
             if old_stratum == self.context.current_stratum {
