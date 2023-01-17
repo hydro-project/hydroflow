@@ -111,8 +111,9 @@ pub const UNIQUE: OperatorConstraints = OperatorConstraints {
                     // TODO(mingwei): Better data structure for this?
                     let #ident = {
                         let mut set = context.state_ref(#uniquedata_ident).borrow_mut();
-                        set.extend(#input);
-                        set.clone().into_iter()
+                        #input.filter(|x| set.insert(::std::clone::Clone::clone(x)))
+                            .collect::<::std::vec::Vec<_>>()
+                            .into_iter()
                     };
                 };
 
