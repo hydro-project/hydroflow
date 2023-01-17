@@ -125,6 +125,7 @@
 <a href="#125" id="125">125</a>
 <a href="#126" id="126">126</a>
 <a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
 </pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
 
 <span class="kw">use super</span>::{
@@ -238,8 +239,9 @@
                     <span class="comment">// TODO(mingwei): Better data structure for this?
                     </span><span class="kw">let </span>#ident = {
                         <span class="kw">let </span><span class="kw-2">mut </span>set = context.state_ref(#uniquedata_ident).borrow_mut();
-                        set.extend(#input);
-                        set.clone().into_iter()
+                        #input.filter(|x| set.insert(::std::clone::Clone::clone(x)))
+                            .collect::&lt;::std::vec::Vec&lt;<span class="kw">_</span>&gt;&gt;()
+                            .into_iter()
                     };
                 };
 

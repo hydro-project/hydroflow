@@ -561,6 +561,14 @@
 <a href="#561" id="561">561</a>
 <a href="#562" id="562">562</a>
 <a href="#563" id="563">563</a>
+<a href="#564" id="564">564</a>
+<a href="#565" id="565">565</a>
+<a href="#566" id="566">566</a>
+<a href="#567" id="567">567</a>
+<a href="#568" id="568">568</a>
+<a href="#569" id="569">569</a>
+<a href="#570" id="570">570</a>
+<a href="#571" id="571">571</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::any::Any;
 <span class="kw">use </span>std::borrow::Cow;
 <span class="kw">use </span>std::cell::Cell;
@@ -666,9 +674,10 @@
 
     <span class="doccomment">/// Runs the dataflow until the next tick begins.
     </span><span class="kw">pub fn </span>run_tick(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-        <span class="kw">let </span>tick = <span class="self">self</span>.current_tick();
-        <span class="kw">while </span><span class="self">self</span>.next_stratum() &amp;&amp; tick == <span class="self">self</span>.current_tick() {
-            <span class="self">self</span>.run_stratum();
+        <span class="comment">// While work is immediately available *on the current tick*.
+        </span><span class="kw">while </span><span class="self">self</span>.next_stratum(<span class="bool-val">true</span>) {
+            <span class="comment">// Do any work (this also receives events).
+            </span><span class="self">self</span>.run_stratum();
         }
     }
 
@@ -676,8 +685,8 @@
     /// If the dataflow contains loops this method may run forever.
     </span><span class="kw">pub fn </span>run_available(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="comment">// While work is immediately available.
-        </span><span class="kw">while </span><span class="self">self</span>.next_stratum() {
-            <span class="comment">// And do any work (this also receives events).
+        </span><span class="kw">while </span><span class="self">self</span>.next_stratum(<span class="bool-val">false</span>) {
+            <span class="comment">// Do any work (this also receives events).
             </span><span class="self">self</span>.run_stratum();
         }
     }
@@ -717,8 +726,12 @@
     }
 
     <span class="doccomment">/// Go to the next stratum which has work available, possibly the current stratum.
-    /// Return true if more work is available, otherwise false if no work is immediately available on any strata.
-    </span><span class="kw">pub fn </span>next_stratum(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; bool {
+    /// Return true if more work is available, otherwise false if no work is immediately
+    /// available on any strata.
+    ///
+    /// If `current_tick_only` is set to `true`, will only return `true` if work is immediately
+    /// available on the *current tick*.
+    </span><span class="kw">pub fn </span>next_stratum(<span class="kw-2">&amp;mut </span><span class="self">self</span>, current_tick_only: bool) -&gt; bool {
         <span class="self">self</span>.try_recv_events();
 
         <span class="kw">let </span>old_stratum = <span class="self">self</span>.context.current_stratum;
@@ -732,6 +745,9 @@
             <span class="kw">if </span><span class="self">self</span>.context.current_stratum &gt;= <span class="self">self</span>.stratum_queues.len() {
                 <span class="self">self</span>.context.current_stratum = <span class="number">0</span>;
                 <span class="self">self</span>.context.current_tick += <span class="number">1</span>;
+                <span class="kw">if </span>current_tick_only {
+                    <span class="kw">return </span><span class="bool-val">false</span>;
+                }
             }
             <span class="comment">// After incrementing, exit if we made a full loop around the strata.
             </span><span class="kw">if </span>old_stratum == <span class="self">self</span>.context.current_stratum {
