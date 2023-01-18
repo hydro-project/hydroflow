@@ -106,7 +106,7 @@ impl Hydroflow {
     pub fn run_tick(&mut self) {
         // While work is immediately available *on the current tick*.
         while self.next_stratum(true) {
-            // Do any work (this also receives events).
+            // Do any work.
             self.run_stratum();
         }
     }
@@ -116,16 +116,13 @@ impl Hydroflow {
     pub fn run_available(&mut self) {
         // While work is immediately available.
         while self.next_stratum(false) {
-            // Do any work (this also receives events).
+            // Do any work.
             self.run_stratum();
         }
     }
 
     /// Runs the current stratum of the dataflow until no more work is immediately available.
     pub fn run_stratum(&mut self) {
-        // Add any external jobs to ready queue.
-        self.try_recv_events();
-
         while let Some(sg_id) = self.stratum_queues[self.context.current_stratum].pop_front() {
             {
                 let sg_data = &mut self.subgraphs[sg_id.0];
@@ -150,8 +147,6 @@ impl Hydroflow {
                     }
                 }
             }
-
-            self.try_recv_events();
         }
     }
 
@@ -162,7 +157,10 @@ impl Hydroflow {
     /// If `current_tick_only` is set to `true`, will only return `true` if work is immediately
     /// available on the *current tick*.
     pub fn next_stratum(&mut self, current_tick_only: bool) -> bool {
-        self.try_recv_events();
+        if 0 == self.context.current_stratum {
+            // Only receive events at the start of a tick.
+            self.try_recv_events();
+        }
 
         let old_stratum = self.context.current_stratum;
         loop {
@@ -175,6 +173,10 @@ impl Hydroflow {
             if self.context.current_stratum >= self.stratum_queues.len() {
                 self.context.current_stratum = 0;
                 self.context.current_tick += 1;
+
+                // Only receive events at the start of a tick.
+                self.try_recv_events();
+
                 if current_tick_only {
                     return false;
                 }
@@ -193,8 +195,8 @@ impl Hydroflow {
     /// TODO(mingwei): Currently blockes forever, no notion of "completion."
     pub fn run(&mut self) -> Option<!> {
         loop {
-            self.run_tick();
             self.recv_events()?;
+            self.run_tick();
         }
     }
 
