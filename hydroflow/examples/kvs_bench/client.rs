@@ -29,8 +29,8 @@ pub async fn run_client(server_addr: SocketAddr) {
         let random_key = rng.next_u64();
         let random_val = rng.next_u64();
 
-        keys.push(random_key.clone());
-        map.insert(random_key.clone(), random_val.clone());
+        keys.push(random_key);
+        map.insert(random_key, random_val);
 
         outbound
             .send(serialize_to_bytes(KVSRequest::Put {
@@ -51,10 +51,10 @@ pub async fn run_client(server_addr: SocketAddr) {
     loop {
         while outstanding < 5000 {
             let dist = Uniform::new(0, keys.len());
-            let key = keys[dist.sample(&mut rng)].clone();
+            let key = keys[dist.sample(&mut rng)];
 
             outbound
-                .send(serialize_to_bytes(KVSRequest::Get { key: key }))
+                .send(serialize_to_bytes(KVSRequest::Get { key }))
                 .await
                 .unwrap();
 
