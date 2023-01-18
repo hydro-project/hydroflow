@@ -17,6 +17,7 @@ mod cross_join;
 mod demux;
 mod dest_sink;
 mod dest_sink_serde;
+mod dest_sink_serde_tcp;
 mod difference;
 mod filter;
 mod filter_map;
@@ -41,6 +42,7 @@ mod source_iter;
 mod source_stdin;
 mod source_stream;
 mod source_stream_serde;
+mod source_stream_serde_tcp;
 mod tee;
 mod unique;
 mod unzip;
@@ -168,6 +170,7 @@ pub const OPERATORS: &[OperatorConstraints] = &[
     source_stdin::SOURCE_STDIN,
     source_stream::SOURCE_STREAM,
     source_stream_serde::SOURCE_STREAM_SERDE,
+    source_stream_serde_tcp::SOURCE_STREAM_SERDE_TCP,
     repeat_iter::REPEAT_ITER,
     difference::DIFFERENCE,
     next_stratum::NEXT_STRATUM,
@@ -176,6 +179,7 @@ pub const OPERATORS: &[OperatorConstraints] = &[
     demux::DEMUX,
     dest_sink::DEST_SINK,
     dest_sink_serde::DEST_SINK_SERDE,
+    dest_sink_serde_tcp::DEST_SINK_SERDE_TCP,
 ];
 
 pub struct WriteContextArgs<'a> {

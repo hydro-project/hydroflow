@@ -18,6 +18,7 @@ timely = "*"
 differential-dataflow = "*"
 tokio = { version = "1.0", features = [ "rt-multi-thread" ] }
 static_assertions = "1.1.0"
+serde = "*"
 
 [[bench]]
 name = "arithmetic"

@@ -15,3 +15,13 @@ members = [
 [profile.release]
 strip = true      # Strip symbols from the binary
 opt-level = "z"   # Optimize for size
+
+[profile.profile]
+inherits = "release"
+opt-level = 3
+debug-assertions = false
+overflow-checks = false
+incremental = false
+codegen-units = 1
+debug = 2
+strip = "none"
