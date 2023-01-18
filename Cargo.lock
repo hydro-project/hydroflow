@@ -121,7 +121,6 @@ dependencies = [
  "lazy_static",
  "rand 0.8.5",
  "seq-macro",
- "serde",
  "static_assertions",
  "timely",
  "tokio",
