@@ -22,9 +22,10 @@ pub const UNZIP: OperatorConstraints = OperatorConstraints {
     soft_range_inn: RANGE_1,
     hard_range_out: &(2..=2),
     soft_range_out: &(2..=2),
+    num_args: 0,
+    is_external_input: false,
     ports_inn: None,
     ports_out: Some(&|| super::PortListSpec::Fixed(parse_quote!(0, 1))),
-    num_args: 0,
     input_delaytype_fn: &|_| None,
     write_fn: &(|&WriteContextArgs { root, op_span, .. },
                  &WriteIteratorArgs {

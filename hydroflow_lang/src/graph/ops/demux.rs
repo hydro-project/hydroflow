@@ -48,9 +48,10 @@ pub const DEMUX: OperatorConstraints = OperatorConstraints {
     soft_range_inn: RANGE_1,
     hard_range_out: &(2..),
     soft_range_out: &(2..),
+    num_args: 1,
+    is_external_input: false,
     ports_inn: None,
     ports_out: Some(&(|| PortListSpec::Variadic)),
-    num_args: 1,
     input_delaytype_fn: &|_| None,
     write_fn: &(|&WriteContextArgs { root, op_span, .. },
                  &WriteIteratorArgs {
