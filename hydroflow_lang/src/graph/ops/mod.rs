@@ -71,6 +71,9 @@ pub struct OperatorConstraints {
     pub soft_range_out: &'static dyn RangeTrait<usize>,
     /// Number of arguments i.e. `operator(a, b, c)` has `num_args = 3`.
     pub num_args: usize,
+    /// If this operator receives external inputs and therefore must be in
+    /// stratum 0.
+    pub is_external_input: bool,
 
     /// What named or numbered input ports to expect?
     pub ports_inn: Option<&'static dyn Fn() -> PortListSpec>,

@@ -21,9 +21,10 @@ pub const FLATTEN: OperatorConstraints = OperatorConstraints {
     soft_range_inn: RANGE_1,
     hard_range_out: RANGE_1,
     soft_range_out: RANGE_1,
+    num_args: 0,
+    is_external_input: false,
     ports_inn: None,
     ports_out: None,
-    num_args: 0,
     input_delaytype_fn: &|_| None,
     write_fn: &(|&WriteContextArgs { root, op_span, .. },
                  &WriteIteratorArgs {
