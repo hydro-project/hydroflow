@@ -815,6 +815,7 @@ dependencies = [
  "rand 0.8.5",
  "ref-cast",
  "regex",
+ "rustc-hash",
  "sealed",
  "serde",
  "serde_json",

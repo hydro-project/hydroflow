@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+type HashMap<K, V> = rustc_hash::FxHashMap<K, V>;
 
 #[derive(Debug)]
 pub struct HalfJoinState<Key, ValBuild, ValProbe> {
@@ -11,7 +11,7 @@ pub struct HalfJoinState<Key, ValBuild, ValProbe> {
 impl<Key, ValBuild, ValProbe> Default for HalfJoinState<Key, ValBuild, ValProbe> {
     fn default() -> Self {
         Self {
-            table: HashMap::new(),
+            table: HashMap::default(),
             current_matches: None,
         }
     }
