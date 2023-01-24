@@ -1,3 +1,5 @@
+use std::collections::hash_map::Entry;
+
 type HashMap<K, V> = rustc_hash::FxHashMap<K, V>;
 
 #[derive(Debug)]
@@ -6,7 +8,7 @@ pub struct HalfJoinState<Key, ValBuild, ValProbe> {
     table: HashMap<Key, Vec<ValBuild>>,
     /// Not-yet emitted matches. [`Option`] of the `Key`, other-side probe value, and index within
     /// the corresponding `table[key]` vec.
-    current_matches: Option<(Key, ValProbe, usize)>,
+    current_matches: Option<(Key, ValProbe, usize, *const Vec<ValBuild>)>,
 }
 impl<Key, ValBuild, ValProbe> Default for HalfJoinState<Key, ValBuild, ValProbe> {
     fn default() -> Self {
@@ -23,8 +25,10 @@ where
     ValProbe: Clone,
 {
     fn pop_buffer(&mut self) -> Option<(Key, ValProbe, ValBuild)> {
-        let (k, v, idx) = self.current_matches.as_mut()?;
-        let vec = &self.table[k];
+        let (k, v, idx, cached_entry) = self.current_matches.as_mut()?;
+
+        let vec = unsafe { &**cached_entry };
+
         let result = (k.clone(), v.clone(), vec[*idx].clone());
         *idx += 1;
         if vec.len() <= *idx {
@@ -34,17 +38,29 @@ where
     }
 
     fn build(&mut self, k: Key, v: &ValBuild) -> bool {
-        let vec = self.table.entry(k).or_insert_with(Vec::new);
-        if !vec.contains(v) {
-            vec.push(v.clone());
-            return true;
-        }
+        let entry = self.table.entry(k);
+
+        match entry {
+            Entry::Occupied(mut e) => {
+                let vec = e.get_mut();
+
+                if !vec.contains(v) {
+                    vec.push(v.clone());
+                    return true;
+                }
+            }
+            Entry::Vacant(e) => {
+                e.insert(vec![v.clone()]);
+                return true;
+            }
+        };
+
         false
     }
 
     fn probe(&mut self, k: Key, v: ValProbe) {
-        if self.table.contains_key(&k) {
-            self.current_matches = Some((k, v, 0));
+        if let Some(entry) = self.table.get(&k) {
+            self.current_matches = Some((k, v, 0, entry as *const _));
         }
     }
 }
