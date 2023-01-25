@@ -342,6 +342,9 @@
 <a href="#342" id="342">342</a>
 <a href="#343" id="343">343</a>
 <a href="#344" id="344">344</a>
+<a href="#345" id="345">345</a>
+<a href="#346" id="346">346</a>
+<a href="#347" id="347">347</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::fmt::Display;
 <span class="kw">use </span>std::ops::{Bound, RangeBounds};
 
@@ -415,6 +418,9 @@
     </span><span class="kw">pub </span>soft_range_out: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span><span class="kw">dyn </span>RangeTrait&lt;usize&gt;,
     <span class="doccomment">/// Number of arguments i.e. `operator(a, b, c)` has `num_args = 3`.
     </span><span class="kw">pub </span>num_args: usize,
+    <span class="doccomment">/// If this operator receives external inputs and therefore must be in
+    /// stratum 0.
+    </span><span class="kw">pub </span>is_external_input: bool,
 
     <span class="doccomment">/// What named or numbered input ports to expect?
     </span><span class="kw">pub </span>ports_inn: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span><span class="kw">dyn </span>Fn() -&gt; PortListSpec&gt;,

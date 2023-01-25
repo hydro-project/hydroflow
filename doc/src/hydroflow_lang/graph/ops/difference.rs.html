@@ -68,6 +68,7 @@
 <a href="#68" id="68">68</a>
 <a href="#69" id="69">69</a>
 <a href="#70" id="70">70</a>
+<a href="#71" id="71">71</a>
 </pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::graph::PortIndexValue;
 
 <span class="kw">use super</span>::{
@@ -98,9 +99,10 @@
     soft_range_inn: <span class="kw-2">&amp;</span>(<span class="number">2</span>..=<span class="number">2</span>),
     hard_range_out: RANGE_1,
     soft_range_out: RANGE_1,
+    num_args: <span class="number">0</span>,
+    is_external_input: <span class="bool-val">false</span>,
     ports_inn: <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>|| <span class="kw">super</span>::PortListSpec::Fixed(<span class="macro">parse_quote! </span>{ pos, neg })),
     ports_out: <span class="prelude-val">None</span>,
-    num_args: <span class="number">0</span>,
     input_delaytype_fn: <span class="kw-2">&amp;</span>|idx| <span class="kw">match </span>idx {
         PortIndexValue::Path(path) <span class="kw">if </span><span class="string">&quot;neg&quot; </span>== path.to_token_stream().to_string() =&gt; {
             <span class="prelude-val">Some</span>(DelayType::Stratum)

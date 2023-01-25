@@ -63,6 +63,7 @@
 <a href="#63" id="63">63</a>
 <a href="#64" id="64">64</a>
 <a href="#65" id="65">65</a>
+<a href="#66" id="66">66</a>
 </pre><pre class="rust"><code><span class="kw">use super</span>::{OperatorConstraints, WriteContextArgs, WriteIteratorArgs, RANGE_1};
 
 <span class="kw">use </span>quote::quote_spanned;
@@ -106,9 +107,10 @@
     soft_range_inn: <span class="kw-2">&amp;</span>(<span class="number">2</span>..=<span class="number">2</span>),
     hard_range_out: RANGE_1,
     soft_range_out: RANGE_1,
+    num_args: <span class="number">0</span>,
+    is_external_input: <span class="bool-val">false</span>,
     ports_inn: <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>(|| <span class="kw">super</span>::PortListSpec::Fixed(<span class="macro">parse_quote! </span>{ <span class="number">0</span>, <span class="number">1 </span>}))),
     ports_out: <span class="prelude-val">None</span>,
-    num_args: <span class="number">0</span>,
     input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">None</span>,
     write_fn: <span class="kw-2">&amp;</span>(|wc @ <span class="kw-2">&amp;</span>WriteContextArgs { op_span, .. },
                  wi @ <span class="kw-2">&amp;</span>WriteIteratorArgs { ident, inputs, .. },

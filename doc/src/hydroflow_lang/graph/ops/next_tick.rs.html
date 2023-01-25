@@ -45,6 +45,7 @@
 <a href="#45" id="45">45</a>
 <a href="#46" id="46">46</a>
 <a href="#47" id="47">47</a>
+<a href="#48" id="48">48</a>
 </pre><pre class="rust"><code><span class="kw">use super</span>::{DelayType, OperatorConstraints, IDENTITY_WRITE_FN, RANGE_1};
 
 <span class="doccomment">/// Delays all elements which pass through to the next tick. In short,
@@ -86,9 +87,10 @@
     soft_range_inn: RANGE_1,
     hard_range_out: RANGE_1,
     soft_range_out: RANGE_1,
+    num_args: <span class="number">0</span>,
+    is_external_input: <span class="bool-val">false</span>,
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">None</span>,
-    num_args: <span class="number">0</span>,
     input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">Some</span>(DelayType::Tick),
     write_fn: IDENTITY_WRITE_FN,
 };

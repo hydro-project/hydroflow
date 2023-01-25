@@ -15,6 +15,7 @@
 <a href="#15" id="15">15</a>
 <a href="#16" id="16">16</a>
 <a href="#17" id="17">17</a>
+<a href="#18" id="18">18</a>
 </pre><pre class="rust"><code><span class="kw">use super</span>::{DelayType, OperatorConstraints, IDENTITY_WRITE_FN, RANGE_1};
 
 <span class="doccomment">/// Delays all elements which pass through to the next stratum (in the same
@@ -26,9 +27,10 @@
     soft_range_inn: RANGE_1,
     hard_range_out: RANGE_1,
     soft_range_out: RANGE_1,
+    num_args: <span class="number">0</span>,
+    is_external_input: <span class="bool-val">false</span>,
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">None</span>,
-    num_args: <span class="number">0</span>,
     input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">Some</span>(DelayType::Stratum),
     write_fn: IDENTITY_WRITE_FN,
 };

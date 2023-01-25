@@ -200,6 +200,7 @@
 <a href="#200" id="200">200</a>
 <a href="#201" id="201">201</a>
 <a href="#202" id="202">202</a>
+<a href="#203" id="203">203</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 
 <span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
@@ -250,9 +251,10 @@
     soft_range_inn: RANGE_1,
     hard_range_out: <span class="kw-2">&amp;</span>(<span class="number">2</span>..),
     soft_range_out: <span class="kw-2">&amp;</span>(<span class="number">2</span>..),
+    num_args: <span class="number">1</span>,
+    is_external_input: <span class="bool-val">false</span>,
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>(|| PortListSpec::Variadic)),
-    num_args: <span class="number">1</span>,
     input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">None</span>,
     write_fn: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span>WriteContextArgs { root, op_span, .. },
                  <span class="kw-2">&amp;</span>WriteIteratorArgs {
