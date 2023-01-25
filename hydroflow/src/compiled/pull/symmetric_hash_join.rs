@@ -1,4 +1,4 @@
-use std::collections::hash_map::Entry;
+use std::collections::{hash_map::Entry, VecDeque};
 
 type HashMap<K, V> = rustc_hash::FxHashMap<K, V>;
 
@@ -6,15 +6,14 @@ type HashMap<K, V> = rustc_hash::FxHashMap<K, V>;
 pub struct HalfJoinState<Key, ValBuild, ValProbe> {
     /// Table to probe, vec val contains all matches.
     table: HashMap<Key, Vec<ValBuild>>,
-    /// Not-yet emitted matches. [`Option`] of the `Key`, other-side probe value, and index within
-    /// the corresponding `table[key]` vec.
-    current_matches: Option<(Key, ValProbe, usize, *const Vec<ValBuild>)>,
+    /// Not-yet emitted matches.
+    current_matches: VecDeque<(Key, ValProbe, ValBuild)>,
 }
 impl<Key, ValBuild, ValProbe> Default for HalfJoinState<Key, ValBuild, ValProbe> {
     fn default() -> Self {
         Self {
             table: HashMap::default(),
-            current_matches: None,
+            current_matches: VecDeque::default(),
         }
     }
 }
@@ -24,19 +23,6 @@ where
     ValBuild: Clone + Eq,
     ValProbe: Clone,
 {
-    fn pop_buffer(&mut self) -> Option<(Key, ValProbe, ValBuild)> {
-        let (k, v, idx, cached_entry) = self.current_matches.as_mut()?;
-
-        let vec = unsafe { &**cached_entry };
-
-        let result = (k.clone(), v.clone(), vec[*idx].clone());
-        *idx += 1;
-        if vec.len() <= *idx {
-            self.current_matches = None;
-        }
-        Some(result)
-    }
-
     fn build(&mut self, k: Key, v: &ValBuild) -> bool {
         let entry = self.table.entry(k);
 
@@ -58,9 +44,13 @@ where
         false
     }
 
-    fn probe(&mut self, k: Key, v: ValProbe) {
+    fn probe(&mut self, k: &Key, v: &ValProbe) {
         if let Some(entry) = self.table.get(&k) {
-            self.current_matches = Some((k, v, 0, entry as *const _));
+            self.current_matches.extend(
+                entry
+                    .iter()
+                    .map(|valbuild| (k.clone(), v.clone(), valbuild.clone())),
+            );
         }
     }
 }
@@ -96,22 +86,22 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
-            if let Some((k, v2, v1)) = self.state.0.pop_buffer() {
+            if let Some((k, v2, v1)) = self.state.0.current_matches.pop_front() {
                 return Some((k, (v1, v2)));
             }
-            if let Some((k, v1, v2)) = self.state.1.pop_buffer() {
+            if let Some((k, v1, v2)) = self.state.1.current_matches.pop_front() {
                 return Some((k, (v1, v2)));
             }
 
             if let Some((k, v1)) = self.lhs.next() {
                 if self.state.0.build(k.clone(), &v1) {
-                    self.state.1.probe(k, v1);
+                    self.state.1.probe(&k, &v1);
                 }
                 continue;
             }
             if let Some((k, v2)) = self.rhs.next() {
                 if self.state.1.build(k.clone(), &v2) {
-                    self.state.0.probe(k, v2);
+                    self.state.0.probe(&k, &v2);
                 }
                 continue;
             }
