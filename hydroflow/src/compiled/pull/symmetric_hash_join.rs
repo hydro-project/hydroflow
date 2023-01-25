@@ -45,7 +45,7 @@ where
     }
 
     fn probe(&mut self, k: &Key, v: &ValProbe) {
-        if let Some(entry) = self.table.get(&k) {
+        if let Some(entry) = self.table.get(k) {
             // TODO: Don't free/shrink the self.current_matches vecdeque to save time.
             // This mean it will grow to eventually become the largest number of matches in a single probe call.
             // Maybe we should clear this memory at the beginning of every tick/periodically?
