@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use slotmap::{Key, SecondaryMap, SlotMap, SparseSecondaryMap};
 
 use serde::{Deserialize, Serialize};
@@ -13,7 +15,6 @@ pub struct SerdeEdge {
 }
 
 #[derive(Default, Serialize, Deserialize)]
-#[allow(dead_code)] // TODO(mingwei): remove when no longer needed.
 pub struct SerdeGraph {
     pub nodes: SecondaryMap<GraphNodeId, String>,
     pub node_color_map: SparseSecondaryMap<GraphNodeId, Color>,
@@ -22,6 +23,10 @@ pub struct SerdeGraph {
     pub subgraph_nodes: SlotMap<GraphSubgraphId, Vec<GraphNodeId>>,
     pub subgraph_stratum: SecondaryMap<GraphSubgraphId, usize>,
     pub subgraph_internal_handoffs: SecondaryMap<GraphSubgraphId, Vec<GraphNodeId>>,
+
+    /// What variable name each graph node belongs to (if any).
+    /// The nodes that each variable name encompases.
+    pub varname_nodes: BTreeMap<String, Vec<GraphNodeId>>,
 }
 
 impl SerdeGraph {
@@ -39,9 +44,11 @@ impl SerdeGraph {
 
         fn write_mermaid_prelude(write: &mut impl std::fmt::Write) -> std::fmt::Result {
             // intro
+            #[allow(clippy::write_literal)]
             writeln!(
                 write,
-                r"%%{{init: {{'theme': 'base', 'themeVariables': {{'clusterBkg':'#ddd'}}}}}}%%"
+                "{}",
+                r"%%{init:{'theme':'base','themeVariables':{'clusterBkg':'#ddd','clusterBorder':'#888'}}}%%",
             )?;
             writeln!(write, "flowchart TD")?;
             writeln!(write, "classDef pullClass fill:#02f,color:#fff,stroke:#000")?;
@@ -135,11 +142,11 @@ impl SerdeGraph {
         ) -> std::fmt::Result {
             writeln!(
                 write,
-                "{:t$}subgraph \"sg_{:?} stratum {:?}\"",
+                "{:t$}subgraph sg_{sg:?} [\"sg_{sg:?} stratum {:?}\"]",
                 "",
-                subgraph_id.data(),
                 stratum,
-                t = tab
+                sg = subgraph_id.data(),
+                t = tab,
             )?;
             Ok(())
         }
@@ -149,6 +156,28 @@ impl SerdeGraph {
             tab: usize,
         ) -> std::fmt::Result {
             // subgraph footer
+            writeln!(write, "{:t$}end", "", t = tab)?;
+            Ok(())
+        }
+
+        fn write_mermaid_subgraph_varnames<'a>(
+            write: &mut impl std::fmt::Write,
+            subgraph_id: GraphSubgraphId,
+            varname: &str,
+            local_named_nodes: impl Iterator<Item = &'a GraphNodeId>,
+            tab: usize,
+        ) -> std::fmt::Result {
+            writeln!(
+                write,
+                "{:t$}subgraph sg_{sg:?}_var_{var} [\"var <tt>{var}</tt>\"]",
+                "",
+                sg = subgraph_id.data(),
+                var = varname,
+                t = tab,
+            )?;
+            for local_named_node in local_named_nodes {
+                writeln!(write, "{:t$}{:?}", "", local_named_node.data(), t = tab + 4)?;
+            }
             writeln!(write, "{:t$}end", "", t = tab)?;
             Ok(())
         }
@@ -195,6 +224,24 @@ impl SerdeGraph {
                             write_mermaid_edge(src, edge, tab, write)?;
                         }
                     }
+                }
+            }
+
+            // write out any variable names
+            for (varname, varname_node_ids) in self.varname_nodes.iter() {
+                // TODO(mingwei): this is awkward, inefficient runtime
+                let mut local_named_nodes = varname_node_ids
+                    .iter()
+                    .filter(|node_id| node_ids.contains(node_id))
+                    .peekable();
+                if local_named_nodes.peek().is_some() {
+                    write_mermaid_subgraph_varnames(
+                        write,
+                        subgraph_id,
+                        varname,
+                        local_named_nodes,
+                        tab,
+                    )?;
                 }
             }
 

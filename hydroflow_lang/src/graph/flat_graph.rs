@@ -1,10 +1,11 @@
 use std::borrow::Cow;
 use std::collections::btree_map::Entry;
 use std::collections::{BTreeMap, BTreeSet};
+use std::rc::Rc;
 
 use proc_macro2::Span;
 use quote::ToTokens;
-use slotmap::{Key, SecondaryMap, SlotMap};
+use slotmap::{Key, SecondaryMap, SlotMap, SparseSecondaryMap};
 use syn::spanned::Spanned;
 use syn::Ident;
 
@@ -34,8 +35,10 @@ pub struct FlatGraph {
     /// Spanned error/warning/etc diagnostics to emit.
     pub(crate) diagnostics: Vec<Diagnostic>,
 
+    /// What variable name each graph node belongs to (if any).
+    pub(crate) node_varnames: SparseSecondaryMap<GraphNodeId, Rc<Ident>>,
     /// Variable names, used as [`HfStatement::Named`] are added.
-    names: BTreeMap<Ident, Ends>,
+    varname_ends: BTreeMap<Rc<Ident>, Ends>,
 }
 
 impl FlatGraph {
@@ -58,8 +61,9 @@ impl FlatGraph {
         let stmt_span = stmt.span();
         match stmt {
             HfStatement::Named(named) => {
-                let ends = self.add_pipeline(named.pipeline);
-                match self.names.entry(named.name) {
+                let varname = Rc::new(named.name);
+                let ends = self.add_pipeline(named.pipeline, Some(&varname));
+                match self.varname_ends.entry(varname) {
                     Entry::Vacant(vacant_entry) => {
                         vacant_entry.insert(ends);
                     }
@@ -87,20 +91,22 @@ impl FlatGraph {
                 }
             }
             HfStatement::Pipeline(pipeline) => {
-                self.add_pipeline(pipeline);
+                self.add_pipeline(pipeline, None);
             }
         }
     }
 
     /// Helper: Add a pipeline, i.e. `a -> b -> c`. Return the input and output ends for it.
-    fn add_pipeline(&mut self, pipeline: Pipeline) -> Ends {
+    fn add_pipeline(&mut self, pipeline: Pipeline, current_varname: Option<&Rc<Ident>>) -> Ends {
         match pipeline {
-            Pipeline::Paren(pipeline_paren) => self.add_pipeline(*pipeline_paren.pipeline),
+            Pipeline::Paren(pipeline_paren) => {
+                self.add_pipeline(*pipeline_paren.pipeline, current_varname)
+            }
             Pipeline::Link(pipeline_link) => {
                 // Add the nested LHS and RHS of this link.
-                let lhs_ends = self.add_pipeline(*pipeline_link.lhs);
+                let lhs_ends = self.add_pipeline(*pipeline_link.lhs, current_varname);
                 let connector = pipeline_link.connector;
-                let rhs_ends = self.add_pipeline(*pipeline_link.rhs);
+                let rhs_ends = self.add_pipeline(*pipeline_link.rhs, current_varname);
 
                 if let (Some(src), Some(dst)) = (lhs_ends.out, rhs_ends.inn) {
                     let (src_port, dst_port) = PortIndexValue::from_arrow_connector(connector);
@@ -176,7 +182,7 @@ impl FlatGraph {
                     out: rhs_ends.out,
                 }
             }
-            Pipeline::Name(ident) => self.names.get(&ident).copied().unwrap_or_else(|| {
+            Pipeline::Name(ident) => self.varname_ends.get(&ident).copied().unwrap_or_else(|| {
                 self.diagnostics.push(Diagnostic::spanned(
                     ident.span(),
                     Level::Error,
@@ -189,6 +195,9 @@ impl FlatGraph {
             }),
             Pipeline::Operator(operator) => {
                 let key = self.nodes.insert(Node::Operator(operator));
+                if let Some(current_varname) = current_varname {
+                    self.node_varnames.insert(key, Rc::clone(current_varname));
+                }
                 Ends {
                     inn: Some(key),
                     out: Some(key),
