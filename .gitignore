@@ -1,3 +1,7 @@
 /target*
 /rust.git
 /*.dot
+
+perf.data
+perf.data.old
+flamegraph.svg
