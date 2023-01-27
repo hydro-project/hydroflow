@@ -16,6 +16,11 @@ pub trait LatticeRepr {
 pub trait Merge<Delta: LatticeRepr>: LatticeRepr<Lattice = Delta::Lattice> {
     /// Merge DELTA into THIS. Return TRUE if THIS changed, FALSE if THIS was unchanged.
     fn merge(this: &mut Self::Repr, delta: Delta::Repr) -> bool;
+
+    fn fold(mut this: Self::Repr, delta: Delta::Repr) -> Self::Repr {
+        Self::merge(&mut this, delta);
+        this
+    }
 }
 
 pub trait Convert<Target: LatticeRepr<Lattice = Self::Lattice>>: LatticeRepr {
