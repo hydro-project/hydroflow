@@ -1,7 +1,6 @@
 use std::borrow::Cow;
 use std::collections::btree_map::Entry;
 use std::collections::{BTreeMap, BTreeSet};
-use std::rc::Rc;
 
 use proc_macro2::Span;
 use quote::ToTokens;
@@ -36,9 +35,9 @@ pub struct FlatGraph {
     pub(crate) diagnostics: Vec<Diagnostic>,
 
     /// What variable name each graph node belongs to (if any).
-    pub(crate) node_varnames: SparseSecondaryMap<GraphNodeId, Rc<Ident>>,
+    pub(crate) node_varnames: SparseSecondaryMap<GraphNodeId, Ident>,
     /// Variable names, used as [`HfStatement::Named`] are added.
-    varname_ends: BTreeMap<Rc<Ident>, Ends>,
+    varname_ends: BTreeMap<Ident, Ends>,
 }
 
 impl FlatGraph {
@@ -61,9 +60,8 @@ impl FlatGraph {
         let stmt_span = stmt.span();
         match stmt {
             HfStatement::Named(named) => {
-                let varname = Rc::new(named.name);
-                let ends = self.add_pipeline(named.pipeline, Some(&varname));
-                match self.varname_ends.entry(varname) {
+                let ends = self.add_pipeline(named.pipeline, Some(&named.name));
+                match self.varname_ends.entry(named.name) {
                     Entry::Vacant(vacant_entry) => {
                         vacant_entry.insert(ends);
                     }
@@ -97,7 +95,7 @@ impl FlatGraph {
     }
 
     /// Helper: Add a pipeline, i.e. `a -> b -> c`. Return the input and output ends for it.
-    fn add_pipeline(&mut self, pipeline: Pipeline, current_varname: Option<&Rc<Ident>>) -> Ends {
+    fn add_pipeline(&mut self, pipeline: Pipeline, current_varname: Option<&Ident>) -> Ends {
         match pipeline {
             Pipeline::Paren(pipeline_paren) => {
                 self.add_pipeline(*pipeline_paren.pipeline, current_varname)
@@ -196,7 +194,7 @@ impl FlatGraph {
             Pipeline::Operator(operator) => {
                 let key = self.nodes.insert(Node::Operator(operator));
                 if let Some(current_varname) = current_varname {
-                    self.node_varnames.insert(key, Rc::clone(current_varname));
+                    self.node_varnames.insert(key, current_varname.clone());
                 }
                 Ends {
                     inn: Some(key),

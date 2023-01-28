@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 use proc_macro2::{Ident, Literal, TokenStream};
 use quote::{format_ident, quote, quote_spanned, ToTokens};
 use slotmap::{Key, SecondaryMap, SlotMap, SparseSecondaryMap};
@@ -39,7 +37,7 @@ pub struct PartitionedGraph {
     pub(crate) node_color_map: SparseSecondaryMap<GraphNodeId, Color>,
 
     /// What variable name each graph node belongs to (if any).
-    pub(crate) node_varnames: SparseSecondaryMap<GraphNodeId, Rc<Ident>>,
+    pub(crate) node_varnames: SparseSecondaryMap<GraphNodeId, Ident>,
 }
 impl PartitionedGraph {
     pub fn new() -> Self {
