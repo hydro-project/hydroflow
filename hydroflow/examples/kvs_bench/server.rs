@@ -2,7 +2,6 @@ use super::KVSBatch;
 use super::KVSRequest;
 use super::KVSResponse;
 use crate::util::bounded_broadcast_channel;
-use crdts::CvRDT;
 use futures::SinkExt;
 use hydroflow::util::deserialize_from_bytes;
 use hydroflow::util::serialize_to_bytes;
@@ -18,7 +17,9 @@ use tokio::task;
 use tokio_stream::StreamExt;
 
 use crate::MyMVReg;
+use crate::MyOp;
 use crdts::CmRDT;
+use crdts::VClock;
 
 pub async fn run_server(batch_addr: SocketAddr, client_addr: SocketAddr, peers: Vec<SocketAddr>) {
     println!("tid server: {}", palaver::thread::gettid());
@@ -155,55 +156,128 @@ pub async fn run_server(batch_addr: SocketAddr, client_addr: SocketAddr, peers: 
     // `PollSender` adapts the send half of the bounded channel into a `Sink`.
     let transducer_to_client_tx = tokio_util::sync::PollSender::new(transducer_to_client_tx);
 
+    #[derive(Clone, Debug, Eq, PartialEq, Hash)]
+    enum AddrOrValue {
+        GetType(SocketAddr),
+        PutType(u64),
+    }
+
     let mut df = hydroflow_syntax! {
 
-        my_demux = source_stream(client_to_transducer_rx)
-            -> demux(|(req, addr), var_args!(puts, gets)| match req {
-                KVSRequest::Put {key, value} => puts.give((key, value)),
-                KVSRequest::Get {key} => gets.give((key, addr)),
+        inputs = source_stream(client_to_transducer_rx)
+            -> map(|(req, addr)| {
+                match req {
+                    KVSRequest::Put {key, value} => (key, AddrOrValue::PutType(value)),
+                    KVSRequest::Get {key} => (key, AddrOrValue::GetType(addr)),
+                }
+            })
+            -> inspect(|x| println!("\n\n{batch_addr}: input: {x:?}"));
+
+        // LHS stores sequence of lattice ops, rhs is for getting based on key those sequence of ops
+        state = join::<'static, 'tick>() -> inspect(|x| println!("{batch_addr}: join: {x:?}"));
+
+        my_demux = state
+            -> map(|(key, (op, tt))| ((key, tt), op))
+            -> group_by::<'tick, (u64, AddrOrValue), MyMVReg>(|| MyMVReg::default(), |old: &mut MyMVReg, val: MyOp| {
+                old.apply(val);
+            })
+            -> inspect(|x| println!("{batch_addr}: group_by_output: {x:?}"))
+            -> demux(|((key, tt), reg), var_args!(puts, gets)| match tt {
+                AddrOrValue::PutType(value) => puts.give((key, reg, value)),
+                AddrOrValue::GetType(addr) => gets.give((key, reg, addr)),
             });
 
-        puts = my_demux[puts]
-            -> group_by::<u64, MyMVReg>(MyMVReg::default, |old: &mut MyMVReg, val: u64| {
-                let op = old.write(val, old.read_ctx().derive_add_ctx(batch_addr));
-                old.apply(op);
+        my_merge = merge();
+
+        // This is a disgusting hack because of a lack of right-outer join.
+        source_iter([(7, MyOp::Put {clock: VClock::default(), val: 0})]) -> my_merge;
+
+        // Apply locally generated writes.
+        my_tee = my_demux[puts]
+            -> inspect(|x| println!("{batch_addr}: my_demux[puts]: {x:?}"))
+            -> map(|(key, reg, value): (u64, MyMVReg, u64)| {
+                (key, reg.write(value, reg.read_ctx().derive_add_ctx(batch_addr)))
             })
-            -> inspect(|x| println!("{batch_addr}: puts: {x:?}"))
             -> tee();
 
-        gets = my_demux[gets]
-            -> inspect(|x| println!("{batch_addr}: gets: {x:?}"));
+        my_tee -> my_merge;
 
-        // Broadcast merged puts out to peers
-        puts
-            -> map(|(key, reg)| KVSBatch::Batch {key, reg})
+        // Broadcast ops to other peers
+        my_tee
+            -> map(|(key, op)| KVSBatch::Batch {key, op})
             -> inspect(|x| println!("{batch_addr}: broadcasting put: {x:?}"))
             -> for_each(|x| { transducer_to_peers_tx.send(x).unwrap(); });
 
-        // merge in batches received from other peers
-        my_merge = merge();
+        // Apply writes received from other peers.
         source_stream(peer_to_transducer_rx)
-            -> map(|batch| match batch {KVSBatch::Batch {key, reg} => (key, reg)})
+            -> map(|batch| match batch {KVSBatch::Batch {key, op} => (key, op)})
             -> inspect(|x| println!("{batch_addr}: incoming merge: {x:?}"))
             -> my_merge;
-        puts[0] -> my_merge;
 
-        // join PUTs and GETs by key
-        lookup = join::<'static, 'tick>() -> inspect(|x| println!("{batch_addr}: join: {x:?}"));
-        my_merge -> [0]lookup;
-        gets -> [1]lookup;
+        //
+        my_merge -> [0]state;
+        inputs -> [1]state;
 
-        // every time epoch elapses, broadcast updates to anna peers
-        // source_stream(timer) -> map(|x| KVSBatch::Batch {actor: batch_addr, batches: vec![(0, 0)]}) -> for_each(|x| { transducer_to_peers_tx.send(x).unwrap(); });
-
-        lookup
-            -> group_by::<'tick>(|| (MyMVReg::default(), None), |old: &mut (MyMVReg, Option<SocketAddr>), val: (MyMVReg, SocketAddr)| {
-                old.0.merge(val.0);
-                old.1 = Some(val.1);
-            })
-            -> map(|(key, (reg, addr))| (KVSResponse::Response{key, reg}, addr.unwrap()))
+        // Send responses to actual gets.
+        my_demux[gets]
+            -> map(|(key, reg, addr): (u64, MyMVReg, SocketAddr)| (KVSResponse::Response{key, reg}, addr))
             -> inspect(|x| println!("{batch_addr}: Sending: {x:?}"))
             -> dest_sink(transducer_to_client_tx);
+
+
+
+        // -> map(|(key, (reg, addr))| (KVSResponse::Response{key, reg}, addr.unwrap()))
+        // -> inspect(|x| println!("{batch_addr}: Sending: {x:?}"))
+        // -> dest_sink(transducer_to_client_tx);
+
+
+        // my_demux = source_stream(client_to_transducer_rx)
+        //     -> demux(|(req, addr), var_args!(puts, gets)| match req {
+        //         KVSRequest::Put {key, value} => puts.give((key, value)),
+        //         KVSRequest::Get {key} => gets.give((key, addr)),
+        //     });
+
+        // puts = my_demux[puts]
+        //     -> group_by::<u64, MyMVReg>(MyMVReg::default, |old: &mut MyMVReg, val: u64| {
+        //         let op = old.write(val, old.read_ctx().derive_add_ctx(batch_addr));
+        //         old.apply(op);
+        //     })
+        //     -> inspect(|x| println!("{batch_addr}: puts: {x:?}"))
+        //     -> tee();
+
+        // gets = my_demux[gets]
+        //     -> inspect(|x| println!("{batch_addr}: gets: {x:?}"));
+
+        // // Broadcast merged puts out to peers
+        // puts
+        //     -> map(|(key, reg)| KVSBatch::Batch {key, reg})
+        //     -> inspect(|x| println!("{batch_addr}: broadcasting put: {x:?}"))
+        //     -> for_each(|x| { transducer_to_peers_tx.send(x).unwrap(); });
+
+        // // merge in batches received from other peers
+        // my_merge = merge();
+        // source_stream(peer_to_transducer_rx)
+        //     -> map(|batch| match batch {KVSBatch::Batch {key, reg} => (key, reg)})
+        //     -> inspect(|x| println!("{batch_addr}: incoming merge: {x:?}"))
+        //     -> my_merge;
+        // puts[0] -> my_merge;
+
+        // // join PUTs and GETs by key
+        // lookup = join::<'static, 'tick>() -> inspect(|x| println!("{batch_addr}: join: {x:?}"));
+        // my_merge -> [0]lookup;
+        // gets -> [1]lookup;
+
+        // // every time epoch elapses, broadcast updates to anna peers
+        // // source_stream(timer) -> map(|x| KVSBatch::Batch {actor: batch_addr, batches: vec![(0, 0)]}) -> for_each(|x| { transducer_to_peers_tx.send(x).unwrap(); });
+
+        // lookup
+        //     -> group_by::<'tick>(|| (MyMVReg::default(), None), |old: &mut (MyMVReg, Option<SocketAddr>), val: (MyMVReg, SocketAddr)| {
+        //         old.0.merge(val.0);
+        //         old.1 = Some(val.1);
+        //     })
+        //     -> map(|(key, (reg, addr))| (KVSResponse::Response{key, reg}, addr.unwrap()))
+        //     -> inspect(|x| println!("{batch_addr}: Sending: {x:?}"))
+        //     -> dest_sink(transducer_to_client_tx);
     };
 
     let f5 = df.run_async();

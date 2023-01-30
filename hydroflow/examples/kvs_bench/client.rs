@@ -43,6 +43,8 @@ pub async fn run_client(server_addr: SocketAddr) {
 
     println!("sent puts");
 
+    tokio::time::sleep(Duration::from_millis(100)).await;
+
     let mut outstanding = 0;
 
     let mut time_since_last_report = std::time::Instant::now();

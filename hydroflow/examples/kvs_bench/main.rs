@@ -15,6 +15,7 @@ use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 
 type MyMVReg = MVReg<u64, SocketAddr>;
+type MyOp = crdts::mvreg::Op<u64, SocketAddr>;
 
 #[derive(PartialEq, Eq, Clone, Serialize, Deserialize, Debug)]
 pub enum KVSRequest {
@@ -29,7 +30,7 @@ pub enum KVSResponse {
 
 #[derive(PartialEq, Eq, Clone, Serialize, Deserialize, Debug)]
 pub enum KVSBatch {
-    Batch { key: u64, reg: MyMVReg },
+    Batch { key: u64, op: MyOp },
 }
 
 #[derive(Debug, Parser)] // requires `derive` feature
