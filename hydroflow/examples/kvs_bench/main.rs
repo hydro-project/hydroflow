@@ -1,14 +1,20 @@
+mod broadcast_receiver_stream;
 mod client;
 mod server;
+mod util;
 
 use crate::client::run_client;
 use crate::server::run_server;
+use clap::command;
 use clap::Parser;
-use clap::ValueEnum;
+use clap::Subcommand;
+use crdts::MVReg;
 use hydroflow::tokio;
 use hydroflow::util::ipv4_resolve;
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
+
+type MyMVReg = MVReg<u64, SocketAddr>;
 
 #[derive(PartialEq, Eq, Clone, Serialize, Deserialize, Debug)]
 pub enum KVSRequest {
@@ -18,35 +24,48 @@ pub enum KVSRequest {
 
 #[derive(PartialEq, Eq, Clone, Serialize, Deserialize, Debug)]
 pub enum KVSResponse {
-    Response { key: u64, value: u64 },
+    Response { key: u64, reg: MyMVReg },
 }
 
-#[derive(Clone, ValueEnum, Debug)]
-enum Role {
-    Client,
-    Server,
+#[derive(PartialEq, Eq, Clone, Serialize, Deserialize, Debug)]
+pub enum KVSBatch {
+    Batch { key: u64, reg: MyMVReg },
 }
 
-#[derive(Parser, Debug)]
-struct Opts {
-    #[clap(value_enum, long)]
-    role: Role,
-    #[clap(long, value_parser = ipv4_resolve)]
-    addr: Option<SocketAddr>,
+#[derive(Debug, Parser)] // requires `derive` feature
+struct Cli {
+    #[command(subcommand)]
+    command: Commands,
+}
+
+#[derive(Debug, Subcommand)]
+enum Commands {
+    #[command(arg_required_else_help = true)]
+    Client {
+        #[clap(long, value_parser = ipv4_resolve)]
+        addr: SocketAddr,
+    },
+    #[command(arg_required_else_help = true)]
+    Server {
+        #[clap(long, value_parser = ipv4_resolve)]
+        batch_addr: SocketAddr,
+
+        #[clap(long, value_parser = ipv4_resolve)]
+        client_addr: SocketAddr,
+
+        #[clap(long, value_parser = ipv4_resolve)]
+        peer: SocketAddr,
+    },
 }
 
 #[tokio::main(flavor = "current_thread")]
-// #[tokio::main]
 async fn main() {
-    let opts = Opts::parse();
-    let addr = opts.addr.unwrap();
-
-    match opts.role {
-        Role::Client => {
-            run_client(addr).await;
-        }
-        Role::Server => {
-            run_server(addr).await;
-        }
+    match Cli::parse().command {
+        Commands::Client { addr } => run_client(addr).await,
+        Commands::Server {
+            batch_addr,
+            client_addr,
+            peer,
+        } => run_server(batch_addr, client_addr, vec![peer]).await,
     }
 }
