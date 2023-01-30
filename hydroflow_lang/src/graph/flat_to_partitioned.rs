@@ -508,6 +508,7 @@ impl TryFrom<FlatGraph> for PartitionedGraph {
             mut nodes,
             mut graph,
             mut ports,
+            node_varnames,
             ..
         } = flat_graph;
 
@@ -601,6 +602,8 @@ impl TryFrom<FlatGraph> for PartitionedGraph {
             subgraph_send_handoffs,
             subgraph_internal_handoffs,
             node_color_map: node_color,
+
+            node_varnames,
         })
     }
 }
