@@ -11,6 +11,8 @@ use quote::quote_spanned;
 /// Iterates through a stream passing each element to the closure in the
 /// argument.
 ///
+/// > Note: The closure has access to the [`context` object](surface_flows.md#the-context-object).
+///
 /// ```hydroflow
 ///     source_iter(vec!["Hello", "World"])
 ///         -> for_each(|x| println!("{}", x));

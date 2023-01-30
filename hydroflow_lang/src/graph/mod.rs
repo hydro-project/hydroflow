@@ -32,6 +32,9 @@ new_key_type! {
     pub struct GraphSubgraphId;
 }
 
+/// Context identifier as a string.
+const CONTEXT: &str = "context";
+
 pub enum Node {
     Operator(Operator),
     Handoff { src_span: Span, dst_span: Span },

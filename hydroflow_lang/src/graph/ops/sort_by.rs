@@ -8,6 +8,8 @@ use quote::quote_spanned;
 /// Takes a stream as input and produces a version of the stream as output
 /// sorted according to the key extracted by the closure.
 ///
+/// > Note: The closure has access to the [`context` object](surface_flows.md#the-context-object).
+///
 /// ```hydroflow
 /// // should print (1, 'z'), (2, 'y'), (3, 'x') (in order)
 /// source_iter(vec![(2, 'y'), (3, 'x'), (1, 'z')])

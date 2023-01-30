@@ -189,6 +189,9 @@ pub const OPERATORS: &[OperatorConstraints] = &[
 pub struct WriteContextArgs<'a> {
     /// `hydroflow` crate name for `use #root::something`.
     pub root: &'a TokenStream,
+    /// `context` ident, the name of the provided
+    /// [`hydroflow::scheduled::Context`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/context/struct.Context.html).
+    pub context: &'a Ident,
     /// Subgraph ID in which this operator is contained.
     pub subgraph_id: GraphSubgraphId,
     /// Node ID identifying this operator in the flat or partitioned graph meta-datastructure.
