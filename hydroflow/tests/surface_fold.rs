@@ -1,6 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
-use hydroflow::{hydroflow_syntax, util::collect_ready};
+use hydroflow::hydroflow_syntax;
+use hydroflow::util::collect_ready;
 
 #[test]
 pub fn test_fold_tick() {
