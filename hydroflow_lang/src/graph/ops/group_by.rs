@@ -22,7 +22,7 @@ use quote::{quote_spanned, ToTokens};
 /// `'tick` or `'static`, to specify how data persists. With `'tick`, values will only be collected
 /// within the same tick. With `'static`, values will be remembered across ticks and will be
 /// aggregated with pairs arriving in later ticks. When not explicitly specified persistence
-/// defaults to `static.
+/// defaults to `'static`.
 ///
 /// `group_by` can also be provided with two type arguments, the key and value type. This is
 /// required when using `'static` persistence if the compiler cannot infer the types.
