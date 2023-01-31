@@ -1,0 +1,118 @@
+use std::collections::BTreeSet;
+
+#[test]
+pub fn test_group_by_infer_basic() {
+    pub struct SubordResponse {
+        pub xid: &'static str,
+        pub mtype: u32,
+    }
+
+    let mut df = hydroflow::hydroflow_syntax! {
+        source_iter([
+            SubordResponse { xid: "123", mtype: 33 },
+            SubordResponse { xid: "123", mtype: 52 },
+            SubordResponse { xid: "123", mtype: 72 },
+            SubordResponse { xid: "123", mtype: 83 },
+            SubordResponse { xid: "123", mtype: 78 },
+        ])
+            -> map(|m: SubordResponse| (m.xid, 1))
+            -> group_by::<'static>(|| 0, |old: &mut u32, val: u32| *old += val)
+            -> for_each(|(k, v)| println!("{}: {}", k, v));
+    };
+    df.run_available();
+}
+
+#[test]
+pub fn test_group_by_tick() {
+    let (items_send, items_recv) = hydroflow::util::unbounded_channel::<(u32, Vec<u32>)>();
+    let (result_send, mut result_recv) = hydroflow::util::unbounded_channel::<(u32, Vec<u32>)>();
+
+    let mut df = hydroflow::hydroflow_syntax! {
+        source_stream(items_recv)
+            -> group_by::<'tick>(Vec::new, |old: &mut Vec<u32>, mut x: Vec<u32>| old.append(&mut x))
+            -> for_each(|v| result_send.send(v).unwrap());
+    };
+
+    println!(
+        "{}",
+        df.serde_graph()
+            .expect("No graph found, maybe failed to parse.")
+            .to_mermaid()
+    );
+    df.run_available();
+
+    items_send.send((0, vec![1, 2])).unwrap();
+    items_send.send((0, vec![3, 4])).unwrap();
+    items_send.send((1, vec![1])).unwrap();
+    items_send.send((1, vec![1, 2])).unwrap();
+    df.run_available();
+
+    assert_eq!(
+        [(0, vec![1, 2, 3, 4]), (1, vec![1, 1, 2])]
+            .into_iter()
+            .collect::<BTreeSet<_>>(),
+        hydroflow::util::collect_ready::<BTreeSet<_>, _>(&mut result_recv)
+    );
+
+    items_send.send((0, vec![5, 6])).unwrap();
+    items_send.send((0, vec![7, 8])).unwrap();
+    items_send.send((1, vec![10])).unwrap();
+    items_send.send((1, vec![11, 12])).unwrap();
+    df.run_available();
+
+    assert_eq!(
+        [(0, vec![5, 6, 7, 8]), (1, vec![10, 11, 12])]
+            .into_iter()
+            .collect::<BTreeSet<_>>(),
+        hydroflow::util::collect_ready::<BTreeSet<_>, _>(&mut result_recv)
+    );
+}
+
+#[test]
+pub fn test_group_by_static() {
+    let (items_send, items_recv) = hydroflow::util::unbounded_channel::<(u32, Vec<u32>)>();
+    let (result_send, mut result_recv) = hydroflow::util::unbounded_channel::<(u32, Vec<u32>)>();
+
+    let mut df = hydroflow::hydroflow_syntax! {
+        source_stream(items_recv)
+            -> group_by::<'static>(Vec::new, |old: &mut Vec<u32>, mut x: Vec<u32>| old.append(&mut x))
+            -> for_each(|v| result_send.send(v).unwrap());
+    };
+
+    println!(
+        "{}",
+        df.serde_graph()
+            .expect("No graph found, maybe failed to parse.")
+            .to_mermaid()
+    );
+    df.run_available();
+
+    items_send.send((0, vec![1, 2])).unwrap();
+    items_send.send((0, vec![3, 4])).unwrap();
+    items_send.send((1, vec![1])).unwrap();
+    items_send.send((1, vec![1, 2])).unwrap();
+    df.run_available();
+
+    assert_eq!(
+        [(0, vec![1, 2, 3, 4]), (1, vec![1, 1, 2])]
+            .into_iter()
+            .collect::<BTreeSet<_>>(),
+        hydroflow::util::collect_ready::<BTreeSet<_>, _>(&mut result_recv)
+    );
+
+    items_send.send((0, vec![5, 6])).unwrap();
+    items_send.send((0, vec![7, 8])).unwrap();
+    items_send.send((1, vec![10])).unwrap();
+    items_send.send((1, vec![11, 12])).unwrap();
+    df.run_available();
+
+    assert_eq!(
+        [
+            (0, vec![1, 2, 3, 4, 5, 6, 7, 8]),
+            (1, vec![1, 1, 2, 10, 11, 12])
+        ]
+        .into_iter()
+        .collect::<BTreeSet<_>>(),
+        hydroflow::util::collect_ready::<BTreeSet<_>, _>(&mut result_recv)
+    );
+}

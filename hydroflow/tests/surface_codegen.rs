@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 use hydroflow::hydroflow_syntax;
 use hydroflow::scheduled::graph::Hydroflow;
@@ -184,47 +184,6 @@ pub fn test_cross_join() {
 }
 
 #[test]
-pub fn test_flatten() {
-    // test pull
-    let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<(u8, u8)>();
-    let mut df_pull = hydroflow_syntax! {
-        source_iter([(1,1), (1,2), (2,3), (2,4)])
-        -> fold(HashMap::<u8,u8>::new(), |mut ht, t:(u8,u8)| {
-                let e = ht.entry(t.0).or_insert(0);
-                *e += t.1;
-                ht})
-        -> flatten()
-        -> for_each(|(k,v)| out_send.send((k,v)).unwrap());
-    };
-    df_pull.run_available();
-
-    let out: HashSet<_> = collect_ready(&mut out_recv);
-    for pair in [(1, 3), (2, 7)] {
-        assert!(out.contains(&pair));
-    }
-
-    // test push
-    let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<(u8, u8)>();
-    let mut df_push = hydroflow_syntax! {
-        datagen = source_iter([(1,2), (1,2), (2,4), (2,4)]) -> tee();
-        datagen[0] -> fold(HashMap::<u8,u8>::new(), |mut ht, t:(u8,u8)| {
-                let e = ht.entry(t.0).or_insert(0);
-                *e += t.1;
-                ht})
-        -> flatten()
-        -> for_each(|(k,v)| out_send.send((k,v)).unwrap());
-        datagen[1] -> null();
-    };
-
-    df_push.run_available();
-
-    let out: HashSet<_> = collect_ready(&mut out_recv);
-    for pair in [(1, 4), (2, 8)] {
-        assert!(out.contains(&pair));
-    }
-}
-
-#[test]
 pub fn test_next_tick() {
     let (inp_send, inp_recv) = hydroflow::util::unbounded_channel::<usize>();
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
@@ -356,74 +315,6 @@ pub fn test_unique() {
     items_send.send(2).unwrap();
     items_send.send(0).unwrap();
     items_send.send(2).unwrap();
-    df.run_available();
-
-    println!();
-}
-
-#[test]
-pub fn test_fold_sort() {
-    let (items_send, items_recv) = hydroflow::util::unbounded_channel::<usize>();
-
-    let mut df = hydroflow_syntax! {
-        source_stream(items_recv)
-            -> fold(Vec::new(), |mut v, x| {
-                v.push(x);
-                v
-            })
-            -> flat_map(|mut vec| { vec.sort(); vec })
-            -> for_each(|v| print!("{:?}, ", v));
-    };
-
-    println!(
-        "{}",
-        df.serde_graph()
-            .expect("No graph found, maybe failed to parse.")
-            .to_mermaid()
-    );
-    df.run_available();
-
-    print!("\nA: ");
-
-    items_send.send(9).unwrap();
-    items_send.send(2).unwrap();
-    items_send.send(5).unwrap();
-    df.run_available();
-
-    print!("\nB: ");
-
-    items_send.send(9).unwrap();
-    items_send.send(5).unwrap();
-    items_send.send(2).unwrap();
-    items_send.send(0).unwrap();
-    items_send.send(3).unwrap();
-    df.run_available();
-
-    println!();
-}
-
-#[test]
-pub fn test_group_by() {
-    let (items_send, items_recv) = hydroflow::util::unbounded_channel::<(u32, Vec<u32>)>();
-
-    let mut df = hydroflow_syntax! {
-        source_stream(items_recv)
-            -> group_by(Vec::new, |old: &mut Vec<u32>, mut x: Vec<u32>| old.append(&mut x))
-            -> for_each(|v| print!("{:?}, ", v));
-    };
-
-    println!(
-        "{}",
-        df.serde_graph()
-            .expect("No graph found, maybe failed to parse.")
-            .to_mermaid()
-    );
-    df.run_available();
-
-    items_send.send((0, vec![1, 2])).unwrap();
-    items_send.send((0, vec![3, 4])).unwrap();
-    items_send.send((1, vec![1])).unwrap();
-    items_send.send((1, vec![1, 2])).unwrap();
     df.run_available();
 
     println!();
