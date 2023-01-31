@@ -1,12 +1,9 @@
-use crate::diagnostic::{Diagnostic, Level};
-
 use super::{
-    parse_persistence_lifetimes, DelayType, OperatorConstraints, OperatorWriteOutput, Persistence,
-    WriteContextArgs, WriteIteratorArgs, RANGE_1,
+    DelayType, OperatorConstraints, OperatorWriteOutput, Persistence, WriteContextArgs,
+    WriteIteratorArgs, RANGE_0, RANGE_1,
 };
 
 use quote::quote_spanned;
-use syn::spanned::Spanned;
 
 /// Takes one stream as input and filters out any duplicate occurrences. The output
 /// contains all unique values from the input.
@@ -53,39 +50,27 @@ pub const UNIQUE: OperatorConstraints = OperatorConstraints {
     hard_range_out: RANGE_1,
     soft_range_out: RANGE_1,
     num_args: 0,
+    persistence_args: &(0..=1),
+    type_args: RANGE_0,
     is_external_input: false,
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: &|_| Some(DelayType::Stratum),
     write_fn: &(|wc @ &WriteContextArgs { op_span, .. },
-                 wi @ &WriteIteratorArgs {
+                 &WriteIteratorArgs {
                      ident,
                      inputs,
                      is_pull,
-                     generic_args,
-                     op_name,
+                     persistence_args,
                      ..
                  },
-                 diagnostics| {
+                 _| {
         assert!(is_pull);
 
-        let generics_span = generic_args.map(Spanned::span).unwrap_or(op_span);
-
-        let persistence = parse_persistence_lifetimes(wi, diagnostics);
-        let persistence = match *persistence {
+        let persistence = match *persistence_args {
             [] => Persistence::Static,
             [a] => a,
-            _ => {
-                diagnostics.push(Diagnostic::spanned(
-                    generics_span,
-                    Level::Error,
-                    format!(
-                        "Operator `{}` expects zero or one persistence lifetime generic arguments",
-                        op_name
-                    ),
-                ));
-                Persistence::Static
-            }
+            _ => unreachable!(),
         };
 
         let input = &inputs[0];

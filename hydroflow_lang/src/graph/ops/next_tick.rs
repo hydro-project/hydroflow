@@ -1,4 +1,4 @@
-use super::{DelayType, OperatorConstraints, IDENTITY_WRITE_FN, RANGE_1};
+use super::{DelayType, OperatorConstraints, IDENTITY_WRITE_FN, RANGE_0, RANGE_1};
 
 /// Delays all elements which pass through to the next tick. In short,
 /// execution of a hydroflow graph runs as a sequence of distinct "ticks".
@@ -40,6 +40,8 @@ pub const NEXT_TICK: OperatorConstraints = OperatorConstraints {
     hard_range_out: RANGE_1,
     soft_range_out: RANGE_1,
     num_args: 0,
+    persistence_args: RANGE_0,
+    type_args: RANGE_0,
     is_external_input: false,
     ports_inn: None,
     ports_out: None,

@@ -1,4 +1,6 @@
-use super::{OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs};
+use super::{
+    OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, RANGE_0,
+};
 
 use quote::quote_spanned;
 
@@ -24,6 +26,8 @@ pub const NULL: OperatorConstraints = OperatorConstraints {
     hard_range_out: &(0..=1),
     soft_range_out: &(0..=1),
     num_args: 0,
+    persistence_args: RANGE_0,
+    type_args: RANGE_0,
     is_external_input: false,
     ports_inn: None,
     ports_out: None,

@@ -1,6 +1,6 @@
 use super::{
     DelayType, OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs,
-    RANGE_1,
+    RANGE_0, RANGE_1,
 };
 
 use quote::quote_spanned;
@@ -22,6 +22,8 @@ pub const SORT_BY: OperatorConstraints = OperatorConstraints {
     hard_range_out: RANGE_1,
     soft_range_out: RANGE_1,
     num_args: 1,
+    persistence_args: RANGE_0,
+    type_args: RANGE_0,
     is_external_input: false,
     ports_inn: None,
     ports_out: None,
