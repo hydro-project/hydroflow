@@ -2,12 +2,15 @@ use proc_macro2::{Ident, Literal, TokenStream};
 use quote::{format_ident, quote, quote_spanned, ToTokens};
 use slotmap::{Key, SecondaryMap, SlotMap, SparseSecondaryMap};
 use syn::spanned::Spanned;
+use syn::GenericArgument;
 
-use crate::diagnostic::Diagnostic;
+use crate::diagnostic::{Diagnostic, Level};
 
 use super::di_mul_graph::DiMulGraph;
 use super::flat_graph::FlatGraph;
-use super::ops::{DelayType, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, OPERATORS};
+use super::ops::{
+    DelayType, OperatorWriteOutput, Persistence, WriteContextArgs, WriteIteratorArgs, OPERATORS,
+};
 use super::serde_graph::{SerdeEdge, SerdeGraph};
 use super::{node_color, Color, GraphEdgeId, GraphNodeId, GraphSubgraphId, Node, PortIndexValue};
 
@@ -195,6 +198,65 @@ impl PartitionedGraph {
 
                             let is_pull = idx < pull_to_push_idx;
 
+                            // Generic arguments.
+                            let generic_args = op.type_arguments();
+                            let persistence_args = generic_args.into_iter().flatten().map_while(|generic_arg| match generic_arg {
+                                GenericArgument::Lifetime(lifetime) => {
+                                    match &*lifetime.ident.to_string() {
+                                        "static" => Some(Persistence::Static),
+                                        "tick" => Some(Persistence::Tick),
+                                        _ => {
+                                            diagnostics.push(Diagnostic::spanned(
+                                                generic_arg.span(),
+                                                Level::Error,
+                                                format!("Unknown lifetime generic argument `'{}`, expected `'epoch` or `'static`.", lifetime.ident),
+                                            ));
+                                            // TODO(mingwei): should really keep going and not short circuit?
+                                            None
+                                        }
+                                    }
+                                },
+                                _ => None,
+                            }).collect::<Vec<_>>();
+                            let type_args = generic_args.into_iter().flatten().skip(persistence_args.len()).map_while(|generic_arg| match generic_arg {
+                                GenericArgument::Type(typ) => Some(typ),
+                                _ => None,
+                            }).collect::<Vec<_>>();
+
+                            {
+                                // TODO(mingwei): Also catch these errors earlier, in flat_graph.
+                                let mut bad_generics = false;
+                                if !op_constraints.persistence_args.contains(&persistence_args.len()) {
+                                    diagnostics.push(Diagnostic::spanned(
+                                        generic_args.span(),
+                                        Level::Error,
+                                        format!(
+                                            "`{}` should have {} persistence lifetime arguments, actually has {}.",
+                                            op_name,
+                                            op_constraints.persistence_args.human_string(),
+                                            persistence_args.len()
+                                        )
+                                    ));
+                                    bad_generics = true;
+                                }
+                                if !op_constraints.type_args.contains(&type_args.len()) {
+                                    diagnostics.push(Diagnostic::spanned(
+                                        generic_args.span(),
+                                        Level::Error,
+                                        format!(
+                                            "`{}` should have {} generic type arguments, actually has {}.",
+                                            op_name,
+                                            op_constraints.type_args.human_string(),
+                                            type_args.len()
+                                        )
+                                    ));
+                                    bad_generics = true;
+                                }
+                                if bad_generics {
+                                    continue;
+                                }
+                            }
+
                             let iter_args = WriteIteratorArgs {
                                 ident: &ident,
                                 is_pull,
@@ -202,7 +264,9 @@ impl PartitionedGraph {
                                 outputs: &*outputs,
                                 input_ports: &*input_ports,
                                 output_ports: &*output_ports,
-                                generic_args: op.type_arguments(),
+                                generic_args,
+                                persistence_args: &*persistence_args,
+                                type_args: &*type_args,
                                 arguments: &op.args,
                                 op_name: op_constraints.name,
                             };

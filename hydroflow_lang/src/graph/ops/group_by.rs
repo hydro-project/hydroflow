@@ -1,12 +1,9 @@
 use super::{
-    parse_generic_types, parse_persistence_lifetimes, DelayType, OperatorConstraints,
-    OperatorWriteOutput, Persistence, WriteContextArgs, WriteIteratorArgs, RANGE_1,
+    DelayType, OperatorConstraints, OperatorWriteOutput, Persistence, WriteContextArgs,
+    WriteIteratorArgs, RANGE_1,
 };
 
-use quote::quote_spanned;
-use syn::spanned::Spanned;
-
-use crate::diagnostic::{Diagnostic, Level};
+use quote::{quote_spanned, ToTokens};
 
 /// > 1 input stream of type (K,V1), 1 output stream of type (K,V2).
 /// The output will have one tuple for each distinct K, with an accumulated value of type V2.
@@ -64,51 +61,41 @@ pub const GROUP_BY: OperatorConstraints = OperatorConstraints {
     hard_range_out: RANGE_1,
     soft_range_out: RANGE_1,
     num_args: 2,
+    persistence_args: &(0..=1),
+    type_args: &(0..=2),
     is_external_input: false,
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: &|_| Some(DelayType::Stratum),
     write_fn: &(|wc @ &WriteContextArgs { op_span, .. },
-                 wi @ &WriteIteratorArgs {
+                 &WriteIteratorArgs {
                      ident,
                      inputs,
-                     generic_args,
+                     persistence_args,
+                     type_args,
                      arguments,
                      is_pull,
-                     op_name,
                      ..
                  },
-                 diagnostics| {
+                 _| {
         assert!(is_pull);
 
-        let generics_span = generic_args.map(Spanned::span).unwrap_or(op_span);
-
-        let persistence = parse_persistence_lifetimes(wi, diagnostics);
-        let persistence = match *persistence {
+        let persistence = match *persistence_args {
             [] => Persistence::Static,
             [a] => a,
-            _ => {
-                diagnostics.push(Diagnostic::spanned(
-                    generics_span,
-                    Level::Error,
-                    format!(
-                        "Operator `{}` expects zero or one persistence lifetime generic arguments",
-                        op_name
-                    ),
-                ));
-                Persistence::Static
-            }
+            _ => unreachable!(),
         };
 
-        let mut generic_type_args = parse_generic_types(wi);
-        if !generic_type_args.is_empty() && 2 != generic_type_args.len() {
-            diagnostics.push(Diagnostic::spanned(
-                generics_span,
-                Level::Error,
-                format!("Operator `{}` expects zero or two type arguments", op_name),
-            ));
-            generic_type_args.clear();
-        }
+        let generic_type_args = [
+            type_args
+                .get(0)
+                .map(ToTokens::to_token_stream)
+                .unwrap_or(quote_spanned!(op_span=> _)),
+            type_args
+                .get(1)
+                .map(ToTokens::to_token_stream)
+                .unwrap_or(quote_spanned!(op_span=> _)),
+        ];
 
         let input = &inputs[0];
         let initfn = &arguments[0];

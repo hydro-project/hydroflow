@@ -88,6 +88,8 @@ pub const DEST_SINK: OperatorConstraints = OperatorConstraints {
     hard_range_out: RANGE_0,
     soft_range_out: RANGE_0,
     num_args: 1,
+    persistence_args: RANGE_0,
+    type_args: RANGE_0,
     is_external_input: false,
     ports_inn: None,
     ports_out: None,

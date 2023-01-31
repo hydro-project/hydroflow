@@ -5,7 +5,7 @@ pub fn test_diff_timing() {
     let (neg_send, neg_recv) = hydroflow::util::unbounded_channel::<usize>();
 
     let mut df = hydroflow::hydroflow_syntax! {
-        diff = difference::<'static>() -> for_each(|x| println!("diff: {:?}", x));
+        diff = difference() -> for_each(|x| println!("diff: {:?}", x));
 
         poss = source_stream(pos_recv); //-> tee();
         poss -> [pos]diff;
