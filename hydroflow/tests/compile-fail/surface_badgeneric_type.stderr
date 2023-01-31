@@ -1,0 +1,5 @@
+error: `identity` should have exactly 0 generic type arguments, actually has 1.
+ --> tests/compile-fail/surface_badgeneric_type.rs:7:42
+  |
+7 |         source_iter(0..10) -> identity::<usize>() -> for_each(std::mem::drop);
+  |                                          ^^^^^

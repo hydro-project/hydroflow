@@ -1,5 +1,5 @@
 use super::{
-    OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, RANGE_1,
+    OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, RANGE_0, RANGE_1,
 };
 
 use quote::quote_spanned;
@@ -23,6 +23,8 @@ pub const UNZIP: OperatorConstraints = OperatorConstraints {
     hard_range_out: &(2..=2),
     soft_range_out: &(2..=2),
     num_args: 0,
+    persistence_args: RANGE_0,
+    type_args: RANGE_0,
     is_external_input: false,
     ports_inn: None,
     ports_out: Some(&|| super::PortListSpec::Fixed(parse_quote!(0, 1))),

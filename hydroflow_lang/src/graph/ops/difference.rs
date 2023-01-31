@@ -2,7 +2,7 @@ use crate::graph::PortIndexValue;
 
 use super::{
     DelayType, OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs,
-    RANGE_1,
+    RANGE_0, RANGE_1,
 };
 
 use quote::{quote_spanned, ToTokens};
@@ -29,6 +29,8 @@ pub const DIFFERENCE: OperatorConstraints = OperatorConstraints {
     hard_range_out: RANGE_1,
     soft_range_out: RANGE_1,
     num_args: 0,
+    persistence_args: RANGE_0,
+    type_args: RANGE_0,
     is_external_input: false,
     ports_inn: Some(&|| super::PortListSpec::Fixed(parse_quote! { pos, neg })),
     ports_out: None,

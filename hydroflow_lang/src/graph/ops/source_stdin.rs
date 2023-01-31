@@ -26,6 +26,8 @@ pub const SOURCE_STDIN: OperatorConstraints = OperatorConstraints {
     hard_range_out: RANGE_1,
     soft_range_out: RANGE_1,
     num_args: 0,
+    persistence_args: RANGE_0,
+    type_args: RANGE_0,
     is_external_input: true,
     ports_inn: None,
     ports_out: None,

@@ -1,6 +1,6 @@
 use super::{
-    OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, RANGE_1,
-    RANGE_ANY,
+    OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, RANGE_0,
+    RANGE_1, RANGE_ANY,
 };
 
 use quote::{quote_spanned, ToTokens};
@@ -26,6 +26,8 @@ pub const TEE: OperatorConstraints = OperatorConstraints {
     hard_range_out: RANGE_ANY,
     soft_range_out: &(2..),
     num_args: 0,
+    persistence_args: RANGE_0,
+    type_args: RANGE_0,
     is_external_input: false,
     ports_inn: None,
     ports_out: None,

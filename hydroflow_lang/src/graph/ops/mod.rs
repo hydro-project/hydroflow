@@ -5,10 +5,9 @@ use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote_spanned;
 use slotmap::Key;
 use syn::punctuated::Punctuated;
-use syn::spanned::Spanned;
 use syn::{Expr, GenericArgument, Token, Type};
 
-use crate::diagnostic::{Diagnostic, Level};
+use crate::diagnostic::Diagnostic;
 use crate::parse::PortIndex;
 
 use super::{GraphNodeId, GraphSubgraphId, PortIndexValue};
@@ -71,6 +70,12 @@ pub struct OperatorConstraints {
     pub soft_range_out: &'static dyn RangeTrait<usize>,
     /// Number of arguments i.e. `operator(a, b, c)` has `num_args = 3`.
     pub num_args: usize,
+    /// How many persistence lifetime arguments can be provided.
+    pub persistence_args: &'static dyn RangeTrait<usize>,
+    // /// How many (non-persistence) lifetime arguemtns can be provided.
+    // pub lifetime_args: &'static dyn RangeTrait<usize>,
+    /// How many generic type arguments can be provided.
+    pub type_args: &'static dyn RangeTrait<usize>,
     /// If this operator receives external inputs and therefore must be in
     /// stratum 0.
     pub is_external_input: bool,
@@ -222,6 +227,10 @@ pub struct WriteIteratorArgs<'a> {
 
     /// Operator generic (type or lifetime) arguments.
     pub generic_args: Option<&'a Punctuated<GenericArgument, Token![,]>>,
+    /// Lifetime persistence arguments. Corresponds to a prefix of [`Self::generic_args`].
+    pub persistence_args: &'a [Persistence],
+    /// Type persistence arguments. Corersponds to a (suffix) of [`Self::generic_args`].
+    pub type_args: &'a [&'a Type],
     /// Arguments provided by the user into the operator as arguments.
     /// I.e. the `a, b, c` in `-> my_op(a, b, c) -> `.
     pub arguments: &'a Punctuated<Expr, Token![,]>,
@@ -293,55 +302,4 @@ where
 pub enum Persistence {
     Tick,
     Static,
-}
-
-pub fn parse_generic_types<'a>(
-    &WriteIteratorArgs { generic_args, .. }: &WriteIteratorArgs<'a>,
-) -> Vec<&'a Type> {
-    if let Some(generic_args) = generic_args {
-        generic_args
-            .iter()
-            .skip_while(|generic_arg| matches!(generic_arg, GenericArgument::Lifetime(_)))
-            .map_while(|generic_arg| {
-                if let GenericArgument::Type(ty) = generic_arg {
-                    Some(ty)
-                } else {
-                    None
-                }
-            })
-            .collect()
-    } else {
-        Vec::new()
-    }
-}
-
-pub fn parse_persistence_lifetimes(
-    &WriteIteratorArgs { generic_args, .. }: &WriteIteratorArgs,
-    diagnostics: &mut Vec<Diagnostic>,
-) -> Vec<Persistence> {
-    if let Some(generic_args) = generic_args {
-        generic_args
-            .iter()
-            .map_while(|generic_arg| {
-                if let GenericArgument::Lifetime(lifetime) = generic_arg {
-                    match &*lifetime.ident.to_string() {
-                        "static" => Some(Persistence::Static),
-                        "tick" => Some(Persistence::Tick),
-                        _ => {
-                                diagnostics.push(Diagnostic::spanned(
-                                generic_arg.span(),
-                                Level::Error,
-                                format!("Unknown lifetime generic argument `'{}`, expected `'epoch` or `'static`.", lifetime.ident),
-                            ));
-                            None
-                        }
-                    }
-                } else {
-                    None
-                }
-            })
-            .collect()
-    } else {
-        Vec::new()
-    }
 }

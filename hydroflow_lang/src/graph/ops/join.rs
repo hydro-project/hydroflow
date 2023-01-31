@@ -1,8 +1,6 @@
-use crate::diagnostic::{Diagnostic, Level};
-
 use super::{
-    parse_persistence_lifetimes, OperatorConstraints, OperatorWriteOutput, Persistence,
-    WriteContextArgs, WriteIteratorArgs, RANGE_1,
+    OperatorConstraints, OperatorWriteOutput, Persistence, WriteContextArgs, WriteIteratorArgs,
+    RANGE_0, RANGE_1,
 };
 
 use quote::quote_spanned;
@@ -87,34 +85,25 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
     hard_range_out: RANGE_1,
     soft_range_out: RANGE_1,
     num_args: 0,
+    persistence_args: &(0..=2),
+    type_args: RANGE_0,
     is_external_input: false,
     ports_inn: Some(&(|| super::PortListSpec::Fixed(parse_quote! { 0, 1 }))),
     ports_out: None,
     input_delaytype_fn: &|_| None,
     write_fn: &(|wc @ &WriteContextArgs { root, op_span, .. },
-                 wi @ &WriteIteratorArgs {
+                 &WriteIteratorArgs {
                      ident,
                      inputs,
-                     op_name,
+                     persistence_args,
                      ..
                  },
-                 diagnostics| {
-        let persistence = parse_persistence_lifetimes(wi, diagnostics);
-        let persistences = match *persistence {
+                 _| {
+        let persistences = match *persistence_args {
             [] => [Persistence::Static, Persistence::Static],
             [a] => [a, a],
             [a, b] => [a, b],
-            _ => {
-                diagnostics.push(Diagnostic::spanned(
-                    op_span,
-                    Level::Error,
-                    format!(
-                        "Operator `{}` expects zero, one, or two persistence lifetime generic arguments",
-                        op_name
-                    ),
-                ));
-                [Persistence::Static, Persistence::Static]
-            }
+            _ => unreachable!(),
         };
         // TODO(mingwei): This is messy
         let items = persistences

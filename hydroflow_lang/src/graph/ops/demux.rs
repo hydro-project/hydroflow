@@ -6,7 +6,7 @@ use crate::pretty_span::PrettySpan;
 
 use super::{
     OperatorConstraints, OperatorWriteOutput, PortListSpec, WriteContextArgs, WriteIteratorArgs,
-    RANGE_1,
+    RANGE_0, RANGE_1,
 };
 
 use proc_macro2::{Ident, TokenTree};
@@ -49,6 +49,8 @@ pub const DEMUX: OperatorConstraints = OperatorConstraints {
     hard_range_out: &(2..),
     soft_range_out: &(2..),
     num_args: 1,
+    persistence_args: RANGE_0,
+    type_args: RANGE_0,
     is_external_input: false,
     ports_inn: None,
     ports_out: Some(&(|| PortListSpec::Variadic)),
