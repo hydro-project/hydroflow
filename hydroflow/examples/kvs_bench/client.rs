@@ -25,8 +25,8 @@ pub async fn run_client(server_addr: SocketAddr) {
     let mut keys = Vec::new();
     let mut map = HashMap::new();
 
-    for _ in 0..1 {
-        let random_key = 7; //rng.next_u64();
+    for _ in 0..50 {
+        let random_key = rng.next_u64();
         let random_val = rng.next_u64();
 
         keys.push(random_key);
@@ -43,7 +43,7 @@ pub async fn run_client(server_addr: SocketAddr) {
 
     println!("sent puts");
 
-    tokio::time::sleep(Duration::from_millis(100)).await;
+    // tokio::time::sleep(Duration::from_millis(100)).await;
 
     let mut outstanding = 0;
 
@@ -51,7 +51,7 @@ pub async fn run_client(server_addr: SocketAddr) {
     let mut gets = 0;
 
     loop {
-        while outstanding < 1 {
+        while outstanding < 50 {
             let dist = Uniform::new(0, keys.len());
             let key = keys[dist.sample(&mut rng)];
 
@@ -67,10 +67,10 @@ pub async fn run_client(server_addr: SocketAddr) {
 
         if let Some(Ok(response)) = inbound.next().await {
             let response: KVSResponse = deserialize_from_bytes(response);
-            // match response {
-            //     KVSResponse::Response { key, reg } => assert_eq!(reg, map[&key]),
-            // }
-            println!("{response:?}");
+            // println!("{response:?}");
+            match response {
+                KVSResponse::Response { key, reg } => assert_eq!(&reg.read().val[0], &map[&key]),
+            }
             outstanding -= 1;
             gets += 1;
         }
@@ -80,8 +80,6 @@ pub async fn run_client(server_addr: SocketAddr) {
             println!("get/s: {gets}");
             gets = 0;
         }
-
-        return;
     }
 }
 

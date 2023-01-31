@@ -15,22 +15,17 @@ use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 
 type MyMVReg = MVReg<u64, SocketAddr>;
-type MyOp = crdts::mvreg::Op<u64, SocketAddr>;
 
 #[derive(PartialEq, Eq, Clone, Serialize, Deserialize, Debug)]
 pub enum KVSRequest {
     Put { key: u64, value: u64 },
     Get { key: u64 },
+    Gossip { key: u64, reg: MyMVReg },
 }
 
 #[derive(PartialEq, Eq, Clone, Serialize, Deserialize, Debug)]
 pub enum KVSResponse {
     Response { key: u64, reg: MyMVReg },
-}
-
-#[derive(PartialEq, Eq, Clone, Serialize, Deserialize, Debug)]
-pub enum KVSBatch {
-    Batch { key: u64, op: MyOp },
 }
 
 #[derive(Debug, Parser)] // requires `derive` feature
@@ -49,10 +44,7 @@ enum Commands {
     #[command(arg_required_else_help = true)]
     Server {
         #[clap(long, value_parser = ipv4_resolve)]
-        batch_addr: SocketAddr,
-
-        #[clap(long, value_parser = ipv4_resolve)]
-        client_addr: SocketAddr,
+        addr: SocketAddr,
 
         #[clap(long, value_parser = ipv4_resolve)]
         peer: SocketAddr,
@@ -63,10 +55,6 @@ enum Commands {
 async fn main() {
     match Cli::parse().command {
         Commands::Client { addr } => run_client(addr).await,
-        Commands::Server {
-            batch_addr,
-            client_addr,
-            peer,
-        } => run_server(batch_addr, client_addr, vec![peer]).await,
+        Commands::Server { addr, peer } => run_server(addr, vec![peer]).await,
     }
 }

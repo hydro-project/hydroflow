@@ -19,10 +19,10 @@ impl<T: Clone> ReceiverStream<T> {
         Self { inner: recv }
     }
 
-    /// Get back the inner `UnboundedReceiver`.
-    pub fn into_inner(self) -> Receiver<T> {
-        self.inner
-    }
+    // /// Get back the inner `UnboundedReceiver`.
+    // pub fn into_inner(self) -> Receiver<T> {
+    //     self.inner
+    // }
 
     // /// Closes the receiving half of a channel without dropping it.
     // ///
@@ -36,7 +36,7 @@ impl<T: Clone> ReceiverStream<T> {
 impl<T: Clone> Stream for ReceiverStream<T> {
     type Item = T;
 
-    fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+    fn poll_next(mut self: Pin<&mut Self>, _: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         match self.inner.try_recv() {
             Ok(x) => Poll::Ready(Some(x)),
             Err(e) => match e {
