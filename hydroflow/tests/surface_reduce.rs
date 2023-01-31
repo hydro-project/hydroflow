@@ -1,0 +1,154 @@
+use hydroflow::hydroflow_syntax;
+
+#[test]
+pub fn test_reduce_tick() {
+    let (items_send, items_recv) = hydroflow::util::unbounded_channel::<u32>();
+    let (result_send, mut result_recv) = hydroflow::util::unbounded_channel::<u32>();
+
+    let mut df = hydroflow::hydroflow_syntax! {
+        source_stream(items_recv)
+            -> reduce::<'tick>(|acc: u32, next: u32| acc + next)
+            -> for_each(|v| result_send.send(v).unwrap());
+    };
+
+    println!(
+        "{}",
+        df.serde_graph()
+            .expect("No graph found, maybe failed to parse.")
+            .to_mermaid()
+    );
+
+    items_send.send(1).unwrap();
+    items_send.send(2).unwrap();
+    df.run_available();
+
+    assert_eq!(
+        &[3],
+        &*hydroflow::util::collect_ready::<Vec<_>, _>(&mut result_recv)
+    );
+
+    items_send.send(3).unwrap();
+    items_send.send(4).unwrap();
+    df.run_available();
+
+    assert_eq!(
+        &[7],
+        &*hydroflow::util::collect_ready::<Vec<_>, _>(&mut result_recv)
+    );
+}
+
+#[test]
+pub fn test_reduce_static() {
+    let (items_send, items_recv) = hydroflow::util::unbounded_channel::<u32>();
+    let (result_send, mut result_recv) = hydroflow::util::unbounded_channel::<u32>();
+
+    let mut df = hydroflow::hydroflow_syntax! {
+        source_stream(items_recv)
+            -> reduce::<'static>(|acc: u32, next: u32| acc + next)
+            -> for_each(|v| result_send.send(v).unwrap());
+    };
+
+    println!(
+        "{}",
+        df.serde_graph()
+            .expect("No graph found, maybe failed to parse.")
+            .to_mermaid()
+    );
+
+    items_send.send(1).unwrap();
+    items_send.send(2).unwrap();
+    df.run_available();
+
+    assert_eq!(
+        &[3],
+        &*hydroflow::util::collect_ready::<Vec<_>, _>(&mut result_recv)
+    );
+
+    items_send.send(3).unwrap();
+    items_send.send(4).unwrap();
+    df.run_available();
+
+    assert_eq!(
+        &[10],
+        &*hydroflow::util::collect_ready::<Vec<_>, _>(&mut result_recv)
+    );
+}
+
+#[test]
+pub fn test_reduce_sum() {
+    let (items_send, items_recv) = hydroflow::util::unbounded_channel::<usize>();
+
+    let mut df = hydroflow_syntax! {
+        source_stream(items_recv)
+            -> reduce(|a, b| a + b)
+            -> for_each(|v| print!("{:?}", v));
+    };
+
+    println!(
+        "{}",
+        df.serde_graph()
+            .expect("No graph found, maybe failed to parse.")
+            .to_mermaid()
+    );
+    df.run_available();
+
+    print!("\nA: ");
+
+    items_send.send(9).unwrap();
+    items_send.send(2).unwrap();
+    items_send.send(5).unwrap();
+    df.run_available();
+
+    print!("\nB: ");
+
+    items_send.send(9).unwrap();
+    items_send.send(5).unwrap();
+    items_send.send(2).unwrap();
+    items_send.send(0).unwrap();
+    items_send.send(3).unwrap();
+    df.run_available();
+
+    println!();
+}
+
+/// This tests graph reachability along with an accumulation (in this case sum of vertex ids).
+/// This is to test fixed-point being reched before the accumulation running.
+#[test]
+pub fn test_reduce() {
+    // An edge in the input data = a pair of `usize` vertex IDs.
+    let (pairs_send, pairs_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+
+    let mut df = hydroflow_syntax! {
+        reached_vertices = merge() -> map(|v| (v, ()));
+        source_iter(vec![0]) -> [0]reached_vertices;
+
+        my_join_tee = join() -> map(|(_src, ((), dst))| dst) -> tee();
+        reached_vertices -> [0]my_join_tee;
+        source_stream(pairs_recv) -> [1]my_join_tee;
+
+        my_join_tee[0] -> [1]reached_vertices;
+        my_join_tee[1] -> reduce(|a, b| a + b) -> for_each(|sum| println!("{}", sum));
+    };
+
+    println!(
+        "{}",
+        df.serde_graph()
+            .expect("No graph found, maybe failed to parse.")
+            .to_mermaid()
+    );
+    df.run_available();
+
+    println!("A");
+
+    pairs_send.send((0, 1)).unwrap();
+    pairs_send.send((2, 4)).unwrap();
+    pairs_send.send((3, 4)).unwrap();
+    pairs_send.send((1, 2)).unwrap();
+    df.run_available();
+
+    println!("B");
+
+    pairs_send.send((0, 3)).unwrap();
+    pairs_send.send((0, 3)).unwrap();
+    df.run_available();
+}

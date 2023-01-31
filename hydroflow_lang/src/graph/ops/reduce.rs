@@ -1,6 +1,6 @@
 use super::{
-    DelayType, OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs,
-    RANGE_0, RANGE_1,
+    DelayType, OperatorConstraints, OperatorWriteOutput, Persistence, WriteContextArgs,
+    WriteIteratorArgs, RANGE_0, RANGE_1,
 };
 
 use quote::quote_spanned;
@@ -32,27 +32,65 @@ pub const REDUCE: OperatorConstraints = OperatorConstraints {
     hard_range_out: RANGE_1,
     soft_range_out: RANGE_1,
     num_args: 1,
-    persistence_args: RANGE_0,
+    persistence_args: &(0..=1),
     type_args: RANGE_0,
     is_external_input: false,
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: &|_| Some(DelayType::Stratum),
-    write_fn: &(|&WriteContextArgs { op_span, .. },
+    write_fn: &(|wc @ &WriteContextArgs {
+                     context, op_span, ..
+                 },
                  &WriteIteratorArgs {
                      ident,
                      inputs,
+                     persistence_args,
                      arguments,
                      is_pull,
                      ..
                  },
                  _| {
         assert!(is_pull);
-        let input = &inputs[0];
-        let write_iterator = quote_spanned! {op_span=>
-            let #ident = #input.reduce(#arguments).into_iter();
+
+        let persistence = match *persistence_args {
+            [] => Persistence::Static,
+            [a] => a,
+            _ => unreachable!(),
         };
+
+        let input = &inputs[0];
+        let func = &arguments[0];
+        let reducedata_ident = wc.make_ident("reducedata_ident");
+
+        let (write_prologue, write_iterator) = match persistence {
+            Persistence::Tick => (
+                Default::default(),
+                quote_spanned! {op_span=>
+                    let #ident = #input.reduce(#func).into_iter();
+                },
+            ),
+            Persistence::Static => (
+                quote_spanned! {op_span=>
+                    let #reducedata_ident = df.add_state(
+                        ::std::cell::Cell::new(::std::option::Option::None)
+                    );
+                },
+                quote_spanned! {op_span=>
+                    let #ident = {
+                        let opt = #context.state_ref(#reducedata_ident).take();
+                        let opt = match opt {
+                            Some(accum) => Some(#input.fold(accum, #func)),
+                            None => #input.reduce(#func),
+                        };
+                        #context.state_ref(#reducedata_ident).set(::std::clone::Clone::clone(&opt));
+                        opt.into_iter()
+                    };
+                },
+            ),
+        };
+
         Ok(OperatorWriteOutput {
+            write_prologue,
             write_iterator,
             ..Default::default()
         })
