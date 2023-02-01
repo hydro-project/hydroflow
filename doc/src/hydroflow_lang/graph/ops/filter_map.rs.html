@@ -51,8 +51,10 @@
 <a href="#51" id="51">51</a>
 <a href="#52" id="52">52</a>
 <a href="#53" id="53">53</a>
+<a href="#54" id="54">54</a>
+<a href="#55" id="55">55</a>
 </pre><pre class="rust"><code><span class="kw">use super</span>::{
-    OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, RANGE_1,
+    OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, RANGE_0, RANGE_1,
 };
 
 <span class="kw">use </span>quote::quote_spanned;
@@ -73,6 +75,8 @@
     hard_range_out: RANGE_1,
     soft_range_out: RANGE_1,
     num_args: <span class="number">1</span>,
+    persistence_args: RANGE_0,
+    type_args: RANGE_0,
     is_external_input: <span class="bool-val">false</span>,
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">None</span>,

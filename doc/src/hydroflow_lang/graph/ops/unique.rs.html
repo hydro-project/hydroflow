@@ -112,30 +112,12 @@
 <a href="#112" id="112">112</a>
 <a href="#113" id="113">113</a>
 <a href="#114" id="114">114</a>
-<a href="#115" id="115">115</a>
-<a href="#116" id="116">116</a>
-<a href="#117" id="117">117</a>
-<a href="#118" id="118">118</a>
-<a href="#119" id="119">119</a>
-<a href="#120" id="120">120</a>
-<a href="#121" id="121">121</a>
-<a href="#122" id="122">122</a>
-<a href="#123" id="123">123</a>
-<a href="#124" id="124">124</a>
-<a href="#125" id="125">125</a>
-<a href="#126" id="126">126</a>
-<a href="#127" id="127">127</a>
-<a href="#128" id="128">128</a>
-<a href="#129" id="129">129</a>
-</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
-
-<span class="kw">use super</span>::{
-    parse_persistence_lifetimes, DelayType, OperatorConstraints, OperatorWriteOutput, Persistence,
-    WriteContextArgs, WriteIteratorArgs, RANGE_1,
+</pre><pre class="rust"><code><span class="kw">use super</span>::{
+    DelayType, OperatorConstraints, OperatorWriteOutput, Persistence, WriteContextArgs,
+    WriteIteratorArgs, RANGE_0, RANGE_1,
 };
 
 <span class="kw">use </span>quote::quote_spanned;
-<span class="kw">use </span>syn::spanned::Spanned;
 
 <span class="doccomment">/// Takes one stream as input and filters out any duplicate occurrences. The output
 /// contains all unique values from the input.
@@ -182,39 +164,27 @@
     hard_range_out: RANGE_1,
     soft_range_out: RANGE_1,
     num_args: <span class="number">0</span>,
+    persistence_args: <span class="kw-2">&amp;</span>(<span class="number">0</span>..=<span class="number">1</span>),
+    type_args: RANGE_0,
     is_external_input: <span class="bool-val">false</span>,
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">None</span>,
     input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">Some</span>(DelayType::Stratum),
     write_fn: <span class="kw-2">&amp;</span>(|wc @ <span class="kw-2">&amp;</span>WriteContextArgs { op_span, .. },
-                 wi @ <span class="kw-2">&amp;</span>WriteIteratorArgs {
+                 <span class="kw-2">&amp;</span>WriteIteratorArgs {
                      ident,
                      inputs,
                      is_pull,
-                     generic_args,
-                     op_name,
+                     persistence_args,
                      ..
                  },
-                 diagnostics| {
+                 <span class="kw">_</span>| {
         <span class="macro">assert!</span>(is_pull);
 
-        <span class="kw">let </span>generics_span = generic_args.map(Spanned::span).unwrap_or(op_span);
-
-        <span class="kw">let </span>persistence = parse_persistence_lifetimes(wi, diagnostics);
-        <span class="kw">let </span>persistence = <span class="kw">match </span><span class="kw-2">*</span>persistence {
+        <span class="kw">let </span>persistence = <span class="kw">match </span><span class="kw-2">*</span>persistence_args {
             [] =&gt; Persistence::Static,
             [a] =&gt; a,
-            <span class="kw">_ </span>=&gt; {
-                diagnostics.push(Diagnostic::spanned(
-                    generics_span,
-                    Level::Error,
-                    <span class="macro">format!</span>(
-                        <span class="string">&quot;Operator `{}` expects zero or one persistence lifetime generic arguments&quot;</span>,
-                        op_name
-                    ),
-                ));
-                Persistence::Static
-            }
+            <span class="kw">_ </span>=&gt; <span class="macro">unreachable!</span>(),
         };
 
         <span class="kw">let </span>input = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>];

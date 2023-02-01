@@ -181,22 +181,9 @@
 <a href="#181" id="181">181</a>
 <a href="#182" id="182">182</a>
 <a href="#183" id="183">183</a>
-<a href="#184" id="184">184</a>
-<a href="#185" id="185">185</a>
-<a href="#186" id="186">186</a>
-<a href="#187" id="187">187</a>
-<a href="#188" id="188">188</a>
-<a href="#189" id="189">189</a>
-<a href="#190" id="190">190</a>
-<a href="#191" id="191">191</a>
-<a href="#192" id="192">192</a>
-<a href="#193" id="193">193</a>
-<a href="#194" id="194">194</a>
-</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
-
-<span class="kw">use super</span>::{
-    parse_persistence_lifetimes, OperatorConstraints, OperatorWriteOutput, Persistence,
-    WriteContextArgs, WriteIteratorArgs, RANGE_1,
+</pre><pre class="rust"><code><span class="kw">use super</span>::{
+    OperatorConstraints, OperatorWriteOutput, Persistence, WriteContextArgs, WriteIteratorArgs,
+    RANGE_0, RANGE_1,
 };
 
 <span class="kw">use </span>quote::quote_spanned;
@@ -230,11 +217,11 @@
 /// join(); // Or
 /// join::&lt;&#39;static&gt;();
 ///
-/// join::&lt;&#39;epoch&gt;();
+/// join::&lt;&#39;tick&gt;();
 ///
-/// join::&lt;&#39;static, &#39;epoch&gt;();
+/// join::&lt;&#39;static, &#39;tick&gt;();
 ///
-/// join::&lt;&#39;epoch, &#39;static&gt;();
+/// join::&lt;&#39;tick, &#39;static&gt;();
 /// // etc.
 /// ```
 ///
@@ -281,34 +268,25 @@
     hard_range_out: RANGE_1,
     soft_range_out: RANGE_1,
     num_args: <span class="number">0</span>,
+    persistence_args: <span class="kw-2">&amp;</span>(<span class="number">0</span>..=<span class="number">2</span>),
+    type_args: RANGE_0,
     is_external_input: <span class="bool-val">false</span>,
     ports_inn: <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>(|| <span class="kw">super</span>::PortListSpec::Fixed(<span class="macro">parse_quote! </span>{ <span class="number">0</span>, <span class="number">1 </span>}))),
     ports_out: <span class="prelude-val">None</span>,
     input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">None</span>,
     write_fn: <span class="kw-2">&amp;</span>(|wc @ <span class="kw-2">&amp;</span>WriteContextArgs { root, op_span, .. },
-                 wi @ <span class="kw-2">&amp;</span>WriteIteratorArgs {
+                 <span class="kw-2">&amp;</span>WriteIteratorArgs {
                      ident,
                      inputs,
-                     op_name,
+                     persistence_args,
                      ..
                  },
-                 diagnostics| {
-        <span class="kw">let </span>persistence = parse_persistence_lifetimes(wi, diagnostics);
-        <span class="kw">let </span>persistences = <span class="kw">match </span><span class="kw-2">*</span>persistence {
+                 <span class="kw">_</span>| {
+        <span class="kw">let </span>persistences = <span class="kw">match </span><span class="kw-2">*</span>persistence_args {
             [] =&gt; [Persistence::Static, Persistence::Static],
             [a] =&gt; [a, a],
             [a, b] =&gt; [a, b],
-            <span class="kw">_ </span>=&gt; {
-                diagnostics.push(Diagnostic::spanned(
-                    op_span,
-                    Level::Error,
-                    <span class="macro">format!</span>(
-                        <span class="string">&quot;Operator `{}` expects zero, one, or two persistence lifetime generic arguments&quot;</span>,
-                        op_name
-                    ),
-                ));
-                [Persistence::Static, Persistence::Static]
-            }
+            <span class="kw">_ </span>=&gt; <span class="macro">unreachable!</span>(),
         };
         <span class="comment">// TODO(mingwei): This is messy
         </span><span class="kw">let </span>items = persistences

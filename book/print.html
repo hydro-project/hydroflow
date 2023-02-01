@@ -2308,11 +2308,11 @@ When no persistence arguments are applied it defaults to <code>'static</code> fo
 <pre><code class="language-hydroflow ignore">join(); // Or
 join::&lt;'static&gt;();
 
-join::&lt;'epoch&gt;();
+join::&lt;'tick&gt;();
 
-join::&lt;'static, 'epoch&gt;();
+join::&lt;'static, 'tick&gt;();
 
-join::&lt;'epoch, 'static&gt;();
+join::&lt;'tick, 'static&gt;();
 // etc.
 </code></pre>
 <h3 id="examples"><a class="header" href="#examples">Examples</a></h3>

@@ -421,16 +421,83 @@
 <a href="#421" id="421">421</a>
 <a href="#422" id="422">422</a>
 <a href="#423" id="423">423</a>
+<a href="#424" id="424">424</a>
+<a href="#425" id="425">425</a>
+<a href="#426" id="426">426</a>
+<a href="#427" id="427">427</a>
+<a href="#428" id="428">428</a>
+<a href="#429" id="429">429</a>
+<a href="#430" id="430">430</a>
+<a href="#431" id="431">431</a>
+<a href="#432" id="432">432</a>
+<a href="#433" id="433">433</a>
+<a href="#434" id="434">434</a>
+<a href="#435" id="435">435</a>
+<a href="#436" id="436">436</a>
+<a href="#437" id="437">437</a>
+<a href="#438" id="438">438</a>
+<a href="#439" id="439">439</a>
+<a href="#440" id="440">440</a>
+<a href="#441" id="441">441</a>
+<a href="#442" id="442">442</a>
+<a href="#443" id="443">443</a>
+<a href="#444" id="444">444</a>
+<a href="#445" id="445">445</a>
+<a href="#446" id="446">446</a>
+<a href="#447" id="447">447</a>
+<a href="#448" id="448">448</a>
+<a href="#449" id="449">449</a>
+<a href="#450" id="450">450</a>
+<a href="#451" id="451">451</a>
+<a href="#452" id="452">452</a>
+<a href="#453" id="453">453</a>
+<a href="#454" id="454">454</a>
+<a href="#455" id="455">455</a>
+<a href="#456" id="456">456</a>
+<a href="#457" id="457">457</a>
+<a href="#458" id="458">458</a>
+<a href="#459" id="459">459</a>
+<a href="#460" id="460">460</a>
+<a href="#461" id="461">461</a>
+<a href="#462" id="462">462</a>
+<a href="#463" id="463">463</a>
+<a href="#464" id="464">464</a>
+<a href="#465" id="465">465</a>
+<a href="#466" id="466">466</a>
+<a href="#467" id="467">467</a>
+<a href="#468" id="468">468</a>
+<a href="#469" id="469">469</a>
+<a href="#470" id="470">470</a>
+<a href="#471" id="471">471</a>
+<a href="#472" id="472">472</a>
+<a href="#473" id="473">473</a>
+<a href="#474" id="474">474</a>
+<a href="#475" id="475">475</a>
+<a href="#476" id="476">476</a>
+<a href="#477" id="477">477</a>
+<a href="#478" id="478">478</a>
+<a href="#479" id="479">479</a>
+<a href="#480" id="480">480</a>
+<a href="#481" id="481">481</a>
+<a href="#482" id="482">482</a>
+<a href="#483" id="483">483</a>
+<a href="#484" id="484">484</a>
+<a href="#485" id="485">485</a>
+<a href="#486" id="486">486</a>
+<a href="#487" id="487">487</a>
 </pre><pre class="rust"><code><span class="kw">use </span>proc_macro2::{Ident, Literal, TokenStream};
 <span class="kw">use </span>quote::{format_ident, quote, quote_spanned, ToTokens};
 <span class="kw">use </span>slotmap::{Key, SecondaryMap, SlotMap, SparseSecondaryMap};
 <span class="kw">use </span>syn::spanned::Spanned;
+<span class="kw">use </span>syn::GenericArgument;
 
-<span class="kw">use </span><span class="kw">crate</span>::diagnostic::Diagnostic;
+<span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
 
 <span class="kw">use </span><span class="kw">super</span>::di_mul_graph::DiMulGraph;
 <span class="kw">use </span><span class="kw">super</span>::flat_graph::FlatGraph;
-<span class="kw">use </span><span class="kw">super</span>::ops::{DelayType, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, OPERATORS};
+<span class="kw">use </span><span class="kw">super</span>::ops::{
+    DelayType, OperatorWriteOutput, Persistence, WriteContextArgs, WriteIteratorArgs, OPERATORS,
+};
 <span class="kw">use </span><span class="kw">super</span>::serde_graph::{SerdeEdge, SerdeGraph};
 <span class="kw">use super</span>::{node_color, Color, GraphEdgeId, GraphNodeId, GraphSubgraphId, Node, PortIndexValue};
 
@@ -618,6 +685,65 @@
 
                             <span class="kw">let </span>is_pull = idx &lt; pull_to_push_idx;
 
+                            <span class="comment">// Generic arguments.
+                            </span><span class="kw">let </span>generic_args = op.type_arguments();
+                            <span class="kw">let </span>persistence_args = generic_args.into_iter().flatten().map_while(|generic_arg| <span class="kw">match </span>generic_arg {
+                                GenericArgument::Lifetime(lifetime) =&gt; {
+                                    <span class="kw">match </span><span class="kw-2">&amp;*</span>lifetime.ident.to_string() {
+                                        <span class="string">&quot;static&quot; </span>=&gt; <span class="prelude-val">Some</span>(Persistence::Static),
+                                        <span class="string">&quot;tick&quot; </span>=&gt; <span class="prelude-val">Some</span>(Persistence::Tick),
+                                        <span class="kw">_ </span>=&gt; {
+                                            diagnostics.push(Diagnostic::spanned(
+                                                generic_arg.span(),
+                                                Level::Error,
+                                                <span class="macro">format!</span>(<span class="string">&quot;Unknown lifetime generic argument `&#39;{}`, expected `&#39;tick` or `&#39;static`.&quot;</span>, lifetime.ident),
+                                            ));
+                                            <span class="comment">// TODO(mingwei): should really keep going and not short circuit?
+                                            </span><span class="prelude-val">None
+                                        </span>}
+                                    }
+                                },
+                                <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
+                            }).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+                            <span class="kw">let </span>type_args = generic_args.into_iter().flatten().skip(persistence_args.len()).map_while(|generic_arg| <span class="kw">match </span>generic_arg {
+                                GenericArgument::Type(typ) =&gt; <span class="prelude-val">Some</span>(typ),
+                                <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
+                            }).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+
+                            {
+                                <span class="comment">// TODO(mingwei): Also catch these errors earlier, in flat_graph.
+                                </span><span class="kw">let </span><span class="kw-2">mut </span>bad_generics = <span class="bool-val">false</span>;
+                                <span class="kw">if </span>!op_constraints.persistence_args.contains(<span class="kw-2">&amp;</span>persistence_args.len()) {
+                                    diagnostics.push(Diagnostic::spanned(
+                                        generic_args.span(),
+                                        Level::Error,
+                                        <span class="macro">format!</span>(
+                                            <span class="string">&quot;`{}` should have {} persistence lifetime arguments, actually has {}.&quot;</span>,
+                                            op_name,
+                                            op_constraints.persistence_args.human_string(),
+                                            persistence_args.len()
+                                        )
+                                    ));
+                                    bad_generics = <span class="bool-val">true</span>;
+                                }
+                                <span class="kw">if </span>!op_constraints.type_args.contains(<span class="kw-2">&amp;</span>type_args.len()) {
+                                    diagnostics.push(Diagnostic::spanned(
+                                        generic_args.span(),
+                                        Level::Error,
+                                        <span class="macro">format!</span>(
+                                            <span class="string">&quot;`{}` should have {} generic type arguments, actually has {}.&quot;</span>,
+                                            op_name,
+                                            op_constraints.type_args.human_string(),
+                                            type_args.len()
+                                        )
+                                    ));
+                                    bad_generics = <span class="bool-val">true</span>;
+                                }
+                                <span class="kw">if </span>bad_generics {
+                                    <span class="kw">continue</span>;
+                                }
+                            }
+
                             <span class="kw">let </span>iter_args = WriteIteratorArgs {
                                 ident: <span class="kw-2">&amp;</span>ident,
                                 is_pull,
@@ -625,7 +751,9 @@
                                 outputs: <span class="kw-2">&amp;*</span>outputs,
                                 input_ports: <span class="kw-2">&amp;*</span>input_ports,
                                 output_ports: <span class="kw-2">&amp;*</span>output_ports,
-                                generic_args: op.type_arguments(),
+                                generic_args,
+                                persistence_args: <span class="kw-2">&amp;*</span>persistence_args,
+                                type_args: <span class="kw-2">&amp;*</span>type_args,
                                 arguments: <span class="kw-2">&amp;</span>op.args,
                                 op_name: op_constraints.name,
                             };

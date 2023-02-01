@@ -201,6 +201,8 @@
 <a href="#201" id="201">201</a>
 <a href="#202" id="202">202</a>
 <a href="#203" id="203">203</a>
+<a href="#204" id="204">204</a>
+<a href="#205" id="205">205</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 
 <span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
@@ -209,7 +211,7 @@
 
 <span class="kw">use super</span>::{
     OperatorConstraints, OperatorWriteOutput, PortListSpec, WriteContextArgs, WriteIteratorArgs,
-    RANGE_1,
+    RANGE_0, RANGE_1,
 };
 
 <span class="kw">use </span>proc_macro2::{Ident, TokenTree};
@@ -252,6 +254,8 @@
     hard_range_out: <span class="kw-2">&amp;</span>(<span class="number">2</span>..),
     soft_range_out: <span class="kw-2">&amp;</span>(<span class="number">2</span>..),
     num_args: <span class="number">1</span>,
+    persistence_args: RANGE_0,
+    type_args: RANGE_0,
     is_external_input: <span class="bool-val">false</span>,
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>(|| PortListSpec::Variadic)),

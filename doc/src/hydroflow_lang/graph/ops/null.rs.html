@@ -55,7 +55,13 @@
 <a href="#55" id="55">55</a>
 <a href="#56" id="56">56</a>
 <a href="#57" id="57">57</a>
-</pre><pre class="rust"><code><span class="kw">use super</span>::{OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs};
+<a href="#58" id="58">58</a>
+<a href="#59" id="59">59</a>
+<a href="#60" id="60">60</a>
+<a href="#61" id="61">61</a>
+</pre><pre class="rust"><code><span class="kw">use super</span>::{
+    OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, RANGE_0,
+};
 
 <span class="kw">use </span>quote::quote_spanned;
 
@@ -81,6 +87,8 @@
     hard_range_out: <span class="kw-2">&amp;</span>(<span class="number">0</span>..=<span class="number">1</span>),
     soft_range_out: <span class="kw-2">&amp;</span>(<span class="number">0</span>..=<span class="number">1</span>),
     num_args: <span class="number">0</span>,
+    persistence_args: RANGE_0,
+    type_args: RANGE_0,
     is_external_input: <span class="bool-val">false</span>,
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">None</span>,

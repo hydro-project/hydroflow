@@ -16,7 +16,9 @@
 <a href="#16" id="16">16</a>
 <a href="#17" id="17">17</a>
 <a href="#18" id="18">18</a>
-</pre><pre class="rust"><code><span class="kw">use super</span>::{DelayType, OperatorConstraints, IDENTITY_WRITE_FN, RANGE_1};
+<a href="#19" id="19">19</a>
+<a href="#20" id="20">20</a>
+</pre><pre class="rust"><code><span class="kw">use super</span>::{DelayType, OperatorConstraints, IDENTITY_WRITE_FN, RANGE_0, RANGE_1};
 
 <span class="doccomment">/// Delays all elements which pass through to the next stratum (in the same
 /// tick).
@@ -28,6 +30,8 @@
     hard_range_out: RANGE_1,
     soft_range_out: RANGE_1,
     num_args: <span class="number">0</span>,
+    persistence_args: RANGE_0,
+    type_args: RANGE_0,
     is_external_input: <span class="bool-val">false</span>,
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">None</span>,

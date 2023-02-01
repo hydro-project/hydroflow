@@ -303,48 +303,6 @@
 <a href="#303" id="303">303</a>
 <a href="#304" id="304">304</a>
 <a href="#305" id="305">305</a>
-<a href="#306" id="306">306</a>
-<a href="#307" id="307">307</a>
-<a href="#308" id="308">308</a>
-<a href="#309" id="309">309</a>
-<a href="#310" id="310">310</a>
-<a href="#311" id="311">311</a>
-<a href="#312" id="312">312</a>
-<a href="#313" id="313">313</a>
-<a href="#314" id="314">314</a>
-<a href="#315" id="315">315</a>
-<a href="#316" id="316">316</a>
-<a href="#317" id="317">317</a>
-<a href="#318" id="318">318</a>
-<a href="#319" id="319">319</a>
-<a href="#320" id="320">320</a>
-<a href="#321" id="321">321</a>
-<a href="#322" id="322">322</a>
-<a href="#323" id="323">323</a>
-<a href="#324" id="324">324</a>
-<a href="#325" id="325">325</a>
-<a href="#326" id="326">326</a>
-<a href="#327" id="327">327</a>
-<a href="#328" id="328">328</a>
-<a href="#329" id="329">329</a>
-<a href="#330" id="330">330</a>
-<a href="#331" id="331">331</a>
-<a href="#332" id="332">332</a>
-<a href="#333" id="333">333</a>
-<a href="#334" id="334">334</a>
-<a href="#335" id="335">335</a>
-<a href="#336" id="336">336</a>
-<a href="#337" id="337">337</a>
-<a href="#338" id="338">338</a>
-<a href="#339" id="339">339</a>
-<a href="#340" id="340">340</a>
-<a href="#341" id="341">341</a>
-<a href="#342" id="342">342</a>
-<a href="#343" id="343">343</a>
-<a href="#344" id="344">344</a>
-<a href="#345" id="345">345</a>
-<a href="#346" id="346">346</a>
-<a href="#347" id="347">347</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::fmt::Display;
 <span class="kw">use </span>std::ops::{Bound, RangeBounds};
 
@@ -352,10 +310,9 @@
 <span class="kw">use </span>quote::quote_spanned;
 <span class="kw">use </span>slotmap::Key;
 <span class="kw">use </span>syn::punctuated::Punctuated;
-<span class="kw">use </span>syn::spanned::Spanned;
 <span class="kw">use </span>syn::{Expr, GenericArgument, Token, Type};
 
-<span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
+<span class="kw">use </span><span class="kw">crate</span>::diagnostic::Diagnostic;
 <span class="kw">use </span><span class="kw">crate</span>::parse::PortIndex;
 
 <span class="kw">use super</span>::{GraphNodeId, GraphSubgraphId, PortIndexValue};
@@ -418,6 +375,12 @@
     </span><span class="kw">pub </span>soft_range_out: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span><span class="kw">dyn </span>RangeTrait&lt;usize&gt;,
     <span class="doccomment">/// Number of arguments i.e. `operator(a, b, c)` has `num_args = 3`.
     </span><span class="kw">pub </span>num_args: usize,
+    <span class="doccomment">/// How many persistence lifetime arguments can be provided.
+    </span><span class="kw">pub </span>persistence_args: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span><span class="kw">dyn </span>RangeTrait&lt;usize&gt;,
+    <span class="comment">// /// How many (non-persistence) lifetime arguemtns can be provided.
+    // pub lifetime_args: &amp;&#39;static dyn RangeTrait&lt;usize&gt;,
+    </span><span class="doccomment">/// How many generic type arguments can be provided.
+    </span><span class="kw">pub </span>type_args: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span><span class="kw">dyn </span>RangeTrait&lt;usize&gt;,
     <span class="doccomment">/// If this operator receives external inputs and therefore must be in
     /// stratum 0.
     </span><span class="kw">pub </span>is_external_input: bool,
@@ -569,6 +532,10 @@
 
     <span class="doccomment">/// Operator generic (type or lifetime) arguments.
     </span><span class="kw">pub </span>generic_args: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Punctuated&lt;GenericArgument, <span class="macro">Token!</span>[,]&gt;&gt;,
+    <span class="doccomment">/// Lifetime persistence arguments. Corresponds to a prefix of [`Self::generic_args`].
+    </span><span class="kw">pub </span>persistence_args: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[Persistence],
+    <span class="doccomment">/// Type persistence arguments. Corersponds to a (suffix) of [`Self::generic_args`].
+    </span><span class="kw">pub </span>type_args: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Type],
     <span class="doccomment">/// Arguments provided by the user into the operator as arguments.
     /// I.e. the `a, b, c` in `-&gt; my_op(a, b, c) -&gt; `.
     </span><span class="kw">pub </span>arguments: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Punctuated&lt;Expr, <span class="macro">Token!</span>[,]&gt;,
@@ -640,57 +607,6 @@
 </span><span class="kw">pub enum </span>Persistence {
     Tick,
     Static,
-}
-
-<span class="kw">pub fn </span>parse_generic_types&lt;<span class="lifetime">&#39;a</span>&gt;(
-    <span class="kw-2">&amp;</span>WriteIteratorArgs { generic_args, .. }: <span class="kw-2">&amp;</span>WriteIteratorArgs&lt;<span class="lifetime">&#39;a</span>&gt;,
-) -&gt; Vec&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Type&gt; {
-    <span class="kw">if let </span><span class="prelude-val">Some</span>(generic_args) = generic_args {
-        generic_args
-            .iter()
-            .skip_while(|generic_arg| <span class="macro">matches!</span>(generic_arg, GenericArgument::Lifetime(<span class="kw">_</span>)))
-            .map_while(|generic_arg| {
-                <span class="kw">if let </span>GenericArgument::Type(ty) = generic_arg {
-                    <span class="prelude-val">Some</span>(ty)
-                } <span class="kw">else </span>{
-                    <span class="prelude-val">None
-                </span>}
-            })
-            .collect()
-    } <span class="kw">else </span>{
-        Vec::new()
-    }
-}
-
-<span class="kw">pub fn </span>parse_persistence_lifetimes(
-    <span class="kw-2">&amp;</span>WriteIteratorArgs { generic_args, .. }: <span class="kw-2">&amp;</span>WriteIteratorArgs,
-    diagnostics: <span class="kw-2">&amp;mut </span>Vec&lt;Diagnostic&gt;,
-) -&gt; Vec&lt;Persistence&gt; {
-    <span class="kw">if let </span><span class="prelude-val">Some</span>(generic_args) = generic_args {
-        generic_args
-            .iter()
-            .map_while(|generic_arg| {
-                <span class="kw">if let </span>GenericArgument::Lifetime(lifetime) = generic_arg {
-                    <span class="kw">match </span><span class="kw-2">&amp;*</span>lifetime.ident.to_string() {
-                        <span class="string">&quot;static&quot; </span>=&gt; <span class="prelude-val">Some</span>(Persistence::Static),
-                        <span class="string">&quot;tick&quot; </span>=&gt; <span class="prelude-val">Some</span>(Persistence::Tick),
-                        <span class="kw">_ </span>=&gt; {
-                                diagnostics.push(Diagnostic::spanned(
-                                generic_arg.span(),
-                                Level::Error,
-                                <span class="macro">format!</span>(<span class="string">&quot;Unknown lifetime generic argument `&#39;{}`, expected `&#39;epoch` or `&#39;static`.&quot;</span>, lifetime.ident),
-                            ));
-                            <span class="prelude-val">None
-                        </span>}
-                    }
-                } <span class="kw">else </span>{
-                    <span class="prelude-val">None
-                </span>}
-            })
-            .collect()
-    } <span class="kw">else </span>{
-        Vec::new()
-    }
 }
 </code></pre></div>
 </section></main><div id="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="hydroflow_lang" data-themes="" data-resource-suffix="" data-rustdoc-version="1.69.0-nightly (dc1d9d50f 2023-01-31)" data-search-js="search-98d53477a794af0b.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-7c23ac01f615ce90.css" ></div></body></html>
