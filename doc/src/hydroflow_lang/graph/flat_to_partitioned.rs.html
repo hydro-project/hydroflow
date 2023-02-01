@@ -631,6 +631,11 @@
 <a href="#631" id="631">631</a>
 <a href="#632" id="632">632</a>
 <a href="#633" id="633">633</a>
+<a href="#634" id="634">634</a>
+<a href="#635" id="635">635</a>
+<a href="#636" id="636">636</a>
+<a href="#637" id="637">637</a>
+<a href="#638" id="638">638</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
 
 <span class="kw">use </span>proc_macro2::Span;
@@ -1121,11 +1126,16 @@
                 subgraph_recv_handoffs[node_subgraph[dst]].push(src);
             }
             (Node::Handoff { .. }, Node::Handoff { .. }) =&gt; {
-                Span::call_site().unwrap().error(<span class="macro">format!</span>(
-                    <span class="string">&quot;Internal Error: Consecutive handoffs {:?} -&gt; {:?}&quot;</span>,
-                    src.data(),
-                    dst.data()
-                ));
+                Diagnostic::spanned(
+                    Span::call_site(),
+                    Level::Error,
+                    <span class="macro">format!</span>(
+                        <span class="string">&quot;Internal Error: Consecutive handoffs {:?} -&gt; {:?}&quot;</span>,
+                        src.data(),
+                        dst.data()
+                    ),
+                )
+                .emit();
             }
         }
     }

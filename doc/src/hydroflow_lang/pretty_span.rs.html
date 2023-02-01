@@ -22,16 +22,34 @@
 <a href="#22" id="22">22</a>
 <a href="#23" id="23">23</a>
 <a href="#24" id="24">24</a>
+<a href="#25" id="25">25</a>
+<a href="#26" id="26">26</a>
+<a href="#27" id="27">27</a>
+<a href="#28" id="28">28</a>
+<a href="#29" id="29">29</a>
+<a href="#30" id="30">30</a>
+<a href="#31" id="31">31</a>
+<a href="#32" id="32">32</a>
+<a href="#33" id="33">33</a>
 </pre><pre class="rust"><code><span class="doccomment">/// Helper struct which displays the span as `path:row:col` for human reading/IDE linking.
 /// Example: `hydroflow\tests\surface_syntax.rs:42:18`.
 </span><span class="kw">pub struct </span>PrettySpan(<span class="kw">pub </span>proc_macro2::Span);
 <span class="kw">impl </span>std::fmt::Display <span class="kw">for </span>PrettySpan {
     <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; std::fmt::Result {
-        <span class="kw">let </span>span = <span class="self">self</span>.<span class="number">0</span>.unwrap();
+        <span class="kw">let </span>span = <span class="self">self</span>.<span class="number">0</span>;
+
+        <span class="attr">#[cfg(feature = <span class="string">&quot;diagnostics&quot;</span>)]
+        </span><span class="kw">let </span>path = span.unwrap().source_file().path();
+        <span class="attr">#[cfg(feature = <span class="string">&quot;diagnostics&quot;</span>)]
+        </span><span class="kw">let </span>location = path.display();
+
+        <span class="attr">#[cfg(not(feature = <span class="string">&quot;diagnostics&quot;</span>))]
+        </span><span class="kw">let </span>location = <span class="string">&quot;unknown&quot;</span>;
+
         <span class="macro">write!</span>(
             f,
             <span class="string">&quot;{}:{}:{}&quot;</span>,
-            span.source_file().path().display(),
+            location,
             span.start().line,
             span.start().column
         )
@@ -42,7 +60,7 @@
 </span><span class="kw">pub struct </span>PrettyRowCol(<span class="kw">pub </span>proc_macro2::Span);
 <span class="kw">impl </span>std::fmt::Display <span class="kw">for </span>PrettyRowCol {
     <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; std::fmt::Result {
-        <span class="kw">let </span>span = <span class="self">self</span>.<span class="number">0</span>.unwrap();
+        <span class="kw">let </span>span = <span class="self">self</span>.<span class="number">0</span>;
         <span class="macro">write!</span>(f, <span class="string">&quot;{}:{}&quot;</span>, span.start().line, span.start().column)
     }
 }
