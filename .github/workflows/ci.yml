@@ -45,7 +45,30 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: check
-          args: --all-targets
+          args: --all-targets --all-features
+
+  check-wasm:
+    name: Check WebAssembly
+    needs: pre_job
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install nightly toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          target: wasm32-unknown-unknown
+          override: true
+
+      - name: Check hydroflow_lang
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: -p hydroflow_lang --target wasm32-unknown-unknown --no-default-features
 
   test:
     name: Test Suite
@@ -68,6 +91,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
+          args: --all-features
 
   lints:
     name: Lints
@@ -96,7 +120,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: clippy
-          args: --all-targets -- -D warnings
+          args: --all-targets --all-features -- -D warnings
 
   docs:
     name: Docs

@@ -3,9 +3,13 @@ name = "hydroflow_lang"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+default = [ "diagnostics" ]
+diagnostics = []
+
 [dependencies]
 hydroflow_internalmacro = { path = "../hydroflow_internalmacro" }
-proc-macro2 = "1.0.0"
+proc-macro2 = { version = "1.0.0", features = ["span-locations"] }
 quote = "1.0.0"
 regex = "1.7.0"
 serde = "1.0.1"

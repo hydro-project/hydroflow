@@ -488,11 +488,16 @@ fn find_subgraph_handoffs(
                 subgraph_recv_handoffs[node_subgraph[dst]].push(src);
             }
             (Node::Handoff { .. }, Node::Handoff { .. }) => {
-                Span::call_site().unwrap().error(format!(
-                    "Internal Error: Consecutive handoffs {:?} -> {:?}",
-                    src.data(),
-                    dst.data()
-                ));
+                Diagnostic::spanned(
+                    Span::call_site(),
+                    Level::Error,
+                    format!(
+                        "Internal Error: Consecutive handoffs {:?} -> {:?}",
+                        src.data(),
+                        dst.data()
+                    ),
+                )
+                .emit();
             }
         }
     }
