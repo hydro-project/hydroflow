@@ -1,9 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use proc_macro2::Span;
-#[cfg(feature = "diagnostics")]
-use slotmap::Key;
-use slotmap::{SecondaryMap, SlotMap, SparseSecondaryMap};
+use slotmap::{Key, SecondaryMap, SlotMap, SparseSecondaryMap};
 use syn::parse_quote;
 use syn::spanned::Spanned;
 
@@ -437,12 +435,16 @@ fn find_subgraph_handoffs(
                 subgraph_recv_handoffs[node_subgraph[dst]].push(src);
             }
             (Node::Handoff { .. }, Node::Handoff { .. }) => {
-                #[cfg(feature = "diagnostics")]
-                Span::call_site().unwrap().error(format!(
-                    "Internal Error: Consecutive handoffs {:?} -> {:?}",
-                    src.data(),
-                    dst.data()
-                ));
+                Diagnostic::spanned(
+                    Span::call_site(),
+                    Level::Error,
+                    format!(
+                        "Internal Error: Consecutive handoffs {:?} -> {:?}",
+                        src.data(),
+                        dst.data()
+                    ),
+                )
+                .emit();
             }
         }
     }
