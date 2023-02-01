@@ -30,6 +30,16 @@ jobs:
     needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust_release: [pinned-nightly, latest-nightly]
+        exclude:
+          # For non-pull requests, event_name != 'pull_request' will be true,
+          # and nothing is truthy, so the entire && operator will resolve to
+          # 'nothing'. Then the || operator will resolve to 'nothing' so we
+          # will exclude 'nothing'. https://stackoverflow.com/a/73822998
+          - rust_release: ${{ (github.event_name != 'pull_request' && 'nothing') || 'latest-nightly' }}
+
     steps:
       - name: Checkout sources
         uses: actions/checkout@v2
@@ -39,7 +49,7 @@ jobs:
         with:
           profile: minimal
           toolchain: nightly
-          override: true
+          override: ${{ matrix.rust_release == 'latest-nightly' }}
 
       - name: Run cargo check
         uses: actions-rs/cargo@v1
@@ -52,6 +62,16 @@ jobs:
     needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust_release: [pinned-nightly, latest-nightly]
+        exclude:
+          # For non-pull requests, event_name != 'pull_request' will be true,
+          # and nothing is truthy, so the entire && operator will resolve to
+          # 'nothing'. Then the || operator will resolve to 'nothing' so we
+          # will exclude 'nothing'. https://stackoverflow.com/a/73822998
+          - rust_release: ${{ (github.event_name != 'pull_request' && 'nothing') || 'latest-nightly' }}
+
     steps:
       - name: Checkout sources
         uses: actions/checkout@v2
@@ -62,7 +82,7 @@ jobs:
           profile: minimal
           toolchain: nightly
           target: wasm32-unknown-unknown
-          override: true
+          override: ${{ matrix.rust_release == 'latest-nightly' }}
 
       - name: Check hydroflow_lang
         uses: actions-rs/cargo@v1
@@ -75,6 +95,16 @@ jobs:
     needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust_release: [pinned-nightly, latest-nightly]
+        exclude:
+          # For non-pull requests, event_name != 'pull_request' will be true,
+          # and nothing is truthy, so the entire && operator will resolve to
+          # 'nothing'. Then the || operator will resolve to 'nothing' so we
+          # will exclude 'nothing'. https://stackoverflow.com/a/73822998
+          - rust_release: ${{ (github.event_name != 'pull_request' && 'nothing') || 'latest-nightly' }}
+
     steps:
       - name: Checkout sources
         uses: actions/checkout@v2
@@ -84,7 +114,7 @@ jobs:
         with:
           profile: minimal
           toolchain: nightly
-          override: true
+          override: ${{ matrix.rust_release == 'latest-nightly' }}
           components: rustfmt
 
       - name: Run cargo test
@@ -98,6 +128,16 @@ jobs:
     needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust_release: [pinned-nightly, latest-nightly]
+        exclude:
+          # For non-pull requests, event_name != 'pull_request' will be true,
+          # and nothing is truthy, so the entire && operator will resolve to
+          # 'nothing'. Then the || operator will resolve to 'nothing' so we
+          # will exclude 'nothing'. https://stackoverflow.com/a/73822998
+          - rust_release: ${{ (github.event_name != 'pull_request' && 'nothing') || 'latest-nightly' }}
+
     steps:
       - name: Checkout sources
         uses: actions/checkout@v2
@@ -107,7 +147,7 @@ jobs:
         with:
           profile: minimal
           toolchain: nightly
-          override: true
+          override: ${{ matrix.rust_release == 'latest-nightly' }}
           components: rustfmt, clippy
 
       - name: Run cargo fmt
@@ -138,7 +178,6 @@ jobs:
         with:
           profile: minimal
           toolchain: nightly
-          override: true
 
       - name: Run cargo doc
         uses: actions-rs/cargo@v1
@@ -218,7 +257,6 @@ jobs:
         with:
           profile: minimal
           toolchain: nightly
-          override: true
 
       - name: Checkout gh-pages
         shell: bash
