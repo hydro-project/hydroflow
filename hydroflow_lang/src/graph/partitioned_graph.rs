@@ -209,7 +209,7 @@ impl PartitionedGraph {
                                             diagnostics.push(Diagnostic::spanned(
                                                 generic_arg.span(),
                                                 Level::Error,
-                                                format!("Unknown lifetime generic argument `'{}`, expected `'epoch` or `'static`.", lifetime.ident),
+                                                format!("Unknown lifetime generic argument `'{}`, expected `'tick` or `'static`.", lifetime.ident),
                                             ));
                                             // TODO(mingwei): should really keep going and not short circuit?
                                             None
