@@ -5,7 +5,7 @@ error[E0271]: expected `impl Iterator<Item = {integer}>` to be an iterator that 
   |             ------ required by a bound introduced by this call
 6 |         source_iter(0..10) -> map(|x| (x, x)) -> [0]j;
 7 |         source_iter(0..10) -> [1]j;
-  |         ^^^^^^^^^^^^^^^^^^ expected tuple, found integer
+  |         ^^^^^^^^^^^^^^^^^^ expected `({integer}, _)`, found integer
   |
   = note: expected tuple `({integer}, _)`
               found type `{integer}`
