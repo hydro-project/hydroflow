@@ -1,5 +1,5 @@
 ---
-source: hydroflow_datalog/src/lib.rs
+source: hydroflow_datalog_core/src/lib.rs
 expression: "prettyplease::unparse(&wrapped)"
 ---
 fn main() {
@@ -7,7 +7,7 @@ fn main() {
         {
             use hydroflow::{var_expr, var_args};
             let mut df = hydroflow::scheduled::graph::Hydroflow::new_with_graph(
-                "{\"nodes\":[{\"value\":null,\"version\":0},{\"value\":\"merge ()\",\"version\":1},{\"value\":\"tee ()\",\"version\":1},{\"value\":\"merge ()\",\"version\":1},{\"value\":\"tee ()\",\"version\":1},{\"value\":\"source_stream (input)\",\"version\":1},{\"value\":\"for_each (| v | out . send (v) . unwrap ())\",\"version\":1},{\"value\":\"filter (| & row : & (_ , _ ,) | row . 0 == row . 1)\",\"version\":1},{\"value\":\"map (| row : (_ , _ ,) | (row . 0 , row . 0 ,))\",\"version\":1}],\"node_color_map\":[{\"value\":null,\"version\":0},{\"value\":\"Pull\",\"version\":1},{\"value\":\"Pull\",\"version\":1},{\"value\":\"Push\",\"version\":1},{\"value\":\"Push\",\"version\":1},{\"value\":\"Pull\",\"version\":1},{\"value\":\"Push\",\"version\":1},{\"value\":\"Pull\",\"version\":1},{\"value\":\"Push\",\"version\":1}],\"edges\":[{\"value\":null,\"version\":0},{\"value\":[{\"src\":{\"idx\":1,\"version\":1},\"dst\":{\"idx\":2,\"version\":1},\"blocking\":false,\"label\":null}],\"version\":1},{\"value\":[{\"src\":{\"idx\":2,\"version\":1},\"dst\":{\"idx\":7,\"version\":1},\"blocking\":false,\"label\":\"0\"}],\"version\":1},{\"value\":[{\"src\":{\"idx\":3,\"version\":1},\"dst\":{\"idx\":4,\"version\":1},\"blocking\":false,\"label\":null}],\"version\":1},{\"value\":[{\"src\":{\"idx\":4,\"version\":1},\"dst\":{\"idx\":6,\"version\":1},\"blocking\":false,\"label\":\"0\"}],\"version\":1},{\"value\":[{\"src\":{\"idx\":5,\"version\":1},\"dst\":{\"idx\":1,\"version\":1},\"blocking\":false,\"label\":\"0\"}],\"version\":1},{\"value\":null,\"version\":0},{\"value\":[{\"src\":{\"idx\":7,\"version\":1},\"dst\":{\"idx\":8,\"version\":1},\"blocking\":false,\"label\":null}],\"version\":1},{\"value\":[{\"src\":{\"idx\":8,\"version\":1},\"dst\":{\"idx\":3,\"version\":1},\"blocking\":false,\"label\":\"0\"}],\"version\":1}],\"barrier_handoffs\":[{\"value\":null,\"version\":0}],\"subgraph_nodes\":[{\"value\":null,\"version\":0},{\"value\":[{\"idx\":5,\"version\":1},{\"idx\":1,\"version\":1},{\"idx\":2,\"version\":1},{\"idx\":7,\"version\":1},{\"idx\":8,\"version\":1},{\"idx\":3,\"version\":1},{\"idx\":4,\"version\":1},{\"idx\":6,\"version\":1}],\"version\":1}],\"subgraph_stratum\":[{\"value\":null,\"version\":0},{\"value\":0,\"version\":1}],\"subgraph_internal_handoffs\":[{\"value\":null,\"version\":0}],\"varname_nodes\":{\"input\":[{\"idx\":1,\"version\":1},{\"idx\":2,\"version\":1}],\"join_0_filter\":[{\"idx\":7,\"version\":1}],\"out\":[{\"idx\":3,\"version\":1},{\"idx\":4,\"version\":1}]}}\n",
+                "{\"nodes\":[{\"value\":null,\"version\":0},{\"value\":\"merge ()\",\"version\":1},{\"value\":\"tee ()\",\"version\":1},{\"value\":\"merge ()\",\"version\":1},{\"value\":\"tee ()\",\"version\":1},{\"value\":\"source_stream (input)\",\"version\":1},{\"value\":\"for_each (| v | out . send (v) . unwrap ())\",\"version\":1},{\"value\":\"filter (| & row : & (_ , _ , _ , _ ,) | row . 0 == row . 1 && row . 2 == row . 3)\",\"version\":1},{\"value\":\"map (| row : (_ , _ , _ , _ ,) | (row . 0 , row . 0 , row . 2 , row . 2 ,))\",\"version\":1}],\"node_color_map\":[{\"value\":null,\"version\":0},{\"value\":\"Pull\",\"version\":1},{\"value\":\"Pull\",\"version\":1},{\"value\":\"Push\",\"version\":1},{\"value\":\"Push\",\"version\":1},{\"value\":\"Pull\",\"version\":1},{\"value\":\"Push\",\"version\":1},{\"value\":\"Pull\",\"version\":1},{\"value\":\"Push\",\"version\":1}],\"edges\":[{\"value\":null,\"version\":0},{\"value\":[{\"src\":{\"idx\":1,\"version\":1},\"dst\":{\"idx\":2,\"version\":1},\"blocking\":false,\"label\":null}],\"version\":1},{\"value\":[{\"src\":{\"idx\":2,\"version\":1},\"dst\":{\"idx\":7,\"version\":1},\"blocking\":false,\"label\":\"0\"}],\"version\":1},{\"value\":[{\"src\":{\"idx\":3,\"version\":1},\"dst\":{\"idx\":4,\"version\":1},\"blocking\":false,\"label\":null}],\"version\":1},{\"value\":[{\"src\":{\"idx\":4,\"version\":1},\"dst\":{\"idx\":6,\"version\":1},\"blocking\":false,\"label\":\"0\"}],\"version\":1},{\"value\":[{\"src\":{\"idx\":5,\"version\":1},\"dst\":{\"idx\":1,\"version\":1},\"blocking\":false,\"label\":\"0\"}],\"version\":1},{\"value\":null,\"version\":0},{\"value\":[{\"src\":{\"idx\":7,\"version\":1},\"dst\":{\"idx\":8,\"version\":1},\"blocking\":false,\"label\":null}],\"version\":1},{\"value\":[{\"src\":{\"idx\":8,\"version\":1},\"dst\":{\"idx\":3,\"version\":1},\"blocking\":false,\"label\":\"0\"}],\"version\":1}],\"barrier_handoffs\":[{\"value\":null,\"version\":0}],\"subgraph_nodes\":[{\"value\":null,\"version\":0},{\"value\":[{\"idx\":5,\"version\":1},{\"idx\":1,\"version\":1},{\"idx\":2,\"version\":1},{\"idx\":7,\"version\":1},{\"idx\":8,\"version\":1},{\"idx\":3,\"version\":1},{\"idx\":4,\"version\":1},{\"idx\":6,\"version\":1}],\"version\":1}],\"subgraph_stratum\":[{\"value\":null,\"version\":0},{\"value\":0,\"version\":1}],\"subgraph_internal_handoffs\":[{\"value\":null,\"version\":0}],\"varname_nodes\":{\"input\":[{\"idx\":1,\"version\":1},{\"idx\":2,\"version\":1}],\"join_0_filter\":[{\"idx\":7,\"version\":1}],\"out\":[{\"idx\":3,\"version\":1},{\"idx\":4,\"version\":1}]}}\n",
             );
             let mut sg_1v1_node_5v1_stream = Box::pin(input);
             df.add_subgraph_stratified(
@@ -68,7 +68,8 @@ fn main() {
                         }
                         check_op_2v1(op_2v1)
                     };
-                    let op_7v1 = op_2v1.filter(|&row: &(_, _)| row.0 == row.1);
+                    let op_7v1 = op_2v1
+                        .filter(|&row: &(_, _, _, _)| row.0 == row.1 && row.2 == row.3);
                     let op_7v1 = {
                         #[inline(always)]
                         pub fn check_op_7v1<
@@ -79,7 +80,8 @@ fn main() {
                         }
                         check_op_7v1(op_7v1)
                     };
-                    let op_8v1 = op_7v1.map(|row: (_, _)| (row.0, row.0));
+                    let op_8v1 = op_7v1
+                        .map(|row: (_, _, _, _)| (row.0, row.0, row.2, row.2));
                     let op_8v1 = {
                         #[inline(always)]
                         pub fn check_op_8v1<
