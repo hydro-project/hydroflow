@@ -16,6 +16,8 @@ use quote::{quote_spanned, ToTokens};
 /// is partitioned into groups by the first field, and for each group the values in the second
 /// field are accumulated via the closures in the arguments.
 ///
+/// > Note: The closures have access to the [`context` object](surface_flows.md#the-context-object).
+///
 /// `group_by` can also be provided with one generic lifetime persistence argument, either
 /// `'tick` or `'static`, to specify how data persists. With `'tick`, values will only be collected
 /// within the same tick. With `'static`, values will be remembered across ticks and will be
@@ -67,7 +69,9 @@ pub const GROUP_BY: OperatorConstraints = OperatorConstraints {
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: &|_| Some(DelayType::Stratum),
-    write_fn: &(|wc @ &WriteContextArgs { op_span, .. },
+    write_fn: &(|wc @ &WriteContextArgs {
+                     context, op_span, ..
+                 },
                  &WriteIteratorArgs {
                      ident,
                      inputs,
@@ -123,7 +127,7 @@ pub const GROUP_BY: OperatorConstraints = OperatorConstraints {
                 },
                 quote_spanned! {op_span=>
                     let #ident = {
-                        let mut ht = context.state_ref(#groupbydata_ident).borrow_mut();
+                        let mut ht = #context.state_ref(#groupbydata_ident).borrow_mut();
                         #[inline(always)]
                         fn check_input<Iter: ::std::iter::Iterator<Item = (A, B)>, A: ::std::clone::Clone, B: ::std::clone::Clone>(iter: Iter)
                             -> impl ::std::iter::Iterator<Item = (A, B)> { iter }

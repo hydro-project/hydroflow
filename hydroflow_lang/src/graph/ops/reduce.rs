@@ -13,6 +13,8 @@ use quote::quote_spanned;
 /// Akin to Rust's built-in reduce operator. Folds every element into an accumulator by applying a closure,
 /// returning the final result.
 ///
+/// > Note: The closure has access to the [`context` object](surface_flows.md#the-context-object).
+///
 /// ```hydroflow
 /// // should print 120 (i.e., 1*2*3*4*5)
 /// source_iter([1,2,3,4,5])

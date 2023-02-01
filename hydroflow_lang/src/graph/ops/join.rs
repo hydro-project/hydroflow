@@ -91,7 +91,12 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
     ports_inn: Some(&(|| super::PortListSpec::Fixed(parse_quote! { 0, 1 }))),
     ports_out: None,
     input_delaytype_fn: &|_| None,
-    write_fn: &(|wc @ &WriteContextArgs { root, op_span, .. },
+    write_fn: &(|wc @ &WriteContextArgs {
+                     root,
+                     context,
+                     op_span,
+                     ..
+                 },
                  &WriteIteratorArgs {
                      ident,
                      inputs,
@@ -121,7 +126,7 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
                             )
                         },
                         quote_spanned! {op_span=>
-                            &mut #borrow_ident.try_insert_with(context.current_tick(), Default::default).0
+                            &mut #borrow_ident.try_insert_with(#context.current_tick(), Default::default).0
                         },
                     ),
                     Persistence::Static => (
@@ -150,8 +155,8 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
         let lhs = &inputs[0];
         let rhs = &inputs[1];
         let write_iterator = quote_spanned! {op_span=>
-            let mut #lhs_borrow_ident = context.state_ref(#lhs_joindata_ident).borrow_mut();
-            let mut #rhs_borrow_ident = context.state_ref(#rhs_joindata_ident).borrow_mut();
+            let mut #lhs_borrow_ident = #context.state_ref(#lhs_joindata_ident).borrow_mut();
+            let mut #rhs_borrow_ident = #context.state_ref(#rhs_joindata_ident).borrow_mut();
             let #ident = {
                 /// Limit error propagation by bounding locally, erasing output iterator type.
                 #[inline(always)]

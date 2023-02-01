@@ -448,7 +448,7 @@ pub fn test_sort_by() {
 }
 
 #[test]
-fn sort_by_owned() {
+fn test_sort_by_owned() {
     #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
     struct Dummy {
         x: String,
@@ -478,6 +478,15 @@ fn sort_by_owned() {
     assert_ne!(&dummies_saved, &*results);
     dummies_saved.sort_unstable_by(|d1, d2| d1.x.cmp(&d2.x));
     assert_eq!(&dummies_saved, &*results);
+}
+
+#[test]
+pub fn test_context_api() {
+    let mut df = hydroflow_syntax! {
+        source_iter([()])
+            -> for_each(|()| println!("Current tick: {}, stratum: {}", context.current_tick(), context.current_stratum()));
+    };
+    df.run_available();
 }
 
 #[test]

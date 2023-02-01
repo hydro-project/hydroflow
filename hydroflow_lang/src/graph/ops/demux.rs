@@ -27,6 +27,8 @@ use syn::{Expr, Pat};
 /// > Note: The [`Pusherator`](https://hydro-project.github.io/hydroflow/doc/pusherator/trait.Pusherator.html)
 /// > trait is automatically imported to enable the [`.give(...)` method](https://hydro-project.github.io/hydroflow/doc/pusherator/trait.Pusherator.html#tymethod.give).
 ///
+/// > Note: The closure has access to the [`context` object](surface_flows.md#the-context-object).
+///
 /// ```hydroflow
 /// my_demux = source_iter(1..=100) -> demux(|v, var_args!(fzbz, fizz, buzz, vals)|
 ///     match (v % 3, v % 5) {
