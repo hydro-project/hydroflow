@@ -34,11 +34,11 @@ use syn::parse_quote;
 /// join(); // Or
 /// join::<'static>();
 ///
-/// join::<'epoch>();
+/// join::<'tick>();
 ///
-/// join::<'static, 'epoch>();
+/// join::<'static, 'tick>();
 ///
-/// join::<'epoch, 'static>();
+/// join::<'tick, 'static>();
 /// // etc.
 /// ```
 ///
