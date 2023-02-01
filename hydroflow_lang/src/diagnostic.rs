@@ -16,9 +16,9 @@ impl Level {
 
 #[derive(Debug, Clone)]
 pub struct Diagnostic {
-    span: Span,
-    level: Level,
-    message: String,
+    pub span: Span,
+    pub level: Level,
+    pub message: String,
 }
 impl Diagnostic {
     pub fn spanned(span: Span, level: Level, message: impl Into<String>) -> Self {
@@ -33,13 +33,16 @@ impl Diagnostic {
         self.level.is_error()
     }
     pub fn emit(&self) {
-        let pm_diag = match self.level {
-            Level::Error => self.span.unwrap().error(&*self.message),
-            Level::Warning => self.span.unwrap().warning(&*self.message),
-            Level::Note => self.span.unwrap().note(&*self.message),
-            Level::Help => self.span.unwrap().help(&*self.message),
-        };
-        pm_diag.emit();
+        #[cfg(feature = "diagnostics")]
+        {
+            let pm_diag = match self.level {
+                Level::Error => self.span.unwrap().error(&*self.message),
+                Level::Warning => self.span.unwrap().warning(&*self.message),
+                Level::Note => self.span.unwrap().note(&*self.message),
+                Level::Help => self.span.unwrap().help(&*self.message),
+            };
+            pm_diag.emit();
+        }
     }
 }
 impl From<syn::Error> for Diagnostic {
