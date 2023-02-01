@@ -1,0 +1,28 @@
+[package]
+name = "hydroflow_datalog_core"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+path = "src/lib.rs"
+
+[features]
+default = [ "diagnostics" ]
+diagnostics = [ "hydroflow_lang/diagnostics" ]
+
+[dependencies]
+quote = "1.0.0"
+slotmap = "1.0.6"
+syn = { version = "1.0.0", features = [ "parsing", "extra-traits" ] }
+proc-macro2 = "1.0.27"
+proc-macro-crate = "1.1.0"
+rust-sitter = "0.2.1"
+hydroflow_lang = { path = "../hydroflow_lang", default-features = false }
+
+[build-dependencies]
+rust-sitter-tool = "0.2.1"
+
+[dev-dependencies]
+insta = "1.7.1"
+prettyplease = "0.1.21"
+tempfile = "3.2.0"
