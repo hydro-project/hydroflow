@@ -13,10 +13,12 @@ hydroflow = { path = "../hydroflow" }
 lazy_static = "1.4.0"
 # pprof = { version = "0.6", features = [ "flamegraph", "criterion" ] }
 rand = "0.8.4"
+rand_distr = "0.4.3"
 seq-macro = "0.2"
 timely = "*"
 differential-dataflow = "*"
 tokio = { version = "1.0", features = [ "rt-multi-thread" ] }
+static_assertions = "1.1.0"
 
 [[bench]]
 name = "arithmetic"
@@ -48,4 +50,12 @@ harness = false
 
 [[bench]]
 name = "reachability"
+harness = false
+
+[[bench]]
+name = "micro_ops"
+harness = false
+
+[[bench]]
+name = "symmetric_hash_join"
 harness = false

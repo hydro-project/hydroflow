@@ -177,7 +177,7 @@ jobs:
           git -C "$WWW_DIR" config 'http.https://github.com/.extraheader' "$(git config 'http.https://github.com/.extraheader')"
           git -C "$WWW_DIR" config core.autocrlf input
           git -C "$WWW_DIR" config core.safecrlf false
-          git -C "$WWW_DIR" fetch origin gh-pages:gh-pages
+          git -C "$WWW_DIR" fetch origin gh-pages:gh-pages || true
           git -C "$WWW_DIR" symbolic-ref HEAD refs/heads/gh-pages
           git -C "$WWW_DIR" reset
           git -C "$WWW_DIR" add book doc design_docs
@@ -240,6 +240,7 @@ jobs:
       - name: Run benchmark
         run: |
           time cargo bench -p benches -- hydroflow --output-format bencher | tee output.txt
+          time cargo bench -p benches -- micro/ops/ --output-format bencher | tee -a output.txt
 
       - name: Generate benchmark page
         uses: benchmark-action/github-action-benchmark@v1

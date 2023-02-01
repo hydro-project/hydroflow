@@ -35,6 +35,9 @@ pub struct PartitionedGraph {
     pub(crate) subgraph_internal_handoffs: SecondaryMap<GraphSubgraphId, Vec<GraphNodeId>>,
     /// The modality of each non-handoff node (Push or Pull)
     pub(crate) node_color_map: SparseSecondaryMap<GraphNodeId, Color>,
+
+    /// What variable name each graph node belongs to (if any).
+    pub(crate) node_varnames: SparseSecondaryMap<GraphNodeId, Ident>,
 }
 impl PartitionedGraph {
     pub fn new() -> Self {
@@ -328,12 +331,14 @@ impl PartitionedGraph {
     pub fn to_serde_graph(&self) -> SerdeGraph {
         // TODO(mingwei): Double initialization of SerdeGraph fields.
         let mut g = SerdeGraph::new();
-        for (edge_id, (src, dst)) in self.graph.edges() {
-            // add nodes
-            g.nodes.insert(src, self.node_to_txt(src));
-            g.nodes.insert(dst, self.node_to_txt(dst));
 
-            // add edges
+        // add nodes
+        for node_id in self.nodes.keys() {
+            g.nodes.insert(node_id, self.node_to_txt(node_id));
+        }
+
+        // add edges
+        for (edge_id, (src, dst)) in self.graph.edges() {
             let mut blocking = false;
             let the_ports = &self.ports[edge_id];
             if let Node::Operator(dest_op) = &self.nodes[dst] {
@@ -365,46 +370,48 @@ impl PartitionedGraph {
                 (None, None) => None,
             };
 
-            match g.edges.get_mut(src) {
-                Some(e) => {
-                    e.push(SerdeEdge {
-                        src,
-                        dst,
-                        blocking,
-                        label,
-                    });
-                }
-                None => {
-                    g.edges.insert(
-                        src,
-                        vec![SerdeEdge {
-                            src,
-                            dst,
-                            blocking,
-                            label,
-                        }],
-                    );
-                }
+            let serde_edge = SerdeEdge {
+                src,
+                dst,
+                blocking,
+                label,
+            };
+            if let Some(adj) = g.edges.get_mut(src) {
+                adj.push(serde_edge);
+            } else {
+                g.edges.insert(src, vec![serde_edge]);
             }
-
-            // add barrier_handoffs, i.e. handoffs that are *not* in the subgraph_recv_handoffs and
-            // subgraph_send_handoffs for the same subgraph
-            for sg in self.subgraph_recv_handoffs.keys() {
-                let recvs = self.subgraph_recv_handoffs.get(sg).unwrap();
-                let sends = self.subgraph_send_handoffs.get(sg).unwrap();
-                for recv in recvs {
-                    if !sends.contains(recv) {
-                        g.barrier_handoffs.insert(*recv, true);
-                    }
-                }
-            }
-
-            // add subgraphs
-            g.subgraph_nodes = self.subgraph_nodes.clone();
-            g.subgraph_stratum = self.subgraph_stratum.clone();
-            g.subgraph_internal_handoffs = self.subgraph_internal_handoffs.clone();
-            g.node_color_map = self.node_color_map.clone();
         }
+
+        // add barrier_handoffs, i.e. handoffs that are *not* in the subgraph_recv_handoffs and
+        // subgraph_send_handoffs for the same subgraph
+        for sg in self.subgraph_recv_handoffs.keys() {
+            let recvs = self.subgraph_recv_handoffs.get(sg).unwrap();
+            let sends = self.subgraph_send_handoffs.get(sg).unwrap();
+            for recv in recvs {
+                if !sends.contains(recv) {
+                    g.barrier_handoffs.insert(*recv, true);
+                }
+            }
+        }
+
+        // add subgraphs
+        g.subgraph_nodes = self.subgraph_nodes.clone();
+        g.subgraph_stratum = self.subgraph_stratum.clone();
+        g.subgraph_internal_handoffs = self.subgraph_internal_handoffs.clone();
+        g.node_color_map = self.node_color_map.clone();
+
+        // add varnames (sort for determinism).
+        let mut varnames_sorted = self.node_varnames.iter().collect::<Vec<_>>();
+        varnames_sorted.sort();
+        for (node_id, varname_ident) in varnames_sorted {
+            let node_ids = g
+                .varname_nodes
+                .entry(varname_ident.to_string())
+                .or_default();
+            node_ids.push(node_id);
+        }
+
         g
     }
 

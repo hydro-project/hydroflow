@@ -1,18 +1,19 @@
-use std::collections::HashMap;
+use std::collections::{hash_map::Entry, VecDeque};
+
+type HashMap<K, V> = rustc_hash::FxHashMap<K, V>;
 
 #[derive(Debug)]
 pub struct HalfJoinState<Key, ValBuild, ValProbe> {
     /// Table to probe, vec val contains all matches.
     table: HashMap<Key, Vec<ValBuild>>,
-    /// Not-yet emitted matches. [`Option`] of the `Key`, other-side probe value, and index within
-    /// the corresponding `table[key]` vec.
-    current_matches: Option<(Key, ValProbe, usize)>,
+    /// Not-yet emitted matches.
+    current_matches: VecDeque<(Key, ValProbe, ValBuild)>,
 }
 impl<Key, ValBuild, ValProbe> Default for HalfJoinState<Key, ValBuild, ValProbe> {
     fn default() -> Self {
         Self {
-            table: HashMap::new(),
-            current_matches: None,
+            table: HashMap::default(),
+            current_matches: VecDeque::default(),
         }
     }
 }
@@ -22,29 +23,37 @@ where
     ValBuild: Clone + Eq,
     ValProbe: Clone,
 {
-    fn pop_buffer(&mut self) -> Option<(Key, ValProbe, ValBuild)> {
-        let (k, v, idx) = self.current_matches.as_mut()?;
-        let vec = &self.table[k];
-        let result = (k.clone(), v.clone(), vec[*idx].clone());
-        *idx += 1;
-        if vec.len() <= *idx {
-            self.current_matches = None;
-        }
-        Some(result)
-    }
-
     fn build(&mut self, k: Key, v: &ValBuild) -> bool {
-        let vec = self.table.entry(k).or_insert_with(Vec::new);
-        if !vec.contains(v) {
-            vec.push(v.clone());
-            return true;
-        }
+        let entry = self.table.entry(k);
+
+        match entry {
+            Entry::Occupied(mut e) => {
+                let vec = e.get_mut();
+
+                if !vec.contains(v) {
+                    vec.push(v.clone());
+                    return true;
+                }
+            }
+            Entry::Vacant(e) => {
+                e.insert(vec![v.clone()]);
+                return true;
+            }
+        };
+
         false
     }
 
-    fn probe(&mut self, k: Key, v: ValProbe) {
-        if self.table.contains_key(&k) {
-            self.current_matches = Some((k, v, 0));
+    fn probe(&mut self, k: &Key, v: &ValProbe) {
+        if let Some(entry) = self.table.get(k) {
+            // TODO: We currently don't free/shrink the self.current_matches vecdeque to save time.
+            // This mean it will grow to eventually become the largest number of matches in a single probe call.
+            // Maybe we should clear this memory at the beginning of every tick/periodically?
+            self.current_matches.extend(
+                entry
+                    .iter()
+                    .map(|valbuild| (k.clone(), v.clone(), valbuild.clone())),
+            );
         }
     }
 }
@@ -80,22 +89,22 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
-            if let Some((k, v2, v1)) = self.state.0.pop_buffer() {
+            if let Some((k, v2, v1)) = self.state.0.current_matches.pop_front() {
                 return Some((k, (v1, v2)));
             }
-            if let Some((k, v1, v2)) = self.state.1.pop_buffer() {
+            if let Some((k, v1, v2)) = self.state.1.current_matches.pop_front() {
                 return Some((k, (v1, v2)));
             }
 
             if let Some((k, v1)) = self.lhs.next() {
                 if self.state.0.build(k.clone(), &v1) {
-                    self.state.1.probe(k, v1);
+                    self.state.1.probe(&k, &v1);
                 }
                 continue;
             }
             if let Some((k, v2)) = self.rhs.next() {
                 if self.state.1.build(k.clone(), &v2) {
-                    self.state.0.probe(k, v2);
+                    self.state.0.probe(&k, &v2);
                 }
                 continue;
             }

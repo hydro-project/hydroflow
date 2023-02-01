@@ -16,3 +16,8 @@ members = [
 [profile.release]
 strip = true      # Strip symbols from the binary
 opt-level = "z"   # Optimize for size
+
+[profile.profile]
+inherits = "release"
+debug = 2
+strip = "none"

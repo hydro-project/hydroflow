@@ -1,9 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use proc_macro2::Span;
-#[cfg(feature = "diagnostics")]
-use slotmap::Key;
-use slotmap::{SecondaryMap, SlotMap, SparseSecondaryMap};
+use slotmap::{Key, SecondaryMap, SlotMap, SparseSecondaryMap};
 use syn::parse_quote;
 use syn::spanned::Spanned;
 
@@ -12,12 +10,21 @@ use crate::union_find::UnionFind;
 
 use super::di_mul_graph::DiMulGraph;
 use super::flat_graph::FlatGraph;
-use super::ops::{DelayType, OPERATORS};
+use super::ops::{DelayType, OperatorConstraints};
 use super::partitioned_graph::PartitionedGraph;
 use super::{
     graph_algorithms, node_color, Color, GraphEdgeId, GraphNodeId, GraphSubgraphId, Node,
     PortIndexValue,
 };
+
+fn find_operator_constraints(node: &Node) -> Option<&OperatorConstraints> {
+    if let Node::Operator(operator) = node {
+        let name = &*operator.name_string();
+        super::ops::OPERATORS.iter().find(|&op| name == op.name)
+    } else {
+        None
+    }
+}
 
 fn find_barrier_crossers(
     nodes: &SlotMap<GraphNodeId, Node>,
@@ -27,17 +34,10 @@ fn find_barrier_crossers(
     graph
         .edges()
         .filter_map(|(edge_id, (_src, dst))| {
+            let op_constraints = find_operator_constraints(&nodes[dst])?;
             let (_src_idx, dst_idx) = &ports[edge_id];
-            if let Node::Operator(dst_operator) = &nodes[dst] {
-                let dst_name = &*dst_operator.name_string();
-                OPERATORS
-                    .iter()
-                    .find(|&op| dst_name == op.name)
-                    .and_then(|op_constraints| (op_constraints.input_delaytype_fn)(dst_idx))
-                    .map(|input_barrier| (edge_id, input_barrier))
-            } else {
-                None
-            }
+            let input_barrier = (op_constraints.input_delaytype_fn)(dst_idx)?;
+            Some((edge_id, input_barrier))
         })
         .collect()
 }
@@ -405,6 +405,57 @@ fn find_subgraph_strata(
     Ok(subgraph_stratum)
 }
 
+/// Put `is_external_input: true` operators in separate stratum 0 subgraphs if they are not in stratum 0.
+fn separate_external_inputs(
+    nodes: &mut SlotMap<GraphNodeId, Node>,
+    ports: &mut SecondaryMap<GraphEdgeId, (PortIndexValue, PortIndexValue)>,
+    graph: &mut DiMulGraph<GraphNodeId, GraphEdgeId>,
+    node_subgraph: &mut SecondaryMap<GraphNodeId, GraphSubgraphId>,
+    subgraph_nodes: &mut SlotMap<GraphSubgraphId, Vec<GraphNodeId>>,
+    subgraph_stratum: &mut SecondaryMap<GraphSubgraphId, usize>,
+) {
+    let external_input_nodes: Vec<_> = nodes
+        .iter()
+        // Ensure node is an operator (not a handoff), get constraints spec.
+        .filter_map(|(node_id, node)| {
+            find_operator_constraints(node).map(|op_constraints| (node_id, op_constraints))
+        })
+        // Ensure current `node_id` is an external input.
+        .filter(|(_node_id, op_constraints)| op_constraints.is_external_input)
+        // Collect just `node_id`s.
+        .map(|(node_id, _op_constraints)| node_id)
+        // Ignore if operator node is already stratum 0.
+        .filter(|&node_id| 0 != subgraph_stratum[node_subgraph[node_id]])
+        .collect();
+
+    for node_id in external_input_nodes {
+        let old_sg_id = node_subgraph[node_id];
+        // Remove node from old subgraph.
+        {
+            let old_subgraph_nodes = &mut subgraph_nodes[old_sg_id];
+            let index = old_subgraph_nodes
+                .iter()
+                .position(|&nid| node_id == nid)
+                .unwrap();
+            old_subgraph_nodes.remove(index);
+        }
+        // Create new subgraph in stratum 0 for this source.
+        let new_sg_id = subgraph_nodes.insert(vec![node_id]);
+        node_subgraph.insert(node_id, new_sg_id);
+        subgraph_stratum.insert(new_sg_id, 0);
+        // Insert handoff.
+        let successor_edges: Vec<_> = graph.successor_edges(node_id).collect();
+        for edge_id in successor_edges {
+            let span = nodes[node_id].span();
+            let hoff = Node::Handoff {
+                src_span: span,
+                dst_span: span,
+            };
+            insert_intermediate_node(nodes, ports, graph, hoff, edge_id);
+        }
+    }
+}
+
 // Find the input (recv) and output (send) handoffs for each subgraph.
 fn find_subgraph_handoffs(
     nodes: &SlotMap<GraphNodeId, Node>,
@@ -437,12 +488,16 @@ fn find_subgraph_handoffs(
                 subgraph_recv_handoffs[node_subgraph[dst]].push(src);
             }
             (Node::Handoff { .. }, Node::Handoff { .. }) => {
-                #[cfg(feature = "diagnostics")]
-                Span::call_site().unwrap().error(format!(
-                    "Internal Error: Consecutive handoffs {:?} -> {:?}",
-                    src.data(),
-                    dst.data()
-                ));
+                Diagnostic::spanned(
+                    Span::call_site(),
+                    Level::Error,
+                    format!(
+                        "Internal Error: Consecutive handoffs {:?} -> {:?}",
+                        src.data(),
+                        dst.data()
+                    ),
+                )
+                .emit();
             }
         }
     }
@@ -458,6 +513,7 @@ impl TryFrom<FlatGraph> for PartitionedGraph {
             mut nodes,
             mut graph,
             mut ports,
+            node_varnames,
             ..
         } = flat_graph;
 
@@ -475,6 +531,7 @@ impl TryFrom<FlatGraph> for PartitionedGraph {
             .map(|(node_id, op_color)| (node_id, op_color.unwrap()))
             .collect();
 
+        // Partition into subgraphs.
         let (mut node_subgraph, mut subgraph_nodes) = make_subgraphs(
             &mut nodes,
             &mut ports,
@@ -483,7 +540,8 @@ impl TryFrom<FlatGraph> for PartitionedGraph {
             &mut node_color,
         );
 
-        let subgraph_stratum = find_subgraph_strata(
+        // Find strata for subgraphs.
+        let mut subgraph_stratum = find_subgraph_strata(
             &mut nodes,
             &mut ports,
             &mut graph,
@@ -491,6 +549,16 @@ impl TryFrom<FlatGraph> for PartitionedGraph {
             &mut subgraph_nodes,
             &barrier_crossers,
         )?;
+
+        // Ensure all external inputs are in stratum 0.
+        separate_external_inputs(
+            &mut nodes,
+            &mut ports,
+            &mut graph,
+            &mut node_subgraph,
+            &mut subgraph_nodes,
+            &mut subgraph_stratum,
+        );
 
         let (subgraph_recv_handoffs, subgraph_send_handoffs) =
             find_subgraph_handoffs(&nodes, &graph, &node_subgraph, &subgraph_nodes);
@@ -539,6 +607,8 @@ impl TryFrom<FlatGraph> for PartitionedGraph {
             subgraph_send_handoffs,
             subgraph_internal_handoffs,
             node_color_map: node_color,
+
+            node_varnames,
         })
     }
 }
