@@ -1,10 +1,10 @@
 # Flow Syntax
 Flows consist of named _operators_ that are connected via flow _edges_ denoted by `->`. The example below
-uses the [`source_iter`](./surface_ops.gen.md#source_iter) operator to generate two strings from a Rust `vec`, the 
-[`map`](./surface_ops.gen.md#map) operator to apply some Rust code to uppercase each string, and the [`for_each`](./surface_ops.gen.md#for_each) 
+uses the [`source_iter`](./surface_ops.gen.md#source_iter) operator to generate two strings from a Rust `vec`, the
+[`map`](./surface_ops.gen.md#map) operator to apply some Rust code to uppercase each string, and the [`for_each`](./surface_ops.gen.md#for_each)
 operator to print each string to stdout.
 ```rust,ignore
-source_iter(vec!["Hello", "world"]) 
+source_iter(vec!["Hello", "world"])
     -> map(|x| x.to_uppercase()) -> for_each(|x| println!("{}", x));
 ```
 
@@ -14,13 +14,13 @@ upper_print = map(|x| x.to_uppercase()) -> for_each(|x| println!("{}", x));
 source_iter(vec!["Hello", "world"]) -> upper_print;
 ```
 ## Operators with Multiple Ports
-Some operators have more than one input _port_ that can be referenced by `->`. For example [`merge`](./surface_ops.gen.md#merge) 
+Some operators have more than one input _port_ that can be referenced by `->`. For example [`merge`](./surface_ops.gen.md#merge)
 merges the contents of many flows, so it can have an abitrary number of input ports. Some operators have multiple outputs, notably [`tee`](./surface_ops.gen.md#tee),
-which has an arbitrary number of outputs. 
+which has an arbitrary number of outputs.
 
 In the syntax, we distinguish input ports via an _indexing prefix_ number
-in square brackets before the operator name (e.g. `[0]merge(...)` and `[1]merge(...)`). We 
-distinguish output ports by an _indexing suffix_ (e.g. `tee[0]`). 
+in square brackets before the operator name (e.g. `[0]merge(...)` and `[1]merge(...)`). We
+distinguish output ports by an _indexing suffix_ (e.g. `tee[0]`).
 
 Here is an example that tees one flow into two, handles each separately, and then merges them to print out the contents in both lowercase and uppercase:
 ```rust,ignore
@@ -57,9 +57,22 @@ flowchart TB
     7v1-->3v1
     8v1-->3v1
 ```
-Hydroflow compiled this flow into two subgraphs called _compiled components_, connected by _handoffs_. You can ignore 
+Hydroflow compiled this flow into two subgraphs called _compiled components_, connected by _handoffs_. You can ignore
 these details unless you are interested in low-level performance tuning; they are explained in the discussion
-of [in-out trees](./in-out_trees.md). 
+of [in-out trees](./in-out_trees.md).
 
 ### A note on assigning flows with multiple ports
 > *TODO*: _Need to document the port numbers for variables assigned to tree- or dag-shaped flows_
+
+## The `context` object
+
+Closures inside surface syntax operators have access to a special `context` object which provides
+access to scheduling, timing, and state APIs. The object is accessible as a shared reference
+(`&Context`) via the special name `context`.
+[Here is the full API documentation for `Context`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/context/struct.Context.html).
+
+```rust,ignore
+source_iter([()])
+    -> for_each(|()| println!("Current tick: {}, stratum: {}", context.current_tick(), context.current_stratum()));
+// Current tick: 0, stratum: 0
+```

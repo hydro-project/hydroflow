@@ -56,7 +56,9 @@ pub const UNIQUE: OperatorConstraints = OperatorConstraints {
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: &|_| Some(DelayType::Stratum),
-    write_fn: &(|wc @ &WriteContextArgs { op_span, .. },
+    write_fn: &(|wc @ &WriteContextArgs {
+                     op_span, context, ..
+                 },
                  &WriteIteratorArgs {
                      ident,
                      inputs,
@@ -96,7 +98,7 @@ pub const UNIQUE: OperatorConstraints = OperatorConstraints {
                 let write_iterator = quote_spanned! {op_span=>
                     // TODO(mingwei): Better data structure for this?
                     let #ident = {
-                        let mut set = context.state_ref(#uniquedata_ident).borrow_mut();
+                        let mut set = #context.state_ref(#uniquedata_ident).borrow_mut();
                         #input.filter(|x| set.insert(::std::clone::Clone::clone(x)))
                             .collect::<::std::vec::Vec<_>>()
                             .into_iter()

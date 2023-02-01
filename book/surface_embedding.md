@@ -11,6 +11,6 @@ pub fn example() {
     };
 }
 ```
-The resulting `flow` object is of type `Hydroflow`.
+The resulting `flow` object is of type [`Hydroflow`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html).
 <!-- TODO(mingwei): see the documentation on the
 [Hydroflow Object](./hydroflow_object.md) for details on how to use the result. -->

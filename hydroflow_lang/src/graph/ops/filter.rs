@@ -7,7 +7,11 @@ use quote::quote_spanned;
 /// Filter outputs a subsequence of the items it receives at its input, according to a
 /// Rust boolean closure passed in as an argument.
 ///
-/// > TODO: Why does filter's closure expect a reference and other ops like map do not?
+/// The closure receives a reference `&T` rather than an owned value `T` because filtering does
+/// not modify or take ownership of the values. If you need to modify the values while filtering
+/// use [`filter_map`](#filter_map) instead.
+///
+/// > Note: The closure has access to the [`context` object](surface_flows.md#the-context-object).
 ///
 /// ```hydroflow
 /// source_iter(vec!["hello", "world"]) -> filter(|x| x.starts_with('w'))

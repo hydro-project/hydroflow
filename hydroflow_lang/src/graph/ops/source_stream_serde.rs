@@ -37,7 +37,12 @@ pub const SOURCE_STREAM_SERDE: OperatorConstraints = OperatorConstraints {
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: &|_| None,
-    write_fn: &(|wc @ &WriteContextArgs { root, op_span, .. },
+    write_fn: &(|wc @ &WriteContextArgs {
+                     root,
+                     context,
+                     op_span,
+                     ..
+                 },
                  &WriteIteratorArgs {
                      ident, arguments, ..
                  },
@@ -49,7 +54,7 @@ pub const SOURCE_STREAM_SERDE: OperatorConstraints = OperatorConstraints {
         };
         let write_iterator = quote_spanned! {op_span=>
             let #ident = std::iter::from_fn(|| {
-                match #root::futures::stream::Stream::poll_next(#stream_ident.as_mut(), &mut std::task::Context::from_waker(&context.waker())) {
+                match #root::futures::stream::Stream::poll_next(#stream_ident.as_mut(), &mut std::task::Context::from_waker(&#context.waker())) {
                     std::task::Poll::Ready(Some(std::result::Result::Ok((payload, addr)))) => Some((#root::util::deserialize_from_bytes(payload), addr)),
                     std::task::Poll::Ready(Some(Err(_))) => None,
                     std::task::Poll::Ready(None) => None,

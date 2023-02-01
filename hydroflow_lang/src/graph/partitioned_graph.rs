@@ -1,4 +1,4 @@
-use proc_macro2::{Ident, Literal, TokenStream};
+use proc_macro2::{Ident, Literal, Span, TokenStream};
 use quote::{format_ident, quote, quote_spanned, ToTokens};
 use slotmap::{Key, SecondaryMap, SlotMap, SparseSecondaryMap};
 use syn::spanned::Spanned;
@@ -12,7 +12,9 @@ use super::ops::{
     DelayType, OperatorWriteOutput, Persistence, WriteContextArgs, WriteIteratorArgs, OPERATORS,
 };
 use super::serde_graph::{SerdeEdge, SerdeGraph};
-use super::{node_color, Color, GraphEdgeId, GraphNodeId, GraphSubgraphId, Node, PortIndexValue};
+use super::{
+    node_color, Color, GraphEdgeId, GraphNodeId, GraphSubgraphId, Node, PortIndexValue, CONTEXT,
+};
 
 #[derive(Default)]
 #[allow(dead_code)] // TODO(mingwei): remove when no longer needed.
@@ -162,6 +164,7 @@ impl PartitionedGraph {
                         {
                             let context_args = WriteContextArgs {
                                 root: &root,
+                                context: &Ident::new(CONTEXT, op_span),
                                 subgraph_id,
                                 node_id,
                                 op_span,
@@ -346,6 +349,7 @@ impl PartitionedGraph {
                 let stratum = Literal::usize_unsuffixed(
                     self.subgraph_stratum.get(subgraph_id).cloned().unwrap_or(0),
                 );
+                let context = Ident::new(CONTEXT, Span::call_site());
                 quote! {
                     #( #op_prologue_code )*
 
@@ -354,7 +358,7 @@ impl PartitionedGraph {
                         #stratum,
                         var_expr!( #( #recv_ports ),* ),
                         var_expr!( #( #send_ports ),* ),
-                        move |context, var_args!( #( #recv_ports ),* ), var_args!( #( #send_ports ),* )| {
+                        move |#context, var_args!( #( #recv_ports ),* ), var_args!( #( #send_ports ),* )| {
                             #( #recv_port_code )*
                             #( #send_port_code )*
                             #( #subgraph_op_iter_code )*

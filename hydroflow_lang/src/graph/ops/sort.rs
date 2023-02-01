@@ -53,7 +53,9 @@ pub const SORT: OperatorConstraints = OperatorConstraints {
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: &|_| Some(DelayType::Stratum),
-    write_fn: &(|wc @ &WriteContextArgs { op_span, .. },
+    write_fn: &(|wc @ &WriteContextArgs {
+                     context, op_span, ..
+                 },
                  &WriteIteratorArgs {
                      ident,
                      inputs,
@@ -95,7 +97,7 @@ pub const SORT: OperatorConstraints = OperatorConstraints {
                 let write_iterator = quote_spanned! {op_span=>
                     // TODO(mingwei): Better data structure for this?
                     let #ident = {
-                        let mut v = context.state_ref(#sortdata_ident).borrow_mut();
+                        let mut v = #context.state_ref(#sortdata_ident).borrow_mut();
                         v.extend(#input);
                         v.sort_unstable();
                         v.clone().into_iter()

@@ -11,6 +11,8 @@ use quote::quote_spanned;
 /// For each item `i` passed in, treat `i` as an iterator and map the closure to that
 /// iterator to produce items one by one. The type of the input items must be iterable.
 ///
+/// > Note: The closure has access to the [`context` object](surface_flows.md#the-context-object).
+///
 /// ```hydroflow
 /// // should print out each character of each word on a separate line
 /// source_iter(vec!["hello", "world"]) -> flat_map(|x| x.chars())

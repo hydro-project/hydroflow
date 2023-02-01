@@ -8,6 +8,8 @@ use quote::quote_spanned;
 ///
 /// An operator that both filters and maps. It yields only the items for which the supplied closure returns `Some(value)`.
 ///
+/// > Note: The closure has access to the [`context` object](surface_flows.md#the-context-object).
+///
 /// ```hydroflow
 /// source_iter(vec!["1", "hello", "world", "2"]) -> filter_map(|s| s.parse().ok())
 ///     -> for_each(|x: usize| println!("{}", x));

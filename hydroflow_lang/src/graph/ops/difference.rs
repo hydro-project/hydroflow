@@ -40,7 +40,12 @@ pub const DIFFERENCE: OperatorConstraints = OperatorConstraints {
         }
         _else => None,
     },
-    write_fn: &(|wc @ &WriteContextArgs { root, op_span, .. },
+    write_fn: &(|wc @ &WriteContextArgs {
+                     root,
+                     context,
+                     op_span,
+                     ..
+                 },
                  &WriteIteratorArgs { ident, inputs, .. },
                  _| {
         let handle_ident = wc.make_ident("diffdata_handle");
@@ -56,9 +61,9 @@ pub const DIFFERENCE: OperatorConstraints = OperatorConstraints {
             let input_neg = &inputs[0]; // N before P
             let input_pos = &inputs[1];
             quote_spanned! {op_span=>
-                let mut #borrow_ident = context.state_ref(#handle_ident).borrow_mut();
+                let mut #borrow_ident = #context.state_ref(#handle_ident).borrow_mut();
                 let #negset_ident = #borrow_ident
-                    .try_insert_with((context.current_tick(), context.current_stratum()), || {
+                    .try_insert_with((#context.current_tick(), #context.current_stratum()), || {
                         #input_neg.collect()
                     });
                 let #ident = #input_pos.filter(move |x| !#negset_ident.contains(x));
