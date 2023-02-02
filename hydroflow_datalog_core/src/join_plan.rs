@@ -1,20 +1,21 @@
 use std::collections::{btree_map::Entry, BTreeMap, HashMap};
 
-use hydroflow_lang::{
-    graph::flat_graph::FlatGraph,
-    parse::{ArrowConnector, IndexInt, Indexing, Pipeline, PipelineLink, PortIndex},
-};
+use hydroflow_lang::{graph::flat_graph::FlatGraph, parse::Pipeline};
 use proc_macro2::Span;
 use syn::{self, parse_quote};
 
-use crate::{grammar::datalog::Atom, util::Counter};
+use crate::{
+    grammar::datalog::{BoolOp, PredicateExpr, RelationExpr},
+    util::Counter,
+};
 
 /// Captures the tree of joins used to compute contributions from a single rule.
 pub enum JoinPlan<'a> {
     /// A single relation without any joins, leaves of the tree.
-    Source(&'a Atom),
+    Source(&'a RelationExpr),
     /// A join between two subtrees.
     Join(Box<JoinPlan<'a>>, Box<JoinPlan<'a>>),
+    Predicate(Vec<&'a PredicateExpr>, Box<JoinPlan<'a>>),
 }
 
 /// Tracks the Hydroflow node that corresponds to a subtree of a join plan.
@@ -74,25 +75,18 @@ fn emit_join_input_pipeline(
 
     let source_name = &source_expanded.name;
     let source_type = &source_expanded.tuple_type;
-    flat_graph.add_statement(hydroflow_lang::parse::HfStatement::Pipeline(
-        Pipeline::Link(PipelineLink {
-            lhs: Box::new(parse_quote!(#source_name)),
-            connector: ArrowConnector {
-                src: source_expanded.tee_idx.map(|i| Indexing {
-                    bracket_token: syn::token::Bracket::default(),
-                    index: PortIndex::Int(IndexInt {
-                        value: i,
-                        span: Span::call_site(),
-                    }),
-                }),
-                arrow: parse_quote!(->),
-                dst: None,
-            },
-            rhs: Box::new(parse_quote! {
-                map(|v: #source_type| ((#(#hash_keys, )*), v)) -> [#out_index] #join_node
-            }),
-        }),
-    ));
+
+    let rhs: Pipeline =
+        parse_quote!(map(|v: #source_type| ((#(#hash_keys, )*), v)) -> [#out_index] #join_node);
+    let statement = match source_expanded.tee_idx {
+        Some(i) => {
+            let in_index = syn::LitInt::new(&format!("{}", i), Span::call_site());
+            parse_quote!(#source_name [#in_index] -> #rhs)
+        }
+        None => parse_quote!(#source_name -> #rhs),
+    };
+
+    flat_graph.add_statement(statement);
 }
 
 /// Creates a mapping from variable names to the indices where that variable appears in `fields`.
@@ -180,37 +174,37 @@ pub fn expand_join_plan(
 
             let row_type = parse_quote!((#(#row_types, )*));
 
-            if !local_constraints.is_empty() {
-                let relation_node = syn::Ident::new(&target.name.name, Span::call_site());
-                let relation_idx = syn::LitInt::new(&tee_index.to_string(), Span::call_site());
-
-                let filter_node = syn::Ident::new(
-                    &format!(
-                        "join_{}_filter",
-                        next_join_idx.next().expect("Out of join indices")
-                    ),
-                    Span::call_site(),
-                );
-
-                let conditions = build_local_constraint_conditions(&local_constraints);
-
-                flat_graph.add_statement(parse_quote! {
-                    #filter_node = #relation_node [#relation_idx] -> filter(|&row: &#row_type| #conditions)
-                });
-
-                IntermediateJoinNode {
-                    name: filter_node,
-                    tee_idx: None,
-                    variable_mapping,
-                    tuple_type: row_type,
-                }
-            } else {
-                IntermediateJoinNode {
+            if local_constraints.is_empty() {
+                return IntermediateJoinNode {
                     name: syn::Ident::new(&target.name.name, Span::call_site()),
                     tee_idx: Some(tee_index),
                     variable_mapping,
                     tuple_type: row_type,
-                }
+                };
+            }
+
+            let relation_node = syn::Ident::new(&target.name.name, Span::call_site());
+            let relation_idx = syn::LitInt::new(&tee_index.to_string(), Span::call_site());
+
+            let filter_node = syn::Ident::new(
+                &format!(
+                    "join_{}_filter",
+                    next_join_idx.next().expect("Out of join indices")
+                ),
+                Span::call_site(),
+            );
+
+            let conditions = build_local_constraint_conditions(&local_constraints);
+
+            flat_graph.add_statement(parse_quote! {
+                #filter_node = #relation_node [#relation_idx] -> filter(|&row: &#row_type| #conditions)
+            });
+
+            IntermediateJoinNode {
+                name: filter_node,
+                tee_idx: None,
+                variable_mapping,
+                tuple_type: row_type,
             }
         }
         JoinPlan::Join(lhs, rhs) => {
@@ -296,6 +290,49 @@ pub fn expand_join_plan(
                 tee_idx: None,
                 variable_mapping: flattened_mapping,
                 tuple_type: parse_quote!((#(#output_types, )*)),
+            }
+        }
+        JoinPlan::Predicate(predicates, inner) => {
+            let inner_expanded = expand_join_plan(inner, flat_graph, tee_counter, next_join_idx);
+            let inner_name = inner_expanded.name.clone();
+            let row_type = inner_expanded.tuple_type;
+            let variable_mapping = &inner_expanded.variable_mapping;
+
+            let conditions = predicates
+                .iter()
+                .map(|p| {
+                    let l_ident = syn::Ident::new(&p.left.name, Span::call_site());
+                    let r_ident = syn::Ident::new(&p.right.name, Span::call_site());
+                    let l = syn::Index::from(*variable_mapping.get(&l_ident).unwrap());
+                    let r = syn::Index::from(*variable_mapping.get(&r_ident).unwrap());
+                    match &p.op {
+                        BoolOp::Lt(_) => parse_quote!(row.#l < row.#r),
+                        BoolOp::LtEq(_) => parse_quote!(row.#l <= row.#r),
+                        BoolOp::Gt(_) => parse_quote!(row.#l > row.#r),
+                        BoolOp::GtEq(_) => parse_quote!(row.#l >= row.#r),
+                        BoolOp::Eq(_) => parse_quote!(row.#l == row.#r),
+                    }
+                })
+                .reduce(|a: syn::Expr, b| parse_quote!(#a && #b))
+                .unwrap();
+
+            let predicate_filter_node = syn::Ident::new(
+                &format!(
+                    "predicate_{}_filter",
+                    next_join_idx.next().expect("Out of join indices")
+                ),
+                Span::call_site(),
+            );
+
+            flat_graph.add_statement(parse_quote! {
+                #predicate_filter_node = #inner_name -> filter(|&row: &#row_type| #conditions )
+            });
+
+            IntermediateJoinNode {
+                name: predicate_filter_node,
+                tee_idx: None,
+                variable_mapping: inner_expanded.variable_mapping,
+                tuple_type: row_type,
             }
         }
     }
