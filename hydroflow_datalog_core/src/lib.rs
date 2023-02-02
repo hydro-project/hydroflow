@@ -134,11 +134,26 @@ fn generate_rule(
     let sources: Vec<Atom> = rule.sources.to_vec();
 
     // TODO(shadaj): smarter plans
-    let plan = sources
+    let mut plan: JoinPlan = sources
         .iter()
-        .map(JoinPlan::Source)
+        .filter_map(|x| match x {
+            Atom::Relation(e) => Some(JoinPlan::Source(e)),
+            _ => None,
+        })
         .reduce(|a, b| JoinPlan::Join(Box::new(a), Box::new(b)))
         .unwrap();
+
+    let predicates = sources
+        .iter()
+        .filter_map(|x| match x {
+            Atom::Predicate(e) => Some(e),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+
+    if !predicates.is_empty() {
+        plan = JoinPlan::Predicate(predicates, Box::new(plan))
+    }
 
     let out_expanded = expand_join_plan(&plan, flat_graph, tee_counter, next_join_idx);
 
@@ -330,6 +345,18 @@ mod tests {
             .output out
 
             out(x, x, y, y) :- input(x, x, y, y).
+            "#
+        );
+    }
+
+    #[test]
+    fn test_simple_filter() {
+        test_snapshots!(
+            r#"
+            .input input
+            .output out
+
+            out(x, y) :- input(x, y), ( x > y ), ( y == x ).
             "#
         );
     }

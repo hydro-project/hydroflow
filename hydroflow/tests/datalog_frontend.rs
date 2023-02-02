@@ -245,3 +245,221 @@ pub async fn test_local_constraints() {
     assert_eq!(out_recv.next().await.unwrap(), (1, 1));
     assert_eq!(out_recv.next().await, None);
 }
+
+pub async fn test_boolean_relation_eq() {
+    let (in_send, input) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (out, mut out_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+
+    in_send.send((1, 1)).unwrap();
+    in_send.send((1, 2)).unwrap();
+    in_send.send((2, 1)).unwrap();
+
+    thread::spawn(|| {
+        let mut flow = datalog!(
+            r#"
+            .input input
+            .output out
+
+            out(a, b) :- input(a, b), ( a == b ).
+            "#
+        );
+
+        flow.run_available();
+    })
+    .join()
+    .unwrap();
+
+    assert_eq!(out_recv.next().await.unwrap(), (1, 1));
+    assert_eq!(out_recv.next().await, None);
+}
+
+#[tokio::test]
+pub async fn test_boolean_relation_lt() {
+    let (in_send, input) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (out, mut out_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+
+    in_send.send((1, 1)).unwrap();
+    in_send.send((1, 2)).unwrap();
+    in_send.send((2, 1)).unwrap();
+
+    thread::spawn(|| {
+        let mut flow = datalog!(
+            r#"
+            .input input
+            .output out
+
+            out(a, b) :- input(a, b), ( a < b ).
+            "#
+        );
+
+        flow.run_available();
+    })
+    .join()
+    .unwrap();
+
+    assert_eq!(out_recv.next().await.unwrap(), (1, 2));
+    assert_eq!(out_recv.next().await, None);
+}
+
+#[tokio::test]
+pub async fn test_boolean_relation_le() {
+    let (in_send, input) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (out, mut out_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+
+    in_send.send((1, 1)).unwrap();
+    in_send.send((1, 2)).unwrap();
+    in_send.send((2, 1)).unwrap();
+
+    thread::spawn(|| {
+        let mut flow = datalog!(
+            r#"
+            .input input
+            .output out
+
+            out(a, b) :- input(a, b), ( a <= b ).
+            "#
+        );
+
+        flow.run_available();
+    })
+    .join()
+    .unwrap();
+
+    assert_eq!(out_recv.next().await.unwrap(), (1, 1));
+    assert_eq!(out_recv.next().await.unwrap(), (1, 2));
+    assert_eq!(out_recv.next().await, None);
+}
+
+#[tokio::test]
+pub async fn test_boolean_relation_gt() {
+    let (in_send, input) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (out, mut out_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+
+    in_send.send((1, 1)).unwrap();
+    in_send.send((1, 2)).unwrap();
+    in_send.send((2, 1)).unwrap();
+
+    thread::spawn(|| {
+        let mut flow = datalog!(
+            r#"
+            .input input
+            .output out
+
+            out(a, b) :- input(a, b), ( a > b ).
+            "#
+        );
+
+        flow.run_available();
+    })
+    .join()
+    .unwrap();
+
+    assert_eq!(out_recv.next().await.unwrap(), (2, 1));
+    assert_eq!(out_recv.next().await, None);
+}
+
+#[tokio::test]
+pub async fn test_boolean_relation_ge() {
+    let (in_send, input) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (out, mut out_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+
+    in_send.send((1, 1)).unwrap();
+    in_send.send((1, 2)).unwrap();
+    in_send.send((2, 1)).unwrap();
+
+    thread::spawn(|| {
+        let mut flow = datalog!(
+            r#"
+            .input input
+            .output out
+
+            out(a, b) :- input(a, b), ( a >= b ).
+            "#
+        );
+
+        flow.run_available();
+    })
+    .join()
+    .unwrap();
+
+    assert_eq!(out_recv.next().await.unwrap(), (1, 1));
+    assert_eq!(out_recv.next().await.unwrap(), (2, 1));
+    assert_eq!(out_recv.next().await, None);
+}
+
+#[tokio::test]
+pub async fn test_join_multiple_and_relation() {
+    let (in1_send, in1) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (in2_send, in2) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (in3_send, in3) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (out, mut out_recv) = hydroflow::util::unbounded_channel::<(usize, usize, usize, usize)>();
+
+    in1_send.send((1, 2)).unwrap();
+
+    in2_send.send((2, 3)).unwrap();
+    in2_send.send((2, 4)).unwrap();
+
+    in3_send.send((3, 4)).unwrap();
+    in3_send.send((4, 5)).unwrap();
+    in3_send.send((4, 0)).unwrap();
+
+    thread::spawn(|| {
+        let mut flow = datalog!(
+            r#"
+            .input in1
+            .input in2
+            .input in3
+            .output out
+
+            out(a, b, c, d) :- in1(a, b), in2(b, c), in3(c, d), ( d > a ).
+            "#
+        );
+        flow.run_available();
+    })
+    .join()
+    .unwrap();
+
+    assert_eq!(out_recv.next().await.unwrap(), (1, 2, 3, 4));
+    assert_eq!(out_recv.next().await.unwrap(), (1, 2, 4, 5));
+    assert_eq!(out_recv.next().await, None);
+}
+
+#[tokio::test]
+pub async fn test_join_multiple_then_relation() {
+    // Same test as test_join_multiple_and_relation, except with a filter on top instead of a
+    // filter in the join.
+    let (in1_send, in1) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (in2_send, in2) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (in3_send, in3) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (out, mut out_recv) = hydroflow::util::unbounded_channel::<(usize, usize, usize, usize)>();
+
+    in1_send.send((1, 2)).unwrap();
+
+    in2_send.send((2, 3)).unwrap();
+    in2_send.send((2, 4)).unwrap();
+
+    in3_send.send((3, 4)).unwrap();
+    in3_send.send((4, 5)).unwrap();
+    in3_send.send((4, 0)).unwrap();
+
+    thread::spawn(|| {
+        let mut flow = datalog!(
+            r#"
+            .input in1
+            .input in2
+            .input in3
+            .output out
+
+            int(a, b, c, d) :- in1(a, b), in2(b, c), in3(c, d).
+            out(a, b, c, d) :- int(a, b, c, d), ( d > a ).
+            "#
+        );
+        flow.run_available();
+    })
+    .join()
+    .unwrap();
+
+    assert_eq!(out_recv.next().await.unwrap(), (1, 2, 3, 4));
+    assert_eq!(out_recv.next().await.unwrap(), (1, 2, 4, 5));
+    assert_eq!(out_recv.next().await, None);
+}
