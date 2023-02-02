@@ -112,6 +112,8 @@
 <a href="#112" id="112">112</a>
 <a href="#113" id="113">113</a>
 <a href="#114" id="114">114</a>
+<a href="#115" id="115">115</a>
+<a href="#116" id="116">116</a>
 </pre><pre class="rust"><code><span class="kw">use super</span>::{
     DelayType, OperatorConstraints, OperatorWriteOutput, Persistence, WriteContextArgs,
     WriteIteratorArgs, RANGE_0, RANGE_1,
@@ -170,7 +172,9 @@
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">None</span>,
     input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">Some</span>(DelayType::Stratum),
-    write_fn: <span class="kw-2">&amp;</span>(|wc @ <span class="kw-2">&amp;</span>WriteContextArgs { op_span, .. },
+    write_fn: <span class="kw-2">&amp;</span>(|wc @ <span class="kw-2">&amp;</span>WriteContextArgs {
+                     op_span, context, ..
+                 },
                  <span class="kw-2">&amp;</span>WriteIteratorArgs {
                      ident,
                      inputs,
@@ -210,7 +214,7 @@
                 <span class="kw">let </span>write_iterator = <span class="macro">quote_spanned! </span>{op_span=&gt;
                     <span class="comment">// TODO(mingwei): Better data structure for this?
                     </span><span class="kw">let </span>#ident = {
-                        <span class="kw">let </span><span class="kw-2">mut </span>set = context.state_ref(#uniquedata_ident).borrow_mut();
+                        <span class="kw">let </span><span class="kw-2">mut </span>set = #context.state_ref(#uniquedata_ident).borrow_mut();
                         #input.filter(|x| set.insert(::std::clone::Clone::clone(x)))
                             .collect::&lt;::std::vec::Vec&lt;<span class="kw">_</span>&gt;&gt;()
                             .into_iter()

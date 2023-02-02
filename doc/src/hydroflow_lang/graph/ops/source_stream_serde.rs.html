@@ -64,6 +64,11 @@
 <a href="#64" id="64">64</a>
 <a href="#65" id="65">65</a>
 <a href="#66" id="66">66</a>
+<a href="#67" id="67">67</a>
+<a href="#68" id="68">68</a>
+<a href="#69" id="69">69</a>
+<a href="#70" id="70">70</a>
+<a href="#71" id="71">71</a>
 </pre><pre class="rust"><code><span class="kw">use super</span>::{
     OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, RANGE_0, RANGE_1,
 };
@@ -103,7 +108,12 @@
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">None</span>,
     input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">None</span>,
-    write_fn: <span class="kw-2">&amp;</span>(|wc @ <span class="kw-2">&amp;</span>WriteContextArgs { root, op_span, .. },
+    write_fn: <span class="kw-2">&amp;</span>(|wc @ <span class="kw-2">&amp;</span>WriteContextArgs {
+                     root,
+                     context,
+                     op_span,
+                     ..
+                 },
                  <span class="kw-2">&amp;</span>WriteIteratorArgs {
                      ident, arguments, ..
                  },
@@ -115,7 +125,7 @@
         };
         <span class="kw">let </span>write_iterator = <span class="macro">quote_spanned! </span>{op_span=&gt;
             <span class="kw">let </span>#ident = std::iter::from_fn(|| {
-                <span class="kw">match </span>#root::futures::stream::Stream::poll_next(#stream_ident.as_mut(), <span class="kw-2">&amp;mut </span>std::task::Context::from_waker(<span class="kw-2">&amp;</span>context.waker())) {
+                <span class="kw">match </span>#root::futures::stream::Stream::poll_next(#stream_ident.as_mut(), <span class="kw-2">&amp;mut </span>std::task::Context::from_waker(<span class="kw-2">&amp;</span>#context.waker())) {
                     std::task::Poll::Ready(<span class="prelude-val">Some</span>(std::result::Result::Ok((payload, addr)))) =&gt; <span class="prelude-val">Some</span>((#root::util::deserialize_from_bytes(payload), addr)),
                     std::task::Poll::Ready(<span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(<span class="kw">_</span>))) =&gt; <span class="prelude-val">None</span>,
                     std::task::Poll::Ready(<span class="prelude-val">None</span>) =&gt; <span class="prelude-val">None</span>,

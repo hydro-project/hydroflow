@@ -156,6 +156,10 @@
 <a href="#156" id="156">156</a>
 <a href="#157" id="157">157</a>
 <a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
 </pre><pre class="rust"><code><span class="kw">use super</span>::{
     DelayType, OperatorConstraints, OperatorWriteOutput, Persistence, WriteContextArgs,
     WriteIteratorArgs, RANGE_1,
@@ -174,11 +178,13 @@
 /// is partitioned into groups by the first field, and for each group the values in the second
 /// field are accumulated via the closures in the arguments.
 ///
+/// &gt; Note: The closures have access to the [`context` object](surface_flows.md#the-context-object).
+///
 /// `group_by` can also be provided with one generic lifetime persistence argument, either
 /// `&#39;tick` or `&#39;static`, to specify how data persists. With `&#39;tick`, values will only be collected
 /// within the same tick. With `&#39;static`, values will be remembered across ticks and will be
 /// aggregated with pairs arriving in later ticks. When not explicitly specified persistence
-/// defaults to `static.
+/// defaults to `&#39;static`.
 ///
 /// `group_by` can also be provided with two type arguments, the key and value type. This is
 /// required when using `&#39;static` persistence if the compiler cannot infer the types.
@@ -225,7 +231,9 @@
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">None</span>,
     input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">Some</span>(DelayType::Stratum),
-    write_fn: <span class="kw-2">&amp;</span>(|wc @ <span class="kw-2">&amp;</span>WriteContextArgs { op_span, .. },
+    write_fn: <span class="kw-2">&amp;</span>(|wc @ <span class="kw-2">&amp;</span>WriteContextArgs {
+                     context, op_span, ..
+                 },
                  <span class="kw-2">&amp;</span>WriteIteratorArgs {
                      ident,
                      inputs,
@@ -281,7 +289,7 @@
                 },
                 <span class="macro">quote_spanned! </span>{op_span=&gt;
                     <span class="kw">let </span>#ident = {
-                        <span class="kw">let </span><span class="kw-2">mut </span>ht = context.state_ref(#groupbydata_ident).borrow_mut();
+                        <span class="kw">let </span><span class="kw-2">mut </span>ht = #context.state_ref(#groupbydata_ident).borrow_mut();
                         <span class="attr">#[inline(always)]
                         </span><span class="kw">fn </span>check_input&lt;Iter: ::std::iter::Iterator&lt;Item = (A, B)&gt;, A: ::std::clone::Clone, B: ::std::clone::Clone&gt;(iter: Iter)
                             -&gt; <span class="kw">impl </span>::std::iter::Iterator&lt;Item = (A, B)&gt; { iter }

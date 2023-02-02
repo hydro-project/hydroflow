@@ -1699,15 +1699,15 @@ pub fn example() {
 }
 <span class="boring">}
 </span></code></pre></pre>
-<p>The resulting <code>flow</code> object is of type <code>Hydroflow</code>.</p>
+<p>The resulting <code>flow</code> object is of type <a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html"><code>Hydroflow</code></a>.</p>
 <!-- TODO(mingwei): see the documentation on the
 [Hydroflow Object](./hydroflow_object.md) for details on how to use the result. -->
 <div style="break-before: page; page-break-before: always;"></div><h1 id="flow-syntax"><a class="header" href="#flow-syntax">Flow Syntax</a></h1>
 <p>Flows consist of named <em>operators</em> that are connected via flow <em>edges</em> denoted by <code>-&gt;</code>. The example below
-uses the <a href="./surface_ops.gen.html#source_iter"><code>source_iter</code></a> operator to generate two strings from a Rust <code>vec</code>, the 
-<a href="./surface_ops.gen.html#map"><code>map</code></a> operator to apply some Rust code to uppercase each string, and the <a href="./surface_ops.gen.html#for_each"><code>for_each</code></a> 
+uses the <a href="./surface_ops.gen.html#source_iter"><code>source_iter</code></a> operator to generate two strings from a Rust <code>vec</code>, the
+<a href="./surface_ops.gen.html#map"><code>map</code></a> operator to apply some Rust code to uppercase each string, and the <a href="./surface_ops.gen.html#for_each"><code>for_each</code></a>
 operator to print each string to stdout.</p>
-<pre><code class="language-rust ignore">source_iter(vec![&quot;Hello&quot;, &quot;world&quot;]) 
+<pre><code class="language-rust ignore">source_iter(vec![&quot;Hello&quot;, &quot;world&quot;])
     -&gt; map(|x| x.to_uppercase()) -&gt; for_each(|x| println!(&quot;{}&quot;, x));
 </code></pre>
 <p>Flows can be assigned to variable names for convenience. E.g, the above can be rewritten as follows:</p>
@@ -1715,12 +1715,12 @@ operator to print each string to stdout.</p>
 source_iter(vec![&quot;Hello&quot;, &quot;world&quot;]) -&gt; upper_print;
 </code></pre>
 <h2 id="operators-with-multiple-ports"><a class="header" href="#operators-with-multiple-ports">Operators with Multiple Ports</a></h2>
-<p>Some operators have more than one input <em>port</em> that can be referenced by <code>-&gt;</code>. For example <a href="./surface_ops.gen.html#merge"><code>merge</code></a> 
+<p>Some operators have more than one input <em>port</em> that can be referenced by <code>-&gt;</code>. For example <a href="./surface_ops.gen.html#merge"><code>merge</code></a>
 merges the contents of many flows, so it can have an abitrary number of input ports. Some operators have multiple outputs, notably <a href="./surface_ops.gen.html#tee"><code>tee</code></a>,
-which has an arbitrary number of outputs. </p>
+which has an arbitrary number of outputs.</p>
 <p>In the syntax, we distinguish input ports via an <em>indexing prefix</em> number
-in square brackets before the operator name (e.g. <code>[0]merge(...)</code> and <code>[1]merge(...)</code>). We 
-distinguish output ports by an <em>indexing suffix</em> (e.g. <code>tee[0]</code>). </p>
+in square brackets before the operator name (e.g. <code>[0]merge(...)</code> and <code>[1]merge(...)</code>). We
+distinguish output ports by an <em>indexing suffix</em> (e.g. <code>tee[0]</code>).</p>
 <p>Here is an example that tees one flow into two, handles each separately, and then merges them to print out the contents in both lowercase and uppercase:</p>
 <pre><code class="language-rust ignore">source = source_iter(vec![&quot;Hello&quot;, &quot;world&quot;]) -&gt; tee();
 print = merge() -&gt; for_each(|x| println!(&quot;{}&quot;, x));
@@ -1753,13 +1753,22 @@ source[1] -&gt; map(|x: &amp;str| x.to_lowercase()) -&gt; [1]print;
     7v1--&gt;3v1
     8v1--&gt;3v1
 </pre>
-<p>Hydroflow compiled this flow into two subgraphs called <em>compiled components</em>, connected by <em>handoffs</em>. You can ignore 
+<p>Hydroflow compiled this flow into two subgraphs called <em>compiled components</em>, connected by <em>handoffs</em>. You can ignore
 these details unless you are interested in low-level performance tuning; they are explained in the discussion
-of <a href="./in-out_trees.html">in-out trees</a>. </p>
+of <a href="./in-out_trees.html">in-out trees</a>.</p>
 <h3 id="a-note-on-assigning-flows-with-multiple-ports"><a class="header" href="#a-note-on-assigning-flows-with-multiple-ports">A note on assigning flows with multiple ports</a></h3>
 <blockquote>
 <p><em>TODO</em>: <em>Need to document the port numbers for variables assigned to tree- or dag-shaped flows</em></p>
 </blockquote>
+<h2 id="the-context-object"><a class="header" href="#the-context-object">The <code>context</code> object</a></h2>
+<p>Closures inside surface syntax operators have access to a special <code>context</code> object which provides
+access to scheduling, timing, and state APIs. The object is accessible as a shared reference
+(<code>&amp;Context</code>) via the special name <code>context</code>.
+<a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/context/struct.Context.html">Here is the full API documentation for <code>Context</code></a>.</p>
+<pre><code class="language-rust ignore">source_iter([()])
+    -&gt; for_each(|()| println!(&quot;Current tick: {}, stratum: {}&quot;, context.current_tick(), context.current_stratum()));
+// Current tick: 0, stratum: 0
+</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="data-sources-and-sinks-in-rust"><a class="header" href="#data-sources-and-sinks-in-rust">Data Sources and Sinks in Rust</a></h1>
 <p>Any useful flow requires us to define sources of data, either generated computationally or received from 
 and outside environment via I/O.</p>
@@ -1875,6 +1884,9 @@ deliver to any number of output streams.</p>
 <blockquote>
 <p>Note: The <a href="https://hydro-project.github.io/hydroflow/doc/pusherator/trait.Pusherator.html"><code>Pusherator</code></a>
 trait is automatically imported to enable the <a href="https://hydro-project.github.io/hydroflow/doc/pusherator/trait.Pusherator.html#tymethod.give"><code>.give(...)</code> method</a>.</p>
+</blockquote>
+<blockquote>
+<p>Note: The closure has access to the <a href="surface_flows.html#the-context-object"><code>context</code> object</a>.</p>
 </blockquote>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
@@ -2030,8 +2042,11 @@ diff -&gt; for_each(|v| println!(&quot;{}&quot;, v));
 </div><!-- GENERATED "hydroflow_lang/src/graph/ops/filter.rs" -->
 <p>Filter outputs a subsequence of the items it receives at its input, according to a
 Rust boolean closure passed in as an argument.</p>
+<p>The closure receives a reference <code>&amp;T</code> rather than an owned value <code>T</code> because filtering does
+not modify or take ownership of the values. If you need to modify the values while filtering
+use <a href="surface_ops.gen.html#filter_map"><code>filter_map</code></a> instead.</p>
 <blockquote>
-<p>TODO: Why does filter's closure expect a reference and other ops like map do not?</p>
+<p>Note: The closure has access to the <a href="surface_flows.html#the-context-object"><code>context</code> object</a>.</p>
 </blockquote>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
@@ -2053,6 +2068,9 @@ Rust boolean closure passed in as an argument.</p>
 <p>1 input stream, 1 output stream</p>
 </blockquote>
 <p>An operator that both filters and maps. It yields only the items for which the supplied closure returns <code>Some(value)</code>.</p>
+<blockquote>
+<p>Note: The closure has access to the <a href="surface_flows.html#the-context-object"><code>context</code> object</a>.</p>
+</blockquote>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
@@ -2077,6 +2095,9 @@ Rust boolean closure passed in as an argument.</p>
 </blockquote>
 <p>For each item <code>i</code> passed in, treat <code>i</code> as an iterator and map the closure to that
 iterator to produce items one by one. The type of the input items must be iterable.</p>
+<blockquote>
+<p>Note: The closure has access to the <a href="surface_flows.html#the-context-object"><code>context</code> object</a>.</p>
+</blockquote>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
@@ -2125,6 +2146,14 @@ an 'accumulator', and an element. The closure returns the value that the accumul
 </blockquote>
 <p>Akin to Rust's built-in fold operator. Folds every element into an accumulator by applying a closure,
 returning the final result.</p>
+<blockquote>
+<p>Note: The closure has access to the <a href="surface_flows.html#the-context-object"><code>context</code> object</a>.</p>
+</blockquote>
+<p><code>fold</code> can also be provided with one generic lifetime persistence argument, either
+<code>'tick</code> or <code>'static</code>, to specify how data persists. With <code>'tick</code>, values will only be collected
+within the same tick. With <code>'static</code>, values will be remembered across ticks and will be
+aggregated with pairs arriving in later ticks. When not explicitly specified persistence
+defaults to <code>'static</code>.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
@@ -2132,7 +2161,7 @@ returning the final result.</p>
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>// should print `Reassembled vector [1,2,3,4,5]`
 source_iter([1,2,3,4,5])
-    -&gt; fold(Vec::new(), |mut accum, elem| {
+    -&gt; fold::&lt;'tick&gt;(Vec::new(), |mut accum, elem| {
         accum.push(elem);
         accum
     })
@@ -2154,6 +2183,9 @@ source_iter([1,2,3,4,5])
 </blockquote>
 <p>Iterates through a stream passing each element to the closure in the
 argument.</p>
+<blockquote>
+<p>Note: The closure has access to the <a href="surface_flows.html#the-context-object"><code>context</code> object</a>.</p>
+</blockquote>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
@@ -2182,11 +2214,14 @@ value that the accumulator should have for the next iteration.</p>
 <p>A special case of <code>fold</code>, in the spirit of SQL's GROUP BY and aggregation constructs. The input
 is partitioned into groups by the first field, and for each group the values in the second
 field are accumulated via the closures in the arguments.</p>
+<blockquote>
+<p>Note: The closures have access to the <a href="surface_flows.html#the-context-object"><code>context</code> object</a>.</p>
+</blockquote>
 <p><code>group_by</code> can also be provided with one generic lifetime persistence argument, either
 <code>'tick</code> or <code>'static</code>, to specify how data persists. With <code>'tick</code>, values will only be collected
 within the same tick. With <code>'static</code>, values will be remembered across ticks and will be
 aggregated with pairs arriving in later ticks. When not explicitly specified persistence
-defaults to `static.</p>
+defaults to <code>'static</code>.</p>
 <p><code>group_by</code> can also be provided with two type arguments, the key and value type. This is
 required when using <code>'static</code> persistence if the compiler cannot infer the types.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
@@ -2258,6 +2293,9 @@ source_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; identity()
 modifying it. The closure is called on a reference to each item. This is
 mainly useful for debugging as in the example below, and it is generally an
 anti-pattern to provide a closure with side effects.</p>
+<blockquote>
+<p>Note: The closure has access to the <a href="surface_flows.html#the-context-object"><code>context</code> object</a>.</p>
+</blockquote>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
@@ -2365,6 +2403,9 @@ For each item passed in, apply the closure to generate an item to emit.</p>
 </blockquote>
 <p>If you do not want to modify the item stream and instead only want to view
 each item use the <a href="surface_ops.gen.html#inspect"><code>inspect</code></a> operator instead.</p>
+<blockquote>
+<p>Note: The closure has access to the <a href="surface_flows.html#the-context-object"><code>context</code> object</a>.</p>
+</blockquote>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
@@ -2486,6 +2527,9 @@ an ‘accumulator’, and an element. The closure returns the value that the acc
 </blockquote>
 <p>Akin to Rust's built-in reduce operator. Folds every element into an accumulator by applying a closure,
 returning the final result.</p>
+<blockquote>
+<p>Note: The closure has access to the <a href="surface_flows.html#the-context-object"><code>context</code> object</a>.</p>
+</blockquote>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
@@ -2559,6 +2603,9 @@ flow.run_available();
 </div><!-- GENERATED "hydroflow_lang/src/graph/ops/sort_by.rs" -->
 <p>Takes a stream as input and produces a version of the stream as output
 sorted according to the key extracted by the closure.</p>
+<blockquote>
+<p>Note: The closure has access to the <a href="surface_flows.html#the-context-object"><code>context</code> object</a>.</p>
+</blockquote>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};

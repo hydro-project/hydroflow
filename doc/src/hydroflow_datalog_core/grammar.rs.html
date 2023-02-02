@@ -55,6 +55,40 @@
 <a href="#55" id="55">55</a>
 <a href="#56" id="56">56</a>
 <a href="#57" id="57">57</a>
+<a href="#58" id="58">58</a>
+<a href="#59" id="59">59</a>
+<a href="#60" id="60">60</a>
+<a href="#61" id="61">61</a>
+<a href="#62" id="62">62</a>
+<a href="#63" id="63">63</a>
+<a href="#64" id="64">64</a>
+<a href="#65" id="65">65</a>
+<a href="#66" id="66">66</a>
+<a href="#67" id="67">67</a>
+<a href="#68" id="68">68</a>
+<a href="#69" id="69">69</a>
+<a href="#70" id="70">70</a>
+<a href="#71" id="71">71</a>
+<a href="#72" id="72">72</a>
+<a href="#73" id="73">73</a>
+<a href="#74" id="74">74</a>
+<a href="#75" id="75">75</a>
+<a href="#76" id="76">76</a>
+<a href="#77" id="77">77</a>
+<a href="#78" id="78">78</a>
+<a href="#79" id="79">79</a>
+<a href="#80" id="80">80</a>
+<a href="#81" id="81">81</a>
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
+<a href="#86" id="86">86</a>
+<a href="#87" id="87">87</a>
+<a href="#88" id="88">88</a>
+<a href="#89" id="89">89</a>
+<a href="#90" id="90">90</a>
+<a href="#91" id="91">91</a>
 </pre><pre class="rust"><code><span class="attr">#[rust_sitter::grammar(<span class="string">&quot;datalog&quot;</span>)]
 #[allow(dead_code)]
 </span><span class="kw">pub mod </span>datalog {
@@ -73,29 +107,41 @@
 
     <span class="attr">#[derive(Debug, Clone)]
     </span><span class="kw">pub struct </span>Rule {
-        <span class="kw">pub </span>target: Atom,
+        <span class="kw">pub </span>target: RelationExpr,
+
         <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;:-&quot;</span>)]
         </span>_from: (),
+
         <span class="attr">#[rust_sitter::repeat(non_empty = <span class="bool-val">true</span>)]
         #[rust_sitter::delimited(
             <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;,&quot;</span>)]
             </span>()
         )]
         <span class="kw">pub </span>sources: Vec&lt;Atom&gt;,
+
         <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;.&quot;</span>)]
         </span>_dot: <span class="prelude-ty">Option</span>&lt;()&gt;,
     }
 
     <span class="attr">#[derive(Debug, Clone)]
-    </span><span class="kw">pub struct </span>Atom {
+    </span><span class="kw">pub enum </span>Atom {
+        Relation(RelationExpr),
+        Predicate(PredicateExpr),
+    }
+
+    <span class="attr">#[derive(Debug, Clone)]
+    </span><span class="kw">pub struct </span>RelationExpr {
         <span class="kw">pub </span>name: Ident,
+
         <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;(&quot;</span>)]
         </span>_l_paren: (),
+
         <span class="attr">#[rust_sitter::delimited(
             <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;,&quot;</span>)]
             </span>()
         )]
         <span class="kw">pub </span>fields: Vec&lt;Ident&gt;,
+
         <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;)&quot;</span>)]
         </span>_r_paren: (),
     }
@@ -110,6 +156,28 @@
     </span><span class="kw">struct </span>Whitespace {
         <span class="attr">#[rust_sitter::leaf(pattern = <span class="string">r&quot;\s&quot;</span>)]
         </span>_whitespace: (),
+    }
+
+    <span class="attr">#[derive(Debug, Clone)]
+    </span><span class="kw">pub enum </span>BoolOp {
+        Lt(<span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;&lt;&quot;</span>)] </span>()),
+        LtEq(<span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;&lt;=&quot;</span>)] </span>()),
+        Gt(<span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;&gt;&quot;</span>)] </span>()),
+        GtEq(<span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;&gt;=&quot;</span>)] </span>()),
+        Eq(<span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;==&quot;</span>)] </span>()),
+    }
+
+    <span class="attr">#[derive(Debug, Clone)]
+    </span><span class="kw">pub struct </span>PredicateExpr {
+        <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;(&quot;</span>)]
+        </span>_l_brace: (),
+
+        <span class="kw">pub </span>left: Ident,
+        <span class="kw">pub </span>op: BoolOp,
+        <span class="kw">pub </span>right: Ident,
+
+        <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;)&quot;</span>)]
+        </span>_r_brace: (),
     }
 }
 </code></pre></div>

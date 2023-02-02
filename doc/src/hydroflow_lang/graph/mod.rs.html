@@ -168,6 +168,9 @@
 <a href="#168" id="168">168</a>
 <a href="#169" id="169">169</a>
 <a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
 </pre><pre class="rust"><code><span class="doccomment">//! Graph representation stages for Hydroflow graphs.
 
 </span><span class="kw">use </span>std::hash::Hash;
@@ -201,6 +204,9 @@
     <span class="doccomment">/// ID to identify a subgraph in [`partitioned_graph::PartitionedGraph`].
     </span><span class="kw">pub struct </span>GraphSubgraphId;
 }
+
+<span class="doccomment">/// Context identifier as a string.
+</span><span class="kw">const </span>CONTEXT: <span class="kw-2">&amp;</span>str = <span class="string">&quot;context&quot;</span>;
 
 <span class="kw">pub enum </span>Node {
     Operator(Operator),

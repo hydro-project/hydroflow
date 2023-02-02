@@ -485,7 +485,11 @@
 <a href="#485" id="485">485</a>
 <a href="#486" id="486">486</a>
 <a href="#487" id="487">487</a>
-</pre><pre class="rust"><code><span class="kw">use </span>proc_macro2::{Ident, Literal, TokenStream};
+<a href="#488" id="488">488</a>
+<a href="#489" id="489">489</a>
+<a href="#490" id="490">490</a>
+<a href="#491" id="491">491</a>
+</pre><pre class="rust"><code><span class="kw">use </span>proc_macro2::{Ident, Literal, Span, TokenStream};
 <span class="kw">use </span>quote::{format_ident, quote, quote_spanned, ToTokens};
 <span class="kw">use </span>slotmap::{Key, SecondaryMap, SlotMap, SparseSecondaryMap};
 <span class="kw">use </span>syn::spanned::Spanned;
@@ -499,7 +503,9 @@
     DelayType, OperatorWriteOutput, Persistence, WriteContextArgs, WriteIteratorArgs, OPERATORS,
 };
 <span class="kw">use </span><span class="kw">super</span>::serde_graph::{SerdeEdge, SerdeGraph};
-<span class="kw">use super</span>::{node_color, Color, GraphEdgeId, GraphNodeId, GraphSubgraphId, Node, PortIndexValue};
+<span class="kw">use super</span>::{
+    node_color, Color, GraphEdgeId, GraphNodeId, GraphSubgraphId, Node, PortIndexValue, CONTEXT,
+};
 
 <span class="attr">#[derive(Default)]
 #[allow(dead_code)] </span><span class="comment">// TODO(mingwei): remove when no longer needed.
@@ -649,6 +655,7 @@
                         {
                             <span class="kw">let </span>context_args = WriteContextArgs {
                                 root: <span class="kw-2">&amp;</span>root,
+                                context: <span class="kw-2">&amp;</span>Ident::new(CONTEXT, op_span),
                                 subgraph_id,
                                 node_id,
                                 op_span,
@@ -833,6 +840,7 @@
                 <span class="kw">let </span>stratum = Literal::usize_unsuffixed(
                     <span class="self">self</span>.subgraph_stratum.get(subgraph_id).cloned().unwrap_or(<span class="number">0</span>),
                 );
+                <span class="kw">let </span>context = Ident::new(CONTEXT, Span::call_site());
                 <span class="macro">quote! </span>{
                     #( #op_prologue_code )*
 
@@ -841,7 +849,7 @@
                         #stratum,
                         <span class="macro">var_expr!</span>( #( #recv_ports ),* ),
                         <span class="macro">var_expr!</span>( #( #send_ports ),* ),
-                        <span class="kw">move </span>|context, <span class="macro">var_args!</span>( #( #recv_ports ),* ), <span class="macro">var_args!</span>( #( #send_ports ),* )| {
+                        <span class="kw">move </span>|#context, <span class="macro">var_args!</span>( #( #recv_ports ),* ), <span class="macro">var_args!</span>( #( #send_ports ),* )| {
                             #( #recv_port_code )*
                             #( #send_port_code )*
                             #( #subgraph_op_iter_code )*

@@ -59,6 +59,11 @@
 <a href="#59" id="59">59</a>
 <a href="#60" id="60">60</a>
 <a href="#61" id="61">61</a>
+<a href="#62" id="62">62</a>
+<a href="#63" id="63">63</a>
+<a href="#64" id="64">64</a>
+<a href="#65" id="65">65</a>
+<a href="#66" id="66">66</a>
 </pre><pre class="rust"><code><span class="kw">use super</span>::{
     OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, RANGE_0, RANGE_1,
 };
@@ -93,7 +98,12 @@
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">None</span>,
     input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">None</span>,
-    write_fn: <span class="kw-2">&amp;</span>(|wc @ <span class="kw-2">&amp;</span>WriteContextArgs { root, op_span, .. },
+    write_fn: <span class="kw-2">&amp;</span>(|wc @ <span class="kw-2">&amp;</span>WriteContextArgs {
+                     root,
+                     context,
+                     op_span,
+                     ..
+                 },
                  <span class="kw-2">&amp;</span>WriteIteratorArgs { ident, .. },
                  <span class="kw">_</span>| {
         <span class="kw">let </span>stream_ident = wc.make_ident(<span class="string">&quot;stream&quot;</span>);
@@ -107,7 +117,7 @@
         };
         <span class="kw">let </span>write_iterator = <span class="macro">quote_spanned! </span>{op_span=&gt;
             <span class="kw">let </span>#ident = std::iter::from_fn(|| {
-                <span class="kw">match </span>#root::futures::stream::Stream::poll_next(std::pin::Pin::new(<span class="kw-2">&amp;mut </span>#stream_ident), <span class="kw-2">&amp;mut </span>std::task::Context::from_waker(<span class="kw-2">&amp;</span>context.waker())) {
+                <span class="kw">match </span>#root::futures::stream::Stream::poll_next(std::pin::Pin::new(<span class="kw-2">&amp;mut </span>#stream_ident), <span class="kw-2">&amp;mut </span>std::task::Context::from_waker(<span class="kw-2">&amp;</span>#context.waker())) {
                     std::task::Poll::Ready(maybe) =&gt; maybe,
                     std::task::Poll::Pending =&gt; <span class="prelude-val">None</span>,
                 }
