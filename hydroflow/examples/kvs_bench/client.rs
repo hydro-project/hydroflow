@@ -25,8 +25,8 @@ pub async fn run_client(server_addr: SocketAddr) {
     let mut keys = Vec::new();
     let mut map = HashMap::new();
 
-    for _ in 0..50 {
-        let random_key = rng.next_u64();
+    for _ in 0..1 {
+        let random_key = 7; //rng.next_u64();
         let random_val = rng.next_u64();
 
         keys.push(random_key);
@@ -42,6 +42,7 @@ pub async fn run_client(server_addr: SocketAddr) {
     }
 
     println!("sent puts");
+    return;
 
     // tokio::time::sleep(Duration::from_millis(100)).await;
 

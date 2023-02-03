@@ -20,6 +20,7 @@ use crdts::ctx::AddCtx;
 use crdts::CmRDT;
 use crdts::CvRDT;
 use crdts::VClock;
+use tokio::time::Instant;
 
 pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
     println!("tid server: {}", palaver::thread::gettid());
@@ -146,9 +147,13 @@ pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
         }
     });
 
-    // let timer = tokio_stream::wrappers::IntervalStream::new(tokio::time::interval(
-    //     Duration::from_millis(1000),
-    // ));
+    let timer = tokio_stream::wrappers::IntervalStream::new(tokio::time::interval(
+        Duration::from_millis(1000),
+    ));
+
+    let timer2 = tokio_stream::wrappers::IntervalStream::new(tokio::time::interval(
+        Duration::from_millis(1000),
+    ));
 
     // `PollSender` adapts the send half of the bounded channel into a `Sink`.
     let transducer_to_client_tx = tokio_util::sync::PollSender::new(transducer_to_client_tx);
@@ -224,7 +229,11 @@ pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
         my_merge5 = merge();
         my_tee5 = tee();
 
+
         my_demux[gets] -> my_tee5;
+
+        my_tee5 -> buffer(timer2) -> for_each(|x| { println!("buffered: {x:?}"); });
+
 
         my_demux2[store] -> my_merge5;
         my_tee5
@@ -238,9 +247,52 @@ pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
             -> [0]lookup;
 
         // Broadcast ops to other peers
-        my_demux2[broadcast]
-            -> map(|(key, reg)| KVSRequest::Gossip {key, reg})
-            // -> inspect(|x| println!("{addr}:{:5}: broadcasting put: {x:?}", context.current_tick()))
+        // With buffering.
+
+
+        outgoing_puts = my_demux2[broadcast]
+            -> inspect(|x| println!("{addr}:{:5}: xxxxxx: {x:?}", context.current_tick()))
+            -> tee();
+
+        timestamp_source = tee();
+        source_stream(timer) -> timestamp_source;
+
+        my_merge9 = merge();
+
+        outgoing_puts -> map(|_| Instant::now().checked_sub(Duration::from_secs(99999999)).unwrap()) -> my_merge9;
+        timestamp_source -> my_merge9;
+
+
+        timestamper_cross = cross_join::<'tick, 'tick>()
+            -> inspect(|x| println!("{addr}:{:5}: yyyyyy: {x:?}", context.current_tick()));
+
+        my_merge9
+            -> map(|x| ((), x))
+            -> group_by::<'static>(Instant::now, |accum: &mut Instant, instant: Instant| {
+                *accum = std::cmp::max(*accum, instant);
+            })
+            -> map(|((), timestamp)| timestamp)
+            -> [0]timestamper_cross;
+        outgoing_puts -> [1]timestamper_cross;
+
+
+        buffer_cross = cross_join::<'static, 'tick>();
+
+        timestamper_cross -> map(|x| x) -> [0]buffer_cross;
+        timestamp_source -> map(|x| x) -> [1]buffer_cross;
+
+        buffer_cross
+            -> map(|((time_generated, (key, reg)), current_time)| (key, (reg, time_generated, current_time)))
+            -> group_by::<'tick>(|| (MyMVReg::default(), Instant::now().checked_sub(Duration::from_secs(99999999)).unwrap(), Instant::now().checked_sub(Duration::from_secs(99999999)).unwrap()),
+                |(accum_reg, accum_time_generated, accum_current_time): &mut (MyMVReg, Instant, Instant), (reg, time_generated, current_time): (MyMVReg, Instant, Instant)| {
+
+                accum_reg.merge(reg);
+                *accum_time_generated = std::cmp::max(*accum_time_generated, time_generated);
+                *accum_current_time = std::cmp::max(*accum_current_time, current_time);
+            })
+            -> filter(|(_, (_, time_generated, current_time))| (time_generated.checked_add(Duration::from_secs(1)).unwrap()) >= *current_time)
+            -> map(|(key, (reg, _, _))| KVSRequest::Gossip {key, reg})
+            -> inspect(|x| println!("{addr}:{:5}: broadcasting buffered puts: {x:?}", context.current_tick()))
             -> for_each(|x| { transducer_to_peers_tx.send(x).unwrap(); });
 
         // Feed gets into the join to make them do the actual matching.
