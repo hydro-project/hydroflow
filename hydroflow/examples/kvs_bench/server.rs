@@ -165,9 +165,9 @@ pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
         client_input = source_stream(client_to_transducer_rx)
             -> demux(|(req, addr), var_args!(puts, gets)| {
                 match req {
-                    KVSRequest::Put {key, value} => puts.give((key, ValueOrReg::Value(value))),
+                    KVSRequest::Put {key, value} => puts.give((key, (ValueOrReg::Value(value), addr))),
                     KVSRequest::Get {key} => gets.give((key, addr)),
-                    KVSRequest::Gossip {key, reg} => puts.give((key, ValueOrReg::Reg(reg))),
+                    KVSRequest::Gossip {key, reg} => puts.give((key, (ValueOrReg::Reg(reg), addr))),
                 }
             });
 
@@ -181,7 +181,7 @@ pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
 
         max_vclock = put_tee
             -> map(|x| x)
-            -> group_by::<'static, u64, VClock<SocketAddr>>(VClock::default, |accum: &mut VClock<SocketAddr>, value_or_reg| {
+            -> group_by::<'static, u64, VClock<SocketAddr>>(VClock::default, |accum: &mut VClock<SocketAddr>, (value_or_reg, _addr)| {
                 match value_or_reg {
                     ValueOrReg::Value(_) => {
                         accum.apply(accum.inc(addr));
@@ -198,7 +198,7 @@ pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
         put_tee     -> [1]maxvclock_puts;
 
         broadcast_or_store = maxvclock_puts
-            -> demux(|(clock, (key, value_or_reg)): (VClock<SocketAddr>, (u64, ValueOrReg)), var_args!(broadcast, store)| {
+            -> demux(|(clock, (key, (value_or_reg, addr))): (VClock<SocketAddr>, (u64, (ValueOrReg, SocketAddr))), var_args!(broadcast, store)| {
                 match value_or_reg {
                     ValueOrReg::Value(value) => {
                         let mut reg = MyMVReg::default();
@@ -211,10 +211,10 @@ pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
                         reg.apply(reg.write(value, ctx));
 
                         broadcast.give((key, reg.clone()));
-                        store.give((key, reg));
+                        store.give((key, (reg, addr)));
                     },
                     ValueOrReg::Reg(reg) => {
-                        store.give((key, reg));
+                        store.give((key, (reg, addr)));
                     },
                 }
             });
@@ -241,13 +241,26 @@ pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
         gets = client_input[gets] -> tee();
 
         gets
-            -> map(|(key, _addr)| (key, MyMVReg::default())) // Nasty hack to get the group_by to emit another entry at the righ
+            -> map(|(key, addr)| (key, (MyMVReg::default(), addr))) // Nasty hack to get the group_by to emit another entry at the righ
             -> bump_merge;
 
-            broadcast_or_store[store] -> bump_merge;
+        put_ack_tee = tee();
+
+        broadcast_or_store[store] -> put_ack_tee;
+
+        transducer_to_client_tx_merge = merge();
+
+        put_ack_tee
+            -> map(|x| x)
+            -> map(|(key, (_reg, addr))| (KVSResponse::PutResponse{key}, addr))
+            // -> inspect(|x| println!("{addr}:{:5}: Response to client: {x:?}", context.current_tick()))
+            -> transducer_to_client_tx_merge;
+
+        put_ack_tee -> bump_merge;
 
         bump_merge
-            -> group_by::<'static>(MyMVReg::default, |accum: &mut MyMVReg, reg: MyMVReg| {
+            -> map(|x| x)
+            -> group_by::<'static>(MyMVReg::default, |accum: &mut MyMVReg, (reg, _addr): (MyMVReg, SocketAddr)| {
                 accum.merge(reg);
             })
             // -> inspect(|x| println!("{addr}:{:5}: stores-into-lookup: {x:?}", context.current_tick()))
@@ -260,9 +273,12 @@ pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
 
         // Send get results back to user
         lookup
-            -> map(|(key, (reg, addr))| (KVSResponse::Response{key, reg}, addr))
+            -> map(|x| x)
+            -> map(|(key, (reg, addr))| (KVSResponse::GetResponse{key, reg}, addr))
             // -> inspect(|x| println!("{addr}:{:5}: Response to client: {x:?}", context.current_tick()))
-            -> dest_sink(transducer_to_client_tx);
+            -> transducer_to_client_tx_merge;
+
+        transducer_to_client_tx_merge -> dest_sink(transducer_to_client_tx);
     };
 
     let serde_graph = df

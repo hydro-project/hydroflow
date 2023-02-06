@@ -25,7 +25,8 @@ pub enum KVSRequest {
 
 #[derive(PartialEq, Eq, Clone, Serialize, Deserialize, Debug)]
 pub enum KVSResponse {
-    Response { key: u64, reg: MyMVReg },
+    PutResponse { key: u64 },
+    GetResponse { key: u64, reg: MyMVReg },
 }
 
 #[derive(Debug, Parser)] // requires `derive` feature

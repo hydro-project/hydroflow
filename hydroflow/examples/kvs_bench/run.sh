@@ -1,10 +1,12 @@
 #!/bin/bash
 
-
 topology=127.0.0.100:5000
 topology+=,127.0.0.101:5000
 topology+=,127.0.0.102:5000
-topology+=,127.0.0.103:5000
+topology+=,127.0.0.104:5000
+topology+=,127.0.0.105:5000
+topology+=,127.0.0.106:5000
+topology+=,127.0.0.107:5000
 
 for i in ${topology//,/ }
 do

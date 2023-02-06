@@ -58,9 +58,11 @@ pub async fn run_client(server_addr: SocketAddr) {
             let random_val = rng.next_u64();
 
             outbound
-                .feed(serialize_to_bytes(KVSRequest::Get { key }))
+                .send(serialize_to_bytes(KVSRequest::Get { key }))
                 .await
                 .unwrap();
+
+            tokio::time::sleep(Duration::from_millis(700)).await;
 
             outbound
                 .send(serialize_to_bytes(KVSRequest::Put {
@@ -70,7 +72,7 @@ pub async fn run_client(server_addr: SocketAddr) {
                 .await
                 .unwrap();
 
-            outstanding += 1;
+            outstanding += 2;
         }
 
         outbound.flush().await.unwrap();
@@ -78,19 +80,21 @@ pub async fn run_client(server_addr: SocketAddr) {
         // println!("waiting");
         if let Some(Ok(response)) = inbound.next().await {
             let response: KVSResponse = deserialize_from_bytes(response);
-            // println!("{response:?}");
-            // match response {
-            //     KVSResponse::Response { key, reg } => assert_eq!(&reg.read().val[0], &map[&key]),
-            // }
+            match response {
+                KVSResponse::GetResponse { key, reg } => println!("{reg:?}"),
+                KVSResponse::PutResponse { key } => (),
+            }
             outstanding -= 1;
             gets += 1;
         }
 
         if time_since_last_report.elapsed() >= Duration::from_secs(1) {
             time_since_last_report = Instant::now();
-            println!("get/s: {gets}");
+            println!("puts/s: {gets}");
             gets = 0;
         }
+
+        tokio::time::sleep(Duration::from_millis(500)).await;
     }
 }
 
