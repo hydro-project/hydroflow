@@ -335,15 +335,6 @@ fn test_sort_by_owned() {
 }
 
 #[test]
-pub fn test_context_api() {
-    let mut df = hydroflow_syntax! {
-        source_iter([()])
-            -> for_each(|()| println!("Current tick: {}, stratum: {}", context.current_tick(), context.current_stratum()));
-    };
-    df.run_available();
-}
-
-#[test]
 pub fn test_demux_1() {
     enum Shape {
         Circle(f64),

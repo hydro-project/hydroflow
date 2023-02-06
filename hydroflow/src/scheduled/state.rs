@@ -3,6 +3,7 @@ use std::marker::PhantomData;
 use super::StateId;
 
 #[must_use]
+#[derive(Debug)]
 pub struct StateHandle<T> {
     pub(crate) state_id: StateId,
     pub(crate) _phantom: PhantomData<*mut T>,
