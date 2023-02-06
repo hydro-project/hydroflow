@@ -12,6 +12,7 @@ use crate::parse::PortIndex;
 
 use super::{GraphNodeId, GraphSubgraphId, PortIndexValue};
 
+mod buffer;
 mod cross_join;
 mod demux;
 mod dest_sink;
@@ -184,6 +185,7 @@ pub const OPERATORS: &[OperatorConstraints] = &[
     demux::DEMUX,
     dest_sink::DEST_SINK,
     dest_sink_serde::DEST_SINK_SERDE,
+    buffer::BUFFER,
 ];
 
 pub struct WriteContextArgs<'a> {

@@ -151,10 +151,6 @@ pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
         Duration::from_millis(1000),
     ));
 
-    let timer2 = tokio_stream::wrappers::IntervalStream::new(tokio::time::interval(
-        Duration::from_millis(1000),
-    ));
-
     // `PollSender` adapts the send half of the bounded channel into a `Sink`.
     let transducer_to_client_tx = tokio_util::sync::PollSender::new(transducer_to_client_tx);
 
@@ -175,15 +171,15 @@ pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
                 }
             });
 
-        my_crossjoin = cross_join::<'tick, 'tick>();
+        maxvclock_puts = cross_join::<'tick, 'tick>();
 
         put_tee = tee();
 
         my_demux[puts]
-            // -> inspect(|x| println!("{addr}:{:5}: puts-in: {x:?}", context.current_tick()))
+            // -> inspect(|x| println!("{addr}:{:5}: puts-into-crossjoin: {x:?}", context.current_tick()))
             -> put_tee;
 
-        put_tee
+        max_vclock = put_tee
             -> map(|x| x)
             -> group_by::<'static, u64, VClock<SocketAddr>>(VClock::default, |accum: &mut VClock<SocketAddr>, value_or_reg| {
                 match value_or_reg {
@@ -195,15 +191,13 @@ pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
                     },
                 }
             })
-            -> map(|x| x.1)
-            // -> inspect(|x| println!("{addr}:{:5}: puts-into-crossjoin: {x:?}", context.current_tick()))
-            -> [0]my_crossjoin;
+            // -> inspect(|x| println!("{addr}:{:5}: maxvclock-into-crossjoin: {x:?}", context.current_tick()))
+            -> map(|x| x.1);
 
-        put_tee -> [1]my_crossjoin;
+        max_vclock  -> [0]maxvclock_puts;
+        put_tee     -> [1]maxvclock_puts;
 
-        lookup = join::<'tick, 'tick>();
-
-        my_demux2 = my_crossjoin
+        my_demux2 = maxvclock_puts
             -> demux(|(clock, (key, value_or_reg)): (VClock<SocketAddr>, (u64, ValueOrReg)), var_args!(broadcast, store)| {
                 match value_or_reg {
                     ValueOrReg::Value(value) => {
@@ -225,79 +219,42 @@ pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
                 }
             });
 
-        // Merge all puts together
-        my_merge5 = merge();
-        my_tee5 = tee();
 
+        // broadcast out locally generated changes to other nodes.
+        my_demux2[broadcast]
+            // -> next_tick() // hack: buffer operator doesn't seem to compile without this.
+            -> map(|MEMER| MEMER)
+            -> buffer(timer)
+            -> group_by::<'tick>(MyMVReg::default, |accum: &mut MyMVReg, reg: MyMVReg| {
+                // If multiple writes have hit the same key then they can be merged before sending.
+                accum.merge(reg);
+            })
+            -> map(|(key, reg)| KVSRequest::Gossip{key, reg} )
+            -> inspect(|x| println!("{addr}:{:5}: sending to peers: {x:?}", context.current_tick()))
+            -> for_each(|x| { transducer_to_peers_tx.send(x).unwrap(); });
 
-        my_demux[gets] -> my_tee5;
+        // join for lookups
+        lookup = join::<'tick, 'tick>();
 
-        my_tee5 -> buffer(timer2) -> for_each(|x| { println!("buffered: {x:?}"); });
+        bump_merge = merge(); // group_by does not re-emit the last value every tick so need to feed in a bottom value to get it to do that.
 
+        gets = my_demux[gets] -> tee();
 
-        my_demux2[store] -> my_merge5;
-        my_tee5
-            -> map(|(key, _addr)| (key, MyMVReg::default())) // Nasty hack to get the group_by to emit another entry at the right time...
-            -> my_merge5;
+        gets
+            -> map(|(key, _addr)| (key, MyMVReg::default())) // Nasty hack to get the group_by to emit another entry at the righ
+            -> bump_merge;
 
-        my_merge5
+        my_demux2[store] -> bump_merge;
+
+        bump_merge
             -> group_by::<'static>(MyMVReg::default, |accum: &mut MyMVReg, reg: MyMVReg| {
                 accum.merge(reg);
             })
+            // -> inspect(|x| println!("{addr}:{:5}: stores-into-lookup: {x:?}", context.current_tick()))
             -> [0]lookup;
 
-        // Broadcast ops to other peers
-        // With buffering.
-
-
-        outgoing_puts = my_demux2[broadcast]
-            -> inspect(|x| println!("{addr}:{:5}: xxxxxx: {x:?}", context.current_tick()))
-            -> tee();
-
-        timestamp_source = tee();
-        source_stream(timer) -> timestamp_source;
-
-        my_merge9 = merge();
-
-        outgoing_puts -> map(|_| Instant::now().checked_sub(Duration::from_secs(99999999)).unwrap()) -> my_merge9;
-        timestamp_source -> my_merge9;
-
-
-        timestamper_cross = cross_join::<'tick, 'tick>()
-            -> inspect(|x| println!("{addr}:{:5}: yyyyyy: {x:?}", context.current_tick()));
-
-        my_merge9
-            -> map(|x| ((), x))
-            -> group_by::<'static>(Instant::now, |accum: &mut Instant, instant: Instant| {
-                *accum = std::cmp::max(*accum, instant);
-            })
-            -> map(|((), timestamp)| timestamp)
-            -> [0]timestamper_cross;
-        outgoing_puts -> [1]timestamper_cross;
-
-
-        buffer_cross = cross_join::<'static, 'tick>();
-
-        timestamper_cross -> map(|x| x) -> [0]buffer_cross;
-        timestamp_source -> map(|x| x) -> [1]buffer_cross;
-
-        buffer_cross
-            -> map(|((time_generated, (key, reg)), current_time)| (key, (reg, time_generated, current_time)))
-            -> group_by::<'tick>(|| (MyMVReg::default(), Instant::now().checked_sub(Duration::from_secs(99999999)).unwrap(), Instant::now().checked_sub(Duration::from_secs(99999999)).unwrap()),
-                |(accum_reg, accum_time_generated, accum_current_time): &mut (MyMVReg, Instant, Instant), (reg, time_generated, current_time): (MyMVReg, Instant, Instant)| {
-
-                accum_reg.merge(reg);
-                *accum_time_generated = std::cmp::max(*accum_time_generated, time_generated);
-                *accum_current_time = std::cmp::max(*accum_current_time, current_time);
-            })
-            -> filter(|(_, (_, time_generated, current_time))| (time_generated.checked_add(Duration::from_secs(1)).unwrap()) >= *current_time)
-            -> map(|(key, (reg, _, _))| KVSRequest::Gossip {key, reg})
-            -> inspect(|x| println!("{addr}:{:5}: broadcasting buffered puts: {x:?}", context.current_tick()))
-            -> for_each(|x| { transducer_to_peers_tx.send(x).unwrap(); });
-
         // Feed gets into the join to make them do the actual matching.
-        my_tee5
-            -> map(|x| x)
+        gets
             // -> inspect(|x| println!("{addr}:{:5}: gets-into-lookup: {x:?}", context.current_tick()))
             -> [1]lookup;
 
