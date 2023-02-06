@@ -6,7 +6,7 @@ use tokio::runtime::{Handle, TryCurrentError};
 use tokio::sync::mpsc::UnboundedSender;
 use tokio::task::JoinHandle;
 
-use super::graph::{HandoffData, StateData};
+use super::graph::StateData;
 use super::state::StateHandle;
 use super::{StateId, SubgraphId};
 
@@ -18,7 +18,6 @@ use super::{StateId, SubgraphId};
 /// Before the `Context` is provided to a running operator, the `subgraph_id`
 /// field must be updated.
 pub struct Context {
-    pub(crate) handoffs: Vec<HandoffData>,
     pub(crate) states: Vec<StateData>,
 
     // TODO(mingwei): as long as this is here, it's impossible to know when all work is done.
@@ -115,6 +114,18 @@ impl Context {
             state_id,
             _phantom: PhantomData,
         }
+    }
+
+    /// Removes state from the context returns it as an owned heap value.
+    pub fn remove_state<T>(&mut self, handle: StateHandle<T>) -> Box<T>
+    where
+        T: Any,
+    {
+        self.states
+            .remove(handle.state_id.0)
+            .state
+            .downcast()
+            .expect("StateHandle wrong type T for casting.")
     }
 
     pub fn spawn_task<Fut>(&mut self, future: Fut) -> Result<(), TryCurrentError>

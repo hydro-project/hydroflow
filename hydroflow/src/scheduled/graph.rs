@@ -24,6 +24,7 @@ use super::{HandoffId, SubgraphId};
 pub struct Hydroflow {
     pub(super) subgraphs: Vec<SubgraphData>,
     pub(super) context: Context,
+    handoffs: Vec<HandoffData>,
 
     /// TODO(mingwei): separate scheduler into its own struct/trait?
     /// Index is stratum, value is FIFO queue for that stratum.
@@ -38,7 +39,6 @@ impl Default for Hydroflow {
         let stratum_queues = vec![Default::default()]; // Always initialize stratum #0.
         let (event_queue_send, event_queue_recv) = mpsc::unbounded_channel();
         let context = Context {
-            handoffs,
             states,
 
             event_queue_send,
@@ -53,6 +53,7 @@ impl Default for Hydroflow {
         Self {
             subgraphs,
             context,
+            handoffs,
 
             stratum_queues,
 
@@ -132,11 +133,11 @@ impl Hydroflow {
                 assert!(sg_data.is_scheduled.take());
 
                 self.context.subgraph_id = sg_id;
-                sg_data.subgraph.run(&mut self.context);
+                sg_data.subgraph.run(&mut self.context, &mut self.handoffs);
             }
 
             for &handoff_id in self.subgraphs[sg_id.0].succs.iter() {
-                let handoff = &self.context.handoffs[handoff_id.0];
+                let handoff = &self.handoffs[handoff_id.0];
                 if !handoff.handoff.is_bottom() {
                     for &succ_id in handoff.succs.iter() {
                         let succ_sg_data = &self.subgraphs[succ_id.0];
@@ -266,7 +267,7 @@ impl Hydroflow {
         Name: Into<Cow<'static, str>>,
         R: 'static + PortList<RECV>,
         W: 'static + PortList<SEND>,
-        F: 'static + for<'ctx> FnMut(&'ctx Context, R::Ctx<'ctx>, W::Ctx<'ctx>),
+        F: 'static + for<'ctx> FnMut(&'ctx mut Context, R::Ctx<'ctx>, W::Ctx<'ctx>),
     {
         self.add_subgraph_stratified(name, 0, recv_ports, send_ports, subgraph)
     }
@@ -286,27 +287,17 @@ impl Hydroflow {
         Name: Into<Cow<'static, str>>,
         R: 'static + PortList<RECV>,
         W: 'static + PortList<SEND>,
-        F: 'static + for<'ctx> FnMut(&'ctx Context, R::Ctx<'ctx>, W::Ctx<'ctx>),
+        F: 'static + for<'ctx> FnMut(&'ctx mut Context, R::Ctx<'ctx>, W::Ctx<'ctx>),
     {
         let sg_id = SubgraphId(self.subgraphs.len());
 
         let (mut subgraph_preds, mut subgraph_succs) = Default::default();
-        recv_ports.set_graph_meta(
-            &mut *self.context.handoffs,
-            None,
-            Some(sg_id),
-            &mut subgraph_preds,
-        );
-        send_ports.set_graph_meta(
-            &mut *self.context.handoffs,
-            Some(sg_id),
-            None,
-            &mut subgraph_succs,
-        );
+        recv_ports.set_graph_meta(&mut *self.handoffs, None, Some(sg_id), &mut subgraph_preds);
+        send_ports.set_graph_meta(&mut *self.handoffs, Some(sg_id), None, &mut subgraph_succs);
 
-        let subgraph = move |context: &mut Context| {
-            let recv = recv_ports.make_ctx(&*context.handoffs);
-            let send = send_ports.make_ctx(&*context.handoffs);
+        let subgraph = move |context: &mut Context, handoffs: &mut Vec<HandoffData>| {
+            let recv = recv_ports.make_ctx(&*handoffs);
+            let send = send_ports.make_ctx(&*handoffs);
             (subgraph)(context, recv, send);
         };
         self.subgraphs.push(SubgraphData::new(
@@ -336,7 +327,7 @@ impl Hydroflow {
         R: 'static + Handoff,
         W: 'static + Handoff,
         F: 'static
-            + for<'ctx> FnMut(&'ctx Context, &'ctx [&'ctx RecvCtx<R>], &'ctx [&'ctx SendCtx<W>]),
+            + for<'ctx> FnMut(&'ctx mut Context, &'ctx [&'ctx RecvCtx<R>], &'ctx [&'ctx SendCtx<W>]),
     {
         self.add_subgraph_stratified_n_m(name, 0, recv_ports, send_ports, subgraph)
     }
@@ -355,7 +346,7 @@ impl Hydroflow {
         R: 'static + Handoff,
         W: 'static + Handoff,
         F: 'static
-            + for<'ctx> FnMut(&'ctx Context, &'ctx [&'ctx RecvCtx<R>], &'ctx [&'ctx SendCtx<W>]),
+            + for<'ctx> FnMut(&'ctx mut Context, &'ctx [&'ctx RecvCtx<R>], &'ctx [&'ctx SendCtx<W>]),
     {
         let sg_id = SubgraphId(self.subgraphs.len());
 
@@ -363,21 +354,17 @@ impl Hydroflow {
         let subgraph_succs = send_ports.iter().map(|port| port.handoff_id).collect();
 
         for recv_port in recv_ports.iter() {
-            self.context.handoffs[recv_port.handoff_id.0]
-                .succs
-                .push(sg_id);
+            self.handoffs[recv_port.handoff_id.0].succs.push(sg_id);
         }
         for send_port in send_ports.iter() {
-            self.context.handoffs[send_port.handoff_id.0]
-                .preds
-                .push(sg_id);
+            self.handoffs[send_port.handoff_id.0].preds.push(sg_id);
         }
 
-        let subgraph = move |context: &mut Context| {
+        let subgraph = move |context: &mut Context, handoffs: &mut Vec<HandoffData>| {
             let recvs: Vec<&RecvCtx<R>> = recv_ports
                 .iter()
                 .map(|hid| hid.handoff_id)
-                .map(|hid| context.handoffs.get(hid.0).unwrap())
+                .map(|hid| handoffs.get(hid.0).unwrap())
                 .map(|h_data| {
                     h_data
                         .handoff
@@ -391,7 +378,7 @@ impl Hydroflow {
             let sends: Vec<&SendCtx<W>> = send_ports
                 .iter()
                 .map(|hid| hid.handoff_id)
-                .map(|hid| context.handoffs.get(hid.0).unwrap())
+                .map(|hid| handoffs.get(hid.0).unwrap())
                 .map(|h_data| {
                     h_data
                         .handoff
@@ -432,13 +419,11 @@ impl Hydroflow {
         Name: Into<Cow<'static, str>>,
         H: 'static + Handoff,
     {
-        let handoff_id = HandoffId(self.context.handoffs.len());
+        let handoff_id = HandoffId(self.handoffs.len());
 
         // Create and insert handoff.
         let handoff = H::default();
-        self.context
-            .handoffs
-            .push(HandoffData::new(name.into(), handoff));
+        self.handoffs.push(HandoffData::new(name.into(), handoff));
 
         // Make ports.
         let input_port = SendPort {
