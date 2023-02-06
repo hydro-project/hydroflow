@@ -269,7 +269,7 @@ pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
         .serde_graph()
         .expect("No graph found, maybe failed to parse.");
 
-    println!("{}", serde_graph.to_mermaid());
+    // println!("{}", serde_graph.to_mermaid());
 
     let f5 = df.run_async();
 
