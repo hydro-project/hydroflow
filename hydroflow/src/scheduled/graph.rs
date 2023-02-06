@@ -24,7 +24,7 @@ use super::{HandoffId, SubgraphId};
 pub struct Hydroflow {
     pub(super) subgraphs: Vec<SubgraphData>,
     pub(super) context: Context,
-    pub(crate) handoffs: Vec<HandoffData>,
+    handoffs: Vec<HandoffData>,
 
     /// TODO(mingwei): separate scheduler into its own struct/trait?
     /// Index is stratum, value is FIFO queue for that stratum.
