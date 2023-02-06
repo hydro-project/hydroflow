@@ -162,7 +162,7 @@ pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
 
     let mut df = hydroflow_syntax! {
 
-        my_demux = source_stream(client_to_transducer_rx)
+        client_input = source_stream(client_to_transducer_rx)
             -> demux(|(req, addr), var_args!(puts, gets)| {
                 match req {
                     KVSRequest::Put {key, value} => puts.give((key, ValueOrReg::Value(value))),
@@ -175,7 +175,7 @@ pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
 
         put_tee = tee();
 
-        my_demux[puts]
+        client_input[puts]
             // -> inspect(|x| println!("{addr}:{:5}: puts-into-crossjoin: {x:?}", context.current_tick()))
             -> put_tee;
 
@@ -197,7 +197,7 @@ pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
         max_vclock  -> [0]maxvclock_puts;
         put_tee     -> [1]maxvclock_puts;
 
-        my_demux2 = maxvclock_puts
+        broadcast_or_store = maxvclock_puts
             -> demux(|(clock, (key, value_or_reg)): (VClock<SocketAddr>, (u64, ValueOrReg)), var_args!(broadcast, store)| {
                 match value_or_reg {
                     ValueOrReg::Value(value) => {
@@ -221,7 +221,7 @@ pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
 
 
         // broadcast out locally generated changes to other nodes.
-        my_demux2[broadcast]
+        broadcast_or_store[broadcast]
             // -> next_tick() // hack: buffer operator doesn't seem to compile without this.
             -> map(|MEMER| MEMER)
             -> buffer(timer)
@@ -238,13 +238,13 @@ pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
 
         bump_merge = merge(); // group_by does not re-emit the last value every tick so need to feed in a bottom value to get it to do that.
 
-        gets = my_demux[gets] -> tee();
+        gets = client_input[gets] -> tee();
 
         gets
             -> map(|(key, _addr)| (key, MyMVReg::default())) // Nasty hack to get the group_by to emit another entry at the righ
             -> bump_merge;
 
-        my_demux2[store] -> bump_merge;
+            broadcast_or_store[store] -> bump_merge;
 
         bump_merge
             -> group_by::<'static>(MyMVReg::default, |accum: &mut MyMVReg, reg: MyMVReg| {
@@ -275,8 +275,3 @@ pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
 
     futures::join!(f2, f3, f4, f5);
 }
-
-// group_by::<u64, MyMVReg>(MyMVReg::default, |old: &mut MyMVReg, val: u64| {
-//     let op = old.write(val, old.read_ctx().derive_add_ctx(batch_addr));
-//     old.apply(op);
-// }) ->
