@@ -18,8 +18,7 @@ pub mod datalog {
     pub struct Rule {
         pub target: RelationExpr,
 
-        #[rust_sitter::leaf(text = ":-")]
-        _from: (),
+        pub rule_type: RuleType,
 
         #[rust_sitter::repeat(non_empty = true)]
         #[rust_sitter::delimited(
@@ -30,6 +29,13 @@ pub mod datalog {
 
         #[rust_sitter::leaf(text = ".")]
         _dot: Option<()>,
+    }
+
+    #[derive(Debug, Clone)]
+    pub enum RuleType {
+        Sync(#[rust_sitter::leaf(text = ":-")] ()),
+        NextTick(#[rust_sitter::leaf(text = ":+")] ()),
+        Async(#[rust_sitter::leaf(text = ":~")] ()),
     }
 
     #[derive(Debug, Clone)]
