@@ -1,4 +1,4 @@
-use std::{cell::RefCell, rc::Rc, thread};
+use std::thread;
 
 use hydroflow::{futures::StreamExt, util::collect_ready};
 use hydroflow_datalog::datalog;
