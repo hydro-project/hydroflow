@@ -1,36 +1,7 @@
 use std::{cell::RefCell, rc::Rc, thread};
 
-use hydroflow::futures::StreamExt;
+use hydroflow::{futures::StreamExt, util::collect_ready};
 use hydroflow_datalog::datalog;
-
-struct FakeOutputChannel<T> {
-    data: Rc<RefCell<Vec<T>>>,
-}
-
-impl<T> FakeOutputChannel<T> {
-    pub fn take_all(&mut self) -> Vec<T> {
-        self.data.borrow_mut().drain(..).collect()
-    }
-}
-
-struct FakeOutputChannelSender<T> {
-    data: Rc<RefCell<Vec<T>>>,
-}
-
-impl<T> FakeOutputChannelSender<T> {
-    pub fn send(&self, value: T) -> Option<()> {
-        self.data.borrow_mut().push(value);
-        Some(())
-    }
-}
-
-fn fake_output_channel<T>() -> (FakeOutputChannelSender<T>, FakeOutputChannel<T>) {
-    let data = Rc::new(RefCell::new(Vec::new()));
-    let data_clone = Rc::clone(&data);
-    let output = FakeOutputChannelSender { data: data_clone };
-    let sender = FakeOutputChannel { data };
-    (output, sender)
-}
 
 #[tokio::test]
 pub async fn test_minimal() {
@@ -497,7 +468,7 @@ pub async fn test_join_multiple_then_relation() {
 pub fn test_next_tick() {
     let (ints_1_send, ints_1) = hydroflow::util::unbounded_channel::<(usize,)>();
     let (ints_2_send, ints_2) = hydroflow::util::unbounded_channel::<(usize,)>();
-    let (result, mut result_recv) = fake_output_channel::<(usize,)>();
+    let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(usize,)>();
 
     ints_1_send.send((1,)).unwrap();
     ints_1_send.send((2,)).unwrap();
@@ -517,9 +488,15 @@ pub fn test_next_tick() {
 
     flow.run_tick();
 
-    assert_eq!(result_recv.take_all(), &[(1,), (2,)]);
+    assert_eq!(
+        &*collect_ready::<Vec<_>, _>(&mut result_recv),
+        &[(1,), (2,)]
+    );
 
     flow.run_tick();
 
-    assert_eq!(result_recv.take_all(), &[(3,), (4,)]);
+    assert_eq!(
+        &*collect_ready::<Vec<_>, _>(&mut result_recv),
+        &[(3,), (4,)]
+    );
 }
