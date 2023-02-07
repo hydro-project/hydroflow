@@ -554,21 +554,6 @@
 <a href="#554" id="554">554</a>
 <a href="#555" id="555">555</a>
 <a href="#556" id="556">556</a>
-<a href="#557" id="557">557</a>
-<a href="#558" id="558">558</a>
-<a href="#559" id="559">559</a>
-<a href="#560" id="560">560</a>
-<a href="#561" id="561">561</a>
-<a href="#562" id="562">562</a>
-<a href="#563" id="563">563</a>
-<a href="#564" id="564">564</a>
-<a href="#565" id="565">565</a>
-<a href="#566" id="566">566</a>
-<a href="#567" id="567">567</a>
-<a href="#568" id="568">568</a>
-<a href="#569" id="569">569</a>
-<a href="#570" id="570">570</a>
-<a href="#571" id="571">571</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::any::Any;
 <span class="kw">use </span>std::borrow::Cow;
 <span class="kw">use </span>std::cell::Cell;
@@ -595,6 +580,7 @@
 </span><span class="kw">pub struct </span>Hydroflow {
     <span class="kw">pub</span>(<span class="kw">super</span>) subgraphs: Vec&lt;SubgraphData&gt;,
     <span class="kw">pub</span>(<span class="kw">super</span>) context: Context,
+    handoffs: Vec&lt;HandoffData&gt;,
 
     <span class="doccomment">/// TODO(mingwei): separate scheduler into its own struct/trait?
     /// Index is stratum, value is FIFO queue for that stratum.
@@ -609,7 +595,6 @@
         <span class="kw">let </span>stratum_queues = <span class="macro">vec!</span>[Default::default()]; <span class="comment">// Always initialize stratum #0.
         </span><span class="kw">let </span>(event_queue_send, event_queue_recv) = mpsc::unbounded_channel();
         <span class="kw">let </span>context = Context {
-            handoffs,
             states,
 
             event_queue_send,
@@ -624,6 +609,7 @@
         <span class="self">Self </span>{
             subgraphs,
             context,
+            handoffs,
 
             stratum_queues,
 
@@ -703,11 +689,11 @@
                 </span><span class="macro">assert!</span>(sg_data.is_scheduled.take());
 
                 <span class="self">self</span>.context.subgraph_id = sg_id;
-                sg_data.subgraph.run(<span class="kw-2">&amp;mut </span><span class="self">self</span>.context);
+                sg_data.subgraph.run(<span class="kw-2">&amp;mut </span><span class="self">self</span>.context, <span class="kw-2">&amp;mut </span><span class="self">self</span>.handoffs);
             }
 
             <span class="kw">for </span><span class="kw-2">&amp;</span>handoff_id <span class="kw">in </span><span class="self">self</span>.subgraphs[sg_id.<span class="number">0</span>].succs.iter() {
-                <span class="kw">let </span>handoff = <span class="kw-2">&amp;</span><span class="self">self</span>.context.handoffs[handoff_id.<span class="number">0</span>];
+                <span class="kw">let </span>handoff = <span class="kw-2">&amp;</span><span class="self">self</span>.handoffs[handoff_id.<span class="number">0</span>];
                 <span class="kw">if </span>!handoff.handoff.is_bottom() {
                     <span class="kw">for </span><span class="kw-2">&amp;</span>succ_id <span class="kw">in </span>handoff.succs.iter() {
                         <span class="kw">let </span>succ_sg_data = <span class="kw-2">&amp;</span><span class="self">self</span>.subgraphs[succ_id.<span class="number">0</span>];
@@ -837,7 +823,7 @@
         </span>Name: Into&lt;Cow&lt;<span class="lifetime">&#39;static</span>, str&gt;&gt;,
         R: <span class="lifetime">&#39;static </span>+ PortList&lt;RECV&gt;,
         W: <span class="lifetime">&#39;static </span>+ PortList&lt;SEND&gt;,
-        F: <span class="lifetime">&#39;static </span>+ <span class="kw">for</span>&lt;<span class="lifetime">&#39;ctx</span>&gt; FnMut(<span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span>Context, R::Ctx&lt;<span class="lifetime">&#39;ctx</span>&gt;, W::Ctx&lt;<span class="lifetime">&#39;ctx</span>&gt;),
+        F: <span class="lifetime">&#39;static </span>+ <span class="kw">for</span>&lt;<span class="lifetime">&#39;ctx</span>&gt; FnMut(<span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span><span class="kw-2">mut </span>Context, R::Ctx&lt;<span class="lifetime">&#39;ctx</span>&gt;, W::Ctx&lt;<span class="lifetime">&#39;ctx</span>&gt;),
     {
         <span class="self">self</span>.add_subgraph_stratified(name, <span class="number">0</span>, recv_ports, send_ports, subgraph)
     }
@@ -857,27 +843,17 @@
         </span>Name: Into&lt;Cow&lt;<span class="lifetime">&#39;static</span>, str&gt;&gt;,
         R: <span class="lifetime">&#39;static </span>+ PortList&lt;RECV&gt;,
         W: <span class="lifetime">&#39;static </span>+ PortList&lt;SEND&gt;,
-        F: <span class="lifetime">&#39;static </span>+ <span class="kw">for</span>&lt;<span class="lifetime">&#39;ctx</span>&gt; FnMut(<span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span>Context, R::Ctx&lt;<span class="lifetime">&#39;ctx</span>&gt;, W::Ctx&lt;<span class="lifetime">&#39;ctx</span>&gt;),
+        F: <span class="lifetime">&#39;static </span>+ <span class="kw">for</span>&lt;<span class="lifetime">&#39;ctx</span>&gt; FnMut(<span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span><span class="kw-2">mut </span>Context, R::Ctx&lt;<span class="lifetime">&#39;ctx</span>&gt;, W::Ctx&lt;<span class="lifetime">&#39;ctx</span>&gt;),
     {
         <span class="kw">let </span>sg_id = SubgraphId(<span class="self">self</span>.subgraphs.len());
 
         <span class="kw">let </span>(<span class="kw-2">mut </span>subgraph_preds, <span class="kw-2">mut </span>subgraph_succs) = Default::default();
-        recv_ports.set_graph_meta(
-            <span class="kw-2">&amp;mut *</span><span class="self">self</span>.context.handoffs,
-            <span class="prelude-val">None</span>,
-            <span class="prelude-val">Some</span>(sg_id),
-            <span class="kw-2">&amp;mut </span>subgraph_preds,
-        );
-        send_ports.set_graph_meta(
-            <span class="kw-2">&amp;mut *</span><span class="self">self</span>.context.handoffs,
-            <span class="prelude-val">Some</span>(sg_id),
-            <span class="prelude-val">None</span>,
-            <span class="kw-2">&amp;mut </span>subgraph_succs,
-        );
+        recv_ports.set_graph_meta(<span class="kw-2">&amp;mut *</span><span class="self">self</span>.handoffs, <span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(sg_id), <span class="kw-2">&amp;mut </span>subgraph_preds);
+        send_ports.set_graph_meta(<span class="kw-2">&amp;mut *</span><span class="self">self</span>.handoffs, <span class="prelude-val">Some</span>(sg_id), <span class="prelude-val">None</span>, <span class="kw-2">&amp;mut </span>subgraph_succs);
 
-        <span class="kw">let </span>subgraph = <span class="kw">move </span>|context: <span class="kw-2">&amp;mut </span>Context| {
-            <span class="kw">let </span>recv = recv_ports.make_ctx(<span class="kw-2">&amp;*</span>context.handoffs);
-            <span class="kw">let </span>send = send_ports.make_ctx(<span class="kw-2">&amp;*</span>context.handoffs);
+        <span class="kw">let </span>subgraph = <span class="kw">move </span>|context: <span class="kw-2">&amp;mut </span>Context, handoffs: <span class="kw-2">&amp;mut </span>Vec&lt;HandoffData&gt;| {
+            <span class="kw">let </span>recv = recv_ports.make_ctx(<span class="kw-2">&amp;*</span>handoffs);
+            <span class="kw">let </span>send = send_ports.make_ctx(<span class="kw-2">&amp;*</span>handoffs);
             (subgraph)(context, recv, send);
         };
         <span class="self">self</span>.subgraphs.push(SubgraphData::new(
@@ -907,7 +883,7 @@
         R: <span class="lifetime">&#39;static </span>+ Handoff,
         W: <span class="lifetime">&#39;static </span>+ Handoff,
         F: <span class="lifetime">&#39;static
-            </span>+ <span class="kw">for</span>&lt;<span class="lifetime">&#39;ctx</span>&gt; FnMut(<span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span>Context, <span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span>[<span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span>RecvCtx&lt;R&gt;], <span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span>[<span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span>SendCtx&lt;W&gt;]),
+            </span>+ <span class="kw">for</span>&lt;<span class="lifetime">&#39;ctx</span>&gt; FnMut(<span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span><span class="kw-2">mut </span>Context, <span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span>[<span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span>RecvCtx&lt;R&gt;], <span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span>[<span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span>SendCtx&lt;W&gt;]),
     {
         <span class="self">self</span>.add_subgraph_stratified_n_m(name, <span class="number">0</span>, recv_ports, send_ports, subgraph)
     }
@@ -926,7 +902,7 @@
         R: <span class="lifetime">&#39;static </span>+ Handoff,
         W: <span class="lifetime">&#39;static </span>+ Handoff,
         F: <span class="lifetime">&#39;static
-            </span>+ <span class="kw">for</span>&lt;<span class="lifetime">&#39;ctx</span>&gt; FnMut(<span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span>Context, <span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span>[<span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span>RecvCtx&lt;R&gt;], <span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span>[<span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span>SendCtx&lt;W&gt;]),
+            </span>+ <span class="kw">for</span>&lt;<span class="lifetime">&#39;ctx</span>&gt; FnMut(<span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span><span class="kw-2">mut </span>Context, <span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span>[<span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span>RecvCtx&lt;R&gt;], <span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span>[<span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span>SendCtx&lt;W&gt;]),
     {
         <span class="kw">let </span>sg_id = SubgraphId(<span class="self">self</span>.subgraphs.len());
 
@@ -934,21 +910,17 @@
         <span class="kw">let </span>subgraph_succs = send_ports.iter().map(|port| port.handoff_id).collect();
 
         <span class="kw">for </span>recv_port <span class="kw">in </span>recv_ports.iter() {
-            <span class="self">self</span>.context.handoffs[recv_port.handoff_id.<span class="number">0</span>]
-                .succs
-                .push(sg_id);
+            <span class="self">self</span>.handoffs[recv_port.handoff_id.<span class="number">0</span>].succs.push(sg_id);
         }
         <span class="kw">for </span>send_port <span class="kw">in </span>send_ports.iter() {
-            <span class="self">self</span>.context.handoffs[send_port.handoff_id.<span class="number">0</span>]
-                .preds
-                .push(sg_id);
+            <span class="self">self</span>.handoffs[send_port.handoff_id.<span class="number">0</span>].preds.push(sg_id);
         }
 
-        <span class="kw">let </span>subgraph = <span class="kw">move </span>|context: <span class="kw-2">&amp;mut </span>Context| {
+        <span class="kw">let </span>subgraph = <span class="kw">move </span>|context: <span class="kw-2">&amp;mut </span>Context, handoffs: <span class="kw-2">&amp;mut </span>Vec&lt;HandoffData&gt;| {
             <span class="kw">let </span>recvs: Vec&lt;<span class="kw-2">&amp;</span>RecvCtx&lt;R&gt;&gt; = recv_ports
                 .iter()
                 .map(|hid| hid.handoff_id)
-                .map(|hid| context.handoffs.get(hid.<span class="number">0</span>).unwrap())
+                .map(|hid| handoffs.get(hid.<span class="number">0</span>).unwrap())
                 .map(|h_data| {
                     h_data
                         .handoff
@@ -962,7 +934,7 @@
             <span class="kw">let </span>sends: Vec&lt;<span class="kw-2">&amp;</span>SendCtx&lt;W&gt;&gt; = send_ports
                 .iter()
                 .map(|hid| hid.handoff_id)
-                .map(|hid| context.handoffs.get(hid.<span class="number">0</span>).unwrap())
+                .map(|hid| handoffs.get(hid.<span class="number">0</span>).unwrap())
                 .map(|h_data| {
                     h_data
                         .handoff
@@ -1003,13 +975,11 @@
         </span>Name: Into&lt;Cow&lt;<span class="lifetime">&#39;static</span>, str&gt;&gt;,
         H: <span class="lifetime">&#39;static </span>+ Handoff,
     {
-        <span class="kw">let </span>handoff_id = HandoffId(<span class="self">self</span>.context.handoffs.len());
+        <span class="kw">let </span>handoff_id = HandoffId(<span class="self">self</span>.handoffs.len());
 
         <span class="comment">// Create and insert handoff.
         </span><span class="kw">let </span>handoff = H::default();
-        <span class="self">self</span>.context
-            .handoffs
-            .push(HandoffData::new(name.into(), handoff));
+        <span class="self">self</span>.handoffs.push(HandoffData::new(name.into(), handoff));
 
         <span class="comment">// Make ports.
         </span><span class="kw">let </span>input_port = SendPort {

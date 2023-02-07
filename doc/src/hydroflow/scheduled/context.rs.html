@@ -134,6 +134,17 @@
 <a href="#134" id="134">134</a>
 <a href="#135" id="135">135</a>
 <a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::any::Any;
 <span class="kw">use </span>std::marker::PhantomData;
 
@@ -142,7 +153,7 @@
 <span class="kw">use </span>tokio::sync::mpsc::UnboundedSender;
 <span class="kw">use </span>tokio::task::JoinHandle;
 
-<span class="kw">use </span><span class="kw">super</span>::graph::{HandoffData, StateData};
+<span class="kw">use </span><span class="kw">super</span>::graph::StateData;
 <span class="kw">use </span><span class="kw">super</span>::state::StateHandle;
 <span class="kw">use super</span>::{StateId, SubgraphId};
 
@@ -154,7 +165,6 @@
 /// Before the `Context` is provided to a running operator, the `subgraph_id`
 /// field must be updated.
 </span><span class="kw">pub struct </span>Context {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) handoffs: Vec&lt;HandoffData&gt;,
     <span class="kw">pub</span>(<span class="kw">crate</span>) states: Vec&lt;StateData&gt;,
 
     <span class="comment">// TODO(mingwei): as long as this is here, it&#39;s impossible to know when all work is done.
@@ -251,6 +261,18 @@
             state_id,
             _phantom: PhantomData,
         }
+    }
+
+    <span class="doccomment">/// Removes state from the context returns it as an owned heap value.
+    </span><span class="kw">pub fn </span>remove_state&lt;T&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, handle: StateHandle&lt;T&gt;) -&gt; Box&lt;T&gt;
+    <span class="kw">where
+        </span>T: Any,
+    {
+        <span class="self">self</span>.states
+            .remove(handle.state_id.<span class="number">0</span>)
+            .state
+            .downcast()
+            .expect(<span class="string">&quot;StateHandle wrong type T for casting.&quot;</span>)
     }
 
     <span class="kw">pub fn </span>spawn_task&lt;Fut&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, future: Fut) -&gt; <span class="prelude-ty">Result</span>&lt;(), TryCurrentError&gt;

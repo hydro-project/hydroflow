@@ -16,11 +16,13 @@
 <a href="#16" id="16">16</a>
 <a href="#17" id="17">17</a>
 <a href="#18" id="18">18</a>
+<a href="#19" id="19">19</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::marker::PhantomData;
 
 <span class="kw">use </span><span class="kw">super</span>::StateId;
 
 <span class="attr">#[must_use]
+#[derive(Debug)]
 </span><span class="kw">pub struct </span>StateHandle&lt;T&gt; {
     <span class="kw">pub</span>(<span class="kw">crate</span>) state_id: StateId,
     <span class="kw">pub</span>(<span class="kw">crate</span>) _phantom: PhantomData&lt;<span class="kw-2">*mut </span>T&gt;,
