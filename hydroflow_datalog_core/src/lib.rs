@@ -191,8 +191,14 @@ fn generate_rule(
 
     let my_merge_index_lit = syn::LitInt::new(&format!("{}", my_merge_index), Span::call_site());
 
-    let after_join: Pipeline = parse_quote! {
-        map(#after_join_map) -> [#my_merge_index_lit] #target_ident
+    let after_join = match rule.rule_type {
+        RuleType::Sync(_) => {
+            parse_quote!(map(#after_join_map) -> [#my_merge_index_lit] #target_ident)
+        }
+        RuleType::NextTick(_) => {
+            parse_quote!(map(#after_join_map) -> next_tick() -> [#my_merge_index_lit] #target_ident)
+        }
+        RuleType::Async(_) => panic!("Async rules not yet supported"),
     };
 
     let out_name = out_expanded.name;
