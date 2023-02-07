@@ -1,6 +1,6 @@
 use std::thread;
 
-use hydroflow::futures::StreamExt;
+use hydroflow::{futures::StreamExt, util::collect_ready};
 use hydroflow_datalog::datalog;
 
 #[tokio::test]
@@ -20,7 +20,7 @@ pub async fn test_minimal() {
             "#
         );
 
-        flow.run_available();
+        flow.run_tick();
     })
     .join()
     .unwrap();
@@ -48,7 +48,7 @@ pub async fn test_join_with_self() {
             "#
         );
 
-        flow.run_available();
+        flow.run_tick();
     })
     .join()
     .unwrap();
@@ -78,7 +78,7 @@ pub async fn test_multi_use_intermediate() {
             "#
         );
 
-        flow.run_available();
+        flow.run_tick();
     })
     .join()
     .unwrap();
@@ -109,7 +109,7 @@ pub async fn test_join_with_other() {
             "#
         );
 
-        flow.run_available();
+        flow.run_tick();
     })
     .join()
     .unwrap();
@@ -139,7 +139,7 @@ pub async fn test_multiple_contributors() {
             "#
         );
 
-        flow.run_available();
+        flow.run_tick();
     })
     .join()
     .unwrap();
@@ -172,7 +172,7 @@ pub async fn test_transitive_closure() {
             "#
         );
 
-        flow.run_available();
+        flow.run_tick();
     })
     .join()
     .unwrap();
@@ -209,7 +209,7 @@ pub async fn test_triple_relation_join() {
             "#
         );
 
-        flow.run_available();
+        flow.run_tick();
     })
     .join()
     .unwrap();
@@ -237,7 +237,7 @@ pub async fn test_local_constraints() {
             "#
         );
 
-        flow.run_available();
+        flow.run_tick();
     })
     .join()
     .unwrap();
@@ -264,7 +264,7 @@ pub async fn test_boolean_relation_eq() {
             "#
         );
 
-        flow.run_available();
+        flow.run_tick();
     })
     .join()
     .unwrap();
@@ -292,7 +292,7 @@ pub async fn test_boolean_relation_lt() {
             "#
         );
 
-        flow.run_available();
+        flow.run_tick();
     })
     .join()
     .unwrap();
@@ -320,7 +320,7 @@ pub async fn test_boolean_relation_le() {
             "#
         );
 
-        flow.run_available();
+        flow.run_tick();
     })
     .join()
     .unwrap();
@@ -349,7 +349,7 @@ pub async fn test_boolean_relation_gt() {
             "#
         );
 
-        flow.run_available();
+        flow.run_tick();
     })
     .join()
     .unwrap();
@@ -377,7 +377,7 @@ pub async fn test_boolean_relation_ge() {
             "#
         );
 
-        flow.run_available();
+        flow.run_tick();
     })
     .join()
     .unwrap();
@@ -414,7 +414,7 @@ pub async fn test_join_multiple_and_relation() {
             out(a, b, c, d) :- in1(a, b), in2(b, c), in3(c, d), ( d > a ).
             "#
         );
-        flow.run_available();
+        flow.run_tick();
     })
     .join()
     .unwrap();
@@ -454,7 +454,7 @@ pub async fn test_join_multiple_then_relation() {
             out(a, b, c, d) :- int(a, b, c, d), ( d > a ).
             "#
         );
-        flow.run_available();
+        flow.run_tick();
     })
     .join()
     .unwrap();
@@ -462,4 +462,41 @@ pub async fn test_join_multiple_then_relation() {
     assert_eq!(out_recv.next().await.unwrap(), (1, 2, 3, 4));
     assert_eq!(out_recv.next().await.unwrap(), (1, 2, 4, 5));
     assert_eq!(out_recv.next().await, None);
+}
+
+#[test]
+pub fn test_next_tick() {
+    let (ints_1_send, ints_1) = hydroflow::util::unbounded_channel::<(usize,)>();
+    let (ints_2_send, ints_2) = hydroflow::util::unbounded_channel::<(usize,)>();
+    let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(usize,)>();
+
+    ints_1_send.send((1,)).unwrap();
+    ints_1_send.send((2,)).unwrap();
+    ints_2_send.send((3,)).unwrap();
+    ints_2_send.send((4,)).unwrap();
+
+    let mut flow = datalog!(
+        r#"
+        .input ints_1
+        .input ints_2
+        .output result
+
+        result(x) :- ints_1(x).
+        result(x) :+ ints_2(x).
+        "#
+    );
+
+    flow.run_tick();
+
+    assert_eq!(
+        &*collect_ready::<Vec<_>, _>(&mut result_recv),
+        &[(1,), (2,)]
+    );
+
+    flow.run_tick();
+
+    assert_eq!(
+        &*collect_ready::<Vec<_>, _>(&mut result_recv),
+        &[(3,), (4,)]
+    );
 }
