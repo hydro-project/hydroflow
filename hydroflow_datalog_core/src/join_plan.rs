@@ -262,7 +262,8 @@ pub fn expand_join_plan(
                 ),
                 Span::call_site(),
             );
-            flat_graph.add_statement(parse_quote!(#join_node = join() -> map(#flatten_closure)));
+            flat_graph
+                .add_statement(parse_quote!(#join_node = join::<'tick>() -> map(#flatten_closure)));
 
             emit_join_input_pipeline(
                 &identifiers_to_join,
