@@ -18,7 +18,9 @@ pub const REPEAT_ITER: OperatorConstraints = OperatorConstraints {
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: &|_| None,
-    write_fn: &(|&WriteContextArgs { op_span, .. },
+    write_fn: &(|&WriteContextArgs {
+                     context, op_span, ..
+                 },
                  &WriteIteratorArgs {
                      ident, arguments, ..
                  },
@@ -32,8 +34,12 @@ pub const REPEAT_ITER: OperatorConstraints = OperatorConstraints {
                 check_iter(#arguments)
             };
         };
+        let write_iterator_after = quote_spanned! {op_span=>
+            #context.schedule_subgraph(#context.current_subgraph());
+        };
         Ok(OperatorWriteOutput {
             write_iterator,
+            write_iterator_after,
             ..Default::default()
         })
     }),
