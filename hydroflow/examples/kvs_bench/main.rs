@@ -39,8 +39,8 @@ struct Cli {
 enum Commands {
     #[command(arg_required_else_help = true)]
     Client {
-        #[clap(long, value_parser = ipv4_resolve)]
-        addr: SocketAddr,
+        #[clap(long, value_parser = ipv4_resolve, value_delimiter = ',')]
+        targets: Vec<SocketAddr>,
     },
     #[command(arg_required_else_help = true)]
     Server {
@@ -52,19 +52,11 @@ enum Commands {
     },
 }
 
-pub fn ipv4_resolve_multi(addr: &str) -> Result<Vec<SocketAddr>, std::io::Error> {
-    println!("{addr}");
-    let vec = addr.split(',').map(|x| ipv4_resolve(x).unwrap()).collect();
-
-    println!("{vec:?}");
-
-    Ok(vec)
-}
-
 #[tokio::main(flavor = "current_thread")]
+// #[tokio::main]
 async fn main() {
     match Cli::parse().command {
-        Commands::Client { addr } => run_client(addr).await,
+        Commands::Client { targets } => run_client(targets).await,
         Commands::Server { addr, mut peers } => {
             peers.retain(|&x| x != addr); // Don't try to connect to self, makes the bash script easier to write.
             run_server(addr, peers).await

@@ -20,7 +20,6 @@ use crdts::ctx::AddCtx;
 use crdts::CmRDT;
 use crdts::CvRDT;
 use crdts::VClock;
-use tokio::time::Instant;
 
 pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
     println!("tid server: {}", palaver::thread::gettid());
@@ -83,8 +82,10 @@ pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
 
                     async move {
                         while let Some(payload) = inbound.next().await {
-                            let payload: KVSRequest = deserialize_from_bytes(payload.unwrap());
-                            client_to_transducer_tx.send((payload, addr)).unwrap();
+                            if let Ok(payload) = payload {
+                                let payload: KVSRequest = deserialize_from_bytes(payload);
+                                client_to_transducer_tx.send((payload, addr)).unwrap();
+                            }
                         }
                     }
                 });
@@ -102,11 +103,7 @@ pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
             while let Some((req, addr)) = transducer_to_client_rx.next().await {
                 let outbound = clients.borrow().get(&addr).unwrap().clone();
 
-                outbound
-                    .borrow_mut()
-                    .send(serialize_to_bytes(req))
-                    .await
-                    .unwrap();
+                let _ = outbound.borrow_mut().send(serialize_to_bytes(req)).await;
             }
         })
         .await
@@ -219,11 +216,9 @@ pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
                 }
             });
 
-
         // broadcast out locally generated changes to other nodes.
         broadcast_or_store[broadcast]
             // -> next_tick() // hack: buffer operator doesn't seem to compile without this.
-            -> map(|MEMER| MEMER)
             -> buffer(timer)
             -> group_by::<'tick>(MyMVReg::default, |accum: &mut MyMVReg, reg: MyMVReg| {
                 // If multiple writes have hit the same key then they can be merged before sending.
@@ -281,11 +276,11 @@ pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
         transducer_to_client_tx_merge -> dest_sink(transducer_to_client_tx);
     };
 
-    let serde_graph = df
+    let _serde_graph = df
         .serde_graph()
         .expect("No graph found, maybe failed to parse.");
 
-    // println!("{}", serde_graph.to_mermaid());
+    // println!("{}", _serde_graph.to_mermaid());
 
     let f5 = df.run_async();
 

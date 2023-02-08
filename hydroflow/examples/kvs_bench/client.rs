@@ -1,100 +1,103 @@
 use crate::{KVSRequest, KVSResponse};
 use futures::SinkExt;
 use hydroflow::util::{deserialize_from_bytes, serialize_to_bytes, tcp_bytes};
-use rand::{distributions::Uniform, prelude::Distribution, rngs::StdRng, RngCore, SeedableRng};
+use rand::{prelude::Distribution, rngs::StdRng, RngCore, SeedableRng};
 use std::{
-    collections::HashMap,
     net::SocketAddr,
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc,
+    },
     time::{Duration, Instant},
 };
 use tokio::net::TcpStream;
 use tokio_stream::StreamExt;
 
-pub async fn run_client(server_addr: SocketAddr) {
-    println!("tid client: {}", palaver::thread::gettid());
+pub async fn run_client(targets: Vec<SocketAddr>) {
+    println!(
+        "client:{}. {:?}",
+        palaver::thread::gettid(),
+        tokio::runtime::Handle::current()
+    );
 
-    let stream = TcpStream::connect(server_addr).await.unwrap();
-    stream.set_nodelay(true).unwrap();
+    let puts = Arc::new(AtomicUsize::new(0));
 
-    println!("connected");
+    println!("{targets:?}");
+    for target in targets {
+        let puts = puts.clone();
+        std::thread::spawn(move || {
+            let rt = tokio::runtime::Builder::new_multi_thread() // Single threaded seems to hang for whatever reason? This will all get replaced soon anyway.
+                .enable_all()
+                .build()
+                .unwrap();
 
-    let (mut outbound, mut inbound) = tcp_bytes(stream);
+            let _guard = rt.enter();
 
-    let mut rng = StdRng::from_entropy();
+            rt.block_on(async {
+                println!(
+                    "client:{}. {:?}",
+                    palaver::thread::gettid(),
+                    tokio::runtime::Handle::current()
+                );
 
-    let mut keys = Vec::new();
-    let mut map = HashMap::new();
+                println!("tid client: {}", palaver::thread::gettid());
 
-    for _ in 0..1 {
-        let random_key = 7; //rng.next_u64();
-        let random_val = rng.next_u64();
+                let stream = TcpStream::connect(target).await.unwrap();
+                stream.set_nodelay(true).unwrap();
 
-        keys.push(random_key);
-        map.insert(random_key, random_val);
+                println!("connected");
 
-        outbound
-            .send(serialize_to_bytes(KVSRequest::Put {
-                key: random_key,
-                value: random_val,
-            }))
-            .await
-            .unwrap();
+                let (mut outbound, mut inbound) = tcp_bytes(stream);
+
+                let mut rng = StdRng::from_entropy();
+
+                let dist = rand_distr::Zipf::new(8000, 8.0).unwrap();
+
+                let mut outstanding = 0;
+
+                loop {
+                    // println!("client:{}. iter", palaver::thread::gettid());
+                    while outstanding < 1 {
+                        let key = dist.sample(&mut rng) as u64;
+                        let value = rng.next_u64();
+
+                        outbound
+                            .feed(serialize_to_bytes(KVSRequest::Put { key, value }))
+                            .await
+                            .unwrap();
+
+                        outstanding += 1;
+                    }
+
+                    outbound.flush().await.unwrap();
+
+                    // println!("client:{}. wait", palaver::thread::gettid());
+
+                    if let Some(Ok(_response)) = inbound.next().await {
+                        let response: KVSResponse = deserialize_from_bytes(_response);
+                        match response {
+                            KVSResponse::GetResponse { key, reg } => println!("{reg:?}"),
+                            KVSResponse::PutResponse { key } => (),
+                        }
+                        outstanding -= 1;
+                        puts.fetch_add(1, Ordering::SeqCst);
+                    }
+
+                    tokio::time::sleep(Duration::from_millis(1)).await;
+                }
+            })
+        });
     }
 
-    println!("sent puts");
-    // return;
-
-    // tokio::time::sleep(Duration::from_millis(100)).await;
-
-    let mut outstanding = 0;
-
     let mut time_since_last_report = std::time::Instant::now();
-    let mut gets = 0;
-
     loop {
-        while outstanding < 1 {
-            let dist = Uniform::new(0, keys.len());
-            let key = keys[dist.sample(&mut rng)];
-            let random_val = rng.next_u64();
-
-            outbound
-                .send(serialize_to_bytes(KVSRequest::Get { key }))
-                .await
-                .unwrap();
-
-            tokio::time::sleep(Duration::from_millis(700)).await;
-
-            outbound
-                .send(serialize_to_bytes(KVSRequest::Put {
-                    key,
-                    value: random_val,
-                }))
-                .await
-                .unwrap();
-
-            outstanding += 2;
-        }
-
-        outbound.flush().await.unwrap();
-
-        // println!("waiting");
-        if let Some(Ok(response)) = inbound.next().await {
-            let response: KVSResponse = deserialize_from_bytes(response);
-            match response {
-                KVSResponse::GetResponse { key, reg } => println!("{reg:?}"),
-                KVSResponse::PutResponse { key } => (),
-            }
-            outstanding -= 1;
-            gets += 1;
-        }
-
         if time_since_last_report.elapsed() >= Duration::from_secs(1) {
             time_since_last_report = Instant::now();
-            println!("puts/s: {gets}");
-            gets = 0;
+            println!("puts/s: {}", puts.load(Ordering::SeqCst));
+            puts.store(0, Ordering::SeqCst);
         }
 
-        tokio::time::sleep(Duration::from_millis(500)).await;
+        tokio::time::sleep(Duration::from_millis(32)).await;
     }
 }
 
