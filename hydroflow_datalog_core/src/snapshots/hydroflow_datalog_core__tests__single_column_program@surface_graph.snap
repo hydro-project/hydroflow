@@ -11,7 +11,7 @@ expression: graph.surface_syntax_string()
 7v1 = source_stream (in1);
 8v1 = source_stream (in2);
 9v1 = for_each (| v | out . send (v) . unwrap ());
-10v1 = join ();
+10v1 = join :: < 'tick > ();
 11v1 = map (| kv : ((_ ,) , ((_ ,) , (_ ,))) | (kv . 1 . 0 . 0 ,));
 12v1 = map (| v : (_ ,) | ((v . 0 ,) , v));
 13v1 = map (| v : (_ ,) | ((v . 0 ,) , v));

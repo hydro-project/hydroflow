@@ -308,6 +308,20 @@ mod tests {
     }
 
     #[test]
+    fn transitive_closure() {
+        test_snapshots!(
+            r#"
+            .input edges
+            .input seed_reachable
+            .output reachable
+
+            reachable(x) :- seed_reachable(x).
+            reachable(y) :- reachable(x), edges(x, y).
+            "#
+        );
+    }
+
+    #[test]
     fn single_column_program() {
         test_snapshots!(
             r#"
