@@ -30,6 +30,8 @@ pub struct Hydroflow {
     /// Index is stratum, value is FIFO queue for that stratum.
     stratum_queues: Vec<VecDeque<SubgraphId>>,
     event_queue_recv: UnboundedReceiver<SubgraphId>,
+    /// If the events have been received for this tick.
+    events_received_tick: bool,
 
     serde_graph: Option<SerdeGraph>,
 }
@@ -56,8 +58,8 @@ impl Default for Hydroflow {
             handoffs,
 
             stratum_queues,
-
             event_queue_recv,
+            events_received_tick: false,
 
             serde_graph: None,
         }
@@ -103,30 +105,39 @@ impl Hydroflow {
     }
 
     /// Runs the dataflow until the next tick begins.
-    pub fn run_tick(&mut self) {
+    /// Returns true if any work was done.
+    pub fn run_tick(&mut self) -> bool {
+        let mut work_done = false;
         // While work is immediately available *on the current tick*.
         while self.next_stratum(true) {
-            // Do any work (this also receives events).
+            work_done = true;
+            // Do any work.
             self.run_stratum();
         }
+        work_done
     }
 
     /// Runs the dataflow until no more work is immediately available.
     /// If the dataflow contains loops this method may run forever.
-    pub fn run_available(&mut self) {
+    /// Returns true if any work was done.
+    pub fn run_available(&mut self) -> bool {
+        let mut work_done = false;
         // While work is immediately available.
         while self.next_stratum(false) {
-            // Do any work (this also receives events).
+            work_done = true;
+            // Do any work.
             self.run_stratum();
         }
+        work_done
     }
 
-    /// Runs the current stratum of the dataflow until no more work is immediately available.
-    pub fn run_stratum(&mut self) {
-        // Add any external jobs to ready queue.
-        self.try_recv_events();
+    /// Runs the current stratum of the dataflow until no more local work is available (does not receive events).
+    /// Returns true if any work was done.
+    pub fn run_stratum(&mut self) -> bool {
+        let mut work_done = false;
 
         while let Some(sg_id) = self.stratum_queues[self.context.current_stratum].pop_front() {
+            work_done = true;
             {
                 let sg_data = &mut self.subgraphs[sg_id.0];
                 // This must be true for the subgraph to be enqueued.
@@ -150,39 +161,59 @@ impl Hydroflow {
                     }
                 }
             }
-
-            self.try_recv_events();
         }
+        work_done
     }
 
     /// Go to the next stratum which has work available, possibly the current stratum.
     /// Return true if more work is available, otherwise false if no work is immediately
     /// available on any strata.
     ///
+    /// This will receive external events when at the start of a tick.
+    ///
     /// If `current_tick_only` is set to `true`, will only return `true` if work is immediately
     /// available on the *current tick*.
+    ///
+    /// If this returns false then the graph will be at the start of a tick (at stratum 0, can
+    /// receive more external events).
     pub fn next_stratum(&mut self, current_tick_only: bool) -> bool {
-        self.try_recv_events();
+        if 0 == self.context.current_stratum && !self.events_received_tick {
+            // Add any external jobs to ready queue.
+            self.try_recv_events();
+        }
 
-        let old_stratum = self.context.current_stratum;
+        // The stratum we will stop searching at, i.e. made a full loop around.
+        let mut end_stratum = self.context.current_stratum;
+
         loop {
             // If current stratum has work, return true.
             if !self.stratum_queues[self.context.current_stratum].is_empty() {
                 return true;
             }
+
             // Increment stratum counter.
             self.context.current_stratum += 1;
             if self.context.current_stratum >= self.stratum_queues.len() {
                 self.context.current_stratum = 0;
                 self.context.current_tick += 1;
                 if current_tick_only {
+                    self.events_received_tick = false;
                     return false;
+                } else if 0 < self.try_recv_events() {
+                    // Do a full loop more to find where events have been added.
+                    end_stratum = 0;
+                    continue;
                 }
             }
+
             // After incrementing, exit if we made a full loop around the strata.
-            if old_stratum == self.context.current_stratum {
+            if end_stratum == self.context.current_stratum {
                 // Note: if current stratum had work, the very first loop iteration would've
                 // returned true. Therefore we can return false without checking.
+                // Also means nothing was done so we can reset the stratum to zero and wait for
+                // events.
+                self.events_received_tick = false;
+                self.context.current_stratum = 0;
                 return false;
             }
         }
@@ -215,6 +246,8 @@ impl Hydroflow {
     ///
     /// Returns the number of subgraphs enqueued.
     pub fn try_recv_events(&mut self) -> usize {
+        self.events_received_tick = true;
+
         let mut enqueued_count = 0;
         while let Ok(sg_id) = self.event_queue_recv.try_recv() {
             let sg_data = &self.subgraphs[sg_id.0];
@@ -229,6 +262,8 @@ impl Hydroflow {
     /// Enqueues subgraphs triggered by external events, blocking until at
     /// least one subgraph is scheduled.
     pub fn recv_events(&mut self) -> Option<NonZeroUsize> {
+        self.events_received_tick = true;
+
         loop {
             let sg_id = self.event_queue_recv.blocking_recv()?;
             let sg_data = &self.subgraphs[sg_id.0];
@@ -244,6 +279,8 @@ impl Hydroflow {
     /// Enqueues subgraphs triggered by external events asynchronously, waiting
     /// until at least one subgraph is scheduled.
     pub async fn recv_events_async(&mut self) -> Option<NonZeroUsize> {
+        self.events_received_tick = true;
+
         loop {
             let sg_id = self.event_queue_recv.recv().await?;
             let sg_data = &self.subgraphs[sg_id.0];

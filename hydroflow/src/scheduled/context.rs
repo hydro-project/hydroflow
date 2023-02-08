@@ -45,6 +45,11 @@ impl Context {
         self.current_stratum
     }
 
+    /// Gets the ID of the current subgraph.
+    pub fn current_subgraph(&self) -> SubgraphId {
+        self.subgraph_id
+    }
+
     /// Schedules a subgraph.
     pub fn schedule_subgraph(&self, sg_id: SubgraphId) {
         self.event_queue_send.send(sg_id).unwrap()
