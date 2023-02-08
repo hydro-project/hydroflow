@@ -69,14 +69,16 @@ pub const FOLD: OperatorConstraints = OperatorConstraints {
         let func = &arguments[1];
         let folddata_ident = wc.make_ident("folddata");
 
-        let (write_prologue, write_iterator) = match persistence {
+        let (write_prologue, write_iterator, write_iterator_after) = match persistence {
             // TODO(mingwei): Issues if initial value is not copy.
             // TODO(mingwei): Might introduce the initial value multiple times on scheduling.
             Persistence::Tick => (
                 Default::default(),
                 quote_spanned! {op_span=>
+                    #[allow(clippy::unnecessary_fold)]
                     let #ident = ::std::iter::once(#input.fold(#init, #func));
                 },
+                Default::default(),
             ),
             Persistence::Static => (
                 quote_spanned! {op_span=>
@@ -87,6 +89,7 @@ pub const FOLD: OperatorConstraints = OperatorConstraints {
                 quote_spanned! {op_span=>
                     let #ident = {
                         let accum = #context.state_ref(#folddata_ident).take().expect("FOLD DATA MISSING");
+                        #[allow(clippy::unnecessary_fold)]
                         let accum = #input.fold(accum, #func);
                         #context.state_ref(#folddata_ident).set(
                             ::std::option::Option::Some(::std::clone::Clone::clone(&accum))
@@ -94,13 +97,16 @@ pub const FOLD: OperatorConstraints = OperatorConstraints {
                         ::std::iter::once(accum)
                     };
                 },
+                quote_spanned! {op_span=>
+                    #context.schedule_subgraph(#context.current_subgraph());
+                },
             ),
         };
 
         Ok(OperatorWriteOutput {
             write_prologue,
             write_iterator,
-            ..Default::default()
+            write_iterator_after,
         })
     }),
 };

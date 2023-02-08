@@ -18,3 +18,39 @@ pub fn test_repeat_iter() {
 
     assert_eq!(&[1, 1, 1], &*collect_ready::<Vec<_>, _>(&mut out_recv));
 }
+
+#[test]
+pub fn test_fold_tick() {
+    let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
+
+    let mut df = hydroflow_syntax! {
+        source_iter([1]) -> fold::<'tick>(0, |accum, elem| accum + elem) -> for_each(|v| out_send.send(v).unwrap());
+    };
+    assert_eq!((0, 0), (df.current_tick(), df.current_stratum()));
+    df.run_tick();
+    assert_eq!((1, 0), (df.current_tick(), df.current_stratum()));
+    df.run_tick();
+    assert_eq!((2, 0), (df.current_tick(), df.current_stratum()));
+    df.run_tick();
+    assert_eq!((3, 0), (df.current_tick(), df.current_stratum()));
+
+    assert_eq!(&[1], &*collect_ready::<Vec<_>, _>(&mut out_recv));
+}
+
+#[test]
+pub fn test_fold_static() {
+    let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
+
+    let mut df = hydroflow_syntax! {
+        source_iter([1]) -> fold::<'static>(0, |accum, elem| accum + elem) -> for_each(|v| out_send.send(v).unwrap());
+    };
+    assert_eq!((0, 0), (df.current_tick(), df.current_stratum()));
+    df.run_tick();
+    assert_eq!((1, 0), (df.current_tick(), df.current_stratum()));
+    df.run_tick();
+    assert_eq!((2, 0), (df.current_tick(), df.current_stratum()));
+    df.run_tick();
+    assert_eq!((3, 0), (df.current_tick(), df.current_stratum()));
+
+    assert_eq!(&[1, 1, 1], &*collect_ready::<Vec<_>, _>(&mut out_recv));
+}
