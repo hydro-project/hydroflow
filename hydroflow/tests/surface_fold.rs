@@ -21,10 +21,13 @@ pub fn test_fold_tick() {
             .to_mermaid()
     );
 
+    assert_eq!((0, 0), (df.current_tick(), df.current_stratum()));
+
     items_send.send(vec![1, 2]).unwrap();
     items_send.send(vec![3, 4]).unwrap();
-    df.run_available();
+    df.run_tick();
 
+    assert_eq!((1, 0), (df.current_tick(), df.current_stratum()));
     assert_eq!(
         &[vec![1, 2, 3, 4]],
         &*hydroflow::util::collect_ready::<Vec<_>, _>(&mut result_recv)
@@ -32,8 +35,9 @@ pub fn test_fold_tick() {
 
     items_send.send(vec![5, 6]).unwrap();
     items_send.send(vec![7, 8]).unwrap();
-    df.run_available();
+    df.run_tick();
 
+    assert_eq!((2, 0), (df.current_tick(), df.current_stratum()));
     assert_eq!(
         &[vec![5, 6, 7, 8]],
         &*hydroflow::util::collect_ready::<Vec<_>, _>(&mut result_recv)
@@ -58,10 +62,13 @@ pub fn test_fold_static() {
             .to_mermaid()
     );
 
+    assert_eq!((0, 0), (df.current_tick(), df.current_stratum()));
+
     items_send.send(vec![1, 2]).unwrap();
     items_send.send(vec![3, 4]).unwrap();
-    df.run_available();
+    df.run_tick();
 
+    assert_eq!((1, 0), (df.current_tick(), df.current_stratum()));
     assert_eq!(
         &[vec![1, 2, 3, 4]],
         &*hydroflow::util::collect_ready::<Vec<_>, _>(&mut result_recv)
@@ -69,8 +76,9 @@ pub fn test_fold_static() {
 
     items_send.send(vec![5, 6]).unwrap();
     items_send.send(vec![7, 8]).unwrap();
-    df.run_available();
+    df.run_tick();
 
+    assert_eq!((2, 0), (df.current_tick(), df.current_stratum()));
     assert_eq!(
         &[vec![1, 2, 3, 4, 5, 6, 7, 8]],
         &*hydroflow::util::collect_ready::<Vec<_>, _>(&mut result_recv)
@@ -90,7 +98,9 @@ pub fn test_fold_flatten() {
             -> flatten()
             -> for_each(|(k,v)| out_send.send((k,v)).unwrap());
     };
-    df_pull.run_available();
+    assert_eq!((0, 0), (df_pull.current_tick(), df_pull.current_stratum()));
+    df_pull.run_tick();
+    assert_eq!((1, 0), (df_pull.current_tick(), df_pull.current_stratum()));
 
     let out: HashSet<_> = collect_ready(&mut out_recv);
     for pair in [(1, 3), (2, 7)] {
@@ -109,8 +119,9 @@ pub fn test_fold_flatten() {
             -> for_each(|(k,v)| out_send.send((k,v)).unwrap());
         datagen[1] -> null();
     };
-
-    df_push.run_available();
+    assert_eq!((0, 0), (df_push.current_tick(), df_push.current_stratum()));
+    df_push.run_tick();
+    assert_eq!((1, 0), (df_push.current_tick(), df_push.current_stratum()));
 
     let out: HashSet<_> = collect_ready(&mut out_recv);
     for pair in [(1, 4), (2, 8)] {
@@ -138,14 +149,17 @@ pub fn test_fold_sort() {
             .expect("No graph found, maybe failed to parse.")
             .to_mermaid()
     );
-    df.run_available();
+    assert_eq!((0, 0), (df.current_tick(), df.current_stratum()));
+    df.run_tick();
+    assert_eq!((1, 0), (df.current_tick(), df.current_stratum()));
 
     print!("\nA: ");
 
     items_send.send(9).unwrap();
     items_send.send(2).unwrap();
     items_send.send(5).unwrap();
-    df.run_available();
+    df.run_tick();
+    assert_eq!((2, 0), (df.current_tick(), df.current_stratum()));
 
     print!("\nB: ");
 
@@ -154,7 +168,8 @@ pub fn test_fold_sort() {
     items_send.send(2).unwrap();
     items_send.send(0).unwrap();
     items_send.send(3).unwrap();
-    df.run_available();
+    df.run_tick();
+    assert_eq!((3, 0), (df.current_tick(), df.current_stratum()));
 
     println!();
 }
