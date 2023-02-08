@@ -62,12 +62,13 @@ pub const REDUCE: OperatorConstraints = OperatorConstraints {
         let func = &arguments[0];
         let reducedata_ident = wc.make_ident("reducedata_ident");
 
-        let (write_prologue, write_iterator) = match persistence {
+        let (write_prologue, write_iterator, write_iterator_after) = match persistence {
             Persistence::Tick => (
                 Default::default(),
                 quote_spanned! {op_span=>
                     let #ident = #input.reduce(#func).into_iter();
                 },
+                Default::default(),
             ),
             Persistence::Static => (
                 quote_spanned! {op_span=>
@@ -86,13 +87,16 @@ pub const REDUCE: OperatorConstraints = OperatorConstraints {
                         opt.into_iter()
                     };
                 },
+                quote_spanned! {op_span=>
+                    #context.schedule_subgraph(#context.current_subgraph());
+                },
             ),
         };
 
         Ok(OperatorWriteOutput {
             write_prologue,
             write_iterator,
-            ..Default::default()
+            write_iterator_after,
         })
     }),
 };
