@@ -43,7 +43,7 @@ where
         if self
             .key
             .as_ref()
-            .map(|old_key| old_key <= &key)
+            .map(|old_key| old_key < &key)
             .unwrap_or(true)
         {
             self.key = Some(key);
