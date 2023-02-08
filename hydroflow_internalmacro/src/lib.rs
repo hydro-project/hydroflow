@@ -119,4 +119,9 @@ const DOCTEST_HYDROFLOW_PREFIX: &str = "\
 # let mut __hf = hydroflow::hydroflow_syntax! {";
 const DOCTEST_HYDROFLOW_SUFFIX: &str = "\
 # };
-# __hf.run_available();";
+# for _ in 0..100 {
+#     if !__hf.run_tick() {
+#         // No work done.
+#         break;
+#     }
+# }";
