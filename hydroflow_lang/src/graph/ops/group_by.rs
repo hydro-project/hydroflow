@@ -106,7 +106,7 @@ pub const GROUP_BY: OperatorConstraints = OperatorConstraints {
         let aggfn = &arguments[1];
         let groupbydata_ident = wc.make_ident("groupbydata");
 
-        let (write_prologue, write_iterator) = match persistence {
+        let (write_prologue, write_iterator, write_iterator_after) = match persistence {
             Persistence::Tick => (
                 Default::default(),
                 quote_spanned! {op_span=>
@@ -120,6 +120,7 @@ pub const GROUP_BY: OperatorConstraints = OperatorConstraints {
                         }).into_iter()
                     };
                 },
+                Default::default(),
             ),
             Persistence::Static => (
                 quote_spanned! {op_span=>
@@ -131,24 +132,20 @@ pub const GROUP_BY: OperatorConstraints = OperatorConstraints {
                         #[inline(always)]
                         fn check_input<Iter: ::std::iter::Iterator<Item = (A, B)>, A: ::std::clone::Clone, B: ::std::clone::Clone>(iter: Iter)
                             -> impl ::std::iter::Iterator<Item = (A, B)> { iter }
-                        let mut any = false;
                         for kv in check_input(#input) {
-                            any = true;
                             let entry = ht.entry(kv.0).or_insert_with(#initfn);
                             #[allow(clippy::redundant_closure_call)] (#aggfn)(entry, kv.1);
                         }
                         ::std::iter::IntoIterator::into_iter(
-                            if any {
-                                // TODO(mingwei): extra collect here, could be avoided by keeping the `BorrowMut` alive (risky?).
-                                ht.iter()
-                                    .map(#[allow(clippy::clone_on_copy, clippy::clone_double_ref)] |(k, v)| (k.clone(), v.clone()))
-                                    .collect::<::std::vec::Vec::<_>>()
-                            }
-                            else {
-                                ::std::vec::Vec::new()
-                            }
+                            // TODO(mingwei): extra collect here, could be avoided by keeping the `BorrowMut` alive (risky?).
+                            ht.iter()
+                                .map(#[allow(clippy::clone_on_copy, clippy::clone_double_ref)] |(k, v)| (k.clone(), v.clone()))
+                                .collect::<::std::vec::Vec::<_>>()
                         )
                     };
+                },
+                quote_spanned! {op_span=>
+                    #context.schedule_subgraph(#context.current_subgraph());
                 },
             ),
         };
@@ -156,7 +153,7 @@ pub const GROUP_BY: OperatorConstraints = OperatorConstraints {
         Ok(OperatorWriteOutput {
             write_prologue,
             write_iterator,
-            ..Default::default()
+            write_iterator_after,
         })
     }),
 };
