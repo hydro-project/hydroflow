@@ -21,10 +21,7 @@ pub fn test_minimal() {
 
     flow.run_tick();
 
-    assert_eq!(
-        &*collect_ready::<Vec<_>, _>(&mut out_recv),
-        &[(2,1)]
-    );
+    assert_eq!(&*collect_ready::<Vec<_>, _>(&mut out_recv), &[(2, 1)]);
 }
 
 #[test]
@@ -49,7 +46,7 @@ pub fn test_join_with_self() {
 
     assert_eq!(
         &*collect_ready::<Vec<_>, _>(&mut out_recv),
-        &[(2,1), (1,2)]
+        &[(2, 1), (1, 2)]
     );
 }
 
@@ -76,7 +73,7 @@ pub fn test_multi_use_intermediate() {
 
     assert_eq!(
         &*collect_ready::<Vec<_>, _>(&mut out_recv),
-        &[(2,1), (1,2)]
+        &[(2, 1), (1, 2)]
     );
 }
 
@@ -103,10 +100,7 @@ pub fn test_join_with_other() {
 
     flow.run_tick();
 
-    assert_eq!(
-        &*collect_ready::<Vec<_>, _>(&mut out_recv),
-        &[(1,2)]
-    );
+    assert_eq!(&*collect_ready::<Vec<_>, _>(&mut out_recv), &[(1, 2)]);
 
     in1_send.send((1, 3)).unwrap();
     in1_send.send((1, 4)).unwrap();
@@ -114,10 +108,7 @@ pub fn test_join_with_other() {
 
     flow.run_tick();
 
-    assert_eq!(
-        &*collect_ready::<Vec<_>, _>(&mut out_recv),
-        &[(1,3)]
-    );
+    assert_eq!(&*collect_ready::<Vec<_>, _>(&mut out_recv), &[(1, 3)]);
 }
 
 #[test]
@@ -144,7 +135,7 @@ pub fn test_multiple_contributors() {
 
     assert_eq!(
         &*collect_ready::<Vec<_>, _>(&mut out_recv),
-        &[(1,2), (1,3)]
+        &[(1, 2), (1, 3)]
     );
 }
 
@@ -207,7 +198,7 @@ pub fn test_triple_relation_join() {
 
     assert_eq!(
         &*collect_ready::<Vec<_>, _>(&mut out_recv),
-        &[(3,1,2,1), (4,1,2,1)]
+        &[(3, 1, 2, 1), (4, 1, 2, 1)]
     );
 }
 
@@ -230,10 +221,7 @@ pub fn test_local_constraints() {
 
     flow.run_tick();
 
-    assert_eq!(
-        &*collect_ready::<Vec<_>, _>(&mut out_recv),
-        &[(1,1)]
-    );
+    assert_eq!(&*collect_ready::<Vec<_>, _>(&mut out_recv), &[(1, 1)]);
 }
 
 #[test]
@@ -260,10 +248,7 @@ pub fn test_boolean_relation_eq() {
     .join()
     .unwrap();
 
-    assert_eq!(
-        &*collect_ready::<Vec<_>, _>(&mut out_recv),
-        &[(1,1)]
-    );
+    assert_eq!(&*collect_ready::<Vec<_>, _>(&mut out_recv), &[(1, 1)]);
 }
 
 #[test]
@@ -286,10 +271,7 @@ pub fn test_boolean_relation_lt() {
 
     flow.run_tick();
 
-    assert_eq!(
-        &*collect_ready::<Vec<_>, _>(&mut out_recv),
-        &[(1,2)]
-    );
+    assert_eq!(&*collect_ready::<Vec<_>, _>(&mut out_recv), &[(1, 2)]);
 }
 
 #[test]
@@ -314,7 +296,7 @@ pub fn test_boolean_relation_le() {
 
     assert_eq!(
         &*collect_ready::<Vec<_>, _>(&mut out_recv),
-        &[(1,1), (1,2)]
+        &[(1, 1), (1, 2)]
     );
 }
 
@@ -338,10 +320,7 @@ pub fn test_boolean_relation_gt() {
 
     flow.run_tick();
 
-    assert_eq!(
-        &*collect_ready::<Vec<_>, _>(&mut out_recv),
-        &[(2,1)]
-    );
+    assert_eq!(&*collect_ready::<Vec<_>, _>(&mut out_recv), &[(2, 1)]);
 }
 
 #[test]
@@ -366,7 +345,7 @@ pub fn test_boolean_relation_ge() {
 
     assert_eq!(
         &*collect_ready::<Vec<_>, _>(&mut out_recv),
-        &[(1,1), (2,1)]
+        &[(1, 1), (2, 1)]
     );
 }
 
@@ -400,7 +379,7 @@ pub fn test_join_multiple_and_relation() {
 
     assert_eq!(
         &*collect_ready::<Vec<_>, _>(&mut out_recv),
-        &[(1,2,3,4), (1,2,4,5)]
+        &[(1, 2, 3, 4), (1, 2, 4, 5)]
     );
 }
 
@@ -437,7 +416,7 @@ pub fn test_join_multiple_then_relation() {
 
     assert_eq!(
         &*collect_ready::<Vec<_>, _>(&mut out_recv),
-        &[(1,2,3,4), (1,2,4,5)]
+        &[(1, 2, 3, 4), (1, 2, 4, 5)]
     );
 }
 
