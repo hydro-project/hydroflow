@@ -19,7 +19,9 @@ pub fn test_group_by_infer_basic() {
             -> group_by::<'static>(|| 0, |old: &mut u32, val: u32| *old += val)
             -> for_each(|(k, v)| println!("{}: {}", k, v));
     };
-    df.run_available();
+    assert_eq!((0, 0), (df.current_tick(), df.current_stratum()));
+    df.run_tick();
+    assert_eq!((1, 0), (df.current_tick(), df.current_stratum()));
 }
 
 #[test]
@@ -39,14 +41,17 @@ pub fn test_group_by_tick() {
             .expect("No graph found, maybe failed to parse.")
             .to_mermaid()
     );
-    df.run_available();
+    assert_eq!((0, 0), (df.current_tick(), df.current_stratum()));
+    df.run_tick();
+    assert_eq!((1, 0), (df.current_tick(), df.current_stratum()));
 
     items_send.send((0, vec![1, 2])).unwrap();
     items_send.send((0, vec![3, 4])).unwrap();
     items_send.send((1, vec![1])).unwrap();
     items_send.send((1, vec![1, 2])).unwrap();
-    df.run_available();
+    df.run_tick();
 
+    assert_eq!((2, 0), (df.current_tick(), df.current_stratum()));
     assert_eq!(
         [(0, vec![1, 2, 3, 4]), (1, vec![1, 1, 2])]
             .into_iter()
@@ -58,8 +63,9 @@ pub fn test_group_by_tick() {
     items_send.send((0, vec![7, 8])).unwrap();
     items_send.send((1, vec![10])).unwrap();
     items_send.send((1, vec![11, 12])).unwrap();
-    df.run_available();
+    df.run_tick();
 
+    assert_eq!((3, 0), (df.current_tick(), df.current_stratum()));
     assert_eq!(
         [(0, vec![5, 6, 7, 8]), (1, vec![10, 11, 12])]
             .into_iter()
@@ -85,14 +91,17 @@ pub fn test_group_by_static() {
             .expect("No graph found, maybe failed to parse.")
             .to_mermaid()
     );
-    df.run_available();
+    assert_eq!((0, 0), (df.current_tick(), df.current_stratum()));
+    df.run_tick();
+    assert_eq!((1, 0), (df.current_tick(), df.current_stratum()));
 
     items_send.send((0, vec![1, 2])).unwrap();
     items_send.send((0, vec![3, 4])).unwrap();
     items_send.send((1, vec![1])).unwrap();
     items_send.send((1, vec![1, 2])).unwrap();
-    df.run_available();
+    df.run_tick();
 
+    assert_eq!((2, 0), (df.current_tick(), df.current_stratum()));
     assert_eq!(
         [(0, vec![1, 2, 3, 4]), (1, vec![1, 1, 2])]
             .into_iter()
@@ -104,8 +113,9 @@ pub fn test_group_by_static() {
     items_send.send((0, vec![7, 8])).unwrap();
     items_send.send((1, vec![10])).unwrap();
     items_send.send((1, vec![11, 12])).unwrap();
-    df.run_available();
+    df.run_tick();
 
+    assert_eq!((3, 0), (df.current_tick(), df.current_stratum()));
     assert_eq!(
         [
             (0, vec![1, 2, 3, 4, 5, 6, 7, 8]),

@@ -90,3 +90,42 @@ pub fn test_reduce_static() {
 
     assert_eq!(&[1, 1, 1], &*collect_ready::<Vec<_>, _>(&mut out_recv));
 }
+
+#[test]
+pub fn test_group_by_tick() {
+    let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<(char, usize)>();
+
+    let mut df = hydroflow_syntax! {
+        source_iter([('a', 1), ('a', 2)]) -> group_by::<'tick>(|| 0, |acc: &mut usize, item| { *acc += item; }) -> for_each(|v| out_send.send(v).unwrap());
+    };
+    assert_eq!((0, 0), (df.current_tick(), df.current_stratum()));
+    df.run_tick();
+    assert_eq!((1, 0), (df.current_tick(), df.current_stratum()));
+    df.run_tick();
+    assert_eq!((2, 0), (df.current_tick(), df.current_stratum()));
+    df.run_tick();
+    assert_eq!((3, 0), (df.current_tick(), df.current_stratum()));
+
+    assert_eq!(&[('a', 3)], &*collect_ready::<Vec<_>, _>(&mut out_recv));
+}
+
+#[test]
+pub fn test_group_by_static() {
+    let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<(char, usize)>();
+
+    let mut df = hydroflow_syntax! {
+        source_iter([('a', 1), ('a', 2)]) -> group_by::<'static>(|| 0, |acc: &mut usize, item| { *acc += item; }) -> for_each(|v| out_send.send(v).unwrap());
+    };
+    assert_eq!((0, 0), (df.current_tick(), df.current_stratum()));
+    df.run_tick();
+    assert_eq!((1, 0), (df.current_tick(), df.current_stratum()));
+    df.run_tick();
+    assert_eq!((2, 0), (df.current_tick(), df.current_stratum()));
+    df.run_tick();
+    assert_eq!((3, 0), (df.current_tick(), df.current_stratum()));
+
+    assert_eq!(
+        &[('a', 3), ('a', 3), ('a', 3)],
+        &*collect_ready::<Vec<_>, _>(&mut out_recv)
+    );
+}
