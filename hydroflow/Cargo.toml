@@ -60,6 +60,10 @@ tokio-util = { version = "0.7.4", features = [ "net", "codec" ] }
 variadics = { path = "../variadics" }
 rustc-hash = "1.1.0"
 
+# Diagnostics feature does not work on wasm32.
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+hydroflow_macro = { optional = true, path = "../hydroflow_macro", features = ["diagnostics"] }
+
 [dev-dependencies]
 chrono = { version = "0.4.20", features = [ "serde" ], default-features = false }
 clap = { version = "4.0.29", features = [ "derive" ] }

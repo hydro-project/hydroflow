@@ -13,3 +13,7 @@ syn = { version = "1.0.0", features = [ "parsing", "extra-traits" ] }
 proc-macro2 = "1.0.27"
 proc-macro-crate = "1.1.0"
 hydroflow_datalog_core = { path = "../hydroflow_datalog_core" }
+
+# Diagnostics feature does not work on wasm32.
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+hydroflow_datalog_core = { path = "../hydroflow_datalog_core", features = ["diagnostics" ] }

@@ -3,6 +3,10 @@ name = "hydroflow_macro"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+default = []
+diagnostics = [ "hydroflow_lang/diagnostics" ]
+
 [lib]
 proc-macro = true
 
