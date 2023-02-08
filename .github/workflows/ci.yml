@@ -27,6 +27,7 @@ jobs:
 
   check:
     name: Check
+    timeout-minutes: 10
     needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
@@ -59,6 +60,7 @@ jobs:
 
   check-wasm:
     name: Check WebAssembly
+    timeout-minutes: 10
     needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
@@ -92,6 +94,7 @@ jobs:
 
   test:
     name: Test Suite
+    timeout-minutes: 15
     needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
@@ -125,6 +128,7 @@ jobs:
 
   lints:
     name: Lints
+    timeout-minutes: 10
     needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
@@ -164,6 +168,7 @@ jobs:
 
   docs:
     name: Docs
+    timeout-minutes: 10
     needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
@@ -230,6 +235,7 @@ jobs:
 
   benches:
     name: Benchmarks
+    timeout-minutes: 30
     needs: pre_job
     if: |
       needs.pre_job.outputs.should_skip != 'true' &&
