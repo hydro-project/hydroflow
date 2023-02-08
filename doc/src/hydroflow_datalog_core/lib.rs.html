@@ -361,6 +361,12 @@
 <a href="#361" id="361">361</a>
 <a href="#362" id="362">362</a>
 <a href="#363" id="363">363</a>
+<a href="#364" id="364">364</a>
+<a href="#365" id="365">365</a>
+<a href="#366" id="366">366</a>
+<a href="#367" id="367">367</a>
+<a href="#368" id="368">368</a>
+<a href="#369" id="369">369</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::collections::{HashMap, HashSet};
 
 <span class="kw">use </span>hydroflow_lang::{
@@ -554,8 +560,14 @@
 
     <span class="kw">let </span>my_merge_index_lit = syn::LitInt::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, my_merge_index), Span::call_site());
 
-    <span class="kw">let </span>after_join: Pipeline = <span class="macro">parse_quote! </span>{
-        map(#after_join_map) -&gt; [#my_merge_index_lit] #target_ident
+    <span class="kw">let </span>after_join = <span class="kw">match </span>rule.rule_type {
+        RuleType::Sync(<span class="kw">_</span>) =&gt; {
+            <span class="macro">parse_quote!</span>(map(#after_join_map) -&gt; [#my_merge_index_lit] #target_ident)
+        }
+        RuleType::NextTick(<span class="kw">_</span>) =&gt; {
+            <span class="macro">parse_quote!</span>(map(#after_join_map) -&gt; next_tick() -&gt; [#my_merge_index_lit] #target_ident)
+        }
+        RuleType::Async(<span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Async rules not yet supported&quot;</span>),
     };
 
     <span class="kw">let </span>out_name = out_expanded.name;
