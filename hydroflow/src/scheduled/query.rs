@@ -62,7 +62,7 @@ impl Query {
     }
 
     pub fn run_available(&mut self) {
-        (*self.df).borrow_mut().run_available()
+        (*self.df).borrow_mut().run_available();
     }
 }
 
