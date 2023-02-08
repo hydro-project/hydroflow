@@ -17,11 +17,13 @@ pub fn test_reduce_tick() {
             .expect("No graph found, maybe failed to parse.")
             .to_mermaid()
     );
+    assert_eq!((0, 0), (df.current_tick(), df.current_stratum()));
 
     items_send.send(1).unwrap();
     items_send.send(2).unwrap();
-    df.run_available();
+    df.run_tick();
 
+    assert_eq!((1, 0), (df.current_tick(), df.current_stratum()));
     assert_eq!(
         &[3],
         &*hydroflow::util::collect_ready::<Vec<_>, _>(&mut result_recv)
@@ -29,8 +31,9 @@ pub fn test_reduce_tick() {
 
     items_send.send(3).unwrap();
     items_send.send(4).unwrap();
-    df.run_available();
+    df.run_tick();
 
+    assert_eq!((2, 0), (df.current_tick(), df.current_stratum()));
     assert_eq!(
         &[7],
         &*hydroflow::util::collect_ready::<Vec<_>, _>(&mut result_recv)
@@ -54,11 +57,13 @@ pub fn test_reduce_static() {
             .expect("No graph found, maybe failed to parse.")
             .to_mermaid()
     );
+    assert_eq!((0, 0), (df.current_tick(), df.current_stratum()));
 
     items_send.send(1).unwrap();
     items_send.send(2).unwrap();
-    df.run_available();
+    df.run_tick();
 
+    assert_eq!((1, 0), (df.current_tick(), df.current_stratum()));
     assert_eq!(
         &[3],
         &*hydroflow::util::collect_ready::<Vec<_>, _>(&mut result_recv)
@@ -66,8 +71,9 @@ pub fn test_reduce_static() {
 
     items_send.send(3).unwrap();
     items_send.send(4).unwrap();
-    df.run_available();
+    df.run_tick();
 
+    assert_eq!((2, 0), (df.current_tick(), df.current_stratum()));
     assert_eq!(
         &[10],
         &*hydroflow::util::collect_ready::<Vec<_>, _>(&mut result_recv)
@@ -90,14 +96,17 @@ pub fn test_reduce_sum() {
             .expect("No graph found, maybe failed to parse.")
             .to_mermaid()
     );
-    df.run_available();
+    assert_eq!((0, 0), (df.current_tick(), df.current_stratum()));
+    df.run_tick();
+    assert_eq!((1, 0), (df.current_tick(), df.current_stratum()));
 
     print!("\nA: ");
 
     items_send.send(9).unwrap();
     items_send.send(2).unwrap();
     items_send.send(5).unwrap();
-    df.run_available();
+    df.run_tick();
+    assert_eq!((2, 0), (df.current_tick(), df.current_stratum()));
 
     print!("\nB: ");
 
@@ -106,7 +115,8 @@ pub fn test_reduce_sum() {
     items_send.send(2).unwrap();
     items_send.send(0).unwrap();
     items_send.send(3).unwrap();
-    df.run_available();
+    df.run_tick();
+    assert_eq!((3, 0), (df.current_tick(), df.current_stratum()));
 
     println!();
 }
@@ -136,7 +146,9 @@ pub fn test_reduce() {
             .expect("No graph found, maybe failed to parse.")
             .to_mermaid()
     );
-    df.run_available();
+    assert_eq!((0, 0), (df.current_tick(), df.current_stratum()));
+    df.run_tick();
+    assert_eq!((1, 0), (df.current_tick(), df.current_stratum()));
 
     println!("A");
 
@@ -144,11 +156,13 @@ pub fn test_reduce() {
     pairs_send.send((2, 4)).unwrap();
     pairs_send.send((3, 4)).unwrap();
     pairs_send.send((1, 2)).unwrap();
-    df.run_available();
+    df.run_tick();
+    assert_eq!((2, 0), (df.current_tick(), df.current_stratum()));
 
     println!("B");
 
     pairs_send.send((0, 3)).unwrap();
     pairs_send.send((0, 3)).unwrap();
-    df.run_available();
+    df.run_tick();
+    assert_eq!((3, 0), (df.current_tick(), df.current_stratum()));
 }
