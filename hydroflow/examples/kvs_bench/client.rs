@@ -1,6 +1,8 @@
 use crate::{KVSRequest, KVSResponse};
 use futures::SinkExt;
-use hydroflow::util::{deserialize_from_bytes, serialize_to_bytes, tcp_bytes};
+use hydroflow::util::{
+    deserialize_from_bytes, deserialize_from_bytes2, serialize_to_bytes, tcp_bytes,
+};
 use rand::{prelude::Distribution, rngs::StdRng, RngCore, SeedableRng};
 use std::{
     net::SocketAddr,
@@ -42,12 +44,18 @@ pub async fn run_client(targets: Vec<SocketAddr>) {
 
                 println!("tid client: {}", palaver::thread::gettid());
 
-                let stream = TcpStream::connect(target).await.unwrap();
-                stream.set_nodelay(true).unwrap();
+                let ctx = tmq::Context::new();
+
+                let mut dealer_socket = tmq::dealer(&ctx)
+                    .connect(&format!("tcp://{}", target))
+                    .unwrap();
+
+                // let stream = TcpStream::connect(target).await.unwrap();
+                // stream.set_nodelay(true).unwrap();
 
                 println!("connected");
 
-                let (mut outbound, mut inbound) = tcp_bytes(stream);
+                // let (mut outbound, mut inbound) = tcp_bytes(stream);
 
                 let mut rng = StdRng::from_entropy();
 
@@ -61,20 +69,39 @@ pub async fn run_client(targets: Vec<SocketAddr>) {
                         let key = dist.sample(&mut rng) as u64;
                         let value = rng.next_u64();
 
-                        outbound
-                            .feed(serialize_to_bytes(KVSRequest::Put { key, value }))
+                        dealer_socket
+                            .send(vec![
+                                serialize_to_bytes(KVSRequest::Put { key, value }).to_vec()
+                            ])
                             .await
                             .unwrap();
+
+                        // outbound
+                        //     .feed(serialize_to_bytes(KVSRequest::Put { key, value }))
+                        //     .await
+                        //     .unwrap();
 
                         outstanding += 1;
                     }
 
-                    outbound.flush().await.unwrap();
+                    // dealer_socket.flush().await.unwrap();
+
+                    // outbound.flush().await.unwrap();
 
                     // println!("client:{}. wait", palaver::thread::gettid());
 
-                    if let Some(Ok(_response)) = inbound.next().await {
-                        let response: KVSResponse = deserialize_from_bytes(_response);
+                    // if let Some(Ok(_response)) = inbound.next().await {
+                    //     let response: KVSResponse = deserialize_from_bytes(_response);
+                    //     match response {
+                    //         KVSResponse::GetResponse { key, reg } => println!("{reg:?}"),
+                    //         KVSResponse::PutResponse { key } => (),
+                    //     }
+                    //     outstanding -= 1;
+                    //     puts.fetch_add(1, Ordering::SeqCst);
+                    // }
+
+                    if let Some(Ok(_response)) = dealer_socket.next().await {
+                        let response: KVSResponse = deserialize_from_bytes2(&_response.0[0]);
                         match response {
                             KVSResponse::GetResponse { key, reg } => println!("{reg:?}"),
                             KVSResponse::PutResponse { key } => (),

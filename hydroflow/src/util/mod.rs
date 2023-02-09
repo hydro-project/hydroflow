@@ -96,6 +96,13 @@ where
     bincode::deserialize(&msg).unwrap()
 }
 
+pub fn deserialize_from_bytes2<T>(msg: &[u8]) -> T
+where
+    T: Serialize + for<'a> Deserialize<'a> + Clone,
+{
+    bincode::deserialize(msg).unwrap()
+}
+
 pub fn ipv4_resolve(addr: &str) -> Result<SocketAddr, std::io::Error> {
     use std::net::ToSocketAddrs;
     let mut addrs = addr.to_socket_addrs()?;

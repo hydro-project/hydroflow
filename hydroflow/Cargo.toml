@@ -61,6 +61,8 @@ variadics = { path = "../variadics" }
 rustc-hash = "1.1.0"
 crdts = "7.2.0"
 rand_distr = "0.4.3"
+#zmq = "*"
+tmq = "0.3.2"
 
 [dev-dependencies]
 chrono = { version = "0.4.20", features = [ "serde" ], default-features = false }

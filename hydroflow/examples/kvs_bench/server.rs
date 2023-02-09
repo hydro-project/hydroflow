@@ -20,18 +20,74 @@ use crdts::ctx::AddCtx;
 use crdts::CmRDT;
 use crdts::CvRDT;
 use crdts::VClock;
+use hydroflow::util::deserialize_from_bytes2;
+use tokio::select;
 
 pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
     println!("tid server: {}", palaver::thread::gettid());
 
-    let client_listener = TcpListener::bind(addr).await.unwrap();
+    let ctx = tmq::Context::new();
 
     let (transducer_to_peers_tx, _) = bounded_broadcast_channel::<KVSRequest>(500000);
 
     let (client_to_transducer_tx, client_to_transducer_rx) =
-        hydroflow::util::unbounded_channel::<(KVSRequest, SocketAddr)>();
+        hydroflow::util::unbounded_channel::<(KVSRequest, Vec<u8>)>();
     let (transducer_to_client_tx, mut transducer_to_client_rx) =
-        hydroflow::util::bounded_channel::<(KVSResponse, SocketAddr)>(500000);
+        hydroflow::util::bounded_channel::<(KVSResponse, Vec<u8>)>(500000);
+
+    // {
+    //     // let pub_socket = ctx.socket(zmq::PUB).unwrap();
+    //     // pub_socket.bind(&format!("tcp://{}", addr)).unwrap();
+
+    //     // std::thread::spawn({
+    //     //     let ctx = ctx.clone();
+    //     //     let peers = peers.clone();
+
+    //     //     move || {
+    //     //         let sub_socket = ctx.socket(zmq::SUB).unwrap();
+    //     //         sub_socket.set_subscribe(&[]).unwrap();
+
+    //     //         for peer in peers.iter() {
+    //     //             sub_socket.connect(&format!("tcp://{}", peer)).unwrap();
+    //     //         }
+
+    //     //         loop {
+    //     //             let raw_msg = sub_socket.recv_msg(0).unwrap();
+    //     //             let req: KVSRequest = deserialize_from_bytes2(&raw_msg);
+
+    //     //             client_to_transducer_tx.send((req, addr)).unwrap();
+    //     //         }
+    //     //     }
+    //     // });
+
+    //     let ctx = tmq::Context::new();
+
+    //     tokio::spawn({
+    //         let mut router_socket = tmq::router(&ctx).bind(&format!("tcp://{}", addr)).unwrap();
+
+    //         async move {
+    //             while let Some(x) = router_socket.next().await {
+    //                 let x = x.unwrap();
+
+    //                 println!("{x:?}");
+    //             }
+    //         }
+    //     });
+
+    //     let mut dealer_socket = tmq::dealer(&ctx)
+    //         .connect(&format!("tcp://{}", addr))
+    //         .unwrap();
+
+    //     dealer_socket.send(vec!["meme1", "meme2"]).await.unwrap();
+
+    //     // std::thread::sleep(Duration::from_secs(1));
+
+    //     tokio::time::sleep(Duration::from_secs(100)).await;
+
+    //     return;
+    // }
+
+    // let client_listener = TcpListener::bind(addr).await.unwrap();
 
     let localset = tokio::task::LocalSet::new();
 
@@ -60,35 +116,61 @@ pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
     //     .unwrap()
     // });
 
-    let clients = Rc::new(RefCell::new(HashMap::new()));
+    // let clients = Rc::new(RefCell::new(HashMap::new()));
 
     // Handle incoming messages from clients or peers
+    // let f2 = localset.run_until(async {
+    //     let clients = clients.clone();
+
+    //     task::spawn_local(async move {
+    //         loop {
+    //             let (stream, addr) = client_listener.accept().await.unwrap();
+    //             stream.set_nodelay(true).unwrap();
+
+    //             let (outbound, mut inbound) = tcp_bytes(stream);
+
+    //             clients
+    //                 .borrow_mut()
+    //                 .insert(addr.clone(), Rc::new(RefCell::new(outbound)));
+
+    //             task::spawn_local({
+    //                 let client_to_transducer_tx = client_to_transducer_tx.clone();
+
+    //                 async move {
+    //                     while let Some(payload) = inbound.next().await {
+    //                         if let Ok(payload) = payload {
+    //                             let payload: KVSRequest = deserialize_from_bytes(payload);
+    //                             client_to_transducer_tx.send((payload, addr)).unwrap();
+    //                         }
+    //                     }
+    //                 }
+    //             });
+    //         }
+    //     })
+    //     .await
+    //     .unwrap()
+    // });
+
     let f2 = localset.run_until(async {
-        let clients = clients.clone();
+        task::spawn_local({
+            let mut router_socket = tmq::router(&ctx).bind(&format!("tcp://{}", addr)).unwrap();
 
-        task::spawn_local(async move {
-            loop {
-                let (stream, addr) = client_listener.accept().await.unwrap();
-                stream.set_nodelay(true).unwrap();
+            async move {
+                loop {
+                    select! {
+                        Some(x) = router_socket.next() => {
+                            let x = x.unwrap();
+                            assert_eq!(x.0.len(), 2);
 
-                let (outbound, mut inbound) = tcp_bytes(stream);
-
-                clients
-                    .borrow_mut()
-                    .insert(addr.clone(), Rc::new(RefCell::new(outbound)));
-
-                task::spawn_local({
-                    let client_to_transducer_tx = client_to_transducer_tx.clone();
-
-                    async move {
-                        while let Some(payload) = inbound.next().await {
-                            if let Ok(payload) = payload {
-                                let payload: KVSRequest = deserialize_from_bytes(payload);
-                                client_to_transducer_tx.send((payload, addr)).unwrap();
-                            }
+                            let routing_id = Vec::from(&x.0[0][..]);
+                            let payload: KVSRequest = deserialize_from_bytes2(&x.0[1]);
+                            client_to_transducer_tx.send((payload, routing_id)).unwrap();
+                        },
+                        Some(x) = transducer_to_client_rx.next() => {
+                            router_socket.send(vec![x.1, serialize_to_bytes(x.0).to_vec()]).await.unwrap();
                         }
                     }
-                });
+                }
             }
         })
         .await
@@ -96,19 +178,19 @@ pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
     });
 
     // Handle outgoing messages to clients
-    let f3 = localset.run_until(async {
-        let clients = clients.clone();
+    // let f3 = localset.run_until(async {
+    //     let clients = clients.clone();
 
-        task::spawn_local(async move {
-            while let Some((req, addr)) = transducer_to_client_rx.next().await {
-                let outbound = clients.borrow().get(&addr).unwrap().clone();
+    //     task::spawn_local(async move {
+    //         while let Some((req, addr)) = transducer_to_client_rx.next().await {
+    //             let outbound = clients.borrow().get(&addr).unwrap().clone();
 
-                let _ = outbound.borrow_mut().send(serialize_to_bytes(req)).await;
-            }
-        })
-        .await
-        .unwrap()
-    });
+    //             let _ = outbound.borrow_mut().send(serialize_to_bytes(req)).await;
+    //         }
+    //     })
+    //     .await
+    //     .unwrap()
+    // });
 
     // Wait for other servers to set up their listening tcp sockets so the subsequent connect() calls will not fail.
     // Terrible hack, not sure of a better way to do this.
@@ -117,32 +199,57 @@ pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
     // Handle outgoing peer-to-peer communication
 
     let f4 = localset.run_until({
+        let ctx = ctx.clone();
         let transducer_to_peers_tx = transducer_to_peers_tx.clone();
         async move {
-            task::spawn_local(async move {
-                // disable peers for now.
-                for peer in peers {
-                    let stream = TcpStream::connect(peer).await.unwrap();
-                    stream.set_nodelay(true).unwrap();
+            for peer in peers {
+                let mut socket = tmq::dealer(&ctx)
+                    .connect(&format!("tcp://{}", peer))
+                    .unwrap();
 
-                    let (mut outbound, _) = tcp_bytes(stream);
-                    println!("connected to peer: {peer}");
+                task::spawn_local({
+                    let mut transducer_to_peers_rx = transducer_to_peers_tx.subscribe();
 
-                    task::spawn_local({
-                        let mut transducer_to_peers_rx = transducer_to_peers_tx.subscribe();
-
-                        async move {
-                            while let Ok(batch) = transducer_to_peers_rx.recv().await {
-                                outbound.send(serialize_to_bytes(batch)).await.unwrap();
-                            }
+                    async move {
+                        while let Ok(batch) = transducer_to_peers_rx.recv().await {
+                            socket
+                                .send(vec![serialize_to_bytes(batch).to_vec()])
+                                .await
+                                .unwrap();
                         }
-                    });
-                }
-            })
-            .await
-            .unwrap()
+                    }
+                });
+            }
         }
     });
+
+    // let f4 = localset.run_until({
+    //     let transducer_to_peers_tx = transducer_to_peers_tx.clone();
+    //     async move {
+    //         task::spawn_local(async move {
+    //             // disable peers for now.
+    //             for peer in peers {
+    //                 let stream = TcpStream::connect(peer).await.unwrap();
+    //                 stream.set_nodelay(true).unwrap();
+
+    //                 let (mut outbound, _) = tcp_bytes(stream);
+    //                 println!("connected to peer: {peer}");
+
+    //                 task::spawn_local({
+    //                     let mut transducer_to_peers_rx = transducer_to_peers_tx.subscribe();
+
+    //                     async move {
+    //                         while let Ok(batch) = transducer_to_peers_rx.recv().await {
+    //                             outbound.send(serialize_to_bytes(batch)).await.unwrap();
+    //                         }
+    //                     }
+    //                 });
+    //             }
+    //         })
+    //         .await
+    //         .unwrap()
+    //     }
+    // });
 
     let timer = tokio_stream::wrappers::IntervalStream::new(tokio::time::interval(
         Duration::from_millis(1000),
@@ -160,7 +267,7 @@ pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
     let mut df = hydroflow_syntax! {
 
         client_input = source_stream(client_to_transducer_rx)
-            -> demux(|(req, addr), var_args!(puts, gets)| {
+            -> demux(|(req, addr): (KVSRequest, Vec<u8>), var_args!(puts, gets)| {
                 match req {
                     KVSRequest::Put {key, value} => puts.give((key, (ValueOrReg::Value(value), addr))),
                     KVSRequest::Get {key} => gets.give((key, addr)),
@@ -181,7 +288,7 @@ pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
             -> group_by::<'static, u64, VClock<SocketAddr>>(VClock::default, |accum: &mut VClock<SocketAddr>, (value_or_reg, _addr)| {
                 match value_or_reg {
                     ValueOrReg::Value(_) => {
-                        accum.apply(accum.inc(addr));
+                        accum.apply(accum.inc(addr)); // TODO: this is a hack, need to figure out what to call self.
                     },
                     ValueOrReg::Reg(reg) => {
                         accum.merge(reg.read_ctx().add_clock);
@@ -195,7 +302,7 @@ pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
         put_tee     -> [1]maxvclock_puts;
 
         broadcast_or_store = maxvclock_puts
-            -> demux(|(clock, (key, (value_or_reg, addr))): (VClock<SocketAddr>, (u64, (ValueOrReg, SocketAddr))), var_args!(broadcast, store)| {
+            -> demux(|(clock, (key, (value_or_reg, response_addr))): (VClock<SocketAddr>, (u64, (ValueOrReg, Vec<u8>))), var_args!(broadcast, store)| {
                 match value_or_reg {
                     ValueOrReg::Value(value) => {
                         let mut reg = MyMVReg::default();
@@ -208,10 +315,10 @@ pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
                         reg.apply(reg.write(value, ctx));
 
                         broadcast.give((key, reg.clone()));
-                        store.give((key, (reg, addr)));
+                        store.give((key, (reg, response_addr)));
                     },
                     ValueOrReg::Reg(reg) => {
-                        store.give((key, (reg, addr)));
+                        store.give((key, (reg, response_addr)));
                     },
                 }
             });
@@ -236,6 +343,7 @@ pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
         gets = client_input[gets] -> tee();
 
         gets
+            -> map(|x| x)
             -> map(|(key, addr)| (key, (MyMVReg::default(), addr))) // Nasty hack to get the group_by to emit another entry at the righ
             -> bump_merge;
 
@@ -255,7 +363,7 @@ pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
 
         bump_merge
             -> map(|x| x)
-            -> group_by::<'static>(MyMVReg::default, |accum: &mut MyMVReg, (reg, _addr): (MyMVReg, SocketAddr)| {
+            -> group_by::<'static>(MyMVReg::default, |accum: &mut MyMVReg, (reg, _addr): (MyMVReg, Vec<u8>)| {
                 accum.merge(reg);
             })
             // -> inspect(|x| println!("{addr}:{:5}: stores-into-lookup: {x:?}", context.current_tick()))
@@ -284,5 +392,5 @@ pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
 
     let f5 = df.run_async();
 
-    futures::join!(f2, f3, f4, f5);
+    futures::join!(f2, f4, f5);
 }

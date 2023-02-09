@@ -48,7 +48,7 @@ enum Commands {
         addr: SocketAddr,
 
         #[clap(long, value_parser = ipv4_resolve, value_delimiter = ',')]
-        peers: Vec<SocketAddr>,
+        topology: Vec<SocketAddr>,
     },
 }
 
@@ -57,8 +57,9 @@ enum Commands {
 async fn main() {
     match Cli::parse().command {
         Commands::Client { targets } => run_client(targets).await,
-        Commands::Server { addr, mut peers } => {
-            peers.retain(|&x| x != addr); // Don't try to connect to self, makes the bash script easier to write.
+        Commands::Server { addr, mut topology } => {
+            topology.retain(|&x| x != addr); // Don't try to connect to self, makes the bash script easier to write.
+            let peers = topology;
             run_server(addr, peers).await
         }
     }
