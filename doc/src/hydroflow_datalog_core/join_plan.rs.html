@@ -337,6 +337,7 @@
 <a href="#337" id="337">337</a>
 <a href="#338" id="338">338</a>
 <a href="#339" id="339">339</a>
+<a href="#340" id="340">340</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::collections::{btree_map::Entry, BTreeMap, HashMap};
 
 <span class="kw">use </span>hydroflow_lang::{graph::flat_graph::FlatGraph, parse::Pipeline};
@@ -601,7 +602,8 @@
                 ),
                 Span::call_site(),
             );
-            flat_graph.add_statement(<span class="macro">parse_quote!</span>(#join_node = join() -&gt; map(#flatten_closure)));
+            flat_graph
+                .add_statement(<span class="macro">parse_quote!</span>(#join_node = join::&lt;<span class="lifetime">&#39;tick</span>&gt;() -&gt; map(#flatten_closure)));
 
             emit_join_input_pipeline(
                 <span class="kw-2">&amp;</span>identifiers_to_join,

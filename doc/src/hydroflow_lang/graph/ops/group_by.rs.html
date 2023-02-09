@@ -157,9 +157,6 @@
 <a href="#157" id="157">157</a>
 <a href="#158" id="158">158</a>
 <a href="#159" id="159">159</a>
-<a href="#160" id="160">160</a>
-<a href="#161" id="161">161</a>
-<a href="#162" id="162">162</a>
 </pre><pre class="rust"><code><span class="kw">use super</span>::{
     DelayType, OperatorConstraints, OperatorWriteOutput, Persistence, WriteContextArgs,
     WriteIteratorArgs, RANGE_1,
@@ -268,7 +265,7 @@
         <span class="kw">let </span>aggfn = <span class="kw-2">&amp;</span>arguments[<span class="number">1</span>];
         <span class="kw">let </span>groupbydata_ident = wc.make_ident(<span class="string">&quot;groupbydata&quot;</span>);
 
-        <span class="kw">let </span>(write_prologue, write_iterator) = <span class="kw">match </span>persistence {
+        <span class="kw">let </span>(write_prologue, write_iterator, write_iterator_after) = <span class="kw">match </span>persistence {
             Persistence::Tick =&gt; (
                 Default::default(),
                 <span class="macro">quote_spanned! </span>{op_span=&gt;
@@ -282,6 +279,7 @@
                         }).into_iter()
                     };
                 },
+                Default::default(),
             ),
             Persistence::Static =&gt; (
                 <span class="macro">quote_spanned! </span>{op_span=&gt;
@@ -293,24 +291,20 @@
                         <span class="attr">#[inline(always)]
                         </span><span class="kw">fn </span>check_input&lt;Iter: ::std::iter::Iterator&lt;Item = (A, B)&gt;, A: ::std::clone::Clone, B: ::std::clone::Clone&gt;(iter: Iter)
                             -&gt; <span class="kw">impl </span>::std::iter::Iterator&lt;Item = (A, B)&gt; { iter }
-                        <span class="kw">let </span><span class="kw-2">mut </span>any = <span class="bool-val">false</span>;
                         <span class="kw">for </span>kv <span class="kw">in </span>check_input(#input) {
-                            any = <span class="bool-val">true</span>;
                             <span class="kw">let </span>entry = ht.entry(kv.<span class="number">0</span>).or_insert_with(#initfn);
                             <span class="attr">#[allow(clippy::redundant_closure_call)] </span>(#aggfn)(entry, kv.<span class="number">1</span>);
                         }
                         ::std::iter::IntoIterator::into_iter(
-                            <span class="kw">if </span>any {
-                                <span class="comment">// TODO(mingwei): extra collect here, could be avoided by keeping the `BorrowMut` alive (risky?).
-                                </span>ht.iter()
-                                    .map(<span class="attr">#[allow(clippy::clone_on_copy, clippy::clone_double_ref)] </span>|(k, v)| (k.clone(), v.clone()))
-                                    .collect::&lt;::std::vec::Vec::&lt;<span class="kw">_</span>&gt;&gt;()
-                            }
-                            <span class="kw">else </span>{
-                                ::std::vec::Vec::new()
-                            }
+                            <span class="comment">// TODO(mingwei): extra collect here, could be avoided by keeping the `BorrowMut` alive (risky?).
+                            </span>ht.iter()
+                                .map(<span class="attr">#[allow(clippy::clone_on_copy, clippy::clone_double_ref)] </span>|(k, v)| (k.clone(), v.clone()))
+                                .collect::&lt;::std::vec::Vec::&lt;<span class="kw">_</span>&gt;&gt;()
                         )
                     };
+                },
+                <span class="macro">quote_spanned! </span>{op_span=&gt;
+                    #context.schedule_subgraph(#context.current_subgraph());
                 },
             ),
         };
@@ -318,7 +312,7 @@
         <span class="prelude-val">Ok</span>(OperatorWriteOutput {
             write_prologue,
             write_iterator,
-            ..Default::default()
+            write_iterator_after,
         })
     }),
 };

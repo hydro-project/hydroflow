@@ -145,6 +145,11 @@
 <a href="#145" id="145">145</a>
 <a href="#146" id="146">146</a>
 <a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::any::Any;
 <span class="kw">use </span>std::marker::PhantomData;
 
@@ -190,6 +195,11 @@
     <span class="doccomment">/// Gets the current stratum nubmer.
     </span><span class="kw">pub fn </span>current_stratum(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
         <span class="self">self</span>.current_stratum
+    }
+
+    <span class="doccomment">/// Gets the ID of the current subgraph.
+    </span><span class="kw">pub fn </span>current_subgraph(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SubgraphId {
+        <span class="self">self</span>.subgraph_id
     }
 
     <span class="doccomment">/// Schedules a subgraph.

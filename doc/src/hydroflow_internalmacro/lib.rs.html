@@ -120,6 +120,11 @@
 <a href="#120" id="120">120</a>
 <a href="#121" id="121">121</a>
 <a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
+<a href="#124" id="124">124</a>
+<a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
 </pre><pre class="rust"><code><span class="attr">#![feature(proc_macro_diagnostic, proc_macro_span)]
 #![allow(clippy::explicit_auto_deref)]
 
@@ -241,6 +246,11 @@
 # let mut __hf = hydroflow::hydroflow_syntax! {&quot;</span>;
 <span class="kw">const </span>DOCTEST_HYDROFLOW_SUFFIX: <span class="kw-2">&amp;</span>str = <span class="string">&quot;\
 # };
-# __hf.run_available();&quot;</span>;
+# for _ in 0..100 {
+#     if !__hf.run_tick() {
+#         // No work done.
+#         break;
+#     }
+# }&quot;</span>;
 </code></pre></div>
 </section></main><div id="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="hydroflow_internalmacro" data-themes="" data-resource-suffix="" data-rustdoc-version="1.69.0-nightly (dc1d9d50f 2023-01-31)" data-search-js="search-98d53477a794af0b.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-7c23ac01f615ce90.css" ></div></body></html>
