@@ -46,6 +46,8 @@ pub async fn run_client(targets: Vec<SocketAddr>) {
 
                 let ctx = tmq::Context::new();
 
+                println!("target: {target:?}");
+
                 let mut dealer_socket = tmq::dealer(&ctx)
                     .connect(&format!("tcp://{}", target))
                     .unwrap();
@@ -110,7 +112,7 @@ pub async fn run_client(targets: Vec<SocketAddr>) {
                         puts.fetch_add(1, Ordering::SeqCst);
                     }
 
-                    tokio::time::sleep(Duration::from_millis(1)).await;
+                    // tokio::time::sleep(Duration::from_millis(1)).await;
                 }
             })
         });

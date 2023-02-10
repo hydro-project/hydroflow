@@ -55,6 +55,8 @@ enum Commands {
 #[tokio::main(flavor = "current_thread")]
 // #[tokio::main]
 async fn main() {
+    // run_server("127.0.0.1:5000".parse().unwrap(), vec![]).await;
+
     match Cli::parse().command {
         Commands::Client { targets } => run_client(targets).await,
         Commands::Server { addr, mut topology } => {

@@ -153,9 +153,12 @@ pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
 
     let f2 = localset.run_until(async {
         task::spawn_local({
-            let mut router_socket = tmq::router(&ctx).bind(&format!("tcp://{}", addr)).unwrap();
+            let ctx = ctx.clone();
 
             async move {
+                println!("binding to: {addr:?}");
+                let mut router_socket = tmq::router(&ctx).bind(&format!("tcp://{}", addr)).unwrap();
+
                 loop {
                     select! {
                         Some(x) = router_socket.next() => {
@@ -194,7 +197,7 @@ pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
 
     // Wait for other servers to set up their listening tcp sockets so the subsequent connect() calls will not fail.
     // Terrible hack, not sure of a better way to do this.
-    tokio::time::sleep(Duration::from_secs(1)).await;
+    // tokio::time::sleep(Duration::from_secs(1)).await;
 
     // Handle outgoing peer-to-peer communication
 

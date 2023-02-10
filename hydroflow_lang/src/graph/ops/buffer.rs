@@ -1,5 +1,5 @@
 use super::{
-    OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, RANGE_1,
+    OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, RANGE_0, RANGE_1,
 };
 
 use quote::quote_spanned;
@@ -27,6 +27,8 @@ use quote::quote_spanned;
 #[hydroflow_internalmacro::operator_docgen]
 pub const BUFFER: OperatorConstraints = OperatorConstraints {
     name: "buffer",
+    persistence_args: RANGE_0,
+    type_args: RANGE_0,
     hard_range_inn: RANGE_1,
     soft_range_inn: RANGE_1,
     hard_range_out: RANGE_1,
