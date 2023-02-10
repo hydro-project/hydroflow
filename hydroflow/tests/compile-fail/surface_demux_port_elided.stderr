@@ -1,8 +1,8 @@
 error: Output port from `demux(..)` must be specified and must be a valid identifier.
-  --> tests/compile-fail/surface_demux_port_elided.rs:15:18
+  --> tests/compile-fail/surface_demux_port_elided.rs:15:9
    |
 15 |         my_demux -> for_each(std::mem::drop);
-   |                  ^^
+   |         ^^^^^^^^
 
 error: `demux(..)` closure argument `odds` missing corresponding output port.
  --> tests/compile-fail/surface_demux_port_elided.rs:6:72

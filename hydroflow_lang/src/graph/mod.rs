@@ -9,7 +9,7 @@ use slotmap::new_key_type;
 use syn::spanned::Spanned;
 use syn::ExprPath;
 
-use crate::parse::{ArrowConnector, IndexInt, Operator, PortIndex};
+use crate::parse::{IndexInt, Operator, PortIndex, Ported};
 use crate::pretty_span::PrettySpan;
 
 pub mod di_mul_graph;
@@ -96,19 +96,38 @@ pub enum PortIndexValue {
     Elided(Span),
 }
 impl PortIndexValue {
-    pub fn from_arrow_connector(arrow_connector: ArrowConnector) -> (Self, Self) {
-        let src = arrow_connector
-            .src
+    pub fn from_ported<Inner>(ported: Ported<Inner>) -> (Self, Inner, Self)
+    where
+        Inner: Spanned,
+    {
+        let ported_span = ported.inner.span();
+        let port_inn = ported
+            .inn
             .map(|idx| idx.index.into())
-            .unwrap_or_else(|| Self::Elided(arrow_connector.arrow.span()));
-        let dst = arrow_connector
-            .dst
+            .unwrap_or_else(|| Self::Elided(ported_span));
+        let inner = ported.inner;
+        let port_out = ported
+            .out
             .map(|idx| idx.index.into())
-            .unwrap_or_else(|| Self::Elided(arrow_connector.arrow.span()));
-        (src, dst)
+            .unwrap_or_else(|| Self::Elided(ported_span));
+        (port_inn, inner, port_out)
     }
+
     pub fn is_specified(&self) -> bool {
         !matches!(self, Self::Elided(_))
+    }
+
+    /// Return `Err(self)` if there is a conflict.
+    pub fn combine(self, other: Self) -> Result<Self, Self> {
+        if self.is_specified() {
+            if other.is_specified() {
+                Err(self)
+            } else {
+                Ok(self)
+            }
+        } else {
+            Ok(other)
+        }
     }
 }
 impl From<PortIndex> for PortIndexValue {
