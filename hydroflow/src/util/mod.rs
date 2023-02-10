@@ -21,6 +21,22 @@ pub fn unbounded_channel<T>() -> (
     (send, recv)
 }
 
+pub fn ready_iter<S>(stream: S) -> impl Iterator<Item = S::Item>
+where
+    S: Stream,
+{
+    let mut stream = Box::pin(stream);
+    std::iter::from_fn(move || {
+        match stream
+            .as_mut()
+            .poll_next(&mut Context::from_waker(futures::task::noop_waker_ref()))
+        {
+            Poll::Ready(opt) => opt,
+            Poll::Pending => None,
+        }
+    })
+}
+
 /// Collects the immediately available items from the `Stream` into a `FromIterator` collection.
 ///
 /// This consumes the stream, use [`futures::StreamExt::by_ref()`] (or just `&mut ...`) if you want
@@ -30,17 +46,29 @@ where
     C: FromIterator<S::Item>,
     S: Stream,
 {
-    let mut stream = Box::pin(stream);
-    std::iter::from_fn(|| {
-        match stream
-            .as_mut()
-            .poll_next(&mut Context::from_waker(futures::task::noop_waker_ref()))
-        {
-            Poll::Ready(opt) => opt,
-            Poll::Pending => None,
-        }
-    })
-    .collect()
+    assert!(tokio::runtime::Handle::try_current().is_err(), "Calling `collect_ready` from an async runtime may cause incorrect results, use `collect_ready_async` instead.");
+    ready_iter(stream).collect()
+}
+
+/// Collects the immediately available items from the `Stream` into a collection (`Default` + `Extend`).
+///
+/// This consumes the stream, use [`futures::StreamExt::by_ref()`] (or just `&mut ...`) if you want
+/// to retain ownership of your stream.
+pub async fn collect_ready_async<C, S>(stream: S) -> C
+where
+    C: Default + Extend<S::Item>,
+    S: Stream,
+{
+    let any = std::cell::Cell::new(true);
+    let mut unfused_iter = ready_iter(stream).inspect(|_| any.set(true));
+    let mut out = C::default();
+    while any.replace(false) {
+        out.extend(unfused_iter.by_ref());
+        // Tokio unbounded channel returns items in lenght-128 chunks, so we have to be careful
+        // that everything gets returned. That is why we yield here and loop.
+        tokio::task::yield_now().await;
+    }
+    out
 }
 
 pub fn serialize_to_bytes<T>(msg: T) -> bytes::Bytes
@@ -88,4 +116,31 @@ where
     K: Ord,
 {
     slice.sort_unstable_by(|a, b| f(a).cmp(f(b)))
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    pub fn test_collect_ready() {
+        let (send, mut recv) = unbounded_channel::<usize>();
+        for x in 0..1000 {
+            send.send(x).unwrap();
+        }
+        assert_eq!(1000, collect_ready::<Vec<_>, _>(&mut recv).len());
+    }
+
+    #[tokio::test]
+    pub async fn test_collect_ready_async() {
+        // Tokio unbounded channel returns items in 128 item long chunks, so we have to be careful that everything gets returned.
+        let (send, mut recv) = unbounded_channel::<usize>();
+        for x in 0..1000 {
+            send.send(x).unwrap();
+        }
+        assert_eq!(
+            1000,
+            collect_ready_async::<Vec<_>, _>(&mut recv).await.len()
+        );
+    }
 }
