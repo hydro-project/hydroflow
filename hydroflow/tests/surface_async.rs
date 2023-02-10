@@ -1,13 +1,13 @@
 //! Surface syntax tests of asynchrony and networking.
 
-use std::collections::HashSet;
+use std::collections::{BTreeSet, HashSet};
 use std::error::Error;
 use std::net::{Ipv4Addr, SocketAddr};
 use std::time::Duration;
 
 use bytes::Bytes;
 use hydroflow::scheduled::graph::Hydroflow;
-use hydroflow::util::{collect_ready, tcp_lines};
+use hydroflow::util::{collect_ready_async, ready_iter, tcp_lines};
 use hydroflow::{hydroflow_syntax, rassert, rassert_eq};
 use tokio::net::{TcpListener, TcpStream, UdpSocket};
 use tokio::task::LocalSet;
@@ -44,7 +44,7 @@ pub async fn test_echo_udp() -> Result<(), Box<dyn Error>> {
             _ = tokio::time::sleep(Duration::from_secs(1)) => (),
         };
 
-        let seen: HashSet<_> = collect_ready(seen_recv);
+        let seen: HashSet<_> = collect_ready_async(seen_recv).await;
         rassert_eq!(4, seen.len())?;
         rassert!(seen.contains("Hello"))?;
         rassert!(seen.contains("World"))?;
@@ -79,7 +79,7 @@ pub async fn test_echo_udp() -> Result<(), Box<dyn Error>> {
             _ = tokio::time::sleep(Duration::from_secs(1)) => (),
         };
 
-        let seen: Vec<_> = collect_ready(seen_recv);
+        let seen: Vec<_> = collect_ready_async(seen_recv).await;
         rassert_eq!(&["Hello".to_owned(), "World".to_owned()], &*seen)?;
 
         Ok(()) as Result<(), Box<dyn Error>>
@@ -110,7 +110,7 @@ pub async fn test_echo_udp() -> Result<(), Box<dyn Error>> {
             _ = tokio::time::sleep(Duration::from_secs(1)) => (),
         };
 
-        let seen: Vec<_> = collect_ready(seen_recv);
+        let seen: Vec<_> = collect_ready_async(seen_recv).await;
         rassert_eq!(&["Raise".to_owned(), "Count".to_owned()], &*seen)?;
 
         Ok(()) as Result<(), Box<dyn Error>>
@@ -153,7 +153,7 @@ pub async fn test_echo_tcp() -> Result<(), Box<dyn Error>> {
             .await
             .expect_err("Expected time out");
 
-        let seen: Vec<_> = collect_ready(seen_recv);
+        let seen: Vec<_> = collect_ready_async(seen_recv).await;
         rassert_eq!(&["Hello".to_owned(), "World".to_owned()], &*seen)?;
 
         Ok(()) as Result<(), Box<dyn Error>>
@@ -188,7 +188,7 @@ pub async fn test_echo_tcp() -> Result<(), Box<dyn Error>> {
             .await
             .expect_err("Expected time out");
 
-        let seen: Vec<_> = collect_ready(seen_recv);
+        let seen: Vec<_> = collect_ready_async(seen_recv).await;
         rassert_eq!(&["Hello".to_owned(), "World".to_owned()], &*seen)?;
 
         Ok(()) as Result<(), Box<dyn Error>>
@@ -255,7 +255,7 @@ pub async fn test_futures_stream_sink() -> Result<(), Box<dyn Error>> {
         _ = tokio::time::sleep(Duration::from_secs(1)) => (),
     };
 
-    let seen: Vec<_> = collect_ready(seen_recv);
+    let seen: Vec<_> = collect_ready_async(seen_recv).await;
     rassert_eq!(&std::array::from_fn::<_, MAX, _>(|i| i), &*seen)?;
 
     Ok(())
@@ -278,8 +278,13 @@ async fn asynctest_dest_sink_bounded_channel() {
         .expect_err("Expected time out");
 
     // Only 5 elemts received due to buffer size
-    let out: Vec<_> = collect_ready(&mut recv);
+    let out: Vec<_> = ready_iter(&mut recv).collect();
     assert_eq!(&[0, 1, 2, 3, 4], &*out);
+
+    tokio::task::yield_now().await;
+
+    let out: Vec<_> = ready_iter(&mut recv).collect();
+    assert_eq!(&[5, 6, 7, 8, 9], &*out);
 }
 
 #[tokio::test(flavor = "current_thread")]
@@ -362,6 +367,48 @@ async fn asynctest_source_stream() {
             a_send.send(3).unwrap();
 
             tokio::task::yield_now().await;
+        })
+        .await;
+}
+
+/// Check to make sure hf.run_async() does not hang due to replaying stateful operators saturating
+/// `run_available()`.
+#[tokio::test(flavor = "current_thread")]
+async fn asynctest_check_state_yielding() {
+    LocalSet::new()
+        .run_until(async {
+            let (a_send, a_recv) = hydroflow::util::unbounded_channel::<usize>();
+            let (b_send, mut b_recv) = hydroflow::util::unbounded_channel::<usize>();
+
+            let task_a = tokio::task::spawn_local(async move {
+                for a in 0..10 {
+                    tokio::time::sleep(Duration::from_millis(10)).await;
+                    a_send.send(a).unwrap();
+                }
+            });
+
+            let task_b = tokio::task::spawn_local(async move {
+                let mut hf = hydroflow_syntax! {
+                    source_stream(a_recv)
+                        -> reduce::<'static>(|a, b| a + b)
+                        -> for_each(|x| b_send.send(x).unwrap());
+                };
+
+                tokio::time::timeout(Duration::from_millis(200), hf.run_async())
+                    .await
+                    .expect_err("Expected time out");
+
+                assert_eq!(
+                    [0, 1, 3, 6, 10, 15, 21, 28, 36, 45]
+                        .into_iter()
+                        .collect::<BTreeSet<_>>(),
+                    collect_ready_async(&mut b_recv).await
+                );
+            });
+
+            let (result_a, result_b) = tokio::join!(task_a, task_b);
+            result_a.unwrap();
+            result_b.unwrap();
         })
         .await;
 }

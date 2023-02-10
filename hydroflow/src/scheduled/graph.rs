@@ -225,7 +225,6 @@ impl Hydroflow {
     pub fn run(&mut self) -> Option<!> {
         loop {
             self.run_tick();
-            self.recv_events()?;
         }
     }
 
@@ -235,9 +234,11 @@ impl Hydroflow {
     pub async fn run_async(&mut self) -> Option<!> {
         loop {
             // Run any work which is immediately available.
-            self.run_available();
-            // Only when there is absolutely no work available in any stratum.
-            // Do we yield to wait for more events.
+            while self.run_tick() {
+                // Yield between each tick to receive more events.
+                tokio::task::yield_now().await;
+            }
+            // When no work is available yield until more events occur.
             self.recv_events_async().await;
         }
     }
