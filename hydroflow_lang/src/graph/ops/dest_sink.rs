@@ -36,7 +36,7 @@ use quote::quote_spanned;
 /// // Only 5 elements received due to buffer size.
 /// // (Note that if we were using a multi-threaded executor instead of `current_thread` it would
 /// // be possible for more items to be added as they're removed, resulting in >5 collected.)
-/// let out: Vec<_> = hydroflow::util::collect_ready(&mut recv);
+/// let out: Vec<_> = hydroflow::util::ready_iter(&mut recv).collect();
 /// assert_eq!(&[0, 1, 2, 3, 4], &*out);
 /// # }
 /// ```
