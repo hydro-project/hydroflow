@@ -105,7 +105,7 @@ pub fn gen_hydroflow_graph(
     if !diagnostics.is_empty() {
         Err((vec![], diagnostics))
     } else {
-        Ok(flat_graph)
+        Ok(flat_graph.finalize())
     }
 }
 
