@@ -1,12 +1,6 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 
 use slotmap::{Key, SecondaryMap, SlotMap};
-
-#[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq)]
-pub struct EdgeIndex(pub usize);
-
-pub type EdgeEnd<V> = (V, EdgeIndex);
-pub type AdjEdges<V> = BTreeMap<EdgeIndex, EdgeEnd<V>>;
 
 /// A directed multigraph where an vertex's inbound and outbound edges are indexed.
 #[derive(Clone, Debug)]
