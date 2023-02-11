@@ -38,6 +38,8 @@ pub struct FlatGraph {
     pub(crate) node_varnames: SparseSecondaryMap<GraphNodeId, Ident>,
     /// Variable names, used as [`HfStatement::Named`] are added.
     varname_ends: BTreeMap<Ident, Ends>,
+
+    links: Vec<Ends>,
 }
 
 impl FlatGraph {
@@ -50,9 +52,7 @@ impl FlatGraph {
         for stmt in input.statements {
             graph.add_statement(stmt);
         }
-
-        graph.check_operator_errors();
-        graph
+        graph.finalize()
     }
 
     /// Add a single [`HfStatement`] line to this `FlatGraph`.
@@ -94,81 +94,80 @@ impl FlatGraph {
         }
     }
 
-    /// Helper: Add a pipeline, i.e. `a -> b -> c`. Return the input and output ends for it.
-    fn add_pipeline(&mut self, pipeline: Pipeline, current_varname: Option<&Ident>) -> Ends {
-        fn combine_ends(
-            diagnostics: &mut Vec<Diagnostic>,
-            og_ends: Ends,
-            inn_port: PortIndexValue,
-            out_port: PortIndexValue,
-        ) -> Ends {
-            // TODO(mingwei): minification pass over this code?
-            fn combine_end(
-                diagnostics: &mut Vec<Diagnostic>,
-                og: Option<(PortIndexValue, GraphNodeId)>,
-                other: PortIndexValue,
-                input_output: &'static str,
-            ) -> Option<(PortIndexValue, GraphNodeId)> {
-                let other_span = other.span();
+    pub fn finalize(mut self) -> Self {
+        self.connect_operator_links();
+        self.check_operator_errors();
+        self
+    }
 
-                let (og_port, og_node) = og?;
-                match og_port.combine(other) {
-                    Ok(combined_port) => Some((combined_port, og_node)),
-                    Err(og_port) => {
-                        // TODO(mingwei): Use `MultiSpan` once `proc_macro2` supports it.
-                        diagnostics.push(Diagnostic::spanned(
-                            og_port.span(),
-                            Level::Error,
-                            format!(
-                                "Indexing on {} is overwritten below ({}) (1/2)",
-                                input_output,
-                                PrettySpan(other_span),
-                            ),
-                        ));
-                        diagnostics.push(Diagnostic::spanned(
-                            other_span,
-                            Level::Error,
-                            format!(
-                                "Cannot index on already-indexed {}, previously indexed above ({}) (2/2)",
-                                input_output,
-                                PrettySpan(og_port.span()),
+    fn helper_combine_end(
+        diagnostics: &mut Vec<Diagnostic>,
+        og: Option<(PortIndexValue, GraphDet)>,
+        other: PortIndexValue,
+        input_output: &'static str,
+    ) -> Option<(PortIndexValue, GraphDet)> {
+        // TODO(mingwei): minification pass over this code?
 
-                            ),
-                        ));
-                        // When errored, just use original and ignore OTHER port to minimize
-                        // noisy/extra diagnostics.
-                        Some((og_port, og_node))
-                    }
-                }
-            }
-            Ends {
-                inn: combine_end(diagnostics, og_ends.inn, inn_port, "input"),
-                out: combine_end(diagnostics, og_ends.out, out_port, "output"),
+        let other_span = other.span();
+
+        let (og_port, og_node) = og?;
+        match og_port.combine(other) {
+            Ok(combined_port) => Some((combined_port, og_node)),
+            Err(og_port) => {
+                // TODO(mingwei): Use `MultiSpan` once `proc_macro2` supports it.
+                diagnostics.push(Diagnostic::spanned(
+                    og_port.span(),
+                    Level::Error,
+                    format!(
+                        "Indexing on {} is overwritten below ({}) (1/2)",
+                        input_output,
+                        PrettySpan(other_span),
+                    ),
+                ));
+                diagnostics.push(Diagnostic::spanned(
+                    other_span,
+                    Level::Error,
+                    format!(
+                        "Cannot index on already-indexed {}, previously indexed above ({}) (2/2)",
+                        input_output,
+                        PrettySpan(og_port.span()),
+                    ),
+                ));
+                // When errored, just use original and ignore OTHER port to minimize
+                // noisy/extra diagnostics.
+                Some((og_port, og_node))
             }
         }
+    }
 
+    fn helper_combine_ends(
+        diagnostics: &mut Vec<Diagnostic>,
+        og_ends: Ends,
+        inn_port: PortIndexValue,
+        out_port: PortIndexValue,
+    ) -> Ends {
+        Ends {
+            inn: Self::helper_combine_end(diagnostics, og_ends.inn, inn_port, "input"),
+            out: Self::helper_combine_end(diagnostics, og_ends.out, out_port, "output"),
+        }
+    }
+
+    /// Helper: Add a pipeline, i.e. `a -> b -> c`. Return the input and output ends for it.
+    fn add_pipeline(&mut self, pipeline: Pipeline, current_varname: Option<&Ident>) -> Ends {
         match pipeline {
             Pipeline::Paren(ported_pipeline_paren) => {
                 let (inn_port, pipeline_paren, out_port) =
                     PortIndexValue::from_ported(ported_pipeline_paren);
                 let og_ends = self.add_pipeline(*pipeline_paren.pipeline, current_varname);
-                combine_ends(&mut self.diagnostics, og_ends, inn_port, out_port)
+                Self::helper_combine_ends(&mut self.diagnostics, og_ends, inn_port, out_port)
             }
-
             Pipeline::Name(pipeline_name) => {
                 let (inn_port, ident, out_port) = PortIndexValue::from_ported(pipeline_name);
-                if let Some(og_ends) = self.varname_ends.get(&ident).cloned() {
-                    combine_ends(&mut self.diagnostics, og_ends, inn_port, out_port)
-                } else {
-                    self.diagnostics.push(Diagnostic::spanned(
-                        ident.span(),
-                        Level::Error,
-                        format!("Cannot find name `{}`", ident),
-                    ));
-                    Ends {
-                        inn: None,
-                        out: None,
-                    }
+                // We could lookup non-forward references immediately, but easier to just have one
+                // consistent code path. -mingwei
+                Ends {
+                    inn: Some((inn_port, GraphDet::Undetermined(ident.clone()))),
+                    out: Some((out_port, GraphDet::Undetermined(ident))),
                 }
             }
             Pipeline::Link(pipeline_link) => {
@@ -176,78 +175,18 @@ impl FlatGraph {
                 let lhs_ends = self.add_pipeline(*pipeline_link.lhs, current_varname);
                 let rhs_ends = self.add_pipeline(*pipeline_link.rhs, current_varname);
 
-                if let (Some((src_port, src)), Some((dst_port, dst))) = (lhs_ends.out, rhs_ends.inn)
-                {
-                    {
-                        /// Helper to emit conflicts when a port is used twice.
-                        fn emit_conflict(
-                            inout: &str,
-                            old: &PortIndexValue,
-                            new: &PortIndexValue,
-                            diagnostics: &mut Vec<Diagnostic>,
-                        ) {
-                            // TODO(mingwei): Use `MultiSpan` once `proc_macro2` supports it.
-                            diagnostics.push(Diagnostic::spanned(
-                                old.span(),
-                                Level::Error,
-                                format!(
-                                    "{} connection conflicts with below ({}) (1/2)",
-                                    inout,
-                                    PrettySpan(new.span()),
-                                ),
-                            ));
-                            diagnostics.push(Diagnostic::spanned(
-                                new.span(),
-                                Level::Error,
-                                format!(
-                                    "{} connection conflicts with above ({}) (2/2)",
-                                    inout,
-                                    PrettySpan(old.span()),
-                                ),
-                            ));
-                        }
-
-                        // Handle src's successor port conflicts:
-                        if src_port.is_specified() {
-                            for conflicting_edge in self
-                                .graph
-                                .successor_edges(src)
-                                .filter(|&e| self.ports[e].0 == src_port)
-                            {
-                                emit_conflict(
-                                    "Output",
-                                    &self.ports[conflicting_edge].0,
-                                    &src_port,
-                                    &mut self.diagnostics,
-                                );
-                            }
-                        }
-
-                        // Handle dst's predecessor port conflicts:
-                        if dst_port.is_specified() {
-                            for conflicting_edge in self
-                                .graph
-                                .predecessor_edges(dst)
-                                .filter(|&e| self.ports[e].1 == dst_port)
-                            {
-                                emit_conflict(
-                                    "Input",
-                                    &self.ports[conflicting_edge].1,
-                                    &dst_port,
-                                    &mut self.diagnostics,
-                                );
-                            }
-                        }
-                    }
-
-                    let e = self.graph.insert_edge(src, dst);
-                    self.ports.insert(e, (src_port, dst_port));
-                }
-
-                Ends {
+                // Outer (first and last) ends.
+                let outer_ends = Ends {
                     inn: lhs_ends.inn,
                     out: rhs_ends.out,
-                }
+                };
+                // Inner (link) ends.
+                let link_ends = Ends {
+                    out: lhs_ends.out,
+                    inn: rhs_ends.inn,
+                };
+                self.links.push(link_ends);
+                outer_ends
             }
             Pipeline::Operator(operator) => {
                 let op_span = operator.span();
@@ -256,11 +195,141 @@ impl FlatGraph {
                     self.node_varnames.insert(key, current_varname.clone());
                 }
                 Ends {
-                    inn: Some((PortIndexValue::Elided(op_span), key)),
-                    out: Some((PortIndexValue::Elided(op_span), key)),
+                    inn: Some((PortIndexValue::Elided(op_span), GraphDet::Determined(key))),
+                    out: Some((PortIndexValue::Elided(op_span), GraphDet::Determined(key))),
                 }
             }
         }
+    }
+
+    fn resolve_name_recursive(
+        &mut self,
+        mut port_det: Option<(PortIndexValue, GraphDet)>,
+        is_in: bool,
+    ) -> Option<(PortIndexValue, GraphNodeId)> {
+        const DEFAULT_RECURSION_LIMIT: usize = 128;
+        // TODO(mingwei): Make recursion limit configurable if needed.
+
+        let mut span = Span::call_site();
+        for _ in 0..DEFAULT_RECURSION_LIMIT {
+            match port_det? {
+                (port, GraphDet::Determined(node_id)) => {
+                    return Some((port, node_id));
+                }
+                (port, GraphDet::Undetermined(ident)) => {
+                    span = ident.span();
+                    let Some(name_ends) = self.varname_ends.get(&ident) else {
+                        self.diagnostics.push(Diagnostic::spanned(
+                            ident.span(),
+                            Level::Error,
+                            format!("Cannot find name `{}`", ident),
+                        ));
+                        return None;
+                    };
+                    let prev = if is_in {
+                        &name_ends.inn
+                    } else {
+                        &name_ends.out
+                    };
+                    port_det = Self::helper_combine_end(
+                        &mut self.diagnostics,
+                        prev.clone(),
+                        port,
+                        if is_in { "input" } else { "output" },
+                    );
+                }
+            }
+        }
+        self.diagnostics.push(Diagnostic::spanned(
+            span,
+            Level::Error,
+            "Reached the recursion limit while resolving resolving name. Is the pipeline self-referential?",
+        ));
+        None
+    }
+
+    fn connect_operator_links(&mut self) {
+        for Ends { out, inn } in std::mem::take(&mut self.links) {
+            let out_opt = self.resolve_name_recursive(out, false);
+            let inn_opt = self.resolve_name_recursive(inn, true);
+            // `None` already have errors in `self.diagnostics`.
+            if let (Some((out_port, out_node)), Some((inn_port, inn_node))) = (out_opt, inn_opt) {
+                self.connect_operators(out_port, out_node, inn_port, inn_node);
+            }
+        }
+    }
+
+    fn connect_operators(
+        &mut self,
+        src_port: PortIndexValue,
+        src: GraphNodeId,
+        dst_port: PortIndexValue,
+        dst: GraphNodeId,
+    ) {
+        {
+            /// Helper to emit conflicts when a port is used twice.
+            fn emit_conflict(
+                inout: &str,
+                old: &PortIndexValue,
+                new: &PortIndexValue,
+                diagnostics: &mut Vec<Diagnostic>,
+            ) {
+                // TODO(mingwei): Use `MultiSpan` once `proc_macro2` supports it.
+                diagnostics.push(Diagnostic::spanned(
+                    old.span(),
+                    Level::Error,
+                    format!(
+                        "{} connection conflicts with below ({}) (1/2)",
+                        inout,
+                        PrettySpan(new.span()),
+                    ),
+                ));
+                diagnostics.push(Diagnostic::spanned(
+                    new.span(),
+                    Level::Error,
+                    format!(
+                        "{} connection conflicts with above ({}) (2/2)",
+                        inout,
+                        PrettySpan(old.span()),
+                    ),
+                ));
+            }
+
+            // Handle src's successor port conflicts:
+            if src_port.is_specified() {
+                for conflicting_edge in self
+                    .graph
+                    .successor_edges(src)
+                    .filter(|&e| self.ports[e].0 == src_port)
+                {
+                    emit_conflict(
+                        "Output",
+                        &self.ports[conflicting_edge].0,
+                        &src_port,
+                        &mut self.diagnostics,
+                    );
+                }
+            }
+
+            // Handle dst's predecessor port conflicts:
+            if dst_port.is_specified() {
+                for conflicting_edge in self
+                    .graph
+                    .predecessor_edges(dst)
+                    .filter(|&e| self.ports[e].1 == dst_port)
+                {
+                    emit_conflict(
+                        "Input",
+                        &self.ports[conflicting_edge].1,
+                        &dst_port,
+                        &mut self.diagnostics,
+                    );
+                }
+            }
+        }
+
+        let e = self.graph.insert_edge(src, dst);
+        self.ports.insert(e, (src_port, dst_port));
     }
 
     /// Validates that operators have valid number of inputs, outputs, & arguments.
@@ -535,6 +604,12 @@ impl FlatGraph {
 
 #[derive(Clone, Debug)]
 struct Ends {
-    inn: Option<(PortIndexValue, GraphNodeId)>,
-    out: Option<(PortIndexValue, GraphNodeId)>,
+    inn: Option<(PortIndexValue, GraphDet)>,
+    out: Option<(PortIndexValue, GraphDet)>,
+}
+
+#[derive(Clone, Debug)]
+enum GraphDet {
+    Determined(GraphNodeId),
+    Undetermined(Ident),
 }

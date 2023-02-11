@@ -140,3 +140,98 @@ pub fn test_parser_port_naked_knot() {
         x_1[1] -> [1]x_1;
     };
 }
+
+#[test]
+pub fn test_parser_forwardref_basic() {
+    hydroflow_parser! {
+        source_iter(0..10) -> c;
+        c = for_each(std::mem::drop);
+    };
+}
+
+#[test]
+pub fn test_parser_forwardref_chain() {
+    hydroflow_parser! {
+        source_iter(0..10) -> c;
+        c = d;
+        d = e;
+        e = f;
+        f = g;
+        g = h;
+        h = i;
+        i = j;
+        j = k;
+        k = for_each(std::mem::drop);
+    };
+}
+
+#[test]
+pub fn test_parser_forwardref_cycle_right() {
+    hydroflow_parser! {
+        c = identity() -> c;
+    };
+}
+
+#[test]
+pub fn test_parser_forwardref_cycle_left() {
+    hydroflow_parser! {
+        c = c -> identity();
+    };
+}
+
+#[test]
+pub fn test_parser_forwardref_mutual() {
+    hydroflow_parser! {
+        a = identity() -> b;
+        b = identity() -> a;
+    };
+}
+
+#[test]
+pub fn test_parser_forwardref_degen() {
+    // TODO(mingwei):
+    // This works because no links are created, so it does nothing.
+    // But it would obviously be a mistake to write seriously...
+    hydroflow_parser! {
+        c = c;
+    };
+}
+
+#[test]
+pub fn test_parser_forwardref_tee() {
+    hydroflow_parser! {
+        c = c -> tee();
+        c -> for_each(std::mem::drop);
+    };
+}
+
+#[test]
+pub fn test_parser_forwardref_merge() {
+    hydroflow_parser! {
+        c = merge() -> c;
+        source_iter(0..10) -> c;
+    };
+}
+
+#[test]
+pub fn test_parser_forwardref_knot() {
+    hydroflow_parser! {
+        inn_0 = [0]pivot;
+        inn_1 = [1]pivot;
+
+        out_0 = pivot[0];
+        out_1 = pivot[1];
+
+        out_0 -> inn_0;
+        out_1 -> inn_1;
+
+        pivot = merge() -> tee();
+    };
+}
+
+#[test]
+pub fn test_parser_forwardref_self_middle() {
+    hydroflow_parser! {
+        self_ref = map(|a: usize| a) -> [0]self_ref[1] -> map(|b: usize| b);
+    };
+}
