@@ -591,6 +591,7 @@
 <a href="#591" id="591">591</a>
 <a href="#592" id="592">592</a>
 <a href="#593" id="593">593</a>
+<a href="#594" id="594">594</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::any::Any;
 <span class="kw">use </span>std::borrow::Cow;
 <span class="kw">use </span>std::cell::Cell;
@@ -818,7 +819,6 @@
     </span><span class="kw">pub fn </span>run(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;!&gt; {
         <span class="kw">loop </span>{
             <span class="self">self</span>.run_tick();
-            <span class="self">self</span>.recv_events()<span class="question-mark">?</span>;
         }
     }
 
@@ -828,9 +828,11 @@
     </span><span class="kw">pub async fn </span>run_async(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;!&gt; {
         <span class="kw">loop </span>{
             <span class="comment">// Run any work which is immediately available.
-            </span><span class="self">self</span>.run_available();
-            <span class="comment">// Only when there is absolutely no work available in any stratum.
-            // Do we yield to wait for more events.
+            </span><span class="kw">while </span><span class="self">self</span>.run_tick() {
+                <span class="comment">// Yield between each tick to receive more events.
+                </span>tokio::task::yield_now().<span class="kw">await</span>;
+            }
+            <span class="comment">// When no work is available yield until more events occur.
             </span><span class="self">self</span>.recv_events_async().<span class="kw">await</span>;
         }
     }

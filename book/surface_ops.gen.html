@@ -278,7 +278,7 @@ let mut recv = tokio_stream::wrappers::ReceiverStream::new(recv);
 // Only 5 elements received due to buffer size.
 // (Note that if we were using a multi-threaded executor instead of `current_thread` it would
 // be possible for more items to be added as they're removed, resulting in &gt;5 collected.)
-let out: Vec&lt;_&gt; = hydroflow::util::collect_ready(&amp;mut recv);
+let out: Vec&lt;_&gt; = hydroflow::util::ready_iter(&amp;mut recv).collect();
 assert_eq!(&amp;[0, 1, 2, 3, 4], &amp;*out);
 <span class="boring">}
 </span></code></pre></pre>

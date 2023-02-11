@@ -89,6 +89,61 @@
 <a href="#89" id="89">89</a>
 <a href="#90" id="90">90</a>
 <a href="#91" id="91">91</a>
+<a href="#92" id="92">92</a>
+<a href="#93" id="93">93</a>
+<a href="#94" id="94">94</a>
+<a href="#95" id="95">95</a>
+<a href="#96" id="96">96</a>
+<a href="#97" id="97">97</a>
+<a href="#98" id="98">98</a>
+<a href="#99" id="99">99</a>
+<a href="#100" id="100">100</a>
+<a href="#101" id="101">101</a>
+<a href="#102" id="102">102</a>
+<a href="#103" id="103">103</a>
+<a href="#104" id="104">104</a>
+<a href="#105" id="105">105</a>
+<a href="#106" id="106">106</a>
+<a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
+<a href="#109" id="109">109</a>
+<a href="#110" id="110">110</a>
+<a href="#111" id="111">111</a>
+<a href="#112" id="112">112</a>
+<a href="#113" id="113">113</a>
+<a href="#114" id="114">114</a>
+<a href="#115" id="115">115</a>
+<a href="#116" id="116">116</a>
+<a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
+<a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a>
+<a href="#121" id="121">121</a>
+<a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
+<a href="#124" id="124">124</a>
+<a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
 </pre><pre class="rust"><code><span class="doccomment">//! Helper utilities for the Hydroflow surface syntax.
 
 </span><span class="kw">mod </span>udp;
@@ -112,6 +167,22 @@
     (send, recv)
 }
 
+<span class="kw">pub fn </span>ready_iter&lt;S&gt;(stream: S) -&gt; <span class="kw">impl </span>Iterator&lt;Item = S::Item&gt;
+<span class="kw">where
+    </span>S: Stream,
+{
+    <span class="kw">let </span><span class="kw-2">mut </span>stream = Box::pin(stream);
+    std::iter::from_fn(<span class="kw">move </span>|| {
+        <span class="kw">match </span>stream
+            .as_mut()
+            .poll_next(<span class="kw-2">&amp;mut </span>Context::from_waker(futures::task::noop_waker_ref()))
+        {
+            Poll::Ready(opt) =&gt; opt,
+            Poll::Pending =&gt; <span class="prelude-val">None</span>,
+        }
+    })
+}
+
 <span class="doccomment">/// Collects the immediately available items from the `Stream` into a `FromIterator` collection.
 ///
 /// This consumes the stream, use [`futures::StreamExt::by_ref()`] (or just `&amp;mut ...`) if you want
@@ -121,17 +192,29 @@
     </span>C: FromIterator&lt;S::Item&gt;,
     S: Stream,
 {
-    <span class="kw">let </span><span class="kw-2">mut </span>stream = Box::pin(stream);
-    std::iter::from_fn(|| {
-        <span class="kw">match </span>stream
-            .as_mut()
-            .poll_next(<span class="kw-2">&amp;mut </span>Context::from_waker(futures::task::noop_waker_ref()))
-        {
-            Poll::Ready(opt) =&gt; opt,
-            Poll::Pending =&gt; <span class="prelude-val">None</span>,
-        }
-    })
-    .collect()
+    <span class="macro">assert!</span>(tokio::runtime::Handle::try_current().is_err(), <span class="string">&quot;Calling `collect_ready` from an async runtime may cause incorrect results, use `collect_ready_async` instead.&quot;</span>);
+    ready_iter(stream).collect()
+}
+
+<span class="doccomment">/// Collects the immediately available items from the `Stream` into a collection (`Default` + `Extend`).
+///
+/// This consumes the stream, use [`futures::StreamExt::by_ref()`] (or just `&amp;mut ...`) if you want
+/// to retain ownership of your stream.
+</span><span class="kw">pub async fn </span>collect_ready_async&lt;C, S&gt;(stream: S) -&gt; C
+<span class="kw">where
+    </span>C: Default + Extend&lt;S::Item&gt;,
+    S: Stream,
+{
+    <span class="kw">let </span>any = std::cell::Cell::new(<span class="bool-val">true</span>);
+    <span class="kw">let </span><span class="kw-2">mut </span>unfused_iter = ready_iter(stream).inspect(|<span class="kw">_</span>| any.set(<span class="bool-val">true</span>));
+    <span class="kw">let </span><span class="kw-2">mut </span>out = C::default();
+    <span class="kw">while </span>any.replace(<span class="bool-val">false</span>) {
+        out.extend(unfused_iter.by_ref());
+        <span class="comment">// Tokio unbounded channel returns items in lenght-128 chunks, so we have to be careful
+        // that everything gets returned. That is why we yield here and loop.
+        </span>tokio::task::yield_now().<span class="kw">await</span>;
+    }
+    out
 }
 
 <span class="kw">pub fn </span>serialize_to_bytes&lt;T&gt;(msg: T) -&gt; bytes::Bytes
@@ -179,6 +262,33 @@
     K: Ord,
 {
     slice.sort_unstable_by(|a, b| f(a).cmp(f(b)))
+}
+
+<span class="attr">#[cfg(test)]
+</span><span class="kw">mod </span>test {
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
+
+    <span class="attr">#[test]
+    </span><span class="kw">pub fn </span>test_collect_ready() {
+        <span class="kw">let </span>(send, <span class="kw-2">mut </span>recv) = unbounded_channel::&lt;usize&gt;();
+        <span class="kw">for </span>x <span class="kw">in </span><span class="number">0</span>..<span class="number">1000 </span>{
+            send.send(x).unwrap();
+        }
+        <span class="macro">assert_eq!</span>(<span class="number">1000</span>, collect_ready::&lt;Vec&lt;<span class="kw">_</span>&gt;, <span class="kw">_</span>&gt;(<span class="kw-2">&amp;mut </span>recv).len());
+    }
+
+    <span class="attr">#[tokio::test]
+    </span><span class="kw">pub async fn </span>test_collect_ready_async() {
+        <span class="comment">// Tokio unbounded channel returns items in 128 item long chunks, so we have to be careful that everything gets returned.
+        </span><span class="kw">let </span>(send, <span class="kw-2">mut </span>recv) = unbounded_channel::&lt;usize&gt;();
+        <span class="kw">for </span>x <span class="kw">in </span><span class="number">0</span>..<span class="number">1000 </span>{
+            send.send(x).unwrap();
+        }
+        <span class="macro">assert_eq!</span>(
+            <span class="number">1000</span>,
+            collect_ready_async::&lt;Vec&lt;<span class="kw">_</span>&gt;, <span class="kw">_</span>&gt;(<span class="kw-2">&amp;mut </span>recv).<span class="kw">await</span>.len()
+        );
+    }
 }
 </code></pre></div>
 </section></main><div id="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="hydroflow" data-themes="" data-resource-suffix="" data-rustdoc-version="1.69.0-nightly (dc1d9d50f 2023-01-31)" data-search-js="search-98d53477a794af0b.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-7c23ac01f615ce90.css" ></div></body></html>
