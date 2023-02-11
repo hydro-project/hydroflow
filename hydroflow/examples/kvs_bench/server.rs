@@ -318,10 +318,10 @@ pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
                         reg.apply(reg.write(value, ctx));
 
                         broadcast.give((key, reg.clone()));
-                        store.give((key, (reg, response_addr)));
+                        store.give((key, (reg, Some(response_addr))));
                     },
                     ValueOrReg::Reg(reg) => {
-                        store.give((key, (reg, response_addr)));
+                        store.give((key, (reg, None)));
                     },
                 }
             });
@@ -335,7 +335,7 @@ pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
                 accum.merge(reg);
             })
             -> map(|(key, reg)| KVSRequest::Gossip{key, reg} )
-            -> inspect(|x| println!("{addr}:{:5}: sending to peers: {x:?}", context.current_tick()))
+            // -> inspect(|x| println!("{addr}:{:5}: sending to peers: {x:?}", context.current_tick()))
             -> for_each(|x| { transducer_to_peers_tx.send(x).unwrap(); });
 
         // join for lookups
@@ -347,7 +347,7 @@ pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
 
         gets
             -> map(|x| x)
-            -> map(|(key, addr)| (key, (MyMVReg::default(), addr))) // Nasty hack to get the group_by to emit another entry at the righ
+            -> map(|(key, addr)| (key, (MyMVReg::default(), Some(addr)))) // Nasty hack to get the group_by to emit another entry at the righ
             -> bump_merge;
 
         put_ack_tee = tee();
@@ -358,15 +358,17 @@ pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
 
         put_ack_tee
             -> map(|x| x)
-            -> map(|(key, (_reg, addr))| (KVSResponse::PutResponse{key}, addr))
+            -> filter(|x| x.1.1.is_some())
+            -> map(|(key, (_reg, addr))| (KVSResponse::PutResponse{key}, addr.unwrap()))
             // -> inspect(|x| println!("{addr}:{:5}: Response to client: {x:?}", context.current_tick()))
             -> transducer_to_client_tx_merge;
 
-        put_ack_tee -> bump_merge;
+        put_ack_tee
+            -> bump_merge;
 
         bump_merge
             -> map(|x| x)
-            -> group_by::<'static>(MyMVReg::default, |accum: &mut MyMVReg, (reg, _addr): (MyMVReg, Vec<u8>)| {
+            -> group_by::<'static, u64, MyMVReg>(MyMVReg::default, |accum: &mut MyMVReg, (reg, _addr): (MyMVReg, Option<Vec<u8>>)| {
                 accum.merge(reg);
             })
             // -> inspect(|x| println!("{addr}:{:5}: stores-into-lookup: {x:?}", context.current_tick()))
@@ -384,7 +386,9 @@ pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
             // -> inspect(|x| println!("{addr}:{:5}: Response to client: {x:?}", context.current_tick()))
             -> transducer_to_client_tx_merge;
 
-        transducer_to_client_tx_merge -> dest_sink(transducer_to_client_tx);
+        transducer_to_client_tx_merge
+            // -> inspect(|x| println!("{addr}:{:5}: Response to client: {x:?}", context.current_tick()))
+            -> dest_sink(transducer_to_client_tx);
     };
 
     let _serde_graph = df

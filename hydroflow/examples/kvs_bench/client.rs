@@ -61,13 +61,13 @@ pub async fn run_client(targets: Vec<SocketAddr>) {
 
                 let mut rng = StdRng::from_entropy();
 
-                let dist = rand_distr::Zipf::new(8000, 8.0).unwrap();
+                let dist = rand_distr::Zipf::new(8000, 99999999.0).unwrap();
 
                 let mut outstanding = 0;
 
                 loop {
                     // println!("client:{}. iter", palaver::thread::gettid());
-                    while outstanding < 1 {
+                    while outstanding < 50 {
                         let key = dist.sample(&mut rng) as u64;
                         let value = rng.next_u64();
 
@@ -111,6 +111,8 @@ pub async fn run_client(targets: Vec<SocketAddr>) {
                         outstanding -= 1;
                         puts.fetch_add(1, Ordering::SeqCst);
                     }
+
+                    // return;
 
                     // tokio::time::sleep(Duration::from_millis(1)).await;
                 }

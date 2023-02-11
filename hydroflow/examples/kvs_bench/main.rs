@@ -12,6 +12,7 @@ use crdts::MVReg;
 use hydroflow::tokio;
 use hydroflow::util::ipv4_resolve;
 use serde::{Deserialize, Serialize};
+use std::env;
 use std::net::SocketAddr;
 
 type MyMVReg = MVReg<u64, SocketAddr>;
@@ -56,6 +57,9 @@ enum Commands {
 // #[tokio::main]
 async fn main() {
     // run_server("127.0.0.1:5000".parse().unwrap(), vec![]).await;
+
+    let args: Vec<_> = env::args().collect();
+    println!("{:?}", args);
 
     match Cli::parse().command {
         Commands::Client { targets } => run_client(targets).await,
