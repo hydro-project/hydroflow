@@ -650,3 +650,35 @@ pub fn test_covid_tracing() {
         hydroflow.run_available();
     }
 }
+
+#[test]
+pub fn test_nested_stmt_merge() {
+    let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
+
+    let mut df = hydroflow_syntax! {
+        a = source_iter(10..20) -> (my_merge = merge() -> for_each(|x| out_send.send(x).unwrap()));
+        b = source_iter(20..30) -> my_merge;
+    };
+    df.run_available();
+
+    assert_eq!(
+        (10..30).collect::<Vec<_>>(),
+        collect_ready::<Vec<_>, _>(&mut out_recv)
+    );
+}
+
+#[test]
+pub fn test_nested_stmt_join() {
+    let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
+
+    let mut df = hydroflow_syntax! {
+        a = source_iter(10..20) -> map(|x| (x, x)) -> [0](my_join = join() -> for_each(|(k, (_a, _b))| out_send.send(k).unwrap()));
+        b = source_iter(10..20) -> map(|x| (x, x)) -> [1]my_join;
+    };
+    df.run_available();
+
+    assert_eq!(
+        (10..20).collect::<Vec<_>>(),
+        collect_ready::<Vec<_>, _>(&mut out_recv)
+    );
+}

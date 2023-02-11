@@ -92,11 +92,19 @@ impl Pipeline {
     }
 
     fn parse_one(input: ParseStream) -> syn::Result<Self> {
-        if input.peek(Paren) {
+        // TODO(mingwei): use the branching thing for better diagnostic messages.
+
+        // If `(stuff)` or `[index](stuff)`
+        if input.peek(Paren) || (input.peek(Bracket) && input.peek2(Paren)) {
             Ok(Self::Paren(input.parse()?))
-        } else if input.peek2(Paren) || input.peek2(Token![<]) || input.peek2(Token![::]) {
+        }
+        // Presumably current head is a ident or a `[` now.
+        // If `op_ident(` or `op_ident<` or `op_ident::`
+        else if input.peek2(Paren) || input.peek2(Token![<]) || input.peek2(Token![::]) {
             Ok(Self::Operator(input.parse()?))
-        } else {
+        }
+        // `var_ident` or `[idx]var_ident`
+        else {
             Ok(Self::Name(input.parse()?))
         }
     }
@@ -146,7 +154,7 @@ where
 
 pub struct PipelineParen {
     pub paren_token: Paren,
-    pub pipeline: Box<Pipeline>,
+    pub pipeline: Box<HfStatement>,
 }
 impl Parse for PipelineParen {
     fn parse(input: ParseStream) -> syn::Result<Self> {

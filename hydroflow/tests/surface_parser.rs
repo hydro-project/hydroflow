@@ -140,3 +140,19 @@ pub fn test_parser_port_naked_knot() {
         x_1[1] -> [1]x_1;
     };
 }
+
+#[test]
+pub fn test_parser_nested_stmt_merge() {
+    hydroflow_parser! {
+        a = source_iter(10..20) -> (my_merge = merge() -> for_each(std::mem::drop));
+        b = source_iter(20..30) -> my_merge;
+    };
+}
+
+#[test]
+pub fn test_parser_nested_stmt_join() {
+    hydroflow_parser! {
+        a = source_iter(10..20) -> map(|x| (x, x)) -> [0](my_join = join() -> for_each(std::mem::drop));
+        b = source_iter(10..20) -> map(|x| (x, x)) -> [1]my_join;
+    };
+}

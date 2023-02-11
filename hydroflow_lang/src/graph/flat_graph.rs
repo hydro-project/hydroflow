@@ -57,13 +57,21 @@ impl FlatGraph {
 
     /// Add a single [`HfStatement`] line to this `FlatGraph`.
     pub fn add_statement(&mut self, stmt: HfStatement) {
+        self.add_statement_internal(stmt, None);
+    }
+
+    fn add_statement_internal(
+        &mut self,
+        stmt: HfStatement,
+        current_varname: Option<&Ident>,
+    ) -> Ends {
         let stmt_span = stmt.span();
         match stmt {
             HfStatement::Named(named) => {
                 let ends = self.add_pipeline(named.pipeline, Some(&named.name));
                 match self.varname_ends.entry(named.name) {
                     Entry::Vacant(vacant_entry) => {
-                        vacant_entry.insert(ends);
+                        vacant_entry.insert(ends.clone());
                     }
                     Entry::Occupied(occupied_entry) => {
                         let prev_conflict = occupied_entry.key();
@@ -86,11 +94,10 @@ impl FlatGraph {
                             ),
                         ));
                     }
-                }
+                };
+                ends
             }
-            HfStatement::Pipeline(pipeline) => {
-                self.add_pipeline(pipeline, None);
-            }
+            HfStatement::Pipeline(pipeline) => self.add_pipeline(pipeline, current_varname),
         }
     }
 
@@ -151,7 +158,8 @@ impl FlatGraph {
             Pipeline::Paren(ported_pipeline_paren) => {
                 let (inn_port, pipeline_paren, out_port) =
                     PortIndexValue::from_ported(ported_pipeline_paren);
-                let og_ends = self.add_pipeline(*pipeline_paren.pipeline, current_varname);
+                let og_ends =
+                    self.add_statement_internal(*pipeline_paren.pipeline, current_varname);
                 combine_ends(&mut self.diagnostics, og_ends, inn_port, out_port)
             }
 
