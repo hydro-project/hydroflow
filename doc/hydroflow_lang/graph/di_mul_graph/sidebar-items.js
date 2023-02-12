@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["DiMulGraph","A directed multigraph where an vertex’s inbound and outbound edges are indexed."],["EdgeIndex",""]],"type":[["AdjEdges",""],["EdgeEnd",""]]};
+window.SIDEBAR_ITEMS = {"struct":[["DiMulGraph","A directed multigraph where an vertex’s inbound and outbound edges are indexed."]]};
