@@ -40,8 +40,8 @@ struct Cli {
 enum Commands {
     #[command(arg_required_else_help = true)]
     Client {
-        #[clap(long, value_parser = ipv4_resolve, value_delimiter = ',')]
-        targets: Vec<SocketAddr>,
+        #[clap(long, value_delimiter = ',')]
+        targets: Vec<String>,
     },
     #[command(arg_required_else_help = true)]
     Server {

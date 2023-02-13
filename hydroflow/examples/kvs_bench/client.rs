@@ -15,7 +15,7 @@ use std::{
 use tokio::net::TcpStream;
 use tokio_stream::StreamExt;
 
-pub async fn run_client(targets: Vec<SocketAddr>) {
+pub async fn run_client(targets: Vec<String>) {
     println!(
         "client:{}. {:?}",
         palaver::thread::gettid(),
@@ -48,9 +48,7 @@ pub async fn run_client(targets: Vec<SocketAddr>) {
 
                 println!("target: {target:?}");
 
-                let mut dealer_socket = tmq::dealer(&ctx)
-                    .connect(&format!("tcp://{}", target))
-                    .unwrap();
+                let mut dealer_socket = tmq::dealer(&ctx).connect(&target).unwrap();
 
                 // let stream = TcpStream::connect(target).await.unwrap();
                 // stream.set_nodelay(true).unwrap();
