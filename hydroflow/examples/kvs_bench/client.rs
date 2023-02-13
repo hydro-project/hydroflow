@@ -1,34 +1,26 @@
 use crate::{KVSRequest, KVSResponse};
 use futures::SinkExt;
-use hydroflow::util::{
-    deserialize_from_bytes, deserialize_from_bytes2, serialize_to_bytes, tcp_bytes,
-};
+use hydroflow::util::{deserialize_from_bytes2, serialize_to_bytes};
 use rand::{prelude::Distribution, rngs::StdRng, RngCore, SeedableRng};
 use std::{
-    net::SocketAddr,
     sync::{
         atomic::{AtomicUsize, Ordering},
         Arc,
     },
     time::{Duration, Instant},
 };
-use tokio::net::TcpStream;
+use tmq::Context;
 use tokio_stream::StreamExt;
 
-pub async fn run_client(targets: Vec<String>) {
-    println!(
-        "client:{}. {:?}",
-        palaver::thread::gettid(),
-        tokio::runtime::Handle::current()
-    );
-
+pub fn run_client(targets: Vec<String>, ctx: Context) {
     let puts = Arc::new(AtomicUsize::new(0));
 
     println!("{targets:?}");
     for target in targets {
         let puts = puts.clone();
+        let ctx = ctx.clone();
         std::thread::spawn(move || {
-            let rt = tokio::runtime::Builder::new_multi_thread() // Single threaded seems to hang for whatever reason? This will all get replaced soon anyway.
+            let rt = tokio::runtime::Builder::new_current_thread() // Single threaded seems to hang for whatever reason? This will all get replaced soon anyway.
                 .enable_all()
                 .build()
                 .unwrap();
@@ -44,22 +36,16 @@ pub async fn run_client(targets: Vec<String>) {
 
                 println!("tid client: {}", palaver::thread::gettid());
 
-                let ctx = tmq::Context::new();
-
-                println!("target: {target:?}");
-
                 let mut dealer_socket = tmq::dealer(&ctx).connect(&target).unwrap();
 
                 // let stream = TcpStream::connect(target).await.unwrap();
                 // stream.set_nodelay(true).unwrap();
 
-                println!("connected");
-
                 // let (mut outbound, mut inbound) = tcp_bytes(stream);
 
                 let mut rng = StdRng::from_entropy();
 
-                let dist = rand_distr::Zipf::new(8000, 16.0).unwrap();
+                let dist = rand_distr::Zipf::new(8000, 4.0).unwrap();
 
                 let mut outstanding = 0;
 
@@ -96,12 +82,12 @@ pub async fn run_client(targets: Vec<String>) {
 
                 loop {
                     // println!("client:{}. iter", palaver::thread::gettid());
-                    while outstanding < 128 {
+                    while outstanding < 256 {
                         let key = dist.sample(&mut rng) as u64;
                         let value = rng.next_u64();
 
                         dealer_socket
-                            .send(vec![
+                            .feed(vec![
                                 serialize_to_bytes(KVSRequest::Put { key, value }).to_vec()
                             ])
                             .await
@@ -112,6 +98,20 @@ pub async fn run_client(targets: Vec<String>) {
                         //     .await
                         //     .unwrap();
 
+                        outstanding += 1;
+                    }
+
+                    {
+                        let key = dist.sample(&mut rng) as u64;
+                        let value = rng.next_u64();
+
+                        // .flush() doesn't seem to compile?
+                        dealer_socket
+                            .send(vec![
+                                serialize_to_bytes(KVSRequest::Put { key, value }).to_vec()
+                            ])
+                            .await
+                            .unwrap();
                         outstanding += 1;
                     }
 
@@ -134,8 +134,8 @@ pub async fn run_client(targets: Vec<String>) {
                     if let Some(Ok(_response)) = dealer_socket.next().await {
                         let response: KVSResponse = deserialize_from_bytes2(&_response.0[0]);
                         match response {
-                            KVSResponse::GetResponse { key, reg } => println!("{reg:?}"),
-                            KVSResponse::PutResponse { key } => (),
+                            KVSResponse::GetResponse { key: _, reg } => println!("{reg:?}"),
+                            KVSResponse::PutResponse { key: _ } => (),
                         }
                         outstanding -= 1;
                         puts.fetch_add(1, Ordering::SeqCst);
@@ -147,16 +147,18 @@ pub async fn run_client(targets: Vec<String>) {
         });
     }
 
-    let mut time_since_last_report = std::time::Instant::now();
-    loop {
-        if time_since_last_report.elapsed() >= Duration::from_secs(1) {
-            time_since_last_report = Instant::now();
-            println!("puts/s: {}", puts.load(Ordering::SeqCst));
-            puts.store(0, Ordering::SeqCst);
-        }
+    std::thread::spawn(move || {
+        let mut time_since_last_report = std::time::Instant::now();
+        loop {
+            if time_since_last_report.elapsed() >= Duration::from_secs(1) {
+                time_since_last_report = Instant::now();
+                println!("puts/s: {}", puts.load(Ordering::SeqCst));
+                puts.store(0, Ordering::SeqCst);
+            }
 
-        tokio::time::sleep(Duration::from_millis(32)).await;
-    }
+            std::thread::sleep(Duration::from_millis(32));
+        }
+    });
 }
 
 // let mut futs = Vec::new();

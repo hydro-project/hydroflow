@@ -10,11 +10,9 @@ use clap::Parser;
 use clap::Subcommand;
 use crdts::MVReg;
 use crdts::VClock;
-use hydroflow::tokio;
-use hydroflow::util::ipv4_resolve;
 use serde::{Deserialize, Serialize};
 use std::env;
-use std::net::SocketAddr;
+use std::time::Duration;
 
 type MyMVReg = MVReg<u64, String>;
 type MyVClock = VClock<String>;
@@ -53,22 +51,45 @@ enum Commands {
         #[clap(long, value_delimiter = ',')]
         topology: Vec<String>,
     },
+    All {
+        #[clap(long, value_delimiter = ',')]
+        clients: Vec<String>,
+
+        #[clap(long, value_delimiter = ',')]
+        servers: Vec<String>,
+    },
 }
 
-#[tokio::main(flavor = "current_thread")]
-// #[tokio::main]
-async fn main() {
+fn main() {
     // run_server("127.0.0.1:5000".parse().unwrap(), vec![]).await;
 
     let args: Vec<_> = env::args().collect();
     println!("{:?}", args);
 
+    let ctx = tmq::Context::new();
+
     match Cli::parse().command {
-        Commands::Client { targets } => run_client(targets).await,
+        Commands::Client { targets } => run_client(targets, ctx),
         Commands::Server { addr, mut topology } => {
             topology.retain(|x| *x != addr); // Don't try to connect to self, makes the bash script easier to write.
             let peers = topology;
-            run_server(addr, peers).await
+            run_server(addr, peers, ctx)
         }
+        Commands::All { clients, servers } => {
+            let topology = servers.clone();
+            for server in servers {
+                let mut topology = topology.clone();
+                topology.retain(|x| *x != server);
+                run_server(server, topology, ctx.clone());
+            }
+
+            std::thread::sleep(Duration::from_secs(1));
+
+            run_client(clients, ctx);
+        }
+    }
+
+    loop {
+        std::thread::sleep(Duration::from_secs(1));
     }
 }
