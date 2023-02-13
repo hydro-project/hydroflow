@@ -306,6 +306,8 @@
 <a href="#306" id="306">306</a>
 <a href="#307" id="307">307</a>
 <a href="#308" id="308">308</a>
+<a href="#309" id="309">309</a>
+<a href="#310" id="310">310</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::fmt::Display;
 <span class="kw">use </span>std::ops::{Bound, RangeBounds};
 
@@ -320,6 +322,7 @@
 
 <span class="kw">use super</span>::{GraphNodeId, GraphSubgraphId, PortIndexValue};
 
+<span class="kw">mod </span>anti_join;
 <span class="kw">mod </span>cross_join;
 <span class="kw">mod </span>demux;
 <span class="kw">mod </span>dest_sink;
@@ -486,6 +489,7 @@
     source_stream_serde::SOURCE_STREAM_SERDE,
     repeat_iter::REPEAT_ITER,
     difference::DIFFERENCE,
+    anti_join::ANTI_JOIN,
     next_stratum::NEXT_STRATUM,
     next_tick::NEXT_TICK,
     for_each::FOR_EACH,

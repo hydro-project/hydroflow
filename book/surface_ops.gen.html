@@ -139,6 +139,42 @@
 <p>In our previous examples we made use of some of Hydroflow's built-in operators.
 Here we document each operators in more detail. Most of these operators
 are based on the Rust equivalents for iterators; see the <a href="https://doc.rust-lang.org/std/iter/trait.Iterator.html">Rust documentation</a>.</p>
+<h2 id="anti_join"><a class="header" href="#anti_join"><code>anti_join</code></a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
+<tr><td><span title="exactly 2">exactly 2</span></td><td><code>-&gt; [&lt;input_port&gt;]anti_join() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Blocking</td></tr>
+</tbody></table>
+</div>
+<blockquote>
+<p>Input port names: <code>pos</code> (streaming), <code>neg</code> (blocking)</p>
+</blockquote>
+<!-- GENERATED "hydroflow_lang/src/graph/ops/anti_join.rs" -->
+<blockquote>
+<p>2 input streams the first of type (K, T), the second of type K,
+with output type (K, T)</p>
+</blockquote>
+<p>For a given tick, computes the anti-join of the items in the input
+streams, returning items in the <code>pos</code> input that do not have matching keys
+in the <code>neg</code> input.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
+</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
+</span>// should print (&quot;elephant&quot;, 3)
+diff = anti_join();
+source_iter(vec![(&quot;dog&quot;, 1), (&quot;cat&quot;, 2), (&quot;elephant&quot;, 3)]) -&gt; [pos]diff;
+source_iter(vec![&quot;dog&quot;, &quot;cat&quot;, &quot;gorilla&quot;]) -&gt; [neg]diff;
+diff -&gt; for_each(|v: (_, _)| println!(&quot;{}, {}&quot;, v.0, v.1));
+// elephant 3
+<span class="boring">};
+</span><span class="boring">for _ in 0..100 {
+</span><span class="boring">    if !__hf.run_tick() {
+</span><span class="boring">        // No work done.
+</span><span class="boring">        break;
+</span><span class="boring">    }
+</span><span class="boring">}
+</span><span class="boring">}
+</span></code></pre></pre>
 <h2 id="cross_join"><a class="header" href="#cross_join"><code>cross_join</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 2">exactly 2</span></td><td><code>-&gt; [&lt;input_port&gt;]cross_join() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
