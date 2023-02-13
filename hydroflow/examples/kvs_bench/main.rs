@@ -9,13 +9,15 @@ use clap::command;
 use clap::Parser;
 use clap::Subcommand;
 use crdts::MVReg;
+use crdts::VClock;
 use hydroflow::tokio;
 use hydroflow::util::ipv4_resolve;
 use serde::{Deserialize, Serialize};
 use std::env;
 use std::net::SocketAddr;
 
-type MyMVReg = MVReg<u64, SocketAddr>;
+type MyMVReg = MVReg<u64, String>;
+type MyVClock = VClock<String>;
 
 #[derive(PartialEq, Eq, Clone, Serialize, Deserialize, Debug)]
 pub enum KVSRequest {
@@ -45,11 +47,11 @@ enum Commands {
     },
     #[command(arg_required_else_help = true)]
     Server {
-        #[clap(long, value_parser = ipv4_resolve)]
-        addr: SocketAddr,
+        #[clap(long)]
+        addr: String,
 
-        #[clap(long, value_parser = ipv4_resolve, value_delimiter = ',')]
-        topology: Vec<SocketAddr>,
+        #[clap(long, value_delimiter = ',')]
+        topology: Vec<String>,
     },
 }
 
@@ -64,7 +66,7 @@ async fn main() {
     match Cli::parse().command {
         Commands::Client { targets } => run_client(targets).await,
         Commands::Server { addr, mut topology } => {
-            topology.retain(|&x| x != addr); // Don't try to connect to self, makes the bash script easier to write.
+            topology.retain(|x| *x != addr); // Don't try to connect to self, makes the bash script easier to write.
             let peers = topology;
             run_server(addr, peers).await
         }

@@ -16,14 +16,14 @@ use tokio::task;
 use tokio_stream::StreamExt;
 
 use crate::MyMVReg;
+use crate::MyVClock;
 use crdts::ctx::AddCtx;
 use crdts::CmRDT;
 use crdts::CvRDT;
-use crdts::VClock;
 use hydroflow::util::deserialize_from_bytes2;
 use tokio::select;
 
-pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
+pub async fn run_server(server_addr: String, peers: Vec<String>) {
     println!("tid server: {}", palaver::thread::gettid());
 
     let ctx = tmq::Context::new();
@@ -151,34 +151,38 @@ pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
     //     .unwrap()
     // });
 
-    let f2 = localset.run_until(async {
-        task::spawn_local({
-            let ctx = ctx.clone();
+    let f2 = localset.run_until({
+        let ctx = ctx.clone();
+        let addr = server_addr.clone();
+    
+        async {
+            task::spawn_local({
 
-            async move {
-                println!("binding to: {addr:?}");
-                let mut router_socket = tmq::router(&ctx).bind(&format!("tcp://{}", addr)).unwrap();
 
-                loop {
-                    select! {
-                        Some(x) = router_socket.next() => {
-                            let x = x.unwrap();
-                            assert_eq!(x.0.len(), 2);
+                async move {
+                    println!("binding to: {addr:?}");
+                    let mut router_socket = tmq::router(&ctx).bind(&addr).unwrap();
 
-                            let routing_id = Vec::from(&x.0[0][..]);
-                            let payload: KVSRequest = deserialize_from_bytes2(&x.0[1]);
-                            client_to_transducer_tx.send((payload, routing_id)).unwrap();
-                        },
-                        Some(x) = transducer_to_client_rx.next() => {
-                            router_socket.send(vec![x.1, serialize_to_bytes(x.0).to_vec()]).await.unwrap();
+                    loop {
+                        select! {
+                            Some(x) = router_socket.next() => {
+                                let x = x.unwrap();
+                                assert_eq!(x.0.len(), 2);
+
+                                let routing_id = Vec::from(&x.0[0][..]);
+                                let payload: KVSRequest = deserialize_from_bytes2(&x.0[1]);
+                                client_to_transducer_tx.send((payload, routing_id)).unwrap();
+                            },
+                            Some(x) = transducer_to_client_rx.next() => {
+                                router_socket.send(vec![x.1, serialize_to_bytes(x.0).to_vec()]).await.unwrap();
+                            }
                         }
                     }
                 }
-            }
-        })
-        .await
-        .unwrap()
-    });
+            })
+            .await
+            .unwrap()
+    }});
 
     // Handle outgoing messages to clients
     // let f3 = localset.run_until(async {
@@ -206,9 +210,7 @@ pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
         let transducer_to_peers_tx = transducer_to_peers_tx.clone();
         async move {
             for peer in peers {
-                let mut socket = tmq::dealer(&ctx)
-                    .connect(&format!("tcp://{}", peer))
-                    .unwrap();
+                let mut socket = tmq::dealer(&ctx).connect(&peer).unwrap();
 
                 task::spawn_local({
                     let mut transducer_to_peers_rx = transducer_to_peers_tx.subscribe();
@@ -288,10 +290,10 @@ pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
 
         max_vclock = put_tee
             -> map(|(_key, x)| (0, x)) // convert group-by to fold.
-            -> group_by::<'static, u64, VClock<SocketAddr>>(VClock::default, |accum: &mut VClock<SocketAddr>, (value_or_reg, _addr)| {
+            -> group_by::<'static, u64, MyVClock>(MyVClock::default, |accum: &mut MyVClock, (value_or_reg, _addr)| {
                 match value_or_reg {
                     ValueOrReg::Value(_) => {
-                        accum.apply(accum.inc(addr)); // TODO: this is a hack, need to figure out what to call self.
+                        accum.apply(accum.inc(server_addr.clone())); // TODO: this is a hack, need to figure out what to call self.
                     },
                     ValueOrReg::Reg(reg) => {
                         accum.merge(reg.read_ctx().add_clock);
@@ -306,13 +308,13 @@ pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
 
         broadcast_or_store = maxvclock_puts
             // -> inspect(|x| println!("{addr}:{:5}: output of maxvclock_puts: {x:?}", context.current_tick()))
-            -> demux(|(clock, (key, (value_or_reg, response_addr))): (VClock<SocketAddr>, (u64, (ValueOrReg, Vec<u8>))), var_args!(broadcast, store)| {
+            -> demux(|(clock, (key, (value_or_reg, response_addr))): (MyVClock, (u64, (ValueOrReg, Vec<u8>))), var_args!(broadcast, store)| {
                 match value_or_reg {
                     ValueOrReg::Value(value) => {
                         let mut reg = MyMVReg::default();
 
                         let ctx = AddCtx {
-                            dot: clock.dot(addr),
+                            dot: clock.dot(server_addr.clone()),
                             clock: clock,
                         };
 
