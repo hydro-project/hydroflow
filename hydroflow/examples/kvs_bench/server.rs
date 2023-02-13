@@ -283,11 +283,11 @@ pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
         put_tee = tee();
 
         client_input[puts]
-            // -> inspect(|x| println!("{addr}:{:5}: puts-into-crossjoin: {x:?}", context.current_tick()))
+            // -> inspect(|(key, (x, a))| if let ValueOrReg::Value(_) = x {println!("{addr}:{:5}: puts-into-crossjoin: {key:?}, {x:?}, {a:?}", context.current_tick())})
             -> put_tee;
 
         max_vclock = put_tee
-            -> map(|x| x)
+            -> map(|(_key, x)| (0, x)) // convert group-by to fold.
             -> group_by::<'static, u64, VClock<SocketAddr>>(VClock::default, |accum: &mut VClock<SocketAddr>, (value_or_reg, _addr)| {
                 match value_or_reg {
                     ValueOrReg::Value(_) => {
@@ -305,6 +305,7 @@ pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
         put_tee     -> [1]maxvclock_puts;
 
         broadcast_or_store = maxvclock_puts
+            // -> inspect(|x| println!("{addr}:{:5}: output of maxvclock_puts: {x:?}", context.current_tick()))
             -> demux(|(clock, (key, (value_or_reg, response_addr))): (VClock<SocketAddr>, (u64, (ValueOrReg, Vec<u8>))), var_args!(broadcast, store)| {
                 match value_or_reg {
                     ValueOrReg::Value(value) => {
@@ -360,7 +361,6 @@ pub async fn run_server(addr: SocketAddr, peers: Vec<SocketAddr>) {
             -> map(|x| x)
             -> filter(|x| x.1.1.is_some())
             -> map(|(key, (_reg, addr))| (KVSResponse::PutResponse{key}, addr.unwrap()))
-            // -> inspect(|x| println!("{addr}:{:5}: Response to client: {x:?}", context.current_tick()))
             -> transducer_to_client_tx_merge;
 
         put_ack_tee

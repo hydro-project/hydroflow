@@ -61,13 +61,44 @@ pub async fn run_client(targets: Vec<SocketAddr>) {
 
                 let mut rng = StdRng::from_entropy();
 
-                let dist = rand_distr::Zipf::new(8000, 99999999.0).unwrap();
+                let dist = rand_distr::Zipf::new(8000, 16.0).unwrap();
 
                 let mut outstanding = 0;
 
+                // dealer_socket
+                //     .send(vec![serialize_to_bytes(KVSRequest::Put {
+                //         key: 7,
+                //         value: 0,
+                //     })
+                //     .to_vec()])
+                //     .await
+                //     .unwrap();
+
+                // tokio::time::sleep(Duration::from_secs(1)).await;
+
+                // dealer_socket
+                //     .send(vec![serialize_to_bytes(KVSRequest::Put {
+                //         key: 7,
+                //         value: 1,
+                //     })
+                //     .to_vec()])
+                //     .await
+                //     .unwrap();
+
+                // dealer_socket
+                //     .send(vec![serialize_to_bytes(KVSRequest::Put {
+                //         key: 6,
+                //         value: 1,
+                //     })
+                //     .to_vec()])
+                //     .await
+                //     .unwrap();
+
+                // return;
+
                 loop {
                     // println!("client:{}. iter", palaver::thread::gettid());
-                    while outstanding < 50 {
+                    while outstanding < 128 {
                         let key = dist.sample(&mut rng) as u64;
                         let value = rng.next_u64();
 
@@ -111,8 +142,6 @@ pub async fn run_client(targets: Vec<SocketAddr>) {
                         outstanding -= 1;
                         puts.fetch_add(1, Ordering::SeqCst);
                     }
-
-                    // return;
 
                     // tokio::time::sleep(Duration::from_millis(1)).await;
                 }
