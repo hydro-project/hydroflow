@@ -12,6 +12,7 @@ use crate::parse::PortIndex;
 
 use super::{GraphNodeId, GraphSubgraphId, PortIndexValue};
 
+mod anti_join;
 mod cross_join;
 mod demux;
 mod dest_sink;
@@ -178,6 +179,7 @@ pub const OPERATORS: &[OperatorConstraints] = &[
     source_stream_serde::SOURCE_STREAM_SERDE,
     repeat_iter::REPEAT_ITER,
     difference::DIFFERENCE,
+    anti_join::ANTI_JOIN,
     next_stratum::NEXT_STRATUM,
     next_tick::NEXT_TICK,
     for_each::FOR_EACH,
