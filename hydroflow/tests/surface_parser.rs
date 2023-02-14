@@ -60,3 +60,83 @@ pub fn test_parser_basic() {
         (h[2] -> [1]g);
     }
 }
+
+#[test]
+pub fn test_parser_port_reassign() {
+    hydroflow_parser! {
+        id = identity();
+        inn = id;
+        out = id;
+        out -> inn;
+    };
+
+    hydroflow_parser! {
+        id = identity();
+        inn = id;
+        out = id;
+        out[0] -> [0]inn;
+    };
+
+    hydroflow_parser! {
+        id = identity();
+        inn = id;
+        out = id;
+        [0]out[0] -> [0]inn[0]; // ?
+    };
+}
+
+#[test]
+pub fn test_parser_port_naked_basic() {
+    hydroflow_parser! {
+        id = identity();
+        inn = [0]id;
+        out = id[0];
+        out -> inn;
+    };
+}
+
+#[test]
+pub fn test_parser_port_naked_knot() {
+    hydroflow_parser! {
+        pivot = merge() -> tee();
+
+        inn_0 = [0]pivot;
+        inn_1 = [1]pivot;
+
+        out_0 = pivot[0];
+        out_1 = pivot[1];
+
+        out_0 -> inn_0;
+        out_1 -> inn_1;
+    };
+
+    hydroflow_parser! {
+        pivot = merge() -> tee();
+
+        x_0 = [0]pivot[0];
+        x_1 = [1]pivot[1];
+
+        x_0 -> x_0;
+        x_1 -> x_1;
+    };
+
+    hydroflow_parser! {
+        pivot = merge() -> tee();
+
+        x_0 = pivot[0];
+        x_1 = pivot[1];
+
+        x_0 -> [0]x_0;
+        x_1 -> [1]x_1;
+    };
+
+    hydroflow_parser! {
+        pivot = merge() -> tee();
+
+        x_0 = pivot;
+        x_1 = pivot;
+
+        x_0[0] -> [0]x_0;
+        x_1[1] -> [1]x_1;
+    };
+}
