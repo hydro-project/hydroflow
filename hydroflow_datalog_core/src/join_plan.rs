@@ -15,6 +15,7 @@ pub enum JoinPlan<'a> {
     Source(&'a RelationExpr),
     /// A join between two subtrees.
     Join(Box<JoinPlan<'a>>, Box<JoinPlan<'a>>),
+    AntiJoin(Box<JoinPlan<'a>>, Box<JoinPlan<'a>>),
     Predicate(Vec<&'a PredicateExpr>, Box<JoinPlan<'a>>),
 }
 
@@ -56,6 +57,8 @@ fn emit_join_input_pipeline(
     join_node: &syn::Ident,
     // Whether this node contributes to the left or right side of the join.
     join_side: JoinSide,
+    // Whether the pipeline is for an anti-join.
+    anti_join: bool,
     // The Hydroflow graph to emit the pipeline to.
     flat_graph: &mut FlatGraph,
 ) {
@@ -76,8 +79,19 @@ fn emit_join_input_pipeline(
     let source_name = &source_expanded.name;
     let source_type = &source_expanded.tuple_type;
 
-    let rhs: Pipeline =
-        parse_quote!(map(|v: #source_type| ((#(#hash_keys, )*), v)) -> [#out_index] #join_node);
+    let rhs: Pipeline = if anti_join {
+        match join_side {
+            JoinSide::Left => {
+                parse_quote!(map(|v: #source_type| ((#(#hash_keys, )*), v)) -> [pos] #join_node)
+            }
+            JoinSide::Right => {
+                parse_quote!(map(|v: #source_type| (#(#hash_keys, )*)) -> [neg] #join_node)
+            }
+        }
+    } else {
+        parse_quote!(map(|v: #source_type| ((#(#hash_keys, )*), v)) -> [#out_index] #join_node)
+    };
+
     let statement = match source_expanded.tee_idx {
         Some(i) => {
             let in_index = syn::LitInt::new(&format!("{}", i), Span::call_site());
@@ -207,7 +221,9 @@ pub fn expand_join_plan(
                 tuple_type: row_type,
             }
         }
-        JoinPlan::Join(lhs, rhs) => {
+        JoinPlan::Join(lhs, rhs) | JoinPlan::AntiJoin(lhs, rhs) => {
+            let is_anti = matches!(plan, JoinPlan::AntiJoin(_, _));
+
             let left_expanded = expand_join_plan(lhs, flat_graph, tee_counter, next_join_idx);
             let right_expanded = expand_join_plan(rhs, flat_graph, tee_counter, next_join_idx);
 
@@ -217,34 +233,6 @@ pub fn expand_join_plan(
                 .filter(|i| left_expanded.variable_mapping.contains_key(i))
                 .collect::<Vec<_>>();
 
-            // We start by defining the pipeline from the `join()` operator onwards. The main logic
-            // here is to flatten the tuples from the left and right sides of the join into a
-            // single tuple that is used by downstream joins or the final output.
-            let mut flattened_tuple_elems: Vec<syn::Expr> = vec![];
-            let mut flattened_mapping = BTreeMap::new();
-
-            for (ident, source_idx) in left_expanded
-                .variable_mapping
-                .keys()
-                .map(|l| (l, 0))
-                .chain(right_expanded.variable_mapping.keys().map(|l| (l, 1)))
-            {
-                if !flattened_mapping.contains_key(ident) {
-                    let syn_source_index = syn::Index::from(source_idx);
-                    let source_expr: syn::Expr = parse_quote!(kv.1.#syn_source_index);
-                    let bindings = if source_idx == 0 {
-                        &left_expanded.variable_mapping
-                    } else {
-                        &right_expanded.variable_mapping
-                    };
-
-                    let source_col_idx = syn::Index::from(*bindings.get(ident).unwrap());
-
-                    flattened_mapping.insert(ident.clone(), flattened_tuple_elems.len());
-                    flattened_tuple_elems.push(parse_quote!(#source_expr.#source_col_idx));
-                }
-            }
-
             let key_type = identifiers_to_join
                 .iter()
                 .map(|_| parse_quote!(_))
@@ -253,8 +241,6 @@ pub fn expand_join_plan(
             let left_type = &left_expanded.tuple_type;
             let right_type = &right_expanded.tuple_type;
 
-            let flatten_closure: syn::Expr = parse_quote!(|kv: ((#(#key_type, )*), (#left_type, #right_type))| (#(#flattened_tuple_elems, )*));
-
             let join_node = syn::Ident::new(
                 &format!(
                     "join_{}",
@@ -262,14 +248,74 @@ pub fn expand_join_plan(
                 ),
                 Span::call_site(),
             );
-            flat_graph
-                .add_statement(parse_quote!(#join_node = join::<'tick>() -> map(#flatten_closure)));
+
+            let intermediate = if is_anti {
+                let flatten_closure: syn::Expr =
+                    parse_quote!(|kv: ((#(#key_type, )*), #left_type)| kv.1);
+
+                flat_graph
+                    .add_statement(parse_quote!(#join_node = anti_join() -> map(#flatten_closure)));
+
+                IntermediateJoinNode {
+                    name: join_node.clone(),
+                    tee_idx: None,
+                    variable_mapping: left_expanded.variable_mapping.clone(),
+                    tuple_type: left_expanded.tuple_type.clone(),
+                }
+            } else {
+                // We start by defining the pipeline from the `join()` operator onwards. The main logic
+                // here is to flatten the tuples from the left and right sides of the join into a
+                // single tuple that is used by downstream joins or the final output.
+                let mut flattened_tuple_elems: Vec<syn::Expr> = vec![];
+                let mut flattened_mapping = BTreeMap::new();
+
+                for (ident, source_idx) in left_expanded
+                    .variable_mapping
+                    .keys()
+                    .map(|l| (l, 0))
+                    .chain(right_expanded.variable_mapping.keys().map(|l| (l, 1)))
+                {
+                    if !flattened_mapping.contains_key(ident) {
+                        let syn_source_index = syn::Index::from(source_idx);
+                        let source_expr: syn::Expr = parse_quote!(kv.1.#syn_source_index);
+                        let bindings = if source_idx == 0 {
+                            &left_expanded.variable_mapping
+                        } else {
+                            &right_expanded.variable_mapping
+                        };
+
+                        let source_col_idx = syn::Index::from(*bindings.get(ident).unwrap());
+
+                        flattened_mapping.insert(ident.clone(), flattened_tuple_elems.len());
+                        flattened_tuple_elems.push(parse_quote!(#source_expr.#source_col_idx));
+                    }
+                }
+
+                let flatten_closure: syn::Expr = parse_quote!(|kv: ((#(#key_type, )*), (#left_type, #right_type))| (#(#flattened_tuple_elems, )*));
+
+                flat_graph.add_statement(
+                    parse_quote!(#join_node = join::<'tick>() -> map(#flatten_closure)),
+                );
+
+                let output_types: Vec<syn::Type> = flattened_tuple_elems
+                    .iter()
+                    .map(|_| parse_quote!(_))
+                    .collect::<Vec<_>>();
+
+                IntermediateJoinNode {
+                    name: join_node.clone(),
+                    tee_idx: None,
+                    variable_mapping: flattened_mapping,
+                    tuple_type: parse_quote!((#(#output_types, )*)),
+                }
+            };
 
             emit_join_input_pipeline(
                 &identifiers_to_join,
                 &left_expanded,
                 &join_node,
                 JoinSide::Left,
+                is_anti,
                 flat_graph,
             );
 
@@ -278,20 +324,11 @@ pub fn expand_join_plan(
                 &right_expanded,
                 &join_node,
                 JoinSide::Right,
+                is_anti,
                 flat_graph,
             );
 
-            let output_types: Vec<syn::Type> = flattened_tuple_elems
-                .iter()
-                .map(|_| parse_quote!(_))
-                .collect::<Vec<_>>();
-
-            IntermediateJoinNode {
-                name: join_node,
-                tee_idx: None,
-                variable_mapping: flattened_mapping,
-                tuple_type: parse_quote!((#(#output_types, )*)),
-            }
+            intermediate
         }
         JoinPlan::Predicate(predicates, inner) => {
             let inner_expanded = expand_join_plan(inner, flat_graph, tee_counter, next_join_idx);

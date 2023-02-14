@@ -40,7 +40,7 @@ pub mod datalog {
 
     #[derive(Debug, Clone)]
     pub enum Atom {
-        Relation(RelationExpr),
+        Relation(#[rust_sitter::leaf(text = "!")] Option<()>, RelationExpr),
         Predicate(PredicateExpr),
     }
 

@@ -137,11 +137,31 @@ fn generate_rule(
     let mut plan: JoinPlan = sources
         .iter()
         .filter_map(|x| match x {
-            Atom::Relation(e) => Some(JoinPlan::Source(e)),
+            Atom::Relation(negated, e) => {
+                if negated.is_none() {
+                    Some(JoinPlan::Source(e))
+                } else {
+                    None
+                }
+            }
             _ => None,
         })
         .reduce(|a, b| JoinPlan::Join(Box::new(a), Box::new(b)))
         .unwrap();
+
+    plan = sources
+        .iter()
+        .filter_map(|x| match x {
+            Atom::Relation(negated, e) => {
+                if negated.is_some() {
+                    Some(JoinPlan::Source(e))
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        })
+        .fold(plan, |a, b| JoinPlan::AntiJoin(Box::new(a), Box::new(b)));
 
     let predicates = sources
         .iter()
@@ -373,6 +393,20 @@ mod tests {
             .output out
 
             out(x, y) :- input(x, y), ( x > y ), ( y == x ).
+            "#
+        );
+    }
+
+    #[test]
+    fn test_anti_join() {
+        test_snapshots!(
+            r#"
+            .input ints_1
+            .input ints_2
+            .input ints_3
+            .output result
+
+            result(x, z) :- ints_1(x, y), ints_2(y, z), !ints_3(y)
             "#
         );
     }
