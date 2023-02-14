@@ -3,7 +3,7 @@ use std::collections::{HashMap, HashSet};
 use hydroflow_lang::{
     diagnostic::{Diagnostic, Level},
     graph::flat_graph::FlatGraph,
-    parse::{ArrowConnector, IndexInt, Indexing, Pipeline, PipelineLink},
+    parse::{IndexInt, Indexing, Pipeline, PipelineLink},
 };
 use proc_macro2::{Span, TokenStream};
 use syn::parse_quote;
@@ -202,23 +202,19 @@ fn generate_rule(
     };
 
     let out_name = out_expanded.name;
+    // If the output comes with a tee index, we must read with that. This only happens when we are
+    // directly outputting a transformation of a single relation on the RHS.
+    let out_indexing = out_expanded.tee_idx.map(|i| Indexing {
+        bracket_token: syn::token::Bracket::default(),
+        index: hydroflow_lang::parse::PortIndex::Int(IndexInt {
+            value: i,
+            span: Span::call_site(),
+        }),
+    });
     flat_graph.add_statement(hydroflow_lang::parse::HfStatement::Pipeline(
         Pipeline::Link(PipelineLink {
-            lhs: Box::new(parse_quote!(#out_name)),
-            connector: ArrowConnector {
-                // if the output comes with a tee index, we must read with that
-                // this only happens when we are directly outputting a transformation
-                // of a single relation on the RHS
-                src: out_expanded.tee_idx.map(|i| Indexing {
-                    bracket_token: syn::token::Bracket::default(),
-                    index: hydroflow_lang::parse::PortIndex::Int(IndexInt {
-                        value: i,
-                        span: Span::call_site(),
-                    }),
-                }),
-                arrow: parse_quote!(->),
-                dst: None,
-            },
+            lhs: Box::new(parse_quote!(#out_name #out_indexing)), // out_name[idx]
+            arrow: parse_quote!(->),
             rhs: Box::new(after_join),
         }),
     ));

@@ -96,19 +96,88 @@ impl FlatGraph {
 
     /// Helper: Add a pipeline, i.e. `a -> b -> c`. Return the input and output ends for it.
     fn add_pipeline(&mut self, pipeline: Pipeline, current_varname: Option<&Ident>) -> Ends {
+        fn combine_ends(
+            diagnostics: &mut Vec<Diagnostic>,
+            og_ends: Ends,
+            inn_port: PortIndexValue,
+            out_port: PortIndexValue,
+        ) -> Ends {
+            // TODO(mingwei): minification pass over this code?
+            fn combine_end(
+                diagnostics: &mut Vec<Diagnostic>,
+                og: Option<(PortIndexValue, GraphNodeId)>,
+                other: PortIndexValue,
+                input_output: &'static str,
+            ) -> Option<(PortIndexValue, GraphNodeId)> {
+                let other_span = other.span();
+
+                let (og_port, og_node) = og?;
+                match og_port.combine(other) {
+                    Ok(combined_port) => Some((combined_port, og_node)),
+                    Err(og_port) => {
+                        // TODO(mingwei): Use `MultiSpan` once `proc_macro2` supports it.
+                        diagnostics.push(Diagnostic::spanned(
+                            og_port.span(),
+                            Level::Error,
+                            format!(
+                                "Indexing on {} is overwritten below ({}) (1/2)",
+                                input_output,
+                                PrettySpan(other_span),
+                            ),
+                        ));
+                        diagnostics.push(Diagnostic::spanned(
+                            other_span,
+                            Level::Error,
+                            format!(
+                                "Cannot index on already-indexed {}, previously indexed above ({}) (2/2)",
+                                input_output,
+                                PrettySpan(og_port.span()),
+
+                            ),
+                        ));
+                        // When errored, just use original and ignore OTHER port to minimize
+                        // noisy/extra diagnostics.
+                        Some((og_port, og_node))
+                    }
+                }
+            }
+            Ends {
+                inn: combine_end(diagnostics, og_ends.inn, inn_port, "input"),
+                out: combine_end(diagnostics, og_ends.out, out_port, "output"),
+            }
+        }
+
         match pipeline {
-            Pipeline::Paren(pipeline_paren) => {
-                self.add_pipeline(*pipeline_paren.pipeline, current_varname)
+            Pipeline::Paren(ported_pipeline_paren) => {
+                let (inn_port, pipeline_paren, out_port) =
+                    PortIndexValue::from_ported(ported_pipeline_paren);
+                let og_ends = self.add_pipeline(*pipeline_paren.pipeline, current_varname);
+                combine_ends(&mut self.diagnostics, og_ends, inn_port, out_port)
+            }
+
+            Pipeline::Name(pipeline_name) => {
+                let (inn_port, ident, out_port) = PortIndexValue::from_ported(pipeline_name);
+                if let Some(og_ends) = self.varname_ends.get(&ident).cloned() {
+                    combine_ends(&mut self.diagnostics, og_ends, inn_port, out_port)
+                } else {
+                    self.diagnostics.push(Diagnostic::spanned(
+                        ident.span(),
+                        Level::Error,
+                        format!("Cannot find name `{}`", ident),
+                    ));
+                    Ends {
+                        inn: None,
+                        out: None,
+                    }
+                }
             }
             Pipeline::Link(pipeline_link) => {
                 // Add the nested LHS and RHS of this link.
                 let lhs_ends = self.add_pipeline(*pipeline_link.lhs, current_varname);
-                let connector = pipeline_link.connector;
                 let rhs_ends = self.add_pipeline(*pipeline_link.rhs, current_varname);
 
-                if let (Some(src), Some(dst)) = (lhs_ends.out, rhs_ends.inn) {
-                    let (src_port, dst_port) = PortIndexValue::from_arrow_connector(connector);
-
+                if let (Some((src_port, src)), Some((dst_port, dst))) = (lhs_ends.out, rhs_ends.inn)
+                {
                     {
                         /// Helper to emit conflicts when a port is used twice.
                         fn emit_conflict(
@@ -180,25 +249,15 @@ impl FlatGraph {
                     out: rhs_ends.out,
                 }
             }
-            Pipeline::Name(ident) => self.varname_ends.get(&ident).copied().unwrap_or_else(|| {
-                self.diagnostics.push(Diagnostic::spanned(
-                    ident.span(),
-                    Level::Error,
-                    format!("Cannot find name `{}`", ident),
-                ));
-                Ends {
-                    inn: None,
-                    out: None,
-                }
-            }),
             Pipeline::Operator(operator) => {
+                let op_span = operator.span();
                 let key = self.nodes.insert(Node::Operator(operator));
                 if let Some(current_varname) = current_varname {
                     self.node_varnames.insert(key, current_varname.clone());
                 }
                 Ends {
-                    inn: Some(key),
-                    out: Some(key),
+                    inn: Some((PortIndexValue::Elided(op_span), key)),
+                    out: Some((PortIndexValue::Elided(op_span), key)),
                 }
             }
         }
@@ -474,8 +533,8 @@ impl FlatGraph {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 struct Ends {
-    inn: Option<GraphNodeId>,
-    out: Option<GraphNodeId>,
+    inn: Option<(PortIndexValue, GraphNodeId)>,
+    out: Option<(PortIndexValue, GraphNodeId)>,
 }

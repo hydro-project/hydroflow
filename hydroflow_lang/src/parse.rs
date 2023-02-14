@@ -73,24 +73,21 @@ impl ToTokens for NamedHfStatement {
 }
 
 pub enum Pipeline {
-    Paren(PipelineParen),
+    Paren(Ported<PipelineParen>),
+    Name(Ported<Ident>),
     Link(PipelineLink),
-    Name(Ident),
     Operator(Operator),
 }
 impl Pipeline {
     fn parse_helper(input: ParseStream) -> syn::Result<Self> {
-        let lhs = Self::parse_one(input)?;
+        let lhs = Pipeline::parse_one(input)?;
         if input.is_empty() || input.peek(Token![;]) {
             Ok(lhs)
         } else {
-            let connector = input.parse()?;
+            let arrow = input.parse()?;
             let rhs = input.parse()?;
-            Ok(Self::Link(PipelineLink {
-                lhs: Box::new(lhs),
-                connector,
-                rhs,
-            }))
+            let lhs = Box::new(lhs);
+            Ok(Self::Link(PipelineLink { lhs, arrow, rhs }))
         }
     }
 
@@ -120,6 +117,33 @@ impl ToTokens for Pipeline {
     }
 }
 
+pub struct Ported<Inner> {
+    pub inn: Option<Indexing>,
+    pub inner: Inner,
+    pub out: Option<Indexing>,
+}
+impl<Inner> Parse for Ported<Inner>
+where
+    Inner: Parse,
+{
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let inn = input.peek(Bracket).then(|| input.parse()).transpose()?;
+        let inner = input.parse()?;
+        let out = input.peek(Bracket).then(|| input.parse()).transpose()?;
+        Ok(Self { inn, inner, out })
+    }
+}
+impl<Inner> ToTokens for Ported<Inner>
+where
+    Inner: ToTokens,
+{
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        self.inn.to_tokens(tokens);
+        self.inner.to_tokens(tokens);
+        self.out.to_tokens(tokens);
+    }
+}
+
 pub struct PipelineParen {
     pub paren_token: Paren,
     pub pipeline: Box<Pipeline>,
@@ -145,54 +169,23 @@ impl ToTokens for PipelineParen {
 
 pub struct PipelineLink {
     pub lhs: Box<Pipeline>,
-    pub connector: ArrowConnector,
+    pub arrow: Token![->],
     pub rhs: Box<Pipeline>,
 }
 impl Parse for PipelineLink {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let lhs = input.parse()?;
-        let connector = input.parse()?;
+        let arrow = input.parse()?;
         let rhs = input.parse()?;
 
-        Ok(Self {
-            lhs,
-            connector,
-            rhs,
-        })
+        Ok(Self { lhs, arrow, rhs })
     }
 }
 impl ToTokens for PipelineLink {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         self.lhs.to_tokens(tokens);
-        self.connector.to_tokens(tokens);
-        self.rhs.to_tokens(tokens);
-    }
-}
-
-pub struct ArrowConnector {
-    pub src: Option<Indexing>,
-    pub arrow: Token![->],
-    pub dst: Option<Indexing>,
-}
-impl Parse for ArrowConnector {
-    fn parse(input: ParseStream) -> syn::Result<Self> {
-        let mut src = None;
-        if input.peek(Bracket) {
-            src = Some(input.parse()?);
-        }
-        let arrow = input.parse()?;
-        let mut dst = None;
-        if input.peek(Bracket) {
-            dst = Some(input.parse()?);
-        }
-        Ok(Self { src, arrow, dst })
-    }
-}
-impl ToTokens for ArrowConnector {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        self.src.to_tokens(tokens);
         self.arrow.to_tokens(tokens);
-        self.dst.to_tokens(tokens);
+        self.rhs.to_tokens(tokens);
     }
 }
 

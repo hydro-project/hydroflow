@@ -21,7 +21,7 @@ pub(crate) fn rga_datalog_agg(
 
         // firstLastChild(Parent, max<Child>, min<Child) :- insertAfter(Child, Parent)
         firstLastChild = insertAfter[firstLastChild]
-            -> map(|(c, p)| (p, c))[firstLastChild]
+            -> map(|(c, p)| (p, c))
             -> group_by::<'static, Timestamp, (Timestamp, Timestamp)>(|| (Timestamp{node_ts: 0, node_id: 0}, Timestamp{node_ts: std::usize::MAX, node_id: std::usize::MAX}),
                                                                       |(first, last): &mut (Timestamp, Timestamp), s2: Timestamp| {
                                                                         if s2 > *first {*first = s2};
