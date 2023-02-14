@@ -2,5 +2,10 @@
 rustflags = [
     "-Zproc-macro-backtrace",
     # TODO(mingwei): Need rust-analyzer support:
+    # https://blog.rust-lang.org/2023/02/09/Rust-1.67.1.html#whats-in-1671-stable
     "-Aclippy::uninlined-format-args",
+    # TODO(mingwei):
+    # https://github.com/nvzqz/static-assertions-rs/issues/53
+    # https://github.com/rust-lang/rust-clippy/issues/10318
+    "-Aclippy::extra-unused-type-parameters",
 ]
