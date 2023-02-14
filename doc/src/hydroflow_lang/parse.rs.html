@@ -341,13 +341,6 @@
 <a href="#341" id="341">341</a>
 <a href="#342" id="342">342</a>
 <a href="#343" id="343">343</a>
-<a href="#344" id="344">344</a>
-<a href="#345" id="345">345</a>
-<a href="#346" id="346">346</a>
-<a href="#347" id="347">347</a>
-<a href="#348" id="348">348</a>
-<a href="#349" id="349">349</a>
-<a href="#350" id="350">350</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::hash::Hash;
 
 <span class="kw">use </span>proc_macro2::{Span, TokenStream};
@@ -423,24 +416,21 @@
 }
 
 <span class="kw">pub enum </span>Pipeline {
-    Paren(PipelineParen),
+    Paren(Ported&lt;PipelineParen&gt;),
+    Name(Ported&lt;Ident&gt;),
     Link(PipelineLink),
-    Name(Ident),
     Operator(Operator),
 }
 <span class="kw">impl </span>Pipeline {
     <span class="kw">fn </span>parse_helper(input: ParseStream) -&gt; syn::Result&lt;<span class="self">Self</span>&gt; {
-        <span class="kw">let </span>lhs = <span class="self">Self</span>::parse_one(input)<span class="question-mark">?</span>;
+        <span class="kw">let </span>lhs = Pipeline::parse_one(input)<span class="question-mark">?</span>;
         <span class="kw">if </span>input.is_empty() || input.peek(<span class="macro">Token!</span>[;]) {
             <span class="prelude-val">Ok</span>(lhs)
         } <span class="kw">else </span>{
-            <span class="kw">let </span>connector = input.parse()<span class="question-mark">?</span>;
+            <span class="kw">let </span>arrow = input.parse()<span class="question-mark">?</span>;
             <span class="kw">let </span>rhs = input.parse()<span class="question-mark">?</span>;
-            <span class="prelude-val">Ok</span>(<span class="self">Self</span>::Link(PipelineLink {
-                lhs: Box::new(lhs),
-                connector,
-                rhs,
-            }))
+            <span class="kw">let </span>lhs = Box::new(lhs);
+            <span class="prelude-val">Ok</span>(<span class="self">Self</span>::Link(PipelineLink { lhs, arrow, rhs }))
         }
     }
 
@@ -470,6 +460,33 @@
     }
 }
 
+<span class="kw">pub struct </span>Ported&lt;Inner&gt; {
+    <span class="kw">pub </span>inn: <span class="prelude-ty">Option</span>&lt;Indexing&gt;,
+    <span class="kw">pub </span>inner: Inner,
+    <span class="kw">pub </span>out: <span class="prelude-ty">Option</span>&lt;Indexing&gt;,
+}
+<span class="kw">impl</span>&lt;Inner&gt; Parse <span class="kw">for </span>Ported&lt;Inner&gt;
+<span class="kw">where
+    </span>Inner: Parse,
+{
+    <span class="kw">fn </span>parse(input: ParseStream) -&gt; syn::Result&lt;<span class="self">Self</span>&gt; {
+        <span class="kw">let </span>inn = input.peek(Bracket).then(|| input.parse()).transpose()<span class="question-mark">?</span>;
+        <span class="kw">let </span>inner = input.parse()<span class="question-mark">?</span>;
+        <span class="kw">let </span>out = input.peek(Bracket).then(|| input.parse()).transpose()<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{ inn, inner, out })
+    }
+}
+<span class="kw">impl</span>&lt;Inner&gt; ToTokens <span class="kw">for </span>Ported&lt;Inner&gt;
+<span class="kw">where
+    </span>Inner: ToTokens,
+{
+    <span class="kw">fn </span>to_tokens(<span class="kw-2">&amp;</span><span class="self">self</span>, tokens: <span class="kw-2">&amp;mut </span>TokenStream) {
+        <span class="self">self</span>.inn.to_tokens(tokens);
+        <span class="self">self</span>.inner.to_tokens(tokens);
+        <span class="self">self</span>.out.to_tokens(tokens);
+    }
+}
+
 <span class="kw">pub struct </span>PipelineParen {
     <span class="kw">pub </span>paren_token: Paren,
     <span class="kw">pub </span>pipeline: Box&lt;Pipeline&gt;,
@@ -495,54 +512,23 @@
 
 <span class="kw">pub struct </span>PipelineLink {
     <span class="kw">pub </span>lhs: Box&lt;Pipeline&gt;,
-    <span class="kw">pub </span>connector: ArrowConnector,
+    <span class="kw">pub </span>arrow: <span class="macro">Token!</span>[-&gt;],
     <span class="kw">pub </span>rhs: Box&lt;Pipeline&gt;,
 }
 <span class="kw">impl </span>Parse <span class="kw">for </span>PipelineLink {
     <span class="kw">fn </span>parse(input: ParseStream) -&gt; syn::Result&lt;<span class="self">Self</span>&gt; {
         <span class="kw">let </span>lhs = input.parse()<span class="question-mark">?</span>;
-        <span class="kw">let </span>connector = input.parse()<span class="question-mark">?</span>;
+        <span class="kw">let </span>arrow = input.parse()<span class="question-mark">?</span>;
         <span class="kw">let </span>rhs = input.parse()<span class="question-mark">?</span>;
 
-        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
-            lhs,
-            connector,
-            rhs,
-        })
+        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{ lhs, arrow, rhs })
     }
 }
 <span class="kw">impl </span>ToTokens <span class="kw">for </span>PipelineLink {
     <span class="kw">fn </span>to_tokens(<span class="kw-2">&amp;</span><span class="self">self</span>, tokens: <span class="kw-2">&amp;mut </span>TokenStream) {
         <span class="self">self</span>.lhs.to_tokens(tokens);
-        <span class="self">self</span>.connector.to_tokens(tokens);
-        <span class="self">self</span>.rhs.to_tokens(tokens);
-    }
-}
-
-<span class="kw">pub struct </span>ArrowConnector {
-    <span class="kw">pub </span>src: <span class="prelude-ty">Option</span>&lt;Indexing&gt;,
-    <span class="kw">pub </span>arrow: <span class="macro">Token!</span>[-&gt;],
-    <span class="kw">pub </span>dst: <span class="prelude-ty">Option</span>&lt;Indexing&gt;,
-}
-<span class="kw">impl </span>Parse <span class="kw">for </span>ArrowConnector {
-    <span class="kw">fn </span>parse(input: ParseStream) -&gt; syn::Result&lt;<span class="self">Self</span>&gt; {
-        <span class="kw">let </span><span class="kw-2">mut </span>src = <span class="prelude-val">None</span>;
-        <span class="kw">if </span>input.peek(Bracket) {
-            src = <span class="prelude-val">Some</span>(input.parse()<span class="question-mark">?</span>);
-        }
-        <span class="kw">let </span>arrow = input.parse()<span class="question-mark">?</span>;
-        <span class="kw">let </span><span class="kw-2">mut </span>dst = <span class="prelude-val">None</span>;
-        <span class="kw">if </span>input.peek(Bracket) {
-            dst = <span class="prelude-val">Some</span>(input.parse()<span class="question-mark">?</span>);
-        }
-        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{ src, arrow, dst })
-    }
-}
-<span class="kw">impl </span>ToTokens <span class="kw">for </span>ArrowConnector {
-    <span class="kw">fn </span>to_tokens(<span class="kw-2">&amp;</span><span class="self">self</span>, tokens: <span class="kw-2">&amp;mut </span>TokenStream) {
-        <span class="self">self</span>.src.to_tokens(tokens);
         <span class="self">self</span>.arrow.to_tokens(tokens);
-        <span class="self">self</span>.dst.to_tokens(tokens);
+        <span class="self">self</span>.rhs.to_tokens(tokens);
     }
 }
 

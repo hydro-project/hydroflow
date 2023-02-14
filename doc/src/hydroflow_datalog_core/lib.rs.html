@@ -377,16 +377,12 @@
 <a href="#377" id="377">377</a>
 <a href="#378" id="378">378</a>
 <a href="#379" id="379">379</a>
-<a href="#380" id="380">380</a>
-<a href="#381" id="381">381</a>
-<a href="#382" id="382">382</a>
-<a href="#383" id="383">383</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::collections::{HashMap, HashSet};
 
 <span class="kw">use </span>hydroflow_lang::{
     diagnostic::{Diagnostic, Level},
     graph::flat_graph::FlatGraph,
-    parse::{ArrowConnector, IndexInt, Indexing, Pipeline, PipelineLink},
+    parse::{IndexInt, Indexing, Pipeline, PipelineLink},
 };
 <span class="kw">use </span>proc_macro2::{Span, TokenStream};
 <span class="kw">use </span>syn::parse_quote;
@@ -585,23 +581,19 @@
     };
 
     <span class="kw">let </span>out_name = out_expanded.name;
+    <span class="comment">// If the output comes with a tee index, we must read with that. This only happens when we are
+    // directly outputting a transformation of a single relation on the RHS.
+    </span><span class="kw">let </span>out_indexing = out_expanded.tee_idx.map(|i| Indexing {
+        bracket_token: syn::token::Bracket::default(),
+        index: hydroflow_lang::parse::PortIndex::Int(IndexInt {
+            value: i,
+            span: Span::call_site(),
+        }),
+    });
     flat_graph.add_statement(hydroflow_lang::parse::HfStatement::Pipeline(
         Pipeline::Link(PipelineLink {
-            lhs: Box::new(<span class="macro">parse_quote!</span>(#out_name)),
-            connector: ArrowConnector {
-                <span class="comment">// if the output comes with a tee index, we must read with that
-                // this only happens when we are directly outputting a transformation
-                // of a single relation on the RHS
-                </span>src: out_expanded.tee_idx.map(|i| Indexing {
-                    bracket_token: syn::token::Bracket::default(),
-                    index: hydroflow_lang::parse::PortIndex::Int(IndexInt {
-                        value: i,
-                        span: Span::call_site(),
-                    }),
-                }),
-                arrow: <span class="macro">parse_quote!</span>(-&gt;),
-                dst: <span class="prelude-val">None</span>,
-            },
+            lhs: Box::new(<span class="macro">parse_quote!</span>(#out_name #out_indexing)), <span class="comment">// out_name[idx]
+            </span>arrow: <span class="macro">parse_quote!</span>(-&gt;),
             rhs: Box::new(after_join),
         }),
     ));
