@@ -1,0 +1,13 @@
+[package]
+name = "hydro_cli"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { version = "1.16", features = [ "full" ] }
+clap = { version = "4.1.4", features = ["derive"] }
+pyo3 = { version = "0.18.1", features = ["auto-initialize"] }
+pyo3-asyncio = { version = "0.18.0", features = ["attributes", "tokio-runtime"] }
+async-trait = "0.1.64"
+
+[dev-dependencies]

@@ -64,11 +64,11 @@ async def main():
     )
 
     # Wire the programs
-    client_hf.outbound.connect(server_hf.inbound)
-    server_hf.outbound.connect(client_hf.inbound)
+    client_hf.ports.outbound.connect(server_hf.ports.inbound)
+    server_hf.ports.outbound.connect(client_hf.ports.inbound)
 
     # Launch the two programs
-    await hydro.deploy([server_hf, client_hf])
+    await hydro.deploy(server_hf, client_hf)
 
     # Once deployment finishes, start capturing logs from the client
     client_logs = client_hf.stdout()
