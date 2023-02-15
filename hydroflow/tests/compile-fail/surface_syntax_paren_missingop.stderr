@@ -1,0 +1,5 @@
+error: unexpected end of input, expected identifier
+ --> tests/compile-fail/surface_syntax_paren_missingop.rs:5:32
+  |
+5 |         (source_iter(0..10) -> );
+  |                                ^
