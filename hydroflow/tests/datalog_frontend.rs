@@ -456,3 +456,127 @@ pub fn test_next_tick() {
         &[(3,), (4,)]
     );
 }
+
+#[test]
+pub fn test_anti_join() {
+    let (ints_1_send, ints_1) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (ints_2_send, ints_2) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (ints_3_send, ints_3) = hydroflow::util::unbounded_channel::<(usize,)>();
+    let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+
+    let mut flow = datalog!(
+        r#"
+        .input ints_1
+        .input ints_2
+        .input ints_3
+        .output result
+
+        result(x, z) :- ints_1(x, y), ints_2(y, z), !ints_3(y)
+        "#
+    );
+
+    ints_1_send.send((1, 2)).unwrap();
+    ints_1_send.send((2, 3)).unwrap();
+    ints_2_send.send((2, 3)).unwrap();
+    ints_2_send.send((3, 4)).unwrap();
+    ints_3_send.send((2,)).unwrap();
+
+    flow.run_tick();
+
+    assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result_recv), &[(2, 4)]);
+
+    ints_1_send.send((1, 2)).unwrap();
+    ints_1_send.send((2, 3)).unwrap();
+    ints_2_send.send((2, 3)).unwrap();
+    ints_2_send.send((3, 4)).unwrap();
+    ints_3_send.send((3,)).unwrap();
+
+    flow.run_tick();
+
+    assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result_recv), &[(1, 3)]);
+}
+
+#[test]
+pub fn test_anti_join_next_tick() {
+    let (ints_1_send, ints_1) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (ints_2_send, ints_2) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (ints_3_send, ints_3) = hydroflow::util::unbounded_channel::<(usize,)>();
+    let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+
+    let mut flow = datalog!(
+        r#"
+        .input ints_1
+        .input ints_2
+        .input ints_3
+        .output result
+
+        result(x, z) :+ ints_1(x, y), ints_2(y, z), !ints_3(y)
+        "#
+    );
+
+    ints_1_send.send((1, 2)).unwrap();
+    ints_1_send.send((2, 3)).unwrap();
+    ints_2_send.send((2, 3)).unwrap();
+    ints_2_send.send((3, 4)).unwrap();
+    ints_3_send.send((2,)).unwrap();
+
+    flow.run_tick();
+
+    assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result_recv), &[]);
+
+    ints_1_send.send((1, 2)).unwrap();
+    ints_1_send.send((2, 3)).unwrap();
+    ints_2_send.send((2, 3)).unwrap();
+    ints_2_send.send((3, 4)).unwrap();
+    ints_3_send.send((3,)).unwrap();
+
+    flow.run_tick();
+
+    assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result_recv), &[(2, 4)]);
+
+    flow.run_tick();
+
+    assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result_recv), &[(1, 3)]);
+}
+
+#[test]
+pub fn test_anti_join_next_tick_cycle() {
+    let (ints_1_send, ints_1) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (ints_2_send, ints_2) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (ints_3_send, ints_3) = hydroflow::util::unbounded_channel::<(usize,)>();
+    let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+
+    let mut flow = datalog!(
+        r#"
+        .input ints_1
+        .input ints_2
+        .input ints_3
+        .output result
+
+        result(x, z) :+ ints_1(x, y), ints_2(y, z), !ints_3(y), !result(x, z)
+        "#
+    );
+
+    ints_1_send.send((1, 2)).unwrap();
+    ints_1_send.send((2, 3)).unwrap();
+    ints_2_send.send((2, 3)).unwrap();
+    ints_2_send.send((3, 4)).unwrap();
+    ints_3_send.send((2,)).unwrap();
+
+    flow.run_tick();
+
+    assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result_recv), &[]);
+
+    ints_1_send.send((1, 2)).unwrap();
+    ints_1_send.send((2, 3)).unwrap();
+    ints_2_send.send((2, 3)).unwrap();
+    ints_2_send.send((3, 4)).unwrap();
+
+    flow.run_tick();
+
+    assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result_recv), &[(2, 4)]);
+
+    flow.run_tick();
+
+    assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result_recv), &[(1, 3)]);
+}
