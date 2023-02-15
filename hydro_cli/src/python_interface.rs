@@ -75,12 +75,13 @@ impl PyService {
 }
 
 #[pyfunction]
-fn create_HydroflowCrate(src: String, on: &PyHost, deployment: &PyDeployment) -> PyService {
+fn create_HydroflowCrate(src: String, on: &PyHost, example: Option<String>, deployment: &PyDeployment) -> PyService {
     PyService {
         underlying: deployment.underlying.blocking_write().add_service(
             crate::core::HydroflowCrate {
-                src,
+                src: src.into(),
                 on: on.underlying.clone(),
+                example,
                 outgoing_ports: Default::default(),
                 incoming_ports: Default::default(),
             },

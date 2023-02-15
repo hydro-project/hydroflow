@@ -1,3 +1,4 @@
+from typing import Optional
 import hydro_cli_rust # type: ignore
 
 class Deployment(object):
@@ -7,8 +8,8 @@ class Deployment(object):
     def Localhost(self) -> "Localhost":
         return Localhost(self)
 
-    def HydroflowCrate(self, src: str, on: "Host") -> "HydroflowCrate":
-        return HydroflowCrate(src, on, self)
+    def HydroflowCrate(self, src: str, on: "Host", example: Optional[str] = None) -> "HydroflowCrate":
+        return HydroflowCrate(src, on, example, self)
 
     def deploy(self):
         return self.underlying.deploy()
@@ -46,17 +47,17 @@ class HydroflowPort(object):
 
 class HydroflowCratePorts(object):
     def __init__(self, underlying) -> None:
-        self.underlying = underlying
+        self.__underlying = underlying
 
     def __getattribute__(self, __name: str) -> HydroflowPort:
-        if __name == "underlying":
+        if __name == "_HydroflowCratePorts__underlying":
             return object.__getattribute__(self, __name)
-        return HydroflowPort(self.underlying, __name)
+        return HydroflowPort(self.__underlying, __name)
 
 class HydroflowCrate(Service):
-    def __init__(self, src: str, on: Host, deployment: Deployment) -> None:
-        super().__init__(hydro_cli_rust.create_HydroflowCrate(src, on.underlying, deployment.underlying))
+    def __init__(self, src: str, on: Host, example: Optional[str], deployment: Deployment) -> None:
+        super().__init__(hydro_cli_rust.create_HydroflowCrate(src, on.underlying, example, deployment.underlying))
 
     @property
-    def ports(self):
+    def ports(self) -> HydroflowCratePorts:
         return HydroflowCratePorts(self.underlying)

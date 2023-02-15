@@ -8,11 +8,13 @@ async def main():
 
     program = deployment.HydroflowCrate(
         src=".",
+        example="simple",
         on=machine
     )
 
     program2 = deployment.HydroflowCrate(
         src=".",
+        example="simple",
         on=machine
     )
 
