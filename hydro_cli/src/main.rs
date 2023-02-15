@@ -4,6 +4,8 @@ use clap::{Parser, Subcommand};
 use pyo3::{prelude::*, types::PyList};
 
 pub mod core;
+
+#[allow(non_snake_case)]
 mod python_interface;
 
 #[derive(Parser, Debug)]
@@ -22,7 +24,7 @@ enum Commands {
     },
 }
 
-async fn deploy(config: PathBuf) {
+async fn deploy(config: PathBuf) -> Result<(), PyErr> {
     let res: PyResult<_> = Python::with_gil(|py| {
         let syspath: &PyList = py.import("sys")?.getattr("path")?.downcast::<PyList>()?;
         syspath.insert(0, PathBuf::from(".").canonicalize().unwrap())?;
@@ -44,9 +46,9 @@ async fn deploy(config: PathBuf) {
     });
 
     let fn_future = res.unwrap();
+    fn_future.await?;
 
-    fn_future.await.unwrap();
-    dbg!("hi");
+    Ok(())
 }
 
 use python_interface::hydro_cli_rust;
@@ -57,10 +59,11 @@ fn main() {
         if let Some(cmd) = args.command {
             match cmd {
                 Commands::Deploy { config } => {
-                    deploy(config).await;
+                    deploy(config).await?;
                 }
             }
         }
+
         Ok(())
     }
 
@@ -73,6 +76,6 @@ fn main() {
 
     pyo3_asyncio::tokio::init(builder);
     pyo3::Python::with_gil(|py| {
-        pyo3_asyncio::tokio::run(py, main()).unwrap();
+        pyo3_asyncio::tokio::run(py, main()).unwrap_or_else(|e| e.print_and_set_sys_last_vars(py));
     });
 }

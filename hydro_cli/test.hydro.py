@@ -1,21 +1,21 @@
 import hydro
-from hydro import Localhost, HydroflowCrate
 
 async def main():
-    machine = Localhost()
+    deployment = hydro.Deployment()
+    machine = deployment.Localhost()
 
     await machine.provision()
 
-    program = HydroflowCrate(
+    program = deployment.HydroflowCrate(
         src=".",
         on=machine
     )
 
-    program2 = HydroflowCrate(
+    program2 = deployment.HydroflowCrate(
         src=".",
         on=machine
     )
 
     program.ports.foo.send_to(program2.ports.bar)
 
-    await hydro.deploy(program)
+    await deployment.deploy()
