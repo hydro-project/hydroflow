@@ -1,0 +1,5 @@
+error: expected identifier
+ --> tests/compile-fail/surface_syntax_eol_missingop.rs:5:31
+  |
+5 |         source_iter(0..10) -> ;
+  |                               ^

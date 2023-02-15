@@ -1,0 +1,12 @@
+error: proc macro panicked
+ --> tests/compile-fail/surface_null.rs:4:18
+  |
+4 |       let mut df = hydroflow_syntax! {
+  |  __________________^
+5 | |         null();
+6 | |     };
+  | |_____^
+  |
+  = help: message: assertion failed: `(left == right)`
+            left: `1`,
+           right: `0`: If entire subgraph is pull, should have only one handoff output. Do you have a loose `null()` or other degenerate pipeline somewhere?
