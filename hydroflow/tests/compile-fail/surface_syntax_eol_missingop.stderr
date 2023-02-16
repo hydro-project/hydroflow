@@ -1,4 +1,4 @@
-error: expected identifier
+error: expected one of: square brackets, identifier, parentheses
  --> tests/compile-fail/surface_syntax_eol_missingop.rs:5:31
   |
 5 |         source_iter(0..10) -> ;

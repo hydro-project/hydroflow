@@ -347,7 +347,7 @@ fn benchmark_hydroflow_surface(c: &mut Criterion) {
                         my_join_tee -> reached_vertices;
                         my_join_tee -> for_each(|x| {
                             reachable_inner.borrow_mut().insert(x);
-                        })
+                        });
                     }
                 };
 

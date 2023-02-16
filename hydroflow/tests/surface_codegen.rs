@@ -434,11 +434,11 @@ pub fn test_channel_minimal() {
     let (send, recv) = hydroflow::util::unbounded_channel::<usize>();
 
     let mut df1 = hydroflow_syntax! {
-        source_iter([1, 2, 3]) -> for_each(|x| { send.send(x).unwrap(); })
+        source_iter([1, 2, 3]) -> for_each(|x| { send.send(x).unwrap(); });
     };
 
     let mut df2 = hydroflow_syntax! {
-        source_stream(recv) -> for_each(|x| println!("{}", x))
+        source_stream(recv) -> for_each(|x| println!("{}", x));
     };
 
     df2.run_available();

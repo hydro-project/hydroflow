@@ -58,7 +58,7 @@ pub fn main() {
             }
         })
         -> flat_map(|n| (n..=n+1))
-        -> for_each(|n| println!("Ahoy, {}", n))
+        -> for_each(|n| println!("Ahoy, {}", n));
     };
 
     println!("A");

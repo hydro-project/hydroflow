@@ -16,6 +16,9 @@ pub struct HfCode {
 impl Parse for HfCode {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let statements = input.parse_terminated(HfStatement::parse)?;
+        if !statements.empty_or_trailing() {
+            return Err(input.parse::<Token![;]>().unwrap_err());
+        }
         Ok(HfCode { statements })
     }
 }
@@ -79,7 +82,49 @@ pub enum Pipeline {
     Operator(Operator),
 }
 impl Pipeline {
-    fn parse_helper(input: ParseStream) -> syn::Result<Self> {
+    fn parse_one(input: ParseStream) -> syn::Result<Self> {
+        let lookahead1 = input.lookahead1();
+
+        // Leading indexing
+        if lookahead1.peek(Bracket) {
+            let inn_idx = input.parse()?;
+            let lookahead2 = input.lookahead1();
+            // Indexed paren
+            if lookahead2.peek(Paren) {
+                Ok(Self::Paren(Ported::parse_rest(Some(inn_idx), input)?))
+            }
+            // Indexed name
+            else if lookahead2.peek(Ident) {
+                Ok(Self::Name(Ported::parse_rest(Some(inn_idx), input)?))
+            }
+            // Emit lookahead expected tokens errors.
+            else {
+                Err(lookahead2.error())
+            }
+        }
+        // Ident
+        else if lookahead1.peek(Ident) {
+            // If has paren or generic next, it's an operator
+            if input.peek2(Paren) || input.peek2(Token![<]) || input.peek2(Token![::]) {
+                Ok(Self::Operator(input.parse()?))
+            }
+            // Otherwise it's a name
+            else {
+                Ok(Self::Name(input.parse()?))
+            }
+        }
+        // Paren group
+        else if lookahead1.peek(Paren) {
+            Ok(Self::Paren(input.parse()?))
+        }
+        // Emit lookahead expected tokens errors.
+        else {
+            Err(lookahead1.error())
+        }
+    }
+}
+impl Parse for Pipeline {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
         let lhs = Pipeline::parse_one(input)?;
         if input.is_empty() || input.peek(Token![;]) {
             Ok(lhs)
@@ -89,21 +134,6 @@ impl Pipeline {
             let lhs = Box::new(lhs);
             Ok(Self::Link(PipelineLink { lhs, arrow, rhs }))
         }
-    }
-
-    fn parse_one(input: ParseStream) -> syn::Result<Self> {
-        if input.peek(Paren) {
-            Ok(Self::Paren(input.parse()?))
-        } else if input.peek2(Paren) || input.peek2(Token![<]) || input.peek2(Token![::]) {
-            Ok(Self::Operator(input.parse()?))
-        } else {
-            Ok(Self::Name(input.parse()?))
-        }
-    }
-}
-impl Parse for Pipeline {
-    fn parse(input: ParseStream) -> syn::Result<Self> {
-        Self::parse_helper(input)
     }
 }
 impl ToTokens for Pipeline {
@@ -122,15 +152,23 @@ pub struct Ported<Inner> {
     pub inner: Inner,
     pub out: Option<Indexing>,
 }
+impl<Inner> Ported<Inner>
+where
+    Inner: Parse,
+{
+    fn parse_rest(inn: Option<Indexing>, input: ParseStream) -> syn::Result<Self> {
+        let inner = input.parse()?;
+        let out = input.call(Indexing::parse_opt)?;
+        Ok(Self { inn, inner, out })
+    }
+}
 impl<Inner> Parse for Ported<Inner>
 where
     Inner: Parse,
 {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        let inn = input.peek(Bracket).then(|| input.parse()).transpose()?;
-        let inner = input.parse()?;
-        let out = input.peek(Bracket).then(|| input.parse()).transpose()?;
-        Ok(Self { inn, inner, out })
+        let inn = input.call(Indexing::parse_opt)?;
+        Self::parse_rest(inn, input)
     }
 }
 impl<Inner> ToTokens for Ported<Inner>
@@ -192,6 +230,11 @@ impl ToTokens for PipelineLink {
 pub struct Indexing {
     pub bracket_token: Bracket,
     pub index: PortIndex,
+}
+impl Indexing {
+    fn parse_opt(input: ParseStream) -> syn::Result<Option<Self>> {
+        input.peek(Bracket).then(|| input.parse()).transpose()
+    }
 }
 impl Parse for Indexing {
     fn parse(input: ParseStream) -> syn::Result<Self> {
