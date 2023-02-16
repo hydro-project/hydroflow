@@ -1,5 +1,10 @@
-error: `source_iter` must have exactly 1 output(s), actually has 0.
- --> tests/compile-fail/surface_syntax_eol_op.rs:5:9
+error: expected `;`
+ --> tests/compile-fail/surface_syntax_eol_op.rs:4:18
   |
-5 |         source_iter(0..10)
-  |         ^^^^^^^^^^^^^^^^^^
+4 |       let mut df = hydroflow_syntax! {
+  |  __________________^
+5 | |         source_iter(0..10) -> for_each(std::mem::drop)
+6 | |     };
+  | |_____^
+  |
+  = note: this error originates in the macro `hydroflow_syntax` (in Nightly builds, run with -Z macro-backtrace for more info)
