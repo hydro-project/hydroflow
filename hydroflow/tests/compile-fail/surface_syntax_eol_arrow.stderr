@@ -1,4 +1,4 @@
-error: unexpected end of input, expected identifier
+error: unexpected end of input, expected one of: square brackets, identifier, parentheses
  --> tests/compile-fail/surface_syntax_eol_arrow.rs:4:18
   |
 4 |       let mut df = hydroflow_syntax! {

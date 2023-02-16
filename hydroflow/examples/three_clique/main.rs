@@ -39,7 +39,7 @@ pub fn main() {
             let mut v = vec![x, y, z];
             v.sort();
             (v[0], v[1], v[2])
-        }) -> for_each(|e| println!("three_clique found: {:?}", e))
+        }) -> for_each(|e| println!("three_clique found: {:?}", e));
     };
 
     if let Some(graph) = opts.graph {

@@ -83,7 +83,7 @@ use hydroflow::hydroflow_syntax;
             }
         })
         -> flat_map(|n| (n..=n+1))
-        -> for_each(|n| println!("G'day {}", n))
+        -> for_each(|n| println!("G'day {}", n));
     };
 
     flow.run_available();
