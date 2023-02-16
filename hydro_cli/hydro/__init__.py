@@ -54,10 +54,21 @@ class HydroflowCratePorts(object):
             return object.__getattribute__(self, __name)
         return HydroflowPort(self.__underlying, __name)
 
+async def pyreceiver_to_async_generator(pyreceiver):
+    while True:
+        res = await pyreceiver.next()
+        if res is None:
+            break
+        else:
+            yield res
+
 class HydroflowCrate(Service):
     def __init__(self, src: str, on: Host, example: Optional[str], deployment: Deployment) -> None:
-        super().__init__(hydro_cli_rust.create_HydroflowCrate(src, on.underlying, example, deployment.underlying))
+        super().__init__(hydro_cli_rust.PyHydroflowCrate(src, on.underlying, example, deployment.underlying))
 
     @property
     def ports(self) -> HydroflowCratePorts:
         return HydroflowCratePorts(self.underlying)
+
+    def stdout(self):
+        return pyreceiver_to_async_generator(self.underlying.stdout())

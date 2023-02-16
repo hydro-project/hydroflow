@@ -33,16 +33,14 @@ async fn deploy(config: PathBuf) -> Result<(), PyErr> {
         let fun: Py<PyAny> = PyModule::from_code(
             py,
             std::fs::read_to_string(config).unwrap().as_str(),
-            &filename.to_str().unwrap(),
+            filename.to_str().unwrap(),
             "",
         )?
         .getattr("main")?
         .into();
 
         // call object without any arguments
-        Ok(pyo3_asyncio::tokio::into_future(
-            &(fun.call0(py)?).as_ref(py),
-        )?)
+        pyo3_asyncio::tokio::into_future((fun.call0(py)?).as_ref(py))
     });
 
     let fn_future = res.unwrap();

@@ -21,3 +21,9 @@ async def main():
     program.ports.foo.send_to(program2.ports.bar)
 
     await deployment.deploy()
+    
+    async for log in program.stdout():
+        print(log)
+
+    async for log in program2.stdout():
+        print(log)

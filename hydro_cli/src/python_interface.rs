@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use async_channel::Receiver;
 use pyo3::prelude::*;
 use tokio::sync::RwLock;
 
@@ -57,7 +58,7 @@ fn create_LocalhostHost(deployment: &PyDeployment) -> PyHost {
     }
 }
 
-#[pyclass(name = "PyService")]
+#[pyclass(subclass)]
 pub struct PyService {
     underlying: Arc<RwLock<dyn crate::core::Service>>,
 }
@@ -74,18 +75,62 @@ impl PyService {
     }
 }
 
-#[pyfunction]
-fn create_HydroflowCrate(src: String, on: &PyHost, example: Option<String>, deployment: &PyDeployment) -> PyService {
-    PyService {
-        underlying: deployment.underlying.blocking_write().add_service(
-            crate::core::HydroflowCrate {
-                src: src.into(),
-                on: on.underlying.clone(),
-                example,
-                outgoing_ports: Default::default(),
-                incoming_ports: Default::default(),
+#[pyclass]
+struct PyReceiver {
+    receiver: Arc<Receiver<String>>,
+}
+
+#[pymethods]
+impl PyReceiver {
+    fn next<'p>(&self, py: Python<'p>) -> &'p pyo3::PyAny {
+        let my_receiver = self.receiver.clone();
+        pyo3_asyncio::tokio::future_into_py(py, async move {
+            let underlying = my_receiver.recv();
+            Ok(underlying.await.map(Some).unwrap_or(None))
+        })
+        .unwrap()
+    }
+}
+
+#[pyclass(extends=PyService, subclass)]
+struct PyHydroflowCrate {}
+
+#[pymethods]
+impl PyHydroflowCrate {
+    #[new]
+    fn new(
+        src: String,
+        on: &PyHost,
+        example: Option<String>,
+        deployment: &PyDeployment,
+    ) -> (Self, PyService) {
+        (
+            PyHydroflowCrate {},
+            PyService {
+                underlying: deployment.underlying.blocking_write().add_service(
+                    crate::core::HydroflowCrate {
+                        src: src.into(),
+                        on: on.underlying.clone(),
+                        example,
+                        outgoing_ports: Default::default(),
+                        incoming_ports: Default::default(),
+                        launched_binary: None,
+                    },
+                ),
             },
-        ),
+        )
+    }
+
+    fn stdout(self_: PyRef<'_, Self>) -> PyResult<PyReceiver> {
+        let underlying = &self_.as_ref().underlying;
+        let mut underlying_mut = underlying.blocking_write();
+        let hydro = underlying_mut
+            .as_any_mut()
+            .downcast_mut::<crate::core::HydroflowCrate>()
+            .unwrap();
+        Ok(PyReceiver {
+            receiver: Arc::new(hydro.stdout()),
+        })
     }
 }
 
@@ -118,7 +163,7 @@ fn create_connection(from: &PyService, from_port: String, to: &PyService, to_por
 pub fn hydro_cli_rust(_py: Python<'_>, module: &PyModule) -> PyResult<()> {
     module.add_function(wrap_pyfunction!(create_Deployment, module)?)?;
     module.add_function(wrap_pyfunction!(create_LocalhostHost, module)?)?;
-    module.add_function(wrap_pyfunction!(create_HydroflowCrate, module)?)?;
+    module.add_class::<PyHydroflowCrate>()?;
     module.add_function(wrap_pyfunction!(create_connection, module)?)?;
     Ok(())
 }
