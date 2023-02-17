@@ -15,7 +15,9 @@ use cargo::{
 };
 use tokio::{sync::RwLock, task::JoinHandle};
 
-use super::{ConnectionPipe, Host, LaunchedBinary, LaunchedHost, Service};
+use super::{
+    ConnectionPipe, Host, LaunchedBinary, LaunchedHost, Service, TerraformBatch, TerraformResult,
+};
 
 pub struct HydroflowCrate {
     pub src: PathBuf,
@@ -107,7 +109,12 @@ impl HydroflowCrate {
 
 #[async_trait]
 impl Service for HydroflowCrate {
-    async fn deploy(&mut self) {
+    async fn collect_resources(&mut self, terraform: &mut TerraformBatch) {
+        let mut host = self.on.write().await;
+        host.collect_resources(terraform).await;
+    }
+
+    async fn deploy(&mut self, terraform_result: &TerraformResult) {
         let built = self.build();
         let host_read = self.on.read().await;
 
@@ -121,7 +128,7 @@ impl Service for HydroflowCrate {
         drop(host_read);
 
         let mut host_write = self.on.write().await;
-        let launched = host_write.provision();
+        let launched = host_write.provision(terraform_result);
 
         self.built_binary = Some(built.await.unwrap());
         self.launched_host = Some(launched.await);

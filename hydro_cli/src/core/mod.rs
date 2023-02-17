@@ -13,6 +13,16 @@ pub use localhost::LocalhostHost;
 pub mod hydroflow_crate;
 pub use hydroflow_crate::HydroflowCrate;
 
+pub struct TerraformBatch {}
+
+impl TerraformBatch {
+    async fn provision(&mut self) -> TerraformResult {
+        TerraformResult {}
+    }
+}
+
+pub struct TerraformResult {}
+
 #[async_trait]
 pub trait LaunchedBinary: Send + Sync {
     fn stdin(&self) -> Sender<String>;
@@ -38,7 +48,10 @@ pub enum ConnectionType {
 
 #[async_trait]
 pub trait Host: Send + Sync + Debug {
-    async fn provision(&mut self) -> Arc<dyn LaunchedHost>;
+    /// Collect the set of resources that this host needs to run.
+    async fn collect_resources(&mut self, terraform: &mut TerraformBatch);
+
+    async fn provision(&mut self, terraform_result: &TerraformResult) -> Arc<dyn LaunchedHost>;
 
     async fn allocate_pipe(&self, client: Arc<RwLock<dyn Host>>) -> ConnectionPipe;
 
@@ -47,7 +60,10 @@ pub trait Host: Send + Sync + Debug {
 
 #[async_trait]
 pub trait Service: Send + Sync + Debug {
-    async fn deploy(&mut self);
+    /// Collect the set of resources that this service needs to run.
+    async fn collect_resources(&mut self, terraform: &mut TerraformBatch);
+
+    async fn deploy(&mut self, terraform_result: &TerraformResult);
     async fn ready(&mut self);
     async fn start(&mut self);
 

@@ -18,9 +18,6 @@ class Host(object):
     def __init__(self, underlying) -> None:
         self.underlying = underlying
 
-    def provision(self):
-        return self.underlying.provision()
-
 class Localhost(Host):
     def __init__(self, deployment: Deployment):
         super().__init__(hydro_cli_rust.PyLocalhostHost(deployment.underlying))
@@ -28,9 +25,6 @@ class Localhost(Host):
 class Service(object):
     def __init__(self, underlying) -> None:
         self.underlying = underlying
-
-    def deploy(self):
-        return self.underlying.deploy()
 
     def start(self):
         return self.underlying.start()

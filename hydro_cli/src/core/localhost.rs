@@ -6,7 +6,10 @@ use async_trait::async_trait;
 use futures::{io::BufReader, AsyncBufReadExt, AsyncWriteExt, StreamExt};
 use tokio::sync::RwLock;
 
-use super::{ConnectionPipe, ConnectionType, Host, LaunchedBinary, LaunchedHost};
+use super::{
+    ConnectionPipe, ConnectionType, Host, LaunchedBinary, LaunchedHost, TerraformBatch,
+    TerraformResult,
+};
 
 struct LaunchedLocalhostBinary {
     child: RwLock<async_process::Child>,
@@ -100,7 +103,9 @@ pub struct LocalhostHost {
 
 #[async_trait]
 impl Host for LocalhostHost {
-    async fn provision(&mut self) -> Arc<dyn LaunchedHost> {
+    async fn collect_resources(&mut self, _terraform: &mut TerraformBatch) {}
+
+    async fn provision(&mut self, _terraform_result: &TerraformResult) -> Arc<dyn LaunchedHost> {
         Arc::new(LaunchedLocalhost {})
     }
 

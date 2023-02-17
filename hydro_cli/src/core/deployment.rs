@@ -16,11 +16,21 @@ pub struct Deployment {
 
 impl Deployment {
     pub async fn deploy(&mut self) {
+        let mut terraform_pool = super::TerraformBatch {};
+        for host in self.hosts.iter_mut() {
+            host.write()
+                .await
+                .collect_resources(&mut terraform_pool)
+                .await;
+        }
+
+        let result = terraform_pool.provision().await;
+
         let hosts_future = self
             .hosts
             .iter_mut()
             .map(|host: &mut Arc<RwLock<dyn Host>>| async {
-                host.write().await.provision().await;
+                host.write().await.provision(&result).await;
             });
 
         let all_hosts = futures::future::join_all(hosts_future);
@@ -29,7 +39,7 @@ impl Deployment {
             self.services
                 .iter_mut()
                 .map(|service: &mut Arc<RwLock<dyn Service>>| async {
-                    service.write().await.deploy().await;
+                    service.write().await.deploy(&result).await;
                 });
 
         let all_services = futures::future::join_all(services_future);

@@ -36,18 +36,6 @@ pub struct PyHost {
     underlying: Arc<RwLock<dyn crate::core::Host>>,
 }
 
-#[pymethods]
-impl PyHost {
-    fn provision<'p>(&self, py: Python<'p>) -> &'p pyo3::PyAny {
-        let underlying = self.underlying.clone();
-        pyo3_asyncio::tokio::future_into_py(py, async move {
-            underlying.write().await.provision().await;
-            Ok(Python::with_gil(|py| py.None()))
-        })
-        .unwrap()
-    }
-}
-
 #[pyclass(extends=PyHost, subclass)]
 struct PyLocalhostHost {}
 
@@ -74,15 +62,6 @@ pub struct PyService {
 
 #[pymethods]
 impl PyService {
-    fn deploy<'p>(&self, py: Python<'p>) -> &'p pyo3::PyAny {
-        let underlying = self.underlying.clone();
-        pyo3_asyncio::tokio::future_into_py(py, async move {
-            underlying.write().await.deploy().await;
-            Ok(Python::with_gil(|py| py.None()))
-        })
-        .unwrap()
-    }
-
     fn start<'p>(&self, py: Python<'p>) -> &'p pyo3::PyAny {
         let underlying = self.underlying.clone();
         pyo3_asyncio::tokio::future_into_py(py, async move {

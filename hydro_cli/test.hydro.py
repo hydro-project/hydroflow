@@ -4,8 +4,6 @@ async def main():
     deployment = hydro.Deployment()
     machine = deployment.Localhost()
 
-    await machine.provision()
-
     program = deployment.HydroflowCrate(
         src=".",
         example="simple",
