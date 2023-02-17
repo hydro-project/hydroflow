@@ -3,13 +3,13 @@ import hydro_cli_rust # type: ignore
 
 class Deployment(object):
     def __init__(self) -> None:
-        self.underlying = hydro_cli_rust.create_Deployment()
+        self.underlying = hydro_cli_rust.PyDeployment()
 
     def Localhost(self) -> "Localhost":
         return Localhost(self)
 
     def HydroflowCrate(self, src: str, on: "Host", example: Optional[str] = None) -> "HydroflowCrate":
-        return HydroflowCrate(src, on, example, self)
+        return HydroflowCrate(self, src, on, example)
 
     def deploy(self):
         return self.underlying.deploy()
@@ -23,7 +23,7 @@ class Host(object):
 
 class Localhost(Host):
     def __init__(self, deployment: Deployment):
-        super().__init__(hydro_cli_rust.create_LocalhostHost(deployment.underlying))
+        super().__init__(hydro_cli_rust.PyLocalhostHost(deployment.underlying))
 
 class Service(object):
     def __init__(self, underlying) -> None:
@@ -63,8 +63,8 @@ async def pyreceiver_to_async_generator(pyreceiver):
             yield res
 
 class HydroflowCrate(Service):
-    def __init__(self, src: str, on: Host, example: Optional[str], deployment: Deployment) -> None:
-        super().__init__(hydro_cli_rust.PyHydroflowCrate(src, on.underlying, example, deployment.underlying))
+    def __init__(self, deployment: Deployment, src: str, on: Host, example: Optional[str]) -> None:
+        super().__init__(hydro_cli_rust.PyHydroflowCrate(deployment.underlying, src, on.underlying, example))
 
     @property
     def ports(self) -> HydroflowCratePorts:

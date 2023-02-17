@@ -11,6 +11,16 @@ pub struct PyDeployment {
 
 #[pymethods]
 impl PyDeployment {
+    #[new]
+    fn new() -> Self {
+        PyDeployment {
+            underlying: Arc::new(RwLock::new(crate::core::Deployment {
+                hosts: Vec::new(),
+                services: Vec::new(),
+            })),
+        }
+    }
+
     fn deploy<'p>(&self, py: Python<'p>) -> &'p pyo3::PyAny {
         let underlying = self.underlying.clone();
         pyo3_asyncio::tokio::future_into_py(py, async move {
@@ -21,17 +31,7 @@ impl PyDeployment {
     }
 }
 
-#[pyfunction]
-fn create_Deployment() -> PyDeployment {
-    PyDeployment {
-        underlying: Arc::new(RwLock::new(crate::core::Deployment {
-            hosts: Vec::new(),
-            services: Vec::new(),
-        })),
-    }
-}
-
-#[pyclass(name = "PyHost")]
+#[pyclass(subclass)]
 pub struct PyHost {
     underlying: Arc<RwLock<dyn crate::core::Host>>,
 }
@@ -48,13 +48,22 @@ impl PyHost {
     }
 }
 
-#[pyfunction]
-fn create_LocalhostHost(deployment: &PyDeployment) -> PyHost {
-    PyHost {
-        underlying: deployment
-            .underlying
-            .blocking_write()
-            .add_host(crate::core::LocalhostHost {}),
+#[pyclass(extends=PyHost, subclass)]
+struct PyLocalhostHost {}
+
+#[pymethods]
+impl PyLocalhostHost {
+    #[new]
+    fn new(deployment: &PyDeployment) -> (Self, PyHost) {
+        (
+            PyLocalhostHost {},
+            PyHost {
+                underlying: deployment
+                    .underlying
+                    .blocking_write()
+                    .add_host(crate::core::LocalhostHost {}),
+            },
+        )
     }
 }
 
@@ -99,10 +108,10 @@ struct PyHydroflowCrate {}
 impl PyHydroflowCrate {
     #[new]
     fn new(
+        deployment: &PyDeployment,
         src: String,
         on: &PyHost,
         example: Option<String>,
-        deployment: &PyDeployment,
     ) -> (Self, PyService) {
         (
             PyHydroflowCrate {},
@@ -136,8 +145,8 @@ impl PyHydroflowCrate {
 
 #[pyfunction]
 fn create_connection(from: &PyService, from_port: String, to: &PyService, to_port: String) {
-    let from = from.underlying.clone();
-    let to = to.underlying.clone();
+    let from = &from.underlying;
+    let to = &to.underlying;
 
     let mut from_mut = from.blocking_write();
     let mut to_mut = to.blocking_write();
@@ -161,9 +170,12 @@ fn create_connection(from: &PyService, from_port: String, to: &PyService, to_por
 
 #[pymodule]
 pub fn hydro_cli_rust(_py: Python<'_>, module: &PyModule) -> PyResult<()> {
-    module.add_function(wrap_pyfunction!(create_Deployment, module)?)?;
-    module.add_function(wrap_pyfunction!(create_LocalhostHost, module)?)?;
+    module.add_class::<PyDeployment>()?;
+    module.add_class::<PyHost>()?;
+    module.add_class::<PyLocalhostHost>()?;
+
     module.add_class::<PyHydroflowCrate>()?;
+
     module.add_function(wrap_pyfunction!(create_connection, module)?)?;
     Ok(())
 }
