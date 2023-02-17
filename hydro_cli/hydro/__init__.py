@@ -32,6 +32,9 @@ class Service(object):
     def deploy(self):
         return self.underlying.deploy()
 
+    def start(self):
+        return self.underlying.start()
+
 class HydroflowPort(object):
     def __init__(self, underlying, name) -> None:
         self.underlying = underlying

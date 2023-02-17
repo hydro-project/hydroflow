@@ -61,7 +61,7 @@ impl PyLocalhostHost {
                 underlying: deployment
                     .underlying
                     .blocking_write()
-                    .add_host(crate::core::LocalhostHost {}),
+                    .add_host(|id| crate::core::LocalhostHost { id }),
             },
         )
     }
@@ -78,6 +78,15 @@ impl PyService {
         let underlying = self.underlying.clone();
         pyo3_asyncio::tokio::future_into_py(py, async move {
             underlying.write().await.deploy().await;
+            Ok(Python::with_gil(|py| py.None()))
+        })
+        .unwrap()
+    }
+
+    fn start<'p>(&self, py: Python<'p>) -> &'p pyo3::PyAny {
+        let underlying = self.underlying.clone();
+        pyo3_asyncio::tokio::future_into_py(py, async move {
+            underlying.write().await.start().await;
             Ok(Python::with_gil(|py| py.None()))
         })
         .unwrap()
@@ -117,14 +126,7 @@ impl PyHydroflowCrate {
             PyHydroflowCrate {},
             PyService {
                 underlying: deployment.underlying.blocking_write().add_service(
-                    crate::core::HydroflowCrate {
-                        src: src.into(),
-                        on: on.underlying.clone(),
-                        example,
-                        outgoing_ports: Default::default(),
-                        incoming_ports: Default::default(),
-                        launched_binary: None,
-                    },
+                    crate::core::HydroflowCrate::new(src.into(), on.underlying.clone(), example),
                 ),
             },
         )

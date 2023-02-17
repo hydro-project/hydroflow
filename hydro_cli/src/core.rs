@@ -5,7 +5,7 @@ use std::{
     sync::{Arc, Weak},
 };
 
-use async_channel::Receiver;
+use async_channel::{Receiver, Sender};
 use async_process::{Command, Stdio};
 use async_trait::async_trait;
 use cargo::ops::CompileFilter;
@@ -39,10 +39,28 @@ impl Deployment {
         let all_services = futures::future::join_all(services_future);
 
         futures::future::join(all_hosts, all_services).await;
+
+        let all_services_ready =
+            self.services
+                .iter()
+                .map(|service: &Arc<RwLock<dyn Service>>| async {
+                    service.write().await.ready().await;
+                });
+
+        futures::future::join_all(all_services_ready).await;
+
+        let all_services_start =
+            self.services
+                .iter()
+                .map(|service: &Arc<RwLock<dyn Service>>| async {
+                    service.write().await.start().await;
+                });
+
+        futures::future::join_all(all_services_start).await;
     }
 
-    pub fn add_host<T: Host + 'static>(&mut self, host: T) -> Arc<RwLock<T>> {
-        let arc = Arc::new(RwLock::new(host));
+    pub fn add_host<T: Host + 'static, F: Fn(usize) -> T>(&mut self, host: F) -> Arc<RwLock<T>> {
+        let arc = Arc::new(RwLock::new(host(self.hosts.len())));
         self.hosts.push(arc.clone());
         arc
     }
@@ -79,6 +97,7 @@ impl Debug for Deployment {
 
 #[async_trait]
 pub trait LaunchedBinary: Send + Sync {
+    fn stdin(&self) -> Sender<String>;
     fn stdout(&self) -> Receiver<String>;
     fn stderr(&self) -> Receiver<String>;
 
@@ -87,12 +106,17 @@ pub trait LaunchedBinary: Send + Sync {
 
 struct LaunchedLocalhostBinary {
     child: RwLock<async_process::Child>,
+    stdin_channel: Sender<String>,
     stdout_channel: Receiver<String>,
     stderr_channel: Receiver<String>,
 }
 
 #[async_trait]
 impl LaunchedBinary for LaunchedLocalhostBinary {
+    fn stdin(&self) -> Sender<String> {
+        self.stdin_channel.clone()
+    }
+
     fn stdout(&self) -> Receiver<String> {
         self.stdout_channel.clone()
     }
@@ -121,10 +145,21 @@ struct LaunchedLocalhost {}
 impl LaunchedHost for LaunchedLocalhost {
     async fn launch_binary(&self, binary: String) -> Arc<RwLock<dyn LaunchedBinary>> {
         let mut child = Command::new(binary)
+            .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()
             .unwrap();
+
+        let (stdin_sender, mut stdin_receiver) = async_channel::unbounded::<String>();
+        let mut stdin = child.stdin.take().unwrap();
+        tokio::spawn(async move {
+            while let Some(line) = stdin_receiver.next().await {
+                if stdin.write_all(line.as_bytes()).await.is_err() {
+                    break;
+                }
+            }
+        });
 
         let (stdout_sender, stdout_receiver) = async_channel::unbounded();
         let stdout = child.stdout.take().unwrap();
@@ -152,30 +187,69 @@ impl LaunchedHost for LaunchedLocalhost {
 
         Arc::new(RwLock::new(LaunchedLocalhostBinary {
             child: RwLock::new(child),
+            stdin_channel: stdin_sender,
             stdout_channel: stdout_receiver,
             stderr_channel: stderr_receiver,
         }))
     }
 }
 
+#[derive(Clone, Debug)]
+pub enum ConnectionPipe {
+    UnixSocket(PathBuf),
+}
+
+pub enum ConnectionType {
+    UnixSocket(usize),
+}
+
 #[async_trait]
 pub trait Host: Send + Sync + Debug {
     async fn provision(&mut self) -> Arc<dyn LaunchedHost>;
+
+    async fn allocate_pipe(&self, client: Arc<RwLock<dyn Host>>) -> ConnectionPipe;
+
+    fn can_connect_to(&self, typ: ConnectionType) -> bool;
 }
 
 #[derive(Debug)]
-pub struct LocalhostHost {}
+pub struct LocalhostHost {
+    pub id: usize,
+}
 
 #[async_trait]
 impl Host for LocalhostHost {
     async fn provision(&mut self) -> Arc<dyn LaunchedHost> {
         Arc::new(LaunchedLocalhost {})
     }
+
+    async fn allocate_pipe(&self, client: Arc<RwLock<dyn Host>>) -> ConnectionPipe {
+        if client
+            .read()
+            .await
+            .can_connect_to(ConnectionType::UnixSocket(self.id))
+        {
+            // TODO(allocate a random file)
+            ConnectionPipe::UnixSocket(PathBuf::from("/tmp/hydroflow.sock"))
+        } else {
+            todo!()
+        }
+    }
+
+    fn can_connect_to(&self, typ: ConnectionType) -> bool {
+        match typ {
+            ConnectionType::UnixSocket(id) => self.id == id,
+        }
+    }
 }
 
 #[async_trait]
 pub trait Service: Send + Sync + Debug {
     async fn deploy(&mut self);
+    async fn ready(&mut self);
+    async fn start(&mut self);
+
+    fn host(&self) -> Arc<RwLock<dyn Host>>;
 
     fn as_any(&self) -> &dyn std::any::Any;
     fn as_any_mut(&mut self) -> &mut dyn std::any::Any;
@@ -190,10 +264,27 @@ pub struct HydroflowCrate {
     pub outgoing_ports: HashMap<String, (Weak<RwLock<dyn Service>>, String)>,
     pub incoming_ports: HashMap<String, (Weak<RwLock<dyn Service>>, String)>,
 
+    pub built_binary: Option<String>,
+    pub launched_host: Option<Arc<dyn LaunchedHost>>,
+    pub allocated_incoming: HashMap<String, ConnectionPipe>,
     pub launched_binary: Option<Arc<RwLock<dyn LaunchedBinary>>>,
 }
 
 impl HydroflowCrate {
+    pub fn new(src: PathBuf, on: Arc<RwLock<dyn Host>>, example: Option<String>) -> Self {
+        Self {
+            src,
+            on,
+            example,
+            outgoing_ports: HashMap::new(),
+            incoming_ports: HashMap::new(),
+            built_binary: None,
+            launched_host: None,
+            allocated_incoming: HashMap::new(),
+            launched_binary: None,
+        }
+    }
+
     pub fn stdout(&self) -> Receiver<String> {
         self.launched_binary
             .as_ref()
@@ -257,10 +348,65 @@ impl HydroflowCrate {
 impl Service for HydroflowCrate {
     async fn deploy(&mut self) {
         let built = self.build();
-        let mut host = self.on.write().await;
-        let launched = host.provision();
+        let host_read = self.on.read().await;
 
-        self.launched_binary = Some(launched.await.launch_binary(built.await.unwrap()).await);
+        self.allocated_incoming = HashMap::new();
+        for (port_name, (service, _)) in self.incoming_ports.iter() {
+            let service = service.upgrade().unwrap();
+            let pipe = host_read.allocate_pipe(service.read().await.host()).await;
+            self.allocated_incoming.insert(port_name.clone(), pipe);
+        }
+
+        drop(host_read);
+
+        let mut host_write = self.on.write().await;
+        let launched = host_write.provision();
+
+        self.built_binary = Some(built.await.unwrap());
+        self.launched_host = Some(launched.await);
+    }
+
+    async fn ready(&mut self) {
+        self.launched_binary = Some(
+            self.launched_host
+                .as_ref()
+                .unwrap()
+                .launch_binary(self.built_binary.as_ref().unwrap().clone())
+                .await,
+        );
+    }
+
+    async fn start(&mut self) {
+        let mut all_ports = self.allocated_incoming.clone();
+        for (port_name, (target, target_port)) in self.outgoing_ports.iter() {
+            let target = target.upgrade().unwrap();
+            let target = target.read().await;
+            let target = target.as_any().downcast_ref::<HydroflowCrate>().unwrap();
+            all_ports.insert(
+                port_name.clone(),
+                target.allocated_incoming.get(target_port).unwrap().clone(),
+            );
+        }
+
+        let formatted_ports = all_ports
+            .iter()
+            .map(|(port_name, pipe)| format!("{}={:?}", port_name, pipe))
+            .collect::<Vec<_>>()
+            .join(";");
+
+        self.launched_binary
+            .as_mut()
+            .unwrap()
+            .write()
+            .await
+            .stdin()
+            .send(format!("{formatted_ports}\n"))
+            .await
+            .unwrap();
+    }
+
+    fn host(&self) -> Arc<RwLock<dyn Host>> {
+        self.on.clone()
     }
 
     fn as_any(&self) -> &dyn std::any::Any {
