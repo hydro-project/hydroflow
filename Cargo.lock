@@ -1353,7 +1353,6 @@ dependencies = [
  "clap 4.1.4",
  "futures",
  "futures-core",
- "futures-lite",
  "pyo3",
  "pyo3-asyncio",
  "tokio",

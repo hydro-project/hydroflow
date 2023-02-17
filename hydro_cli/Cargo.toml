@@ -14,7 +14,6 @@ pyo3 = { version = "0.18.1", features = ["auto-initialize"] }
 pyo3-asyncio = { version = "0.18.0", features = ["attributes", "unstable-streams", "tokio-runtime"] }
 async-trait = "0.1.64"
 async-process = "1.6.0"
-futures-lite = "1.12.0"
 futures = "0.3.26"
 futures-core = "0.3.26"
 async-channel = "1.8.0"
