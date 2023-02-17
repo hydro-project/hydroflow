@@ -81,10 +81,12 @@ impl Debug for Deployment {
 pub trait LaunchedBinary: Send + Sync {
     fn stdout(&self) -> Receiver<String>;
     fn stderr(&self) -> Receiver<String>;
+
+    fn exit_code(&self) -> Option<i32>;
 }
 
 struct LaunchedLocalhostBinary {
-    _child: async_process::Child,
+    child: RwLock<async_process::Child>,
     stdout_channel: Receiver<String>,
     stderr_channel: Receiver<String>,
 }
@@ -97,6 +99,14 @@ impl LaunchedBinary for LaunchedLocalhostBinary {
 
     fn stderr(&self) -> Receiver<String> {
         self.stderr_channel.clone()
+    }
+
+    fn exit_code(&self) -> Option<i32> {
+        self.child
+            .blocking_write()
+            .try_status()
+            .map(|s| s.and_then(|c| c.code()))
+            .unwrap_or(None)
     }
 }
 
@@ -141,7 +151,7 @@ impl LaunchedHost for LaunchedLocalhost {
         });
 
         Arc::new(RwLock::new(LaunchedLocalhostBinary {
-            _child: child,
+            child: RwLock::new(child),
             stdout_channel: stdout_receiver,
             stderr_channel: stderr_receiver,
         }))
@@ -198,6 +208,14 @@ impl HydroflowCrate {
             .unwrap()
             .blocking_read()
             .stderr()
+    }
+
+    pub fn exit_code(&self) -> Option<i32> {
+        self.launched_binary
+            .as_ref()
+            .unwrap()
+            .blocking_read()
+            .exit_code()
     }
 
     fn build(&mut self) -> JoinHandle<String> {

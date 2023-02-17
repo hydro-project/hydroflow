@@ -27,3 +27,5 @@ async def main():
 
     async for log in program2.stdout():
         print(log)
+
+    print(program.exit_code())

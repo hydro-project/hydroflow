@@ -153,6 +153,16 @@ impl PyHydroflowCrate {
             receiver: Arc::new(hydro.stderr()),
         })
     }
+
+    fn exit_code(self_: PyRef<'_, Self>) -> PyResult<Option<i32>> {
+        let underlying = &self_.as_ref().underlying;
+        let mut underlying_mut = underlying.blocking_write();
+        let hydro = underlying_mut
+            .as_any_mut()
+            .downcast_mut::<crate::core::HydroflowCrate>()
+            .unwrap();
+        Ok(hydro.exit_code())
+    }
 }
 
 #[pyfunction]
