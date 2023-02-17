@@ -161,11 +161,11 @@ fn create_connection(from: &PyService, from_port: String, to: &PyService, to_por
 
     from_hydro
         .outgoing_ports
-        .insert(from_port.clone(), (Arc::downgrade(&to), to_port.clone()));
+        .insert(from_port.clone(), (Arc::downgrade(to), to_port.clone()));
 
     to_hydro
         .incoming_ports
-        .insert(to_port, (Arc::downgrade(&from), from_port));
+        .insert(to_port, (Arc::downgrade(from), from_port));
 }
 
 #[pymodule]

@@ -77,27 +77,13 @@ impl Debug for Deployment {
     }
 }
 
-enum NetworkType {
-    Localhost,
-    PublicIP,
-}
-
-enum BuildTask {
-    HydroflowCrate(String),
-    // DockerImage(String),
-}
-
-enum ProvisioningTask {
-    // DockerContainer(...)
-}
-
 #[async_trait]
 pub trait LaunchedBinary: Send + Sync {
     fn lines(&self) -> Receiver<String>;
 }
 
 struct LaunchedLocalhostBinary {
-    child: async_process::Child,
+    _child: async_process::Child,
     stdout_channel: Receiver<String>,
 }
 
@@ -113,9 +99,7 @@ pub trait LaunchedHost: Send + Sync {
     async fn launch_binary(&self, binary: String) -> Arc<RwLock<dyn LaunchedBinary>>;
 }
 
-struct LaunchedLocalhost {
-    // ...
-}
+struct LaunchedLocalhost {}
 
 #[async_trait]
 impl LaunchedHost for LaunchedLocalhost {
@@ -136,7 +120,7 @@ impl LaunchedHost for LaunchedLocalhost {
         });
 
         Arc::new(RwLock::new(LaunchedLocalhostBinary {
-            child,
+            _child: child,
             stdout_channel: receiver,
         }))
     }
@@ -148,16 +132,12 @@ pub trait Host: Send + Sync + Debug {
 }
 
 #[derive(Debug)]
-pub struct LocalhostHost {
-    // ...
-}
+pub struct LocalhostHost {}
 
 #[async_trait]
 impl Host for LocalhostHost {
     async fn provision(&mut self) -> Arc<dyn LaunchedHost> {
-        Arc::new(LaunchedLocalhost {
-            // ...
-        })
+        Arc::new(LaunchedLocalhost {})
     }
 }
 

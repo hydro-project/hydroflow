@@ -1,4 +1,4 @@
-# Hydro(Pilot) CLI Design
+# Hydro CLI Design
 Hydroflow makes it possible to describe single node/thread stream processors, but is unopinionated when it comes to networking and deployment. Working towards the goal of Hydro being and end-to-end stack for distributed programming, the first step is to automate **deploying** standalone Hydroflow programs to cloud machines and **wiring** them together to form a distributed application. This document describes the design of the Hydro CLI, which will be used to achieve these goals.
 
 The Hydro CLI (`hydro`) allows developers to define Python and JavaScript programs that specify how a set of Hydroflow programs should be deployed. Unlike Terraform, where config files generate a static JSON spec, and SkyPilot, which uses YAML config to specify constraints on machines, Hydro config files are **dynamic**. A single config file can be used to generate multiple deployments, each with different parameters. This allows developers to easily experiment with different configurations and conditions. And on top of that, the same config files can interact and monitor with **live** deployments, making it possible to run complex experiments.
@@ -71,11 +71,8 @@ async def main():
     await hydro.deploy(server_hf, client_hf)
 
     # Once deployment finishes, start capturing logs from the client
+    # (logs are buffered even before we grab `stdout`)
     client_logs = client_hf.stdout()
-
-    # Start running the programs
-    await server_hf.start()
-    await client_hf.start()
 
     i = 0
     async for log in client_logs:
