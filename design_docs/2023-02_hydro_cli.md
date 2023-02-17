@@ -35,30 +35,32 @@ module main(
 
 Assume we also have a `src/echo_client.hf` file that periodically sends `EchoMsg`s to an `outbound` channel and logs echos from the `inbound` channel. We can deploy this program to a cloud machine using the following `echo.hydro.py` config file:
 ```python
-from hydro import deploy, Hydroflow
+from hydro import Deployment
 from hydro.gcp import GCPMachine # keys are automatically loaded from somewhere
 
 async def main():
+    deployment = Deployment()
+
     # Specify the GCP instances we want to deploy to
-    server_machine = GCPMachine(
+    server_machine = deployment.GCPMachine(
         project="hydro-1234",
         zone="us-west1-a",
         type="e2-micro",
     )
 
-    client_machine = GCPMachine(
+    client_machine = deployment.GCPMachine(
         project="hydro-1234",
         zone="us-west1-a",
         type="e2-micro",
     )
 
     # Load Hydroflow programs
-    server_hf = Hydroflow(
+    server_hf = deployment.Hydroflow(
         src="src/echo_server.hf",
         on=server_machine,
     )
 
-    client_hf = Hydroflow(
+    client_hf = deployment.Hydroflow(
         src="src/echo_client.hf",
         on=client_machine,
     )
@@ -68,7 +70,7 @@ async def main():
     server_hf.ports.outbound.connect(client_hf.ports.inbound)
 
     # Launch the two programs
-    await hydro.deploy(server_hf, client_hf)
+    await deployment.deploy()
 
     # Once deployment finishes, start capturing logs from the client
     # (logs are buffered even before we grab `stdout`)
