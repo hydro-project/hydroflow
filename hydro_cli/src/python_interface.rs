@@ -141,6 +141,18 @@ impl PyHydroflowCrate {
             receiver: Arc::new(hydro.stdout()),
         })
     }
+
+    fn stderr(self_: PyRef<'_, Self>) -> PyResult<PyReceiver> {
+        let underlying = &self_.as_ref().underlying;
+        let mut underlying_mut = underlying.blocking_write();
+        let hydro = underlying_mut
+            .as_any_mut()
+            .downcast_mut::<crate::core::HydroflowCrate>()
+            .unwrap();
+        Ok(PyReceiver {
+            receiver: Arc::new(hydro.stderr()),
+        })
+    }
 }
 
 #[pyfunction]

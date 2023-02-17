@@ -72,3 +72,6 @@ class HydroflowCrate(Service):
 
     def stdout(self):
         return pyreceiver_to_async_generator(self.underlying.stdout())
+
+    def stderr(self):
+        return pyreceiver_to_async_generator(self.underlying.stderr())

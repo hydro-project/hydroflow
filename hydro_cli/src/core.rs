@@ -79,18 +79,24 @@ impl Debug for Deployment {
 
 #[async_trait]
 pub trait LaunchedBinary: Send + Sync {
-    fn lines(&self) -> Receiver<String>;
+    fn stdout(&self) -> Receiver<String>;
+    fn stderr(&self) -> Receiver<String>;
 }
 
 struct LaunchedLocalhostBinary {
     _child: async_process::Child,
     stdout_channel: Receiver<String>,
+    stderr_channel: Receiver<String>,
 }
 
 #[async_trait]
 impl LaunchedBinary for LaunchedLocalhostBinary {
-    fn lines(&self) -> Receiver<String> {
+    fn stdout(&self) -> Receiver<String> {
         self.stdout_channel.clone()
+    }
+
+    fn stderr(&self) -> Receiver<String> {
+        self.stderr_channel.clone()
     }
 }
 
@@ -104,16 +110,31 @@ struct LaunchedLocalhost {}
 #[async_trait]
 impl LaunchedHost for LaunchedLocalhost {
     async fn launch_binary(&self, binary: String) -> Arc<RwLock<dyn LaunchedBinary>> {
-        let mut child = Command::new(binary).stdout(Stdio::piped()).spawn().unwrap();
+        let mut child = Command::new(binary)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .unwrap();
 
-        let (sender, receiver) = async_channel::unbounded();
-
+        let (stdout_sender, stdout_receiver) = async_channel::unbounded();
         let stdout = child.stdout.take().unwrap();
         tokio::spawn(async move {
             let mut lines = BufReader::new(stdout).lines();
 
             while let Some(line) = lines.next().await {
-                if sender.send(line.unwrap()).await.is_err() {
+                if stdout_sender.send(line.unwrap()).await.is_err() {
+                    break;
+                }
+            }
+        });
+
+        let (stderr_sender, stderr_receiver) = async_channel::unbounded();
+        let stderr = child.stderr.take().unwrap();
+        tokio::spawn(async move {
+            let mut lines = BufReader::new(stderr).lines();
+
+            while let Some(line) = lines.next().await {
+                if stderr_sender.send(line.unwrap()).await.is_err() {
                     break;
                 }
             }
@@ -121,7 +142,8 @@ impl LaunchedHost for LaunchedLocalhost {
 
         Arc::new(RwLock::new(LaunchedLocalhostBinary {
             _child: child,
-            stdout_channel: receiver,
+            stdout_channel: stdout_receiver,
+            stderr_channel: stderr_receiver,
         }))
     }
 }
@@ -167,7 +189,15 @@ impl HydroflowCrate {
             .as_ref()
             .unwrap()
             .blocking_read()
-            .lines()
+            .stdout()
+    }
+
+    pub fn stderr(&self) -> Receiver<String> {
+        self.launched_binary
+            .as_ref()
+            .unwrap()
+            .blocking_read()
+            .stderr()
     }
 
     fn build(&mut self) -> JoinHandle<String> {
