@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 
 use hydroflow_lang::{
     diagnostic::{Diagnostic, Level},
-    graph::flat_graph::FlatGraph,
+    graph::flat_graph::{FlatGraph, FlatGraphBuilder},
     parse::{IndexInt, Indexing, Pipeline, PipelineLink},
 };
 use proc_macro2::{Span, TokenStream};
@@ -35,7 +35,7 @@ pub fn gen_hydroflow_graph(
         }
     }
 
-    let mut flat_graph = FlatGraph::default();
+    let mut flat_graph_builder = FlatGraphBuilder::new();
     let mut tee_counter = HashMap::new();
     let mut merge_counter = HashMap::new();
 
@@ -50,7 +50,7 @@ pub fn gen_hydroflow_graph(
         if !created_rules.contains(&target_ident) {
             created_rules.insert(target_ident.clone());
             let name = syn::Ident::new(&target_ident.name, Span::call_site());
-            flat_graph.add_statement(parse_quote!(#name = merge() -> tee()));
+            flat_graph_builder.add_statement(parse_quote!(#name = merge() -> tee()));
         }
     }
 
@@ -67,7 +67,7 @@ pub fn gen_hydroflow_graph(
             syn::LitInt::new(&format!("{}", my_merge_index), Span::call_site());
         let name = syn::Ident::new(&target.name, Span::call_site());
 
-        flat_graph.add_statement(parse_quote! {
+        flat_graph_builder.add_statement(parse_quote! {
             source_stream(#target_ident) -> [#my_merge_index_lit] #name
         });
     }
@@ -84,7 +84,7 @@ pub fn gen_hydroflow_graph(
         let my_tee_index_lit = syn::LitInt::new(&format!("{}", my_tee_index), Span::call_site());
         let target_ident = syn::Ident::new(&target.name, Span::call_site());
 
-        flat_graph.add_statement(parse_quote! {
+        flat_graph_builder.add_statement(parse_quote! {
             #target_ident [#my_tee_index_lit] -> for_each(|v| #out_send_ident.send(v).unwrap())
         });
     }
@@ -94,7 +94,7 @@ pub fn gen_hydroflow_graph(
     for rule in rules {
         generate_rule(
             rule,
-            &mut flat_graph,
+            &mut flat_graph_builder,
             &mut tee_counter,
             &mut merge_counter,
             &mut next_join_idx,
@@ -105,7 +105,10 @@ pub fn gen_hydroflow_graph(
     if !diagnostics.is_empty() {
         Err((vec![], diagnostics))
     } else {
-        Ok(flat_graph.finalize())
+        let flat_graph = flat_graph_builder
+            .build(Level::Error)
+            .unwrap_or_else(std::convert::identity);
+        Ok(flat_graph)
     }
 }
 
@@ -122,7 +125,7 @@ pub fn hydroflow_graph_to_program(flat_graph: FlatGraph, root: TokenStream) -> s
 
 fn generate_rule(
     rule: &Rule,
-    flat_graph: &mut FlatGraph,
+    flat_graph_builder: &mut FlatGraphBuilder,
     tee_counter: &mut HashMap<String, Counter>,
     merge_counter: &mut HashMap<String, Counter>,
     next_join_idx: &mut Counter,
@@ -175,7 +178,7 @@ fn generate_rule(
         plan = JoinPlan::Predicate(predicates, Box::new(plan))
     }
 
-    let out_expanded = expand_join_plan(&plan, flat_graph, tee_counter, next_join_idx);
+    let out_expanded = expand_join_plan(&plan, flat_graph_builder, tee_counter, next_join_idx);
 
     let output_tuple_elems = rule
         .target
@@ -231,7 +234,7 @@ fn generate_rule(
             span: Span::call_site(),
         }),
     });
-    flat_graph.add_statement(hydroflow_lang::parse::HfStatement::Pipeline(
+    flat_graph_builder.add_statement(hydroflow_lang::parse::HfStatement::Pipeline(
         Pipeline::Link(PipelineLink {
             lhs: Box::new(parse_quote!(#out_name #out_indexing)), // out_name[idx]
             arrow: parse_quote!(->),
