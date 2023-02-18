@@ -3,9 +3,21 @@ use proc_macro2::Span;
 #[non_exhaustive]
 #[derive(Debug, Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub enum Level {
+    /// An error.
+    ///
+    /// The most severe and important diagnostic. Errors will prevent compilation.
     Error,
+    /// A warning.
+    ///
+    /// The second most severe diagnostic. Will not stop compilation.
     Warning,
+    /// A note.
+    ///
+    /// The third most severe, or second least severe diagnostic.
     Note,
+    /// A help message.
+    ///
+    /// The least severe and important diagnostic.
     Help,
 }
 impl Level {
