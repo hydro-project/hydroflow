@@ -13,11 +13,10 @@ use quote::{quote_spanned, ToTokens};
 /// a variable to reference its multiple input ports across statements.
 ///
 /// ```hydroflow
-/// my_merge = merge();
 /// source_iter(vec!["hello", "world"]) -> my_merge;
 /// source_iter(vec!["stay", "gold"]) -> my_merge;
 /// source_iter(vec!["don\'t", "give", "up"]) -> my_merge;
-/// my_merge -> map(|x| x.to_uppercase())
+/// my_merge = merge() -> map(|x| x.to_uppercase())
 ///     -> for_each(|x| println!("{}", x));
 /// ```
 #[hydroflow_internalmacro::operator_docgen]

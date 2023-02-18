@@ -12,10 +12,9 @@ use syn::parse_quote;
 ///
 /// ```hydroflow
 /// // should print `(hello, (world, cleveland))`
-/// my_join = join();
 /// source_iter(vec![("hello", "world"), ("stay", "gold")]) -> [0]my_join;
 /// source_iter(vec![("hello", "cleveland")]) -> [1]my_join;
-/// my_join -> for_each(|(k, (v1, v2))| println!("({}, ({}, {}))", k, v1, v2));
+/// my_join = join() -> for_each(|(k, (v1, v2))| println!("({}, ({}, {}))", k, v1, v2));
 /// ```
 ///
 /// `join` can also be provided with one or two generic lifetime persistence arguments, either

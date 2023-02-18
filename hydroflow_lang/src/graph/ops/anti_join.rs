@@ -17,10 +17,9 @@ use syn::parse_quote;
 ///
 /// ```hydroflow
 /// // should print ("elephant", 3)
-/// diff = anti_join();
 /// source_iter(vec![("dog", 1), ("cat", 2), ("elephant", 3)]) -> [pos]diff;
 /// source_iter(vec!["dog", "cat", "gorilla"]) -> [neg]diff;
-/// diff -> for_each(|v: (_, _)| println!("{}, {}", v.0, v.1));
+/// diff = anti_join() -> for_each(|v: (_, _)| println!("{}, {}", v.0, v.1));
 /// // elephant 3
 /// ```
 #[hydroflow_internalmacro::operator_docgen]
