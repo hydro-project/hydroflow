@@ -16,10 +16,9 @@ use syn::parse_quote;
 ///
 /// ```hydroflow
 /// // should print "elephant"
-/// diff = difference();
 /// source_iter(vec!["dog", "cat", "elephant"]) -> [pos]diff;
 /// source_iter(vec!["dog", "cat", "gorilla"]) -> [neg]diff;
-/// diff -> for_each(|v| println!("{}", v));
+/// diff = difference() -> for_each(|v| println!("{}", v));
 /// ```
 #[hydroflow_internalmacro::operator_docgen]
 pub const DIFFERENCE: OperatorConstraints = OperatorConstraints {
