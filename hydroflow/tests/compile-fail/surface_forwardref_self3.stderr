@@ -1,8 +1,8 @@
-error: Reached the recursion limit while resolving resolving name. Is the pipeline self-referential?
- --> tests/compile-fail/surface_forwardref_self3.rs:5:13
+error: Name `f` forms or references an illegal self-referential cycle (1/1).
+ --> tests/compile-fail/surface_forwardref_self3.rs:6:9
   |
-5 |         f = f;
-  |             ^
+6 |         f -> for_each(std::mem::drop);
+  |         ^
 
 error: `for_each` must have exactly 1 input(s), actually has 0.
  --> tests/compile-fail/surface_forwardref_self3.rs:6:14
