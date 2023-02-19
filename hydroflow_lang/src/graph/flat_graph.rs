@@ -27,7 +27,8 @@ pub struct FlatGraphBuilder {
     /// FlatGraph being built.
     flat_graph: FlatGraph,
     /// Variable names, used as [`HfStatement::Named`] are added.
-    varname_ends: BTreeMap<Ident, Ends>,
+    /// Value will be set to `Err(())` if the name references an illegal self-referential cycle.
+    varname_ends: BTreeMap<Ident, Result<Ends, ()>>,
     /// Each (out -> inn) link inputted.
     links: Vec<Ends>,
 }
@@ -71,7 +72,7 @@ impl FlatGraphBuilder {
                 let ends = self.add_pipeline(named.pipeline, Some(&named.name));
                 match self.varname_ends.entry(named.name) {
                     Entry::Vacant(vacant_entry) => {
-                        vacant_entry.insert(ends);
+                        vacant_entry.insert(Ok(ends));
                     }
                     Entry::Occupied(occupied_entry) => {
                         let prev_conflict = occupied_entry.key();
@@ -168,30 +169,57 @@ impl FlatGraphBuilder {
     }
     /// Recursively resolve a variable name. For handling forward (and backward) name references
     /// after all names have been assigned.
+    /// Returns `None` if the name is not resolvable, either because it was never assigned or
+    /// because it contains a self-referential cycle.
     fn helper_resolve_name(
         &mut self,
         mut port_det: Option<(PortIndexValue, GraphDet)>,
         is_in: bool,
     ) -> Option<(PortIndexValue, GraphNodeId)> {
-        const DEFAULT_RECURSION_LIMIT: usize = 128;
-        // TODO(mingwei): Make recursion limit configurable if needed.
+        const BACKUP_RECURSION_LIMIT: usize = 1024;
 
-        let mut span = Span::call_site();
-        for _ in 0..DEFAULT_RECURSION_LIMIT {
+        let mut names = Vec::new();
+        for _ in 0..BACKUP_RECURSION_LIMIT {
             match port_det? {
                 (port, GraphDet::Determined(node_id)) => {
                     return Some((port, node_id));
                 }
                 (port, GraphDet::Undetermined(ident)) => {
-                    span = ident.span();
-                    let Some(name_ends) = self.varname_ends.get(&ident) else {
+                    let Some(name_ends_result) = self.varname_ends.get(&ident) else {
                         self.diagnostics.push(Diagnostic::spanned(
                             ident.span(),
                             Level::Error,
-                            format!("Cannot find name `{}`", ident),
+                            format!("Cannot find name `{}`; name was never assigned.", ident),
                         ));
                         return None;
                     };
+                    // Check for a self-referential cycle.
+                    let cycle_found = names.contains(&ident);
+                    if !cycle_found {
+                        names.push(ident);
+                    };
+                    if cycle_found || name_ends_result.is_err() {
+                        let len = names.len();
+                        for (i, name) in names.into_iter().enumerate() {
+                            self.diagnostics.push(Diagnostic::spanned(
+                                name.span(),
+                                Level::Error,
+                                format!(
+                                    "Name `{}` forms or references an illegal self-referential cycle ({}/{}).",
+                                    name,
+                                    i + 1,
+                                    len
+                                ),
+                            ));
+                            // Set value as `Err(())` to trigger `name_ends_result.is_err()`
+                            // diagnostics above if the name is referenced in the future.
+                            self.varname_ends.insert(name, Err(()));
+                        }
+                        return None;
+                    }
+
+                    // No self-cycle.
+                    let name_ends = name_ends_result.as_ref().unwrap();
                     let prev = if is_in {
                         &name_ends.inn
                     } else {
@@ -207,9 +235,13 @@ impl FlatGraphBuilder {
             }
         }
         self.diagnostics.push(Diagnostic::spanned(
-            span,
+            Span::call_site(),
             Level::Error,
-            "Reached the recursion limit while resolving resolving name. Is the pipeline self-referential?",
+            format!(
+                "Reached the recursion limit {} while resolving names. This is either a hydroflow bug or you have an absurdly long chain of names: `{}`.",
+                BACKUP_RECURSION_LIMIT,
+                names.iter().map(ToString::to_string).collect::<Vec<_>>().join("` -> `"),
+            )
         ));
         None
     }
@@ -524,7 +556,7 @@ impl FlatGraphBuilder {
                     og_port.span(),
                     Level::Error,
                     format!(
-                        "Indexing on {} is overwritten below ({}) (1/2)",
+                        "Indexing on {} is overwritten below ({}) (1/2).",
                         input_output,
                         PrettySpan(other_span),
                     ),
@@ -533,7 +565,7 @@ impl FlatGraphBuilder {
                     other_span,
                     Level::Error,
                     format!(
-                        "Cannot index on already-indexed {}, previously indexed above ({}) (2/2)",
+                        "Cannot index on already-indexed {}, previously indexed above ({}) (2/2).",
                         input_output,
                         PrettySpan(og_port.span()),
                     ),
