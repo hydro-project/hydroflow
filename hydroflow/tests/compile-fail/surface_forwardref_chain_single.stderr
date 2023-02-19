@@ -1,0 +1,5 @@
+error: Reached the recursion limit while resolving resolving name. Is the pipeline self-referential?
+  --> tests/compile-fail/surface_forwardref_chain_single.rs:10:13
+   |
+10 |         f = g;
+   |             ^

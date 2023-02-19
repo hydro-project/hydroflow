@@ -1,0 +1,11 @@
+error: Reached the recursion limit while resolving resolving name. Is the pipeline self-referential?
+  --> tests/compile-fail/surface_forwardref_chain_double.rs:19:13
+   |
+19 |         m = k;
+   |             ^
+
+error: Reached the recursion limit while resolving resolving name. Is the pipeline self-referential?
+  --> tests/compile-fail/surface_forwardref_chain_double.rs:17:13
+   |
+17 |         k = l;
+   |             ^
