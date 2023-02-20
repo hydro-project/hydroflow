@@ -6,13 +6,13 @@ async def main():
 
     program = deployment.HydroflowCrate(
         src=".",
-        example="simple",
+        example="sender",
         on=machine
     )
 
     program2 = deployment.HydroflowCrate(
         src=".",
-        example="simple",
+        example="receiver",
         on=machine
     )
 
