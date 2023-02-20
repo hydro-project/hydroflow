@@ -1,15 +1,13 @@
-use std::{path::PathBuf, sync::Arc};
+use std::{any::Any, sync::Arc};
 
 use async_channel::{Receiver, Sender};
 use async_process::{Command, Stdio};
 use async_trait::async_trait;
 use futures::{io::BufReader, AsyncBufReadExt, AsyncWriteExt, StreamExt};
+use hydroflow::util::connection::ConnectionPipe;
 use tokio::sync::RwLock;
 
-use super::{
-    ConnectionPipe, ConnectionType, Host, LaunchedBinary, LaunchedHost, TerraformBatch,
-    TerraformResult,
-};
+use super::{ConnectionType, Host, LaunchedBinary, LaunchedHost, TerraformBatch, TerraformResult};
 
 struct LaunchedLocalhostBinary {
     child: RwLock<async_process::Child>,
@@ -47,6 +45,7 @@ struct LaunchedLocalhost {}
 impl LaunchedHost for LaunchedLocalhost {
     async fn launch_binary(&self, binary: String) -> Arc<RwLock<dyn LaunchedBinary>> {
         let mut child = Command::new(binary)
+            .kill_on_drop(true)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
@@ -69,7 +68,8 @@ impl LaunchedHost for LaunchedLocalhost {
             let mut lines = BufReader::new(stdout).lines();
 
             while let Some(line) = lines.next().await {
-                if stdout_sender.send(line.unwrap()).await.is_err() {
+                let line_value = line.unwrap();
+                if stdout_sender.send(line_value).await.is_err() {
                     break;
                 }
             }
@@ -81,7 +81,8 @@ impl LaunchedHost for LaunchedLocalhost {
             let mut lines = BufReader::new(stderr).lines();
 
             while let Some(line) = lines.next().await {
-                if stderr_sender.send(line.unwrap()).await.is_err() {
+                let line_value = line.unwrap();
+                if stderr_sender.send(line_value).await.is_err() {
                     break;
                 }
             }
@@ -109,14 +110,18 @@ impl Host for LocalhostHost {
         Arc::new(LaunchedLocalhost {})
     }
 
-    async fn allocate_pipe(&self, client: Arc<RwLock<dyn Host>>) -> ConnectionPipe {
+    async fn allocate_pipe(
+        &self,
+        client: Arc<RwLock<dyn Host>>,
+    ) -> (ConnectionPipe, Box<dyn Any + Send + Sync>) {
         if client
             .read()
             .await
             .can_connect_to(ConnectionType::UnixSocket(self.id))
         {
-            // TODO(allocate a random file)
-            ConnectionPipe::UnixSocket(PathBuf::from("/tmp/hydroflow.sock"))
+            let dir = tempfile::tempdir().unwrap();
+            let socket_path = dir.path().join("socket");
+            (ConnectionPipe::UnixSocket(socket_path), Box::new(dir))
         } else {
             todo!()
         }

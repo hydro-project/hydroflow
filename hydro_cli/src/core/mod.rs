@@ -1,7 +1,8 @@
-use std::{fmt::Debug, path::PathBuf, sync::Arc};
+use std::{any::Any, fmt::Debug, sync::Arc};
 
 use async_channel::{Receiver, Sender};
 use async_trait::async_trait;
+use hydroflow::util::connection::ConnectionPipe;
 use tokio::sync::RwLock;
 
 pub mod deployment;
@@ -37,11 +38,6 @@ pub trait LaunchedHost: Send + Sync {
     async fn launch_binary(&self, binary: String) -> Arc<RwLock<dyn LaunchedBinary>>;
 }
 
-#[derive(Clone, Debug)]
-pub enum ConnectionPipe {
-    UnixSocket(PathBuf),
-}
-
 pub enum ConnectionType {
     UnixSocket(usize),
 }
@@ -53,7 +49,10 @@ pub trait Host: Send + Sync + Debug {
 
     async fn provision(&mut self, terraform_result: &TerraformResult) -> Arc<dyn LaunchedHost>;
 
-    async fn allocate_pipe(&self, client: Arc<RwLock<dyn Host>>) -> ConnectionPipe;
+    async fn allocate_pipe(
+        &self,
+        client: Arc<RwLock<dyn Host>>,
+    ) -> (ConnectionPipe, Box<dyn Any + Send + Sync>);
 
     fn can_connect_to(&self, typ: ConnectionType) -> bool;
 }

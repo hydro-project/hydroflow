@@ -1,4 +1,5 @@
 use std::{
+    any::Any,
     collections::HashMap,
     fmt::Debug,
     path::PathBuf,
@@ -13,11 +14,10 @@ use cargo::{
     util::command_prelude::CompileMode,
     Config,
 };
+use hydroflow::util::connection::ConnectionPipe;
 use tokio::{sync::RwLock, task::JoinHandle};
 
-use super::{
-    ConnectionPipe, Host, LaunchedBinary, LaunchedHost, Service, TerraformBatch, TerraformResult,
-};
+use super::{Host, LaunchedBinary, LaunchedHost, Service, TerraformBatch, TerraformResult};
 
 pub struct HydroflowCrate {
     pub src: PathBuf,
@@ -30,7 +30,7 @@ pub struct HydroflowCrate {
 
     pub built_binary: Option<String>,
     pub launched_host: Option<Arc<dyn LaunchedHost>>,
-    pub allocated_incoming: HashMap<String, ConnectionPipe>,
+    pub allocated_incoming: HashMap<String, (ConnectionPipe, Box<dyn Any + Send + Sync>)>,
     pub launched_binary: Option<Arc<RwLock<dyn LaunchedBinary>>>,
 }
 
@@ -135,40 +135,53 @@ impl Service for HydroflowCrate {
     }
 
     async fn ready(&mut self) {
-        self.launched_binary = Some(
-            self.launched_host
-                .as_ref()
-                .unwrap()
-                .launch_binary(self.built_binary.as_ref().unwrap().clone())
-                .await,
-        );
-    }
+        let binary = self
+            .launched_host
+            .as_ref()
+            .unwrap()
+            .launch_binary(self.built_binary.as_ref().unwrap().clone())
+            .await;
 
-    async fn start(&mut self) {
-        let mut all_ports = self.allocated_incoming.clone();
+        let mut port_config = HashMap::new();
+        for (port_name, (conn_type, _)) in self.allocated_incoming.iter() {
+            port_config.insert(port_name.clone(), conn_type.clone());
+        }
+
         for (port_name, (target, target_port)) in self.outgoing_ports.iter() {
             let target = target.upgrade().unwrap();
             let target = target.read().await;
             let target = target.as_any().downcast_ref::<HydroflowCrate>().unwrap();
-            all_ports.insert(
-                port_name.clone(),
-                target.allocated_incoming.get(target_port).unwrap().clone(),
-            );
+
+            let (conn_type, _) = target.allocated_incoming.get(target_port).unwrap();
+
+            port_config.insert(port_name.clone(), conn_type.clone());
         }
 
-        let formatted_ports = all_ports
-            .iter()
-            .map(|(port_name, pipe)| format!("{}={:?}", port_name, pipe))
-            .collect::<Vec<_>>()
-            .join(";");
+        let formatted_ports = serde_json::to_string(&port_config).unwrap();
 
+        binary
+            .write()
+            .await
+            .stdin()
+            .send(format!("{formatted_ports}\n"))
+            .await
+            .unwrap();
+
+        if binary.write().await.stdout().recv().await.unwrap() != "ready" {
+            panic!("expected ready");
+        }
+
+        self.launched_binary = Some(binary);
+    }
+
+    async fn start(&mut self) {
         self.launched_binary
             .as_mut()
             .unwrap()
             .write()
             .await
             .stdin()
-            .send(format!("{formatted_ports}\n"))
+            .send("start\n".to_string())
             .await
             .unwrap();
     }

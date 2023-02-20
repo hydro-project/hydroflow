@@ -26,9 +26,6 @@ class Service(object):
     def __init__(self, underlying) -> None:
         self.underlying = underlying
 
-    def start(self):
-        return self.underlying.start()
-
 class HydroflowPort(object):
     def __init__(self, underlying, name) -> None:
         self.underlying = underlying

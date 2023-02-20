@@ -60,18 +60,6 @@ pub struct PyService {
     underlying: Arc<RwLock<dyn crate::core::Service>>,
 }
 
-#[pymethods]
-impl PyService {
-    fn start<'p>(&self, py: Python<'p>) -> &'p pyo3::PyAny {
-        let underlying = self.underlying.clone();
-        pyo3_asyncio::tokio::future_into_py(py, async move {
-            underlying.write().await.start().await;
-            Ok(Python::with_gil(|py| py.None()))
-        })
-        .unwrap()
-    }
-}
-
 #[pyclass]
 struct PyReceiver {
     receiver: Arc<Receiver<String>>,
