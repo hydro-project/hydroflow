@@ -68,6 +68,9 @@
 <a href="#68" id="68">68</a>
 <a href="#69" id="69">69</a>
 <a href="#70" id="70">70</a>
+<a href="#71" id="71">71</a>
+<a href="#72" id="72">72</a>
+<a href="#73" id="73">73</a>
 </pre><pre class="rust"><code><span class="attr">#![feature(proc_macro_diagnostic, proc_macro_span)]
 #![allow(clippy::explicit_auto_deref)]
 
@@ -75,7 +78,8 @@
 <span class="kw">use </span>quote::quote;
 <span class="kw">use </span>syn::{parse_macro_input, LitStr};
 
-<span class="kw">use </span>hydroflow_lang::graph::flat_graph::FlatGraph;
+<span class="kw">use </span>hydroflow_lang::diagnostic::Level;
+<span class="kw">use </span>hydroflow_lang::graph::flat_graph::FlatGraphBuilder;
 <span class="kw">use </span>hydroflow_lang::parse::HfCode;
 
 <span class="attr">#[proc_macro]
@@ -92,8 +96,9 @@
 
     <span class="kw">let </span>input = <span class="macro">parse_macro_input!</span>(input <span class="kw">as </span>HfCode);
 
-    <span class="kw">let </span>flat_graph = FlatGraph::from_hfcode(input);
-    <span class="kw">if </span>!flat_graph.emit_diagnostics() {
+    <span class="kw">let </span>flat_graph_builder = FlatGraphBuilder::from_hfcode(input);
+    <span class="kw">let </span>flat_graph_result = flat_graph_builder.build(Level::Help);
+    <span class="kw">if let </span><span class="prelude-val">Ok</span>(flat_graph) = flat_graph_result {
         <span class="kw">match </span>flat_graph.into_partitioned_graph() {
             <span class="prelude-val">Ok</span>(part_graph) =&gt; <span class="kw">return </span>part_graph.as_code(root, <span class="bool-val">true</span>).into(),
             <span class="prelude-val">Err</span>(diagnostic) =&gt; diagnostic.emit(),
@@ -106,9 +111,10 @@
 </span><span class="kw">pub fn </span>hydroflow_parser(input: proc_macro::TokenStream) -&gt; proc_macro::TokenStream {
     <span class="kw">let </span>input = <span class="macro">parse_macro_input!</span>(input <span class="kw">as </span>HfCode);
 
-    <span class="kw">let </span>flat_graph = FlatGraph::from_hfcode(input);
-    flat_graph.emit_diagnostics();
-
+    <span class="kw">let </span>flat_graph_builder = FlatGraphBuilder::from_hfcode(input);
+    <span class="kw">let </span>flat_graph = flat_graph_builder
+        .build(Level::Help)
+        .unwrap_or_else(std::convert::identity);
     <span class="kw">let </span>flat_mermaid = flat_graph.mermaid_string();
 
     <span class="kw">let </span>part_graph = flat_graph.into_partitioned_graph().unwrap();

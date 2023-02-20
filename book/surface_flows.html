@@ -143,47 +143,60 @@ operator to print each string to stdout.</p>
     -&gt; map(|x| x.to_uppercase()) -&gt; for_each(|x| println!(&quot;{}&quot;, x));
 </code></pre>
 <p>Flows can be assigned to variable names for convenience. E.g, the above can be rewritten as follows:</p>
-<pre><code class="language-rust ignore">upper_print = map(|x| x.to_uppercase()) -&gt; for_each(|x| println!(&quot;{}&quot;, x));
-source_iter(vec![&quot;Hello&quot;, &quot;world&quot;]) -&gt; upper_print;
+<pre><code class="language-rust ignore">source_iter(vec![&quot;Hello&quot;, &quot;world&quot;]) -&gt; upper_print;
+upper_print = map(|x| x.to_uppercase()) -&gt; for_each(|x| println!(&quot;{}&quot;, x));
 </code></pre>
+<p>Note that the order of the statements (lines) doesn't matter. In this example, <code>upper_print</code> is
+referenced before it is assigned, and that is completely OK and better matches the flow of
+data, making the program more understandable.</p>
 <h2 id="operators-with-multiple-ports"><a class="header" href="#operators-with-multiple-ports">Operators with Multiple Ports</a></h2>
 <p>Some operators have more than one input <em>port</em> that can be referenced by <code>-&gt;</code>. For example <a href="./surface_ops.gen.html#merge"><code>merge</code></a>
 merges the contents of many flows, so it can have an abitrary number of input ports. Some operators have multiple outputs, notably <a href="./surface_ops.gen.html#tee"><code>tee</code></a>,
 which has an arbitrary number of outputs.</p>
-<p>In the syntax, we distinguish input ports via an <em>indexing prefix</em> number
-in square brackets before the operator name (e.g. <code>[0]merge(...)</code> and <code>[1]merge(...)</code>). We
-distinguish output ports by an <em>indexing suffix</em> (e.g. <code>tee[0]</code>).</p>
+<p>In the syntax, we optionally distinguish input ports via an <em>indexing prefix</em> number
+in square brackets before the name (e.g. <code>[0]my_join</code> and <code>[1]my_join</code>). We
+can distinguish output ports by an <em>indexing suffix</em> (e.g. <code>my_tee[0]</code>).</p>
 <p>Here is an example that tees one flow into two, handles each separately, and then merges them to print out the contents in both lowercase and uppercase:</p>
-<pre><code class="language-rust ignore">source = source_iter(vec![&quot;Hello&quot;, &quot;world&quot;]) -&gt; tee();
-print = merge() -&gt; for_each(|x| println!(&quot;{}&quot;, x));
-source[0] -&gt; map(|x: &amp;str| x.to_uppercase()) -&gt; [0]print;
-source[1] -&gt; map(|x: &amp;str| x.to_lowercase()) -&gt; [1]print;
+<pre><code class="language-rust ignore">my_tee = source_iter(vec![&quot;Hello&quot;, &quot;world&quot;]) -&gt; tee();
+my_tee -&gt; map(|x| x.to_uppercase()) -&gt; my_merge;
+my_tee -&gt; map(|x| x.to_lowercase()) -&gt; my_merge;
+my_merge = merge() -&gt; for_each(|x| println!(&quot;{}&quot;, x));
 </code></pre>
-<p>(Note that the Rust code inside map needed a little help with type inference after the <code>tee</code>.)</p>
+<p><code>merge()</code> and <code>tee()</code> treat all their input/outputs the same, so we omit the indexing.</p>
 <p>Here is a visualization of the flow that was generated:</p>
-<pre class="mermaid">flowchart TB
-    subgraph Compiled Component 2
-        3v1[&quot;3v1 &lt;tt&gt;op_3v1: merge()&lt;/tt&gt;&quot;]
-        4v1[&quot;4v1 &lt;tt&gt;op_4v1: for_each(| x | println! (&amp;quot;{}&amp;quot;, x))&lt;/tt&gt;&quot;]
+<pre class="mermaid">%%{init:{'theme':'base','themeVariables':{'clusterBkg':'#ddd','clusterBorder':'#888'}}}%%
+flowchart TD
+classDef pullClass fill:#02f,color:#fff,stroke:#000
+classDef pushClass fill:#ff0,stroke:#000
+linkStyle default stroke:#aaa,stroke-width:4px,color:red,font-size:1.5em;
+subgraph sg_1v1 [&quot;sg_1v1 stratum 0&quot;]
+    1v1[\&quot;(1v1) &lt;tt&gt;source_iter(vec! [&amp;quot;Hello&amp;quot;, &amp;quot;world&amp;quot;])&lt;/tt&gt;&quot;/]:::pullClass
+    2v1[/&quot;(2v1) &lt;tt&gt;tee()&lt;/tt&gt;&quot;\]:::pushClass
+    1v1---&gt;2v1
+    subgraph sg_1v1_var_my_tee [&quot;var &lt;tt&gt;my_tee&lt;/tt&gt;&quot;]
+        1v1
+        2v1
     end
-    subgraph Compiled Component 1
-        1v1[&quot;1v1 &lt;tt&gt;op_1v1: source_iter(vec! [&amp;quot;Hello&amp;quot;, &amp;quot;world&amp;quot;])&lt;/tt&gt;&quot;]
-        2v1[&quot;2v1 &lt;tt&gt;op_2v1: tee()&lt;/tt&gt;&quot;]
-        5v1[&quot;5v1 &lt;tt&gt;op_5v1: map(| x : &amp;amp; str | x.to_uppercase())&lt;/tt&gt;&quot;]
-        6v1[&quot;6v1 &lt;tt&gt;op_6v1: map(| x : &amp;amp; str | x.to_lowercase())&lt;/tt&gt;&quot;]
+end
+subgraph sg_2v1 [&quot;sg_2v1 stratum 0&quot;]
+    3v1[\&quot;(3v1) &lt;tt&gt;map(| x : &amp;amp; str | x.to_uppercase())&lt;/tt&gt;&quot;/]:::pullClass
+    4v1[\&quot;(4v1) &lt;tt&gt;map(| x : &amp;amp; str | x.to_lowercase())&lt;/tt&gt;&quot;/]:::pullClass
+    5v1[\&quot;(5v1) &lt;tt&gt;merge()&lt;/tt&gt;&quot;/]:::pullClass
+    6v1[/&quot;(6v1) &lt;tt&gt;for_each(| x | println! (&amp;quot;{}&amp;quot;, x))&lt;/tt&gt;&quot;\]:::pushClass
+    3v1--0---&gt;5v1
+    4v1--1---&gt;5v1
+    5v1---&gt;6v1
+    subgraph sg_2v1_var_my_merge [&quot;var &lt;tt&gt;my_merge&lt;/tt&gt;&quot;]
+        5v1
+        6v1
     end
-
-    7v1{&quot;handoff&quot;}
-    8v1{&quot;handoff&quot;}
-
-    1v1--&gt;2v1
-    2v1--&gt;5v1
-    2v1--&gt;6v1
-    3v1--&gt;4v1
-    5v1--&gt;7v1
-    6v1--&gt;8v1
-    7v1--&gt;3v1
-    8v1--&gt;3v1
+end
+2v1--0---&gt;7v1
+2v1--1---&gt;8v1
+7v1[&quot;(7v1) &lt;tt&gt;handoff&lt;/tt&gt;&quot;]:::otherClass
+7v1---&gt;3v1
+8v1[&quot;(8v1) &lt;tt&gt;handoff&lt;/tt&gt;&quot;]:::otherClass
+8v1---&gt;4v1
 </pre>
 <p>Hydroflow compiled this flow into two subgraphs called <em>compiled components</em>, connected by <em>handoffs</em>. You can ignore
 these details unless you are interested in low-level performance tuning; they are explained in the discussion

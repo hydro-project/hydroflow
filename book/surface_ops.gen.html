@@ -161,10 +161,9 @@ in the <code>neg</code> input.</p>
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>// should print (&quot;elephant&quot;, 3)
-diff = anti_join();
 source_iter(vec![(&quot;dog&quot;, 1), (&quot;cat&quot;, 2), (&quot;elephant&quot;, 3)]) -&gt; [pos]diff;
 source_iter(vec![&quot;dog&quot;, &quot;cat&quot;, &quot;gorilla&quot;]) -&gt; [neg]diff;
-diff -&gt; for_each(|v: (_, _)| println!(&quot;{}, {}&quot;, v.0, v.1));
+diff = anti_join() -&gt; for_each(|v: (_, _)| println!(&quot;{}, {}&quot;, v.0, v.1));
 // elephant 3
 <span class="boring">};
 </span><span class="boring">for _ in 0..100 {
@@ -195,10 +194,9 @@ tupled pairs.</p>
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>// should print all 4 pairs of emotion and animal
-my_join = cross_join();
 source_iter(vec![&quot;happy&quot;, &quot;sad&quot;]) -&gt; [0]my_join;
 source_iter(vec![&quot;dog&quot;, &quot;cat&quot;]) -&gt; [1]my_join;
-my_join -&gt; for_each(|(v1, v2)| println!(&quot;({}, {})&quot;, v1, v2));
+my_join = cross_join() -&gt; for_each(|(v1, v2)| println!(&quot;({}, {})&quot;, v1, v2));
 <span class="boring">};
 </span><span class="boring">for _ in 0..100 {
 </span><span class="boring">    if !__hf.run_tick() {
@@ -397,10 +395,9 @@ streams, returning items in the <code>pos</code> input that are not found in the
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>// should print &quot;elephant&quot;
-diff = difference();
 source_iter(vec![&quot;dog&quot;, &quot;cat&quot;, &quot;elephant&quot;]) -&gt; [pos]diff;
 source_iter(vec![&quot;dog&quot;, &quot;cat&quot;, &quot;gorilla&quot;]) -&gt; [neg]diff;
-diff -&gt; for_each(|v| println!(&quot;{}&quot;, v));
+diff = difference() -&gt; for_each(|v| println!(&quot;{}&quot;, v));
 <span class="boring">};
 </span><span class="boring">for _ in 0..100 {
 </span><span class="boring">    if !__hf.run_tick() {
@@ -745,10 +742,9 @@ anti-pattern to provide a closure with side effects.</p>
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>// should print `(hello, (world, cleveland))`
-my_join = join();
 source_iter(vec![(&quot;hello&quot;, &quot;world&quot;), (&quot;stay&quot;, &quot;gold&quot;)]) -&gt; [0]my_join;
 source_iter(vec![(&quot;hello&quot;, &quot;cleveland&quot;)]) -&gt; [1]my_join;
-my_join -&gt; for_each(|(k, (v1, v2))| println!(&quot;({}, ({}, {}))&quot;, k, v1, v2));
+my_join = join() -&gt; for_each(|(k, (v1, v2))| println!(&quot;({}, ({}, {}))&quot;, k, v1, v2));
 <span class="boring">};
 </span><span class="boring">for _ in 0..100 {
 </span><span class="boring">    if !__hf.run_tick() {
@@ -863,11 +859,10 @@ a variable to reference its multiple input ports across statements.</p>
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
 </span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
-</span>my_merge = merge();
-source_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; my_merge;
+</span>source_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; my_merge;
 source_iter(vec![&quot;stay&quot;, &quot;gold&quot;]) -&gt; my_merge;
 source_iter(vec![&quot;don\'t&quot;, &quot;give&quot;, &quot;up&quot;]) -&gt; my_merge;
-my_merge -&gt; map(|x| x.to_uppercase())
+my_merge = merge() -&gt; map(|x| x.to_uppercase())
     -&gt; for_each(|x| println!(&quot;{}&quot;, x));
 <span class="boring">};
 </span><span class="boring">for _ in 0..100 {

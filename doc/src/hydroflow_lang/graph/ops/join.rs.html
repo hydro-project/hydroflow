@@ -185,7 +185,6 @@
 <a href="#185" id="185">185</a>
 <a href="#186" id="186">186</a>
 <a href="#187" id="187">187</a>
-<a href="#188" id="188">188</a>
 </pre><pre class="rust"><code><span class="kw">use super</span>::{
     OperatorConstraints, OperatorWriteOutput, Persistence, WriteContextArgs, WriteIteratorArgs,
     RANGE_0, RANGE_1,
@@ -200,10 +199,9 @@
 ///
 /// ```hydroflow
 /// // should print `(hello, (world, cleveland))`
-/// my_join = join();
 /// source_iter(vec![(&quot;hello&quot;, &quot;world&quot;), (&quot;stay&quot;, &quot;gold&quot;)]) -&gt; [0]my_join;
 /// source_iter(vec![(&quot;hello&quot;, &quot;cleveland&quot;)]) -&gt; [1]my_join;
-/// my_join -&gt; for_each(|(k, (v1, v2))| println!(&quot;({}, ({}, {}))&quot;, k, v1, v2));
+/// my_join = join() -&gt; for_each(|(k, (v1, v2))| println!(&quot;({}, ({}, {}))&quot;, k, v1, v2));
 /// ```
 ///
 /// `join` can also be provided with one or two generic lifetime persistence arguments, either

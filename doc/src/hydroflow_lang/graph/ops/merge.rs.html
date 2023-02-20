@@ -71,7 +71,6 @@
 <a href="#71" id="71">71</a>
 <a href="#72" id="72">72</a>
 <a href="#73" id="73">73</a>
-<a href="#74" id="74">74</a>
 </pre><pre class="rust"><code><span class="kw">use super</span>::{
     OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, RANGE_0,
     RANGE_1, RANGE_ANY,
@@ -87,11 +86,10 @@
 /// a variable to reference its multiple input ports across statements.
 ///
 /// ```hydroflow
-/// my_merge = merge();
 /// source_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; my_merge;
 /// source_iter(vec![&quot;stay&quot;, &quot;gold&quot;]) -&gt; my_merge;
 /// source_iter(vec![&quot;don\&#39;t&quot;, &quot;give&quot;, &quot;up&quot;]) -&gt; my_merge;
-/// my_merge -&gt; map(|x| x.to_uppercase())
+/// my_merge = merge() -&gt; map(|x| x.to_uppercase())
 ///     -&gt; for_each(|x| println!(&quot;{}&quot;, x));
 /// ```
 </span><span class="attr">#[hydroflow_internalmacro::operator_docgen]

@@ -65,7 +65,6 @@
 <a href="#65" id="65">65</a>
 <a href="#66" id="66">66</a>
 <a href="#67" id="67">67</a>
-<a href="#68" id="68">68</a>
 </pre><pre class="rust"><code><span class="kw">use super</span>::{OperatorConstraints, WriteContextArgs, WriteIteratorArgs, RANGE_0, RANGE_1};
 
 <span class="kw">use </span>quote::quote_spanned;
@@ -78,10 +77,9 @@
 ///
 /// ```hydroflow
 /// // should print all 4 pairs of emotion and animal
-/// my_join = cross_join();
 /// source_iter(vec![&quot;happy&quot;, &quot;sad&quot;]) -&gt; [0]my_join;
 /// source_iter(vec![&quot;dog&quot;, &quot;cat&quot;]) -&gt; [1]my_join;
-/// my_join -&gt; for_each(|(v1, v2)| println!(&quot;({}, {})&quot;, v1, v2));
+/// my_join = cross_join() -&gt; for_each(|(v1, v2)| println!(&quot;({}, {})&quot;, v1, v2));
 /// ```
 ///
 /// `cross_join` can also be provided with one or two generic lifetime persistence arguments
