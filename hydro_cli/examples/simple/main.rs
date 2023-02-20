@@ -13,7 +13,7 @@ async fn main() {
     let trimmed = input.trim();
 
     let connection_pipes =
-        serde_json::from_str::<HashMap<String, ConnectionPipe>>(&trimmed).unwrap();
+        serde_json::from_str::<HashMap<String, ConnectionPipe>>(trimmed).unwrap();
 
     if connection_pipes.contains_key("bar") {
         if let Some(ConnectionPipe::UnixSocket(s)) = connection_pipes.get("bar") {
