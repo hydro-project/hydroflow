@@ -17,14 +17,14 @@ pub const REPEAT_ITER: OperatorConstraints = OperatorConstraints {
     is_external_input: false,
     ports_inn: None,
     ports_out: None,
-    input_delaytype_fn: &|_| None,
-    write_fn: &(|&WriteContextArgs {
-                     context, op_span, ..
-                 },
-                 &WriteIteratorArgs {
-                     ident, arguments, ..
-                 },
-                 _| {
+    input_delaytype_fn: |_| None,
+    write_fn: |&WriteContextArgs {
+                   context, op_span, ..
+               },
+               &WriteIteratorArgs {
+                   ident, arguments, ..
+               },
+               _| {
         let write_iterator = quote_spanned! {op_span=>
             let #ident = {
                 #[inline(always)]
@@ -42,5 +42,5 @@ pub const REPEAT_ITER: OperatorConstraints = OperatorConstraints {
             write_iterator_after,
             ..Default::default()
         })
-    }),
+    },
 };

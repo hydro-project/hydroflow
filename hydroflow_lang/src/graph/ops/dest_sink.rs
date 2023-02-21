@@ -93,12 +93,12 @@ pub const DEST_SINK: OperatorConstraints = OperatorConstraints {
     is_external_input: false,
     ports_inn: None,
     ports_out: None,
-    input_delaytype_fn: &|_| None,
-    write_fn: &(|wc @ &WriteContextArgs { root, op_span, .. },
-                 &WriteIteratorArgs {
-                     ident, arguments, ..
-                 },
-                 _| {
+    input_delaytype_fn: |_| None,
+    write_fn: |wc @ &WriteContextArgs { root, op_span, .. },
+               &WriteIteratorArgs {
+                   ident, arguments, ..
+               },
+               _| {
         let sink_arg = &arguments[0];
 
         let send_ident = wc.make_ident("item_send");
@@ -146,5 +146,5 @@ pub const DEST_SINK: OperatorConstraints = OperatorConstraints {
             write_iterator,
             ..Default::default()
         })
-    }),
+    },
 };
