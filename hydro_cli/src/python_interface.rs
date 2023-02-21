@@ -99,38 +99,50 @@ impl PyHydroflowCrate {
         )
     }
 
-    fn stdout(self_: PyRef<'_, Self>) -> PyResult<PyReceiver> {
+    fn stdout<'p>(self_: PyRef<'p, Self>, py: Python<'p>) -> &'p pyo3::PyAny {
         let underlying = &self_.as_ref().underlying;
-        let mut underlying_mut = underlying.blocking_write();
-        let hydro = underlying_mut
-            .as_any_mut()
-            .downcast_mut::<crate::core::HydroflowCrate>()
-            .unwrap();
-        Ok(PyReceiver {
-            receiver: Arc::new(hydro.stdout()),
+        let underlying = underlying.clone();
+        pyo3_asyncio::tokio::future_into_py(py, async move {
+            let mut underlying_mut = underlying.write().await;
+            let hydro = underlying_mut
+                .as_any_mut()
+                .downcast_mut::<crate::core::HydroflowCrate>()
+                .unwrap();
+            Ok(PyReceiver {
+                receiver: Arc::new(hydro.stdout().await),
+            })
         })
+        .unwrap()
     }
 
-    fn stderr(self_: PyRef<'_, Self>) -> PyResult<PyReceiver> {
+    fn stderr<'p>(self_: PyRef<'p, Self>, py: Python<'p>) -> &'p pyo3::PyAny {
         let underlying = &self_.as_ref().underlying;
-        let mut underlying_mut = underlying.blocking_write();
-        let hydro = underlying_mut
-            .as_any_mut()
-            .downcast_mut::<crate::core::HydroflowCrate>()
-            .unwrap();
-        Ok(PyReceiver {
-            receiver: Arc::new(hydro.stderr()),
+        let underlying = underlying.clone();
+        pyo3_asyncio::tokio::future_into_py(py, async move {
+            let mut underlying_mut = underlying.write().await;
+            let hydro = underlying_mut
+                .as_any_mut()
+                .downcast_mut::<crate::core::HydroflowCrate>()
+                .unwrap();
+            Ok(PyReceiver {
+                receiver: Arc::new(hydro.stderr().await),
+            })
         })
+        .unwrap()
     }
 
-    fn exit_code(self_: PyRef<'_, Self>) -> PyResult<Option<i32>> {
+    fn exit_code<'p>(self_: PyRef<'p, Self>, py: Python<'p>) -> &'p pyo3::PyAny {
         let underlying = &self_.as_ref().underlying;
-        let mut underlying_mut = underlying.blocking_write();
-        let hydro = underlying_mut
-            .as_any_mut()
-            .downcast_mut::<crate::core::HydroflowCrate>()
-            .unwrap();
-        Ok(hydro.exit_code())
+        let underlying = underlying.clone();
+        pyo3_asyncio::tokio::future_into_py(py, async move {
+            let mut underlying_mut = underlying.write().await;
+            let hydro = underlying_mut
+                .as_any_mut()
+                .downcast_mut::<crate::core::HydroflowCrate>()
+                .unwrap();
+            Ok(hydro.exit_code().await)
+        })
+        .unwrap()
     }
 }
 

@@ -12,27 +12,34 @@ use super::{ConnectionType, Host, LaunchedBinary, LaunchedHost, TerraformBatch, 
 struct LaunchedLocalhostBinary {
     child: RwLock<async_process::Child>,
     stdin_channel: Sender<String>,
-    stdout_channel: Receiver<String>,
-    stderr_channel: Receiver<String>,
+    stdout_receivers: Arc<RwLock<Vec<Sender<String>>>>,
+    stderr_receivers: Arc<RwLock<Vec<Sender<String>>>>,
 }
 
 #[async_trait]
 impl LaunchedBinary for LaunchedLocalhostBinary {
-    fn stdin(&self) -> Sender<String> {
+    async fn stdin(&self) -> Sender<String> {
         self.stdin_channel.clone()
     }
 
-    fn stdout(&self) -> Receiver<String> {
-        self.stdout_channel.clone()
+    async fn stdout(&self) -> Receiver<String> {
+        let mut receivers = self.stdout_receivers.write().await;
+        let (sender, receiver) = async_channel::unbounded::<String>();
+        receivers.push(sender);
+        receiver
     }
 
-    fn stderr(&self) -> Receiver<String> {
-        self.stderr_channel.clone()
+    async fn stderr(&self) -> Receiver<String> {
+        let mut receivers = self.stderr_receivers.write().await;
+        let (sender, receiver) = async_channel::unbounded::<String>();
+        receivers.push(sender);
+        receiver
     }
 
-    fn exit_code(&self) -> Option<i32> {
+    async fn exit_code(&self) -> Option<i32> {
         self.child
-            .blocking_write()
+            .write()
+            .await
             .try_status()
             .map(|s| s.and_then(|c| c.code()))
             .unwrap_or(None)
@@ -62,27 +69,51 @@ impl LaunchedHost for LaunchedLocalhost {
             }
         });
 
-        let (stdout_sender, stdout_receiver) = async_channel::unbounded();
+        let stdout_receivers = Arc::new(RwLock::new(Vec::<Sender<String>>::new()));
+        let weak_stdout = Arc::downgrade(&stdout_receivers);
         let stdout = child.stdout.take().unwrap();
         tokio::spawn(async move {
             let mut lines = BufReader::new(stdout).lines();
 
-            while let Some(line) = lines.next().await {
-                let line_value = line.unwrap();
-                if stdout_sender.send(line_value).await.is_err() {
+            while let Some(Result::Ok(line)) = lines.next().await {
+                if let Some(receivers) = weak_stdout.upgrade() {
+                    let mut receivers = receivers.write().await;
+                    let mut successful_send = false;
+                    for r in receivers.iter() {
+                        successful_send = successful_send | r.send(line.clone()).await.is_ok();
+                    }
+
+                    receivers.retain(|r| !r.is_closed());
+
+                    if !successful_send {
+                        println!("{line}");
+                    }
+                } else {
                     break;
                 }
             }
         });
 
-        let (stderr_sender, stderr_receiver) = async_channel::unbounded();
+        let stderr_receivers = Arc::new(RwLock::new(Vec::<Sender<String>>::new()));
+        let weak_stderr = Arc::downgrade(&stderr_receivers);
         let stderr = child.stderr.take().unwrap();
         tokio::spawn(async move {
             let mut lines = BufReader::new(stderr).lines();
 
-            while let Some(line) = lines.next().await {
-                let line_value = line.unwrap();
-                if stderr_sender.send(line_value).await.is_err() {
+            while let Some(Result::Ok(line)) = lines.next().await {
+                if let Some(receivers) = weak_stderr.upgrade() {
+                    let mut receivers = receivers.write().await;
+                    let mut successful_send = false;
+                    for r in receivers.iter() {
+                        successful_send = successful_send | r.send(line.clone()).await.is_ok();
+                    }
+
+                    receivers.retain(|r| !r.is_closed());
+
+                    if !successful_send {
+                        eprintln!("{line}");
+                    }
+                } else {
                     break;
                 }
             }
@@ -91,8 +122,8 @@ impl LaunchedHost for LaunchedLocalhost {
         Arc::new(RwLock::new(LaunchedLocalhostBinary {
             child: RwLock::new(child),
             stdin_channel: stdin_sender,
-            stdout_channel: stdout_receiver,
-            stderr_channel: stderr_receiver,
+            stdout_receivers,
+            stderr_receivers,
         }))
     }
 }

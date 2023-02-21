@@ -1,3 +1,4 @@
+import traceback
 from typing import Optional
 import hydro_cli_rust # type: ignore
 
@@ -64,11 +65,11 @@ class HydroflowCrate(Service):
     def ports(self) -> HydroflowCratePorts:
         return HydroflowCratePorts(self.underlying)
 
-    def stdout(self):
-        return pyreceiver_to_async_generator(self.underlying.stdout())
+    async def stdout(self):
+        return pyreceiver_to_async_generator(await self.underlying.stdout())
 
-    def stderr(self):
-        return pyreceiver_to_async_generator(self.underlying.stderr())
+    async def stderr(self):
+        return pyreceiver_to_async_generator(await self.underlying.stderr())
 
     def exit_code(self):
         return self.underlying.exit_code();

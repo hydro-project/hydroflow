@@ -22,11 +22,13 @@ async def main():
 
     print("deployed!")
 
+    # create this as separate variable to indicate to Hydro that we want to capture all stdout
+    program2out = await program2.stdout()
     counter = 0
-    async for log in program2.stdout():
+    async for log in program2out:
         print(log)
         counter += 1
         if counter == 10:
             break
 
-    print(program.exit_code())
+    print(await program.exit_code())

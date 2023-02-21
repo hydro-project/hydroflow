@@ -26,11 +26,11 @@ pub struct TerraformResult {}
 
 #[async_trait]
 pub trait LaunchedBinary: Send + Sync {
-    fn stdin(&self) -> Sender<String>;
-    fn stdout(&self) -> Receiver<String>;
-    fn stderr(&self) -> Receiver<String>;
+    async fn stdin(&self) -> Sender<String>;
+    async fn stdout(&self) -> Receiver<String>;
+    async fn stderr(&self) -> Receiver<String>;
 
-    fn exit_code(&self) -> Option<i32>;
+    async fn exit_code(&self) -> Option<i32>;
 }
 
 #[async_trait]

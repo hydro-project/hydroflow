@@ -35,6 +35,8 @@ async fn main() {
             ]) -> foo;
         };
 
+        println!("hello from the sender!");
+
         df.run_async().await;
     }
 }

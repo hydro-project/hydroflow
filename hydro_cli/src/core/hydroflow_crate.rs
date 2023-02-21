@@ -49,28 +49,34 @@ impl HydroflowCrate {
         }
     }
 
-    pub fn stdout(&self) -> Receiver<String> {
+    pub async fn stdout(&self) -> Receiver<String> {
         self.launched_binary
             .as_ref()
             .unwrap()
-            .blocking_read()
+            .read()
+            .await
             .stdout()
+            .await
     }
 
-    pub fn stderr(&self) -> Receiver<String> {
+    pub async fn stderr(&self) -> Receiver<String> {
         self.launched_binary
             .as_ref()
             .unwrap()
-            .blocking_read()
+            .read()
+            .await
             .stderr()
+            .await
     }
 
-    pub fn exit_code(&self) -> Option<i32> {
+    pub async fn exit_code(&self) -> Option<i32> {
         self.launched_binary
             .as_ref()
             .unwrap()
-            .blocking_read()
+            .read()
+            .await
             .exit_code()
+            .await
     }
 
     fn build(&mut self) -> JoinHandle<String> {
@@ -159,15 +165,19 @@ impl Service for HydroflowCrate {
 
         let formatted_ports = serde_json::to_string(&port_config).unwrap();
 
+        // request stdout before sending config so we don't miss the "ready" response
+        let stdout_receiver = binary.write().await.stdout().await;
+
         binary
             .write()
             .await
             .stdin()
+            .await
             .send(format!("{formatted_ports}\n"))
             .await
             .unwrap();
 
-        if binary.write().await.stdout().recv().await.unwrap() != "ready" {
+        if stdout_receiver.recv().await.unwrap() != "ready" {
             panic!("expected ready");
         }
 
@@ -181,6 +191,7 @@ impl Service for HydroflowCrate {
             .write()
             .await
             .stdin()
+            .await
             .send("start\n".to_string())
             .await
             .unwrap();
