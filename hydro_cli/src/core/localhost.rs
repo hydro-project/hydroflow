@@ -145,14 +145,19 @@ impl Host for LocalhostHost {
         &self,
         client: Arc<RwLock<dyn Host>>,
     ) -> (ConnectionPipe, Box<dyn Any + Send + Sync>) {
-        if client
-            .read()
-            .await
-            .can_connect_to(ConnectionType::UnixSocket(self.id))
-        {
+        let client = client.read().await;
+
+        if client.can_connect_to(ConnectionType::UnixSocket(self.id)) {
             let dir = tempfile::tempdir().unwrap();
             let socket_path = dir.path().join("socket");
             (ConnectionPipe::UnixSocket(socket_path), Box::new(dir))
+        } else if client.can_connect_to(ConnectionType::InternalTcpPort(self.id)) {
+            // find an available port
+            let port = (8000..9000)
+                .find(|port| std::net::TcpListener::bind(("127.0.0.1", *port)).is_ok())
+                .expect("Could not find an available port");
+
+            (ConnectionPipe::InternalTcpPort(port), Box::new(()))
         } else {
             todo!()
         }
@@ -160,7 +165,18 @@ impl Host for LocalhostHost {
 
     fn can_connect_to(&self, typ: ConnectionType) -> bool {
         match typ {
-            ConnectionType::UnixSocket(id) => self.id == id,
+            ConnectionType::UnixSocket(id) => {
+                #[cfg(unix)]
+                {
+                    self.id == id
+                }
+
+                #[cfg(not(unix))]
+                {
+                    false
+                }
+            }
+            ConnectionType::InternalTcpPort(id) => self.id == id,
         }
     }
 }

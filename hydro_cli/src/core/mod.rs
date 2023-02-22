@@ -39,7 +39,14 @@ pub trait LaunchedHost: Send + Sync {
 }
 
 pub enum ConnectionType {
-    UnixSocket(usize),
+    UnixSocket(
+        /// Unique identifier for the host this socket will be on.
+        usize,
+    ),
+    InternalTcpPort(
+        /// Unique identifier for the VPC this port will be on.
+        usize,
+    ),
 }
 
 #[async_trait]

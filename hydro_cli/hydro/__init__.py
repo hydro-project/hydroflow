@@ -15,6 +15,9 @@ class Deployment(object):
     def deploy(self):
         return self.underlying.deploy()
 
+    def start(self):
+        return self.underlying.start()
+
 class Host(object):
     def __init__(self, underlying) -> None:
         self.underlying = underlying

@@ -2,9 +2,8 @@ use std::collections::HashMap;
 
 use hydroflow::{
     hydroflow_syntax,
-    util::{connection::ConnectionPipe, unix_lines},
+    util::connection::ConnectionPipe,
 };
-use tokio::net::UnixListener;
 
 #[tokio::main]
 async fn main() {
@@ -15,27 +14,30 @@ async fn main() {
     let connection_pipes =
         serde_json::from_str::<HashMap<String, ConnectionPipe>>(trimmed).unwrap();
 
-    if let Some(ConnectionPipe::UnixSocket(s)) = connection_pipes.get("bar") {
-        let server = UnixListener::bind(s).unwrap();
-        println!("ready");
+    // bind to sockets
+    let server = connection_pipes.get("bar").unwrap().bind().await;
 
-        let client_stream = server.accept().await.unwrap().0;
-        let (_, client_recv) = unix_lines(client_stream);
+    println!("ready");
 
-        let mut start_buf = String::new();
-        std::io::stdin().read_line(&mut start_buf).unwrap();
-        if start_buf != "start\n" {
-            panic!("expected start");
-        }
+    // listen for incoming connections
+    let (_, bar_recv) = server.accept_lines().await;
 
-        let mut df = hydroflow_syntax! {
-            bar = source_stream(client_recv)
-                -> map(|x| x.unwrap())
-                -> tee();
-
-            bar[0] -> for_each(|s| println!("echo {}", s));
-        };
-
-        df.run_async().await;
+    let mut start_buf = String::new();
+    std::io::stdin().read_line(&mut start_buf).unwrap();
+    if start_buf != "start\n" {
+        panic!("expected start");
     }
+
+    // connect to sockets
+
+    // start program
+    let mut df = hydroflow_syntax! {
+        bar = source_stream(bar_recv)
+            -> map(|x| x.unwrap())
+            -> tee();
+
+        bar[0] -> for_each(|s| println!("echo {}", s));
+    };
+
+    df.run_async().await;
 }

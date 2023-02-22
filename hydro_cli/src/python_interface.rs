@@ -29,6 +29,15 @@ impl PyDeployment {
         })
         .unwrap()
     }
+
+    fn start<'p>(&self, py: Python<'p>) -> &'p pyo3::PyAny {
+        let underlying = self.underlying.clone();
+        pyo3_asyncio::tokio::future_into_py(py, async move {
+            underlying.write().await.start().await;
+            Ok(Python::with_gil(|py| py.None()))
+        })
+        .unwrap()
+    }
 }
 
 #[pyclass(subclass)]
