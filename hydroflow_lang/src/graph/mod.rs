@@ -93,14 +93,14 @@ pub fn node_color(node: &Node, inn_degree: usize, out_degree: usize) -> Option<C
 pub enum PortIndexValue {
     Int(IndexInt),
     Path(ExprPath),
-    Elided(Span),
+    Elided(Option<Span>),
 }
 impl PortIndexValue {
     pub fn from_ported<Inner>(ported: Ported<Inner>) -> (Self, Inner, Self)
     where
         Inner: Spanned,
     {
-        let ported_span = ported.inner.span();
+        let ported_span = Some(ported.inner.span());
         let port_inn = ported
             .inn
             .map(|idx| idx.index.into())
@@ -143,7 +143,7 @@ impl Spanned for PortIndexValue {
         match self {
             PortIndexValue::Int(x) => x.span(),
             PortIndexValue::Path(x) => x.span(),
-            PortIndexValue::Elided(span) => *span,
+            PortIndexValue::Elided(span) => span.unwrap_or_else(Span::call_site),
         }
     }
 }
