@@ -1,9 +1,6 @@
 use std::collections::HashMap;
 
-use hydroflow::{
-    hydroflow_syntax,
-    util::connection::ConnectionPipe,
-};
+use hydroflow::{hydroflow_syntax, util::connection::ConnectionPipe};
 
 #[tokio::main]
 async fn main() {
@@ -11,11 +8,11 @@ async fn main() {
     std::io::stdin().read_line(&mut input).unwrap();
     let trimmed = input.trim();
 
-    let connection_pipes =
+    let mut connection_pipes =
         serde_json::from_str::<HashMap<String, ConnectionPipe>>(trimmed).unwrap();
 
     // bind to sockets
-    let server = connection_pipes.get("bar").unwrap().bind().await;
+    let server = connection_pipes.remove("bar").unwrap().bind().await;
 
     println!("ready");
 

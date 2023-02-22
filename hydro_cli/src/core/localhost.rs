@@ -157,7 +157,10 @@ impl Host for LocalhostHost {
                 .find(|port| std::net::TcpListener::bind(("127.0.0.1", *port)).is_ok())
                 .expect("Could not find an available port");
 
-            (ConnectionPipe::InternalTcpPort(port), Box::new(()))
+            (
+                ConnectionPipe::InternalTcpPort("127.0.0.1".to_string(), port),
+                Box::new(()),
+            )
         } else {
             todo!()
         }
