@@ -87,6 +87,15 @@ pub mod datalog {
         Aggregation(Aggregation),
     }
 
+    impl TargetExpr {
+        pub fn ident(&self) -> &Ident {
+            match self {
+                TargetExpr::Ident(ident) => ident,
+                TargetExpr::Aggregation(a) => &a.ident,
+            }
+        }
+    }
+
     #[derive(Debug, Clone)]
     pub struct Aggregation {
         pub tpe: AggregationType,

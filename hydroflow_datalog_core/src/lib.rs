@@ -180,38 +180,39 @@ fn generate_rule(
 
     let out_expanded = expand_join_plan(&plan, flat_graph_builder, tee_counter, next_join_idx);
 
-    let (group_by_keys, agg_keys): (Vec<_>, Vec<_>) = rule
-        .target
-        .fields
-        .iter()
-        .map(|field| {
-            (
-                field,
-                match field {
-                    TargetExpr::Ident(ident)
-                    | TargetExpr::Aggregation(Aggregation { ident, .. }) => {
-                        if let Some(col) = out_expanded
-                            .variable_mapping
-                            .get(&syn::Ident::new(&ident.name, Span::call_site()))
-                        {
-                            let source_col_idx = syn::Index::from(*col);
-                            parse_quote!(row.#source_col_idx)
-                        } else {
-                            diagnostics.push(Diagnostic::spanned(
-                                Span::call_site(),
-                                Level::Error,
-                                format!("Could not find column {} in RHS of rule", ident.name),
-                            ));
-                            parse_quote!(())
-                        }
-                    }
-                },
-            )
-        })
-        .partition(|t: &(&TargetExpr, syn::Expr)| matches!(t.0, TargetExpr::Ident(_)));
+    let mut aggregations = vec![];
+    let mut group_by_exprs = vec![];
+    let mut agg_exprs = vec![];
 
-    let group_by_exprs = group_by_keys.iter().map(|p| &p.1).collect::<Vec<_>>();
-    let agg_exprs = agg_keys.iter().map(|p| &p.1).collect::<Vec<_>>();
+    for field in rule.target.fields.iter() {
+        let expr: syn::Expr = if let Some(col) = out_expanded
+            .variable_mapping
+            .get(&syn::Ident::new(&field.ident().name, Span::call_site()))
+        {
+            let source_col_idx = syn::Index::from(*col);
+            parse_quote!(row.#source_col_idx)
+        } else {
+            diagnostics.push(Diagnostic::spanned(
+                Span::call_site(),
+                Level::Error,
+                format!(
+                    "Could not find column {} in RHS of rule",
+                    &field.ident().name
+                ),
+            ));
+            parse_quote!(())
+        };
+
+        match field {
+            TargetExpr::Ident(_) => {
+                group_by_exprs.push(expr);
+            }
+            TargetExpr::Aggregation(_) => {
+                aggregations.push(field);
+                agg_exprs.push(expr);
+            }
+        }
+    }
 
     let flattened_tuple_type = out_expanded.tuple_type;
 
@@ -223,19 +224,11 @@ fn generate_rule(
 
     let my_merge_index_lit = syn::LitInt::new(&format!("{}", my_merge_index), Span::call_site());
 
-    let after_join = if agg_keys.is_empty() {
+    let after_join: Pipeline = if agg_exprs.is_empty() {
         let after_join_map: syn::Expr =
             parse_quote!(|row: #flattened_tuple_type| (#(#group_by_exprs, )*));
 
-        match rule.rule_type {
-            RuleType::Sync(_) => {
-                parse_quote!(map(#after_join_map) -> [#my_merge_index_lit] #target_ident)
-            }
-            RuleType::NextTick(_) => {
-                parse_quote!(map(#after_join_map) -> next_tick() -> [#my_merge_index_lit] #target_ident)
-            }
-            RuleType::Async(_) => panic!("Async rules not yet supported"),
-        }
+        parse_quote!(map(#after_join_map))
     } else {
         let pre_group_by_map: syn::Expr = parse_quote!(|row: #flattened_tuple_type| ((#(#group_by_exprs, )*), (#(#agg_exprs, )*)));
 
@@ -257,10 +250,10 @@ fn generate_rule(
             .collect::<Vec<syn::Type>>();
         let group_by_type: syn::Type = parse_quote!((#(#group_by_types, )*));
 
-        let group_by_stmts: Vec<syn::Stmt> = agg_keys
+        let group_by_stmts: Vec<syn::Stmt> = aggregations
             .iter()
             .enumerate()
-            .map(|(i, (agg, _))| {
+            .map(|(i, agg)| {
                 let idx = syn::Index::from(i);
                 let old_at_index: syn::Expr = parse_quote!(old.#idx);
                 let val_at_index: syn::Expr = parse_quote!(val.#idx);
@@ -308,15 +301,17 @@ fn generate_rule(
 
         let after_group_map: syn::Expr = parse_quote!(|(g, a)| (#(#after_group_lookups, )*));
 
-        match rule.rule_type {
-            RuleType::Sync(_) => {
-                parse_quote!(map(#pre_group_by_map) -> group_by::<'tick, #group_by_input_type, #group_by_type>(|| #group_by_initial, #group_by_fn) -> map(#after_group_map) -> [#my_merge_index_lit] #target_ident)
-            }
-            RuleType::NextTick(_) => {
-                parse_quote!(map(#pre_group_by_map) -> group_by::<'tick, #group_by_input_type, #group_by_type>(|| #group_by_initial, #group_by_fn) -> map(#after_group_map) -> next_tick() -> [#my_merge_index_lit] #target_ident)
-            }
-            RuleType::Async(_) => panic!("Async rules not yet supported"),
+        parse_quote!(map(#pre_group_by_map) -> group_by::<'tick, #group_by_input_type, #group_by_type>(|| #group_by_initial, #group_by_fn) -> map(#after_group_map))
+    };
+
+    let after_join_and_send: Pipeline = match rule.rule_type {
+        RuleType::Sync(_) => {
+            parse_quote!(#after_join -> [#my_merge_index_lit] #target_ident)
         }
+        RuleType::NextTick(_) => {
+            parse_quote!(#after_join -> next_tick() -> [#my_merge_index_lit] #target_ident)
+        }
+        RuleType::Async(_) => panic!("Async rules not yet supported"),
     };
 
     let out_name = out_expanded.name;
@@ -333,7 +328,7 @@ fn generate_rule(
         Pipeline::Link(PipelineLink {
             lhs: Box::new(parse_quote!(#out_name #out_indexing)), // out_name[idx]
             arrow: parse_quote!(->),
-            rhs: Box::new(after_join),
+            rhs: Box::new(after_join_and_send),
         }),
     ));
 }
