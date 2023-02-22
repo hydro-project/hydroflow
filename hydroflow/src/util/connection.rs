@@ -11,7 +11,7 @@ use super::{tcp_lines, unix_lines};
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum ConnectionPipe {
     UnixSocket(PathBuf),
-    InternalTcpPort(String, u16),
+    TcpPort(String, u16),
 }
 
 impl ConnectionPipe {
@@ -28,7 +28,7 @@ impl ConnectionPipe {
                     panic!("Unix sockets are not supported on this platform")
                 }
             }
-            ConnectionPipe::InternalTcpPort(host, port) => {
+            ConnectionPipe::TcpPort(host, port) => {
                 BoundConnection::InternalTcpPort(TcpListener::bind((host, port)).await.unwrap())
             }
         }
@@ -54,7 +54,7 @@ impl ConnectionPipe {
                     panic!("Unix sockets are not supported on this platform")
                 }
             }
-            ConnectionPipe::InternalTcpPort(host, port) => {
+            ConnectionPipe::TcpPort(host, port) => {
                 let stream = TcpStream::connect((host, port)).await.unwrap();
                 let (a, b) = tcp_lines(stream);
                 (Box::pin(a), Box::pin(b))

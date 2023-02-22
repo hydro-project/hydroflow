@@ -158,7 +158,7 @@ impl Host for LocalhostHost {
                 .expect("Could not find an available port");
 
             (
-                ConnectionPipe::InternalTcpPort("127.0.0.1".to_string(), port),
+                ConnectionPipe::TcpPort("127.0.0.1".to_string(), port),
                 Box::new(()),
             )
         } else {
