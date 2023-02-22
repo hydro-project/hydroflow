@@ -180,6 +180,50 @@ fn generate_rule(
 
     let out_expanded = expand_join_plan(&plan, flat_graph_builder, tee_counter, next_join_idx);
 
+    let after_join = apply_aggregations(rule, &out_expanded, diagnostics);
+
+    let my_merge_index = merge_counter
+        .entry(target.name.clone())
+        .or_insert_with(|| 0..)
+        .next()
+        .expect("Out of merge indices");
+
+    let my_merge_index_lit = syn::LitInt::new(&format!("{}", my_merge_index), Span::call_site());
+
+    let after_join_and_send: Pipeline = match rule.rule_type {
+        RuleType::Sync(_) => {
+            parse_quote!(#after_join -> [#my_merge_index_lit] #target_ident)
+        }
+        RuleType::NextTick(_) => {
+            parse_quote!(#after_join -> next_tick() -> [#my_merge_index_lit] #target_ident)
+        }
+        RuleType::Async(_) => panic!("Async rules not yet supported"),
+    };
+
+    let out_name = out_expanded.name;
+    // If the output comes with a tee index, we must read with that. This only happens when we are
+    // directly outputting a transformation of a single relation on the RHS.
+    let out_indexing = out_expanded.tee_idx.map(|i| Indexing {
+        bracket_token: syn::token::Bracket::default(),
+        index: hydroflow_lang::parse::PortIndex::Int(IndexInt {
+            value: i,
+            span: Span::call_site(),
+        }),
+    });
+    flat_graph_builder.add_statement(hydroflow_lang::parse::HfStatement::Pipeline(
+        Pipeline::Link(PipelineLink {
+            lhs: Box::new(parse_quote!(#out_name #out_indexing)), // out_name[idx]
+            arrow: parse_quote!(->),
+            rhs: Box::new(after_join_and_send),
+        }),
+    ));
+}
+
+fn apply_aggregations(
+    rule: &Rule,
+    out_expanded: &IntermediateJoinNode,
+    diagnostics: &mut Vec<Diagnostic>,
+) -> Pipeline {
     let mut aggregations = vec![];
     let mut group_by_exprs = vec![];
     let mut agg_exprs = vec![];
@@ -214,17 +258,9 @@ fn generate_rule(
         }
     }
 
-    let flattened_tuple_type = out_expanded.tuple_type;
+    let flattened_tuple_type = &out_expanded.tuple_type;
 
-    let my_merge_index = merge_counter
-        .entry(target.name.clone())
-        .or_insert_with(|| 0..)
-        .next()
-        .expect("Out of merge indices");
-
-    let my_merge_index_lit = syn::LitInt::new(&format!("{}", my_merge_index), Span::call_site());
-
-    let after_join: Pipeline = if agg_exprs.is_empty() {
+    if agg_exprs.is_empty() {
         parse_quote!(map(|row: #flattened_tuple_type| (#(#group_by_exprs, )*)))
     } else {
         let agg_initial_values = group_by_exprs
@@ -300,35 +336,7 @@ fn generate_rule(
         parse_quote! {
             map(#pre_group_by_map) -> group_by::<'tick, #group_by_input_type, #agg_type>(|| #agg_initial, #group_by_fn) -> map(#after_group_map)
         }
-    };
-
-    let after_join_and_send: Pipeline = match rule.rule_type {
-        RuleType::Sync(_) => {
-            parse_quote!(#after_join -> [#my_merge_index_lit] #target_ident)
-        }
-        RuleType::NextTick(_) => {
-            parse_quote!(#after_join -> next_tick() -> [#my_merge_index_lit] #target_ident)
-        }
-        RuleType::Async(_) => panic!("Async rules not yet supported"),
-    };
-
-    let out_name = out_expanded.name;
-    // If the output comes with a tee index, we must read with that. This only happens when we are
-    // directly outputting a transformation of a single relation on the RHS.
-    let out_indexing = out_expanded.tee_idx.map(|i| Indexing {
-        bracket_token: syn::token::Bracket::default(),
-        index: hydroflow_lang::parse::PortIndex::Int(IndexInt {
-            value: i,
-            span: Span::call_site(),
-        }),
-    });
-    flat_graph_builder.add_statement(hydroflow_lang::parse::HfStatement::Pipeline(
-        Pipeline::Link(PipelineLink {
-            lhs: Box::new(parse_quote!(#out_name #out_indexing)), // out_name[idx]
-            arrow: parse_quote!(->),
-            rhs: Box::new(after_join_and_send),
-        }),
-    ));
+    }
 }
 
 #[cfg(test)]
