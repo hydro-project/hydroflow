@@ -617,7 +617,7 @@ fn insert_intermediate_node(
     node: Node,
     edge_id: GraphEdgeId,
 ) -> (GraphNodeId, GraphEdgeId) {
-    let span = node.span();
+    let span = Some(node.span());
     let node_id = nodes.insert(node);
     let (e0, e1) = graph.insert_intermediate_node(node_id, edge_id).unwrap();
 

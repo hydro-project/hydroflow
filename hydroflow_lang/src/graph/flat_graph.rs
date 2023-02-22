@@ -141,7 +141,7 @@ impl FlatGraphBuilder {
                 outer_ends
             }
             Pipeline::Operator(operator) => {
-                let op_span = operator.span();
+                let op_span = Some(operator.span());
                 let key = self.flat_graph.nodes.insert(Node::Operator(operator));
                 if let Some(current_varname) = current_varname {
                     self.flat_graph
