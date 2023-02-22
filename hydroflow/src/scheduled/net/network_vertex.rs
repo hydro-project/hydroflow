@@ -1,3 +1,5 @@
+#![cfg(not(target_arch = "wasm32"))]
+
 use std::collections::HashMap;
 
 use futures::{SinkExt, StreamExt};

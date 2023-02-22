@@ -7,7 +7,7 @@ edition = "2021"
 path = "src/lib.rs"
 
 [features]
-default = [ "diagnostics" ]
+default = []
 diagnostics = [ "hydroflow_lang/diagnostics" ]
 
 [dependencies]
@@ -17,7 +17,7 @@ syn = { version = "1.0.0", features = [ "parsing", "extra-traits" ] }
 proc-macro2 = "1.0.27"
 proc-macro-crate = "1.1.0"
 rust-sitter = "0.2.1"
-hydroflow_lang = { path = "../hydroflow_lang", default-features = false }
+hydroflow_lang = { path = "../hydroflow_lang" }
 
 [build-dependencies]
 rust-sitter-tool = "0.2.1"
