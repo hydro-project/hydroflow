@@ -87,22 +87,22 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
     persistence_args: &(0..=2),
     type_args: RANGE_0,
     is_external_input: false,
-    ports_inn: Some(&(|| super::PortListSpec::Fixed(parse_quote! { 0, 1 }))),
+    ports_inn: Some(|| super::PortListSpec::Fixed(parse_quote! { 0, 1 })),
     ports_out: None,
-    input_delaytype_fn: &|_| None,
-    write_fn: &(|wc @ &WriteContextArgs {
-                     root,
-                     context,
-                     op_span,
-                     ..
-                 },
-                 &WriteIteratorArgs {
-                     ident,
-                     inputs,
-                     persistence_args,
-                     ..
-                 },
-                 _| {
+    input_delaytype_fn: |_| None,
+    write_fn: |wc @ &WriteContextArgs {
+                   root,
+                   context,
+                   op_span,
+                   ..
+               },
+               &WriteIteratorArgs {
+                   ident,
+                   inputs,
+                   persistence_args,
+                   ..
+               },
+               _| {
         let persistences = match *persistence_args {
             [] => [Persistence::Static, Persistence::Static],
             [a] => [a, a],
@@ -183,5 +183,5 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
             write_iterator,
             ..Default::default()
         })
-    }),
+    },
 };

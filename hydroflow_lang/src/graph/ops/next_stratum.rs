@@ -15,6 +15,6 @@ pub const NEXT_STRATUM: OperatorConstraints = OperatorConstraints {
     is_external_input: false,
     ports_inn: None,
     ports_out: None,
-    input_delaytype_fn: &|_| Some(DelayType::Stratum),
+    input_delaytype_fn: |_| Some(DelayType::Stratum),
     write_fn: IDENTITY_WRITE_FN,
 };

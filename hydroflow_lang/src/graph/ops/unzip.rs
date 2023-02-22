@@ -27,16 +27,16 @@ pub const UNZIP: OperatorConstraints = OperatorConstraints {
     type_args: RANGE_0,
     is_external_input: false,
     ports_inn: None,
-    ports_out: Some(&|| super::PortListSpec::Fixed(parse_quote!(0, 1))),
-    input_delaytype_fn: &|_| None,
-    write_fn: &(|&WriteContextArgs { root, op_span, .. },
-                 &WriteIteratorArgs {
-                     ident,
-                     outputs,
-                     is_pull,
-                     ..
-                 },
-                 _| {
+    ports_out: Some(|| super::PortListSpec::Fixed(parse_quote!(0, 1))),
+    input_delaytype_fn: |_| None,
+    write_fn: |&WriteContextArgs { root, op_span, .. },
+               &WriteIteratorArgs {
+                   ident,
+                   outputs,
+                   is_pull,
+                   ..
+               },
+               _| {
         assert!(!is_pull);
         let output0 = &outputs[0];
         let output1 = &outputs[1];
@@ -47,5 +47,5 @@ pub const UNZIP: OperatorConstraints = OperatorConstraints {
             write_iterator,
             ..Default::default()
         })
-    }),
+    },
 };

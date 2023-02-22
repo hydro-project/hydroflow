@@ -52,18 +52,18 @@ pub const SORT: OperatorConstraints = OperatorConstraints {
     is_external_input: false,
     ports_inn: None,
     ports_out: None,
-    input_delaytype_fn: &|_| Some(DelayType::Stratum),
-    write_fn: &(|wc @ &WriteContextArgs {
-                     context, op_span, ..
-                 },
-                 &WriteIteratorArgs {
-                     ident,
-                     inputs,
-                     is_pull,
-                     persistence_args,
-                     ..
-                 },
-                 _| {
+    input_delaytype_fn: |_| Some(DelayType::Stratum),
+    write_fn: |wc @ &WriteContextArgs {
+                   context, op_span, ..
+               },
+               &WriteIteratorArgs {
+                   ident,
+                   inputs,
+                   is_pull,
+                   persistence_args,
+                   ..
+               },
+               _| {
         assert!(is_pull);
 
         let persistence = match *persistence_args {
@@ -111,5 +111,5 @@ pub const SORT: OperatorConstraints = OperatorConstraints {
                 })
             }
         }
-    }),
+    },
 };

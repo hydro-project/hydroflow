@@ -10,21 +10,12 @@ use crate::union_find::UnionFind;
 
 use super::di_mul_graph::DiMulGraph;
 use super::flat_graph::FlatGraph;
-use super::ops::{DelayType, OperatorConstraints};
+use super::ops::{find_node_op_constraints, DelayType};
 use super::partitioned_graph::PartitionedGraph;
 use super::{
     graph_algorithms, node_color, Color, GraphEdgeId, GraphNodeId, GraphSubgraphId, Node,
     PortIndexValue,
 };
-
-fn find_operator_constraints(node: &Node) -> Option<&OperatorConstraints> {
-    if let Node::Operator(operator) = node {
-        let name = &*operator.name_string();
-        super::ops::OPERATORS.iter().find(|&op| name == op.name)
-    } else {
-        None
-    }
-}
 
 fn find_barrier_crossers(
     nodes: &SlotMap<GraphNodeId, Node>,
@@ -34,7 +25,7 @@ fn find_barrier_crossers(
     graph
         .edges()
         .filter_map(|(edge_id, (_src, dst))| {
-            let op_constraints = find_operator_constraints(&nodes[dst])?;
+            let op_constraints = find_node_op_constraints(&nodes[dst])?;
             let (_src_idx, dst_idx) = &ports[edge_id];
             let input_barrier = (op_constraints.input_delaytype_fn)(dst_idx)?;
             Some((edge_id, input_barrier))
@@ -418,7 +409,7 @@ fn separate_external_inputs(
         .iter()
         // Ensure node is an operator (not a handoff), get constraints spec.
         .filter_map(|(node_id, node)| {
-            find_operator_constraints(node).map(|op_constraints| (node_id, op_constraints))
+            find_node_op_constraints(node).map(|op_constraints| (node_id, op_constraints))
         })
         // Ensure current `node_id` is an external input.
         .filter(|(_node_id, op_constraints)| op_constraints.is_external_input)

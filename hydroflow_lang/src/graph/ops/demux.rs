@@ -55,19 +55,19 @@ pub const DEMUX: OperatorConstraints = OperatorConstraints {
     type_args: RANGE_0,
     is_external_input: false,
     ports_inn: None,
-    ports_out: Some(&(|| PortListSpec::Variadic)),
-    input_delaytype_fn: &|_| None,
-    write_fn: &(|&WriteContextArgs { root, op_span, .. },
-                 &WriteIteratorArgs {
-                     ident,
-                     outputs,
-                     output_ports,
-                     arguments,
-                     op_name,
-                     is_pull,
-                     ..
-                 },
-                 diagnostics| {
+    ports_out: Some(|| PortListSpec::Variadic),
+    input_delaytype_fn: |_| None,
+    write_fn: |&WriteContextArgs { root, op_span, .. },
+               &WriteIteratorArgs {
+                   ident,
+                   outputs,
+                   output_ports,
+                   arguments,
+                   op_name,
+                   is_pull,
+                   ..
+               },
+               diagnostics| {
         assert!(!is_pull);
         let func = &arguments[0];
         let Expr::Closure(func) = func else {
@@ -175,7 +175,7 @@ pub const DEMUX: OperatorConstraints = OperatorConstraints {
             write_iterator,
             ..Default::default()
         })
-    }),
+    },
 };
 
 fn extract_closure_idents(arg2: &Pat) -> HashMap<Ident, usize> {

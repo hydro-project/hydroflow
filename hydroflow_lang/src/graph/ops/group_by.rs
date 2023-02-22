@@ -68,20 +68,20 @@ pub const GROUP_BY: OperatorConstraints = OperatorConstraints {
     is_external_input: false,
     ports_inn: None,
     ports_out: None,
-    input_delaytype_fn: &|_| Some(DelayType::Stratum),
-    write_fn: &(|wc @ &WriteContextArgs {
-                     context, op_span, ..
-                 },
-                 &WriteIteratorArgs {
-                     ident,
-                     inputs,
-                     persistence_args,
-                     type_args,
-                     arguments,
-                     is_pull,
-                     ..
-                 },
-                 _| {
+    input_delaytype_fn: |_| Some(DelayType::Stratum),
+    write_fn: |wc @ &WriteContextArgs {
+                   context, op_span, ..
+               },
+               &WriteIteratorArgs {
+                   ident,
+                   inputs,
+                   persistence_args,
+                   type_args,
+                   arguments,
+                   is_pull,
+                   ..
+               },
+               _| {
         assert!(is_pull);
 
         let persistence = match *persistence_args {
@@ -155,5 +155,5 @@ pub const GROUP_BY: OperatorConstraints = OperatorConstraints {
             write_iterator,
             write_iterator_after,
         })
-    }),
+    },
 };
