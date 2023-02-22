@@ -1,3 +1,5 @@
+#![cfg(not(target_arch = "wasm32"))]
+
 //! Surface syntax tests of asynchrony and networking.
 
 use std::collections::{BTreeSet, HashSet};
