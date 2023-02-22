@@ -183,8 +183,6 @@
 <a href="#183" id="183">183</a>
 <a href="#184" id="184">184</a>
 <a href="#185" id="185">185</a>
-<a href="#186" id="186">186</a>
-<a href="#187" id="187">187</a>
 </pre><pre class="rust"><code><span class="kw">use super</span>::{
     OperatorConstraints, OperatorWriteOutput, Persistence, WriteContextArgs, WriteIteratorArgs,
     RANGE_0, RANGE_1,
@@ -233,10 +231,9 @@
 /// ```rustbook
 /// let (input_send, input_recv) = hydroflow::util::unbounded_channel::&lt;(&amp;str, &amp;str)&gt;();
 /// let mut flow = hydroflow::hydroflow_syntax! {
-///     my_join = join::&lt;&#39;tick&gt;();
 ///     source_iter([(&quot;hello&quot;, &quot;world&quot;)]) -&gt; [0]my_join;
 ///     source_stream(input_recv) -&gt; [1]my_join;
-///     my_join -&gt; for_each(|(k, (v1, v2))| println!(&quot;({}, ({}, {}))&quot;, k, v1, v2));
+///     my_join = join::&lt;&#39;tick&gt;() -&gt; for_each(|(k, (v1, v2))| println!(&quot;({}, ({}, {}))&quot;, k, v1, v2));
 /// };
 /// input_send.send((&quot;hello&quot;, &quot;oakland&quot;)).unwrap();
 /// flow.run_tick();
@@ -251,10 +248,9 @@
 /// ```rustbook
 /// let (input_send, input_recv) = hydroflow::util::unbounded_channel::&lt;(&amp;str, &amp;str)&gt;();
 /// let mut flow = hydroflow::hydroflow_syntax! {
-///     my_join = join::&lt;&#39;static&gt;();
 ///     source_iter([(&quot;hello&quot;, &quot;world&quot;)]) -&gt; [0]my_join;
 ///     source_stream(input_recv) -&gt; [1]my_join;
-///     my_join -&gt; for_each(|(k, (v1, v2))| println!(&quot;({}, ({}, {}))&quot;, k, v1, v2));
+///     my_join = join::&lt;&#39;static&gt;() -&gt; for_each(|(k, (v1, v2))| println!(&quot;({}, ({}, {}))&quot;, k, v1, v2));
 /// };
 /// input_send.send((&quot;hello&quot;, &quot;oakland&quot;)).unwrap();
 /// flow.run_tick();
@@ -274,22 +270,22 @@
     persistence_args: <span class="kw-2">&amp;</span>(<span class="number">0</span>..=<span class="number">2</span>),
     type_args: RANGE_0,
     is_external_input: <span class="bool-val">false</span>,
-    ports_inn: <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>(|| <span class="kw">super</span>::PortListSpec::Fixed(<span class="macro">parse_quote! </span>{ <span class="number">0</span>, <span class="number">1 </span>}))),
+    ports_inn: <span class="prelude-val">Some</span>(|| <span class="kw">super</span>::PortListSpec::Fixed(<span class="macro">parse_quote! </span>{ <span class="number">0</span>, <span class="number">1 </span>})),
     ports_out: <span class="prelude-val">None</span>,
-    input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">None</span>,
-    write_fn: <span class="kw-2">&amp;</span>(|wc @ <span class="kw-2">&amp;</span>WriteContextArgs {
-                     root,
-                     context,
-                     op_span,
-                     ..
-                 },
-                 <span class="kw-2">&amp;</span>WriteIteratorArgs {
-                     ident,
-                     inputs,
-                     persistence_args,
-                     ..
-                 },
-                 <span class="kw">_</span>| {
+    input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">None</span>,
+    write_fn: |wc @ <span class="kw-2">&amp;</span>WriteContextArgs {
+                   root,
+                   context,
+                   op_span,
+                   ..
+               },
+               <span class="kw-2">&amp;</span>WriteIteratorArgs {
+                   ident,
+                   inputs,
+                   persistence_args,
+                   ..
+               },
+               <span class="kw">_</span>| {
         <span class="kw">let </span>persistences = <span class="kw">match </span><span class="kw-2">*</span>persistence_args {
             [] =&gt; [Persistence::Static, Persistence::Static],
             [a] =&gt; [a, a],
@@ -370,7 +366,7 @@
             write_iterator,
             ..Default::default()
         })
-    }),
+    },
 };
 </code></pre></div>
 </section></main><div id="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="hydroflow_lang" data-themes="" data-resource-suffix="" data-rustdoc-version="1.69.0-nightly (dc1d9d50f 2023-01-31)" data-search-js="search-98d53477a794af0b.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-7c23ac01f615ce90.css" ></div></body></html>

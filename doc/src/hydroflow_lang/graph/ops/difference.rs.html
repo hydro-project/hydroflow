@@ -108,22 +108,22 @@
     persistence_args: RANGE_0,
     type_args: RANGE_0,
     is_external_input: <span class="bool-val">false</span>,
-    ports_inn: <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>|| <span class="kw">super</span>::PortListSpec::Fixed(<span class="macro">parse_quote! </span>{ pos, neg })),
+    ports_inn: <span class="prelude-val">Some</span>(|| <span class="kw">super</span>::PortListSpec::Fixed(<span class="macro">parse_quote! </span>{ pos, neg })),
     ports_out: <span class="prelude-val">None</span>,
-    input_delaytype_fn: <span class="kw-2">&amp;</span>|idx| <span class="kw">match </span>idx {
+    input_delaytype_fn: |idx| <span class="kw">match </span>idx {
         PortIndexValue::Path(path) <span class="kw">if </span><span class="string">&quot;neg&quot; </span>== path.to_token_stream().to_string() =&gt; {
             <span class="prelude-val">Some</span>(DelayType::Stratum)
         }
         _else =&gt; <span class="prelude-val">None</span>,
     },
-    write_fn: <span class="kw-2">&amp;</span>(|wc @ <span class="kw-2">&amp;</span>WriteContextArgs {
-                     root,
-                     context,
-                     op_span,
-                     ..
-                 },
-                 <span class="kw-2">&amp;</span>WriteIteratorArgs { ident, inputs, .. },
-                 <span class="kw">_</span>| {
+    write_fn: |wc @ <span class="kw-2">&amp;</span>WriteContextArgs {
+                   root,
+                   context,
+                   op_span,
+                   ..
+               },
+               <span class="kw-2">&amp;</span>WriteIteratorArgs { ident, inputs, .. },
+               <span class="kw">_</span>| {
         <span class="kw">let </span>handle_ident = wc.make_ident(<span class="string">&quot;diffdata_handle&quot;</span>);
         <span class="kw">let </span>write_prologue = <span class="macro">quote_spanned! </span>{op_span=&gt;
             <span class="kw">let </span>#handle_ident = df.add_state(std::cell::RefCell::new(
@@ -150,7 +150,7 @@
             write_iterator,
             ..Default::default()
         })
-    }),
+    },
 };
 </code></pre></div>
 </section></main><div id="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="hydroflow_lang" data-themes="" data-resource-suffix="" data-rustdoc-version="1.69.0-nightly (dc1d9d50f 2023-01-31)" data-search-js="search-98d53477a794af0b.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-7c23ac01f615ce90.css" ></div></body></html>

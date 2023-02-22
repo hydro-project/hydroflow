@@ -2468,10 +2468,9 @@ join::&lt;'tick, 'static&gt;();
 </span><span class="boring">fn main() {
 </span>let (input_send, input_recv) = hydroflow::util::unbounded_channel::&lt;(&amp;str, &amp;str)&gt;();
 let mut flow = hydroflow::hydroflow_syntax! {
-    my_join = join::&lt;'tick&gt;();
     source_iter([(&quot;hello&quot;, &quot;world&quot;)]) -&gt; [0]my_join;
     source_stream(input_recv) -&gt; [1]my_join;
-    my_join -&gt; for_each(|(k, (v1, v2))| println!(&quot;({}, ({}, {}))&quot;, k, v1, v2));
+    my_join = join::&lt;'tick&gt;() -&gt; for_each(|(k, (v1, v2))| println!(&quot;({}, ({}, {}))&quot;, k, v1, v2));
 };
 input_send.send((&quot;hello&quot;, &quot;oakland&quot;)).unwrap();
 flow.run_tick();
@@ -2486,10 +2485,9 @@ included in the first tick, then forgotten.</p>
 </span><span class="boring">fn main() {
 </span>let (input_send, input_recv) = hydroflow::util::unbounded_channel::&lt;(&amp;str, &amp;str)&gt;();
 let mut flow = hydroflow::hydroflow_syntax! {
-    my_join = join::&lt;'static&gt;();
     source_iter([(&quot;hello&quot;, &quot;world&quot;)]) -&gt; [0]my_join;
     source_stream(input_recv) -&gt; [1]my_join;
-    my_join -&gt; for_each(|(k, (v1, v2))| println!(&quot;({}, ({}, {}))&quot;, k, v1, v2));
+    my_join = join::&lt;'static&gt;() -&gt; for_each(|(k, (v1, v2))| println!(&quot;({}, ({}, {}))&quot;, k, v1, v2));
 };
 input_send.send((&quot;hello&quot;, &quot;oakland&quot;)).unwrap();
 flow.run_tick();

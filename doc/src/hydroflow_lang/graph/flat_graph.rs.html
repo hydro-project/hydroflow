@@ -700,11 +700,12 @@
 <span class="kw">use </span>syn::Ident;
 
 <span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
-<span class="kw">use </span><span class="kw">crate</span>::graph::ops::{PortListSpec, RangeTrait, OPERATORS};
+<span class="kw">use </span><span class="kw">crate</span>::graph::ops::{PortListSpec, RangeTrait};
 <span class="kw">use </span><span class="kw">crate</span>::parse::{HfCode, HfStatement, Operator, Pipeline};
 <span class="kw">use </span><span class="kw">crate</span>::pretty_span::{PrettyRowCol, PrettySpan};
 
 <span class="kw">use </span><span class="kw">super</span>::di_mul_graph::DiMulGraph;
+<span class="kw">use </span><span class="kw">super</span>::ops::find_op_op_constraints;
 <span class="kw">use </span><span class="kw">super</span>::partitioned_graph::PartitionedGraph;
 <span class="kw">use super</span>::{GraphEdgeId, GraphNodeId, Node, PortIndexValue};
 
@@ -1017,8 +1018,7 @@
         <span class="kw">for </span>(node_key, node) <span class="kw">in </span><span class="self">self</span>.flat_graph.nodes.iter() {
             <span class="kw">match </span>node {
                 Node::Operator(operator) =&gt; {
-                    <span class="kw">let </span>op_name = <span class="kw-2">&amp;*</span>operator.name_string();
-                    <span class="kw">match </span>OPERATORS.iter().find(|<span class="kw-2">&amp;</span>op| op_name == op.name) {
+                    <span class="kw">match </span>find_op_op_constraints(operator) {
                         <span class="prelude-val">Some</span>(op_constraints) =&gt; {
                             <span class="comment">// Check numer of args
                             </span><span class="kw">if </span>op_constraints.num_args != operator.args.len() {
@@ -1103,7 +1103,7 @@
 
                             <span class="kw">fn </span>emit_port_error&lt;<span class="lifetime">&#39;a</span>&gt;(
                                 operator_span: Span,
-                                expected_ports_fn: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="kw">dyn </span>Fn() -&gt; PortListSpec&gt;,
+                                expected_ports_fn: <span class="prelude-ty">Option</span>&lt;<span class="kw">fn</span>() -&gt; PortListSpec&gt;,
                                 actual_ports_iter: <span class="kw">impl </span>Iterator&lt;Item = <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>PortIndexValue&gt;,
                                 input_output: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str,
                                 diagnostics: <span class="kw-2">&amp;mut </span>Vec&lt;Diagnostic&gt;,
@@ -1198,7 +1198,7 @@
                             <span class="self">self</span>.diagnostics.push(Diagnostic::spanned(
                                 operator.path.span(),
                                 Level::Error,
-                                <span class="macro">format!</span>(<span class="string">&quot;Unknown operator `{}`&quot;</span>, op_name),
+                                <span class="macro">format!</span>(<span class="string">&quot;Unknown operator `{}`&quot;</span>, operator.name_string()),
                             ));
                         }
                     }

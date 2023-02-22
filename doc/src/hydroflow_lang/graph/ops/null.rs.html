@@ -92,16 +92,16 @@
     is_external_input: <span class="bool-val">false</span>,
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">None</span>,
-    input_delaytype_fn: <span class="kw-2">&amp;</span>|<span class="kw">_</span>| <span class="prelude-val">None</span>,
-    write_fn: <span class="kw-2">&amp;</span>(|<span class="kw-2">&amp;</span>WriteContextArgs { root, op_span, .. },
-                 <span class="kw-2">&amp;</span>WriteIteratorArgs {
-                     ident,
-                     inputs,
-                     outputs,
-                     is_pull,
-                     ..
-                 },
-                 <span class="kw">_</span>| {
+    input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">None</span>,
+    write_fn: |<span class="kw-2">&amp;</span>WriteContextArgs { root, op_span, .. },
+               <span class="kw-2">&amp;</span>WriteIteratorArgs {
+                   ident,
+                   inputs,
+                   outputs,
+                   is_pull,
+                   ..
+               },
+               <span class="kw">_</span>| {
         <span class="kw">let </span>write_iterator = <span class="kw">if </span>is_pull {
             <span class="macro">quote_spanned! </span>{op_span=&gt;
                 (#(#inputs.for_each(std::mem::drop)),<span class="kw-2">*</span>);
@@ -118,7 +118,7 @@
             write_iterator,
             ..Default::default()
         })
-    }),
+    },
 };
 </code></pre></div>
 </section></main><div id="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="hydroflow_lang" data-themes="" data-resource-suffix="" data-rustdoc-version="1.69.0-nightly (dc1d9d50f 2023-01-31)" data-search-js="search-98d53477a794af0b.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-7c23ac01f615ce90.css" ></div></body></html>
