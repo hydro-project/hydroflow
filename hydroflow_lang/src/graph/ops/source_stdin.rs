@@ -31,15 +31,15 @@ pub const SOURCE_STDIN: OperatorConstraints = OperatorConstraints {
     is_external_input: true,
     ports_inn: None,
     ports_out: None,
-    input_delaytype_fn: &|_| None,
-    write_fn: &(|wc @ &WriteContextArgs {
-                     root,
-                     context,
-                     op_span,
-                     ..
-                 },
-                 &WriteIteratorArgs { ident, .. },
-                 _| {
+    input_delaytype_fn: |_| None,
+    write_fn: |wc @ &WriteContextArgs {
+                   root,
+                   context,
+                   op_span,
+                   ..
+               },
+               &WriteIteratorArgs { ident, .. },
+               _| {
         let stream_ident = wc.make_ident("stream");
         let write_prologue = quote_spanned! {op_span=>
             let mut #stream_ident = {
@@ -62,5 +62,5 @@ pub const SOURCE_STDIN: OperatorConstraints = OperatorConstraints {
             write_iterator,
             ..Default::default()
         })
-    }),
+    },
 };

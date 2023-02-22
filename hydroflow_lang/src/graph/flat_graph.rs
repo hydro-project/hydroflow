@@ -11,11 +11,12 @@ use syn::spanned::Spanned;
 use syn::Ident;
 
 use crate::diagnostic::{Diagnostic, Level};
-use crate::graph::ops::{PortListSpec, RangeTrait, OPERATORS};
+use crate::graph::ops::{PortListSpec, RangeTrait};
 use crate::parse::{HfCode, HfStatement, Operator, Pipeline};
 use crate::pretty_span::{PrettyRowCol, PrettySpan};
 
 use super::di_mul_graph::DiMulGraph;
+use super::ops::find_op_op_constraints;
 use super::partitioned_graph::PartitionedGraph;
 use super::{GraphEdgeId, GraphNodeId, Node, PortIndexValue};
 
@@ -328,8 +329,7 @@ impl FlatGraphBuilder {
         for (node_key, node) in self.flat_graph.nodes.iter() {
             match node {
                 Node::Operator(operator) => {
-                    let op_name = &*operator.name_string();
-                    match OPERATORS.iter().find(|&op| op_name == op.name) {
+                    match find_op_op_constraints(operator) {
                         Some(op_constraints) => {
                             // Check numer of args
                             if op_constraints.num_args != operator.args.len() {
@@ -414,7 +414,7 @@ impl FlatGraphBuilder {
 
                             fn emit_port_error<'a>(
                                 operator_span: Span,
-                                expected_ports_fn: Option<&dyn Fn() -> PortListSpec>,
+                                expected_ports_fn: Option<fn() -> PortListSpec>,
                                 actual_ports_iter: impl Iterator<Item = &'a PortIndexValue>,
                                 input_output: &'static str,
                                 diagnostics: &mut Vec<Diagnostic>,
@@ -509,7 +509,7 @@ impl FlatGraphBuilder {
                             self.diagnostics.push(Diagnostic::spanned(
                                 operator.path.span(),
                                 Level::Error,
-                                format!("Unknown operator `{}`", op_name),
+                                format!("Unknown operator `{}`", operator.name_string()),
                             ));
                         }
                     }

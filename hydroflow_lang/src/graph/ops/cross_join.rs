@@ -44,12 +44,12 @@ pub const CROSS_JOIN: OperatorConstraints = OperatorConstraints {
     persistence_args: &(0..=2),
     type_args: RANGE_0,
     is_external_input: false,
-    ports_inn: Some(&(|| super::PortListSpec::Fixed(parse_quote! { 0, 1 }))),
+    ports_inn: Some(|| super::PortListSpec::Fixed(parse_quote! { 0, 1 })),
     ports_out: None,
-    input_delaytype_fn: &|_| None,
-    write_fn: &(|wc @ &WriteContextArgs { op_span, .. },
-                 wi @ &WriteIteratorArgs { ident, inputs, .. },
-                 diagnostics| {
+    input_delaytype_fn: |_| None,
+    write_fn: |wc @ &WriteContextArgs { op_span, .. },
+               wi @ &WriteIteratorArgs { ident, inputs, .. },
+               diagnostics| {
         let mut output = (super::join::JOIN.write_fn)(wc, wi, diagnostics)?;
 
         let lhs = &inputs[0];
@@ -63,5 +63,5 @@ pub const CROSS_JOIN: OperatorConstraints = OperatorConstraints {
         );
 
         Ok(output)
-    }),
+    },
 };

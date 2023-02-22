@@ -1,6 +1,8 @@
+use std::collections::HashMap;
 use std::fmt::Display;
 use std::ops::{Bound, RangeBounds};
 
+use once_cell::sync::OnceCell;
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote_spanned;
 use slotmap::Key;
@@ -8,9 +10,9 @@ use syn::punctuated::Punctuated;
 use syn::{Expr, GenericArgument, Token, Type};
 
 use crate::diagnostic::Diagnostic;
-use crate::parse::PortIndex;
+use crate::parse::{Operator, PortIndex};
 
-use super::{GraphNodeId, GraphSubgraphId, PortIndexValue};
+use super::{GraphNodeId, GraphSubgraphId, Node, PortIndexValue};
 
 mod anti_join;
 mod cross_join;
@@ -82,18 +84,18 @@ pub struct OperatorConstraints {
     pub is_external_input: bool,
 
     /// What named or numbered input ports to expect?
-    pub ports_inn: Option<&'static dyn Fn() -> PortListSpec>,
+    pub ports_inn: Option<fn() -> PortListSpec>,
     /// What named or numbered output ports to expect?
-    pub ports_out: Option<&'static dyn Fn() -> PortListSpec>,
+    pub ports_out: Option<fn() -> PortListSpec>,
 
     /// Determines if this input must be preceeded by a stratum barrier.
-    pub input_delaytype_fn: &'static dyn Fn(&PortIndexValue) -> Option<DelayType>,
+    pub input_delaytype_fn: fn(&PortIndexValue) -> Option<DelayType>,
 
     /// Emit code in multiple locations. See [`OperatorWriteOutput`].
     pub write_fn: WriteFn,
 }
 
-pub type WriteFn = &'static dyn Fn(
+pub type WriteFn = fn(
     &WriteContextArgs<'_>,
     &WriteIteratorArgs<'_>,
     &mut Vec<Diagnostic>,
@@ -145,13 +147,13 @@ pub fn identity_write_iterator_fn(
     }
 }
 
-pub const IDENTITY_WRITE_FN: WriteFn = &(|write_context_args, write_iterator_args, _| {
+pub const IDENTITY_WRITE_FN: WriteFn = |write_context_args, write_iterator_args, _| {
     let write_iterator = identity_write_iterator_fn(write_context_args, write_iterator_args);
     Ok(OperatorWriteOutput {
         write_iterator,
         ..Default::default()
     })
-});
+};
 
 pub const OPERATORS: &[OperatorConstraints] = &[
     null::NULL,
@@ -187,6 +189,22 @@ pub const OPERATORS: &[OperatorConstraints] = &[
     dest_sink::DEST_SINK,
     dest_sink_serde::DEST_SINK_SERDE,
 ];
+pub fn operator_lookup() -> &'static HashMap<&'static str, &'static OperatorConstraints> {
+    pub static OPERATOR_LOOKUP: OnceCell<HashMap<&'static str, &'static OperatorConstraints>> =
+        OnceCell::new();
+    OPERATOR_LOOKUP.get_or_init(|| OPERATORS.iter().map(|op| (op.name, op)).collect())
+}
+pub fn find_node_op_constraints(node: &Node) -> Option<&'static OperatorConstraints> {
+    if let Node::Operator(operator) = node {
+        find_op_op_constraints(operator)
+    } else {
+        None
+    }
+}
+pub fn find_op_op_constraints(operator: &Operator) -> Option<&'static OperatorConstraints> {
+    let name = &*operator.name_string();
+    operator_lookup().get(name).copied()
+}
 
 pub struct WriteContextArgs<'a> {
     /// `hydroflow` crate name for `use #root::something`.
@@ -243,7 +261,7 @@ pub struct WriteIteratorArgs<'a> {
     pub op_name: &'static str,
 }
 
-pub trait RangeTrait<T>
+pub trait RangeTrait<T>: Send + Sync
 where
     T: ?Sized,
 {
@@ -285,7 +303,7 @@ where
 
 impl<R, T> RangeTrait<T> for R
 where
-    R: RangeBounds<T>,
+    R: RangeBounds<T> + Send + Sync,
 {
     fn start_bound(&self) -> Bound<&T> {
         self.start_bound()
