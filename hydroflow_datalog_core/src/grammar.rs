@@ -16,7 +16,7 @@ pub mod datalog {
 
     #[derive(Debug, Clone)]
     pub struct Rule {
-        pub target: RelationExpr,
+        pub target: TargetRelationExpr,
 
         pub rule_type: RuleType,
 
@@ -40,12 +40,15 @@ pub mod datalog {
 
     #[derive(Debug, Clone)]
     pub enum Atom {
-        Relation(#[rust_sitter::leaf(text = "!")] Option<()>, RelationExpr),
+        Relation(
+            #[rust_sitter::leaf(text = "!")] Option<()>,
+            InputRelationExpr,
+        ),
         Predicate(PredicateExpr),
     }
 
     #[derive(Debug, Clone)]
-    pub struct RelationExpr {
+    pub struct InputRelationExpr {
         pub name: Ident,
 
         #[rust_sitter::leaf(text = "(")]
@@ -59,6 +62,44 @@ pub mod datalog {
 
         #[rust_sitter::leaf(text = ")")]
         _r_paren: (),
+    }
+
+    #[derive(Debug, Clone)]
+    pub struct TargetRelationExpr {
+        pub name: Ident,
+
+        #[rust_sitter::leaf(text = "(")]
+        _l_paren: (),
+
+        #[rust_sitter::delimited(
+            #[rust_sitter::leaf(text = ",")]
+            ()
+        )]
+        pub fields: Vec<TargetExpr>,
+
+        #[rust_sitter::leaf(text = ")")]
+        _r_paren: (),
+    }
+
+    #[derive(Debug, Clone)]
+    pub enum TargetExpr {
+        Ident(Ident),
+        Aggregation(Aggregation),
+    }
+
+    #[derive(Debug, Clone)]
+    pub struct Aggregation {
+        pub tpe: AggregationType,
+        #[rust_sitter::leaf(text = "(")]
+        _lparen: (),
+        pub ident: Ident,
+        #[rust_sitter::leaf(text = ")")]
+        _rparen: (),
+    }
+
+    #[derive(Debug, Clone)]
+    pub enum AggregationType {
+        Max(#[rust_sitter::leaf(text = "max")] ()),
     }
 
     #[derive(Clone, PartialEq, Eq, Hash, Ord, PartialOrd, Debug)]

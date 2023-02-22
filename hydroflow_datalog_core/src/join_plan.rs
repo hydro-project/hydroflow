@@ -5,14 +5,14 @@ use proc_macro2::Span;
 use syn::{self, parse_quote};
 
 use crate::{
-    grammar::datalog::{BoolOp, PredicateExpr, RelationExpr},
+    grammar::datalog::{BoolOp, InputRelationExpr, PredicateExpr},
     util::Counter,
 };
 
 /// Captures the tree of joins used to compute contributions from a single rule.
 pub enum JoinPlan<'a> {
     /// A single relation without any joins, leaves of the tree.
-    Source(&'a RelationExpr),
+    Source(&'a InputRelationExpr),
     /// A join between two subtrees.
     Join(Box<JoinPlan<'a>>, Box<JoinPlan<'a>>),
     AntiJoin(Box<JoinPlan<'a>>, Box<JoinPlan<'a>>),

@@ -180,31 +180,40 @@ fn generate_rule(
 
     let out_expanded = expand_join_plan(&plan, flat_graph_builder, tee_counter, next_join_idx);
 
-    let output_tuple_elems = rule
+    let (group_by_keys, agg_keys): (Vec<_>, Vec<_>) = rule
         .target
         .fields
         .iter()
         .map(|field| {
-            if let Some(col) = out_expanded
-                .variable_mapping
-                .get(&syn::Ident::new(&field.name, Span::call_site()))
-            {
-                let source_col_idx = syn::Index::from(*col);
-                parse_quote!(row.#source_col_idx)
-            } else {
-                diagnostics.push(Diagnostic::spanned(
-                    Span::call_site(),
-                    Level::Error,
-                    format!("Could not find column {} in RHS of rule", field.name),
-                ));
-                parse_quote!(())
-            }
+            (
+                field,
+                match field {
+                    TargetExpr::Ident(ident)
+                    | TargetExpr::Aggregation(Aggregation { ident, .. }) => {
+                        if let Some(col) = out_expanded
+                            .variable_mapping
+                            .get(&syn::Ident::new(&ident.name, Span::call_site()))
+                        {
+                            let source_col_idx = syn::Index::from(*col);
+                            parse_quote!(row.#source_col_idx)
+                        } else {
+                            diagnostics.push(Diagnostic::spanned(
+                                Span::call_site(),
+                                Level::Error,
+                                format!("Could not find column {} in RHS of rule", ident.name),
+                            ));
+                            parse_quote!(())
+                        }
+                    }
+                },
+            )
         })
-        .collect::<Vec<syn::Expr>>();
+        .partition(|t: &(&TargetExpr, syn::Expr)| matches!(t.0, TargetExpr::Ident(_)));
+
+    let group_by_exprs = group_by_keys.iter().map(|p| &p.1).collect::<Vec<_>>();
+    let agg_exprs = agg_keys.iter().map(|p| &p.1).collect::<Vec<_>>();
 
     let flattened_tuple_type = out_expanded.tuple_type;
-    let after_join_map: syn::Expr =
-        parse_quote!(|row: #flattened_tuple_type| (#(#output_tuple_elems, )*));
 
     let my_merge_index = merge_counter
         .entry(target.name.clone())
@@ -214,14 +223,100 @@ fn generate_rule(
 
     let my_merge_index_lit = syn::LitInt::new(&format!("{}", my_merge_index), Span::call_site());
 
-    let after_join = match rule.rule_type {
-        RuleType::Sync(_) => {
-            parse_quote!(map(#after_join_map) -> [#my_merge_index_lit] #target_ident)
+    let after_join = if agg_keys.is_empty() {
+        let after_join_map: syn::Expr =
+            parse_quote!(|row: #flattened_tuple_type| (#(#group_by_exprs, )*));
+
+        match rule.rule_type {
+            RuleType::Sync(_) => {
+                parse_quote!(map(#after_join_map) -> [#my_merge_index_lit] #target_ident)
+            }
+            RuleType::NextTick(_) => {
+                parse_quote!(map(#after_join_map) -> next_tick() -> [#my_merge_index_lit] #target_ident)
+            }
+            RuleType::Async(_) => panic!("Async rules not yet supported"),
         }
-        RuleType::NextTick(_) => {
-            parse_quote!(map(#after_join_map) -> next_tick() -> [#my_merge_index_lit] #target_ident)
+    } else {
+        let pre_group_by_map: syn::Expr = parse_quote!(|row: #flattened_tuple_type| ((#(#group_by_exprs, )*), (#(#agg_exprs, )*)));
+
+        let only_none = group_by_exprs
+            .iter()
+            .map(|_| parse_quote!(None))
+            .collect::<Vec<syn::Expr>>();
+        let group_by_initial: syn::Expr = parse_quote!((#(#only_none, )*));
+
+        let group_by_input_types = group_by_exprs
+            .iter()
+            .map(|_| parse_quote!(_))
+            .collect::<Vec<syn::Type>>();
+        let group_by_input_type: syn::Type = parse_quote!((#(#group_by_input_types, )*));
+
+        let group_by_types = group_by_exprs
+            .iter()
+            .map(|_| parse_quote!(Option<_>))
+            .collect::<Vec<syn::Type>>();
+        let group_by_type: syn::Type = parse_quote!((#(#group_by_types, )*));
+
+        let group_by_stmts: Vec<syn::Stmt> = agg_keys
+            .iter()
+            .enumerate()
+            .map(|(i, (agg, _))| {
+                let idx = syn::Index::from(i);
+                let old_at_index: syn::Expr = parse_quote!(old.#idx);
+                let val_at_index: syn::Expr = parse_quote!(val.#idx);
+
+                let agg_expr: syn::Expr = match agg {
+                    TargetExpr::Aggregation(Aggregation { tpe, .. }) => match tpe {
+                        AggregationType::Max(_) => {
+                            parse_quote!(std::cmp::max(prev, #val_at_index))
+                        }
+                    },
+                    _ => panic!(),
+                };
+
+                parse_quote! {
+                    #old_at_index = if let Some(prev) = #old_at_index {
+                        Some(#agg_expr)
+                    } else {
+                        Some(#val_at_index)
+                    };
+                }
+            })
+            .collect();
+
+        let group_by_fn: syn::Expr = parse_quote!(|old: &mut #group_by_type, val: #group_by_input_type| {
+            #(#group_by_stmts)*
+        });
+
+        let mut after_group_lookups: Vec<syn::Expr> = vec![];
+        let mut group_key_idx = 0;
+        let mut agg_idx = 0;
+        for field in rule.target.fields.iter() {
+            match field {
+                TargetExpr::Ident(_) => {
+                    let idx = syn::Index::from(group_key_idx);
+                    after_group_lookups.push(parse_quote!(g.#idx));
+                    group_key_idx += 1;
+                }
+                TargetExpr::Aggregation(_) => {
+                    let idx = syn::Index::from(agg_idx);
+                    after_group_lookups.push(parse_quote!(a.#idx.unwrap()));
+                    agg_idx += 1;
+                }
+            }
         }
-        RuleType::Async(_) => panic!("Async rules not yet supported"),
+
+        let after_group_map: syn::Expr = parse_quote!(|(g, a)| (#(#after_group_lookups, )*));
+
+        match rule.rule_type {
+            RuleType::Sync(_) => {
+                parse_quote!(map(#pre_group_by_map) -> group_by::<'tick, #group_by_input_type, #group_by_type>(|| #group_by_initial, #group_by_fn) -> map(#after_group_map) -> [#my_merge_index_lit] #target_ident)
+            }
+            RuleType::NextTick(_) => {
+                parse_quote!(map(#pre_group_by_map) -> group_by::<'tick, #group_by_input_type, #group_by_type>(|| #group_by_initial, #group_by_fn) -> map(#after_group_map) -> next_tick() -> [#my_merge_index_lit] #target_ident)
+            }
+            RuleType::Async(_) => panic!("Async rules not yet supported"),
+        }
     };
 
     let out_name = out_expanded.name;
@@ -410,6 +505,18 @@ mod tests {
             .output result
 
             result(x, z) :- ints_1(x, y), ints_2(y, z), !ints_3(y)
+            "#
+        );
+    }
+
+    #[test]
+    fn test_max() {
+        test_snapshots!(
+            r#"
+            .input ints
+            .output result
+
+            result(max(a), b) :- ints(a, b)
             "#
         );
     }
