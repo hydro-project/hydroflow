@@ -263,7 +263,7 @@ fn apply_aggregations(
     if agg_exprs.is_empty() {
         parse_quote!(map(|row: #flattened_tuple_type| (#(#group_by_exprs, )*)))
     } else {
-        let agg_initial_values = group_by_exprs
+        let agg_initial_values = agg_exprs
             .iter()
             .map(|_| parse_quote!(None))
             .collect::<Vec<syn::Expr>>();
@@ -275,7 +275,13 @@ fn apply_aggregations(
             .collect::<Vec<syn::Type>>();
         let group_by_input_type: syn::Type = parse_quote!((#(#group_by_input_types, )*));
 
-        let agg_types = group_by_exprs
+        let agg_input_types = agg_exprs
+            .iter()
+            .map(|_| parse_quote!(_))
+            .collect::<Vec<syn::Type>>();
+        let agg_input_type: syn::Type = parse_quote!((#(#agg_input_types, )*));
+
+        let agg_types = agg_exprs
             .iter()
             .map(|_| parse_quote!(Option<_>))
             .collect::<Vec<syn::Type>>();
@@ -308,7 +314,7 @@ fn apply_aggregations(
             })
             .collect();
 
-        let group_by_fn: syn::Expr = parse_quote!(|old: &mut #agg_type, val: #group_by_input_type| {
+        let group_by_fn: syn::Expr = parse_quote!(|old: &mut #agg_type, val: #agg_input_type| {
             #(#group_by_stmts)*
         });
 
@@ -518,6 +524,18 @@ mod tests {
             .output result
 
             result(max(a), b) :- ints(a, b)
+            "#
+        );
+    }
+
+    #[test]
+    fn test_max_all() {
+        test_snapshots!(
+            r#"
+            .input ints
+            .output result
+
+            result(max(a), max(b)) :- ints(a, b)
             "#
         );
     }

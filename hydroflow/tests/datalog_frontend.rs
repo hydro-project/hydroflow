@@ -609,3 +609,28 @@ fn test_max() {
     res.sort_by_key(|v| v.0);
     assert_eq!(&res, &[(3, 2), (5, 3)]);
 }
+
+#[test]
+fn test_max_all() {
+    let (ints_send, ints) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+
+    let mut flow = datalog!(
+        r#"
+        .input ints
+        .output result
+
+        result(max(a), max(b)) :- ints(a, b)
+        "#
+    );
+
+    ints_send.send((1, 3)).unwrap();
+    ints_send.send((2, 2)).unwrap();
+    ints_send.send((3, 1)).unwrap();
+
+    flow.run_tick();
+
+    let mut res = collect_ready::<Vec<_>, _>(&mut result_recv);
+    res.sort_by_key(|v| v.0);
+    assert_eq!(&res, &[(3, 3)]);
+}
