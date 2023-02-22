@@ -16,7 +16,7 @@ pub struct Deployment {
 
 impl Deployment {
     pub async fn deploy(&mut self) {
-        let mut terraform_pool = super::TerraformBatch {};
+        let mut terraform_pool = super::ResourceBatch {};
         for host in self.hosts.iter_mut() {
             host.write()
                 .await

@@ -38,6 +38,12 @@ name = "deadlock_detector"
 [[example]]
 name = "kvs"
 
+[[example]]
+name = "cli_sender"
+
+[[example]]
+name = "cli_receiver"
+
 [dependencies]
 bincode = "1.3"
 byteorder = "1.4.3"

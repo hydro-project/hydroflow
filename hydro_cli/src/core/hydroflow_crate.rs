@@ -9,15 +9,15 @@ use std::{
 use async_channel::Receiver;
 use async_trait::async_trait;
 use cargo::{
-    core::Workspace,
+    core::{compiler::BuildConfig, Workspace},
     ops::{CompileFilter, CompileOptions, FilterRule, LibRule},
-    util::command_prelude::CompileMode,
+    util::{command_prelude::CompileMode, interning::InternedString},
     Config,
 };
 use hydroflow::util::connection::ConnectionPipe;
 use tokio::{sync::RwLock, task::JoinHandle};
 
-use super::{Host, LaunchedBinary, LaunchedHost, Service, TerraformBatch, TerraformResult};
+use super::{Host, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult, Service};
 
 pub struct HydroflowCrate {
     pub src: PathBuf,
@@ -97,6 +97,20 @@ impl HydroflowCrate {
                 benches: FilterRule::Just(vec![]),
             };
 
+            compile_options.build_config = BuildConfig::new(
+                &config,
+                None,
+                false,
+                &[
+                    // TODO(shadaj): make configurable
+                    "x86_64-unknown-linux-musl".to_string(),
+                ],
+                CompileMode::Build,
+            )
+            .unwrap();
+
+            compile_options.build_config.requested_profile = InternedString::from("release");
+
             let res = cargo::ops::compile(&workspace, &compile_options).unwrap();
             let binaries = res
                 .binaries
@@ -115,12 +129,12 @@ impl HydroflowCrate {
 
 #[async_trait]
 impl Service for HydroflowCrate {
-    async fn collect_resources(&mut self, terraform: &mut TerraformBatch) {
+    async fn collect_resources(&mut self, terraform: &mut ResourceBatch) {
         let mut host = self.on.write().await;
         host.collect_resources(terraform).await;
     }
 
-    async fn deploy(&mut self, terraform_result: &TerraformResult) {
+    async fn deploy(&mut self, terraform_result: &ResourceResult) {
         let built = self.build();
         let host_read = self.on.read().await;
 

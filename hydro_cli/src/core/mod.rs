@@ -14,15 +14,15 @@ pub use localhost::LocalhostHost;
 pub mod hydroflow_crate;
 pub use hydroflow_crate::HydroflowCrate;
 
-pub struct TerraformBatch {}
+pub struct ResourceBatch {}
 
-impl TerraformBatch {
-    async fn provision(&mut self) -> TerraformResult {
-        TerraformResult {}
+impl ResourceBatch {
+    async fn provision(&mut self) -> ResourceResult {
+        ResourceResult {}
     }
 }
 
-pub struct TerraformResult {}
+pub struct ResourceResult {}
 
 #[async_trait]
 pub trait LaunchedBinary: Send + Sync {
@@ -45,9 +45,9 @@ pub enum ConnectionType {
 #[async_trait]
 pub trait Host: Send + Sync + Debug {
     /// Collect the set of resources that this host needs to run.
-    async fn collect_resources(&mut self, terraform: &mut TerraformBatch);
+    async fn collect_resources(&mut self, terraform: &mut ResourceBatch);
 
-    async fn provision(&mut self, terraform_result: &TerraformResult) -> Arc<dyn LaunchedHost>;
+    async fn provision(&mut self, terraform_result: &ResourceResult) -> Arc<dyn LaunchedHost>;
 
     async fn allocate_pipe(
         &self,
@@ -60,9 +60,9 @@ pub trait Host: Send + Sync + Debug {
 #[async_trait]
 pub trait Service: Send + Sync + Debug {
     /// Collect the set of resources that this service needs to run.
-    async fn collect_resources(&mut self, terraform: &mut TerraformBatch);
+    async fn collect_resources(&mut self, terraform: &mut ResourceBatch);
 
-    async fn deploy(&mut self, terraform_result: &TerraformResult);
+    async fn deploy(&mut self, terraform_result: &ResourceResult);
     async fn ready(&mut self);
     async fn start(&mut self);
 

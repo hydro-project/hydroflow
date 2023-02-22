@@ -7,7 +7,7 @@ use futures::{io::BufReader, AsyncBufReadExt, AsyncWriteExt, StreamExt};
 use hydroflow::util::connection::ConnectionPipe;
 use tokio::sync::RwLock;
 
-use super::{ConnectionType, Host, LaunchedBinary, LaunchedHost, TerraformBatch, TerraformResult};
+use super::{ConnectionType, Host, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult};
 
 struct LaunchedLocalhostBinary {
     child: RwLock<async_process::Child>,
@@ -80,7 +80,7 @@ impl LaunchedHost for LaunchedLocalhost {
                     let mut receivers = receivers.write().await;
                     let mut successful_send = false;
                     for r in receivers.iter() {
-                        successful_send = successful_send | r.send(line.clone()).await.is_ok();
+                        successful_send |= r.send(line.clone()).await.is_ok();
                     }
 
                     receivers.retain(|r| !r.is_closed());
@@ -105,7 +105,7 @@ impl LaunchedHost for LaunchedLocalhost {
                     let mut receivers = receivers.write().await;
                     let mut successful_send = false;
                     for r in receivers.iter() {
-                        successful_send = successful_send | r.send(line.clone()).await.is_ok();
+                        successful_send |= r.send(line.clone()).await.is_ok();
                     }
 
                     receivers.retain(|r| !r.is_closed());
@@ -135,9 +135,9 @@ pub struct LocalhostHost {
 
 #[async_trait]
 impl Host for LocalhostHost {
-    async fn collect_resources(&mut self, _terraform: &mut TerraformBatch) {}
+    async fn collect_resources(&mut self, _terraform: &mut ResourceBatch) {}
 
-    async fn provision(&mut self, _terraform_result: &TerraformResult) -> Arc<dyn LaunchedHost> {
+    async fn provision(&mut self, _terraform_result: &ResourceResult) -> Arc<dyn LaunchedHost> {
         Arc::new(LaunchedLocalhost {})
     }
 

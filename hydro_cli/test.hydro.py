@@ -5,14 +5,14 @@ async def main():
     machine = deployment.Localhost()
 
     program = deployment.HydroflowCrate(
-        src=".",
-        example="sender",
+        src="../hydroflow",
+        example="cli_sender",
         on=machine
     )
 
     program2 = deployment.HydroflowCrate(
-        src=".",
-        example="receiver",
+        src="../hydroflow",
+        example="cli_receiver",
         on=machine
     )
 
