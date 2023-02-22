@@ -46,10 +46,9 @@ use syn::parse_quote;
 /// ```rustbook
 /// let (input_send, input_recv) = hydroflow::util::unbounded_channel::<(&str, &str)>();
 /// let mut flow = hydroflow::hydroflow_syntax! {
-///     my_join = join::<'tick>();
 ///     source_iter([("hello", "world")]) -> [0]my_join;
 ///     source_stream(input_recv) -> [1]my_join;
-///     my_join -> for_each(|(k, (v1, v2))| println!("({}, ({}, {}))", k, v1, v2));
+///     my_join = join::<'tick>() -> for_each(|(k, (v1, v2))| println!("({}, ({}, {}))", k, v1, v2));
 /// };
 /// input_send.send(("hello", "oakland")).unwrap();
 /// flow.run_tick();
@@ -64,10 +63,9 @@ use syn::parse_quote;
 /// ```rustbook
 /// let (input_send, input_recv) = hydroflow::util::unbounded_channel::<(&str, &str)>();
 /// let mut flow = hydroflow::hydroflow_syntax! {
-///     my_join = join::<'static>();
 ///     source_iter([("hello", "world")]) -> [0]my_join;
 ///     source_stream(input_recv) -> [1]my_join;
-///     my_join -> for_each(|(k, (v1, v2))| println!("({}, ({}, {}))", k, v1, v2));
+///     my_join = join::<'static>() -> for_each(|(k, (v1, v2))| println!("({}, ({}, {}))", k, v1, v2));
 /// };
 /// input_send.send(("hello", "oakland")).unwrap();
 /// flow.run_tick();
