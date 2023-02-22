@@ -225,18 +225,13 @@ fn generate_rule(
     let my_merge_index_lit = syn::LitInt::new(&format!("{}", my_merge_index), Span::call_site());
 
     let after_join: Pipeline = if agg_exprs.is_empty() {
-        let after_join_map: syn::Expr =
-            parse_quote!(|row: #flattened_tuple_type| (#(#group_by_exprs, )*));
-
-        parse_quote!(map(#after_join_map))
+        parse_quote!(map(|row: #flattened_tuple_type| (#(#group_by_exprs, )*)))
     } else {
-        let pre_group_by_map: syn::Expr = parse_quote!(|row: #flattened_tuple_type| ((#(#group_by_exprs, )*), (#(#agg_exprs, )*)));
-
-        let only_none = group_by_exprs
+        let agg_initial_values = group_by_exprs
             .iter()
             .map(|_| parse_quote!(None))
             .collect::<Vec<syn::Expr>>();
-        let group_by_initial: syn::Expr = parse_quote!((#(#only_none, )*));
+        let agg_initial: syn::Expr = parse_quote!((#(#agg_initial_values, )*));
 
         let group_by_input_types = group_by_exprs
             .iter()
@@ -244,11 +239,11 @@ fn generate_rule(
             .collect::<Vec<syn::Type>>();
         let group_by_input_type: syn::Type = parse_quote!((#(#group_by_input_types, )*));
 
-        let group_by_types = group_by_exprs
+        let agg_types = group_by_exprs
             .iter()
             .map(|_| parse_quote!(Option<_>))
             .collect::<Vec<syn::Type>>();
-        let group_by_type: syn::Type = parse_quote!((#(#group_by_types, )*));
+        let agg_type: syn::Type = parse_quote!((#(#agg_types, )*));
 
         let group_by_stmts: Vec<syn::Stmt> = aggregations
             .iter()
@@ -277,7 +272,7 @@ fn generate_rule(
             })
             .collect();
 
-        let group_by_fn: syn::Expr = parse_quote!(|old: &mut #group_by_type, val: #group_by_input_type| {
+        let group_by_fn: syn::Expr = parse_quote!(|old: &mut #agg_type, val: #group_by_input_type| {
             #(#group_by_stmts)*
         });
 
@@ -299,9 +294,12 @@ fn generate_rule(
             }
         }
 
+        let pre_group_by_map: syn::Expr = parse_quote!(|row: #flattened_tuple_type| ((#(#group_by_exprs, )*), (#(#agg_exprs, )*)));
         let after_group_map: syn::Expr = parse_quote!(|(g, a)| (#(#after_group_lookups, )*));
 
-        parse_quote!(map(#pre_group_by_map) -> group_by::<'tick, #group_by_input_type, #group_by_type>(|| #group_by_initial, #group_by_fn) -> map(#after_group_map))
+        parse_quote! {
+            map(#pre_group_by_map) -> group_by::<'tick, #group_by_input_type, #agg_type>(|| #agg_initial, #group_by_fn) -> map(#after_group_map)
+        }
     };
 
     let after_join_and_send: Pipeline = match rule.rule_type {
