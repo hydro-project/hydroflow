@@ -1,4 +1,3 @@
-import traceback
 from typing import Optional
 import hydro_cli_rust # type: ignore
 
