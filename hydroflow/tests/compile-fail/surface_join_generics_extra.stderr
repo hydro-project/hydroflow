@@ -1,0 +1,5 @@
+error: `join` should have exactly 0 generic type arguments, actually has 1.
+ --> tests/compile-fail/surface_join_generics_extra.rs:5:20
+  |
+5 |         j = join::<usize>() -> for_each(std::mem::drop);
+  |                    ^^^^^
