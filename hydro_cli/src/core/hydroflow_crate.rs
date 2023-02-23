@@ -1,5 +1,4 @@
 use std::{
-    any::Any,
     collections::HashMap,
     fmt::Debug,
     path::PathBuf,
@@ -9,12 +8,12 @@ use std::{
 use async_channel::Receiver;
 use async_trait::async_trait;
 use cargo::{
-    core::{compiler::BuildConfig, Workspace},
+    core::{compiler::BuildConfig, resolver::CliFeatures, Workspace},
     ops::{CompileFilter, CompileOptions, FilterRule, LibRule},
     util::{command_prelude::CompileMode, interning::InternedString},
     Config,
 };
-use hydroflow::util::connection::ConnectionPipe;
+use hydroflow::util::connection::{BindType, ConnectionPipe};
 use tokio::{sync::RwLock, task::JoinHandle};
 
 use super::{Host, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult, Service};
@@ -23,6 +22,7 @@ pub struct HydroflowCrate {
     pub src: PathBuf,
     pub on: Arc<RwLock<dyn Host>>,
     pub example: Option<String>,
+    pub features: Option<Vec<String>>,
 
     // actually HydroflowCrates
     pub outgoing_ports: HashMap<String, (Weak<RwLock<dyn Service>>, String)>,
@@ -30,21 +30,33 @@ pub struct HydroflowCrate {
 
     pub built_binary: Option<String>,
     pub launched_host: Option<Arc<dyn LaunchedHost>>,
-    pub allocated_incoming: HashMap<String, (ConnectionPipe, Box<dyn Any + Send + Sync>)>,
+
+    /// A map of port names to the config for how to listen for connections.
+    pub bind_types: HashMap<String, BindType>,
+
+    /// A map of port names to config for how other services can connect to this one.
+    pub bound_pipes: HashMap<String, ConnectionPipe>,
     pub launched_binary: Option<Arc<RwLock<dyn LaunchedBinary>>>,
 }
 
 impl HydroflowCrate {
-    pub fn new(src: PathBuf, on: Arc<RwLock<dyn Host>>, example: Option<String>) -> Self {
+    pub fn new(
+        src: PathBuf,
+        on: Arc<RwLock<dyn Host>>,
+        example: Option<String>,
+        features: Option<Vec<String>>,
+    ) -> Self {
         Self {
             src,
             on,
             example,
+            features,
             outgoing_ports: HashMap::new(),
             incoming_ports: HashMap::new(),
             built_binary: None,
             launched_host: None,
-            allocated_incoming: HashMap::new(),
+            bind_types: HashMap::new(),
+            bound_pipes: HashMap::new(),
             launched_binary: None,
         }
     }
@@ -82,6 +94,7 @@ impl HydroflowCrate {
     fn build(&mut self) -> JoinHandle<String> {
         let src_cloned = self.src.join("Cargo.toml").canonicalize().unwrap();
         let example_cloned = self.example.clone();
+        let features_cloned = self.features.clone();
 
         tokio::task::spawn_blocking(move || {
             let config = Config::default().unwrap();
@@ -110,6 +123,9 @@ impl HydroflowCrate {
             .unwrap();
 
             compile_options.build_config.requested_profile = InternedString::from("release");
+            compile_options.cli_features =
+                CliFeatures::from_command_line(&features_cloned.unwrap_or_default(), false, true)
+                    .unwrap();
 
             let res = cargo::ops::compile(&workspace, &compile_options).unwrap();
             let binaries = res
@@ -134,11 +150,11 @@ impl Service for HydroflowCrate {
         self.built_binary = Some(built.await.unwrap());
         let host_read = self.on.read().await;
 
-        self.allocated_incoming = HashMap::new();
+        self.bind_types = HashMap::new();
         for (port_name, (service, _)) in self.incoming_ports.iter() {
             let service = service.upgrade().unwrap();
-            let pipe = host_read.allocate_pipe(service.read().await.host()).await;
-            self.allocated_incoming.insert(port_name.clone(), pipe);
+            let pipe = host_read.find_bind_type(service.read().await.host()).await;
+            self.bind_types.insert(port_name.clone(), pipe);
         }
 
         drop(host_read);
@@ -161,22 +177,7 @@ impl Service for HydroflowCrate {
             .launch_binary(self.built_binary.as_ref().unwrap().clone())
             .await;
 
-        let mut port_config = HashMap::new();
-        for (port_name, (conn_type, _)) in self.allocated_incoming.iter() {
-            port_config.insert(port_name.clone(), conn_type.clone());
-        }
-
-        for (port_name, (target, target_port)) in self.outgoing_ports.iter() {
-            let target = target.upgrade().unwrap();
-            let target = target.read().await;
-            let target = target.as_any().downcast_ref::<HydroflowCrate>().unwrap();
-
-            let (conn_type, _) = target.allocated_incoming.get(target_port).unwrap();
-
-            port_config.insert(port_name.clone(), conn_type.clone());
-        }
-
-        let formatted_ports = serde_json::to_string(&port_config).unwrap();
+        let formatted_bind_types = serde_json::to_string(&self.bind_types).unwrap();
 
         // request stdout before sending config so we don't miss the "ready" response
         let stdout_receiver = binary.write().await.stdout().await;
@@ -186,11 +187,15 @@ impl Service for HydroflowCrate {
             .await
             .stdin()
             .await
-            .send(format!("{formatted_ports}\n"))
+            .send(format!("{formatted_bind_types}\n"))
             .await
             .unwrap();
 
-        if stdout_receiver.recv().await.unwrap() != "ready" {
+        let ready_line = stdout_receiver.recv().await.unwrap();
+        if ready_line.starts_with("ready: ") {
+            self.bound_pipes =
+                serde_json::from_str(ready_line.trim_start_matches("ready: ")).unwrap();
+        } else {
             panic!("expected ready");
         }
 
@@ -198,6 +203,19 @@ impl Service for HydroflowCrate {
     }
 
     async fn start(&mut self) {
+        let mut pipe_config = HashMap::new();
+        for (port_name, (target, target_port)) in self.outgoing_ports.iter() {
+            let target = target.upgrade().unwrap();
+            let target = target.read().await;
+            let target = target.as_any().downcast_ref::<HydroflowCrate>().unwrap();
+
+            let conn = target.bound_pipes.get(target_port).unwrap();
+
+            pipe_config.insert(port_name.clone(), conn.clone());
+        }
+
+        let formatted_pipe_config = serde_json::to_string(&pipe_config).unwrap();
+
         self.launched_binary
             .as_mut()
             .unwrap()
@@ -205,7 +223,7 @@ impl Service for HydroflowCrate {
             .await
             .stdin()
             .await
-            .send("start\n".to_string())
+            .send(format!("start: {formatted_pipe_config}\n"))
             .await
             .unwrap();
     }

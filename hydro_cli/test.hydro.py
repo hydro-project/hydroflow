@@ -7,12 +7,14 @@ async def main():
     program = deployment.HydroflowCrate(
         src="../hydroflow",
         example="cli_sender",
+        features=["cli_integration"],
         on=machine
     )
 
     program2 = deployment.HydroflowCrate(
         src="../hydroflow",
         example="cli_receiver",
+        features=["cli_integration"],
         on=machine
     )
 

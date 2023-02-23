@@ -1389,6 +1389,7 @@ dependencies = [
  "serde_json",
  "slotmap",
  "static_assertions",
+ "tempfile",
  "textnonce",
  "time",
  "tokio",

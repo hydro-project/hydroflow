@@ -1,8 +1,8 @@
-use std::{any::Any, fmt::Debug, sync::Arc};
+use std::{fmt::Debug, sync::Arc};
 
 use async_channel::{Receiver, Sender};
 use async_trait::async_trait;
-use hydroflow::util::connection::ConnectionPipe;
+use hydroflow::util::connection::BindType;
 use tokio::sync::RwLock;
 
 pub mod deployment;
@@ -52,14 +52,11 @@ pub enum ConnectionType {
 #[async_trait]
 pub trait Host: Send + Sync + Debug {
     /// Collect the set of resources that this host needs to run.
-    async fn collect_resources(&mut self, terraform: &mut ResourceBatch);
+    async fn collect_resources(&mut self, resource_batch: &mut ResourceBatch);
 
-    async fn provision(&mut self, terraform_result: &ResourceResult) -> Arc<dyn LaunchedHost>;
+    async fn provision(&mut self, resource_result: &ResourceResult) -> Arc<dyn LaunchedHost>;
 
-    async fn allocate_pipe(
-        &self,
-        client: Arc<RwLock<dyn Host>>,
-    ) -> (ConnectionPipe, Box<dyn Any + Send + Sync>);
+    async fn find_bind_type(&self, client: Arc<RwLock<dyn Host>>) -> BindType;
 
     fn can_connect_to(&self, typ: ConnectionType) -> bool;
 }

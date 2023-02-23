@@ -97,12 +97,18 @@ impl PyHydroflowCrate {
         src: String,
         on: &PyHost,
         example: Option<String>,
+        features: Option<Vec<String>>,
     ) -> (Self, PyService) {
         (
             PyHydroflowCrate {},
             PyService {
                 underlying: deployment.underlying.blocking_write().add_service(
-                    crate::core::HydroflowCrate::new(src.into(), on.underlying.clone(), example),
+                    crate::core::HydroflowCrate::new(
+                        src.into(),
+                        on.underlying.clone(),
+                        example,
+                        features,
+                    ),
                 ),
             },
         )

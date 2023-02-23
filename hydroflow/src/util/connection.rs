@@ -7,6 +7,39 @@ use tokio_util::codec::LinesCodecError;
 
 use super::{tcp_lines, unix_lines};
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub enum BindType {
+    UnixSocket,
+    TcpPort(
+        /// The host the port should be bound on.
+        String
+    ),
+}
+
+impl BindType {
+    pub async fn bind(self) -> BoundConnection {
+        match self {
+            BindType::UnixSocket => {
+                #[cfg(unix)]
+                {
+                    let dir = tempfile::tempdir().unwrap();
+                    let socket_path = dir.path().join("socket");
+                    BoundConnection::UnixSocket(UnixListener::bind(socket_path).unwrap(), dir)
+                }
+
+                #[cfg(not(unix))]
+                {
+                    panic!("Unix sockets are not supported on this platform")
+                }
+            }
+            BindType::TcpPort(host) => {
+                let listener = TcpListener::bind((host, 0)).await.unwrap();
+                BoundConnection::TcpPort(listener)
+            }
+        }
+    }
+}
+
 /// Describes a medium through which two HydroFlow services can communicate.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum ConnectionPipe {
@@ -15,25 +48,6 @@ pub enum ConnectionPipe {
 }
 
 impl ConnectionPipe {
-    pub async fn bind(self) -> BoundConnection {
-        match self {
-            ConnectionPipe::UnixSocket(path) => {
-                #[cfg(unix)]
-                {
-                    BoundConnection::UnixSocket(UnixListener::bind(path).unwrap())
-                }
-
-                #[cfg(not(unix))]
-                {
-                    panic!("Unix sockets are not supported on this platform")
-                }
-            }
-            ConnectionPipe::TcpPort(host, port) => {
-                BoundConnection::InternalTcpPort(TcpListener::bind((host, port)).await.unwrap())
-            }
-        }
-    }
-
     pub async fn connect(
         self,
     ) -> (
@@ -64,11 +78,31 @@ impl ConnectionPipe {
 }
 
 pub enum BoundConnection {
-    UnixSocket(UnixListener),
-    InternalTcpPort(TcpListener),
+    UnixSocket(UnixListener, tempfile::TempDir),
+    TcpPort(TcpListener),
 }
 
 impl BoundConnection {
+    pub fn connection_pipe(&self) -> ConnectionPipe {
+        match self {
+            BoundConnection::UnixSocket(listener, _) => {
+                #[cfg(unix)]
+                {
+                    ConnectionPipe::UnixSocket(listener.local_addr().unwrap().as_pathname().unwrap().to_path_buf())
+                }
+
+                #[cfg(not(unix))]
+                {
+                    panic!("Unix sockets are not supported on this platform")
+                }
+            }
+            BoundConnection::TcpPort(listener) => {
+                let addr = listener.local_addr().unwrap();
+                ConnectionPipe::TcpPort(addr.ip().to_string(), addr.port())
+            }
+        }
+    }
+
     pub async fn accept_lines(
         &self,
     ) -> (
@@ -76,7 +110,7 @@ impl BoundConnection {
         Pin<Box<dyn Stream<Item = Result<String, LinesCodecError>>>>,
     ) {
         match self {
-            BoundConnection::UnixSocket(listener) => {
+            BoundConnection::UnixSocket(listener, _) => {
                 #[cfg(unix)]
                 {
                     let (stream, _) = listener.accept().await.unwrap();
@@ -89,7 +123,7 @@ impl BoundConnection {
                     panic!("Unix sockets are not supported on this platform")
                 }
             }
-            BoundConnection::InternalTcpPort(listener) => {
+            BoundConnection::TcpPort(listener) => {
                 let (stream, _) = listener.accept().await.unwrap();
                 let (a, b) = tcp_lines(stream);
                 (Box::pin(a), Box::pin(b))

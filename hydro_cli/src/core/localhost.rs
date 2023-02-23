@@ -1,10 +1,10 @@
-use std::{any::Any, sync::Arc};
+use std::sync::Arc;
 
 use async_channel::{Receiver, Sender};
 use async_process::{Command, Stdio};
 use async_trait::async_trait;
 use futures::{io::BufReader, AsyncBufReadExt, AsyncWriteExt, StreamExt};
-use hydroflow::util::connection::ConnectionPipe;
+use hydroflow::util::connection::BindType;
 use tokio::sync::RwLock;
 
 use super::{ConnectionType, Host, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult};
@@ -141,26 +141,13 @@ impl Host for LocalhostHost {
         Arc::new(LaunchedLocalhost {})
     }
 
-    async fn allocate_pipe(
-        &self,
-        client: Arc<RwLock<dyn Host>>,
-    ) -> (ConnectionPipe, Box<dyn Any + Send + Sync>) {
+    async fn find_bind_type(&self, client: Arc<RwLock<dyn Host>>) -> BindType {
         let client = client.read().await;
 
         if client.can_connect_to(ConnectionType::UnixSocket(self.id)) {
-            let dir = tempfile::tempdir().unwrap();
-            let socket_path = dir.path().join("socket");
-            (ConnectionPipe::UnixSocket(socket_path), Box::new(dir))
+            BindType::UnixSocket
         } else if client.can_connect_to(ConnectionType::InternalTcpPort(self.id)) {
-            // find an available port
-            let port = (8000..9000)
-                .find(|port| std::net::TcpListener::bind(("127.0.0.1", *port)).is_ok())
-                .expect("Could not find an available port");
-
-            (
-                ConnectionPipe::TcpPort("127.0.0.1".to_string(), port),
-                Box::new(()),
-            )
+            BindType::TcpPort("127.0.0.1".to_string())
         } else {
             todo!()
         }

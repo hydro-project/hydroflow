@@ -16,6 +16,6 @@ futures-core = "0.3.26"
 async-channel = "1.8.0"
 serde_json = "1.0"
 tempfile = "3.3.0"
-hydroflow = { path = "../hydroflow" }
+hydroflow = { path = "../hydroflow", features = ["cli_integration"] }
 
 [dev-dependencies]
