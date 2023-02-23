@@ -45,6 +45,6 @@ pub const NEXT_TICK: OperatorConstraints = OperatorConstraints {
     is_external_input: false,
     ports_inn: None,
     ports_out: None,
-    input_delaytype_fn: &|_| Some(DelayType::Tick),
+    input_delaytype_fn: |_| Some(DelayType::Tick),
     write_fn: IDENTITY_WRITE_FN,
 };

@@ -1,4 +1,4 @@
-error: Cannot find name `hydro_lab`
+error: Cannot find name `hydro_lab`; name was never assigned.
  --> tests/compile-fail/surface_undefined_variable.rs:5:9
   |
 5 |         hydro_lab -> for_each(std::mem::drop);

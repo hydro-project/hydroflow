@@ -12,10 +12,9 @@ use syn::parse_quote;
 ///
 /// ```hydroflow
 /// // should print `(hello, (world, cleveland))`
-/// my_join = join();
 /// source_iter(vec![("hello", "world"), ("stay", "gold")]) -> [0]my_join;
 /// source_iter(vec![("hello", "cleveland")]) -> [1]my_join;
-/// my_join -> for_each(|(k, (v1, v2))| println!("({}, ({}, {}))", k, v1, v2));
+/// my_join = join() -> for_each(|(k, (v1, v2))| println!("({}, ({}, {}))", k, v1, v2));
 /// ```
 ///
 /// `join` can also be provided with one or two generic lifetime persistence arguments, either
@@ -47,10 +46,9 @@ use syn::parse_quote;
 /// ```rustbook
 /// let (input_send, input_recv) = hydroflow::util::unbounded_channel::<(&str, &str)>();
 /// let mut flow = hydroflow::hydroflow_syntax! {
-///     my_join = join::<'tick>();
 ///     source_iter([("hello", "world")]) -> [0]my_join;
 ///     source_stream(input_recv) -> [1]my_join;
-///     my_join -> for_each(|(k, (v1, v2))| println!("({}, ({}, {}))", k, v1, v2));
+///     my_join = join::<'tick>() -> for_each(|(k, (v1, v2))| println!("({}, ({}, {}))", k, v1, v2));
 /// };
 /// input_send.send(("hello", "oakland")).unwrap();
 /// flow.run_tick();
@@ -65,10 +63,9 @@ use syn::parse_quote;
 /// ```rustbook
 /// let (input_send, input_recv) = hydroflow::util::unbounded_channel::<(&str, &str)>();
 /// let mut flow = hydroflow::hydroflow_syntax! {
-///     my_join = join::<'static>();
 ///     source_iter([("hello", "world")]) -> [0]my_join;
 ///     source_stream(input_recv) -> [1]my_join;
-///     my_join -> for_each(|(k, (v1, v2))| println!("({}, ({}, {}))", k, v1, v2));
+///     my_join = join::<'static>() -> for_each(|(k, (v1, v2))| println!("({}, ({}, {}))", k, v1, v2));
 /// };
 /// input_send.send(("hello", "oakland")).unwrap();
 /// flow.run_tick();
@@ -88,22 +85,22 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
     persistence_args: &(0..=2),
     type_args: RANGE_0,
     is_external_input: false,
-    ports_inn: Some(&(|| super::PortListSpec::Fixed(parse_quote! { 0, 1 }))),
+    ports_inn: Some(|| super::PortListSpec::Fixed(parse_quote! { 0, 1 })),
     ports_out: None,
-    input_delaytype_fn: &|_| None,
-    write_fn: &(|wc @ &WriteContextArgs {
-                     root,
-                     context,
-                     op_span,
-                     ..
-                 },
-                 &WriteIteratorArgs {
-                     ident,
-                     inputs,
-                     persistence_args,
-                     ..
-                 },
-                 _| {
+    input_delaytype_fn: |_| None,
+    write_fn: |wc @ &WriteContextArgs {
+                   root,
+                   context,
+                   op_span,
+                   ..
+               },
+               &WriteIteratorArgs {
+                   ident,
+                   inputs,
+                   persistence_args,
+                   ..
+               },
+               _| {
         let persistences = match *persistence_args {
             [] => [Persistence::Static, Persistence::Static],
             [a] => [a, a],
@@ -184,5 +181,5 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
             write_iterator,
             ..Default::default()
         })
-    }),
+    },
 };

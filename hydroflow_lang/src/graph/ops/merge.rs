@@ -13,11 +13,10 @@ use quote::{quote_spanned, ToTokens};
 /// a variable to reference its multiple input ports across statements.
 ///
 /// ```hydroflow
-/// my_merge = merge();
 /// source_iter(vec!["hello", "world"]) -> my_merge;
 /// source_iter(vec!["stay", "gold"]) -> my_merge;
 /// source_iter(vec!["don\'t", "give", "up"]) -> my_merge;
-/// my_merge -> map(|x| x.to_uppercase())
+/// my_merge = merge() -> map(|x| x.to_uppercase())
 ///     -> for_each(|x| println!("{}", x));
 /// ```
 #[hydroflow_internalmacro::operator_docgen]
@@ -33,16 +32,16 @@ pub const MERGE: OperatorConstraints = OperatorConstraints {
     is_external_input: false,
     ports_inn: None,
     ports_out: None,
-    input_delaytype_fn: &|_| None,
-    write_fn: &(|&WriteContextArgs { op_span, .. },
-                 &WriteIteratorArgs {
-                     ident,
-                     inputs,
-                     outputs,
-                     is_pull,
-                     ..
-                 },
-                 _| {
+    input_delaytype_fn: |_| None,
+    write_fn: |&WriteContextArgs { op_span, .. },
+               &WriteIteratorArgs {
+                   ident,
+                   inputs,
+                   outputs,
+                   is_pull,
+                   ..
+               },
+               _| {
         let write_iterator = if is_pull {
             let chains = inputs
                 .iter()
@@ -70,5 +69,5 @@ pub const MERGE: OperatorConstraints = OperatorConstraints {
             write_iterator,
             ..Default::default()
         })
-    }),
+    },
 };

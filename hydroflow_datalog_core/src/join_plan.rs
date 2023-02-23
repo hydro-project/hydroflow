@@ -1,18 +1,18 @@
 use std::collections::{btree_map::Entry, BTreeMap, HashMap};
 
-use hydroflow_lang::{graph::flat_graph::FlatGraph, parse::Pipeline};
+use hydroflow_lang::{graph::flat_graph::FlatGraphBuilder, parse::Pipeline};
 use proc_macro2::Span;
 use syn::{self, parse_quote};
 
 use crate::{
-    grammar::datalog::{BoolOp, PredicateExpr, RelationExpr},
-    util::Counter,
+    grammar::datalog::{BoolOp, InputRelationExpr, PredicateExpr},
+    util::{repeat_tuple, Counter},
 };
 
 /// Captures the tree of joins used to compute contributions from a single rule.
 pub enum JoinPlan<'a> {
     /// A single relation without any joins, leaves of the tree.
-    Source(&'a RelationExpr),
+    Source(&'a InputRelationExpr),
     /// A join between two subtrees.
     Join(Box<JoinPlan<'a>>, Box<JoinPlan<'a>>),
     AntiJoin(Box<JoinPlan<'a>>, Box<JoinPlan<'a>>),
@@ -60,7 +60,7 @@ fn emit_join_input_pipeline(
     // Whether the pipeline is for an anti-join.
     anti_join: bool,
     // The Hydroflow graph to emit the pipeline to.
-    flat_graph: &mut FlatGraph,
+    flat_graph_builder: &mut FlatGraphBuilder,
 ) {
     let hash_keys: Vec<syn::Expr> = identifiers_to_join
         .iter()
@@ -100,7 +100,7 @@ fn emit_join_input_pipeline(
         None => parse_quote!(#source_name -> #rhs),
     };
 
-    flat_graph.add_statement(statement);
+    flat_graph_builder.add_statement(statement);
 }
 
 /// Creates a mapping from variable names to the indices where that variable appears in `fields`.
@@ -159,7 +159,7 @@ pub fn expand_join_plan(
     // The plan we are converting to a Hydroflow pipeline.
     plan: &JoinPlan,
     // The Hydroflow graph to emit the pipeline to.
-    flat_graph: &mut FlatGraph,
+    flat_graph_builder: &mut FlatGraphBuilder,
     tee_counter: &mut HashMap<String, Counter>,
     next_join_idx: &mut Counter,
 ) -> IntermediateJoinNode {
@@ -210,7 +210,7 @@ pub fn expand_join_plan(
 
             let conditions = build_local_constraint_conditions(&local_constraints);
 
-            flat_graph.add_statement(parse_quote! {
+            flat_graph_builder.add_statement(parse_quote! {
                 #filter_node = #relation_node [#relation_idx] -> filter(|&row: &#row_type| #conditions)
             });
 
@@ -224,8 +224,10 @@ pub fn expand_join_plan(
         JoinPlan::Join(lhs, rhs) | JoinPlan::AntiJoin(lhs, rhs) => {
             let is_anti = matches!(plan, JoinPlan::AntiJoin(_, _));
 
-            let left_expanded = expand_join_plan(lhs, flat_graph, tee_counter, next_join_idx);
-            let right_expanded = expand_join_plan(rhs, flat_graph, tee_counter, next_join_idx);
+            let left_expanded =
+                expand_join_plan(lhs, flat_graph_builder, tee_counter, next_join_idx);
+            let right_expanded =
+                expand_join_plan(rhs, flat_graph_builder, tee_counter, next_join_idx);
 
             let identifiers_to_join = right_expanded
                 .variable_mapping
@@ -233,10 +235,8 @@ pub fn expand_join_plan(
                 .filter(|i| left_expanded.variable_mapping.contains_key(i))
                 .collect::<Vec<_>>();
 
-            let key_type = identifiers_to_join
-                .iter()
-                .map(|_| parse_quote!(_))
-                .collect::<Vec<syn::Type>>();
+            let key_type =
+                repeat_tuple::<syn::Type, syn::Type>(|| parse_quote!(_), identifiers_to_join.len());
 
             let left_type = &left_expanded.tuple_type;
             let right_type = &right_expanded.tuple_type;
@@ -250,10 +250,9 @@ pub fn expand_join_plan(
             );
 
             let intermediate = if is_anti {
-                let flatten_closure: syn::Expr =
-                    parse_quote!(|kv: ((#(#key_type, )*), #left_type)| kv.1);
+                let flatten_closure: syn::Expr = parse_quote!(|kv: (#key_type, #left_type)| kv.1);
 
-                flat_graph
+                flat_graph_builder
                     .add_statement(parse_quote!(#join_node = anti_join() -> map(#flatten_closure)));
 
                 IntermediateJoinNode {
@@ -291,22 +290,22 @@ pub fn expand_join_plan(
                     }
                 }
 
-                let flatten_closure: syn::Expr = parse_quote!(|kv: ((#(#key_type, )*), (#left_type, #right_type))| (#(#flattened_tuple_elems, )*));
+                let flatten_closure: syn::Expr = parse_quote!(|kv: (#key_type, (#left_type, #right_type))| (#(#flattened_tuple_elems, )*));
 
-                flat_graph.add_statement(
+                flat_graph_builder.add_statement(
                     parse_quote!(#join_node = join::<'tick>() -> map(#flatten_closure)),
                 );
 
-                let output_types: Vec<syn::Type> = flattened_tuple_elems
-                    .iter()
-                    .map(|_| parse_quote!(_))
-                    .collect::<Vec<_>>();
+                let output_type = repeat_tuple::<syn::Type, syn::Type>(
+                    || parse_quote!(_),
+                    flattened_tuple_elems.len(),
+                );
 
                 IntermediateJoinNode {
                     name: join_node.clone(),
                     tee_idx: None,
                     variable_mapping: flattened_mapping,
-                    tuple_type: parse_quote!((#(#output_types, )*)),
+                    tuple_type: output_type,
                 }
             };
 
@@ -316,7 +315,7 @@ pub fn expand_join_plan(
                 &join_node,
                 JoinSide::Left,
                 is_anti,
-                flat_graph,
+                flat_graph_builder,
             );
 
             emit_join_input_pipeline(
@@ -325,13 +324,14 @@ pub fn expand_join_plan(
                 &join_node,
                 JoinSide::Right,
                 is_anti,
-                flat_graph,
+                flat_graph_builder,
             );
 
             intermediate
         }
         JoinPlan::Predicate(predicates, inner) => {
-            let inner_expanded = expand_join_plan(inner, flat_graph, tee_counter, next_join_idx);
+            let inner_expanded =
+                expand_join_plan(inner, flat_graph_builder, tee_counter, next_join_idx);
             let inner_name = inner_expanded.name.clone();
             let row_type = inner_expanded.tuple_type;
             let variable_mapping = &inner_expanded.variable_mapping;
@@ -362,7 +362,7 @@ pub fn expand_join_plan(
                 Span::call_site(),
             );
 
-            flat_graph.add_statement(parse_quote! {
+            flat_graph_builder.add_statement(parse_quote! {
                 #predicate_filter_node = #inner_name -> filter(|&row: &#row_type| #conditions )
             });
 

@@ -17,10 +17,9 @@ use syn::parse_quote;
 ///
 /// ```hydroflow
 /// // should print ("elephant", 3)
-/// diff = anti_join();
 /// source_iter(vec![("dog", 1), ("cat", 2), ("elephant", 3)]) -> [pos]diff;
 /// source_iter(vec!["dog", "cat", "gorilla"]) -> [neg]diff;
-/// diff -> for_each(|v: (_, _)| println!("{}, {}", v.0, v.1));
+/// diff = anti_join() -> for_each(|v: (_, _)| println!("{}, {}", v.0, v.1));
 /// // elephant 3
 /// ```
 #[hydroflow_internalmacro::operator_docgen]
@@ -34,22 +33,22 @@ pub const ANTI_JOIN: OperatorConstraints = OperatorConstraints {
     persistence_args: RANGE_0,
     type_args: RANGE_0,
     is_external_input: false,
-    ports_inn: Some(&|| super::PortListSpec::Fixed(parse_quote! { pos, neg })),
+    ports_inn: Some(|| super::PortListSpec::Fixed(parse_quote! { pos, neg })),
     ports_out: None,
-    input_delaytype_fn: &|idx| match idx {
+    input_delaytype_fn: |idx| match idx {
         PortIndexValue::Path(path) if "neg" == path.to_token_stream().to_string() => {
             Some(DelayType::Stratum)
         }
         _else => None,
     },
-    write_fn: &(|wc @ &WriteContextArgs {
-                     root,
-                     context,
-                     op_span,
-                     ..
-                 },
-                 &WriteIteratorArgs { ident, inputs, .. },
-                 _| {
+    write_fn: |wc @ &WriteContextArgs {
+                   root,
+                   context,
+                   op_span,
+                   ..
+               },
+               &WriteIteratorArgs { ident, inputs, .. },
+               _| {
         let handle_ident = wc.make_ident("diffdata_handle");
         let write_prologue = quote_spanned! {op_span=>
             let #handle_ident = df.add_state(std::cell::RefCell::new(
@@ -76,5 +75,5 @@ pub const ANTI_JOIN: OperatorConstraints = OperatorConstraints {
             write_iterator,
             ..Default::default()
         })
-    }),
+    },
 };

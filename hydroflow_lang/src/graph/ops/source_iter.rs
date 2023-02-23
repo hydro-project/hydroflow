@@ -29,12 +29,12 @@ pub const SOURCE_ITER: OperatorConstraints = OperatorConstraints {
     is_external_input: false,
     ports_inn: None,
     ports_out: None,
-    input_delaytype_fn: &|_| None,
-    write_fn: &(|wc @ &WriteContextArgs { op_span, .. },
-                 &WriteIteratorArgs {
-                     ident, arguments, ..
-                 },
-                 _| {
+    input_delaytype_fn: |_| None,
+    write_fn: |wc @ &WriteContextArgs { op_span, .. },
+               &WriteIteratorArgs {
+                   ident, arguments, ..
+               },
+               _| {
         let iter_ident = wc.make_ident("iter");
         let write_prologue = quote_spanned! {op_span=>
             let mut #iter_ident = {
@@ -53,5 +53,5 @@ pub const SOURCE_ITER: OperatorConstraints = OperatorConstraints {
             write_iterator,
             ..Default::default()
         })
-    }),
+    },
 };

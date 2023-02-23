@@ -6,9 +6,10 @@ use std::fs::File;
 use std::io::{BufReader, BufWriter, Write};
 use std::path::{Path, PathBuf};
 
+use hydroflow_lang::graph::PortIndexValue;
 use quote::ToTokens;
 
-use hydroflow_lang::graph::ops::{DelayType, PortListSpec, OPERATORS};
+use hydroflow_lang::graph::ops::{PortListSpec, OPERATORS};
 
 const FILENAME: &str = "surface_ops.gen.md";
 
@@ -81,36 +82,34 @@ fn main() -> Result<(), Box<dyn Error>> {
         );
 
         let mut blocking = false;
-        let mut input_str_maybe = None;
-        if let Some(f) = op.ports_inn {
-            input_str_maybe = Some(match (f)() {
-                PortListSpec::Fixed(port_names) => {
-                    format!(
-                        "> Input port names: {}  ",
-                        port_names
-                            .into_iter()
-                            .map(|idx| {
-                                let port_ix = idx.clone().into();
-                                let flow_str = if Some(DelayType::Stratum)
-                                    == (op.input_delaytype_fn)(&port_ix)
-                                {
-                                    blocking = true;
-                                    "blocking"
-                                } else {
-                                    "streaming"
-                                };
-                                format!("`{}` ({}), ", idx.into_token_stream(), flow_str)
-                            })
-                            .collect::<String>()
-                            .strip_suffix(", ")
-                            .unwrap_or("&lt;EMPTY&gt;")
-                    )
-                }
-                PortListSpec::Variadic => {
-                    "> Input port names: Variadic, as specified in arguments.".to_string()
-                }
-            })
-        }
+        let input_port_names = op.ports_inn.map(|ports_inn_fn| (ports_inn_fn)());
+        let input_str_maybe = match input_port_names {
+            None => {
+                blocking = (op.input_delaytype_fn)(&PortIndexValue::Elided(None)).is_some();
+                None
+            }
+            Some(PortListSpec::Fixed(port_names)) => Some(format!(
+                "> Input port names: {}  ",
+                port_names
+                    .into_iter()
+                    .map(|idx| {
+                        let port_ix = idx.clone().into();
+                        let flow_str = if (op.input_delaytype_fn)(&port_ix).is_some() {
+                            blocking = true;
+                            "blocking"
+                        } else {
+                            "streaming"
+                        };
+                        format!("`{}` ({}), ", idx.into_token_stream(), flow_str)
+                    })
+                    .collect::<String>()
+                    .strip_suffix(", ")
+                    .unwrap_or("&lt;EMPTY&gt;")
+            )),
+            Some(PortListSpec::Variadic) => {
+                Some("> Input port names: Variadic, as specified in arguments.".to_string())
+            }
+        };
         let mut output_str_maybe = None;
         if let Some(f) = op.ports_out {
             output_str_maybe = Some(match (f)() {

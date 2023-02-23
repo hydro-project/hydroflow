@@ -1,0 +1,23 @@
+---
+source: hydroflow_datalog_core/src/lib.rs
+expression: graph.surface_syntax_string()
+---
+1v1 = merge ();
+2v1 = tee ();
+3v1 = merge ();
+4v1 = tee ();
+5v1 = source_stream (ints);
+6v1 = for_each (| v | result . send (v) . unwrap ());
+7v1 = map (| row : (_ , _ ,) | ((row . 1 ,) , (row . 0 ,)));
+8v1 = group_by :: < 'tick , (_ ,) , (Option < _ > ,) > (| | (None ,) , | old : & mut (Option < _ > ,) , val : (_ ,) | { old . 0 = if let Some (prev) = old . 0 { Some (std :: cmp :: max (prev , val . 0)) } else { Some (val . 0) } ; });
+9v1 = map (| (g , a) | (a . 0 . unwrap () , g . 0 ,));
+
+(1v1-->2v1);
+(3v1-->4v1);
+(5v1-->1v1);
+(4v1-->6v1);
+(9v1-->3v1);
+(8v1-->9v1);
+(7v1-->8v1);
+(2v1-->7v1);
+

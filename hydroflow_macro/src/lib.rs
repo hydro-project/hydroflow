@@ -5,7 +5,8 @@ use proc_macro2::{Ident, Literal, Span};
 use quote::quote;
 use syn::{parse_macro_input, LitStr};
 
-use hydroflow_lang::graph::flat_graph::FlatGraph;
+use hydroflow_lang::diagnostic::Level;
+use hydroflow_lang::graph::flat_graph::FlatGraphBuilder;
 use hydroflow_lang::parse::HfCode;
 
 #[proc_macro]
@@ -22,8 +23,9 @@ pub fn hydroflow_syntax(input: proc_macro::TokenStream) -> proc_macro::TokenStre
 
     let input = parse_macro_input!(input as HfCode);
 
-    let flat_graph = FlatGraph::from_hfcode(input);
-    if !flat_graph.emit_diagnostics() {
+    let flat_graph_builder = FlatGraphBuilder::from_hfcode(input);
+    let flat_graph_result = flat_graph_builder.build(Level::Help);
+    if let Ok(flat_graph) = flat_graph_result {
         match flat_graph.into_partitioned_graph() {
             Ok(part_graph) => return part_graph.as_code(root, true).into(),
             Err(diagnostic) => diagnostic.emit(),
@@ -36,9 +38,10 @@ pub fn hydroflow_syntax(input: proc_macro::TokenStream) -> proc_macro::TokenStre
 pub fn hydroflow_parser(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = parse_macro_input!(input as HfCode);
 
-    let flat_graph = FlatGraph::from_hfcode(input);
-    flat_graph.emit_diagnostics();
-
+    let flat_graph_builder = FlatGraphBuilder::from_hfcode(input);
+    let flat_graph = flat_graph_builder
+        .build(Level::Help)
+        .unwrap_or_else(std::convert::identity);
     let flat_mermaid = flat_graph.mermaid_string();
 
     let part_graph = flat_graph.into_partitioned_graph().unwrap();

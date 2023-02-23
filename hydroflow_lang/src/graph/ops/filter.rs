@@ -30,17 +30,17 @@ pub const FILTER: OperatorConstraints = OperatorConstraints {
     is_external_input: false,
     ports_inn: None,
     ports_out: None,
-    input_delaytype_fn: &|_| None,
-    write_fn: &(|&WriteContextArgs { root, op_span, .. },
-                 &WriteIteratorArgs {
-                     ident,
-                     inputs,
-                     outputs,
-                     arguments,
-                     is_pull,
-                     ..
-                 },
-                 _| {
+    input_delaytype_fn: |_| None,
+    write_fn: |&WriteContextArgs { root, op_span, .. },
+               &WriteIteratorArgs {
+                   ident,
+                   inputs,
+                   outputs,
+                   arguments,
+                   is_pull,
+                   ..
+               },
+               _| {
         let write_iterator = if is_pull {
             let input = &inputs[0];
             quote_spanned! {op_span=>
@@ -56,5 +56,5 @@ pub const FILTER: OperatorConstraints = OperatorConstraints {
             write_iterator,
             ..Default::default()
         })
-    }),
+    },
 };

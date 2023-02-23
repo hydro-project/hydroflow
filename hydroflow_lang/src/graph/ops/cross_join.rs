@@ -10,10 +10,9 @@ use syn::parse_quote;
 ///
 /// ```hydroflow
 /// // should print all 4 pairs of emotion and animal
-/// my_join = cross_join();
 /// source_iter(vec!["happy", "sad"]) -> [0]my_join;
 /// source_iter(vec!["dog", "cat"]) -> [1]my_join;
-/// my_join -> for_each(|(v1, v2)| println!("({}, {})", v1, v2));
+/// my_join = cross_join() -> for_each(|(v1, v2)| println!("({}, {})", v1, v2));
 /// ```
 ///
 /// `cross_join` can also be provided with one or two generic lifetime persistence arguments
@@ -45,12 +44,12 @@ pub const CROSS_JOIN: OperatorConstraints = OperatorConstraints {
     persistence_args: &(0..=2),
     type_args: RANGE_0,
     is_external_input: false,
-    ports_inn: Some(&(|| super::PortListSpec::Fixed(parse_quote! { 0, 1 }))),
+    ports_inn: Some(|| super::PortListSpec::Fixed(parse_quote! { 0, 1 })),
     ports_out: None,
-    input_delaytype_fn: &|_| None,
-    write_fn: &(|wc @ &WriteContextArgs { op_span, .. },
-                 wi @ &WriteIteratorArgs { ident, inputs, .. },
-                 diagnostics| {
+    input_delaytype_fn: |_| None,
+    write_fn: |wc @ &WriteContextArgs { op_span, .. },
+               wi @ &WriteIteratorArgs { ident, inputs, .. },
+               diagnostics| {
         let mut output = (super::join::JOIN.write_fn)(wc, wi, diagnostics)?;
 
         let lhs = &inputs[0];
@@ -64,5 +63,5 @@ pub const CROSS_JOIN: OperatorConstraints = OperatorConstraints {
         );
 
         Ok(output)
-    }),
+    },
 };
