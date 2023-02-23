@@ -1246,7 +1246,7 @@
     node: Node,
     edge_id: GraphEdgeId,
 ) -&gt; (GraphNodeId, GraphEdgeId) {
-    <span class="kw">let </span>span = node.span();
+    <span class="kw">let </span>span = <span class="prelude-val">Some</span>(node.span());
     <span class="kw">let </span>node_id = nodes.insert(node);
     <span class="kw">let </span>(e0, e1) = graph.insert_intermediate_node(node_id, edge_id).unwrap();
 

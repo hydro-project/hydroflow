@@ -285,14 +285,14 @@
 </span><span class="kw">pub enum </span>PortIndexValue {
     Int(IndexInt),
     Path(ExprPath),
-    Elided(Span),
+    Elided(<span class="prelude-ty">Option</span>&lt;Span&gt;),
 }
 <span class="kw">impl </span>PortIndexValue {
     <span class="kw">pub fn </span>from_ported&lt;Inner&gt;(ported: Ported&lt;Inner&gt;) -&gt; (<span class="self">Self</span>, Inner, <span class="self">Self</span>)
     <span class="kw">where
         </span>Inner: Spanned,
     {
-        <span class="kw">let </span>ported_span = ported.inner.span();
+        <span class="kw">let </span>ported_span = <span class="prelude-val">Some</span>(ported.inner.span());
         <span class="kw">let </span>port_inn = ported
             .inn
             .map(|idx| idx.index.into())
@@ -335,7 +335,7 @@
         <span class="kw">match </span><span class="self">self </span>{
             PortIndexValue::Int(x) =&gt; x.span(),
             PortIndexValue::Path(x) =&gt; x.span(),
-            PortIndexValue::Elided(span) =&gt; <span class="kw-2">*</span>span,
+            PortIndexValue::Elided(span) =&gt; span.unwrap_or_else(Span::call_site),
         }
     }
 }
