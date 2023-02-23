@@ -6,11 +6,15 @@ use proc_macro2::Span;
 use quote::ToTokens;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
+use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
-use syn::ExprPath;
+use syn::{Expr, ExprPath, GenericArgument, Token, Type};
 
+use crate::diagnostic::{Diagnostic, Level};
 use crate::parse::{IndexInt, Operator, PortIndex, Ported};
 use crate::pretty_span::PrettySpan;
+
+use self::ops::{OperatorConstraints, Persistence};
 
 pub mod di_mul_graph;
 pub mod flat_graph;
@@ -34,6 +38,8 @@ new_key_type! {
 
 /// Context identifier as a string.
 const CONTEXT: &str = "context";
+/// Hydroflow identifier as a string.
+const HYDROFLOW: &str = "df";
 
 pub enum Node {
     Operator(Operator),
@@ -55,6 +61,76 @@ impl std::fmt::Debug for Node {
             }
             Self::Handoff { .. } => write!(f, "Node::Handoff"),
         }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct OperatorInstance {
+    /// Name of the operator (will match [`OperatorConstraints::name`]).
+    pub op_constraints: &'static OperatorConstraints,
+    // /// The source span of this operator instance.
+    // pub op_span: Span,
+    /// Port values used as this operator's input.
+    pub input_ports: Vec<PortIndexValue>,
+    /// Port values used as this operator's output.
+    pub output_ports: Vec<PortIndexValue>,
+
+    /// Generic arguments.
+    pub generics: OpInstGenerics,
+    /// Arguments provided by the user into the operator as arguments.
+    /// I.e. the `a, b, c` in `-> my_op(a, b, c) -> `.
+    pub arguments: Punctuated<Expr, Token![,]>,
+}
+
+#[derive(Clone, Debug)]
+pub struct OpInstGenerics {
+    /// Operator generic (type or lifetime) arguments.
+    pub generic_args: Option<Punctuated<GenericArgument, Token![,]>>,
+    /// Lifetime persistence arguments. Corresponds to a prefix of [`Self::generic_args`].
+    pub persistence_args: Vec<Persistence>,
+    /// Type persistence arguments. Corersponds to a (suffix) of [`Self::generic_args`].
+    pub type_args: Vec<Type>,
+}
+
+pub fn get_operator_generics(
+    diagnostics: &mut Vec<Diagnostic>,
+    operator: &Operator,
+) -> OpInstGenerics {
+    // Generic arguments.
+    let generic_args = operator.type_arguments().cloned();
+    let persistence_args = generic_args.iter().flatten().map_while(|generic_arg| match generic_arg {
+            GenericArgument::Lifetime(lifetime) => {
+                match &*lifetime.ident.to_string() {
+                    "static" => Some(Persistence::Static),
+                    "tick" => Some(Persistence::Tick),
+                    _ => {
+                        diagnostics.push(Diagnostic::spanned(
+                            generic_arg.span(),
+                            Level::Error,
+                            format!("Unknown lifetime generic argument `'{}`, expected `'tick` or `'static`.", lifetime.ident),
+                        ));
+                        // TODO(mingwei): should really keep going and not short circuit?
+                        None
+                    }
+                }
+            },
+            _ => None,
+        }).collect::<Vec<_>>();
+    let type_args = generic_args
+        .iter()
+        .flatten()
+        .skip(persistence_args.len())
+        .map_while(|generic_arg| match generic_arg {
+            GenericArgument::Type(typ) => Some(typ),
+            _ => None,
+        })
+        .cloned()
+        .collect::<Vec<_>>();
+
+    OpInstGenerics {
+        generic_args,
+        persistence_args,
+        type_args,
     }
 }
 

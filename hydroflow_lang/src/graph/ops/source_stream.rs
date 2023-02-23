@@ -1,6 +1,6 @@
-use super::{
-    OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, RANGE_0, RANGE_1,
-};
+use crate::graph::OperatorInstance;
+
+use super::{OperatorConstraints, OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1};
 
 use quote::quote_spanned;
 
@@ -41,10 +41,9 @@ pub const SOURCE_STREAM: OperatorConstraints = OperatorConstraints {
                    root,
                    context,
                    op_span,
+                   ident,
+                   op_inst: OperatorInstance { arguments, .. },
                    ..
-               },
-               &WriteIteratorArgs {
-                   ident, arguments, ..
                },
                _| {
         let receiver = &arguments[0];

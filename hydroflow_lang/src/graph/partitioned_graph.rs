@@ -2,18 +2,16 @@ use proc_macro2::{Ident, Literal, Span, TokenStream};
 use quote::{format_ident, quote, quote_spanned, ToTokens};
 use slotmap::{Key, SecondaryMap, SlotMap, SparseSecondaryMap};
 use syn::spanned::Spanned;
-use syn::GenericArgument;
 
-use crate::diagnostic::{Diagnostic, Level};
+use crate::diagnostic::Diagnostic;
 
 use super::di_mul_graph::DiMulGraph;
 use super::flat_graph::FlatGraph;
-use super::ops::{
-    DelayType, OperatorWriteOutput, Persistence, WriteContextArgs, WriteIteratorArgs, OPERATORS,
-};
+use super::ops::{DelayType, OperatorWriteOutput, WriteContextArgs, OPERATORS};
 use super::serde_graph::{SerdeEdge, SerdeGraph};
 use super::{
-    node_color, Color, GraphEdgeId, GraphNodeId, GraphSubgraphId, Node, PortIndexValue, CONTEXT,
+    node_color, Color, GraphEdgeId, GraphNodeId, GraphSubgraphId, Node, OperatorInstance,
+    PortIndexValue, CONTEXT, HYDROFLOW,
 };
 
 #[derive(Default)]
@@ -21,6 +19,8 @@ use super::{
 pub struct PartitionedGraph {
     /// Each node (operator or handoff).
     pub(crate) nodes: SlotMap<GraphNodeId, Node>,
+    /// Instance data corresponding to each operator node.
+    pub(super) operator_instances: SecondaryMap<GraphNodeId, OperatorInstance>,
     /// Graph
     pub(crate) graph: DiMulGraph<GraphNodeId, GraphEdgeId>,
     /// Input and output port for each edge.
@@ -82,6 +82,8 @@ impl PartitionedGraph {
     }
 
     pub fn as_code(&self, root: TokenStream, include_type_guards: bool) -> TokenStream {
+        let df = &Ident::new(HYDROFLOW, Span::call_site());
+
         let handoffs = self
             .nodes
             .iter()
@@ -95,7 +97,7 @@ impl PartitionedGraph {
                 let hoff_name = Literal::string(&*format!("handoff {:?}", node_id));
                 quote! {
                     let (#ident_send, #ident_recv) =
-                        df.make_edge::<_, #root::scheduled::handoff::VecHandoff<_>>(#hoff_name);
+                        #df.make_edge::<_, #root::scheduled::handoff::VecHandoff<_>>(#hoff_name);
                 }
             });
 
@@ -147,13 +149,11 @@ impl PartitionedGraph {
 
                     for (idx, &node_id) in nodes_iter.enumerate() {
                         let node = &self.nodes[node_id];
-                        let op = match node {
-                            Node::Operator(op) => op,
-                            Node::Handoff { .. } => unreachable!("Handoffs are not part of subgraphs."),
-                        };
+                        assert!(matches!(node, Node::Operator(_)), "Handoffs are not part of subgraphs.");
+                        let op_inst = &self.operator_instances[node_id];
 
                         let op_span = node.span();
-                        let op_name = &*op.name_string();
+                        let op_name = op_inst.op_constraints.name;
                         let op_constraints = OPERATORS
                             .iter()
                             .find(|op| op_name == op.name)
@@ -162,14 +162,6 @@ impl PartitionedGraph {
                         let ident = self.node_id_as_ident(node_id, false);
 
                         {
-                            let context_args = WriteContextArgs {
-                                root: &root,
-                                context: &Ident::new(CONTEXT, op_span),
-                                subgraph_id,
-                                node_id,
-                                op_span,
-                            };
-
                             // TODO clean this up.
                             // Collect input arguments (predacessors).
                             let mut input_edges: Vec<(&PortIndexValue, GraphNodeId)> =
@@ -183,7 +175,6 @@ impl PartitionedGraph {
                                 .iter()
                                 .map(|&(_port, pred)| self.node_id_as_ident(pred, true))
                                 .collect();
-                            let input_ports: Vec<&PortIndexValue> = input_edges.into_iter().map(|(port, _pred)| port).collect();
 
                             // Collect output arguments (successors).
                             let mut output_edges: Vec<(&PortIndexValue, GraphNodeId)> =
@@ -197,84 +188,25 @@ impl PartitionedGraph {
                                 .iter()
                                 .map(|&(_port, succ)| self.node_id_as_ident(succ, false))
                                 .collect();
-                            let output_ports: Vec<&PortIndexValue> = output_edges.into_iter().map(|(port, _succ)| port).collect();
 
                             let is_pull = idx < pull_to_push_idx;
 
-                            // Generic arguments.
-                            let generic_args = op.type_arguments();
-                            let persistence_args = generic_args.into_iter().flatten().map_while(|generic_arg| match generic_arg {
-                                GenericArgument::Lifetime(lifetime) => {
-                                    match &*lifetime.ident.to_string() {
-                                        "static" => Some(Persistence::Static),
-                                        "tick" => Some(Persistence::Tick),
-                                        _ => {
-                                            diagnostics.push(Diagnostic::spanned(
-                                                generic_arg.span(),
-                                                Level::Error,
-                                                format!("Unknown lifetime generic argument `'{}`, expected `'tick` or `'static`.", lifetime.ident),
-                                            ));
-                                            // TODO(mingwei): should really keep going and not short circuit?
-                                            None
-                                        }
-                                    }
-                                },
-                                _ => None,
-                            }).collect::<Vec<_>>();
-                            let type_args = generic_args.into_iter().flatten().skip(persistence_args.len()).map_while(|generic_arg| match generic_arg {
-                                GenericArgument::Type(typ) => Some(typ),
-                                _ => None,
-                            }).collect::<Vec<_>>();
-
-                            {
-                                // TODO(mingwei): Also catch these errors earlier, in flat_graph.
-                                let mut bad_generics = false;
-                                if !op_constraints.persistence_args.contains(&persistence_args.len()) {
-                                    diagnostics.push(Diagnostic::spanned(
-                                        generic_args.span(),
-                                        Level::Error,
-                                        format!(
-                                            "`{}` should have {} persistence lifetime arguments, actually has {}.",
-                                            op_name,
-                                            op_constraints.persistence_args.human_string(),
-                                            persistence_args.len()
-                                        )
-                                    ));
-                                    bad_generics = true;
-                                }
-                                if !op_constraints.type_args.contains(&type_args.len()) {
-                                    diagnostics.push(Diagnostic::spanned(
-                                        generic_args.span(),
-                                        Level::Error,
-                                        format!(
-                                            "`{}` should have {} generic type arguments, actually has {}.",
-                                            op_name,
-                                            op_constraints.type_args.human_string(),
-                                            type_args.len()
-                                        )
-                                    ));
-                                    bad_generics = true;
-                                }
-                                if bad_generics {
-                                    continue;
-                                }
-                            }
-
-                            let iter_args = WriteIteratorArgs {
+                            let context_args = WriteContextArgs {
+                                root: &root,
+                                context: &Ident::new(CONTEXT, op_span),
+                                hydroflow: &Ident::new(HYDROFLOW, op_span),
+                                subgraph_id,
+                                node_id,
+                                op_span,
                                 ident: &ident,
                                 is_pull,
                                 inputs: &*inputs,
                                 outputs: &*outputs,
-                                input_ports: &*input_ports,
-                                output_ports: &*output_ports,
-                                generic_args,
-                                persistence_args: &*persistence_args,
-                                type_args: &*type_args,
-                                arguments: &op.args,
-                                op_name: op_constraints.name,
+                                op_name,
+                                op_inst,
                             };
 
-                            let write_result = (op_constraints.write_fn)(&context_args, &iter_args, &mut diagnostics);
+                            let write_result = (op_constraints.write_fn)(&context_args, &mut diagnostics);
                             let Ok(OperatorWriteOutput {
                                 write_prologue,
                                 write_iterator,
@@ -353,7 +285,7 @@ impl PartitionedGraph {
                 quote! {
                     #( #op_prologue_code )*
 
-                    df.add_subgraph_stratified(
+                    #df.add_subgraph_stratified(
                         #hoff_name,
                         #stratum,
                         var_expr!( #( #recv_ports ),* ),
@@ -373,12 +305,12 @@ impl PartitionedGraph {
             {
                 use #root::{var_expr, var_args};
 
-                let mut df = #root::scheduled::graph::Hydroflow::new_with_graph(#serde_string);
+                let mut #df = #root::scheduled::graph::Hydroflow::new_with_graph(#serde_string);
 
                 #( #handoffs )*
                 #( #subgraphs )*
 
-                df
+                #df
             }
         };
 

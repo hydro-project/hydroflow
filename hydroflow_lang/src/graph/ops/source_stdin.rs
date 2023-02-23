@@ -1,6 +1,4 @@
-use super::{
-    OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, RANGE_0, RANGE_1,
-};
+use super::{OperatorConstraints, OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1};
 
 use quote::quote_spanned;
 
@@ -36,9 +34,9 @@ pub const SOURCE_STDIN: OperatorConstraints = OperatorConstraints {
                    root,
                    context,
                    op_span,
+                   ident,
                    ..
                },
-               &WriteIteratorArgs { ident, .. },
                _| {
         let stream_ident = wc.make_ident("stream");
         let write_prologue = quote_spanned! {op_span=>
