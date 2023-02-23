@@ -1,12 +1,11 @@
 use std::collections::HashMap;
 
 use crate::diagnostic::{Diagnostic, Level};
-use crate::graph::PortIndexValue;
+use crate::graph::{OperatorInstance, PortIndexValue};
 use crate::pretty_span::PrettySpan;
 
 use super::{
-    OperatorConstraints, OperatorWriteOutput, PortListSpec, WriteContextArgs, WriteIteratorArgs,
-    RANGE_0, RANGE_1,
+    OperatorConstraints, OperatorWriteOutput, PortListSpec, WriteContextArgs, RANGE_0, RANGE_1,
 };
 
 use proc_macro2::{Ident, TokenTree};
@@ -57,14 +56,19 @@ pub const DEMUX: OperatorConstraints = OperatorConstraints {
     ports_inn: None,
     ports_out: Some(|| PortListSpec::Variadic),
     input_delaytype_fn: |_| None,
-    write_fn: |&WriteContextArgs { root, op_span, .. },
-               &WriteIteratorArgs {
+    write_fn: |&WriteContextArgs {
+                   root,
+                   op_span,
                    ident,
                    outputs,
-                   output_ports,
-                   arguments,
-                   op_name,
                    is_pull,
+                   op_name,
+                   op_inst:
+                       OperatorInstance {
+                           output_ports,
+                           arguments,
+                           ..
+                       },
                    ..
                },
                diagnostics| {
@@ -98,7 +102,7 @@ pub const DEMUX: OperatorConstraints = OperatorConstraints {
         // Port idents supplied via port connections in the surface syntax.
         let port_idents: Vec<_> = output_ports
             .iter()
-            .filter_map(|&output_port| {
+            .filter_map(|output_port| {
                 let PortIndexValue::Path(port_expr) = output_port else {
                     diagnostics.push(Diagnostic::spanned(
                         output_port.span(),

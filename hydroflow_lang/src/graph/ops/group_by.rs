@@ -1,6 +1,7 @@
+use crate::graph::{OpInstGenerics, OperatorInstance};
+
 use super::{
-    DelayType, OperatorConstraints, OperatorWriteOutput, Persistence, WriteContextArgs,
-    WriteIteratorArgs, RANGE_1,
+    DelayType, OperatorConstraints, OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_1,
 };
 
 use quote::{quote_spanned, ToTokens};
@@ -70,21 +71,29 @@ pub const GROUP_BY: OperatorConstraints = OperatorConstraints {
     ports_out: None,
     input_delaytype_fn: |_| Some(DelayType::Stratum),
     write_fn: |wc @ &WriteContextArgs {
-                   context, op_span, ..
-               },
-               &WriteIteratorArgs {
+                   context,
+                   hydroflow,
+                   op_span,
                    ident,
                    inputs,
-                   persistence_args,
-                   type_args,
-                   arguments,
                    is_pull,
+                   op_inst:
+                       OperatorInstance {
+                           arguments,
+                           generics:
+                               OpInstGenerics {
+                                   persistence_args,
+                                   type_args,
+                                   ..
+                               },
+                           ..
+                       },
                    ..
                },
                _| {
         assert!(is_pull);
 
-        let persistence = match *persistence_args {
+        let persistence = match persistence_args[..] {
             [] => Persistence::Static,
             [a] => a,
             _ => unreachable!(),
@@ -124,7 +133,7 @@ pub const GROUP_BY: OperatorConstraints = OperatorConstraints {
             ),
             Persistence::Static => (
                 quote_spanned! {op_span=>
-                    let #groupbydata_ident = df.add_state(::std::cell::RefCell::new(::std::collections::HashMap::<#( #generic_type_args ),*>::new()));
+                    let #groupbydata_ident = #hydroflow.add_state(::std::cell::RefCell::new(::std::collections::HashMap::<#( #generic_type_args ),*>::new()));
                 },
                 quote_spanned! {op_span=>
                     let #ident = {

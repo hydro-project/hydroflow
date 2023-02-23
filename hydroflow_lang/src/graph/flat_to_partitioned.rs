@@ -10,11 +10,11 @@ use crate::union_find::UnionFind;
 
 use super::di_mul_graph::DiMulGraph;
 use super::flat_graph::FlatGraph;
-use super::ops::{find_node_op_constraints, DelayType};
+use super::ops::{find_node_op_constraints, find_op_op_constraints, DelayType};
 use super::partitioned_graph::PartitionedGraph;
 use super::{
-    graph_algorithms, node_color, Color, GraphEdgeId, GraphNodeId, GraphSubgraphId, Node,
-    PortIndexValue,
+    get_operator_generics, graph_algorithms, node_color, Color, GraphEdgeId, GraphNodeId,
+    GraphSubgraphId, Node, OperatorInstance, PortIndexValue,
 };
 
 fn find_barrier_crossers(
@@ -140,6 +140,7 @@ fn make_subgraph_collect(
 /// the DelayType data.
 fn make_subgraphs(
     nodes: &mut SlotMap<GraphNodeId, Node>,
+    operator_instances: &mut SecondaryMap<GraphNodeId, OperatorInstance>,
     ports: &mut SecondaryMap<GraphEdgeId, (PortIndexValue, PortIndexValue)>,
     graph: &mut DiMulGraph<GraphNodeId, GraphEdgeId>,
     barrier_crossers: &mut SecondaryMap<GraphEdgeId, DelayType>,
@@ -173,7 +174,8 @@ fn make_subgraphs(
             src_span: src_node.span(),
             dst_span: dst_node.span(),
         };
-        let (_node_id, out_edge_id) = insert_intermediate_node(nodes, ports, graph, hoff, edge_id);
+        let (_node_id, out_edge_id) =
+            insert_intermediate_node(nodes, operator_instances, ports, graph, hoff, edge_id);
 
         // Update barrier_crossers for inserted node.
         if let Some(delay_type) = barrier_crossers.remove(edge_id) {
@@ -249,6 +251,7 @@ fn can_connect_colorize(
 
 fn find_subgraph_strata(
     nodes: &mut SlotMap<GraphNodeId, Node>,
+    operator_instances: &mut SecondaryMap<GraphNodeId, OperatorInstance>,
     ports: &mut SecondaryMap<GraphEdgeId, (PortIndexValue, PortIndexValue)>,
     graph: &mut DiMulGraph<GraphNodeId, GraphEdgeId>,
     node_subgraph: &mut SecondaryMap<GraphNodeId, GraphSubgraphId>,
@@ -361,6 +364,7 @@ fn find_subgraph_strata(
                     // Then add intermediate identity:
                     let (new_node_id, new_edge_id) = insert_intermediate_node(
                         nodes,
+                        operator_instances,
                         ports,
                         graph,
                         // TODO(mingwei): Proper span w/ `parse_quote_spanned!`?
@@ -372,8 +376,14 @@ fn find_subgraph_strata(
                         src_span: Span::call_site(), // TODO(mingwei): Proper spanning?
                         dst_span: Span::call_site(),
                     };
-                    let (_hoff_node_id, _hoff_edge_id) =
-                        insert_intermediate_node(nodes, ports, graph, hoff, new_edge_id);
+                    let (_hoff_node_id, _hoff_edge_id) = insert_intermediate_node(
+                        nodes,
+                        operator_instances,
+                        ports,
+                        graph,
+                        hoff,
+                        new_edge_id,
+                    );
                     // After: A (src) -> H -> ID -> H' -> B (dst)
 
                     // Set stratum numbers.
@@ -399,6 +409,7 @@ fn find_subgraph_strata(
 /// Put `is_external_input: true` operators in separate stratum 0 subgraphs if they are not in stratum 0.
 fn separate_external_inputs(
     nodes: &mut SlotMap<GraphNodeId, Node>,
+    operator_instances: &mut SecondaryMap<GraphNodeId, OperatorInstance>,
     ports: &mut SecondaryMap<GraphEdgeId, (PortIndexValue, PortIndexValue)>,
     graph: &mut DiMulGraph<GraphNodeId, GraphEdgeId>,
     node_subgraph: &mut SecondaryMap<GraphNodeId, GraphSubgraphId>,
@@ -442,7 +453,7 @@ fn separate_external_inputs(
                 src_span: span,
                 dst_span: span,
             };
-            insert_intermediate_node(nodes, ports, graph, hoff, edge_id);
+            insert_intermediate_node(nodes, operator_instances, ports, graph, hoff, edge_id);
         }
     }
 }
@@ -502,6 +513,7 @@ impl TryFrom<FlatGraph> for PartitionedGraph {
     fn try_from(flat_graph: FlatGraph) -> Result<Self, Self::Error> {
         let FlatGraph {
             mut nodes,
+            mut operator_instances,
             mut graph,
             mut ports,
             node_varnames,
@@ -525,6 +537,7 @@ impl TryFrom<FlatGraph> for PartitionedGraph {
         // Partition into subgraphs.
         let (mut node_subgraph, mut subgraph_nodes) = make_subgraphs(
             &mut nodes,
+            &mut operator_instances,
             &mut ports,
             &mut graph,
             &mut barrier_crossers,
@@ -534,6 +547,7 @@ impl TryFrom<FlatGraph> for PartitionedGraph {
         // Find strata for subgraphs.
         let mut subgraph_stratum = find_subgraph_strata(
             &mut nodes,
+            &mut operator_instances,
             &mut ports,
             &mut graph,
             &mut node_subgraph,
@@ -544,6 +558,7 @@ impl TryFrom<FlatGraph> for PartitionedGraph {
         // Ensure all external inputs are in stratum 0.
         separate_external_inputs(
             &mut nodes,
+            &mut operator_instances,
             &mut ports,
             &mut graph,
             &mut node_subgraph,
@@ -588,6 +603,7 @@ impl TryFrom<FlatGraph> for PartitionedGraph {
         }
         Ok(PartitionedGraph {
             nodes,
+            operator_instances,
             graph,
             ports,
             node_subgraph,
@@ -612,13 +628,36 @@ impl TryFrom<FlatGraph> for PartitionedGraph {
 /// Returns the ID of X & ID of edge OUT of X.
 fn insert_intermediate_node(
     nodes: &mut SlotMap<GraphNodeId, Node>,
+    operator_instances: &mut SecondaryMap<GraphNodeId, OperatorInstance>,
     ports: &mut SecondaryMap<GraphEdgeId, (PortIndexValue, PortIndexValue)>,
     graph: &mut DiMulGraph<GraphNodeId, GraphEdgeId>,
     node: Node,
     edge_id: GraphEdgeId,
 ) -> (GraphNodeId, GraphEdgeId) {
     let span = Some(node.span());
-    let node_id = nodes.insert(node);
+    let node_id = nodes.insert_with_key(|node_id| {
+        'oc: {
+            let Node::Operator(operator) = &node else { break 'oc; };
+            let Some(op_constraints) = find_op_op_constraints(operator) else { break 'oc; };
+            let (input_port, output_port) = ports.get(edge_id).cloned().unwrap();
+            let generics = get_operator_generics(
+                &mut Vec::new(), /* TODO(mingwei) diagnostics */
+                operator,
+            );
+
+            operator_instances.insert(
+                node_id,
+                OperatorInstance {
+                    op_constraints,
+                    input_ports: vec![input_port],
+                    output_ports: vec![output_port],
+                    generics,
+                    arguments: operator.args.clone(),
+                },
+            );
+        }
+        node
+    });
     let (e0, e1) = graph.insert_intermediate_vertex(node_id, edge_id).unwrap();
 
     let (src_idx, dst_idx) = ports.remove(edge_id).unwrap();

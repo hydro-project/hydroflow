@@ -1,6 +1,6 @@
-use super::{
-    OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, RANGE_0, RANGE_1,
-};
+use crate::graph::OperatorInstance;
+
+use super::{OperatorConstraints, OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1};
 
 use quote::quote_spanned;
 
@@ -19,10 +19,11 @@ pub const REPEAT_ITER: OperatorConstraints = OperatorConstraints {
     ports_out: None,
     input_delaytype_fn: |_| None,
     write_fn: |&WriteContextArgs {
-                   context, op_span, ..
-               },
-               &WriteIteratorArgs {
-                   ident, arguments, ..
+                   context,
+                   op_span,
+                   ident,
+                   op_inst: OperatorInstance { arguments, .. },
+                   ..
                },
                _| {
         let write_iterator = quote_spanned! {op_span=>

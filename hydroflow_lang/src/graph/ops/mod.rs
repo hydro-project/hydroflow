@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
 use std::ops::{Bound, RangeBounds};
 
 use once_cell::sync::OnceCell;
@@ -7,12 +7,12 @@ use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote_spanned;
 use slotmap::Key;
 use syn::punctuated::Punctuated;
-use syn::{Expr, GenericArgument, Token, Type};
+use syn::Token;
 
 use crate::diagnostic::Diagnostic;
 use crate::parse::{Operator, PortIndex};
 
-use super::{GraphNodeId, GraphSubgraphId, Node, PortIndexValue};
+use super::{GraphNodeId, GraphSubgraphId, Node, OperatorInstance, PortIndexValue};
 
 mod anti_join;
 mod cross_join;
@@ -94,12 +94,28 @@ pub struct OperatorConstraints {
     /// Emit code in multiple locations. See [`OperatorWriteOutput`].
     pub write_fn: WriteFn,
 }
+impl Debug for OperatorConstraints {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("OperatorConstraints")
+            .field("name", &self.name)
+            .field("hard_range_inn", &self.hard_range_inn)
+            .field("soft_range_inn", &self.soft_range_inn)
+            .field("hard_range_out", &self.hard_range_out)
+            .field("soft_range_out", &self.soft_range_out)
+            .field("num_args", &self.num_args)
+            .field("persistence_args", &self.persistence_args)
+            .field("type_args", &self.type_args)
+            .field("is_external_input", &self.is_external_input)
+            .field("ports_inn", &self.ports_inn)
+            .field("ports_out", &self.ports_out)
+            // .field("input_delaytype_fn", &self.input_delaytype_fn)
+            // .field("write_fn", &self.write_fn)
+            .finish()
+    }
+}
 
-pub type WriteFn = fn(
-    &WriteContextArgs<'_>,
-    &WriteIteratorArgs<'_>,
-    &mut Vec<Diagnostic>,
-) -> Result<OperatorWriteOutput, ()>;
+pub type WriteFn =
+    fn(&WriteContextArgs<'_>, &mut Vec<Diagnostic>) -> Result<OperatorWriteOutput, ()>;
 
 #[derive(Default)]
 #[non_exhaustive]
@@ -123,17 +139,15 @@ pub const RANGE_0: &'static dyn RangeTrait<usize> = &(0..=0);
 pub const RANGE_1: &'static dyn RangeTrait<usize> = &(1..=1);
 
 pub fn identity_write_iterator_fn(
-    write_context_args: &WriteContextArgs,
-    write_iterator_args: &WriteIteratorArgs,
-) -> TokenStream {
-    let &WriteContextArgs { op_span, .. } = write_context_args;
-    let &WriteIteratorArgs {
+    &WriteContextArgs {
+        op_span,
         ident,
         inputs,
         outputs,
         is_pull,
         ..
-    } = write_iterator_args;
+    }: &WriteContextArgs,
+) -> TokenStream {
     if is_pull {
         let input = &inputs[0];
         quote_spanned! {op_span=>
@@ -147,8 +161,8 @@ pub fn identity_write_iterator_fn(
     }
 }
 
-pub const IDENTITY_WRITE_FN: WriteFn = |write_context_args, write_iterator_args, _| {
-    let write_iterator = identity_write_iterator_fn(write_context_args, write_iterator_args);
+pub const IDENTITY_WRITE_FN: WriteFn = |write_context_args, _| {
+    let write_iterator = identity_write_iterator_fn(write_context_args);
     Ok(OperatorWriteOutput {
         write_iterator,
         ..Default::default()
@@ -212,12 +226,30 @@ pub struct WriteContextArgs<'a> {
     /// `context` ident, the name of the provided
     /// [`hydroflow::scheduled::Context`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/context/struct.Context.html).
     pub context: &'a Ident,
+    /// `df` ident, the name of the
+    /// [`hydroflow::scheduled::graph::Hydroflow`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html)
+    /// instance.
+    pub hydroflow: &'a Ident,
     /// Subgraph ID in which this operator is contained.
     pub subgraph_id: GraphSubgraphId,
     /// Node ID identifying this operator in the flat or partitioned graph meta-datastructure.
     pub node_id: GraphNodeId,
     /// The source span of this operator.
     pub op_span: Span,
+
+    /// Ident the iterator or pullerator should be assigned to.
+    pub ident: &'a Ident,
+    /// If a pull iterator (true) or pusherator (false) should be used.
+    pub is_pull: bool,
+    /// Input operator idents (used for pull).
+    pub inputs: &'a [Ident],
+    /// Output operator idents (used for push).
+    pub outputs: &'a [Ident],
+
+    /// Operator name.
+    pub op_name: &'static str,
+    /// Operator instance arguments object.
+    pub op_inst: &'a OperatorInstance,
 }
 impl WriteContextArgs<'_> {
     pub fn make_ident(&self, suffix: impl AsRef<str>) -> Ident {
@@ -233,35 +265,7 @@ impl WriteContextArgs<'_> {
     }
 }
 
-pub struct WriteIteratorArgs<'a> {
-    /// Ident the iterator or pullerator should be assigned to.
-    pub ident: &'a Ident,
-    /// If a pull iterator (true) or pusherator (false) should be used.
-    pub is_pull: bool,
-    /// Input operator idents (used for pull).
-    pub inputs: &'a [Ident],
-    /// Output operator idents (used for push).
-    pub outputs: &'a [Ident],
-
-    /// Port values used as this operator's input.
-    pub input_ports: &'a [&'a PortIndexValue],
-    /// Port values used as this operator's output.
-    pub output_ports: &'a [&'a PortIndexValue],
-
-    /// Operator generic (type or lifetime) arguments.
-    pub generic_args: Option<&'a Punctuated<GenericArgument, Token![,]>>,
-    /// Lifetime persistence arguments. Corresponds to a prefix of [`Self::generic_args`].
-    pub persistence_args: &'a [Persistence],
-    /// Type persistence arguments. Corersponds to a (suffix) of [`Self::generic_args`].
-    pub type_args: &'a [&'a Type],
-    /// Arguments provided by the user into the operator as arguments.
-    /// I.e. the `a, b, c` in `-> my_op(a, b, c) -> `.
-    pub arguments: &'a Punctuated<Expr, Token![,]>,
-    /// Name of the operator (will match [`OperatorConstraints::name`]).
-    pub op_name: &'static str,
-}
-
-pub trait RangeTrait<T>: Send + Sync
+pub trait RangeTrait<T>: Send + Sync + std::fmt::Debug
 where
     T: ?Sized,
 {
@@ -303,7 +307,7 @@ where
 
 impl<R, T> RangeTrait<T> for R
 where
-    R: RangeBounds<T> + Send + Sync,
+    R: RangeBounds<T> + Send + Sync + std::fmt::Debug,
 {
     fn start_bound(&self) -> Bound<&T> {
         self.start_bound()

@@ -1,8 +1,7 @@
 use crate::graph::PortIndexValue;
 
 use super::{
-    DelayType, OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs,
-    RANGE_0, RANGE_1,
+    DelayType, OperatorConstraints, OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
 };
 
 use quote::{quote_spanned, ToTokens};
@@ -42,14 +41,16 @@ pub const DIFFERENCE: OperatorConstraints = OperatorConstraints {
     write_fn: |wc @ &WriteContextArgs {
                    root,
                    context,
+                   hydroflow,
                    op_span,
+                   ident,
+                   inputs,
                    ..
                },
-               &WriteIteratorArgs { ident, inputs, .. },
                _| {
         let handle_ident = wc.make_ident("diffdata_handle");
         let write_prologue = quote_spanned! {op_span=>
-            let #handle_ident = df.add_state(std::cell::RefCell::new(
+            let #handle_ident = #hydroflow.add_state(std::cell::RefCell::new(
                 #root::lang::monotonic_map::MonotonicMap::<_, std::collections::HashSet<_>>::default(),
             ));
         };

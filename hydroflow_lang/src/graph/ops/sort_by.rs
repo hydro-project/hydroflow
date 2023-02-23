@@ -1,6 +1,7 @@
+use crate::graph::OperatorInstance;
+
 use super::{
-    DelayType, OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs,
-    RANGE_0, RANGE_1,
+    DelayType, OperatorConstraints, OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
 };
 
 use quote::quote_spanned;
@@ -30,12 +31,13 @@ pub const SORT_BY: OperatorConstraints = OperatorConstraints {
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| Some(DelayType::Stratum),
-    write_fn: |&WriteContextArgs { root, op_span, .. },
-               &WriteIteratorArgs {
+    write_fn: |&WriteContextArgs {
+                   root,
+                   op_span,
                    ident,
                    inputs,
-                   arguments,
                    is_pull,
+                   op_inst: OperatorInstance { arguments, .. },
                    ..
                },
                _| {

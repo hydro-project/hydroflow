@@ -1,4 +1,4 @@
-use super::{OperatorConstraints, WriteContextArgs, WriteIteratorArgs, RANGE_0, RANGE_1};
+use super::{OperatorConstraints, WriteContextArgs, RANGE_0, RANGE_1};
 
 use quote::quote_spanned;
 use syn::parse_quote;
@@ -47,10 +47,14 @@ pub const CROSS_JOIN: OperatorConstraints = OperatorConstraints {
     ports_inn: Some(|| super::PortListSpec::Fixed(parse_quote! { 0, 1 })),
     ports_out: None,
     input_delaytype_fn: |_| None,
-    write_fn: |wc @ &WriteContextArgs { op_span, .. },
-               wi @ &WriteIteratorArgs { ident, inputs, .. },
+    write_fn: |wc @ &WriteContextArgs {
+                   op_span,
+                   ident,
+                   inputs,
+                   ..
+               },
                diagnostics| {
-        let mut output = (super::join::JOIN.write_fn)(wc, wi, diagnostics)?;
+        let mut output = (super::join::JOIN.write_fn)(wc, diagnostics)?;
 
         let lhs = &inputs[0];
         let rhs = &inputs[1];
