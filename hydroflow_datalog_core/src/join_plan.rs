@@ -5,14 +5,14 @@ use proc_macro2::Span;
 use syn::{self, parse_quote};
 
 use crate::{
-    grammar::datalog::{BoolOp, PredicateExpr, RelationExpr},
-    util::Counter,
+    grammar::datalog::{BoolOp, InputRelationExpr, PredicateExpr},
+    util::{repeat_tuple, Counter},
 };
 
 /// Captures the tree of joins used to compute contributions from a single rule.
 pub enum JoinPlan<'a> {
     /// A single relation without any joins, leaves of the tree.
-    Source(&'a RelationExpr),
+    Source(&'a InputRelationExpr),
     /// A join between two subtrees.
     Join(Box<JoinPlan<'a>>, Box<JoinPlan<'a>>),
     AntiJoin(Box<JoinPlan<'a>>, Box<JoinPlan<'a>>),
@@ -235,10 +235,8 @@ pub fn expand_join_plan(
                 .filter(|i| left_expanded.variable_mapping.contains_key(i))
                 .collect::<Vec<_>>();
 
-            let key_type = identifiers_to_join
-                .iter()
-                .map(|_| parse_quote!(_))
-                .collect::<Vec<syn::Type>>();
+            let key_type =
+                repeat_tuple::<syn::Type, syn::Type>(|| parse_quote!(_), identifiers_to_join.len());
 
             let left_type = &left_expanded.tuple_type;
             let right_type = &right_expanded.tuple_type;
@@ -252,8 +250,7 @@ pub fn expand_join_plan(
             );
 
             let intermediate = if is_anti {
-                let flatten_closure: syn::Expr =
-                    parse_quote!(|kv: ((#(#key_type, )*), #left_type)| kv.1);
+                let flatten_closure: syn::Expr = parse_quote!(|kv: (#key_type, #left_type)| kv.1);
 
                 flat_graph_builder
                     .add_statement(parse_quote!(#join_node = anti_join() -> map(#flatten_closure)));
@@ -293,22 +290,22 @@ pub fn expand_join_plan(
                     }
                 }
 
-                let flatten_closure: syn::Expr = parse_quote!(|kv: ((#(#key_type, )*), (#left_type, #right_type))| (#(#flattened_tuple_elems, )*));
+                let flatten_closure: syn::Expr = parse_quote!(|kv: (#key_type, (#left_type, #right_type))| (#(#flattened_tuple_elems, )*));
 
                 flat_graph_builder.add_statement(
                     parse_quote!(#join_node = join::<'tick>() -> map(#flatten_closure)),
                 );
 
-                let output_types: Vec<syn::Type> = flattened_tuple_elems
-                    .iter()
-                    .map(|_| parse_quote!(_))
-                    .collect::<Vec<_>>();
+                let output_type = repeat_tuple::<syn::Type, syn::Type>(
+                    || parse_quote!(_),
+                    flattened_tuple_elems.len(),
+                );
 
                 IntermediateJoinNode {
                     name: join_node.clone(),
                     tee_idx: None,
                     variable_mapping: flattened_mapping,
-                    tuple_type: parse_quote!((#(#output_types, )*)),
+                    tuple_type: output_type,
                 }
             };
 
