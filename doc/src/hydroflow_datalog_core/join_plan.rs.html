@@ -375,9 +375,6 @@
 <a href="#375" id="375">375</a>
 <a href="#376" id="376">376</a>
 <a href="#377" id="377">377</a>
-<a href="#378" id="378">378</a>
-<a href="#379" id="379">379</a>
-<a href="#380" id="380">380</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::collections::{btree_map::Entry, BTreeMap, HashMap};
 
 <span class="kw">use </span>hydroflow_lang::{graph::flat_graph::FlatGraphBuilder, parse::Pipeline};
@@ -385,14 +382,14 @@
 <span class="kw">use </span>syn::{<span class="self">self</span>, parse_quote};
 
 <span class="kw">use crate</span>::{
-    grammar::datalog::{BoolOp, PredicateExpr, RelationExpr},
-    util::Counter,
+    grammar::datalog::{BoolOp, InputRelationExpr, PredicateExpr},
+    util::{repeat_tuple, Counter},
 };
 
 <span class="doccomment">/// Captures the tree of joins used to compute contributions from a single rule.
 </span><span class="kw">pub enum </span>JoinPlan&lt;<span class="lifetime">&#39;a</span>&gt; {
     <span class="doccomment">/// A single relation without any joins, leaves of the tree.
-    </span>Source(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>RelationExpr),
+    </span>Source(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>InputRelationExpr),
     <span class="doccomment">/// A join between two subtrees.
     </span>Join(Box&lt;JoinPlan&lt;<span class="lifetime">&#39;a</span>&gt;&gt;, Box&lt;JoinPlan&lt;<span class="lifetime">&#39;a</span>&gt;&gt;),
     AntiJoin(Box&lt;JoinPlan&lt;<span class="lifetime">&#39;a</span>&gt;&gt;, Box&lt;JoinPlan&lt;<span class="lifetime">&#39;a</span>&gt;&gt;),
@@ -615,10 +612,8 @@
                 .filter(|i| left_expanded.variable_mapping.contains_key(i))
                 .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
 
-            <span class="kw">let </span>key_type = identifiers_to_join
-                .iter()
-                .map(|<span class="kw">_</span>| <span class="macro">parse_quote!</span>(<span class="kw">_</span>))
-                .collect::&lt;Vec&lt;syn::Type&gt;&gt;();
+            <span class="kw">let </span>key_type =
+                repeat_tuple::&lt;syn::Type, syn::Type&gt;(|| <span class="macro">parse_quote!</span>(<span class="kw">_</span>), identifiers_to_join.len());
 
             <span class="kw">let </span>left_type = <span class="kw-2">&amp;</span>left_expanded.tuple_type;
             <span class="kw">let </span>right_type = <span class="kw-2">&amp;</span>right_expanded.tuple_type;
@@ -632,8 +627,7 @@
             );
 
             <span class="kw">let </span>intermediate = <span class="kw">if </span>is_anti {
-                <span class="kw">let </span>flatten_closure: syn::Expr =
-                    <span class="macro">parse_quote!</span>(|kv: ((#(#key_type, )<span class="kw-2">*</span>), #left_type)| kv.<span class="number">1</span>);
+                <span class="kw">let </span>flatten_closure: syn::Expr = <span class="macro">parse_quote!</span>(|kv: (#key_type, #left_type)| kv.<span class="number">1</span>);
 
                 flat_graph_builder
                     .add_statement(<span class="macro">parse_quote!</span>(#join_node = anti_join() -&gt; map(#flatten_closure)));
@@ -673,22 +667,22 @@
                     }
                 }
 
-                <span class="kw">let </span>flatten_closure: syn::Expr = <span class="macro">parse_quote!</span>(|kv: ((#(#key_type, )<span class="kw-2">*</span>), (#left_type, #right_type))| (#(#flattened_tuple_elems, )<span class="kw-2">*</span>));
+                <span class="kw">let </span>flatten_closure: syn::Expr = <span class="macro">parse_quote!</span>(|kv: (#key_type, (#left_type, #right_type))| (#(#flattened_tuple_elems, )<span class="kw-2">*</span>));
 
                 flat_graph_builder.add_statement(
                     <span class="macro">parse_quote!</span>(#join_node = join::&lt;<span class="lifetime">&#39;tick</span>&gt;() -&gt; map(#flatten_closure)),
                 );
 
-                <span class="kw">let </span>output_types: Vec&lt;syn::Type&gt; = flattened_tuple_elems
-                    .iter()
-                    .map(|<span class="kw">_</span>| <span class="macro">parse_quote!</span>(<span class="kw">_</span>))
-                    .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+                <span class="kw">let </span>output_type = repeat_tuple::&lt;syn::Type, syn::Type&gt;(
+                    || <span class="macro">parse_quote!</span>(<span class="kw">_</span>),
+                    flattened_tuple_elems.len(),
+                );
 
                 IntermediateJoinNode {
                     name: join_node.clone(),
                     tee_idx: <span class="prelude-val">None</span>,
                     variable_mapping: flattened_mapping,
-                    tuple_type: <span class="macro">parse_quote!</span>((#(#output_types, )<span class="kw-2">*</span>)),
+                    tuple_type: output_type,
                 }
             };
 
