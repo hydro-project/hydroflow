@@ -1,6 +1,5 @@
 use super::{
-    OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, RANGE_0,
-    RANGE_1, RANGE_ANY,
+    OperatorConstraints, OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1, RANGE_ANY,
 };
 
 use quote::{quote_spanned, ToTokens};
@@ -33,8 +32,8 @@ pub const MERGE: OperatorConstraints = OperatorConstraints {
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| None,
-    write_fn: |&WriteContextArgs { op_span, .. },
-               &WriteIteratorArgs {
+    write_fn: |&WriteContextArgs {
+                   op_span,
                    ident,
                    inputs,
                    outputs,

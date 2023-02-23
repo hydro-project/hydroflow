@@ -1,6 +1,6 @@
-use super::{
-    OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, RANGE_0, RANGE_1,
-};
+use crate::graph::OperatorInstance;
+
+use super::{OperatorConstraints, OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1};
 
 use quote::quote_spanned;
 
@@ -30,9 +30,11 @@ pub const SOURCE_ITER: OperatorConstraints = OperatorConstraints {
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| None,
-    write_fn: |wc @ &WriteContextArgs { op_span, .. },
-               &WriteIteratorArgs {
-                   ident, arguments, ..
+    write_fn: |wc @ &WriteContextArgs {
+                   op_span,
+                   ident,
+                   op_inst: OperatorInstance { arguments, .. },
+                   ..
                },
                _| {
         let iter_ident = wc.make_ident("iter");

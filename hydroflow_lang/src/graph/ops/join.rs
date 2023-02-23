@@ -1,6 +1,7 @@
+use crate::graph::{OpInstGenerics, OperatorInstance};
+
 use super::{
-    OperatorConstraints, OperatorWriteOutput, Persistence, WriteContextArgs, WriteIteratorArgs,
-    RANGE_0, RANGE_1,
+    OperatorConstraints, OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_0, RANGE_1,
 };
 
 use quote::quote_spanned;
@@ -91,17 +92,22 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
     write_fn: |wc @ &WriteContextArgs {
                    root,
                    context,
+                   hydroflow,
                    op_span,
-                   ..
-               },
-               &WriteIteratorArgs {
                    ident,
                    inputs,
-                   persistence_args,
+                   op_inst:
+                       OperatorInstance {
+                           generics:
+                               OpInstGenerics {
+                                   persistence_args, ..
+                               },
+                           ..
+                       },
                    ..
                },
                _| {
-        let persistences = match *persistence_args {
+        let persistences = match persistence_args[..] {
             [] => [Persistence::Static, Persistence::Static],
             [a] => [a, a],
             [a, b] => [a, b],
@@ -141,10 +147,10 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
             items;
 
         let write_prologue = quote_spanned! {op_span=>
-            let #lhs_joindata_ident = df.add_state(std::cell::RefCell::new(
+            let #lhs_joindata_ident = #hydroflow.add_state(std::cell::RefCell::new(
                 #lhs_init
             ));
-            let #rhs_joindata_ident = df.add_state(std::cell::RefCell::new(
+            let #rhs_joindata_ident = #hydroflow.add_state(std::cell::RefCell::new(
                 #rhs_init
             ));
         };

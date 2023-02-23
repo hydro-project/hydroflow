@@ -1,6 +1,8 @@
+use crate::graph::{OpInstGenerics, OperatorInstance};
+
 use super::{
-    DelayType, OperatorConstraints, OperatorWriteOutput, Persistence, WriteContextArgs,
-    WriteIteratorArgs, RANGE_0, RANGE_1,
+    DelayType, OperatorConstraints, OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_0,
+    RANGE_1,
 };
 
 use quote::quote_spanned;
@@ -57,19 +59,26 @@ pub const UNIQUE: OperatorConstraints = OperatorConstraints {
     ports_out: None,
     input_delaytype_fn: |_| Some(DelayType::Stratum),
     write_fn: |wc @ &WriteContextArgs {
-                   op_span, context, ..
-               },
-               &WriteIteratorArgs {
+                   op_span,
+                   context,
+                   hydroflow,
                    ident,
                    inputs,
                    is_pull,
-                   persistence_args,
+                   op_inst:
+                       OperatorInstance {
+                           generics:
+                               OpInstGenerics {
+                                   persistence_args, ..
+                               },
+                           ..
+                       },
                    ..
                },
                _| {
         assert!(is_pull);
 
-        let persistence = match *persistence_args {
+        let persistence = match persistence_args[..] {
             [] => Persistence::Static,
             [a] => a,
             _ => unreachable!(),
@@ -93,7 +102,7 @@ pub const UNIQUE: OperatorConstraints = OperatorConstraints {
                 let uniquedata_ident = wc.make_ident("uniquedata");
 
                 let write_prologue = quote_spanned! {op_span=>
-                    let #uniquedata_ident = df.add_state(::std::cell::RefCell::new(::std::collections::HashSet::new()));
+                    let #uniquedata_ident = #hydroflow.add_state(::std::cell::RefCell::new(::std::collections::HashSet::new()));
                 };
                 let write_iterator = quote_spanned! {op_span=>
                     // TODO(mingwei): Better data structure for this?

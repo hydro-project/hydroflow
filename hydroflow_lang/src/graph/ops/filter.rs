@@ -1,6 +1,6 @@
-use super::{
-    OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, RANGE_0, RANGE_1,
-};
+use crate::graph::OperatorInstance;
+
+use super::{OperatorConstraints, OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1};
 
 use quote::quote_spanned;
 
@@ -31,13 +31,14 @@ pub const FILTER: OperatorConstraints = OperatorConstraints {
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| None,
-    write_fn: |&WriteContextArgs { root, op_span, .. },
-               &WriteIteratorArgs {
+    write_fn: |&WriteContextArgs {
+                   root,
+                   op_span,
                    ident,
                    inputs,
                    outputs,
-                   arguments,
                    is_pull,
+                   op_inst: OperatorInstance { arguments, .. },
                    ..
                },
                _| {

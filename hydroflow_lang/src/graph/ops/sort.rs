@@ -1,6 +1,8 @@
+use crate::graph::{OpInstGenerics, OperatorInstance};
+
 use super::{
-    DelayType, OperatorConstraints, OperatorWriteOutput, Persistence, WriteContextArgs,
-    WriteIteratorArgs, RANGE_0, RANGE_1,
+    DelayType, OperatorConstraints, OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_0,
+    RANGE_1,
 };
 
 use quote::quote_spanned;
@@ -54,19 +56,26 @@ pub const SORT: OperatorConstraints = OperatorConstraints {
     ports_out: None,
     input_delaytype_fn: |_| Some(DelayType::Stratum),
     write_fn: |wc @ &WriteContextArgs {
-                   context, op_span, ..
-               },
-               &WriteIteratorArgs {
+                   context,
+                   hydroflow,
+                   op_span,
                    ident,
                    inputs,
                    is_pull,
-                   persistence_args,
+                   op_inst:
+                       OperatorInstance {
+                           generics:
+                               OpInstGenerics {
+                                   persistence_args, ..
+                               },
+                           ..
+                       },
                    ..
                },
                _| {
         assert!(is_pull);
 
-        let persistence = match *persistence_args {
+        let persistence = match persistence_args[..] {
             [] => Persistence::Tick,
             [a] => a,
             _ => unreachable!(),
@@ -92,7 +101,7 @@ pub const SORT: OperatorConstraints = OperatorConstraints {
                 let sortdata_ident = wc.make_ident("sortdata");
 
                 let write_prologue = quote_spanned! {op_span=>
-                    let #sortdata_ident = df.add_state(::std::cell::RefCell::new(::std::vec::Vec::new()));
+                    let #sortdata_ident = #hydroflow.add_state(::std::cell::RefCell::new(::std::vec::Vec::new()));
                 };
                 let write_iterator = quote_spanned! {op_span=>
                     // TODO(mingwei): Better data structure for this?

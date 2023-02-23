@@ -1,6 +1,6 @@
-use super::{
-    OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, RANGE_0, RANGE_1,
-};
+use crate::graph::OperatorInstance;
+
+use super::{OperatorConstraints, OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1};
 
 use quote::quote_spanned;
 
@@ -94,9 +94,13 @@ pub const DEST_SINK: OperatorConstraints = OperatorConstraints {
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| None,
-    write_fn: |wc @ &WriteContextArgs { root, op_span, .. },
-               &WriteIteratorArgs {
-                   ident, arguments, ..
+    write_fn: |wc @ &WriteContextArgs {
+                   root,
+                   hydroflow,
+                   op_span,
+                   ident,
+                   op_inst: OperatorInstance { arguments, .. },
+                   ..
                },
                _| {
         let sink_arg = &arguments[0];
@@ -129,7 +133,7 @@ pub const DEST_SINK: OperatorConstraints = OperatorConstraints {
                         sink.flush().await.expect("Failed to flush sink.");
                     }
                 }
-                df
+                #hydroflow
                     .spawn_task(sink_feed_flush(#recv_ident, #sink_arg))
                     .expect("dest_sink() must be used within a tokio runtime");
             }
