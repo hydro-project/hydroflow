@@ -14,7 +14,7 @@ mod util;
 
 use grammar::datalog::*;
 use join_plan::*;
-use util::Counter;
+use util::{repeat_tuple, Counter};
 
 pub fn gen_hydroflow_graph(
     literal: proc_macro2::Literal,
@@ -263,29 +263,16 @@ fn apply_aggregations(
     if agg_exprs.is_empty() {
         parse_quote!(map(|row: #flattened_tuple_type| (#(#group_by_exprs, )*)))
     } else {
-        let agg_initial_values = agg_exprs
-            .iter()
-            .map(|_| parse_quote!(None))
-            .collect::<Vec<syn::Expr>>();
-        let agg_initial: syn::Expr = parse_quote!((#(#agg_initial_values, )*));
+        let agg_initial =
+            repeat_tuple::<syn::Expr, syn::Expr>(|| parse_quote!(None), agg_exprs.len());
 
-        let group_by_input_types = group_by_exprs
-            .iter()
-            .map(|_| parse_quote!(_))
-            .collect::<Vec<syn::Type>>();
-        let group_by_input_type: syn::Type = parse_quote!((#(#group_by_input_types, )*));
+        let group_by_input_type =
+            repeat_tuple::<syn::Type, syn::Type>(|| parse_quote!(_), group_by_exprs.len());
 
-        let agg_input_types = agg_exprs
-            .iter()
-            .map(|_| parse_quote!(_))
-            .collect::<Vec<syn::Type>>();
-        let agg_input_type: syn::Type = parse_quote!((#(#agg_input_types, )*));
-
-        let agg_types = agg_exprs
-            .iter()
-            .map(|_| parse_quote!(Option<_>))
-            .collect::<Vec<syn::Type>>();
-        let agg_type: syn::Type = parse_quote!((#(#agg_types, )*));
+        let agg_input_type =
+            repeat_tuple::<syn::Type, syn::Type>(|| parse_quote!(_), agg_exprs.len());
+        let agg_type: syn::Type =
+            repeat_tuple::<syn::Type, syn::Type>(|| parse_quote!(Option<_>), agg_exprs.len());
 
         let group_by_stmts: Vec<syn::Stmt> = aggregations
             .iter()
