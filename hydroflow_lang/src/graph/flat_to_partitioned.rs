@@ -108,7 +108,7 @@ fn make_subgraph_collect(
             .map(|(node_id, _)| node_id),
         |v| {
             graph
-                .predecessor_nodes(v)
+                .predecessor_vertices(v)
                 .filter(|&pred| !matches!(nodes[pred], Node::Handoff { .. }))
         },
     );
@@ -279,8 +279,8 @@ fn find_subgraph_strata(
                 continue;
             }
 
-            assert_eq!(1, graph.predecessor_nodes(node_id).count());
-            let pred = graph.predecessor_nodes(node_id).next().unwrap();
+            assert_eq!(1, graph.predecessor_vertices(node_id).count());
+            let pred = graph.predecessor_vertices(node_id).next().unwrap();
 
             let pred_sg = node_subgraph[pred];
             let succ_sg = node_subgraph[succ];
@@ -342,8 +342,8 @@ fn find_subgraph_strata(
     let max_stratum = subgraph_stratum.values().cloned().max().unwrap_or(0) + 1; // Used for `next_tick()` delayer subgraphs.
     for (edge_id, &delay_type) in barrier_crossers.iter() {
         let (hoff, dst) = graph.edge(edge_id).unwrap();
-        assert_eq!(1, graph.predecessor_nodes(hoff).count());
-        let src = graph.predecessor_nodes(hoff).next().unwrap();
+        assert_eq!(1, graph.predecessor_vertices(hoff).count());
+        let src = graph.predecessor_vertices(hoff).next().unwrap();
 
         let src_sg = node_subgraph[src];
         let dst_sg = node_subgraph[dst];
@@ -559,9 +559,9 @@ impl TryFrom<FlatGraph> for PartitionedGraph {
 
         // build a SecondaryMap from edges.dst to edges to find inbound edges of a node
         let mut dest_map = SecondaryMap::new();
-        graph.edges.iter().for_each(|e| {
+        graph.edges().for_each(|e| {
             let (_, (_src, dest)) = e;
-            dest_map.insert(*dest, e);
+            dest_map.insert(dest, e);
         });
         // iterate through edges, find internal handoffs and their inbound/outbound edges
         for e in graph.edges() {
@@ -619,7 +619,7 @@ fn insert_intermediate_node(
 ) -> (GraphNodeId, GraphEdgeId) {
     let span = Some(node.span());
     let node_id = nodes.insert(node);
-    let (e0, e1) = graph.insert_intermediate_node(node_id, edge_id).unwrap();
+    let (e0, e1) = graph.insert_intermediate_vertex(node_id, edge_id).unwrap();
 
     let (src_idx, dst_idx) = ports.remove(edge_id).unwrap();
     ports.insert(e0, (src_idx, PortIndexValue::Elided(span)));
