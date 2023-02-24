@@ -205,6 +205,14 @@ impl PortIndexValue {
             Ok(other)
         }
     }
+
+    pub fn as_error_message_string(&self) -> String {
+        match self {
+            PortIndexValue::Int(n) => format!("`{}`", n.value),
+            PortIndexValue::Path(path) => format!("`{}`", path.to_token_stream()),
+            PortIndexValue::Elided(_) => "<elided>".to_owned(),
+        }
+    }
 }
 impl From<PortIndex> for PortIndexValue {
     fn from(value: PortIndex) -> Self {
@@ -266,3 +274,17 @@ impl Ord for PortIndexValue {
         }
     }
 }
+// impl PartialEq<PortIndex> for PortIndexValue {
+//     fn eq(&self, other: &PortIndex) -> bool {
+//         match (self, other) {
+//             (PortIndexValue::Int(a), PortIndex::Int(b)) => a == b,
+//             (PortIndexValue::Path(a), PortIndex::Path(b)) => a == b,
+//             _no_match => false,
+//         }
+//     }
+// }
+// impl PartialEq<PortIndexValue> for PortIndex {
+//     fn eq(&self, other: &PortIndexValue) -> bool {
+//         other == self
+//     }
+// }
