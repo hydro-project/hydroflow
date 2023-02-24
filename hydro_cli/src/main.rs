@@ -83,33 +83,20 @@ async def wrap(inner):
 use python_interface::hydro_cli_rust;
 
 fn main() -> Result<(), ()> {
-    fn main() -> Result<(), ()> {
-        let args = Cli::parse();
-        if let Some(cmd) = args.command {
-            match cmd {
-                Commands::Deploy { config } => {
-                    deploy(config)?;
-                }
-            }
-        }
-
-        Ok(())
-    }
-
     let mut builder = tokio::runtime::Builder::new_multi_thread();
     builder.enable_all();
     pyo3_asyncio::tokio::init(builder);
 
     pyo3::append_to_inittab!(hydro_cli_rust);
 
-    main()
+    let args = Cli::parse();
+    if let Some(cmd) = args.command {
+        match cmd {
+            Commands::Deploy { config } => {
+                deploy(config)?;
+            }
+        }
+    }
 
-    // let res = unsafe {
-    //     pyo3::with_embedded_python_interpreter(|py| {
-    //         pyo3_asyncio::tokio::run(py, main()).map_err(|e| {
-    //             e.print_and_set_sys_last_vars(py);
-    //             ()
-    //         })
-    //     })
-    // };
+    Ok(())
 }
