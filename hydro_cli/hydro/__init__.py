@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 import hydro_cli_rust # type: ignore
 
 class Deployment(object):
@@ -8,11 +8,14 @@ class Deployment(object):
     def Localhost(self) -> "Localhost":
         return Localhost(self)
 
-    def HydroflowCrate(self, src: str, on: "Host", example: Optional[str] = None) -> "HydroflowCrate":
-        return HydroflowCrate(self, src, on, example)
+    def HydroflowCrate(self, src: str, on: "Host", example: Optional[str] = None, features: Optional[List[str]] = None) -> "HydroflowCrate":
+        return HydroflowCrate(self, src, on, example, features)
 
     def deploy(self):
         return self.underlying.deploy()
+
+    def start(self):
+        return self.underlying.start()
 
 class Host(object):
     def __init__(self, underlying) -> None:
@@ -25,9 +28,6 @@ class Localhost(Host):
 class Service(object):
     def __init__(self, underlying) -> None:
         self.underlying = underlying
-
-    def start(self):
-        return self.underlying.start()
 
 class HydroflowPort(object):
     def __init__(self, underlying, name) -> None:
@@ -60,18 +60,18 @@ async def pyreceiver_to_async_generator(pyreceiver):
             yield res
 
 class HydroflowCrate(Service):
-    def __init__(self, deployment: Deployment, src: str, on: Host, example: Optional[str]) -> None:
-        super().__init__(hydro_cli_rust.PyHydroflowCrate(deployment.underlying, src, on.underlying, example))
+    def __init__(self, deployment: Deployment, src: str, on: Host, example: Optional[str], features: Optional[List[str]]) -> None:
+        super().__init__(hydro_cli_rust.PyHydroflowCrate(deployment.underlying, src, on.underlying, example, features))
 
     @property
     def ports(self) -> HydroflowCratePorts:
         return HydroflowCratePorts(self.underlying)
 
-    def stdout(self):
-        return pyreceiver_to_async_generator(self.underlying.stdout())
+    async def stdout(self):
+        return pyreceiver_to_async_generator(await self.underlying.stdout())
 
-    def stderr(self):
-        return pyreceiver_to_async_generator(self.underlying.stderr())
+    async def stderr(self):
+        return pyreceiver_to_async_generator(await self.underlying.stderr())
 
     def exit_code(self):
         return self.underlying.exit_code();

@@ -29,6 +29,15 @@ impl PyDeployment {
         })
         .unwrap()
     }
+
+    fn start<'p>(&self, py: Python<'p>) -> &'p pyo3::PyAny {
+        let underlying = self.underlying.clone();
+        pyo3_asyncio::tokio::future_into_py(py, async move {
+            underlying.write().await.start().await;
+            Ok(Python::with_gil(|py| py.None()))
+        })
+        .unwrap()
+    }
 }
 
 #[pyclass(subclass)]
@@ -60,18 +69,6 @@ pub struct PyService {
     underlying: Arc<RwLock<dyn crate::core::Service>>,
 }
 
-#[pymethods]
-impl PyService {
-    fn start<'p>(&self, py: Python<'p>) -> &'p pyo3::PyAny {
-        let underlying = self.underlying.clone();
-        pyo3_asyncio::tokio::future_into_py(py, async move {
-            underlying.write().await.start().await;
-            Ok(Python::with_gil(|py| py.None()))
-        })
-        .unwrap()
-    }
-}
-
 #[pyclass]
 struct PyReceiver {
     receiver: Arc<Receiver<String>>,
@@ -100,49 +97,67 @@ impl PyHydroflowCrate {
         src: String,
         on: &PyHost,
         example: Option<String>,
+        features: Option<Vec<String>>,
     ) -> (Self, PyService) {
         (
             PyHydroflowCrate {},
             PyService {
                 underlying: deployment.underlying.blocking_write().add_service(
-                    crate::core::HydroflowCrate::new(src.into(), on.underlying.clone(), example),
+                    crate::core::HydroflowCrate::new(
+                        src.into(),
+                        on.underlying.clone(),
+                        example,
+                        features,
+                    ),
                 ),
             },
         )
     }
 
-    fn stdout(self_: PyRef<'_, Self>) -> PyResult<PyReceiver> {
+    fn stdout<'p>(self_: PyRef<'p, Self>, py: Python<'p>) -> &'p pyo3::PyAny {
         let underlying = &self_.as_ref().underlying;
-        let mut underlying_mut = underlying.blocking_write();
-        let hydro = underlying_mut
-            .as_any_mut()
-            .downcast_mut::<crate::core::HydroflowCrate>()
-            .unwrap();
-        Ok(PyReceiver {
-            receiver: Arc::new(hydro.stdout()),
+        let underlying = underlying.clone();
+        pyo3_asyncio::tokio::future_into_py(py, async move {
+            let mut underlying_mut = underlying.write().await;
+            let hydro = underlying_mut
+                .as_any_mut()
+                .downcast_mut::<crate::core::HydroflowCrate>()
+                .unwrap();
+            Ok(PyReceiver {
+                receiver: Arc::new(hydro.stdout().await),
+            })
         })
+        .unwrap()
     }
 
-    fn stderr(self_: PyRef<'_, Self>) -> PyResult<PyReceiver> {
+    fn stderr<'p>(self_: PyRef<'p, Self>, py: Python<'p>) -> &'p pyo3::PyAny {
         let underlying = &self_.as_ref().underlying;
-        let mut underlying_mut = underlying.blocking_write();
-        let hydro = underlying_mut
-            .as_any_mut()
-            .downcast_mut::<crate::core::HydroflowCrate>()
-            .unwrap();
-        Ok(PyReceiver {
-            receiver: Arc::new(hydro.stderr()),
+        let underlying = underlying.clone();
+        pyo3_asyncio::tokio::future_into_py(py, async move {
+            let mut underlying_mut = underlying.write().await;
+            let hydro = underlying_mut
+                .as_any_mut()
+                .downcast_mut::<crate::core::HydroflowCrate>()
+                .unwrap();
+            Ok(PyReceiver {
+                receiver: Arc::new(hydro.stderr().await),
+            })
         })
+        .unwrap()
     }
 
-    fn exit_code(self_: PyRef<'_, Self>) -> PyResult<Option<i32>> {
+    fn exit_code<'p>(self_: PyRef<'p, Self>, py: Python<'p>) -> &'p pyo3::PyAny {
         let underlying = &self_.as_ref().underlying;
-        let mut underlying_mut = underlying.blocking_write();
-        let hydro = underlying_mut
-            .as_any_mut()
-            .downcast_mut::<crate::core::HydroflowCrate>()
-            .unwrap();
-        Ok(hydro.exit_code())
+        let underlying = underlying.clone();
+        pyo3_asyncio::tokio::future_into_py(py, async move {
+            let mut underlying_mut = underlying.write().await;
+            let hydro = underlying_mut
+                .as_any_mut()
+                .downcast_mut::<crate::core::HydroflowCrate>()
+                .unwrap();
+            Ok(hydro.exit_code().await)
+        })
+        .unwrap()
     }
 }
 
@@ -162,13 +177,8 @@ fn create_connection(from: &PyService, from_port: String, to: &PyService, to_por
         .downcast_mut::<crate::core::HydroflowCrate>()
         .unwrap();
 
-    from_hydro
-        .outgoing_ports
-        .insert(from_port.clone(), (Arc::downgrade(to), to_port.clone()));
-
-    to_hydro
-        .incoming_ports
-        .insert(to_port, (Arc::downgrade(from), from_port));
+    from_hydro.add_outgoing_port(from_port, to, to_port.clone());
+    to_hydro.add_incoming_port(to_port, from_hydro);
 }
 
 #[pymodule]

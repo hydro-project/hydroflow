@@ -5,25 +5,36 @@ async def main():
     machine = deployment.Localhost()
 
     program = deployment.HydroflowCrate(
-        src=".",
-        example="simple",
+        src="../hydroflow",
+        example="cli_sender",
+        features=["cli_integration"],
         on=machine
     )
 
     program2 = deployment.HydroflowCrate(
-        src=".",
-        example="simple",
+        src="../hydroflow",
+        example="cli_receiver",
+        features=["cli_integration"],
         on=machine
     )
 
     program.ports.foo.send_to(program2.ports.bar)
 
     await deployment.deploy()
-    
-    async for log in program.stdout():
-        print(log)
 
-    async for log in program2.stdout():
-        print(log)
+    print("deployed!")
 
-    print(program.exit_code())
+    # create this as separate variable to indicate to Hydro that we want to capture all stdout, even after the loop
+    program2out = await program2.stdout()
+
+    await deployment.start()
+    print("started!")
+
+    counter = 0
+    async for log in program2out:
+        print(f"{counter}: {log}")
+        counter += 1
+        if counter == 10:
+            break
+
+    print(await program.exit_code())
