@@ -27,6 +27,7 @@ async fn main() {
     // receive outgoing connection config
     let mut start_buf = String::new();
     std::io::stdin().read_line(&mut start_buf).unwrap();
+    #[allow(unused)]
     let mut connection_pipes = if start_buf.starts_with("start: ") {
         serde_json::from_str::<HashMap<String, ConnectionPipe>>(
             start_buf.trim_start_matches("start: ").trim(),
