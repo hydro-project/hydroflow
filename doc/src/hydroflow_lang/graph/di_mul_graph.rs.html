@@ -180,24 +180,84 @@
 <a href="#180" id="180">180</a>
 <a href="#181" id="181">181</a>
 <a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a>
+<a href="#199" id="199">199</a>
+<a href="#200" id="200">200</a>
+<a href="#201" id="201">201</a>
+<a href="#202" id="202">202</a>
+<a href="#203" id="203">203</a>
+<a href="#204" id="204">204</a>
+<a href="#205" id="205">205</a>
+<a href="#206" id="206">206</a>
+<a href="#207" id="207">207</a>
+<a href="#208" id="208">208</a>
+<a href="#209" id="209">209</a>
+<a href="#210" id="210">210</a>
+<a href="#211" id="211">211</a>
+<a href="#212" id="212">212</a>
+<a href="#213" id="213">213</a>
+<a href="#214" id="214">214</a>
+<a href="#215" id="215">215</a>
+<a href="#216" id="216">216</a>
+<a href="#217" id="217">217</a>
+<a href="#218" id="218">218</a>
+<a href="#219" id="219">219</a>
+<a href="#220" id="220">220</a>
+<a href="#221" id="221">221</a>
+<a href="#222" id="222">222</a>
+<a href="#223" id="223">223</a>
+<a href="#224" id="224">224</a>
+<a href="#225" id="225">225</a>
+<a href="#226" id="226">226</a>
+<a href="#227" id="227">227</a>
+<a href="#228" id="228">228</a>
+<a href="#229" id="229">229</a>
+<a href="#230" id="230">230</a>
+<a href="#231" id="231">231</a>
+<a href="#232" id="232">232</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::collections::BTreeSet;
+<span class="kw">use </span>std::fmt::Debug;
+<span class="kw">use </span>std::iter::FusedIterator;
 
 <span class="kw">use </span>slotmap::{Key, SecondaryMap, SlotMap};
 
 <span class="doccomment">/// A directed multigraph where an vertex&#39;s inbound and outbound edges are indexed.
+///
+/// `DiMulGraph` does **not** allocate vertices `V`. The user shall use an external
+/// [`SlotMap&lt;V, ...&gt;`] for allocating vertices, which also allows the user to associate data `...`
+/// with each vertex.
+///
+/// `DiMulGraph` **does** allocate edges `E` as they are added. Additional data can be associated
+/// with edges via an external [`SlotMap&lt;E, ...&gt;`].
+/// [`SecondaryMap`]s.
 </span><span class="attr">#[derive(Clone, Debug)]
 </span><span class="kw">pub struct </span>DiMulGraph&lt;V, E&gt;
 <span class="kw">where
     </span>V: Key,
     E: Key,
 {
-    <span class="doccomment">/// Edges
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) edges: SlotMap&lt;E, (V, V)&gt;,
+    <span class="doccomment">/// Edges (src, dst).
+    </span>edges: SlotMap&lt;E, (V, V)&gt;,
 
     <span class="doccomment">/// Successors for each vert.
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) succs: SecondaryMap&lt;V, Vec&lt;E&gt;&gt;,
+    </span>succs: SecondaryMap&lt;V, Vec&lt;E&gt;&gt;,
     <span class="doccomment">/// Predecessors for each vert.
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) preds: SecondaryMap&lt;V, Vec&lt;E&gt;&gt;,
+    </span>preds: SecondaryMap&lt;V, Vec&lt;E&gt;&gt;,
 }
 <span class="kw">impl</span>&lt;V, E&gt; Default <span class="kw">for </span>DiMulGraph&lt;V, E&gt;
 <span class="kw">where
@@ -218,11 +278,14 @@
     </span>V: Key,
     E: Key,
 {
-    <span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
+    <span class="doccomment">/// Creates an empty `DiMulGraph`.
+    </span><span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
         Default::default()
     }
 
-    <span class="kw">pub fn </span>with_capacity(capacity: usize) -&gt; <span class="self">Self </span>{
+    <span class="doccomment">/// Creates a `DiMulGraph` with pre-allocated memory for `capacity` vertices and `capacity`
+    /// edges.
+    </span><span class="kw">pub fn </span>with_capacity(capacity: usize) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
             <span class="comment">// Estimate 1 edge per vertex.
             </span>edges: SlotMap::with_capacity_and_key(capacity),
@@ -231,8 +294,8 @@
         }
     }
 
-    <span class="doccomment">/// Assert that `self` is in a consistent state, for debugging.
-    /// This is computationally expensive for large graphs.
+    <span class="doccomment">/// Assert that `self` is in a consistent state, for debugging. This is computationally
+    /// expensive for large graphs.
     </span><span class="kw">pub fn </span>assert_valid(<span class="kw-2">&amp;</span><span class="self">self</span>) {
         <span class="comment">// Ensure each edge exists in the adj lists.
         </span><span class="kw">for </span>(edge_id, <span class="kw-2">&amp;</span>(src, dst)) <span class="kw">in </span><span class="self">self</span>.edges.iter() {
@@ -250,8 +313,8 @@
             <span class="macro">assert_eq!</span>(set.len(), pred_list.len());
         }
 
-        <span class="comment">// Missing edges and duplicate edges could cancel each other out. But
-        // this would be caught by the above.
+        <span class="comment">// Missing edges and duplicate edges could cancel each other out. But this would be caught
+        // by the above.
         </span><span class="macro">assert_eq!</span>(
             <span class="self">self</span>.edges.len(),
             <span class="self">self</span>.succs.values().map(|vec| vec.len()).sum::&lt;usize&gt;(),
@@ -264,34 +327,38 @@
         </span>);
     }
 
-    <span class="kw">fn </span>get_adj_edges(adj_list: <span class="kw-2">&amp;mut </span>SecondaryMap&lt;V, Vec&lt;E&gt;&gt;, v: V) -&gt; <span class="kw-2">&amp;mut </span>Vec&lt;E&gt; {
+    <span class="doccomment">/// HELPER, get the list out of the adj list `adj_list` for a particular vertex `v`.
+    </span><span class="kw">fn </span>get_adj_edges(adj_list: <span class="kw-2">&amp;mut </span>SecondaryMap&lt;V, Vec&lt;E&gt;&gt;, v: V) -&gt; <span class="kw-2">&amp;mut </span>Vec&lt;E&gt; {
         <span class="kw">if </span>!adj_list.contains_key(v) {
             adj_list.insert(v, Default::default());
         }
         <span class="kw-2">&amp;mut </span>adj_list[v]
     }
 
-    <span class="kw">pub fn </span>insert_edge(<span class="kw-2">&amp;mut </span><span class="self">self</span>, src: V, dst: V) -&gt; E {
+    <span class="doccomment">/// Creates an edge going from `src` to `dst` and returns the edge ID.
+    </span><span class="kw">pub fn </span>insert_edge(<span class="kw-2">&amp;mut </span><span class="self">self</span>, src: V, dst: V) -&gt; E {
         <span class="kw">let </span>e = <span class="self">self</span>.edges.insert((src, dst));
         <span class="self">Self</span>::get_adj_edges(<span class="kw-2">&amp;mut </span><span class="self">self</span>.succs, src).push(e);
         <span class="self">Self</span>::get_adj_edges(<span class="kw-2">&amp;mut </span><span class="self">self</span>.preds, dst).push(e);
         e
     }
 
-    <span class="doccomment">/// For an edge E from A -&gt; B, insert a new node NODE along that edge to
-    /// create A -&gt; NODE -&gt; B. Returns the edge ID into and out of NODE
-    /// respectively.
+    <span class="doccomment">/// For an `edge` from `A --&gt; B`, insert a new vertex `V` along that edge to create
+    /// `A --e0--&gt; V --e1--&gt; B`. Returns the pair of new edge IDs in and out of `V`, i.e.
+    /// `(e0, e1)`.
     ///
-    /// Returns None if the edge doesn&#39;t exist.
-    </span><span class="kw">pub fn </span>insert_intermediate_node(<span class="kw-2">&amp;mut </span><span class="self">self</span>, new_node: V, edge: E) -&gt; <span class="prelude-ty">Option</span>&lt;(E, E)&gt; {
+    /// Returns `None` if the edge doesn&#39;t exist.
+    ///
+    /// `edge` is removed from the graph, both returned edge IDs are new.
+    </span><span class="kw">pub fn </span>insert_intermediate_vertex(<span class="kw-2">&amp;mut </span><span class="self">self</span>, new_vertex: V, edge: E) -&gt; <span class="prelude-ty">Option</span>&lt;(E, E)&gt; {
         <span class="self">self</span>.assert_valid();
 
         <span class="comment">// Remove old edge from edges.
         </span><span class="kw">let </span>(src, dst) = <span class="self">self</span>.edges.remove(edge)<span class="question-mark">?</span>;
 
         <span class="comment">// Insert new edges into edges.
-        </span><span class="kw">let </span>e0 = <span class="self">self</span>.edges.insert((src, new_node));
-        <span class="kw">let </span>e1 = <span class="self">self</span>.edges.insert((new_node, dst));
+        </span><span class="kw">let </span>e0 = <span class="self">self</span>.edges.insert((src, new_vertex));
+        <span class="kw">let </span>e1 = <span class="self">self</span>.edges.insert((new_vertex, dst));
 
         <span class="comment">// Remove old &amp; add new edges in succs/preds.
         </span><span class="kw">let </span>succ_vec_idx = <span class="self">self</span>.succs[src].iter().position(|<span class="kw-2">&amp;</span>e| e == edge).unwrap();
@@ -305,60 +372,93 @@
             std::mem::replace(<span class="kw-2">&amp;mut </span><span class="self">self</span>.preds[dst][pred_vec_idx], e1)
         );
 
-        <span class="comment">// Insert new node succs/preds.
+        <span class="comment">// Insert new vertex succs/preds.
         </span><span class="macro">assert!</span>(
-            <span class="self">self</span>.preds.insert(new_node, <span class="macro">vec!</span>[e0]).is_none(),
-            <span class="string">&quot;Cannot insert intermediate node that already exists&quot;
+            <span class="self">self</span>.preds.insert(new_vertex, <span class="macro">vec!</span>[e0]).is_none(),
+            <span class="string">&quot;Cannot insert intermediate vertex that already exists&quot;
         </span>);
         <span class="macro">assert!</span>(
-            <span class="self">self</span>.succs.insert(new_node, <span class="macro">vec!</span>[e1]).is_none(),
-            <span class="string">&quot;Cannot insert intermediate node that already exists&quot;
+            <span class="self">self</span>.succs.insert(new_vertex, <span class="macro">vec!</span>[e1]).is_none(),
+            <span class="string">&quot;Cannot insert intermediate vertex that already exists&quot;
         </span>);
 
         <span class="self">self</span>.assert_valid();
         <span class="prelude-val">Some</span>((e0, e1))
     }
 
-    <span class="kw">pub fn </span>edge(<span class="kw-2">&amp;</span><span class="self">self</span>, e: E) -&gt; <span class="prelude-ty">Option</span>&lt;(V, V)&gt; {
+    <span class="doccomment">/// Get the source and destination vertex IDs for the given edge ID.
+    </span><span class="kw">pub fn </span>edge(<span class="kw-2">&amp;</span><span class="self">self</span>, e: E) -&gt; <span class="prelude-ty">Option</span>&lt;(V, V)&gt; {
         <span class="self">self</span>.edges.get(e).copied()
     }
 
-    <span class="kw">pub fn </span>edges(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;_ </span>+ Iterator&lt;Item = (E, (V, V))&gt; {
+    <span class="doccomment">/// Return an iterator over all edges in form `(E, (V, V))`.
+    </span><span class="kw">pub fn </span>edges(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+    ) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;_ </span>+ Iterator&lt;Item = (E, (V, V))&gt; + ExactSizeIterator + FusedIterator + Clone + Debug
+    {
         <span class="self">self</span>.edges.iter().map(|(e, <span class="kw-2">&amp;</span>(src, dst))| (e, (src, dst)))
     }
 
-    <span class="kw">pub fn </span>successor_edges(<span class="kw-2">&amp;</span><span class="self">self</span>, v: V) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;_ </span>+ Iterator&lt;Item = E&gt; {
+    <span class="doccomment">/// Return an iterator of all edge IDs coming out of `v`.
+    </span><span class="kw">pub fn </span>successor_edges(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        v: V,
+    ) -&gt; std::iter::Copied&lt;std::iter::Flatten&lt;std::option::IntoIter&lt;<span class="kw-2">&amp;</span>Vec&lt;E&gt;&gt;&gt;&gt; {
         <span class="self">self</span>.succs.get(v).into_iter().flatten().copied()
     }
 
-    <span class="kw">pub fn </span>predecessor_edges(<span class="kw-2">&amp;</span><span class="self">self</span>, v: V) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;_ </span>+ Iterator&lt;Item = E&gt; {
+    <span class="doccomment">/// Return an iterator of all edge IDs going into `v`.
+    </span><span class="kw">pub fn </span>predecessor_edges(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        v: V,
+    ) -&gt; std::iter::Copied&lt;std::iter::Flatten&lt;std::option::IntoIter&lt;<span class="kw-2">&amp;</span>Vec&lt;E&gt;&gt;&gt;&gt; {
         <span class="self">self</span>.preds.get(v).into_iter().flatten().copied()
     }
 
-    <span class="kw">pub fn </span>successor_nodes(<span class="kw-2">&amp;</span><span class="self">self</span>, v: V) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;_ </span>+ Iterator&lt;Item = V&gt; {
+    <span class="doccomment">/// Return an iterator of all successor vertex IDs of `v`.
+    </span><span class="kw">pub fn </span>successor_vertices(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        v: V,
+    ) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;_ </span>+ Iterator&lt;Item = V&gt; + DoubleEndedIterator + FusedIterator + Clone + Debug {
         <span class="self">self</span>.successor_edges(v).map(|edge_id| <span class="self">self</span>.edges[edge_id].<span class="number">1</span>)
     }
 
-    <span class="kw">pub fn </span>predecessor_nodes(<span class="kw-2">&amp;</span><span class="self">self</span>, v: V) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;_ </span>+ Iterator&lt;Item = V&gt; {
+    <span class="doccomment">/// Return an iterator of all predecessor vertex IDs of `v`.
+    </span><span class="kw">pub fn </span>predecessor_vertices(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        v: V,
+    ) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;_ </span>+ Iterator&lt;Item = V&gt; + DoubleEndedIterator + FusedIterator + Clone + Debug {
         <span class="self">self</span>.predecessor_edges(v)
             .map(|edge_id| <span class="self">self</span>.edges[edge_id].<span class="number">0</span>)
     }
 
-    <span class="kw">pub fn </span>successors(<span class="kw-2">&amp;</span><span class="self">self</span>, v: V) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;_ </span>+ Iterator&lt;Item = (E, V)&gt; {
+    <span class="doccomment">/// Return an iterator of all successor edge IDs _and_ vertex IDs of `v` in form `(E, V)`.
+    </span><span class="kw">pub fn </span>successors(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        v: V,
+    ) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;_ </span>+ Iterator&lt;Item = (E, V)&gt; + DoubleEndedIterator + FusedIterator + Clone + Debug
+    {
         <span class="self">self</span>.successor_edges(v)
             .map(|edge_id| (edge_id, <span class="self">self</span>.edges[edge_id].<span class="number">1</span>))
     }
 
-    <span class="kw">pub fn </span>predecessors(<span class="kw-2">&amp;</span><span class="self">self</span>, v: V) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;_ </span>+ Iterator&lt;Item = (E, V)&gt; {
+    <span class="doccomment">/// Return an iterator of all predecessor edge IDs _and_ vertex IDs of `v` in form `(E, V)`.
+    </span><span class="kw">pub fn </span>predecessors(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        v: V,
+    ) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;_ </span>+ Iterator&lt;Item = (E, V)&gt; + DoubleEndedIterator + FusedIterator + Clone + Debug
+    {
         <span class="self">self</span>.predecessor_edges(v)
             .map(|edge_id| (edge_id, <span class="self">self</span>.edges[edge_id].<span class="number">0</span>))
     }
 
-    <span class="kw">pub fn </span>degree_out(<span class="kw-2">&amp;</span><span class="self">self</span>, v: V) -&gt; usize {
+    <span class="doccomment">/// The degree (number of edges/vertices) coming out of `v`, i.e. the number of successors.
+    </span><span class="kw">pub fn </span>degree_out(<span class="kw-2">&amp;</span><span class="self">self</span>, v: V) -&gt; usize {
         <span class="self">self</span>.succs.get(v).map(Vec::len).unwrap_or_default()
     }
 
-    <span class="kw">pub fn </span>degree_in(<span class="kw-2">&amp;</span><span class="self">self</span>, v: V) -&gt; usize {
+    <span class="doccomment">/// The degree (number of edges/vertices) going into `v`, i.e. the number of predecessors.
+    </span><span class="kw">pub fn </span>degree_in(<span class="kw-2">&amp;</span><span class="self">self</span>, v: V) -&gt; usize {
         <span class="self">self</span>.preds.get(v).map(Vec::len).unwrap_or_default()
     }
 }

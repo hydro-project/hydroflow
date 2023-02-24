@@ -737,7 +737,7 @@
             .map(|(node_id, <span class="kw">_</span>)| node_id),
         |v| {
             graph
-                .predecessor_nodes(v)
+                .predecessor_vertices(v)
                 .filter(|<span class="kw-2">&amp;</span>pred| !<span class="macro">matches!</span>(nodes[pred], Node::Handoff { .. }))
         },
     );
@@ -908,8 +908,8 @@
                 <span class="kw">continue</span>;
             }
 
-            <span class="macro">assert_eq!</span>(<span class="number">1</span>, graph.predecessor_nodes(node_id).count());
-            <span class="kw">let </span>pred = graph.predecessor_nodes(node_id).next().unwrap();
+            <span class="macro">assert_eq!</span>(<span class="number">1</span>, graph.predecessor_vertices(node_id).count());
+            <span class="kw">let </span>pred = graph.predecessor_vertices(node_id).next().unwrap();
 
             <span class="kw">let </span>pred_sg = node_subgraph[pred];
             <span class="kw">let </span>succ_sg = node_subgraph[succ];
@@ -971,8 +971,8 @@
     </span><span class="kw">let </span>max_stratum = subgraph_stratum.values().cloned().max().unwrap_or(<span class="number">0</span>) + <span class="number">1</span>; <span class="comment">// Used for `next_tick()` delayer subgraphs.
     </span><span class="kw">for </span>(edge_id, <span class="kw-2">&amp;</span>delay_type) <span class="kw">in </span>barrier_crossers.iter() {
         <span class="kw">let </span>(hoff, dst) = graph.edge(edge_id).unwrap();
-        <span class="macro">assert_eq!</span>(<span class="number">1</span>, graph.predecessor_nodes(hoff).count());
-        <span class="kw">let </span>src = graph.predecessor_nodes(hoff).next().unwrap();
+        <span class="macro">assert_eq!</span>(<span class="number">1</span>, graph.predecessor_vertices(hoff).count());
+        <span class="kw">let </span>src = graph.predecessor_vertices(hoff).next().unwrap();
 
         <span class="kw">let </span>src_sg = node_subgraph[src];
         <span class="kw">let </span>dst_sg = node_subgraph[dst];
@@ -1188,9 +1188,9 @@
 
         <span class="comment">// build a SecondaryMap from edges.dst to edges to find inbound edges of a node
         </span><span class="kw">let </span><span class="kw-2">mut </span>dest_map = SecondaryMap::new();
-        graph.edges.iter().for_each(|e| {
+        graph.edges().for_each(|e| {
             <span class="kw">let </span>(<span class="kw">_</span>, (_src, dest)) = e;
-            dest_map.insert(<span class="kw-2">*</span>dest, e);
+            dest_map.insert(dest, e);
         });
         <span class="comment">// iterate through edges, find internal handoffs and their inbound/outbound edges
         </span><span class="kw">for </span>e <span class="kw">in </span>graph.edges() {
@@ -1248,7 +1248,7 @@
 ) -&gt; (GraphNodeId, GraphEdgeId) {
     <span class="kw">let </span>span = <span class="prelude-val">Some</span>(node.span());
     <span class="kw">let </span>node_id = nodes.insert(node);
-    <span class="kw">let </span>(e0, e1) = graph.insert_intermediate_node(node_id, edge_id).unwrap();
+    <span class="kw">let </span>(e0, e1) = graph.insert_intermediate_vertex(node_id, edge_id).unwrap();
 
     <span class="kw">let </span>(src_idx, dst_idx) = ports.remove(edge_id).unwrap();
     ports.insert(e0, (src_idx, PortIndexValue::Elided(span)));
