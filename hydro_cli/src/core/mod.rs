@@ -55,8 +55,9 @@ pub trait Host: Send + Sync + Debug {
     async fn collect_resources(&mut self, resource_batch: &mut ResourceBatch);
 
     /// Connects to the acquired resources and prepares the host to run services.
-    async fn provision(&mut self, resource_result: &ResourceResult) -> Arc<dyn LaunchedHost>;
+    async fn provision(&mut self, resource_result: &Arc<ResourceResult>) -> Arc<dyn LaunchedHost>;
 
+    /// Identifies a network type that this host can use for connections from the given host.
     fn find_bind_type(&self, connection_from: &dyn Host) -> BindType;
 
     fn can_connect_to(&self, typ: ConnectionType) -> bool;
@@ -70,7 +71,7 @@ pub trait Service: Send + Sync + Debug {
     async fn collect_resources(&mut self, resource_batch: &mut ResourceBatch);
 
     /// Connects to the acquired resources and prepares the service to be launched.
-    async fn deploy(&mut self, resource_result: &ResourceResult);
+    async fn deploy(&mut self, resource_result: &Arc<ResourceResult>);
 
     /// Launches the service, which should start listening for incoming network
     /// connections. The service should not start computing at this point.

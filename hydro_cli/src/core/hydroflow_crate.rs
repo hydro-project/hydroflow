@@ -14,7 +14,7 @@ use cargo::{
     util::{command_prelude::CompileMode, interning::InternedString},
     Config,
 };
-use hydroflow::util::connection::{BindType, ConnectionPipe};
+use hydroflow::util::connection::ConnectionPipe;
 use tokio::{sync::RwLock, task::JoinHandle};
 
 use super::{Host, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult, Service};
@@ -29,8 +29,8 @@ pub struct HydroflowCrate {
     /// Each `dyn Service` is guaranteed to be another `HydroflowCrate`.
     outgoing_ports: HashMap<String, (Weak<RwLock<dyn Service>>, String)>,
 
-    /// A map of port names to config for how this service can connect to other services.
-    incoming_ports: HashMap<String, BindType>,
+    /// A map of port names to the host that will be sending data to the port.
+    incoming_ports: HashMap<String, Arc<RwLock<dyn Host>>>,
 
     built_binary: Option<String>,
     launched_host: Option<Arc<dyn LaunchedHost>>,
@@ -64,15 +64,7 @@ impl HydroflowCrate {
     }
 
     pub fn add_incoming_port(&mut self, my_port: String, from: &HydroflowCrate) {
-        let host = from.host();
-        let read_host = host.blocking_read();
-
-        self.incoming_ports.insert(
-            my_port,
-            self.host()
-                .blocking_read()
-                .find_bind_type(read_host.deref()),
-        );
+        self.incoming_ports.insert(my_port, from.host());
     }
 
     pub fn add_outgoing_port(
@@ -180,7 +172,7 @@ impl Service for HydroflowCrate {
         host.collect_resources(resource_batch).await;
     }
 
-    async fn deploy(&mut self, resource_result: &ResourceResult) {
+    async fn deploy(&mut self, resource_result: &Arc<ResourceResult>) {
         let mut host_write = self.on.write().await;
         let launched = host_write.provision(resource_result);
         self.launched_host = Some(launched.await);
@@ -194,7 +186,18 @@ impl Service for HydroflowCrate {
             .launch_binary(self.built_binary.as_ref().unwrap().clone())
             .await;
 
-        let formatted_bind_types = serde_json::to_string(&self.incoming_ports).unwrap();
+        let mut bind_types = HashMap::new();
+        for (port_name, from_host) in self.incoming_ports.iter() {
+            bind_types.insert(
+                port_name.clone(),
+                from_host
+                    .read()
+                    .await
+                    .find_bind_type(self.on.read().await.deref()),
+            );
+        }
+
+        let formatted_bind_types = serde_json::to_string(&bind_types).unwrap();
 
         // request stdout before sending config so we don't miss the "ready" response
         let stdout_receiver = binary.write().await.stdout().await;

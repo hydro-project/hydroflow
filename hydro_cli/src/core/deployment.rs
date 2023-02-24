@@ -25,7 +25,7 @@ impl Deployment {
                 .await;
         }
 
-        let result = resource_pool.provision().await;
+        let result = Arc::new(resource_pool.provision().await);
 
         let services_future =
             self.services
