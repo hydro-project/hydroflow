@@ -1,5 +1,5 @@
 use clap::{Parser, ValueEnum};
-use hydroflow::util::collect_ready;
+use hydroflow::util::collect_ready_async;
 use std::collections::{HashMap, HashSet};
 use tokio::sync::mpsc::UnboundedSender;
 use tokio_stream::wrappers::UnboundedReceiverStream;
@@ -57,25 +57,6 @@ pub async fn main() {
         None => rga_adjacency(input_recv, rga_send, list_send),
     };
 
-    keystroke((1, 0, 'a'), (0, 0), &input_send).await;
-    keystroke((2, 0, 'b'), (1, 0), &input_send).await;
-    keystroke((3, 0, 'a'), (2, 0), &input_send).await;
-    keystroke((4, 0, 't'), (3, 0), &input_send).await;
-    keystroke((5, 0, 'e'), (4, 0), &input_send).await;
-
-    keystroke((6, 1, 'o'), (2, 0), &input_send).await;
-    keystroke((7, 1, 'r'), (6, 1), &input_send).await;
-    keystroke((8, 0, 'C'), (0, 0), &input_send).await;
-    keystroke((9, 0, 'o'), (8, 0), &input_send).await;
-    keystroke((10, 0, 'l'), (9, 0), &input_send).await;
-    keystroke((11, 0, 'l'), (10, 0), &input_send).await;
-
-    df.run_available();
-
-    let mut output = String::new();
-    write_to_dot(&mut rga_recv, &mut list_recv, &mut output);
-    std::fs::write(opts.output, output).expect("write to output file failed");
-
     if let Some(graph) = opts.graph {
         let serde_graph = df
             .serde_graph()
@@ -92,6 +73,25 @@ pub async fn main() {
             }
         }
     }
+
+    keystroke((1, 0, 'a'), (0, 0), &input_send).await;
+    keystroke((2, 0, 'b'), (1, 0), &input_send).await;
+    keystroke((3, 0, 'a'), (2, 0), &input_send).await;
+    keystroke((4, 0, 't'), (3, 0), &input_send).await;
+    keystroke((5, 0, 'e'), (4, 0), &input_send).await;
+
+    keystroke((6, 1, 'o'), (2, 0), &input_send).await;
+    keystroke((7, 1, 'r'), (6, 1), &input_send).await;
+    keystroke((8, 0, 'C'), (0, 0), &input_send).await;
+    keystroke((9, 0, 'o'), (8, 0), &input_send).await;
+    keystroke((10, 0, 'l'), (9, 0), &input_send).await;
+    keystroke((11, 0, 'l'), (10, 0), &input_send).await;
+
+    df.run_tick();
+
+    let mut output = String::new();
+    write_to_dot(&mut rga_recv, &mut list_recv, &mut output).await;
+    std::fs::write(opts.output, output).expect("write to output file failed");
 }
 
 async fn keystroke(
@@ -113,13 +113,13 @@ async fn keystroke(
         .unwrap();
 }
 
-fn write_to_dot(
+async fn write_to_dot(
     rga_recv: &mut UnboundedReceiverStream<(Token, Timestamp)>,
     list_recv: &mut UnboundedReceiverStream<(Timestamp, Timestamp)>,
     w: &mut impl std::fmt::Write,
 ) {
-    let tree_edges: HashSet<_> = collect_ready(rga_recv);
-    let list_edges: HashMap<_, _> = collect_ready(list_recv);
+    let tree_edges: HashSet<_> = collect_ready_async(rga_recv).await;
+    let list_edges: HashMap<_, _> = collect_ready_async(list_recv).await;
     let node_names = tree_edges
         .iter()
         .map(|(c, _)| (c.ts, c.value))

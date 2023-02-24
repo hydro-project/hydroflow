@@ -12,7 +12,8 @@ use syn::Token;
 use crate::diagnostic::Diagnostic;
 use crate::parse::{Operator, PortIndex};
 
-use super::{GraphNodeId, GraphSubgraphId, Node, OperatorInstance, PortIndexValue};
+use super::{GraphNodeId, GraphSubgraphId, Node, OpInstGenerics, OperatorInstance, PortIndexValue};
+use serde::{Deserialize, Serialize};
 
 mod anti_join;
 mod cross_join;
@@ -58,6 +59,24 @@ pub enum PortListSpec {
     Fixed(Punctuated<PortIndex, Token![,]>),
 }
 
+#[derive(Default, Debug, Eq, PartialEq, Clone, Copy)]
+pub enum FlowPropertyVal {
+    #[default]
+    No,
+    Yes,
+    Preserve,
+    DependsOnArgs,
+}
+#[derive(Default, Debug, Eq, PartialEq, Clone, Copy)]
+pub struct FlowProperties {
+    /// Is the flow deterministic.
+    pub deterministic: FlowPropertyVal,
+    /// Is the flow monotonic.
+    pub monotonic: FlowPropertyVal,
+    /// Has inconsistency been introduced.
+    pub inconsistency_tainted: bool,
+}
+
 pub struct OperatorConstraints {
     /// Operator's name.
     pub name: &'static str,
@@ -87,6 +106,9 @@ pub struct OperatorConstraints {
     pub ports_inn: Option<fn() -> PortListSpec>,
     /// What named or numbered output ports to expect?
     pub ports_out: Option<fn() -> PortListSpec>,
+
+    /// Monotonicity preservation properties, for analysis.
+    pub properties: FlowProperties,
 
     /// Determines if this input must be preceeded by a stratum barrier.
     pub input_delaytype_fn: fn(&PortIndexValue) -> Option<DelayType>,
@@ -325,7 +347,7 @@ where
     }
 }
 
-#[derive(Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub enum Persistence {
     Tick,
     Static,
