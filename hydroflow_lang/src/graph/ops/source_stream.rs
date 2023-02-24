@@ -1,5 +1,6 @@
 use super::{
-    OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, RANGE_0, RANGE_1,
+    FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
+    WriteIteratorArgs, RANGE_0, RANGE_1,
 };
 
 use quote::quote_spanned;
@@ -37,6 +38,11 @@ pub const SOURCE_STREAM: OperatorConstraints = OperatorConstraints {
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| None,
+    properties: FlowProperties {
+        deterministic: FlowPropertyVal::No,
+        monotonic: FlowPropertyVal::Yes,
+        tainted: false,
+    },
     write_fn: |wc @ &WriteContextArgs {
                    root,
                    context,

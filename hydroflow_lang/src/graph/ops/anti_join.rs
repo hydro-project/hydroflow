@@ -1,5 +1,7 @@
 use crate::graph::PortIndexValue;
 
+use super::{FlowProperties, FlowPropertyVal};
+
 use super::{
     DelayType, OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs,
     RANGE_0, RANGE_1,
@@ -40,6 +42,11 @@ pub const ANTI_JOIN: OperatorConstraints = OperatorConstraints {
             Some(DelayType::Stratum)
         }
         _else => None,
+    },
+    properties: FlowProperties {
+        deterministic: FlowPropertyVal::Preserve,
+        monotonic: FlowPropertyVal::No,
+        tainted: false,
     },
     write_fn: |wc @ &WriteContextArgs {
                    root,

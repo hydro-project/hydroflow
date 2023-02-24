@@ -1,6 +1,6 @@
 use super::{
-    OperatorConstraints, OperatorWriteOutput, Persistence, WriteContextArgs, WriteIteratorArgs,
-    RANGE_0, RANGE_1,
+    FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput, Persistence,
+    WriteContextArgs, WriteIteratorArgs, RANGE_0, RANGE_1,
 };
 
 use quote::quote_spanned;
@@ -88,6 +88,11 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
     ports_inn: Some(|| super::PortListSpec::Fixed(parse_quote! { 0, 1 })),
     ports_out: None,
     input_delaytype_fn: |_| None,
+    properties: FlowProperties {
+        deterministic: FlowPropertyVal::Preserve,
+        monotonic: FlowPropertyVal::Preserve,
+        tainted: false,
+    },
     write_fn: |wc @ &WriteContextArgs {
                    root,
                    context,

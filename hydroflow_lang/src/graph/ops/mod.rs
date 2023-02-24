@@ -13,6 +13,7 @@ use crate::diagnostic::Diagnostic;
 use crate::parse::{Operator, PortIndex};
 
 use super::{GraphNodeId, GraphSubgraphId, Node, PortIndexValue};
+use serde::{Deserialize, Serialize};
 
 mod anti_join;
 mod cross_join;
@@ -58,6 +59,29 @@ pub enum PortListSpec {
     Fixed(Punctuated<PortIndex, Token![,]>),
 }
 
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone, Copy)]
+pub enum FlowPropertyVal {
+    Yes,
+    No,
+    Preserve,
+    CodeBlock,
+}
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone, Copy)]
+pub struct FlowProperties {
+    pub deterministic: FlowPropertyVal,
+    pub monotonic: FlowPropertyVal,
+    pub tainted: bool,
+}
+impl Default for FlowProperties {
+    fn default() -> Self {
+        Self {
+            deterministic: FlowPropertyVal::No,
+            monotonic: FlowPropertyVal::No,
+            tainted: false,
+        }
+    }
+}
+
 pub struct OperatorConstraints {
     /// Operator's name.
     pub name: &'static str,
@@ -93,6 +117,8 @@ pub struct OperatorConstraints {
 
     /// Emit code in multiple locations. See [`OperatorWriteOutput`].
     pub write_fn: WriteFn,
+
+    pub properties: FlowProperties,
 }
 
 pub type WriteFn = fn(
@@ -321,7 +347,7 @@ where
     }
 }
 
-#[derive(Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub enum Persistence {
     Tick,
     Static,

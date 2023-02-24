@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use super::{FlowProperties, FlowPropertyVal};
 use crate::diagnostic::{Diagnostic, Level};
 use crate::graph::PortIndexValue;
 use crate::pretty_span::PrettySpan;
@@ -57,6 +58,11 @@ pub const DEMUX: OperatorConstraints = OperatorConstraints {
     ports_inn: None,
     ports_out: Some(|| PortListSpec::Variadic),
     input_delaytype_fn: |_| None,
+    properties: FlowProperties {
+        deterministic: FlowPropertyVal::Preserve,
+        monotonic: FlowPropertyVal::Preserve,
+        tainted: false,
+    },
     write_fn: |&WriteContextArgs { root, op_span, .. },
                &WriteIteratorArgs {
                    ident,

@@ -9,11 +9,13 @@ use crate::diagnostic::{Diagnostic, Level};
 use super::di_mul_graph::DiMulGraph;
 use super::flat_graph::FlatGraph;
 use super::ops::{
-    DelayType, OperatorWriteOutput, Persistence, WriteContextArgs, WriteIteratorArgs, OPERATORS,
+    DelayType, FlowProperties, FlowPropertyVal, OperatorWriteOutput, Persistence, WriteContextArgs,
+    WriteIteratorArgs, OPERATORS,
 };
 use super::serde_graph::{SerdeEdge, SerdeGraph};
 use super::{
-    node_color, Color, GraphEdgeId, GraphNodeId, GraphSubgraphId, Node, PortIndexValue, CONTEXT,
+    find_operator_constraints, node_color, Color, GraphEdgeId, GraphNodeId, GraphSubgraphId, Node,
+    PortIndexValue, CONTEXT,
 };
 
 #[derive(Default)]
@@ -79,6 +81,307 @@ impl PartitionedGraph {
             (false, &Node::Handoff { dst_span, .. }) => dst_span,
         };
         Ident::new(&*name, span)
+    }
+
+    fn monotone_op(props: FlowProperties, monotone_block: FlowPropertyVal) -> FlowPropertyVal {
+        if props.monotonic == FlowPropertyVal::CodeBlock {
+            if monotone_block == FlowPropertyVal::Yes {
+                return FlowPropertyVal::Preserve;
+            } else {
+                return FlowPropertyVal::No;
+            }
+        } else {
+            return props.monotonic.clone();
+        }
+    }
+
+    fn deterministic_op(
+        props: FlowProperties,
+        deterministic_block: FlowPropertyVal,
+    ) -> FlowPropertyVal {
+        if props.deterministic == FlowPropertyVal::CodeBlock {
+            if deterministic_block == FlowPropertyVal::Yes {
+                return FlowPropertyVal::Preserve;
+            } else {
+                return FlowPropertyVal::No;
+            }
+        } else {
+            return props.deterministic.clone();
+        }
+    }
+
+    // return Some(true) if all the arguments are 'static, Some(false) if any argument is 'tick,
+    // and None if it's stateless.
+    fn cross_tick_persistence(node: &Node) -> Option<bool> {
+        match node {
+            Node::Operator(operator) => {
+                if let Some(_op_constraints) = find_operator_constraints(node) {
+                    let persistence_args = extract_persistence_args(
+                        &mut Vec::new(), // TODO(mingwei): this is unused
+                        operator.type_arguments(),
+                    );
+                    if persistence_args.is_empty() {
+                        None
+                    } else {
+                        Some(
+                            persistence_args
+                                .iter()
+                                .all(|persistence| matches!(persistence, Persistence::Static)),
+                        )
+                    }
+                } else {
+                    None
+                }
+            }
+            Node::Handoff { .. } => Some(false),
+        }
+    }
+
+    fn op_props(
+        &self,
+        node_id: GraphNodeId,
+        props: FlowProperties,
+        monotonic_block: FlowPropertyVal,
+        deterministic_block: FlowPropertyVal,
+    ) -> FlowProperties {
+        let mut retval = FlowProperties {
+            deterministic: FlowPropertyVal::No,
+            monotonic: FlowPropertyVal::No,
+            tainted: false,
+        };
+        let node = &self.nodes[node_id];
+        // op monotonicity
+        if props.monotonic == FlowPropertyVal::No || props.monotonic == FlowPropertyVal::Yes {
+            // already determined
+            retval.monotonic = props.monotonic.clone();
+        } else if props.monotonic == FlowPropertyVal::CodeBlock
+            && monotonic_block == FlowPropertyVal::No
+        {
+            // non-monotonic code block
+            retval.monotonic = FlowPropertyVal::No;
+        }
+        // by here, op_entry['monotone'] must effectively be FlowPropertyVal::Preserve
+        else if let Some(persistence) = Self::cross_tick_persistence(node) {
+            // Only apply to ops, not Handoffs! Handoffs are identity, so always monotonic even though 'tick.
+            match node {
+                Node::Operator { .. } => {
+                    if persistence
+                        && Self::monotone_op(props, monotonic_block) != FlowPropertyVal::No
+                    {
+                        retval.monotonic = FlowPropertyVal::Yes;
+                    } else {
+                        retval.monotonic = FlowPropertyVal::No;
+                    }
+                }
+                Node::Handoff { .. } => retval.monotonic = FlowPropertyVal::Preserve,
+            }
+        } else {
+            // stateless and
+            // #Preserve
+            retval.monotonic = FlowPropertyVal::Preserve;
+        }
+
+        retval.deterministic = Self::deterministic_op(props, deterministic_block);
+        if retval.monotonic == FlowPropertyVal::No && retval.deterministic == FlowPropertyVal::No {
+            retval.tainted = true;
+        }
+
+        // println!("op_props: {:?} -> {:?}", node_id, retval);
+        return retval;
+    }
+
+    pub fn derive_properties(
+        &self,
+    ) -> (
+        SecondaryMap<GraphNodeId, FlowProperties>,
+        SecondaryMap<GraphEdgeId, FlowProperties>,
+    ) {
+        let mut node_properties = SecondaryMap::with_capacity(self.nodes.len());
+        let mut edge_properties = SecondaryMap::with_capacity(self.graph.edges().len());
+        // TODO: replace these with an analysis of the code block
+        let monotonic_block = FlowPropertyVal::Yes;
+        let deterministic_block = FlowPropertyVal::Yes;
+
+        // initialize node properties
+        self.nodes
+            .iter()
+            .map(|(node_id, node)| match node {
+                // borrowed from check_operator_errors... seems inefficient!
+                Node::Operator(operator) => {
+                    let op_name = &*operator.name_string();
+                    match OPERATORS.iter().find(|&op| op_name == op.name) {
+                        Some(op_constraints) => (node_id, op_constraints.properties.clone()),
+                        None => {
+                            panic!("Operator {} not found in OPERATORS", op_name);
+                        }
+                    }
+                }
+                Node::Handoff { .. } => (
+                    node_id,
+                    FlowProperties {
+                        deterministic: FlowPropertyVal::Preserve,
+                        monotonic: FlowPropertyVal::Preserve,
+                        tainted: false,
+                    },
+                ),
+            })
+            .for_each(|(node_id, initial_props)| {
+                let op_props = Self::op_props(
+                    self,
+                    node_id,
+                    initial_props,
+                    monotonic_block.clone(),
+                    deterministic_block.clone(),
+                );
+                node_properties.insert(node_id, op_props);
+            });
+
+        // initialize edge properties
+        self.graph.edges().for_each(|(edge_id, _)| {
+            edge_properties.insert(
+                edge_id,
+                FlowProperties {
+                    deterministic: FlowPropertyVal::Preserve,
+                    monotonic: FlowPropertyVal::Preserve,
+                    tainted: false,
+                },
+            );
+        });
+
+        // Now walk the graph, upgrading from Preserve to YES/NO, and propagating taint
+        let mut changed = true;
+        while changed {
+            changed = false;
+            for (node_id, _node) in &self.nodes {
+                let mut node_props = node_properties[node_id].clone();
+                if (node_properties[node_id].deterministic == FlowPropertyVal::Preserve
+                    || node_properties[node_id].monotonic == FlowPropertyVal::Preserve)
+                    && self
+                        .graph
+                        .predecessor_edges(node_id)
+                        .collect::<Vec<GraphEdgeId>>()
+                        .is_empty()
+                        == false
+                {
+                    // upgrade vertex to YES if currently Preserve and ALL inbound edges are YES
+                    // upgrade vertex to NO if currently Preserve and ANY inbound edges are NO
+                    let mut all_deterministic =
+                        node_props.deterministic == FlowPropertyVal::Preserve;
+                    let mut all_monotonic = node_props.monotonic == FlowPropertyVal::Preserve;
+                    // println!("node {:?}: properties are {:?}", node_id.data(), node_props);
+                    for e in self.graph.predecessor_edges(node_id) {
+                        let edge_props = edge_properties[e].clone();
+                        // let (from, to) = self.graph.edges[e];
+                        // println!("edge {:?}->{:?}: properties are {:?}", from, to, edge_props);
+                        if edge_props.deterministic != FlowPropertyVal::Yes {
+                            all_deterministic = false;
+                            if node_props.deterministic == FlowPropertyVal::Preserve
+                                && edge_props.deterministic == FlowPropertyVal::No
+                            {
+                                node_props.deterministic = FlowPropertyVal::No;
+                                changed = true;
+                            }
+                        }
+                        if edge_props.monotonic != FlowPropertyVal::Yes {
+                            all_monotonic = false;
+                            if node_props.monotonic == FlowPropertyVal::Preserve
+                                && edge_props.monotonic == FlowPropertyVal::No
+                            {
+                                node_props.monotonic = FlowPropertyVal::No;
+                                changed = true;
+                            }
+                        }
+                    }
+                    if all_deterministic && node_props.deterministic != FlowPropertyVal::Yes {
+                        node_props.deterministic = FlowPropertyVal::Yes;
+                        changed = true;
+                    }
+                    if all_monotonic && node_props.monotonic != FlowPropertyVal::Yes {
+                        node_props.monotonic = FlowPropertyVal::Yes;
+                        changed = true;
+                    }
+                    if node_props.tainted == false
+                        && node_props.deterministic == FlowPropertyVal::No
+                        && node_props.monotonic == FlowPropertyVal::No
+                    {
+                        node_props.tainted = true;
+                        changed = true;
+                    }
+                    // if changed {
+                    //     println!("changing node {:?} to {:?}", node_id.data(), node_props);
+                    // }
+                    // install the updated node properties
+                    node_properties[node_id] = node_props;
+                }
+                // upgrade outbounds if vertex is no longer Preserve
+                for e in self.graph.successor_edges(node_id) {
+                    let mut edge_props = edge_properties[e];
+                    // let (from, to) = self.graph.edges[e];
+                    if edge_props.deterministic == FlowPropertyVal::Preserve
+                        && edge_props.deterministic != node_props.deterministic
+                    {
+                        edge_props.deterministic = node_props.deterministic;
+                        changed = true;
+                    }
+                    if edge_props.monotonic == FlowPropertyVal::Preserve
+                        && edge_props.monotonic != node_props.monotonic
+                    {
+                        edge_props.monotonic = node_props.monotonic;
+                        changed = true;
+                    }
+                    if edge_props.tainted == false && node_props.tainted == true {
+                        edge_props.tainted = true;
+                        changed = true;
+                    }
+                    // if changed {
+                    //     println!("changing edge {:?}->{:?} to {:?}", from, to, edge_props);
+                    // }
+                    // install the updated edge properties
+                    edge_properties[e] = edge_props;
+                }
+            }
+            if !changed {
+                break;
+            }
+        }
+
+        // now that everything is propagated, resolve any remaining ambiguity
+        // - tainted if non-deterministic and non-monotone
+        // - properties left at PRESERVE go to YES
+        for (node_id, _node) in &self.nodes {
+            let mut node_props = node_properties[node_id].clone();
+            if node_props.deterministic == FlowPropertyVal::No
+                && node_props.monotonic == FlowPropertyVal::No
+            {
+                node_props.tainted = true;
+            }
+            if node_props.deterministic == FlowPropertyVal::Preserve {
+                node_props.deterministic = FlowPropertyVal::Yes;
+            }
+            if node_props.monotonic == FlowPropertyVal::Preserve {
+                node_props.monotonic = FlowPropertyVal::Yes
+            }
+            // install the updated node properties
+            node_properties[node_id] = node_props;
+        }
+        for (edge_id, _edge) in self.graph.edges() {
+            let mut edge_props = edge_properties[edge_id].clone();
+            if edge_props.deterministic == FlowPropertyVal::No
+                && edge_props.monotonic == FlowPropertyVal::No
+            {
+                edge_props.tainted = true;
+            }
+            if edge_props.deterministic == FlowPropertyVal::Preserve {
+                edge_props.deterministic = FlowPropertyVal::Yes;
+            }
+            if edge_props.monotonic == FlowPropertyVal::Preserve {
+                edge_props.monotonic = FlowPropertyVal::Yes
+            }
+            // install the updated edge properties
+            edge_properties[edge_id] = edge_props;
+        }
+
+        return (node_properties, edge_properties);
     }
 
     pub fn as_code(&self, root: TokenStream, include_type_guards: bool) -> TokenStream {
@@ -203,24 +506,7 @@ impl PartitionedGraph {
 
                             // Generic arguments.
                             let generic_args = op.type_arguments();
-                            let persistence_args = generic_args.into_iter().flatten().map_while(|generic_arg| match generic_arg {
-                                GenericArgument::Lifetime(lifetime) => {
-                                    match &*lifetime.ident.to_string() {
-                                        "static" => Some(Persistence::Static),
-                                        "tick" => Some(Persistence::Tick),
-                                        _ => {
-                                            diagnostics.push(Diagnostic::spanned(
-                                                generic_arg.span(),
-                                                Level::Error,
-                                                format!("Unknown lifetime generic argument `'{}`, expected `'tick` or `'static`.", lifetime.ident),
-                                            ));
-                                            // TODO(mingwei): should really keep going and not short circuit?
-                                            None
-                                        }
-                                    }
-                                },
-                                _ => None,
-                            }).collect::<Vec<_>>();
+                            let persistence_args = extract_persistence_args(&mut diagnostics, generic_args);
                             let type_args = generic_args.into_iter().flatten().skip(persistence_args.len()).map_while(|generic_arg| match generic_arg {
                                 GenericArgument::Type(typ) => Some(typ),
                                 _ => None,
@@ -400,15 +686,22 @@ impl PartitionedGraph {
         // TODO(mingwei): Double initialization of SerdeGraph fields.
         let mut g = SerdeGraph::new();
 
+        // derive node and edge properties from PartitionGraph
+        let (node_props, edge_props) = self.derive_properties();
+
         // add nodes
         for node_id in self.nodes.keys() {
             g.nodes.insert(node_id, self.node_to_txt(node_id));
         }
+        g.node_properties = node_props.clone();
 
         // add edges
         for (edge_id, (src, dst)) in self.graph.edges() {
             let mut blocking = false;
             let the_ports = &self.ports[edge_id];
+            let properties = edge_props[edge_id];
+            // let (from, to) = self.graph.edges[edge_id];
+
             if let Node::Operator(dest_op) = &self.nodes[dst] {
                 let op_name = &*dest_op.name_string();
                 let op_constraints = OPERATORS
@@ -443,6 +736,7 @@ impl PartitionedGraph {
                 dst,
                 blocking,
                 label,
+                properties,
             };
             if let Some(adj) = g.edges.get_mut(src) {
                 adj.push(serde_edge);
@@ -488,4 +782,30 @@ impl PartitionedGraph {
         writeln!(write, "{}", serde_json::to_string(&sg).unwrap())?;
         Ok(())
     }
+}
+
+// TODO(mingwei): check `persistence_args.len()` vs the operators expected persistence args, keep consistent default case.
+fn extract_persistence_args(
+    diagnostics: &mut Vec<Diagnostic>,
+    generic_args: Option<&syn::punctuated::Punctuated<GenericArgument, syn::token::Comma>>,
+) -> Vec<Persistence> {
+    let persistence_args = generic_args.into_iter().flatten().map_while(|generic_arg| match generic_arg {
+        GenericArgument::Lifetime(lifetime) => {
+            match &*lifetime.ident.to_string() {
+                "static" => Some(Persistence::Static),
+                "tick" => Some(Persistence::Tick),
+                _ => {
+                    diagnostics.push(Diagnostic::spanned(
+                        generic_arg.span(),
+                        Level::Error,
+                        format!("Unknown lifetime generic argument `'{}`, expected `'tick` or `'static`.", lifetime.ident),
+                    ));
+                    // TODO(mingwei): should really keep going and not short circuit?
+                    None
+                }
+            }
+        },
+        _ => None,
+    }).collect::<Vec<_>>();
+    persistence_args
 }

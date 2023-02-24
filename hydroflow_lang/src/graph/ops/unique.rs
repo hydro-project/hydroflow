@@ -1,6 +1,6 @@
 use super::{
-    DelayType, OperatorConstraints, OperatorWriteOutput, Persistence, WriteContextArgs,
-    WriteIteratorArgs, RANGE_0, RANGE_1,
+    DelayType, FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput,
+    Persistence, WriteContextArgs, WriteIteratorArgs, RANGE_0, RANGE_1,
 };
 
 use quote::quote_spanned;
@@ -55,6 +55,11 @@ pub const UNIQUE: OperatorConstraints = OperatorConstraints {
     is_external_input: false,
     ports_inn: None,
     ports_out: None,
+    properties: FlowProperties {
+        deterministic: FlowPropertyVal::Preserve,
+        monotonic: FlowPropertyVal::Preserve,
+        tainted: false,
+    },
     input_delaytype_fn: |_| Some(DelayType::Stratum),
     write_fn: |wc @ &WriteContextArgs {
                    op_span, context, ..

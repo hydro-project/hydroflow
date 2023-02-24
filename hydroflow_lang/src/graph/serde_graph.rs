@@ -5,6 +5,7 @@ use slotmap::{Key, SecondaryMap, SlotMap, SparseSecondaryMap};
 use serde::{Deserialize, Serialize};
 
 use super::{Color, GraphNodeId, GraphSubgraphId};
+use crate::graph::ops::{FlowProperties, FlowPropertyVal};
 
 #[derive(Default, Serialize, Deserialize, Clone)]
 pub struct SerdeEdge {
@@ -12,6 +13,7 @@ pub struct SerdeEdge {
     pub dst: GraphNodeId,
     pub blocking: bool,
     pub label: Option<String>,
+    pub properties: FlowProperties,
 }
 
 #[derive(Default, Serialize, Deserialize)]
@@ -23,7 +25,7 @@ pub struct SerdeGraph {
     pub subgraph_nodes: SlotMap<GraphSubgraphId, Vec<GraphNodeId>>,
     pub subgraph_stratum: SecondaryMap<GraphSubgraphId, usize>,
     pub subgraph_internal_handoffs: SecondaryMap<GraphSubgraphId, Vec<GraphNodeId>>,
-
+    pub node_properties: SecondaryMap<GraphNodeId, FlowProperties>,
     /// What variable name each graph node belongs to (if any).
     /// The nodes that each variable name encompases.
     pub varname_nodes: BTreeMap<String, Vec<GraphNodeId>>,
@@ -293,16 +295,28 @@ impl SerdeGraph {
         fn write_dot_node(
             node_id: GraphNodeId,
             node_color_map: &SparseSecondaryMap<GraphNodeId, Color>,
+            node_properties: &SecondaryMap<GraphNodeId, FlowProperties>,
             text: &str,
             tab: usize,
             w: &mut impl std::fmt::Write,
         ) -> std::fmt::Result {
+            let mut properties = Vec::new();
             let nm = text.replace('"', "\\\"").replace('\n', "\\l");
+            let label = format!("n{:?}", node_id.data());
+            properties.push(format!(
+                "label=\"({}) {}{}\"",
+                label.to_string(),
+                nm,
+                // if contains linebreak left-justify by appending another "\\l"
+                if nm.contains("\\l") { "\\l" } else { "" },
+            ));
+
+            properties.push("fontname=Monaco".to_string());
+
             let mode = match node_color_map.get(node_id) {
                 Some(color) => *color,
                 None => Color::Hoff,
             };
-            let label = format!("n{:?}", node_id.data());
             let shape_str = match mode {
                 // Color::Push => "polygon, sides=4, distortion=-0.1",
                 // Color::Pull => "polygon, sides=4, distortion=0.1",
@@ -310,29 +324,41 @@ impl SerdeGraph {
                 Color::Pull => "invhouse",
                 Color::Hoff => "parallelogram",
                 Color::Comp => "circle",
-            }
-            .to_string();
-            let color_str = match mode {
-                Color::Push => "style = filled, color = \"#ffff00\"",
-                Color::Pull => "style = filled, color = \"#0022ff\", fontcolor = \"#ffffff\"",
-                Color::Hoff => "style = filled, color = \"#ddddff\"",
-                Color::Comp => "style = filled, color = white",
             };
-            write!(
+            properties.push(format!("shape = {}", shape_str.to_string()));
+
+            let dashed_str = if node_properties[node_id].deterministic == FlowPropertyVal::No {
+                ",dashed"
+            } else {
+                ""
+            };
+            let color_str = if node_properties[node_id].tainted {
+                "color = \"#ff0000\""
+            } else {
+                match mode {
+                    Color::Push => "color = \"#ffff00\"",
+                    Color::Pull => "color = \"#0022ff\", fontcolor = \"#ffffff\"",
+                    Color::Hoff => "color = \"#ddddff\"",
+                    Color::Comp => "color = white",
+                }
+            };
+            properties.push(format!(
+                "style=\"filled{}\", {}",
+                dashed_str.to_string(),
+                color_str.to_string()
+            ));
+            writeln!(
                 w,
-                "{:t$}{} [label=\"({}) {}{}\"",
+                "{:t$}n{:?} {}",
                 "",
-                label,
-                label,
-                nm,
-                // if contains linebreak left-justify by appending another "\\l"
-                if nm.contains("\\l") { "\\l" } else { "" },
-                t = tab
+                node_id.data(),
+                if !properties.is_empty() {
+                    format!(" [{}]", properties.join(", "))
+                } else {
+                    "".to_string()
+                },
+                t = tab,
             )?;
-            write!(w, ", fontname=Monaco")?;
-            write!(w, ", shape={}", shape_str)?;
-            write!(w, ", {}", color_str)?;
-            writeln!(w, "]")?;
             Ok(())
         }
 
@@ -346,9 +372,15 @@ impl SerdeGraph {
             if edge.label.is_some() {
                 properties.push(format!("label=\"{}\"", edge.label.as_ref().unwrap()));
             };
-            if edge.blocking {
-                properties.push("arrowhead=box, color=red".to_string());
+            // if edge.blocking {
+            //     properties.push("arrowhead=box, color=red".to_string());
+            // };
+            if edge.properties.tainted {
+                properties.push("color=red".to_string());
             };
+            if edge.properties.deterministic == FlowPropertyVal::No {
+                properties.push("style=dashed".to_string());
+            }
             writeln!(
                 w,
                 "{:t$}n{:?} -> n{:?}{}",
@@ -413,6 +445,7 @@ impl SerdeGraph {
                 write_dot_node(
                     node_id,
                     &self.node_color_map,
+                    &self.node_properties,
                     self.nodes.get(node_id).unwrap(),
                     tab,
                     w,
@@ -423,7 +456,14 @@ impl SerdeGraph {
             if let Some(hoffs) = self.subgraph_internal_handoffs.get(subgraph_id) {
                 for hoff in hoffs {
                     let text = self.nodes.get(*hoff).unwrap();
-                    write_dot_node(*hoff, &self.node_color_map, text, tab, w)?;
+                    write_dot_node(
+                        *hoff,
+                        &self.node_color_map,
+                        &self.node_properties,
+                        text,
+                        tab,
+                        w,
+                    )?;
                     // write out internal handoff edges
                     for edge in self.edges.get(*hoff).unwrap_or(&empty) {
                         write_dot_edge(*hoff, edge, tab, w)?;
@@ -452,7 +492,14 @@ impl SerdeGraph {
                 if self.barrier_handoffs.contains_key(src) {
                     // write out handoff
                     let text = self.nodes.get(src).unwrap();
-                    write_dot_node(src, &self.node_color_map, text, tab, w)?;
+                    write_dot_node(
+                        src,
+                        &self.node_color_map,
+                        &self.node_properties,
+                        text,
+                        tab,
+                        w,
+                    )?;
                     // write out edge
                     write_dot_edge(src, edge, tab, w)?;
                 } else if self.barrier_handoffs.contains_key(edge.dst) {

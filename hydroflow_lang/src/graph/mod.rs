@@ -66,7 +66,7 @@ pub enum Color {
     Push,
     /// Computation (yellow)
     Comp,
-    /// Handoff (red) -- not a color for operators, inserted between subgraphs.
+    /// Handoff (grey) -- not a color for operators, inserted between subgraphs.
     Hoff,
 }
 
@@ -188,5 +188,14 @@ impl Ord for PortIndexValue {
             (_, Self::Elided(_)) => std::cmp::Ordering::Less,
             (Self::Elided(_), _) => std::cmp::Ordering::Greater,
         }
+    }
+}
+
+pub fn find_operator_constraints(node: &Node) -> Option<&ops::OperatorConstraints> {
+    if let Node::Operator(operator) = node {
+        let name = &*operator.name_string();
+        ops::OPERATORS.iter().find(|&op| name == op.name)
+    } else {
+        None
     }
 }

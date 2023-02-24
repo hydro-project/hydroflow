@@ -1,4 +1,6 @@
-use super::{OperatorConstraints, IDENTITY_WRITE_FN, RANGE_0, RANGE_1};
+use super::{
+    FlowProperties, FlowPropertyVal, OperatorConstraints, IDENTITY_WRITE_FN, RANGE_0, RANGE_1,
+};
 
 /// > 1 input stream of type T, 1 output stream of type T
 ///
@@ -23,5 +25,10 @@ pub const IDENTITY: OperatorConstraints = OperatorConstraints {
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| None,
+    properties: FlowProperties {
+        deterministic: FlowPropertyVal::Preserve,
+        monotonic: FlowPropertyVal::Preserve,
+        tainted: false,
+    },
     write_fn: IDENTITY_WRITE_FN,
 };

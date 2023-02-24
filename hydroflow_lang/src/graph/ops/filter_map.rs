@@ -1,3 +1,4 @@
+use super::{FlowProperties, FlowPropertyVal};
 use super::{
     OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, RANGE_0, RANGE_1,
 };
@@ -27,6 +28,11 @@ pub const FILTER_MAP: OperatorConstraints = OperatorConstraints {
     is_external_input: false,
     ports_inn: None,
     ports_out: None,
+    properties: FlowProperties {
+        deterministic: FlowPropertyVal::CodeBlock,
+        monotonic: FlowPropertyVal::CodeBlock,
+        tainted: false,
+    },
     input_delaytype_fn: |_| None,
     write_fn: |&WriteContextArgs { root, op_span, .. },
                &WriteIteratorArgs {

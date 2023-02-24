@@ -1,6 +1,6 @@
 use super::{
-    OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, RANGE_0,
-    RANGE_1, RANGE_ANY,
+    FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
+    WriteIteratorArgs, RANGE_0, RANGE_1, RANGE_ANY,
 };
 
 use quote::{quote_spanned, ToTokens};
@@ -31,6 +31,11 @@ pub const TEE: OperatorConstraints = OperatorConstraints {
     is_external_input: false,
     ports_inn: None,
     ports_out: None,
+    properties: FlowProperties {
+        deterministic: FlowPropertyVal::Preserve,
+        monotonic: FlowPropertyVal::Preserve,
+        tainted: false,
+    },
     input_delaytype_fn: |_| None,
     write_fn: |&WriteContextArgs { root, op_span, .. },
                &WriteIteratorArgs {

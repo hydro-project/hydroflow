@@ -1,6 +1,6 @@
 use super::{
-    DelayType, OperatorConstraints, OperatorWriteOutput, Persistence, WriteContextArgs,
-    WriteIteratorArgs, RANGE_0, RANGE_1,
+    DelayType, FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput,
+    Persistence, WriteContextArgs, WriteIteratorArgs, RANGE_0, RANGE_1,
 };
 
 use quote::quote_spanned;
@@ -53,6 +53,11 @@ pub const SORT: OperatorConstraints = OperatorConstraints {
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| Some(DelayType::Stratum),
+    properties: FlowProperties {
+        deterministic: FlowPropertyVal::Preserve,
+        monotonic: FlowPropertyVal::No,
+        tainted: false,
+    },
     write_fn: |wc @ &WriteContextArgs {
                    context, op_span, ..
                },
