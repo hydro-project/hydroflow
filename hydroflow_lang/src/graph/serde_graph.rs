@@ -305,7 +305,7 @@ impl SerdeGraph {
             let label = format!("n{:?}", node_id.data());
             properties.push(format!(
                 "label=\"({}) {}{}\"",
-                label.to_string(),
+                label,
                 nm,
                 // if contains linebreak left-justify by appending another "\\l"
                 if nm.contains("\\l") { "\\l" } else { "" },
@@ -325,7 +325,7 @@ impl SerdeGraph {
                 Color::Hoff => "parallelogram",
                 Color::Comp => "circle",
             };
-            properties.push(format!("shape = {}", shape_str.to_string()));
+            properties.push(format!("shape = {}", shape_str));
 
             let dashed_str = if node_properties[node_id].deterministic == FlowPropertyVal::No {
                 ",dashed"
@@ -342,11 +342,7 @@ impl SerdeGraph {
                     Color::Comp => "color = white",
                 }
             };
-            properties.push(format!(
-                "style=\"filled{}\", {}",
-                dashed_str.to_string(),
-                color_str.to_string()
-            ));
+            properties.push(format!("style=\"filled{}\", {}", dashed_str, color_str));
             writeln!(
                 w,
                 "{:t$}n{:?} {}",

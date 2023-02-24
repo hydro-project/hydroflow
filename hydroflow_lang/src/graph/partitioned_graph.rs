@@ -86,12 +86,12 @@ impl PartitionedGraph {
     fn monotone_op(props: FlowProperties, monotone_block: FlowPropertyVal) -> FlowPropertyVal {
         if props.monotonic == FlowPropertyVal::CodeBlock {
             if monotone_block == FlowPropertyVal::Yes {
-                return FlowPropertyVal::Preserve;
+                FlowPropertyVal::Preserve
             } else {
-                return FlowPropertyVal::No;
+                FlowPropertyVal::No
             }
         } else {
-            return props.monotonic.clone();
+            props.monotonic
         }
     }
 
@@ -101,12 +101,12 @@ impl PartitionedGraph {
     ) -> FlowPropertyVal {
         if props.deterministic == FlowPropertyVal::CodeBlock {
             if deterministic_block == FlowPropertyVal::Yes {
-                return FlowPropertyVal::Preserve;
+                FlowPropertyVal::Preserve
             } else {
-                return FlowPropertyVal::No;
+                FlowPropertyVal::No
             }
         } else {
-            return props.deterministic.clone();
+            props.deterministic
         }
     }
 
@@ -153,7 +153,7 @@ impl PartitionedGraph {
         // op monotonicity
         if props.monotonic == FlowPropertyVal::No || props.monotonic == FlowPropertyVal::Yes {
             // already determined
-            retval.monotonic = props.monotonic.clone();
+            retval.monotonic = props.monotonic;
         } else if props.monotonic == FlowPropertyVal::CodeBlock
             && monotonic_block == FlowPropertyVal::No
         {
@@ -187,7 +187,7 @@ impl PartitionedGraph {
         }
 
         // println!("op_props: {:?} -> {:?}", node_id, retval);
-        return retval;
+        retval
     }
 
     pub fn derive_properties(
@@ -210,7 +210,7 @@ impl PartitionedGraph {
                 Node::Operator(operator) => {
                     let op_name = &*operator.name_string();
                     match OPERATORS.iter().find(|&op| op_name == op.name) {
-                        Some(op_constraints) => (node_id, op_constraints.properties.clone()),
+                        Some(op_constraints) => (node_id, op_constraints.properties),
                         None => {
                             panic!("Operator {} not found in OPERATORS", op_name);
                         }
@@ -230,8 +230,8 @@ impl PartitionedGraph {
                     self,
                     node_id,
                     initial_props,
-                    monotonic_block.clone(),
-                    deterministic_block.clone(),
+                    monotonic_block,
+                    deterministic_block,
                 );
                 node_properties.insert(node_id, op_props);
             });
@@ -253,15 +253,14 @@ impl PartitionedGraph {
         while changed {
             changed = false;
             for (node_id, _node) in &self.nodes {
-                let mut node_props = node_properties[node_id].clone();
+                let mut node_props = node_properties[node_id];
                 if (node_properties[node_id].deterministic == FlowPropertyVal::Preserve
                     || node_properties[node_id].monotonic == FlowPropertyVal::Preserve)
-                    && self
+                    && !self
                         .graph
                         .predecessor_edges(node_id)
                         .collect::<Vec<GraphEdgeId>>()
                         .is_empty()
-                        == false
                 {
                     // upgrade vertex to YES if currently Preserve and ALL inbound edges are YES
                     // upgrade vertex to NO if currently Preserve and ANY inbound edges are NO
@@ -270,7 +269,7 @@ impl PartitionedGraph {
                     let mut all_monotonic = node_props.monotonic == FlowPropertyVal::Preserve;
                     // println!("node {:?}: properties are {:?}", node_id.data(), node_props);
                     for e in self.graph.predecessor_edges(node_id) {
-                        let edge_props = edge_properties[e].clone();
+                        let edge_props = edge_properties[e];
                         // let (from, to) = self.graph.edges[e];
                         // println!("edge {:?}->{:?}: properties are {:?}", from, to, edge_props);
                         if edge_props.deterministic != FlowPropertyVal::Yes {
@@ -300,7 +299,7 @@ impl PartitionedGraph {
                         node_props.monotonic = FlowPropertyVal::Yes;
                         changed = true;
                     }
-                    if node_props.tainted == false
+                    if !node_props.tainted
                         && node_props.deterministic == FlowPropertyVal::No
                         && node_props.monotonic == FlowPropertyVal::No
                     {
@@ -329,7 +328,7 @@ impl PartitionedGraph {
                         edge_props.monotonic = node_props.monotonic;
                         changed = true;
                     }
-                    if edge_props.tainted == false && node_props.tainted == true {
+                    if !edge_props.tainted && node_props.tainted {
                         edge_props.tainted = true;
                         changed = true;
                     }
@@ -349,7 +348,7 @@ impl PartitionedGraph {
         // - tainted if non-deterministic and non-monotone
         // - properties left at PRESERVE go to YES
         for (node_id, _node) in &self.nodes {
-            let mut node_props = node_properties[node_id].clone();
+            let mut node_props = node_properties[node_id];
             if node_props.deterministic == FlowPropertyVal::No
                 && node_props.monotonic == FlowPropertyVal::No
             {
@@ -365,7 +364,7 @@ impl PartitionedGraph {
             node_properties[node_id] = node_props;
         }
         for (edge_id, _edge) in self.graph.edges() {
-            let mut edge_props = edge_properties[edge_id].clone();
+            let mut edge_props = edge_properties[edge_id];
             if edge_props.deterministic == FlowPropertyVal::No
                 && edge_props.monotonic == FlowPropertyVal::No
             {
@@ -381,7 +380,7 @@ impl PartitionedGraph {
             edge_properties[edge_id] = edge_props;
         }
 
-        return (node_properties, edge_properties);
+        (node_properties, edge_properties)
     }
 
     pub fn as_code(&self, root: TokenStream, include_type_guards: bool) -> TokenStream {
@@ -693,7 +692,7 @@ impl PartitionedGraph {
         for node_id in self.nodes.keys() {
             g.nodes.insert(node_id, self.node_to_txt(node_id));
         }
-        g.node_properties = node_props.clone();
+        g.node_properties = node_props;
 
         // add edges
         for (edge_id, (src, dst)) in self.graph.edges() {
