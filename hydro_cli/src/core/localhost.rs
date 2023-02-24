@@ -3,7 +3,7 @@ use std::sync::Arc;
 use async_channel::{Receiver, Sender};
 use async_process::{Command, Stdio};
 use async_trait::async_trait;
-use futures::{io::BufReader, AsyncBufReadExt, AsyncWriteExt, StreamExt};
+use futures::{io::BufReader, AsyncBufReadExt, AsyncRead, AsyncWriteExt, StreamExt};
 use hydroflow::util::connection::BindType;
 use tokio::sync::RwLock;
 
@@ -48,6 +48,38 @@ impl LaunchedBinary for LaunchedLocalhostBinary {
 
 struct LaunchedLocalhost {}
 
+fn create_broadcast<T: AsyncRead + Send + Unpin + 'static>(
+    source: T,
+    default: impl Fn(String) -> () + Send + 'static,
+) -> Arc<RwLock<Vec<Sender<String>>>> {
+    let receivers = Arc::new(RwLock::new(Vec::<Sender<String>>::new()));
+    let weak_receivers = Arc::downgrade(&receivers);
+
+    tokio::spawn(async move {
+        let mut lines = BufReader::new(source).lines();
+
+        while let Some(Result::Ok(line)) = lines.next().await {
+            if let Some(receivers) = weak_receivers.upgrade() {
+                let mut receivers = receivers.write().await;
+                let mut successful_send = false;
+                for r in receivers.iter() {
+                    successful_send |= r.send(line.clone()).await.is_ok();
+                }
+
+                receivers.retain(|r| !r.is_closed());
+
+                if !successful_send {
+                    default(line);
+                }
+            } else {
+                break;
+            }
+        }
+    });
+
+    receivers
+}
+
 #[async_trait]
 impl LaunchedHost for LaunchedLocalhost {
     async fn launch_binary(&self, binary: String) -> Arc<RwLock<dyn LaunchedBinary>> {
@@ -69,55 +101,8 @@ impl LaunchedHost for LaunchedLocalhost {
             }
         });
 
-        let stdout_receivers = Arc::new(RwLock::new(Vec::<Sender<String>>::new()));
-        let weak_stdout = Arc::downgrade(&stdout_receivers);
-        let stdout = child.stdout.take().unwrap();
-        tokio::spawn(async move {
-            let mut lines = BufReader::new(stdout).lines();
-
-            while let Some(Result::Ok(line)) = lines.next().await {
-                if let Some(receivers) = weak_stdout.upgrade() {
-                    let mut receivers = receivers.write().await;
-                    let mut successful_send = false;
-                    for r in receivers.iter() {
-                        successful_send |= r.send(line.clone()).await.is_ok();
-                    }
-
-                    receivers.retain(|r| !r.is_closed());
-
-                    if !successful_send {
-                        println!("{line}");
-                    }
-                } else {
-                    break;
-                }
-            }
-        });
-
-        let stderr_receivers = Arc::new(RwLock::new(Vec::<Sender<String>>::new()));
-        let weak_stderr = Arc::downgrade(&stderr_receivers);
-        let stderr = child.stderr.take().unwrap();
-        tokio::spawn(async move {
-            let mut lines = BufReader::new(stderr).lines();
-
-            while let Some(Result::Ok(line)) = lines.next().await {
-                if let Some(receivers) = weak_stderr.upgrade() {
-                    let mut receivers = receivers.write().await;
-                    let mut successful_send = false;
-                    for r in receivers.iter() {
-                        successful_send |= r.send(line.clone()).await.is_ok();
-                    }
-
-                    receivers.retain(|r| !r.is_closed());
-
-                    if !successful_send {
-                        eprintln!("{line}");
-                    }
-                } else {
-                    break;
-                }
-            }
-        });
+        let stdout_receivers = create_broadcast(child.stdout.take().unwrap(), |s| println!("{s}"));
+        let stderr_receivers = create_broadcast(child.stderr.take().unwrap(), |s| eprintln!("{s}"));
 
         Arc::new(RwLock::new(LaunchedLocalhostBinary {
             child: RwLock::new(child),
