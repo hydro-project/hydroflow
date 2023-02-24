@@ -11,9 +11,11 @@ async fn main() {
     std::io::stdin().read_line(&mut input).unwrap();
     let trimmed = input.trim();
 
+    #[allow(unused)]
     let mut bind_types = serde_json::from_str::<HashMap<String, BindType>>(trimmed).unwrap();
 
     // bind to sockets
+    #[allow(unused)]
     let mut bind_results: HashMap<String, ConnectionPipe> = HashMap::new();
 
     let bind_serialized = serde_json::to_string(&bind_results).unwrap();
