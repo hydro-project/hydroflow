@@ -50,7 +50,7 @@ struct LaunchedLocalhost {}
 
 fn create_broadcast<T: AsyncRead + Send + Unpin + 'static>(
     source: T,
-    default: impl Fn(String) -> () + Send + 'static,
+    default: impl Fn(String) + Send + 'static,
 ) -> Arc<RwLock<Vec<Sender<String>>>> {
     let receivers = Arc::new(RwLock::new(Vec::<Sender<String>>::new()));
     let weak_receivers = Arc::downgrade(&receivers);

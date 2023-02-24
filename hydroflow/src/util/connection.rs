@@ -1,4 +1,4 @@
-use std::{path::PathBuf, pin::Pin, net::SocketAddr};
+use std::{net::SocketAddr, path::PathBuf, pin::Pin};
 
 use futures::{Sink, Stream};
 use serde::{Deserialize, Serialize};
@@ -12,7 +12,7 @@ pub enum BindType {
     UnixSocket,
     TcpPort(
         /// The host the port should be bound on.
-        String
+        String,
     ),
 }
 
@@ -88,7 +88,14 @@ impl BoundConnection {
             BoundConnection::UnixSocket(listener, _) => {
                 #[cfg(unix)]
                 {
-                    ConnectionPipe::UnixSocket(listener.local_addr().unwrap().as_pathname().unwrap().to_path_buf())
+                    ConnectionPipe::UnixSocket(
+                        listener
+                            .local_addr()
+                            .unwrap()
+                            .as_pathname()
+                            .unwrap()
+                            .to_path_buf(),
+                    )
                 }
 
                 #[cfg(not(unix))]

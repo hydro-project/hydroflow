@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 
-use hydroflow::{hydroflow_syntax, util::connection::{ConnectionPipe, BindType}};
+use hydroflow::{
+    hydroflow_syntax,
+    util::connection::{BindType, ConnectionPipe},
+};
 
 #[tokio::main]
 async fn main() {
@@ -8,8 +11,7 @@ async fn main() {
     std::io::stdin().read_line(&mut input).unwrap();
     let trimmed = input.trim();
 
-    let mut bind_types =
-        serde_json::from_str::<HashMap<String, BindType>>(trimmed).unwrap();
+    let mut bind_types = serde_json::from_str::<HashMap<String, BindType>>(trimmed).unwrap();
 
     // bind to sockets
     let mut bind_results: HashMap<String, ConnectionPipe> = HashMap::new();
@@ -23,7 +25,10 @@ async fn main() {
     let mut start_buf = String::new();
     std::io::stdin().read_line(&mut start_buf).unwrap();
     let mut connection_pipes = if start_buf.starts_with("start: ") {
-        serde_json::from_str::<HashMap<String, ConnectionPipe>>(start_buf.trim_start_matches("start: ").trim()).unwrap()
+        serde_json::from_str::<HashMap<String, ConnectionPipe>>(
+            start_buf.trim_start_matches("start: ").trim(),
+        )
+        .unwrap()
     } else {
         panic!("expected start");
     };
