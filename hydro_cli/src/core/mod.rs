@@ -64,9 +64,9 @@ pub trait Host: Send + Sync + Debug {
 #[async_trait]
 pub trait Service: Send + Sync + Debug {
     /// Collect the set of resources that this service needs to run.
-    async fn collect_resources(&mut self, terraform: &mut ResourceBatch);
+    async fn collect_resources(&mut self, resource_batch: &mut ResourceBatch);
 
-    async fn deploy(&mut self, terraform_result: &ResourceResult);
+    async fn deploy(&mut self, resource_result: &ResourceResult);
     async fn ready(&mut self);
     async fn start(&mut self);
 

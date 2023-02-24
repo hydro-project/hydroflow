@@ -120,9 +120,9 @@ pub struct LocalhostHost {
 
 #[async_trait]
 impl Host for LocalhostHost {
-    async fn collect_resources(&mut self, _terraform: &mut ResourceBatch) {}
+    async fn collect_resources(&mut self, _resource_batch: &mut ResourceBatch) {}
 
-    async fn provision(&mut self, _terraform_result: &ResourceResult) -> Arc<dyn LaunchedHost> {
+    async fn provision(&mut self, _resource_result: &ResourceResult) -> Arc<dyn LaunchedHost> {
         Arc::new(LaunchedLocalhost {})
     }
 

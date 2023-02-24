@@ -169,7 +169,7 @@ impl HydroflowCrate {
 
 #[async_trait]
 impl Service for HydroflowCrate {
-    async fn collect_resources(&mut self, terraform: &mut ResourceBatch) {
+    async fn collect_resources(&mut self, resource_batch: &mut ResourceBatch) {
         let built = self.build();
         self.built_binary = Some(built.await.unwrap());
         let host_read = self.on.read().await;
@@ -177,12 +177,12 @@ impl Service for HydroflowCrate {
         drop(host_read);
 
         let mut host = self.on.write().await;
-        host.collect_resources(terraform).await;
+        host.collect_resources(resource_batch).await;
     }
 
-    async fn deploy(&mut self, terraform_result: &ResourceResult) {
+    async fn deploy(&mut self, resource_result: &ResourceResult) {
         let mut host_write = self.on.write().await;
-        let launched = host_write.provision(terraform_result);
+        let launched = host_write.provision(resource_result);
         self.launched_host = Some(launched.await);
     }
 

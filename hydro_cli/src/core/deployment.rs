@@ -16,16 +16,16 @@ pub struct Deployment {
 
 impl Deployment {
     pub async fn deploy(&mut self) {
-        let mut terraform_pool = super::ResourceBatch {};
+        let mut resource_pool = super::ResourceBatch {};
         for service in self.services.iter_mut() {
             service
                 .write()
                 .await
-                .collect_resources(&mut terraform_pool)
+                .collect_resources(&mut resource_pool)
                 .await;
         }
 
-        let result = terraform_pool.provision().await;
+        let result = resource_pool.provision().await;
 
         let services_future =
             self.services
