@@ -42,8 +42,7 @@ async fn main() {
     // start program
     let mut df = hydroflow_syntax! {
         bar = source_stream(bar_recv)
-            -> map(|x| x.unwrap())
-            -> tee();
+            -> map(|x| x.unwrap());
 
         bar[0] -> for_each(|s| println!("echo {}", s));
     };
