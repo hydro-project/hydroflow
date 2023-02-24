@@ -2,7 +2,6 @@ use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
 use pyo3::{
-    exceptions::PyException,
     prelude::*,
     types::{PyList, PyTuple},
 };
@@ -76,7 +75,6 @@ async def wrap(inner):
         Python::with_gil(|py| {
             e.print_and_set_sys_last_vars(py);
         });
-        ()
     })?;
 
     Ok(())

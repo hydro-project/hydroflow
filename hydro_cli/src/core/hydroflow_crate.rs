@@ -1,6 +1,5 @@
 use std::{
     collections::HashMap,
-    fmt::Debug,
     ops::Deref,
     path::PathBuf,
     sync::{Arc, Weak},
@@ -184,7 +183,7 @@ impl Service for HydroflowCrate {
             .launched_host
             .as_ref()
             .unwrap()
-            .launch_binary(&self.built_binary.as_ref().unwrap())
+            .launch_binary(self.built_binary.as_ref().unwrap())
             .await?;
 
         let mut bind_types = HashMap::new();

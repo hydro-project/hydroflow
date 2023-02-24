@@ -1,4 +1,4 @@
-use std::{fmt::Debug, path::PathBuf, sync::Arc};
+use std::{path::Path, sync::Arc};
 
 use anyhow::Result;
 use async_channel::{Receiver, Sender};
@@ -27,7 +27,7 @@ pub struct ResourceBatch {
 impl ResourceBatch {
     fn new() -> ResourceBatch {
         ResourceBatch {
-            terraform: terraform::TerraformBatch::new(),
+            terraform: terraform::TerraformBatch::default(),
         }
     }
 
@@ -53,7 +53,7 @@ pub trait LaunchedBinary: Send + Sync {
 
 #[async_trait]
 pub trait LaunchedHost: Send + Sync {
-    async fn launch_binary(&self, binary: &PathBuf) -> Result<Arc<RwLock<dyn LaunchedBinary>>>;
+    async fn launch_binary(&self, binary: &Path) -> Result<Arc<RwLock<dyn LaunchedBinary>>>;
 }
 
 pub enum ConnectionType {

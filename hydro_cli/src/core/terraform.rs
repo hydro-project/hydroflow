@@ -10,55 +10,8 @@ pub struct TerraformBatch {
     pub output: HashMap<String, TerraformOutput>,
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct TerraformConfig {
-    pub required_providers: HashMap<String, TerraformProvider>,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct TerraformProvider {
-    pub source: String,
-    pub version: String,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct TerraformOutput {
-    pub value: String,
-}
-
-pub struct TerraformResult {
-    pub outputs: HashMap<String, TerraformOutput>,
-    pub deployment_folder: tempfile::TempDir,
-}
-
-impl Drop for TerraformResult {
-    fn drop(&mut self) {
-        println!(
-            "Destroying terraform deployment at {}",
-            self.deployment_folder.path().display()
-        );
-        if !std::process::Command::new("terraform")
-            .current_dir(&self.deployment_folder)
-            .arg("destroy")
-            .arg("-auto-approve")
-            .spawn()
-            .expect("Failed to spawn terraform destroy command")
-            .wait()
-            .expect("Failed to destroy terraform deployment")
-            .success()
-        {
-            panic!("Failed to destroy terraform deployment");
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct TerraformResultOutput {
-    value: String,
-}
-
-impl TerraformBatch {
-    pub fn new() -> TerraformBatch {
+impl Default for TerraformBatch {
+    fn default() -> TerraformBatch {
         TerraformBatch {
             terraform: TerraformConfig {
                 required_providers: HashMap::new(),
@@ -67,7 +20,9 @@ impl TerraformBatch {
             output: HashMap::new(),
         }
     }
+}
 
+impl TerraformBatch {
     pub async fn provision(self) -> TerraformResult {
         let dothydro_folder = std::env::current_dir().unwrap().join(".hydro");
         std::fs::create_dir_all(&dothydro_folder).unwrap();
@@ -133,4 +88,51 @@ impl TerraformBatch {
 
         result
     }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct TerraformConfig {
+    pub required_providers: HashMap<String, TerraformProvider>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct TerraformProvider {
+    pub source: String,
+    pub version: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct TerraformOutput {
+    pub value: String,
+}
+
+pub struct TerraformResult {
+    pub outputs: HashMap<String, TerraformOutput>,
+    pub deployment_folder: tempfile::TempDir,
+}
+
+impl Drop for TerraformResult {
+    fn drop(&mut self) {
+        println!(
+            "Destroying terraform deployment at {}",
+            self.deployment_folder.path().display()
+        );
+        if !std::process::Command::new("terraform")
+            .current_dir(&self.deployment_folder)
+            .arg("destroy")
+            .arg("-auto-approve")
+            .spawn()
+            .expect("Failed to spawn terraform destroy command")
+            .wait()
+            .expect("Failed to destroy terraform deployment")
+            .success()
+        {
+            panic!("Failed to destroy terraform deployment");
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct TerraformResultOutput {
+    value: String,
 }

@@ -1,4 +1,4 @@
-use std::{path::PathBuf, sync::Arc};
+use std::{path::Path, sync::Arc};
 
 use anyhow::{Context, Result};
 use async_channel::{Receiver, Sender};
@@ -83,7 +83,7 @@ pub fn create_broadcast<T: AsyncRead + Send + Unpin + 'static>(
 
 #[async_trait]
 impl LaunchedHost for LaunchedLocalhost {
-    async fn launch_binary(&self, binary: &PathBuf) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
+    async fn launch_binary(&self, binary: &Path) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
         let mut child = Command::new(binary)
             .kill_on_drop(true)
             .stdin(Stdio::piped())

@@ -1,13 +1,15 @@
-use std::{net::SocketAddr, path::PathBuf, sync::Arc};
-
-use anyhow::{anyhow, bail, Context, Result};
-use async_channel::{Receiver, Sender};
-use async_process::{Command, Stdio};
-use async_ssh2_lite::{ssh2::FileStat, AsyncChannel, AsyncSession, SessionConfiguration};
-use async_trait::async_trait;
-use futures::{
-    io::BufReader, AsyncBufReadExt, AsyncRead, AsyncReadExt, AsyncWriteExt, Future, StreamExt,
+use std::{
+    net::SocketAddr,
+    path::{Path, PathBuf},
+    sync::Arc,
 };
+
+use anyhow::{anyhow, Context, Result};
+use async_channel::{Receiver, Sender};
+
+use async_ssh2_lite::{AsyncChannel, AsyncSession, SessionConfiguration};
+use async_trait::async_trait;
+use futures::{AsyncWriteExt, Future, StreamExt};
 use hydroflow::util::connection::BindType;
 use serde_json::json;
 use tokio::{net::TcpStream, sync::RwLock};
@@ -80,7 +82,7 @@ async fn async_retry<T, F: Future<Output = Result<T>>>(
 
 #[async_trait]
 impl LaunchedHost for LaunchedComputeEngine {
-    async fn launch_binary(&self, binary: &PathBuf) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
+    async fn launch_binary(&self, binary: &Path) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
         let mut session = async_retry(
             || async {
                 let mut config = SessionConfiguration::new();
@@ -270,7 +272,7 @@ impl Host for GCPComputeEngineHost {
             .insert(
                 allow_ssh_rule.clone(),
                 json!({
-                    "name": allow_ssh_rule.clone(),
+                    "name": allow_ssh_rule,
                     "project": project,
                     "network": format!("${{google_compute_network.{vpc_network}.name}}"),
                     "target_tags": [allow_ssh_rule],
