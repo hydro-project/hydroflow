@@ -178,6 +178,48 @@
         {
             "type": "lldb",
             "request": "launch",
+            "name": "Debug example 'graph_unreachability'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=graph_unreachability",
+                    "--package=hydroflow"
+                ],
+                "filter": {
+                    "name": "graph_unreachability",
+                    "kind": "example"
+                }
+            },
+            "args": [
+                "--graph=dot"
+            ],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'rga'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=rga",
+                    "--package=hydroflow"
+                ],
+                "filter": {
+                    "name": "rga",
+                    "kind": "example"
+                }
+            },
+            "args": [
+                "-o rga.out",
+                "--impl=datalog-agg",
+                "--graph=dot"
+            ],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
             "name": "Debug example 'three_clique'",
             "cargo": {
                 "args": [
