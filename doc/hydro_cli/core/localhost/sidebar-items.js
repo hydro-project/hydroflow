@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["LaunchedLocalhost",""],["LaunchedLocalhostBinary",""],["LocalhostHost",""]]};
+window.SIDEBAR_ITEMS = {"fn":[["create_broadcast",""]],"struct":[["LaunchedLocalhost",""],["LaunchedLocalhostBinary",""],["LocalhostHost",""]]};

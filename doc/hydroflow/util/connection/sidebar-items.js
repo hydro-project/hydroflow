@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":[["BindType",""],["BoundConnection",""],["ConnectionPipe","Describes a medium through which two HydroFlow services can communicate."]]};

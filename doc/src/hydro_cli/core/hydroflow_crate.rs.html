@@ -197,9 +197,85 @@
 <a href="#197" id="197">197</a>
 <a href="#198" id="198">198</a>
 <a href="#199" id="199">199</a>
+<a href="#200" id="200">200</a>
+<a href="#201" id="201">201</a>
+<a href="#202" id="202">202</a>
+<a href="#203" id="203">203</a>
+<a href="#204" id="204">204</a>
+<a href="#205" id="205">205</a>
+<a href="#206" id="206">206</a>
+<a href="#207" id="207">207</a>
+<a href="#208" id="208">208</a>
+<a href="#209" id="209">209</a>
+<a href="#210" id="210">210</a>
+<a href="#211" id="211">211</a>
+<a href="#212" id="212">212</a>
+<a href="#213" id="213">213</a>
+<a href="#214" id="214">214</a>
+<a href="#215" id="215">215</a>
+<a href="#216" id="216">216</a>
+<a href="#217" id="217">217</a>
+<a href="#218" id="218">218</a>
+<a href="#219" id="219">219</a>
+<a href="#220" id="220">220</a>
+<a href="#221" id="221">221</a>
+<a href="#222" id="222">222</a>
+<a href="#223" id="223">223</a>
+<a href="#224" id="224">224</a>
+<a href="#225" id="225">225</a>
+<a href="#226" id="226">226</a>
+<a href="#227" id="227">227</a>
+<a href="#228" id="228">228</a>
+<a href="#229" id="229">229</a>
+<a href="#230" id="230">230</a>
+<a href="#231" id="231">231</a>
+<a href="#232" id="232">232</a>
+<a href="#233" id="233">233</a>
+<a href="#234" id="234">234</a>
+<a href="#235" id="235">235</a>
+<a href="#236" id="236">236</a>
+<a href="#237" id="237">237</a>
+<a href="#238" id="238">238</a>
+<a href="#239" id="239">239</a>
+<a href="#240" id="240">240</a>
+<a href="#241" id="241">241</a>
+<a href="#242" id="242">242</a>
+<a href="#243" id="243">243</a>
+<a href="#244" id="244">244</a>
+<a href="#245" id="245">245</a>
+<a href="#246" id="246">246</a>
+<a href="#247" id="247">247</a>
+<a href="#248" id="248">248</a>
+<a href="#249" id="249">249</a>
+<a href="#250" id="250">250</a>
+<a href="#251" id="251">251</a>
+<a href="#252" id="252">252</a>
+<a href="#253" id="253">253</a>
+<a href="#254" id="254">254</a>
+<a href="#255" id="255">255</a>
+<a href="#256" id="256">256</a>
+<a href="#257" id="257">257</a>
+<a href="#258" id="258">258</a>
+<a href="#259" id="259">259</a>
+<a href="#260" id="260">260</a>
+<a href="#261" id="261">261</a>
+<a href="#262" id="262">262</a>
+<a href="#263" id="263">263</a>
+<a href="#264" id="264">264</a>
+<a href="#265" id="265">265</a>
+<a href="#266" id="266">266</a>
+<a href="#267" id="267">267</a>
+<a href="#268" id="268">268</a>
+<a href="#269" id="269">269</a>
+<a href="#270" id="270">270</a>
+<a href="#271" id="271">271</a>
+<a href="#272" id="272">272</a>
+<a href="#273" id="273">273</a>
+<a href="#274" id="274">274</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::{
     collections::HashMap,
     fmt::Debug,
+    ops::Deref,
     path::PathBuf,
     sync::{Arc, Weak},
 };
@@ -207,74 +283,108 @@
 <span class="kw">use </span>async_channel::Receiver;
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>cargo::{
-    core::Workspace,
+    core::{compiler::BuildConfig, resolver::CliFeatures, Workspace},
     ops::{CompileFilter, CompileOptions, FilterRule, LibRule},
-    util::command_prelude::CompileMode,
+    util::{command_prelude::CompileMode, interning::InternedString},
     Config,
 };
+<span class="kw">use </span>hydroflow::util::connection::ConnectionPipe;
 <span class="kw">use </span>tokio::{sync::RwLock, task::JoinHandle};
 
-<span class="kw">use super</span>::{
-    ConnectionPipe, Host, LaunchedBinary, LaunchedHost, Service, TerraformBatch, TerraformResult,
-};
+<span class="kw">use super</span>::{Host, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult, Service};
 
 <span class="kw">pub struct </span>HydroflowCrate {
-    <span class="kw">pub </span>src: PathBuf,
-    <span class="kw">pub </span>on: Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;,
-    <span class="kw">pub </span>example: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    src: PathBuf,
+    on: Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;,
+    example: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    features: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
 
-    <span class="comment">// actually HydroflowCrates
-    </span><span class="kw">pub </span>outgoing_ports: HashMap&lt;String, (Weak&lt;RwLock&lt;<span class="kw">dyn </span>Service&gt;&gt;, String)&gt;,
-    <span class="kw">pub </span>incoming_ports: HashMap&lt;String, (Weak&lt;RwLock&lt;<span class="kw">dyn </span>Service&gt;&gt;, String)&gt;,
+    <span class="doccomment">/// A mapping from output ports to the service that the port sends data to.
+    /// Each `dyn Service` is guaranteed to be another `HydroflowCrate`.
+    </span>outgoing_ports: HashMap&lt;String, (Weak&lt;RwLock&lt;<span class="kw">dyn </span>Service&gt;&gt;, String)&gt;,
 
-    <span class="kw">pub </span>built_binary: <span class="prelude-ty">Option</span>&lt;String&gt;,
-    <span class="kw">pub </span>launched_host: <span class="prelude-ty">Option</span>&lt;Arc&lt;<span class="kw">dyn </span>LaunchedHost&gt;&gt;,
-    <span class="kw">pub </span>allocated_incoming: HashMap&lt;String, ConnectionPipe&gt;,
-    <span class="kw">pub </span>launched_binary: <span class="prelude-ty">Option</span>&lt;Arc&lt;RwLock&lt;<span class="kw">dyn </span>LaunchedBinary&gt;&gt;&gt;,
+    <span class="doccomment">/// A map of port names to the host that will be sending data to the port.
+    </span>incoming_ports: HashMap&lt;String, Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;&gt;,
+
+    built_binary: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    launched_host: <span class="prelude-ty">Option</span>&lt;Arc&lt;<span class="kw">dyn </span>LaunchedHost&gt;&gt;,
+
+    <span class="doccomment">/// A map of port names to config for how other services can connect to this one.
+    /// Only valid after `ready` has been called.
+    </span>bound_pipes: HashMap&lt;String, ConnectionPipe&gt;,
+
+    launched_binary: <span class="prelude-ty">Option</span>&lt;Arc&lt;RwLock&lt;<span class="kw">dyn </span>LaunchedBinary&gt;&gt;&gt;,
 }
 
 <span class="kw">impl </span>HydroflowCrate {
-    <span class="kw">pub fn </span>new(src: PathBuf, on: Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;, example: <span class="prelude-ty">Option</span>&lt;String&gt;) -&gt; <span class="self">Self </span>{
+    <span class="kw">pub fn </span>new(
+        src: PathBuf,
+        on: Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;,
+        example: <span class="prelude-ty">Option</span>&lt;String&gt;,
+        features: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
+    ) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
             src,
             on,
             example,
+            features,
             outgoing_ports: HashMap::new(),
             incoming_ports: HashMap::new(),
             built_binary: <span class="prelude-val">None</span>,
             launched_host: <span class="prelude-val">None</span>,
-            allocated_incoming: HashMap::new(),
+            bound_pipes: HashMap::new(),
             launched_binary: <span class="prelude-val">None</span>,
         }
     }
 
-    <span class="kw">pub fn </span>stdout(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Receiver&lt;String&gt; {
-        <span class="self">self</span>.launched_binary
-            .as_ref()
-            .unwrap()
-            .blocking_read()
-            .stdout()
+    <span class="kw">pub fn </span>add_incoming_port(<span class="kw-2">&amp;mut </span><span class="self">self</span>, my_port: String, from: <span class="kw-2">&amp;</span>HydroflowCrate) {
+        <span class="self">self</span>.incoming_ports.insert(my_port, from.host());
     }
 
-    <span class="kw">pub fn </span>stderr(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Receiver&lt;String&gt; {
-        <span class="self">self</span>.launched_binary
-            .as_ref()
-            .unwrap()
-            .blocking_read()
-            .stderr()
+    <span class="kw">pub fn </span>add_outgoing_port(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        my_port: String,
+        to: <span class="kw-2">&amp;</span>Arc&lt;RwLock&lt;<span class="kw">dyn </span>Service&gt;&gt;,
+        to_port: String,
+    ) {
+        <span class="self">self</span>.outgoing_ports
+            .insert(my_port, (Arc::downgrade(to), to_port));
     }
 
-    <span class="kw">pub fn </span>exit_code(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;i32&gt; {
+    <span class="kw">pub async fn </span>stdout(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Receiver&lt;String&gt; {
         <span class="self">self</span>.launched_binary
             .as_ref()
             .unwrap()
-            .blocking_read()
-            .exit_code()
-    }
+            .read()
+            .<span class="kw">await
+            </span>.stdout()
+            .<span class="kw">await
+    </span>}
+
+    <span class="kw">pub async fn </span>stderr(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Receiver&lt;String&gt; {
+        <span class="self">self</span>.launched_binary
+            .as_ref()
+            .unwrap()
+            .read()
+            .<span class="kw">await
+            </span>.stderr()
+            .<span class="kw">await
+    </span>}
+
+    <span class="kw">pub async fn </span>exit_code(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;i32&gt; {
+        <span class="self">self</span>.launched_binary
+            .as_ref()
+            .unwrap()
+            .read()
+            .<span class="kw">await
+            </span>.exit_code()
+            .<span class="kw">await
+    </span>}
 
     <span class="kw">fn </span>build(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; JoinHandle&lt;String&gt; {
         <span class="kw">let </span>src_cloned = <span class="self">self</span>.src.join(<span class="string">&quot;Cargo.toml&quot;</span>).canonicalize().unwrap();
         <span class="kw">let </span>example_cloned = <span class="self">self</span>.example.clone();
+        <span class="kw">let </span>features_cloned = <span class="self">self</span>.features.clone();
 
         tokio::task::spawn_blocking(<span class="kw">move </span>|| {
             <span class="kw">let </span>config = Config::default().unwrap();
@@ -289,6 +399,23 @@
                 tests: FilterRule::Just(<span class="macro">vec!</span>[]),
                 benches: FilterRule::Just(<span class="macro">vec!</span>[]),
             };
+
+            compile_options.build_config = BuildConfig::new(
+                <span class="kw-2">&amp;</span>config,
+                <span class="prelude-val">None</span>,
+                <span class="bool-val">false</span>,
+                <span class="kw-2">&amp;</span>[
+                    <span class="comment">// TODO(shadaj): make configurable
+                    </span><span class="string">&quot;x86_64-unknown-linux-musl&quot;</span>.to_string(),
+                ],
+                CompileMode::Build,
+            )
+            .unwrap();
+
+            compile_options.build_config.requested_profile = InternedString::from(<span class="string">&quot;release&quot;</span>);
+            compile_options.cli_features =
+                CliFeatures::from_command_line(<span class="kw-2">&amp;</span>features_cloned.unwrap_or_default(), <span class="bool-val">false</span>, <span class="bool-val">true</span>)
+                    .unwrap();
 
             <span class="kw">let </span>res = cargo::ops::compile(<span class="kw-2">&amp;</span>workspace, <span class="kw-2">&amp;</span>compile_options).unwrap();
             <span class="kw">let </span>binaries = res
@@ -308,58 +435,80 @@
 
 <span class="attr">#[async_trait]
 </span><span class="kw">impl </span>Service <span class="kw">for </span>HydroflowCrate {
-    <span class="kw">async fn </span>collect_resources(<span class="kw-2">&amp;mut </span><span class="self">self</span>, terraform: <span class="kw-2">&amp;mut </span>TerraformBatch) {
-        <span class="kw">let </span><span class="kw-2">mut </span>host = <span class="self">self</span>.on.write().<span class="kw">await</span>;
-        host.collect_resources(terraform).<span class="kw">await</span>;
-    }
-
-    <span class="kw">async fn </span>deploy(<span class="kw-2">&amp;mut </span><span class="self">self</span>, terraform_result: <span class="kw-2">&amp;</span>TerraformResult) {
+    <span class="kw">async fn </span>collect_resources(<span class="kw-2">&amp;mut </span><span class="self">self</span>, resource_batch: <span class="kw-2">&amp;mut </span>ResourceBatch) {
         <span class="kw">let </span>built = <span class="self">self</span>.build();
+        <span class="self">self</span>.built_binary = <span class="prelude-val">Some</span>(built.<span class="kw">await</span>.unwrap());
         <span class="kw">let </span>host_read = <span class="self">self</span>.on.read().<span class="kw">await</span>;
-
-        <span class="self">self</span>.allocated_incoming = HashMap::new();
-        <span class="kw">for </span>(port_name, (service, <span class="kw">_</span>)) <span class="kw">in </span><span class="self">self</span>.incoming_ports.iter() {
-            <span class="kw">let </span>service = service.upgrade().unwrap();
-            <span class="kw">let </span>pipe = host_read.allocate_pipe(service.read().<span class="kw">await</span>.host()).<span class="kw">await</span>;
-            <span class="self">self</span>.allocated_incoming.insert(port_name.clone(), pipe);
-        }
 
         drop(host_read);
 
-        <span class="kw">let </span><span class="kw-2">mut </span>host_write = <span class="self">self</span>.on.write().<span class="kw">await</span>;
-        <span class="kw">let </span>launched = host_write.provision(terraform_result);
+        <span class="kw">let </span><span class="kw-2">mut </span>host = <span class="self">self</span>.on.write().<span class="kw">await</span>;
+        host.collect_resources(resource_batch).<span class="kw">await</span>;
+    }
 
-        <span class="self">self</span>.built_binary = <span class="prelude-val">Some</span>(built.<span class="kw">await</span>.unwrap());
+    <span class="kw">async fn </span>deploy(<span class="kw-2">&amp;mut </span><span class="self">self</span>, resource_result: <span class="kw-2">&amp;</span>Arc&lt;ResourceResult&gt;) {
+        <span class="kw">let </span><span class="kw-2">mut </span>host_write = <span class="self">self</span>.on.write().<span class="kw">await</span>;
+        <span class="kw">let </span>launched = host_write.provision(resource_result);
         <span class="self">self</span>.launched_host = <span class="prelude-val">Some</span>(launched.<span class="kw">await</span>);
     }
 
     <span class="kw">async fn </span>ready(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-        <span class="self">self</span>.launched_binary = <span class="prelude-val">Some</span>(
-            <span class="self">self</span>.launched_host
-                .as_ref()
-                .unwrap()
-                .launch_binary(<span class="self">self</span>.built_binary.as_ref().unwrap().clone())
-                .<span class="kw">await</span>,
-        );
+        <span class="kw">let </span>binary = <span class="self">self
+            </span>.launched_host
+            .as_ref()
+            .unwrap()
+            .launch_binary(<span class="self">self</span>.built_binary.as_ref().unwrap().clone())
+            .<span class="kw">await</span>;
+
+        <span class="kw">let </span><span class="kw-2">mut </span>bind_types = HashMap::new();
+        <span class="kw">for </span>(port_name, from_host) <span class="kw">in </span><span class="self">self</span>.incoming_ports.iter() {
+            bind_types.insert(
+                port_name.clone(),
+                from_host
+                    .read()
+                    .<span class="kw">await
+                    </span>.find_bind_type(<span class="self">self</span>.on.read().<span class="kw">await</span>.deref()),
+            );
+        }
+
+        <span class="kw">let </span>formatted_bind_types = serde_json::to_string(<span class="kw-2">&amp;</span>bind_types).unwrap();
+
+        <span class="comment">// request stdout before sending config so we don&#39;t miss the &quot;ready&quot; response
+        </span><span class="kw">let </span>stdout_receiver = binary.write().<span class="kw">await</span>.stdout().<span class="kw">await</span>;
+
+        binary
+            .write()
+            .<span class="kw">await
+            </span>.stdin()
+            .<span class="kw">await
+            </span>.send(<span class="macro">format!</span>(<span class="string">&quot;{formatted_bind_types}\n&quot;</span>))
+            .<span class="kw">await
+            </span>.unwrap();
+
+        <span class="kw">let </span>ready_line = stdout_receiver.recv().<span class="kw">await</span>.unwrap();
+        <span class="kw">if </span>ready_line.starts_with(<span class="string">&quot;ready: &quot;</span>) {
+            <span class="self">self</span>.bound_pipes =
+                serde_json::from_str(ready_line.trim_start_matches(<span class="string">&quot;ready: &quot;</span>)).unwrap();
+        } <span class="kw">else </span>{
+            <span class="macro">panic!</span>(<span class="string">&quot;expected ready&quot;</span>);
+        }
+
+        <span class="self">self</span>.launched_binary = <span class="prelude-val">Some</span>(binary);
     }
 
     <span class="kw">async fn </span>start(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-        <span class="kw">let </span><span class="kw-2">mut </span>all_ports = <span class="self">self</span>.allocated_incoming.clone();
+        <span class="kw">let </span><span class="kw-2">mut </span>pipe_config = HashMap::new();
         <span class="kw">for </span>(port_name, (target, target_port)) <span class="kw">in </span><span class="self">self</span>.outgoing_ports.iter() {
             <span class="kw">let </span>target = target.upgrade().unwrap();
             <span class="kw">let </span>target = target.read().<span class="kw">await</span>;
             <span class="kw">let </span>target = target.as_any().downcast_ref::&lt;HydroflowCrate&gt;().unwrap();
-            all_ports.insert(
-                port_name.clone(),
-                target.allocated_incoming.get(target_port).unwrap().clone(),
-            );
+
+            <span class="kw">let </span>conn = target.bound_pipes.get(target_port).unwrap();
+
+            pipe_config.insert(port_name.clone(), conn.clone());
         }
 
-        <span class="kw">let </span>formatted_ports = all_ports
-            .iter()
-            .map(|(port_name, pipe)| <span class="macro">format!</span>(<span class="string">&quot;{}={:?}&quot;</span>, port_name, pipe))
-            .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;()
-            .join(<span class="string">&quot;;&quot;</span>);
+        <span class="kw">let </span>formatted_pipe_config = serde_json::to_string(<span class="kw-2">&amp;</span>pipe_config).unwrap();
 
         <span class="self">self</span>.launched_binary
             .as_mut()
@@ -367,7 +516,8 @@
             .write()
             .<span class="kw">await
             </span>.stdin()
-            .send(<span class="macro">format!</span>(<span class="string">&quot;{formatted_ports}\n&quot;</span>))
+            .<span class="kw">await
+            </span>.send(<span class="macro">format!</span>(<span class="string">&quot;start: {formatted_pipe_config}\n&quot;</span>))
             .<span class="kw">await
             </span>.unwrap();
     }

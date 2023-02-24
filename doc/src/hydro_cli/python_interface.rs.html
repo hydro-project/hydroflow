@@ -182,6 +182,16 @@
 <a href="#182" id="182">182</a>
 <a href="#183" id="183">183</a>
 <a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::sync::Arc;
 
 <span class="kw">use </span>async_channel::Receiver;
@@ -209,6 +219,15 @@
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.clone();
         pyo3_asyncio::tokio::future_into_py(py, <span class="kw">async move </span>{
             underlying.write().<span class="kw">await</span>.deploy().<span class="kw">await</span>;
+            <span class="prelude-val">Ok</span>(Python::with_gil(|py| py.<span class="prelude-val">None</span>()))
+        })
+        .unwrap()
+    }
+
+    <span class="kw">fn </span>start&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny {
+        <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.clone();
+        pyo3_asyncio::tokio::future_into_py(py, <span class="kw">async move </span>{
+            underlying.write().<span class="kw">await</span>.start().<span class="kw">await</span>;
             <span class="prelude-val">Ok</span>(Python::with_gil(|py| py.<span class="prelude-val">None</span>()))
         })
         .unwrap()
@@ -244,18 +263,6 @@
     underlying: Arc&lt;RwLock&lt;<span class="kw">dyn </span><span class="kw">crate</span>::core::Service&gt;&gt;,
 }
 
-<span class="attr">#[pymethods]
-</span><span class="kw">impl </span>PyService {
-    <span class="kw">fn </span>start&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny {
-        <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.clone();
-        pyo3_asyncio::tokio::future_into_py(py, <span class="kw">async move </span>{
-            underlying.write().<span class="kw">await</span>.start().<span class="kw">await</span>;
-            <span class="prelude-val">Ok</span>(Python::with_gil(|py| py.<span class="prelude-val">None</span>()))
-        })
-        .unwrap()
-    }
-}
-
 <span class="attr">#[pyclass]
 </span><span class="kw">struct </span>PyReceiver {
     receiver: Arc&lt;Receiver&lt;String&gt;&gt;,
@@ -284,49 +291,67 @@
         src: String,
         on: <span class="kw-2">&amp;</span>PyHost,
         example: <span class="prelude-ty">Option</span>&lt;String&gt;,
+        features: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
     ) -&gt; (<span class="self">Self</span>, PyService) {
         (
             PyHydroflowCrate {},
             PyService {
                 underlying: deployment.underlying.blocking_write().add_service(
-                    <span class="kw">crate</span>::core::HydroflowCrate::new(src.into(), on.underlying.clone(), example),
+                    <span class="kw">crate</span>::core::HydroflowCrate::new(
+                        src.into(),
+                        on.underlying.clone(),
+                        example,
+                        features,
+                    ),
                 ),
             },
         )
     }
 
-    <span class="kw">fn </span>stdout(self_: PyRef&lt;<span class="lifetime">&#39;_</span>, <span class="self">Self</span>&gt;) -&gt; PyResult&lt;PyReceiver&gt; {
+    <span class="kw">fn </span>stdout&lt;<span class="lifetime">&#39;p</span>&gt;(self_: PyRef&lt;<span class="lifetime">&#39;p</span>, <span class="self">Self</span>&gt;, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny {
         <span class="kw">let </span>underlying = <span class="kw-2">&amp;</span>self_.as_ref().underlying;
-        <span class="kw">let </span><span class="kw-2">mut </span>underlying_mut = underlying.blocking_write();
-        <span class="kw">let </span>hydro = underlying_mut
-            .as_any_mut()
-            .downcast_mut::&lt;<span class="kw">crate</span>::core::HydroflowCrate&gt;()
-            .unwrap();
-        <span class="prelude-val">Ok</span>(PyReceiver {
-            receiver: Arc::new(hydro.stdout()),
+        <span class="kw">let </span>underlying = underlying.clone();
+        pyo3_asyncio::tokio::future_into_py(py, <span class="kw">async move </span>{
+            <span class="kw">let </span><span class="kw-2">mut </span>underlying_mut = underlying.write().<span class="kw">await</span>;
+            <span class="kw">let </span>hydro = underlying_mut
+                .as_any_mut()
+                .downcast_mut::&lt;<span class="kw">crate</span>::core::HydroflowCrate&gt;()
+                .unwrap();
+            <span class="prelude-val">Ok</span>(PyReceiver {
+                receiver: Arc::new(hydro.stdout().<span class="kw">await</span>),
+            })
         })
+        .unwrap()
     }
 
-    <span class="kw">fn </span>stderr(self_: PyRef&lt;<span class="lifetime">&#39;_</span>, <span class="self">Self</span>&gt;) -&gt; PyResult&lt;PyReceiver&gt; {
+    <span class="kw">fn </span>stderr&lt;<span class="lifetime">&#39;p</span>&gt;(self_: PyRef&lt;<span class="lifetime">&#39;p</span>, <span class="self">Self</span>&gt;, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny {
         <span class="kw">let </span>underlying = <span class="kw-2">&amp;</span>self_.as_ref().underlying;
-        <span class="kw">let </span><span class="kw-2">mut </span>underlying_mut = underlying.blocking_write();
-        <span class="kw">let </span>hydro = underlying_mut
-            .as_any_mut()
-            .downcast_mut::&lt;<span class="kw">crate</span>::core::HydroflowCrate&gt;()
-            .unwrap();
-        <span class="prelude-val">Ok</span>(PyReceiver {
-            receiver: Arc::new(hydro.stderr()),
+        <span class="kw">let </span>underlying = underlying.clone();
+        pyo3_asyncio::tokio::future_into_py(py, <span class="kw">async move </span>{
+            <span class="kw">let </span><span class="kw-2">mut </span>underlying_mut = underlying.write().<span class="kw">await</span>;
+            <span class="kw">let </span>hydro = underlying_mut
+                .as_any_mut()
+                .downcast_mut::&lt;<span class="kw">crate</span>::core::HydroflowCrate&gt;()
+                .unwrap();
+            <span class="prelude-val">Ok</span>(PyReceiver {
+                receiver: Arc::new(hydro.stderr().<span class="kw">await</span>),
+            })
         })
+        .unwrap()
     }
 
-    <span class="kw">fn </span>exit_code(self_: PyRef&lt;<span class="lifetime">&#39;_</span>, <span class="self">Self</span>&gt;) -&gt; PyResult&lt;<span class="prelude-ty">Option</span>&lt;i32&gt;&gt; {
+    <span class="kw">fn </span>exit_code&lt;<span class="lifetime">&#39;p</span>&gt;(self_: PyRef&lt;<span class="lifetime">&#39;p</span>, <span class="self">Self</span>&gt;, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny {
         <span class="kw">let </span>underlying = <span class="kw-2">&amp;</span>self_.as_ref().underlying;
-        <span class="kw">let </span><span class="kw-2">mut </span>underlying_mut = underlying.blocking_write();
-        <span class="kw">let </span>hydro = underlying_mut
-            .as_any_mut()
-            .downcast_mut::&lt;<span class="kw">crate</span>::core::HydroflowCrate&gt;()
-            .unwrap();
-        <span class="prelude-val">Ok</span>(hydro.exit_code())
+        <span class="kw">let </span>underlying = underlying.clone();
+        pyo3_asyncio::tokio::future_into_py(py, <span class="kw">async move </span>{
+            <span class="kw">let </span><span class="kw-2">mut </span>underlying_mut = underlying.write().<span class="kw">await</span>;
+            <span class="kw">let </span>hydro = underlying_mut
+                .as_any_mut()
+                .downcast_mut::&lt;<span class="kw">crate</span>::core::HydroflowCrate&gt;()
+                .unwrap();
+            <span class="prelude-val">Ok</span>(hydro.exit_code().<span class="kw">await</span>)
+        })
+        .unwrap()
     }
 }
 
@@ -346,13 +371,8 @@
         .downcast_mut::&lt;<span class="kw">crate</span>::core::HydroflowCrate&gt;()
         .unwrap();
 
-    from_hydro
-        .outgoing_ports
-        .insert(from_port.clone(), (Arc::downgrade(to), to_port.clone()));
-
-    to_hydro
-        .incoming_ports
-        .insert(to_port, (Arc::downgrade(from), from_port));
+    from_hydro.add_outgoing_port(from_port, to, to_port.clone());
+    to_hydro.add_incoming_port(to_port, from_hydro);
 }
 
 <span class="attr">#[pymodule]

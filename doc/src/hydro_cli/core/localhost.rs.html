@@ -128,44 +128,74 @@
 <a href="#128" id="128">128</a>
 <a href="#129" id="129">129</a>
 <a href="#130" id="130">130</a>
-</pre><pre class="rust"><code><span class="kw">use </span>std::{path::PathBuf, sync::Arc};
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+</pre><pre class="rust"><code><span class="kw">use </span>std::sync::Arc;
 
 <span class="kw">use </span>async_channel::{Receiver, Sender};
 <span class="kw">use </span>async_process::{Command, Stdio};
 <span class="kw">use </span>async_trait::async_trait;
-<span class="kw">use </span>futures::{io::BufReader, AsyncBufReadExt, AsyncWriteExt, StreamExt};
+<span class="kw">use </span>futures::{io::BufReader, AsyncBufReadExt, AsyncRead, AsyncWriteExt, StreamExt};
+<span class="kw">use </span>hydroflow::util::connection::BindType;
 <span class="kw">use </span>tokio::sync::RwLock;
 
-<span class="kw">use super</span>::{
-    ConnectionPipe, ConnectionType, Host, LaunchedBinary, LaunchedHost, TerraformBatch,
-    TerraformResult,
-};
+<span class="kw">use super</span>::{ConnectionType, Host, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult};
 
 <span class="kw">struct </span>LaunchedLocalhostBinary {
     child: RwLock&lt;async_process::Child&gt;,
     stdin_channel: Sender&lt;String&gt;,
-    stdout_channel: Receiver&lt;String&gt;,
-    stderr_channel: Receiver&lt;String&gt;,
+    stdout_receivers: Arc&lt;RwLock&lt;Vec&lt;Sender&lt;String&gt;&gt;&gt;&gt;,
+    stderr_receivers: Arc&lt;RwLock&lt;Vec&lt;Sender&lt;String&gt;&gt;&gt;&gt;,
 }
 
 <span class="attr">#[async_trait]
 </span><span class="kw">impl </span>LaunchedBinary <span class="kw">for </span>LaunchedLocalhostBinary {
-    <span class="kw">fn </span>stdin(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Sender&lt;String&gt; {
+    <span class="kw">async fn </span>stdin(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Sender&lt;String&gt; {
         <span class="self">self</span>.stdin_channel.clone()
     }
 
-    <span class="kw">fn </span>stdout(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Receiver&lt;String&gt; {
-        <span class="self">self</span>.stdout_channel.clone()
+    <span class="kw">async fn </span>stdout(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Receiver&lt;String&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>receivers = <span class="self">self</span>.stdout_receivers.write().<span class="kw">await</span>;
+        <span class="kw">let </span>(sender, receiver) = async_channel::unbounded::&lt;String&gt;();
+        receivers.push(sender);
+        receiver
     }
 
-    <span class="kw">fn </span>stderr(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Receiver&lt;String&gt; {
-        <span class="self">self</span>.stderr_channel.clone()
+    <span class="kw">async fn </span>stderr(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Receiver&lt;String&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>receivers = <span class="self">self</span>.stderr_receivers.write().<span class="kw">await</span>;
+        <span class="kw">let </span>(sender, receiver) = async_channel::unbounded::&lt;String&gt;();
+        receivers.push(sender);
+        receiver
     }
 
-    <span class="kw">fn </span>exit_code(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;i32&gt; {
+    <span class="kw">async fn </span>exit_code(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;i32&gt; {
         <span class="self">self</span>.child
-            .blocking_write()
-            .try_status()
+            .write()
+            .<span class="kw">await
+            </span>.try_status()
             .map(|s| s.and_then(|c| c.code()))
             .unwrap_or(<span class="prelude-val">None</span>)
     }
@@ -173,10 +203,43 @@
 
 <span class="kw">struct </span>LaunchedLocalhost {}
 
+<span class="kw">fn </span>create_broadcast&lt;T: AsyncRead + Send + Unpin + <span class="lifetime">&#39;static</span>&gt;(
+    source: T,
+    default: <span class="kw">impl </span>Fn(String) + Send + <span class="lifetime">&#39;static</span>,
+) -&gt; Arc&lt;RwLock&lt;Vec&lt;Sender&lt;String&gt;&gt;&gt;&gt; {
+    <span class="kw">let </span>receivers = Arc::new(RwLock::new(Vec::&lt;Sender&lt;String&gt;&gt;::new()));
+    <span class="kw">let </span>weak_receivers = Arc::downgrade(<span class="kw-2">&amp;</span>receivers);
+
+    tokio::spawn(<span class="kw">async move </span>{
+        <span class="kw">let </span><span class="kw-2">mut </span>lines = BufReader::new(source).lines();
+
+        <span class="kw">while let </span><span class="prelude-val">Some</span>(Result::Ok(line)) = lines.next().<span class="kw">await </span>{
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(receivers) = weak_receivers.upgrade() {
+                <span class="kw">let </span><span class="kw-2">mut </span>receivers = receivers.write().<span class="kw">await</span>;
+                <span class="kw">let </span><span class="kw-2">mut </span>successful_send = <span class="bool-val">false</span>;
+                <span class="kw">for </span>r <span class="kw">in </span>receivers.iter() {
+                    successful_send |= r.send(line.clone()).<span class="kw">await</span>.is_ok();
+                }
+
+                receivers.retain(|r| !r.is_closed());
+
+                <span class="kw">if </span>!successful_send {
+                    default(line);
+                }
+            } <span class="kw">else </span>{
+                <span class="kw">break</span>;
+            }
+        }
+    });
+
+    receivers
+}
+
 <span class="attr">#[async_trait]
 </span><span class="kw">impl </span>LaunchedHost <span class="kw">for </span>LaunchedLocalhost {
     <span class="kw">async fn </span>launch_binary(<span class="kw-2">&amp;</span><span class="self">self</span>, binary: String) -&gt; Arc&lt;RwLock&lt;<span class="kw">dyn </span>LaunchedBinary&gt;&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>child = Command::new(binary)
+            .kill_on_drop(<span class="bool-val">true</span>)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
@@ -193,35 +256,14 @@
             }
         });
 
-        <span class="kw">let </span>(stdout_sender, stdout_receiver) = async_channel::unbounded();
-        <span class="kw">let </span>stdout = child.stdout.take().unwrap();
-        tokio::spawn(<span class="kw">async move </span>{
-            <span class="kw">let </span><span class="kw-2">mut </span>lines = BufReader::new(stdout).lines();
-
-            <span class="kw">while let </span><span class="prelude-val">Some</span>(line) = lines.next().<span class="kw">await </span>{
-                <span class="kw">if </span>stdout_sender.send(line.unwrap()).<span class="kw">await</span>.is_err() {
-                    <span class="kw">break</span>;
-                }
-            }
-        });
-
-        <span class="kw">let </span>(stderr_sender, stderr_receiver) = async_channel::unbounded();
-        <span class="kw">let </span>stderr = child.stderr.take().unwrap();
-        tokio::spawn(<span class="kw">async move </span>{
-            <span class="kw">let </span><span class="kw-2">mut </span>lines = BufReader::new(stderr).lines();
-
-            <span class="kw">while let </span><span class="prelude-val">Some</span>(line) = lines.next().<span class="kw">await </span>{
-                <span class="kw">if </span>stderr_sender.send(line.unwrap()).<span class="kw">await</span>.is_err() {
-                    <span class="kw">break</span>;
-                }
-            }
-        });
+        <span class="kw">let </span>stdout_receivers = create_broadcast(child.stdout.take().unwrap(), |s| <span class="macro">println!</span>(<span class="string">&quot;{s}&quot;</span>));
+        <span class="kw">let </span>stderr_receivers = create_broadcast(child.stderr.take().unwrap(), |s| <span class="macro">eprintln!</span>(<span class="string">&quot;{s}&quot;</span>));
 
         Arc::new(RwLock::new(LaunchedLocalhostBinary {
             child: RwLock::new(child),
             stdin_channel: stdin_sender,
-            stdout_channel: stdout_receiver,
-            stderr_channel: stderr_receiver,
+            stdout_receivers,
+            stderr_receivers,
         }))
     }
 }
@@ -233,20 +275,17 @@
 
 <span class="attr">#[async_trait]
 </span><span class="kw">impl </span>Host <span class="kw">for </span>LocalhostHost {
-    <span class="kw">async fn </span>collect_resources(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _terraform: <span class="kw-2">&amp;mut </span>TerraformBatch) {}
+    <span class="kw">async fn </span>collect_resources(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _resource_batch: <span class="kw-2">&amp;mut </span>ResourceBatch) {}
 
-    <span class="kw">async fn </span>provision(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _terraform_result: <span class="kw-2">&amp;</span>TerraformResult) -&gt; Arc&lt;<span class="kw">dyn </span>LaunchedHost&gt; {
+    <span class="kw">async fn </span>provision(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _resource_result: <span class="kw-2">&amp;</span>Arc&lt;ResourceResult&gt;) -&gt; Arc&lt;<span class="kw">dyn </span>LaunchedHost&gt; {
         Arc::new(LaunchedLocalhost {})
     }
 
-    <span class="kw">async fn </span>allocate_pipe(<span class="kw-2">&amp;</span><span class="self">self</span>, client: Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;) -&gt; ConnectionPipe {
-        <span class="kw">if </span>client
-            .read()
-            .<span class="kw">await
-            </span>.can_connect_to(ConnectionType::UnixSocket(<span class="self">self</span>.id))
-        {
-            <span class="comment">// TODO(allocate a random file)
-            </span>ConnectionPipe::UnixSocket(PathBuf::from(<span class="string">&quot;/tmp/hydroflow.sock&quot;</span>))
+    <span class="kw">fn </span>find_bind_type(<span class="kw-2">&amp;</span><span class="self">self</span>, connection_from: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Host) -&gt; BindType {
+        <span class="kw">if </span>connection_from.can_connect_to(ConnectionType::UnixSocket(<span class="self">self</span>.id)) {
+            BindType::UnixSocket
+        } <span class="kw">else if </span>connection_from.can_connect_to(ConnectionType::InternalTcpPort(<span class="self">self</span>.id)) {
+            BindType::TcpPort(<span class="string">&quot;127.0.0.1&quot;</span>.to_string())
         } <span class="kw">else </span>{
             <span class="macro">todo!</span>()
         }
@@ -254,7 +293,18 @@
 
     <span class="kw">fn </span>can_connect_to(<span class="kw-2">&amp;</span><span class="self">self</span>, typ: ConnectionType) -&gt; bool {
         <span class="kw">match </span>typ {
-            ConnectionType::UnixSocket(id) =&gt; <span class="self">self</span>.id == id,
+            ConnectionType::UnixSocket(id) =&gt; {
+                <span class="attr">#[cfg(unix)]
+                </span>{
+                    <span class="self">self</span>.id == id
+                }
+
+                <span class="attr">#[cfg(not(unix))]
+                </span>{
+                    <span class="bool-val">false
+                </span>}
+            }
+            ConnectionType::InternalTcpPort(id) =&gt; <span class="self">self</span>.id == id,
         }
     }
 }

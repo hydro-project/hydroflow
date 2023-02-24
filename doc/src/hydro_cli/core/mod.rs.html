@@ -72,10 +72,24 @@
 <a href="#72" id="72">72</a>
 <a href="#73" id="73">73</a>
 <a href="#74" id="74">74</a>
-</pre><pre class="rust"><code><span class="kw">use </span>std::{fmt::Debug, path::PathBuf, sync::Arc};
+<a href="#75" id="75">75</a>
+<a href="#76" id="76">76</a>
+<a href="#77" id="77">77</a>
+<a href="#78" id="78">78</a>
+<a href="#79" id="79">79</a>
+<a href="#80" id="80">80</a>
+<a href="#81" id="81">81</a>
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
+<a href="#86" id="86">86</a>
+<a href="#87" id="87">87</a>
+</pre><pre class="rust"><code><span class="kw">use </span>std::{fmt::Debug, sync::Arc};
 
 <span class="kw">use </span>async_channel::{Receiver, Sender};
 <span class="kw">use </span>async_trait::async_trait;
+<span class="kw">use </span>hydroflow::util::connection::BindType;
 <span class="kw">use </span>tokio::sync::RwLock;
 
 <span class="kw">pub mod </span>deployment;
@@ -87,23 +101,23 @@
 <span class="kw">pub mod </span>hydroflow_crate;
 <span class="kw">pub use </span>hydroflow_crate::HydroflowCrate;
 
-<span class="kw">pub struct </span>TerraformBatch {}
+<span class="kw">pub struct </span>ResourceBatch {}
 
-<span class="kw">impl </span>TerraformBatch {
-    <span class="kw">async fn </span>provision(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; TerraformResult {
-        TerraformResult {}
+<span class="kw">impl </span>ResourceBatch {
+    <span class="kw">async fn </span>provision(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; ResourceResult {
+        ResourceResult {}
     }
 }
 
-<span class="kw">pub struct </span>TerraformResult {}
+<span class="kw">pub struct </span>ResourceResult {}
 
 <span class="attr">#[async_trait]
 </span><span class="kw">pub trait </span>LaunchedBinary: Send + Sync {
-    <span class="kw">fn </span>stdin(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Sender&lt;String&gt;;
-    <span class="kw">fn </span>stdout(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Receiver&lt;String&gt;;
-    <span class="kw">fn </span>stderr(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Receiver&lt;String&gt;;
+    <span class="kw">async fn </span>stdin(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Sender&lt;String&gt;;
+    <span class="kw">async fn </span>stdout(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Receiver&lt;String&gt;;
+    <span class="kw">async fn </span>stderr(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Receiver&lt;String&gt;;
 
-    <span class="kw">fn </span>exit_code(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;i32&gt;;
+    <span class="kw">async fn </span>exit_code(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;i32&gt;;
 }
 
 <span class="attr">#[async_trait]
@@ -111,35 +125,47 @@
     <span class="kw">async fn </span>launch_binary(<span class="kw-2">&amp;</span><span class="self">self</span>, binary: String) -&gt; Arc&lt;RwLock&lt;<span class="kw">dyn </span>LaunchedBinary&gt;&gt;;
 }
 
-<span class="attr">#[derive(Clone, Debug)]
-</span><span class="kw">pub enum </span>ConnectionPipe {
-    UnixSocket(PathBuf),
-}
-
 <span class="kw">pub enum </span>ConnectionType {
-    UnixSocket(usize),
+    UnixSocket(
+        <span class="doccomment">/// Unique identifier for the host this socket will be on.
+        </span>usize,
+    ),
+    InternalTcpPort(
+        <span class="doccomment">/// Unique identifier for the VPC this port will be on.
+        </span>usize,
+    ),
 }
 
 <span class="attr">#[async_trait]
 </span><span class="kw">pub trait </span>Host: Send + Sync + Debug {
-    <span class="doccomment">/// Collect the set of resources that this host needs to run.
-    </span><span class="kw">async fn </span>collect_resources(<span class="kw-2">&amp;mut </span><span class="self">self</span>, terraform: <span class="kw-2">&amp;mut </span>TerraformBatch);
+    <span class="doccomment">/// Makes requests for physical resources (servers) that this host needs to run.
+    </span><span class="kw">async fn </span>collect_resources(<span class="kw-2">&amp;mut </span><span class="self">self</span>, resource_batch: <span class="kw-2">&amp;mut </span>ResourceBatch);
 
-    <span class="kw">async fn </span>provision(<span class="kw-2">&amp;mut </span><span class="self">self</span>, terraform_result: <span class="kw-2">&amp;</span>TerraformResult) -&gt; Arc&lt;<span class="kw">dyn </span>LaunchedHost&gt;;
+    <span class="doccomment">/// Connects to the acquired resources and prepares the host to run services.
+    </span><span class="kw">async fn </span>provision(<span class="kw-2">&amp;mut </span><span class="self">self</span>, resource_result: <span class="kw-2">&amp;</span>Arc&lt;ResourceResult&gt;) -&gt; Arc&lt;<span class="kw">dyn </span>LaunchedHost&gt;;
 
-    <span class="kw">async fn </span>allocate_pipe(<span class="kw-2">&amp;</span><span class="self">self</span>, client: Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;) -&gt; ConnectionPipe;
+    <span class="doccomment">/// Identifies a network type that this host can use for connections from the given host.
+    </span><span class="kw">fn </span>find_bind_type(<span class="kw-2">&amp;</span><span class="self">self</span>, connection_from: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Host) -&gt; BindType;
 
     <span class="kw">fn </span>can_connect_to(<span class="kw-2">&amp;</span><span class="self">self</span>, typ: ConnectionType) -&gt; bool;
 }
 
 <span class="attr">#[async_trait]
 </span><span class="kw">pub trait </span>Service: Send + Sync + Debug {
-    <span class="doccomment">/// Collect the set of resources that this service needs to run.
-    </span><span class="kw">async fn </span>collect_resources(<span class="kw-2">&amp;mut </span><span class="self">self</span>, terraform: <span class="kw-2">&amp;mut </span>TerraformBatch);
+    <span class="doccomment">/// Makes requests for physical resources (servers) that this service needs to run.
+    /// This should also perform any &quot;free&quot; computations (compilations) that are needed,
+    /// because the `deploy` method will be called after these resources are allocated.
+    </span><span class="kw">async fn </span>collect_resources(<span class="kw-2">&amp;mut </span><span class="self">self</span>, resource_batch: <span class="kw-2">&amp;mut </span>ResourceBatch);
 
-    <span class="kw">async fn </span>deploy(<span class="kw-2">&amp;mut </span><span class="self">self</span>, terraform_result: <span class="kw-2">&amp;</span>TerraformResult);
-    <span class="kw">async fn </span>ready(<span class="kw-2">&amp;mut </span><span class="self">self</span>);
-    <span class="kw">async fn </span>start(<span class="kw-2">&amp;mut </span><span class="self">self</span>);
+    <span class="doccomment">/// Connects to the acquired resources and prepares the service to be launched.
+    </span><span class="kw">async fn </span>deploy(<span class="kw-2">&amp;mut </span><span class="self">self</span>, resource_result: <span class="kw-2">&amp;</span>Arc&lt;ResourceResult&gt;);
+
+    <span class="doccomment">/// Launches the service, which should start listening for incoming network
+    /// connections. The service should not start computing at this point.
+    </span><span class="kw">async fn </span>ready(<span class="kw-2">&amp;mut </span><span class="self">self</span>);
+
+    <span class="doccomment">/// Starts the service by having it connect to other services and start computations.
+    </span><span class="kw">async fn </span>start(<span class="kw-2">&amp;mut </span><span class="self">self</span>);
 
     <span class="kw">fn </span>host(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;;
 
