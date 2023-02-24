@@ -51,9 +51,10 @@ pub enum ConnectionType {
 
 #[async_trait]
 pub trait Host: Send + Sync + Debug {
-    /// Collect the set of resources that this host needs to run.
+    /// Makes requests for physical resources (servers) that this host needs to run.
     async fn collect_resources(&mut self, resource_batch: &mut ResourceBatch);
 
+    /// Connects to the acquired resources and prepares the host to run services.
     async fn provision(&mut self, resource_result: &ResourceResult) -> Arc<dyn LaunchedHost>;
 
     fn find_bind_type(&self, connection_from: &dyn Host) -> BindType;
@@ -63,11 +64,19 @@ pub trait Host: Send + Sync + Debug {
 
 #[async_trait]
 pub trait Service: Send + Sync + Debug {
-    /// Collect the set of resources that this service needs to run.
+    /// Makes requests for physical resources (servers) that this service needs to run.
+    /// This should also perform any "free" computations (compilations) that are needed,
+    /// because the `deploy` method will be called after these resources are allocated.
     async fn collect_resources(&mut self, resource_batch: &mut ResourceBatch);
 
+    /// Connects to the acquired resources and prepares the service to be launched.
     async fn deploy(&mut self, resource_result: &ResourceResult);
+
+    /// Launches the service, which should start listening for incoming network
+    /// connections. The service should not start computing at this point.
     async fn ready(&mut self);
+
+    /// Starts the service by having it connect to other services and start computations.
     async fn start(&mut self);
 
     fn host(&self) -> Arc<RwLock<dyn Host>>;
