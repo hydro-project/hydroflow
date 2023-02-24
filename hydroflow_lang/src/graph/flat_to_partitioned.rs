@@ -635,31 +635,35 @@ fn insert_intermediate_node(
     edge_id: GraphEdgeId,
 ) -> (GraphNodeId, GraphEdgeId) {
     let span = Some(node.span());
-    let node_id = nodes.insert_with_key(|node_id| {
-        'oc: {
-            let Node::Operator(operator) = &node else { break 'oc; };
-            let Some(op_constraints) = find_op_op_constraints(operator) else { break 'oc; };
-            let (input_port, output_port) = ports.get(edge_id).cloned().unwrap();
-            let generics = get_operator_generics(
-                &mut Vec::new(), /* TODO(mingwei) diagnostics */
-                operator,
-            );
 
-            operator_instances.insert(
-                node_id,
-                OperatorInstance {
-                    op_constraints,
-                    input_ports: vec![input_port],
-                    output_ports: vec![output_port],
-                    generics,
-                    arguments: operator.args.clone(),
-                },
-            );
-        }
-        node
-    });
+    // Make corresponding operator instance (if `node` is an operator).
+    let op_inst_opt = 'oc: {
+        let Node::Operator(operator) = &node else { break 'oc None; };
+        let Some(op_constraints) = find_op_op_constraints(operator) else { break 'oc None; };
+        let (input_port, output_port) = ports.get(edge_id).cloned().unwrap();
+        let generics = get_operator_generics(
+            &mut Vec::new(), /* TODO(mingwei) diagnostics */
+            operator,
+        );
+        Some(OperatorInstance {
+            op_constraints,
+            input_ports: vec![input_port],
+            output_ports: vec![output_port],
+            generics,
+            arguments: operator.args.clone(),
+        })
+    };
+
+    // Insert new `node`.
+    let node_id = nodes.insert(node);
+    // Insert corresponding `OperatorInstance` if applicable.
+    if let Some(op_inst) = op_inst_opt {
+        operator_instances.insert(node_id, op_inst);
+    }
+    // Update edges to insert node within `edge_id`.
     let (e0, e1) = graph.insert_intermediate_vertex(node_id, edge_id).unwrap();
 
+    // Update corresponding ports.
     let (src_idx, dst_idx) = ports.remove(edge_id).unwrap();
     ports.insert(e0, (src_idx, PortIndexValue::Elided(span)));
     ports.insert(e1, (PortIndexValue::Elided(span), dst_idx));

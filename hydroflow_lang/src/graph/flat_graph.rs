@@ -322,7 +322,7 @@ impl FlatGraphBuilder {
         self.flat_graph.ports.insert(e, (src_port, dst_port));
     }
 
-    /// Process operators and emit opreator errors.
+    /// Process operators and emit operator errors.
     fn process_operator_errors(&mut self) {
         self.make_operator_instances();
         self.check_operator_errors();
@@ -427,13 +427,12 @@ impl FlatGraphBuilder {
 
     /// Validates that operators have valid number of inputs, outputs, & arguments.
     /// Adds errors (and warnings) to `self.diagnostics`.
-    /// TODO(mingwei): Clean this up, make it do more than just arity? Do no overlapping edge ports.
     fn check_operator_errors(&mut self) {
         for (node_id, node) in self.flat_graph.nodes.iter() {
             match node {
                 Node::Operator(operator) => {
                     let Some(op_constraints) = find_op_op_constraints(operator) else { continue };
-                    // Check numer of args
+                    // Check number of args
                     if op_constraints.num_args != operator.args.len() {
                         self.diagnostics.push(Diagnostic::spanned(
                             operator.span(),
@@ -532,16 +531,22 @@ impl FlatGraphBuilder {
 
                         // Reject unexpected ports.
                         let ports: BTreeSet<_> = actual_ports_iter
-                            .inspect(|port_index_value| {
-                                if !expected_ports.iter().any(|port_index| {
-                                    port_index_value == &&port_index.clone().into()
-                                }) {
+                            // Use `inspect` before collecting into `BTreeSet` to ensure we get
+                            // both error messages on duplicated port names.
+                            .inspect(|actual_port_iv| {
+                                // For each actually used port `port_index_value`, check if it is expected.
+                                let is_expected = expected_ports.iter().any(|port_index| {
+                                    actual_port_iv == &&port_index.clone().into()
+                                });
+                                // If it is not expected, emit a diagnostic error.
+                                if !is_expected {
                                     diagnostics.push(Diagnostic::spanned(
-                                        port_index_value.span(),
+                                        actual_port_iv.span(),
                                         Level::Error,
                                         format!(
-                                            "Unexpected {} port. Expected one of: `{}`",
+                                            "Unexpected {} port: {}. Expected one of: `{}`",
                                             input_output,
+                                            actual_port_iv.as_error_message_string(),
                                             expected_ports
                                                 .iter()
                                                 .map(|port| Cow::Owned(
@@ -555,7 +560,7 @@ impl FlatGraphBuilder {
                             })
                             .collect();
 
-                        // List missing ports.
+                        // List missing expected ports.
                         let missing: Vec<_> = expected_ports
                             .into_iter()
                             .filter_map(|expected_port| {

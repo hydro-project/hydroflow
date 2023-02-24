@@ -82,7 +82,7 @@ impl PartitionedGraph {
     }
 
     pub fn as_code(&self, root: TokenStream, include_type_guards: bool) -> TokenStream {
-        let df = &Ident::new(HYDROFLOW, Span::call_site());
+        let hf = &Ident::new(HYDROFLOW, Span::call_site());
 
         let handoffs = self
             .nodes
@@ -97,7 +97,7 @@ impl PartitionedGraph {
                 let hoff_name = Literal::string(&*format!("handoff {:?}", node_id));
                 quote! {
                     let (#ident_send, #ident_recv) =
-                        #df.make_edge::<_, #root::scheduled::handoff::VecHandoff<_>>(#hoff_name);
+                        #hf.make_edge::<_, #root::scheduled::handoff::VecHandoff<_>>(#hoff_name);
                 }
             });
 
@@ -163,7 +163,7 @@ impl PartitionedGraph {
 
                         {
                             // TODO clean this up.
-                            // Collect input arguments (predacessors).
+                            // Collect input arguments (predecessors).
                             let mut input_edges: Vec<(&PortIndexValue, GraphNodeId)> =
                                 self.graph.predecessors(node_id)
                                     .map(|(edge_id, pred)| (&self.ports[edge_id].1, pred))
@@ -285,7 +285,7 @@ impl PartitionedGraph {
                 quote! {
                     #( #op_prologue_code )*
 
-                    #df.add_subgraph_stratified(
+                    #hf.add_subgraph_stratified(
                         #hoff_name,
                         #stratum,
                         var_expr!( #( #recv_ports ),* ),
@@ -305,12 +305,12 @@ impl PartitionedGraph {
             {
                 use #root::{var_expr, var_args};
 
-                let mut #df = #root::scheduled::graph::Hydroflow::new_with_graph(#serde_string);
+                let mut #hf = #root::scheduled::graph::Hydroflow::new_with_graph(#serde_string);
 
                 #( #handoffs )*
                 #( #subgraphs )*
 
-                #df
+                #hf
             }
         };
 
