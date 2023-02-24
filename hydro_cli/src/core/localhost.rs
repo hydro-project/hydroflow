@@ -146,6 +146,7 @@ impl Host for LocalhostHost {
 
                 #[cfg(not(unix))]
                 {
+                    let _ = id;
                     false
                 }
             }
