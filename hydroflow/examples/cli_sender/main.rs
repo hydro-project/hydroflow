@@ -40,7 +40,7 @@ async fn main() {
 
     // start program
     let mut df = hydroflow_syntax! {
-        foo = merge() -> dest_sink(foo_send);
+        foo = dest_sink(foo_send);
 
         repeat_iter([
             "Hello",
