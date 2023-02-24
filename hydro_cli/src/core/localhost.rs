@@ -141,12 +141,10 @@ impl Host for LocalhostHost {
         Arc::new(LaunchedLocalhost {})
     }
 
-    async fn find_bind_type(&self, client: Arc<RwLock<dyn Host>>) -> BindType {
-        let client = client.read().await;
-
-        if client.can_connect_to(ConnectionType::UnixSocket(self.id)) {
+    fn find_bind_type(&self, connection_from: &dyn Host) -> BindType {
+        if connection_from.can_connect_to(ConnectionType::UnixSocket(self.id)) {
             BindType::UnixSocket
-        } else if client.can_connect_to(ConnectionType::InternalTcpPort(self.id)) {
+        } else if connection_from.can_connect_to(ConnectionType::InternalTcpPort(self.id)) {
             BindType::TcpPort("127.0.0.1".to_string())
         } else {
             todo!()

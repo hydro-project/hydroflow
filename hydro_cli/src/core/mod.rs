@@ -56,7 +56,7 @@ pub trait Host: Send + Sync + Debug {
 
     async fn provision(&mut self, resource_result: &ResourceResult) -> Arc<dyn LaunchedHost>;
 
-    async fn find_bind_type(&self, client: Arc<RwLock<dyn Host>>) -> BindType;
+    fn find_bind_type(&self, connection_from: &dyn Host) -> BindType;
 
     fn can_connect_to(&self, typ: ConnectionType) -> bool;
 }

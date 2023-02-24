@@ -1,6 +1,7 @@
 use std::{
     collections::HashMap,
     fmt::Debug,
+    ops::Deref,
     path::PathBuf,
     sync::{Arc, Weak},
 };
@@ -19,24 +20,26 @@ use tokio::{sync::RwLock, task::JoinHandle};
 use super::{Host, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult, Service};
 
 pub struct HydroflowCrate {
-    pub src: PathBuf,
-    pub on: Arc<RwLock<dyn Host>>,
-    pub example: Option<String>,
-    pub features: Option<Vec<String>>,
+    src: PathBuf,
+    on: Arc<RwLock<dyn Host>>,
+    example: Option<String>,
+    features: Option<Vec<String>>,
 
-    // actually HydroflowCrates
-    pub outgoing_ports: HashMap<String, (Weak<RwLock<dyn Service>>, String)>,
-    pub incoming_ports: HashMap<String, (Weak<RwLock<dyn Service>>, String)>,
+    /// A mapping from output ports to the service that the port sends data to.
+    /// Each `dyn Service` is guaranteed to be another `HydroflowCrate`.
+    outgoing_ports: HashMap<String, (Weak<RwLock<dyn Service>>, String)>,
 
-    pub built_binary: Option<String>,
-    pub launched_host: Option<Arc<dyn LaunchedHost>>,
+    /// A map of port names to config for how this service can connect to other services.
+    incoming_ports: HashMap<String, BindType>,
 
-    /// A map of port names to the config for how to listen for connections.
-    pub bind_types: HashMap<String, BindType>,
+    built_binary: Option<String>,
+    launched_host: Option<Arc<dyn LaunchedHost>>,
 
     /// A map of port names to config for how other services can connect to this one.
-    pub bound_pipes: HashMap<String, ConnectionPipe>,
-    pub launched_binary: Option<Arc<RwLock<dyn LaunchedBinary>>>,
+    /// Only valid after `ready` has been called.
+    bound_pipes: HashMap<String, ConnectionPipe>,
+
+    launched_binary: Option<Arc<RwLock<dyn LaunchedBinary>>>,
 }
 
 impl HydroflowCrate {
@@ -55,10 +58,31 @@ impl HydroflowCrate {
             incoming_ports: HashMap::new(),
             built_binary: None,
             launched_host: None,
-            bind_types: HashMap::new(),
             bound_pipes: HashMap::new(),
             launched_binary: None,
         }
+    }
+
+    pub fn add_incoming_port(&mut self, my_port: String, from: &HydroflowCrate) {
+        let host = from.host();
+        let read_host = host.blocking_read();
+
+        self.incoming_ports.insert(
+            my_port,
+            self.host()
+                .blocking_read()
+                .find_bind_type(read_host.deref()),
+        );
+    }
+
+    pub fn add_outgoing_port(
+        &mut self,
+        my_port: String,
+        to: &Arc<RwLock<dyn Service>>,
+        to_port: String,
+    ) {
+        self.outgoing_ports
+            .insert(my_port, (Arc::downgrade(to), to_port));
     }
 
     pub async fn stdout(&self) -> Receiver<String> {
@@ -150,13 +174,6 @@ impl Service for HydroflowCrate {
         self.built_binary = Some(built.await.unwrap());
         let host_read = self.on.read().await;
 
-        self.bind_types = HashMap::new();
-        for (port_name, (service, _)) in self.incoming_ports.iter() {
-            let service = service.upgrade().unwrap();
-            let pipe = host_read.find_bind_type(service.read().await.host()).await;
-            self.bind_types.insert(port_name.clone(), pipe);
-        }
-
         drop(host_read);
 
         let mut host = self.on.write().await;
@@ -177,7 +194,7 @@ impl Service for HydroflowCrate {
             .launch_binary(self.built_binary.as_ref().unwrap().clone())
             .await;
 
-        let formatted_bind_types = serde_json::to_string(&self.bind_types).unwrap();
+        let formatted_bind_types = serde_json::to_string(&self.incoming_ports).unwrap();
 
         // request stdout before sending config so we don't miss the "ready" response
         let stdout_receiver = binary.write().await.stdout().await;

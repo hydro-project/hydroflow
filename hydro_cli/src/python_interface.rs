@@ -177,13 +177,8 @@ fn create_connection(from: &PyService, from_port: String, to: &PyService, to_por
         .downcast_mut::<crate::core::HydroflowCrate>()
         .unwrap();
 
-    from_hydro
-        .outgoing_ports
-        .insert(from_port.clone(), (Arc::downgrade(to), to_port.clone()));
-
-    to_hydro
-        .incoming_ports
-        .insert(to_port, (Arc::downgrade(from), from_port));
+    from_hydro.add_outgoing_port(from_port, to, to_port.clone());
+    to_hydro.add_incoming_port(to_port, from_hydro);
 }
 
 #[pymodule]
