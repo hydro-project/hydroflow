@@ -6,6 +6,7 @@ use std::{
     sync::{Arc, Weak},
 };
 
+use anyhow::{bail, Context, Result};
 use async_channel::Receiver;
 use async_trait::async_trait;
 use cargo::{
@@ -32,7 +33,7 @@ pub struct HydroflowCrate {
     /// A map of port names to the host that will be sending data to the port.
     incoming_ports: HashMap<String, Arc<RwLock<dyn Host>>>,
 
-    built_binary: Option<String>,
+    built_binary: Option<PathBuf>,
     launched_host: Option<Arc<dyn LaunchedHost>>,
 
     /// A map of port names to config for how other services can connect to this one.
@@ -107,7 +108,7 @@ impl HydroflowCrate {
             .await
     }
 
-    fn build(&mut self) -> JoinHandle<String> {
+    fn build(&mut self) -> JoinHandle<PathBuf> {
         let src_cloned = self.src.join("Cargo.toml").canonicalize().unwrap();
         let example_cloned = self.example.clone();
         let features_cloned = self.features.clone();
@@ -151,7 +152,7 @@ impl HydroflowCrate {
                 .collect::<Vec<_>>();
 
             if binaries.len() == 1 {
-                binaries[0].to_string()
+                binaries[0].to_string().into()
             } else {
                 panic!("expected exactly one binary, got {}", binaries.len())
             }
@@ -178,13 +179,13 @@ impl Service for HydroflowCrate {
         self.launched_host = Some(launched.await);
     }
 
-    async fn ready(&mut self) {
+    async fn ready(&mut self) -> Result<()> {
         let binary = self
             .launched_host
             .as_ref()
             .unwrap()
-            .launch_binary(self.built_binary.as_ref().unwrap().clone())
-            .await;
+            .launch_binary(&self.built_binary.as_ref().unwrap())
+            .await?;
 
         let mut bind_types = HashMap::new();
         for (port_name, from_host) in self.incoming_ports.iter() {
@@ -209,17 +210,19 @@ impl Service for HydroflowCrate {
             .await
             .send(format!("{formatted_bind_types}\n"))
             .await
-            .unwrap();
+            .context("failed to send config to binary")?;
 
         let ready_line = stdout_receiver.recv().await.unwrap();
         if ready_line.starts_with("ready: ") {
             self.bound_pipes =
                 serde_json::from_str(ready_line.trim_start_matches("ready: ")).unwrap();
         } else {
-            panic!("expected ready");
+            bail!("expected ready");
         }
 
         self.launched_binary = Some(binary);
+
+        Ok(())
     }
 
     async fn start(&mut self) {
@@ -258,17 +261,5 @@ impl Service for HydroflowCrate {
 
     fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
         self
-    }
-}
-
-impl Debug for HydroflowCrate {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("HydroflowCrate")
-            .field("src", &self.src)
-            .field("on", &self.on.blocking_read())
-            .field("example", &self.example)
-            .field("outgoing_ports", &self.outgoing_ports)
-            .field("incoming_ports", &self.incoming_ports)
-            .finish()
     }
 }

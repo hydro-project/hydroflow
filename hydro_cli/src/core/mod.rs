@@ -1,5 +1,6 @@
-use std::{fmt::Debug, sync::Arc};
+use std::{fmt::Debug, path::PathBuf, sync::Arc};
 
+use anyhow::Result;
 use async_channel::{Receiver, Sender};
 use async_trait::async_trait;
 use hydroflow::util::connection::BindType;
@@ -11,18 +12,35 @@ pub use deployment::Deployment;
 pub mod localhost;
 pub use localhost::LocalhostHost;
 
+pub mod gcp;
+pub use gcp::GCPComputeEngineHost;
+
 pub mod hydroflow_crate;
 pub use hydroflow_crate::HydroflowCrate;
 
-pub struct ResourceBatch {}
+pub mod terraform;
+
+pub struct ResourceBatch {
+    pub terraform: terraform::TerraformBatch,
+}
 
 impl ResourceBatch {
-    async fn provision(&mut self) -> ResourceResult {
-        ResourceResult {}
+    fn new() -> ResourceBatch {
+        ResourceBatch {
+            terraform: terraform::TerraformBatch::new(),
+        }
+    }
+
+    async fn provision(self) -> ResourceResult {
+        ResourceResult {
+            terraform: self.terraform.provision().await,
+        }
     }
 }
 
-pub struct ResourceResult {}
+pub struct ResourceResult {
+    pub terraform: terraform::TerraformResult,
+}
 
 #[async_trait]
 pub trait LaunchedBinary: Send + Sync {
@@ -35,7 +53,7 @@ pub trait LaunchedBinary: Send + Sync {
 
 #[async_trait]
 pub trait LaunchedHost: Send + Sync {
-    async fn launch_binary(&self, binary: String) -> Arc<RwLock<dyn LaunchedBinary>>;
+    async fn launch_binary(&self, binary: &PathBuf) -> Result<Arc<RwLock<dyn LaunchedBinary>>>;
 }
 
 pub enum ConnectionType {
@@ -50,7 +68,7 @@ pub enum ConnectionType {
 }
 
 #[async_trait]
-pub trait Host: Send + Sync + Debug {
+pub trait Host: Send + Sync {
     /// Makes requests for physical resources (servers) that this host needs to run.
     async fn collect_resources(&mut self, resource_batch: &mut ResourceBatch);
 
@@ -64,7 +82,7 @@ pub trait Host: Send + Sync + Debug {
 }
 
 #[async_trait]
-pub trait Service: Send + Sync + Debug {
+pub trait Service: Send + Sync {
     /// Makes requests for physical resources (servers) that this service needs to run.
     /// This should also perform any "free" computations (compilations) that are needed,
     /// because the `deploy` method will be called after these resources are allocated.
@@ -75,7 +93,7 @@ pub trait Service: Send + Sync + Debug {
 
     /// Launches the service, which should start listening for incoming network
     /// connections. The service should not start computing at this point.
-    async fn ready(&mut self);
+    async fn ready(&mut self) -> Result<()>;
 
     /// Starts the service by having it connect to other services and start computations.
     async fn start(&mut self);

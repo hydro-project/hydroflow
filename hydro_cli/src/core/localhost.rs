@@ -1,5 +1,6 @@
-use std::sync::Arc;
+use std::{path::PathBuf, sync::Arc};
 
+use anyhow::{Context, Result};
 use async_channel::{Receiver, Sender};
 use async_process::{Command, Stdio};
 use async_trait::async_trait;
@@ -48,7 +49,7 @@ impl LaunchedBinary for LaunchedLocalhostBinary {
 
 struct LaunchedLocalhost {}
 
-fn create_broadcast<T: AsyncRead + Send + Unpin + 'static>(
+pub fn create_broadcast<T: AsyncRead + Send + Unpin + 'static>(
     source: T,
     default: impl Fn(String) + Send + 'static,
 ) -> Arc<RwLock<Vec<Sender<String>>>> {
@@ -82,14 +83,14 @@ fn create_broadcast<T: AsyncRead + Send + Unpin + 'static>(
 
 #[async_trait]
 impl LaunchedHost for LaunchedLocalhost {
-    async fn launch_binary(&self, binary: String) -> Arc<RwLock<dyn LaunchedBinary>> {
+    async fn launch_binary(&self, binary: &PathBuf) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
         let mut child = Command::new(binary)
             .kill_on_drop(true)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()
-            .unwrap();
+            .context("Failed to launch binary")?;
 
         let (stdin_sender, mut stdin_receiver) = async_channel::unbounded::<String>();
         let mut stdin = child.stdin.take().unwrap();
@@ -104,12 +105,12 @@ impl LaunchedHost for LaunchedLocalhost {
         let stdout_receivers = create_broadcast(child.stdout.take().unwrap(), |s| println!("{s}"));
         let stderr_receivers = create_broadcast(child.stderr.take().unwrap(), |s| eprintln!("{s}"));
 
-        Arc::new(RwLock::new(LaunchedLocalhostBinary {
+        Ok(Arc::new(RwLock::new(LaunchedLocalhostBinary {
             child: RwLock::new(child),
             stdin_channel: stdin_sender,
             stdout_receivers,
             stderr_receivers,
-        }))
+        })))
     }
 }
 

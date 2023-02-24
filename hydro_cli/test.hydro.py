@@ -2,7 +2,9 @@ import hydro
 
 async def main():
     deployment = hydro.Deployment()
-    machine = deployment.Localhost()
+    machine = deployment.GCPComputeEngineHost(
+        project="autocompartmentalization"
+    )
 
     program = deployment.HydroflowCrate(
         src="../hydroflow",

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use async_channel::Receiver;
-use pyo3::prelude::*;
+use pyo3::{exceptions::PyException, prelude::*};
 use tokio::sync::RwLock;
 
 #[pyclass(name = "PyDeployment")]
@@ -24,8 +24,11 @@ impl PyDeployment {
     fn deploy<'p>(&self, py: Python<'p>) -> &'p pyo3::PyAny {
         let underlying = self.underlying.clone();
         pyo3_asyncio::tokio::future_into_py(py, async move {
-            underlying.write().await.deploy().await;
-            Ok(Python::with_gil(|py| py.None()))
+            let r = underlying.write().await.deploy().await;
+            Python::with_gil(|py| {
+                r.map_err(|e| PyException::new_err(format!("{}", e)))?;
+                Ok(py.None())
+            })
         })
         .unwrap()
     }
@@ -34,7 +37,7 @@ impl PyDeployment {
         let underlying = self.underlying.clone();
         pyo3_asyncio::tokio::future_into_py(py, async move {
             underlying.write().await.start().await;
-            Ok(Python::with_gil(|py| py.None()))
+            Python::with_gil(|py| Ok(py.None()))
         })
         .unwrap()
     }
@@ -59,6 +62,29 @@ impl PyLocalhostHost {
                     .underlying
                     .blocking_write()
                     .add_host(|id| crate::core::LocalhostHost { id }),
+            },
+        )
+    }
+}
+
+#[pyclass(extends=PyHost, subclass)]
+struct PyGCPComputeEngineHost {}
+
+#[pymethods]
+impl PyGCPComputeEngineHost {
+    #[new]
+    fn new(deployment: &PyDeployment, project: String) -> (Self, PyHost) {
+        (
+            PyGCPComputeEngineHost {},
+            PyHost {
+                underlying: deployment.underlying.blocking_write().add_host(|id| {
+                    crate::core::GCPComputeEngineHost {
+                        id,
+                        project,
+                        ip: None,
+                        launched: None,
+                    }
+                }),
             },
         )
     }
@@ -186,6 +212,7 @@ pub fn hydro_cli_rust(_py: Python<'_>, module: &PyModule) -> PyResult<()> {
     module.add_class::<PyDeployment>()?;
     module.add_class::<PyHost>()?;
     module.add_class::<PyLocalhostHost>()?;
+    module.add_class::<PyGCPComputeEngineHost>()?;
 
     module.add_class::<PyHydroflowCrate>()?;
 

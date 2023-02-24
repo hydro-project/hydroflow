@@ -1,7 +1,11 @@
 use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
-use pyo3::{prelude::*, types::PyList};
+use pyo3::{
+    exceptions::PyException,
+    prelude::*,
+    types::{PyList, PyTuple},
+};
 
 pub mod core;
 
@@ -24,8 +28,8 @@ enum Commands {
     },
 }
 
-async fn deploy(config: PathBuf) -> Result<(), PyErr> {
-    let res: PyResult<_> = Python::with_gil(|py| {
+fn deploy(config: PathBuf) -> Result<(), ()> {
+    Python::with_gil(|py| {
         let syspath: &PyList = py.import("sys")?.getattr("path")?.downcast::<PyList>()?;
         syspath.insert(0, PathBuf::from(".").canonicalize().unwrap())?;
 
@@ -39,25 +43,54 @@ async fn deploy(config: PathBuf) -> Result<(), PyErr> {
         .getattr("main")?
         .into();
 
-        // call object without any arguments
-        pyo3_asyncio::tokio::into_future((fun.call0(py)?).as_ref(py))
-    });
+        let wrapper = PyModule::from_code(
+            py,
+            r#"
+async def wrap(inner):
+    try:
+        return (await inner(), None)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return (None, e)
+"#,
+            "wrapper.py",
+            "wrapper",
+        )?;
 
-    let fn_future = res.unwrap();
-    fn_future.await?;
+        let asyncio = PyModule::import(py, "asyncio")?;
+        let wrapped = wrapper.call_method1("wrap", (fun,))?;
+
+        asyncio.call_method1("run", (wrapped,)).and_then(|v| {
+            let v = v.downcast::<PyTuple>()?;
+            let _result = v.get_item(0)?;
+            let error = v.get_item(1)?;
+            if error.is_none() {
+                Ok(())
+            } else {
+                Err(PyErr::from_value(error))
+            }
+        })
+    })
+    .map_err(|e: PyErr| {
+        Python::with_gil(|py| {
+            e.print_and_set_sys_last_vars(py);
+        });
+        ()
+    })?;
 
     Ok(())
 }
 
 use python_interface::hydro_cli_rust;
 
-fn main() {
-    async fn main() -> PyResult<()> {
+fn main() -> Result<(), ()> {
+    fn main() -> Result<(), ()> {
         let args = Cli::parse();
         if let Some(cmd) = args.command {
             match cmd {
                 Commands::Deploy { config } => {
-                    deploy(config).await?;
+                    deploy(config)?;
                 }
             }
         }
@@ -65,15 +98,20 @@ fn main() {
         Ok(())
     }
 
-    pyo3::append_to_inittab!(hydro_cli_rust);
-
-    pyo3::prepare_freethreaded_python();
-
     let mut builder = tokio::runtime::Builder::new_multi_thread();
     builder.enable_all();
-
     pyo3_asyncio::tokio::init(builder);
-    pyo3::Python::with_gil(|py| {
-        pyo3_asyncio::tokio::run(py, main()).unwrap_or_else(|e| e.print_and_set_sys_last_vars(py));
-    });
+
+    pyo3::append_to_inittab!(hydro_cli_rust);
+
+    main()
+
+    // let res = unsafe {
+    //     pyo3::with_embedded_python_interpreter(|py| {
+    //         pyo3_asyncio::tokio::run(py, main()).map_err(|e| {
+    //             e.print_and_set_sys_last_vars(py);
+    //             ()
+    //         })
+    //     })
+    // };
 }
