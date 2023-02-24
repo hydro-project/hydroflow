@@ -1,4 +1,4 @@
-use std::{path::PathBuf, pin::Pin};
+use std::{path::PathBuf, pin::Pin, net::SocketAddr};
 
 use futures::{Sink, Stream};
 use serde::{Deserialize, Serialize};
@@ -44,7 +44,7 @@ impl BindType {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum ConnectionPipe {
     UnixSocket(PathBuf),
-    TcpPort(String, u16),
+    TcpPort(SocketAddr),
 }
 
 impl ConnectionPipe {
@@ -68,8 +68,8 @@ impl ConnectionPipe {
                     panic!("Unix sockets are not supported on this platform")
                 }
             }
-            ConnectionPipe::TcpPort(host, port) => {
-                let stream = TcpStream::connect((host, port)).await.unwrap();
+            ConnectionPipe::TcpPort(addr) => {
+                let stream = TcpStream::connect(addr).await.unwrap();
                 let (a, b) = tcp_lines(stream);
                 (Box::pin(a), Box::pin(b))
             }
@@ -98,7 +98,7 @@ impl BoundConnection {
             }
             BoundConnection::TcpPort(listener) => {
                 let addr = listener.local_addr().unwrap();
-                ConnectionPipe::TcpPort(addr.ip().to_string(), addr.port())
+                ConnectionPipe::TcpPort(SocketAddr::new(addr.ip(), addr.port()))
             }
         }
     }
