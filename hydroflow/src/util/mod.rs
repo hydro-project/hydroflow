@@ -4,6 +4,11 @@ mod udp;
 pub use udp::*;
 mod tcp;
 pub use tcp::*;
+mod socket;
+pub use socket::*;
+
+#[cfg(feature = "cli_integration")]
+pub mod connection;
 
 use std::net::SocketAddr;
 use std::task::{Context, Poll};

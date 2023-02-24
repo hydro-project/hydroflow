@@ -1353,8 +1353,11 @@ dependencies = [
  "clap 4.1.4",
  "futures",
  "futures-core",
+ "hydroflow",
  "pyo3",
  "pyo3-asyncio",
+ "serde_json",
+ "tempfile",
  "tokio",
 ]
 
@@ -1386,6 +1389,7 @@ dependencies = [
  "serde_json",
  "slotmap",
  "static_assertions",
+ "tempfile",
  "textnonce",
  "time",
  "tokio",

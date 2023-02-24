@@ -1,7 +1,8 @@
-use std::{fmt::Debug, path::PathBuf, sync::Arc};
+use std::{fmt::Debug, sync::Arc};
 
 use async_channel::{Receiver, Sender};
 use async_trait::async_trait;
+use hydroflow::util::connection::BindType;
 use tokio::sync::RwLock;
 
 pub mod deployment;
@@ -13,23 +14,23 @@ pub use localhost::LocalhostHost;
 pub mod hydroflow_crate;
 pub use hydroflow_crate::HydroflowCrate;
 
-pub struct TerraformBatch {}
+pub struct ResourceBatch {}
 
-impl TerraformBatch {
-    async fn provision(&mut self) -> TerraformResult {
-        TerraformResult {}
+impl ResourceBatch {
+    async fn provision(&mut self) -> ResourceResult {
+        ResourceResult {}
     }
 }
 
-pub struct TerraformResult {}
+pub struct ResourceResult {}
 
 #[async_trait]
 pub trait LaunchedBinary: Send + Sync {
-    fn stdin(&self) -> Sender<String>;
-    fn stdout(&self) -> Receiver<String>;
-    fn stderr(&self) -> Receiver<String>;
+    async fn stdin(&self) -> Sender<String>;
+    async fn stdout(&self) -> Receiver<String>;
+    async fn stderr(&self) -> Receiver<String>;
 
-    fn exit_code(&self) -> Option<i32>;
+    async fn exit_code(&self) -> Option<i32>;
 }
 
 #[async_trait]
@@ -37,34 +38,46 @@ pub trait LaunchedHost: Send + Sync {
     async fn launch_binary(&self, binary: String) -> Arc<RwLock<dyn LaunchedBinary>>;
 }
 
-#[derive(Clone, Debug)]
-pub enum ConnectionPipe {
-    UnixSocket(PathBuf),
-}
-
 pub enum ConnectionType {
-    UnixSocket(usize),
+    UnixSocket(
+        /// Unique identifier for the host this socket will be on.
+        usize,
+    ),
+    InternalTcpPort(
+        /// Unique identifier for the VPC this port will be on.
+        usize,
+    ),
 }
 
 #[async_trait]
 pub trait Host: Send + Sync + Debug {
-    /// Collect the set of resources that this host needs to run.
-    async fn collect_resources(&mut self, terraform: &mut TerraformBatch);
+    /// Makes requests for physical resources (servers) that this host needs to run.
+    async fn collect_resources(&mut self, resource_batch: &mut ResourceBatch);
 
-    async fn provision(&mut self, terraform_result: &TerraformResult) -> Arc<dyn LaunchedHost>;
+    /// Connects to the acquired resources and prepares the host to run services.
+    async fn provision(&mut self, resource_result: &Arc<ResourceResult>) -> Arc<dyn LaunchedHost>;
 
-    async fn allocate_pipe(&self, client: Arc<RwLock<dyn Host>>) -> ConnectionPipe;
+    /// Identifies a network type that this host can use for connections from the given host.
+    fn find_bind_type(&self, connection_from: &dyn Host) -> BindType;
 
     fn can_connect_to(&self, typ: ConnectionType) -> bool;
 }
 
 #[async_trait]
 pub trait Service: Send + Sync + Debug {
-    /// Collect the set of resources that this service needs to run.
-    async fn collect_resources(&mut self, terraform: &mut TerraformBatch);
+    /// Makes requests for physical resources (servers) that this service needs to run.
+    /// This should also perform any "free" computations (compilations) that are needed,
+    /// because the `deploy` method will be called after these resources are allocated.
+    async fn collect_resources(&mut self, resource_batch: &mut ResourceBatch);
 
-    async fn deploy(&mut self, terraform_result: &TerraformResult);
+    /// Connects to the acquired resources and prepares the service to be launched.
+    async fn deploy(&mut self, resource_result: &Arc<ResourceResult>);
+
+    /// Launches the service, which should start listening for incoming network
+    /// connections. The service should not start computing at this point.
     async fn ready(&mut self);
+
+    /// Starts the service by having it connect to other services and start computations.
     async fn start(&mut self);
 
     fn host(&self) -> Arc<RwLock<dyn Host>>;
