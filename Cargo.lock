@@ -2234,7 +2234,6 @@ version = "0.18.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "06a3d8e8a46ab2738109347433cb7b96dffda2e4a218b03ef27090238886b147"
 dependencies = [
- "anyhow",
  "cfg-if",
  "indoc",
  "libc",

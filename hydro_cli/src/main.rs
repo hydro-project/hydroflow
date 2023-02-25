@@ -74,21 +74,21 @@ fn deploy(config: PathBuf) -> anyhow::Result<()> {
         let wrapper = async_wrapper_module(py)?;
         match wrapper.call_method1("run", (fun,)) {
             Ok(_) => Ok(()),
-            Err(e) => {
-                let traceback = e
+            Err(err) => {
+                let traceback = err
                     .traceback(py)
                     .context("traceback was expected but none found")
                     .and_then(|tb| Ok(tb.format()?))?
                     .trim()
                     .to_string();
 
-                if e.is_instance_of::<AnyhowWrapper>(py) {
-                    let wrapper = e.into_py(py).extract::<AnyhowWrapper>(py)?;
+                if err.is_instance_of::<AnyhowWrapper>(py) {
+                    let wrapper = err.into_py(py).extract::<AnyhowWrapper>(py)?;
                     let underlying = wrapper.underlying;
                     let mut underlying = underlying.blocking_write();
                     Err(underlying.take().unwrap()).context(format!("RustException\n{}", traceback))
                 } else {
-                    Err(PyErrWithTraceback { err: e, traceback }.into())
+                    Err(PyErrWithTraceback { err, traceback }.into())
                 }
             }
         }
