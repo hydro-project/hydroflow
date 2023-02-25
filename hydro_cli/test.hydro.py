@@ -3,11 +3,15 @@ import hydro
 async def main():
     deployment = hydro.Deployment()
     machine1 = deployment.GCPComputeEngineHost(
-        project="autocompartmentalization"
+        project="autocompartmentalization",
+        machine_type="e2-micro",
+        region="us-west1-a"
     )
 
     machine2 = deployment.GCPComputeEngineHost(
-        project="autocompartmentalization"
+        project="autocompartmentalization",
+        machine_type="e2-micro",
+        region="us-west1-a"
     )
 
     program = deployment.HydroflowCrate(

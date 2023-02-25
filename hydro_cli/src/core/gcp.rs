@@ -177,16 +177,20 @@ impl LaunchedHost for LaunchedComputeEngine {
 pub struct GCPComputeEngineHost {
     pub id: usize,
     pub project: String,
+    pub machine_type: String,
+    pub region: String,
     pub internal_ip: Option<String>,
     pub external_ip: Option<String>,
     pub launched: Option<Arc<dyn LaunchedHost>>,
 }
 
 impl GCPComputeEngineHost {
-    pub fn new(id: usize, project: String) -> Self {
+    pub fn new(id: usize, project: String, machine_type: String, region: String) -> Self {
         Self {
             id,
             project,
+            machine_type,
+            region,
             internal_ip: None,
             external_ip: None,
             launched: None,
@@ -346,8 +350,8 @@ impl Host for GCPComputeEngineHost {
             .insert(vm_instance.clone(), json!({
                 "name": vm_instance,
                 "project": project,
-                "machine_type": "e2-micro",
-                "zone": "us-west1-a",
+                "machine_type": self.machine_type,
+                "zone": self.region,
                 "tags": [ allow_ssh_rule ],
                 "metadata": {
                 "ssh-keys": "hydro:${tls_private_key.vm_instance_ssh_key.public_key_openssh}"

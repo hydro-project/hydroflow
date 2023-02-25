@@ -73,14 +73,18 @@ struct PyGCPComputeEngineHost {}
 #[pymethods]
 impl PyGCPComputeEngineHost {
     #[new]
-    fn new(deployment: &PyDeployment, project: String) -> (Self, PyHost) {
+    fn new(
+        deployment: &PyDeployment,
+        project: String,
+        machine_type: String,
+        region: String,
+    ) -> (Self, PyHost) {
         (
             PyGCPComputeEngineHost {},
             PyHost {
-                underlying: deployment
-                    .underlying
-                    .blocking_write()
-                    .add_host(|id| crate::core::GCPComputeEngineHost::new(id, project)),
+                underlying: deployment.underlying.blocking_write().add_host(|id| {
+                    crate::core::GCPComputeEngineHost::new(id, project, machine_type, region)
+                }),
             },
         )
     }
