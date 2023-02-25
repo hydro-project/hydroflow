@@ -55,9 +55,11 @@
 <a href="#55" id="55">55</a>
 <a href="#56" id="56">56</a>
 <a href="#57" id="57">57</a>
-</pre><pre class="rust"><code><span class="kw">use super</span>::{
-    OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, RANGE_0, RANGE_1,
-};
+<a href="#58" id="58">58</a>
+<a href="#59" id="59">59</a>
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::graph::OperatorInstance;
+
+<span class="kw">use super</span>::{OperatorConstraints, OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1};
 
 <span class="kw">use </span>quote::quote_spanned;
 
@@ -87,9 +89,11 @@
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">None</span>,
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">None</span>,
-    write_fn: |wc @ <span class="kw-2">&amp;</span>WriteContextArgs { op_span, .. },
-               <span class="kw-2">&amp;</span>WriteIteratorArgs {
-                   ident, arguments, ..
+    write_fn: |wc @ <span class="kw-2">&amp;</span>WriteContextArgs {
+                   op_span,
+                   ident,
+                   op_inst: OperatorInstance { arguments, .. },
+                   ..
                },
                <span class="kw">_</span>| {
         <span class="kw">let </span>iter_ident = wc.make_ident(<span class="string">&quot;iter&quot;</span>);

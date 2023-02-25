@@ -68,10 +68,9 @@
 <a href="#68" id="68">68</a>
 <a href="#69" id="69">69</a>
 <a href="#70" id="70">70</a>
-<a href="#71" id="71">71</a>
-</pre><pre class="rust"><code><span class="kw">use super</span>::{
-    OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, RANGE_0, RANGE_1,
-};
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::graph::OperatorInstance;
+
+<span class="kw">use super</span>::{OperatorConstraints, OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1};
 
 <span class="kw">use </span>quote::quote_spanned;
 
@@ -112,10 +111,9 @@
                    root,
                    context,
                    op_span,
+                   ident,
+                   op_inst: OperatorInstance { arguments, .. },
                    ..
-               },
-               <span class="kw-2">&amp;</span>WriteIteratorArgs {
-                   ident, arguments, ..
                },
                <span class="kw">_</span>| {
         <span class="kw">let </span>receiver = <span class="kw-2">&amp;</span>arguments[<span class="number">0</span>];

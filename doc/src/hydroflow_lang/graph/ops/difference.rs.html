@@ -75,11 +75,11 @@
 <a href="#75" id="75">75</a>
 <a href="#76" id="76">76</a>
 <a href="#77" id="77">77</a>
+<a href="#78" id="78">78</a>
 </pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::graph::PortIndexValue;
 
 <span class="kw">use super</span>::{
-    DelayType, OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs,
-    RANGE_0, RANGE_1,
+    DelayType, OperatorConstraints, OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
 };
 
 <span class="kw">use </span>quote::{quote_spanned, ToTokens};
@@ -119,14 +119,16 @@
     write_fn: |wc @ <span class="kw-2">&amp;</span>WriteContextArgs {
                    root,
                    context,
+                   hydroflow,
                    op_span,
+                   ident,
+                   inputs,
                    ..
                },
-               <span class="kw-2">&amp;</span>WriteIteratorArgs { ident, inputs, .. },
                <span class="kw">_</span>| {
         <span class="kw">let </span>handle_ident = wc.make_ident(<span class="string">&quot;diffdata_handle&quot;</span>);
         <span class="kw">let </span>write_prologue = <span class="macro">quote_spanned! </span>{op_span=&gt;
-            <span class="kw">let </span>#handle_ident = df.add_state(std::cell::RefCell::new(
+            <span class="kw">let </span>#handle_ident = #hydroflow.add_state(std::cell::RefCell::new(
                 #root::lang::monotonic_map::MonotonicMap::&lt;<span class="kw">_</span>, std::collections::HashSet&lt;<span class="kw">_</span>&gt;&gt;::default(),
             ));
         };

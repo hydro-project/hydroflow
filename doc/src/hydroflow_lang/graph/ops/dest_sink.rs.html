@@ -148,9 +148,13 @@
 <a href="#148" id="148">148</a>
 <a href="#149" id="149">149</a>
 <a href="#150" id="150">150</a>
-</pre><pre class="rust"><code><span class="kw">use super</span>::{
-    OperatorConstraints, OperatorWriteOutput, WriteContextArgs, WriteIteratorArgs, RANGE_0, RANGE_1,
-};
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::graph::OperatorInstance;
+
+<span class="kw">use super</span>::{OperatorConstraints, OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1};
 
 <span class="kw">use </span>quote::quote_spanned;
 
@@ -244,9 +248,13 @@
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">None</span>,
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">None</span>,
-    write_fn: |wc @ <span class="kw-2">&amp;</span>WriteContextArgs { root, op_span, .. },
-               <span class="kw-2">&amp;</span>WriteIteratorArgs {
-                   ident, arguments, ..
+    write_fn: |wc @ <span class="kw-2">&amp;</span>WriteContextArgs {
+                   root,
+                   hydroflow,
+                   op_span,
+                   ident,
+                   op_inst: OperatorInstance { arguments, .. },
+                   ..
                },
                <span class="kw">_</span>| {
         <span class="kw">let </span>sink_arg = <span class="kw-2">&amp;</span>arguments[<span class="number">0</span>];
@@ -279,7 +287,7 @@
                         sink.flush().<span class="kw">await</span>.expect(<span class="string">&quot;Failed to flush sink.&quot;</span>);
                     }
                 }
-                df
+                #hydroflow
                     .spawn_task(sink_feed_flush(#recv_ident, #sink_arg))
                     .expect(<span class="string">&quot;dest_sink() must be used within a tokio runtime&quot;</span>);
             }

@@ -100,9 +100,20 @@
 <a href="#100" id="100">100</a>
 <a href="#101" id="101">101</a>
 <a href="#102" id="102">102</a>
-</pre><pre class="rust"><code><span class="kw">use super</span>::{
-    DelayType, OperatorConstraints, OperatorWriteOutput, Persistence, WriteContextArgs,
-    WriteIteratorArgs, RANGE_0, RANGE_1,
+<a href="#103" id="103">103</a>
+<a href="#104" id="104">104</a>
+<a href="#105" id="105">105</a>
+<a href="#106" id="106">106</a>
+<a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
+<a href="#109" id="109">109</a>
+<a href="#110" id="110">110</a>
+<a href="#111" id="111">111</a>
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::graph::{OpInstGenerics, OperatorInstance};
+
+<span class="kw">use super</span>::{
+    DelayType, OperatorConstraints, OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_0,
+    RANGE_1,
 };
 
 <span class="kw">use </span>quote::quote_spanned;
@@ -141,20 +152,27 @@
     ports_out: <span class="prelude-val">None</span>,
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">Some</span>(DelayType::Stratum),
     write_fn: |wc @ <span class="kw-2">&amp;</span>WriteContextArgs {
-                   context, op_span, ..
-               },
-               <span class="kw-2">&amp;</span>WriteIteratorArgs {
+                   context,
+                   hydroflow,
+                   op_span,
                    ident,
                    inputs,
-                   persistence_args,
-                   arguments,
                    is_pull,
+                   op_inst:
+                       OperatorInstance {
+                           arguments,
+                           generics:
+                               OpInstGenerics {
+                                   persistence_args, ..
+                               },
+                           ..
+                       },
                    ..
                },
                <span class="kw">_</span>| {
         <span class="macro">assert!</span>(is_pull);
 
-        <span class="kw">let </span>persistence = <span class="kw">match </span><span class="kw-2">*</span>persistence_args {
+        <span class="kw">let </span>persistence = <span class="kw">match </span>persistence_args[..] {
             [] =&gt; Persistence::Static,
             [a] =&gt; a,
             <span class="kw">_ </span>=&gt; <span class="macro">unreachable!</span>(),
@@ -174,7 +192,7 @@
             ),
             Persistence::Static =&gt; (
                 <span class="macro">quote_spanned! </span>{op_span=&gt;
-                    <span class="kw">let </span>#reducedata_ident = df.add_state(
+                    <span class="kw">let </span>#reducedata_ident = #hydroflow.add_state(
                         ::std::cell::Cell::new(::std::option::Option::None)
                     );
                 },

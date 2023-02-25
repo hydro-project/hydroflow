@@ -627,6 +627,49 @@
 <a href="#627" id="627">627</a>
 <a href="#628" id="628">628</a>
 <a href="#629" id="629">629</a>
+<a href="#630" id="630">630</a>
+<a href="#631" id="631">631</a>
+<a href="#632" id="632">632</a>
+<a href="#633" id="633">633</a>
+<a href="#634" id="634">634</a>
+<a href="#635" id="635">635</a>
+<a href="#636" id="636">636</a>
+<a href="#637" id="637">637</a>
+<a href="#638" id="638">638</a>
+<a href="#639" id="639">639</a>
+<a href="#640" id="640">640</a>
+<a href="#641" id="641">641</a>
+<a href="#642" id="642">642</a>
+<a href="#643" id="643">643</a>
+<a href="#644" id="644">644</a>
+<a href="#645" id="645">645</a>
+<a href="#646" id="646">646</a>
+<a href="#647" id="647">647</a>
+<a href="#648" id="648">648</a>
+<a href="#649" id="649">649</a>
+<a href="#650" id="650">650</a>
+<a href="#651" id="651">651</a>
+<a href="#652" id="652">652</a>
+<a href="#653" id="653">653</a>
+<a href="#654" id="654">654</a>
+<a href="#655" id="655">655</a>
+<a href="#656" id="656">656</a>
+<a href="#657" id="657">657</a>
+<a href="#658" id="658">658</a>
+<a href="#659" id="659">659</a>
+<a href="#660" id="660">660</a>
+<a href="#661" id="661">661</a>
+<a href="#662" id="662">662</a>
+<a href="#663" id="663">663</a>
+<a href="#664" id="664">664</a>
+<a href="#665" id="665">665</a>
+<a href="#666" id="666">666</a>
+<a href="#667" id="667">667</a>
+<a href="#668" id="668">668</a>
+<a href="#669" id="669">669</a>
+<a href="#670" id="670">670</a>
+<a href="#671" id="671">671</a>
+<a href="#672" id="672">672</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
 
 <span class="kw">use </span>proc_macro2::Span;
@@ -639,11 +682,11 @@
 
 <span class="kw">use </span><span class="kw">super</span>::di_mul_graph::DiMulGraph;
 <span class="kw">use </span><span class="kw">super</span>::flat_graph::FlatGraph;
-<span class="kw">use </span><span class="kw">super</span>::ops::{find_node_op_constraints, DelayType};
+<span class="kw">use </span><span class="kw">super</span>::ops::{find_node_op_constraints, find_op_op_constraints, DelayType};
 <span class="kw">use </span><span class="kw">super</span>::partitioned_graph::PartitionedGraph;
 <span class="kw">use super</span>::{
-    graph_algorithms, node_color, Color, GraphEdgeId, GraphNodeId, GraphSubgraphId, Node,
-    PortIndexValue,
+    get_operator_generics, graph_algorithms, node_color, Color, GraphEdgeId, GraphNodeId,
+    GraphSubgraphId, Node, OperatorInstance, PortIndexValue,
 };
 
 <span class="kw">fn </span>find_barrier_crossers(
@@ -769,6 +812,7 @@
 /// the DelayType data.
 </span><span class="kw">fn </span>make_subgraphs(
     nodes: <span class="kw-2">&amp;mut </span>SlotMap&lt;GraphNodeId, Node&gt;,
+    operator_instances: <span class="kw-2">&amp;mut </span>SecondaryMap&lt;GraphNodeId, OperatorInstance&gt;,
     ports: <span class="kw-2">&amp;mut </span>SecondaryMap&lt;GraphEdgeId, (PortIndexValue, PortIndexValue)&gt;,
     graph: <span class="kw-2">&amp;mut </span>DiMulGraph&lt;GraphNodeId, GraphEdgeId&gt;,
     barrier_crossers: <span class="kw-2">&amp;mut </span>SecondaryMap&lt;GraphEdgeId, DelayType&gt;,
@@ -802,7 +846,8 @@
             src_span: src_node.span(),
             dst_span: dst_node.span(),
         };
-        <span class="kw">let </span>(_node_id, out_edge_id) = insert_intermediate_node(nodes, ports, graph, hoff, edge_id);
+        <span class="kw">let </span>(_node_id, out_edge_id) =
+            insert_intermediate_node(nodes, operator_instances, ports, graph, hoff, edge_id);
 
         <span class="comment">// Update barrier_crossers for inserted node.
         </span><span class="kw">if let </span><span class="prelude-val">Some</span>(delay_type) = barrier_crossers.remove(edge_id) {
@@ -878,6 +923,7 @@
 
 <span class="kw">fn </span>find_subgraph_strata(
     nodes: <span class="kw-2">&amp;mut </span>SlotMap&lt;GraphNodeId, Node&gt;,
+    operator_instances: <span class="kw-2">&amp;mut </span>SecondaryMap&lt;GraphNodeId, OperatorInstance&gt;,
     ports: <span class="kw-2">&amp;mut </span>SecondaryMap&lt;GraphEdgeId, (PortIndexValue, PortIndexValue)&gt;,
     graph: <span class="kw-2">&amp;mut </span>DiMulGraph&lt;GraphNodeId, GraphEdgeId&gt;,
     node_subgraph: <span class="kw-2">&amp;mut </span>SecondaryMap&lt;GraphNodeId, GraphSubgraphId&gt;,
@@ -990,6 +1036,7 @@
                     // Then add intermediate identity:
                     </span><span class="kw">let </span>(new_node_id, new_edge_id) = insert_intermediate_node(
                         nodes,
+                        operator_instances,
                         ports,
                         graph,
                         <span class="comment">// TODO(mingwei): Proper span w/ `parse_quote_spanned!`?
@@ -1001,8 +1048,14 @@
                         src_span: Span::call_site(), <span class="comment">// TODO(mingwei): Proper spanning?
                         </span>dst_span: Span::call_site(),
                     };
-                    <span class="kw">let </span>(_hoff_node_id, _hoff_edge_id) =
-                        insert_intermediate_node(nodes, ports, graph, hoff, new_edge_id);
+                    <span class="kw">let </span>(_hoff_node_id, _hoff_edge_id) = insert_intermediate_node(
+                        nodes,
+                        operator_instances,
+                        ports,
+                        graph,
+                        hoff,
+                        new_edge_id,
+                    );
                     <span class="comment">// After: A (src) -&gt; H -&gt; ID -&gt; H&#39; -&gt; B (dst)
 
                     // Set stratum numbers.
@@ -1028,6 +1081,7 @@
 <span class="doccomment">/// Put `is_external_input: true` operators in separate stratum 0 subgraphs if they are not in stratum 0.
 </span><span class="kw">fn </span>separate_external_inputs(
     nodes: <span class="kw-2">&amp;mut </span>SlotMap&lt;GraphNodeId, Node&gt;,
+    operator_instances: <span class="kw-2">&amp;mut </span>SecondaryMap&lt;GraphNodeId, OperatorInstance&gt;,
     ports: <span class="kw-2">&amp;mut </span>SecondaryMap&lt;GraphEdgeId, (PortIndexValue, PortIndexValue)&gt;,
     graph: <span class="kw-2">&amp;mut </span>DiMulGraph&lt;GraphNodeId, GraphEdgeId&gt;,
     node_subgraph: <span class="kw-2">&amp;mut </span>SecondaryMap&lt;GraphNodeId, GraphSubgraphId&gt;,
@@ -1071,7 +1125,7 @@
                 src_span: span,
                 dst_span: span,
             };
-            insert_intermediate_node(nodes, ports, graph, hoff, edge_id);
+            insert_intermediate_node(nodes, operator_instances, ports, graph, hoff, edge_id);
         }
     }
 }
@@ -1131,6 +1185,7 @@
     <span class="kw">fn </span>try_from(flat_graph: FlatGraph) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
         <span class="kw">let </span>FlatGraph {
             <span class="kw-2">mut </span>nodes,
+            <span class="kw-2">mut </span>operator_instances,
             <span class="kw-2">mut </span>graph,
             <span class="kw-2">mut </span>ports,
             node_varnames,
@@ -1154,6 +1209,7 @@
         <span class="comment">// Partition into subgraphs.
         </span><span class="kw">let </span>(<span class="kw-2">mut </span>node_subgraph, <span class="kw-2">mut </span>subgraph_nodes) = make_subgraphs(
             <span class="kw-2">&amp;mut </span>nodes,
+            <span class="kw-2">&amp;mut </span>operator_instances,
             <span class="kw-2">&amp;mut </span>ports,
             <span class="kw-2">&amp;mut </span>graph,
             <span class="kw-2">&amp;mut </span>barrier_crossers,
@@ -1163,6 +1219,7 @@
         <span class="comment">// Find strata for subgraphs.
         </span><span class="kw">let </span><span class="kw-2">mut </span>subgraph_stratum = find_subgraph_strata(
             <span class="kw-2">&amp;mut </span>nodes,
+            <span class="kw-2">&amp;mut </span>operator_instances,
             <span class="kw-2">&amp;mut </span>ports,
             <span class="kw-2">&amp;mut </span>graph,
             <span class="kw-2">&amp;mut </span>node_subgraph,
@@ -1173,6 +1230,7 @@
         <span class="comment">// Ensure all external inputs are in stratum 0.
         </span>separate_external_inputs(
             <span class="kw-2">&amp;mut </span>nodes,
+            <span class="kw-2">&amp;mut </span>operator_instances,
             <span class="kw-2">&amp;mut </span>ports,
             <span class="kw-2">&amp;mut </span>graph,
             <span class="kw-2">&amp;mut </span>node_subgraph,
@@ -1217,6 +1275,7 @@
         }
         <span class="prelude-val">Ok</span>(PartitionedGraph {
             nodes,
+            operator_instances,
             graph,
             ports,
             node_subgraph,
@@ -1241,16 +1300,43 @@
 /// Returns the ID of X &amp; ID of edge OUT of X.
 </span><span class="kw">fn </span>insert_intermediate_node(
     nodes: <span class="kw-2">&amp;mut </span>SlotMap&lt;GraphNodeId, Node&gt;,
+    operator_instances: <span class="kw-2">&amp;mut </span>SecondaryMap&lt;GraphNodeId, OperatorInstance&gt;,
     ports: <span class="kw-2">&amp;mut </span>SecondaryMap&lt;GraphEdgeId, (PortIndexValue, PortIndexValue)&gt;,
     graph: <span class="kw-2">&amp;mut </span>DiMulGraph&lt;GraphNodeId, GraphEdgeId&gt;,
     node: Node,
     edge_id: GraphEdgeId,
 ) -&gt; (GraphNodeId, GraphEdgeId) {
     <span class="kw">let </span>span = <span class="prelude-val">Some</span>(node.span());
-    <span class="kw">let </span>node_id = nodes.insert(node);
-    <span class="kw">let </span>(e0, e1) = graph.insert_intermediate_vertex(node_id, edge_id).unwrap();
 
-    <span class="kw">let </span>(src_idx, dst_idx) = ports.remove(edge_id).unwrap();
+    <span class="comment">// Make corresponding operator instance (if `node` is an operator).
+    </span><span class="kw">let </span>op_inst_opt = <span class="lifetime">&#39;oc</span>: {
+        <span class="kw">let </span>Node::Operator(operator) = <span class="kw-2">&amp;</span>node <span class="kw">else </span>{ <span class="kw">break </span><span class="lifetime">&#39;oc </span><span class="prelude-val">None</span>; };
+        <span class="kw">let </span><span class="prelude-val">Some</span>(op_constraints) = find_op_op_constraints(operator) <span class="kw">else </span>{ <span class="kw">break </span><span class="lifetime">&#39;oc </span><span class="prelude-val">None</span>; };
+        <span class="kw">let </span>(input_port, output_port) = ports.get(edge_id).cloned().unwrap();
+        <span class="kw">let </span>generics = get_operator_generics(
+            <span class="kw-2">&amp;mut </span>Vec::new(), <span class="comment">/* TODO(mingwei) diagnostics */
+            </span>operator,
+        );
+        <span class="prelude-val">Some</span>(OperatorInstance {
+            op_constraints,
+            input_ports: <span class="macro">vec!</span>[input_port],
+            output_ports: <span class="macro">vec!</span>[output_port],
+            generics,
+            arguments: operator.args.clone(),
+        })
+    };
+
+    <span class="comment">// Insert new `node`.
+    </span><span class="kw">let </span>node_id = nodes.insert(node);
+    <span class="comment">// Insert corresponding `OperatorInstance` if applicable.
+    </span><span class="kw">if let </span><span class="prelude-val">Some</span>(op_inst) = op_inst_opt {
+        operator_instances.insert(node_id, op_inst);
+    }
+    <span class="comment">// Update edges to insert node within `edge_id`.
+    </span><span class="kw">let </span>(e0, e1) = graph.insert_intermediate_vertex(node_id, edge_id).unwrap();
+
+    <span class="comment">// Update corresponding ports.
+    </span><span class="kw">let </span>(src_idx, dst_idx) = ports.remove(edge_id).unwrap();
     ports.insert(e0, (src_idx, PortIndexValue::Elided(span)));
     ports.insert(e1, (PortIndexValue::Elided(span), dst_idx));
 

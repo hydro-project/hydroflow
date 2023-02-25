@@ -65,7 +65,11 @@
 <a href="#65" id="65">65</a>
 <a href="#66" id="66">66</a>
 <a href="#67" id="67">67</a>
-</pre><pre class="rust"><code><span class="kw">use super</span>::{OperatorConstraints, WriteContextArgs, WriteIteratorArgs, RANGE_0, RANGE_1};
+<a href="#68" id="68">68</a>
+<a href="#69" id="69">69</a>
+<a href="#70" id="70">70</a>
+<a href="#71" id="71">71</a>
+</pre><pre class="rust"><code><span class="kw">use super</span>::{OperatorConstraints, WriteContextArgs, RANGE_0, RANGE_1};
 
 <span class="kw">use </span>quote::quote_spanned;
 <span class="kw">use </span>syn::parse_quote;
@@ -114,10 +118,14 @@
     ports_inn: <span class="prelude-val">Some</span>(|| <span class="kw">super</span>::PortListSpec::Fixed(<span class="macro">parse_quote! </span>{ <span class="number">0</span>, <span class="number">1 </span>})),
     ports_out: <span class="prelude-val">None</span>,
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">None</span>,
-    write_fn: |wc @ <span class="kw-2">&amp;</span>WriteContextArgs { op_span, .. },
-               wi @ <span class="kw-2">&amp;</span>WriteIteratorArgs { ident, inputs, .. },
+    write_fn: |wc @ <span class="kw-2">&amp;</span>WriteContextArgs {
+                   op_span,
+                   ident,
+                   inputs,
+                   ..
+               },
                diagnostics| {
-        <span class="kw">let </span><span class="kw-2">mut </span>output = (<span class="kw">super</span>::join::JOIN.write_fn)(wc, wi, diagnostics)<span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>output = (<span class="kw">super</span>::join::JOIN.write_fn)(wc, diagnostics)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>lhs = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>];
         <span class="kw">let </span>rhs = <span class="kw-2">&amp;</span>inputs[<span class="number">1</span>];
