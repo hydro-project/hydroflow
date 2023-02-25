@@ -8,6 +8,7 @@ pub mod core;
 
 #[allow(non_snake_case)]
 mod python_interface;
+use python_interface::{hydro_cli_rust, AnyhowWrapper};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -95,8 +96,6 @@ fn deploy(config: PathBuf) -> anyhow::Result<()> {
 
     Ok(())
 }
-
-use python_interface::{hydro_cli_rust, AnyhowWrapper};
 
 fn main() -> anyhow::Result<()> {
     let mut builder = tokio::runtime::Builder::new_multi_thread();
