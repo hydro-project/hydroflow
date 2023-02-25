@@ -63,7 +63,7 @@ pub enum ConnectionType {
     ),
     InternalTcpPort(
         /// Unique identifier for the VPC this port will be on.
-        usize,
+        String,
     ),
 }
 

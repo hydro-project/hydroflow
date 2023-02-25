@@ -59,7 +59,7 @@ impl LaunchedBinary for LaunchedComputeEngineBinary {
 
 struct LaunchedComputeEngine {
     resource_result: Arc<ResourceResult>,
-    ip: String,
+    external_ip: String,
     binary_counter: RwLock<usize>,
 }
 
@@ -73,7 +73,6 @@ async fn async_retry<T, F: Future<Output = Result<T>>>(
             return result;
         } else {
             tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
-            println!("retrying...")
         }
     }
 
@@ -83,38 +82,41 @@ async fn async_retry<T, F: Future<Output = Result<T>>>(
 #[async_trait]
 impl LaunchedHost for LaunchedComputeEngine {
     async fn launch_binary(&self, binary: &Path) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
-        let mut session = async_retry(
+        let session = async_retry(
             || async {
                 let mut config = SessionConfiguration::new();
                 config.set_timeout(5000);
-                AsyncSession::<TcpStream>::connect(
-                    SocketAddr::new(self.ip.parse().unwrap(), 22),
+
+                let mut session = AsyncSession::<TcpStream>::connect(
+                    SocketAddr::new(self.external_ip.parse().unwrap(), 22),
                     Some(config),
                 )
                 .await
-                .map_err(|e| anyhow!("failed to connect to server: {}", e))
+                .map_err(|e| anyhow!("failed to connect to server: {}", e))?;
+
+                session.handshake().await.context("failed to handshake")?;
+
+                session
+                    .userauth_pubkey_file(
+                        "hydro",
+                        None,
+                        self.resource_result
+                            .terraform
+                            .deployment_folder
+                            .path()
+                            .join(".ssh")
+                            .join("vm_instance_ssh_key_pem")
+                            .as_path(),
+                        None,
+                    )
+                    .await
+                    .map_err(|e| anyhow!("failed to authenticate with public key: {}", e))?;
+
+                Ok(session)
             },
             10,
         )
         .await?;
-
-        session.handshake().await.context("failed to handshake")?;
-
-        session
-            .userauth_pubkey_file(
-                "hydro",
-                None,
-                self.resource_result
-                    .terraform
-                    .deployment_folder
-                    .path()
-                    .join(".ssh")
-                    .join("vm_instance_ssh_key_pem")
-                    .as_path(),
-                None,
-            )
-            .await
-            .map_err(|e| anyhow!("failed to authenticate with public key: {}", e))?;
 
         let sftp = session
             .sftp()
@@ -175,8 +177,21 @@ impl LaunchedHost for LaunchedComputeEngine {
 pub struct GCPComputeEngineHost {
     pub id: usize,
     pub project: String,
-    pub ip: Option<String>,
+    pub internal_ip: Option<String>,
+    pub external_ip: Option<String>,
     pub launched: Option<Arc<dyn LaunchedHost>>,
+}
+
+impl GCPComputeEngineHost {
+    pub fn new(id: usize, project: String) -> Self {
+        Self {
+            id,
+            project,
+            internal_ip: None,
+            external_ip: None,
+            launched: None,
+        }
+    }
 }
 
 #[async_trait]
@@ -185,7 +200,7 @@ impl Host for GCPComputeEngineHost {
         let project = self.project.as_str();
         let id = self.id;
 
-        let _ = resource_batch
+        resource_batch
             .terraform
             .terraform
             .required_providers
@@ -197,7 +212,7 @@ impl Host for GCPComputeEngineHost {
                 },
             );
 
-        let _ = resource_batch
+        resource_batch
             .terraform
             .terraform
             .required_providers
@@ -209,7 +224,7 @@ impl Host for GCPComputeEngineHost {
                 },
             );
 
-        let _ = resource_batch
+        resource_batch
             .terraform
             .terraform
             .required_providers
@@ -221,7 +236,7 @@ impl Host for GCPComputeEngineHost {
                 },
             );
 
-        let _ = resource_batch
+        resource_batch
             .terraform
             .resource
             .entry("tls_private_key".to_string())
@@ -234,7 +249,7 @@ impl Host for GCPComputeEngineHost {
                 }),
             );
 
-        let _ = resource_batch
+        resource_batch
             .terraform
             .resource
             .entry("local_file".to_string())
@@ -249,7 +264,7 @@ impl Host for GCPComputeEngineHost {
             );
 
         let vpc_network = format!("vpc-network-{project}");
-        let _ = resource_batch
+        resource_batch
             .terraform
             .resource
             .entry("google_compute_network".to_string())
@@ -263,31 +278,70 @@ impl Host for GCPComputeEngineHost {
                 }),
             );
 
-        let allow_ssh_rule = format!("allow-ssh-{project}");
-        let _ = resource_batch
+        let firewall_entries = resource_batch
             .terraform
             .resource
             .entry("google_compute_firewall".to_string())
-            .or_default()
-            .insert(
-                allow_ssh_rule.clone(),
-                json!({
-                    "name": allow_ssh_rule,
-                    "project": project,
-                    "network": format!("${{google_compute_network.{vpc_network}.name}}"),
-                    "target_tags": [allow_ssh_rule],
-                    "source_ranges": ["0.0.0.0/0"],
-                    "allow": [
-                        {
-                            "protocol": "tcp",
-                            "ports": ["22"]
-                        }
-                    ]
-                }),
-            );
+            .or_default();
+
+        firewall_entries.insert(
+            format!("{vpc_network}-default-allow-internal"),
+            json!({
+                "name": format!("{vpc_network}-default-allow-internal"),
+                "project": project,
+                "network": format!("${{google_compute_network.{vpc_network}.name}}"),
+                "source_ranges": ["10.128.0.0/9"],
+                "allow": [
+                    {
+                        "protocol": "tcp",
+                        "ports": ["0-65535"]
+                    },
+                    {
+                        "protocol": "udp",
+                        "ports": ["0-65535"]
+                    },
+                    {
+                        "protocol": "icmp"
+                    }
+                ]
+            }),
+        );
+
+        firewall_entries.insert(
+            format!("{vpc_network}-default-allow-ping"),
+            json!({
+                "name": format!("{vpc_network}-default-allow-ping"),
+                "project": project,
+                "network": format!("${{google_compute_network.{vpc_network}.name}}"),
+                "source_ranges": ["0.0.0.0/0"],
+                "allow": [
+                    {
+                        "protocol": "icmp"
+                    }
+                ]
+            }),
+        );
+
+        let allow_ssh_rule = format!("{vpc_network}-allow-ssh");
+        firewall_entries.insert(
+            allow_ssh_rule.clone(),
+            json!({
+                "name": allow_ssh_rule,
+                "project": project,
+                "network": format!("${{google_compute_network.{vpc_network}.name}}"),
+                "target_tags": [allow_ssh_rule],
+                "source_ranges": ["0.0.0.0/0"],
+                "allow": [
+                    {
+                        "protocol": "tcp",
+                        "ports": ["22"]
+                    }
+                ]
+            }),
+        );
 
         let vm_instance = format!("vm-instance-{project}-{id}");
-        let _ = resource_batch.terraform.resource.entry("google_compute_instance".to_string())
+        resource_batch.terraform.resource.entry("google_compute_instance".to_string())
             .or_default()
             .insert(vm_instance.clone(), json!({
                 "name": vm_instance,
@@ -319,7 +373,16 @@ impl Host for GCPComputeEngineHost {
                 ]
             }));
 
-        let _ = resource_batch.terraform.output.insert(
+        resource_batch.terraform.output.insert(
+            format!("{vm_instance}-internal-ip"),
+            TerraformOutput {
+                value: format!(
+                    "${{google_compute_instance.{vm_instance}.network_interface[0].network_ip}}"
+                ),
+            },
+        );
+
+        resource_batch.terraform.output.insert(
             format!("{vm_instance}-public-ip"),
             TerraformOutput {
                 value: format!("${{google_compute_instance.{vm_instance}.network_interface[0].access_config[0].nat_ip}}")
@@ -332,17 +395,25 @@ impl Host for GCPComputeEngineHost {
             let project = self.project.as_str();
             let id = self.id;
 
-            let ip = &resource_result
+            let internal_ip = &resource_result
+                .terraform
+                .outputs
+                .get(&format!("vm-instance-{project}-{id}-internal-ip"))
+                .unwrap()
+                .value;
+            self.internal_ip = Some(internal_ip.clone());
+
+            let external_ip = &resource_result
                 .terraform
                 .outputs
                 .get(&format!("vm-instance-{project}-{id}-public-ip"))
                 .unwrap()
                 .value;
-            self.ip = Some(ip.clone());
+            self.external_ip = Some(external_ip.clone());
 
             self.launched = Some(Arc::new(LaunchedComputeEngine {
                 resource_result: resource_result.clone(),
-                ip: ip.clone(),
+                external_ip: external_ip.clone(),
                 binary_counter: RwLock::new(0),
             }))
         }
@@ -353,8 +424,10 @@ impl Host for GCPComputeEngineHost {
     fn find_bind_type(&self, connection_from: &dyn Host) -> BindType {
         if connection_from.can_connect_to(ConnectionType::UnixSocket(self.id)) {
             BindType::UnixSocket
-        } else if connection_from.can_connect_to(ConnectionType::InternalTcpPort(self.id)) {
-            BindType::TcpPort(self.ip.as_ref().unwrap().clone())
+        } else if connection_from
+            .can_connect_to(ConnectionType::InternalTcpPort(self.project.clone()))
+        {
+            BindType::TcpPort(self.internal_ip.as_ref().unwrap().clone())
         } else {
             todo!()
         }
@@ -373,7 +446,7 @@ impl Host for GCPComputeEngineHost {
                     false
                 }
             }
-            ConnectionType::InternalTcpPort(id) => self.id == id,
+            ConnectionType::InternalTcpPort(id) => self.project == id,
         }
     }
 }

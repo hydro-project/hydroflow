@@ -2,7 +2,11 @@ import hydro
 
 async def main():
     deployment = hydro.Deployment()
-    machine = deployment.GCPComputeEngineHost(
+    machine1 = deployment.GCPComputeEngineHost(
+        project="autocompartmentalization"
+    )
+
+    machine2 = deployment.GCPComputeEngineHost(
         project="autocompartmentalization"
     )
 
@@ -10,14 +14,14 @@ async def main():
         src="../hydroflow",
         example="cli_sender",
         features=["cli_integration"],
-        on=machine
+        on=machine1
     )
 
     program2 = deployment.HydroflowCrate(
         src="../hydroflow",
         example="cli_receiver",
         features=["cli_integration"],
-        on=machine
+        on=machine2
     )
 
     program.ports.foo.send_to(program2.ports.bar)

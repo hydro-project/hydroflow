@@ -77,14 +77,10 @@ impl PyGCPComputeEngineHost {
         (
             PyGCPComputeEngineHost {},
             PyHost {
-                underlying: deployment.underlying.blocking_write().add_host(|id| {
-                    crate::core::GCPComputeEngineHost {
-                        id,
-                        project,
-                        ip: None,
-                        launched: None,
-                    }
-                }),
+                underlying: deployment
+                    .underlying
+                    .blocking_write()
+                    .add_host(|id| crate::core::GCPComputeEngineHost::new(id, project)),
             },
         )
     }

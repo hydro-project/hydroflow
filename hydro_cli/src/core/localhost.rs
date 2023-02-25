@@ -130,7 +130,9 @@ impl Host for LocalhostHost {
     fn find_bind_type(&self, connection_from: &dyn Host) -> BindType {
         if connection_from.can_connect_to(ConnectionType::UnixSocket(self.id)) {
             BindType::UnixSocket
-        } else if connection_from.can_connect_to(ConnectionType::InternalTcpPort(self.id)) {
+        } else if connection_from
+            .can_connect_to(ConnectionType::InternalTcpPort(format!("{}", self.id)))
+        {
             BindType::TcpPort("127.0.0.1".to_string())
         } else {
             todo!()
@@ -150,7 +152,7 @@ impl Host for LocalhostHost {
                     false
                 }
             }
-            ConnectionType::InternalTcpPort(id) => self.id == id,
+            ConnectionType::InternalTcpPort(id) => format!("{}", self.id) == id,
         }
     }
 }

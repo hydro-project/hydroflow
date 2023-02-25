@@ -45,22 +45,50 @@ fn deploy(config: PathBuf) -> Result<(), ()> {
         let wrapper = PyModule::from_code(
             py,
             r#"
+import asyncio
+
 async def wrap(inner):
     try:
         return (await inner(), None)
-    except Exception as e:
+    except asyncio.CancelledError as e:
         import traceback
         traceback.print_exc()
         return (None, e)
+    except BaseException as e:
+        import traceback
+        traceback.print_exc()
+        return (None, e)
+    except:
+        import traceback
+        traceback.print_exc()
+
+        return (None, Exception("Unknown error"))
+
+def run(inner):
+    event_loop = asyncio.get_event_loop()
+    task = event_loop.create_task(wrap(inner))
+    should_cancel = False
+    try:
+        res = event_loop.run_until_complete(task)
+    except:
+        should_cancel = True
+
+    if should_cancel:
+        task.cancel()
+        res = event_loop.run_until_complete(task)
+
+    pending = asyncio.all_tasks(loop=event_loop)
+    group = asyncio.gather(*pending)
+    event_loop.run_until_complete(group)
+
+    event_loop.close()
+    return res
 "#,
             "wrapper.py",
             "wrapper",
         )?;
 
-        let asyncio = PyModule::import(py, "asyncio")?;
-        let wrapped = wrapper.call_method1("wrap", (fun,))?;
-
-        asyncio.call_method1("run", (wrapped,)).and_then(|v| {
+        wrapper.call_method1("run", (fun,)).and_then(|v| {
             let v = v.downcast::<PyTuple>()?;
             let _result = v.get_item(0)?;
             let error = v.get_item(1)?;

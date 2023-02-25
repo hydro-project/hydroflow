@@ -190,10 +190,10 @@ impl Service for HydroflowCrate {
         for (port_name, from_host) in self.incoming_ports.iter() {
             bind_types.insert(
                 port_name.clone(),
-                from_host
+                self.on
                     .read()
                     .await
-                    .find_bind_type(self.on.read().await.deref()),
+                    .find_bind_type(from_host.read().await.deref()),
             );
         }
 
