@@ -1,10 +1,8 @@
-use std::path::PathBuf;
+use std::{fmt::Display, path::PathBuf};
 
+use anyhow::Context;
 use clap::{Parser, Subcommand};
-use pyo3::{
-    prelude::*,
-    types::{PyList, PyTuple},
-};
+use pyo3::{prelude::*, types::PyList};
 
 pub mod core;
 
@@ -27,9 +25,37 @@ enum Commands {
     },
 }
 
-fn deploy(config: PathBuf) -> Result<(), ()> {
-    Python::with_gil(|py| {
-        let syspath: &PyList = py.import("sys")?.getattr("path")?.downcast::<PyList>()?;
+fn async_wrapper_module(py: Python) -> Result<&PyModule, PyErr> {
+    PyModule::from_code(
+        py,
+        include_str!("async_wrapper.py"),
+        "wrapper.py",
+        "wrapper",
+    )
+}
+
+#[derive(Debug)]
+struct PyErrWithTraceback {
+    err: PyErr,
+    traceback: String,
+}
+
+impl std::error::Error for PyErrWithTraceback {}
+
+impl Display for PyErrWithTraceback {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "{}", self.err)?;
+        write!(f, "{}", self.traceback)
+    }
+}
+
+fn deploy(config: PathBuf) -> anyhow::Result<()> {
+    Python::with_gil(|py| -> anyhow::Result<()> {
+        let syspath: &PyList = py
+            .import("sys")
+            .and_then(|s| s.getattr("path"))
+            .and_then(|p| Ok(p.downcast::<PyList>()?))?;
+
         syspath.insert(0, PathBuf::from(".").canonicalize().unwrap())?;
 
         let filename = config.canonicalize().unwrap();
@@ -38,79 +64,41 @@ fn deploy(config: PathBuf) -> Result<(), ()> {
             std::fs::read_to_string(config).unwrap().as_str(),
             filename.to_str().unwrap(),
             "",
-        )?
-        .getattr("main")?
+        )
+        .with_context(|| format!("failed to load deployment script: {}", filename.display()))?
+        .getattr("main")
+        .context("expected deployment script to define a `main` function, but one was not found")?
         .into();
 
-        let wrapper = PyModule::from_code(
-            py,
-            r#"
-import asyncio
+        let wrapper = async_wrapper_module(py)?;
+        match wrapper.call_method1("run", (fun,)) {
+            Ok(_) => Ok(()),
+            Err(e) => {
+                let traceback = e
+                    .traceback(py)
+                    .context("traceback was expected but none found")
+                    .and_then(|tb| Ok(tb.format()?))?
+                    .trim()
+                    .to_string();
 
-async def wrap(inner):
-    try:
-        return (await inner(), None)
-    except asyncio.CancelledError as e:
-        import traceback
-        traceback.print_exc()
-        return (None, e)
-    except BaseException as e:
-        import traceback
-        traceback.print_exc()
-        return (None, e)
-    except:
-        import traceback
-        traceback.print_exc()
-
-        return (None, Exception("Unknown error"))
-
-def run(inner):
-    event_loop = asyncio.get_event_loop()
-    task = event_loop.create_task(wrap(inner))
-    should_cancel = False
-    try:
-        res = event_loop.run_until_complete(task)
-    except:
-        should_cancel = True
-
-    if should_cancel:
-        task.cancel()
-        res = event_loop.run_until_complete(task)
-
-    pending = asyncio.all_tasks(loop=event_loop)
-    group = asyncio.gather(*pending)
-    event_loop.run_until_complete(group)
-
-    event_loop.close()
-    return res
-"#,
-            "wrapper.py",
-            "wrapper",
-        )?;
-
-        wrapper.call_method1("run", (fun,)).and_then(|v| {
-            let v = v.downcast::<PyTuple>()?;
-            let _result = v.get_item(0)?;
-            let error = v.get_item(1)?;
-            if error.is_none() {
-                Ok(())
-            } else {
-                Err(PyErr::from_value(error))
+                if e.is_instance_of::<AnyhowWrapper>(py) {
+                    let wrapper = e.into_py(py).extract::<AnyhowWrapper>(py)?;
+                    let underlying = wrapper.underlying;
+                    let mut underlying = underlying.blocking_write();
+                    Err(underlying.take().unwrap()).context(format!("RustException\n{}", traceback))
+                } else {
+                    Err(PyErrWithTraceback { err: e, traceback }.into())
+                }
             }
-        })
-    })
-    .map_err(|e: PyErr| {
-        Python::with_gil(|py| {
-            e.print_and_set_sys_last_vars(py);
-        });
+        }
     })?;
 
     Ok(())
 }
 
-use python_interface::hydro_cli_rust;
+use python_interface::{hydro_cli_rust, AnyhowWrapper};
 
-fn main() -> Result<(), ()> {
+fn main() -> anyhow::Result<()> {
     let mut builder = tokio::runtime::Builder::new_multi_thread();
     builder.enable_all();
     pyo3_asyncio::tokio::init(builder);

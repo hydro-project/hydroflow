@@ -1,8 +1,15 @@
 use std::sync::Arc;
 
 use async_channel::Receiver;
-use pyo3::{exceptions::PyException, prelude::*};
+use pyo3::exceptions::PyException;
+use pyo3::prelude::*;
 use tokio::sync::RwLock;
+
+#[pyclass(extends=PyException)]
+#[derive(Clone)]
+pub struct AnyhowWrapper {
+    pub underlying: Arc<RwLock<Option<anyhow::Error>>>,
+}
 
 #[pyclass(name = "PyDeployment")]
 pub struct PyDeployment {
@@ -24,11 +31,21 @@ impl PyDeployment {
     fn deploy<'p>(&self, py: Python<'p>) -> &'p pyo3::PyAny {
         let underlying = self.underlying.clone();
         pyo3_asyncio::tokio::future_into_py(py, async move {
-            let r = underlying.write().await.deploy().await;
-            Python::with_gil(|py| {
-                r.map_err(|e| PyException::new_err(format!("{}", e)))?;
-                Ok(py.None())
-            })
+            underlying.write().await.deploy().await.map_err(|e| {
+                Python::with_gil(|py| {
+                    PyErr::from_value(
+                        Py::new(
+                            py,
+                            AnyhowWrapper {
+                                underlying: Arc::new(RwLock::new(Some(e))),
+                            },
+                        )
+                        .unwrap()
+                        .as_ref(py),
+                    )
+                })
+            })?;
+            Python::with_gil(|py| Ok(py.None()))
         })
         .unwrap()
     }
@@ -37,7 +54,7 @@ impl PyDeployment {
         let underlying = self.underlying.clone();
         pyo3_asyncio::tokio::future_into_py(py, async move {
             underlying.write().await.start().await;
-            Python::with_gil(|py| Ok(py.None()))
+            Ok(Python::with_gil(|py| py.None()))
         })
         .unwrap()
     }
@@ -209,6 +226,7 @@ fn create_connection(from: &PyService, from_port: String, to: &PyService, to_por
 
 #[pymodule]
 pub fn hydro_cli_rust(_py: Python<'_>, module: &PyModule) -> PyResult<()> {
+    module.add_class::<AnyhowWrapper>()?;
     module.add_class::<PyDeployment>()?;
     module.add_class::<PyHost>()?;
     module.add_class::<PyLocalhostHost>()?;

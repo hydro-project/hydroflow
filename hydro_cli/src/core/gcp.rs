@@ -4,7 +4,7 @@ use std::{
     sync::Arc,
 };
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::Result;
 use async_channel::{Receiver, Sender};
 
 use async_ssh2_lite::{AsyncChannel, AsyncSession, SessionConfiguration};
@@ -91,10 +91,9 @@ impl LaunchedHost for LaunchedComputeEngine {
                     SocketAddr::new(self.external_ip.parse().unwrap(), 22),
                     Some(config),
                 )
-                .await
-                .map_err(|e| anyhow!("failed to connect to server: {}", e))?;
+                .await?;
 
-                session.handshake().await.context("failed to handshake")?;
+                session.handshake().await?;
 
                 session
                     .userauth_pubkey_file(
@@ -109,8 +108,7 @@ impl LaunchedHost for LaunchedComputeEngine {
                             .as_path(),
                         None,
                     )
-                    .await
-                    .map_err(|e| anyhow!("failed to authenticate with public key: {}", e))?;
+                    .await?;
 
                 Ok(session)
             },
@@ -118,10 +116,7 @@ impl LaunchedHost for LaunchedComputeEngine {
         )
         .await?;
 
-        let sftp = session
-            .sftp()
-            .await
-            .context("could not open sftp channel")?;
+        let sftp = session.sftp().await?;
 
         let mut binary_counter_write = self.binary_counter.write().await;
         let my_binary_counter = *binary_counter_write;
@@ -133,8 +128,7 @@ impl LaunchedHost for LaunchedComputeEngine {
         let mut created_file = sftp.create(&binary_path).await?;
         created_file
             .write_all(std::fs::read(binary).unwrap().as_slice())
-            .await
-            .context("failed to copy binary")?;
+            .await?;
 
         let mut orig_file_stat = sftp.stat(&binary_path).await?;
         orig_file_stat.perm = Some(0o755);
@@ -142,14 +136,8 @@ impl LaunchedHost for LaunchedComputeEngine {
         created_file.close().await?;
         drop(created_file);
 
-        let mut channel = session
-            .channel_session()
-            .await
-            .context("could not open stdout channel")?;
-        channel
-            .exec(binary_path.to_str().unwrap())
-            .await
-            .context("could not launch binary")?;
+        let mut channel = session.channel_session().await?;
+        channel.exec(binary_path.to_str().unwrap()).await?;
 
         let (stdin_sender, mut stdin_receiver) = async_channel::unbounded::<String>();
         let mut stdin = channel.stream(0);

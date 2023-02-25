@@ -5,10 +5,10 @@ edition = "2021"
 
 [dependencies]
 tokio = { version = "1.16", features = [ "full" ] }
-anyhow = "1.0.69"
+anyhow = { version = "1.0.69", features = [ "backtrace" ] }
 clap = { version = "4.1.4", features = ["derive"] }
 cargo = "0.68.0"
-pyo3 = { version = "0.18.1", features = ["auto-initialize"] }
+pyo3 = { version = "0.18.1", features = ["auto-initialize", "anyhow"] }
 pyo3-asyncio = { version = "0.18.0", features = ["attributes", "unstable-streams", "tokio-runtime"] }
 async-trait = "0.1.64"
 async-process = "1.6.0"

@@ -5,7 +5,7 @@ use std::{
     sync::{Arc, Weak},
 };
 
-use anyhow::{bail, Context, Result};
+use anyhow::{bail, Result};
 use async_channel::Receiver;
 use async_trait::async_trait;
 use cargo::{
@@ -208,8 +208,7 @@ impl Service for HydroflowCrate {
             .stdin()
             .await
             .send(format!("{formatted_bind_types}\n"))
-            .await
-            .context("failed to send config to binary")?;
+            .await?;
 
         let ready_line = stdout_receiver.recv().await.unwrap();
         if ready_line.starts_with("ready: ") {
