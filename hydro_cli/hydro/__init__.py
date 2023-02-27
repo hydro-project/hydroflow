@@ -8,6 +8,9 @@ class Deployment(object):
     def Localhost(self) -> "Localhost":
         return Localhost(self)
 
+    def GCPComputeEngineHost(self, project: str, machine_type: str, region: str) -> "GCPComputeEngineHost":
+        return GCPComputeEngineHost(self, project, machine_type, region)
+
     def HydroflowCrate(self, src: str, on: "Host", example: Optional[str] = None, features: Optional[List[str]] = None) -> "HydroflowCrate":
         return HydroflowCrate(self, src, on, example, features)
 
@@ -24,6 +27,10 @@ class Host(object):
 class Localhost(Host):
     def __init__(self, deployment: Deployment):
         super().__init__(hydro_cli_rust.PyLocalhostHost(deployment.underlying))
+
+class GCPComputeEngineHost(Host):
+    def __init__(self, deployment: Deployment, project: str, machine_type: str, region: str):
+        super().__init__(hydro_cli_rust.PyGCPComputeEngineHost(deployment.underlying, project, machine_type, region))
 
 class Service(object):
     def __init__(self, underlying) -> None:

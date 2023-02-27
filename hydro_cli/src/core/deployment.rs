@@ -1,9 +1,8 @@
-use std::fmt::Debug;
-
 use super::Service;
 
 use super::Host;
 
+use anyhow::Result;
 use tokio::sync::RwLock;
 
 use std::sync::Arc;
@@ -15,14 +14,10 @@ pub struct Deployment {
 }
 
 impl Deployment {
-    pub async fn deploy(&mut self) {
-        let mut resource_pool = super::ResourceBatch {};
+    pub async fn deploy(&mut self) -> Result<()> {
+        let mut resource_pool = super::ResourceBatch::new();
         for service in self.services.iter_mut() {
-            service
-                .write()
-                .await
-                .collect_resources(&mut resource_pool)
-                .await;
+            service.write().await.collect_resources(&mut resource_pool);
         }
 
         let result = Arc::new(resource_pool.provision().await);
@@ -40,10 +35,13 @@ impl Deployment {
             self.services
                 .iter()
                 .map(|service: &Arc<RwLock<dyn Service>>| async {
-                    service.write().await.ready().await;
+                    service.write().await.ready().await?;
+                    Ok(()) as Result<()>
                 });
 
-        futures::future::join_all(all_services_ready).await;
+        futures::future::try_join_all(all_services_ready).await?;
+
+        Ok(())
     }
 
     pub async fn start(&mut self) {
@@ -57,7 +55,10 @@ impl Deployment {
         futures::future::join_all(all_services_start).await;
     }
 
-    pub fn add_host<T: Host + 'static, F: Fn(usize) -> T>(&mut self, host: F) -> Arc<RwLock<T>> {
+    pub fn add_host<T: Host + 'static, F: FnOnce(usize) -> T>(
+        &mut self,
+        host: F,
+    ) -> Arc<RwLock<T>> {
         let arc = Arc::new(RwLock::new(host(self.hosts.len())));
         self.hosts.push(arc.clone());
         arc
@@ -67,28 +68,5 @@ impl Deployment {
         let arc = Arc::new(RwLock::new(service));
         self.services.push(arc.clone());
         arc
-    }
-}
-
-impl Debug for Deployment {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Deployment")
-            .field(
-                "hosts",
-                &self
-                    .hosts
-                    .iter()
-                    .map(|h| h.blocking_read())
-                    .collect::<Vec<_>>(),
-            )
-            .field(
-                "services",
-                &self
-                    .services
-                    .iter()
-                    .map(|h| h.blocking_read())
-                    .collect::<Vec<_>>(),
-            )
-            .finish()
     }
 }
