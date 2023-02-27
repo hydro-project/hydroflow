@@ -4,7 +4,10 @@ mod udp;
 pub use udp::*;
 mod tcp;
 pub use tcp::*;
+
+#[cfg(unix)]
 mod socket;
+#[cfg(unix)]
 pub use socket::*;
 
 #[cfg(feature = "cli_integration")]

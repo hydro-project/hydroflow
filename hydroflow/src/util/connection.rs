@@ -2,10 +2,16 @@ use std::{net::SocketAddr, path::PathBuf, pin::Pin};
 
 use futures::{Sink, Stream};
 use serde::{Deserialize, Serialize};
-use tokio::net::{TcpListener, TcpStream, UnixListener, UnixStream};
+use tokio::net::{TcpListener, TcpStream};
+#[cfg(unix)]
+use tokio::net::{UnixListener, UnixStream};
+#[cfg(not(unix))]
+type UnixListener = !;
 use tokio_util::codec::LinesCodecError;
 
-use super::{tcp_lines, unix_lines};
+use super::tcp_lines;
+#[cfg(unix)]
+use super::unix_lines;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum BindType {
@@ -65,7 +71,8 @@ impl ConnectionPipe {
 
                 #[cfg(not(unix))]
                 {
-                    panic!("Unix sockets are not supported on this platform")
+                    let _ = path;
+                    panic!("Unix sockets are not supported on this platform");
                 }
             }
             ConnectionPipe::TcpPort(addr) => {
@@ -100,6 +107,7 @@ impl BoundConnection {
 
                 #[cfg(not(unix))]
                 {
+                    let _ = listener;
                     panic!("Unix sockets are not supported on this platform")
                 }
             }
@@ -127,6 +135,7 @@ impl BoundConnection {
 
                 #[cfg(not(unix))]
                 {
+                    let _ = listener;
                     panic!("Unix sockets are not supported on this platform")
                 }
             }
