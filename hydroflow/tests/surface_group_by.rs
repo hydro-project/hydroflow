@@ -1,6 +1,8 @@
 use std::collections::BTreeSet;
 
-#[test]
+use multiplatform_test::multiplatform_test;
+
+#[multiplatform_test]
 pub fn test_group_by_infer_basic() {
     pub struct SubordResponse {
         pub xid: &'static str,
@@ -24,7 +26,7 @@ pub fn test_group_by_infer_basic() {
     assert_eq!((1, 0), (df.current_tick(), df.current_stratum()));
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_group_by_tick() {
     let (items_send, items_recv) = hydroflow::util::unbounded_channel::<(u32, Vec<u32>)>();
     let (result_send, mut result_recv) = hydroflow::util::unbounded_channel::<(u32, Vec<u32>)>();
@@ -74,7 +76,7 @@ pub fn test_group_by_tick() {
     );
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_group_by_static() {
     let (items_send, items_recv) = hydroflow::util::unbounded_channel::<(u32, Vec<u32>)>();
     let (result_send, mut result_recv) = hydroflow::util::unbounded_channel::<(u32, Vec<u32>)>();

@@ -1,6 +1,7 @@
 [workspace]
 
 members = [
+    "multiplatform_test",
     "hydroflow_internalmacro",
     "hydroflow_lang",
     "hydroflow_macro",

@@ -1,6 +1,8 @@
 use hydroflow::hydroflow_syntax;
 
-#[test]
+use multiplatform_test::multiplatform_test;
+
+#[multiplatform_test]
 pub fn test_reduce_tick() {
     let (items_send, items_recv) = hydroflow::util::unbounded_channel::<u32>();
     let (result_send, mut result_recv) = hydroflow::util::unbounded_channel::<u32>();
@@ -40,7 +42,7 @@ pub fn test_reduce_tick() {
     );
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_reduce_static() {
     let (items_send, items_recv) = hydroflow::util::unbounded_channel::<u32>();
     let (result_send, mut result_recv) = hydroflow::util::unbounded_channel::<u32>();
@@ -80,7 +82,7 @@ pub fn test_reduce_static() {
     );
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_reduce_sum() {
     let (items_send, items_recv) = hydroflow::util::unbounded_channel::<usize>();
 
@@ -123,7 +125,7 @@ pub fn test_reduce_sum() {
 
 /// This tests graph reachability along with an accumulation (in this case sum of vertex ids).
 /// This is to test fixed-point being reched before the accumulation running.
-#[test]
+#[multiplatform_test]
 pub fn test_reduce() {
     // An edge in the input data = a pair of `usize` vertex IDs.
     let (pairs_send, pairs_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();

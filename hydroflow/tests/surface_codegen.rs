@@ -1,5 +1,7 @@
 use std::collections::HashSet;
 
+use multiplatform_test::multiplatform_test;
+
 use hydroflow::hydroflow_syntax;
 use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::util::collect_ready;
@@ -21,7 +23,7 @@ use hydroflow::util::collect_ready;
 // TODO(mingwei): Documentation articles.
 // TODO(mingwei): Find a way to display join keys
 
-#[test]
+#[multiplatform_test]
 pub fn test_basic_2() {
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
 
@@ -33,7 +35,7 @@ pub fn test_basic_2() {
     assert_eq!(&[1], &*collect_ready::<Vec<_>, _>(&mut out_recv));
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_basic_3() {
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
 
@@ -45,7 +47,7 @@ pub fn test_basic_3() {
     assert_eq!(&[2], &*collect_ready::<Vec<_>, _>(&mut out_recv));
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_basic_merge() {
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
 
@@ -59,7 +61,7 @@ pub fn test_basic_merge() {
     assert_eq!(&[1, 2], &*collect_ready::<Vec<_>, _>(&mut out_recv));
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_basic_tee() {
     let (out_send_a, mut out_recv) = hydroflow::util::unbounded_channel::<String>();
     let out_send_b = out_send_a.clone();
@@ -77,7 +79,7 @@ pub fn test_basic_tee() {
     assert!(out.contains(&"B 1".to_owned()));
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_basic_inspect_null() {
     use std::cell::RefCell;
     use std::rc::Rc;
@@ -94,7 +96,7 @@ pub fn test_basic_inspect_null() {
 }
 
 // Mainly checking subgraph partitioning pull-push handling.
-#[test]
+#[multiplatform_test]
 pub fn test_large_diamond() {
     #[allow(clippy::map_identity)]
     let mut df: Hydroflow = hydroflow_syntax! {
@@ -107,7 +109,7 @@ pub fn test_large_diamond() {
 }
 
 /// Test that source_stream can handle "complex" expressions.
-#[test]
+#[multiplatform_test]
 pub fn test_recv_expr() {
     let send_recv = hydroflow::util::unbounded_channel::<usize>();
 
@@ -131,7 +133,7 @@ pub fn test_recv_expr() {
     df.run_available();
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_unzip() {
     let (send0, mut recv0) = hydroflow::util::unbounded_channel::<&'static str>();
     let (send1, mut recv1) = hydroflow::util::unbounded_channel::<&'static str>();
@@ -149,7 +151,7 @@ pub fn test_unzip() {
     assert_eq!(&["Foo", "Bar"], &*out1);
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_join_order() {
     let _df_good = hydroflow_syntax! {
         yikes = join() -> for_each(|m: ((), (u32, String))| println!("{:?}", m));
@@ -163,7 +165,7 @@ pub fn test_join_order() {
     };
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_cross_join() {
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<(usize, &str)>();
 
@@ -183,7 +185,7 @@ pub fn test_cross_join() {
     }
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_next_tick() {
     let (inp_send, inp_recv) = hydroflow::util::unbounded_channel::<usize>();
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
@@ -209,7 +211,7 @@ pub fn test_next_tick() {
     assert_eq!(&[1, 2, 3, 4, 5, 6], &*out);
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_anti_join() {
     let (inp_send, inp_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
@@ -235,7 +237,7 @@ pub fn test_anti_join() {
     assert_eq!(&[(1, 2), (2, 3), (3, 4), (4, 5), (5, 4), (6, 5)], &*out);
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_sort() {
     let (items_send, items_recv) = hydroflow::util::unbounded_channel::<usize>();
 
@@ -272,7 +274,7 @@ pub fn test_sort() {
     println!();
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_unique() {
     let (items_send, items_recv) = hydroflow::util::unbounded_channel::<usize>();
 
@@ -309,7 +311,7 @@ pub fn test_unique() {
     println!();
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_sort_by() {
     let mut df = hydroflow_syntax! {
         source_iter(vec!((2, 'y'), (3, 'x'), (1, 'z')))
@@ -327,7 +329,7 @@ pub fn test_sort_by() {
     println!();
 }
 
-#[test]
+#[multiplatform_test]
 fn test_sort_by_owned() {
     #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
     struct Dummy {
@@ -360,7 +362,7 @@ fn test_sort_by_owned() {
     assert_eq!(&dummies_saved, &*results);
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_demux_1() {
     enum Shape {
         Circle(f64),
@@ -389,7 +391,7 @@ pub fn test_demux_1() {
     df.run_available();
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_demux_fizzbuzz_1() {
     let mut df = hydroflow_syntax! {
         my_demux = source_iter(1..=100)
@@ -409,7 +411,7 @@ pub fn test_demux_fizzbuzz_1() {
     df.run_available();
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_demux_fizzbuzz_2() {
     let mut df = hydroflow_syntax! {
         my_demux = source_iter(1..=100)
@@ -429,7 +431,7 @@ pub fn test_demux_fizzbuzz_2() {
     df.run_available();
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_channel_minimal() {
     let (send, recv) = hydroflow::util::unbounded_channel::<usize>();
 
@@ -448,7 +450,7 @@ pub fn test_channel_minimal() {
     df2.run_available();
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_surface_syntax_reachability_generated() {
     // An edge in the input data = a pair of `usize` vertex IDs.
     let (pairs_send, pairs_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
@@ -496,7 +498,7 @@ pub fn test_surface_syntax_reachability_generated() {
     // Reached: 4
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_transitive_closure() {
     // An edge in the input data = a pair of `usize` vertex IDs.
     let (pairs_send, pairs_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
@@ -553,7 +555,7 @@ pub fn test_transitive_closure() {
     // transitive closure: (0,3)
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_covid_tracing() {
     use hydroflow::util::unbounded_channel;
 

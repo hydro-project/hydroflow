@@ -1,6 +1,8 @@
+use multiplatform_test::multiplatform_test;
+
 use hydroflow::hydroflow_syntax;
 
-#[test]
+#[multiplatform_test]
 pub fn test_context_ref() {
     let mut df = hydroflow_syntax! {
         source_iter([()])
@@ -9,7 +11,7 @@ pub fn test_context_ref() {
     df.run_available();
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_context_mut() {
     // TODO(mingwei): Currently cannot have conflicting (mut) references to `context` in the same
     // subgraph - bit of a leak of the subgraphs abstraction. `next_stratum()` here so it runs.
