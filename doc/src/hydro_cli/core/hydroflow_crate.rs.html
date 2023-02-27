@@ -261,25 +261,14 @@
 <a href="#261" id="261">261</a>
 <a href="#262" id="262">262</a>
 <a href="#263" id="263">263</a>
-<a href="#264" id="264">264</a>
-<a href="#265" id="265">265</a>
-<a href="#266" id="266">266</a>
-<a href="#267" id="267">267</a>
-<a href="#268" id="268">268</a>
-<a href="#269" id="269">269</a>
-<a href="#270" id="270">270</a>
-<a href="#271" id="271">271</a>
-<a href="#272" id="272">272</a>
-<a href="#273" id="273">273</a>
-<a href="#274" id="274">274</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::{
     collections::HashMap,
-    fmt::Debug,
     ops::Deref,
     path::PathBuf,
     sync::{Arc, Weak},
 };
 
+<span class="kw">use </span>anyhow::{bail, <span class="prelude-ty">Result</span>};
 <span class="kw">use </span>async_channel::Receiver;
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>cargo::{
@@ -306,7 +295,7 @@
     <span class="doccomment">/// A map of port names to the host that will be sending data to the port.
     </span>incoming_ports: HashMap&lt;String, Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;&gt;,
 
-    built_binary: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    built_binary: <span class="prelude-ty">Option</span>&lt;JoinHandle&lt;PathBuf&gt;&gt;,
     launched_host: <span class="prelude-ty">Option</span>&lt;Arc&lt;<span class="kw">dyn </span>LaunchedHost&gt;&gt;,
 
     <span class="doccomment">/// A map of port names to config for how other services can connect to this one.
@@ -381,7 +370,7 @@
             .<span class="kw">await
     </span>}
 
-    <span class="kw">fn </span>build(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; JoinHandle&lt;String&gt; {
+    <span class="kw">fn </span>build(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; JoinHandle&lt;PathBuf&gt; {
         <span class="kw">let </span>src_cloned = <span class="self">self</span>.src.join(<span class="string">&quot;Cargo.toml&quot;</span>).canonicalize().unwrap();
         <span class="kw">let </span>example_cloned = <span class="self">self</span>.example.clone();
         <span class="kw">let </span>features_cloned = <span class="self">self</span>.features.clone();
@@ -425,7 +414,7 @@
                 .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
 
             <span class="kw">if </span>binaries.len() == <span class="number">1 </span>{
-                binaries[<span class="number">0</span>].to_string()
+                binaries[<span class="number">0</span>].to_string().into()
             } <span class="kw">else </span>{
                 <span class="macro">panic!</span>(<span class="string">&quot;expected exactly one binary, got {}&quot;</span>, binaries.len())
             }
@@ -435,15 +424,15 @@
 
 <span class="attr">#[async_trait]
 </span><span class="kw">impl </span>Service <span class="kw">for </span>HydroflowCrate {
-    <span class="kw">async fn </span>collect_resources(<span class="kw-2">&amp;mut </span><span class="self">self</span>, resource_batch: <span class="kw-2">&amp;mut </span>ResourceBatch) {
+    <span class="kw">fn </span>collect_resources(<span class="kw-2">&amp;mut </span><span class="self">self</span>, resource_batch: <span class="kw-2">&amp;mut </span>ResourceBatch) {
         <span class="kw">let </span>built = <span class="self">self</span>.build();
-        <span class="self">self</span>.built_binary = <span class="prelude-val">Some</span>(built.<span class="kw">await</span>.unwrap());
-        <span class="kw">let </span>host_read = <span class="self">self</span>.on.read().<span class="kw">await</span>;
+        <span class="self">self</span>.built_binary = <span class="prelude-val">Some</span>(built);
 
-        drop(host_read);
-
-        <span class="kw">let </span><span class="kw-2">mut </span>host = <span class="self">self</span>.on.write().<span class="kw">await</span>;
-        host.collect_resources(resource_batch).<span class="kw">await</span>;
+        <span class="kw">let </span>host = <span class="self">self
+            </span>.on
+            .try_read()
+            .expect(<span class="string">&quot;No one should be writing to the host while resources are collected&quot;</span>);
+        host.collect_resources(resource_batch);
     }
 
     <span class="kw">async fn </span>deploy(<span class="kw-2">&amp;mut </span><span class="self">self</span>, resource_result: <span class="kw-2">&amp;</span>Arc&lt;ResourceResult&gt;) {
@@ -452,22 +441,22 @@
         <span class="self">self</span>.launched_host = <span class="prelude-val">Some</span>(launched.<span class="kw">await</span>);
     }
 
-    <span class="kw">async fn </span>ready(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+    <span class="kw">async fn </span>ready(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">let </span>binary = <span class="self">self
             </span>.launched_host
             .as_ref()
             .unwrap()
-            .launch_binary(<span class="self">self</span>.built_binary.as_ref().unwrap().clone())
-            .<span class="kw">await</span>;
+            .launch_binary(<span class="self">self</span>.built_binary.take().unwrap().<span class="kw">await</span>.as_ref().unwrap())
+            .<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="kw">let </span><span class="kw-2">mut </span>bind_types = HashMap::new();
         <span class="kw">for </span>(port_name, from_host) <span class="kw">in </span><span class="self">self</span>.incoming_ports.iter() {
             bind_types.insert(
                 port_name.clone(),
-                from_host
+                <span class="self">self</span>.on
                     .read()
                     .<span class="kw">await
-                    </span>.find_bind_type(<span class="self">self</span>.on.read().<span class="kw">await</span>.deref()),
+                    </span>.find_bind_type(from_host.read().<span class="kw">await</span>.deref()),
             );
         }
 
@@ -482,18 +471,19 @@
             </span>.stdin()
             .<span class="kw">await
             </span>.send(<span class="macro">format!</span>(<span class="string">&quot;{formatted_bind_types}\n&quot;</span>))
-            .<span class="kw">await
-            </span>.unwrap();
+            .<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="kw">let </span>ready_line = stdout_receiver.recv().<span class="kw">await</span>.unwrap();
         <span class="kw">if </span>ready_line.starts_with(<span class="string">&quot;ready: &quot;</span>) {
             <span class="self">self</span>.bound_pipes =
                 serde_json::from_str(ready_line.trim_start_matches(<span class="string">&quot;ready: &quot;</span>)).unwrap();
         } <span class="kw">else </span>{
-            <span class="macro">panic!</span>(<span class="string">&quot;expected ready&quot;</span>);
+            <span class="macro">bail!</span>(<span class="string">&quot;expected ready&quot;</span>);
         }
 
         <span class="self">self</span>.launched_binary = <span class="prelude-val">Some</span>(binary);
+
+        <span class="prelude-val">Ok</span>(())
     }
 
     <span class="kw">async fn </span>start(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
@@ -533,18 +523,6 @@
     <span class="kw">fn </span>as_any_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span><span class="kw">dyn </span>std::any::Any {
         <span class="self">self
     </span>}
-}
-
-<span class="kw">impl </span>Debug <span class="kw">for </span>HydroflowCrate {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; std::fmt::Result {
-        f.debug_struct(<span class="string">&quot;HydroflowCrate&quot;</span>)
-            .field(<span class="string">&quot;src&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.src)
-            .field(<span class="string">&quot;on&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.on.blocking_read())
-            .field(<span class="string">&quot;example&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.example)
-            .field(<span class="string">&quot;outgoing_ports&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.outgoing_ports)
-            .field(<span class="string">&quot;incoming_ports&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.incoming_ports)
-            .finish()
-    }
 }
 </code></pre></div>
 </section></main><div id="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="hydro_cli" data-themes="" data-resource-suffix="" data-rustdoc-version="1.69.0-nightly (dc1d9d50f 2023-01-31)" data-search-js="search-98d53477a794af0b.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-7c23ac01f615ce90.css" ></div></body></html>

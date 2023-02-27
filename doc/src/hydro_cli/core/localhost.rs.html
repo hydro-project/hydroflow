@@ -154,8 +154,11 @@
 <a href="#154" id="154">154</a>
 <a href="#155" id="155">155</a>
 <a href="#156" id="156">156</a>
-</pre><pre class="rust"><code><span class="kw">use </span>std::sync::Arc;
+<a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+</pre><pre class="rust"><code><span class="kw">use </span>std::{path::Path, sync::Arc};
 
+<span class="kw">use </span>anyhow::Result;
 <span class="kw">use </span>async_channel::{Receiver, Sender};
 <span class="kw">use </span>async_process::{Command, Stdio};
 <span class="kw">use </span>async_trait::async_trait;
@@ -167,7 +170,7 @@
 
 <span class="kw">struct </span>LaunchedLocalhostBinary {
     child: RwLock&lt;async_process::Child&gt;,
-    stdin_channel: Sender&lt;String&gt;,
+    stdin_sender: Sender&lt;String&gt;,
     stdout_receivers: Arc&lt;RwLock&lt;Vec&lt;Sender&lt;String&gt;&gt;&gt;&gt;,
     stderr_receivers: Arc&lt;RwLock&lt;Vec&lt;Sender&lt;String&gt;&gt;&gt;&gt;,
 }
@@ -175,7 +178,7 @@
 <span class="attr">#[async_trait]
 </span><span class="kw">impl </span>LaunchedBinary <span class="kw">for </span>LaunchedLocalhostBinary {
     <span class="kw">async fn </span>stdin(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Sender&lt;String&gt; {
-        <span class="self">self</span>.stdin_channel.clone()
+        <span class="self">self</span>.stdin_sender.clone()
     }
 
     <span class="kw">async fn </span>stdout(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Receiver&lt;String&gt; {
@@ -204,7 +207,7 @@
 
 <span class="kw">struct </span>LaunchedLocalhost {}
 
-<span class="kw">fn </span>create_broadcast&lt;T: AsyncRead + Send + Unpin + <span class="lifetime">&#39;static</span>&gt;(
+<span class="kw">pub fn </span>create_broadcast&lt;T: AsyncRead + Send + Unpin + <span class="lifetime">&#39;static</span>&gt;(
     source: T,
     default: <span class="kw">impl </span>Fn(String) + Send + <span class="lifetime">&#39;static</span>,
 ) -&gt; Arc&lt;RwLock&lt;Vec&lt;Sender&lt;String&gt;&gt;&gt;&gt; {
@@ -238,14 +241,13 @@
 
 <span class="attr">#[async_trait]
 </span><span class="kw">impl </span>LaunchedHost <span class="kw">for </span>LaunchedLocalhost {
-    <span class="kw">async fn </span>launch_binary(<span class="kw-2">&amp;</span><span class="self">self</span>, binary: String) -&gt; Arc&lt;RwLock&lt;<span class="kw">dyn </span>LaunchedBinary&gt;&gt; {
+    <span class="kw">async fn </span>launch_binary(<span class="kw-2">&amp;</span><span class="self">self</span>, binary: <span class="kw-2">&amp;</span>Path) -&gt; <span class="prelude-ty">Result</span>&lt;Arc&lt;RwLock&lt;<span class="kw">dyn </span>LaunchedBinary&gt;&gt;&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>child = Command::new(binary)
             .kill_on_drop(<span class="bool-val">true</span>)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
-            .spawn()
-            .unwrap();
+            .spawn()<span class="question-mark">?</span>;
 
         <span class="kw">let </span>(stdin_sender, <span class="kw-2">mut </span>stdin_receiver) = async_channel::unbounded::&lt;String&gt;();
         <span class="kw">let </span><span class="kw-2">mut </span>stdin = child.stdin.take().unwrap();
@@ -260,12 +262,12 @@
         <span class="kw">let </span>stdout_receivers = create_broadcast(child.stdout.take().unwrap(), |s| <span class="macro">println!</span>(<span class="string">&quot;{s}&quot;</span>));
         <span class="kw">let </span>stderr_receivers = create_broadcast(child.stderr.take().unwrap(), |s| <span class="macro">eprintln!</span>(<span class="string">&quot;{s}&quot;</span>));
 
-        Arc::new(RwLock::new(LaunchedLocalhostBinary {
+        <span class="prelude-val">Ok</span>(Arc::new(RwLock::new(LaunchedLocalhostBinary {
             child: RwLock::new(child),
-            stdin_channel: stdin_sender,
+            stdin_sender,
             stdout_receivers,
             stderr_receivers,
-        }))
+        })))
     }
 }
 
@@ -276,7 +278,7 @@
 
 <span class="attr">#[async_trait]
 </span><span class="kw">impl </span>Host <span class="kw">for </span>LocalhostHost {
-    <span class="kw">async fn </span>collect_resources(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _resource_batch: <span class="kw-2">&amp;mut </span>ResourceBatch) {}
+    <span class="kw">fn </span>collect_resources(<span class="kw-2">&amp;</span><span class="self">self</span>, _resource_batch: <span class="kw-2">&amp;mut </span>ResourceBatch) {}
 
     <span class="kw">async fn </span>provision(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _resource_result: <span class="kw-2">&amp;</span>Arc&lt;ResourceResult&gt;) -&gt; Arc&lt;<span class="kw">dyn </span>LaunchedHost&gt; {
         Arc::new(LaunchedLocalhost {})
@@ -285,7 +287,9 @@
     <span class="kw">fn </span>find_bind_type(<span class="kw-2">&amp;</span><span class="self">self</span>, connection_from: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Host) -&gt; BindType {
         <span class="kw">if </span>connection_from.can_connect_to(ConnectionType::UnixSocket(<span class="self">self</span>.id)) {
             BindType::UnixSocket
-        } <span class="kw">else if </span>connection_from.can_connect_to(ConnectionType::InternalTcpPort(<span class="self">self</span>.id)) {
+        } <span class="kw">else if </span>connection_from
+            .can_connect_to(ConnectionType::InternalTcpPort(<span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, <span class="self">self</span>.id)))
+        {
             BindType::TcpPort(<span class="string">&quot;127.0.0.1&quot;</span>.to_string())
         } <span class="kw">else </span>{
             <span class="macro">todo!</span>()
@@ -306,7 +310,7 @@
                     <span class="bool-val">false
                 </span>}
             }
-            ConnectionType::InternalTcpPort(id) =&gt; <span class="self">self</span>.id == id,
+            ConnectionType::InternalTcpPort(id) =&gt; <span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, <span class="self">self</span>.id) == id,
         }
     }
 }

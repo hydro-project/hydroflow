@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":[["create_connection",""],["hydro_cli_rust",""]],"struct":[["PyDeployment",""],["PyHost",""],["PyHydroflowCrate",""],["PyLocalhostHost",""],["PyReceiver",""],["PyService",""]]};
+window.SIDEBAR_ITEMS = {"fn":[["create_connection",""],["hydro_cli_rust",""]],"struct":[["AnyhowWrapper",""],["PyDeployment",""],["PyGCPComputeEngineHost",""],["PyHost",""],["PyHydroflowCrate",""],["PyLocalhostHost",""],["PyReceiver",""],["PyService",""]]};

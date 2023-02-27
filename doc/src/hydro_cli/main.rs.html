@@ -77,8 +77,47 @@
 <a href="#77" id="77">77</a>
 <a href="#78" id="78">78</a>
 <a href="#79" id="79">79</a>
-</pre><pre class="rust"><code><span class="kw">use </span>std::path::PathBuf;
+<a href="#80" id="80">80</a>
+<a href="#81" id="81">81</a>
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
+<a href="#86" id="86">86</a>
+<a href="#87" id="87">87</a>
+<a href="#88" id="88">88</a>
+<a href="#89" id="89">89</a>
+<a href="#90" id="90">90</a>
+<a href="#91" id="91">91</a>
+<a href="#92" id="92">92</a>
+<a href="#93" id="93">93</a>
+<a href="#94" id="94">94</a>
+<a href="#95" id="95">95</a>
+<a href="#96" id="96">96</a>
+<a href="#97" id="97">97</a>
+<a href="#98" id="98">98</a>
+<a href="#99" id="99">99</a>
+<a href="#100" id="100">100</a>
+<a href="#101" id="101">101</a>
+<a href="#102" id="102">102</a>
+<a href="#103" id="103">103</a>
+<a href="#104" id="104">104</a>
+<a href="#105" id="105">105</a>
+<a href="#106" id="106">106</a>
+<a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
+<a href="#109" id="109">109</a>
+<a href="#110" id="110">110</a>
+<a href="#111" id="111">111</a>
+<a href="#112" id="112">112</a>
+<a href="#113" id="113">113</a>
+<a href="#114" id="114">114</a>
+<a href="#115" id="115">115</a>
+<a href="#116" id="116">116</a>
+<a href="#117" id="117">117</a>
+</pre><pre class="rust"><code><span class="kw">use </span>std::{fmt::Display, path::PathBuf};
 
+<span class="kw">use </span>anyhow::Context;
 <span class="kw">use </span>clap::{Parser, Subcommand};
 <span class="kw">use </span>pyo3::{prelude::<span class="kw-2">*</span>, types::PyList};
 
@@ -86,6 +125,7 @@
 
 <span class="attr">#[allow(non_snake_case)]
 </span><span class="kw">mod </span>python_interface;
+<span class="kw">use </span>python_interface::{hydro_cli_rust, AnyhowWrapper};
 
 <span class="attr">#[derive(Parser, Debug)]
 #[command(author, version, about, long_about = <span class="prelude-val">None</span>)]
@@ -103,9 +143,37 @@
     },
 }
 
-<span class="kw">async fn </span>deploy(config: PathBuf) -&gt; <span class="prelude-ty">Result</span>&lt;(), PyErr&gt; {
-    <span class="kw">let </span>res: PyResult&lt;<span class="kw">_</span>&gt; = Python::with_gil(|py| {
-        <span class="kw">let </span>syspath: <span class="kw-2">&amp;</span>PyList = py.import(<span class="string">&quot;sys&quot;</span>)<span class="question-mark">?</span>.getattr(<span class="string">&quot;path&quot;</span>)<span class="question-mark">?</span>.downcast::&lt;PyList&gt;()<span class="question-mark">?</span>;
+<span class="kw">fn </span>async_wrapper_module(py: Python) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span>PyModule, PyErr&gt; {
+    PyModule::from_code(
+        py,
+        <span class="macro">include_str!</span>(<span class="string">&quot;async_wrapper.py&quot;</span>),
+        <span class="string">&quot;wrapper.py&quot;</span>,
+        <span class="string">&quot;wrapper&quot;</span>,
+    )
+}
+
+<span class="attr">#[derive(Debug)]
+</span><span class="kw">struct </span>PyErrWithTraceback {
+    err: PyErr,
+    traceback: String,
+}
+
+<span class="kw">impl </span>std::error::Error <span class="kw">for </span>PyErrWithTraceback {}
+
+<span class="kw">impl </span>Display <span class="kw">for </span>PyErrWithTraceback {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; std::fmt::Result {
+        <span class="macro">writeln!</span>(f, <span class="string">&quot;{}&quot;</span>, <span class="self">self</span>.err)<span class="question-mark">?</span>;
+        <span class="macro">write!</span>(f, <span class="string">&quot;{}&quot;</span>, <span class="self">self</span>.traceback)
+    }
+}
+
+<span class="kw">fn </span>deploy(config: PathBuf) -&gt; anyhow::Result&lt;()&gt; {
+    Python::with_gil(|py| -&gt; anyhow::Result&lt;()&gt; {
+        <span class="kw">let </span>syspath: <span class="kw-2">&amp;</span>PyList = py
+            .import(<span class="string">&quot;sys&quot;</span>)
+            .and_then(|s| s.getattr(<span class="string">&quot;path&quot;</span>))
+            .and_then(|p| <span class="prelude-val">Ok</span>(p.downcast::&lt;PyList&gt;()<span class="question-mark">?</span>))<span class="question-mark">?</span>;
+
         syspath.insert(<span class="number">0</span>, PathBuf::from(<span class="string">&quot;.&quot;</span>).canonicalize().unwrap())<span class="question-mark">?</span>;
 
         <span class="kw">let </span>filename = config.canonicalize().unwrap();
@@ -114,47 +182,55 @@
             std::fs::read_to_string(config).unwrap().as_str(),
             filename.to_str().unwrap(),
             <span class="string">&quot;&quot;</span>,
-        )<span class="question-mark">?
-        </span>.getattr(<span class="string">&quot;main&quot;</span>)<span class="question-mark">?
+        )
+        .with_context(|| <span class="macro">format!</span>(<span class="string">&quot;failed to load deployment script: {}&quot;</span>, filename.display()))<span class="question-mark">?
+        </span>.getattr(<span class="string">&quot;main&quot;</span>)
+        .context(<span class="string">&quot;expected deployment script to define a `main` function, but one was not found&quot;</span>)<span class="question-mark">?
         </span>.into();
 
-        <span class="comment">// call object without any arguments
-        </span>pyo3_asyncio::tokio::into_future((fun.call0(py)<span class="question-mark">?</span>).as_ref(py))
-    });
+        <span class="kw">let </span>wrapper = async_wrapper_module(py)<span class="question-mark">?</span>;
+        <span class="kw">match </span>wrapper.call_method1(<span class="string">&quot;run&quot;</span>, (fun,)) {
+            <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">Ok</span>(()),
+            <span class="prelude-val">Err</span>(err) =&gt; {
+                <span class="kw">let </span>traceback = err
+                    .traceback(py)
+                    .context(<span class="string">&quot;traceback was expected but none found&quot;</span>)
+                    .and_then(|tb| <span class="prelude-val">Ok</span>(tb.format()<span class="question-mark">?</span>))<span class="question-mark">?
+                    </span>.trim()
+                    .to_string();
 
-    <span class="kw">let </span>fn_future = res.unwrap();
-    fn_future.<span class="kw">await</span><span class="question-mark">?</span>;
+                <span class="kw">if </span>err.is_instance_of::&lt;AnyhowWrapper&gt;(py) {
+                    <span class="kw">let </span>wrapper = err.into_py(py).extract::&lt;AnyhowWrapper&gt;(py)<span class="question-mark">?</span>;
+                    <span class="kw">let </span>underlying = wrapper.underlying;
+                    <span class="kw">let </span><span class="kw-2">mut </span>underlying = underlying.blocking_write();
+                    <span class="prelude-val">Err</span>(underlying.take().unwrap()).context(<span class="macro">format!</span>(<span class="string">&quot;RustException\n{}&quot;</span>, traceback))
+                } <span class="kw">else </span>{
+                    <span class="prelude-val">Err</span>(PyErrWithTraceback { err, traceback }.into())
+                }
+            }
+        }
+    })<span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="kw">use </span>python_interface::hydro_cli_rust;
-
-<span class="kw">fn </span>main() {
-    <span class="kw">async fn </span>main() -&gt; PyResult&lt;()&gt; {
-        <span class="kw">let </span>args = Cli::parse();
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(cmd) = args.command {
-            <span class="kw">match </span>cmd {
-                Commands::Deploy { config } =&gt; {
-                    deploy(config).<span class="kw">await</span><span class="question-mark">?</span>;
-                }
-            }
-        }
-
-        <span class="prelude-val">Ok</span>(())
-    }
+<span class="kw">fn </span>main() -&gt; anyhow::Result&lt;()&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>builder = tokio::runtime::Builder::new_multi_thread();
+    builder.enable_all();
+    pyo3_asyncio::tokio::init(builder);
 
     <span class="macro">pyo3::append_to_inittab!</span>(hydro_cli_rust);
 
-    pyo3::prepare_freethreaded_python();
+    <span class="kw">let </span>args = Cli::parse();
+    <span class="kw">if let </span><span class="prelude-val">Some</span>(cmd) = args.command {
+        <span class="kw">match </span>cmd {
+            Commands::Deploy { config } =&gt; {
+                deploy(config)<span class="question-mark">?</span>;
+            }
+        }
+    }
 
-    <span class="kw">let </span><span class="kw-2">mut </span>builder = tokio::runtime::Builder::new_multi_thread();
-    builder.enable_all();
-
-    pyo3_asyncio::tokio::init(builder);
-    pyo3::Python::with_gil(|py| {
-        pyo3_asyncio::tokio::run(py, main()).unwrap_or_else(|e| e.print_and_set_sys_last_vars(py));
-    });
+    <span class="prelude-val">Ok</span>(())
 }
 </code></pre></div>
 </section></main><div id="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="hydro_cli" data-themes="" data-resource-suffix="" data-rustdoc-version="1.69.0-nightly (dc1d9d50f 2023-01-31)" data-search-js="search-98d53477a794af0b.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-7c23ac01f615ce90.css" ></div></body></html>

@@ -85,8 +85,29 @@
 <a href="#85" id="85">85</a>
 <a href="#86" id="86">86</a>
 <a href="#87" id="87">87</a>
-</pre><pre class="rust"><code><span class="kw">use </span>std::{fmt::Debug, sync::Arc};
+<a href="#88" id="88">88</a>
+<a href="#89" id="89">89</a>
+<a href="#90" id="90">90</a>
+<a href="#91" id="91">91</a>
+<a href="#92" id="92">92</a>
+<a href="#93" id="93">93</a>
+<a href="#94" id="94">94</a>
+<a href="#95" id="95">95</a>
+<a href="#96" id="96">96</a>
+<a href="#97" id="97">97</a>
+<a href="#98" id="98">98</a>
+<a href="#99" id="99">99</a>
+<a href="#100" id="100">100</a>
+<a href="#101" id="101">101</a>
+<a href="#102" id="102">102</a>
+<a href="#103" id="103">103</a>
+<a href="#104" id="104">104</a>
+<a href="#105" id="105">105</a>
+<a href="#106" id="106">106</a>
+<a href="#107" id="107">107</a>
+</pre><pre class="rust"><code><span class="kw">use </span>std::{path::Path, sync::Arc};
 
+<span class="kw">use </span>anyhow::Result;
 <span class="kw">use </span>async_channel::{Receiver, Sender};
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>hydroflow::util::connection::BindType;
@@ -98,18 +119,37 @@
 <span class="kw">pub mod </span>localhost;
 <span class="kw">pub use </span>localhost::LocalhostHost;
 
+<span class="kw">pub mod </span>gcp;
+<span class="kw">pub use </span>gcp::GCPComputeEngineHost;
+
 <span class="kw">pub mod </span>hydroflow_crate;
 <span class="kw">pub use </span>hydroflow_crate::HydroflowCrate;
 
-<span class="kw">pub struct </span>ResourceBatch {}
+<span class="kw">pub mod </span>terraform;
+
+<span class="kw">pub mod </span>util;
+
+<span class="kw">pub struct </span>ResourceBatch {
+    <span class="kw">pub </span>terraform: terraform::TerraformBatch,
+}
 
 <span class="kw">impl </span>ResourceBatch {
-    <span class="kw">async fn </span>provision(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; ResourceResult {
-        ResourceResult {}
+    <span class="kw">fn </span>new() -&gt; ResourceBatch {
+        ResourceBatch {
+            terraform: terraform::TerraformBatch::default(),
+        }
+    }
+
+    <span class="kw">async fn </span>provision(<span class="self">self</span>) -&gt; ResourceResult {
+        ResourceResult {
+            terraform: <span class="self">self</span>.terraform.provision().<span class="kw">await</span>,
+        }
     }
 }
 
-<span class="kw">pub struct </span>ResourceResult {}
+<span class="kw">pub struct </span>ResourceResult {
+    <span class="kw">pub </span>terraform: terraform::TerraformResult,
+}
 
 <span class="attr">#[async_trait]
 </span><span class="kw">pub trait </span>LaunchedBinary: Send + Sync {
@@ -122,7 +162,7 @@
 
 <span class="attr">#[async_trait]
 </span><span class="kw">pub trait </span>LaunchedHost: Send + Sync {
-    <span class="kw">async fn </span>launch_binary(<span class="kw-2">&amp;</span><span class="self">self</span>, binary: String) -&gt; Arc&lt;RwLock&lt;<span class="kw">dyn </span>LaunchedBinary&gt;&gt;;
+    <span class="kw">async fn </span>launch_binary(<span class="kw-2">&amp;</span><span class="self">self</span>, binary: <span class="kw-2">&amp;</span>Path) -&gt; <span class="prelude-ty">Result</span>&lt;Arc&lt;RwLock&lt;<span class="kw">dyn </span>LaunchedBinary&gt;&gt;&gt;;
 }
 
 <span class="kw">pub enum </span>ConnectionType {
@@ -132,14 +172,14 @@
     ),
     InternalTcpPort(
         <span class="doccomment">/// Unique identifier for the VPC this port will be on.
-        </span>usize,
+        </span>String,
     ),
 }
 
 <span class="attr">#[async_trait]
-</span><span class="kw">pub trait </span>Host: Send + Sync + Debug {
+</span><span class="kw">pub trait </span>Host: Send + Sync {
     <span class="doccomment">/// Makes requests for physical resources (servers) that this host needs to run.
-    </span><span class="kw">async fn </span>collect_resources(<span class="kw-2">&amp;mut </span><span class="self">self</span>, resource_batch: <span class="kw-2">&amp;mut </span>ResourceBatch);
+    </span><span class="kw">fn </span>collect_resources(<span class="kw-2">&amp;</span><span class="self">self</span>, resource_batch: <span class="kw-2">&amp;mut </span>ResourceBatch);
 
     <span class="doccomment">/// Connects to the acquired resources and prepares the host to run services.
     </span><span class="kw">async fn </span>provision(<span class="kw-2">&amp;mut </span><span class="self">self</span>, resource_result: <span class="kw-2">&amp;</span>Arc&lt;ResourceResult&gt;) -&gt; Arc&lt;<span class="kw">dyn </span>LaunchedHost&gt;;
@@ -151,18 +191,18 @@
 }
 
 <span class="attr">#[async_trait]
-</span><span class="kw">pub trait </span>Service: Send + Sync + Debug {
+</span><span class="kw">pub trait </span>Service: Send + Sync {
     <span class="doccomment">/// Makes requests for physical resources (servers) that this service needs to run.
-    /// This should also perform any &quot;free&quot; computations (compilations) that are needed,
+    /// This should also perform any &quot;free&quot;, non-blocking computations (compilations),
     /// because the `deploy` method will be called after these resources are allocated.
-    </span><span class="kw">async fn </span>collect_resources(<span class="kw-2">&amp;mut </span><span class="self">self</span>, resource_batch: <span class="kw-2">&amp;mut </span>ResourceBatch);
+    </span><span class="kw">fn </span>collect_resources(<span class="kw-2">&amp;mut </span><span class="self">self</span>, resource_batch: <span class="kw-2">&amp;mut </span>ResourceBatch);
 
     <span class="doccomment">/// Connects to the acquired resources and prepares the service to be launched.
     </span><span class="kw">async fn </span>deploy(<span class="kw-2">&amp;mut </span><span class="self">self</span>, resource_result: <span class="kw-2">&amp;</span>Arc&lt;ResourceResult&gt;);
 
     <span class="doccomment">/// Launches the service, which should start listening for incoming network
     /// connections. The service should not start computing at this point.
-    </span><span class="kw">async fn </span>ready(<span class="kw-2">&amp;mut </span><span class="self">self</span>);
+    </span><span class="kw">async fn </span>ready(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt;;
 
     <span class="doccomment">/// Starts the service by having it connect to other services and start computations.
     </span><span class="kw">async fn </span>start(<span class="kw-2">&amp;mut </span><span class="self">self</span>);

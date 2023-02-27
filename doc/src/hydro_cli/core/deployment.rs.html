@@ -70,34 +70,11 @@
 <a href="#70" id="70">70</a>
 <a href="#71" id="71">71</a>
 <a href="#72" id="72">72</a>
-<a href="#73" id="73">73</a>
-<a href="#74" id="74">74</a>
-<a href="#75" id="75">75</a>
-<a href="#76" id="76">76</a>
-<a href="#77" id="77">77</a>
-<a href="#78" id="78">78</a>
-<a href="#79" id="79">79</a>
-<a href="#80" id="80">80</a>
-<a href="#81" id="81">81</a>
-<a href="#82" id="82">82</a>
-<a href="#83" id="83">83</a>
-<a href="#84" id="84">84</a>
-<a href="#85" id="85">85</a>
-<a href="#86" id="86">86</a>
-<a href="#87" id="87">87</a>
-<a href="#88" id="88">88</a>
-<a href="#89" id="89">89</a>
-<a href="#90" id="90">90</a>
-<a href="#91" id="91">91</a>
-<a href="#92" id="92">92</a>
-<a href="#93" id="93">93</a>
-<a href="#94" id="94">94</a>
-</pre><pre class="rust"><code><span class="kw">use </span>std::fmt::Debug;
-
-<span class="kw">use </span><span class="kw">super</span>::Service;
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::Service;
 
 <span class="kw">use </span><span class="kw">super</span>::Host;
 
+<span class="kw">use </span>anyhow::Result;
 <span class="kw">use </span>tokio::sync::RwLock;
 
 <span class="kw">use </span>std::sync::Arc;
@@ -109,14 +86,10 @@
 }
 
 <span class="kw">impl </span>Deployment {
-    <span class="kw">pub async fn </span>deploy(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-        <span class="kw">let </span><span class="kw-2">mut </span>resource_pool = <span class="kw">super</span>::ResourceBatch {};
+    <span class="kw">pub async fn </span>deploy(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>resource_pool = <span class="kw">super</span>::ResourceBatch::new();
         <span class="kw">for </span>service <span class="kw">in </span><span class="self">self</span>.services.iter_mut() {
-            service
-                .write()
-                .<span class="kw">await
-                </span>.collect_resources(<span class="kw-2">&amp;mut </span>resource_pool)
-                .<span class="kw">await</span>;
+            service.write().<span class="kw">await</span>.collect_resources(<span class="kw-2">&amp;mut </span>resource_pool);
         }
 
         <span class="kw">let </span>result = Arc::new(resource_pool.provision().<span class="kw">await</span>);
@@ -134,10 +107,13 @@
             <span class="self">self</span>.services
                 .iter()
                 .map(|service: <span class="kw-2">&amp;</span>Arc&lt;RwLock&lt;<span class="kw">dyn </span>Service&gt;&gt;| <span class="kw">async </span>{
-                    service.write().<span class="kw">await</span>.ready().<span class="kw">await</span>;
+                    service.write().<span class="kw">await</span>.ready().<span class="kw">await</span><span class="question-mark">?</span>;
+                    <span class="prelude-val">Ok</span>(()) <span class="kw">as </span><span class="prelude-ty">Result</span>&lt;()&gt;
                 });
 
-        futures::future::join_all(all_services_ready).<span class="kw">await</span>;
+        futures::future::try_join_all(all_services_ready).<span class="kw">await</span><span class="question-mark">?</span>;
+
+        <span class="prelude-val">Ok</span>(())
     }
 
     <span class="kw">pub async fn </span>start(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
@@ -151,7 +127,10 @@
         futures::future::join_all(all_services_start).<span class="kw">await</span>;
     }
 
-    <span class="kw">pub fn </span>add_host&lt;T: Host + <span class="lifetime">&#39;static</span>, F: Fn(usize) -&gt; T&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, host: F) -&gt; Arc&lt;RwLock&lt;T&gt;&gt; {
+    <span class="kw">pub fn </span>add_host&lt;T: Host + <span class="lifetime">&#39;static</span>, F: FnOnce(usize) -&gt; T&gt;(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        host: F,
+    ) -&gt; Arc&lt;RwLock&lt;T&gt;&gt; {
         <span class="kw">let </span>arc = Arc::new(RwLock::new(host(<span class="self">self</span>.hosts.len())));
         <span class="self">self</span>.hosts.push(arc.clone());
         arc
@@ -161,29 +140,6 @@
         <span class="kw">let </span>arc = Arc::new(RwLock::new(service));
         <span class="self">self</span>.services.push(arc.clone());
         arc
-    }
-}
-
-<span class="kw">impl </span>Debug <span class="kw">for </span>Deployment {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; std::fmt::Result {
-        f.debug_struct(<span class="string">&quot;Deployment&quot;</span>)
-            .field(
-                <span class="string">&quot;hosts&quot;</span>,
-                <span class="kw-2">&amp;</span><span class="self">self
-                    </span>.hosts
-                    .iter()
-                    .map(|h| h.blocking_read())
-                    .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;(),
-            )
-            .field(
-                <span class="string">&quot;services&quot;</span>,
-                <span class="kw-2">&amp;</span><span class="self">self
-                    </span>.services
-                    .iter()
-                    .map(|h| h.blocking_read())
-                    .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;(),
-            )
-            .finish()
     }
 }
 </code></pre></div>
