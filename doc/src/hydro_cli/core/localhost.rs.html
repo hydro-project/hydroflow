@@ -153,6 +153,7 @@
 <a href="#153" id="153">153</a>
 <a href="#154" id="154">154</a>
 <a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::sync::Arc;
 
 <span class="kw">use </span>async_channel::{Receiver, Sender};
@@ -301,6 +302,7 @@
 
                 <span class="attr">#[cfg(not(unix))]
                 </span>{
+                    <span class="kw">let _ </span>= id;
                     <span class="bool-val">false
                 </span>}
             }

@@ -138,14 +138,29 @@
 <a href="#138" id="138">138</a>
 <a href="#139" id="139">139</a>
 <a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::{net::SocketAddr, path::PathBuf, pin::Pin};
 
 <span class="kw">use </span>futures::{Sink, Stream};
 <span class="kw">use </span>serde::{Deserialize, Serialize};
-<span class="kw">use </span>tokio::net::{TcpListener, TcpStream, UnixListener, UnixStream};
+<span class="kw">use </span>tokio::net::{TcpListener, TcpStream};
+<span class="attr">#[cfg(unix)]
+</span><span class="kw">use </span>tokio::net::{UnixListener, UnixStream};
+<span class="attr">#[cfg(not(unix))]
+</span><span class="kw">type </span>UnixListener = !;
 <span class="kw">use </span>tokio_util::codec::LinesCodecError;
 
-<span class="kw">use super</span>::{tcp_lines, unix_lines};
+<span class="kw">use </span><span class="kw">super</span>::tcp_lines;
+<span class="attr">#[cfg(unix)]
+</span><span class="kw">use </span><span class="kw">super</span>::unix_lines;
 
 <span class="attr">#[derive(Serialize, Deserialize, Clone, Debug)]
 </span><span class="kw">pub enum </span>BindType {
@@ -205,7 +220,8 @@
 
                 <span class="attr">#[cfg(not(unix))]
                 </span>{
-                    <span class="macro">panic!</span>(<span class="string">&quot;Unix sockets are not supported on this platform&quot;</span>)
+                    <span class="kw">let _ </span>= path;
+                    <span class="macro">panic!</span>(<span class="string">&quot;Unix sockets are not supported on this platform&quot;</span>);
                 }
             }
             ConnectionPipe::TcpPort(addr) =&gt; {
@@ -240,6 +256,7 @@
 
                 <span class="attr">#[cfg(not(unix))]
                 </span>{
+                    <span class="kw">let _ </span>= listener;
                     <span class="macro">panic!</span>(<span class="string">&quot;Unix sockets are not supported on this platform&quot;</span>)
                 }
             }
@@ -267,6 +284,7 @@
 
                 <span class="attr">#[cfg(not(unix))]
                 </span>{
+                    <span class="kw">let _ </span>= listener;
                     <span class="macro">panic!</span>(<span class="string">&quot;Unix sockets are not supported on this platform&quot;</span>)
                 }
             }
