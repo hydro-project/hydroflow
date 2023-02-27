@@ -84,7 +84,7 @@ pub trait Host: Send + Sync {
 #[async_trait]
 pub trait Service: Send + Sync {
     /// Makes requests for physical resources (servers) that this service needs to run.
-    /// This should also perform any "free" computations (compilations) that are needed,
+    /// This should also perform any "free", non-blocking computations (compilations),
     /// because the `deploy` method will be called after these resources are allocated.
     fn collect_resources(&mut self, resource_batch: &mut ResourceBatch);
 
