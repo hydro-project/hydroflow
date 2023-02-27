@@ -23,7 +23,7 @@ use super::{
 struct LaunchedComputeEngineBinary {
     _resource_result: Arc<ResourceResult>,
     channel: AsyncChannel<TcpStream>,
-    stdin_channel: Sender<String>,
+    stdin_sender: Sender<String>,
     stdout_receivers: Arc<RwLock<Vec<Sender<String>>>>,
     stderr_receivers: Arc<RwLock<Vec<Sender<String>>>>,
 }
@@ -31,7 +31,7 @@ struct LaunchedComputeEngineBinary {
 #[async_trait]
 impl LaunchedBinary for LaunchedComputeEngineBinary {
     async fn stdin(&self) -> Sender<String> {
-        self.stdin_channel.clone()
+        self.stdin_sender.clone()
     }
 
     async fn stdout(&self) -> Receiver<String> {
@@ -49,6 +49,7 @@ impl LaunchedBinary for LaunchedComputeEngineBinary {
     }
 
     async fn exit_code(&self) -> Option<i32> {
+        // until the program exits, the exit status is meaningless
         if self.channel.eof() {
             self.channel.exit_status().ok()
         } else {
@@ -118,6 +119,7 @@ impl LaunchedHost for LaunchedComputeEngine {
 
         let sftp = session.sftp().await?;
 
+        // we may be deploying multiple binaries, so give each a unique name
         let mut binary_counter_write = self.binary_counter.write().await;
         let my_binary_counter = *binary_counter_write;
         *binary_counter_write += 1;
@@ -131,7 +133,7 @@ impl LaunchedHost for LaunchedComputeEngine {
             .await?;
 
         let mut orig_file_stat = sftp.stat(&binary_path).await?;
-        orig_file_stat.perm = Some(0o755);
+        orig_file_stat.perm = Some(0o755); // allow the copied binary to be executed by anyone
         created_file.setstat(orig_file_stat).await?;
         created_file.close().await?;
         drop(created_file);
@@ -140,7 +142,7 @@ impl LaunchedHost for LaunchedComputeEngine {
         channel.exec(binary_path.to_str().unwrap()).await?;
 
         let (stdin_sender, mut stdin_receiver) = async_channel::unbounded::<String>();
-        let mut stdin = channel.stream(0);
+        let mut stdin = channel.stream(0); // stream 0 is stdout/stdin, we use it for stdin
         tokio::spawn(async move {
             while let Some(line) = stdin_receiver.next().await {
                 if stdin.write_all(line.as_bytes()).await.is_err() {
@@ -155,7 +157,7 @@ impl LaunchedHost for LaunchedComputeEngine {
         Ok(Arc::new(RwLock::new(LaunchedComputeEngineBinary {
             _resource_result: self.resource_result.clone(),
             channel,
-            stdin_channel: stdin_sender,
+            stdin_sender,
             stdout_receivers,
             stderr_receivers,
         })))
@@ -192,6 +194,7 @@ impl Host for GCPComputeEngineHost {
         let project = self.project.as_str();
         let id = self.id;
 
+        // first, we import the providers we need
         resource_batch
             .terraform
             .terraform
@@ -228,6 +231,7 @@ impl Host for GCPComputeEngineHost {
                 },
             );
 
+        // we use a single SSH key for all VMs
         resource_batch
             .terraform
             .resource
@@ -255,6 +259,7 @@ impl Host for GCPComputeEngineHost {
                 }),
             );
 
+        // we use a single VPC for all VMs
         let vpc_network = format!("vpc-network-{project}");
         resource_batch
             .terraform
@@ -276,6 +281,7 @@ impl Host for GCPComputeEngineHost {
             .entry("google_compute_firewall".to_string())
             .or_default();
 
+        // allow all VMs to communicate with each other over internal IPs
         firewall_entries.insert(
             format!("{vpc_network}-default-allow-internal"),
             json!({
@@ -299,6 +305,7 @@ impl Host for GCPComputeEngineHost {
             }),
         );
 
+        // allow external pings to all VMs
         firewall_entries.insert(
             format!("{vpc_network}-default-allow-ping"),
             json!({
@@ -314,6 +321,7 @@ impl Host for GCPComputeEngineHost {
             }),
         );
 
+        // allow SSH access to all VMs
         let allow_ssh_rule = format!("{vpc_network}-allow-ssh");
         firewall_entries.insert(
             allow_ssh_rule.clone(),
@@ -419,6 +427,7 @@ impl Host for GCPComputeEngineHost {
         } else if connection_from
             .can_connect_to(ConnectionType::InternalTcpPort(self.project.clone()))
         {
+            // we use the project as a way to uniquely identify the VPC network
             BindType::TcpPort(self.internal_ip.as_ref().unwrap().clone())
         } else {
             todo!()

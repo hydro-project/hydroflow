@@ -12,7 +12,7 @@ use super::{ConnectionType, Host, LaunchedBinary, LaunchedHost, ResourceBatch, R
 
 struct LaunchedLocalhostBinary {
     child: RwLock<async_process::Child>,
-    stdin_channel: Sender<String>,
+    stdin_sender: Sender<String>,
     stdout_receivers: Arc<RwLock<Vec<Sender<String>>>>,
     stderr_receivers: Arc<RwLock<Vec<Sender<String>>>>,
 }
@@ -20,7 +20,7 @@ struct LaunchedLocalhostBinary {
 #[async_trait]
 impl LaunchedBinary for LaunchedLocalhostBinary {
     async fn stdin(&self) -> Sender<String> {
-        self.stdin_channel.clone()
+        self.stdin_sender.clone()
     }
 
     async fn stdout(&self) -> Receiver<String> {
@@ -106,7 +106,7 @@ impl LaunchedHost for LaunchedLocalhost {
 
         Ok(Arc::new(RwLock::new(LaunchedLocalhostBinary {
             child: RwLock::new(child),
-            stdin_channel: stdin_sender,
+            stdin_sender,
             stdout_receivers,
             stderr_receivers,
         })))
