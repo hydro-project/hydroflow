@@ -40,13 +40,10 @@ impl Deployment {
                 .iter()
                 .map(|service: &Arc<RwLock<dyn Service>>| async {
                     service.write().await.ready().await?;
-                    Ok(())
+                    Ok(()) as Result<()>
                 });
 
-        let services_res: Vec<Result<()>> = futures::future::join_all(all_services_ready).await;
-        for res in services_res {
-            res?;
-        }
+        futures::future::try_join_all(all_services_ready).await?;
 
         Ok(())
     }
