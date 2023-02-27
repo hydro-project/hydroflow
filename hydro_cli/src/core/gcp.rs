@@ -2,6 +2,7 @@ use std::{
     net::SocketAddr,
     path::{Path, PathBuf},
     sync::Arc,
+    time::Duration,
 };
 
 use anyhow::Result;
@@ -9,7 +10,7 @@ use async_channel::{Receiver, Sender};
 
 use async_ssh2_lite::{AsyncChannel, AsyncSession, SessionConfiguration};
 use async_trait::async_trait;
-use futures::{AsyncWriteExt, Future, StreamExt};
+use futures::{AsyncWriteExt, StreamExt};
 use hydroflow::util::connection::BindType;
 use serde_json::json;
 use tokio::{net::TcpStream, sync::RwLock};
@@ -17,6 +18,7 @@ use tokio::{net::TcpStream, sync::RwLock};
 use super::{
     localhost::create_broadcast,
     terraform::{TerraformOutput, TerraformProvider},
+    util::async_retry,
     ConnectionType, Host, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult,
 };
 
@@ -64,22 +66,6 @@ struct LaunchedComputeEngine {
     binary_counter: RwLock<usize>,
 }
 
-async fn async_retry<T, F: Future<Output = Result<T>>>(
-    thunk: impl Fn() -> F,
-    count: usize,
-) -> Result<T> {
-    for _ in 1..count {
-        let result = thunk().await;
-        if result.is_ok() {
-            return result;
-        } else {
-            tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
-        }
-    }
-
-    thunk().await
-}
-
 #[async_trait]
 impl LaunchedHost for LaunchedComputeEngine {
     async fn launch_binary(&self, binary: &Path) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
@@ -114,6 +100,7 @@ impl LaunchedHost for LaunchedComputeEngine {
                 Ok(session)
             },
             10,
+            Duration::from_secs(1),
         )
         .await?;
 

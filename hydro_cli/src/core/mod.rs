@@ -20,6 +20,8 @@ pub use hydroflow_crate::HydroflowCrate;
 
 pub mod terraform;
 
+pub mod util;
+
 pub struct ResourceBatch {
     pub terraform: terraform::TerraformBatch,
 }
