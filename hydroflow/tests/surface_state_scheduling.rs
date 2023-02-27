@@ -1,7 +1,9 @@
 use hydroflow::hydroflow_syntax;
 use hydroflow::util::collect_ready;
 
-#[test]
+use multiplatform_test::multiplatform_test;
+
+#[multiplatform_test]
 pub fn test_repeat_iter() {
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
 
@@ -19,7 +21,7 @@ pub fn test_repeat_iter() {
     assert_eq!(&[1, 1, 1], &*collect_ready::<Vec<_>, _>(&mut out_recv));
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_fold_tick() {
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
 
@@ -37,7 +39,7 @@ pub fn test_fold_tick() {
     assert_eq!(&[1], &*collect_ready::<Vec<_>, _>(&mut out_recv));
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_fold_static() {
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
 
@@ -55,7 +57,7 @@ pub fn test_fold_static() {
     assert_eq!(&[1, 1, 1], &*collect_ready::<Vec<_>, _>(&mut out_recv));
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_reduce_tick() {
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
 
@@ -73,7 +75,7 @@ pub fn test_reduce_tick() {
     assert_eq!(&[1], &*collect_ready::<Vec<_>, _>(&mut out_recv));
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_reduce_static() {
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
 
@@ -91,7 +93,7 @@ pub fn test_reduce_static() {
     assert_eq!(&[1, 1, 1], &*collect_ready::<Vec<_>, _>(&mut out_recv));
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_group_by_tick() {
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<(char, usize)>();
 
@@ -109,7 +111,7 @@ pub fn test_group_by_tick() {
     assert_eq!(&[('a', 3)], &*collect_ready::<Vec<_>, _>(&mut out_recv));
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_group_by_static() {
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<(char, usize)>();
 

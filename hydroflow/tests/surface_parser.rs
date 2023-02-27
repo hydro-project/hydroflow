@@ -1,6 +1,8 @@
 use hydroflow::hydroflow_parser;
 
-#[test]
+use multiplatform_test::multiplatform_test;
+
+#[multiplatform_test]
 pub fn test_parser_basic() {
     hydroflow_parser! {
         reached_vertices = (merge() -> map(|v| (v, ())));
@@ -61,7 +63,7 @@ pub fn test_parser_basic() {
     }
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_parser_port_reassign() {
     hydroflow_parser! {
         id = identity();
@@ -85,7 +87,7 @@ pub fn test_parser_port_reassign() {
     };
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_parser_port_naked_basic() {
     hydroflow_parser! {
         id = identity();
@@ -95,7 +97,7 @@ pub fn test_parser_port_naked_basic() {
     };
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_parser_port_naked_knot() {
     hydroflow_parser! {
         pivot = merge() -> tee();
@@ -141,7 +143,7 @@ pub fn test_parser_port_naked_knot() {
     };
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_parser_forwardref_basic() {
     hydroflow_parser! {
         source_iter(0..10) -> c;
@@ -149,7 +151,7 @@ pub fn test_parser_forwardref_basic() {
     };
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_parser_forwardref_chain() {
     hydroflow_parser! {
         source_iter(0..10) -> c;
@@ -165,21 +167,21 @@ pub fn test_parser_forwardref_chain() {
     };
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_parser_forwardref_cycle_right() {
     hydroflow_parser! {
         c = identity() -> c;
     };
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_parser_forwardref_cycle_left() {
     hydroflow_parser! {
         c = c -> identity();
     };
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_parser_forwardref_mutual() {
     hydroflow_parser! {
         a = identity() -> b;
@@ -187,7 +189,7 @@ pub fn test_parser_forwardref_mutual() {
     };
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_parser_forwardref_degen() {
     // TODO(mingwei):
     // This works because no links are created, so it does nothing.
@@ -197,7 +199,7 @@ pub fn test_parser_forwardref_degen() {
     };
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_parser_forwardref_tee() {
     hydroflow_parser! {
         c = c -> tee();
@@ -205,7 +207,7 @@ pub fn test_parser_forwardref_tee() {
     };
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_parser_forwardref_merge() {
     hydroflow_parser! {
         c = merge() -> c;
@@ -213,7 +215,7 @@ pub fn test_parser_forwardref_merge() {
     };
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_parser_forwardref_knot() {
     hydroflow_parser! {
         inn_0 = [0]pivot;
@@ -229,7 +231,7 @@ pub fn test_parser_forwardref_knot() {
     };
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_parser_forwardref_self_middle() {
     hydroflow_parser! {
         self_ref = map(|a: usize| a) -> [0]self_ref[1] -> map(|b: usize| b);

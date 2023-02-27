@@ -1,6 +1,8 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use multiplatform_test::multiplatform_test;
+
 use hydroflow::hydroflow_syntax;
 use hydroflow::scheduled::graph::Hydroflow;
 use tokio::sync::mpsc::error::SendError;
@@ -16,7 +18,7 @@ use tokio::sync::mpsc::error::SendError;
 // }
 
 /// Basic difference test, test difference between two one-off iterators.
-#[test]
+#[multiplatform_test]
 pub fn test_difference_a() {
     let output = <Rc<RefCell<Vec<usize>>>>::default();
     let output_inner = Rc::clone(&output);
@@ -34,7 +36,7 @@ pub fn test_difference_a() {
 
 /// More complex different test.
 /// Take the difference of each tick of items and subtract the previous tick's items.
-#[test]
+#[multiplatform_test]
 pub fn test_difference_b() -> Result<(), SendError<&'static str>> {
     let (inp_send, inp_recv) = hydroflow::util::unbounded_channel::<&'static str>();
 
@@ -72,7 +74,7 @@ pub fn test_difference_b() -> Result<(), SendError<&'static str>> {
     Ok(())
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_tick_loop_1() {
     let output = <Rc<RefCell<Vec<usize>>>>::default();
     let output_inner = Rc::clone(&output);
@@ -101,7 +103,7 @@ pub fn test_tick_loop_1() {
     assert_eq!(&[8, 24], &*output.take());
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_tick_loop_2() {
     let output = <Rc<RefCell<Vec<usize>>>>::default();
     let output_inner = Rc::clone(&output);
@@ -131,7 +133,7 @@ pub fn test_tick_loop_2() {
     assert_eq!(&[4, 12], &*output.take());
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_tick_loop_3() {
     let output = <Rc<RefCell<Vec<usize>>>>::default();
     let output_inner = Rc::clone(&output);
@@ -161,7 +163,7 @@ pub fn test_tick_loop_3() {
     assert!(output.take().is_empty());
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_surface_syntax_graph_unreachability() {
     // TODO(mingwei): may need persistence if we want this to make easier to eyeball.
 
@@ -210,7 +212,7 @@ pub fn test_surface_syntax_graph_unreachability() {
 }
 
 /// Test that subgraphs are in the same stratum when possible.
-#[test]
+#[multiplatform_test]
 pub fn test_subgraph_stratum_consolidation() {
     let output = <Rc<RefCell<Vec<usize>>>>::default();
     let output_inner = Rc::clone(&output);

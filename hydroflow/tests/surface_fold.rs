@@ -1,9 +1,11 @@
 use std::collections::{HashMap, HashSet};
 
+use multiplatform_test::multiplatform_test;
+
 use hydroflow::hydroflow_syntax;
 use hydroflow::util::collect_ready;
 
-#[test]
+#[multiplatform_test]
 pub fn test_fold_tick() {
     let (items_send, items_recv) = hydroflow::util::unbounded_channel::<Vec<u32>>();
     let (result_send, mut result_recv) = hydroflow::util::unbounded_channel::<Vec<u32>>();
@@ -44,7 +46,7 @@ pub fn test_fold_tick() {
     );
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_fold_static() {
     let (items_send, items_recv) = hydroflow::util::unbounded_channel::<Vec<u32>>();
     let (result_send, mut result_recv) = hydroflow::util::unbounded_channel::<Vec<u32>>();
@@ -85,7 +87,7 @@ pub fn test_fold_static() {
     );
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_fold_flatten() {
     // test pull
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<(u8, u8)>();
@@ -129,7 +131,7 @@ pub fn test_fold_flatten() {
     }
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_fold_sort() {
     let (items_send, items_recv) = hydroflow::util::unbounded_channel::<usize>();
 
