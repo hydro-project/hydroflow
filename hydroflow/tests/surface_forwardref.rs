@@ -1,7 +1,9 @@
+use multiplatform_test::multiplatform_test;
+
 use hydroflow::hydroflow_syntax;
 use hydroflow::util::collect_ready;
 
-#[test]
+#[multiplatform_test]
 pub fn test_forwardref_basic_forward() {
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
 
@@ -17,7 +19,7 @@ pub fn test_forwardref_basic_forward() {
     );
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_forwardref_basic_backward() {
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
 
@@ -33,7 +35,7 @@ pub fn test_forwardref_basic_backward() {
     );
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_forwardref_basic_middle() {
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
 

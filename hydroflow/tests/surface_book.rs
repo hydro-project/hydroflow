@@ -1,4 +1,6 @@
-#[test]
+use multiplatform_test::multiplatform_test;
+
+#[multiplatform_test]
 fn test_surface_flows_1() {
     let mut df = hydroflow::hydroflow_syntax! {
         my_tee = source_iter(vec!["Hello", "world"]) -> tee();

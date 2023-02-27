@@ -1,9 +1,9 @@
-use std::thread;
+use multiplatform_test::multiplatform_test;
 
 use hydroflow::util::collect_ready;
 use hydroflow_datalog::datalog;
 
-#[test]
+#[multiplatform_test]
 pub fn test_minimal() {
     let (in_send, input) = hydroflow::util::unbounded_channel::<(usize, usize)>();
     let (out, mut out_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
@@ -24,7 +24,7 @@ pub fn test_minimal() {
     assert_eq!(&*collect_ready::<Vec<_>, _>(&mut out_recv), &[(2, 1)]);
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_join_with_self() {
     let (in_send, input) = hydroflow::util::unbounded_channel::<(usize, usize)>();
     let (out, mut out_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
@@ -50,7 +50,7 @@ pub fn test_join_with_self() {
     );
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_multi_use_intermediate() {
     let (in_send, input) = hydroflow::util::unbounded_channel::<(usize, usize)>();
     let (out, mut out_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
@@ -77,7 +77,7 @@ pub fn test_multi_use_intermediate() {
     );
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_join_with_other() {
     let (in1_send, in1) = hydroflow::util::unbounded_channel::<(usize, usize)>();
     let (in2_send, in2) = hydroflow::util::unbounded_channel::<(usize, usize)>();
@@ -111,7 +111,7 @@ pub fn test_join_with_other() {
     assert_eq!(&*collect_ready::<Vec<_>, _>(&mut out_recv), &[(1, 3)]);
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_multiple_contributors() {
     let (in1_send, in1) = hydroflow::util::unbounded_channel::<(usize, usize)>();
     let (in2_send, in2) = hydroflow::util::unbounded_channel::<(usize, usize)>();
@@ -139,7 +139,7 @@ pub fn test_multiple_contributors() {
     );
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_transitive_closure() {
     let (edges_send, edges) = hydroflow::util::unbounded_channel::<(usize, usize)>();
     let (seed_reachable_send, seed_reachable) = hydroflow::util::unbounded_channel::<(usize,)>();
@@ -169,7 +169,7 @@ pub fn test_transitive_closure() {
     );
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_triple_relation_join() {
     let (in1_send, in1) = hydroflow::util::unbounded_channel::<(usize, usize)>();
     let (in2_send, in2) = hydroflow::util::unbounded_channel::<(usize, usize)>();
@@ -202,7 +202,7 @@ pub fn test_triple_relation_join() {
     );
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_local_constraints() {
     let (in_send, input) = hydroflow::util::unbounded_channel::<(usize, usize)>();
     let (out, mut out_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
@@ -224,7 +224,7 @@ pub fn test_local_constraints() {
     assert_eq!(&*collect_ready::<Vec<_>, _>(&mut out_recv), &[(1, 1)]);
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_boolean_relation_eq() {
     let (in_send, input) = hydroflow::util::unbounded_channel::<(usize, usize)>();
     let (out, mut out_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
@@ -233,25 +233,21 @@ pub fn test_boolean_relation_eq() {
     in_send.send((1, 2)).unwrap();
     in_send.send((2, 1)).unwrap();
 
-    thread::spawn(|| {
-        let mut flow = datalog!(
-            r#"
-            .input input
-            .output out
+    let mut flow = datalog!(
+        r#"
+        .input input
+        .output out
 
-            out(a, b) :- input(a, b), ( a == b ).
-            "#
-        );
+        out(a, b) :- input(a, b), ( a == b ).
+        "#
+    );
 
-        flow.run_tick();
-    })
-    .join()
-    .unwrap();
+    flow.run_tick();
 
     assert_eq!(&*collect_ready::<Vec<_>, _>(&mut out_recv), &[(1, 1)]);
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_boolean_relation_lt() {
     let (in_send, input) = hydroflow::util::unbounded_channel::<(usize, usize)>();
     let (out, mut out_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
@@ -274,7 +270,7 @@ pub fn test_boolean_relation_lt() {
     assert_eq!(&*collect_ready::<Vec<_>, _>(&mut out_recv), &[(1, 2)]);
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_boolean_relation_le() {
     let (in_send, input) = hydroflow::util::unbounded_channel::<(usize, usize)>();
     let (out, mut out_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
@@ -300,7 +296,7 @@ pub fn test_boolean_relation_le() {
     );
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_boolean_relation_gt() {
     let (in_send, input) = hydroflow::util::unbounded_channel::<(usize, usize)>();
     let (out, mut out_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
@@ -323,7 +319,7 @@ pub fn test_boolean_relation_gt() {
     assert_eq!(&*collect_ready::<Vec<_>, _>(&mut out_recv), &[(2, 1)]);
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_boolean_relation_ge() {
     let (in_send, input) = hydroflow::util::unbounded_channel::<(usize, usize)>();
     let (out, mut out_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
@@ -349,7 +345,7 @@ pub fn test_boolean_relation_ge() {
     );
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_join_multiple_and_relation() {
     let (in1_send, in1) = hydroflow::util::unbounded_channel::<(usize, usize)>();
     let (in2_send, in2) = hydroflow::util::unbounded_channel::<(usize, usize)>();
@@ -383,7 +379,7 @@ pub fn test_join_multiple_and_relation() {
     );
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_join_multiple_then_relation() {
     // Same test as test_join_multiple_and_relation, except with a filter on top instead of a
     // filter in the join.
@@ -420,7 +416,7 @@ pub fn test_join_multiple_then_relation() {
     );
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_next_tick() {
     let (ints_1_send, ints_1) = hydroflow::util::unbounded_channel::<(usize,)>();
     let (ints_2_send, ints_2) = hydroflow::util::unbounded_channel::<(usize,)>();
@@ -457,7 +453,7 @@ pub fn test_next_tick() {
     );
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_anti_join() {
     let (ints_1_send, ints_1) = hydroflow::util::unbounded_channel::<(usize, usize)>();
     let (ints_2_send, ints_2) = hydroflow::util::unbounded_channel::<(usize, usize)>();
@@ -496,7 +492,7 @@ pub fn test_anti_join() {
     assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result_recv), &[(1, 3)]);
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_anti_join_next_tick() {
     let (ints_1_send, ints_1) = hydroflow::util::unbounded_channel::<(usize, usize)>();
     let (ints_2_send, ints_2) = hydroflow::util::unbounded_channel::<(usize, usize)>();
@@ -539,7 +535,7 @@ pub fn test_anti_join_next_tick() {
     assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result_recv), &[(1, 3)]);
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_anti_join_next_tick_cycle() {
     let (ints_1_send, ints_1) = hydroflow::util::unbounded_channel::<(usize, usize)>();
     let (ints_2_send, ints_2) = hydroflow::util::unbounded_channel::<(usize, usize)>();
