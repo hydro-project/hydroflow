@@ -1,6 +1,6 @@
 use std::thread;
 
-use hydroflow::{scheduled::graph::Hydroflow, util::collect_ready};
+use hydroflow::util::collect_ready;
 use hydroflow_datalog::datalog;
 
 #[test]
@@ -673,7 +673,7 @@ fn test_send_to_node() {
     let (async_send_result_2, async_receive_result_2) =
         hydroflow::util::unbounded_channel::<(usize,)>();
 
-    let mut flow_1: Hydroflow = {
+    let mut flow_1 = {
         let ints = ints_1;
         let async_receive_result = async_receive_result_1;
         let result = result_1;
@@ -694,7 +694,7 @@ fn test_send_to_node() {
         )
     };
 
-    let mut flow_2: Hydroflow = {
+    let mut flow_2 = {
         let ints = ints_2;
         let async_receive_result = async_receive_result_2;
         let result = result_2;
