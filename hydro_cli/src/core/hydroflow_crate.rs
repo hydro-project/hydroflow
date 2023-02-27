@@ -1,11 +1,11 @@
 use std::{
     collections::HashMap,
-    fmt::Debug,
     ops::Deref,
     path::PathBuf,
     sync::{Arc, Weak},
 };
 
+use anyhow::{bail, Result};
 use async_channel::Receiver;
 use async_trait::async_trait;
 use cargo::{
@@ -32,7 +32,7 @@ pub struct HydroflowCrate {
     /// A map of port names to the host that will be sending data to the port.
     incoming_ports: HashMap<String, Arc<RwLock<dyn Host>>>,
 
-    built_binary: Option<String>,
+    built_binary: Option<JoinHandle<PathBuf>>,
     launched_host: Option<Arc<dyn LaunchedHost>>,
 
     /// A map of port names to config for how other services can connect to this one.
@@ -107,7 +107,7 @@ impl HydroflowCrate {
             .await
     }
 
-    fn build(&mut self) -> JoinHandle<String> {
+    fn build(&mut self) -> JoinHandle<PathBuf> {
         let src_cloned = self.src.join("Cargo.toml").canonicalize().unwrap();
         let example_cloned = self.example.clone();
         let features_cloned = self.features.clone();
@@ -151,7 +151,7 @@ impl HydroflowCrate {
                 .collect::<Vec<_>>();
 
             if binaries.len() == 1 {
-                binaries[0].to_string()
+                binaries[0].to_string().into()
             } else {
                 panic!("expected exactly one binary, got {}", binaries.len())
             }
@@ -161,15 +161,15 @@ impl HydroflowCrate {
 
 #[async_trait]
 impl Service for HydroflowCrate {
-    async fn collect_resources(&mut self, resource_batch: &mut ResourceBatch) {
+    fn collect_resources(&mut self, resource_batch: &mut ResourceBatch) {
         let built = self.build();
-        self.built_binary = Some(built.await.unwrap());
-        let host_read = self.on.read().await;
+        self.built_binary = Some(built);
 
-        drop(host_read);
-
-        let mut host = self.on.write().await;
-        host.collect_resources(resource_batch).await;
+        let host = self
+            .on
+            .try_read()
+            .expect("No one should be writing to the host while resources are collected");
+        host.collect_resources(resource_batch);
     }
 
     async fn deploy(&mut self, resource_result: &Arc<ResourceResult>) {
@@ -178,22 +178,22 @@ impl Service for HydroflowCrate {
         self.launched_host = Some(launched.await);
     }
 
-    async fn ready(&mut self) {
+    async fn ready(&mut self) -> Result<()> {
         let binary = self
             .launched_host
             .as_ref()
             .unwrap()
-            .launch_binary(self.built_binary.as_ref().unwrap().clone())
-            .await;
+            .launch_binary(self.built_binary.take().unwrap().await.as_ref().unwrap())
+            .await?;
 
         let mut bind_types = HashMap::new();
         for (port_name, from_host) in self.incoming_ports.iter() {
             bind_types.insert(
                 port_name.clone(),
-                from_host
+                self.on
                     .read()
                     .await
-                    .find_bind_type(self.on.read().await.deref()),
+                    .find_bind_type(from_host.read().await.deref()),
             );
         }
 
@@ -208,18 +208,19 @@ impl Service for HydroflowCrate {
             .stdin()
             .await
             .send(format!("{formatted_bind_types}\n"))
-            .await
-            .unwrap();
+            .await?;
 
         let ready_line = stdout_receiver.recv().await.unwrap();
         if ready_line.starts_with("ready: ") {
             self.bound_pipes =
                 serde_json::from_str(ready_line.trim_start_matches("ready: ")).unwrap();
         } else {
-            panic!("expected ready");
+            bail!("expected ready");
         }
 
         self.launched_binary = Some(binary);
+
+        Ok(())
     }
 
     async fn start(&mut self) {
@@ -258,17 +259,5 @@ impl Service for HydroflowCrate {
 
     fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
         self
-    }
-}
-
-impl Debug for HydroflowCrate {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("HydroflowCrate")
-            .field("src", &self.src)
-            .field("on", &self.on.blocking_read())
-            .field("example", &self.example)
-            .field("outgoing_ports", &self.outgoing_ports)
-            .field("incoming_ports", &self.incoming_ports)
-            .finish()
     }
 }

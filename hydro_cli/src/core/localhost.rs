@@ -1,5 +1,6 @@
-use std::sync::Arc;
+use std::{path::Path, sync::Arc};
 
+use anyhow::Result;
 use async_channel::{Receiver, Sender};
 use async_process::{Command, Stdio};
 use async_trait::async_trait;
@@ -11,7 +12,7 @@ use super::{ConnectionType, Host, LaunchedBinary, LaunchedHost, ResourceBatch, R
 
 struct LaunchedLocalhostBinary {
     child: RwLock<async_process::Child>,
-    stdin_channel: Sender<String>,
+    stdin_sender: Sender<String>,
     stdout_receivers: Arc<RwLock<Vec<Sender<String>>>>,
     stderr_receivers: Arc<RwLock<Vec<Sender<String>>>>,
 }
@@ -19,7 +20,7 @@ struct LaunchedLocalhostBinary {
 #[async_trait]
 impl LaunchedBinary for LaunchedLocalhostBinary {
     async fn stdin(&self) -> Sender<String> {
-        self.stdin_channel.clone()
+        self.stdin_sender.clone()
     }
 
     async fn stdout(&self) -> Receiver<String> {
@@ -48,7 +49,7 @@ impl LaunchedBinary for LaunchedLocalhostBinary {
 
 struct LaunchedLocalhost {}
 
-fn create_broadcast<T: AsyncRead + Send + Unpin + 'static>(
+pub fn create_broadcast<T: AsyncRead + Send + Unpin + 'static>(
     source: T,
     default: impl Fn(String) + Send + 'static,
 ) -> Arc<RwLock<Vec<Sender<String>>>> {
@@ -82,14 +83,13 @@ fn create_broadcast<T: AsyncRead + Send + Unpin + 'static>(
 
 #[async_trait]
 impl LaunchedHost for LaunchedLocalhost {
-    async fn launch_binary(&self, binary: String) -> Arc<RwLock<dyn LaunchedBinary>> {
+    async fn launch_binary(&self, binary: &Path) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
         let mut child = Command::new(binary)
             .kill_on_drop(true)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
-            .spawn()
-            .unwrap();
+            .spawn()?;
 
         let (stdin_sender, mut stdin_receiver) = async_channel::unbounded::<String>();
         let mut stdin = child.stdin.take().unwrap();
@@ -104,12 +104,12 @@ impl LaunchedHost for LaunchedLocalhost {
         let stdout_receivers = create_broadcast(child.stdout.take().unwrap(), |s| println!("{s}"));
         let stderr_receivers = create_broadcast(child.stderr.take().unwrap(), |s| eprintln!("{s}"));
 
-        Arc::new(RwLock::new(LaunchedLocalhostBinary {
+        Ok(Arc::new(RwLock::new(LaunchedLocalhostBinary {
             child: RwLock::new(child),
-            stdin_channel: stdin_sender,
+            stdin_sender,
             stdout_receivers,
             stderr_receivers,
-        }))
+        })))
     }
 }
 
@@ -120,7 +120,7 @@ pub struct LocalhostHost {
 
 #[async_trait]
 impl Host for LocalhostHost {
-    async fn collect_resources(&mut self, _resource_batch: &mut ResourceBatch) {}
+    fn collect_resources(&self, _resource_batch: &mut ResourceBatch) {}
 
     async fn provision(&mut self, _resource_result: &Arc<ResourceResult>) -> Arc<dyn LaunchedHost> {
         Arc::new(LaunchedLocalhost {})
@@ -129,7 +129,9 @@ impl Host for LocalhostHost {
     fn find_bind_type(&self, connection_from: &dyn Host) -> BindType {
         if connection_from.can_connect_to(ConnectionType::UnixSocket(self.id)) {
             BindType::UnixSocket
-        } else if connection_from.can_connect_to(ConnectionType::InternalTcpPort(self.id)) {
+        } else if connection_from
+            .can_connect_to(ConnectionType::InternalTcpPort(format!("{}", self.id)))
+        {
             BindType::TcpPort("127.0.0.1".to_string())
         } else {
             todo!()
@@ -150,7 +152,7 @@ impl Host for LocalhostHost {
                     false
                 }
             }
-            ConnectionType::InternalTcpPort(id) => self.id == id,
+            ConnectionType::InternalTcpPort(id) => format!("{}", self.id) == id,
         }
     }
 }

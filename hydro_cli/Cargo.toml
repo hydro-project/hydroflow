@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 tokio = { version = "1.16", features = [ "full" ] }
+anyhow = { version = "1.0.69", features = [ "backtrace" ] }
 clap = { version = "4.1.4", features = ["derive"] }
 cargo = "0.68.0"
 pyo3 = { version = "0.18.1", features = ["auto-initialize"] }
@@ -14,8 +15,10 @@ async-process = "1.6.0"
 futures = "0.3.26"
 futures-core = "0.3.26"
 async-channel = "1.8.0"
-serde_json = "1.0"
+serde = { version = "1", features = [ "derive" ] }
+serde_json = "1"
 tempfile = "3.3.0"
+async-ssh2-lite = { version = "0.4.2", features = [ "tokio" ] }
 hydroflow = { path = "../hydroflow", features = ["cli_integration"] }
 
 [dev-dependencies]
