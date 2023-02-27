@@ -32,7 +32,7 @@ pub struct HydroflowCrate {
     /// A map of port names to the host that will be sending data to the port.
     incoming_ports: HashMap<String, Arc<RwLock<dyn Host>>>,
 
-    built_binary: Option<PathBuf>,
+    built_binary: Option<JoinHandle<PathBuf>>,
     launched_host: Option<Arc<dyn LaunchedHost>>,
 
     /// A map of port names to config for how other services can connect to this one.
@@ -161,15 +161,15 @@ impl HydroflowCrate {
 
 #[async_trait]
 impl Service for HydroflowCrate {
-    async fn collect_resources(&mut self, resource_batch: &mut ResourceBatch) {
+    fn collect_resources(&mut self, resource_batch: &mut ResourceBatch) {
         let built = self.build();
-        self.built_binary = Some(built.await.unwrap());
-        let host_read = self.on.read().await;
+        self.built_binary = Some(built);
 
-        drop(host_read);
-
-        let mut host = self.on.write().await;
-        host.collect_resources(resource_batch).await;
+        let host = self
+            .on
+            .try_read()
+            .expect("No one should be writing to the host while resources are collected");
+        host.collect_resources(resource_batch);
     }
 
     async fn deploy(&mut self, resource_result: &Arc<ResourceResult>) {
@@ -183,7 +183,7 @@ impl Service for HydroflowCrate {
             .launched_host
             .as_ref()
             .unwrap()
-            .launch_binary(self.built_binary.as_ref().unwrap())
+            .launch_binary(self.built_binary.take().unwrap().await.as_ref().unwrap())
             .await?;
 
         let mut bind_types = HashMap::new();

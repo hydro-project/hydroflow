@@ -188,7 +188,7 @@ impl GCPComputeEngineHost {
 
 #[async_trait]
 impl Host for GCPComputeEngineHost {
-    async fn collect_resources(&mut self, resource_batch: &mut ResourceBatch) {
+    fn collect_resources(&self, resource_batch: &mut ResourceBatch) {
         let project = self.project.as_str();
         let id = self.id;
 

@@ -17,11 +17,7 @@ impl Deployment {
     pub async fn deploy(&mut self) -> Result<()> {
         let mut resource_pool = super::ResourceBatch::new();
         for service in self.services.iter_mut() {
-            service
-                .write()
-                .await
-                .collect_resources(&mut resource_pool)
-                .await;
+            service.write().await.collect_resources(&mut resource_pool);
         }
 
         let result = Arc::new(resource_pool.provision().await);

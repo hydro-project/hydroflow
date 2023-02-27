@@ -120,7 +120,7 @@ pub struct LocalhostHost {
 
 #[async_trait]
 impl Host for LocalhostHost {
-    async fn collect_resources(&mut self, _resource_batch: &mut ResourceBatch) {}
+    fn collect_resources(&self, _resource_batch: &mut ResourceBatch) {}
 
     async fn provision(&mut self, _resource_result: &Arc<ResourceResult>) -> Arc<dyn LaunchedHost> {
         Arc::new(LaunchedLocalhost {})
