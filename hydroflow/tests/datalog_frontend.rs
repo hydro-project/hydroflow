@@ -659,3 +659,65 @@ fn test_max_next_tick() {
 
     assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result_recv), &[(3, 3)]);
 }
+
+#[test]
+fn test_send_to_node() {
+    let (ints_send_1, ints_1) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (_ints_send_2, ints_2) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+
+    let (result_1, mut result_recv_1) = hydroflow::util::unbounded_channel::<(usize,)>();
+    let (result_2, mut result_recv_2) = hydroflow::util::unbounded_channel::<(usize,)>();
+
+    let (_async_send_result_1, async_receive_result_1) =
+        hydroflow::util::unbounded_channel::<(usize,)>();
+    let (async_send_result_2, async_receive_result_2) =
+        hydroflow::util::unbounded_channel::<(usize,)>();
+
+    let mut flow_1 = {
+        let ints = ints_1;
+        let async_receive_result = async_receive_result_1;
+        let result = result_1;
+
+        let async_send_result = move |node: usize, data: (usize,)| -> Result<(), ()> {
+            assert!(node == 2);
+            async_send_result_2.send(data).unwrap();
+            Ok(())
+        };
+
+        datalog!(
+            r#"
+            .input ints
+            .output result
+
+            result@b(a) :~ ints(a, b)
+            "#
+        )
+    };
+
+    let mut flow_2 = {
+        let ints = ints_2;
+        let async_receive_result = async_receive_result_2;
+        let result = result_2;
+
+        let async_send_result = |_: usize, _: (usize,)| -> Result<(), ()> {
+            panic!("Should not be called");
+        };
+
+        datalog!(
+            r#"
+            .input ints
+            .output result
+
+            result@b(a) :~ ints(a, b)
+            "#
+        )
+    };
+
+    ints_send_1.send((5, 2)).unwrap();
+
+    flow_1.run_tick();
+    flow_2.run_tick();
+
+    assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result_recv_1), &[]);
+    assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result_recv_2), &[(5,)]);
+}

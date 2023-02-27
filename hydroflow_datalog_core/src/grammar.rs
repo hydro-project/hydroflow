@@ -68,6 +68,8 @@ pub mod datalog {
     pub struct TargetRelationExpr {
         pub name: Ident,
 
+        pub at_node: Option<AtNode>,
+
         #[rust_sitter::leaf(text = "(")]
         _l_paren: (),
 
@@ -79,6 +81,15 @@ pub mod datalog {
 
         #[rust_sitter::leaf(text = ")")]
         _r_paren: (),
+    }
+
+    #[derive(Debug, Clone)]
+    #[allow(clippy::manual_non_exhaustive)]
+    pub struct AtNode {
+        #[rust_sitter::leaf(text = "@")]
+        _at: (),
+
+        pub node: TargetExpr,
     }
 
     #[derive(Debug, Clone)]

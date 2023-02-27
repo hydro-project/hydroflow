@@ -192,12 +192,54 @@ fn generate_rule(
 
     let after_join_and_send: Pipeline = match rule.rule_type {
         RuleType::Sync(_) => {
+            if rule.target.at_node.is_some() {
+                panic!("Rule must be async to send data to other nodes")
+            }
+
             parse_quote!(#after_join -> [#my_merge_index_lit] #target_ident)
         }
         RuleType::NextTick(_) => {
+            if rule.target.at_node.is_some() {
+                panic!("Rule must be async to send data to other nodes")
+            }
+
             parse_quote!(#after_join -> next_tick() -> [#my_merge_index_lit] #target_ident)
         }
-        RuleType::Async(_) => panic!("Async rules not yet supported"),
+        RuleType::Async(_) => {
+            if rule.target.at_node.is_none() {
+                panic!("Async rules are only for sending data to other nodes")
+            }
+
+            let exprs_get_data = rule
+                .target
+                .fields
+                .iter()
+                .enumerate()
+                .map(|(i, _)| -> syn::Expr {
+                    let syn_index = syn::Index::from(i);
+                    parse_quote!(v.#syn_index)
+                });
+
+            let syn_target_index = syn::Index::from(rule.target.fields.len());
+
+            let v_type = repeat_tuple::<syn::Type, syn::Type>(
+                || parse_quote!(_),
+                rule.target.fields.len() + 1,
+            );
+
+            let send_ident = syn::Ident::new(
+                &format!("async_send_{}", &rule.target.name.name),
+                Span::call_site(),
+            );
+
+            let async_receiver_ident = syn::Ident::new(
+                &format!("async_receive_{}", &rule.target.name.name),
+                Span::call_site(),
+            );
+            flat_graph_builder.add_statement(parse_quote!(source_stream(#async_receiver_ident) -> [#my_merge_index_lit] #target_ident));
+
+            parse_quote!(#after_join -> for_each(|v: #v_type| #send_ident(v.#syn_target_index, (#(#exprs_get_data, )*)).unwrap()))
+        }
     };
 
     let out_name = out_expanded.name;
@@ -228,7 +270,12 @@ fn apply_aggregations(
     let mut group_by_exprs = vec![];
     let mut agg_exprs = vec![];
 
-    for field in rule.target.fields.iter() {
+    for field in rule
+        .target
+        .fields
+        .iter()
+        .chain(rule.target.at_node.iter().map(|n| &n.node))
+    {
         let expr: syn::Expr = if let Some(col) = out_expanded
             .variable_mapping
             .get(&syn::Ident::new(&field.ident().name, Span::call_site()))
@@ -308,7 +355,12 @@ fn apply_aggregations(
         let mut after_group_lookups: Vec<syn::Expr> = vec![];
         let mut group_key_idx = 0;
         let mut agg_idx = 0;
-        for field in rule.target.fields.iter() {
+        for field in rule
+            .target
+            .fields
+            .iter()
+            .chain(rule.target.at_node.iter().map(|n| &n.node))
+        {
             match field {
                 TargetExpr::Ident(_) => {
                     let idx = syn::Index::from(group_key_idx);
@@ -523,6 +575,18 @@ mod tests {
             .output result
 
             result(max(a), max(b)) :- ints(a, b)
+            "#
+        );
+    }
+
+    #[test]
+    fn test_send_to_node() {
+        test_snapshots!(
+            r#"
+            .input ints
+            .output result
+
+            result@b(a) :~ ints(a, b)
             "#
         );
     }
