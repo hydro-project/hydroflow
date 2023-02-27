@@ -227,13 +227,18 @@ fn generate_rule(
                 rule.target.fields.len() + 1,
             );
 
+            let send_ident = syn::Ident::new(
+                &format!("async_send_{}", &rule.target.name.name),
+                Span::call_site(),
+            );
+
             let async_receiver_ident = syn::Ident::new(
                 &format!("async_receive_{}", &rule.target.name.name),
                 Span::call_site(),
             );
             flat_graph_builder.add_statement(parse_quote!(source_stream(#async_receiver_ident) -> [#my_merge_index_lit] #target_ident));
 
-            parse_quote!(#after_join -> for_each(|v: #v_type| send_to_node(v.#syn_target_index, (#(#exprs_get_data, )*)).unwrap()))
+            parse_quote!(#after_join -> for_each(|v: #v_type| #send_ident(v.#syn_target_index, (#(#exprs_get_data, )*)).unwrap()))
         }
     };
 

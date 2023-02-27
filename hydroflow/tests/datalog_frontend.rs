@@ -678,7 +678,7 @@ fn test_send_to_node() {
         let async_receive_result = async_receive_result_1;
         let result = result_1;
 
-        let send_to_node = move |node: usize, data: (usize,)| -> Result<(), ()> {
+        let async_send_result = move |node: usize, data: (usize,)| -> Result<(), ()> {
             assert!(node == 2);
             async_send_result_2.send(data).unwrap();
             Ok(())
@@ -699,7 +699,7 @@ fn test_send_to_node() {
         let async_receive_result = async_receive_result_2;
         let result = result_2;
 
-        let send_to_node = |_: usize, _: (usize,)| -> Result<(), ()> {
+        let async_send_result = |_: usize, _: (usize,)| -> Result<(), ()> {
             panic!("Should not be called");
         };
 
