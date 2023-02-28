@@ -6,9 +6,13 @@ use tokio::sync::RwLock;
 
 use super::{BindType, Host, LaunchedHost, ResourceBatch, ResourceResult, Service};
 
+/// Represents an unknown, third-party service that is not part of the Hydroflow ecosystem.
 pub struct CustomService {
     on: Arc<RwLock<dyn Host>>,
+
+    /// The ports that the service wishes to expose to the public internet.
     external_ports: Vec<u16>,
+
     launched_host: Option<Arc<dyn LaunchedHost>>,
 }
 
