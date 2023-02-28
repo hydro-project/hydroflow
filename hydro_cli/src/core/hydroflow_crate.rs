@@ -68,7 +68,7 @@ impl HydroflowCrate {
             self.on
                 .try_read()
                 .unwrap()
-                .get_bind_type(from.host().try_read().unwrap().deref()),
+                .get_bind_type(from.on.try_read().unwrap().deref()),
         );
     }
 
@@ -248,9 +248,5 @@ impl Service for HydroflowCrate {
             .send(format!("start: {formatted_pipe_config}\n"))
             .await
             .unwrap();
-    }
-
-    fn host(&self) -> Arc<RwLock<dyn Host>> {
-        self.on.clone()
     }
 }

@@ -46,8 +46,4 @@ impl Service for CustomService {
     }
 
     async fn start(&mut self) {}
-
-    fn host(&self) -> Arc<RwLock<dyn Host>> {
-        self.on.clone()
-    }
 }

@@ -120,6 +120,4 @@ pub trait Service: Send + Sync {
 
     /// Starts the service by having it connect to other services and start computations.
     async fn start(&mut self);
-
-    fn host(&self) -> Arc<RwLock<dyn Host>>;
 }
