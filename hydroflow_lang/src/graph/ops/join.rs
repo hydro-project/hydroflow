@@ -1,7 +1,8 @@
 use crate::graph::{OpInstGenerics, OperatorInstance};
 
 use super::{
-    OperatorConstraints, OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_0, RANGE_1,
+    FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput, Persistence,
+    WriteContextArgs, RANGE_0, RANGE_1,
 };
 
 use quote::quote_spanned;
@@ -88,6 +89,11 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
     is_external_input: false,
     ports_inn: Some(|| super::PortListSpec::Fixed(parse_quote! { 0, 1 })),
     ports_out: None,
+    properties: FlowProperties {
+        deterministic: FlowPropertyVal::Preserve,
+        monotonic: FlowPropertyVal::Preserve,
+        inconsistency_tainted: false,
+    },
     input_delaytype_fn: |_| None,
     write_fn: |wc @ &WriteContextArgs {
                    root,
