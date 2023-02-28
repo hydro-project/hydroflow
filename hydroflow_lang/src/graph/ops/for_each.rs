@@ -1,6 +1,7 @@
-use crate::graph::OperatorInstance;
-
-use super::{OperatorConstraints, OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1};
+use super::{
+    FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorInstance, OperatorWriteOutput,
+    WriteContextArgs, RANGE_0, RANGE_1,
+};
 
 use quote::quote_spanned;
 
@@ -30,6 +31,11 @@ pub const FOR_EACH: OperatorConstraints = OperatorConstraints {
     is_external_input: false,
     ports_inn: None,
     ports_out: None,
+    properties: FlowProperties {
+        deterministic: FlowPropertyVal::DependsOnArgs,
+        monotonic: FlowPropertyVal::DependsOnArgs,
+        inconsistency_tainted: false,
+    },
     input_delaytype_fn: |_| None,
     write_fn: |&WriteContextArgs {
                    root,

@@ -142,7 +142,7 @@ pub enum Color {
     Push,
     /// Computation (yellow)
     Comp,
-    /// Handoff (red) -- not a color for operators, inserted between subgraphs.
+    /// Handoff (grey) -- not a color for operators, inserted between subgraphs.
     Hoff,
 }
 
@@ -274,17 +274,3 @@ impl Ord for PortIndexValue {
         }
     }
 }
-// impl PartialEq<PortIndex> for PortIndexValue {
-//     fn eq(&self, other: &PortIndex) -> bool {
-//         match (self, other) {
-//             (PortIndexValue::Int(a), PortIndex::Int(b)) => a == b,
-//             (PortIndexValue::Path(a), PortIndex::Path(b)) => a == b,
-//             _no_match => false,
-//         }
-//     }
-// }
-// impl PartialEq<PortIndexValue> for PortIndex {
-//     fn eq(&self, other: &PortIndexValue) -> bool {
-//         other == self
-//     }
-// }

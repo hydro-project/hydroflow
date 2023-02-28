@@ -1,4 +1,7 @@
-use super::{OperatorConstraints, OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1};
+use super::{
+    FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
+    RANGE_0, RANGE_1,
+};
 
 use quote::quote_spanned;
 
@@ -25,6 +28,11 @@ pub const FLATTEN: OperatorConstraints = OperatorConstraints {
     is_external_input: false,
     ports_inn: None,
     ports_out: None,
+    properties: FlowProperties {
+        deterministic: FlowPropertyVal::Preserve,
+        monotonic: FlowPropertyVal::Preserve,
+        inconsistency_tainted: false,
+    },
     input_delaytype_fn: |_| None,
     write_fn: |&WriteContextArgs {
                    root,

@@ -1,5 +1,7 @@
 use crate::graph::PortIndexValue;
 
+use super::{FlowProperties, FlowPropertyVal};
+
 use super::{
     DelayType, OperatorConstraints, OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
 };
@@ -34,6 +36,11 @@ pub const ANTI_JOIN: OperatorConstraints = OperatorConstraints {
     is_external_input: false,
     ports_inn: Some(|| super::PortListSpec::Fixed(parse_quote! { pos, neg })),
     ports_out: None,
+    properties: FlowProperties {
+        deterministic: FlowPropertyVal::Preserve,
+        monotonic: FlowPropertyVal::No,
+        inconsistency_tainted: false,
+    },
     input_delaytype_fn: |idx| match idx {
         PortIndexValue::Path(path) if "neg" == path.to_token_stream().to_string() => {
             Some(DelayType::Stratum)
