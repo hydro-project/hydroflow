@@ -18,98 +18,142 @@ use util::{repeat_tuple, Counter};
 
 pub fn gen_hydroflow_graph(
     literal: proc_macro2::Literal,
-) -> Result<FlatGraph, (Vec<rust_sitter::errors::ParseError>, Vec<Diagnostic>)> {
+) -> Result<FlatGraph, Vec<Diagnostic>> {
     let str_node: syn::LitStr = parse_quote!(#literal);
     let actual_str = str_node.value();
-    let program: Program = grammar::datalog::parse(&actual_str).map_err(|e| (e, vec![]))?;
+    let program: Program = grammar::datalog::parse(&actual_str);
+    
+    match program {
+        Result::Err(errors) => {
+            return Result::Err(handle_errors(errors, &literal));
+        }
+        Result::Ok(program) => {
+            let mut inputs = Vec::new();
+            let mut outputs = Vec::new();
+            let mut rules = Vec::new();
 
-    let mut inputs = Vec::new();
-    let mut outputs = Vec::new();
-    let mut rules = Vec::new();
+            for stmt in &program.rules {
+                match stmt {
+                    Declaration::Input(_, ident) => inputs.push(ident),
+                    Declaration::Output(_, ident) => outputs.push(ident),
+                    Declaration::Rule(rule) => rules.push(rule),
+                }
+            }
 
-    for stmt in &program.rules {
-        match stmt {
-            Declaration::Input(_, ident) => inputs.push(ident),
-            Declaration::Output(_, ident) => outputs.push(ident),
-            Declaration::Rule(rule) => rules.push(rule),
+            let mut flat_graph_builder = FlatGraphBuilder::new();
+            let mut tee_counter = HashMap::new();
+            let mut merge_counter = HashMap::new();
+
+            let mut created_rules = HashSet::new();
+            for decl in &program.rules {
+                let target_ident = match decl {
+                    Declaration::Input(_, ident) => ident.clone(),
+                    Declaration::Output(_, ident) => ident.clone(),
+                    Declaration::Rule(rule) => rule.target.name.clone(),
+                };
+
+                if !created_rules.contains(&target_ident) {
+                    created_rules.insert(target_ident.clone());
+                    let name = syn::Ident::new(&target_ident.name, Span::call_site());
+                    flat_graph_builder.add_statement(parse_quote!(#name = merge() -> tee()));
+                }
+            }
+
+            for target in inputs {
+                let target_ident = syn::Ident::new(&target.name, Span::call_site());
+
+                let my_merge_index = merge_counter
+                    .entry(target.name.clone())
+                    .or_insert_with(|| 0..)
+                    .next()
+                    .expect("Out of merge indices");
+
+                let my_merge_index_lit =
+                    syn::LitInt::new(&format!("{}", my_merge_index), Span::call_site());
+                let name = syn::Ident::new(&target.name, Span::call_site());
+
+                flat_graph_builder.add_statement(parse_quote! {
+                    source_stream(#target_ident) -> [#my_merge_index_lit] #name
+                });
+            }
+
+            for target in outputs {
+                let my_tee_index = tee_counter
+                    .entry(target.name.clone())
+                    .or_insert_with(|| 0..)
+                    .next()
+                    .expect("Out of tee indices");
+
+                let out_send_ident = syn::Ident::new(&target.name, Span::call_site());
+
+                let my_tee_index_lit = syn::LitInt::new(&format!("{}", my_tee_index), Span::call_site());
+                let target_ident = syn::Ident::new(&target.name, Span::call_site());
+
+                flat_graph_builder.add_statement(parse_quote! {
+                    #target_ident [#my_tee_index_lit] -> for_each(|v| #out_send_ident.send(v).unwrap())
+                });
+            }
+
+            let mut next_join_idx = 0..;
+            let mut diagnostics = Vec::new();
+            for rule in rules {
+                generate_rule(
+                    rule,
+                    &mut flat_graph_builder,
+                    &mut tee_counter,
+                    &mut merge_counter,
+                    &mut next_join_idx,
+                    &mut diagnostics,
+                );
+            }
+
+            if !diagnostics.is_empty() {
+                Err(diagnostics)
+            } else {
+                let flat_graph = flat_graph_builder
+                    .build(Level::Error)
+                    .unwrap_or_else(std::convert::identity);
+                Ok(flat_graph)
+            }
         }
     }
+}
 
-    let mut flat_graph_builder = FlatGraphBuilder::new();
-    let mut tee_counter = HashMap::new();
-    let mut merge_counter = HashMap::new();
-
-    let mut created_rules = HashSet::new();
-    for decl in &program.rules {
-        let target_ident = match decl {
-            Declaration::Input(_, ident) => ident.clone(),
-            Declaration::Output(_, ident) => ident.clone(),
-            Declaration::Rule(rule) => rule.target.name.clone(),
-        };
-
-        if !created_rules.contains(&target_ident) {
-            created_rules.insert(target_ident.clone());
-            let name = syn::Ident::new(&target_ident.name, Span::call_site());
-            flat_graph_builder.add_statement(parse_quote!(#name = merge() -> tee()));
+fn handle_errors(errors: Vec<ParseError>, literal: &proc_macro2::Literal)
+-> Vec<Diagnostic> {
+    let mut diagnostics = vec![];
+    for error in errors {
+        let reason = error.reason;
+        let my_span = literal.subspan(error.start + 3..error.end + 3).unwrap();
+        match reason {
+            ParseErrorReason::UnexpectedToken(msg) => {
+                diagnostics.push(Diagnostic::spanned(
+                    my_span.unwrap(),
+                    proc_macro::Level::Error,
+                    format!("Unexpected Token: '{msg}'", msg = msg),
+                ));
+            }
+            ParseErrorReason::MissingToken(msg) => {
+                diagnostics.push(Diagnostic::spanned(
+                    my_span.unwrap(),
+                    proc_macro::Level::Error,
+                    format!("Missing Token: '{msg}'", msg = msg),
+                ));
+            }
+            ParseErrorReason::FailedNode(_vec) => {
+                if _vec.is_empty() {
+                    diagnostics.push(Diagnostic::spanned(
+                        my_span.unwrap(),
+                        proc_macro::Level::Error,
+                        "Failed to parse",
+                    ));
+                } else {
+                    diagnostics.push_all(handle_errors(_vec, literal));
+                }
+            }
         }
     }
-
-    for target in inputs {
-        let target_ident = syn::Ident::new(&target.name, Span::call_site());
-
-        let my_merge_index = merge_counter
-            .entry(target.name.clone())
-            .or_insert_with(|| 0..)
-            .next()
-            .expect("Out of merge indices");
-
-        let my_merge_index_lit =
-            syn::LitInt::new(&format!("{}", my_merge_index), Span::call_site());
-        let name = syn::Ident::new(&target.name, Span::call_site());
-
-        flat_graph_builder.add_statement(parse_quote! {
-            source_stream(#target_ident) -> [#my_merge_index_lit] #name
-        });
-    }
-
-    for target in outputs {
-        let my_tee_index = tee_counter
-            .entry(target.name.clone())
-            .or_insert_with(|| 0..)
-            .next()
-            .expect("Out of tee indices");
-
-        let out_send_ident = syn::Ident::new(&target.name, Span::call_site());
-
-        let my_tee_index_lit = syn::LitInt::new(&format!("{}", my_tee_index), Span::call_site());
-        let target_ident = syn::Ident::new(&target.name, Span::call_site());
-
-        flat_graph_builder.add_statement(parse_quote! {
-            #target_ident [#my_tee_index_lit] -> for_each(|v| #out_send_ident.send(v).unwrap())
-        });
-    }
-
-    let mut next_join_idx = 0..;
-    let mut diagnostics = Vec::new();
-    for rule in rules {
-        generate_rule(
-            rule,
-            &mut flat_graph_builder,
-            &mut tee_counter,
-            &mut merge_counter,
-            &mut next_join_idx,
-            &mut diagnostics,
-        );
-    }
-
-    if !diagnostics.is_empty() {
-        Err((vec![], diagnostics))
-    } else {
-        let flat_graph = flat_graph_builder
-            .build(Level::Error)
-            .unwrap_or_else(std::convert::identity);
-        Ok(flat_graph)
-    }
+    return diagnostics;
 }
 
 pub fn hydroflow_graph_to_program(flat_graph: FlatGraph, root: TokenStream) -> syn::Stmt {
