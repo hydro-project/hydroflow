@@ -67,6 +67,17 @@ pub struct LaunchedComputeEngine {
     binary_counter: RwLock<usize>,
 }
 
+impl LaunchedComputeEngine {
+    pub fn ssh_key_path(&self) -> PathBuf {
+        self.resource_result
+            .terraform
+            .deployment_folder
+            .path()
+            .join(".ssh")
+            .join("vm_instance_ssh_key_pem")
+    }
+}
+
 #[async_trait]
 impl LaunchedHost for LaunchedComputeEngine {
     fn get_bind_config(&self, bind_type: &BindType) -> BindConfig {
@@ -97,18 +108,7 @@ impl LaunchedHost for LaunchedComputeEngine {
                 session.handshake().await?;
 
                 session
-                    .userauth_pubkey_file(
-                        "hydro",
-                        None,
-                        self.resource_result
-                            .terraform
-                            .deployment_folder
-                            .path()
-                            .join(".ssh")
-                            .join("vm_instance_ssh_key_pem")
-                            .as_path(),
-                        None,
-                    )
+                    .userauth_pubkey_file("hydro", None, self.ssh_key_path().as_path(), None)
                     .await?;
 
                 Ok(session)

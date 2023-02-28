@@ -43,6 +43,10 @@ class GCPComputeEngineHost(Host):
     def external_ip(self) -> Optional[str]:
         return self.underlying.external_ip
 
+    @property
+    def ssh_key_path(self) -> str:
+        return self.underlying.ssh_key_path
+
 class Service(object):
     def __init__(self, underlying) -> None:
         self.underlying = underlying

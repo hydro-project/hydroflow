@@ -132,6 +132,19 @@ impl PyGCPComputeEngineHost {
             .external_ip
             .clone()
     }
+
+    #[getter]
+    fn ssh_key_path(&self) -> String {
+        self.underlying
+            .blocking_read()
+            .launched
+            .as_ref()
+            .unwrap()
+            .ssh_key_path()
+            .to_str()
+            .unwrap()
+            .to_string()
+    }
 }
 
 #[pyclass(subclass)]
