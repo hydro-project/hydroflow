@@ -68,9 +68,16 @@
 <a href="#68" id="68">68</a>
 <a href="#69" id="69">69</a>
 <a href="#70" id="70">70</a>
-</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::graph::OperatorInstance;
-
-<span class="kw">use super</span>::{OperatorConstraints, OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1};
+<a href="#71" id="71">71</a>
+<a href="#72" id="72">72</a>
+<a href="#73" id="73">73</a>
+<a href="#74" id="74">74</a>
+<a href="#75" id="75">75</a>
+<a href="#76" id="76">76</a>
+</pre><pre class="rust"><code><span class="kw">use super</span>::{
+    FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorInstance, OperatorWriteOutput,
+    WriteContextArgs, RANGE_0, RANGE_1,
+};
 
 <span class="kw">use </span>quote::quote_spanned;
 
@@ -106,6 +113,11 @@
     is_external_input: <span class="bool-val">true</span>,
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">None</span>,
+    properties: FlowProperties {
+        deterministic: FlowPropertyVal::DependsOnArgs,
+        monotonic: FlowPropertyVal::DependsOnArgs,
+        inconsistency_tainted: <span class="bool-val">false</span>,
+    },
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">None</span>,
     write_fn: |wc @ <span class="kw-2">&amp;</span>WriteContextArgs {
                    root,

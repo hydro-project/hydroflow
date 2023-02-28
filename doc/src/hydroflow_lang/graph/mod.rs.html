@@ -274,20 +274,6 @@
 <a href="#274" id="274">274</a>
 <a href="#275" id="275">275</a>
 <a href="#276" id="276">276</a>
-<a href="#277" id="277">277</a>
-<a href="#278" id="278">278</a>
-<a href="#279" id="279">279</a>
-<a href="#280" id="280">280</a>
-<a href="#281" id="281">281</a>
-<a href="#282" id="282">282</a>
-<a href="#283" id="283">283</a>
-<a href="#284" id="284">284</a>
-<a href="#285" id="285">285</a>
-<a href="#286" id="286">286</a>
-<a href="#287" id="287">287</a>
-<a href="#288" id="288">288</a>
-<a href="#289" id="289">289</a>
-<a href="#290" id="290">290</a>
 </pre><pre class="rust"><code><span class="doccomment">//! Graph representation stages for Hydroflow graphs.
 
 </span><span class="kw">use </span>std::hash::Hash;
@@ -432,7 +418,7 @@
     </span>Push,
     <span class="doccomment">/// Computation (yellow)
     </span>Comp,
-    <span class="doccomment">/// Handoff (red) -- not a color for operators, inserted between subgraphs.
+    <span class="doccomment">/// Handoff (grey) -- not a color for operators, inserted between subgraphs.
     </span>Hoff,
 }
 
@@ -564,19 +550,5 @@
         }
     }
 }
-<span class="comment">// impl PartialEq&lt;PortIndex&gt; for PortIndexValue {
-//     fn eq(&amp;self, other: &amp;PortIndex) -&gt; bool {
-//         match (self, other) {
-//             (PortIndexValue::Int(a), PortIndex::Int(b)) =&gt; a == b,
-//             (PortIndexValue::Path(a), PortIndex::Path(b)) =&gt; a == b,
-//             _no_match =&gt; false,
-//         }
-//     }
-// }
-// impl PartialEq&lt;PortIndexValue&gt; for PortIndex {
-//     fn eq(&amp;self, other: &amp;PortIndexValue) -&gt; bool {
-//         other == self
-//     }
-// }
-</span></code></pre></div>
+</code></pre></div>
 </section></main><div id="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="hydroflow_lang" data-themes="" data-resource-suffix="" data-rustdoc-version="1.69.0-nightly (dc1d9d50f 2023-01-31)" data-search-js="search-98d53477a794af0b.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-7c23ac01f615ce90.css" ></div></body></html>

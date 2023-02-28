@@ -119,11 +119,12 @@
 <a href="#119" id="119">119</a>
 <a href="#120" id="120">120</a>
 <a href="#121" id="121">121</a>
-</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::graph::{OpInstGenerics, OperatorInstance};
-
-<span class="kw">use super</span>::{
-    DelayType, OperatorConstraints, OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_0,
-    RANGE_1,
+<a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
+<a href="#124" id="124">124</a>
+</pre><pre class="rust"><code><span class="kw">use super</span>::{
+    DelayType, FlowProperties, FlowPropertyVal, OpInstGenerics, OperatorConstraints,
+    OperatorInstance, OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_0, RANGE_1,
 };
 
 <span class="kw">use </span>quote::quote_spanned;
@@ -166,6 +167,11 @@
     is_external_input: <span class="bool-val">false</span>,
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">None</span>,
+    properties: FlowProperties {
+        deterministic: FlowPropertyVal::DependsOnArgs,
+        monotonic: FlowPropertyVal::DependsOnArgs,
+        inconsistency_tainted: <span class="bool-val">false</span>,
+    },
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">Some</span>(DelayType::Stratum),
     write_fn: |wc @ <span class="kw-2">&amp;</span>WriteContextArgs {
                    context,

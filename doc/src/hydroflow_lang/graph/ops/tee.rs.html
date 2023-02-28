@@ -66,8 +66,15 @@
 <a href="#66" id="66">66</a>
 <a href="#67" id="67">67</a>
 <a href="#68" id="68">68</a>
+<a href="#69" id="69">69</a>
+<a href="#70" id="70">70</a>
+<a href="#71" id="71">71</a>
+<a href="#72" id="72">72</a>
+<a href="#73" id="73">73</a>
+<a href="#74" id="74">74</a>
 </pre><pre class="rust"><code><span class="kw">use super</span>::{
-    OperatorConstraints, OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1, RANGE_ANY,
+    FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
+    RANGE_0, RANGE_1, RANGE_ANY,
 };
 
 <span class="kw">use </span>quote::{quote_spanned, ToTokens};
@@ -98,6 +105,11 @@
     is_external_input: <span class="bool-val">false</span>,
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">None</span>,
+    properties: FlowProperties {
+        deterministic: FlowPropertyVal::Preserve,
+        monotonic: FlowPropertyVal::Preserve,
+        inconsistency_tainted: <span class="bool-val">false</span>,
+    },
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">None</span>,
     write_fn: |<span class="kw-2">&amp;</span>WriteContextArgs {
                    root,

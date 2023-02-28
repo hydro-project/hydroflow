@@ -18,7 +18,18 @@
 <a href="#18" id="18">18</a>
 <a href="#19" id="19">19</a>
 <a href="#20" id="20">20</a>
-</pre><pre class="rust"><code><span class="kw">use super</span>::{DelayType, OperatorConstraints, IDENTITY_WRITE_FN, RANGE_0, RANGE_1};
+<a href="#21" id="21">21</a>
+<a href="#22" id="22">22</a>
+<a href="#23" id="23">23</a>
+<a href="#24" id="24">24</a>
+<a href="#25" id="25">25</a>
+<a href="#26" id="26">26</a>
+<a href="#27" id="27">27</a>
+<a href="#28" id="28">28</a>
+</pre><pre class="rust"><code><span class="kw">use super</span>::{
+    DelayType, FlowProperties, FlowPropertyVal, OperatorConstraints, IDENTITY_WRITE_FN, RANGE_0,
+    RANGE_1,
+};
 
 <span class="doccomment">/// Delays all elements which pass through to the next stratum (in the same
 /// tick).
@@ -35,6 +46,11 @@
     is_external_input: <span class="bool-val">false</span>,
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">None</span>,
+    properties: FlowProperties {
+        deterministic: FlowPropertyVal::Preserve,
+        monotonic: FlowPropertyVal::Preserve,
+        inconsistency_tainted: <span class="bool-val">false</span>,
+    },
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">Some</span>(DelayType::Stratum),
     write_fn: IDENTITY_WRITE_FN,
 };

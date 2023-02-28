@@ -76,10 +76,17 @@
 <a href="#76" id="76">76</a>
 <a href="#77" id="77">77</a>
 <a href="#78" id="78">78</a>
+<a href="#79" id="79">79</a>
+<a href="#80" id="80">80</a>
+<a href="#81" id="81">81</a>
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
 </pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::graph::PortIndexValue;
 
 <span class="kw">use super</span>::{
-    DelayType, OperatorConstraints, OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
+    DelayType, FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput,
+    WriteContextArgs, RANGE_0, RANGE_1,
 };
 
 <span class="kw">use </span>quote::{quote_spanned, ToTokens};
@@ -110,6 +117,11 @@
     is_external_input: <span class="bool-val">false</span>,
     ports_inn: <span class="prelude-val">Some</span>(|| <span class="kw">super</span>::PortListSpec::Fixed(<span class="macro">parse_quote! </span>{ pos, neg })),
     ports_out: <span class="prelude-val">None</span>,
+    properties: FlowProperties {
+        deterministic: FlowPropertyVal::Preserve,
+        monotonic: FlowPropertyVal::No,
+        inconsistency_tainted: <span class="bool-val">false</span>,
+    },
     input_delaytype_fn: |idx| <span class="kw">match </span>idx {
         PortIndexValue::Path(path) <span class="kw">if </span><span class="string">&quot;neg&quot; </span>== path.to_token_stream().to_string() =&gt; {
             <span class="prelude-val">Some</span>(DelayType::Stratum)
