@@ -431,6 +431,7 @@ impl Host for GCPComputeEngineHost {
 
                 #[cfg(not(unix))]
                 {
+                    let _ = id;
                     false
                 }
             }
