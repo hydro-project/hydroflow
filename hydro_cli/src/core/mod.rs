@@ -58,18 +58,24 @@ pub trait LaunchedBinary: Send + Sync {
 
 #[async_trait]
 pub trait LaunchedHost: Send + Sync {
-    /// Identifies a network type that this host can use for connections from the given host.
+    /// Given a pre-selected network type, computes concrete information needed for a service
+    /// to listen to network connections (such as the IP address to bind to).
     fn get_bind_config(&self, bind_type: &BindType) -> BindConfig;
 
     async fn launch_binary(&self, binary: &Path) -> Result<Arc<RwLock<dyn LaunchedBinary>>>;
 }
 
+/// Types of connections that a host can make to another host.
 pub enum BindType {
     UnixSocket,
     InternalTcpPort,
-    ExternalTcpPort(u16),
+    ExternalTcpPort(
+        /// The port number to bind to, which must be explicit to open the firewall.
+        u16,
+    ),
 }
 
+/// Like BindType, but includes metadata for determining whether a connection is possible.
 pub enum ConnectionType {
     UnixSocket(
         /// Unique identifier for the host this socket will be on.
@@ -94,6 +100,7 @@ pub trait Host: Send + Sync {
     /// Identifies a network type that this host can use for connections from the given host.
     fn get_bind_type(&self, connection_from: &dyn Host) -> BindType;
 
+    /// Determins whether this host can connect to another host using the given connection type.
     fn can_connect_to(&self, typ: ConnectionType) -> bool;
 }
 
