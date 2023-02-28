@@ -11,6 +11,9 @@ class Deployment(object):
     def GCPComputeEngineHost(self, project: str, machine_type: str, region: str) -> "GCPComputeEngineHost":
         return GCPComputeEngineHost(self, project, machine_type, region)
 
+    def CustomService(self, on: "Host", external_ports: List[int]) -> "CustomService":
+        return CustomService(self, on, external_ports)
+
     def HydroflowCrate(self, src: str, on: "Host", example: Optional[str] = None, features: Optional[List[str]] = None) -> "HydroflowCrate":
         return HydroflowCrate(self, src, on, example, features)
 
@@ -32,9 +35,21 @@ class GCPComputeEngineHost(Host):
     def __init__(self, deployment: Deployment, project: str, machine_type: str, region: str):
         super().__init__(hydro_cli_rust.PyGCPComputeEngineHost(deployment.underlying, project, machine_type, region))
 
+    @property
+    def internal_ip(self) -> str:
+        return self.underlying.internal_ip
+
+    @property
+    def external_ip(self) -> Optional[str]:
+        return self.underlying.external_ip
+
 class Service(object):
     def __init__(self, underlying) -> None:
         self.underlying = underlying
+
+class CustomService(Service):
+    def __init__(self, deployment: Deployment, on: Host, external_ports: List[int]) -> None:
+        super().__init__(hydro_cli_rust.PyCustomService(deployment.underlying, on.underlying, external_ports))
 
 class HydroflowPort(object):
     def __init__(self, underlying, name) -> None:

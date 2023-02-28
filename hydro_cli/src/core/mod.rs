@@ -3,7 +3,7 @@ use std::{path::Path, sync::Arc};
 use anyhow::Result;
 use async_channel::{Receiver, Sender};
 use async_trait::async_trait;
-use hydroflow::util::connection::BindType;
+use hydroflow::util::connection::BindConfig;
 use tokio::sync::RwLock;
 
 pub mod deployment;
@@ -17,6 +17,9 @@ pub use gcp::GCPComputeEngineHost;
 
 pub mod hydroflow_crate;
 pub use hydroflow_crate::HydroflowCrate;
+
+pub mod custom_service;
+pub use custom_service::CustomService;
 
 pub mod terraform;
 
@@ -55,7 +58,16 @@ pub trait LaunchedBinary: Send + Sync {
 
 #[async_trait]
 pub trait LaunchedHost: Send + Sync {
+    /// Identifies a network type that this host can use for connections from the given host.
+    fn get_bind_config(&self, bind_type: &BindType) -> BindConfig;
+
     async fn launch_binary(&self, binary: &Path) -> Result<Arc<RwLock<dyn LaunchedBinary>>>;
+}
+
+pub enum BindType {
+    UnixSocket,
+    InternalTcpPort,
+    ExternalTcpPort(u16),
 }
 
 pub enum ConnectionType {
@@ -71,6 +83,8 @@ pub enum ConnectionType {
 
 #[async_trait]
 pub trait Host: Send + Sync {
+    fn request_port(&mut self, bind_type: &BindType);
+
     /// Makes requests for physical resources (servers) that this host needs to run.
     fn collect_resources(&self, resource_batch: &mut ResourceBatch);
 
@@ -78,7 +92,7 @@ pub trait Host: Send + Sync {
     async fn provision(&mut self, resource_result: &Arc<ResourceResult>) -> Arc<dyn LaunchedHost>;
 
     /// Identifies a network type that this host can use for connections from the given host.
-    fn find_bind_type(&self, connection_from: &dyn Host) -> BindType;
+    fn get_bind_type(&self, connection_from: &dyn Host) -> BindType;
 
     fn can_connect_to(&self, typ: ConnectionType) -> bool;
 }
@@ -101,7 +115,4 @@ pub trait Service: Send + Sync {
     async fn start(&mut self);
 
     fn host(&self) -> Arc<RwLock<dyn Host>>;
-
-    fn as_any(&self) -> &dyn std::any::Any;
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any;
 }
