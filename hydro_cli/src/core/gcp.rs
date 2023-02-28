@@ -169,17 +169,25 @@ pub struct GCPComputeEngineHost {
     pub id: usize,
     pub project: String,
     pub machine_type: String,
+    pub image: String,
     pub region: String,
     pub launched: Option<Arc<LaunchedComputeEngine>>,
     external_ports: Vec<u16>,
 }
 
 impl GCPComputeEngineHost {
-    pub fn new(id: usize, project: String, machine_type: String, region: String) -> Self {
+    pub fn new(
+        id: usize,
+        project: String,
+        machine_type: String,
+        image: String,
+        region: String,
+    ) -> Self {
         Self {
             id,
             project,
             machine_type,
+            image,
             region,
             launched: None,
             external_ports: vec![],
@@ -398,7 +406,7 @@ impl Host for GCPComputeEngineHost {
                         {
                             "initialize_params": [
                                 {
-                                    "image": "debian-cloud/debian-11"
+                                    "image": self.image
                                 }
                             ]
                         }

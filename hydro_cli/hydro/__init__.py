@@ -8,8 +8,8 @@ class Deployment(object):
     def Localhost(self) -> "Localhost":
         return Localhost(self)
 
-    def GCPComputeEngineHost(self, project: str, machine_type: str, region: str) -> "GCPComputeEngineHost":
-        return GCPComputeEngineHost(self, project, machine_type, region)
+    def GCPComputeEngineHost(self, project: str, machine_type: str, image: str, region: str) -> "GCPComputeEngineHost":
+        return GCPComputeEngineHost(self, project, machine_type, image, region)
 
     def CustomService(self, on: "Host", external_ports: List[int]) -> "CustomService":
         return CustomService(self, on, external_ports)
@@ -32,8 +32,8 @@ class Localhost(Host):
         super().__init__(hydro_cli_rust.PyLocalhostHost(deployment.underlying))
 
 class GCPComputeEngineHost(Host):
-    def __init__(self, deployment: Deployment, project: str, machine_type: str, region: str):
-        super().__init__(hydro_cli_rust.PyGCPComputeEngineHost(deployment.underlying, project, machine_type, region))
+    def __init__(self, deployment: Deployment, project: str, machine_type: str, image: str, region: str):
+        super().__init__(hydro_cli_rust.PyGCPComputeEngineHost(deployment.underlying, project, machine_type, image, region))
 
     @property
     def internal_ip(self) -> str:

@@ -96,10 +96,11 @@ impl PyGCPComputeEngineHost {
         deployment: &PyDeployment,
         project: String,
         machine_type: String,
+        image: String,
         region: String,
     ) -> (Self, PyHost) {
         let host = deployment.underlying.blocking_write().add_host(|id| {
-            crate::core::GCPComputeEngineHost::new(id, project, machine_type, region)
+            crate::core::GCPComputeEngineHost::new(id, project, machine_type, image, region)
         });
 
         (
