@@ -126,6 +126,48 @@ jobs:
           command: test
           args: --all-features
 
+  test-wasm:
+    name: Test Suite (WebAssembly)
+    timeout-minutes: 15
+    needs: pre_job
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust_release: [pinned-nightly, latest-nightly]
+        exclude:
+          # For non-pull requests, event_name != 'pull_request' will be true,
+          # and nothing is truthy, so the entire && operator will resolve to
+          # 'nothing'. Then the || operator will resolve to 'nothing' so we
+          # will exclude 'nothing'. https://stackoverflow.com/a/73822998
+          - rust_release: ${{ (github.event_name != 'pull_request' && 'nothing') || 'latest-nightly' }}
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install nightly toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          override: ${{ matrix.rust_release == 'latest-nightly' }}
+          components: rustfmt
+
+      - name: Install WebAssembly test runner
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: wasm-bindgen-cli
+
+      - name: Run cargo test
+        uses: actions-rs/cargo@v1
+        env:
+          CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER: wasm-bindgen-test-runner
+        with:
+          command: test
+          args: -p hydroflow --target wasm32-unknown-unknown --tests
+
   lints:
     name: Lints
     timeout-minutes: 10
