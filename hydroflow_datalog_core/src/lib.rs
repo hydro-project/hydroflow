@@ -331,9 +331,33 @@ fn apply_aggregations(
 
                 let agg_expr: syn::Expr = match agg {
                     TargetExpr::Aggregation(Aggregation { tpe, .. }) => match tpe {
+                        AggregationType::Min(_) => {
+                            parse_quote!(std::cmp::min(prev, #val_at_index))
+                        },
                         AggregationType::Max(_) => {
                             parse_quote!(std::cmp::max(prev, #val_at_index))
-                        }
+                        },
+                        AggregationType::Sum(_) => {
+                            parse_quote!(prev + #val_at_index)
+                        },
+                        AggregationType::Count(_) => {
+                            parse_quote!(prev+1)
+                        },
+                        AggregationType::Choose(_) => {
+                            parse_quote!(prev) // choose = select any 1 element from the relation. By default we select the 1st.
+                        },
+                    },
+                    _ => panic!(),
+                };
+
+                let agg_initial: syn::Expr = match agg {
+                    TargetExpr::Aggregation(Aggregation { tpe, .. }) => match tpe {
+                        AggregationType::Min(_) | AggregationType::Max(_) | AggregationType::Sum(_) | AggregationType::Choose(_) => {
+                            parse_quote!(#val_at_index)
+                        },
+                        AggregationType::Count(_) => {
+                            parse_quote!(1)
+                        },
                     },
                     _ => panic!(),
                 };
@@ -342,7 +366,7 @@ fn apply_aggregations(
                     #old_at_index = if let Some(prev) = #old_at_index {
                         Some(#agg_expr)
                     } else {
-                        Some(#val_at_index)
+                        Some(#agg_initial)
                     };
                 }
             })
@@ -587,6 +611,57 @@ mod tests {
             .output result
 
             result@b(a) :~ ints(a, b)
+            "#
+        );
+    }
+
+    #[test]
+    fn test_choose() {
+        test_snapshots!(
+            r#"
+            .input clientIn
+            .output clientOut
+            .input clientAddr
+            
+            clientOut@addr(choose(i)) :~ clientIn(i), clientAddr(addr)
+            "#
+        );
+    }
+
+    #[test]
+    fn test_voting_replica() {
+        test_snapshots!(
+            r#"
+            .input voteToReplica
+            .input leaderAddr
+            .input local
+            .output voteFromReplica
+            
+            # reply to leader
+            voteFromReplica@addr(s, v) :~ voteToReplica(v), leaderAddr(addr), local(s)
+            "#
+        );
+    }
+
+    #[test]
+    fn test_voting_leader() {
+        test_snapshots!(
+            r#"
+            .input clientIn
+            .output clientOut
+            
+            .output voteToReplica
+            .input voteFromReplica
+            .input voteCounts
+
+            .input replicaAddr
+            .input numReplicas
+            .input clientAddr
+            
+            voteToReplica@addr(v) :~ clientIn(v), replicaAddr(addr)
+            voteFromReplica(s, v) :+ voteFromReplica(s, v)
+            voteCounts(count(l), v) :- voteFromReplica(l, v)
+            clientOut@addr(v) :~ voteCounts(n, v), numReplicas(n), clientAddr(addr)
             "#
         );
     }
