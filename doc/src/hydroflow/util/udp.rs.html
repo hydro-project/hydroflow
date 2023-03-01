@@ -56,7 +56,11 @@
 <a href="#56" id="56">56</a>
 <a href="#57" id="57">57</a>
 <a href="#58" id="58">58</a>
-</pre><pre class="rust"><code><span class="kw">use </span>std::net::SocketAddr;
+<a href="#59" id="59">59</a>
+<a href="#60" id="60">60</a>
+</pre><pre class="rust"><code><span class="attr">#![cfg(not(target_arch = <span class="string">&quot;wasm32&quot;</span>))]
+
+</span><span class="kw">use </span>std::net::SocketAddr;
 
 <span class="kw">use </span>bytes::Bytes;
 <span class="kw">use </span>futures::stream::{SplitSink, SplitStream};

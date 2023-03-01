@@ -152,12 +152,20 @@
 <a href="#152" id="152">152</a>
 <a href="#153" id="153">153</a>
 <a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
 </pre><pre class="rust"><code><span class="doccomment">//! Helper utilities for the Hydroflow surface syntax.
 
 </span><span class="kw">mod </span>udp;
-<span class="kw">pub use </span>udp::<span class="kw-2">*</span>;
+<span class="attr">#[cfg(not(target_arch = <span class="string">&quot;wasm32&quot;</span>))]
+</span><span class="kw">pub use </span>udp::<span class="kw-2">*</span>;
+
 <span class="kw">mod </span>tcp;
-<span class="kw">pub use </span>tcp::<span class="kw-2">*</span>;
+<span class="attr">#[cfg(not(target_arch = <span class="string">&quot;wasm32&quot;</span>))]
+</span><span class="kw">pub use </span>tcp::<span class="kw-2">*</span>;
 
 <span class="attr">#[cfg(unix)]
 </span><span class="kw">mod </span>socket;
@@ -260,12 +268,14 @@
     }
 }
 
-<span class="kw">pub async fn </span>bind_udp_bytes(addr: SocketAddr) -&gt; (UdpSink, UdpStream, SocketAddr) {
+<span class="attr">#[cfg(not(target_arch = <span class="string">&quot;wasm32&quot;</span>))]
+</span><span class="kw">pub async fn </span>bind_udp_bytes(addr: SocketAddr) -&gt; (UdpSink, UdpStream, SocketAddr) {
     <span class="kw">let </span>socket = tokio::net::UdpSocket::bind(addr).<span class="kw">await</span>.unwrap();
     udp_bytes(socket)
 }
 
-<span class="kw">pub async fn </span>bind_udp_lines(addr: SocketAddr) -&gt; (UdpLinesSink, UdpLinesStream, SocketAddr) {
+<span class="attr">#[cfg(not(target_arch = <span class="string">&quot;wasm32&quot;</span>))]
+</span><span class="kw">pub async fn </span>bind_udp_lines(addr: SocketAddr) -&gt; (UdpLinesSink, UdpLinesStream, SocketAddr) {
     <span class="kw">let </span>socket = tokio::net::UdpSocket::bind(addr).<span class="kw">await</span>.unwrap();
     udp_lines(socket)
 }
