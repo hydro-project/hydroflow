@@ -1,0 +1,11 @@
+.input clientIn
+.output clientOut
+
+.output voteToReplica
+.input voteFromReplica
+.input voteCounts
+
+voteToReplica@addr(v) :~ clientIn(v), replicaAddr(addr)
+voteFromReplica(s, v) :+ voteFromReplica(s, v)
+voteCounts(count(l), v) :- voteFromReplica(l, v)
+clientOut@addr(v) :~ voteCounts(n, v), numReplicas(n), clientAddr(addr)

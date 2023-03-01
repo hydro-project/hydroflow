@@ -1,0 +1,5 @@
+.static leaderAddr[("127.0.0.1")]
+.static replicaAddr[("127.0.0.2", "127.0.0.3")]
+.static numReplicas[(2)]
+.static clientAddr[("127.0.0.4")]
+.static local

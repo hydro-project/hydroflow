@@ -1,0 +1,4 @@
+.input voteToReplica
+.output voteFromReplica
+
+voteFromReplica@addr(l, v) :~ voteToReplica(v), leaderAddr(addr), local(l)
