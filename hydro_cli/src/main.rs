@@ -88,7 +88,11 @@ fn deploy(config: PathBuf) -> anyhow::Result<()> {
                     let mut underlying = underlying.blocking_write();
                     Err(underlying.take().unwrap()).context(format!("RustException\n{}", traceback))
                 } else {
-                    Err(PyErrWithTraceback { err_display: format!("{}", err), traceback }.into())
+                    Err(PyErrWithTraceback {
+                        err_display: format!("{}", err),
+                        traceback,
+                    }
+                    .into())
                 }
             }
         }
