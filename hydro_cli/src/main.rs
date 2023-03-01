@@ -37,7 +37,7 @@ fn async_wrapper_module(py: Python) -> Result<&PyModule, PyErr> {
 
 #[derive(Debug)]
 struct PyErrWithTraceback {
-    err: PyErr,
+    err_display: String,
     traceback: String,
 }
 
@@ -45,7 +45,7 @@ impl std::error::Error for PyErrWithTraceback {}
 
 impl Display for PyErrWithTraceback {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "{}", self.err)?;
+        writeln!(f, "{}", self.err_display)?;
         write!(f, "{}", self.traceback)
     }
 }
@@ -88,7 +88,7 @@ fn deploy(config: PathBuf) -> anyhow::Result<()> {
                     let mut underlying = underlying.blocking_write();
                     Err(underlying.take().unwrap()).context(format!("RustException\n{}", traceback))
                 } else {
-                    Err(PyErrWithTraceback { err, traceback }.into())
+                    Err(PyErrWithTraceback { err_display: format!("{}", err), traceback }.into())
                 }
             }
         }
