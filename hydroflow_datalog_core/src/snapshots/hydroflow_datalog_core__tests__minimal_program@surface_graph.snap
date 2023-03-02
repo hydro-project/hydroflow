@@ -1,20 +1,23 @@
 ---
 source: hydroflow_datalog_core/src/lib.rs
-assertion_line: 421
 expression: graph.surface_syntax_string()
 ---
 1v1 = merge ();
-2v1 = tee ();
-3v1 = merge ();
-4v1 = tee ();
-5v1 = source_stream (input);
-6v1 = for_each (| v | out . send (v) . unwrap ());
-7v1 = map (| row : (_ , _ ,) | (row . 1 , row . 0 ,));
+2v1 = unique :: < 'tick > ();
+3v1 = tee ();
+4v1 = merge ();
+5v1 = unique :: < 'tick > ();
+6v1 = tee ();
+7v1 = source_stream (input);
+8v1 = for_each (| v | out . send (v) . unwrap ());
+9v1 = map (| row : (_ , _ ,) | (row . 1 , row . 0 ,));
 
+2v1 -> 3v1;
 1v1 -> 2v1;
-3v1 -> 4v1;
-5v1 -> 1v1;
-4v1 -> 6v1;
-7v1 -> 3v1;
-2v1 -> 7v1;
+5v1 -> 6v1;
+4v1 -> 5v1;
+7v1 -> 1v1;
+6v1 -> 8v1;
+9v1 -> 4v1;
+3v1 -> 9v1;
 

@@ -275,43 +275,6 @@ pub fn test_sort() {
 }
 
 #[multiplatform_test]
-pub fn test_unique() {
-    let (items_send, items_recv) = hydroflow::util::unbounded_channel::<usize>();
-
-    let mut df = hydroflow_syntax! {
-        source_stream(items_recv)
-            -> unique()
-            -> for_each(|v| print!("{:?}, ", v));
-    };
-
-    println!(
-        "{}",
-        df.serde_graph()
-            .expect("No graph found, maybe failed to parse.")
-            .to_mermaid()
-    );
-    df.run_available();
-
-    print!("\nA: ");
-
-    items_send.send(9).unwrap();
-    items_send.send(9).unwrap();
-    items_send.send(5).unwrap();
-    df.run_available();
-
-    print!("\nB: ");
-
-    items_send.send(9).unwrap();
-    items_send.send(9).unwrap();
-    items_send.send(2).unwrap();
-    items_send.send(0).unwrap();
-    items_send.send(2).unwrap();
-    df.run_available();
-
-    println!();
-}
-
-#[multiplatform_test]
 pub fn test_sort_by() {
     let mut df = hydroflow_syntax! {
         source_iter(vec!((2, 'y'), (3, 'x'), (1, 'z')))
