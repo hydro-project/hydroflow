@@ -1,7 +1,7 @@
 use std::{
     net::SocketAddr,
     path::{Path, PathBuf},
-    sync::Arc,
+    sync::{atomic::AtomicUsize, Arc},
     time::Duration,
 };
 
@@ -64,7 +64,7 @@ pub struct LaunchedComputeEngine {
     resource_result: Arc<ResourceResult>,
     pub internal_ip: String,
     pub external_ip: Option<String>,
-    binary_counter: RwLock<usize>,
+    binary_counter: AtomicUsize,
 }
 
 impl LaunchedComputeEngine {
@@ -121,10 +121,9 @@ impl LaunchedHost for LaunchedComputeEngine {
         let sftp = session.sftp().await?;
 
         // we may be deploying multiple binaries, so give each a unique name
-        let mut binary_counter_write = self.binary_counter.write().await;
-        let my_binary_counter = *binary_counter_write;
-        *binary_counter_write += 1;
-        drop(binary_counter_write);
+        let my_binary_counter = self
+            .binary_counter
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
 
         let binary_path = PathBuf::from(format!("/home/hydro/hydro-{my_binary_counter}"));
 
@@ -448,7 +447,7 @@ impl Host for GCPComputeEngineHost {
                 resource_result: resource_result.clone(),
                 internal_ip,
                 external_ip,
-                binary_counter: RwLock::new(0),
+                binary_counter: AtomicUsize::new(0),
             }))
         }
 
