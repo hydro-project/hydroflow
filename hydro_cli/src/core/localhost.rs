@@ -5,10 +5,12 @@ use async_channel::{Receiver, Sender};
 use async_process::{Command, Stdio};
 use async_trait::async_trait;
 use futures::{io::BufReader, AsyncBufReadExt, AsyncRead, AsyncWriteExt, StreamExt};
-use hydroflow::util::connection::BindType;
+use hydroflow::util::connection::BindConfig;
 use tokio::sync::RwLock;
 
-use super::{ConnectionType, Host, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult};
+use super::{
+    BindType, ConnectionType, Host, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult,
+};
 
 struct LaunchedLocalhostBinary {
     child: RwLock<async_process::Child>,
@@ -83,6 +85,14 @@ pub fn create_broadcast<T: AsyncRead + Send + Unpin + 'static>(
 
 #[async_trait]
 impl LaunchedHost for LaunchedLocalhost {
+    fn get_bind_config(&self, bind_type: &BindType) -> BindConfig {
+        match bind_type {
+            BindType::UnixSocket => BindConfig::UnixSocket,
+            BindType::InternalTcpPort => BindConfig::TcpPort("127.0.0.1".to_string()),
+            BindType::ExternalTcpPort(_) => panic!("Cannot bind to external port"),
+        }
+    }
+
     async fn launch_binary(&self, binary: &Path) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
         let mut child = Command::new(binary)
             .kill_on_drop(true)
@@ -120,19 +130,20 @@ pub struct LocalhostHost {
 
 #[async_trait]
 impl Host for LocalhostHost {
+    fn request_port(&mut self, _bind_type: &BindType) {}
     fn collect_resources(&self, _resource_batch: &mut ResourceBatch) {}
 
     async fn provision(&mut self, _resource_result: &Arc<ResourceResult>) -> Arc<dyn LaunchedHost> {
         Arc::new(LaunchedLocalhost {})
     }
 
-    fn find_bind_type(&self, connection_from: &dyn Host) -> BindType {
+    fn get_bind_type(&self, connection_from: &dyn Host) -> BindType {
         if connection_from.can_connect_to(ConnectionType::UnixSocket(self.id)) {
             BindType::UnixSocket
         } else if connection_from
             .can_connect_to(ConnectionType::InternalTcpPort(format!("{}", self.id)))
         {
-            BindType::TcpPort("127.0.0.1".to_string())
+            BindType::InternalTcpPort
         } else {
             todo!()
         }

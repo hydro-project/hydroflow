@@ -5,12 +5,14 @@ async def main():
     machine1 = deployment.GCPComputeEngineHost(
         project="autocompartmentalization",
         machine_type="e2-micro",
+        image="debian-cloud/debian-11",
         region="us-west1-a"
     )
 
     machine2 = deployment.GCPComputeEngineHost(
         project="autocompartmentalization",
         machine_type="e2-micro",
+        image="debian-cloud/debian-11",
         region="us-west1-a"
     )
 

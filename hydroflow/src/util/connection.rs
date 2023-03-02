@@ -14,7 +14,7 @@ use super::tcp_lines;
 use super::unix_lines;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub enum BindType {
+pub enum BindConfig {
     UnixSocket,
     TcpPort(
         /// The host the port should be bound on.
@@ -22,10 +22,10 @@ pub enum BindType {
     ),
 }
 
-impl BindType {
+impl BindConfig {
     pub async fn bind(self) -> BoundConnection {
         match self {
-            BindType::UnixSocket => {
+            BindConfig::UnixSocket => {
                 #[cfg(unix)]
                 {
                     let dir = tempfile::tempdir().unwrap();
@@ -38,7 +38,7 @@ impl BindType {
                     panic!("Unix sockets are not supported on this platform")
                 }
             }
-            BindType::TcpPort(host) => {
+            BindConfig::TcpPort(host) => {
                 let listener = TcpListener::bind((host, 0)).await.unwrap();
                 BoundConnection::TcpPort(listener)
             }

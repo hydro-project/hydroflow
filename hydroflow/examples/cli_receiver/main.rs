@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use hydroflow::{
     hydroflow_syntax,
-    util::connection::{BindType, ConnectionPipe},
+    util::connection::{BindConfig, ConnectionPipe},
 };
 
 #[tokio::main]
@@ -11,11 +11,11 @@ async fn main() {
     std::io::stdin().read_line(&mut input).unwrap();
     let trimmed = input.trim();
 
-    let mut bind_types = serde_json::from_str::<HashMap<String, BindType>>(trimmed).unwrap();
+    let mut bind_config = serde_json::from_str::<HashMap<String, BindConfig>>(trimmed).unwrap();
 
     // bind to sockets
     let mut bind_results: HashMap<String, ConnectionPipe> = HashMap::new();
-    let bar_bind = bind_types.remove("bar").unwrap().bind().await;
+    let bar_bind = bind_config.remove("bar").unwrap().bind().await;
     bind_results.insert("bar".to_string(), bar_bind.connection_pipe());
 
     let bind_serialized = serde_json::to_string(&bind_results).unwrap();

@@ -127,7 +127,7 @@ impl Drop for TerraformResult {
             .expect("Failed to destroy terraform deployment")
             .success()
         {
-            panic!("Failed to destroy terraform deployment");
+            eprintln!("WARNING: failed to destroy terraform deployment");
         }
     }
 }
