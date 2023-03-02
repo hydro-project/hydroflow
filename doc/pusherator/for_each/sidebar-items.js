@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["ForEach",""]]};
+window.SIDEBAR_ITEMS = {"struct":["ForEach"]};

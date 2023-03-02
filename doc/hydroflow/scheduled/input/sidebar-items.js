@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["Buffer",""],["Input",""]],"trait":[["Give",""]]};
+window.SIDEBAR_ITEMS = {"struct":["Buffer","Input"],"trait":["Give"]};

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":[["scc_kosaraju",""],["topo_sort",""]]};
+window.SIDEBAR_ITEMS = {"fn":["scc_kosaraju","topo_sort"]};

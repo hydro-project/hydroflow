@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["HydroflowCrate",""]]};
+window.SIDEBAR_ITEMS = {"opaque":[""],"struct":["HydroflowCrate"]};

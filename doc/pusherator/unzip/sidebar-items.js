@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["Unzip",""],["UnzipBuild",""]]};
+window.SIDEBAR_ITEMS = {"struct":["Unzip","UnzipBuild"]};

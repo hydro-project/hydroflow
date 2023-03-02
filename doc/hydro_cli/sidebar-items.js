@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":[["Commands",""]],"fn":[["async_wrapper_module",""],["deploy",""],["main",""]],"mod":[["core",""],["python_interface",""]],"struct":[["Cli",""],["PyErrWithTraceback",""]]};
+window.SIDEBAR_ITEMS = {"enum":["Commands"],"fn":["async_wrapper_module","deploy","main"],"mod":["core","python_interface"],"struct":["Cli","PyErrWithTraceback"]};

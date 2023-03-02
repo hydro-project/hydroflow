@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["Deployment",""]]};
+window.SIDEBAR_ITEMS = {"opaque":[""],"struct":["Deployment"]};

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["PartitionedGraph",""]]};
+window.SIDEBAR_ITEMS = {"struct":["PartitionedGraph"]};

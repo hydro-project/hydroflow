@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":[["diagnostic",""],["graph","Graph representation stages for Hydroflow graphs."],["parse",""],["pretty_span",""],["union_find",""]]};
+window.SIDEBAR_ITEMS = {"mod":["diagnostic","graph","parse","pretty_span","union_find"]};

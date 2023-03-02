@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["ClearDefault",""]],"trait":[["Clear","A trait for abstracting over the `.clear()` method available in many collection types."]]};
+window.SIDEBAR_ITEMS = {"struct":["ClearDefault"],"trait":["Clear"]};

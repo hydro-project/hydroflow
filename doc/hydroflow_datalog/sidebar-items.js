@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"macro":[["datalog",""]]};
+window.SIDEBAR_ITEMS = {"macro":["datalog"]};

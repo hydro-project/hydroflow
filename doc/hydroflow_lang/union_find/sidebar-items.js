@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["UnionFind",""]]};
+window.SIDEBAR_ITEMS = {"struct":["UnionFind"]};

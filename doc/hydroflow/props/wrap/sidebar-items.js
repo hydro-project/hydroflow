@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"trait":[["PullSpec",""],["PushSpec",""]]};
+window.SIDEBAR_ITEMS = {"trait":["PullSpec","PushSpec"]};

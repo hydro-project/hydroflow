@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["Pivot",""],["PivotBuild",""]]};
+window.SIDEBAR_ITEMS = {"struct":["Pivot","PivotBuild"]};

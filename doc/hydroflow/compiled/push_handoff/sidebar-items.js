@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["PushHandoff",""]]};
+window.SIDEBAR_ITEMS = {"struct":["PushHandoff"]};

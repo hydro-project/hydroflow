@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":[["RECV","An uninstantiable type used to tag port [`Polarity`] as receive."],["SEND","An uninstantiable type used to tag port [`Polarity`] as send."]],"struct":[["Port",""],["PortCtx",""]],"trait":[["Polarity","An empty trait used to denote [`Polarity`]: either send or receive."]],"type":[["RecvCtx",""],["RecvPort",""],["SendCtx",""],["SendPort",""]]};
+window.SIDEBAR_ITEMS = {"enum":["RECV","SEND"],"struct":["Port","PortCtx"],"trait":["Polarity"],"type":["RecvCtx","RecvPort","SendCtx","SendPort"]};

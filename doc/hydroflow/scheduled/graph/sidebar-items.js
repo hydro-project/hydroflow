@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["HandoffData","A handoff and its input and output [SubgraphId]s."],["Hydroflow","A Hydroflow graph. Owns, schedules, and runs the compiled subgraphs."]]};
+window.SIDEBAR_ITEMS = {"struct":["HandoffData","Hydroflow"]};

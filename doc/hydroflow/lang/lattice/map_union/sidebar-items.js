@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["MapUnion",""],["MapUnionRepr",""]],"trait":[["MapTag",""]]};
+window.SIDEBAR_ITEMS = {"struct":["MapUnion","MapUnionRepr"],"trait":["MapTag"]};

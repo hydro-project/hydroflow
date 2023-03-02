@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"attr":[["operator_docgen",""]]};
+window.SIDEBAR_ITEMS = {"attr":["operator_docgen"]};
