@@ -4,26 +4,30 @@ assertion_line: 546
 expression: graph.surface_syntax_string()
 ---
 1v1 = merge ();
-2v1 = tee ();
-3v1 = merge ();
-4v1 = tee ();
-5v1 = merge ();
+2v1 = unique :: < 'tick > ();
+3v1 = tee ();
+4v1 = merge ();
+5v1 = unique :: < 'tick > ();
 6v1 = tee ();
 7v1 = merge ();
-8v1 = tee ();
-9v1 = source_stream (ints_1);
-10v1 = source_stream (ints_2);
-11v1 = source_stream (ints_3);
-12v1 = for_each (| v | result . send (v) . unwrap ());
-13v1 = join :: < 'tick > ();
-14v1 = map (| kv : ((_ ,) , ((_ , _ ,) , (_ , _ ,))) | (kv . 1 . 0 . 0 , kv . 1 . 0 . 1 , kv . 1 . 1 . 1 ,));
-15v1 = map (| v : (_ , _ ,) | ((v . 1 ,) , v));
-16v1 = map (| v : (_ , _ ,) | ((v . 0 ,) , v));
-17v1 = anti_join ();
-18v1 = map (| kv : ((_ ,) , (_ , _ , _ ,)) | kv . 1);
-19v1 = map (| v : (_ , _ , _ ,) | ((v . 1 ,) , v));
-20v1 = map (| v : (_ ,) | (v . 0 ,));
-21v1 = map (| row : (_ , _ , _ ,) | (row . 0 , row . 2 ,));
+8v1 = unique :: < 'tick > ();
+9v1 = tee ();
+10v1 = merge ();
+11v1 = unique :: < 'tick > ();
+12v1 = tee ();
+13v1 = source_stream (ints_1);
+14v1 = source_stream (ints_2);
+15v1 = source_stream (ints_3);
+16v1 = for_each (| v | result . send (v) . unwrap ());
+17v1 = join :: < 'tick > ();
+18v1 = map (| kv : ((_ ,) , ((_ , _ ,) , (_ , _ ,))) | (kv . 1 . 0 . 0 , kv . 1 . 0 . 1 , kv . 1 . 1 . 1 ,));
+19v1 = map (| v : (_ , _ ,) | ((v . 1 ,) , v));
+20v1 = map (| v : (_ , _ ,) | ((v . 0 ,) , v));
+21v1 = anti_join ();
+22v1 = map (| kv : ((_ ,) , (_ , _ , _ ,)) | kv . 1);
+23v1 = map (| v : (_ , _ , _ ,) | ((v . 1 ,) , v));
+24v1 = map (| v : (_ ,) | (v . 0 ,));
+25v1 = map (| row : (_ , _ , _ ,) | (row . 0 , row . 2 ,));
 
 1v1 -> 2v1;
 3v1 -> 4v1;

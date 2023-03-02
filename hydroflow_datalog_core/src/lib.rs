@@ -50,7 +50,8 @@ pub fn gen_hydroflow_graph(
         if !created_rules.contains(&target_ident) {
             created_rules.insert(target_ident.clone());
             let name = syn::Ident::new(&target_ident.name, Span::call_site());
-            flat_graph_builder.add_statement(parse_quote!(#name = merge() -> unique::<'tick>() -> tee()));
+            flat_graph_builder
+                .add_statement(parse_quote!(#name = merge() -> unique::<'tick>() -> tee()));
         }
     }
 

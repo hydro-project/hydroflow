@@ -20,6 +20,7 @@ pub mod partition;
 pub mod pivot;
 pub mod switch;
 pub mod tee;
+pub mod unique;
 pub mod unzip;
 
 use std::marker::PhantomData;

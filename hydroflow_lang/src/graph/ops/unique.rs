@@ -1,8 +1,8 @@
 use crate::graph::{OpInstGenerics, OperatorInstance};
 
 use super::{
-    DelayType, FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput,
-    Persistence, WriteContextArgs, RANGE_0, RANGE_1,
+    FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput, Persistence,
+    WriteContextArgs, RANGE_0, RANGE_1,
 };
 
 use quote::quote_spanned;
@@ -62,13 +62,15 @@ pub const UNIQUE: OperatorConstraints = OperatorConstraints {
         monotonic: FlowPropertyVal::Preserve,
         inconsistency_tainted: false,
     },
-    input_delaytype_fn: |_| Some(DelayType::Stratum),
+    input_delaytype_fn: |_| None,
     write_fn: |wc @ &WriteContextArgs {
+                   root,
                    op_span,
                    context,
                    hydroflow,
                    ident,
                    inputs,
+                   outputs,
                    is_pull,
                    op_inst:
                        OperatorInstance {
@@ -81,8 +83,6 @@ pub const UNIQUE: OperatorConstraints = OperatorConstraints {
                    ..
                },
                _| {
-        assert!(is_pull);
-
         let persistence = match persistence_args[..] {
             [] => Persistence::Static,
             [a] => a,
@@ -90,15 +90,39 @@ pub const UNIQUE: OperatorConstraints = OperatorConstraints {
         };
 
         let input = &inputs[0];
+        let output = &outputs[0];
+
         match persistence {
             Persistence::Tick => {
-                let write_iterator = quote_spanned! {op_span=>
-                    let #ident = #input.fold(
-                        ::std::collections::HashSet::new(),
-                        |mut prev, nxt| {prev.insert(nxt); prev}
-                    ).into_iter();
+                let uniquedata_ident = wc.make_ident("uniquedata");
+                let write_prologue = quote_spanned! {op_span=>
+                    let #uniquedata_ident = #hydroflow.add_state(std::cell::RefCell::new(
+                        #root::lang::monotonic_map::MonotonicMap::<_, std::collections::HashSet<_>>::default(),
+                    ));
                 };
+
+                let write_iterator = if is_pull {
+                    quote_spanned! {op_span=>
+                        let #ident = {
+                            let mut borrow = #context.state_ref(#uniquedata_ident).borrow_mut();
+                            let set = borrow.try_insert_with((#context.current_tick(), #context.current_stratum()), || ::std::collections::HashSet::new());
+                            #input.filter(move |x| set.insert(::std::clone::Clone::clone(x)))
+                                .collect::<::std::vec::Vec<_>>()
+                                .into_iter()
+                        };
+                    }
+                } else {
+                    quote_spanned! {op_span=>
+                        let #ident = {
+                            let mut borrow = #context.state_ref(#uniquedata_ident).borrow_mut();
+                            let set = borrow.try_insert_with((#context.current_tick(), #context.current_stratum()), || ::std::collections::HashSet::new());
+                            #root::pusherator::unique::Unique::new(set, #output)
+                        };
+                    }
+                };
+
                 Ok(OperatorWriteOutput {
+                    write_prologue,
                     write_iterator,
                     ..Default::default()
                 })
@@ -109,14 +133,23 @@ pub const UNIQUE: OperatorConstraints = OperatorConstraints {
                 let write_prologue = quote_spanned! {op_span=>
                     let #uniquedata_ident = #hydroflow.add_state(::std::cell::RefCell::new(::std::collections::HashSet::new()));
                 };
-                let write_iterator = quote_spanned! {op_span=>
-                    // TODO(mingwei): Better data structure for this?
-                    let #ident = {
-                        let mut set = #context.state_ref(#uniquedata_ident).borrow_mut();
-                        #input.filter(|x| set.insert(::std::clone::Clone::clone(x)))
-                            .collect::<::std::vec::Vec<_>>()
-                            .into_iter()
-                    };
+                let write_iterator = if is_pull {
+                    quote_spanned! {op_span=>
+                        // TODO(mingwei): Better data structure for this?
+                        let #ident = {
+                            let mut set = #context.state_ref(#uniquedata_ident).borrow_mut();
+                            #input.filter(|x| set.insert(::std::clone::Clone::clone(x)))
+                                .collect::<::std::vec::Vec<_>>()
+                                .into_iter()
+                        };
+                    }
+                } else {
+                    quote_spanned! {op_span=>
+                        let #ident = {
+                            let set = #context.state_ref(#uniquedata_ident).borrow_mut();
+                            #root::pusherator::unique::Unique::new(set, #output)
+                        };
+                    }
                 };
 
                 Ok(OperatorWriteOutput {
