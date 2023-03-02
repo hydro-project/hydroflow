@@ -1,6 +1,5 @@
 ---
 source: hydroflow_datalog_core/src/lib.rs
-assertion_line: 472
 expression: graph.surface_syntax_string()
 ---
 1v1 = merge ();
@@ -22,19 +21,22 @@ expression: graph.surface_syntax_string()
 17v1 = map (| v : (_ , _ ,) | ((v . 0 ,) , v));
 18v1 = map (| row : (_ , _ ,) | (row . 1 ,));
 
+2v1 -> 3v1;
 1v1 -> 2v1;
-3v1 -> 4v1;
 5v1 -> 6v1;
-7v1 -> 1v1;
-8v1 -> 3v1;
-6v1 -> 9v1;
-10v1 -> 5v1;
-4v1 -> 10v1;
-11v1 -> 12v1;
-13v1 -> 11v1;
+4v1 -> 5v1;
+8v1 -> 9v1;
+7v1 -> 8v1;
+10v1 -> 1v1;
+11v1 -> 4v1;
+9v1 -> 12v1;
+13v1 -> 7v1;
 6v1 -> 13v1;
-14v1 -> 11v1;
-2v1 -> 14v1;
-15v1 -> 5v1;
-12v1 -> 15v1;
+14v1 -> 15v1;
+16v1 -> 14v1;
+9v1 -> 16v1;
+17v1 -> 14v1;
+3v1 -> 17v1;
+18v1 -> 7v1;
+15v1 -> 18v1;
 
