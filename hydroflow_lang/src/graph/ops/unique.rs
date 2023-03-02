@@ -92,72 +92,57 @@ pub const UNIQUE: OperatorConstraints = OperatorConstraints {
         let input = &inputs[0];
         let output = &outputs[0];
 
-        match persistence {
+        let uniquedata_ident = wc.make_ident("uniquedata");
+
+        let (write_prologue, get_set) = match persistence {
             Persistence::Tick => {
-                let uniquedata_ident = wc.make_ident("uniquedata");
                 let write_prologue = quote_spanned! {op_span=>
-                    let #uniquedata_ident = #hydroflow.add_state(std::cell::RefCell::new(
-                        #root::lang::monotonic_map::MonotonicMap::<_, std::collections::HashSet<_>>::default(),
+                    let #uniquedata_ident = #hydroflow.add_state(::std::cell::RefCell::new(
+                        #root::lang::monotonic_map::MonotonicMap::<_, ::std::collections::HashSet<_>>::default(),
                     ));
                 };
-
-                let write_iterator = if is_pull {
-                    quote_spanned! {op_span=>
-                        let #ident = {
-                            let mut borrow = #context.state_ref(#uniquedata_ident).borrow_mut();
-                            let set = borrow.try_insert_with((#context.current_tick(), #context.current_stratum()), || ::std::collections::HashSet::new());
-                            #input.filter(move |x| set.insert(::std::clone::Clone::clone(x)))
-                                .collect::<::std::vec::Vec<_>>()
-                                .into_iter()
-                        };
-                    }
-                } else {
-                    quote_spanned! {op_span=>
-                        let #ident = {
-                            let mut borrow = #context.state_ref(#uniquedata_ident).borrow_mut();
-                            let set = borrow.try_insert_with((#context.current_tick(), #context.current_stratum()), || ::std::collections::HashSet::new());
-                            #root::pusherator::unique::Unique::new(set, #output)
-                        };
-                    }
+                let get_set = quote_spanned! {op_span=>
+                    let mut borrow = #context.state_ref(#uniquedata_ident).borrow_mut();
+                    let set = borrow.try_insert_with((#context.current_tick(), #context.current_stratum()), ::std::collections::HashSet::new);
                 };
-
-                Ok(OperatorWriteOutput {
-                    write_prologue,
-                    write_iterator,
-                    ..Default::default()
-                })
+                (write_prologue, get_set)
             }
             Persistence::Static => {
-                let uniquedata_ident = wc.make_ident("uniquedata");
-
                 let write_prologue = quote_spanned! {op_span=>
                     let #uniquedata_ident = #hydroflow.add_state(::std::cell::RefCell::new(::std::collections::HashSet::new()));
                 };
-                let write_iterator = if is_pull {
-                    quote_spanned! {op_span=>
-                        // TODO(mingwei): Better data structure for this?
-                        let #ident = {
-                            let mut set = #context.state_ref(#uniquedata_ident).borrow_mut();
-                            #input.filter(|x| set.insert(::std::clone::Clone::clone(x)))
-                                .collect::<::std::vec::Vec<_>>()
-                                .into_iter()
-                        };
-                    }
-                } else {
-                    quote_spanned! {op_span=>
-                        let #ident = {
-                            let set = #context.state_ref(#uniquedata_ident).borrow_mut();
-                            #root::pusherator::unique::Unique::new(set, #output)
-                        };
-                    }
+                let get_set = quote_spanned! {op_span=>
+                    let mut set = #context.state_ref(#uniquedata_ident).borrow_mut();
                 };
-
-                Ok(OperatorWriteOutput {
-                    write_prologue,
-                    write_iterator,
-                    ..Default::default()
-                })
+                (write_prologue, get_set)
             }
-        }
+        };
+
+        let filter_fn = quote_spanned! {op_span=>
+            |item| {
+                #get_set
+                if !set.contains(item) {
+                    set.insert(::std::clone::Clone::clone(item));
+                    true
+                } else {
+                    false
+                }
+            }
+        };
+        let write_iterator = if is_pull {
+            quote_spanned! {op_span=>
+                let #ident = #input.filter(#filter_fn);
+            }
+        } else {
+            quote_spanned! {op_span=>
+                let #ident = #root::pusherator::filter::Filter::new(#filter_fn, #output);
+            }
+        };
+
+        Ok(OperatorWriteOutput {
+            write_prologue,
+            write_iterator,
+            ..Default::default()
+        })
     },
 };

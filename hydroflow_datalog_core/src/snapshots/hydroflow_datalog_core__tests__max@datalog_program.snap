@@ -16,10 +16,10 @@ fn main() {
                 >("handoff GraphNodeId(12v1)");
             let sg_1v1_node_5v1_uniquedata = df
                 .add_state(
-                    std::cell::RefCell::new(
+                    ::std::cell::RefCell::new(
                         hydroflow::lang::monotonic_map::MonotonicMap::<
                             _,
-                            std::collections::HashSet<_>,
+                            ::std::collections::HashSet<_>,
                         >::default(),
                     ),
                 );
@@ -99,20 +99,23 @@ fn main() {
                         }
                         check_op_4v1(op_4v1)
                     };
-                    let op_5v1 = {
-                        let mut borrow = context
-                            .state_ref(sg_1v1_node_5v1_uniquedata)
-                            .borrow_mut();
-                        let set = borrow
-                            .try_insert_with(
-                                (context.current_tick(), context.current_stratum()),
-                                || ::std::collections::HashSet::new(),
-                            );
-                        op_4v1
-                            .filter(move |x| set.insert(::std::clone::Clone::clone(x)))
-                            .collect::<::std::vec::Vec<_>>()
-                            .into_iter()
-                    };
+                    let op_5v1 = op_4v1
+                        .filter(|item| {
+                            let mut borrow = context
+                                .state_ref(sg_1v1_node_5v1_uniquedata)
+                                .borrow_mut();
+                            let set = borrow
+                                .try_insert_with(
+                                    (context.current_tick(), context.current_stratum()),
+                                    ::std::collections::HashSet::new,
+                                );
+                            if !set.contains(item) {
+                                set.insert(::std::clone::Clone::clone(item));
+                                true
+                            } else {
+                                false
+                            }
+                        });
                     let op_5v1 = {
                         #[inline(always)]
                         pub fn check_op_5v1<
@@ -163,10 +166,10 @@ fn main() {
             let mut sg_2v1_node_7v1_stream = Box::pin(ints);
             let sg_2v1_node_2v1_uniquedata = df
                 .add_state(
-                    std::cell::RefCell::new(
+                    ::std::cell::RefCell::new(
                         hydroflow::lang::monotonic_map::MonotonicMap::<
                             _,
-                            std::collections::HashSet<_>,
+                            ::std::collections::HashSet<_>,
                         >::default(),
                     ),
                 );
@@ -222,20 +225,23 @@ fn main() {
                         }
                         check_op_1v1(op_1v1)
                     };
-                    let op_2v1 = {
-                        let mut borrow = context
-                            .state_ref(sg_2v1_node_2v1_uniquedata)
-                            .borrow_mut();
-                        let set = borrow
-                            .try_insert_with(
-                                (context.current_tick(), context.current_stratum()),
-                                || ::std::collections::HashSet::new(),
-                            );
-                        op_1v1
-                            .filter(move |x| set.insert(::std::clone::Clone::clone(x)))
-                            .collect::<::std::vec::Vec<_>>()
-                            .into_iter()
-                    };
+                    let op_2v1 = op_1v1
+                        .filter(|item| {
+                            let mut borrow = context
+                                .state_ref(sg_2v1_node_2v1_uniquedata)
+                                .borrow_mut();
+                            let set = borrow
+                                .try_insert_with(
+                                    (context.current_tick(), context.current_stratum()),
+                                    ::std::collections::HashSet::new,
+                                );
+                            if !set.contains(item) {
+                                set.insert(::std::clone::Clone::clone(item));
+                                true
+                            } else {
+                                false
+                            }
+                        });
                     let op_2v1 = {
                         #[inline(always)]
                         pub fn check_op_2v1<

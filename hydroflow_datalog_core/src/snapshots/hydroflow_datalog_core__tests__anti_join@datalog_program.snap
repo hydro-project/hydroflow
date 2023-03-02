@@ -26,19 +26,19 @@ fn main() {
                 >("handoff GraphNodeId(28v1)");
             let sg_1v1_node_2v1_uniquedata = df
                 .add_state(
-                    std::cell::RefCell::new(
+                    ::std::cell::RefCell::new(
                         hydroflow::lang::monotonic_map::MonotonicMap::<
                             _,
-                            std::collections::HashSet<_>,
+                            ::std::collections::HashSet<_>,
                         >::default(),
                     ),
                 );
             let sg_1v1_node_5v1_uniquedata = df
                 .add_state(
-                    std::cell::RefCell::new(
+                    ::std::cell::RefCell::new(
                         hydroflow::lang::monotonic_map::MonotonicMap::<
                             _,
-                            std::collections::HashSet<_>,
+                            ::std::collections::HashSet<_>,
                         >::default(),
                     ),
                 );
@@ -73,10 +73,10 @@ fn main() {
                 );
             let sg_1v1_node_11v1_uniquedata = df
                 .add_state(
-                    std::cell::RefCell::new(
+                    ::std::cell::RefCell::new(
                         hydroflow::lang::monotonic_map::MonotonicMap::<
                             _,
-                            std::collections::HashSet<_>,
+                            ::std::collections::HashSet<_>,
                         >::default(),
                     ),
                 );
@@ -115,20 +115,23 @@ fn main() {
                         }
                         check_op_1v1(op_1v1)
                     };
-                    let op_2v1 = {
-                        let mut borrow = context
-                            .state_ref(sg_1v1_node_2v1_uniquedata)
-                            .borrow_mut();
-                        let set = borrow
-                            .try_insert_with(
-                                (context.current_tick(), context.current_stratum()),
-                                || ::std::collections::HashSet::new(),
-                            );
-                        op_1v1
-                            .filter(move |x| set.insert(::std::clone::Clone::clone(x)))
-                            .collect::<::std::vec::Vec<_>>()
-                            .into_iter()
-                    };
+                    let op_2v1 = op_1v1
+                        .filter(|item| {
+                            let mut borrow = context
+                                .state_ref(sg_1v1_node_2v1_uniquedata)
+                                .borrow_mut();
+                            let set = borrow
+                                .try_insert_with(
+                                    (context.current_tick(), context.current_stratum()),
+                                    ::std::collections::HashSet::new,
+                                );
+                            if !set.contains(item) {
+                                set.insert(::std::clone::Clone::clone(item));
+                                true
+                            } else {
+                                false
+                            }
+                        });
                     let op_2v1 = {
                         #[inline(always)]
                         pub fn check_op_2v1<
@@ -172,20 +175,23 @@ fn main() {
                         }
                         check_op_4v1(op_4v1)
                     };
-                    let op_5v1 = {
-                        let mut borrow = context
-                            .state_ref(sg_1v1_node_5v1_uniquedata)
-                            .borrow_mut();
-                        let set = borrow
-                            .try_insert_with(
-                                (context.current_tick(), context.current_stratum()),
-                                || ::std::collections::HashSet::new(),
-                            );
-                        op_4v1
-                            .filter(move |x| set.insert(::std::clone::Clone::clone(x)))
-                            .collect::<::std::vec::Vec<_>>()
-                            .into_iter()
-                    };
+                    let op_5v1 = op_4v1
+                        .filter(|item| {
+                            let mut borrow = context
+                                .state_ref(sg_1v1_node_5v1_uniquedata)
+                                .borrow_mut();
+                            let set = borrow
+                                .try_insert_with(
+                                    (context.current_tick(), context.current_stratum()),
+                                    ::std::collections::HashSet::new,
+                                );
+                            if !set.contains(item) {
+                                set.insert(::std::clone::Clone::clone(item));
+                                true
+                            } else {
+                                false
+                            }
+                        });
                     let op_5v1 = {
                         #[inline(always)]
                         pub fn check_op_5v1<
@@ -378,20 +384,23 @@ fn main() {
                         }
                         check_op_10v1(op_10v1)
                     };
-                    let op_11v1 = {
-                        let mut borrow = context
-                            .state_ref(sg_1v1_node_11v1_uniquedata)
-                            .borrow_mut();
-                        let set = borrow
-                            .try_insert_with(
-                                (context.current_tick(), context.current_stratum()),
-                                || ::std::collections::HashSet::new(),
-                            );
-                        op_10v1
-                            .filter(move |x| set.insert(::std::clone::Clone::clone(x)))
-                            .collect::<::std::vec::Vec<_>>()
-                            .into_iter()
-                    };
+                    let op_11v1 = op_10v1
+                        .filter(|item| {
+                            let mut borrow = context
+                                .state_ref(sg_1v1_node_11v1_uniquedata)
+                                .borrow_mut();
+                            let set = borrow
+                                .try_insert_with(
+                                    (context.current_tick(), context.current_stratum()),
+                                    ::std::collections::HashSet::new,
+                                );
+                            if !set.contains(item) {
+                                set.insert(::std::clone::Clone::clone(item));
+                                true
+                            } else {
+                                false
+                            }
+                        });
                     let op_11v1 = {
                         #[inline(always)]
                         pub fn check_op_11v1<
@@ -442,10 +451,10 @@ fn main() {
             let mut sg_2v1_node_15v1_stream = Box::pin(ints_3);
             let sg_2v1_node_8v1_uniquedata = df
                 .add_state(
-                    std::cell::RefCell::new(
+                    ::std::cell::RefCell::new(
                         hydroflow::lang::monotonic_map::MonotonicMap::<
                             _,
-                            std::collections::HashSet<_>,
+                            ::std::collections::HashSet<_>,
                         >::default(),
                     ),
                 );
@@ -501,20 +510,23 @@ fn main() {
                         }
                         check_op_7v1(op_7v1)
                     };
-                    let op_8v1 = {
-                        let mut borrow = context
-                            .state_ref(sg_2v1_node_8v1_uniquedata)
-                            .borrow_mut();
-                        let set = borrow
-                            .try_insert_with(
-                                (context.current_tick(), context.current_stratum()),
-                                || ::std::collections::HashSet::new(),
-                            );
-                        op_7v1
-                            .filter(move |x| set.insert(::std::clone::Clone::clone(x)))
-                            .collect::<::std::vec::Vec<_>>()
-                            .into_iter()
-                    };
+                    let op_8v1 = op_7v1
+                        .filter(|item| {
+                            let mut borrow = context
+                                .state_ref(sg_2v1_node_8v1_uniquedata)
+                                .borrow_mut();
+                            let set = borrow
+                                .try_insert_with(
+                                    (context.current_tick(), context.current_stratum()),
+                                    ::std::collections::HashSet::new,
+                                );
+                            if !set.contains(item) {
+                                set.insert(::std::clone::Clone::clone(item));
+                                true
+                            } else {
+                                false
+                            }
+                        });
                     let op_8v1 = {
                         #[inline(always)]
                         pub fn check_op_8v1<
