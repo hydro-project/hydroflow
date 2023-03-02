@@ -1512,7 +1512,7 @@
         }
         <span class="macro">writeln!</span>(write)<span class="question-mark">?</span>;
         <span class="kw">for </span>(_e, (src_key, dst_key)) <span class="kw">in </span><span class="self">self</span>.graph.edges() {
-            <span class="macro">writeln!</span>(write, <span class="string">&quot;({:?}--&gt;{:?});&quot;</span>, src_key.data(), dst_key.data())<span class="question-mark">?</span>;
+            <span class="macro">writeln!</span>(write, <span class="string">&quot;{:?} -&gt; {:?};&quot;</span>, src_key.data(), dst_key.data())<span class="question-mark">?</span>;
         }
         <span class="prelude-val">Ok</span>(())
     }
