@@ -1,23 +1,26 @@
 ---
 source: hydroflow_datalog_core/src/lib.rs
-assertion_line: 584
 expression: graph.surface_syntax_string()
 ---
 1v1 = merge ();
-2v1 = tee ();
-3v1 = merge ();
-4v1 = tee ();
-5v1 = source_stream (ints);
-6v1 = for_each (| v | result . send (v) . unwrap ());
-7v1 = source_stream (async_receive_result);
-8v1 = map (| row : (_ , _ ,) | (row . 0 , row . 1 ,));
-9v1 = for_each (| v : (_ , _ ,) | async_send_result (v . 1 , (v . 0 ,)) . unwrap ());
+2v1 = unique :: < 'tick > ();
+3v1 = tee ();
+4v1 = merge ();
+5v1 = unique :: < 'tick > ();
+6v1 = tee ();
+7v1 = source_stream (ints);
+8v1 = for_each (| v | result . send (v) . unwrap ());
+9v1 = source_stream (async_receive_result);
+10v1 = map (| row : (_ , _ ,) | (row . 0 , row . 1 ,));
+11v1 = for_each (| v : (_ , _ ,) | async_send_result (v . 1 , (v . 0 ,)) . unwrap ());
 
+2v1 -> 3v1;
 1v1 -> 2v1;
-3v1 -> 4v1;
-5v1 -> 1v1;
-4v1 -> 6v1;
-7v1 -> 3v1;
-8v1 -> 9v1;
-2v1 -> 8v1;
+5v1 -> 6v1;
+4v1 -> 5v1;
+7v1 -> 1v1;
+6v1 -> 8v1;
+9v1 -> 4v1;
+10v1 -> 11v1;
+3v1 -> 10v1;
 

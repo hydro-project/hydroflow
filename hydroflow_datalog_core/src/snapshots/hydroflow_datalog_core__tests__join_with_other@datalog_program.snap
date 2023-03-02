@@ -7,11 +7,29 @@ fn main() {
         {
             use hydroflow::{var_expr, var_args};
             let mut df = hydroflow::scheduled::graph::Hydroflow::new_with_graph(
-                "{\"nodes\":[{\"value\":null,\"version\":0},{\"value\":\"merge ()\",\"version\":1},{\"value\":\"tee ()\",\"version\":1},{\"value\":\"merge ()\",\"version\":1},{\"value\":\"tee ()\",\"version\":1},{\"value\":\"merge ()\",\"version\":1},{\"value\":\"tee ()\",\"version\":1},{\"value\":\"source_stream (in1)\",\"version\":1},{\"value\":\"source_stream (in2)\",\"version\":1},{\"value\":\"for_each (| v | out . send (v) . unwrap ())\",\"version\":1},{\"value\":\"join :: < 'tick > ()\",\"version\":1},{\"value\":\"map (| kv : ((_ , _ ,) , ((_ , _ ,) , (_ , _ ,))) | (kv . 1 . 0 . 0 , kv . 1 . 0 . 1 ,))\",\"version\":1},{\"value\":\"map (| v : (_ , _ ,) | ((v . 0 , v . 1 ,) , v))\",\"version\":1},{\"value\":\"map (| v : (_ , _ ,) | ((v . 1 , v . 0 ,) , v))\",\"version\":1},{\"value\":\"map (| row : (_ , _ ,) | (row . 0 , row . 1 ,))\",\"version\":1}],\"node_color_map\":[{\"value\":null,\"version\":0},{\"value\":\"Pull\",\"version\":1},{\"value\":\"Pull\",\"version\":1},{\"value\":\"Pull\",\"version\":1},{\"value\":\"Pull\",\"version\":1},{\"value\":\"Push\",\"version\":1},{\"value\":\"Push\",\"version\":1},{\"value\":\"Pull\",\"version\":1},{\"value\":\"Pull\",\"version\":1},{\"value\":\"Push\",\"version\":1},{\"value\":\"Pull\",\"version\":1},{\"value\":\"Pull\",\"version\":1},{\"value\":\"Pull\",\"version\":1},{\"value\":\"Pull\",\"version\":1},{\"value\":\"Pull\",\"version\":1}],\"edges\":[{\"value\":null,\"version\":0},{\"value\":[{\"src\":{\"idx\":1,\"version\":1},\"dst\":{\"idx\":2,\"version\":1},\"blocking\":false,\"label\":null}],\"version\":1},{\"value\":[{\"src\":{\"idx\":2,\"version\":1},\"dst\":{\"idx\":12,\"version\":1},\"blocking\":false,\"label\":\"0\"}],\"version\":1},{\"value\":[{\"src\":{\"idx\":3,\"version\":1},\"dst\":{\"idx\":4,\"version\":1},\"blocking\":false,\"label\":null}],\"version\":1},{\"value\":[{\"src\":{\"idx\":4,\"version\":1},\"dst\":{\"idx\":13,\"version\":1},\"blocking\":false,\"label\":\"0\"}],\"version\":1},{\"value\":[{\"src\":{\"idx\":5,\"version\":1},\"dst\":{\"idx\":6,\"version\":1},\"blocking\":false,\"label\":null}],\"version\":1},{\"value\":[{\"src\":{\"idx\":6,\"version\":1},\"dst\":{\"idx\":9,\"version\":1},\"blocking\":false,\"label\":\"0\"}],\"version\":1},{\"value\":[{\"src\":{\"idx\":7,\"version\":1},\"dst\":{\"idx\":1,\"version\":1},\"blocking\":false,\"label\":\"0\"}],\"version\":1},{\"value\":[{\"src\":{\"idx\":8,\"version\":1},\"dst\":{\"idx\":3,\"version\":1},\"blocking\":false,\"label\":\"0\"}],\"version\":1},{\"value\":null,\"version\":0},{\"value\":[{\"src\":{\"idx\":10,\"version\":1},\"dst\":{\"idx\":11,\"version\":1},\"blocking\":false,\"label\":null}],\"version\":1},{\"value\":[{\"src\":{\"idx\":11,\"version\":1},\"dst\":{\"idx\":14,\"version\":1},\"blocking\":false,\"label\":null}],\"version\":1},{\"value\":[{\"src\":{\"idx\":12,\"version\":1},\"dst\":{\"idx\":10,\"version\":1},\"blocking\":false,\"label\":\"0\"}],\"version\":1},{\"value\":[{\"src\":{\"idx\":13,\"version\":1},\"dst\":{\"idx\":10,\"version\":1},\"blocking\":false,\"label\":\"1\"}],\"version\":1},{\"value\":[{\"src\":{\"idx\":14,\"version\":1},\"dst\":{\"idx\":5,\"version\":1},\"blocking\":false,\"label\":\"0\"}],\"version\":1}],\"barrier_handoffs\":[{\"value\":null,\"version\":0}],\"subgraph_nodes\":[{\"value\":null,\"version\":0},{\"value\":[{\"idx\":7,\"version\":1},{\"idx\":1,\"version\":1},{\"idx\":2,\"version\":1},{\"idx\":8,\"version\":1},{\"idx\":3,\"version\":1},{\"idx\":4,\"version\":1},{\"idx\":12,\"version\":1},{\"idx\":13,\"version\":1},{\"idx\":10,\"version\":1},{\"idx\":11,\"version\":1},{\"idx\":14,\"version\":1},{\"idx\":5,\"version\":1},{\"idx\":6,\"version\":1},{\"idx\":9,\"version\":1}],\"version\":1}],\"subgraph_stratum\":[{\"value\":null,\"version\":0},{\"value\":0,\"version\":1}],\"subgraph_internal_handoffs\":[{\"value\":null,\"version\":0}],\"varname_nodes\":{\"in1\":[{\"idx\":1,\"version\":1},{\"idx\":2,\"version\":1}],\"in2\":[{\"idx\":3,\"version\":1},{\"idx\":4,\"version\":1}],\"join_0\":[{\"idx\":10,\"version\":1},{\"idx\":11,\"version\":1}],\"out\":[{\"idx\":5,\"version\":1},{\"idx\":6,\"version\":1}]}}\n",
+                "{\"nodes\":[{\"value\":null,\"version\":0},{\"value\":\"merge ()\",\"version\":1},{\"value\":\"unique :: < 'tick > ()\",\"version\":1},{\"value\":\"tee ()\",\"version\":1},{\"value\":\"merge ()\",\"version\":1},{\"value\":\"unique :: < 'tick > ()\",\"version\":1},{\"value\":\"tee ()\",\"version\":1},{\"value\":\"merge ()\",\"version\":1},{\"value\":\"unique :: < 'tick > ()\",\"version\":1},{\"value\":\"tee ()\",\"version\":1},{\"value\":\"source_stream (in1)\",\"version\":1},{\"value\":\"source_stream (in2)\",\"version\":1},{\"value\":\"for_each (| v | out . send (v) . unwrap ())\",\"version\":1},{\"value\":\"join :: < 'tick > ()\",\"version\":1},{\"value\":\"map (| kv : ((_ , _ ,) , ((_ , _ ,) , (_ , _ ,))) | (kv . 1 . 0 . 0 , kv . 1 . 0 . 1 ,))\",\"version\":1},{\"value\":\"map (| v : (_ , _ ,) | ((v . 0 , v . 1 ,) , v))\",\"version\":1},{\"value\":\"map (| v : (_ , _ ,) | ((v . 1 , v . 0 ,) , v))\",\"version\":1},{\"value\":\"map (| row : (_ , _ ,) | (row . 0 , row . 1 ,))\",\"version\":1}],\"node_color_map\":[{\"value\":null,\"version\":0},{\"value\":\"Pull\",\"version\":1},{\"value\":\"Pull\",\"version\":1},{\"value\":\"Pull\",\"version\":1},{\"value\":\"Pull\",\"version\":1},{\"value\":\"Pull\",\"version\":1},{\"value\":\"Pull\",\"version\":1},{\"value\":\"Push\",\"version\":1},{\"value\":\"Push\",\"version\":1},{\"value\":\"Push\",\"version\":1},{\"value\":\"Pull\",\"version\":1},{\"value\":\"Pull\",\"version\":1},{\"value\":\"Push\",\"version\":1},{\"value\":\"Pull\",\"version\":1},{\"value\":\"Pull\",\"version\":1},{\"value\":\"Pull\",\"version\":1},{\"value\":\"Pull\",\"version\":1},{\"value\":\"Pull\",\"version\":1}],\"edges\":[{\"value\":null,\"version\":0},{\"value\":[{\"src\":{\"idx\":1,\"version\":1},\"dst\":{\"idx\":2,\"version\":1},\"blocking\":false,\"label\":null}],\"version\":1},{\"value\":[{\"src\":{\"idx\":2,\"version\":1},\"dst\":{\"idx\":3,\"version\":1},\"blocking\":false,\"label\":null}],\"version\":1},{\"value\":[{\"src\":{\"idx\":3,\"version\":1},\"dst\":{\"idx\":15,\"version\":1},\"blocking\":false,\"label\":\"0\"}],\"version\":1},{\"value\":[{\"src\":{\"idx\":4,\"version\":1},\"dst\":{\"idx\":5,\"version\":1},\"blocking\":false,\"label\":null}],\"version\":1},{\"value\":[{\"src\":{\"idx\":5,\"version\":1},\"dst\":{\"idx\":6,\"version\":1},\"blocking\":false,\"label\":null}],\"version\":1},{\"value\":[{\"src\":{\"idx\":6,\"version\":1},\"dst\":{\"idx\":16,\"version\":1},\"blocking\":false,\"label\":\"0\"}],\"version\":1},{\"value\":[{\"src\":{\"idx\":7,\"version\":1},\"dst\":{\"idx\":8,\"version\":1},\"blocking\":false,\"label\":null}],\"version\":1},{\"value\":[{\"src\":{\"idx\":8,\"version\":1},\"dst\":{\"idx\":9,\"version\":1},\"blocking\":false,\"label\":null}],\"version\":1},{\"value\":[{\"src\":{\"idx\":9,\"version\":1},\"dst\":{\"idx\":12,\"version\":1},\"blocking\":false,\"label\":\"0\"}],\"version\":1},{\"value\":[{\"src\":{\"idx\":10,\"version\":1},\"dst\":{\"idx\":1,\"version\":1},\"blocking\":false,\"label\":\"0\"}],\"version\":1},{\"value\":[{\"src\":{\"idx\":11,\"version\":1},\"dst\":{\"idx\":4,\"version\":1},\"blocking\":false,\"label\":\"0\"}],\"version\":1},{\"value\":null,\"version\":0},{\"value\":[{\"src\":{\"idx\":13,\"version\":1},\"dst\":{\"idx\":14,\"version\":1},\"blocking\":false,\"label\":null}],\"version\":1},{\"value\":[{\"src\":{\"idx\":14,\"version\":1},\"dst\":{\"idx\":17,\"version\":1},\"blocking\":false,\"label\":null}],\"version\":1},{\"value\":[{\"src\":{\"idx\":15,\"version\":1},\"dst\":{\"idx\":13,\"version\":1},\"blocking\":false,\"label\":\"0\"}],\"version\":1},{\"value\":[{\"src\":{\"idx\":16,\"version\":1},\"dst\":{\"idx\":13,\"version\":1},\"blocking\":false,\"label\":\"1\"}],\"version\":1},{\"value\":[{\"src\":{\"idx\":17,\"version\":1},\"dst\":{\"idx\":7,\"version\":1},\"blocking\":false,\"label\":\"0\"}],\"version\":1}],\"barrier_handoffs\":[{\"value\":null,\"version\":0}],\"subgraph_nodes\":[{\"value\":null,\"version\":0},{\"value\":[{\"idx\":10,\"version\":1},{\"idx\":1,\"version\":1},{\"idx\":2,\"version\":1},{\"idx\":3,\"version\":1},{\"idx\":11,\"version\":1},{\"idx\":4,\"version\":1},{\"idx\":5,\"version\":1},{\"idx\":6,\"version\":1},{\"idx\":15,\"version\":1},{\"idx\":16,\"version\":1},{\"idx\":13,\"version\":1},{\"idx\":14,\"version\":1},{\"idx\":17,\"version\":1},{\"idx\":7,\"version\":1},{\"idx\":8,\"version\":1},{\"idx\":9,\"version\":1},{\"idx\":12,\"version\":1}],\"version\":1}],\"subgraph_stratum\":[{\"value\":null,\"version\":0},{\"value\":0,\"version\":1}],\"subgraph_internal_handoffs\":[{\"value\":null,\"version\":0}],\"varname_nodes\":{\"in1\":[{\"idx\":1,\"version\":1},{\"idx\":2,\"version\":1},{\"idx\":3,\"version\":1}],\"in2\":[{\"idx\":4,\"version\":1},{\"idx\":5,\"version\":1},{\"idx\":6,\"version\":1}],\"join_0\":[{\"idx\":13,\"version\":1},{\"idx\":14,\"version\":1}],\"out\":[{\"idx\":7,\"version\":1},{\"idx\":8,\"version\":1},{\"idx\":9,\"version\":1}]}}\n",
             );
-            let mut sg_1v1_node_7v1_stream = Box::pin(in1);
-            let mut sg_1v1_node_8v1_stream = Box::pin(in2);
-            let sg_1v1_node_10v1_joindata_lhs = df
+            let mut sg_1v1_node_10v1_stream = Box::pin(in1);
+            let sg_1v1_node_2v1_uniquedata = df
+                .add_state(
+                    ::std::cell::RefCell::new(
+                        hydroflow::lang::monotonic_map::MonotonicMap::<
+                            _,
+                            ::std::collections::HashSet<_>,
+                        >::default(),
+                    ),
+                );
+            let mut sg_1v1_node_11v1_stream = Box::pin(in2);
+            let sg_1v1_node_5v1_uniquedata = df
+                .add_state(
+                    ::std::cell::RefCell::new(
+                        hydroflow::lang::monotonic_map::MonotonicMap::<
+                            _,
+                            ::std::collections::HashSet<_>,
+                        >::default(),
+                    ),
+                );
+            let sg_1v1_node_13v1_joindata_lhs = df
                 .add_state(
                     std::cell::RefCell::new(
                         hydroflow::lang::monotonic_map::MonotonicMap::new_init(
@@ -21,7 +39,7 @@ fn main() {
                         ),
                     ),
                 );
-            let sg_1v1_node_10v1_joindata_rhs = df
+            let sg_1v1_node_13v1_joindata_rhs = df
                 .add_state(
                     std::cell::RefCell::new(
                         hydroflow::lang::monotonic_map::MonotonicMap::new_init(
@@ -29,6 +47,15 @@ fn main() {
                                 hydroflow::compiled::pull::HalfJoinState::default(),
                             ),
                         ),
+                    ),
+                );
+            let sg_1v1_node_8v1_uniquedata = df
+                .add_state(
+                    ::std::cell::RefCell::new(
+                        hydroflow::lang::monotonic_map::MonotonicMap::<
+                            _,
+                            ::std::collections::HashSet<_>,
+                        >::default(),
                     ),
                 );
             df.add_subgraph_stratified(
@@ -37,24 +64,24 @@ fn main() {
                 var_expr!(),
                 var_expr!(),
                 move |context, var_args!(), var_args!()| {
-                    let op_7v1 = std::iter::from_fn(|| {
+                    let op_10v1 = std::iter::from_fn(|| {
                         match hydroflow::futures::stream::Stream::poll_next(
-                            sg_1v1_node_7v1_stream.as_mut(),
+                            sg_1v1_node_10v1_stream.as_mut(),
                             &mut std::task::Context::from_waker(&context.waker()),
                         ) {
                             std::task::Poll::Ready(maybe) => maybe,
                             std::task::Poll::Pending => None,
                         }
                     });
-                    let op_7v1 = {
+                    let op_10v1 = {
                         #[inline(always)]
-                        pub fn check_op_7v1<
+                        pub fn check_op_10v1<
                             Input: ::std::iter::Iterator<Item = Item>,
                             Item,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
                             input
                         }
-                        check_op_7v1(op_7v1)
+                        check_op_10v1(op_10v1)
                     };
                     let op_1v1 = {
                         #[allow(unused)]
@@ -66,7 +93,7 @@ fn main() {
                         >(a: A, b: B) -> impl ::std::iter::Iterator<Item = Item> {
                             a.chain(b)
                         }
-                        op_7v1
+                        op_10v1
                     };
                     let op_1v1 = {
                         #[inline(always)]
@@ -78,7 +105,23 @@ fn main() {
                         }
                         check_op_1v1(op_1v1)
                     };
-                    let op_2v1 = op_1v1;
+                    let op_2v1 = op_1v1
+                        .filter(|item| {
+                            let mut borrow = context
+                                .state_ref(sg_1v1_node_2v1_uniquedata)
+                                .borrow_mut();
+                            let set = borrow
+                                .try_insert_with(
+                                    (context.current_tick(), context.current_stratum()),
+                                    ::std::collections::HashSet::new,
+                                );
+                            if !set.contains(item) {
+                                set.insert(::std::clone::Clone::clone(item));
+                                true
+                            } else {
+                                false
+                            }
+                        });
                     let op_2v1 = {
                         #[inline(always)]
                         pub fn check_op_2v1<
@@ -89,37 +132,7 @@ fn main() {
                         }
                         check_op_2v1(op_2v1)
                     };
-                    let op_8v1 = std::iter::from_fn(|| {
-                        match hydroflow::futures::stream::Stream::poll_next(
-                            sg_1v1_node_8v1_stream.as_mut(),
-                            &mut std::task::Context::from_waker(&context.waker()),
-                        ) {
-                            std::task::Poll::Ready(maybe) => maybe,
-                            std::task::Poll::Pending => None,
-                        }
-                    });
-                    let op_8v1 = {
-                        #[inline(always)]
-                        pub fn check_op_8v1<
-                            Input: ::std::iter::Iterator<Item = Item>,
-                            Item,
-                        >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
-                            input
-                        }
-                        check_op_8v1(op_8v1)
-                    };
-                    let op_3v1 = {
-                        #[allow(unused)]
-                        #[inline(always)]
-                        fn check_inputs<
-                            A: ::std::iter::Iterator<Item = Item>,
-                            B: ::std::iter::Iterator<Item = Item>,
-                            Item,
-                        >(a: A, b: B) -> impl ::std::iter::Iterator<Item = Item> {
-                            a.chain(b)
-                        }
-                        op_8v1
-                    };
+                    let op_3v1 = op_2v1;
                     let op_3v1 = {
                         #[inline(always)]
                         pub fn check_op_3v1<
@@ -130,7 +143,37 @@ fn main() {
                         }
                         check_op_3v1(op_3v1)
                     };
-                    let op_4v1 = op_3v1;
+                    let op_11v1 = std::iter::from_fn(|| {
+                        match hydroflow::futures::stream::Stream::poll_next(
+                            sg_1v1_node_11v1_stream.as_mut(),
+                            &mut std::task::Context::from_waker(&context.waker()),
+                        ) {
+                            std::task::Poll::Ready(maybe) => maybe,
+                            std::task::Poll::Pending => None,
+                        }
+                    });
+                    let op_11v1 = {
+                        #[inline(always)]
+                        pub fn check_op_11v1<
+                            Input: ::std::iter::Iterator<Item = Item>,
+                            Item,
+                        >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            input
+                        }
+                        check_op_11v1(op_11v1)
+                    };
+                    let op_4v1 = {
+                        #[allow(unused)]
+                        #[inline(always)]
+                        fn check_inputs<
+                            A: ::std::iter::Iterator<Item = Item>,
+                            B: ::std::iter::Iterator<Item = Item>,
+                            Item,
+                        >(a: A, b: B) -> impl ::std::iter::Iterator<Item = Item> {
+                            a.chain(b)
+                        }
+                        op_11v1
+                    };
                     let op_4v1 = {
                         #[inline(always)]
                         pub fn check_op_4v1<
@@ -141,35 +184,73 @@ fn main() {
                         }
                         check_op_4v1(op_4v1)
                     };
-                    let op_12v1 = op_2v1.map(|v: (_, _)| ((v.0, v.1), v));
-                    let op_12v1 = {
+                    let op_5v1 = op_4v1
+                        .filter(|item| {
+                            let mut borrow = context
+                                .state_ref(sg_1v1_node_5v1_uniquedata)
+                                .borrow_mut();
+                            let set = borrow
+                                .try_insert_with(
+                                    (context.current_tick(), context.current_stratum()),
+                                    ::std::collections::HashSet::new,
+                                );
+                            if !set.contains(item) {
+                                set.insert(::std::clone::Clone::clone(item));
+                                true
+                            } else {
+                                false
+                            }
+                        });
+                    let op_5v1 = {
                         #[inline(always)]
-                        pub fn check_op_12v1<
+                        pub fn check_op_5v1<
                             Input: ::std::iter::Iterator<Item = Item>,
                             Item,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
                             input
                         }
-                        check_op_12v1(op_12v1)
+                        check_op_5v1(op_5v1)
                     };
-                    let op_13v1 = op_4v1.map(|v: (_, _)| ((v.1, v.0), v));
+                    let op_6v1 = op_5v1;
+                    let op_6v1 = {
+                        #[inline(always)]
+                        pub fn check_op_6v1<
+                            Input: ::std::iter::Iterator<Item = Item>,
+                            Item,
+                        >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            input
+                        }
+                        check_op_6v1(op_6v1)
+                    };
+                    let op_15v1 = op_3v1.map(|v: (_, _)| ((v.0, v.1), v));
+                    let op_15v1 = {
+                        #[inline(always)]
+                        pub fn check_op_15v1<
+                            Input: ::std::iter::Iterator<Item = Item>,
+                            Item,
+                        >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            input
+                        }
+                        check_op_15v1(op_15v1)
+                    };
+                    let op_16v1 = op_6v1.map(|v: (_, _)| ((v.1, v.0), v));
+                    let op_16v1 = {
+                        #[inline(always)]
+                        pub fn check_op_16v1<
+                            Input: ::std::iter::Iterator<Item = Item>,
+                            Item,
+                        >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            input
+                        }
+                        check_op_16v1(op_16v1)
+                    };
+                    let mut sg_1v1_node_13v1_joindata_lhs_borrow = context
+                        .state_ref(sg_1v1_node_13v1_joindata_lhs)
+                        .borrow_mut();
+                    let mut sg_1v1_node_13v1_joindata_rhs_borrow = context
+                        .state_ref(sg_1v1_node_13v1_joindata_rhs)
+                        .borrow_mut();
                     let op_13v1 = {
-                        #[inline(always)]
-                        pub fn check_op_13v1<
-                            Input: ::std::iter::Iterator<Item = Item>,
-                            Item,
-                        >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
-                            input
-                        }
-                        check_op_13v1(op_13v1)
-                    };
-                    let mut sg_1v1_node_10v1_joindata_lhs_borrow = context
-                        .state_ref(sg_1v1_node_10v1_joindata_lhs)
-                        .borrow_mut();
-                    let mut sg_1v1_node_10v1_joindata_rhs_borrow = context
-                        .state_ref(sg_1v1_node_10v1_joindata_rhs)
-                        .borrow_mut();
-                    let op_10v1 = {
                         /// Limit error propagation by bounding locally, erasing output iterator type.
                         #[inline(always)]
                         fn check_inputs<'a, K, I1, V1, I2, V2>(
@@ -201,39 +282,28 @@ fn main() {
                             )
                         }
                         check_inputs(
-                            op_12v1,
-                            op_13v1,
-                            &mut sg_1v1_node_10v1_joindata_lhs_borrow
+                            op_15v1,
+                            op_16v1,
+                            &mut sg_1v1_node_13v1_joindata_lhs_borrow
                                 .try_insert_with(context.current_tick(), Default::default)
                                 .0,
-                            &mut sg_1v1_node_10v1_joindata_rhs_borrow
+                            &mut sg_1v1_node_13v1_joindata_rhs_borrow
                                 .try_insert_with(context.current_tick(), Default::default)
                                 .0,
                         )
                     };
-                    let op_10v1 = {
+                    let op_13v1 = {
                         #[inline(always)]
-                        pub fn check_op_10v1<
+                        pub fn check_op_13v1<
                             Input: ::std::iter::Iterator<Item = Item>,
                             Item,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
                             input
                         }
-                        check_op_10v1(op_10v1)
+                        check_op_13v1(op_13v1)
                     };
-                    let op_11v1 = op_10v1
+                    let op_14v1 = op_13v1
                         .map(|kv: ((_, _), ((_, _), (_, _)))| (kv.1.0.0, kv.1.0.1));
-                    let op_11v1 = {
-                        #[inline(always)]
-                        pub fn check_op_11v1<
-                            Input: ::std::iter::Iterator<Item = Item>,
-                            Item,
-                        >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
-                            input
-                        }
-                        check_op_11v1(op_11v1)
-                    };
-                    let op_14v1 = op_11v1.map(|row: (_, _)| (row.0, row.1));
                     let op_14v1 = {
                         #[inline(always)]
                         pub fn check_op_14v1<
@@ -244,7 +314,18 @@ fn main() {
                         }
                         check_op_14v1(op_14v1)
                     };
-                    let op_5v1 = {
+                    let op_17v1 = op_14v1.map(|row: (_, _)| (row.0, row.1));
+                    let op_17v1 = {
+                        #[inline(always)]
+                        pub fn check_op_17v1<
+                            Input: ::std::iter::Iterator<Item = Item>,
+                            Item,
+                        >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            input
+                        }
+                        check_op_17v1(op_17v1)
+                    };
+                    let op_7v1 = {
                         #[allow(unused)]
                         #[inline(always)]
                         fn check_inputs<
@@ -254,35 +335,62 @@ fn main() {
                         >(a: A, b: B) -> impl ::std::iter::Iterator<Item = Item> {
                             a.chain(b)
                         }
-                        op_14v1
+                        op_17v1
                     };
-                    let op_5v1 = {
+                    let op_7v1 = {
                         #[inline(always)]
-                        pub fn check_op_5v1<
+                        pub fn check_op_7v1<
                             Input: ::std::iter::Iterator<Item = Item>,
                             Item,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
                             input
                         }
-                        check_op_5v1(op_5v1)
+                        check_op_7v1(op_7v1)
                     };
-                    let op_6v1 = op_5v1;
-                    let op_6v1 = {
+                    let op_8v1 = op_7v1
+                        .filter(|item| {
+                            let mut borrow = context
+                                .state_ref(sg_1v1_node_8v1_uniquedata)
+                                .borrow_mut();
+                            let set = borrow
+                                .try_insert_with(
+                                    (context.current_tick(), context.current_stratum()),
+                                    ::std::collections::HashSet::new,
+                                );
+                            if !set.contains(item) {
+                                set.insert(::std::clone::Clone::clone(item));
+                                true
+                            } else {
+                                false
+                            }
+                        });
+                    let op_8v1 = {
                         #[inline(always)]
-                        pub fn check_op_6v1<
+                        pub fn check_op_8v1<
                             Input: ::std::iter::Iterator<Item = Item>,
                             Item,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
                             input
                         }
-                        check_op_6v1(op_6v1)
+                        check_op_8v1(op_8v1)
                     };
-                    let op_9v1 = hydroflow::pusherator::for_each::ForEach::new(|v| {
-                        out.send(v).unwrap()
-                    });
+                    let op_9v1 = op_8v1;
                     let op_9v1 = {
                         #[inline(always)]
                         pub fn check_op_9v1<
+                            Input: ::std::iter::Iterator<Item = Item>,
+                            Item,
+                        >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            input
+                        }
+                        check_op_9v1(op_9v1)
+                    };
+                    let op_12v1 = hydroflow::pusherator::for_each::ForEach::new(|v| {
+                        out.send(v).unwrap()
+                    });
+                    let op_12v1 = {
+                        #[inline(always)]
+                        pub fn check_op_12v1<
                             Input: hydroflow::pusherator::Pusherator<Item = Item>,
                             Item,
                         >(
@@ -290,7 +398,7 @@ fn main() {
                         ) -> impl hydroflow::pusherator::Pusherator<Item = Item> {
                             input
                         }
-                        check_op_9v1(op_9v1)
+                        check_op_12v1(op_12v1)
                     };
                     #[inline(always)]
                     fn check_pivot_run<
@@ -300,7 +408,7 @@ fn main() {
                     >(pull: Pull, push: Push) {
                         hydroflow::pusherator::pivot::Pivot::new(pull, push).run();
                     }
-                    check_pivot_run(op_6v1, op_9v1);
+                    check_pivot_run(op_9v1, op_12v1);
                 },
             );
             df

@@ -25,6 +25,28 @@ pub fn test_minimal() {
 }
 
 #[multiplatform_test]
+pub fn test_duplicated_facts() {
+    let (in_send, input) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (out, mut out_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+
+    in_send.send((1, 2)).unwrap();
+
+    let mut flow = datalog!(
+        r#"
+        .input input
+        .output out
+
+        out(y, x) :- input(x, y).
+        out(y, x) :- input(x, y).
+        "#
+    );
+
+    flow.run_tick();
+
+    assert_eq!(&*collect_ready::<Vec<_>, _>(&mut out_recv), &[(2, 1)]);
+}
+
+#[multiplatform_test]
 pub fn test_join_with_self() {
     let (in_send, input) = hydroflow::util::unbounded_channel::<(usize, usize)>();
     let (out, mut out_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
@@ -577,7 +599,7 @@ pub fn test_anti_join_next_tick_cycle() {
     assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result_recv), &[(1, 3)]);
 }
 
-#[test]
+#[multiplatform_test]
 fn test_max() {
     let (ints_send, ints) = hydroflow::util::unbounded_channel::<(usize, usize)>();
     let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
@@ -606,7 +628,7 @@ fn test_max() {
     assert_eq!(&res, &[(3, 2), (5, 3)]);
 }
 
-#[test]
+#[multiplatform_test]
 fn test_max_all() {
     let (ints_send, ints) = hydroflow::util::unbounded_channel::<(usize, usize)>();
     let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
@@ -629,7 +651,7 @@ fn test_max_all() {
     assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result_recv), &[(3, 3)]);
 }
 
-#[test]
+#[multiplatform_test]
 fn test_max_next_tick() {
     let (ints_send, ints) = hydroflow::util::unbounded_channel::<(usize, usize)>();
     let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
@@ -656,7 +678,7 @@ fn test_max_next_tick() {
     assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result_recv), &[(3, 3)]);
 }
 
-#[test]
+#[multiplatform_test]
 fn test_send_to_node() {
     let (ints_send_1, ints_1) = hydroflow::util::unbounded_channel::<(usize, usize)>();
     let (_ints_send_2, ints_2) = hydroflow::util::unbounded_channel::<(usize, usize)>();
