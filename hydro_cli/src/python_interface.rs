@@ -85,7 +85,9 @@ impl PyLocalhostHost {
 }
 
 #[pyclass(extends=PyHost, subclass)]
-struct PyGCPComputeEngineHost {}
+struct PyGCPComputeEngineHost {
+    underlying: Arc<RwLock<crate::core::GCPComputeEngineHost>>,
+}
 
 #[pymethods]
 impl PyGCPComputeEngineHost {
@@ -94,22 +96,60 @@ impl PyGCPComputeEngineHost {
         deployment: &PyDeployment,
         project: String,
         machine_type: String,
+        image: String,
         region: String,
     ) -> (Self, PyHost) {
+        let host = deployment.underlying.blocking_write().add_host(|id| {
+            crate::core::GCPComputeEngineHost::new(id, project, machine_type, image, region)
+        });
+
         (
-            PyGCPComputeEngineHost {},
-            PyHost {
-                underlying: deployment.underlying.blocking_write().add_host(|id| {
-                    crate::core::GCPComputeEngineHost::new(id, project, machine_type, region)
-                }),
+            PyGCPComputeEngineHost {
+                underlying: host.clone(),
             },
+            PyHost { underlying: host },
         )
+    }
+
+    #[getter]
+    fn internal_ip(&self) -> String {
+        self.underlying
+            .blocking_read()
+            .launched
+            .as_ref()
+            .unwrap()
+            .internal_ip
+            .clone()
+    }
+
+    #[getter]
+    fn external_ip(&self) -> Option<String> {
+        self.underlying
+            .blocking_read()
+            .launched
+            .as_ref()
+            .unwrap()
+            .external_ip
+            .clone()
+    }
+
+    #[getter]
+    fn ssh_key_path(&self) -> String {
+        self.underlying
+            .blocking_read()
+            .launched
+            .as_ref()
+            .unwrap()
+            .ssh_key_path()
+            .to_str()
+            .unwrap()
+            .to_string()
     }
 }
 
 #[pyclass(subclass)]
 pub struct PyService {
-    underlying: Arc<RwLock<dyn crate::core::Service>>,
+    _underlying: Arc<RwLock<dyn crate::core::Service>>,
 }
 
 #[pyclass]
@@ -130,7 +170,38 @@ impl PyReceiver {
 }
 
 #[pyclass(extends=PyService, subclass)]
-struct PyHydroflowCrate {}
+struct PyCustomService {
+    _underlying: Arc<RwLock<crate::core::CustomService>>,
+}
+
+#[pymethods]
+impl PyCustomService {
+    #[new]
+    fn new(deployment: &PyDeployment, on: &PyHost, external_ports: Vec<u16>) -> (Self, PyService) {
+        let service =
+            deployment
+                .underlying
+                .blocking_write()
+                .add_service(crate::core::CustomService::new(
+                    on.underlying.clone(),
+                    external_ports,
+                ));
+
+        (
+            PyCustomService {
+                _underlying: service.clone(),
+            },
+            PyService {
+                _underlying: service,
+            },
+        )
+    }
+}
+
+#[pyclass(extends=PyService, subclass)]
+struct PyHydroflowCrate {
+    underlying: Arc<RwLock<crate::core::HydroflowCrate>>,
+}
 
 #[pymethods]
 impl PyHydroflowCrate {
@@ -142,96 +213,88 @@ impl PyHydroflowCrate {
         example: Option<String>,
         features: Option<Vec<String>>,
     ) -> (Self, PyService) {
+        let service =
+            deployment
+                .underlying
+                .blocking_write()
+                .add_service(crate::core::HydroflowCrate::new(
+                    src.into(),
+                    on.underlying.clone(),
+                    example,
+                    features,
+                ));
+
         (
-            PyHydroflowCrate {},
+            PyHydroflowCrate {
+                underlying: service.clone(),
+            },
             PyService {
-                underlying: deployment.underlying.blocking_write().add_service(
-                    crate::core::HydroflowCrate::new(
-                        src.into(),
-                        on.underlying.clone(),
-                        example,
-                        features,
-                    ),
-                ),
+                _underlying: service,
             },
         )
     }
 
-    fn stdout<'p>(self_: PyRef<'p, Self>, py: Python<'p>) -> &'p pyo3::PyAny {
-        let underlying = &self_.as_ref().underlying;
-        let underlying = underlying.clone();
+    fn stdout<'p>(&self, py: Python<'p>) -> &'p pyo3::PyAny {
+        let underlying = self.underlying.clone();
         pyo3_asyncio::tokio::future_into_py(py, async move {
-            let mut underlying_mut = underlying.write().await;
-            let hydro = underlying_mut
-                .as_any_mut()
-                .downcast_mut::<crate::core::HydroflowCrate>()
-                .unwrap();
+            let underlying = underlying.read().await;
             Ok(PyReceiver {
-                receiver: Arc::new(hydro.stdout().await),
+                receiver: Arc::new(underlying.stdout().await),
             })
         })
         .unwrap()
     }
 
-    fn stderr<'p>(self_: PyRef<'p, Self>, py: Python<'p>) -> &'p pyo3::PyAny {
-        let underlying = &self_.as_ref().underlying;
-        let underlying = underlying.clone();
+    fn stderr<'p>(&self, py: Python<'p>) -> &'p pyo3::PyAny {
+        let underlying = self.underlying.clone();
         pyo3_asyncio::tokio::future_into_py(py, async move {
-            let mut underlying_mut = underlying.write().await;
-            let hydro = underlying_mut
-                .as_any_mut()
-                .downcast_mut::<crate::core::HydroflowCrate>()
-                .unwrap();
+            let underlying = underlying.read().await;
             Ok(PyReceiver {
-                receiver: Arc::new(hydro.stderr().await),
+                receiver: Arc::new(underlying.stderr().await),
             })
         })
         .unwrap()
     }
 
-    fn exit_code<'p>(self_: PyRef<'p, Self>, py: Python<'p>) -> &'p pyo3::PyAny {
-        let underlying = &self_.as_ref().underlying;
-        let underlying = underlying.clone();
+    fn exit_code<'p>(&self, py: Python<'p>) -> &'p pyo3::PyAny {
+        let underlying = self.underlying.clone();
         pyo3_asyncio::tokio::future_into_py(py, async move {
-            let mut underlying_mut = underlying.write().await;
-            let hydro = underlying_mut
-                .as_any_mut()
-                .downcast_mut::<crate::core::HydroflowCrate>()
-                .unwrap();
-            Ok(hydro.exit_code().await)
+            let underlying = underlying.read().await;
+            Ok(underlying.exit_code().await)
         })
         .unwrap()
     }
 }
 
 #[pyfunction]
-fn create_connection(from: &PyService, from_port: String, to: &PyService, to_port: String) {
+fn create_connection(
+    from: &PyHydroflowCrate,
+    from_port: String,
+    to: &PyHydroflowCrate,
+    to_port: String,
+) {
     let from = &from.underlying;
     let to = &to.underlying;
 
-    let mut from_mut = from.blocking_write();
-    let mut to_mut = to.blocking_write();
-    let from_hydro = from_mut
-        .as_any_mut()
-        .downcast_mut::<crate::core::HydroflowCrate>()
-        .unwrap();
-    let to_hydro = to_mut
-        .as_any_mut()
-        .downcast_mut::<crate::core::HydroflowCrate>()
-        .unwrap();
+    let mut from_write = from.blocking_write();
+    let mut to_write = to.blocking_write();
 
-    from_hydro.add_outgoing_port(from_port, to, to_port.clone());
-    to_hydro.add_incoming_port(to_port, from_hydro);
+    from_write.add_outgoing_port(from_port, to, to_port.clone());
+    to_write.add_incoming_port(to_port, &from_write);
 }
 
 #[pymodule]
 pub fn hydro_cli_rust(_py: Python<'_>, module: &PyModule) -> PyResult<()> {
     module.add_class::<AnyhowWrapper>()?;
+
     module.add_class::<PyDeployment>()?;
+
     module.add_class::<PyHost>()?;
     module.add_class::<PyLocalhostHost>()?;
     module.add_class::<PyGCPComputeEngineHost>()?;
 
+    module.add_class::<PyService>()?;
+    module.add_class::<PyCustomService>()?;
     module.add_class::<PyHydroflowCrate>()?;
 
     module.add_function(wrap_pyfunction!(create_connection, module)?)?;

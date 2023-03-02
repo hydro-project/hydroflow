@@ -20,6 +20,10 @@ impl Deployment {
             service.write().await.collect_resources(&mut resource_pool);
         }
 
+        for host in self.hosts.iter_mut() {
+            host.write().await.collect_resources(&mut resource_pool);
+        }
+
         let result = Arc::new(resource_pool.provision().await);
 
         let services_future =
