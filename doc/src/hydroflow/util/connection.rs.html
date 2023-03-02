@@ -163,7 +163,7 @@
 </span><span class="kw">use </span><span class="kw">super</span>::unix_lines;
 
 <span class="attr">#[derive(Serialize, Deserialize, Clone, Debug)]
-</span><span class="kw">pub enum </span>BindType {
+</span><span class="kw">pub enum </span>BindConfig {
     UnixSocket,
     TcpPort(
         <span class="doccomment">/// The host the port should be bound on.
@@ -171,10 +171,10 @@
     ),
 }
 
-<span class="kw">impl </span>BindType {
+<span class="kw">impl </span>BindConfig {
     <span class="kw">pub async fn </span>bind(<span class="self">self</span>) -&gt; BoundConnection {
         <span class="kw">match </span><span class="self">self </span>{
-            BindType::UnixSocket =&gt; {
+            BindConfig::UnixSocket =&gt; {
                 <span class="attr">#[cfg(unix)]
                 </span>{
                     <span class="kw">let </span>dir = tempfile::tempdir().unwrap();
@@ -187,7 +187,7 @@
                     <span class="macro">panic!</span>(<span class="string">&quot;Unix sockets are not supported on this platform&quot;</span>)
                 }
             }
-            BindType::TcpPort(host) =&gt; {
+            BindConfig::TcpPort(host) =&gt; {
                 <span class="kw">let </span>listener = TcpListener::bind((host, <span class="number">0</span>)).<span class="kw">await</span>.unwrap();
                 BoundConnection::TcpPort(listener)
             }

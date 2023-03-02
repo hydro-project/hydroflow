@@ -156,6 +156,17 @@
 <a href="#156" id="156">156</a>
 <a href="#157" id="157">157</a>
 <a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
+<a href="#166" id="166">166</a>
+<a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::{path::Path, sync::Arc};
 
 <span class="kw">use </span>anyhow::Result;
@@ -163,10 +174,12 @@
 <span class="kw">use </span>async_process::{Command, Stdio};
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>futures::{io::BufReader, AsyncBufReadExt, AsyncRead, AsyncWriteExt, StreamExt};
-<span class="kw">use </span>hydroflow::util::connection::BindType;
+<span class="kw">use </span>hydroflow::util::connection::BindConfig;
 <span class="kw">use </span>tokio::sync::RwLock;
 
-<span class="kw">use super</span>::{ConnectionType, Host, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult};
+<span class="kw">use super</span>::{
+    BindType, ConnectionType, Host, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult,
+};
 
 <span class="kw">struct </span>LaunchedLocalhostBinary {
     child: RwLock&lt;async_process::Child&gt;,
@@ -241,6 +254,14 @@
 
 <span class="attr">#[async_trait]
 </span><span class="kw">impl </span>LaunchedHost <span class="kw">for </span>LaunchedLocalhost {
+    <span class="kw">fn </span>get_bind_config(<span class="kw-2">&amp;</span><span class="self">self</span>, bind_type: <span class="kw-2">&amp;</span>BindType) -&gt; BindConfig {
+        <span class="kw">match </span>bind_type {
+            BindType::UnixSocket =&gt; BindConfig::UnixSocket,
+            BindType::InternalTcpPort =&gt; BindConfig::TcpPort(<span class="string">&quot;127.0.0.1&quot;</span>.to_string()),
+            BindType::ExternalTcpPort(<span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Cannot bind to external port&quot;</span>),
+        }
+    }
+
     <span class="kw">async fn </span>launch_binary(<span class="kw-2">&amp;</span><span class="self">self</span>, binary: <span class="kw-2">&amp;</span>Path) -&gt; <span class="prelude-ty">Result</span>&lt;Arc&lt;RwLock&lt;<span class="kw">dyn </span>LaunchedBinary&gt;&gt;&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>child = Command::new(binary)
             .kill_on_drop(<span class="bool-val">true</span>)
@@ -278,19 +299,20 @@
 
 <span class="attr">#[async_trait]
 </span><span class="kw">impl </span>Host <span class="kw">for </span>LocalhostHost {
+    <span class="kw">fn </span>request_port(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _bind_type: <span class="kw-2">&amp;</span>BindType) {}
     <span class="kw">fn </span>collect_resources(<span class="kw-2">&amp;</span><span class="self">self</span>, _resource_batch: <span class="kw-2">&amp;mut </span>ResourceBatch) {}
 
     <span class="kw">async fn </span>provision(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _resource_result: <span class="kw-2">&amp;</span>Arc&lt;ResourceResult&gt;) -&gt; Arc&lt;<span class="kw">dyn </span>LaunchedHost&gt; {
         Arc::new(LaunchedLocalhost {})
     }
 
-    <span class="kw">fn </span>find_bind_type(<span class="kw-2">&amp;</span><span class="self">self</span>, connection_from: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Host) -&gt; BindType {
+    <span class="kw">fn </span>get_bind_type(<span class="kw-2">&amp;</span><span class="self">self</span>, connection_from: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Host) -&gt; BindType {
         <span class="kw">if </span>connection_from.can_connect_to(ConnectionType::UnixSocket(<span class="self">self</span>.id)) {
             BindType::UnixSocket
         } <span class="kw">else if </span>connection_from
             .can_connect_to(ConnectionType::InternalTcpPort(<span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, <span class="self">self</span>.id)))
         {
-            BindType::TcpPort(<span class="string">&quot;127.0.0.1&quot;</span>.to_string())
+            BindType::InternalTcpPort
         } <span class="kw">else </span>{
             <span class="macro">todo!</span>()
         }

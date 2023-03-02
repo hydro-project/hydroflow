@@ -265,7 +265,7 @@
             .expect(<span class="string">&quot;Failed to destroy terraform deployment&quot;</span>)
             .success()
         {
-            <span class="macro">panic!</span>(<span class="string">&quot;Failed to destroy terraform deployment&quot;</span>);
+            <span class="macro">eprintln!</span>(<span class="string">&quot;WARNING: failed to destroy terraform deployment&quot;</span>);
         }
     }
 }

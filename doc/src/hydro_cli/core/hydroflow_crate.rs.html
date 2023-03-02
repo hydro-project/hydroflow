@@ -250,17 +250,6 @@
 <a href="#250" id="250">250</a>
 <a href="#251" id="251">251</a>
 <a href="#252" id="252">252</a>
-<a href="#253" id="253">253</a>
-<a href="#254" id="254">254</a>
-<a href="#255" id="255">255</a>
-<a href="#256" id="256">256</a>
-<a href="#257" id="257">257</a>
-<a href="#258" id="258">258</a>
-<a href="#259" id="259">259</a>
-<a href="#260" id="260">260</a>
-<a href="#261" id="261">261</a>
-<a href="#262" id="262">262</a>
-<a href="#263" id="263">263</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::{
     collections::HashMap,
     ops::Deref,
@@ -280,7 +269,7 @@
 <span class="kw">use </span>hydroflow::util::connection::ConnectionPipe;
 <span class="kw">use </span>tokio::{sync::RwLock, task::JoinHandle};
 
-<span class="kw">use super</span>::{Host, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult, Service};
+<span class="kw">use super</span>::{BindType, Host, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult, Service};
 
 <span class="kw">pub struct </span>HydroflowCrate {
     src: PathBuf,
@@ -289,11 +278,10 @@
     features: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
 
     <span class="doccomment">/// A mapping from output ports to the service that the port sends data to.
-    /// Each `dyn Service` is guaranteed to be another `HydroflowCrate`.
-    </span>outgoing_ports: HashMap&lt;String, (Weak&lt;RwLock&lt;<span class="kw">dyn </span>Service&gt;&gt;, String)&gt;,
+    </span>outgoing_ports: HashMap&lt;String, (Weak&lt;RwLock&lt;HydroflowCrate&gt;&gt;, String)&gt;,
 
     <span class="doccomment">/// A map of port names to the host that will be sending data to the port.
-    </span>incoming_ports: HashMap&lt;String, Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;&gt;,
+    </span>incoming_ports: HashMap&lt;String, BindType&gt;,
 
     built_binary: <span class="prelude-ty">Option</span>&lt;JoinHandle&lt;PathBuf&gt;&gt;,
     launched_host: <span class="prelude-ty">Option</span>&lt;Arc&lt;<span class="kw">dyn </span>LaunchedHost&gt;&gt;,
@@ -327,13 +315,19 @@
     }
 
     <span class="kw">pub fn </span>add_incoming_port(<span class="kw-2">&amp;mut </span><span class="self">self</span>, my_port: String, from: <span class="kw-2">&amp;</span>HydroflowCrate) {
-        <span class="self">self</span>.incoming_ports.insert(my_port, from.host());
+        <span class="self">self</span>.incoming_ports.insert(
+            my_port,
+            <span class="self">self</span>.on
+                .try_read()
+                .unwrap()
+                .get_bind_type(from.on.try_read().unwrap().deref()),
+        );
     }
 
     <span class="kw">pub fn </span>add_outgoing_port(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         my_port: String,
-        to: <span class="kw-2">&amp;</span>Arc&lt;RwLock&lt;<span class="kw">dyn </span>Service&gt;&gt;,
+        to: <span class="kw-2">&amp;</span>Arc&lt;RwLock&lt;HydroflowCrate&gt;&gt;,
         to_port: String,
     ) {
         <span class="self">self</span>.outgoing_ports
@@ -424,15 +418,19 @@
 
 <span class="attr">#[async_trait]
 </span><span class="kw">impl </span>Service <span class="kw">for </span>HydroflowCrate {
-    <span class="kw">fn </span>collect_resources(<span class="kw-2">&amp;mut </span><span class="self">self</span>, resource_batch: <span class="kw-2">&amp;mut </span>ResourceBatch) {
+    <span class="kw">fn </span>collect_resources(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _resource_batch: <span class="kw-2">&amp;mut </span>ResourceBatch) {
         <span class="kw">let </span>built = <span class="self">self</span>.build();
         <span class="self">self</span>.built_binary = <span class="prelude-val">Some</span>(built);
 
-        <span class="kw">let </span>host = <span class="self">self
+        <span class="kw">let </span><span class="kw-2">mut </span>host = <span class="self">self
             </span>.on
-            .try_read()
-            .expect(<span class="string">&quot;No one should be writing to the host while resources are collected&quot;</span>);
-        host.collect_resources(resource_batch);
+            .try_write()
+            .expect(<span class="string">&quot;No one should be reading/writing the host while resources are collected&quot;</span>);
+
+        host.request_port(<span class="kw-2">&amp;</span>BindType::ExternalTcpPort(<span class="number">22</span>)); <span class="comment">// always need SSH
+        </span><span class="kw">for </span>(<span class="kw">_</span>, bind_type) <span class="kw">in </span><span class="self">self</span>.incoming_ports.iter() {
+            host.request_port(bind_type);
+        }
     }
 
     <span class="kw">async fn </span>deploy(<span class="kw-2">&amp;mut </span><span class="self">self</span>, resource_result: <span class="kw-2">&amp;</span>Arc&lt;ResourceResult&gt;) {
@@ -442,25 +440,18 @@
     }
 
     <span class="kw">async fn </span>ready(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="kw">let </span>binary = <span class="self">self
-            </span>.launched_host
-            .as_ref()
-            .unwrap()
+        <span class="kw">let </span>launched_host = <span class="self">self</span>.launched_host.as_ref().unwrap();
+
+        <span class="kw">let </span>binary = launched_host
             .launch_binary(<span class="self">self</span>.built_binary.take().unwrap().<span class="kw">await</span>.as_ref().unwrap())
             .<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="kw">let </span><span class="kw-2">mut </span>bind_types = HashMap::new();
-        <span class="kw">for </span>(port_name, from_host) <span class="kw">in </span><span class="self">self</span>.incoming_ports.iter() {
-            bind_types.insert(
-                port_name.clone(),
-                <span class="self">self</span>.on
-                    .read()
-                    .<span class="kw">await
-                    </span>.find_bind_type(from_host.read().<span class="kw">await</span>.deref()),
-            );
+        <span class="kw">let </span><span class="kw-2">mut </span>bind_config = HashMap::new();
+        <span class="kw">for </span>(port_name, bind_type) <span class="kw">in </span><span class="self">self</span>.incoming_ports.iter() {
+            bind_config.insert(port_name.clone(), launched_host.get_bind_config(bind_type));
         }
 
-        <span class="kw">let </span>formatted_bind_types = serde_json::to_string(<span class="kw-2">&amp;</span>bind_types).unwrap();
+        <span class="kw">let </span>formatted_bind_config = serde_json::to_string(<span class="kw-2">&amp;</span>bind_config).unwrap();
 
         <span class="comment">// request stdout before sending config so we don&#39;t miss the &quot;ready&quot; response
         </span><span class="kw">let </span>stdout_receiver = binary.write().<span class="kw">await</span>.stdout().<span class="kw">await</span>;
@@ -470,7 +461,7 @@
             .<span class="kw">await
             </span>.stdin()
             .<span class="kw">await
-            </span>.send(<span class="macro">format!</span>(<span class="string">&quot;{formatted_bind_types}\n&quot;</span>))
+            </span>.send(<span class="macro">format!</span>(<span class="string">&quot;{formatted_bind_config}\n&quot;</span>))
             .<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="kw">let </span>ready_line = stdout_receiver.recv().<span class="kw">await</span>.unwrap();
@@ -491,7 +482,6 @@
         <span class="kw">for </span>(port_name, (target, target_port)) <span class="kw">in </span><span class="self">self</span>.outgoing_ports.iter() {
             <span class="kw">let </span>target = target.upgrade().unwrap();
             <span class="kw">let </span>target = target.read().<span class="kw">await</span>;
-            <span class="kw">let </span>target = target.as_any().downcast_ref::&lt;HydroflowCrate&gt;().unwrap();
 
             <span class="kw">let </span>conn = target.bound_pipes.get(target_port).unwrap();
 
@@ -511,18 +501,6 @@
             .<span class="kw">await
             </span>.unwrap();
     }
-
-    <span class="kw">fn </span>host(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt; {
-        <span class="self">self</span>.on.clone()
-    }
-
-    <span class="kw">fn </span>as_any(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="kw">dyn </span>std::any::Any {
-        <span class="self">self
-    </span>}
-
-    <span class="kw">fn </span>as_any_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span><span class="kw">dyn </span>std::any::Any {
-        <span class="self">self
-    </span>}
 }
 </code></pre></div>
 </section></main><div id="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="hydro_cli" data-themes="" data-resource-suffix="" data-rustdoc-version="1.69.0-nightly (31f858d9a 2023-02-28)" data-search-js="search-d5a6cd8418084717.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-0bcba95ff279c1db.css" ></div></body></html>

@@ -439,20 +439,65 @@
 <a href="#439" id="439">439</a>
 <a href="#440" id="440">440</a>
 <a href="#441" id="441">441</a>
+<a href="#442" id="442">442</a>
+<a href="#443" id="443">443</a>
+<a href="#444" id="444">444</a>
+<a href="#445" id="445">445</a>
+<a href="#446" id="446">446</a>
+<a href="#447" id="447">447</a>
+<a href="#448" id="448">448</a>
+<a href="#449" id="449">449</a>
+<a href="#450" id="450">450</a>
+<a href="#451" id="451">451</a>
+<a href="#452" id="452">452</a>
+<a href="#453" id="453">453</a>
+<a href="#454" id="454">454</a>
+<a href="#455" id="455">455</a>
+<a href="#456" id="456">456</a>
+<a href="#457" id="457">457</a>
+<a href="#458" id="458">458</a>
+<a href="#459" id="459">459</a>
+<a href="#460" id="460">460</a>
+<a href="#461" id="461">461</a>
+<a href="#462" id="462">462</a>
+<a href="#463" id="463">463</a>
+<a href="#464" id="464">464</a>
+<a href="#465" id="465">465</a>
+<a href="#466" id="466">466</a>
+<a href="#467" id="467">467</a>
+<a href="#468" id="468">468</a>
+<a href="#469" id="469">469</a>
+<a href="#470" id="470">470</a>
+<a href="#471" id="471">471</a>
+<a href="#472" id="472">472</a>
+<a href="#473" id="473">473</a>
+<a href="#474" id="474">474</a>
+<a href="#475" id="475">475</a>
+<a href="#476" id="476">476</a>
+<a href="#477" id="477">477</a>
+<a href="#478" id="478">478</a>
+<a href="#479" id="479">479</a>
+<a href="#480" id="480">480</a>
+<a href="#481" id="481">481</a>
+<a href="#482" id="482">482</a>
+<a href="#483" id="483">483</a>
+<a href="#484" id="484">484</a>
+<a href="#485" id="485">485</a>
+<a href="#486" id="486">486</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::{
     net::SocketAddr,
     path::{Path, PathBuf},
-    sync::Arc,
+    sync::{atomic::AtomicUsize, Arc},
     time::Duration,
 };
 
-<span class="kw">use </span>anyhow::Result;
+<span class="kw">use </span>anyhow::{Context, <span class="prelude-ty">Result</span>};
 <span class="kw">use </span>async_channel::{Receiver, Sender};
 
 <span class="kw">use </span>async_ssh2_lite::{AsyncChannel, AsyncSession, SessionConfiguration};
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>futures::{AsyncWriteExt, StreamExt};
-<span class="kw">use </span>hydroflow::util::connection::BindType;
+<span class="kw">use </span>hydroflow::util::connection::BindConfig;
 <span class="kw">use </span>serde_json::json;
 <span class="kw">use </span>tokio::{net::TcpStream, sync::RwLock};
 
@@ -460,7 +505,7 @@
     localhost::create_broadcast,
     terraform::{TerraformOutput, TerraformProvider},
     util::async_retry,
-    ConnectionType, Host, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult,
+    BindType, ConnectionType, Host, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult,
 };
 
 <span class="kw">struct </span>LaunchedComputeEngineBinary {
@@ -501,41 +546,55 @@
     }
 }
 
-<span class="kw">struct </span>LaunchedComputeEngine {
+<span class="kw">pub struct </span>LaunchedComputeEngine {
     resource_result: Arc&lt;ResourceResult&gt;,
-    external_ip: String,
-    binary_counter: RwLock&lt;usize&gt;,
+    <span class="kw">pub </span>internal_ip: String,
+    <span class="kw">pub </span>external_ip: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    binary_counter: AtomicUsize,
+}
+
+<span class="kw">impl </span>LaunchedComputeEngine {
+    <span class="kw">pub fn </span>ssh_key_path(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; PathBuf {
+        <span class="self">self</span>.resource_result
+            .terraform
+            .deployment_folder
+            .path()
+            .join(<span class="string">&quot;.ssh&quot;</span>)
+            .join(<span class="string">&quot;vm_instance_ssh_key_pem&quot;</span>)
+    }
 }
 
 <span class="attr">#[async_trait]
 </span><span class="kw">impl </span>LaunchedHost <span class="kw">for </span>LaunchedComputeEngine {
+    <span class="kw">fn </span>get_bind_config(<span class="kw-2">&amp;</span><span class="self">self</span>, bind_type: <span class="kw-2">&amp;</span>BindType) -&gt; BindConfig {
+        <span class="kw">match </span>bind_type {
+            BindType::UnixSocket =&gt; BindConfig::UnixSocket,
+            BindType::InternalTcpPort =&gt; BindConfig::TcpPort(<span class="self">self</span>.internal_ip.clone()),
+            BindType::ExternalTcpPort(<span class="kw">_</span>) =&gt; <span class="macro">todo!</span>(),
+        }
+    }
+
     <span class="kw">async fn </span>launch_binary(<span class="kw-2">&amp;</span><span class="self">self</span>, binary: <span class="kw-2">&amp;</span>Path) -&gt; <span class="prelude-ty">Result</span>&lt;Arc&lt;RwLock&lt;<span class="kw">dyn </span>LaunchedBinary&gt;&gt;&gt; {
+        <span class="kw">let </span>target_addr = SocketAddr::new(
+            <span class="self">self</span>.external_ip
+                .as_ref()
+                .context(<span class="string">&quot;GCP host must be configured with an external IP to launch binaries&quot;</span>)<span class="question-mark">?
+                </span>.parse()
+                .unwrap(),
+            <span class="number">22</span>,
+        );
         <span class="kw">let </span>session = async_retry(
             || <span class="kw">async </span>{
                 <span class="kw">let </span><span class="kw-2">mut </span>config = SessionConfiguration::new();
                 config.set_timeout(<span class="number">5000</span>);
 
-                <span class="kw">let </span><span class="kw-2">mut </span>session = AsyncSession::&lt;TcpStream&gt;::connect(
-                    SocketAddr::new(<span class="self">self</span>.external_ip.parse().unwrap(), <span class="number">22</span>),
-                    <span class="prelude-val">Some</span>(config),
-                )
-                .<span class="kw">await</span><span class="question-mark">?</span>;
+                <span class="kw">let </span><span class="kw-2">mut </span>session =
+                    AsyncSession::&lt;TcpStream&gt;::connect(target_addr, <span class="prelude-val">Some</span>(config)).<span class="kw">await</span><span class="question-mark">?</span>;
 
                 session.handshake().<span class="kw">await</span><span class="question-mark">?</span>;
 
                 session
-                    .userauth_pubkey_file(
-                        <span class="string">&quot;hydro&quot;</span>,
-                        <span class="prelude-val">None</span>,
-                        <span class="self">self</span>.resource_result
-                            .terraform
-                            .deployment_folder
-                            .path()
-                            .join(<span class="string">&quot;.ssh&quot;</span>)
-                            .join(<span class="string">&quot;vm_instance_ssh_key_pem&quot;</span>)
-                            .as_path(),
-                        <span class="prelude-val">None</span>,
-                    )
+                    .userauth_pubkey_file(<span class="string">&quot;hydro&quot;</span>, <span class="prelude-val">None</span>, <span class="self">self</span>.ssh_key_path().as_path(), <span class="prelude-val">None</span>)
                     .<span class="kw">await</span><span class="question-mark">?</span>;
 
                 <span class="prelude-val">Ok</span>(session)
@@ -548,10 +607,9 @@
         <span class="kw">let </span>sftp = session.sftp().<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="comment">// we may be deploying multiple binaries, so give each a unique name
-        </span><span class="kw">let </span><span class="kw-2">mut </span>binary_counter_write = <span class="self">self</span>.binary_counter.write().<span class="kw">await</span>;
-        <span class="kw">let </span>my_binary_counter = <span class="kw-2">*</span>binary_counter_write;
-        <span class="kw-2">*</span>binary_counter_write += <span class="number">1</span>;
-        drop(binary_counter_write);
+        </span><span class="kw">let </span>my_binary_counter = <span class="self">self
+            </span>.binary_counter
+            .fetch_add(<span class="number">1</span>, std::sync::atomic::Ordering::Relaxed);
 
         <span class="kw">let </span>binary_path = PathBuf::from(<span class="macro">format!</span>(<span class="string">&quot;/home/hydro/hydro-{my_binary_counter}&quot;</span>));
 
@@ -596,28 +654,44 @@
     <span class="kw">pub </span>id: usize,
     <span class="kw">pub </span>project: String,
     <span class="kw">pub </span>machine_type: String,
+    <span class="kw">pub </span>image: String,
     <span class="kw">pub </span>region: String,
-    <span class="kw">pub </span>internal_ip: <span class="prelude-ty">Option</span>&lt;String&gt;,
-    <span class="kw">pub </span>external_ip: <span class="prelude-ty">Option</span>&lt;String&gt;,
-    <span class="kw">pub </span>launched: <span class="prelude-ty">Option</span>&lt;Arc&lt;<span class="kw">dyn </span>LaunchedHost&gt;&gt;,
+    <span class="kw">pub </span>launched: <span class="prelude-ty">Option</span>&lt;Arc&lt;LaunchedComputeEngine&gt;&gt;,
+    external_ports: Vec&lt;u16&gt;,
 }
 
 <span class="kw">impl </span>GCPComputeEngineHost {
-    <span class="kw">pub fn </span>new(id: usize, project: String, machine_type: String, region: String) -&gt; <span class="self">Self </span>{
+    <span class="kw">pub fn </span>new(
+        id: usize,
+        project: String,
+        machine_type: String,
+        image: String,
+        region: String,
+    ) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
             id,
             project,
             machine_type,
+            image,
             region,
-            internal_ip: <span class="prelude-val">None</span>,
-            external_ip: <span class="prelude-val">None</span>,
             launched: <span class="prelude-val">None</span>,
+            external_ports: <span class="macro">vec!</span>[],
         }
     }
 }
 
 <span class="attr">#[async_trait]
 </span><span class="kw">impl </span>Host <span class="kw">for </span>GCPComputeEngineHost {
+    <span class="kw">fn </span>request_port(<span class="kw-2">&amp;mut </span><span class="self">self</span>, bind_type: <span class="kw-2">&amp;</span>BindType) {
+        <span class="kw">match </span>bind_type {
+            BindType::UnixSocket =&gt; {}
+            BindType::InternalTcpPort =&gt; {}
+            BindType::ExternalTcpPort(port) =&gt; {
+                <span class="self">self</span>.external_ports.push(<span class="kw-2">*</span>port);
+            }
+        }
+    }
+
     <span class="kw">fn </span>collect_resources(<span class="kw-2">&amp;</span><span class="self">self</span>, resource_batch: <span class="kw-2">&amp;mut </span>ResourceBatch) {
         <span class="kw">let </span>project = <span class="self">self</span>.project.as_str();
         <span class="kw">let </span>id = <span class="self">self</span>.id;
@@ -749,57 +823,82 @@
             }),
         );
 
-        <span class="comment">// allow SSH access to all VMs
-        </span><span class="kw">let </span>allow_ssh_rule = <span class="macro">format!</span>(<span class="string">&quot;{vpc_network}-allow-ssh&quot;</span>);
-        firewall_entries.insert(
-            allow_ssh_rule.clone(),
-            <span class="macro">json!</span>({
-                <span class="string">&quot;name&quot;</span>: allow_ssh_rule,
-                <span class="string">&quot;project&quot;</span>: project,
-                <span class="string">&quot;network&quot;</span>: <span class="macro">format!</span>(<span class="string">&quot;${{google_compute_network.{vpc_network}.name}}&quot;</span>),
-                <span class="string">&quot;target_tags&quot;</span>: [allow_ssh_rule],
-                <span class="string">&quot;source_ranges&quot;</span>: [<span class="string">&quot;0.0.0.0/0&quot;</span>],
-                <span class="string">&quot;allow&quot;</span>: [
-                    {
-                        <span class="string">&quot;protocol&quot;</span>: <span class="string">&quot;tcp&quot;</span>,
-                        <span class="string">&quot;ports&quot;</span>: [<span class="string">&quot;22&quot;</span>]
-                    }
-                ]
-            }),
-        );
-
         <span class="kw">let </span>vm_instance = <span class="macro">format!</span>(<span class="string">&quot;vm-instance-{project}-{id}&quot;</span>);
-        resource_batch.terraform.resource.entry(<span class="string">&quot;google_compute_instance&quot;</span>.to_string())
-            .or_default()
-            .insert(vm_instance.clone(), <span class="macro">json!</span>({
-                <span class="string">&quot;name&quot;</span>: vm_instance,
-                <span class="string">&quot;project&quot;</span>: project,
-                <span class="string">&quot;machine_type&quot;</span>: <span class="self">self</span>.machine_type,
-                <span class="string">&quot;zone&quot;</span>: <span class="self">self</span>.region,
-                <span class="string">&quot;tags&quot;</span>: [ allow_ssh_rule ],
-                <span class="string">&quot;metadata&quot;</span>: {
-                <span class="string">&quot;ssh-keys&quot;</span>: <span class="string">&quot;hydro:${tls_private_key.vm_instance_ssh_key.public_key_openssh}&quot;
-                </span>},
-                <span class="string">&quot;boot_disk&quot;</span>: [
+
+        <span class="kw">let </span><span class="kw-2">mut </span>tags = <span class="macro">vec!</span>[];
+        <span class="kw">let </span><span class="kw-2">mut </span>external_interfaces = <span class="macro">vec!</span>[];
+
+        <span class="kw">if </span><span class="self">self</span>.external_ports.is_empty() {
+            external_interfaces.push(<span class="macro">json!</span>({
+                <span class="string">&quot;network&quot;</span>: <span class="macro">format!</span>(<span class="string">&quot;${{google_compute_network.{vpc_network}.self_link}}&quot;</span>)
+            }));
+        } <span class="kw">else </span>{
+            external_interfaces.push(<span class="macro">json!</span>({
+                <span class="string">&quot;network&quot;</span>: <span class="macro">format!</span>(<span class="string">&quot;${{google_compute_network.{vpc_network}.self_link}}&quot;</span>),
+                <span class="string">&quot;access_config&quot;</span>: [
                     {
-                        <span class="string">&quot;initialize_params&quot;</span>: [
-                            {
-                                <span class="string">&quot;image&quot;</span>: <span class="string">&quot;debian-cloud/debian-11&quot;
-                            </span>}
-                        ]
-                    }
-                ],
-                <span class="string">&quot;network_interface&quot;</span>: [
-                    {
-                        <span class="string">&quot;network&quot;</span>: <span class="macro">format!</span>(<span class="string">&quot;${{google_compute_network.{vpc_network}.self_link}}&quot;</span>),
-                        <span class="string">&quot;access_config&quot;</span>: [
-                            {
-                                <span class="string">&quot;network_tier&quot;</span>: <span class="string">&quot;STANDARD&quot;
-                            </span>}
-                        ]
-                    }
+                        <span class="string">&quot;network_tier&quot;</span>: <span class="string">&quot;STANDARD&quot;
+                    </span>}
                 ]
             }));
+
+            <span class="comment">// open the external ports that were requested
+            </span><span class="kw">let </span>open_external_ports_rule = <span class="macro">format!</span>(<span class="string">&quot;{vm_instance}-open-external-ports&quot;</span>);
+            firewall_entries.insert(
+                open_external_ports_rule.clone(),
+                <span class="macro">json!</span>({
+                    <span class="string">&quot;name&quot;</span>: open_external_ports_rule,
+                    <span class="string">&quot;project&quot;</span>: project,
+                    <span class="string">&quot;network&quot;</span>: <span class="macro">format!</span>(<span class="string">&quot;${{google_compute_network.{vpc_network}.name}}&quot;</span>),
+                    <span class="string">&quot;target_tags&quot;</span>: [open_external_ports_rule],
+                    <span class="string">&quot;source_ranges&quot;</span>: [<span class="string">&quot;0.0.0.0/0&quot;</span>],
+                    <span class="string">&quot;allow&quot;</span>: [
+                        {
+                            <span class="string">&quot;protocol&quot;</span>: <span class="string">&quot;tcp&quot;</span>,
+                            <span class="string">&quot;ports&quot;</span>: <span class="self">self</span>.external_ports.iter().map(|p| p.to_string()).collect::&lt;Vec&lt;String&gt;&gt;()
+                        }
+                    ]
+                }),
+            );
+
+            tags.push(open_external_ports_rule);
+
+            resource_batch.terraform.output.insert(
+                <span class="macro">format!</span>(<span class="string">&quot;{vm_instance}-public-ip&quot;</span>),
+                TerraformOutput {
+                    value: <span class="macro">format!</span>(<span class="string">&quot;${{google_compute_instance.{vm_instance}.network_interface[0].access_config[0].nat_ip}}&quot;</span>)
+                }
+            );
+        }
+
+        resource_batch
+            .terraform
+            .resource
+            .entry(<span class="string">&quot;google_compute_instance&quot;</span>.to_string())
+            .or_default()
+            .insert(
+                vm_instance.clone(),
+                <span class="macro">json!</span>({
+                    <span class="string">&quot;name&quot;</span>: vm_instance,
+                    <span class="string">&quot;project&quot;</span>: project,
+                    <span class="string">&quot;machine_type&quot;</span>: <span class="self">self</span>.machine_type,
+                    <span class="string">&quot;zone&quot;</span>: <span class="self">self</span>.region,
+                    <span class="string">&quot;tags&quot;</span>: tags,
+                    <span class="string">&quot;metadata&quot;</span>: {
+                    <span class="string">&quot;ssh-keys&quot;</span>: <span class="string">&quot;hydro:${tls_private_key.vm_instance_ssh_key.public_key_openssh}&quot;
+                    </span>},
+                    <span class="string">&quot;boot_disk&quot;</span>: [
+                        {
+                            <span class="string">&quot;initialize_params&quot;</span>: [
+                                {
+                                    <span class="string">&quot;image&quot;</span>: <span class="self">self</span>.image
+                                }
+                            ]
+                        }
+                    ],
+                    <span class="string">&quot;network_interface&quot;</span>: external_interfaces
+                }),
+            );
 
         resource_batch.terraform.output.insert(
             <span class="macro">format!</span>(<span class="string">&quot;{vm_instance}-internal-ip&quot;</span>),
@@ -809,13 +908,6 @@
                 </span>),
             },
         );
-
-        resource_batch.terraform.output.insert(
-            <span class="macro">format!</span>(<span class="string">&quot;{vm_instance}-public-ip&quot;</span>),
-            TerraformOutput {
-                value: <span class="macro">format!</span>(<span class="string">&quot;${{google_compute_instance.{vm_instance}.network_interface[0].access_config[0].nat_ip}}&quot;</span>)
-            }
-        );
     }
 
     <span class="kw">async fn </span>provision(<span class="kw-2">&amp;mut </span><span class="self">self</span>, resource_result: <span class="kw-2">&amp;</span>Arc&lt;ResourceResult&gt;) -&gt; Arc&lt;<span class="kw">dyn </span>LaunchedHost&gt; {
@@ -823,40 +915,38 @@
             <span class="kw">let </span>project = <span class="self">self</span>.project.as_str();
             <span class="kw">let </span>id = <span class="self">self</span>.id;
 
-            <span class="kw">let </span>internal_ip = <span class="kw-2">&amp;</span>resource_result
+            <span class="kw">let </span>internal_ip = resource_result
                 .terraform
                 .outputs
                 .get(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;vm-instance-{project}-{id}-internal-ip&quot;</span>))
                 .unwrap()
-                .value;
-            <span class="self">self</span>.internal_ip = <span class="prelude-val">Some</span>(internal_ip.clone());
+                .value
+                .clone();
 
-            <span class="kw">let </span>external_ip = <span class="kw-2">&amp;</span>resource_result
+            <span class="kw">let </span>external_ip = resource_result
                 .terraform
                 .outputs
                 .get(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;vm-instance-{project}-{id}-public-ip&quot;</span>))
-                .unwrap()
-                .value;
-            <span class="self">self</span>.external_ip = <span class="prelude-val">Some</span>(external_ip.clone());
+                .map(|v| v.value.clone());
 
             <span class="self">self</span>.launched = <span class="prelude-val">Some</span>(Arc::new(LaunchedComputeEngine {
                 resource_result: resource_result.clone(),
-                external_ip: external_ip.clone(),
-                binary_counter: RwLock::new(<span class="number">0</span>),
+                internal_ip,
+                external_ip,
+                binary_counter: AtomicUsize::new(<span class="number">0</span>),
             }))
         }
 
         <span class="self">self</span>.launched.as_ref().unwrap().clone()
     }
 
-    <span class="kw">fn </span>find_bind_type(<span class="kw-2">&amp;</span><span class="self">self</span>, connection_from: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Host) -&gt; BindType {
+    <span class="kw">fn </span>get_bind_type(<span class="kw-2">&amp;</span><span class="self">self</span>, connection_from: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Host) -&gt; BindType {
         <span class="kw">if </span>connection_from.can_connect_to(ConnectionType::UnixSocket(<span class="self">self</span>.id)) {
             BindType::UnixSocket
         } <span class="kw">else if </span>connection_from
             .can_connect_to(ConnectionType::InternalTcpPort(<span class="self">self</span>.project.clone()))
         {
-            <span class="comment">// we use the project as a way to uniquely identify the VPC network
-            </span>BindType::TcpPort(<span class="self">self</span>.internal_ip.as_ref().unwrap().clone())
+            BindType::InternalTcpPort
         } <span class="kw">else </span>{
             <span class="macro">todo!</span>()
         }

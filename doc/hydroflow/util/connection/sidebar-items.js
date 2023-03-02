@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["BindType","BoundConnection","ConnectionPipe"]};
+window.SIDEBAR_ITEMS = {"enum":["BindConfig","BoundConnection","ConnectionPipe"]};

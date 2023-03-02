@@ -105,12 +105,31 @@
 <a href="#105" id="105">105</a>
 <a href="#106" id="106">106</a>
 <a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
+<a href="#109" id="109">109</a>
+<a href="#110" id="110">110</a>
+<a href="#111" id="111">111</a>
+<a href="#112" id="112">112</a>
+<a href="#113" id="113">113</a>
+<a href="#114" id="114">114</a>
+<a href="#115" id="115">115</a>
+<a href="#116" id="116">116</a>
+<a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
+<a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a>
+<a href="#121" id="121">121</a>
+<a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
+<a href="#124" id="124">124</a>
+<a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::{path::Path, sync::Arc};
 
 <span class="kw">use </span>anyhow::Result;
 <span class="kw">use </span>async_channel::{Receiver, Sender};
 <span class="kw">use </span>async_trait::async_trait;
-<span class="kw">use </span>hydroflow::util::connection::BindType;
+<span class="kw">use </span>hydroflow::util::connection::BindConfig;
 <span class="kw">use </span>tokio::sync::RwLock;
 
 <span class="kw">pub mod </span>deployment;
@@ -124,6 +143,9 @@
 
 <span class="kw">pub mod </span>hydroflow_crate;
 <span class="kw">pub use </span>hydroflow_crate::HydroflowCrate;
+
+<span class="kw">pub mod </span>custom_service;
+<span class="kw">pub use </span>custom_service::CustomService;
 
 <span class="kw">pub mod </span>terraform;
 
@@ -162,10 +184,25 @@
 
 <span class="attr">#[async_trait]
 </span><span class="kw">pub trait </span>LaunchedHost: Send + Sync {
+    <span class="doccomment">/// Given a pre-selected network type, computes concrete information needed for a service
+    /// to listen to network connections (such as the IP address to bind to).
+    </span><span class="kw">fn </span>get_bind_config(<span class="kw-2">&amp;</span><span class="self">self</span>, bind_type: <span class="kw-2">&amp;</span>BindType) -&gt; BindConfig;
+
     <span class="kw">async fn </span>launch_binary(<span class="kw-2">&amp;</span><span class="self">self</span>, binary: <span class="kw-2">&amp;</span>Path) -&gt; <span class="prelude-ty">Result</span>&lt;Arc&lt;RwLock&lt;<span class="kw">dyn </span>LaunchedBinary&gt;&gt;&gt;;
 }
 
-<span class="kw">pub enum </span>ConnectionType {
+<span class="doccomment">/// Types of connections that a host can make to another host.
+</span><span class="kw">pub enum </span>BindType {
+    UnixSocket,
+    InternalTcpPort,
+    ExternalTcpPort(
+        <span class="doccomment">/// The port number to bind to, which must be explicit to open the firewall.
+        </span>u16,
+    ),
+}
+
+<span class="doccomment">/// Like BindType, but includes metadata for determining whether a connection is possible.
+</span><span class="kw">pub enum </span>ConnectionType {
     UnixSocket(
         <span class="doccomment">/// Unique identifier for the host this socket will be on.
         </span>usize,
@@ -178,6 +215,8 @@
 
 <span class="attr">#[async_trait]
 </span><span class="kw">pub trait </span>Host: Send + Sync {
+    <span class="kw">fn </span>request_port(<span class="kw-2">&amp;mut </span><span class="self">self</span>, bind_type: <span class="kw-2">&amp;</span>BindType);
+
     <span class="doccomment">/// Makes requests for physical resources (servers) that this host needs to run.
     </span><span class="kw">fn </span>collect_resources(<span class="kw-2">&amp;</span><span class="self">self</span>, resource_batch: <span class="kw-2">&amp;mut </span>ResourceBatch);
 
@@ -185,14 +224,18 @@
     </span><span class="kw">async fn </span>provision(<span class="kw-2">&amp;mut </span><span class="self">self</span>, resource_result: <span class="kw-2">&amp;</span>Arc&lt;ResourceResult&gt;) -&gt; Arc&lt;<span class="kw">dyn </span>LaunchedHost&gt;;
 
     <span class="doccomment">/// Identifies a network type that this host can use for connections from the given host.
-    </span><span class="kw">fn </span>find_bind_type(<span class="kw-2">&amp;</span><span class="self">self</span>, connection_from: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Host) -&gt; BindType;
+    </span><span class="kw">fn </span>get_bind_type(<span class="kw-2">&amp;</span><span class="self">self</span>, connection_from: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Host) -&gt; BindType;
 
-    <span class="kw">fn </span>can_connect_to(<span class="kw-2">&amp;</span><span class="self">self</span>, typ: ConnectionType) -&gt; bool;
+    <span class="doccomment">/// Determins whether this host can connect to another host using the given connection type.
+    </span><span class="kw">fn </span>can_connect_to(<span class="kw-2">&amp;</span><span class="self">self</span>, typ: ConnectionType) -&gt; bool;
 }
 
 <span class="attr">#[async_trait]
 </span><span class="kw">pub trait </span>Service: Send + Sync {
-    <span class="doccomment">/// Makes requests for physical resources (servers) that this service needs to run.
+    <span class="doccomment">/// Makes requests for physical resources server ports that this service needs to run.
+    /// This should **not** recursively call `collect_resources` on the host, since
+    /// we guarantee that `collect_resources` is only called once per host.
+    ///
     /// This should also perform any &quot;free&quot;, non-blocking computations (compilations),
     /// because the `deploy` method will be called after these resources are allocated.
     </span><span class="kw">fn </span>collect_resources(<span class="kw-2">&amp;mut </span><span class="self">self</span>, resource_batch: <span class="kw-2">&amp;mut </span>ResourceBatch);
@@ -206,11 +249,6 @@
 
     <span class="doccomment">/// Starts the service by having it connect to other services and start computations.
     </span><span class="kw">async fn </span>start(<span class="kw-2">&amp;mut </span><span class="self">self</span>);
-
-    <span class="kw">fn </span>host(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;;
-
-    <span class="kw">fn </span>as_any(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="kw">dyn </span>std::any::Any;
-    <span class="kw">fn </span>as_any_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span><span class="kw">dyn </span>std::any::Any;
 }
 </code></pre></div>
 </section></main><div id="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="hydro_cli" data-themes="" data-resource-suffix="" data-rustdoc-version="1.69.0-nightly (31f858d9a 2023-02-28)" data-search-js="search-d5a6cd8418084717.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-0bcba95ff279c1db.css" ></div></body></html>
