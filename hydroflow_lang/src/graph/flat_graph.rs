@@ -725,7 +725,7 @@ impl FlatGraph {
         }
         writeln!(write)?;
         for (_e, (src_key, dst_key)) in self.graph.edges() {
-            writeln!(write, "({:?}-->{:?});", src_key.data(), dst_key.data())?;
+            writeln!(write, "{:?} -> {:?};", src_key.data(), dst_key.data())?;
         }
         Ok(())
     }
