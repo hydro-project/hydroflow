@@ -1,0 +1,19 @@
+[project]
+name = "hydro-cli"
+version = "0.0.1"
+authors = []
+description = ""
+readme = "../README.md"
+dependencies = []
+requires-python = ">=3.7"
+
+[build-system]
+requires = ["maturin>=0.14,<0.15"]
+build-backend = "maturin"
+
+[tool.maturin]
+# "extension-module" tells pyo3 we want to build an extension module (skips linking against libpython.so)
+features = ["pyo3/extension-module"]
+
+[project.scripts]
+hydro = "hydro.cli:cli"

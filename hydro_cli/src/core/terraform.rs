@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use anyhow::{Result, Context, bail};
 use async_process::Command;
 use serde::{Deserialize, Serialize};
 
@@ -23,7 +24,7 @@ impl Default for TerraformBatch {
 }
 
 impl TerraformBatch {
-    pub async fn provision(self) -> TerraformResult {
+    pub async fn provision(self) -> Result<TerraformResult> {
         let dothydro_folder = std::env::current_dir().unwrap().join(".hydro");
         std::fs::create_dir_all(&dothydro_folder).unwrap();
         let deployment_folder = tempfile::tempdir_in(dothydro_folder).unwrap();
@@ -32,10 +33,10 @@ impl TerraformBatch {
             && self.resource.is_empty()
             && self.output.is_empty()
         {
-            return TerraformResult {
+            return Ok(TerraformResult {
                 outputs: HashMap::new(),
                 deployment_folder,
-            };
+            });
         }
 
         std::fs::write(
@@ -48,13 +49,13 @@ impl TerraformBatch {
             .current_dir(deployment_folder.path())
             .arg("init")
             .spawn()
-            .unwrap()
+            .context("Failed to spawn `terraform`. Is it installed?")?
             .status()
             .await
-            .expect("Failed to spawn terraform init command")
+            .context("Failed to launch terraform init command")?
             .success()
         {
-            panic!("Failed to initialize terraform");
+            bail!("Failed to initialize terraform");
         }
 
         let mut result = TerraformResult {
@@ -67,13 +68,13 @@ impl TerraformBatch {
             .arg("apply")
             .arg("-auto-approve")
             .spawn()
-            .unwrap()
+            .context("Failed to spawn `terraform`. Is it installed?")?
             .status()
             .await
-            .expect("Failed to spawn terraform apply command")
+            .context("Failed to launch terraform apply command")?
             .success()
         {
-            panic!("Failed to apply terraform");
+            bail!("Failed to apply terraform");
         }
 
         let output = Command::new("terraform")
@@ -82,11 +83,11 @@ impl TerraformBatch {
             .arg("-json")
             .output()
             .await
-            .expect("Failed to spawn terraform output command");
+            .context("Failed to read Terraform outputs")?;
 
         result.outputs = serde_json::from_slice(&output.stdout).unwrap();
 
-        result
+        Ok(result)
     }
 }
 

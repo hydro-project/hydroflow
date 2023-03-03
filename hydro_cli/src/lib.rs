@@ -2,10 +2,15 @@ use std::sync::Arc;
 
 use async_channel::Receiver;
 use pyo3::exceptions::PyException;
-use pyo3::prelude::*;
+use pyo3::{prelude::*, create_exception, wrap_pymodule};
 use tokio::sync::RwLock;
 
-#[pyclass(extends=PyException)]
+pub mod core;
+mod cli;
+
+create_exception!(hydro_cli_core, AnyhowError, PyException);
+
+#[pyclass]
 #[derive(Clone)]
 pub struct AnyhowWrapper {
     pub underlying: Arc<RwLock<Option<anyhow::Error>>>,
@@ -33,15 +38,13 @@ impl PyDeployment {
         pyo3_asyncio::tokio::future_into_py(py, async move {
             underlying.write().await.deploy().await.map_err(|e| {
                 Python::with_gil(|py| {
-                    PyErr::from_value(
+                    AnyhowError::new_err(
                         Py::new(
                             py,
                             AnyhowWrapper {
                                 underlying: Arc::new(RwLock::new(Some(e))),
                             },
-                        )
-                        .unwrap()
-                        .as_ref(py),
+                        ).unwrap()
                     )
                 })
             })?;
@@ -284,7 +287,8 @@ fn create_connection(
 }
 
 #[pymodule]
-pub fn hydro_cli_rust(_py: Python<'_>, module: &PyModule) -> PyResult<()> {
+pub fn _core(py: Python<'_>, module: &PyModule) -> PyResult<()> {
+    module.add("AnyhowError", py.get_type::<AnyhowError>())?;
     module.add_class::<AnyhowWrapper>()?;
 
     module.add_class::<PyDeployment>()?;
@@ -298,5 +302,8 @@ pub fn hydro_cli_rust(_py: Python<'_>, module: &PyModule) -> PyResult<()> {
     module.add_class::<PyHydroflowCrate>()?;
 
     module.add_function(wrap_pyfunction!(create_connection, module)?)?;
+
+    module.add_wrapped(wrap_pymodule!(cli::cli))?;
+
     Ok(())
 }

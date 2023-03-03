@@ -1,5 +1,7 @@
+import hydro._core # type: ignore
+
 from typing import List, Optional
-import hydro_cli_rust # type: ignore
+hydro_cli_rust = hydro._core
 
 class Deployment(object):
     def __init__(self) -> None:

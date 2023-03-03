@@ -24,7 +24,7 @@ impl Deployment {
             host.write().await.collect_resources(&mut resource_pool);
         }
 
-        let result = Arc::new(resource_pool.provision().await);
+        let result = Arc::new(resource_pool.provision().await?);
 
         let services_future =
             self.services
