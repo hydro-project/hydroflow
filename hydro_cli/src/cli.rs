@@ -1,8 +1,8 @@
-use std::{path::PathBuf, fmt::Display};
+use std::{fmt::Display, path::PathBuf};
 
 use anyhow::Context;
 use clap::{Parser, Subcommand};
-use pyo3::{prelude::*, types::PyList, exceptions::PyException};
+use pyo3::{exceptions::PyException, prelude::*, types::PyList};
 
 use crate::{AnyhowError, AnyhowWrapper};
 
@@ -16,9 +16,7 @@ struct Cli {
 #[derive(Subcommand, Debug)]
 enum Commands {
     /// deploys
-    Deploy {
-        config: PathBuf,
-    },
+    Deploy { config: PathBuf },
 }
 
 fn async_wrapper_module(py: Python) -> Result<&PyModule, PyErr> {
@@ -78,12 +76,14 @@ fn deploy(config: PathBuf) -> anyhow::Result<()> {
                     .to_string();
 
                 if err.is_instance_of::<AnyhowError>(py) {
-                    let args = err.value(py).getattr("args")?
+                    let args = err
+                        .value(py)
+                        .getattr("args")?
                         .extract::<Vec<AnyhowWrapper>>()?;
                     let wrapper = args.get(0).unwrap();
                     let underlying = &wrapper.underlying;
                     let mut underlying = underlying.blocking_write();
-                    Err(underlying.take().unwrap()).context(format!("{}", traceback))
+                    Err(underlying.take().unwrap()).context(traceback)
                 } else {
                     Err(PyErrWithTraceback {
                         err_display: format!("{}", err),
@@ -103,19 +103,17 @@ fn cli_entrypoint(args: Vec<String>) -> PyResult<()> {
     match Cli::try_parse_from(args) {
         Ok(args) => {
             let res = match args.command {
-                Commands::Deploy { config } => {
-                    deploy(config)
-                }
+                Commands::Deploy { config } => deploy(config),
             };
-        
+
             match res {
                 Ok(_) => Ok(()),
                 Err(err) => {
                     eprintln!("{:?}", err);
                     Err(PyErr::new::<PyException, _>(""))
-                },
+                }
             }
-        },
+        }
         Err(err) => {
             err.print().unwrap();
             Err(PyErr::new::<PyException, _>(""))

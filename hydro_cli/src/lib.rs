@@ -2,11 +2,11 @@ use std::sync::Arc;
 
 use async_channel::Receiver;
 use pyo3::exceptions::PyException;
-use pyo3::{prelude::*, create_exception, wrap_pymodule};
+use pyo3::{create_exception, prelude::*, wrap_pymodule};
 use tokio::sync::RwLock;
 
-pub mod core;
 mod cli;
+pub mod core;
 
 create_exception!(hydro_cli_core, AnyhowError, PyException);
 
@@ -44,7 +44,8 @@ impl PyDeployment {
                             AnyhowWrapper {
                                 underlying: Arc::new(RwLock::new(Some(e))),
                             },
-                        ).unwrap()
+                        )
+                        .unwrap(),
                     )
                 })
             })?;

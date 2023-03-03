@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use anyhow::{Result, Context, bail};
+use anyhow::{bail, Context, Result};
 use async_process::Command;
 use serde::{Deserialize, Serialize};
 
