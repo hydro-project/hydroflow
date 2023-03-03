@@ -128,11 +128,29 @@
 <a href="#128" id="128">128</a>
 <a href="#129" id="129">129</a>
 <a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
 </pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::graph::{OpInstGenerics, OperatorInstance};
 
 <span class="kw">use super</span>::{
-    DelayType, FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput,
-    Persistence, WriteContextArgs, RANGE_0, RANGE_1,
+    FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput, Persistence,
+    WriteContextArgs, RANGE_0, RANGE_1,
 };
 
 <span class="kw">use </span>quote::quote_spanned;
@@ -192,13 +210,15 @@
         monotonic: FlowPropertyVal::Preserve,
         inconsistency_tainted: <span class="bool-val">false</span>,
     },
-    input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">Some</span>(DelayType::Stratum),
+    input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">None</span>,
     write_fn: |wc @ <span class="kw-2">&amp;</span>WriteContextArgs {
+                   root,
                    op_span,
                    context,
                    hydroflow,
                    ident,
                    inputs,
+                   outputs,
                    is_pull,
                    op_inst:
                        OperatorInstance {
@@ -211,8 +231,6 @@
                    ..
                },
                <span class="kw">_</span>| {
-        <span class="macro">assert!</span>(is_pull);
-
         <span class="kw">let </span>persistence = <span class="kw">match </span>persistence_args[..] {
             [] =&gt; Persistence::Static,
             [a] =&gt; a,
@@ -220,42 +238,60 @@
         };
 
         <span class="kw">let </span>input = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>];
-        <span class="kw">match </span>persistence {
+        <span class="kw">let </span>output = <span class="kw-2">&amp;</span>outputs[<span class="number">0</span>];
+
+        <span class="kw">let </span>uniquedata_ident = wc.make_ident(<span class="string">&quot;uniquedata&quot;</span>);
+
+        <span class="kw">let </span>(write_prologue, get_set) = <span class="kw">match </span>persistence {
             Persistence::Tick =&gt; {
-                <span class="kw">let </span>write_iterator = <span class="macro">quote_spanned! </span>{op_span=&gt;
-                    <span class="kw">let </span>#ident = #input.fold(
-                        ::std::collections::HashSet::new(),
-                        |<span class="kw-2">mut </span>prev, nxt| {prev.insert(nxt); prev}
-                    ).into_iter();
+                <span class="kw">let </span>write_prologue = <span class="macro">quote_spanned! </span>{op_span=&gt;
+                    <span class="kw">let </span>#uniquedata_ident = #hydroflow.add_state(::std::cell::RefCell::new(
+                        #root::lang::monotonic_map::MonotonicMap::&lt;<span class="kw">_</span>, ::std::collections::HashSet&lt;<span class="kw">_</span>&gt;&gt;::default(),
+                    ));
                 };
-                <span class="prelude-val">Ok</span>(OperatorWriteOutput {
-                    write_iterator,
-                    ..Default::default()
-                })
+                <span class="kw">let </span>get_set = <span class="macro">quote_spanned! </span>{op_span=&gt;
+                    <span class="kw">let </span><span class="kw-2">mut </span>borrow = #context.state_ref(#uniquedata_ident).borrow_mut();
+                    <span class="kw">let </span>set = borrow.try_insert_with((#context.current_tick(), #context.current_stratum()), ::std::collections::HashSet::new);
+                };
+                (write_prologue, get_set)
             }
             Persistence::Static =&gt; {
-                <span class="kw">let </span>uniquedata_ident = wc.make_ident(<span class="string">&quot;uniquedata&quot;</span>);
-
                 <span class="kw">let </span>write_prologue = <span class="macro">quote_spanned! </span>{op_span=&gt;
                     <span class="kw">let </span>#uniquedata_ident = #hydroflow.add_state(::std::cell::RefCell::new(::std::collections::HashSet::new()));
                 };
-                <span class="kw">let </span>write_iterator = <span class="macro">quote_spanned! </span>{op_span=&gt;
-                    <span class="comment">// TODO(mingwei): Better data structure for this?
-                    </span><span class="kw">let </span>#ident = {
-                        <span class="kw">let </span><span class="kw-2">mut </span>set = #context.state_ref(#uniquedata_ident).borrow_mut();
-                        #input.filter(|x| set.insert(::std::clone::Clone::clone(x)))
-                            .collect::&lt;::std::vec::Vec&lt;<span class="kw">_</span>&gt;&gt;()
-                            .into_iter()
-                    };
+                <span class="kw">let </span>get_set = <span class="macro">quote_spanned! </span>{op_span=&gt;
+                    <span class="kw">let </span><span class="kw-2">mut </span>set = #context.state_ref(#uniquedata_ident).borrow_mut();
                 };
-
-                <span class="prelude-val">Ok</span>(OperatorWriteOutput {
-                    write_prologue,
-                    write_iterator,
-                    ..Default::default()
-                })
+                (write_prologue, get_set)
             }
-        }
+        };
+
+        <span class="kw">let </span>filter_fn = <span class="macro">quote_spanned! </span>{op_span=&gt;
+            |item| {
+                #get_set
+                <span class="kw">if </span>!set.contains(item) {
+                    set.insert(::std::clone::Clone::clone(item));
+                    <span class="bool-val">true
+                </span>} <span class="kw">else </span>{
+                    <span class="bool-val">false
+                </span>}
+            }
+        };
+        <span class="kw">let </span>write_iterator = <span class="kw">if </span>is_pull {
+            <span class="macro">quote_spanned! </span>{op_span=&gt;
+                <span class="kw">let </span>#ident = #input.filter(#filter_fn);
+            }
+        } <span class="kw">else </span>{
+            <span class="macro">quote_spanned! </span>{op_span=&gt;
+                <span class="kw">let </span>#ident = #root::pusherator::filter::Filter::new(#filter_fn, #output);
+            }
+        };
+
+        <span class="prelude-val">Ok</span>(OperatorWriteOutput {
+            write_prologue,
+            write_iterator,
+            ..Default::default()
+        })
     },
 };
 </code></pre></div>

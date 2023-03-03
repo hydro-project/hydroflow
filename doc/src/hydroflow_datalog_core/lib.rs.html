@@ -591,6 +591,7 @@
 <a href="#591" id="591">591</a>
 <a href="#592" id="592">592</a>
 <a href="#593" id="593">593</a>
+<a href="#594" id="594">594</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::collections::{HashMap, HashSet};
 
 <span class="kw">use </span>hydroflow_lang::{
@@ -643,7 +644,8 @@
         <span class="kw">if </span>!created_rules.contains(<span class="kw-2">&amp;</span>target_ident) {
             created_rules.insert(target_ident.clone());
             <span class="kw">let </span>name = syn::Ident::new(<span class="kw-2">&amp;</span>target_ident.name, Span::call_site());
-            flat_graph_builder.add_statement(<span class="macro">parse_quote!</span>(#name = merge() -&gt; tee()));
+            flat_graph_builder
+                .add_statement(<span class="macro">parse_quote!</span>(#name = merge() -&gt; unique::&lt;<span class="lifetime">&#39;tick</span>&gt;() -&gt; tee()));
         }
     }
 
