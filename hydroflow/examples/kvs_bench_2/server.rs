@@ -8,17 +8,29 @@ use std::time::Duration;
 use tokio::task;
 use tokio_stream::StreamExt;
 
-use crate::MyMVReg;
+use crate::efficient_maxreg::EAddCtx;
+use crate::MyRegType;
 use crate::MyVClock;
 use crate::ValueType;
-use crdts::ctx::AddCtx;
 use crdts::CmRDT;
 use crdts::CvRDT;
 use hydroflow::util::deserialize_from_bytes2;
+use rand::rngs::StdRng;
+use rand::SeedableRng;
+use rand_distr::Distribution;
+use std::sync::atomic::AtomicUsize;
+use std::sync::atomic::Ordering;
+use std::sync::Arc;
 use tmq::Context;
 use tokio::select;
 
-pub fn run_server(server_addr: String, gossip_addr: String, topology: Vec<String>, ctx: Context) {
+pub fn run_server(
+    gossip_addr: usize,
+    topology: Vec<usize>,
+    dist: f64,
+    ctx: Context,
+    throughput: Arc<AtomicUsize>,
+) {
     std::thread::spawn(move || {
         let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()
@@ -37,6 +49,38 @@ pub fn run_server(server_addr: String, gossip_addr: String, topology: Vec<String
                 hydroflow::util::unbounded_channel::<(KVSRequest, Vec<u8>)>();
             let (transducer_to_client_tx, mut transducer_to_client_rx) =
                 hydroflow::util::bounded_channel::<(KVSResponse, Vec<u8>)>(500000);
+
+
+            // simualate some initial requests, then on each ack, send a new request.
+
+            // let simulated_input = stream! {
+
+            //     let mut rng = StdRng::from_entropy();
+
+            //     let dist = rand_distr::Zipf::new(1_000_000, dist).unwrap();
+
+            //     loop {
+            //         yield (KVSRequest::Put {
+            //             key: dist.sample(&mut rng) as u64,
+            //             value: ValueType { data: [0; 1024] },
+            //         }, Vec::new());
+
+            //         throughput.fetch_add(1, Ordering::SeqCst);
+            //     }
+            // };
+
+            {
+                let mut rng = StdRng::from_entropy();
+
+                let dist = rand_distr::Zipf::new(1_000_000, dist).unwrap();
+
+                for i in 0..100 {
+                    client_to_transducer_tx.send((KVSRequest::Put {
+                        key: dist.sample(&mut rng) as u64,
+                        value: ValueType { data: [0; 1024] },
+                    }, Vec::new())).unwrap();
+                }
+            }
 
             // {
             //     // let pub_socket = ctx.socket(zmq::PUB).unwrap();
@@ -94,91 +138,27 @@ pub fn run_server(server_addr: String, gossip_addr: String, topology: Vec<String
 
             let localset = tokio::task::LocalSet::new();
 
-            // Handle incoming peer-to-peer communication
-            // let f1 = localset.run_until(async {
-            //     task::spawn_local(async move {
-            //         loop {
-            //             let (stream, _) = batch_listener.accept().await.unwrap();
-            //             stream.set_nodelay(true).unwrap();
-
-            //             let (_, mut inbound) = tcp_bytes(stream);
-
-            //             task::spawn_local({
-            //                 let peer_to_transducer_tx = peer_to_transducer_tx.clone();
-
-            //                 async move {
-            //                     while let Some(payload) = inbound.next().await {
-            //                         let payload: KVSBatch = deserialize_from_bytes(payload.unwrap());
-            //                         peer_to_transducer_tx.send(payload).unwrap();
-            //                     }
-            //                 }
-            //             });
-            //         }
-            //     })
-            //     .await
-            //     .unwrap()
-            // });
-
-            // let clients = Rc::new(RefCell::new(HashMap::new()));
-
-            // Handle incoming messages from clients or peers
-            // let f2 = localset.run_until(async {
-            //     let clients = clients.clone();
-
-            //     task::spawn_local(async move {
-            //         loop {
-            //             let (stream, addr) = client_listener.accept().await.unwrap();
-            //             stream.set_nodelay(true).unwrap();
-
-            //             let (outbound, mut inbound) = tcp_bytes(stream);
-
-            //             clients
-            //                 .borrow_mut()
-            //                 .insert(addr.clone(), Rc::new(RefCell::new(outbound)));
-
-            //             task::spawn_local({
-            //                 let client_to_transducer_tx = client_to_transducer_tx.clone();
-
-            //                 async move {
-            //                     while let Some(payload) = inbound.next().await {
-            //                         if let Ok(payload) = payload {
-            //                             let payload: KVSRequest = deserialize_from_bytes(payload);
-            //                             client_to_transducer_tx.send((payload, addr)).unwrap();
-            //                         }
-            //                     }
-            //                 }
-            //             });
-            //         }
-            //     })
-            //     .await
-            //     .unwrap()
-            // });
-
             let f2 = localset.run_until({
-                let ctx = ctx.clone();
-                let addr = server_addr.clone();
                 let client_to_transducer_tx = client_to_transducer_tx.clone();
 
                 async {
                     task::spawn_local({
 
-
                         async move {
-                            println!("binding client to: {addr:?}");
-                            let mut router_socket = tmq::router(&ctx).bind(&addr).unwrap();
+
+                            let mut rng = StdRng::from_entropy();
+
+                            let dist = rand_distr::Zipf::new(1_000_000, dist).unwrap();
 
                             loop {
                                 select! {
-                                    Some(x) = router_socket.next() => {
-                                        let x = x.unwrap();
-                                        assert_eq!(x.0.len(), 2);
+                                    Some(_) = transducer_to_client_rx.next() => {
+                                        client_to_transducer_tx.send((KVSRequest::Put {
+                                            key: dist.sample(&mut rng) as u64,
+                                            value: ValueType { data: [0; 1024] },
+                                        }, Vec::new())).unwrap();
 
-                                        let routing_id = Vec::from(&x.0[0][..]);
-                                        let payload: KVSRequest = deserialize_from_bytes2(&x.0[1]);
-                                        client_to_transducer_tx.send((payload, routing_id)).unwrap();
-                                    },
-                                    Some(x) = transducer_to_client_rx.next() => {
-                                        router_socket.send(vec![x.1, serialize_to_bytes(x.0).to_vec()]).await.unwrap();
+                                        throughput.fetch_add(1, Ordering::SeqCst);
                                     }
                                 }
                             }
@@ -190,8 +170,6 @@ pub fn run_server(server_addr: String, gossip_addr: String, topology: Vec<String
 
             let f3 = localset.run_until({
                 let ctx = ctx.clone();
-                let addr = server_addr.clone();
-                let gossip_addr = gossip_addr.clone();
 
                 async {
                     task::spawn_local({
@@ -199,7 +177,7 @@ pub fn run_server(server_addr: String, gossip_addr: String, topology: Vec<String
 
                         async move {
                             println!("binding gossip to: {gossip_addr:?}");
-                            let mut router_socket = tmq::router(&ctx).bind(&gossip_addr).unwrap();
+                            let mut router_socket = tmq::router(&ctx).bind(&format!("inproc://S{gossip_addr}")).unwrap();
 
                             loop {
                                 select! {
@@ -219,21 +197,6 @@ pub fn run_server(server_addr: String, gossip_addr: String, topology: Vec<String
                     .unwrap()
             }});
 
-            // Handle outgoing messages to clients
-            // let f3 = localset.run_until(async {
-            //     let clients = clients.clone();
-
-            //     task::spawn_local(async move {
-            //         while let Some((req, addr)) = transducer_to_client_rx.next().await {
-            //             let outbound = clients.borrow().get(&addr).unwrap().clone();
-
-            //             let _ = outbound.borrow_mut().send(serialize_to_bytes(req)).await;
-            //         }
-            //     })
-            //     .await
-            //     .unwrap()
-            // });
-
             // Wait for other servers to set up their listening tcp sockets so the subsequent connect() calls will not fail.
             // Terrible hack, not sure of a better way to do this.
             // tokio::time::sleep(Duration::from_secs(1)).await;
@@ -243,13 +206,12 @@ pub fn run_server(server_addr: String, gossip_addr: String, topology: Vec<String
             let f4 = localset.run_until({
                 let ctx = ctx.clone();
                 let transducer_to_peers_tx = transducer_to_peers_tx.clone();
-                let gossip_addr = gossip_addr.clone();
 
                 async move {
                     if topology.len() > 1 {
                         for addr in &topology {
                             if *addr != gossip_addr {
-                                let mut socket = tmq::dealer(&ctx).connect(&addr).unwrap();
+                                let mut socket = tmq::dealer(&ctx).connect(&format!("inproc://S{addr}")).unwrap();
 
                                 task::spawn_local({
                                     let mut transducer_to_peers_rx = transducer_to_peers_tx.subscribe();
@@ -317,7 +279,7 @@ pub fn run_server(server_addr: String, gossip_addr: String, topology: Vec<String
             #[derive(Clone, Eq, PartialEq, Debug)]
             enum ValueOrReg {
                 Value(ValueType),
-                Reg(MyMVReg),
+                Reg(MyRegType),
             }
 
             let mut df = hydroflow_syntax! {
@@ -347,7 +309,7 @@ pub fn run_server(server_addr: String, gossip_addr: String, topology: Vec<String
                                 accum.apply(accum.inc(gossip_addr.clone())); // TODO: this is a hack, need to figure out what to call self.
                             },
                             ValueOrReg::Reg(reg) => {
-                                accum.merge(reg.read_ctx().add_clock);
+                                accum.merge(reg.read_ctx().clock);
                             },
                         }
                     })
@@ -362,9 +324,9 @@ pub fn run_server(server_addr: String, gossip_addr: String, topology: Vec<String
                     -> demux(|(clock, (key, (value_or_reg, response_addr))): (MyVClock, (u64, (ValueOrReg, Vec<u8>))), var_args!(broadcast, store)| {
                         match value_or_reg {
                             ValueOrReg::Value(value) => {
-                                let mut reg = MyMVReg::default();
+                                let mut reg = MyRegType::new(ValueType { data: [0; 1024] });
 
-                                let ctx = AddCtx {
+                                let ctx = EAddCtx {
                                     dot: clock.dot(gossip_addr.clone()),
                                     clock: clock,
                                 };
@@ -384,7 +346,7 @@ pub fn run_server(server_addr: String, gossip_addr: String, topology: Vec<String
                 broadcast_or_store[broadcast]
                     // -> next_tick() // hack: buffer operator doesn't seem to compile without this.
                     -> buffer(timer)
-                    -> group_by::<'tick>(MyMVReg::default, |accum: &mut MyMVReg, reg: MyMVReg| {
+                    -> group_by::<'tick>(|| MyRegType::new(ValueType { data: [0; 1024] }), |accum: &mut MyRegType, reg: MyRegType| {
                         // If multiple writes have hit the same key then they can be merged before sending.
                         accum.merge(reg);
                     })
@@ -401,7 +363,7 @@ pub fn run_server(server_addr: String, gossip_addr: String, topology: Vec<String
 
                 gets
                     -> map(|x| x)
-                    -> map(|(key, addr)| (key, (MyMVReg::default(), Some(addr)))) // Nasty hack to get the group_by to emit another entry at the righ
+                    -> map(|(key, addr)| (key, (MyRegType::new(ValueType { data: [0; 1024] }), Some(addr)))) // Nasty hack to get the group_by to emit another entry at the righ
                     -> bump_merge;
 
                 put_ack_tee = tee();
@@ -421,11 +383,13 @@ pub fn run_server(server_addr: String, gossip_addr: String, topology: Vec<String
 
                 bump_merge
                     -> map(|x| x)
-                    -> group_by::<'static, u64, MyMVReg>(MyMVReg::default, |accum: &mut MyMVReg, (reg, _addr): (MyMVReg, Option<Vec<u8>>)| {
+                    -> group_by::<'static, u64, MyRegType>(|| MyRegType::new(ValueType { data: [0; 1024] }), |accum: &mut MyRegType, (reg, _addr): (MyRegType, Option<Vec<u8>>)| {
                         accum.merge(reg);
                     })
+                    -> null();
                     // -> inspect(|x| println!("{addr}:{:5}: stores-into-lookup: {x:?}", context.current_tick()))
-                    -> [0]lookup;
+                    // -> [0]lookup;
+                null() -> [0]lookup;
 
                 // Feed gets into the join to make them do the actual matching.
                 gets

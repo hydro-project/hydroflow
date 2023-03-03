@@ -11,15 +11,24 @@ use clap::Subcommand;
 use crdts::MVReg;
 use crdts::VClock;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::env;
 use std::time::Duration;
 
-type MyMVReg = MVReg<u64, String>;
+use serde_big_array::BigArray;
+
+#[derive(PartialEq, Eq, Clone, Serialize, Deserialize, Debug, Ord, PartialOrd)]
+pub struct ValueType {
+    #[serde(with = "BigArray")]
+    pub data: [u8; 1024],
+}
+
+type MyMVReg = MVReg<ValueType, String>;
 type MyVClock = VClock<String>;
 
 #[derive(PartialEq, Eq, Clone, Serialize, Deserialize, Debug)]
 pub enum KVSRequest {
-    Put { key: u64, value: u64 },
+    Put { key: u64, value: ValueType },
     Get { key: u64 },
     Gossip { key: u64, reg: MyMVReg },
 }
@@ -44,20 +53,20 @@ enum Commands {
         targets: Vec<String>,
     },
     #[command(arg_required_else_help = true)]
-    Server {
-        #[clap(long)]
-        addr: String,
-
-        #[clap(long, value_delimiter = ',')]
-        topology: Vec<String>,
-    },
-    All {
-        #[clap(long, value_delimiter = ',')]
-        clients: Vec<String>,
-
+    Servers {
         #[clap(long, value_delimiter = ',')]
         servers: Vec<String>,
+
+        #[clap(long, value_delimiter = ',')]
+        gossip: Vec<String>,
     },
+    // All {
+    //     #[clap(long, value_delimiter = ',')]
+    //     clients: Vec<String>,
+
+    //     #[clap(long, value_delimiter = ',')]
+    //     servers: Vec<String>,
+    // },
 }
 
 fn main() {
@@ -70,23 +79,31 @@ fn main() {
 
     match Cli::parse().command {
         Commands::Client { targets } => run_client(targets, ctx),
-        Commands::Server { addr, mut topology } => {
-            topology.retain(|x| *x != addr); // Don't try to connect to self, makes the bash script easier to write.
-            let peers = topology;
-            run_server(addr, peers, ctx)
-        }
-        Commands::All { clients, servers } => {
-            let topology = servers.clone();
-            for server in servers {
-                let mut topology = topology.clone();
-                topology.retain(|x| *x != server);
-                run_server(server, topology, ctx.clone());
+        Commands::Servers { servers, gossip } => {
+            assert_eq!(servers.len(), gossip.len());
+
+            for i in 0..servers.len() {
+                run_server(
+                    servers[i].clone(),
+                    gossip[i].clone(),
+                    gossip.clone(),
+                    ctx.clone(),
+                );
             }
+        } // Commands::All { clients, servers } => {
+          //     let mut topology = HashMap::new();
+          //     for idx in 0..servers.len() {
+          //         topology.insert(idx as u64, servers[idx].clone());
+          //     }
 
-            std::thread::sleep(Duration::from_secs(1));
+          //     for server in servers {
+          //         run_server(server, topology.clone(), ctx.clone());
+          //     }
 
-            run_client(clients, ctx);
-        }
+          //     std::thread::sleep(Duration::from_secs(1));
+
+          //     run_client(clients, ctx);
+          // }
     }
 
     loop {

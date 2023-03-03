@@ -1,6 +1,6 @@
-use crate::{KVSRequest, KVSResponse};
+use crate::{KVSRequest, ValueType};
 use futures::SinkExt;
-use hydroflow::util::{deserialize_from_bytes2, serialize_to_bytes};
+use hydroflow::util::serialize_to_bytes;
 use rand::{prelude::Distribution, rngs::StdRng, RngCore, SeedableRng};
 use std::{
     sync::{
@@ -82,9 +82,15 @@ pub fn run_client(targets: Vec<String>, ctx: Context) {
 
                 loop {
                     // println!("client:{}. iter", palaver::thread::gettid());
-                    while outstanding < 256 {
+                    while outstanding < 16384 {
                         let key = dist.sample(&mut rng) as u64;
-                        let value = rng.next_u64();
+                        let mut value = ValueType { data: [0; 1024] };
+                        value.data[0] = rng.next_u32() as u8;
+                        value.data[1] = rng.next_u32() as u8;
+                        value.data[2] = rng.next_u32() as u8;
+                        value.data[3] = rng.next_u32() as u8;
+                        value.data[4] = rng.next_u32() as u8;
+                        value.data[5] = rng.next_u32() as u8;
 
                         dealer_socket
                             .feed(vec![
@@ -103,7 +109,13 @@ pub fn run_client(targets: Vec<String>, ctx: Context) {
 
                     {
                         let key = dist.sample(&mut rng) as u64;
-                        let value = rng.next_u64();
+                        let mut value = ValueType { data: [0; 1024] };
+                        value.data[0] = rng.next_u32() as u8;
+                        value.data[1] = rng.next_u32() as u8;
+                        value.data[2] = rng.next_u32() as u8;
+                        value.data[3] = rng.next_u32() as u8;
+                        value.data[4] = rng.next_u32() as u8;
+                        value.data[5] = rng.next_u32() as u8;
 
                         // .flush() doesn't seem to compile?
                         dealer_socket
@@ -132,11 +144,11 @@ pub fn run_client(targets: Vec<String>, ctx: Context) {
                     // }
 
                     if let Some(Ok(_response)) = dealer_socket.next().await {
-                        let response: KVSResponse = deserialize_from_bytes2(&_response.0[0]);
-                        match response {
-                            KVSResponse::GetResponse { key: _, reg } => println!("{reg:?}"),
-                            KVSResponse::PutResponse { key: _ } => (),
-                        }
+                        // let response: KVSResponse = deserialize_from_bytes2(&_response.0[0]);
+                        // match response {
+                        //     KVSResponse::GetResponse { key: _, reg } => println!("{reg:?}"),
+                        //     KVSResponse::PutResponse { key: _ } => (),
+                        // }
                         outstanding -= 1;
                         puts.fetch_add(1, Ordering::SeqCst);
                     }
