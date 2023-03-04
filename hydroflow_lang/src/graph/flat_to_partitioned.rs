@@ -13,181 +13,218 @@ use super::flat_graph::FlatGraph;
 use super::ops::{find_node_op_constraints, find_op_op_constraints, DelayType};
 use super::partitioned_graph::PartitionedGraph;
 use super::{
-    get_operator_generics, graph_algorithms, node_color, Color, FlatGraphExploded, GraphEdgeId,
-    GraphNodeId, GraphSubgraphId, Node, OperatorInstance, PortIndexValue,
+    get_operator_generics, graph_algorithms, node_color, Color, GraphEdgeId, GraphNodeId,
+    GraphSubgraphId, Node, OperatorInstance, PortIndexValue,
 };
 
-fn find_barrier_crossers(
-    nodes: &SlotMap<GraphNodeId, Node>,
-    ports: &SecondaryMap<GraphEdgeId, (PortIndexValue, PortIndexValue)>,
-    graph: &DiMulGraph<GraphNodeId, GraphEdgeId>,
-) -> SecondaryMap<GraphEdgeId, DelayType> {
-    graph
-        .edges()
-        .filter_map(|(edge_id, (_src, dst))| {
-            let op_constraints = find_node_op_constraints(&nodes[dst])?;
-            let (_src_idx, dst_idx) = &ports[edge_id];
-            let input_barrier = (op_constraints.input_delaytype_fn)(dst_idx)?;
-            Some((edge_id, input_barrier))
-        })
-        .collect()
+struct FlatToPartitionedBuilder {
+    /// Partitioned graph. We will build the partitions AKA subgraphs over the lifetime of `self`.
+    partitioned_graph: PartitionedGraph,
+
+    /// Edges which cross barriers.
+    barrier_crossers: SecondaryMap<GraphEdgeId, DelayType>,
 }
 
-fn find_subgraph_unionfind(
-    nodes: &SlotMap<GraphNodeId, Node>,
-    graph: &DiMulGraph<GraphNodeId, GraphEdgeId>,
-    barrier_crossers: &SecondaryMap<GraphEdgeId, DelayType>,
-    node_color_map: &mut SparseSecondaryMap<GraphNodeId, Color>,
-) -> (UnionFind<GraphNodeId>, BTreeSet<GraphEdgeId>) {
-    let mut subgraph_unionfind: UnionFind<GraphNodeId> = UnionFind::with_capacity(nodes.len());
-    // Will contain all edges which are handoffs. Starts out with all edges and
-    // we remove from this set as we construct subgraphs.
-    let mut handoff_edges: BTreeSet<GraphEdgeId> =
-        graph.edges().map(|(edge_id, _)| edge_id).collect();
-    // Would sort edges here for priority (for now, no sort/priority).
+impl FlatToPartitionedBuilder {
+    pub fn from_flat(flat_graph: FlatGraph) -> Self {
+        let mut partitioned_graph = PartitionedGraph::unpartitioned_from_flat_graph(flat_graph);
+        let barrier_crossers = Self::helper_find_barrier_crossers(&partitioned_graph);
+        partitioned_graph.node_color = Self::helper_find_node_color(&partitioned_graph);
+        Self {
+            partitioned_graph,
+            barrier_crossers,
+        }
+    }
 
-    // Each edge gets looked at in order. However we may not know if a linear
-    // chain of operators is PUSH vs PULL until we look at the ends. A fancier
-    // algorithm would know to handle linear chains from the outside inward.
-    // But instead we just run through the edges in a loop until no more
-    // progress is made. Could have some sort of O(N^2) pathological worst
-    // case.
-    let mut progress = true;
-    while progress {
-        progress = false;
-        for (edge_id, (src, dst)) in graph.edges() {
-            // Ignore (1) already added edges as well as (2) new self-cycles.
-            if subgraph_unionfind.same_set(src, dst) {
-                // Note this might be triggered even if the edge (src, dst) is not in the subgraph (not case 1).
-                // This prevents self-loops which would violate the in-out tree structure (case 2).
-                // Handoffs will be inserted later for this self-loop.
+    /// Return a map containing all barrier crossers.
+    fn helper_find_barrier_crossers(
+        partitioned_graph: &PartitionedGraph,
+    ) -> SecondaryMap<GraphEdgeId, DelayType> {
+        partitioned_graph
+            .edges()
+            .filter_map(|(edge_id, (_src, _src_port, dst, dst_port))| {
+                let op_constraints = partitioned_graph.node(dst).1?.op_constraints;
+                let input_barrier = (op_constraints.input_delaytype_fn)(dst_port)?;
+                Some((edge_id, input_barrier))
+            })
+            .collect()
+    }
+
+    fn helper_find_node_color(
+        partitioned_graph: &PartitionedGraph,
+    ) -> SparseSecondaryMap<GraphNodeId, Color> {
+        partitioned_graph
+            .nodes()
+            .filter_map(|(node_id, node)| {
+                let inn_degree = partitioned_graph.degree_in(node_id);
+                let out_degree = partitioned_graph.degree_out(node_id);
+                let op_color =
+                    node_color(matches!(node, Node::Handoff { .. }), inn_degree, out_degree);
+                op_color.map(|op_color| (node_id, op_color))
+            })
+            .collect()
+    }
+
+    /// Find subgraph and insert handoffs.
+    /// Modifies barrier_crossers so that the edge OUT of an inserted handoff has
+    /// the DelayType data.
+    fn make_subgraphs(&mut self) {
+        // Algorithm:
+        // 1. Each node begins as its own subgraph.
+        // 2. Collect edges. (Future optimization: sort so edges which should not be split across a handoff come first).
+        // 3. For each edge, try to join `(to, from)` into the same subgraph.
+
+        // TODO(mingwei):
+        // self.partitioned_graph.assert_valid();
+
+        let (subgraph_unionfind, handoff_edges) = self.helper_find_subgraph_unionfind();
+
+        // Insert handoffs between subgraphs (or on subgraph self-loop edges)
+        for edge_id in handoff_edges {
+            let (src_id, _src_port, dst_id, _dst_port) = self.partitioned_graph.edge(edge_id);
+
+            // Already has a handoff, no need to insert one.
+            let (src_node, _src_port) = self.partitioned_graph.node(src_id);
+            let (dst_node, _dst_port) = self.partitioned_graph.node(dst_id);
+            if matches!(src_node, Node::Handoff { .. }) || matches!(dst_node, Node::Handoff { .. })
+            {
                 continue;
             }
 
-            // Ignore if would join stratum crossers (next edges).
-            if barrier_crossers.iter().any(|(edge_id, _)| {
-                let (x_src, x_dst) = graph.edge(edge_id).unwrap();
-                (subgraph_unionfind.same_set(x_src, src) && subgraph_unionfind.same_set(x_dst, dst))
-                    || (subgraph_unionfind.same_set(x_src, dst)
-                        && subgraph_unionfind.same_set(x_dst, src))
-            }) {
-                continue;
-            }
+            let hoff = Node::Handoff {
+                src_span: src_node.span(),
+                dst_span: dst_node.span(),
+            };
+            let (_node_id, out_edge_id) = self
+                .partitioned_graph
+                .insert_intermediate_node(edge_id, hoff);
 
-            if can_connect_colorize(node_color_map, src, dst) {
-                // At this point we have selected this edge and its src & dst to be
-                // within a single subgraph.
-                subgraph_unionfind.union(src, dst);
-                assert!(handoff_edges.remove(&edge_id));
-                progress = true;
+            // Update barrier_crossers for inserted node.
+            if let Some(delay_type) = self.barrier_crossers.remove(edge_id) {
+                self.barrier_crossers.insert(out_edge_id, delay_type);
             }
         }
+
+        // Determine node's subgraph and subgraph's nodes.
+        // This list of nodes in each subgraph are to be in topological sort order.
+        // Eventually returned directly in the `PartitionedGraph`.
+        let (node_subgraph, subgraph_nodes) = self.make_subgraph_collect(subgraph_unionfind);
+        self.partitioned_graph.node_subgraph = node_subgraph;
+        self.partitioned_graph.subgraph_nodes = subgraph_nodes;
     }
 
-    (subgraph_unionfind, handoff_edges)
-}
+    fn helper_find_subgraph_unionfind(
+        &mut self,
+    ) -> (UnionFind<GraphNodeId>, BTreeSet<GraphEdgeId>) {
+        let mut subgraph_unionfind: UnionFind<GraphNodeId> =
+            UnionFind::with_capacity(self.partitioned_graph.nodes().len());
+        // Will contain all edges which are handoffs. Starts out with all edges and
+        // we remove from this set as we construct subgraphs.
+        let mut handoff_edges: BTreeSet<GraphEdgeId> = self
+            .partitioned_graph
+            .edges()
+            .map(|(edge_id, _)| edge_id)
+            .collect();
+        // Would sort edges here for priority (for now, no sort/priority).
 
-/// Builds the datastructures for checking which subgraph each node belongs to
-/// after handoffs have already been inserted to partition subgraphs.
-/// This list of nodes in each subgraph are returned in topological sort order.
-fn make_subgraph_collect(
-    nodes: &SlotMap<GraphNodeId, Node>,
-    graph: &DiMulGraph<GraphNodeId, GraphEdgeId>,
-    mut subgraph_unionfind: UnionFind<GraphNodeId>,
-) -> (
-    SecondaryMap<GraphNodeId, GraphSubgraphId>,
-    SlotMap<GraphSubgraphId, Vec<GraphNodeId>>,
-) {
-    // We want the nodes of each subgraph to be listed in topo-sort order.
-    // We could do this on each subgraph, or we could do it all at once on the
-    // whole node graph by ignoring handoffs, which is what we do here:
-    let topo_sort = graph_algorithms::topo_sort(
-        nodes
-            .iter()
-            .filter(|&(_, node)| !matches!(node, Node::Handoff { .. }))
-            .map(|(node_id, _)| node_id),
-        |v| {
-            graph
-                .predecessor_vertices(v)
-                .filter(|&pred| !matches!(nodes[pred], Node::Handoff { .. }))
-        },
-    );
+        // Each edge gets looked at in order. However we may not know if a linear
+        // chain of operators is PUSH vs PULL until we look at the ends. A fancier
+        // algorithm would know to handle linear chains from the outside inward.
+        // But instead we just run through the edges in a loop until no more
+        // progress is made. Could have some sort of O(N^2) pathological worst
+        // case.
+        let mut progress = true;
+        while progress {
+            progress = false;
+            for (edge_id, (src, dst)) in self
+                .partitioned_graph
+                .edges()
+                .map(|(edge_id, (src, _srt_port, dst, _dst_port))| (edge_id, (src, dst)))
+                .collect::<Vec<_>>()
+            {
+                // Ignore (1) already added edges as well as (2) new self-cycles.
+                if subgraph_unionfind.same_set(src, dst) {
+                    // Note this might be triggered even if the edge (src, dst) is not in the subgraph (not case 1).
+                    // This prevents self-loops which would violate the in-out tree structure (case 2).
+                    // Handoffs will be inserted later for this self-loop.
+                    continue;
+                }
 
-    let mut grouped_nodes: SecondaryMap<GraphNodeId, Vec<GraphNodeId>> = Default::default();
-    for node_id in topo_sort {
-        let repr_node = subgraph_unionfind.find(node_id);
-        if !grouped_nodes.contains_key(repr_node) {
-            grouped_nodes.insert(repr_node, Default::default());
-        }
-        grouped_nodes[repr_node].push(node_id);
-    }
+                // Ignore if would join stratum crossers (next edges).
+                if self.barrier_crossers.iter().any(|(edge_id, _)| {
+                    let (x_src, _x_src_port, x_dst, _x_dst_port) =
+                        self.partitioned_graph.edge(edge_id);
+                    (subgraph_unionfind.same_set(x_src, src)
+                        && subgraph_unionfind.same_set(x_dst, dst))
+                        || (subgraph_unionfind.same_set(x_src, dst)
+                            && subgraph_unionfind.same_set(x_dst, src))
+                }) {
+                    continue;
+                }
 
-    let mut node_subgraph: SecondaryMap<GraphNodeId, GraphSubgraphId> = Default::default();
-    let mut subgraph_nodes: SlotMap<GraphSubgraphId, Vec<GraphNodeId>> = Default::default();
-    for (_repr_node, member_nodes) in grouped_nodes {
-        subgraph_nodes.insert_with_key(|subgraph_id| {
-            for &node_id in member_nodes.iter() {
-                node_subgraph.insert(node_id, subgraph_id);
+                if can_connect_colorize(&mut self.partitioned_graph.node_color, src, dst) {
+                    // At this point we have selected this edge and its src & dst to be
+                    // within a single subgraph.
+                    subgraph_unionfind.union(src, dst);
+                    assert!(handoff_edges.remove(&edge_id));
+                    progress = true;
+                }
             }
-            member_nodes
-        });
-    }
-    (node_subgraph, subgraph_nodes)
-}
-
-/// Find subgraph and insert handoffs.
-/// Modifies barrier_crossers so that the edge OUT of an inserted handoff has
-/// the DelayType data.
-fn make_subgraphs(
-    nodes: &mut SlotMap<GraphNodeId, Node>,
-    operator_instances: &mut SecondaryMap<GraphNodeId, OperatorInstance>,
-    ports: &mut SecondaryMap<GraphEdgeId, (PortIndexValue, PortIndexValue)>,
-    graph: &mut DiMulGraph<GraphNodeId, GraphEdgeId>,
-    barrier_crossers: &mut SecondaryMap<GraphEdgeId, DelayType>,
-    node_color: &mut SparseSecondaryMap<GraphNodeId, Color>,
-) -> (
-    SecondaryMap<GraphNodeId, GraphSubgraphId>,
-    SlotMap<GraphSubgraphId, Vec<GraphNodeId>>,
-) {
-    // Algorithm:
-    // 1. Each node begins as its own subgraph.
-    // 2. Collect edges. (Future optimization: sort so edges which should not be split across a handoff come first).
-    // 3. For each edge, try to join `(to, from)` into the same subgraph.
-
-    graph.assert_valid();
-
-    let (subgraph_unionfind, handoff_edges) =
-        find_subgraph_unionfind(nodes, graph, barrier_crossers, node_color);
-
-    // Insert handoffs between subgraphs (or on subgraph self-loop edges)
-    for edge_id in handoff_edges {
-        let (src_id, dst_id) = graph.edge(edge_id).unwrap();
-
-        // Already has a handoff, no need to insert one.
-        let src_node = &nodes[src_id];
-        let dst_node = &nodes[dst_id];
-        if matches!(src_node, Node::Handoff { .. }) || matches!(dst_node, Node::Handoff { .. }) {
-            continue;
         }
 
-        let hoff = Node::Handoff {
-            src_span: src_node.span(),
-            dst_span: dst_node.span(),
-        };
-        let (_node_id, out_edge_id) =
-            insert_intermediate_node(nodes, operator_instances, ports, graph, hoff, edge_id);
-
-        // Update barrier_crossers for inserted node.
-        if let Some(delay_type) = barrier_crossers.remove(edge_id) {
-            barrier_crossers.insert(out_edge_id, delay_type);
-        }
+        (subgraph_unionfind, handoff_edges)
     }
 
-    // Determine node's subgraph and subgraph's nodes.
-    // This list of nodes in each subgraph are to be in topological sort order.
-    // Eventually returned directly in the `PartitionedGraph`.
-    let (node_subgraph, subgraph_nodes) = make_subgraph_collect(nodes, graph, subgraph_unionfind);
-    (node_subgraph, subgraph_nodes)
+    /// Builds the datastructures for checking which subgraph each node belongs to
+    /// after handoffs have already been inserted to partition subgraphs.
+    /// This list of nodes in each subgraph are returned in topological sort order.
+    fn make_subgraph_collect(
+        &self,
+        mut subgraph_unionfind: UnionFind<GraphNodeId>,
+    ) -> (
+        SecondaryMap<GraphNodeId, GraphSubgraphId>,
+        SlotMap<GraphSubgraphId, Vec<GraphNodeId>>,
+    ) {
+        // We want the nodes of each subgraph to be listed in topo-sort order.
+        // We could do this on each subgraph, or we could do it all at once on the
+        // whole node graph by ignoring handoffs, which is what we do here:
+        let topo_sort = graph_algorithms::topo_sort(
+            self.partitioned_graph
+                .nodes()
+                .filter(|&(_, node)| !matches!(node, Node::Handoff { .. }))
+                .map(|(node_id, _)| node_id),
+            |v| {
+                self.partitioned_graph
+                    .predecessors(v)
+                    .map(|(_pred_port, pred_id)| pred_id)
+                    .filter(|&pred_id| {
+                        let (pred, _) = self.partitioned_graph.node(pred_id);
+                        !matches!(pred, Node::Handoff { .. })
+                    })
+            },
+        );
+
+        let mut grouped_nodes: SecondaryMap<GraphNodeId, Vec<GraphNodeId>> = Default::default();
+        for node_id in topo_sort {
+            let repr_node = subgraph_unionfind.find(node_id);
+            if !grouped_nodes.contains_key(repr_node) {
+                grouped_nodes.insert(repr_node, Default::default());
+            }
+            grouped_nodes[repr_node].push(node_id);
+        }
+
+        let mut node_subgraph: SecondaryMap<GraphNodeId, GraphSubgraphId> = Default::default();
+        let mut subgraph_nodes: SlotMap<GraphSubgraphId, Vec<GraphNodeId>> = Default::default();
+        for (_repr_node, member_nodes) in grouped_nodes {
+            subgraph_nodes.insert_with_key(|subgraph_id| {
+                for &node_id in member_nodes.iter() {
+                    node_subgraph.insert(node_id, subgraph_id);
+                }
+                member_nodes
+            });
+        }
+        (node_subgraph, subgraph_nodes)
+    }
 }
 
 /// Set `src` or `dst` color if `None` based on the other (if possible):
@@ -511,41 +548,30 @@ impl TryFrom<FlatGraph> for PartitionedGraph {
     type Error = Diagnostic;
 
     fn try_from(flat_graph: FlatGraph) -> Result<Self, Self::Error> {
-        let FlatGraphExploded {
+        let mut builder = FlatToPartitionedBuilder::from_flat(flat_graph);
+
+        // Partition into subgraphs.
+        builder.make_subgraphs();
+
+        // TODO(mingwei): WIP: keep using `FlatToPartitionedBuilder` instead of exploding.
+        let FlatToPartitionedBuilder {
+            partitioned_graph,
+            barrier_crossers,
+        } = builder;
+        let PartitionedGraph {
             mut nodes,
             mut operator_instances,
             mut graph,
             mut ports,
+            mut node_subgraph,
+            mut subgraph_nodes,
+            subgraph_stratum: _,
+            subgraph_recv_handoffs: _,
+            subgraph_send_handoffs: _,
+            subgraph_internal_handoffs: _,
+            node_color,
             node_varnames,
-        } = flat_graph.explode();
-
-        // Pairs of node IDs which cross stratums or ticks and therefore cannot be in the same subgraph.
-        let mut barrier_crossers = find_barrier_crossers(&nodes, &ports, &graph);
-        let mut node_color = nodes
-            .keys()
-            .map(|node_id| {
-                let inn_degree = graph.degree_in(node_id);
-                let out_degree = graph.degree_out(node_id);
-                let op_color = node_color(
-                    matches!(nodes[node_id], Node::Handoff { .. }),
-                    inn_degree,
-                    out_degree,
-                );
-                (node_id, op_color)
-            })
-            .filter(|(_node_id, op_color)| op_color.is_some())
-            .map(|(node_id, op_color)| (node_id, op_color.unwrap()))
-            .collect();
-
-        // Partition into subgraphs.
-        let (mut node_subgraph, mut subgraph_nodes) = make_subgraphs(
-            &mut nodes,
-            &mut operator_instances,
-            &mut ports,
-            &mut graph,
-            &mut barrier_crossers,
-            &mut node_color,
-        );
+        } = partitioned_graph;
 
         // Find strata for subgraphs.
         let mut subgraph_stratum = find_subgraph_strata(
@@ -623,7 +649,7 @@ impl TryFrom<FlatGraph> for PartitionedGraph {
     }
 }
 
-/// `edge`: (src, dst, dst_idx)
+/// `edge`: X
 ///
 /// Before: A (src) ------------> B (dst)
 /// After:  A (src) -> X (new) -> B (dst)
