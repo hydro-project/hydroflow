@@ -68,9 +68,44 @@ impl FlatGraph {
         edge_id
     }
 
+    /// Get a node with its operator instance (if applicable).
+    pub fn node(&self, node_id: GraphNodeId) -> (&Node, Option<&OperatorInstance>) {
+        (&self.nodes[node_id], self.operator_instances.get(node_id))
+    }
+
     /// Iterator over `(GraphNodeId, &Node)` pairs.
     pub fn nodes(&self) -> slotmap::basic::Iter<GraphNodeId, Node> {
         self.nodes.iter()
+    }
+
+    /// Get edge: `(src GraphNodeId, src &PortIndexValue, dst GraphNodeId, dst &PortIndexValue))`.
+    pub fn edge(
+        &self,
+        edge_id: GraphEdgeId,
+    ) -> (GraphNodeId, &PortIndexValue, GraphNodeId, &PortIndexValue) {
+        let (src, dst) = self.graph.edge(edge_id).expect("Edge not found");
+        let (src_port, dst_port) = &self.ports[edge_id];
+        (src, src_port, dst, dst_port)
+    }
+
+    /// Iterator over all edges: `(GraphEdgeId, (src GraphNodeId, src &PortIndexValue, dst GraphNodeId, dst &PortIndexValue))`.
+    pub fn edges(
+        &self,
+    ) -> impl '_
+           + Iterator<
+        Item = (
+            GraphEdgeId,
+            (GraphNodeId, &PortIndexValue, GraphNodeId, &PortIndexValue),
+        ),
+    >
+           + ExactSizeIterator
+           + FusedIterator
+           + Clone
+           + Debug {
+        self.graph.edges().map(|(edge_id, (src, dst))| {
+            let (src_port, dst_port) = &self.ports[edge_id];
+            (edge_id, (src, src_port, dst, dst_port))
+        })
     }
 
     /// Successors, iterator of `(&PortIndexValue, GraphNodeId)` of outgoing edges.
@@ -105,13 +140,6 @@ impl FlatGraph {
             .map(|(e, v)| (&self.ports[e].1, v))
     }
 
-    /// Convert back into surface syntax.
-    pub fn surface_syntax_string(&self) -> String {
-        let mut string = String::new();
-        self.write_surface_syntax(&mut string).unwrap();
-        string
-    }
-
     /// Degree into a node.
     pub fn degree_in(&self, dst: GraphNodeId) -> usize {
         self.graph.degree_in(dst)
@@ -120,6 +148,13 @@ impl FlatGraph {
     /// Degree out of a node.
     pub fn degree_out(&self, src: GraphNodeId) -> usize {
         self.graph.degree_out(src)
+    }
+
+    /// Convert back into surface syntax.
+    pub fn surface_syntax_string(&self) -> String {
+        let mut string = String::new();
+        self.write_surface_syntax(&mut string).unwrap();
+        string
     }
 
     /// Convert back into surface syntax.
