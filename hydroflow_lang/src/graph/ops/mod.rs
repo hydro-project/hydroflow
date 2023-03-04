@@ -28,6 +28,7 @@ mod group_by;
 mod identity;
 mod inspect;
 mod join;
+mod join_hack;
 mod map;
 mod merge;
 mod next_stratum;
@@ -157,6 +158,7 @@ pub const OPERATORS: &[OperatorConstraints] = &[
     null::NULL,
     merge::MERGE,
     join::JOIN,
+    join_hack::JOIN_HACK,
     cross_join::CROSS_JOIN,
     tee::TEE,
     unzip::UNZIP,

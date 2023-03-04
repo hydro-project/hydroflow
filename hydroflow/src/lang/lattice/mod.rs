@@ -1,4 +1,5 @@
 pub mod bottom;
+pub mod crdts;
 pub mod dom_pair;
 pub mod map_union;
 pub mod ord;

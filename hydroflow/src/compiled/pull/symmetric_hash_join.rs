@@ -96,36 +96,6 @@ where
                 return Some((k, (v1, v2)));
             }
 
-            // let lhs = self.lhs.next();
-            // let rhs = self.rhs.next();
-
-            // match (lhs, rhs) {
-            //     (None, None) => return None,
-            //     (Some((k, v1)), None) => {
-            //         if self.state.0.build(k.clone(), &v1) {
-            //             self.state.1.probe(&k, &v1);
-            //         }
-
-            //         if self.state.0.table.is_empty() {}
-            //     }
-            //     (None, Some((k, v2))) => {
-            //         if self.state.1.build(k.clone(), &v2) {
-            //             self.state.0.probe(&k, &v2);
-            //         }
-
-            //         if self.state.0.table.is_empty() {}
-            //     }
-            //     (Some((k1, v1)), Some((k2, v2))) => {
-            //         if self.state.0.build(k1.clone(), &v1) {
-            //             self.state.1.probe(&k1, &v1);
-            //         }
-
-            //         if self.state.1.build(k2.clone(), &v2) {
-            //             self.state.0.probe(&k2, &v2);
-            //         }
-            //     }
-            // }
-
             if let Some((k, v1)) = self.lhs.next() {
                 if self.state.0.build(k.clone(), &v1) {
                     self.state.1.probe(&k, &v1);

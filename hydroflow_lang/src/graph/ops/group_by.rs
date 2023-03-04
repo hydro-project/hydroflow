@@ -104,7 +104,6 @@ pub const GROUP_BY: OperatorConstraints = OperatorConstraints {
         let input = &inputs[0];
         let initfn = &arguments[0];
         let aggfn = &arguments[1];
-        let groupbydata_ident = wc.make_ident("groupbydata");
 
         let (write_prologue, write_iterator) = match persistence {
             Persistence::Tick => (
@@ -135,9 +134,7 @@ pub const GROUP_BY: OperatorConstraints = OperatorConstraints {
                         #[inline(always)]
                         fn check_input<Iter: ::std::iter::Iterator<Item = (A, B)>, A: ::std::clone::Clone, B: ::std::clone::Clone>(iter: Iter)
                             -> impl ::std::iter::Iterator<Item = (A, B)> { iter }
-                        let mut any = false;
                         for kv in check_input(#input) {
-                            any = true;
                             let entry = #hashtable_ident.entry(kv.0).or_insert_with(#initfn);
                             #[allow(clippy::redundant_closure_call)] (#aggfn)(entry, kv.1);
                         }

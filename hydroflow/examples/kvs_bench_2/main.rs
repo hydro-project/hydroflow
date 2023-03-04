@@ -1,6 +1,4 @@
 mod broadcast_receiver_stream;
-mod efficient_maxreg;
-mod efficient_vclock;
 mod server;
 mod util;
 
@@ -12,9 +10,8 @@ use serde::{Deserialize, Serialize};
 use std::env;
 use std::time::Duration;
 
-use crate::efficient_vclock::EVClock;
-
-use efficient_maxreg::EMaxReg;
+use hydroflow::lang::lattice::crdts::EMaxReg;
+use hydroflow::lang::lattice::crdts::EVClock;
 use serde_big_array::BigArray;
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
@@ -25,6 +22,12 @@ use std::time::Instant;
 pub struct ValueType {
     #[serde(with = "BigArray")]
     pub data: [u8; 1024],
+}
+
+impl Default for ValueType {
+    fn default() -> Self {
+        Self { data: [0; 1024] }
+    }
 }
 
 type MyRegType = EMaxReg<ValueType>;
@@ -93,7 +96,7 @@ fn main() {
             println!("puts/s: {}", throughput.load(Ordering::SeqCst));
             throughput.store(0, Ordering::SeqCst);
 
-            if start_time.elapsed() >= Duration::from_secs(20) {
+            if start_time.elapsed() >= Duration::from_secs(5) {
                 return;
             }
         }

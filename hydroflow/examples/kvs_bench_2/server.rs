@@ -8,12 +8,12 @@ use std::time::Duration;
 use tokio::task;
 use tokio_stream::StreamExt;
 
-use crate::efficient_maxreg::EAddCtx;
 use crate::MyRegType;
 use crate::MyVClock;
 use crate::ValueType;
 use crdts::CmRDT;
 use crdts::CvRDT;
+use hydroflow::lang::lattice::crdts::EAddCtx;
 use hydroflow::util::deserialize_from_bytes2;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
@@ -74,7 +74,7 @@ pub fn run_server(
 
                 let dist = rand_distr::Zipf::new(1_000_000, dist).unwrap();
 
-                for i in 0..100 {
+                for _i in 0..100 {
                     client_to_transducer_tx.send((KVSRequest::Put {
                         key: dist.sample(&mut rng) as u64,
                         value: ValueType { data: [0; 1024] },
@@ -298,7 +298,7 @@ pub fn run_server(
                 put_tee = tee();
 
                 client_input[puts]
-                    // -> inspect(|(key, (x, a))| if let ValueOrReg::Value(_) = x {println!("{addr}:{:5}: puts-into-crossjoin: {key:?}, {x:?}, {a:?}", context.current_tick())})
+                    // -> inspect(|(key, (x, a))| if let ValueOrReg::Value(_) = x {println!("{gossip_addr}:{:5}: puts-into-crossjoin: {key:?}, {x:?}, {a:?}", context.current_tick())})
                     -> put_tee;
 
                 max_vclock = put_tee
@@ -313,18 +313,18 @@ pub fn run_server(
                             },
                         }
                     })
-                    // -> inspect(|x| println!("{addr}:{:5}: maxvclock-into-crossjoin: {x:?}", context.current_tick()))
+                    // -> inspect(|x| println!("{gossip_addr}:{:5}: maxvclock-into-crossjoin: {x:?}", context.current_tick()))
                     -> map(|x| x.1);
 
                 max_vclock  -> [0]maxvclock_puts;
                 put_tee     -> [1]maxvclock_puts;
 
                 broadcast_or_store = maxvclock_puts
-                    // -> inspect(|x| println!("{addr}:{:5}: output of maxvclock_puts: {x:?}", context.current_tick()))
+                    // -> inspect(|x| println!("{gossip_addr}:{:5}: output of maxvclock_puts: {x:?}", context.current_tick()))
                     -> demux(|(clock, (key, (value_or_reg, response_addr))): (MyVClock, (u64, (ValueOrReg, Vec<u8>))), var_args!(broadcast, store)| {
                         match value_or_reg {
                             ValueOrReg::Value(value) => {
-                                let mut reg = MyRegType::new(ValueType { data: [0; 1024] });
+                                let mut reg = MyRegType::default();
 
                                 let ctx = EAddCtx {
                                     dot: clock.dot(gossip_addr.clone()),
@@ -346,12 +346,12 @@ pub fn run_server(
                 broadcast_or_store[broadcast]
                     // -> next_tick() // hack: buffer operator doesn't seem to compile without this.
                     -> buffer(timer)
-                    -> group_by::<'tick>(|| MyRegType::new(ValueType { data: [0; 1024] }), |accum: &mut MyRegType, reg: MyRegType| {
+                    -> group_by::<'tick>(MyRegType::default, |accum: &mut MyRegType, reg: MyRegType| {
                         // If multiple writes have hit the same key then they can be merged before sending.
                         accum.merge(reg);
                     })
                     -> map(|(key, reg)| KVSRequest::Gossip{key, reg} )
-                    // -> inspect(|x| println!("{addr}:{:5}: sending to peers: {x:?}", context.current_tick()))
+                    // -> inspect(|x| println!("{gossip_addr}:{:5}: sending to peers: {x:?}", context.current_tick()))
                     -> for_each(|x| { transducer_to_peers_tx.send(x).unwrap(); });
 
                 // join for lookups
@@ -363,7 +363,7 @@ pub fn run_server(
 
                 gets
                     -> map(|x| x)
-                    -> map(|(key, addr)| (key, (MyRegType::new(ValueType { data: [0; 1024] }), Some(addr)))) // Nasty hack to get the group_by to emit another entry at the righ
+                    -> map(|(key, addr)| (key, (MyRegType::default(), Some(addr)))) // Nasty hack to get the group_by to emit another entry at the righ
                     -> bump_merge;
 
                 put_ack_tee = tee();
@@ -373,6 +373,7 @@ pub fn run_server(
                 transducer_to_client_tx_merge = merge();
 
                 put_ack_tee
+                    // -> inspect(|x| println!("{gossip_addr}:{:5}: put_ack_tee output: {x:?}", context.current_tick()))
                     -> map(|x| x)
                     -> filter(|x| x.1.1.is_some())
                     -> map(|(key, (_reg, addr))| (KVSResponse::PutResponse{key}, addr.unwrap()))
@@ -383,17 +384,17 @@ pub fn run_server(
 
                 bump_merge
                     -> map(|x| x)
-                    -> group_by::<'static, u64, MyRegType>(|| MyRegType::new(ValueType { data: [0; 1024] }), |accum: &mut MyRegType, (reg, _addr): (MyRegType, Option<Vec<u8>>)| {
+                    -> group_by::<'static, u64, MyRegType>(MyRegType::default, |accum: &mut MyRegType, (reg, _addr): (MyRegType, Option<Vec<u8>>)| {
                         accum.merge(reg);
                     })
-                    -> null();
-                    // -> inspect(|x| println!("{addr}:{:5}: stores-into-lookup: {x:?}", context.current_tick()))
-                    // -> [0]lookup;
-                null() -> [0]lookup;
+                    // -> inspect(|x| println!("{gossip_addr}:{:5}: stores-into-lookup: {x:?}", context.current_tick()))
+                    -> [0]lookup;
+
+                // null() -> [0]lookup;
 
                 // Feed gets into the join to make them do the actual matching.
                 gets
-                    // -> inspect(|x| println!("{addr}:{:5}: gets-into-lookup: {x:?}", context.current_tick()))
+                    // -> inspect(|x| println!("{gossip_addr}:{:5}: gets-into-lookup: {x:?}", context.current_tick()))
                     -> [1]lookup;
 
                 // Send get results back to user

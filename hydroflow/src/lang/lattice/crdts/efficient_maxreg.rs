@@ -4,7 +4,7 @@ use core::fmt::{self, Debug, Display};
 
 use serde::{Deserialize, Serialize};
 
-use crate::efficient_vclock::EVClock;
+use super::efficient_vclock::EVClock;
 use crdts::{CmRDT, CvRDT, Dot};
 
 /// ReadCtx's are used to extract data from CRDT's while maintaining some causal history.
@@ -80,25 +80,7 @@ impl<V: Display> Display for EMaxReg<V> {
 
 impl<V: PartialEq> PartialEq for EMaxReg<V> {
     fn eq(&self, other: &Self) -> bool {
-        for dot in self.clock.iter() {
-            let num_found = other.clock.iter().filter(|d| d == &dot).count();
-
-            if num_found == 0 {
-                return false;
-            }
-            // sanity check
-            assert_eq!(num_found, 1);
-        }
-        for dot in other.clock.iter() {
-            let num_found = self.clock.iter().filter(|d| d == &dot).count();
-
-            if num_found == 0 {
-                return false;
-            }
-            // sanity check
-            assert_eq!(num_found, 1);
-        }
-        true
+        self.clock == other.clock && self.val == other.val
     }
 }
 
@@ -174,14 +156,6 @@ impl<V: Ord> CmRDT for EMaxReg<V> {
 }
 
 impl<V> EMaxReg<V> {
-    /// Construct a new empty MVReg
-    pub fn new(val: V) -> Self {
-        Self {
-            clock: EVClock::default(),
-            val,
-        }
-    }
-
     /// Set the value of the register
     pub fn write(&self, val: V, ctx: EAddCtx) -> Op<V> {
         Op::Put {
