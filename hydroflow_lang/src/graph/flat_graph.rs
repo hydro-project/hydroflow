@@ -44,25 +44,36 @@ impl FlatGraphBuilder {
         input.into()
     }
 
+    /// Build into a [`FlatGraph`], returning a tuple of a result and any diagnostics.
+    ///
+    /// First tuple element is `Err(FlatGraph)` if there are any errors.
+    /// Returns `Ok(FlatGraph)` if there are no errors.
+    pub fn try_build(mut self) -> (Result<FlatGraph, FlatGraph>, Vec<Diagnostic>) {
+        self.connect_operator_links();
+        self.process_operator_errors();
+
+        if self.diagnostics.iter().any(Diagnostic::is_error) {
+            (Err(self.flat_graph), self.diagnostics)
+        } else {
+            (Ok(self.flat_graph), self.diagnostics)
+        }
+    }
+
     /// Build into a [`FlatGraph`].
     ///
     /// Emits any diagnostics more severe than `min_diagnostic_level`.
     ///
     /// Returns `Err(FlatGraph)` if there are any errors. Returns `Ok(FlatGraph)` if there are no
     /// errors.
-    pub fn build(mut self, min_diagnostic_level: Level) -> Result<FlatGraph, FlatGraph> {
-        self.connect_operator_links();
-        self.process_operator_errors();
+    pub fn build(self, min_diagnostic_level: Level) -> Result<FlatGraph, FlatGraph> {
+        let (result, diagnostics) = self.try_build();
 
-        self.diagnostics
+        diagnostics
             .iter()
             .filter(|&diag| diag.level <= min_diagnostic_level)
             .for_each(Diagnostic::emit);
-        if self.diagnostics.iter().any(Diagnostic::is_error) {
-            Err(self.flat_graph)
-        } else {
-            Ok(self.flat_graph)
-        }
+
+        result
     }
 
     /// Add a single [`HfStatement`] line to this `FlatGraph`.
