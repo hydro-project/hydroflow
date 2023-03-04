@@ -1,3 +1,6 @@
+use std::fmt::Debug;
+use std::iter::FusedIterator;
+
 use proc_macro2::{Ident, Literal, Span, TokenStream};
 use quote::{format_ident, quote, quote_spanned, ToTokens};
 use slotmap::{Key, SecondaryMap, SlotMap, SparseSecondaryMap};
@@ -5,11 +8,14 @@ use syn::spanned::Spanned;
 
 use crate::diagnostic::Diagnostic;
 
-use super::ops::{DelayType, OperatorWriteOutput, WriteContextArgs, OPERATORS};
+use super::ops::{
+    find_op_op_constraints, DelayType, OperatorWriteOutput, WriteContextArgs, OPERATORS,
+};
 use super::serde_graph::{SerdeEdge, SerdeGraph};
 use super::{
-    node_color, Color, DiMulGraph, FlatGraph, GraphEdgeId, GraphNodeId, GraphSubgraphId, Node,
-    OperatorInstance, PortIndexValue, CONTEXT, HANDOFF_NODE_STR, HYDROFLOW,
+    get_operator_generics, node_color, Color, DiMulGraph, FlatGraph, FlatGraphExploded,
+    GraphEdgeId, GraphNodeId, GraphSubgraphId, Node, OperatorInstance, PortIndexValue, CONTEXT,
+    HANDOFF_NODE_STR, HYDROFLOW,
 };
 
 #[derive(Default)]
@@ -47,9 +53,165 @@ impl PartitionedGraph {
         Default::default()
     }
 
+    /// Create a `PartitionedGraph` without partitions from the `FlatGraph`.
+    pub(crate) fn unpartitioned_from_flat_graph(flat_graph: FlatGraph) -> Self {
+        let FlatGraphExploded {
+            nodes,
+            operator_instances,
+            graph,
+            ports,
+            node_varnames,
+        } = flat_graph.explode();
+        Self {
+            nodes,
+            operator_instances,
+            graph,
+            ports,
+
+            node_varnames,
+
+            ..Default::default()
+        }
+    }
+
     #[allow(clippy::result_unit_err)]
     pub fn from_flat_graph(flat_graph: FlatGraph) -> Result<Self, Diagnostic> {
         flat_graph.try_into()
+    }
+
+    /// Get a node with its operator instance (if applicable).
+    pub fn node(&self, node_id: GraphNodeId) -> (&Node, Option<&OperatorInstance>) {
+        (&self.nodes[node_id], self.operator_instances.get(node_id))
+    }
+
+    /// Iterator over `(GraphNodeId, &Node)` pairs.
+    pub fn nodes(&self) -> slotmap::basic::Iter<GraphNodeId, Node> {
+        self.nodes.iter()
+    }
+
+    /// Get edge: `(src GraphNodeId, src &PortIndexValue, dst GraphNodeId, dst &PortIndexValue))`.
+    pub fn edge(
+        &self,
+        edge_id: GraphEdgeId,
+    ) -> (GraphNodeId, &PortIndexValue, GraphNodeId, &PortIndexValue) {
+        let (src, dst) = self.graph.edge(edge_id).expect("Edge not found");
+        let (src_port, dst_port) = &self.ports[edge_id];
+        (src, src_port, dst, dst_port)
+    }
+
+    /// Iterator over all edges: `(GraphEdgeId, (src GraphNodeId, src &PortIndexValue, dst GraphNodeId, dst &PortIndexValue))`.
+    pub fn edges(
+        &self,
+    ) -> impl '_
+           + Iterator<
+        Item = (
+            GraphEdgeId,
+            (GraphNodeId, &PortIndexValue, GraphNodeId, &PortIndexValue),
+        ),
+    >
+           + ExactSizeIterator
+           + FusedIterator
+           + Clone
+           + Debug {
+        self.graph.edges().map(|(edge_id, (src, dst))| {
+            let (src_port, dst_port) = &self.ports[edge_id];
+            (edge_id, (src, src_port, dst, dst_port))
+        })
+    }
+
+    /// Successors, iterator of `(&PortIndexValue, GraphNodeId)` of outgoing edges.
+    /// `PortIndexValue` for the port coming out of `src`.
+    pub fn successors(
+        &self,
+        src: GraphNodeId,
+    ) -> impl '_
+           + Iterator<Item = (&PortIndexValue, GraphNodeId)>
+           + DoubleEndedIterator
+           + FusedIterator
+           + Clone
+           + Debug {
+        self.graph
+            .successors(src)
+            .map(|(e, v)| (&self.ports[e].0, v))
+    }
+
+    /// Predecessors, iterator of `(&PortIndexValue, GraphNodeId)` of incoming edges.
+    /// `PortIndexValue` for the port going into `dst`.
+    pub fn predecessors(
+        &self,
+        dst: GraphNodeId,
+    ) -> impl '_
+           + Iterator<Item = (&PortIndexValue, GraphNodeId)>
+           + DoubleEndedIterator
+           + FusedIterator
+           + Clone
+           + Debug {
+        self.graph
+            .predecessors(dst)
+            .map(|(e, v)| (&self.ports[e].1, v))
+    }
+
+    /// Degree into a node.
+    pub fn degree_in(&self, dst: GraphNodeId) -> usize {
+        self.graph.degree_in(dst)
+    }
+
+    /// Degree out of a node.
+    pub fn degree_out(&self, src: GraphNodeId) -> usize {
+        self.graph.degree_out(src)
+    }
+
+    /// `edge`: (src, dst, dst_idx)
+    ///
+    /// Before: A (src) ------------> B (dst)
+    /// After:  A (src) -> X (new) -> B (dst)
+    ///
+    /// Returns the ID of X & ID of edge OUT of X.
+    pub fn insert_intermediate_node(
+        &mut self,
+        edge_id: GraphEdgeId,
+        new_node: Node,
+    ) -> (GraphNodeId, GraphEdgeId) {
+        let span = Some(new_node.span());
+
+        // Make corresponding operator instance (if `node` is an operator).
+        let op_inst_opt = 'oc: {
+            let Node::Operator(operator) = &new_node else { break 'oc None; };
+            let Some(op_constraints) = find_op_op_constraints(operator) else { break 'oc None; };
+            let (input_port, output_port) = self.ports.get(edge_id).cloned().unwrap();
+            let generics = get_operator_generics(
+                &mut Vec::new(), /* TODO(mingwei) diagnostics */
+                operator,
+            );
+            Some(OperatorInstance {
+                op_constraints,
+                input_ports: vec![input_port],
+                output_ports: vec![output_port],
+                generics,
+                arguments: operator.args.clone(),
+            })
+        };
+
+        // Insert new `node`.
+        let node_id = self.nodes.insert(new_node);
+        // Insert corresponding `OperatorInstance` if applicable.
+        if let Some(op_inst) = op_inst_opt {
+            self.operator_instances.insert(node_id, op_inst);
+        }
+        // Update edges to insert node within `edge_id`.
+        let (e0, e1) = self
+            .graph
+            .insert_intermediate_vertex(node_id, edge_id)
+            .unwrap();
+
+        // Update corresponding ports.
+        let (src_idx, dst_idx) = self.ports.remove(edge_id).unwrap();
+        self.ports
+            .insert(e0, (src_idx, PortIndexValue::Elided(span)));
+        self.ports
+            .insert(e1, (PortIndexValue::Elided(span), dst_idx));
+
+        (node_id, e1)
     }
 
     pub fn serde_string(&self) -> String {
