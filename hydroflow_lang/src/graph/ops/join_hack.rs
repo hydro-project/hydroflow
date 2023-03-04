@@ -29,7 +29,7 @@ use syn::parse_quote;
 /// When a single persistence argument is supplied, it is applied to both input ports.
 /// When no persistence arguments are applied it defaults to `'static` for both.
 ///
-/// The syntax is as follows: 
+/// The syntax is as follows:
 /// ```hydroflow,ignore
 /// join(); // Or
 /// join::<'static>();
@@ -163,13 +163,13 @@ pub const JOIN_HACK: OperatorConstraints = OperatorConstraints {
                 fn check_inputs<'a, K, I1, V1, I2, V2>(
                     lhs: I1,
                     rhs: I2,
-                    lhs_state: &'a mut #root::compiled::pull::HalfJoinStateHack<K, V1, V2>,
-                    rhs_state: &'a mut #root::compiled::pull::HalfJoinStateHack<K, V2, V1>,
+                    lhs_state: &'a mut #root::compiled::pull::HalfJoinStateHack<K, V1>,
+                    rhs_state: &'a mut #root::compiled::pull::HalfJoinStateHack<K, V2>,
                 ) -> impl 'a + Iterator<Item = (K, (V1, V2))>
                 where
                     K: Eq + std::hash::Hash + Clone,
-                    V1: Eq + Clone,
-                    V2: Eq + Clone,
+                    V1: Eq + Clone + CvRDT + Default,
+                    V2: Eq + Clone + CvRDT + Default,
                     I1: 'a + Iterator<Item = (K, V1)>,
                     I2: 'a + Iterator<Item = (K, V2)>,
                 {

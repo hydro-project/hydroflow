@@ -13,6 +13,7 @@ use crate::MyVClock;
 use crate::ValueType;
 use crdts::CmRDT;
 use crdts::CvRDT;
+use crdts::GSet;
 use hydroflow::lang::lattice::crdts::EAddCtx;
 use hydroflow::util::deserialize_from_bytes2;
 use rand::rngs::StdRng;
@@ -355,16 +356,7 @@ pub fn run_server(
                     -> for_each(|x| { transducer_to_peers_tx.send(x).unwrap(); });
 
                 // join for lookups
-                lookup = join::<'tick, 'tick>();
-
-                bump_merge = merge(); // group_by does not re-emit the last value every tick so need to feed in a bottom value to get it to do that.
-
-                gets = client_input[gets] -> tee();
-
-                gets
-                    -> map(|x| x)
-                    -> map(|(key, addr)| (key, (MyRegType::default(), Some(addr)))) // Nasty hack to get the group_by to emit another entry at the righ
-                    -> bump_merge;
+                lookup = join_hack::<'static, 'tick>();
 
                 put_ack_tee = tee();
 
@@ -380,28 +372,35 @@ pub fn run_server(
                     -> transducer_to_client_tx_merge;
 
                 put_ack_tee
-                    -> bump_merge;
-
-                bump_merge
-                    -> map(|x| x)
-                    -> group_by::<'static, u64, MyRegType>(MyRegType::default, |accum: &mut MyRegType, (reg, _addr): (MyRegType, Option<Vec<u8>>)| {
-                        accum.merge(reg);
-                    })
+                    -> map(|(key, (reg, _addr))| (key, reg))
+                    // -> group_by::<'static, u64, MyRegType>(MyRegType::default, |accum: &mut MyRegType, (reg, _addr): (MyRegType, Option<Vec<u8>>)| {
+                    //     accum.merge(reg);
+                    // })
                     // -> inspect(|x| println!("{gossip_addr}:{:5}: stores-into-lookup: {x:?}", context.current_tick()))
                     -> [0]lookup;
 
                 // null() -> [0]lookup;
 
                 // Feed gets into the join to make them do the actual matching.
-                gets
+                client_input[gets]
+                    -> map(|(key, addr)| {
+                        let mut gset = GSet::new();
+                        gset.insert(addr);
+                        (key, gset)
+                    })
                     // -> inspect(|x| println!("{gossip_addr}:{:5}: gets-into-lookup: {x:?}", context.current_tick()))
                     -> [1]lookup;
 
                 // Send get results back to user
                 lookup
                     -> map(|x| x)
-                    -> map(|(key, (reg, addr))| (KVSResponse::GetResponse{key, reg}, addr))
-                    // -> inspect(|x| println!("{addr}:{:5}: Response to client: {x:?}", context.current_tick()))
+                    -> map(|(key, (reg, addr))| {
+                        addr.read().into_iter().map(move |x| {
+                            (KVSResponse::GetResponse{key: key.clone(), reg: reg.clone()}, x.clone())
+                        })
+                    })
+                    -> flatten()
+                    -> inspect(|x| println!("{gossip_addr}:{:5}: Response to client: {x:?}", context.current_tick()))
                     -> transducer_to_client_tx_merge;
 
                 transducer_to_client_tx_merge
