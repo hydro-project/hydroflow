@@ -5,13 +5,11 @@ use syn::spanned::Spanned;
 
 use crate::diagnostic::Diagnostic;
 
-use super::di_mul_graph::DiMulGraph;
-use super::flat_graph::FlatGraph;
 use super::ops::{DelayType, OperatorWriteOutput, WriteContextArgs, OPERATORS};
 use super::serde_graph::{SerdeEdge, SerdeGraph};
 use super::{
-    node_color, Color, GraphEdgeId, GraphNodeId, GraphSubgraphId, Node, OperatorInstance,
-    PortIndexValue, CONTEXT, HYDROFLOW,
+    node_color, Color, DiMulGraph, FlatGraph, GraphEdgeId, GraphNodeId, GraphSubgraphId, Node,
+    OperatorInstance, PortIndexValue, CONTEXT, HYDROFLOW,
 };
 
 #[derive(Default)]
@@ -39,7 +37,7 @@ pub struct PartitionedGraph {
     /// Internal handoffs
     pub(crate) subgraph_internal_handoffs: SecondaryMap<GraphSubgraphId, Vec<GraphNodeId>>,
     /// The modality of each non-handoff node (Push or Pull)
-    pub(crate) node_color_map: SparseSecondaryMap<GraphNodeId, Color>,
+    pub(crate) node_color: SparseSecondaryMap<GraphNodeId, Color>,
 
     /// What variable name each graph node belongs to (if any).
     pub(crate) node_varnames: SparseSecondaryMap<GraphNodeId, Ident>,
@@ -399,7 +397,7 @@ impl PartitionedGraph {
         g.subgraph_nodes = self.subgraph_nodes.clone();
         g.subgraph_stratum = self.subgraph_stratum.clone();
         g.subgraph_internal_handoffs = self.subgraph_internal_handoffs.clone();
-        g.node_color_map = self.node_color_map.clone();
+        g.node_color_map = self.node_color.clone();
 
         // add varnames (sort for determinism).
         let mut varnames_sorted = self.node_varnames.iter().collect::<Vec<_>>();
