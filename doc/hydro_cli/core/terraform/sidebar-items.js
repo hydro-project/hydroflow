@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"constant":["FIELDS"],"enum":["__Field"],"opaque":[""],"struct":["TerraformBatch","TerraformConfig","TerraformOutput","TerraformProvider","TerraformResult","TerraformResultOutput","__FieldVisitor","__Visitor"]};

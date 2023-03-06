@@ -274,6 +274,13 @@
 <a href="#274" id="274">274</a>
 <a href="#275" id="275">275</a>
 <a href="#276" id="276">276</a>
+<a href="#277" id="277">277</a>
+<a href="#278" id="278">278</a>
+<a href="#279" id="279">279</a>
+<a href="#280" id="280">280</a>
+<a href="#281" id="281">281</a>
+<a href="#282" id="282">282</a>
+<a href="#283" id="283">283</a>
 </pre><pre class="rust"><code><span class="doccomment">//! Graph representation stages for Hydroflow graphs.
 
 </span><span class="kw">use </span>std::hash::Hash;
@@ -292,12 +299,19 @@
 
 <span class="kw">use </span><span class="self">self</span>::ops::{OperatorConstraints, Persistence};
 
-<span class="kw">pub mod </span>di_mul_graph;
-<span class="kw">pub mod </span>flat_graph;
+<span class="kw">mod </span>di_mul_graph;
+<span class="kw">mod </span>flat_graph;
+<span class="kw">mod </span>flat_graph_builder;
+<span class="kw">mod </span>partitioned_graph;
+
+<span class="kw">pub use </span>di_mul_graph::DiMulGraph;
+<span class="kw">pub use </span>flat_graph::{FlatGraph, FlatGraphExploded};
+<span class="kw">pub use </span>flat_graph_builder::FlatGraphBuilder;
+<span class="kw">pub use </span>partitioned_graph::PartitionedGraph;
+
 <span class="kw">pub mod </span>flat_to_partitioned;
 <span class="kw">pub mod </span>graph_algorithms;
 <span class="kw">pub mod </span>ops;
-<span class="kw">pub mod </span>partitioned_graph;
 <span class="kw">pub mod </span>serde_graph;
 
 <span class="macro">new_key_type! </span>{

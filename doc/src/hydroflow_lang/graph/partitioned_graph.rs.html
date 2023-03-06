@@ -419,8 +419,6 @@
 <a href="#419" id="419">419</a>
 <a href="#420" id="420">420</a>
 <a href="#421" id="421">421</a>
-<a href="#422" id="422">422</a>
-<a href="#423" id="423">423</a>
 </pre><pre class="rust"><code><span class="kw">use </span>proc_macro2::{Ident, Literal, Span, TokenStream};
 <span class="kw">use </span>quote::{format_ident, quote, quote_spanned, ToTokens};
 <span class="kw">use </span>slotmap::{Key, SecondaryMap, SlotMap, SparseSecondaryMap};
@@ -428,13 +426,11 @@
 
 <span class="kw">use </span><span class="kw">crate</span>::diagnostic::Diagnostic;
 
-<span class="kw">use </span><span class="kw">super</span>::di_mul_graph::DiMulGraph;
-<span class="kw">use </span><span class="kw">super</span>::flat_graph::FlatGraph;
 <span class="kw">use </span><span class="kw">super</span>::ops::{DelayType, OperatorWriteOutput, WriteContextArgs, OPERATORS};
 <span class="kw">use </span><span class="kw">super</span>::serde_graph::{SerdeEdge, SerdeGraph};
 <span class="kw">use super</span>::{
-    node_color, Color, GraphEdgeId, GraphNodeId, GraphSubgraphId, Node, OperatorInstance,
-    PortIndexValue, CONTEXT, HYDROFLOW,
+    node_color, Color, DiMulGraph, FlatGraph, GraphEdgeId, GraphNodeId, GraphSubgraphId, Node,
+    OperatorInstance, PortIndexValue, CONTEXT, HYDROFLOW,
 };
 
 <span class="attr">#[derive(Default)]
@@ -462,7 +458,7 @@
     <span class="doccomment">/// Internal handoffs
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) subgraph_internal_handoffs: SecondaryMap&lt;GraphSubgraphId, Vec&lt;GraphNodeId&gt;&gt;,
     <span class="doccomment">/// The modality of each non-handoff node (Push or Pull)
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) node_color_map: SparseSecondaryMap&lt;GraphNodeId, Color&gt;,
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) node_color: SparseSecondaryMap&lt;GraphNodeId, Color&gt;,
 
     <span class="doccomment">/// What variable name each graph node belongs to (if any).
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) node_varnames: SparseSecondaryMap&lt;GraphNodeId, Ident&gt;,
@@ -822,7 +818,7 @@
         </span>g.subgraph_nodes = <span class="self">self</span>.subgraph_nodes.clone();
         g.subgraph_stratum = <span class="self">self</span>.subgraph_stratum.clone();
         g.subgraph_internal_handoffs = <span class="self">self</span>.subgraph_internal_handoffs.clone();
-        g.node_color_map = <span class="self">self</span>.node_color_map.clone();
+        g.node_color_map = <span class="self">self</span>.node_color.clone();
 
         <span class="comment">// add varnames (sort for determinism).
         </span><span class="kw">let </span><span class="kw-2">mut </span>varnames_sorted = <span class="self">self</span>.node_varnames.iter().collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
