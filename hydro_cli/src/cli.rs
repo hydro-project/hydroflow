@@ -2,28 +2,21 @@ use std::{fmt::Display, path::PathBuf};
 
 use anyhow::Context;
 use clap::{Parser, Subcommand};
-use pyo3::{prelude::*, types::PyList};
+use pyo3::{exceptions::PyException, prelude::*, types::PyList};
 
-pub mod core;
-
-#[allow(non_snake_case)]
-mod python_interface;
-use python_interface::{hydro_cli_rust, AnyhowWrapper};
+use crate::{AnyhowError, AnyhowWrapper};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Cli {
     #[command(subcommand)]
-    command: Option<Commands>,
+    command: Commands,
 }
 
 #[derive(Subcommand, Debug)]
 enum Commands {
     /// deploys
-    Deploy {
-        #[arg(value_name = "FILE")]
-        config: PathBuf,
-    },
+    Deploy { config: PathBuf },
 }
 
 fn async_wrapper_module(py: Python) -> Result<&PyModule, PyErr> {
@@ -82,11 +75,15 @@ fn deploy(config: PathBuf) -> anyhow::Result<()> {
                     .trim()
                     .to_string();
 
-                if err.is_instance_of::<AnyhowWrapper>(py) {
-                    let wrapper = err.into_py(py).extract::<AnyhowWrapper>(py)?;
-                    let underlying = wrapper.underlying;
+                if err.is_instance_of::<AnyhowError>(py) {
+                    let args = err
+                        .value(py)
+                        .getattr("args")?
+                        .extract::<Vec<AnyhowWrapper>>()?;
+                    let wrapper = args.get(0).unwrap();
+                    let underlying = &wrapper.underlying;
                     let mut underlying = underlying.blocking_write();
-                    Err(underlying.take().unwrap()).context(format!("RustException\n{}", traceback))
+                    Err(underlying.take().unwrap()).context(traceback)
                 } else {
                     Err(PyErrWithTraceback {
                         err_display: format!("{}", err),
@@ -101,21 +98,32 @@ fn deploy(config: PathBuf) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn main() -> anyhow::Result<()> {
-    let mut builder = tokio::runtime::Builder::new_multi_thread();
-    builder.enable_all();
-    pyo3_asyncio::tokio::init(builder);
+#[pyfunction]
+fn cli_entrypoint(args: Vec<String>) -> PyResult<()> {
+    match Cli::try_parse_from(args) {
+        Ok(args) => {
+            let res = match args.command {
+                Commands::Deploy { config } => deploy(config),
+            };
 
-    pyo3::append_to_inittab!(hydro_cli_rust);
-
-    let args = Cli::parse();
-    if let Some(cmd) = args.command {
-        match cmd {
-            Commands::Deploy { config } => {
-                deploy(config)?;
+            match res {
+                Ok(_) => Ok(()),
+                Err(err) => {
+                    eprintln!("{:?}", err);
+                    Err(PyErr::new::<PyException, _>(""))
+                }
             }
         }
+        Err(err) => {
+            err.print().unwrap();
+            Err(PyErr::new::<PyException, _>(""))
+        }
     }
+}
+
+#[pymodule]
+pub fn cli(_py: Python, m: &PyModule) -> PyResult<()> {
+    m.add_function(wrap_pyfunction!(cli_entrypoint, m)?)?;
 
     Ok(())
 }
