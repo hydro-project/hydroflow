@@ -16,7 +16,6 @@ use serde_big_array::BigArray;
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
-use std::time::Instant;
 
 #[derive(PartialEq, Eq, Clone, Serialize, Deserialize, Debug, Ord, PartialOrd)]
 pub struct ValueType {
@@ -65,9 +64,6 @@ enum Commands {
 }
 
 fn main() {
-    let args: Vec<_> = env::args().collect();
-    println!("{:?}", args);
-
     let ctx = tmq::Context::new();
 
     let throughput = Arc::new(AtomicUsize::new(0));
@@ -88,19 +84,26 @@ fn main() {
         }
     }
 
+    std::thread::sleep(Duration::from_millis(2000));
+
+    throughput.store(0, Ordering::SeqCst);
     let start_time = std::time::Instant::now();
-    let mut time_since_last_report = std::time::Instant::now();
-    loop {
-        if time_since_last_report.elapsed() >= Duration::from_secs(1) {
-            time_since_last_report = Instant::now();
-            println!("puts/s: {}", throughput.load(Ordering::SeqCst));
-            throughput.store(0, Ordering::SeqCst);
 
-            if start_time.elapsed() >= Duration::from_secs(5) {
-                return;
-            }
-        }
+    std::thread::sleep(Duration::from_millis(5000));
+    let puts = throughput.load(Ordering::SeqCst) as f64 / start_time.elapsed().as_secs_f64();
+    println!("{puts}");
 
-        std::thread::sleep(Duration::from_millis(32));
-    }
+    // loop {
+    //     if time_since_last_report.elapsed() >= Duration::from_secs(1) {
+    //         time_since_last_report = Instant::now();
+    //         println!("puts/s: {}", throughput.load(Ordering::SeqCst));
+    //         throughput.store(0, Ordering::SeqCst);
+
+    //         if start_time.elapsed() >= Duration::from_secs(5) {
+    //             return;
+    //         }
+    //     }
+
+    //     std::thread::sleep(Duration::from_millis(32));
+    // }
 }

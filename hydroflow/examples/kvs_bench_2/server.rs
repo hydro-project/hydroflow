@@ -42,7 +42,7 @@ pub fn run_server(
 
         rt.block_on(async {
 
-            println!("tid server: {}", palaver::thread::gettid());
+            // println!("tid server: {}", palaver::thread::gettid());
 
             let (transducer_to_peers_tx, _) = bounded_broadcast_channel::<KVSRequest>(500000);
 
@@ -177,7 +177,7 @@ pub fn run_server(
 
 
                         async move {
-                            println!("binding gossip to: {gossip_addr:?}");
+                            // println!("binding gossip to: {gossip_addr:?}");
                             let mut router_socket = tmq::router(&ctx).bind(&format!("inproc://S{gossip_addr}")).unwrap();
 
                             loop {
