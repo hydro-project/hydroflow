@@ -6,7 +6,7 @@ use quote::quote;
 use syn::{parse_macro_input, LitStr};
 
 use hydroflow_lang::diagnostic::Level;
-use hydroflow_lang::graph::flat_graph::FlatGraphBuilder;
+use hydroflow_lang::graph::FlatGraphBuilder;
 use hydroflow_lang::parse::HfCode;
 
 #[proc_macro]
