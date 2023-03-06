@@ -114,14 +114,14 @@ impl FlatGraph {
         &self,
         src: GraphNodeId,
     ) -> impl '_
-           + Iterator<Item = (&PortIndexValue, GraphNodeId)>
+           + Iterator<Item = (GraphEdgeId, &PortIndexValue, GraphNodeId)>
            + DoubleEndedIterator
            + FusedIterator
            + Clone
            + Debug {
         self.graph
             .successors(src)
-            .map(|(e, v)| (&self.ports[e].0, v))
+            .map(|(e, v)| (e, &self.ports[e].0, v))
     }
 
     /// Predecessors, iterator of `(&PortIndexValue, GraphNodeId)` of incoming edges.
@@ -130,14 +130,14 @@ impl FlatGraph {
         &self,
         dst: GraphNodeId,
     ) -> impl '_
-           + Iterator<Item = (&PortIndexValue, GraphNodeId)>
+           + Iterator<Item = (GraphEdgeId, &PortIndexValue, GraphNodeId)>
            + DoubleEndedIterator
            + FusedIterator
            + Clone
            + Debug {
         self.graph
             .predecessors(dst)
-            .map(|(e, v)| (&self.ports[e].1, v))
+            .map(|(e, v)| (e, &self.ports[e].1, v))
     }
 
     /// Degree into a node.

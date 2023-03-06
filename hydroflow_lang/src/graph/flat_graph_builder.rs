@@ -301,10 +301,10 @@ impl FlatGraphBuilder {
 
             // Handle src's successor port conflicts:
             if src_port.is_specified() {
-                for (conflicting_port, _n) in self
+                for (_edge, conflicting_port, _node) in self
                     .flat_graph
                     .successors(src)
-                    .filter(|&(port, _n)| port == &src_port)
+                    .filter(|&(_edge, port, _node)| port == &src_port)
                 {
                     emit_conflict("Output", conflicting_port, &src_port, &mut self.diagnostics);
                 }
@@ -312,10 +312,10 @@ impl FlatGraphBuilder {
 
             // Handle dst's predecessor port conflicts:
             if dst_port.is_specified() {
-                for (conflicting_port, _n) in self
+                for (_edge, conflicting_port, _node) in self
                     .flat_graph
                     .predecessors(dst)
-                    .filter(|&(port, _n)| port == &dst_port)
+                    .filter(|&(_edge, port, _node)| port == &dst_port)
                 {
                     emit_conflict("Input", conflicting_port, &dst_port, &mut self.diagnostics);
                 }
@@ -351,7 +351,7 @@ impl FlatGraphBuilder {
                 let mut input_edges: Vec<(&PortIndexValue, GraphNodeId)> = self
                     .flat_graph
                     .predecessors(node_id)
-                    .map(|(port, pred)| (port, pred))
+                    .map(|(_edge, port, pred)| (port, pred))
                     .collect();
                 // Ensure sorted by port index.
                 input_edges.sort();
@@ -365,7 +365,7 @@ impl FlatGraphBuilder {
                 let mut output_edges: Vec<(&PortIndexValue, GraphNodeId)> = self
                     .flat_graph
                     .successors(node_id)
-                    .map(|(port, succ)| (port, succ))
+                    .map(|(_edge, port, succ)| (port, succ))
                     .collect();
                 // Ensure sorted by port index.
                 output_edges.sort();
@@ -595,14 +595,18 @@ impl FlatGraphBuilder {
                     emit_port_error(
                         operator.span(),
                         op_constraints.ports_inn,
-                        self.flat_graph.predecessors(node_id).map(|(port, _n)| port),
+                        self.flat_graph
+                            .predecessors(node_id)
+                            .map(|(_edge, port, _node)| port),
                         "input",
                         &mut self.diagnostics,
                     );
                     emit_port_error(
                         operator.span(),
                         op_constraints.ports_out,
-                        self.flat_graph.successors(node_id).map(|(port, _n)| port),
+                        self.flat_graph
+                            .successors(node_id)
+                            .map(|(_edge, port, _node)| port),
                         "output",
                         &mut self.diagnostics,
                     );
