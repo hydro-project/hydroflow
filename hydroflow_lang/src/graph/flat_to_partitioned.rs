@@ -109,8 +109,8 @@ impl FlatToPartitionedBuilder {
         // This list of nodes in each subgraph are to be in topological sort order.
         // Eventually returned directly in the `PartitionedGraph`.
         let (node_subgraph, subgraph_nodes) = self.make_subgraph_collect(subgraph_unionfind);
-        self.partitioned_graph.node_subgraph = node_subgraph;
-        self.partitioned_graph.subgraph_nodes = subgraph_nodes;
+        self.partitioned_graph.node_subgraph = node_subgraph; // TODO(mingwei): encapsulate
+        self.partitioned_graph.subgraph_nodes = subgraph_nodes; // TODO(mingwei): encapsulate
     }
 
     fn helper_find_subgraph_unionfind(
@@ -196,7 +196,7 @@ impl FlatToPartitionedBuilder {
             |v| {
                 self.partitioned_graph
                     .predecessors(v)
-                    .map(|(_pred_port, pred_id)| pred_id)
+                    .map(|(_pred_edge_id, _pred_port, pred_id)| pred_id)
                     .filter(|&pred_id| {
                         let (pred, _) = self.partitioned_graph.node(pred_id);
                         !matches!(pred, Node::Handoff { .. })
@@ -224,6 +224,156 @@ impl FlatToPartitionedBuilder {
             });
         }
         (node_subgraph, subgraph_nodes)
+    }
+
+    fn find_subgraph_strata(&mut self) -> Result<(), Diagnostic> {
+        // Determine subgraphs's stratum number.
+        // Find SCCs ignoring `next_tick()` edges, then do TopoSort on the resulting DAG.
+        // (Cycles on cross-stratum negative edges are an error.)
+
+        // Generate a subgraph graph. I.e. each node is a subgraph.
+        // Edges are connections between subgraphs, ignoring tick-crossers.
+        // TODO: use DiMulGraph here?
+        let mut subgraph_preds: BTreeMap<GraphSubgraphId, Vec<GraphSubgraphId>> =
+            Default::default();
+        let mut subgraph_succs: BTreeMap<GraphSubgraphId, Vec<GraphSubgraphId>> =
+            Default::default();
+
+        // Negative (next stratum) connections between subgraphs. (Ignore `next_tick()` connections).
+        let mut subgraph_negative_connections: BTreeSet<(GraphSubgraphId, GraphSubgraphId)> =
+            Default::default();
+
+        for (node_id, node) in self.partitioned_graph.nodes() {
+            if matches!(node, Node::Handoff { .. }) {
+                assert_eq!(1, self.partitioned_graph.successors(node_id).count());
+                let (succ_edge, _port, succ) =
+                    self.partitioned_graph.successors(node_id).next().unwrap();
+
+                // Ignore tick edges.
+                if Some(&DelayType::Tick) == self.barrier_crossers.get(succ_edge) {
+                    continue;
+                }
+
+                assert_eq!(1, self.partitioned_graph.predecessors(node_id).count());
+                let (_edge_id, _port, pred) =
+                    self.partitioned_graph.predecessors(node_id).next().unwrap();
+
+                let pred_sg = self.partitioned_graph.subgraph(pred).unwrap();
+                let succ_sg = self.partitioned_graph.subgraph(succ).unwrap();
+
+                subgraph_preds.entry(succ_sg).or_default().push(pred_sg);
+                subgraph_succs.entry(pred_sg).or_default().push(succ_sg);
+
+                if Some(&DelayType::Stratum) == self.barrier_crossers.get(succ_edge) {
+                    subgraph_negative_connections.insert((pred_sg, succ_sg));
+                }
+            }
+        }
+
+        let scc = graph_algorithms::scc_kosaraju(
+            self.partitioned_graph.subgraphs(),
+            |v| subgraph_preds.get(&v).into_iter().flatten().cloned(),
+            |u| subgraph_succs.get(&u).into_iter().flatten().cloned(),
+        );
+
+        let topo_sort_order = {
+            // Condensed each SCC into a single node for toposort.
+            let mut condensed_preds: BTreeMap<GraphSubgraphId, Vec<GraphSubgraphId>> =
+                Default::default();
+            for (u, preds) in subgraph_preds.iter() {
+                condensed_preds
+                    .entry(scc[u])
+                    .or_default()
+                    .extend(preds.iter().map(|v| scc[v]));
+            }
+
+            graph_algorithms::topo_sort(self.partitioned_graph.subgraphs(), |v| {
+                condensed_preds.get(&v).into_iter().flatten().cloned()
+            })
+        };
+
+        // Each subgraph stratum is the same as it's predecessors. Unless there is a negative edge, then we increment.
+        for sg_id in topo_sort_order {
+            let stratum = subgraph_preds
+                .get(&sg_id)
+                .into_iter()
+                .flatten()
+                .filter_map(|&pred_sg_id| {
+                    self.partitioned_graph
+                        .subgraph_stratum(pred_sg_id)
+                        .map(|stratum| {
+                            stratum
+                                + (subgraph_negative_connections.contains(&(pred_sg_id, sg_id))
+                                    as usize)
+                        })
+                })
+                .max()
+                .unwrap_or(0);
+            self.partitioned_graph.set_subgraph_stratum(sg_id, stratum);
+        }
+
+        // Re-introduce the `next_tick()` edges, ensuring they actually go to the next tick.
+        let extra_stratum = self.partitioned_graph.max_stratum().unwrap_or(0) + 1; // Used for `next_tick()` delayer subgraphs.
+        for (edge_id, &delay_type) in self.barrier_crossers.iter() {
+            let (hoff, _hoff_port, dst, dst_port) = self.partitioned_graph.edge(edge_id);
+            // let (hoff, dst) = graph.edge(edge_id).unwrap();
+            assert_eq!(1, self.partitioned_graph.predecessors(hoff).count());
+            let (_edge, _src_port, src) = self.partitioned_graph.predecessors(hoff).next().unwrap();
+
+            let src_sg = self.partitioned_graph.subgraph(src).unwrap();
+            let dst_sg = self.partitioned_graph.subgraph(dst).unwrap();
+            let src_stratum = self.partitioned_graph.subgraph_stratum(src_sg);
+            let dst_stratum = self.partitioned_graph.subgraph_stratum(dst_sg);
+            match delay_type {
+                DelayType::Tick => {
+                    // If tick edge goes foreward in stratum, need to buffer.
+                    // (TODO(mingwei): could use a different kind of handoff.)
+                    if src_stratum <= dst_stratum {
+                        // We inject a new subgraph between the src/dst which runs as the last stratum
+                        // of the tick and therefore delays the data until the next tick.
+
+                        // Before: A (src) -> H -> B (dst)
+                        // Then add intermediate identity:
+                        let (new_node_id, new_edge_id) =
+                            self.partitioned_graph.insert_intermediate_node(
+                                edge_id,
+                                // TODO(mingwei): Proper span w/ `parse_quote_spanned!`?
+                                Node::Operator(parse_quote! { identity() }),
+                            );
+                        // Intermediate: A (src) -> H -> ID -> B (dst)
+                        let hoff = Node::Handoff {
+                            src_span: Span::call_site(), // TODO(mingwei): Proper spanning?
+                            dst_span: Span::call_site(),
+                        };
+                        let (_hoff_node_id, _hoff_edge_id) = self
+                            .partitioned_graph
+                            .insert_intermediate_node(new_edge_id, hoff);
+                        // After: A (src) -> H -> ID -> H' -> B (dst)
+
+                        // Set stratum number for new intermediate:
+                        // Create subgraph. // TODO(mingwei): encapsulate
+                        let new_subgraph_id = self
+                            .partitioned_graph
+                            .subgraph_nodes
+                            .insert(vec![new_node_id]);
+                        self.partitioned_graph
+                            .node_subgraph
+                            .insert(new_node_id, new_subgraph_id);
+                        // Assign stratum.
+                        self.partitioned_graph
+                            .set_subgraph_stratum(new_subgraph_id, extra_stratum);
+                    }
+                }
+                DelayType::Stratum => {
+                    // Any negative edges which go onto the same or previous stratum are bad.
+                    // Indicates an unbroken negative cycle.
+                    if dst_stratum <= src_stratum {
+                        return Err(Diagnostic::spanned(dst_port.span(), Level::Error, "Negative edge creates a negative cycle which must be broken with a `next_tick()` operator."));
+                    }
+                }
+            }
+        }
+        Ok(())
     }
 }
 
@@ -284,163 +434,6 @@ fn can_connect_colorize(
         (Some(_), Some(Color::Hoff)) => false,
     };
     can_connect
-}
-
-fn find_subgraph_strata(
-    nodes: &mut SlotMap<GraphNodeId, Node>,
-    operator_instances: &mut SecondaryMap<GraphNodeId, OperatorInstance>,
-    ports: &mut SecondaryMap<GraphEdgeId, (PortIndexValue, PortIndexValue)>,
-    graph: &mut DiMulGraph<GraphNodeId, GraphEdgeId>,
-    node_subgraph: &mut SecondaryMap<GraphNodeId, GraphSubgraphId>,
-    subgraph_nodes: &mut SlotMap<GraphSubgraphId, Vec<GraphNodeId>>,
-    barrier_crossers: &SecondaryMap<GraphEdgeId, DelayType>,
-) -> Result<SecondaryMap<GraphSubgraphId, usize>, Diagnostic> {
-    // Determine subgraphs's stratum number.
-    // Find SCCs ignoring `next_tick()` edges, then do TopoSort on the resulting DAG.
-    // (Cycles on cross-stratum negative edges are an error.)
-
-    // Generate a subgraph graph. I.e. each node is a subgraph.
-    // Edges are connections between subgraphs, ignoring tick-crossers.
-    // TODO: use DiMulGraph here?
-    let mut subgraph_preds: BTreeMap<GraphSubgraphId, Vec<GraphSubgraphId>> = Default::default();
-    let mut subgraph_succs: BTreeMap<GraphSubgraphId, Vec<GraphSubgraphId>> = Default::default();
-
-    // Negative (next stratum) connections between subgraphs. (Ignore `next_tick()` connections).
-    let mut subgraph_negative_connections: BTreeSet<(GraphSubgraphId, GraphSubgraphId)> =
-        Default::default();
-
-    for (node_id, node) in nodes.iter() {
-        if matches!(node, Node::Handoff { .. }) {
-            assert_eq!(1, graph.successors(node_id).count());
-            let (succ_edge, succ) = graph.successors(node_id).next().unwrap();
-
-            // Ignore tick edges.
-            if Some(&DelayType::Tick) == barrier_crossers.get(succ_edge) {
-                continue;
-            }
-
-            assert_eq!(1, graph.predecessor_vertices(node_id).count());
-            let pred = graph.predecessor_vertices(node_id).next().unwrap();
-
-            let pred_sg = node_subgraph[pred];
-            let succ_sg = node_subgraph[succ];
-
-            subgraph_preds.entry(succ_sg).or_default().push(pred_sg);
-            subgraph_succs.entry(pred_sg).or_default().push(succ_sg);
-
-            if Some(&DelayType::Stratum) == barrier_crossers.get(succ_edge) {
-                subgraph_negative_connections.insert((pred_sg, succ_sg));
-            }
-        }
-    }
-
-    let scc = graph_algorithms::scc_kosaraju(
-        subgraph_nodes.keys(),
-        |v| subgraph_preds.get(&v).into_iter().flatten().cloned(),
-        |u| subgraph_succs.get(&u).into_iter().flatten().cloned(),
-    );
-
-    let topo_sort_order = {
-        // Condensed each SCC into a single node for toposort.
-        let mut condensed_preds: BTreeMap<GraphSubgraphId, Vec<GraphSubgraphId>> =
-            Default::default();
-        for (u, preds) in subgraph_preds.iter() {
-            condensed_preds
-                .entry(scc[u])
-                .or_default()
-                .extend(preds.iter().map(|v| scc[v]));
-        }
-
-        graph_algorithms::topo_sort(subgraph_nodes.keys(), |v| {
-            condensed_preds.get(&v).into_iter().flatten().cloned()
-        })
-    };
-
-    let mut subgraph_stratum: SecondaryMap<GraphSubgraphId, usize> =
-        SecondaryMap::with_capacity(topo_sort_order.len());
-    // Each subgraph stratum is the same as it's predecessors unless there is a negative edge.
-    for sg_id in topo_sort_order {
-        subgraph_stratum.insert(
-            sg_id,
-            subgraph_preds
-                .get(&sg_id)
-                .into_iter()
-                .flatten()
-                .filter_map(|&pred_sg_id| {
-                    subgraph_stratum.get(pred_sg_id).map(|stratum| {
-                        stratum
-                            + (subgraph_negative_connections.contains(&(pred_sg_id, sg_id))
-                                as usize)
-                    })
-                })
-                .max()
-                .unwrap_or(0),
-        );
-    }
-
-    // Re-introduce the `next_tick()` edges, ensuring they actually go to the next tick.
-    let max_stratum = subgraph_stratum.values().cloned().max().unwrap_or(0) + 1; // Used for `next_tick()` delayer subgraphs.
-    for (edge_id, &delay_type) in barrier_crossers.iter() {
-        let (hoff, dst) = graph.edge(edge_id).unwrap();
-        assert_eq!(1, graph.predecessor_vertices(hoff).count());
-        let src = graph.predecessor_vertices(hoff).next().unwrap();
-
-        let src_sg = node_subgraph[src];
-        let dst_sg = node_subgraph[dst];
-        let src_stratum = subgraph_stratum[src_sg];
-        let dst_stratum = subgraph_stratum[dst_sg];
-        match delay_type {
-            DelayType::Tick => {
-                // If tick edge goes foreward in stratum, need to buffer.
-                // (TODO(mingwei): could use a different kind of handoff.)
-                if src_stratum <= dst_stratum {
-                    // We inject a new subgraph between the src/dst which runs as the last stratum
-                    // of the tick and therefore delays the data until the next tick.
-
-                    // Before: A (src) -> H -> B (dst)
-                    // Then add intermediate identity:
-                    let (new_node_id, new_edge_id) = insert_intermediate_node(
-                        nodes,
-                        operator_instances,
-                        ports,
-                        graph,
-                        // TODO(mingwei): Proper span w/ `parse_quote_spanned!`?
-                        Node::Operator(parse_quote! { identity() }),
-                        edge_id,
-                    );
-                    // Intermediate: A (src) -> H -> ID -> B (dst)
-                    let hoff = Node::Handoff {
-                        src_span: Span::call_site(), // TODO(mingwei): Proper spanning?
-                        dst_span: Span::call_site(),
-                    };
-                    let (_hoff_node_id, _hoff_edge_id) = insert_intermediate_node(
-                        nodes,
-                        operator_instances,
-                        ports,
-                        graph,
-                        hoff,
-                        new_edge_id,
-                    );
-                    // After: A (src) -> H -> ID -> H' -> B (dst)
-
-                    // Set stratum numbers.
-                    let new_subgraph_id = subgraph_nodes.insert(vec![new_node_id]);
-                    subgraph_stratum.insert(new_subgraph_id, max_stratum);
-                    node_subgraph.insert(new_node_id, new_subgraph_id);
-                }
-            }
-            DelayType::Stratum => {
-                // Any negative edges which go onto the same or previous stratum are bad.
-                // Indicates an unbroken negative cycle.
-                if dst_stratum <= src_stratum {
-                    let (_src_idx, dst_idx) = &ports[edge_id];
-                    return Err(Diagnostic::spanned(dst_idx.span(), Level::Error, "Negative edge creates a negative cycle which must be broken with a `next_tick()` operator."));
-                }
-            }
-        }
-    }
-
-    Ok(subgraph_stratum)
 }
 
 /// Put `is_external_input: true` operators in separate stratum 0 subgraphs if they are not in stratum 0.
@@ -553,11 +546,12 @@ impl TryFrom<FlatGraph> for PartitionedGraph {
         // Partition into subgraphs.
         builder.make_subgraphs();
 
+        // Find strata for subgraphs.
+        if let Err(diagnostic) = builder.find_subgraph_strata() {
+            diagnostic.emit();
+        }
+
         // TODO(mingwei): WIP: keep using `FlatToPartitionedBuilder` instead of exploding.
-        let FlatToPartitionedBuilder {
-            partitioned_graph,
-            barrier_crossers,
-        } = builder;
         let PartitionedGraph {
             mut nodes,
             mut operator_instances,
@@ -565,24 +559,13 @@ impl TryFrom<FlatGraph> for PartitionedGraph {
             mut ports,
             mut node_subgraph,
             mut subgraph_nodes,
-            subgraph_stratum: _,
+            mut subgraph_stratum,
             subgraph_recv_handoffs: _,
             subgraph_send_handoffs: _,
             subgraph_internal_handoffs: _,
             node_color,
             node_varnames,
-        } = partitioned_graph;
-
-        // Find strata for subgraphs.
-        let mut subgraph_stratum = find_subgraph_strata(
-            &mut nodes,
-            &mut operator_instances,
-            &mut ports,
-            &mut graph,
-            &mut node_subgraph,
-            &mut subgraph_nodes,
-            &barrier_crossers,
-        )?;
+        } = builder.partitioned_graph;
 
         // Ensure all external inputs are in stratum 0.
         separate_external_inputs(
