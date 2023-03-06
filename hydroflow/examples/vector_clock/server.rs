@@ -8,6 +8,7 @@ use std::collections::HashMap;
 use std::net::SocketAddr;
 
 pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, opts: crate::Opts) {
+    let bot_vc: <VecClock as LatticeRepr>::Repr = HashMap::new();
     println!("Server live!");
 
     let mut flow: Hydroflow = hydroflow_syntax! {
@@ -20,8 +21,7 @@ pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, opts: crat
 
         // merge in the msg vc to the local vc
         inbound_chan[merge] -> map(|(msg, _addr): (EchoMsg, SocketAddr)| msg.vc) -> mergevc;
-        mergevc = fold::<'static> (
-                    HashMap::from([(format!("{:?}", opts.addr.unwrap()), 0)]),
+        mergevc = fold::<'static> (bot_vc,
                     |mut old: <VecClock as LatticeRepr>::Repr, vc: <VecClock as LatticeRepr>::Repr| {
                             let my_addr = format!("{:?}", opts.addr.unwrap());
                             let bump = HashMap::from([(my_addr.clone(), old[&my_addr] + 1)]);

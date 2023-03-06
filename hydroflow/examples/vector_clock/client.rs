@@ -16,7 +16,7 @@ pub(crate) async fn run_client(
 ) {
     // server_addr is required for client
     let server_addr = opts.server_addr.expect("Client requires a server address");
-    let bot_vc: <VecClock as LatticeRepr>::Repr = HashMap::from([(format!("{:?}", addr), 0)]);
+    let bot_vc: <VecClock as LatticeRepr>::Repr = HashMap::new();
 
     println!("Client live!");
 
