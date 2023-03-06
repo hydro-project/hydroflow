@@ -36,10 +36,10 @@ impl ResourceBatch {
         }
     }
 
-    async fn provision(self) -> ResourceResult {
-        ResourceResult {
-            terraform: self.terraform.provision().await,
-        }
+    async fn provision(self) -> Result<ResourceResult> {
+        Ok(ResourceResult {
+            terraform: self.terraform.provision().await?,
+        })
     }
 }
 
