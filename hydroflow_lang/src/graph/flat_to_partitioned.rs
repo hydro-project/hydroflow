@@ -375,6 +375,66 @@ impl FlatToPartitionedBuilder {
         }
         Ok(())
     }
+
+    /// Put `is_external_input: true` operators in separate stratum 0 subgraphs if they are not in stratum 0.
+    fn separate_external_inputs(&mut self) {
+        let external_input_nodes: Vec<_> = self
+            .partitioned_graph
+            .nodes()
+            // Ensure node is an operator (not a handoff), get constraints spec.
+            .filter_map(|(node_id, node)| {
+                find_node_op_constraints(node).map(|op_constraints| (node_id, op_constraints))
+            })
+            // Ensure current `node_id` is an external input.
+            .filter(|(_node_id, op_constraints)| op_constraints.is_external_input)
+            // Collect just `node_id`s.
+            .map(|(node_id, _op_constraints)| node_id)
+            // Ignore if operator node is already stratum 0.
+            .filter(|&node_id| {
+                0 != self
+                    .partitioned_graph
+                    .subgraph_stratum(self.partitioned_graph.node_subgraph[node_id]) // TODO(mingwei): encapsulate
+                    .unwrap()
+            })
+            .collect();
+
+        for node_id in external_input_nodes {
+            // TODO(mingwei): encapsulate
+            let old_sg_id = self.partitioned_graph.node_subgraph[node_id];
+            // Remove node from old subgraph.
+            {
+                // TODO(mingwei): encapsulate
+                let old_subgraph_nodes = &mut self.partitioned_graph.subgraph_nodes[old_sg_id];
+                let index = old_subgraph_nodes
+                    .iter()
+                    .position(|&nid| node_id == nid)
+                    .unwrap();
+                old_subgraph_nodes.remove(index);
+            }
+            // Create new subgraph in stratum 0 for this source.
+            // TODO(mingwei): encapsulate
+            let new_sg_id = self.partitioned_graph.subgraph_nodes.insert(vec![node_id]);
+            self.partitioned_graph
+                .node_subgraph
+                .insert(node_id, new_sg_id);
+            self.partitioned_graph.subgraph_stratum.insert(new_sg_id, 0);
+            // Insert handoff.
+            let successor_edges: Vec<_> = self
+                .partitioned_graph
+                .successors(node_id)
+                .map(|(edge_id, _succ_port, _succ_node)| edge_id)
+                .collect();
+            for edge_id in successor_edges {
+                let span = self.partitioned_graph.node(node_id).0.span();
+                let hoff = Node::Handoff {
+                    src_span: span,
+                    dst_span: span,
+                };
+                self.partitioned_graph
+                    .insert_intermediate_node(edge_id, hoff);
+            }
+        }
+    }
 }
 
 /// Set `src` or `dst` color if `None` based on the other (if possible):
@@ -434,58 +494,6 @@ fn can_connect_colorize(
         (Some(_), Some(Color::Hoff)) => false,
     };
     can_connect
-}
-
-/// Put `is_external_input: true` operators in separate stratum 0 subgraphs if they are not in stratum 0.
-fn separate_external_inputs(
-    nodes: &mut SlotMap<GraphNodeId, Node>,
-    operator_instances: &mut SecondaryMap<GraphNodeId, OperatorInstance>,
-    ports: &mut SecondaryMap<GraphEdgeId, (PortIndexValue, PortIndexValue)>,
-    graph: &mut DiMulGraph<GraphNodeId, GraphEdgeId>,
-    node_subgraph: &mut SecondaryMap<GraphNodeId, GraphSubgraphId>,
-    subgraph_nodes: &mut SlotMap<GraphSubgraphId, Vec<GraphNodeId>>,
-    subgraph_stratum: &mut SecondaryMap<GraphSubgraphId, usize>,
-) {
-    let external_input_nodes: Vec<_> = nodes
-        .iter()
-        // Ensure node is an operator (not a handoff), get constraints spec.
-        .filter_map(|(node_id, node)| {
-            find_node_op_constraints(node).map(|op_constraints| (node_id, op_constraints))
-        })
-        // Ensure current `node_id` is an external input.
-        .filter(|(_node_id, op_constraints)| op_constraints.is_external_input)
-        // Collect just `node_id`s.
-        .map(|(node_id, _op_constraints)| node_id)
-        // Ignore if operator node is already stratum 0.
-        .filter(|&node_id| 0 != subgraph_stratum[node_subgraph[node_id]])
-        .collect();
-
-    for node_id in external_input_nodes {
-        let old_sg_id = node_subgraph[node_id];
-        // Remove node from old subgraph.
-        {
-            let old_subgraph_nodes = &mut subgraph_nodes[old_sg_id];
-            let index = old_subgraph_nodes
-                .iter()
-                .position(|&nid| node_id == nid)
-                .unwrap();
-            old_subgraph_nodes.remove(index);
-        }
-        // Create new subgraph in stratum 0 for this source.
-        let new_sg_id = subgraph_nodes.insert(vec![node_id]);
-        node_subgraph.insert(node_id, new_sg_id);
-        subgraph_stratum.insert(new_sg_id, 0);
-        // Insert handoff.
-        let successor_edges: Vec<_> = graph.successor_edges(node_id).collect();
-        for edge_id in successor_edges {
-            let span = nodes[node_id].span();
-            let hoff = Node::Handoff {
-                src_span: span,
-                dst_span: span,
-            };
-            insert_intermediate_node(nodes, operator_instances, ports, graph, hoff, edge_id);
-        }
-    }
 }
 
 // Find the input (recv) and output (send) handoffs for each subgraph.
@@ -551,32 +559,24 @@ impl TryFrom<FlatGraph> for PartitionedGraph {
             diagnostic.emit();
         }
 
+        // Ensure all external inputs are in stratum 0.
+        builder.separate_external_inputs();
+
         // TODO(mingwei): WIP: keep using `FlatToPartitionedBuilder` instead of exploding.
         let PartitionedGraph {
-            mut nodes,
-            mut operator_instances,
-            mut graph,
-            mut ports,
-            mut node_subgraph,
-            mut subgraph_nodes,
-            mut subgraph_stratum,
+            nodes,
+            operator_instances,
+            graph,
+            ports,
+            node_subgraph,
+            subgraph_nodes,
+            subgraph_stratum,
             subgraph_recv_handoffs: _,
             subgraph_send_handoffs: _,
             subgraph_internal_handoffs: _,
             node_color,
             node_varnames,
         } = builder.partitioned_graph;
-
-        // Ensure all external inputs are in stratum 0.
-        separate_external_inputs(
-            &mut nodes,
-            &mut operator_instances,
-            &mut ports,
-            &mut graph,
-            &mut node_subgraph,
-            &mut subgraph_nodes,
-            &mut subgraph_stratum,
-        );
 
         let (subgraph_recv_handoffs, subgraph_send_handoffs) =
             find_subgraph_handoffs(&nodes, &graph, &node_subgraph, &subgraph_nodes);
