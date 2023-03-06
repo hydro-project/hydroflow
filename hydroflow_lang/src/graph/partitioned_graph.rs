@@ -125,14 +125,14 @@ impl PartitionedGraph {
         &self,
         src: GraphNodeId,
     ) -> impl '_
-           + Iterator<Item = (&PortIndexValue, GraphNodeId)>
+           + Iterator<Item = (GraphEdgeId, &PortIndexValue, GraphNodeId)>
            + DoubleEndedIterator
            + FusedIterator
            + Clone
            + Debug {
         self.graph
             .successors(src)
-            .map(|(e, v)| (&self.ports[e].0, v))
+            .map(|(e, v)| (e, &self.ports[e].0, v))
     }
 
     /// Predecessors, iterator of `(&PortIndexValue, GraphNodeId)` of incoming edges.
@@ -141,14 +141,14 @@ impl PartitionedGraph {
         &self,
         dst: GraphNodeId,
     ) -> impl '_
-           + Iterator<Item = (&PortIndexValue, GraphNodeId)>
+           + Iterator<Item = (GraphEdgeId, &PortIndexValue, GraphNodeId)>
            + DoubleEndedIterator
            + FusedIterator
            + Clone
            + Debug {
         self.graph
             .predecessors(dst)
-            .map(|(e, v)| (&self.ports[e].1, v))
+            .map(|(e, v)| (e, &self.ports[e].1, v))
     }
 
     /// Degree into a node.
@@ -159,6 +159,16 @@ impl PartitionedGraph {
     /// Degree out of a node.
     pub fn degree_out(&self, src: GraphNodeId) -> usize {
         self.graph.degree_out(src)
+    }
+
+    /// Get the subgraph of the node.
+    pub fn subgraph(&self, node_id: GraphNodeId) -> Option<GraphSubgraphId> {
+        self.node_subgraph.get(node_id).copied()
+    }
+
+    /// Iterator over all subgraphs.
+    pub fn subgraphs(&self) -> slotmap::basic::Keys<'_, GraphSubgraphId, Vec<GraphNodeId>> {
+        self.subgraph_nodes.keys()
     }
 
     /// `edge`: (src, dst, dst_idx)
@@ -212,6 +222,25 @@ impl PartitionedGraph {
             .insert(e1, (PortIndexValue::Elided(span), dst_idx));
 
         (node_id, e1)
+    }
+
+    /// Gets the stratum nubmer of the subgraph.
+    pub fn subgraph_stratum(&self, sg_id: GraphSubgraphId) -> Option<usize> {
+        self.subgraph_stratum.get(sg_id).copied()
+    }
+
+    /// Set subgraph's stratum number, returning the old value if exists.
+    pub fn set_subgraph_stratum(
+        &mut self,
+        sg_id: GraphSubgraphId,
+        stratum: usize,
+    ) -> Option<usize> {
+        self.subgraph_stratum.insert(sg_id, stratum)
+    }
+
+    /// Returns the the stratum number of the largest (latest) stratum (inclusive).
+    pub fn max_stratum(&self) -> Option<usize> {
+        self.subgraph_stratum.values().copied().max()
     }
 
     pub fn serde_string(&self) -> String {
