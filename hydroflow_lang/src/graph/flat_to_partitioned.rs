@@ -13,8 +13,8 @@ use super::flat_graph::FlatGraph;
 use super::ops::{find_node_op_constraints, find_op_op_constraints, DelayType};
 use super::partitioned_graph::PartitionedGraph;
 use super::{
-    get_operator_generics, graph_algorithms, node_color, Color, GraphEdgeId, GraphNodeId,
-    GraphSubgraphId, Node, OperatorInstance, PortIndexValue,
+    get_operator_generics, graph_algorithms, node_color, Color, FlatGraphExploded, GraphEdgeId,
+    GraphNodeId, GraphSubgraphId, Node, OperatorInstance, PortIndexValue,
 };
 
 fn find_barrier_crossers(
@@ -511,14 +511,13 @@ impl TryFrom<FlatGraph> for PartitionedGraph {
     type Error = Diagnostic;
 
     fn try_from(flat_graph: FlatGraph) -> Result<Self, Self::Error> {
-        let FlatGraph {
+        let FlatGraphExploded {
             mut nodes,
             mut operator_instances,
             mut graph,
             mut ports,
             node_varnames,
-            ..
-        } = flat_graph;
+        } = flat_graph.explode();
 
         // Pairs of node IDs which cross stratums or ticks and therefore cannot be in the same subgraph.
         let mut barrier_crossers = find_barrier_crossers(&nodes, &ports, &graph);
@@ -613,7 +612,7 @@ impl TryFrom<FlatGraph> for PartitionedGraph {
             subgraph_recv_handoffs,
             subgraph_send_handoffs,
             subgraph_internal_handoffs,
-            node_color_map: node_color,
+            node_color,
 
             node_varnames,
         })

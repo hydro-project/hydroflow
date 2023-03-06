@@ -16,12 +16,19 @@ use crate::pretty_span::PrettySpan;
 
 use self::ops::{OperatorConstraints, Persistence};
 
-pub mod di_mul_graph;
-pub mod flat_graph;
+mod di_mul_graph;
+mod flat_graph;
+mod flat_graph_builder;
+mod partitioned_graph;
+
+pub use di_mul_graph::DiMulGraph;
+pub use flat_graph::{FlatGraph, FlatGraphExploded};
+pub use flat_graph_builder::FlatGraphBuilder;
+pub use partitioned_graph::PartitionedGraph;
+
 pub mod flat_to_partitioned;
 pub mod graph_algorithms;
 pub mod ops;
-pub mod partitioned_graph;
 pub mod serde_graph;
 
 new_key_type! {
