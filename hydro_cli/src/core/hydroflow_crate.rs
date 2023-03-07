@@ -177,7 +177,6 @@ impl Service for HydroflowCrate {
             .try_write()
             .expect("No one should be reading/writing the host while resources are collected");
 
-        host.request_port(&BindType::ExternalTcpPort(22)); // always need SSH
         for (_, bind_type) in self.incoming_ports.iter() {
             host.request_port(bind_type);
         }
