@@ -35,7 +35,7 @@ impl TerraformBatch {
         {
             return Ok(TerraformResult {
                 outputs: HashMap::new(),
-                deployment_folder,
+                deployment_folder: None,
             });
         }
 
@@ -60,11 +60,11 @@ impl TerraformBatch {
 
         let mut result = TerraformResult {
             outputs: HashMap::new(),
-            deployment_folder,
+            deployment_folder: Some(deployment_folder),
         };
 
         if !Command::new("terraform")
-            .current_dir(result.deployment_folder.path())
+            .current_dir(result.deployment_folder.as_ref().unwrap().path())
             .arg("apply")
             .arg("-auto-approve")
             .spawn()
@@ -78,7 +78,7 @@ impl TerraformBatch {
         }
 
         let output = Command::new("terraform")
-            .current_dir(result.deployment_folder.path())
+            .current_dir(result.deployment_folder.as_ref().unwrap().path())
             .arg("output")
             .arg("-json")
             .output()
@@ -109,26 +109,29 @@ pub struct TerraformOutput {
 
 pub struct TerraformResult {
     pub outputs: HashMap<String, TerraformOutput>,
-    pub deployment_folder: tempfile::TempDir,
+    /// `None` if no deployment was performed
+    pub deployment_folder: Option<tempfile::TempDir>,
 }
 
 impl Drop for TerraformResult {
     fn drop(&mut self) {
-        println!(
-            "Destroying terraform deployment at {}",
-            self.deployment_folder.path().display()
-        );
-        if !std::process::Command::new("terraform")
-            .current_dir(&self.deployment_folder)
-            .arg("destroy")
-            .arg("-auto-approve")
-            .spawn()
-            .expect("Failed to spawn terraform destroy command")
-            .wait()
-            .expect("Failed to destroy terraform deployment")
-            .success()
-        {
-            eprintln!("WARNING: failed to destroy terraform deployment");
+        if let Some(folder) = &self.deployment_folder {
+            println!(
+                "Destroying terraform deployment at {}",
+                folder.path().display()
+            );
+            if !std::process::Command::new("terraform")
+                .current_dir(&folder)
+                .arg("destroy")
+                .arg("-auto-approve")
+                .spawn()
+                .expect("Failed to spawn terraform destroy command")
+                .wait()
+                .expect("Failed to destroy terraform deployment")
+                .success()
+            {
+                eprintln!("WARNING: failed to destroy terraform deployment");
+            }
         }
     }
 }
