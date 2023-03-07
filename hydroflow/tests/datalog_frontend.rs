@@ -12,8 +12,8 @@ pub fn test_minimal() {
 
     let mut flow = datalog!(
         r#"
-        .input input
-        .output out
+        .input input `source_stream(input)`
+        .output out `for_each(|v| out.send(v).unwrap())`
 
         out(y, x) :- input(x, y).
         "#
@@ -33,8 +33,8 @@ pub fn test_duplicated_facts() {
 
     let mut flow = datalog!(
         r#"
-        .input input
-        .output out
+        .input input `source_stream(input)`
+        .output out `for_each(|v| out.send(v).unwrap())`
 
         out(y, x) :- input(x, y).
         out(y, x) :- input(x, y).
@@ -57,8 +57,8 @@ pub fn test_join_with_self() {
 
     let mut flow = datalog!(
         r#"
-        .input input
-        .output out
+        .input input `source_stream(input)`
+        .output out `for_each(|v| out.send(v).unwrap())`
 
         out(x, y) :- input(x, y), input(y, x).
         "#
@@ -83,8 +83,8 @@ pub fn test_multi_use_intermediate() {
 
     let mut flow = datalog!(
         r#"
-        .input input
-        .output out
+        .input input `source_stream(input)`
+        .output out `for_each(|v| out.send(v).unwrap())`
 
         in_dup(x, y) :- input(x, y).
         out(x, y) :- in_dup(x, y), in_dup(y, x).
@@ -107,9 +107,9 @@ pub fn test_join_with_other() {
 
     let mut flow = datalog!(
         r#"
-        .input in1
-        .input in2
-        .output out
+        .input in1 `source_stream(in1)`
+        .input in2 `source_stream(in2)`
+        .output out `for_each(|v| out.send(v).unwrap())`
 
         out(x, y) :- in1(x, y), in2(y, x).
         "#
@@ -144,9 +144,9 @@ pub fn test_multiple_contributors() {
 
     let mut flow = datalog!(
         r#"
-        .input in1
-        .input in2
-        .output out
+        .input in1 `source_stream(in1)`
+        .input in2 `source_stream(in2)`
+        .output out `for_each(|v| out.send(v).unwrap())`
 
         out(x, y) :- in1(x, y).
         out(x, y) :- in2(y, x).
@@ -174,9 +174,9 @@ pub fn test_transitive_closure() {
 
     let mut flow = datalog!(
         r#"
-        .input edges
-        .input seed_reachable
-        .output reachable
+        .input edges `source_stream(edges)`
+        .input seed_reachable `source_stream(seed_reachable)`
+        .output reachable `for_each(|v| reachable.send(v).unwrap())`
 
         reachable(x) :- seed_reachable(x).
         reachable(y) :- reachable(x), edges(x, y).
@@ -207,10 +207,10 @@ pub fn test_triple_relation_join() {
 
     let mut flow = datalog!(
         r#"
-        .input in1
-        .input in2
-        .input in3
-        .output out
+        .input in1 `source_stream(in1)`
+        .input in2 `source_stream(in2)`
+        .input in3 `source_stream(in3)`
+        .output out `for_each(|v| out.send(v).unwrap())`
 
         out(d, c, b, a) :- in1(a, b), in2(b, c), in3(c, d).
         "#
@@ -234,8 +234,8 @@ pub fn test_local_constraints() {
 
     let mut flow = datalog!(
         r#"
-        .input input
-        .output out
+        .input input `source_stream(input)`
+        .output out `for_each(|v| out.send(v).unwrap())`
 
         out(x, x) :- input(x, x).
         "#
@@ -257,8 +257,8 @@ pub fn test_boolean_relation_eq() {
 
     let mut flow = datalog!(
         r#"
-        .input input
-        .output out
+        .input input `source_stream(input)`
+        .output out `for_each(|v| out.send(v).unwrap())`
 
         out(a, b) :- input(a, b), ( a == b ).
         "#
@@ -280,8 +280,8 @@ pub fn test_boolean_relation_lt() {
 
     let mut flow = datalog!(
         r#"
-        .input input
-        .output out
+        .input input `source_stream(input)`
+        .output out `for_each(|v| out.send(v).unwrap())`
 
         out(a, b) :- input(a, b), ( a < b ).
         "#
@@ -303,8 +303,8 @@ pub fn test_boolean_relation_le() {
 
     let mut flow = datalog!(
         r#"
-        .input input
-        .output out
+        .input input `source_stream(input)`
+        .output out `for_each(|v| out.send(v).unwrap())`
 
         out(a, b) :- input(a, b), ( a <= b ).
         "#
@@ -329,8 +329,8 @@ pub fn test_boolean_relation_gt() {
 
     let mut flow = datalog!(
         r#"
-        .input input
-        .output out
+        .input input `source_stream(input)`
+        .output out `for_each(|v| out.send(v).unwrap())`
 
         out(a, b) :- input(a, b), ( a > b ).
         "#
@@ -352,8 +352,8 @@ pub fn test_boolean_relation_ge() {
 
     let mut flow = datalog!(
         r#"
-        .input input
-        .output out
+        .input input `source_stream(input)`
+        .output out `for_each(|v| out.send(v).unwrap())`
 
         out(a, b) :- input(a, b), ( a >= b ).
         "#
@@ -385,10 +385,10 @@ pub fn test_join_multiple_and_relation() {
 
     let mut flow = datalog!(
         r#"
-        .input in1
-        .input in2
-        .input in3
-        .output out
+        .input in1 `source_stream(in1)`
+        .input in2 `source_stream(in2)`
+        .input in3 `source_stream(in3)`
+        .output out `for_each(|v| out.send(v).unwrap())`
 
         out(a, b, c, d) :- in1(a, b), in2(b, c), in3(c, d), ( d > a ).
         "#
@@ -421,10 +421,10 @@ pub fn test_join_multiple_then_relation() {
 
     let mut flow = datalog!(
         r#"
-        .input in1
-        .input in2
-        .input in3
-        .output out
+        .input in1 `source_stream(in1)`
+        .input in2 `source_stream(in2)`
+        .input in3 `source_stream(in3)`
+        .output out `for_each(|v| out.send(v).unwrap())`
 
         int(a, b, c, d) :- in1(a, b), in2(b, c), in3(c, d).
         out(a, b, c, d) :- int(a, b, c, d), ( d > a ).
@@ -451,9 +451,9 @@ pub fn test_next_tick() {
 
     let mut flow = datalog!(
         r#"
-        .input ints_1
-        .input ints_2
-        .output result
+        .input ints_1 `source_stream(ints_1)`
+        .input ints_2 `source_stream(ints_2)`
+        .output result `for_each(|v| result.send(v).unwrap())`
 
         result(x) :- ints_1(x).
         result(x) :+ ints_2(x).
@@ -484,10 +484,10 @@ pub fn test_anti_join() {
 
     let mut flow = datalog!(
         r#"
-        .input ints_1
-        .input ints_2
-        .input ints_3
-        .output result
+        .input ints_1 `source_stream(ints_1)`
+        .input ints_2 `source_stream(ints_2)`
+        .input ints_3 `source_stream(ints_3)`
+        .output result `for_each(|v| result.send(v).unwrap())`
 
         result(x, z) :- ints_1(x, y), ints_2(y, z), !ints_3(y)
         "#
@@ -523,10 +523,10 @@ pub fn test_anti_join_next_tick() {
 
     let mut flow = datalog!(
         r#"
-        .input ints_1
-        .input ints_2
-        .input ints_3
-        .output result
+        .input ints_1 `source_stream(ints_1)`
+        .input ints_2 `source_stream(ints_2)`
+        .input ints_3 `source_stream(ints_3)`
+        .output result `for_each(|v| result.send(v).unwrap())`
 
         result(x, z) :+ ints_1(x, y), ints_2(y, z), !ints_3(y)
         "#
@@ -566,10 +566,10 @@ pub fn test_anti_join_next_tick_cycle() {
 
     let mut flow = datalog!(
         r#"
-        .input ints_1
-        .input ints_2
-        .input ints_3
-        .output result
+        .input ints_1 `source_stream(ints_1)`
+        .input ints_2 `source_stream(ints_2)`
+        .input ints_3 `source_stream(ints_3)`
+        .output result `for_each(|v| result.send(v).unwrap())`
 
         result(x, z) :+ ints_1(x, y), ints_2(y, z), !ints_3(y), !result(x, z)
         "#
@@ -606,8 +606,8 @@ fn test_max() {
 
     let mut flow = datalog!(
         r#"
-        .input ints
-        .output result
+        .input ints `source_stream(ints)`
+        .output result `for_each(|v| result.send(v).unwrap())`
 
         result(max(a), b) :- ints(a, b)
         "#
@@ -635,8 +635,8 @@ fn test_max_all() {
 
     let mut flow = datalog!(
         r#"
-        .input ints
-        .output result
+        .input ints `source_stream(ints)`
+        .output result `for_each(|v| result.send(v).unwrap())`
 
         result(max(a), max(b)) :- ints(a, b)
         "#
@@ -658,8 +658,8 @@ fn test_max_next_tick() {
 
     let mut flow = datalog!(
         r#"
-        .input ints
-        .output result
+        .input ints `source_stream(ints)`
+        .output result `for_each(|v| result.send(v).unwrap())`
 
         result(max(a), max(b)) :+ ints(a, b)
         "#
@@ -704,8 +704,8 @@ fn test_send_to_node() {
 
         datalog!(
             r#"
-            .input ints
-            .output result
+            .input ints `source_stream(ints)`
+            .output result `for_each(|v| result.send(v).unwrap())`
 
             result@b(a) :~ ints(a, b)
             "#
@@ -723,8 +723,8 @@ fn test_send_to_node() {
 
         datalog!(
             r#"
-            .input ints
-            .output result
+            .input ints `source_stream(ints)`
+            .output result `for_each(|v| result.send(v).unwrap())`
 
             result@b(a) :~ ints(a, b)
             "#
