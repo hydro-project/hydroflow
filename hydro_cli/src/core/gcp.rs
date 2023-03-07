@@ -72,6 +72,8 @@ impl LaunchedComputeEngine {
         self.resource_result
             .terraform
             .deployment_folder
+            .as_ref()
+            .unwrap()
             .path()
             .join(".ssh")
             .join("vm_instance_ssh_key_pem")
@@ -204,6 +206,10 @@ impl Host for GCPComputeEngineHost {
                 self.external_ports.push(*port);
             }
         }
+    }
+
+    fn request_custom_binary(&mut self) {
+        self.request_port(&BindType::ExternalTcpPort(22));
     }
 
     fn collect_resources(&self, resource_batch: &mut ResourceBatch) {

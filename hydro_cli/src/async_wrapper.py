@@ -1,15 +1,15 @@
 import asyncio
 import sys
 
-async def wrap(inner):
+async def wrap(inner, args):
     try:
-        return (await inner(), None)
+        return (await inner(args), None)
     except:
         return (None, sys.exc_info())
 
-def run(inner):
+def run(inner, args):
     event_loop = asyncio.get_event_loop()
-    task = event_loop.create_task(wrap(inner))
+    task = event_loop.create_task(wrap(inner, args))
     should_cancel = False
 
     try:
