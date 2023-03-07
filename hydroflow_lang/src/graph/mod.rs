@@ -57,8 +57,8 @@ pub enum Node {
 impl Spanned for Node {
     fn span(&self) -> Span {
         match self {
-            Node::Operator(op) => op.span(),
-            &Node::Handoff { src_span, dst_span } => src_span.join(dst_span).unwrap_or(src_span),
+            Self::Operator(op) => op.span(),
+            &Self::Handoff { src_span, dst_span } => src_span.join(dst_span).unwrap_or(src_span),
         }
     }
 }

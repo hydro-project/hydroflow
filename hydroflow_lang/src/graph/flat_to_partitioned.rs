@@ -27,8 +27,12 @@ fn find_barrier_crossers(
         .collect()
 }
 
-fn assign_node_color(partitioned_graph: &mut PartitionedGraph) {
-    let node_color = partitioned_graph
+fn find_subgraph_unionfind(
+    partitioned_graph: &mut PartitionedGraph,
+    barrier_crossers: &SecondaryMap<GraphEdgeId, DelayType>,
+) -> (UnionFind<GraphNodeId>, BTreeSet<GraphEdgeId>) {
+    // Modality (color) of nodes, push or pull.
+    let mut node_color: SparseSecondaryMap<GraphNodeId, Color> = partitioned_graph
         .nodes()
         .filter_map(|(node_id, node)| {
             let inn_degree = partitioned_graph.degree_in(node_id);
@@ -37,16 +41,10 @@ fn assign_node_color(partitioned_graph: &mut PartitionedGraph) {
             op_color.map(|op_color| (node_id, op_color))
         })
         .collect();
-    // TODO(mingwei): encapsulate
-    partitioned_graph.node_color = node_color;
-}
 
-fn find_subgraph_unionfind(
-    partitioned_graph: &mut PartitionedGraph,
-    barrier_crossers: &SecondaryMap<GraphEdgeId, DelayType>,
-) -> (UnionFind<GraphNodeId>, BTreeSet<GraphEdgeId>) {
     let mut subgraph_unionfind: UnionFind<GraphNodeId> =
         UnionFind::with_capacity(partitioned_graph.nodes().len());
+
     // Will contain all edges which are handoffs. Starts out with all edges and
     // we remove from this set as we construct subgraphs.
     let mut handoff_edges: BTreeSet<GraphEdgeId> = partitioned_graph
@@ -87,7 +85,7 @@ fn find_subgraph_unionfind(
                 continue;
             }
 
-            if can_connect_colorize(&mut partitioned_graph.node_color, src, dst) {
+            if can_connect_colorize(&mut node_color, src, dst) {
                 // At this point we have selected this edge and its src & dst to be
                 // within a single subgraph.
                 subgraph_unionfind.union(src, dst);
@@ -520,7 +518,6 @@ impl TryFrom<FlatGraph> for PartitionedGraph {
     fn try_from(flat_graph: FlatGraph) -> Result<Self, Self::Error> {
         let mut partitioned_graph = PartitionedGraph::unpartitioned_from_flat_graph(flat_graph);
         let mut barrier_crossers = find_barrier_crossers(&partitioned_graph);
-        assign_node_color(&mut partitioned_graph);
 
         // Partition into subgraphs.
         make_subgraphs(&mut partitioned_graph, &mut barrier_crossers);
