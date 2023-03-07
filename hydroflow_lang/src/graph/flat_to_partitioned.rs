@@ -8,14 +8,10 @@ use syn::spanned::Spanned;
 use crate::diagnostic::{Diagnostic, Level};
 use crate::union_find::UnionFind;
 
-use super::di_mul_graph::DiMulGraph;
 use super::flat_graph::FlatGraph;
-use super::ops::{find_node_op_constraints, find_op_op_constraints, DelayType};
+use super::ops::{find_node_op_constraints, DelayType};
 use super::partitioned_graph::PartitionedGraph;
-use super::{
-    get_operator_generics, graph_algorithms, node_color, Color, GraphEdgeId, GraphNodeId,
-    GraphSubgraphId, Node, OperatorInstance, PortIndexValue,
-};
+use super::{graph_algorithms, node_color, Color, GraphEdgeId, GraphNodeId, GraphSubgraphId, Node};
 
 struct FlatToPartitionedBuilder {
     /// Partitioned graph. We will build the partitions AKA subgraphs over the lifetime of `self`.
@@ -436,22 +432,22 @@ impl FlatToPartitionedBuilder {
     }
 
     // Find the input (recv) and output (send) handoffs for each subgraph.
-    fn helper_find_subgraph_handoffs(
-        &self,
-    ) -> (
-        SecondaryMap<GraphSubgraphId, Vec<GraphNodeId>>,
-        SecondaryMap<GraphSubgraphId, Vec<GraphNodeId>>,
-    ) {
+    fn helper_find_subgraph_handoffs(&mut self)
+    // -> (
+    //     SecondaryMap<GraphSubgraphId, Vec<GraphNodeId>>,
+    //     SecondaryMap<GraphSubgraphId, Vec<GraphNodeId>>,
+    // )
+    {
         // TODO(mingwei): These should be invariants maintained by `PartitionedGraph`.
         {
             // Get data on handoff src and dst subgraphs.
-            let mut subgraph_recv_handoffs: SecondaryMap<GraphSubgraphId, Vec<GraphNodeId>> = self
+            let subgraph_recv_handoffs: SecondaryMap<GraphSubgraphId, Vec<GraphNodeId>> = self
                 .partitioned_graph
                 .subgraph_nodes
                 .keys()
                 .map(|k| (k, Default::default()))
                 .collect();
-            let mut subgraph_send_handoffs = subgraph_recv_handoffs.clone();
+            let subgraph_send_handoffs = subgraph_recv_handoffs.clone();
 
             self.partitioned_graph.subgraph_recv_handoffs = subgraph_recv_handoffs;
             self.partitioned_graph.subgraph_send_handoffs = subgraph_send_handoffs;
@@ -460,22 +456,25 @@ impl FlatToPartitionedBuilder {
         // For each edge in the graph, if `src` or `dst` are a handoff then assign
         // that handoff the to neighboring subgraphs (the other of `src`/`dst`).
         // (Mingwei: alternatively, could iterate nodes instead and just look at pred/succ).
-        for (_edge_id, (src, _src_port, dst, _dst_port)) in self.partitioned_graph.edges() {
+        for (src, dst) in self
+            .partitioned_graph
+            .edges()
+            .map(|(_edge_id, (src, _src_port, dst, _dst_port))| (src, dst))
+            .collect::<Vec<_>>()
+        {
             let (src_node, _src_inst) = self.partitioned_graph.node(src);
             let (dst_node, _dst_inst) = self.partitioned_graph.node(dst);
             match (src_node, dst_node) {
                 (Node::Operator(_), Node::Operator(_)) => {}
                 (Node::Operator(_), Node::Handoff { .. }) => {
                     // TODO(mingwei): encapsulate
-                    self.partitioned_graph.subgraph_send_handoffs
-                        [self.partitioned_graph.node_subgraph(src).unwrap()]
-                    .push(dst);
+                    let src_sg = self.partitioned_graph.node_subgraph(src).unwrap();
+                    self.partitioned_graph.subgraph_send_handoffs[src_sg].push(dst);
                 }
                 (Node::Handoff { .. }, Node::Operator(_)) => {
                     // TODO(mingwei): encapsulate
-                    self.partitioned_graph.subgraph_recv_handoffs
-                        [self.partitioned_graph.node_subgraph(dst).unwrap()]
-                    .push(src);
+                    let dst_sg = self.partitioned_graph.node_subgraph(dst).unwrap();
+                    self.partitioned_graph.subgraph_recv_handoffs[dst_sg].push(src);
                 }
                 (Node::Handoff { .. }, Node::Handoff { .. }) => {
                     Diagnostic::spanned(
@@ -492,7 +491,7 @@ impl FlatToPartitionedBuilder {
             }
         }
 
-        (subgraph_recv_handoffs, subgraph_send_handoffs)
+        // (subgraph_recv_handoffs, subgraph_send_handoffs)
     }
 }
 
@@ -565,130 +564,13 @@ impl TryFrom<FlatGraph> for PartitionedGraph {
         builder.make_subgraphs();
 
         // Find strata for subgraphs.
-        if let Err(diagnostic) = builder.find_subgraph_strata() {
-            diagnostic.emit();
-        }
+        builder.find_subgraph_strata()?;
 
         // Ensure all external inputs are in stratum 0.
         builder.separate_external_inputs();
 
-        let (subgraph_recv_handoffs, subgraph_send_handoffs) =
-            builder.helper_find_subgraph_handoffs();
+        builder.helper_find_subgraph_handoffs();
 
-        // TODO(mingwei): WIP: keep using `FlatToPartitionedBuilder` instead of exploding.
-        let PartitionedGraph {
-            nodes,
-            operator_instances,
-            graph,
-            ports,
-            node_subgraph,
-            subgraph_nodes,
-            subgraph_stratum,
-            subgraph_recv_handoffs: _,
-            subgraph_send_handoffs: _,
-            subgraph_internal_handoffs: _,
-            node_color,
-            node_varnames,
-        } = builder.partitioned_graph;
-
-        let mut subgraph_internal_handoffs: SecondaryMap<GraphSubgraphId, Vec<GraphNodeId>> =
-            SecondaryMap::new();
-
-        // build a SecondaryMap from edges.dst to edges to find inbound edges of a node
-        let mut dest_map = SecondaryMap::new();
-        graph.edges().for_each(|e| {
-            let (_, (_src, dest)) = e;
-            dest_map.insert(dest, e);
-        });
-        // iterate through edges, find internal handoffs and their inbound/outbound edges
-        for e in graph.edges() {
-            let (src, dst) = e.1;
-            if let Node::Handoff { .. } = nodes[src] {
-                if let Some((_, (inbound_src, _inbound_dest))) = dest_map.get(src) {
-                    // Found an inbound edge to this handoff. Check if it's in the same subgraph as dst
-                    if let Some(inbound_src_subgraph) = node_subgraph.get(*inbound_src) {
-                        if let Some(dst_subgraph) = node_subgraph.get(dst) {
-                            if inbound_src_subgraph == dst_subgraph {
-                                // Found an internal handoff
-                                if let Node::Handoff { .. } = nodes[src] {
-                                    subgraph_internal_handoffs
-                                        .entry(*inbound_src_subgraph)
-                                        .unwrap()
-                                        .or_insert(Vec::new())
-                                        .push(src);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        Ok(PartitionedGraph {
-            nodes,
-            operator_instances,
-            graph,
-            ports,
-            node_subgraph,
-
-            subgraph_nodes,
-            subgraph_stratum,
-            subgraph_recv_handoffs,
-            subgraph_send_handoffs,
-            subgraph_internal_handoffs,
-            node_color,
-
-            node_varnames,
-        })
+        Ok(builder.partitioned_graph)
     }
-}
-
-/// `edge`: X
-///
-/// Before: A (src) ------------> B (dst)
-/// After:  A (src) -> X (new) -> B (dst)
-///
-/// Returns the ID of X & ID of edge OUT of X.
-fn insert_intermediate_node(
-    nodes: &mut SlotMap<GraphNodeId, Node>,
-    operator_instances: &mut SecondaryMap<GraphNodeId, OperatorInstance>,
-    ports: &mut SecondaryMap<GraphEdgeId, (PortIndexValue, PortIndexValue)>,
-    graph: &mut DiMulGraph<GraphNodeId, GraphEdgeId>,
-    node: Node,
-    edge_id: GraphEdgeId,
-) -> (GraphNodeId, GraphEdgeId) {
-    let span = Some(node.span());
-
-    // Make corresponding operator instance (if `node` is an operator).
-    let op_inst_opt = 'oc: {
-        let Node::Operator(operator) = &node else { break 'oc None; };
-        let Some(op_constraints) = find_op_op_constraints(operator) else { break 'oc None; };
-        let (input_port, output_port) = ports.get(edge_id).cloned().unwrap();
-        let generics = get_operator_generics(
-            &mut Vec::new(), /* TODO(mingwei) diagnostics */
-            operator,
-        );
-        Some(OperatorInstance {
-            op_constraints,
-            input_ports: vec![input_port],
-            output_ports: vec![output_port],
-            generics,
-            arguments: operator.args.clone(),
-        })
-    };
-
-    // Insert new `node`.
-    let node_id = nodes.insert(node);
-    // Insert corresponding `OperatorInstance` if applicable.
-    if let Some(op_inst) = op_inst_opt {
-        operator_instances.insert(node_id, op_inst);
-    }
-    // Update edges to insert node within `edge_id`.
-    let (e0, e1) = graph.insert_intermediate_vertex(node_id, edge_id).unwrap();
-
-    // Update corresponding ports.
-    let (src_idx, dst_idx) = ports.remove(edge_id).unwrap();
-    ports.insert(e0, (src_idx, PortIndexValue::Elided(span)));
-    ports.insert(e1, (PortIndexValue::Elided(span), dst_idx));
-
-    (node_id, e1)
 }

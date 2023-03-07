@@ -40,8 +40,6 @@ pub struct PartitionedGraph {
     pub(crate) subgraph_recv_handoffs: SecondaryMap<GraphSubgraphId, Vec<GraphNodeId>>,
     /// Which handoffs go out of each subgraph.
     pub(crate) subgraph_send_handoffs: SecondaryMap<GraphSubgraphId, Vec<GraphNodeId>>,
-    /// Internal handoffs
-    pub(crate) subgraph_internal_handoffs: SecondaryMap<GraphSubgraphId, Vec<GraphNodeId>>,
     /// The modality of each non-handoff node (Push or Pull)
     pub(crate) node_color: SparseSecondaryMap<GraphNodeId, Color>,
 
@@ -592,7 +590,35 @@ impl PartitionedGraph {
         // add subgraphs
         g.subgraph_nodes = self.subgraph_nodes.clone();
         g.subgraph_stratum = self.subgraph_stratum.clone();
-        g.subgraph_internal_handoffs = self.subgraph_internal_handoffs.clone();
+        g.subgraph_internal_handoffs = {
+            let mut subgraph_internal_handoffs: SecondaryMap<GraphSubgraphId, Vec<GraphNodeId>> =
+                SecondaryMap::new();
+            // iterate through edges, find internal handoffs and their inbound/outbound edges
+            for e in self.graph.edges() {
+                let (src, dst) = e.1;
+                if let Node::Handoff { .. } = self.nodes[src] {
+                    // Should only be one inbound_src, since it's a handoff.
+                    for inbound_src in self.graph.predecessor_vertices(src) {
+                        // Found an inbound edge to this handoff. Check if it's in the same subgraph as dst
+                        if let Some(inbound_src_subgraph) = self.node_subgraph.get(inbound_src) {
+                            if let Some(dst_subgraph) = self.node_subgraph.get(dst) {
+                                if inbound_src_subgraph == dst_subgraph {
+                                    // Found an internal handoff
+                                    if let Node::Handoff { .. } = self.nodes[src] {
+                                        subgraph_internal_handoffs
+                                            .entry(*inbound_src_subgraph)
+                                            .unwrap()
+                                            .or_insert(Vec::new())
+                                            .push(src);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            subgraph_internal_handoffs
+        };
 
         // add varnames (sort for determinism).
         let mut varnames_sorted = self.node_varnames.iter().collect::<Vec<_>>();
