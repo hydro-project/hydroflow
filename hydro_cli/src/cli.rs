@@ -16,7 +16,11 @@ struct Cli {
 #[derive(Subcommand, Debug)]
 enum Commands {
     /// deploys
-    Deploy { config: PathBuf },
+    Deploy {
+        config: PathBuf,
+        #[arg(last(true))]
+        args: Vec<String>,
+    },
 }
 
 fn async_wrapper_module(py: Python) -> Result<&PyModule, PyErr> {
@@ -43,7 +47,7 @@ impl Display for PyErrWithTraceback {
     }
 }
 
-fn deploy(config: PathBuf) -> anyhow::Result<()> {
+fn deploy(config: PathBuf, args: Vec<String>) -> anyhow::Result<()> {
     Python::with_gil(|py| -> anyhow::Result<()> {
         let syspath: &PyList = py
             .import("sys")
@@ -65,7 +69,7 @@ fn deploy(config: PathBuf) -> anyhow::Result<()> {
         .into();
 
         let wrapper = async_wrapper_module(py)?;
-        match wrapper.call_method1("run", (fun,)) {
+        match wrapper.call_method1("run", (fun, args)) {
             Ok(_) => Ok(()),
             Err(err) => {
                 let traceback = err
@@ -103,7 +107,7 @@ fn cli_entrypoint(args: Vec<String>) -> PyResult<()> {
     match Cli::try_parse_from(args) {
         Ok(args) => {
             let res = match args.command {
-                Commands::Deploy { config } => deploy(config),
+                Commands::Deploy { config, args } => deploy(config, args),
             };
 
             match res {

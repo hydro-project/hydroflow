@@ -119,6 +119,8 @@ impl HydroflowCrate {
 
         tokio::task::spawn_blocking(move || {
             let config = Config::default().unwrap();
+            config.shell().set_verbosity(cargo::core::Verbosity::Normal);
+
             let workspace = Workspace::new(&src_cloned, &config).unwrap();
 
             let mut compile_options = CompileOptions::new(&config, CompileMode::Build).unwrap();
@@ -175,7 +177,7 @@ impl Service for HydroflowCrate {
             .try_write()
             .expect("No one should be reading/writing the host while resources are collected");
 
-        host.request_port(&BindType::ExternalTcpPort(22)); // always need SSH
+        host.request_custom_binary();
         for (_, bind_type) in self.incoming_ports.iter() {
             host.request_port(bind_type);
         }
