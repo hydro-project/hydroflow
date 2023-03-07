@@ -42,6 +42,7 @@ mod source_iter;
 mod source_stdin;
 mod source_stream;
 mod source_stream_serde;
+mod stamp;
 mod tee;
 mod unique;
 mod unzip;
@@ -159,6 +160,7 @@ pub const OPERATORS: &[OperatorConstraints] = &[
     merge::MERGE,
     join::JOIN,
     join_hack::JOIN_HACK,
+    stamp::STAMP,
     cross_join::CROSS_JOIN,
     tee::TEE,
     unzip::UNZIP,
