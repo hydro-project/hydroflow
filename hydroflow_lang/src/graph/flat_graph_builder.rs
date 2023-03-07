@@ -53,24 +53,34 @@ impl FlatGraphBuilder {
         input.into()
     }
 
+    /// Build into a [`FlatGraph`], returning a tuple of a `FlatGraph` and any diagnostics.
+    ///
+    /// Even if there are errors, the `FlatGraph` will be returned (potentially in a partial state).
+    pub fn try_build(mut self) -> (FlatGraph, Vec<Diagnostic>) {
+        self.connect_operator_links();
+        self.process_operator_errors();
+
+        (self.flat_graph, self.diagnostics)
+    }
+
     /// Build into a [`FlatGraph`].
     ///
     /// Emits any diagnostics more severe than `min_diagnostic_level`.
     ///
     /// Returns `Err(FlatGraph)` if there are any errors. Returns `Ok(FlatGraph)` if there are no
     /// errors.
-    pub fn build(mut self, min_diagnostic_level: Level) -> Result<FlatGraph, FlatGraph> {
-        self.connect_operator_links();
-        self.process_operator_errors();
+    pub fn build(self, min_diagnostic_level: Level) -> Result<FlatGraph, FlatGraph> {
+        let (result, diagnostics) = self.try_build();
 
-        self.diagnostics
+        diagnostics
             .iter()
             .filter(|&diag| diag.level <= min_diagnostic_level)
             .for_each(Diagnostic::emit);
-        if self.diagnostics.iter().any(Diagnostic::is_error) {
-            Err(self.flat_graph)
+
+        if diagnostics.iter().any(|diag| diag.level == Level::Error) {
+            Err(result)
         } else {
-            Ok(self.flat_graph)
+            Ok(result)
         }
     }
 
