@@ -40,6 +40,9 @@ name = "deadlock_detector"
 name = "kvs"
 
 [[example]]
+name = "vector_clock"
+
+[[example]]
 name = "cli_sender"
 required-features = [ "cli_integration" ]
 
