@@ -14,7 +14,7 @@ mod socket;
 pub use socket::*;
 
 #[cfg(feature = "cli_integration")]
-pub mod connection;
+pub mod cli;
 
 use std::net::SocketAddr;
 use std::task::{Context, Poll};
@@ -84,14 +84,14 @@ where
 
 pub fn serialize_to_bytes<T>(msg: T) -> bytes::Bytes
 where
-    T: Serialize + for<'a> Deserialize<'a> + Clone,
+    T: Serialize,
 {
     bytes::Bytes::from(bincode::serialize(&msg).unwrap())
 }
 
 pub fn deserialize_from_bytes<T>(msg: bytes::BytesMut) -> T
 where
-    T: Serialize + for<'a> Deserialize<'a> + Clone,
+    T: for<'a> Deserialize<'a> + Clone,
 {
     bincode::deserialize(&msg).unwrap()
 }
