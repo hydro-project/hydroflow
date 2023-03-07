@@ -15,6 +15,14 @@ pub mod datalog {
             Ident,
             RustSnippet,
         ),
+        Async(
+            #[rust_sitter::leaf(text = ".async")] (),
+            Ident,
+            /// A pipeline for data to be sent to another node, which must consume `(NodeID, Data)` pairs.
+            RustSnippet,
+            /// A pipeline for data received from another node, which must produce `Data` values.
+            RustSnippet,
+        ),
         Rule(Rule),
     }
 

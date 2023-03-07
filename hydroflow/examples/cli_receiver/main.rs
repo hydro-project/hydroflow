@@ -8,10 +8,10 @@ async fn main() {
 
     let mut df = datalog!(
         r#"
-        .input bar `source_stream(bar_recv) -> map(|x| deserialize_from_bytes::<(String,)>(x.unwrap()))`
+        .async repeated `for_each(|_: String| ())` `source_stream(bar_recv) -> map(|x| deserialize_from_bytes::<(String,)>(x.unwrap()))`
         .output stdout `for_each(|tup| println!("echo {:?}", tup))`
 
-        stdout(x) :- bar(x)
+        stdout(x) :- repeated(x)
     "#
     );
 
