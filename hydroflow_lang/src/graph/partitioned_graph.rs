@@ -224,6 +224,11 @@ impl PartitionedGraph {
         (node_id, e1)
     }
 
+    /// Get subgraph for node.
+    pub fn node_subgraph(&self, node_id: GraphNodeId) -> Option<GraphSubgraphId> {
+        self.node_subgraph.get(node_id).copied()
+    }
+
     /// Gets the stratum nubmer of the subgraph.
     pub fn subgraph_stratum(&self, sg_id: GraphSubgraphId) -> Option<usize> {
         self.subgraph_stratum.get(sg_id).copied()

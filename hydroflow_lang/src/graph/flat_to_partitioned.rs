@@ -393,14 +393,13 @@ impl FlatToPartitionedBuilder {
             .filter(|&node_id| {
                 0 != self
                     .partitioned_graph
-                    .subgraph_stratum(self.partitioned_graph.node_subgraph[node_id]) // TODO(mingwei): encapsulate
+                    .subgraph_stratum(self.partitioned_graph.node_subgraph(node_id).unwrap())
                     .unwrap()
             })
             .collect();
 
         for node_id in external_input_nodes {
-            // TODO(mingwei): encapsulate
-            let old_sg_id = self.partitioned_graph.node_subgraph[node_id];
+            let old_sg_id = self.partitioned_graph.node_subgraph(node_id).unwrap();
             // Remove node from old subgraph.
             {
                 // TODO(mingwei): encapsulate
@@ -434,6 +433,66 @@ impl FlatToPartitionedBuilder {
                     .insert_intermediate_node(edge_id, hoff);
             }
         }
+    }
+
+    // Find the input (recv) and output (send) handoffs for each subgraph.
+    fn helper_find_subgraph_handoffs(
+        &self,
+    ) -> (
+        SecondaryMap<GraphSubgraphId, Vec<GraphNodeId>>,
+        SecondaryMap<GraphSubgraphId, Vec<GraphNodeId>>,
+    ) {
+        // TODO(mingwei): These should be invariants maintained by `PartitionedGraph`.
+        {
+            // Get data on handoff src and dst subgraphs.
+            let mut subgraph_recv_handoffs: SecondaryMap<GraphSubgraphId, Vec<GraphNodeId>> = self
+                .partitioned_graph
+                .subgraph_nodes
+                .keys()
+                .map(|k| (k, Default::default()))
+                .collect();
+            let mut subgraph_send_handoffs = subgraph_recv_handoffs.clone();
+
+            self.partitioned_graph.subgraph_recv_handoffs = subgraph_recv_handoffs;
+            self.partitioned_graph.subgraph_send_handoffs = subgraph_send_handoffs;
+        }
+
+        // For each edge in the graph, if `src` or `dst` are a handoff then assign
+        // that handoff the to neighboring subgraphs (the other of `src`/`dst`).
+        // (Mingwei: alternatively, could iterate nodes instead and just look at pred/succ).
+        for (_edge_id, (src, _src_port, dst, _dst_port)) in self.partitioned_graph.edges() {
+            let (src_node, _src_inst) = self.partitioned_graph.node(src);
+            let (dst_node, _dst_inst) = self.partitioned_graph.node(dst);
+            match (src_node, dst_node) {
+                (Node::Operator(_), Node::Operator(_)) => {}
+                (Node::Operator(_), Node::Handoff { .. }) => {
+                    // TODO(mingwei): encapsulate
+                    self.partitioned_graph.subgraph_send_handoffs
+                        [self.partitioned_graph.node_subgraph(src).unwrap()]
+                    .push(dst);
+                }
+                (Node::Handoff { .. }, Node::Operator(_)) => {
+                    // TODO(mingwei): encapsulate
+                    self.partitioned_graph.subgraph_recv_handoffs
+                        [self.partitioned_graph.node_subgraph(dst).unwrap()]
+                    .push(src);
+                }
+                (Node::Handoff { .. }, Node::Handoff { .. }) => {
+                    Diagnostic::spanned(
+                        Span::call_site(),
+                        Level::Error,
+                        format!(
+                            "Internal Error: Consecutive handoffs {:?} -> {:?}",
+                            src.data(),
+                            dst.data()
+                        ),
+                    )
+                    .emit();
+                }
+            }
+        }
+
+        (subgraph_recv_handoffs, subgraph_send_handoffs)
     }
 }
 
@@ -496,55 +555,6 @@ fn can_connect_colorize(
     can_connect
 }
 
-// Find the input (recv) and output (send) handoffs for each subgraph.
-fn find_subgraph_handoffs(
-    nodes: &SlotMap<GraphNodeId, Node>,
-    graph: &DiMulGraph<GraphNodeId, GraphEdgeId>,
-    node_subgraph: &SecondaryMap<GraphNodeId, GraphSubgraphId>,
-    subgraph_nodes: &SlotMap<GraphSubgraphId, Vec<GraphNodeId>>,
-) -> (
-    SecondaryMap<GraphSubgraphId, Vec<GraphNodeId>>,
-    SecondaryMap<GraphSubgraphId, Vec<GraphNodeId>>,
-) {
-    // Get data on handoff src and dst subgraphs.
-    let mut subgraph_recv_handoffs: SecondaryMap<GraphSubgraphId, Vec<GraphNodeId>> =
-        subgraph_nodes
-            .keys()
-            .map(|k| (k, Default::default()))
-            .collect();
-    let mut subgraph_send_handoffs = subgraph_recv_handoffs.clone();
-
-    // For each edge in the graph, if `src` or `dst` are a handoff then assign
-    // that handoff the to neighboring subgraphs (the other of `src`/`dst`).
-    // (Mingwei: alternatively, could iterate nodes instead and just look at pred/succ).
-    for (_edge_id, (src, dst)) in graph.edges() {
-        let (src_node, dst_node) = (&nodes[src], &nodes[dst]);
-        match (src_node, dst_node) {
-            (Node::Operator(_), Node::Operator(_)) => {}
-            (Node::Operator(_), Node::Handoff { .. }) => {
-                subgraph_send_handoffs[node_subgraph[src]].push(dst);
-            }
-            (Node::Handoff { .. }, Node::Operator(_)) => {
-                subgraph_recv_handoffs[node_subgraph[dst]].push(src);
-            }
-            (Node::Handoff { .. }, Node::Handoff { .. }) => {
-                Diagnostic::spanned(
-                    Span::call_site(),
-                    Level::Error,
-                    format!(
-                        "Internal Error: Consecutive handoffs {:?} -> {:?}",
-                        src.data(),
-                        dst.data()
-                    ),
-                )
-                .emit();
-            }
-        }
-    }
-
-    (subgraph_recv_handoffs, subgraph_send_handoffs)
-}
-
 impl TryFrom<FlatGraph> for PartitionedGraph {
     type Error = Diagnostic;
 
@@ -562,6 +572,9 @@ impl TryFrom<FlatGraph> for PartitionedGraph {
         // Ensure all external inputs are in stratum 0.
         builder.separate_external_inputs();
 
+        let (subgraph_recv_handoffs, subgraph_send_handoffs) =
+            builder.helper_find_subgraph_handoffs();
+
         // TODO(mingwei): WIP: keep using `FlatToPartitionedBuilder` instead of exploding.
         let PartitionedGraph {
             nodes,
@@ -577,9 +590,6 @@ impl TryFrom<FlatGraph> for PartitionedGraph {
             node_color,
             node_varnames,
         } = builder.partitioned_graph;
-
-        let (subgraph_recv_handoffs, subgraph_send_handoffs) =
-            find_subgraph_handoffs(&nodes, &graph, &node_subgraph, &subgraph_nodes);
 
         let mut subgraph_internal_handoffs: SecondaryMap<GraphSubgraphId, Vec<GraphNodeId>> =
             SecondaryMap::new();
