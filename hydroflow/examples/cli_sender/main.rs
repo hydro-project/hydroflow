@@ -8,10 +8,11 @@ async fn main() {
 
     let mut df = datalog!(
         r#"
-        .input repeated `repeat_iter(["Hello".to_string(), "world".to_string()]) -> map(|x| (x,))`
-        .output foo `map(|(v,)| serialize_to_bytes(v)) -> dest_sink(foo_send)`
+        .input repeated `repeat_iter([("Hello".to_string(),), ("world".to_string(),)])`
+        .input peers `repeat_iter([(0,)])`
+        .async repeated `map(|(node_id, v)| serialize_to_bytes(v)) -> dest_sink(foo_send)` `null()`
 
-        foo(x) :- repeated(x)
+        repeated@n(x) :~ repeated(x), peers(n)
     "#
     );
 
