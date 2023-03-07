@@ -10,9 +10,11 @@ expression: graph.surface_syntax_string()
 6v1 = tee ();
 7v1 = source_stream (ints);
 8v1 = for_each (| v | result . send (v) . unwrap ());
-9v1 = source_stream (async_receive_result);
-10v1 = map (| row : (_ , _ ,) | (row . 0 , row . 1 ,));
-11v1 = for_each (| v : (_ , _ ,) | async_send_result (v . 1 , (v . 0 ,)) . unwrap ());
+9v1 = merge ();
+10v1 = for_each (| (node , data) | async_send_result (node , data));
+11v1 = source_stream (async_receive_result);
+12v1 = map (| row : (_ , _ ,) | (row . 0 , row . 1 ,));
+13v1 = map (| v : (_ , _ ,) | (v . 1 , (v . 0 ,)));
 
 2v1 -> 3v1;
 1v1 -> 2v1;
@@ -20,7 +22,9 @@ expression: graph.surface_syntax_string()
 4v1 -> 5v1;
 7v1 -> 1v1;
 6v1 -> 8v1;
-9v1 -> 4v1;
-10v1 -> 11v1;
-3v1 -> 10v1;
+9v1 -> 10v1;
+11v1 -> 4v1;
+13v1 -> 9v1;
+12v1 -> 13v1;
+3v1 -> 12v1;
 
