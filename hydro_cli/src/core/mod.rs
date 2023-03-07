@@ -91,6 +91,9 @@ pub enum ConnectionType {
 pub trait Host: Send + Sync {
     fn request_port(&mut self, bind_type: &BindType);
 
+    /// Configures the host to support copying and running a custom binary.
+    fn request_custom_binary(&mut self);
+
     /// Makes requests for physical resources (servers) that this host needs to run.
     fn collect_resources(&self, resource_batch: &mut ResourceBatch);
 

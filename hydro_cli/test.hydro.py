@@ -1,20 +1,22 @@
 import hydro
 
-async def main():
+async def main(args):
+    gcp = args[0] == "gcp"
+
     deployment = hydro.Deployment()
     machine1 = deployment.GCPComputeEngineHost(
         project="autocompartmentalization",
         machine_type="e2-micro",
         image="debian-cloud/debian-11",
         region="us-west1-a"
-    )
+    ) if gcp else deployment.Localhost()
 
     machine2 = deployment.GCPComputeEngineHost(
         project="autocompartmentalization",
         machine_type="e2-micro",
         image="debian-cloud/debian-11",
         region="us-west1-a"
-    )
+    ) if gcp else machine1
 
     program = deployment.HydroflowCrate(
         src="../hydroflow",
