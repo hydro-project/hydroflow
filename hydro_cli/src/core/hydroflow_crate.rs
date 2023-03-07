@@ -180,6 +180,8 @@ impl Service for HydroflowCrate {
         for (_, bind_type) in self.incoming_ports.iter() {
             host.request_port(bind_type);
         }
+
+        host.request_custom_binary();
     }
 
     async fn deploy(&mut self, resource_result: &Arc<ResourceResult>) {
