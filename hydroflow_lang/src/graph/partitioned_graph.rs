@@ -40,8 +40,6 @@ pub struct PartitionedGraph {
     pub(crate) subgraph_recv_handoffs: SecondaryMap<GraphSubgraphId, Vec<GraphNodeId>>,
     /// Which handoffs go out of each subgraph.
     pub(crate) subgraph_send_handoffs: SecondaryMap<GraphSubgraphId, Vec<GraphNodeId>>,
-    /// The modality of each non-handoff node (Push or Pull)
-    pub(crate) node_color: SparseSecondaryMap<GraphNodeId, Color>,
 
     /// What variable name each graph node belongs to (if any).
     pub(crate) node_varnames: SparseSecondaryMap<GraphNodeId, Ident>,
