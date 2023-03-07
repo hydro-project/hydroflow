@@ -14,7 +14,7 @@ mod socket;
 pub use socket::*;
 
 #[cfg(feature = "cli_integration")]
-pub mod connection;
+pub mod cli;
 
 use std::net::SocketAddr;
 use std::task::{Context, Poll};
