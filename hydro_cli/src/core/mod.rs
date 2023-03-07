@@ -3,7 +3,7 @@ use std::{path::Path, sync::Arc};
 use anyhow::Result;
 use async_channel::{Receiver, Sender};
 use async_trait::async_trait;
-use hydroflow::util::connection::BindConfig;
+use hydroflow::util::cli::BindConfig;
 use tokio::sync::RwLock;
 
 pub mod deployment;
