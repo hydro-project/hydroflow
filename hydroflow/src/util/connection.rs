@@ -1,17 +1,20 @@
-use std::{net::SocketAddr, path::PathBuf, pin::Pin};
+use std::{collections::HashMap, net::SocketAddr, path::PathBuf, pin::Pin};
 
+use bytes::{Bytes, BytesMut};
 use futures::{Sink, Stream};
 use serde::{Deserialize, Serialize};
-use tokio::net::{TcpListener, TcpStream};
 #[cfg(unix)]
 use tokio::net::{UnixListener, UnixStream};
+use tokio::{
+    io,
+    net::{TcpListener, TcpStream},
+};
 #[cfg(not(unix))]
 type UnixListener = !;
-use tokio_util::codec::LinesCodecError;
 
-use super::tcp_lines;
+use super::tcp_bytes;
 #[cfg(unix)]
-use super::unix_lines;
+use super::unix_bytes;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum BindConfig {
@@ -23,7 +26,7 @@ pub enum BindConfig {
 }
 
 impl BindConfig {
-    pub async fn bind(self) -> BoundConnection {
+    async fn bind(self) -> BoundConnection {
         match self {
             BindConfig::UnixSocket => {
                 #[cfg(unix)]
@@ -46,6 +49,76 @@ impl BindConfig {
     }
 }
 
+async fn accept_incoming_connections(
+    binds: HashMap<String, BoundConnection>,
+) -> HashMap<
+    String,
+    (
+        Option<Pin<Box<dyn Stream<Item = Result<BytesMut, io::Error>> + Send>>>,
+        Option<Pin<Box<dyn Sink<Bytes, Error = io::Error> + Send>>>,
+    ),
+> {
+    let mut bind_results = HashMap::new();
+    for (name, bind) in binds {
+        let bound = bind.accept().await;
+        bind_results.insert(name.clone(), (Some(bound.0), Some(bound.1)));
+    }
+    bind_results
+}
+
+pub async fn hydro_cli_init() -> HashMap<
+    String,
+    (
+        Option<Pin<Box<dyn Stream<Item = Result<BytesMut, io::Error>> + Send>>>,
+        Option<Pin<Box<dyn Sink<Bytes, Error = io::Error> + Send>>>,
+    ),
+> {
+    let mut input = String::new();
+    std::io::stdin().read_line(&mut input).unwrap();
+    let trimmed = input.trim();
+
+    let bind_config = serde_json::from_str::<HashMap<String, BindConfig>>(trimmed).unwrap();
+
+    // bind to sockets
+    let mut bind_results: HashMap<String, ConnectionPipe> = HashMap::new();
+    let mut binds = HashMap::new();
+    for (name, config) in bind_config {
+        let bound = config.bind().await;
+        bind_results.insert(name.clone(), bound.connection_pipe());
+        binds.insert(name.clone(), bound);
+    }
+
+    let bind_connected_future =
+        tokio::task::spawn(async move { accept_incoming_connections(binds).await });
+
+    let bind_serialized = serde_json::to_string(&bind_results).unwrap();
+    println!("ready: {bind_serialized}");
+
+    let mut start_buf = String::new();
+    std::io::stdin().read_line(&mut start_buf).unwrap();
+    let connection_pipes = if start_buf.starts_with("start: ") {
+        serde_json::from_str::<HashMap<String, ConnectionPipe>>(
+            start_buf.trim_start_matches("start: ").trim(),
+        )
+        .unwrap()
+    } else {
+        panic!("expected start");
+    };
+
+    let mut all_connected = HashMap::new();
+    for (name, pipe) in connection_pipes {
+        let (sink, source) = pipe.connect().await;
+        all_connected.insert(name, (sink, source));
+    }
+
+    let bind_connected = bind_connected_future.await.unwrap();
+    for (name, (sink, source)) in bind_connected {
+        all_connected.insert(name, (sink, source));
+    }
+
+    all_connected
+}
+
 /// Describes a medium through which two HydroFlow services can communicate.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum ConnectionPipe {
@@ -57,16 +130,16 @@ impl ConnectionPipe {
     pub async fn connect(
         self,
     ) -> (
-        Pin<Box<dyn Sink<&'static str, Error = LinesCodecError> + Send>>,
-        Pin<Box<dyn Stream<Item = Result<String, LinesCodecError>>>>,
+        Option<Pin<Box<dyn Stream<Item = Result<BytesMut, io::Error>> + Send>>>,
+        Option<Pin<Box<dyn Sink<Bytes, Error = io::Error> + Send>>>,
     ) {
         match self {
             ConnectionPipe::UnixSocket(path) => {
                 #[cfg(unix)]
                 {
                     let stream = UnixStream::connect(path).await.unwrap();
-                    let (a, b) = unix_lines(stream);
-                    (Box::pin(a), Box::pin(b))
+                    let (sink, source) = unix_bytes(stream);
+                    (Some(Box::pin(source)), Some(Box::pin(sink)))
                 }
 
                 #[cfg(not(unix))]
@@ -77,14 +150,14 @@ impl ConnectionPipe {
             }
             ConnectionPipe::TcpPort(addr) => {
                 let stream = TcpStream::connect(addr).await.unwrap();
-                let (a, b) = tcp_lines(stream);
-                (Box::pin(a), Box::pin(b))
+                let (sink, source) = tcp_bytes(stream);
+                (Some(Box::pin(source)), Some(Box::pin(sink)))
             }
         }
     }
 }
 
-pub enum BoundConnection {
+enum BoundConnection {
     UnixSocket(UnixListener, tempfile::TempDir),
     TcpPort(TcpListener),
 }
@@ -118,19 +191,19 @@ impl BoundConnection {
         }
     }
 
-    pub async fn accept_lines(
+    pub async fn accept(
         &self,
     ) -> (
-        Pin<Box<dyn Sink<&'static str, Error = LinesCodecError>>>,
-        Pin<Box<dyn Stream<Item = Result<String, LinesCodecError>>>>,
+        Pin<Box<dyn Stream<Item = Result<BytesMut, io::Error>> + Send>>,
+        Pin<Box<dyn Sink<Bytes, Error = io::Error> + Send>>,
     ) {
         match self {
             BoundConnection::UnixSocket(listener, _) => {
                 #[cfg(unix)]
                 {
                     let (stream, _) = listener.accept().await.unwrap();
-                    let (a, b) = unix_lines(stream);
-                    (Box::pin(a), Box::pin(b))
+                    let (sink, source) = unix_bytes(stream);
+                    (Box::pin(source), Box::pin(sink))
                 }
 
                 #[cfg(not(unix))]
@@ -141,8 +214,8 @@ impl BoundConnection {
             }
             BoundConnection::TcpPort(listener) => {
                 let (stream, _) = listener.accept().await.unwrap();
-                let (a, b) = tcp_lines(stream);
-                (Box::pin(a), Box::pin(b))
+                let (sink, source) = tcp_bytes(stream);
+                (Box::pin(source), Box::pin(sink))
             }
         }
     }
