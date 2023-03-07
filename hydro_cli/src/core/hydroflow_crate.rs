@@ -119,6 +119,8 @@ impl HydroflowCrate {
 
         tokio::task::spawn_blocking(move || {
             let config = Config::default().unwrap();
+            config.shell().set_verbosity(cargo::core::Verbosity::Normal);
+
             let workspace = Workspace::new(&src_cloned, &config).unwrap();
 
             let mut compile_options = CompileOptions::new(&config, CompileMode::Build).unwrap();

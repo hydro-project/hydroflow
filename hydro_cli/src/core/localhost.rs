@@ -132,6 +132,7 @@ pub struct LocalhostHost {
 impl Host for LocalhostHost {
     fn request_port(&mut self, _bind_type: &BindType) {}
     fn collect_resources(&self, _resource_batch: &mut ResourceBatch) {}
+    fn request_custom_binary(&mut self) {}
 
     async fn provision(&mut self, _resource_result: &Arc<ResourceResult>) -> Arc<dyn LaunchedHost> {
         Arc::new(LaunchedLocalhost {})
