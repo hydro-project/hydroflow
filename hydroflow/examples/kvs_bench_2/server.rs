@@ -54,21 +54,25 @@ pub fn run_server(
 
             // simualate some initial requests, then on each ack, send a new request.
 
-            // let simulated_input = stream! {
-
+            // {
             //     let mut rng = StdRng::from_entropy();
 
             //     let dist = rand_distr::Zipf::new(1_000_000, dist).unwrap();
 
-            //     loop {
-            //         yield (KVSRequest::Put {
-            //             key: dist.sample(&mut rng) as u64,
-            //             value: ValueType { data: [0; 1024] },
-            //         }, Vec::new());
+            //     client_to_transducer_tx.send((KVSRequest::Put {
+            //         key: 7,
+            //         value: ValueType { data: [0; 1024] },
+            //     }, Vec::new())).unwrap();
 
-            //         throughput.fetch_add(1, Ordering::SeqCst);
-            //     }
-            // };
+            //     client_to_transducer_tx.send((KVSRequest::Put {
+            //         key: 7,
+            //         value: ValueType { data: [0; 1024] },
+            //     }, Vec::new())).unwrap();
+
+            //     client_to_transducer_tx.send((KVSRequest::Get {
+            //         key: 7,
+            //     }, Vec::new())).unwrap();
+            // }
 
             {
                 let mut rng = StdRng::from_entropy();
@@ -82,60 +86,6 @@ pub fn run_server(
                     }, Vec::new())).unwrap();
                 }
             }
-
-            // {
-            //     // let pub_socket = ctx.socket(zmq::PUB).unwrap();
-            //     // pub_socket.bind(&format!("tcp://{}", addr)).unwrap();
-
-            //     // std::thread::spawn({
-            //     //     let ctx = ctx.clone();
-            //     //     let peers = peers.clone();
-
-            //     //     move || {
-            //     //         let sub_socket = ctx.socket(zmq::SUB).unwrap();
-            //     //         sub_socket.set_subscribe(&[]).unwrap();
-
-            //     //         for peer in peers.iter() {
-            //     //             sub_socket.connect(&format!("tcp://{}", peer)).unwrap();
-            //     //         }
-
-            //     //         loop {
-            //     //             let raw_msg = sub_socket.recv_msg(0).unwrap();
-            //     //             let req: KVSRequest = deserialize_from_bytes2(&raw_msg);
-
-            //     //             client_to_transducer_tx.send((req, addr)).unwrap();
-            //     //         }
-            //     //     }
-            //     // });
-
-            //     let ctx = tmq::Context::new();
-
-            //     tokio::spawn({
-            //         let mut router_socket = tmq::router(&ctx).bind(&format!("tcp://{}", addr)).unwrap();
-
-            //         async move {
-            //             while let Some(x) = router_socket.next().await {
-            //                 let x = x.unwrap();
-
-            //                 println!("{x:?}");
-            //             }
-            //         }
-            //     });
-
-            //     let mut dealer_socket = tmq::dealer(&ctx)
-            //         .connect(&format!("tcp://{}", addr))
-            //         .unwrap();
-
-            //     dealer_socket.send(vec!["meme1", "meme2"]).await.unwrap();
-
-            //     // std::thread::sleep(Duration::from_secs(1));
-
-            //     tokio::time::sleep(Duration::from_secs(100)).await;
-
-            //     return;
-            // }
-
-            // let client_listener = TcpListener::bind(addr).await.unwrap();
 
             let localset = tokio::task::LocalSet::new();
 
@@ -294,15 +244,14 @@ pub fn run_server(
                         }
                     });
 
-                maxvclock_puts = cross_join::<'tick, 'tick>();
+                vclock_stamper = stamp::<MyVClock>();
 
                 put_tee = tee();
 
                 client_input[puts]
-                    // -> inspect(|(key, (x, a))| if let ValueOrReg::Value(_) = x {println!("{gossip_addr}:{:5}: puts-into-crossjoin: {key:?}, {x:?}, {a:?}", context.current_tick())})
                     -> put_tee;
 
-                max_vclock = put_tee
+                put_tee
                     -> map(|(_key, x)| (0, x)) // convert group-by to fold.
                     -> group_by::<'static, u64, MyVClock>(MyVClock::default, |accum: &mut MyVClock, (value_or_reg, _addr)| {
                         match value_or_reg {
@@ -314,13 +263,15 @@ pub fn run_server(
                             },
                         }
                     })
-                    // -> inspect(|x| println!("{gossip_addr}:{:5}: maxvclock-into-crossjoin: {x:?}", context.current_tick()))
-                    -> map(|x| x.1);
+                    // -> inspect(|x| println!("{gossip_addr}:{:5}: maxvclock-into-stamper: {x:?}", context.current_tick()))
+                    -> map(|x| x.1)
+                    -> [0]vclock_stamper;
 
-                max_vclock  -> [0]maxvclock_puts;
-                put_tee     -> [1]maxvclock_puts;
+                put_tee
+                    // -> inspect(|(key, (x, a))| if let ValueOrReg::Value(_) = x {println!("{gossip_addr}:{:5}: puts-into-stamper: {key:?}, {x:?}, {a:?}", context.current_tick())})
+                    -> [1]vclock_stamper;
 
-                broadcast_or_store = maxvclock_puts
+                broadcast_or_store = vclock_stamper
                     // -> inspect(|x| println!("{gossip_addr}:{:5}: output of maxvclock_puts: {x:?}", context.current_tick()))
                     -> demux(|(clock, (key, (value_or_reg, response_addr))): (MyVClock, (u64, (ValueOrReg, Vec<u8>))), var_args!(broadcast, store)| {
                         match value_or_reg {
@@ -342,6 +293,29 @@ pub fn run_server(
                             },
                         }
                     });
+
+                // broadcast_or_store = maxvclock_puts
+                //     // -> inspect(|x| println!("{gossip_addr}:{:5}: output of maxvclock_puts: {x:?}", context.current_tick()))
+                //     -> demux(|(clock, (key, (value_or_reg, response_addr))): (MyVClock, (u64, (ValueOrReg, Vec<u8>))), var_args!(broadcast, store)| {
+                //         match value_or_reg {
+                //             ValueOrReg::Value(value) => {
+                //                 let mut reg = MyRegType::default();
+
+                //                 let ctx = EAddCtx {
+                //                     dot: clock.dot(gossip_addr.clone()),
+                //                     clock: clock,
+                //                 };
+
+                //                 reg.apply(reg.write(value, ctx));
+
+                //                 broadcast.give((key, reg.clone()));
+                //                 store.give((key, (reg, Some(response_addr))));
+                //             },
+                //             ValueOrReg::Reg(reg) => {
+                //                 store.give((key, (reg, None)));
+                //             },
+                //         }
+                //     });
 
                 // broadcast out locally generated changes to other nodes.
                 broadcast_or_store[broadcast]
@@ -379,8 +353,6 @@ pub fn run_server(
                     // -> inspect(|x| println!("{gossip_addr}:{:5}: stores-into-lookup: {x:?}", context.current_tick()))
                     -> [0]lookup;
 
-                // null() -> [0]lookup;
-
                 // Feed gets into the join to make them do the actual matching.
                 client_input[gets]
                     -> map(|(key, addr)| {
@@ -400,7 +372,7 @@ pub fn run_server(
                         })
                     })
                     -> flatten()
-                    -> inspect(|x| println!("{gossip_addr}:{:5}: Response to client: {x:?}", context.current_tick()))
+                    // -> inspect(|x| println!("{gossip_addr}:{:5}: Response to client: {x:?}", context.current_tick()))
                     -> transducer_to_client_tx_merge;
 
                 transducer_to_client_tx_merge

@@ -16,6 +16,7 @@ use serde_big_array::BigArray;
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
+use std::time::Instant;
 
 #[derive(PartialEq, Eq, Clone, Serialize, Deserialize, Debug, Ord, PartialOrd)]
 pub struct ValueType {
@@ -89,19 +90,17 @@ fn main() {
     throughput.store(0, Ordering::SeqCst);
     let start_time = std::time::Instant::now();
 
-    std::thread::sleep(Duration::from_millis(5000));
+    std::thread::sleep(Duration::from_millis(7000));
     let puts = throughput.load(Ordering::SeqCst) as f64 / start_time.elapsed().as_secs_f64();
     println!("{puts}");
 
+    // let start_time = std::time::Instant::now();
+    // let mut time_since_last_report = std::time::Instant::now();
     // loop {
     //     if time_since_last_report.elapsed() >= Duration::from_secs(1) {
     //         time_since_last_report = Instant::now();
     //         println!("puts/s: {}", throughput.load(Ordering::SeqCst));
     //         throughput.store(0, Ordering::SeqCst);
-
-    //         if start_time.elapsed() >= Duration::from_secs(5) {
-    //             return;
-    //         }
     //     }
 
     //     std::thread::sleep(Duration::from_millis(32));
