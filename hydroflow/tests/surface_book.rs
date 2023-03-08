@@ -1,3 +1,4 @@
+use hydroflow::assert_graphvis_snapshots;
 use multiplatform_test::multiplatform_test;
 
 #[multiplatform_test]
@@ -8,6 +9,6 @@ fn test_surface_flows_1() {
         my_tee[1] -> map(|x| x.to_lowercase()) -> [1]my_merge;
         my_merge = merge() -> for_each(|x| println!("{}", x));
     };
-    println!("{}", df.serde_graph().unwrap().to_mermaid());
+    assert_graphvis_snapshots!(df);
     df.run_available();
 }

@@ -1440,6 +1440,7 @@ dependencies = [
  "hydroflow_datalog",
  "hydroflow_lang",
  "hydroflow_macro",
+ "insta",
  "itertools",
  "multiplatform_test",
  "pusherator",

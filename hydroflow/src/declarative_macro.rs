@@ -39,3 +39,20 @@ macro_rules! assert_var_impl {
         };
     };
 }
+
+#[macro_export]
+macro_rules! assert_graphvis_snapshots {
+    ($df:ident) => {
+        {
+            #[cfg(not(target_arch = "wasm32"))]
+            {
+                insta::with_settings!({snapshot_suffix => "graphvis_mermaid"}, {
+                    insta::assert_snapshot!($df.serde_graph().unwrap().to_mermaid());
+                });
+                insta::with_settings!({snapshot_suffix => "graphvis_dot"}, {
+                    insta::assert_snapshot!($df.serde_graph().unwrap().to_dot());
+                });
+            }
+        }
+    }
+}

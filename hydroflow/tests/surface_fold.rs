@@ -2,8 +2,8 @@ use std::collections::{HashMap, HashSet};
 
 use multiplatform_test::multiplatform_test;
 
-use hydroflow::hydroflow_syntax;
 use hydroflow::util::collect_ready;
+use hydroflow::{assert_graphvis_snapshots, hydroflow_syntax};
 
 #[multiplatform_test]
 pub fn test_fold_tick() {
@@ -15,13 +15,7 @@ pub fn test_fold_tick() {
             -> fold::<'tick>(Vec::new(), |mut old: Vec<u32>, mut x: Vec<u32>| { old.append(&mut x); old })
             -> for_each(|v| result_send.send(v).unwrap());
     };
-
-    println!(
-        "{}",
-        df.serde_graph()
-            .expect("No graph found, maybe failed to parse.")
-            .to_mermaid()
-    );
+    assert_graphvis_snapshots!(df);
 
     assert_eq!((0, 0), (df.current_tick(), df.current_stratum()));
 
@@ -56,13 +50,7 @@ pub fn test_fold_static() {
             -> fold::<'static>(Vec::new(), |mut old: Vec<u32>, mut x: Vec<u32>| { old.append(&mut x); old })
             -> for_each(|v| result_send.send(v).unwrap());
     };
-
-    println!(
-        "{}",
-        df.serde_graph()
-            .expect("No graph found, maybe failed to parse.")
-            .to_mermaid()
-    );
+    assert_graphvis_snapshots!(df);
 
     assert_eq!((0, 0), (df.current_tick(), df.current_stratum()));
 
@@ -100,6 +88,7 @@ pub fn test_fold_flatten() {
             -> flatten()
             -> for_each(|(k,v)| out_send.send((k,v)).unwrap());
     };
+
     assert_eq!((0, 0), (df_pull.current_tick(), df_pull.current_stratum()));
     df_pull.run_tick();
     assert_eq!((1, 0), (df_pull.current_tick(), df_pull.current_stratum()));
@@ -144,13 +133,7 @@ pub fn test_fold_sort() {
             -> flat_map(|mut vec| { vec.sort(); vec })
             -> for_each(|v| print!("{:?}, ", v));
     };
-
-    println!(
-        "{}",
-        df.serde_graph()
-            .expect("No graph found, maybe failed to parse.")
-            .to_mermaid()
-    );
+    assert_graphvis_snapshots!(df);
     assert_eq!((0, 0), (df.current_tick(), df.current_stratum()));
     df.run_tick();
     assert_eq!((1, 0), (df.current_tick(), df.current_stratum()));

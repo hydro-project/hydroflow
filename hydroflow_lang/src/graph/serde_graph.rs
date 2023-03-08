@@ -285,8 +285,8 @@ impl SerdeGraph {
             writeln!(write, "digraph {{")?;
             Ok(())
         }
-        fn write_dot_postlude(tab: usize, write: &mut impl std::fmt::Write) -> std::fmt::Result {
-            writeln!(write, "{:t$}}}", "", t = tab)?;
+        fn write_dot_postlude(write: &mut impl std::fmt::Write) -> std::fmt::Result {
+            writeln!(write, "}}")?;
             Ok(())
         }
 
@@ -463,7 +463,7 @@ impl SerdeGraph {
         }
 
         // outro
-        write_dot_postlude(tab, w)?;
+        write_dot_postlude(w)?;
         Ok(())
     }
 }
