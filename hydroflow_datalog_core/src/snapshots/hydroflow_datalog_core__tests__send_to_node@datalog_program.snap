@@ -7,9 +7,9 @@ fn main() {
         {
             use hydroflow::{var_expr, var_args};
             let mut df = hydroflow::scheduled::graph::Hydroflow::new_with_graph(
-                "{\"nodes\":[{\"value\":null,\"version\":0},{\"value\":\"merge ()\",\"version\":1},{\"value\":\"unique :: < 'tick > ()\",\"version\":1},{\"value\":\"tee ()\",\"version\":1},{\"value\":\"merge ()\",\"version\":1},{\"value\":\"unique :: < 'tick > ()\",\"version\":1},{\"value\":\"tee ()\",\"version\":1},{\"value\":\"source_stream (ints)\",\"version\":1},{\"value\":\"for_each (| v | result . send (v) . unwrap ())\",\"version\":1},{\"value\":\"source_stream (async_receive_result)\",\"version\":1},{\"value\":\"map (| row : (_ , _ ,) | (row . 0 , row . 1 ,))\",\"version\":1},{\"value\":\"for_each (| v : (_ , _ ,) | async_send_result (v . 1 , (v . 0 ,)) . unwrap ())\",\"version\":1}],\"node_color_map\":[{\"value\":null,\"version\":0},{\"value\":\"Pull\",\"version\":1},{\"value\":\"Push\",\"version\":1},{\"value\":\"Push\",\"version\":1},{\"value\":\"Pull\",\"version\":1},{\"value\":\"Push\",\"version\":1},{\"value\":\"Push\",\"version\":1},{\"value\":\"Pull\",\"version\":1},{\"value\":\"Push\",\"version\":1},{\"value\":\"Pull\",\"version\":1},{\"value\":\"Push\",\"version\":1},{\"value\":\"Push\",\"version\":1}],\"edges\":[{\"value\":null,\"version\":0},{\"value\":[{\"src\":{\"idx\":1,\"version\":1},\"dst\":{\"idx\":2,\"version\":1},\"blocking\":false,\"label\":null}],\"version\":1},{\"value\":[{\"src\":{\"idx\":2,\"version\":1},\"dst\":{\"idx\":3,\"version\":1},\"blocking\":false,\"label\":null}],\"version\":1},{\"value\":[{\"src\":{\"idx\":3,\"version\":1},\"dst\":{\"idx\":10,\"version\":1},\"blocking\":false,\"label\":\"0\"}],\"version\":1},{\"value\":[{\"src\":{\"idx\":4,\"version\":1},\"dst\":{\"idx\":5,\"version\":1},\"blocking\":false,\"label\":null}],\"version\":1},{\"value\":[{\"src\":{\"idx\":5,\"version\":1},\"dst\":{\"idx\":6,\"version\":1},\"blocking\":false,\"label\":null}],\"version\":1},{\"value\":[{\"src\":{\"idx\":6,\"version\":1},\"dst\":{\"idx\":8,\"version\":1},\"blocking\":false,\"label\":\"0\"}],\"version\":1},{\"value\":[{\"src\":{\"idx\":7,\"version\":1},\"dst\":{\"idx\":1,\"version\":1},\"blocking\":false,\"label\":\"0\"}],\"version\":1},{\"value\":null,\"version\":0},{\"value\":[{\"src\":{\"idx\":9,\"version\":1},\"dst\":{\"idx\":4,\"version\":1},\"blocking\":false,\"label\":\"0\"}],\"version\":1},{\"value\":[{\"src\":{\"idx\":10,\"version\":1},\"dst\":{\"idx\":11,\"version\":1},\"blocking\":false,\"label\":null}],\"version\":1}],\"barrier_handoffs\":[{\"value\":null,\"version\":0}],\"subgraph_nodes\":[{\"value\":null,\"version\":0},{\"value\":[{\"idx\":9,\"version\":1},{\"idx\":4,\"version\":1},{\"idx\":5,\"version\":1},{\"idx\":6,\"version\":1},{\"idx\":8,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":7,\"version\":1},{\"idx\":1,\"version\":1},{\"idx\":2,\"version\":1},{\"idx\":3,\"version\":1},{\"idx\":10,\"version\":1},{\"idx\":11,\"version\":1}],\"version\":1}],\"subgraph_stratum\":[{\"value\":null,\"version\":0},{\"value\":0,\"version\":1},{\"value\":0,\"version\":1}],\"subgraph_internal_handoffs\":[{\"value\":null,\"version\":0}],\"varname_nodes\":{\"ints\":[{\"idx\":1,\"version\":1},{\"idx\":2,\"version\":1},{\"idx\":3,\"version\":1}],\"result\":[{\"idx\":4,\"version\":1},{\"idx\":5,\"version\":1},{\"idx\":6,\"version\":1}]}}\n",
+                "{\"nodes\":[{\"value\":null,\"version\":0},{\"value\":\"merge ()\",\"version\":1},{\"value\":\"unique :: < 'tick > ()\",\"version\":1},{\"value\":\"tee ()\",\"version\":1},{\"value\":\"merge ()\",\"version\":1},{\"value\":\"unique :: < 'tick > ()\",\"version\":1},{\"value\":\"tee ()\",\"version\":1},{\"value\":\"source_stream (ints)\",\"version\":1},{\"value\":\"for_each (| v | result . send (v) . unwrap ())\",\"version\":1},{\"value\":\"merge ()\",\"version\":1},{\"value\":\"for_each (| (node , data) | async_send_result (node , data))\",\"version\":1},{\"value\":\"source_stream (async_receive_result)\",\"version\":1},{\"value\":\"map (| row : (_ , _ ,) | (row . 0 , row . 1 ,))\",\"version\":1},{\"value\":\"map (| v : (_ , _ ,) | (v . 1 , (v . 0 ,)))\",\"version\":1}],\"node_color_map\":[{\"value\":null,\"version\":0},{\"value\":\"Pull\",\"version\":1},{\"value\":\"Push\",\"version\":1},{\"value\":\"Push\",\"version\":1},{\"value\":\"Pull\",\"version\":1},{\"value\":\"Push\",\"version\":1},{\"value\":\"Push\",\"version\":1},{\"value\":\"Pull\",\"version\":1},{\"value\":\"Push\",\"version\":1},{\"value\":\"Push\",\"version\":1},{\"value\":\"Push\",\"version\":1},{\"value\":\"Pull\",\"version\":1},{\"value\":\"Push\",\"version\":1},{\"value\":\"Push\",\"version\":1}],\"edges\":[{\"value\":null,\"version\":0},{\"value\":[{\"src\":{\"idx\":1,\"version\":1},\"dst\":{\"idx\":2,\"version\":1},\"blocking\":false,\"label\":null}],\"version\":1},{\"value\":[{\"src\":{\"idx\":2,\"version\":1},\"dst\":{\"idx\":3,\"version\":1},\"blocking\":false,\"label\":null}],\"version\":1},{\"value\":[{\"src\":{\"idx\":3,\"version\":1},\"dst\":{\"idx\":12,\"version\":1},\"blocking\":false,\"label\":\"0\"}],\"version\":1},{\"value\":[{\"src\":{\"idx\":4,\"version\":1},\"dst\":{\"idx\":5,\"version\":1},\"blocking\":false,\"label\":null}],\"version\":1},{\"value\":[{\"src\":{\"idx\":5,\"version\":1},\"dst\":{\"idx\":6,\"version\":1},\"blocking\":false,\"label\":null}],\"version\":1},{\"value\":[{\"src\":{\"idx\":6,\"version\":1},\"dst\":{\"idx\":8,\"version\":1},\"blocking\":false,\"label\":\"0\"}],\"version\":1},{\"value\":[{\"src\":{\"idx\":7,\"version\":1},\"dst\":{\"idx\":1,\"version\":1},\"blocking\":false,\"label\":\"0\"}],\"version\":1},{\"value\":null,\"version\":0},{\"value\":[{\"src\":{\"idx\":9,\"version\":1},\"dst\":{\"idx\":10,\"version\":1},\"blocking\":false,\"label\":null}],\"version\":1},{\"value\":null,\"version\":0},{\"value\":[{\"src\":{\"idx\":11,\"version\":1},\"dst\":{\"idx\":4,\"version\":1},\"blocking\":false,\"label\":\"0\"}],\"version\":1},{\"value\":[{\"src\":{\"idx\":12,\"version\":1},\"dst\":{\"idx\":13,\"version\":1},\"blocking\":false,\"label\":null}],\"version\":1},{\"value\":[{\"src\":{\"idx\":13,\"version\":1},\"dst\":{\"idx\":9,\"version\":1},\"blocking\":false,\"label\":null}],\"version\":1}],\"barrier_handoffs\":[{\"value\":null,\"version\":0}],\"subgraph_nodes\":[{\"value\":null,\"version\":0},{\"value\":[{\"idx\":11,\"version\":1},{\"idx\":4,\"version\":1},{\"idx\":5,\"version\":1},{\"idx\":6,\"version\":1},{\"idx\":8,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":7,\"version\":1},{\"idx\":1,\"version\":1},{\"idx\":2,\"version\":1},{\"idx\":3,\"version\":1},{\"idx\":12,\"version\":1},{\"idx\":13,\"version\":1},{\"idx\":9,\"version\":1},{\"idx\":10,\"version\":1}],\"version\":1}],\"subgraph_stratum\":[{\"value\":null,\"version\":0},{\"value\":0,\"version\":1},{\"value\":0,\"version\":1}],\"subgraph_internal_handoffs\":[{\"value\":null,\"version\":0}],\"varname_nodes\":{\"ints\":[{\"idx\":1,\"version\":1},{\"idx\":2,\"version\":1},{\"idx\":3,\"version\":1}],\"result\":[{\"idx\":4,\"version\":1},{\"idx\":5,\"version\":1},{\"idx\":6,\"version\":1}],\"result_async_send\":[{\"idx\":9,\"version\":1},{\"idx\":10,\"version\":1}]}}\n",
             );
-            let mut sg_1v1_node_9v1_stream = Box::pin(async_receive_result);
+            let mut sg_1v1_node_11v1_stream = Box::pin(async_receive_result);
             let sg_1v1_node_5v1_uniquedata = df
                 .add_state(
                     ::std::cell::RefCell::new(
@@ -25,24 +25,24 @@ fn main() {
                 var_expr!(),
                 var_expr!(),
                 move |context, var_args!(), var_args!()| {
-                    let op_9v1 = std::iter::from_fn(|| {
+                    let op_11v1 = std::iter::from_fn(|| {
                         match hydroflow::futures::stream::Stream::poll_next(
-                            sg_1v1_node_9v1_stream.as_mut(),
+                            sg_1v1_node_11v1_stream.as_mut(),
                             &mut std::task::Context::from_waker(&context.waker()),
                         ) {
                             std::task::Poll::Ready(maybe) => maybe,
                             std::task::Poll::Pending => None,
                         }
                     });
-                    let op_9v1 = {
+                    let op_11v1 = {
                         #[inline(always)]
-                        pub fn check_op_9v1<
+                        pub fn check_op_11v1<
                             Input: ::std::iter::Iterator<Item = Item>,
                             Item,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
                             input
                         }
-                        check_op_9v1(op_9v1)
+                        check_op_11v1(op_11v1)
                     };
                     let op_4v1 = {
                         #[allow(unused)]
@@ -54,7 +54,7 @@ fn main() {
                         >(a: A, b: B) -> impl ::std::iter::Iterator<Item = Item> {
                             a.chain(b)
                         }
-                        op_9v1
+                        op_11v1
                     };
                     let op_4v1 = {
                         #[inline(always)]
@@ -225,23 +225,56 @@ fn main() {
                         }
                         check_op_3v1(op_3v1)
                     };
-                    let op_10v1 = op_3v1.map(|row: (_, _)| (row.0, row.1));
-                    let op_10v1 = {
+                    let op_12v1 = op_3v1.map(|row: (_, _)| (row.0, row.1));
+                    let op_12v1 = {
                         #[inline(always)]
-                        pub fn check_op_10v1<
+                        pub fn check_op_12v1<
                             Input: ::std::iter::Iterator<Item = Item>,
                             Item,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
                             input
                         }
-                        check_op_10v1(op_10v1)
+                        check_op_12v1(op_12v1)
                     };
-                    let op_11v1 = hydroflow::pusherator::for_each::ForEach::new(|
-                        v: (_, _)|
-                    async_send_result(v.1, (v.0,)).unwrap());
-                    let op_11v1 = {
+                    let op_13v1 = op_12v1.map(|v: (_, _)| (v.1, (v.0,)));
+                    let op_13v1 = {
                         #[inline(always)]
-                        pub fn check_op_11v1<
+                        pub fn check_op_13v1<
+                            Input: ::std::iter::Iterator<Item = Item>,
+                            Item,
+                        >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            input
+                        }
+                        check_op_13v1(op_13v1)
+                    };
+                    let op_9v1 = {
+                        #[allow(unused)]
+                        #[inline(always)]
+                        fn check_inputs<
+                            A: ::std::iter::Iterator<Item = Item>,
+                            B: ::std::iter::Iterator<Item = Item>,
+                            Item,
+                        >(a: A, b: B) -> impl ::std::iter::Iterator<Item = Item> {
+                            a.chain(b)
+                        }
+                        op_13v1
+                    };
+                    let op_9v1 = {
+                        #[inline(always)]
+                        pub fn check_op_9v1<
+                            Input: ::std::iter::Iterator<Item = Item>,
+                            Item,
+                        >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            input
+                        }
+                        check_op_9v1(op_9v1)
+                    };
+                    let op_10v1 = hydroflow::pusherator::for_each::ForEach::new(|
+                        (node, data)|
+                    async_send_result(node, data));
+                    let op_10v1 = {
+                        #[inline(always)]
+                        pub fn check_op_10v1<
                             Input: hydroflow::pusherator::Pusherator<Item = Item>,
                             Item,
                         >(
@@ -249,7 +282,7 @@ fn main() {
                         ) -> impl hydroflow::pusherator::Pusherator<Item = Item> {
                             input
                         }
-                        check_op_11v1(op_11v1)
+                        check_op_10v1(op_10v1)
                     };
                     #[inline(always)]
                     fn check_pivot_run<
@@ -259,7 +292,7 @@ fn main() {
                     >(pull: Pull, push: Push) {
                         hydroflow::pusherator::pivot::Pivot::new(pull, push).run();
                     }
-                    check_pivot_run(op_10v1, op_11v1);
+                    check_pivot_run(op_9v1, op_10v1);
                 },
             );
             df

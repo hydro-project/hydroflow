@@ -25,12 +25,16 @@ pub fn gen_hydroflow_graph(
 
     let mut inputs = Vec::new();
     let mut outputs = Vec::new();
+    let mut asyncs = Vec::new();
     let mut rules = Vec::new();
 
     for stmt in &program.rules {
         match stmt {
             Declaration::Input(_, ident, hf_code) => inputs.push((ident, hf_code)),
             Declaration::Output(_, ident, hf_code) => outputs.push((ident, hf_code)),
+            Declaration::Async(_, ident, send_hf, recv_hf) => {
+                asyncs.push((ident, send_hf, recv_hf))
+            }
             Declaration::Rule(rule) => rules.push(rule),
         }
     }
@@ -44,6 +48,7 @@ pub fn gen_hydroflow_graph(
         let target_ident = match decl {
             Declaration::Input(_, ident, _) => ident.clone(),
             Declaration::Output(_, ident, _) => ident.clone(),
+            Declaration::Async(_, ident, _, _) => ident.clone(),
             Declaration::Rule(rule) => rule.target.name.clone(),
         };
 
@@ -87,6 +92,32 @@ pub fn gen_hydroflow_graph(
 
         flat_graph_builder.add_statement(parse_quote! {
             #target_ident [#my_tee_index_lit] -> #output_pipeline
+        });
+    }
+
+    for (target, send_hf, recv_hf) in asyncs {
+        let async_send_pipeline = format!("{}_async_send", target.name);
+        let async_send_pipeline = syn::Ident::new(&async_send_pipeline, Span::call_site());
+
+        let recv_merge_index = merge_counter
+            .entry(target.name.clone())
+            .or_insert_with(|| 0..)
+            .next()
+            .expect("Out of merge indices");
+
+        let recv_merge_index_lit =
+            syn::LitInt::new(&format!("{}", recv_merge_index), Span::call_site());
+        let target_ident = syn::Ident::new(&target.name, Span::call_site());
+
+        let send_pipeline: Pipeline = syn::parse_str(&send_hf.code).unwrap();
+        let recv_pipeline: Pipeline = syn::parse_str(&recv_hf.code).unwrap();
+
+        flat_graph_builder.add_statement(parse_quote! {
+            #async_send_pipeline = merge() -> #send_pipeline
+        });
+
+        flat_graph_builder.add_statement(parse_quote! {
+            #recv_pipeline -> [#recv_merge_index_lit] #target_ident
         });
     }
 
@@ -228,18 +259,12 @@ fn generate_rule(
                 rule.target.fields.len() + 1,
             );
 
-            let send_ident = syn::Ident::new(
-                &format!("async_send_{}", &rule.target.name.name),
+            let send_pipeline_ident = syn::Ident::new(
+                &format!("{}_async_send", &rule.target.name.name),
                 Span::call_site(),
             );
 
-            let async_receiver_ident = syn::Ident::new(
-                &format!("async_receive_{}", &rule.target.name.name),
-                Span::call_site(),
-            );
-            flat_graph_builder.add_statement(parse_quote!(source_stream(#async_receiver_ident) -> [#my_merge_index_lit] #target_ident));
-
-            parse_quote!(#after_join -> for_each(|v: #v_type| #send_ident(v.#syn_target_index, (#(#exprs_get_data, )*)).unwrap()))
+            parse_quote!(#after_join -> map(|v: #v_type| (v.#syn_target_index, (#(#exprs_get_data, )*))) -> #send_pipeline_ident)
         }
     };
 
@@ -586,6 +611,7 @@ mod tests {
             r#"
             .input ints `source_stream(ints)`
             .output result `for_each(|v| result.send(v).unwrap())`
+            .async result `for_each(|(node, data)| async_send_result(node, data))` `source_stream(async_receive_result)`
 
             result@b(a) :~ ints(a, b)
             "#
