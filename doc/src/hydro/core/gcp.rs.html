@@ -484,6 +484,12 @@
 <a href="#484" id="484">484</a>
 <a href="#485" id="485">485</a>
 <a href="#486" id="486">486</a>
+<a href="#487" id="487">487</a>
+<a href="#488" id="488">488</a>
+<a href="#489" id="489">489</a>
+<a href="#490" id="490">490</a>
+<a href="#491" id="491">491</a>
+<a href="#492" id="492">492</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::{
     net::SocketAddr,
     path::{Path, PathBuf},
@@ -497,7 +503,7 @@
 <span class="kw">use </span>async_ssh2_lite::{AsyncChannel, AsyncSession, SessionConfiguration};
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>futures::{AsyncWriteExt, StreamExt};
-<span class="kw">use </span>hydroflow::util::connection::BindConfig;
+<span class="kw">use </span>hydroflow::util::cli::BindConfig;
 <span class="kw">use </span>serde_json::json;
 <span class="kw">use </span>tokio::{net::TcpStream, sync::RwLock};
 
@@ -558,6 +564,8 @@
         <span class="self">self</span>.resource_result
             .terraform
             .deployment_folder
+            .as_ref()
+            .unwrap()
             .path()
             .join(<span class="string">&quot;.ssh&quot;</span>)
             .join(<span class="string">&quot;vm_instance_ssh_key_pem&quot;</span>)
@@ -690,6 +698,10 @@
                 <span class="self">self</span>.external_ports.push(<span class="kw-2">*</span>port);
             }
         }
+    }
+
+    <span class="kw">fn </span>request_custom_binary(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="self">self</span>.request_port(<span class="kw-2">&amp;</span>BindType::ExternalTcpPort(<span class="number">22</span>));
     }
 
     <span class="kw">fn </span>collect_resources(<span class="kw-2">&amp;</span><span class="self">self</span>, resource_batch: <span class="kw-2">&amp;mut </span>ResourceBatch) {

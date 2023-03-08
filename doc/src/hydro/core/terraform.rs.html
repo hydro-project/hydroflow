@@ -137,6 +137,9 @@
 <a href="#137" id="137">137</a>
 <a href="#138" id="138">138</a>
 <a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 
 <span class="kw">use </span>anyhow::{bail, Context, <span class="prelude-ty">Result</span>};
@@ -174,7 +177,7 @@
         {
             <span class="kw">return </span><span class="prelude-val">Ok</span>(TerraformResult {
                 outputs: HashMap::new(),
-                deployment_folder,
+                deployment_folder: <span class="prelude-val">None</span>,
             });
         }
 
@@ -199,11 +202,11 @@
 
         <span class="kw">let </span><span class="kw-2">mut </span>result = TerraformResult {
             outputs: HashMap::new(),
-            deployment_folder,
+            deployment_folder: <span class="prelude-val">Some</span>(deployment_folder),
         };
 
         <span class="kw">if </span>!Command::new(<span class="string">&quot;terraform&quot;</span>)
-            .current_dir(result.deployment_folder.path())
+            .current_dir(result.deployment_folder.as_ref().unwrap().path())
             .arg(<span class="string">&quot;apply&quot;</span>)
             .arg(<span class="string">&quot;-auto-approve&quot;</span>)
             .spawn()
@@ -217,7 +220,7 @@
         }
 
         <span class="kw">let </span>output = Command::new(<span class="string">&quot;terraform&quot;</span>)
-            .current_dir(result.deployment_folder.path())
+            .current_dir(result.deployment_folder.as_ref().unwrap().path())
             .arg(<span class="string">&quot;output&quot;</span>)
             .arg(<span class="string">&quot;-json&quot;</span>)
             .output()
@@ -248,26 +251,29 @@
 
 <span class="kw">pub struct </span>TerraformResult {
     <span class="kw">pub </span>outputs: HashMap&lt;String, TerraformOutput&gt;,
-    <span class="kw">pub </span>deployment_folder: tempfile::TempDir,
+    <span class="doccomment">/// `None` if no deployment was performed
+    </span><span class="kw">pub </span>deployment_folder: <span class="prelude-ty">Option</span>&lt;tempfile::TempDir&gt;,
 }
 
 <span class="kw">impl </span>Drop <span class="kw">for </span>TerraformResult {
     <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-        <span class="macro">println!</span>(
-            <span class="string">&quot;Destroying terraform deployment at {}&quot;</span>,
-            <span class="self">self</span>.deployment_folder.path().display()
-        );
-        <span class="kw">if </span>!std::process::Command::new(<span class="string">&quot;terraform&quot;</span>)
-            .current_dir(<span class="kw-2">&amp;</span><span class="self">self</span>.deployment_folder)
-            .arg(<span class="string">&quot;destroy&quot;</span>)
-            .arg(<span class="string">&quot;-auto-approve&quot;</span>)
-            .spawn()
-            .expect(<span class="string">&quot;Failed to spawn terraform destroy command&quot;</span>)
-            .wait()
-            .expect(<span class="string">&quot;Failed to destroy terraform deployment&quot;</span>)
-            .success()
-        {
-            <span class="macro">eprintln!</span>(<span class="string">&quot;WARNING: failed to destroy terraform deployment&quot;</span>);
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(folder) = <span class="kw-2">&amp;</span><span class="self">self</span>.deployment_folder {
+            <span class="macro">println!</span>(
+                <span class="string">&quot;Destroying terraform deployment at {}&quot;</span>,
+                folder.path().display()
+            );
+            <span class="kw">if </span>!std::process::Command::new(<span class="string">&quot;terraform&quot;</span>)
+                .current_dir(folder)
+                .arg(<span class="string">&quot;destroy&quot;</span>)
+                .arg(<span class="string">&quot;-auto-approve&quot;</span>)
+                .spawn()
+                .expect(<span class="string">&quot;Failed to spawn terraform destroy command&quot;</span>)
+                .wait()
+                .expect(<span class="string">&quot;Failed to destroy terraform deployment&quot;</span>)
+                .success()
+            {
+                <span class="macro">eprintln!</span>(<span class="string">&quot;WARNING: failed to destroy terraform deployment&quot;</span>);
+            }
         }
     }
 }

@@ -250,6 +250,8 @@
 <a href="#250" id="250">250</a>
 <a href="#251" id="251">251</a>
 <a href="#252" id="252">252</a>
+<a href="#253" id="253">253</a>
+<a href="#254" id="254">254</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::{
     collections::HashMap,
     ops::Deref,
@@ -266,7 +268,7 @@
     util::{command_prelude::CompileMode, interning::InternedString},
     Config,
 };
-<span class="kw">use </span>hydroflow::util::connection::ConnectionPipe;
+<span class="kw">use </span>hydroflow::util::cli::ConnectionPipe;
 <span class="kw">use </span>tokio::{sync::RwLock, task::JoinHandle};
 
 <span class="kw">use super</span>::{BindType, Host, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult, Service};
@@ -371,6 +373,8 @@
 
         tokio::task::spawn_blocking(<span class="kw">move </span>|| {
             <span class="kw">let </span>config = Config::default().unwrap();
+            config.shell().set_verbosity(cargo::core::Verbosity::Normal);
+
             <span class="kw">let </span>workspace = Workspace::new(<span class="kw-2">&amp;</span>src_cloned, <span class="kw-2">&amp;</span>config).unwrap();
 
             <span class="kw">let </span><span class="kw-2">mut </span>compile_options = CompileOptions::new(<span class="kw-2">&amp;</span>config, CompileMode::Build).unwrap();
@@ -427,8 +431,8 @@
             .try_write()
             .expect(<span class="string">&quot;No one should be reading/writing the host while resources are collected&quot;</span>);
 
-        host.request_port(<span class="kw-2">&amp;</span>BindType::ExternalTcpPort(<span class="number">22</span>)); <span class="comment">// always need SSH
-        </span><span class="kw">for </span>(<span class="kw">_</span>, bind_type) <span class="kw">in </span><span class="self">self</span>.incoming_ports.iter() {
+        host.request_custom_binary();
+        <span class="kw">for </span>(<span class="kw">_</span>, bind_type) <span class="kw">in </span><span class="self">self</span>.incoming_ports.iter() {
             host.request_port(bind_type);
         }
     }
