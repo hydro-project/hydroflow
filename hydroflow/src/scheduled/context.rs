@@ -21,7 +21,8 @@ pub struct Context {
     pub(crate) states: Vec<StateData>,
 
     // TODO(mingwei): as long as this is here, it's impossible to know when all work is done.
-    pub(crate) event_queue_send: UnboundedSender<SubgraphId>,
+    // Second field (bool) is for if the event is an external "important" event (true).
+    pub(crate) event_queue_send: UnboundedSender<(SubgraphId, bool)>,
 
     pub(crate) current_tick: usize,
     pub(crate) current_stratum: usize,
@@ -51,22 +52,24 @@ impl Context {
     }
 
     /// Schedules a subgraph.
-    pub fn schedule_subgraph(&self, sg_id: SubgraphId) {
-        self.event_queue_send.send(sg_id).unwrap()
+    pub fn schedule_subgraph(&self, sg_id: SubgraphId, is_external: bool) {
+        self.event_queue_send.send((sg_id, is_external)).unwrap()
     }
 
     /// Returns a `Waker` for interacting with async Rust.
+    /// Waker events are considered to be extenral.
     pub fn waker(&self) -> std::task::Waker {
         use futures::task::ArcWake;
         use std::sync::Arc;
 
         struct ContextWaker {
             subgraph_id: SubgraphId,
-            event_queue_send: UnboundedSender<SubgraphId>,
+            event_queue_send: UnboundedSender<(SubgraphId, bool)>,
         }
         impl ArcWake for ContextWaker {
             fn wake_by_ref(arc_self: &Arc<Self>) {
-                let _recv_closed_error = arc_self.event_queue_send.send(arc_self.subgraph_id);
+                let _recv_closed_error =
+                    arc_self.event_queue_send.send((arc_self.subgraph_id, true));
             }
         }
 
