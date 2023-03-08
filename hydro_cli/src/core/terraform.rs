@@ -48,6 +48,7 @@ impl TerraformBatch {
         if !Command::new("terraform")
             .current_dir(deployment_folder.path())
             .arg("init")
+            .kill_on_drop(true)
             .spawn()
             .context("Failed to spawn `terraform`. Is it installed?")?
             .status()
@@ -67,6 +68,7 @@ impl TerraformBatch {
             .current_dir(result.deployment_folder.as_ref().unwrap().path())
             .arg("apply")
             .arg("-auto-approve")
+            .kill_on_drop(true)
             .spawn()
             .context("Failed to spawn `terraform`. Is it installed?")?
             .status()
@@ -81,6 +83,7 @@ impl TerraformBatch {
             .current_dir(result.deployment_folder.as_ref().unwrap().path())
             .arg("output")
             .arg("-json")
+            .kill_on_drop(true)
             .output()
             .await
             .context("Failed to read Terraform outputs")?;
