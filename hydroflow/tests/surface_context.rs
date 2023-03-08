@@ -1,6 +1,6 @@
 use multiplatform_test::multiplatform_test;
 
-use hydroflow::hydroflow_syntax;
+use hydroflow::{assert_graphvis_snapshots, hydroflow_syntax};
 
 #[multiplatform_test]
 pub fn test_context_ref() {
@@ -8,6 +8,7 @@ pub fn test_context_ref() {
         source_iter([()])
             -> for_each(|()| println!("Current tick: {}, stratum: {}", context.current_tick(), context.current_stratum()));
     };
+    assert_graphvis_snapshots!(df);
     df.run_available();
 }
 
@@ -21,5 +22,6 @@ pub fn test_context_mut() {
             -> next_stratum()
             -> for_each(|handle| println!("{:?}: {}", handle, context.state_ref(handle)));
     };
+    assert_graphvis_snapshots!(df);
     df.run_available();
 }

@@ -1,0 +1,15 @@
+---
+source: hydroflow/tests/surface_async.rs
+expression: df.serde_graph().unwrap().to_mermaid()
+---
+%%{init:{'theme':'base','themeVariables':{'clusterBkg':'#ddd','clusterBorder':'#888'}}}%%
+flowchart TD
+classDef pullClass fill:#02f,color:#fff,stroke:#000
+classDef pushClass fill:#ff0,stroke:#000
+linkStyle default stroke:#aaa,stroke-width:4px,color:red,font-size:1.5em;
+subgraph sg_1v1 ["sg_1v1 stratum 0"]
+    1v1[\"(1v1) <tt>source_stream(lines_recv)</tt>"/]:::pullClass
+    2v1[/"(2v1) <tt>dest_sink(stdout_lines)</tt>"\]:::pushClass
+    1v1--->2v1
+end
+
