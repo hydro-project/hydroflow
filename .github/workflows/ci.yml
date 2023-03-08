@@ -28,7 +28,6 @@ jobs:
     name: Check
     timeout-minutes: 10
     needs: pre_job
-    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -38,6 +37,7 @@ jobs:
           # and nothing is truthy, so the entire && operator will resolve to
           # 'nothing'. Then the || operator will resolve to 'nothing' so we
           # will exclude 'nothing'. https://stackoverflow.com/a/73822998
+          - rust_release: ${{ (needs.pre_job.outputs.should_skip != 'true' && 'nothing') || 'pinned-nightly' }}
           - rust_release: ${{ (github.event_name != 'pull_request' && 'nothing') || 'latest-nightly' }}
 
     steps:
@@ -61,7 +61,6 @@ jobs:
     name: Check WebAssembly
     timeout-minutes: 10
     needs: pre_job
-    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -71,6 +70,7 @@ jobs:
           # and nothing is truthy, so the entire && operator will resolve to
           # 'nothing'. Then the || operator will resolve to 'nothing' so we
           # will exclude 'nothing'. https://stackoverflow.com/a/73822998
+          - rust_release: ${{ (needs.pre_job.outputs.should_skip != 'true' && 'nothing') || 'pinned-nightly' }}
           - rust_release: ${{ (github.event_name != 'pull_request' && 'nothing') || 'latest-nightly' }}
 
     steps:
@@ -95,7 +95,6 @@ jobs:
     name: Test Suite
     timeout-minutes: 15
     needs: pre_job
-    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -105,6 +104,7 @@ jobs:
           # and nothing is truthy, so the entire && operator will resolve to
           # 'nothing'. Then the || operator will resolve to 'nothing' so we
           # will exclude 'nothing'. https://stackoverflow.com/a/73822998
+          - rust_release: ${{ (needs.pre_job.outputs.should_skip != 'true' && 'nothing') || 'pinned-nightly' }}
           - rust_release: ${{ (github.event_name != 'pull_request' && 'nothing') || 'latest-nightly' }}
 
     steps:
@@ -129,7 +129,6 @@ jobs:
     name: Test Suite (WebAssembly)
     timeout-minutes: 15
     needs: pre_job
-    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -139,6 +138,7 @@ jobs:
           # and nothing is truthy, so the entire && operator will resolve to
           # 'nothing'. Then the || operator will resolve to 'nothing' so we
           # will exclude 'nothing'. https://stackoverflow.com/a/73822998
+          - rust_release: ${{ (needs.pre_job.outputs.should_skip != 'true' && 'nothing') || 'pinned-nightly' }}
           - rust_release: ${{ (github.event_name != 'pull_request' && 'nothing') || 'latest-nightly' }}
 
     steps:
@@ -171,7 +171,6 @@ jobs:
     name: Lints
     timeout-minutes: 10
     needs: pre_job
-    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -181,6 +180,7 @@ jobs:
           # and nothing is truthy, so the entire && operator will resolve to
           # 'nothing'. Then the || operator will resolve to 'nothing' so we
           # will exclude 'nothing'. https://stackoverflow.com/a/73822998
+          - rust_release: ${{ (needs.pre_job.outputs.should_skip != 'true' && 'nothing') || 'pinned-nightly' }}
           - rust_release: ${{ (github.event_name != 'pull_request' && 'nothing') || 'latest-nightly' }}
 
     steps:
