@@ -1,9 +1,12 @@
+use crate::graph::{OpInstGenerics, OperatorInstance};
+
 use super::{
     FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
     RANGE_0,
 };
 
 use quote::quote_spanned;
+use syn::parse_quote_spanned;
 
 /// > unbounded number of input streams of any type, unbounded number of output streams of any type.
 ///
@@ -28,7 +31,7 @@ pub const NULL: OperatorConstraints = OperatorConstraints {
     soft_range_out: &(0..=1),
     num_args: 0,
     persistence_args: RANGE_0,
-    type_args: RANGE_0,
+    type_args: &(0..=1),
     is_external_input: false,
     ports_inn: None,
     ports_out: None,
@@ -45,19 +48,29 @@ pub const NULL: OperatorConstraints = OperatorConstraints {
                    inputs,
                    outputs,
                    is_pull,
+                   op_inst:
+                       OperatorInstance {
+                           generics: OpInstGenerics { type_args, .. },
+                           ..
+                       },
                    ..
                },
                _| {
         let write_iterator = if is_pull {
+            let default_type = parse_quote_spanned! {op_span=> _};
+            let iter_type = type_args.get(0).unwrap_or(&default_type);
             quote_spanned! {op_span=>
                 (#(#inputs.for_each(std::mem::drop)),*);
-                let #ident = std::iter::empty();
+                let #ident = std::iter::empty::<#iter_type>();
             }
         } else {
+            let default_type = parse_quote_spanned! {op_span=> _};
+            let iter_type = type_args.get(0).unwrap_or(&default_type);
+
             quote_spanned! {op_span=>
                 #[allow(clippy::let_unit_value)]
                 let _ = (#(#outputs),*);
-                let #ident = #root::pusherator::for_each::ForEach::new(std::mem::drop);
+                let #ident = #root::pusherator::for_each::ForEach::<_, #iter_type>::new(std::mem::drop);
             }
         };
         Ok(OperatorWriteOutput {

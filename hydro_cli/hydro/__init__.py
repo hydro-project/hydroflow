@@ -1,6 +1,6 @@
 import hydro._core # type: ignore
 
-from typing import List, Optional
+from typing import Dict, List, Optional, Union
 hydro_cli_rust = hydro._core
 
 class Deployment(object):
@@ -57,17 +57,26 @@ class CustomService(Service):
     def __init__(self, deployment: Deployment, on: Host, external_ports: List[int]) -> None:
         super().__init__(hydro_cli_rust.PyCustomService(deployment.underlying, on.underlying, external_ports))
 
-class HydroflowPort(object):
-    def __init__(self, underlying, name) -> None:
-        self.underlying = underlying
-        self.name = name
+class HydroflowSink(object):
+    def __init__(self, underlying_crate_port) -> None:
+        self.underlying_crate_port = underlying_crate_port
 
-    def send_to(self, other: "HydroflowPort"):
+def demux(mapping: Dict[int, Union["HydroflowPort", "HydroflowSink"]]) -> HydroflowSink:
+    return HydroflowSink(hydro_cli_rust.PyHydroflowCratePort.new_demux(
+        { k: v.underlying_crate_port for k, v in mapping.items() }
+    ))
+
+class HydroflowPort(object):
+    def __init__(self, underlying_crate, name, underlying_crate_port) -> None:
+        self.underlying_crate = underlying_crate
+        self.name = name
+        self.underlying_crate_port = underlying_crate_port
+
+    def send_to(self, other: Union["HydroflowPort", "HydroflowSink"]):
         hydro_cli_rust.create_connection(
-            self.underlying,
+            self.underlying_crate,
             self.name,
-            other.underlying,
-            other.name
+            other.underlying_crate_port
         )
 
 class HydroflowCratePorts(object):
@@ -77,7 +86,12 @@ class HydroflowCratePorts(object):
     def __getattribute__(self, __name: str) -> HydroflowPort:
         if __name == "_HydroflowCratePorts__underlying":
             return object.__getattribute__(self, __name)
-        return HydroflowPort(self.__underlying, __name)
+
+        return HydroflowPort(
+            self.__underlying,
+            __name,
+            hydro_cli_rust.PyHydroflowCratePort.new_direct(self.__underlying, __name)
+        )
 
 async def pyreceiver_to_async_generator(pyreceiver):
     while True:

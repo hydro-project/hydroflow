@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use async_channel::Receiver;
 use pyo3::exceptions::PyException;
+use pyo3::types::PyDict;
 use pyo3::{create_exception, prelude::*, wrap_pymodule};
 use tokio::sync::RwLock;
 
@@ -270,21 +271,46 @@ impl PyHydroflowCrate {
     }
 }
 
+#[pyclass]
+#[derive(Clone)]
+struct PyHydroflowCratePort {
+    pub(crate) underlying: crate::core::hydroflow_crate::OutgoingPort,
+}
+
+#[pymethods]
+impl PyHydroflowCratePort {
+    #[staticmethod]
+    fn new_direct(to: &PyHydroflowCrate, to_port: String) -> PyHydroflowCratePort {
+        PyHydroflowCratePort {
+            underlying: crate::core::hydroflow_crate::OutgoingPort::Direct(
+                Arc::downgrade(&to.underlying),
+                to_port,
+            ),
+        }
+    }
+
+    #[staticmethod]
+    fn new_demux(mapping: &PyDict) -> PyHydroflowCratePort {
+        PyHydroflowCratePort {
+            underlying: crate::core::hydroflow_crate::OutgoingPort::Demux(
+                mapping
+                    .into_iter()
+                    .map(|(k, v)| {
+                        let k = k.extract::<u32>().unwrap();
+                        let v = v.extract::<PyHydroflowCratePort>().unwrap();
+                        (k, v.underlying.clone())
+                    })
+                    .collect(),
+            ),
+        }
+    }
+}
+
 #[pyfunction]
-fn create_connection(
-    from: &PyHydroflowCrate,
-    from_port: String,
-    to: &PyHydroflowCrate,
-    to_port: String,
-) {
+fn create_connection(from: &PyHydroflowCrate, from_port: String, to: &PyHydroflowCratePort) {
     let from = &from.underlying;
-    let to = &to.underlying;
-
-    let mut from_write = from.blocking_write();
-    let mut to_write = to.blocking_write();
-
-    from_write.add_outgoing_port(from_port, to, to_port.clone());
-    to_write.add_incoming_port(to_port, &from_write);
+    let mut from_write = from.try_write().unwrap();
+    from_write.add_outgoing_port(from_port, to.underlying.clone());
 }
 
 #[pymodule]
@@ -301,6 +327,7 @@ pub fn _core(py: Python<'_>, module: &PyModule) -> PyResult<()> {
     module.add_class::<PyService>()?;
     module.add_class::<PyCustomService>()?;
     module.add_class::<PyHydroflowCrate>()?;
+    module.add_class::<PyHydroflowCratePort>()?;
 
     module.add_function(wrap_pyfunction!(create_connection, module)?)?;
 
