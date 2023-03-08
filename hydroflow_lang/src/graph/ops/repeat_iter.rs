@@ -42,7 +42,7 @@ pub const REPEAT_ITER: OperatorConstraints = OperatorConstraints {
             };
         };
         let write_iterator_after = quote_spanned! {op_span=>
-            #context.schedule_subgraph(#context.current_subgraph());
+            #context.schedule_subgraph(#context.current_subgraph(), false);
         };
         Ok(OperatorWriteOutput {
             write_iterator,
