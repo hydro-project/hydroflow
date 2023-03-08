@@ -7,6 +7,7 @@ use std::{
 
 use anyhow::{bail, Result};
 use async_channel::Receiver;
+use async_recursion::async_recursion;
 use async_trait::async_trait;
 use cargo::{
     core::{compiler::BuildConfig, resolver::CliFeatures, Workspace},
@@ -19,6 +20,51 @@ use tokio::{sync::RwLock, task::JoinHandle};
 
 use super::{BindType, Host, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult, Service};
 
+#[derive(Clone)]
+pub enum OutgoingPort {
+    Direct(Weak<RwLock<HydroflowCrate>>, String),
+    Demux(HashMap<u32, OutgoingPort>),
+}
+
+impl OutgoingPort {
+    #[async_recursion]
+    pub async fn connection_pipe(&self) -> ConnectionPipe {
+        match self {
+            OutgoingPort::Direct(target, target_port) => {
+                let target = target.upgrade().unwrap();
+                let target = target.read().await;
+
+                let conn = target.bound_pipes.get(target_port).unwrap();
+
+                conn.clone()
+            }
+            OutgoingPort::Demux(demux) => {
+                let mut demux_mapping = HashMap::new();
+                for (id, target) in demux {
+                    demux_mapping.insert(*id, target.connection_pipe().await);
+                }
+
+                ConnectionPipe::Demux(demux_mapping)
+            }
+        }
+    }
+
+    pub fn add_incoming_ports(&self, from: &HydroflowCrate) {
+        match self {
+            OutgoingPort::Direct(target, target_port) => {
+                let target = target.upgrade().unwrap();
+                let mut target = target.try_write().unwrap();
+                target.add_incoming_port(target_port.clone(), from);
+            }
+            OutgoingPort::Demux(demux) => {
+                for target in demux.values() {
+                    target.add_incoming_ports(from);
+                }
+            }
+        }
+    }
+}
+
 pub struct HydroflowCrate {
     src: PathBuf,
     on: Arc<RwLock<dyn Host>>,
@@ -26,7 +72,7 @@ pub struct HydroflowCrate {
     features: Option<Vec<String>>,
 
     /// A mapping from output ports to the service that the port sends data to.
-    outgoing_ports: HashMap<String, (Weak<RwLock<HydroflowCrate>>, String)>,
+    outgoing_ports: HashMap<String, OutgoingPort>,
 
     /// A map of port names to the host that will be sending data to the port.
     incoming_ports: HashMap<String, BindType>,
@@ -72,14 +118,9 @@ impl HydroflowCrate {
         );
     }
 
-    pub fn add_outgoing_port(
-        &mut self,
-        my_port: String,
-        to: &Arc<RwLock<HydroflowCrate>>,
-        to_port: String,
-    ) {
-        self.outgoing_ports
-            .insert(my_port, (Arc::downgrade(to), to_port));
+    pub fn add_outgoing_port(&mut self, my_port: String, to: OutgoingPort) {
+        to.add_incoming_ports(self);
+        self.outgoing_ports.insert(my_port, to);
     }
 
     pub async fn stdout(&self) -> Receiver<String> {
@@ -229,13 +270,8 @@ impl Service for HydroflowCrate {
 
     async fn start(&mut self) {
         let mut pipe_config = HashMap::new();
-        for (port_name, (target, target_port)) in self.outgoing_ports.iter() {
-            let target = target.upgrade().unwrap();
-            let target = target.read().await;
-
-            let conn = target.bound_pipes.get(target_port).unwrap();
-
-            pipe_config.insert(port_name.clone(), conn.clone());
+        for (port_name, outgoing) in self.outgoing_ports.iter() {
+            pipe_config.insert(port_name.clone(), outgoing.connection_pipe().await);
         }
 
         let formatted_pipe_config = serde_json::to_string(&pipe_config).unwrap();
