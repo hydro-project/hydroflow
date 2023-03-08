@@ -696,16 +696,16 @@ fn test_send_to_node() {
         let async_receive_result = async_receive_result_1;
         let result = result_1;
 
-        let async_send_result = move |node: usize, data: (usize,)| -> Result<(), ()> {
+        let async_send_result = move |node: usize, data: (usize,)| {
             assert!(node == 2);
             async_send_result_2.send(data).unwrap();
-            Ok(())
         };
 
         datalog!(
             r#"
             .input ints `source_stream(ints)`
             .output result `for_each(|v| result.send(v).unwrap())`
+            .async result `for_each(|(node, data)| async_send_result(node, data))` `source_stream(async_receive_result)`
 
             result@b(a) :~ ints(a, b)
             "#
@@ -717,7 +717,7 @@ fn test_send_to_node() {
         let async_receive_result = async_receive_result_2;
         let result = result_2;
 
-        let async_send_result = |_: usize, _: (usize,)| -> Result<(), ()> {
+        let async_send_result = |_: usize, _: (usize,)| {
             panic!("Should not be called");
         };
 
@@ -725,6 +725,7 @@ fn test_send_to_node() {
             r#"
             .input ints `source_stream(ints)`
             .output result `for_each(|v| result.send(v).unwrap())`
+            .async result `for_each(|(node, data)| async_send_result(node, data))` `source_stream(async_receive_result)`
 
             result@b(a) :~ ints(a, b)
             "#
