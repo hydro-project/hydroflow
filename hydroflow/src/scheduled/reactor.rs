@@ -6,18 +6,20 @@ use super::SubgraphId;
 /**
  * A handle into a specific [super::graph::Hydroflow] instance for triggering
  * subgraphs to run, possibly from another thread.
+ *
+ * Reactor events are considered to be external events.
  */
 #[derive(Clone)]
 pub struct Reactor {
-    event_queue_send: UnboundedSender<SubgraphId>,
+    event_queue_send: UnboundedSender<(SubgraphId, bool)>,
 }
 impl Reactor {
-    pub fn new(event_queue_send: UnboundedSender<SubgraphId>) -> Self {
+    pub fn new(event_queue_send: UnboundedSender<(SubgraphId, bool)>) -> Self {
         Self { event_queue_send }
     }
 
-    pub fn trigger(&self, sg_id: SubgraphId) -> Result<(), SendError<SubgraphId>> {
-        self.event_queue_send.send(sg_id)
+    pub fn trigger(&self, sg_id: SubgraphId) -> Result<(), SendError<(SubgraphId, bool)>> {
+        self.event_queue_send.send((sg_id, true))
     }
 
     #[cfg(feature = "async")]

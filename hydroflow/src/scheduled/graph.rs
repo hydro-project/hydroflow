@@ -29,7 +29,8 @@ pub struct Hydroflow {
     /// TODO(mingwei): separate scheduler into its own struct/trait?
     /// Index is stratum, value is FIFO queue for that stratum.
     stratum_queues: Vec<VecDeque<SubgraphId>>,
-    event_queue_recv: UnboundedReceiver<SubgraphId>,
+    /// Receive events, if second arg indicates if it is an external "important" event (true).
+    event_queue_recv: UnboundedReceiver<(SubgraphId, bool)>,
     /// If the events have been received for this tick.
     events_received_tick: bool,
 
@@ -90,6 +91,7 @@ impl Hydroflow {
     }
 
     /// Returns a reactor for externally scheduling subgraphs, possibly from another thread.
+    /// Reactor events are considered to be external events.
     pub fn reactor(&self) -> Reactor {
         Reactor::new(self.context.event_queue_send.clone())
     }
@@ -199,10 +201,13 @@ impl Hydroflow {
                 if current_tick_only {
                     self.events_received_tick = false;
                     return false;
-                } else if 0 < self.try_recv_events() {
-                    // Do a full loop more to find where events have been added.
-                    end_stratum = 0;
-                    continue;
+                } else {
+                    let (_num_events, has_external) = self.try_recv_events();
+                    if has_external {
+                        // Do a full loop more to find where events have been added.
+                        end_stratum = 0;
+                        continue;
+                    }
                 }
             }
 
@@ -243,53 +248,67 @@ impl Hydroflow {
         }
     }
 
-    /// Enqueues subgraphs triggered by external events without blocking.
+    /// Enqueues subgraphs triggered by events without blocking.
     ///
-    /// Returns the number of subgraphs enqueued.
-    pub fn try_recv_events(&mut self) -> usize {
+    /// Returns the number of subgraphs enqueued, and if any were external.
+    pub fn try_recv_events(&mut self) -> (usize, bool) {
         self.events_received_tick = true;
 
+        let mut events_has_external = false;
         let mut enqueued_count = 0;
-        while let Ok(sg_id) = self.event_queue_recv.try_recv() {
+        while let Ok((sg_id, is_external)) = self.event_queue_recv.try_recv() {
             let sg_data = &self.subgraphs[sg_id.0];
+            events_has_external |= is_external;
             if !sg_data.is_scheduled.replace(true) {
                 self.stratum_queues[sg_data.stratum].push_back(sg_id);
                 enqueued_count += 1;
             }
         }
-        enqueued_count
+        (enqueued_count, events_has_external)
     }
 
     /// Enqueues subgraphs triggered by external events, blocking until at
-    /// least one subgraph is scheduled.
+    /// least one subgraph is scheduled **from an external event**.
     pub fn recv_events(&mut self) -> Option<NonZeroUsize> {
         self.events_received_tick = true;
 
+        let mut events_has_external = false;
         loop {
-            let sg_id = self.event_queue_recv.blocking_recv()?;
+            let (sg_id, is_external) = self.event_queue_recv.blocking_recv()?;
+            events_has_external |= is_external;
             let sg_data = &self.subgraphs[sg_id.0];
             if !sg_data.is_scheduled.replace(true) {
                 self.stratum_queues[sg_data.stratum].push_back(sg_id);
 
                 // Enqueue any other immediate events.
-                return Some(NonZeroUsize::new(self.try_recv_events() + 1).unwrap());
+                let (extra_count, extra_has_external) = self.try_recv_events();
+                events_has_external |= extra_has_external;
+                if events_has_external {
+                    return Some(NonZeroUsize::new(extra_count + 1).unwrap());
+                }
             }
         }
     }
 
     /// Enqueues subgraphs triggered by external events asynchronously, waiting
-    /// until at least one subgraph is scheduled.
+    /// until at least one subgraph is scheduled **from an external event**.
     pub async fn recv_events_async(&mut self) -> Option<NonZeroUsize> {
         self.events_received_tick = true;
 
+        let mut events_has_external = false;
         loop {
-            let sg_id = self.event_queue_recv.recv().await?;
+            let (sg_id, is_external) = self.event_queue_recv.recv().await?;
+            events_has_external |= is_external;
             let sg_data = &self.subgraphs[sg_id.0];
             if !sg_data.is_scheduled.replace(true) {
                 self.stratum_queues[sg_data.stratum].push_back(sg_id);
 
                 // Enqueue any other immediate events.
-                return Some(NonZeroUsize::new(self.try_recv_events() + 1).unwrap());
+                let (extra_count, extra_has_external) = self.try_recv_events();
+                events_has_external |= extra_has_external;
+                if events_has_external {
+                    return Some(NonZeroUsize::new(extra_count + 1).unwrap());
+                }
             }
         }
     }
