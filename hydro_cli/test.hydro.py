@@ -32,7 +32,9 @@ async def main(args):
         on=machine2
     )
 
-    program.ports.foo.send_to(program2.ports.bar)
+    program.ports.broadcast.send_to(hydro.demux({
+        0: program2.ports.broadcast
+    }))
 
     await deployment.deploy()
 
