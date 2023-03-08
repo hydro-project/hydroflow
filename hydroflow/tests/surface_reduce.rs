@@ -1,4 +1,4 @@
-use hydroflow::hydroflow_syntax;
+use hydroflow::{assert_graphvis_snapshots, hydroflow_syntax};
 
 use multiplatform_test::multiplatform_test;
 
@@ -12,13 +12,7 @@ pub fn test_reduce_tick() {
             -> reduce::<'tick>(|acc: u32, next: u32| acc + next)
             -> for_each(|v| result_send.send(v).unwrap());
     };
-
-    println!(
-        "{}",
-        df.serde_graph()
-            .expect("No graph found, maybe failed to parse.")
-            .to_mermaid()
-    );
+    assert_graphvis_snapshots!(df);
     assert_eq!((0, 0), (df.current_tick(), df.current_stratum()));
 
     items_send.send(1).unwrap();
@@ -52,13 +46,7 @@ pub fn test_reduce_static() {
             -> reduce::<'static>(|acc: u32, next: u32| acc + next)
             -> for_each(|v| result_send.send(v).unwrap());
     };
-
-    println!(
-        "{}",
-        df.serde_graph()
-            .expect("No graph found, maybe failed to parse.")
-            .to_mermaid()
-    );
+    assert_graphvis_snapshots!(df);
     assert_eq!((0, 0), (df.current_tick(), df.current_stratum()));
 
     items_send.send(1).unwrap();
@@ -91,13 +79,7 @@ pub fn test_reduce_sum() {
             -> reduce(|a, b| a + b)
             -> for_each(|v| print!("{:?}", v));
     };
-
-    println!(
-        "{}",
-        df.serde_graph()
-            .expect("No graph found, maybe failed to parse.")
-            .to_mermaid()
-    );
+    assert_graphvis_snapshots!(df);
     assert_eq!((0, 0), (df.current_tick(), df.current_stratum()));
     df.run_tick();
     assert_eq!((1, 0), (df.current_tick(), df.current_stratum()));
@@ -141,13 +123,7 @@ pub fn test_reduce() {
         my_join_tee[0] -> [1]reached_vertices;
         my_join_tee[1] -> reduce(|a, b| a + b) -> for_each(|sum| println!("{}", sum));
     };
-
-    println!(
-        "{}",
-        df.serde_graph()
-            .expect("No graph found, maybe failed to parse.")
-            .to_mermaid()
-    );
+    assert_graphvis_snapshots!(df);
     assert_eq!((0, 0), (df.current_tick(), df.current_stratum()));
     df.run_tick();
     assert_eq!((1, 0), (df.current_tick(), df.current_stratum()));

@@ -2,9 +2,9 @@ use std::collections::HashSet;
 
 use multiplatform_test::multiplatform_test;
 
-use hydroflow::hydroflow_syntax;
 use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::util::collect_ready;
+use hydroflow::{assert_graphvis_snapshots, hydroflow_syntax};
 
 // TODO(mingwei): custom operators? How to handle in syntax? How to handle state?
 
@@ -30,6 +30,7 @@ pub fn test_basic_2() {
     let mut df = hydroflow_syntax! {
         source_iter([1]) -> for_each(|v| out_send.send(v).unwrap());
     };
+    assert_graphvis_snapshots!(df);
     df.run_available();
 
     assert_eq!(&[1], &*collect_ready::<Vec<_>, _>(&mut out_recv));
@@ -42,6 +43,7 @@ pub fn test_basic_3() {
     let mut df = hydroflow_syntax! {
         source_iter([1]) -> map(|v| v + 1) -> for_each(|v| out_send.send(v).unwrap());
     };
+    assert_graphvis_snapshots!(df);
     df.run_available();
 
     assert_eq!(&[2], &*collect_ready::<Vec<_>, _>(&mut out_recv));
@@ -56,6 +58,7 @@ pub fn test_basic_merge() {
         source_iter([1]) -> [0]m;
         source_iter([2]) -> [1]m;
     };
+    assert_graphvis_snapshots!(df);
     df.run_available();
 
     assert_eq!(&[1, 2], &*collect_ready::<Vec<_>, _>(&mut out_recv));
@@ -117,13 +120,7 @@ pub fn test_recv_expr() {
         source_stream(send_recv.1)
             -> for_each(|v| print!("{:?}", v));
     };
-
-    println!(
-        "{}",
-        df.serde_graph()
-            .expect("No graph found, maybe failed to parse.")
-            .to_mermaid()
-    );
+    assert_graphvis_snapshots!(df);
     df.run_available();
 
     let items_send = send_recv.0;
@@ -246,13 +243,7 @@ pub fn test_sort() {
             -> sort()
             -> for_each(|v| print!("{:?}, ", v));
     };
-
-    println!(
-        "{}",
-        df.serde_graph()
-            .expect("No graph found, maybe failed to parse.")
-            .to_mermaid()
-    );
+    assert_graphvis_snapshots!(df);
     df.run_available();
 
     print!("\nA: ");
@@ -281,13 +272,7 @@ pub fn test_sort_by() {
             -> sort_by(|(k, _v)| k)
             -> for_each(|v| println!("{:?}", v));
     };
-
-    println!(
-        "{}",
-        df.serde_graph()
-            .expect("No graph found, maybe failed to parse.")
-            .to_mermaid()
-    );
+    assert_graphvis_snapshots!(df);
     df.run_available();
     println!();
 }
@@ -429,13 +414,7 @@ pub fn test_surface_syntax_reachability_generated() {
         my_join_tee[0] -> [1]reached_vertices;
         my_join_tee[1] -> for_each(|x| println!("Reached: {}", x));
     };
-
-    println!(
-        "{}",
-        df.serde_graph()
-            .expect("No graph found, maybe failed to parse.")
-            .to_mermaid()
-    );
+    assert_graphvis_snapshots!(df);
     df.run_available();
 
     pairs_send.send((0, 1)).unwrap();
@@ -480,14 +459,7 @@ pub fn test_transitive_closure() {
         the_join -> map(|(_k, (a, b))| (a, b)) -> [1]edge_merge_tee;
         edge_merge_tee[1] -> for_each(|(a, b)| println!("transitive closure: ({},{})", a, b));
     };
-
-    println!(
-        "{}",
-        df.serde_graph()
-            .expect("No graph found, maybe failed to parse.")
-            .to_dot()
-    );
-
+    assert_graphvis_snapshots!(df);
     df.run_available();
 
     pairs_send.send((0, 1)).unwrap();
@@ -563,14 +535,7 @@ pub fn test_covid_tracing() {
         source_stream(people_recv) -> [0]notifs;
         new_exposed[1] -> [1]notifs;
     };
-
-    println!(
-        "{}",
-        hydroflow
-            .serde_graph()
-            .expect("No graph found, maybe failed to parse.")
-            .to_dot()
-    );
+    assert_graphvis_snapshots!(hydroflow);
 
     {
         people_send

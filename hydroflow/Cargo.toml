@@ -88,7 +88,9 @@ getrandom = { version = "0.2.6", features = [ "js" ] }
 chrono = { version = "0.4.20", features = [ "serde", "clock" ], default-features = false }
 clap = { version = "4.1.8", features = [ "derive" ] }
 colored = "2.0"
+core_affinity = "0.5.10"
 futures = { version = "0.3" }
+insta = "1.7.1"
 itertools = "0.10.3"
 multiplatform_test = { path = "../multiplatform_test" }
 rand = "0.8.4"
@@ -97,7 +99,6 @@ time = "0.3"
 trybuild = "1.0.71"
 hdrhistogram = "7"
 zipf = "7.0.0"
-core_affinity = "0.5.10"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 # Rayon (rust data-parallelism library) does not compile on WASM.

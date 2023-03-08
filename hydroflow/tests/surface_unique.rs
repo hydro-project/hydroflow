@@ -1,4 +1,5 @@
-use hydroflow::{hydroflow_syntax, util::collect_ready};
+use hydroflow::util::collect_ready;
+use hydroflow::{assert_graphvis_snapshots, hydroflow_syntax};
 use multiplatform_test::multiplatform_test;
 
 #[multiplatform_test]
@@ -10,13 +11,7 @@ pub fn test_unique() {
             -> unique()
             -> for_each(|v| print!("{:?}, ", v));
     };
-
-    println!(
-        "{}",
-        df.serde_graph()
-            .expect("No graph found, maybe failed to parse.")
-            .to_mermaid()
-    );
+    assert_graphvis_snapshots!(df);
     df.run_available();
 
     print!("\nA: ");
@@ -49,14 +44,7 @@ pub fn test_unique_tick_pull() {
         repeat_iter(0..0) -> m2; // Extra merge to force `unique()` to be pull.
         m2 = merge() -> for_each(|v| out_send.send(v).unwrap());
     };
-
-    println!(
-        "{}",
-        df.serde_graph()
-            .expect("No graph found, maybe failed to parse.")
-            .to_mermaid()
-    );
-
+    assert_graphvis_snapshots!(df);
     df.run_tick();
     let mut out: Vec<_> = collect_ready(&mut out_recv);
     out.sort_unstable();
@@ -79,14 +67,7 @@ pub fn test_unique_static_pull() {
         repeat_iter(0..0) -> m2; // Extra merge to force `unique()` to be pull.
         m2 = merge() -> for_each(|v| out_send.send(v).unwrap());
     };
-
-    println!(
-        "{}",
-        df.serde_graph()
-            .expect("No graph found, maybe failed to parse.")
-            .to_mermaid()
-    );
-
+    assert_graphvis_snapshots!(df);
     df.run_tick();
     let mut out: Vec<_> = collect_ready(&mut out_recv);
     out.sort_unstable();
@@ -109,14 +90,7 @@ pub fn test_unique_tick_push() {
         pivot -> unique<'tick>() -> for_each(|v| out_send.send(v).unwrap());
         pivot -> for_each(std::mem::drop); // Force to be push.
     };
-
-    println!(
-        "{}",
-        df.serde_graph()
-            .expect("No graph found, maybe failed to parse.")
-            .to_mermaid()
-    );
-
+    assert_graphvis_snapshots!(df);
     df.run_tick();
     let mut out: Vec<_> = collect_ready(&mut out_recv);
     out.sort_unstable();
@@ -139,14 +113,7 @@ pub fn test_unique_static_push() {
         pivot -> unique<'static>() -> for_each(|v| out_send.send(v).unwrap());
         pivot -> for_each(std::mem::drop); // Force to be push.
     };
-
-    println!(
-        "{}",
-        df.serde_graph()
-            .expect("No graph found, maybe failed to parse.")
-            .to_mermaid()
-    );
-
+    assert_graphvis_snapshots!(df);
     df.run_tick();
     let mut out: Vec<_> = collect_ready(&mut out_recv);
     out.sort_unstable();
