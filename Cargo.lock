@@ -148,6 +148,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-recursion"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3b015a331cc64ebd1774ba119538573603427eaace0a1950c423ab971f903796"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "async-ssh2-lite"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1407,6 +1418,7 @@ dependencies = [
  "anyhow",
  "async-channel",
  "async-process",
+ "async-recursion",
  "async-ssh2-lite",
  "async-trait",
  "cargo",
@@ -1426,6 +1438,7 @@ dependencies = [
 name = "hydroflow"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "bincode",
  "byteorder",
  "bytes",

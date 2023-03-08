@@ -1,7 +1,8 @@
-use std::{collections::HashMap, net::SocketAddr, path::PathBuf, pin::Pin};
+use std::{collections::HashMap, net::SocketAddr, path::PathBuf, pin::Pin, sync::Arc};
 
+use async_trait::async_trait;
 use bytes::{Bytes, BytesMut};
-use futures::{Sink, Stream};
+use futures::{sink, Sink, SinkExt, Stream};
 use serde::{Deserialize, Serialize};
 #[cfg(unix)]
 use tokio::net::{UnixListener, UnixStream};
@@ -51,28 +52,15 @@ impl BindConfig {
 
 async fn accept_incoming_connections(
     binds: HashMap<String, BoundConnection>,
-) -> HashMap<
-    String,
-    (
-        Option<Pin<Box<dyn Stream<Item = Result<BytesMut, io::Error>> + Send>>>,
-        Option<Pin<Box<dyn Sink<Bytes, Error = io::Error> + Send>>>,
-    ),
-> {
+) -> HashMap<String, ConnectionPipe> {
     let mut bind_results = HashMap::new();
     for (name, bind) in binds {
-        let bound = bind.accept().await;
-        bind_results.insert(name.clone(), (Some(bound.0), Some(bound.1)));
+        bind_results.insert(name, ConnectionPipe::Bind(Arc::new(bind)));
     }
     bind_results
 }
 
-pub async fn init() -> HashMap<
-    String,
-    (
-        Option<Pin<Box<dyn Stream<Item = Result<BytesMut, io::Error>> + Send>>>,
-        Option<Pin<Box<dyn Sink<Bytes, Error = io::Error> + Send>>>,
-    ),
-> {
+pub async fn init() -> HashMap<String, ConnectionPipe> {
     let mut input = String::new();
     std::io::stdin().read_line(&mut input).unwrap();
     let trimmed = input.trim();
@@ -107,39 +95,71 @@ pub async fn init() -> HashMap<
 
     let mut all_connected = HashMap::new();
     for (name, pipe) in connection_pipes {
-        let (sink, source) = pipe.connect().await;
-        all_connected.insert(name, (sink, source));
+        all_connected.insert(name, pipe);
     }
 
     let bind_connected = bind_connected_future.await.unwrap();
-    for (name, (sink, source)) in bind_connected {
-        all_connected.insert(name, (sink, source));
+    for (name, pipe) in bind_connected {
+        all_connected.insert(name, pipe);
     }
 
     all_connected
 }
 
-/// Describes a medium through which two HydroFlow services can communicate.
+/// Describes a medium through which two Hydroflow services can communicate.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum ConnectionPipe {
     UnixSocket(PathBuf),
     TcpPort(SocketAddr),
+    Demux(HashMap<u32, ConnectionPipe>),
+    #[serde(skip)]
+    Bind(Arc<BoundConnection>),
 }
 
 impl ConnectionPipe {
-    pub async fn connect(
-        self,
-    ) -> (
-        Option<Pin<Box<dyn Stream<Item = Result<BytesMut, io::Error>> + Send>>>,
-        Option<Pin<Box<dyn Sink<Bytes, Error = io::Error> + Send>>>,
-    ) {
-        match self {
+    pub async fn connect<T: Connected>(self) -> T {
+        T::from_pipe(self).await
+    }
+}
+
+#[async_trait]
+pub trait Connected: Send {
+    type Input: Send;
+
+    fn take_source(&mut self) -> Pin<Box<dyn Stream<Item = Result<BytesMut, io::Error>> + Send>>;
+    fn take_sink(&mut self) -> Pin<Box<dyn Sink<Self::Input, Error = io::Error> + Send + Sync>>;
+
+    async fn from_pipe(pipe: ConnectionPipe) -> Self;
+}
+
+pub struct ConnectedBidi {
+    pub source: Option<Pin<Box<dyn Stream<Item = Result<BytesMut, io::Error>> + Send>>>,
+    pub sink: Option<Pin<Box<dyn Sink<Bytes, Error = io::Error> + Send + Sync>>>,
+}
+
+#[async_trait]
+impl Connected for ConnectedBidi {
+    type Input = Bytes;
+
+    fn take_source(&mut self) -> Pin<Box<dyn Stream<Item = Result<BytesMut, io::Error>> + Send>> {
+        self.source.take().unwrap()
+    }
+
+    fn take_sink(&mut self) -> Pin<Box<dyn Sink<Self::Input, Error = io::Error> + Send + Sync>> {
+        self.sink.take().unwrap()
+    }
+
+    async fn from_pipe(pipe: ConnectionPipe) -> Self {
+        match pipe {
             ConnectionPipe::UnixSocket(path) => {
                 #[cfg(unix)]
                 {
                     let stream = UnixStream::connect(path).await.unwrap();
                     let (sink, source) = unix_bytes(stream);
-                    (Some(Box::pin(source)), Some(Box::pin(sink)))
+                    ConnectedBidi {
+                        source: Some(Box::pin(source)),
+                        sink: Some(Box::pin(sink)),
+                    }
                 }
 
                 #[cfg(not(unix))]
@@ -151,13 +171,71 @@ impl ConnectionPipe {
             ConnectionPipe::TcpPort(addr) => {
                 let stream = TcpStream::connect(addr).await.unwrap();
                 let (sink, source) = tcp_bytes(stream);
-                (Some(Box::pin(source)), Some(Box::pin(sink)))
+                ConnectedBidi {
+                    source: Some(Box::pin(source)),
+                    sink: Some(Box::pin(sink)),
+                }
             }
+            ConnectionPipe::Bind(bound) => {
+                let bound = bound.accept().await;
+                ConnectedBidi {
+                    source: Some(bound.0),
+                    sink: Some(bound.1),
+                }
+            }
+            ConnectionPipe::Demux(_) => panic!("Cannot connect to a demux pipe directly"),
         }
     }
 }
 
-enum BoundConnection {
+pub struct ConnectedDemux<T: Connected> {
+    pub sink: Option<Pin<Box<dyn Sink<(u32, T::Input), Error = io::Error> + Send + Sync>>>,
+}
+
+#[async_trait]
+impl<T: Connected> Connected for ConnectedDemux<T>
+where
+    <T as Connected>::Input: 'static + Sync,
+{
+    type Input = (u32, T::Input);
+
+    fn take_source(&mut self) -> Pin<Box<dyn Stream<Item = Result<BytesMut, io::Error>> + Send>> {
+        panic!("Cannot take source from a demux pipe");
+    }
+
+    fn take_sink(&mut self) -> Pin<Box<dyn Sink<Self::Input, Error = io::Error> + Send + Sync>> {
+        self.sink.take().unwrap()
+    }
+
+    async fn from_pipe(pipe: ConnectionPipe) -> Self {
+        match pipe {
+            ConnectionPipe::Demux(demux) => {
+                let mut connected_demux = HashMap::new();
+                for (id, pipe) in demux {
+                    connected_demux.insert(id, T::from_pipe(pipe).await.take_sink());
+                }
+
+                let demuxer = sink::unfold(
+                    connected_demux,
+                    move |mut connected_demux, v: (u32, T::Input)| async move {
+                        let (id, input) = v;
+                        let sink = connected_demux.get_mut(&id).unwrap();
+                        sink.feed(input).await?;
+                        Ok(connected_demux)
+                    },
+                );
+
+                ConnectedDemux {
+                    sink: Some(Box::pin(demuxer)),
+                }
+            }
+            _ => panic!("Cannot connect to a non-demux pipe as a demux"),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum BoundConnection {
     UnixSocket(UnixListener, tempfile::TempDir),
     TcpPort(TcpListener),
 }
@@ -195,7 +273,7 @@ impl BoundConnection {
         &self,
     ) -> (
         Pin<Box<dyn Stream<Item = Result<BytesMut, io::Error>> + Send>>,
-        Pin<Box<dyn Sink<Bytes, Error = io::Error> + Send>>,
+        Pin<Box<dyn Sink<Bytes, Error = io::Error> + Send + Sync>>,
     ) {
         match self {
             BoundConnection::UnixSocket(listener, _) => {
