@@ -26,7 +26,7 @@ enum Commands {
 fn async_wrapper_module(py: Python) -> Result<&PyModule, PyErr> {
     PyModule::from_code(
         py,
-        include_str!("async_wrapper.py"),
+        include_str!("../hydro/async_wrapper.py"),
         "wrapper.py",
         "wrapper",
     )
