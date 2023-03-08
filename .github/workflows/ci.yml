@@ -117,7 +117,6 @@ jobs:
           profile: minimal
           toolchain: nightly
           override: ${{ matrix.rust_release == 'latest-nightly' }}
-          components: rustfmt
 
       - name: Run cargo test
         uses: actions-rs/cargo@v1
@@ -150,8 +149,8 @@ jobs:
         with:
           profile: minimal
           toolchain: nightly
+          target: wasm32-unknown-unknown
           override: ${{ matrix.rust_release == 'latest-nightly' }}
-          components: rustfmt
 
       - name: Install WebAssembly test runner
         uses: actions-rs/cargo@v1
