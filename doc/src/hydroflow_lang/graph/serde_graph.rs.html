@@ -754,8 +754,8 @@
             <span class="macro">writeln!</span>(write, <span class="string">&quot;digraph {{&quot;</span>)<span class="question-mark">?</span>;
             <span class="prelude-val">Ok</span>(())
         }
-        <span class="kw">fn </span>write_dot_postlude(tab: usize, write: <span class="kw-2">&amp;mut </span><span class="kw">impl </span>std::fmt::Write) -&gt; std::fmt::Result {
-            <span class="macro">writeln!</span>(write, <span class="string">&quot;{:t$}}}&quot;</span>, <span class="string">&quot;&quot;</span>, t = tab)<span class="question-mark">?</span>;
+        <span class="kw">fn </span>write_dot_postlude(write: <span class="kw-2">&amp;mut </span><span class="kw">impl </span>std::fmt::Write) -&gt; std::fmt::Result {
+            <span class="macro">writeln!</span>(write, <span class="string">&quot;}}&quot;</span>)<span class="question-mark">?</span>;
             <span class="prelude-val">Ok</span>(())
         }
 
@@ -932,7 +932,7 @@
         }
 
         <span class="comment">// outro
-        </span>write_dot_postlude(tab, w)<span class="question-mark">?</span>;
+        </span>write_dot_postlude(w)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
     }
 }

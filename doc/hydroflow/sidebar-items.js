@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"macro":["assert_var_impl","hydroflow_parser","hydroflow_syntax","rassert","rassert_eq","var_args","var_expr","var_type"],"mod":["compiled","lang","props","scheduled","util"]};
+window.SIDEBAR_ITEMS = {"macro":["assert_graphvis_snapshots","assert_var_impl","hydroflow_parser","hydroflow_syntax","rassert","rassert_eq","var_args","var_expr","var_type"],"mod":["compiled","lang","props","scheduled","util"]};
