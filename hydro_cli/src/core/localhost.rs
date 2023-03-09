@@ -9,7 +9,7 @@ use hydroflow::util::cli::BindConfig;
 use tokio::sync::RwLock;
 
 use super::{
-    BindType, ConnectionType, Host, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult,
+    BindType, ConnectionType, Host, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult, HostTargetType,
 };
 
 struct LaunchedLocalhostBinary {
@@ -130,6 +130,10 @@ pub struct LocalhostHost {
 
 #[async_trait]
 impl Host for LocalhostHost {
+    fn target_type(&self) -> HostTargetType {
+        HostTargetType::Local
+    }
+
     fn request_port(&mut self, _bind_type: &BindType) {}
     fn collect_resources(&self, _resource_batch: &mut ResourceBatch) {}
     fn request_custom_binary(&mut self) {}
