@@ -225,6 +225,35 @@ impl PartitionedGraph {
         self.node_subgraph.get(node_id).copied()
     }
 
+    /// Create a subgraph consisting of `node_ids`. Returns an error if any of the nodes are already in a subgraph.
+    pub fn create_subgraph(
+        &mut self,
+        node_ids: Vec<GraphNodeId>,
+    ) -> Result<GraphSubgraphId, (GraphNodeId, GraphSubgraphId)> {
+        // Check none are already in subgraphs
+        for &node_id in node_ids.iter() {
+            if let Some(&old_sg_id) = self.node_subgraph.get(node_id) {
+                return Err((node_id, old_sg_id));
+            }
+        }
+        Ok(self.subgraph_nodes.insert_with_key(|sg_id| {
+            for &node_id in node_ids.iter() {
+                self.node_subgraph.insert(node_id, sg_id);
+            }
+            node_ids
+        }))
+    }
+
+    /// Removes a node from its subgraph. Returns true if the node was in a subgraph.
+    pub fn remove_from_subgraph(&mut self, node_id: GraphNodeId) -> bool {
+        if let Some(old_sg_id) = self.node_subgraph.remove(node_id) {
+            self.subgraph_nodes[old_sg_id].retain(|&other_node_id| other_node_id != node_id);
+            true
+        } else {
+            false
+        }
+    }
+
     /// Gets the stratum nubmer of the subgraph.
     pub fn subgraph_stratum(&self, sg_id: GraphSubgraphId) -> Option<usize> {
         self.subgraph_stratum.get(sg_id).copied()
