@@ -308,10 +308,38 @@
 <a href="#308" id="308">308</a>
 <a href="#309" id="309">309</a>
 <a href="#310" id="310">310</a>
+<a href="#311" id="311">311</a>
+<a href="#312" id="312">312</a>
+<a href="#313" id="313">313</a>
+<a href="#314" id="314">314</a>
+<a href="#315" id="315">315</a>
+<a href="#316" id="316">316</a>
+<a href="#317" id="317">317</a>
+<a href="#318" id="318">318</a>
+<a href="#319" id="319">319</a>
+<a href="#320" id="320">320</a>
+<a href="#321" id="321">321</a>
+<a href="#322" id="322">322</a>
+<a href="#323" id="323">323</a>
+<a href="#324" id="324">324</a>
+<a href="#325" id="325">325</a>
+<a href="#326" id="326">326</a>
+<a href="#327" id="327">327</a>
+<a href="#328" id="328">328</a>
+<a href="#329" id="329">329</a>
+<a href="#330" id="330">330</a>
+<a href="#331" id="331">331</a>
+<a href="#332" id="332">332</a>
+<a href="#333" id="333">333</a>
+<a href="#334" id="334">334</a>
+<a href="#335" id="335">335</a>
+<a href="#336" id="336">336</a>
+<a href="#337" id="337">337</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::sync::Arc;
 
 <span class="kw">use </span>async_channel::Receiver;
 <span class="kw">use </span>pyo3::exceptions::PyException;
+<span class="kw">use </span>pyo3::types::PyDict;
 <span class="kw">use </span>pyo3::{create_exception, prelude::<span class="kw-2">*</span>, wrap_pymodule};
 <span class="kw">use </span>tokio::sync::RwLock;
 
@@ -580,21 +608,46 @@
     }
 }
 
+<span class="attr">#[pyclass]
+#[derive(Clone)]
+</span><span class="kw">struct </span>PyHydroflowCratePort {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) underlying: <span class="kw">crate</span>::core::hydroflow_crate::OutgoingPort,
+}
+
+<span class="attr">#[pymethods]
+</span><span class="kw">impl </span>PyHydroflowCratePort {
+    <span class="attr">#[staticmethod]
+    </span><span class="kw">fn </span>new_direct(to: <span class="kw-2">&amp;</span>PyHydroflowCrate, to_port: String) -&gt; PyHydroflowCratePort {
+        PyHydroflowCratePort {
+            underlying: <span class="kw">crate</span>::core::hydroflow_crate::OutgoingPort::Direct(
+                Arc::downgrade(<span class="kw-2">&amp;</span>to.underlying),
+                to_port,
+            ),
+        }
+    }
+
+    <span class="attr">#[staticmethod]
+    </span><span class="kw">fn </span>new_demux(mapping: <span class="kw-2">&amp;</span>PyDict) -&gt; PyHydroflowCratePort {
+        PyHydroflowCratePort {
+            underlying: <span class="kw">crate</span>::core::hydroflow_crate::OutgoingPort::Demux(
+                mapping
+                    .into_iter()
+                    .map(|(k, v)| {
+                        <span class="kw">let </span>k = k.extract::&lt;u32&gt;().unwrap();
+                        <span class="kw">let </span>v = v.extract::&lt;PyHydroflowCratePort&gt;().unwrap();
+                        (k, v.underlying)
+                    })
+                    .collect(),
+            ),
+        }
+    }
+}
+
 <span class="attr">#[pyfunction]
-</span><span class="kw">fn </span>create_connection(
-    from: <span class="kw-2">&amp;</span>PyHydroflowCrate,
-    from_port: String,
-    to: <span class="kw-2">&amp;</span>PyHydroflowCrate,
-    to_port: String,
-) {
+</span><span class="kw">fn </span>create_connection(from: <span class="kw-2">&amp;</span>PyHydroflowCrate, from_port: String, to: <span class="kw-2">&amp;</span>PyHydroflowCratePort) {
     <span class="kw">let </span>from = <span class="kw-2">&amp;</span>from.underlying;
-    <span class="kw">let </span>to = <span class="kw-2">&amp;</span>to.underlying;
-
-    <span class="kw">let </span><span class="kw-2">mut </span>from_write = from.blocking_write();
-    <span class="kw">let </span><span class="kw-2">mut </span>to_write = to.blocking_write();
-
-    from_write.add_outgoing_port(from_port, to, to_port.clone());
-    to_write.add_incoming_port(to_port, <span class="kw-2">&amp;</span>from_write);
+    <span class="kw">let </span><span class="kw-2">mut </span>from_write = from.try_write().unwrap();
+    from_write.add_outgoing_port(from_port, to.underlying.clone());
 }
 
 <span class="attr">#[pymodule]
@@ -611,6 +664,7 @@
     module.add_class::&lt;PyService&gt;()<span class="question-mark">?</span>;
     module.add_class::&lt;PyCustomService&gt;()<span class="question-mark">?</span>;
     module.add_class::&lt;PyHydroflowCrate&gt;()<span class="question-mark">?</span>;
+    module.add_class::&lt;PyHydroflowCratePort&gt;()<span class="question-mark">?</span>;
 
     module.add_function(<span class="macro">wrap_pyfunction!</span>(create_connection, module)<span class="question-mark">?</span>)<span class="question-mark">?</span>;
 

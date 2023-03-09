@@ -66,12 +66,28 @@
 <a href="#66" id="66">66</a>
 <a href="#67" id="67">67</a>
 <a href="#68" id="68">68</a>
-</pre><pre class="rust"><code><span class="kw">use super</span>::{
+<a href="#69" id="69">69</a>
+<a href="#70" id="70">70</a>
+<a href="#71" id="71">71</a>
+<a href="#72" id="72">72</a>
+<a href="#73" id="73">73</a>
+<a href="#74" id="74">74</a>
+<a href="#75" id="75">75</a>
+<a href="#76" id="76">76</a>
+<a href="#77" id="77">77</a>
+<a href="#78" id="78">78</a>
+<a href="#79" id="79">79</a>
+<a href="#80" id="80">80</a>
+<a href="#81" id="81">81</a>
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::graph::{OpInstGenerics, OperatorInstance};
+
+<span class="kw">use super</span>::{
     FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
     RANGE_0,
 };
 
 <span class="kw">use </span>quote::quote_spanned;
+<span class="kw">use </span>syn::parse_quote_spanned;
 
 <span class="doccomment">/// &gt; unbounded number of input streams of any type, unbounded number of output streams of any type.
 ///
@@ -96,7 +112,7 @@
     soft_range_out: <span class="kw-2">&amp;</span>(<span class="number">0</span>..=<span class="number">1</span>),
     num_args: <span class="number">0</span>,
     persistence_args: RANGE_0,
-    type_args: RANGE_0,
+    type_args: <span class="kw-2">&amp;</span>(<span class="number">0</span>..=<span class="number">1</span>),
     is_external_input: <span class="bool-val">false</span>,
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">None</span>,
@@ -113,19 +129,29 @@
                    inputs,
                    outputs,
                    is_pull,
+                   op_inst:
+                       OperatorInstance {
+                           generics: OpInstGenerics { type_args, .. },
+                           ..
+                       },
                    ..
                },
                <span class="kw">_</span>| {
         <span class="kw">let </span>write_iterator = <span class="kw">if </span>is_pull {
+            <span class="kw">let </span>default_type = <span class="macro">parse_quote_spanned! </span>{op_span=&gt; <span class="kw">_</span>};
+            <span class="kw">let </span>iter_type = type_args.get(<span class="number">0</span>).unwrap_or(<span class="kw-2">&amp;</span>default_type);
             <span class="macro">quote_spanned! </span>{op_span=&gt;
                 (#(#inputs.for_each(std::mem::drop)),<span class="kw-2">*</span>);
-                <span class="kw">let </span>#ident = std::iter::empty();
+                <span class="kw">let </span>#ident = std::iter::empty::&lt;#iter_type&gt;();
             }
         } <span class="kw">else </span>{
+            <span class="kw">let </span>default_type = <span class="macro">parse_quote_spanned! </span>{op_span=&gt; <span class="kw">_</span>};
+            <span class="kw">let </span>iter_type = type_args.get(<span class="number">0</span>).unwrap_or(<span class="kw-2">&amp;</span>default_type);
+
             <span class="macro">quote_spanned! </span>{op_span=&gt;
                 <span class="attr">#[allow(clippy::let_unit_value)]
                 </span><span class="kw">let _ </span>= (#(#outputs),<span class="kw-2">*</span>);
-                <span class="kw">let </span>#ident = #root::pusherator::for_each::ForEach::new(std::mem::drop);
+                <span class="kw">let </span>#ident = #root::pusherator::for_each::ForEach::&lt;<span class="kw">_</span>, #iter_type&gt;::new(std::mem::drop);
             }
         };
         <span class="prelude-val">Ok</span>(OperatorWriteOutput {

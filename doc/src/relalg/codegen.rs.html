@@ -112,22 +112,11 @@
 <a href="#112" id="112">112</a>
 <a href="#113" id="113">113</a>
 <a href="#114" id="114">114</a>
-<a href="#115" id="115">115</a>
-<a href="#116" id="116">116</a>
-<a href="#117" id="117">117</a>
-<a href="#118" id="118">118</a>
-<a href="#119" id="119">119</a>
-<a href="#120" id="120">120</a>
-<a href="#121" id="121">121</a>
-<a href="#122" id="122">122</a>
-<a href="#123" id="123">123</a>
-<a href="#124" id="124">124</a>
-<a href="#125" id="125">125</a>
 </pre><pre class="rust"><code><span class="kw">use </span>quote::{
     __private::{Ident, TokenStream},
     format_ident, quote, ToTokens,
 };
-<span class="kw">use </span>xshell::cmd;
+<span class="kw">use </span>syn::parse_quote;
 
 <span class="kw">use crate</span>::{Datum, RelExpr, ScalarExpr};
 
@@ -135,26 +124,15 @@
     <span class="kw">let </span><span class="kw-2">mut </span>builder = SubgraphBuilder::new();
     <span class="kw">let </span>id = builder.compile_op(<span class="kw-2">&amp;</span>r);
     <span class="kw">let </span>code = builder.code;
-    run_rustfmt(<span class="macro">format!</span>(
-        <span class="string">&quot;{}&quot;</span>,
-        <span class="macro">quote! </span>{
-            <span class="kw">fn </span>main() {
-                #(#code)*
+    prettyplease::unparse(<span class="kw-2">&amp;</span><span class="macro">parse_quote! </span>{
+        <span class="kw">fn </span>main() {
+            #(#code)*
 
-                <span class="kw">for </span>row <span class="kw">in </span>#id {
-                    <span class="macro">println!</span>(<span class="string">&quot;{:?}&quot;</span>, row);
-                }
+            <span class="kw">for </span>row <span class="kw">in </span>#id {
+                <span class="macro">println!</span>(<span class="string">&quot;{:?}&quot;</span>, row);
             }
         }
-    ))
-    .unwrap()
-}
-
-<span class="comment">// TODO(justin): How do we make this portable/run on CI?
-</span><span class="kw">fn </span>run_rustfmt(s: String) -&gt; anyhow::Result&lt;String&gt; {
-    <span class="prelude-val">Ok</span>(<span class="macro">cmd!</span>(<span class="string">&quot;rustfmt --config newline_style=Unix&quot;</span>)
-        .stdin(s)
-        .read()<span class="question-mark">?</span>)
+    })
 }
 
 <span class="kw">struct </span>SubgraphBuilder {
