@@ -38,6 +38,8 @@ pub fn test_fold_tick() {
         &[vec![5, 6, 7, 8]],
         &*hydroflow::util::collect_ready::<Vec<_>, _>(&mut result_recv)
     );
+
+    df.run_available(); // Should return quickly and not hang
 }
 
 #[multiplatform_test]
@@ -73,6 +75,8 @@ pub fn test_fold_static() {
         &[vec![1, 2, 3, 4, 5, 6, 7, 8]],
         &*hydroflow::util::collect_ready::<Vec<_>, _>(&mut result_recv)
     );
+
+    df.run_available(); // Should return quickly and not hang
 }
 
 #[multiplatform_test]
@@ -118,6 +122,9 @@ pub fn test_fold_flatten() {
     for pair in [(1, 4), (2, 8)] {
         assert!(out.contains(&pair));
     }
+
+    df_push.run_available(); // Should return quickly and not hang
+    df_pull.run_available(); // Should return quickly and not hang
 }
 
 #[multiplatform_test]
@@ -157,4 +164,6 @@ pub fn test_fold_sort() {
     assert_eq!((3, 0), (df.current_tick(), df.current_stratum()));
 
     println!();
+
+    df.run_available(); // Should return quickly and not hang
 }
