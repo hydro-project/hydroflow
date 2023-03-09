@@ -3,7 +3,6 @@ name: Build CLI
 on:
   push:
     branches: [main]
-  pull_request:
 
 env:
   PACKAGE_NAME: hydro_cli

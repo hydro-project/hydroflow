@@ -1426,7 +1426,7 @@ dependencies = [
  "clap 4.1.8",
  "futures",
  "futures-core",
- "hydroflow",
+ "hydroflow_cli_integration",
  "pyo3",
  "pyo3-asyncio",
  "serde",
@@ -1451,6 +1451,7 @@ dependencies = [
  "futures",
  "getrandom 0.2.6",
  "hdrhistogram",
+ "hydroflow_cli_integration",
  "hydroflow_datalog",
  "hydroflow_lang",
  "hydroflow_macro",
@@ -1467,7 +1468,6 @@ dependencies = [
  "serde_json",
  "slotmap",
  "static_assertions",
- "tempfile",
  "textnonce",
  "time",
  "tokio",
@@ -1478,6 +1478,19 @@ dependencies = [
  "wasm-bindgen-test",
  "wasm-bindgen-test-macro",
  "zipf",
+]
+
+[[package]]
+name = "hydroflow_cli_integration"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "bytes",
+ "futures",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tokio",
 ]
 
 [[package]]
