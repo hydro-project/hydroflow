@@ -18,7 +18,7 @@ use cargo::{
 use hydroflow::util::cli::ConnectionPipe;
 use tokio::{sync::RwLock, task::JoinHandle};
 
-use super::{BindType, Host, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult, Service};
+use super::{BindType, Host, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult, Service, HostTargetType};
 
 #[derive(Clone)]
 pub enum OutgoingPort {
@@ -157,6 +157,7 @@ impl HydroflowCrate {
         let src_cloned = self.src.join("Cargo.toml").canonicalize().unwrap();
         let example_cloned = self.example.clone();
         let features_cloned = self.features.clone();
+        let host = self.on.clone();
 
         tokio::task::spawn_blocking(move || {
             let config = Config::default().unwrap();
@@ -174,14 +175,16 @@ impl HydroflowCrate {
                 benches: FilterRule::Just(vec![]),
             };
 
+            let target_type = host.blocking_read().target_type();
+
             compile_options.build_config = BuildConfig::new(
                 &config,
                 None,
                 false,
-                &[
-                    // TODO(shadaj): make configurable
-                    "x86_64-unknown-linux-musl".to_string(),
-                ],
+                &(match target_type {
+                    HostTargetType::Local => vec![],
+                    HostTargetType::Linux => vec!["x86_64-unknown-linux-musl".to_string()],
+                }),
                 CompileMode::Build,
             )
             .unwrap();

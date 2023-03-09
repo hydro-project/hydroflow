@@ -87,8 +87,15 @@ pub enum ConnectionType {
     ),
 }
 
+pub enum HostTargetType {
+    Local,
+    Linux,
+}
+
 #[async_trait]
 pub trait Host: Send + Sync {
+    fn target_type(&self) -> HostTargetType;
+
     fn request_port(&mut self, bind_type: &BindType);
 
     /// Configures the host to support copying and running a custom binary.
