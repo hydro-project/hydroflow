@@ -54,3 +54,8 @@ async def main(args):
             break
 
     print(await program.exit_code())
+
+if __name__ == "__main__":
+    import sys
+    import hydro.async_wrapper
+    hydro.async_wrapper.run(main, sys.argv[1:])
