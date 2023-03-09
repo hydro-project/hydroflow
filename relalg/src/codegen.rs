@@ -2,7 +2,7 @@ use quote::{
     __private::{Ident, TokenStream},
     format_ident, quote, ToTokens,
 };
-use xshell::cmd;
+use syn::parse_quote;
 
 use crate::{Datum, RelExpr, ScalarExpr};
 
@@ -10,26 +10,15 @@ pub(crate) fn generate_dataflow(r: RelExpr) -> String {
     let mut builder = SubgraphBuilder::new();
     let id = builder.compile_op(&r);
     let code = builder.code;
-    run_rustfmt(format!(
-        "{}",
-        quote! {
-            fn main() {
-                #(#code)*
+    prettyplease::unparse(&parse_quote! {
+        fn main() {
+            #(#code)*
 
-                for row in #id {
-                    println!("{:?}", row);
-                }
+            for row in #id {
+                println!("{:?}", row);
             }
         }
-    ))
-    .unwrap()
-}
-
-// TODO(justin): How do we make this portable/run on CI?
-fn run_rustfmt(s: String) -> anyhow::Result<String> {
-    Ok(cmd!("rustfmt --config newline_style=Unix")
-        .stdin(s)
-        .read()?)
+    })
 }
 
 struct SubgraphBuilder {
