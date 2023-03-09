@@ -120,6 +120,7 @@ impl Hydroflow {
     }
 
     /// Runs the dataflow until no more work is immediately available.
+    /// Runs at least one tick of dataflow, even if no external events have been received.
     /// If the dataflow contains loops this method may run forever.
     /// Returns true if any work was done.
     pub fn run_available(&mut self) -> bool {

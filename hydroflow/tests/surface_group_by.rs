@@ -26,6 +26,8 @@ pub fn test_group_by_infer_basic() {
     assert_eq!((0, 0), (df.current_tick(), df.current_stratum()));
     df.run_tick();
     assert_eq!((1, 0), (df.current_tick(), df.current_stratum()));
+
+    df.run_available(); // Should return quickly and not hang
 }
 
 #[multiplatform_test]
@@ -70,6 +72,8 @@ pub fn test_group_by_tick() {
             .collect::<BTreeSet<_>>(),
         hydroflow::util::collect_ready::<BTreeSet<_>, _>(&mut result_recv)
     );
+
+    df.run_available(); // Should return quickly and not hang
 }
 
 #[multiplatform_test]
@@ -117,4 +121,6 @@ pub fn test_group_by_static() {
         .collect::<BTreeSet<_>>(),
         hydroflow::util::collect_ready::<BTreeSet<_>, _>(&mut result_recv)
     );
+
+    df.run_available(); // Should return quickly and not hang
 }
