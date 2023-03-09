@@ -8,4 +8,5 @@ anyhow = "1.0"
 datadriven = "0.6.0"
 hydroflow = { path = "../hydroflow" }
 quote = "1.0"
-xshell = "0.1"
+syn = { version = "1.0.0", features = [ "parsing", "extra-traits" ] }
+prettyplease = "0.1.21"
