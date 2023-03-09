@@ -1,63 +1,24 @@
 use std::{
     collections::HashMap,
     marker::PhantomData,
-    net::SocketAddr,
-    path::PathBuf,
     pin::Pin,
     sync::Arc,
     task::{Context, Poll},
 };
 
 use async_trait::async_trait;
-use bytes::{Bytes, BytesMut};
-use futures::{Sink, SinkExt, Stream};
-use serde::{Deserialize, Serialize};
+use bytes::Bytes;
+use futures::{Sink, SinkExt};
+use hydroflow_cli_integration::{BindConfig, BoundConnection, ConnectionPipe, DynSink, DynStream};
 #[cfg(unix)]
-use tokio::net::{UnixListener, UnixStream};
-use tokio::{
-    io,
-    net::{TcpListener, TcpStream},
-    sync::Mutex,
-};
-#[cfg(not(unix))]
-type UnixListener = !;
+use tokio::net::UnixStream;
+use tokio::{io, net::TcpStream, sync::Mutex};
 
 use super::tcp_bytes;
 #[cfg(unix)]
 use super::unix_bytes;
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub enum BindConfig {
-    UnixSocket,
-    TcpPort(
-        /// The host the port should be bound on.
-        String,
-    ),
-}
-
-impl BindConfig {
-    async fn bind(self) -> BoundConnection {
-        match self {
-            BindConfig::UnixSocket => {
-                #[cfg(unix)]
-                {
-                    let dir = tempfile::tempdir().unwrap();
-                    let socket_path = dir.path().join("socket");
-                    BoundConnection::UnixSocket(UnixListener::bind(socket_path).unwrap(), dir)
-                }
-
-                #[cfg(not(unix))]
-                {
-                    panic!("Unix sockets are not supported on this platform")
-                }
-            }
-            BindConfig::TcpPort(host) => {
-                let listener = TcpListener::bind((host, 0)).await.unwrap();
-                BoundConnection::TcpPort(listener)
-            }
-        }
-    }
-}
+pub use hydroflow_cli_integration::Connected;
 
 async fn accept_incoming_connections(
     binds: HashMap<String, BoundConnection>,
@@ -115,33 +76,28 @@ pub async fn init() -> HashMap<String, ConnectionPipe> {
     all_connected
 }
 
-/// Describes a medium through which two Hydroflow services can communicate.
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub enum ConnectionPipe {
-    UnixSocket(PathBuf),
-    TcpPort(SocketAddr),
-    Demux(HashMap<u32, ConnectionPipe>),
-    #[serde(skip)]
-    Bind(Arc<BoundConnection>),
-}
+async fn accept(bound: &BoundConnection) -> (DynStream, DynSink<Bytes>) {
+    match bound {
+        BoundConnection::UnixSocket(listener, _) => {
+            #[cfg(unix)]
+            {
+                let (stream, _) = listener.accept().await.unwrap();
+                let (sink, source) = unix_bytes(stream);
+                (Box::pin(source), Box::pin(sink))
+            }
 
-impl ConnectionPipe {
-    pub async fn connect<T: Connected>(self) -> T {
-        T::from_pipe(self).await
+            #[cfg(not(unix))]
+            {
+                let _ = listener;
+                panic!("Unix sockets are not supported on this platform")
+            }
+        }
+        BoundConnection::TcpPort(listener) => {
+            let (stream, _) = listener.accept().await.unwrap();
+            let (sink, source) = tcp_bytes(stream);
+            (Box::pin(source), Box::pin(sink))
+        }
     }
-}
-
-type DynStream = Pin<Box<dyn Stream<Item = Result<BytesMut, io::Error>> + Send>>;
-type DynSink<Input> = Pin<Box<dyn Sink<Input, Error = io::Error> + Send + Sync>>;
-
-#[async_trait]
-pub trait Connected: Send {
-    type Input: Send;
-
-    fn take_source(&mut self) -> DynStream;
-    fn take_sink(&mut self) -> DynSink<Self::Input>;
-
-    async fn from_pipe(pipe: ConnectionPipe) -> Self;
 }
 
 pub struct ConnectedBidi {
@@ -189,7 +145,7 @@ impl Connected for ConnectedBidi {
                 }
             }
             ConnectionPipe::Bind(bound) => {
-                let bound = bound.accept().await;
+                let bound = accept(&bound).await;
                 ConnectedBidi {
                     source: Some(bound.0),
                     sink: Some(bound.1),
@@ -271,66 +227,6 @@ where
                 }
             }
             _ => panic!("Cannot connect to a non-demux pipe as a demux"),
-        }
-    }
-}
-
-#[derive(Debug)]
-pub enum BoundConnection {
-    UnixSocket(UnixListener, tempfile::TempDir),
-    TcpPort(TcpListener),
-}
-
-impl BoundConnection {
-    pub(super) fn connection_pipe(&self) -> ConnectionPipe {
-        match self {
-            BoundConnection::UnixSocket(listener, _) => {
-                #[cfg(unix)]
-                {
-                    ConnectionPipe::UnixSocket(
-                        listener
-                            .local_addr()
-                            .unwrap()
-                            .as_pathname()
-                            .unwrap()
-                            .to_path_buf(),
-                    )
-                }
-
-                #[cfg(not(unix))]
-                {
-                    let _ = listener;
-                    panic!("Unix sockets are not supported on this platform")
-                }
-            }
-            BoundConnection::TcpPort(listener) => {
-                let addr = listener.local_addr().unwrap();
-                ConnectionPipe::TcpPort(SocketAddr::new(addr.ip(), addr.port()))
-            }
-        }
-    }
-
-    pub(super) async fn accept(&self) -> (DynStream, DynSink<Bytes>) {
-        match self {
-            BoundConnection::UnixSocket(listener, _) => {
-                #[cfg(unix)]
-                {
-                    let (stream, _) = listener.accept().await.unwrap();
-                    let (sink, source) = unix_bytes(stream);
-                    (Box::pin(source), Box::pin(sink))
-                }
-
-                #[cfg(not(unix))]
-                {
-                    let _ = listener;
-                    panic!("Unix sockets are not supported on this platform")
-                }
-            }
-            BoundConnection::TcpPort(listener) => {
-                let (stream, _) = listener.accept().await.unwrap();
-                let (sink, source) = tcp_bytes(stream);
-                (Box::pin(source), Box::pin(sink))
-            }
         }
     }
 }
