@@ -11,7 +11,7 @@ use async_channel::{Receiver, Sender};
 use async_ssh2_lite::{AsyncChannel, AsyncSession, SessionConfiguration};
 use async_trait::async_trait;
 use futures::{AsyncWriteExt, StreamExt};
-use hydroflow::util::cli::BindConfig;
+use hydroflow_cli_integration::BindConfig;
 use serde_json::json;
 use tokio::{net::TcpStream, sync::RwLock};
 

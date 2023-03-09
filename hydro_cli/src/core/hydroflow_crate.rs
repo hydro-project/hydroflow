@@ -15,7 +15,7 @@ use cargo::{
     util::{command_prelude::CompileMode, interning::InternedString},
     Config,
 };
-use hydroflow::util::cli::ConnectionPipe;
+use hydroflow_cli_integration::ConnectionPipe;
 use tokio::{sync::RwLock, task::JoinHandle};
 
 use super::{BindType, Host, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult, Service};
