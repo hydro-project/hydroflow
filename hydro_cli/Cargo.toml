@@ -15,8 +15,8 @@ name = "hydro._core"
 tokio = { version = "1.16", features = [ "full" ] }
 anyhow = { version = "1.0.69", features = [ "backtrace" ] }
 clap = { version = "4.1.8", features = ["derive"] }
-cargo = "0.68.0"
-pyo3 = { version = "0.18.1", features = ["auto-initialize", "abi3-py37"] }
+cargo = { version = "0.68.0", features = ["vendored-openssl", "vendored-libgit2"] }
+pyo3 = { version = "0.18.1", features = ["abi3-py37"] }
 pyo3-asyncio = { version = "0.18.0", features = ["attributes", "unstable-streams", "tokio-runtime"] }
 async-trait = "0.1.64"
 async-process = "1.6.0"

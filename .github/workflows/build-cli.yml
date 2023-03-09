@@ -1,0 +1,76 @@
+name: Build CLI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  PACKAGE_NAME: hydro_cli
+  PYTHON_VERSION: "3.7" # to build abi3 wheels
+
+# based on Ruff's CI
+jobs:
+  pre_job:
+    runs-on: ubuntu-latest
+    outputs:
+      should_skip: ${{ steps.skip_check.outputs.should_skip }}
+    steps:
+      - id: skip_check
+        uses: fkirc/skip-duplicate-actions@v3.4.0
+        with:
+          cancel_others: "true"
+
+  macos-universal:
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          architecture: x64
+      - name: "Build wheels - universal2"
+        uses: PyO3/maturin-action@v1
+        with:
+          working-directory: hydro_cli
+          args: --release --universal2 --out dist
+      - name: "Install built wheel - universal2"
+        run: |
+          pip install hydro_cli/dist/${{ env.PACKAGE_NAME }}-*universal2.whl --force-reinstall
+      - name: "Upload wheels"
+        uses: actions/upload-artifact@v3
+        with:
+          name: wheels
+          path: hydro_cli/dist
+  
+  linux:
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target:
+          - x86_64-unknown-linux-gnu
+          - i686-unknown-linux-gnu
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          architecture: x64
+      - name: "Build wheels"
+        uses: PyO3/maturin-action@v1
+        with:
+          working-directory: hydro_cli
+          target: ${{ matrix.target }}
+          manylinux: auto
+          args: --release --out dist
+      - name: "Install built wheel"
+        if: ${{ startsWith(matrix.target, 'x86_64') }}
+        run: |
+          pip install hydro_cli/dist/${{ env.PACKAGE_NAME }}-*.whl --force-reinstall
+      - name: "Upload wheels"
+        uses: actions/upload-artifact@v3
+        with:
+          name: wheels
+          path: hydro_cli/dist

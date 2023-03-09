@@ -397,6 +397,7 @@ dependencies = [
  "log",
  "memchr",
  "opener",
+ "openssl",
  "os_info",
  "pathdiff",
  "percent-encoding",
