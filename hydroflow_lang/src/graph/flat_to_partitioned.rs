@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use proc_macro2::Span;
-use slotmap::{Key, SecondaryMap, SlotMap, SparseSecondaryMap};
+use slotmap::{Key, SecondaryMap, SparseSecondaryMap};
 use syn::parse_quote;
 use syn::spanned::Spanned;
 
@@ -102,12 +102,9 @@ fn find_subgraph_unionfind(
 /// after handoffs have already been inserted to partition subgraphs.
 /// This list of nodes in each subgraph are returned in topological sort order.
 fn make_subgraph_collect(
-    partitioned_graph: &PartitionedGraph,
+    partitioned_graph: &mut PartitionedGraph,
     mut subgraph_unionfind: UnionFind<GraphNodeId>,
-) -> (
-    SecondaryMap<GraphNodeId, GraphSubgraphId>,
-    SlotMap<GraphSubgraphId, Vec<GraphNodeId>>,
-) {
+) -> SecondaryMap<GraphNodeId, Vec<GraphNodeId>> {
     // We want the nodes of each subgraph to be listed in topo-sort order.
     // We could do this on each subgraph, or we could do it all at once on the
     // whole node graph by ignoring handoffs, which is what we do here:
@@ -135,18 +132,7 @@ fn make_subgraph_collect(
         }
         grouped_nodes[repr_node].push(node_id);
     }
-
-    let mut node_subgraph: SecondaryMap<GraphNodeId, GraphSubgraphId> = Default::default();
-    let mut subgraph_nodes: SlotMap<GraphSubgraphId, Vec<GraphNodeId>> = Default::default();
-    for (_repr_node, member_nodes) in grouped_nodes {
-        subgraph_nodes.insert_with_key(|subgraph_id| {
-            for &node_id in member_nodes.iter() {
-                node_subgraph.insert(node_id, subgraph_id);
-            }
-            member_nodes
-        });
-    }
-    (node_subgraph, subgraph_nodes)
+    grouped_nodes
 }
 
 /// Find subgraph and insert handoffs.
@@ -193,10 +179,10 @@ fn make_subgraphs(
     // Determine node's subgraph and subgraph's nodes.
     // This list of nodes in each subgraph are to be in topological sort order.
     // Eventually returned directly in the `PartitionedGraph`.
-    let (node_subgraph, subgraph_nodes) =
-        make_subgraph_collect(partitioned_graph, subgraph_unionfind);
-    partitioned_graph.node_subgraph = node_subgraph; // TODO(mingwei): encapsulate
-    partitioned_graph.subgraph_nodes = subgraph_nodes; // TODO(mingwei): encapsulate
+    let grouped_nodes = make_subgraph_collect(partitioned_graph, subgraph_unionfind);
+    for (_repr_node, member_nodes) in grouped_nodes {
+        partitioned_graph.create_subgraph(member_nodes).unwrap();
+    }
 }
 
 /// Set `src` or `dst` color if `None` based on the other (if possible):
@@ -380,12 +366,10 @@ fn find_subgraph_strata(
                     // After: A (src) -> H -> ID -> H' -> B (dst)
 
                     // Set stratum number for new intermediate:
-                    // Create subgraph. // TODO(mingwei): encapsulate
-                    let new_subgraph_id =
-                        partitioned_graph.subgraph_nodes.insert(vec![new_node_id]);
-                    partitioned_graph
-                        .node_subgraph
-                        .insert(new_node_id, new_subgraph_id);
+                    // Create subgraph.
+                    let new_subgraph_id = partitioned_graph
+                        .create_subgraph(vec![new_node_id])
+                        .unwrap();
                     // Assign stratum.
                     partitioned_graph.set_subgraph_stratum(new_subgraph_id, extra_stratum);
                 }
@@ -423,22 +407,15 @@ fn separate_external_inputs(partitioned_graph: &mut PartitionedGraph) {
         .collect();
 
     for node_id in external_input_nodes {
-        let old_sg_id = partitioned_graph.node_subgraph(node_id).unwrap();
         // Remove node from old subgraph.
-        {
-            // TODO(mingwei): encapsulate
-            let old_subgraph_nodes = &mut partitioned_graph.subgraph_nodes[old_sg_id];
-            let index = old_subgraph_nodes
-                .iter()
-                .position(|&nid| node_id == nid)
-                .unwrap();
-            old_subgraph_nodes.remove(index);
-        }
+        assert!(
+            partitioned_graph.remove_from_subgraph(node_id),
+            "Cannot move input node that is not in a subgraph, this is a Hydroflow bug."
+        );
         // Create new subgraph in stratum 0 for this source.
-        // TODO(mingwei): encapsulate
-        let new_sg_id = partitioned_graph.subgraph_nodes.insert(vec![node_id]);
-        partitioned_graph.node_subgraph.insert(node_id, new_sg_id);
-        partitioned_graph.subgraph_stratum.insert(new_sg_id, 0);
+        let new_sg_id = partitioned_graph.create_subgraph(vec![node_id]).unwrap();
+        partitioned_graph.set_subgraph_stratum(new_sg_id, 0);
+
         // Insert handoff.
         let successor_edges: Vec<_> = partitioned_graph
             .successors(node_id)
