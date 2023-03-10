@@ -11,8 +11,8 @@ subgraph sg_1v1 ["sg_1v1 stratum 0"]
     1v1[\"(1v1) <tt>source_stream(items_recv)</tt>"/]:::pullClass
 end
 subgraph sg_2v1 ["sg_2v1 stratum 1"]
-    2v1[/"(2v1) <tt>fold :: &lt; 'tick &gt; (Vec :: new(), | mut v, x | { v.push(x) ; v })</tt>"\]:::pushClass
-    3v1[/"(3v1) <tt>flat_map(| mut vec | { vec.sort() ; vec })</tt>"\]:::pushClass
+    2v1[\"(2v1) <tt>fold :: &lt; 'tick &gt; (Vec :: new(), | mut v, x | { v.push(x) ; v })</tt>"/]:::pullClass
+    3v1[\"(3v1) <tt>flat_map(| mut vec | { vec.sort() ; vec })</tt>"/]:::pullClass
     4v1[/"(4v1) <tt>for_each(| v | print! (&quot;{:?}, &quot;, v))</tt>"\]:::pushClass
     2v1--->3v1
     3v1--->4v1

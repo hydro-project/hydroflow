@@ -526,7 +526,11 @@ impl TryFrom<FlatGraph> for PartitionedGraph {
             .map(|node_id| {
                 let inn_degree = graph.degree_in(node_id);
                 let out_degree = graph.degree_out(node_id);
-                let op_color = node_color(&nodes[node_id], inn_degree, out_degree);
+                let op_color = node_color(
+                    matches!(nodes[node_id], Node::Handoff { .. }),
+                    inn_degree,
+                    out_degree,
+                );
                 (node_id, op_color)
             })
             .filter(|(_node_id, op_color)| op_color.is_some())
