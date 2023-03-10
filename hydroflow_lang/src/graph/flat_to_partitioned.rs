@@ -8,13 +8,13 @@ use syn::spanned::Spanned;
 use crate::diagnostic::{Diagnostic, Level};
 use crate::union_find::UnionFind;
 
+use super::hydroflow_graph::HydroflowGraph;
 use super::ops::{find_node_op_constraints, DelayType};
-use super::partitioned_graph::PartitionedGraph;
 use super::{graph_algorithms, node_color, Color, GraphEdgeId, GraphNodeId, GraphSubgraphId, Node};
 
 /// Return a map containing all barrier crossers.
 fn find_barrier_crossers(
-    partitioned_graph: &PartitionedGraph,
+    partitioned_graph: &HydroflowGraph,
 ) -> SecondaryMap<GraphEdgeId, DelayType> {
     partitioned_graph
         .edges()
@@ -27,7 +27,7 @@ fn find_barrier_crossers(
 }
 
 fn find_subgraph_unionfind(
-    partitioned_graph: &mut PartitionedGraph,
+    partitioned_graph: &mut HydroflowGraph,
     barrier_crossers: &SecondaryMap<GraphEdgeId, DelayType>,
 ) -> (UnionFind<GraphNodeId>, BTreeSet<GraphEdgeId>) {
     // Modality (color) of nodes, push or pull.
@@ -101,7 +101,7 @@ fn find_subgraph_unionfind(
 /// after handoffs have already been inserted to partition subgraphs.
 /// This list of nodes in each subgraph are returned in topological sort order.
 fn make_subgraph_collect(
-    partitioned_graph: &mut PartitionedGraph,
+    partitioned_graph: &mut HydroflowGraph,
     mut subgraph_unionfind: UnionFind<GraphNodeId>,
 ) -> SecondaryMap<GraphNodeId, Vec<GraphNodeId>> {
     // We want the nodes of each subgraph to be listed in topo-sort order.
@@ -138,7 +138,7 @@ fn make_subgraph_collect(
 /// Modifies barrier_crossers so that the edge OUT of an inserted handoff has
 /// the DelayType data.
 fn make_subgraphs(
-    partitioned_graph: &mut PartitionedGraph,
+    partitioned_graph: &mut HydroflowGraph,
     barrier_crossers: &mut SecondaryMap<GraphEdgeId, DelayType>,
 ) {
     // Algorithm:
@@ -177,7 +177,7 @@ fn make_subgraphs(
 
     // Determine node's subgraph and subgraph's nodes.
     // This list of nodes in each subgraph are to be in topological sort order.
-    // Eventually returned directly in the `PartitionedGraph`.
+    // Eventually returned directly in the `HydroflowGraph`.
     let grouped_nodes = make_subgraph_collect(partitioned_graph, subgraph_unionfind);
     for (_repr_node, member_nodes) in grouped_nodes {
         partitioned_graph.create_subgraph(member_nodes).unwrap();
@@ -244,7 +244,7 @@ fn can_connect_colorize(
 }
 
 fn find_subgraph_strata(
-    partitioned_graph: &mut PartitionedGraph,
+    partitioned_graph: &mut HydroflowGraph,
     barrier_crossers: &SecondaryMap<GraphEdgeId, DelayType>,
 ) -> Result<(), Diagnostic> {
     // Determine subgraphs's stratum number.
@@ -386,7 +386,7 @@ fn find_subgraph_strata(
 }
 
 /// Put `is_external_input: true` operators in separate stratum 0 subgraphs if they are not in stratum 0.
-fn separate_external_inputs(partitioned_graph: &mut PartitionedGraph) {
+fn separate_external_inputs(partitioned_graph: &mut HydroflowGraph) {
     let external_input_nodes: Vec<_> = partitioned_graph
         .nodes()
         // Ensure node is an operator (not a handoff), get constraints spec.
@@ -431,7 +431,7 @@ fn separate_external_inputs(partitioned_graph: &mut PartitionedGraph) {
     }
 }
 
-pub fn partition_graph(flat_graph: PartitionedGraph) -> Result<PartitionedGraph, Diagnostic> {
+pub fn partition_graph(flat_graph: HydroflowGraph) -> Result<HydroflowGraph, Diagnostic> {
     let mut partitioned_graph = flat_graph;
     let mut barrier_crossers = find_barrier_crossers(&partitioned_graph);
 
