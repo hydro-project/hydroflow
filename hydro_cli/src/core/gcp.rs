@@ -19,7 +19,8 @@ use super::{
     localhost::create_broadcast,
     terraform::{TerraformOutput, TerraformProvider},
     util::async_retry,
-    BindType, ConnectionType, Host, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult,
+    BindType, ConnectionType, Host, HostTargetType, LaunchedBinary, LaunchedHost, ResourceBatch,
+    ResourceResult,
 };
 
 struct LaunchedComputeEngineBinary {
@@ -198,6 +199,10 @@ impl GCPComputeEngineHost {
 
 #[async_trait]
 impl Host for GCPComputeEngineHost {
+    fn target_type(&self) -> HostTargetType {
+        HostTargetType::Linux
+    }
+
     fn request_port(&mut self, bind_type: &BindType) {
         match bind_type {
             BindType::UnixSocket => {}
