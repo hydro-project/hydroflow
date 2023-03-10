@@ -8,7 +8,6 @@ use syn::spanned::Spanned;
 use crate::diagnostic::{Diagnostic, Level};
 use crate::union_find::UnionFind;
 
-use super::flat_graph::FlatGraph;
 use super::ops::{find_node_op_constraints, DelayType};
 use super::partitioned_graph::PartitionedGraph;
 use super::{graph_algorithms, node_color, Color, GraphEdgeId, GraphNodeId, GraphSubgraphId, Node};
@@ -432,22 +431,18 @@ fn separate_external_inputs(partitioned_graph: &mut PartitionedGraph) {
     }
 }
 
-impl TryFrom<FlatGraph> for PartitionedGraph {
-    type Error = Diagnostic;
+pub fn partition_graph(flat_graph: PartitionedGraph) -> Result<PartitionedGraph, Diagnostic> {
+    let mut partitioned_graph = flat_graph;
+    let mut barrier_crossers = find_barrier_crossers(&partitioned_graph);
 
-    fn try_from(flat_graph: FlatGraph) -> Result<Self, Self::Error> {
-        let mut partitioned_graph = PartitionedGraph::unpartitioned_from_flat_graph(flat_graph);
-        let mut barrier_crossers = find_barrier_crossers(&partitioned_graph);
+    // Partition into subgraphs.
+    make_subgraphs(&mut partitioned_graph, &mut barrier_crossers);
 
-        // Partition into subgraphs.
-        make_subgraphs(&mut partitioned_graph, &mut barrier_crossers);
+    // Find strata for subgraphs.
+    find_subgraph_strata(&mut partitioned_graph, &barrier_crossers)?;
 
-        // Find strata for subgraphs.
-        find_subgraph_strata(&mut partitioned_graph, &barrier_crossers)?;
+    // Ensure all external inputs are in stratum 0.
+    separate_external_inputs(&mut partitioned_graph);
 
-        // Ensure all external inputs are in stratum 0.
-        separate_external_inputs(&mut partitioned_graph);
-
-        Ok(partitioned_graph)
-    }
+    Ok(partitioned_graph)
 }

@@ -14,7 +14,7 @@ use crate::pretty_span::PrettySpan;
 
 use super::ops::find_op_op_constraints;
 use super::{
-    get_operator_generics, FlatGraph, GraphNodeId, Node, OperatorInstance, PortIndexValue,
+    get_operator_generics, GraphNodeId, Node, OperatorInstance, PartitionedGraph, PortIndexValue,
 };
 
 #[derive(Clone, Debug)]
@@ -34,8 +34,8 @@ pub struct FlatGraphBuilder {
     /// Spanned error/warning/etc diagnostics to emit.
     diagnostics: Vec<Diagnostic>,
 
-    /// FlatGraph being built.
-    flat_graph: FlatGraph,
+    /// PartitionedGraph being built.
+    flat_graph: PartitionedGraph,
     /// Variable names, used as [`HfStatement::Named`] are added.
     /// Value will be set to `Err(())` if the name references an illegal self-referential cycle.
     varname_ends: BTreeMap<Ident, Result<Ends, ()>>,
@@ -53,23 +53,23 @@ impl FlatGraphBuilder {
         input.into()
     }
 
-    /// Build into a [`FlatGraph`], returning a tuple of a `FlatGraph` and any diagnostics.
+    /// Build into an unpartitioned [`PartitionedGraph`], returning a tuple of a `PartitionedGraph` and any diagnostics.
     ///
-    /// Even if there are errors, the `FlatGraph` will be returned (potentially in a partial state).
-    pub fn try_build(mut self) -> (FlatGraph, Vec<Diagnostic>) {
+    /// Even if there are errors, the `PartitionedGraph` will be returned (potentially in a partial state).
+    pub fn try_build(mut self) -> (PartitionedGraph, Vec<Diagnostic>) {
         self.connect_operator_links();
         self.process_operator_errors();
 
         (self.flat_graph, self.diagnostics)
     }
 
-    /// Build into a [`FlatGraph`].
+    /// Build into an unpartitioned [`PartitionedGraph`].
     ///
     /// Emits any diagnostics more severe than `min_diagnostic_level`.
     ///
-    /// Returns `Err(FlatGraph)` if there are any errors. Returns `Ok(FlatGraph)` if there are no
+    /// Returns `Err(PartitionedGraph)` if there are any errors. Returns `Ok(PartitionedGraph)` if there are no
     /// errors.
-    pub fn build(self, min_diagnostic_level: Level) -> Result<FlatGraph, FlatGraph> {
+    pub fn build(self, min_diagnostic_level: Level) -> Result<PartitionedGraph, PartitionedGraph> {
         let (result, diagnostics) = self.try_build();
 
         diagnostics
@@ -84,7 +84,7 @@ impl FlatGraphBuilder {
         }
     }
 
-    /// Add a single [`HfStatement`] line to this `FlatGraph`.
+    /// Add a single [`HfStatement`] line to this `PartitionedGraph`.
     pub fn add_statement(&mut self, stmt: HfStatement) {
         let stmt_span = stmt.span();
         match stmt {

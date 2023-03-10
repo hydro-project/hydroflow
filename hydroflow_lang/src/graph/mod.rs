@@ -17,12 +17,10 @@ use crate::pretty_span::PrettySpan;
 use self::ops::{OperatorConstraints, Persistence};
 
 mod di_mul_graph;
-mod flat_graph;
 mod flat_graph_builder;
 mod partitioned_graph;
 
 pub use di_mul_graph::DiMulGraph;
-pub use flat_graph::{FlatGraph, FlatGraphExploded};
 pub use flat_graph_builder::FlatGraphBuilder;
 pub use partitioned_graph::PartitionedGraph;
 
@@ -32,8 +30,7 @@ pub mod ops;
 pub mod serde_graph;
 
 new_key_type! {
-    /// ID to identify a node (operator or handoff) in both [`flat_graph::FlatGraph`]
-    /// and [`partitioned_graph::PartitionedGraph`].
+    /// ID to identify a node (operator or handoff) in [`partitioned_graph::PartitionedGraph`].
     pub struct GraphNodeId;
 
     /// ID to identify an edge.
