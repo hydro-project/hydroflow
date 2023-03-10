@@ -8,7 +8,7 @@ classDef pullClass fill:#02f,color:#fff,stroke:#000
 classDef pushClass fill:#ff0,stroke:#000
 linkStyle default stroke:#aaa,stroke-width:4px,color:red,font-size:1.5em;
 subgraph sg_1v1 ["sg_1v1 stratum 0"]
-    4v1["(4v1) <tt>next_tick()</tt>"]:::otherClass
+    4v1[\"(4v1) <tt>next_tick()</tt>"/]:::pullClass
 end
 subgraph sg_2v1 ["sg_2v1 stratum 1"]
     1v1[\"(1v1) <tt>difference()</tt>"/]:::pullClass

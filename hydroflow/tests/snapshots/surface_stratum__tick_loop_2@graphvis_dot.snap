@@ -7,7 +7,7 @@ digraph {
         fillcolor="#dddddd"
         style=filled
         label = "sg_1v1\nstratum 0"
-        n4v1 [label="(n4v1) next_tick()", fontname=Monaco, shape=parallelogram, style = filled, color = "#ddddff"]
+        n4v1 [label="(n4v1) next_tick()", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
     }
     subgraph "cluster n2v1" {
         fillcolor="#dddddd"
@@ -29,13 +29,13 @@ digraph {
         fillcolor="#dddddd"
         style=filled
         label = "sg_3v1\nstratum 1"
-        n10v1 [label="(n10v1) identity()", fontname=Monaco, shape=parallelogram, style = filled, color = "#ddddff"]
+        n10v1 [label="(n10v1) identity()", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
     }
     subgraph "cluster n4v1" {
         fillcolor="#dddddd"
         style=filled
         label = "sg_4v1\nstratum 1"
-        n12v1 [label="(n12v1) identity()", fontname=Monaco, shape=parallelogram, style = filled, color = "#ddddff"]
+        n12v1 [label="(n12v1) identity()", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
     }
     n2v1 -> n9v1 [label="0"]
     n4v1 -> n8v1

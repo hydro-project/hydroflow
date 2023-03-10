@@ -13,7 +13,7 @@ subgraph sg_1v1 ["sg_1v1 stratum 0"]
     1v1--->2v1
 end
 subgraph sg_2v1 ["sg_2v1 stratum 1"]
-    3v1[/"(3v1) <tt>next_stratum()</tt>"\]:::pushClass
+    3v1[\"(3v1) <tt>next_stratum()</tt>"/]:::pullClass
     4v1[/"(4v1) <tt>for_each(| handle | println! (&quot;{:?}: {}&quot;, handle, context.state_ref(handle)))</tt>"\]:::pushClass
     3v1--->4v1
 end
