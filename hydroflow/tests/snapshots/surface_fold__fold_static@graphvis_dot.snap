@@ -13,7 +13,7 @@ digraph {
         fillcolor="#dddddd"
         style=filled
         label = "sg_2v1\nstratum 1"
-        n2v1 [label="(n2v1) fold :: < 'static >\l(Vec :: new(), | mut old : Vec < u32 >, mut x : Vec < u32 > |\l{ old.append(& mut x) ; old })\l", fontname=Monaco, shape=house, style = filled, color = "#ffff00"]
+        n2v1 [label="(n2v1) fold :: < 'static >\l(Vec :: new(), | mut old : Vec < u32 >, mut x : Vec < u32 > |\l{ old.append(& mut x) ; old })\l", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
         n3v1 [label="(n3v1) for_each(| v | result_send.send(v).unwrap())", fontname=Monaco, shape=house, style = filled, color = "#ffff00"]
         n2v1 -> n3v1
     }

@@ -125,7 +125,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --all-features
+          args: --all-features --no-fail-fast
 
   test-wasm:
     name: Test Suite (WebAssembly)
@@ -168,7 +168,7 @@ jobs:
           CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER: wasm-bindgen-test-runner
         with:
           command: test
-          args: -p hydroflow --target wasm32-unknown-unknown --tests
+          args: -p hydroflow --target wasm32-unknown-unknown --tests --no-fail-fast
 
   lints:
     name: Lints

@@ -48,6 +48,8 @@ const CONTEXT: &str = "context";
 /// Hydroflow identifier as a string.
 const HYDROFLOW: &str = "df";
 
+const HANDOFF_NODE_STR: &str = "handoff";
+
 pub enum Node {
     Operator(Operator),
     Handoff { src_span: Span, dst_span: Span },
@@ -153,10 +155,12 @@ pub enum Color {
     Hoff,
 }
 
-pub fn node_color(node: &Node, inn_degree: usize, out_degree: usize) -> Option<Color> {
+pub fn node_color(is_handoff: bool, inn_degree: usize, out_degree: usize) -> Option<Color> {
     // Determine op color based on in and out degree. If linear (1 in 1 out), color is None.
-    match node {
-        Node::Operator(_) => match (1 < inn_degree, 1 < out_degree) {
+    if is_handoff {
+        Some(Color::Hoff)
+    } else {
+        match (1 < inn_degree, 1 < out_degree) {
             (true, true) => Some(Color::Comp),
             (true, false) => Some(Color::Pull),
             (false, true) => Some(Color::Push),
@@ -166,8 +170,7 @@ pub fn node_color(node: &Node, inn_degree: usize, out_degree: usize) -> Option<C
                 // (1, 1) =>
                 _both_unary => None,
             },
-        },
-        Node::Handoff { .. } => Some(Color::Hoff),
+        }
     }
 }
 

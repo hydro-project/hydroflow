@@ -7,7 +7,7 @@ digraph {
         fillcolor="#dddddd"
         style=filled
         label = "sg_1v1\nstratum 0"
-        n4v1 [label="(n4v1) next_tick()", fontname=Monaco, shape=parallelogram, style = filled, color = "#ddddff"]
+        n4v1 [label="(n4v1) next_tick()", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
     }
     subgraph "cluster n2v1" {
         fillcolor="#dddddd"
