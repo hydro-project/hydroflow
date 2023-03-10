@@ -1,3 +1,5 @@
+//! AST for surface syntax, modelled on [`syn`]'s ASTs.
+
 use std::hash::Hash;
 
 use proc_macro2::{Span, TokenStream};
@@ -156,6 +158,8 @@ impl<Inner> Ported<Inner>
 where
     Inner: Parse,
 {
+    /// The caller will often parse the first port (`inn`) as part of determining what to parse
+    /// next, so this will do the rest after that.
     fn parse_rest(inn: Option<Indexing>, input: ParseStream) -> syn::Result<Self> {
         let inner = input.parse()?;
         let out = input.call(Indexing::parse_opt)?;

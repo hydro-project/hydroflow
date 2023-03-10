@@ -1,7 +1,7 @@
 #![feature(proc_macro_diagnostic, proc_macro_span)]
 #![allow(clippy::explicit_auto_deref)]
 
-use hydroflow_lang::graph::flat_to_partitioned::partition_graph;
+use hydroflow_lang::graph::partition_graph;
 use proc_macro2::{Ident, Literal, Span};
 use quote::quote;
 use syn::{parse_macro_input, LitStr};

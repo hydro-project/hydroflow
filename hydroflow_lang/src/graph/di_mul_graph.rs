@@ -7,12 +7,11 @@ use slotmap::{Key, SecondaryMap, SlotMap};
 /// A directed multigraph where an vertex's inbound and outbound edges are indexed.
 ///
 /// `DiMulGraph` does **not** allocate vertices `V`. The user shall use an external
-/// [`SlotMap<V, ...>`] for allocating vertices, which also allows the user to associate data `...`
-/// with each vertex.
+/// [`SlotMap<V, _>`] for allocating vertices, which also allows the user to associate data with
+/// each vertex.
 ///
 /// `DiMulGraph` **does** allocate edges `E` as they are added. Additional data can be associated
-/// with edges via an external [`SlotMap<E, ...>`].
-/// [`SecondaryMap`]s.
+/// with edges via an external [`SecondaryMap<E, _>`].
 #[derive(Clone, Debug)]
 pub struct DiMulGraph<V, E>
 where
@@ -159,6 +158,11 @@ where
         self.edges.get(e).copied()
     }
 
+    /// Return an iterator over all edge IDs `E`.
+    pub fn edge_ids(&self) -> slotmap::basic::Keys<E, (V, V)> {
+        self.edges.keys()
+    }
+
     /// Return an iterator over all edges in form `(E, (V, V))`.
     pub fn edges(
         &self,
@@ -168,26 +172,34 @@ where
     }
 
     /// Return an iterator of all edge IDs coming out of `v`.
-    pub fn successor_edges(
-        &self,
-        v: V,
-    ) -> std::iter::Copied<std::iter::Flatten<std::option::IntoIter<&Vec<E>>>> {
-        self.succs.get(v).into_iter().flatten().copied()
+    pub fn successor_edges(&self, v: V) -> std::iter::Copied<std::slice::Iter<'_, E>> {
+        self.succs
+            .get(v)
+            .map(|v| v.iter())
+            .unwrap_or_else(|| [].iter())
+            .copied()
     }
 
     /// Return an iterator of all edge IDs going into `v`.
-    pub fn predecessor_edges(
-        &self,
-        v: V,
-    ) -> std::iter::Copied<std::iter::Flatten<std::option::IntoIter<&Vec<E>>>> {
-        self.preds.get(v).into_iter().flatten().copied()
+    pub fn predecessor_edges(&self, v: V) -> std::iter::Copied<std::slice::Iter<'_, E>> {
+        self.preds
+            .get(v)
+            .map(|v| v.iter())
+            .unwrap_or_else(|| [].iter())
+            .copied()
     }
 
     /// Return an iterator of all successor vertex IDs of `v`.
     pub fn successor_vertices(
         &self,
         v: V,
-    ) -> impl '_ + Iterator<Item = V> + DoubleEndedIterator + FusedIterator + Clone + Debug {
+    ) -> impl '_
+           + Iterator<Item = V>
+           + DoubleEndedIterator
+           + ExactSizeIterator
+           + FusedIterator
+           + Clone
+           + Debug {
         self.successor_edges(v).map(|edge_id| self.edges[edge_id].1)
     }
 
@@ -195,7 +207,13 @@ where
     pub fn predecessor_vertices(
         &self,
         v: V,
-    ) -> impl '_ + Iterator<Item = V> + DoubleEndedIterator + FusedIterator + Clone + Debug {
+    ) -> impl '_
+           + Iterator<Item = V>
+           + DoubleEndedIterator
+           + ExactSizeIterator
+           + FusedIterator
+           + Clone
+           + Debug {
         self.predecessor_edges(v)
             .map(|edge_id| self.edges[edge_id].0)
     }
@@ -204,8 +222,13 @@ where
     pub fn successors(
         &self,
         v: V,
-    ) -> impl '_ + Iterator<Item = (E, V)> + DoubleEndedIterator + FusedIterator + Clone + Debug
-    {
+    ) -> impl '_
+           + Iterator<Item = (E, V)>
+           + DoubleEndedIterator
+           + ExactSizeIterator
+           + FusedIterator
+           + Clone
+           + Debug {
         self.successor_edges(v)
             .map(|edge_id| (edge_id, self.edges[edge_id].1))
     }
@@ -214,8 +237,13 @@ where
     pub fn predecessors(
         &self,
         v: V,
-    ) -> impl '_ + Iterator<Item = (E, V)> + DoubleEndedIterator + FusedIterator + Clone + Debug
-    {
+    ) -> impl '_
+           + Iterator<Item = (E, V)>
+           + DoubleEndedIterator
+           + ExactSizeIterator
+           + FusedIterator
+           + Clone
+           + Debug {
         self.predecessor_edges(v)
             .map(|edge_id| (edge_id, self.edges[edge_id].0))
     }
