@@ -36,10 +36,6 @@ pub struct PartitionedGraph {
     pub(crate) subgraph_nodes: SlotMap<GraphSubgraphId, Vec<GraphNodeId>>,
     /// Which stratum each subgraph belongs to.
     pub(crate) subgraph_stratum: SecondaryMap<GraphSubgraphId, usize>,
-    /// Which handoffs go into each subgraph.
-    pub(crate) subgraph_recv_handoffs: SecondaryMap<GraphSubgraphId, Vec<GraphNodeId>>,
-    /// Which handoffs go out of each subgraph.
-    pub(crate) subgraph_send_handoffs: SecondaryMap<GraphSubgraphId, Vec<GraphNodeId>>,
 
     /// What variable name each graph node belongs to (if any).
     pub(crate) node_varnames: SparseSecondaryMap<GraphNodeId, Ident>,
@@ -300,6 +296,41 @@ impl PartitionedGraph {
         Ident::new(&*name, span)
     }
 
+    /// Returns each subgraph's receive and send handoffs.
+    /// `Map<GraphSubgraphId, (recv handoffs, send handoffs)>`
+    fn helper_collect_subgraph_handoffs(
+        &self,
+    ) -> SecondaryMap<GraphSubgraphId, (Vec<GraphNodeId>, Vec<GraphNodeId>)> {
+        // Get data on handoff src and dst subgraphs.
+        let mut subgraph_handoffs: SecondaryMap<
+            GraphSubgraphId,
+            (Vec<GraphNodeId>, Vec<GraphNodeId>),
+        > = self
+            .subgraph_nodes
+            .keys()
+            .map(|k| (k, Default::default()))
+            .collect();
+
+        // For each handoff node, add it to the `send`/`recv` lists for the corresponding subgraphs.
+        for (hoff_id, node) in self.nodes() {
+            if !matches!(node, Node::Handoff { .. }) {
+                continue;
+            }
+            // Receivers from the handoff. (Should really only be one).
+            for (_edge, _port, succ_id) in self.successors(hoff_id) {
+                let succ_sg = self.subgraph(succ_id).unwrap();
+                subgraph_handoffs[succ_sg].0.push(hoff_id);
+            }
+            // Senders into the handoff. (Should really only be one).
+            for (_edge, _port, pred_id) in self.predecessors(hoff_id) {
+                let pred_sg = self.subgraph(pred_id).unwrap();
+                subgraph_handoffs[pred_sg].1.push(hoff_id);
+            }
+        }
+
+        subgraph_handoffs
+    }
+
     pub fn as_code(&self, root: TokenStream, include_type_guards: bool) -> TokenStream {
         let hf = &Ident::new(HYDROFLOW, Span::call_site());
 
@@ -322,15 +353,18 @@ impl PartitionedGraph {
 
         let mut diagnostics = Vec::new();
 
+        let subgraph_handoffs = self.helper_collect_subgraph_handoffs();
+
         let subgraphs = self
             .subgraph_nodes
             .iter()
             .map(|(subgraph_id, subgraph_nodes)| {
-                let recv_ports: Vec<Ident> = self.subgraph_recv_handoffs[subgraph_id]
+                let (recv_hoffs, send_hoffs) = &subgraph_handoffs[subgraph_id];
+                let recv_ports: Vec<Ident> = recv_hoffs
                     .iter()
                     .map(|&hoff_id| self.node_id_as_ident(hoff_id, true))
                     .collect();
-                let send_ports: Vec<Ident> = self.subgraph_send_handoffs[subgraph_id]
+                let send_ports: Vec<Ident> = send_hoffs
                     .iter()
                     .map(|&hoff_id| self.node_id_as_ident(hoff_id, false))
                     .collect();
@@ -602,11 +636,12 @@ impl PartitionedGraph {
             }
         }
 
+        let subgraph_handoffs = self.helper_collect_subgraph_handoffs();
+
         // add barrier_handoffs, i.e. handoffs that are *not* in the subgraph_recv_handoffs and
         // subgraph_send_handoffs for the same subgraph
-        for sg in self.subgraph_recv_handoffs.keys() {
-            let recvs = self.subgraph_recv_handoffs.get(sg).unwrap();
-            let sends = self.subgraph_send_handoffs.get(sg).unwrap();
+        for sg in self.subgraph_nodes.keys() {
+            let (recvs, sends) = &subgraph_handoffs[sg];
             for recv in recvs {
                 if !sends.contains(recv) {
                     g.barrier_handoffs.insert(*recv, true);
