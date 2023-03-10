@@ -14,7 +14,22 @@ fn main() {
                     _,
                     hydroflow::scheduled::handoff::VecHandoff<_>,
                 >("handoff GraphNodeId(19v1)");
-            let mut sg_1v1_node_10v1_stream = Box::pin(edges);
+            let mut sg_1v1_node_10v1_stream = {
+                #[inline(always)]
+                fn check_stream<
+                    Stream: hydroflow::futures::stream::Stream<Item = Item>,
+                    Item,
+                >(
+                    stream: Stream,
+                ) -> ::std::pin::Pin<
+                    ::std::boxed::Box<
+                        impl hydroflow::futures::stream::Stream<Item = Item>,
+                    >,
+                > {
+                    ::std::boxed::Box::pin(stream)
+                }
+                check_stream(edges)
+            };
             let sg_1v1_node_2v1_uniquedata = df
                 .add_state(
                     ::std::cell::RefCell::new(
@@ -24,7 +39,22 @@ fn main() {
                         >::default(),
                     ),
                 );
-            let mut sg_1v1_node_11v1_stream = Box::pin(seed_reachable);
+            let mut sg_1v1_node_11v1_stream = {
+                #[inline(always)]
+                fn check_stream<
+                    Stream: hydroflow::futures::stream::Stream<Item = Item>,
+                    Item,
+                >(
+                    stream: Stream,
+                ) -> ::std::pin::Pin<
+                    ::std::boxed::Box<
+                        impl hydroflow::futures::stream::Stream<Item = Item>,
+                    >,
+                > {
+                    ::std::boxed::Box::pin(stream)
+                }
+                check_stream(seed_reachable)
+            };
             let sg_1v1_node_5v1_uniquedata = df
                 .add_state(
                     ::std::cell::RefCell::new(
