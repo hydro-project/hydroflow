@@ -1,6 +1,7 @@
 use clap::{Parser, ValueEnum};
 use hydroflow::tokio;
-use hydroflow::util::{bind_udp_bytes, ipv4_resolve};
+// use hydroflow::util::{bind_udp_bytes, ipv4_resolve};//Not using bind_udp_bytes yet.
+use hydroflow::util::ipv4_resolve;
 use hydroflow::hydroflow_syntax;
 use std::net::SocketAddr;
 
@@ -34,13 +35,13 @@ async fn main() {
     let (parent_send, parent_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
     let (left_send, left_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
     let (right_send, right_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
-    let (query_send, query_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    // let (query_send, query_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>(); //Not implemented yet
     
 
-    let (to_right_tx, to_right_rx) = hydroflow::util::unbounded_channel::<(usize, usize)>();
-    let (to_left_tx, to_left_rx) = hydroflow::util::unbounded_channel::<(usize, usize)>();
-    let (to_parent_tx, to_parent_rx) = hydroflow::util::unbounded_channel::<(usize, usize)>();
-    let (to_query_tx, to_query_rx) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (to_right_tx, _to_right_rx) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (to_left_tx, _to_left_rx) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (to_parent_tx, _to_parent_rx) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (to_query_tx, _to_query_rx) = hydroflow::util::unbounded_channel::<(usize, usize)>();
 
 
     println!("Server live!");
@@ -55,15 +56,14 @@ async fn main() {
         (current_time, current_value)
     };
 
-    let time_incrementer = |(mut current_time, mut current_value), new_value| {
-        current_time = current_time + 1;
-        current_value = new_value;
+    let time_incrementer = |(mut current_time, mut _current_value), new_value| {
+        current_time += 1;
 
-        (current_time, current_value)
+        (current_time, new_value)
     };
 
     let update_value = |mut current_value, new_value| {
-        current_value = current_value + new_value;
+        current_value += new_value;
 
         current_value
     };
@@ -71,6 +71,9 @@ async fn main() {
 
     parent_send.send((1, 2)).unwrap();
     left_send.send((1,5)).unwrap();
+    right_send.send((0,0)).unwrap();
+    local_send.send((0,0,)).unwrap();
+    
 
     let mut df = hydroflow_syntax! {
 
@@ -189,10 +192,10 @@ async fn main() {
         // lookup[1] -> map(|(key, (value, client))| (KVSMessage::Response{key, value}, client)) -> [1]outbound_chan;
     };
 
-        let serde_graph = df
-            .serde_graph()
-            .expect("No graph found, maybe failed to parse.");
-                println!("{}", serde_graph.to_mermaid());
+    let serde_graph = df
+        .serde_graph()
+        .expect("No graph found, maybe failed to parse.");
+            println!("{}", serde_graph.to_mermaid());
 
     // df.run_async().await.unwrap();
     df.run_tick();
