@@ -109,7 +109,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: wheels
-          path: dist
+          path: hydro_cli/dist
   
   windows:
     runs-on: windows-latest
@@ -143,4 +143,4 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: wheels
-          path: dist
+          path: hydro_cli/dist
