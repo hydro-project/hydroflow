@@ -18,8 +18,9 @@ fn find_barrier_crossers(
 ) -> SecondaryMap<GraphEdgeId, DelayType> {
     partitioned_graph
         .edges()
-        .filter_map(|(edge_id, (_src, _src_port, dst, dst_port))| {
-            let op_constraints = partitioned_graph.node(dst).1?.op_constraints;
+        .filter_map(|(edge_id, (_src, dst))| {
+            let (_src_port, dst_port) = partitioned_graph.edge_ports(edge_id);
+            let op_constraints = partitioned_graph.node_op_inst(dst)?.op_constraints;
             let input_barrier = (op_constraints.input_delaytype_fn)(dst_port)?;
             Some((edge_id, input_barrier))
         })
@@ -31,11 +32,14 @@ fn find_subgraph_unionfind(
     barrier_crossers: &SecondaryMap<GraphEdgeId, DelayType>,
 ) -> (UnionFind<GraphNodeId>, BTreeSet<GraphEdgeId>) {
     // Modality (color) of nodes, push or pull.
+    // TODO(mingwei)? This does NOT consider `DelayType` barriers (which generally imply `Pull`),
+    // which makes it inconsistant with the final output in `as_code()`. But this doesn't create
+    // any bugs since we exclude `DelayType` edges from joining subgraphs anyway.
     let mut node_color: SparseSecondaryMap<GraphNodeId, Color> = partitioned_graph
         .nodes()
         .filter_map(|(node_id, node)| {
-            let inn_degree = partitioned_graph.degree_in(node_id);
-            let out_degree = partitioned_graph.degree_out(node_id);
+            let inn_degree = partitioned_graph.node_degree_in(node_id);
+            let out_degree = partitioned_graph.node_degree_out(node_id);
             let op_color = node_color(matches!(node, Node::Handoff { .. }), inn_degree, out_degree);
             op_color.map(|op_color| (node_id, op_color))
         })
@@ -61,11 +65,7 @@ fn find_subgraph_unionfind(
     let mut progress = true;
     while progress {
         progress = false;
-        for (edge_id, (src, dst)) in partitioned_graph
-            .edges()
-            .map(|(edge_id, (src, _srt_port, dst, _dst_port))| (edge_id, (src, dst)))
-            .collect::<Vec<_>>()
-        {
+        for (edge_id, (src, dst)) in partitioned_graph.edges().collect::<Vec<_>>() {
             // Ignore (1) already added edges as well as (2) new self-cycles.
             if subgraph_unionfind.same_set(src, dst) {
                 // Note this might be triggered even if the edge (src, dst) is not in the subgraph (not case 1).
@@ -76,7 +76,7 @@ fn find_subgraph_unionfind(
 
             // Ignore if would join stratum crossers (next edges).
             if barrier_crossers.iter().any(|(edge_id, _)| {
-                let (x_src, _x_src_port, x_dst, _x_dst_port) = partitioned_graph.edge(edge_id);
+                let (x_src, x_dst) = partitioned_graph.edge(edge_id);
                 (subgraph_unionfind.same_set(x_src, src) && subgraph_unionfind.same_set(x_dst, dst))
                     || (subgraph_unionfind.same_set(x_src, dst)
                         && subgraph_unionfind.same_set(x_dst, src))
@@ -114,10 +114,9 @@ fn make_subgraph_collect(
             .map(|(node_id, _)| node_id),
         |v| {
             partitioned_graph
-                .predecessors(v)
-                .map(|(_pred_edge_id, _pred_port, pred_id)| pred_id)
+                .node_predecessor_nodes(v)
                 .filter(|&pred_id| {
-                    let (pred, _) = partitioned_graph.node(pred_id);
+                    let pred = partitioned_graph.node(pred_id);
                     !matches!(pred, Node::Handoff { .. })
                 })
         },
@@ -154,11 +153,11 @@ fn make_subgraphs(
 
     // Insert handoffs between subgraphs (or on subgraph self-loop edges)
     for edge_id in handoff_edges {
-        let (src_id, _src_port, dst_id, _dst_port) = partitioned_graph.edge(edge_id);
+        let (src_id, dst_id) = partitioned_graph.edge(edge_id);
 
         // Already has a handoff, no need to insert one.
-        let (src_node, _src_port) = partitioned_graph.node(src_id);
-        let (dst_node, _dst_port) = partitioned_graph.node(dst_id);
+        let src_node = partitioned_graph.node(src_id);
+        let dst_node = partitioned_graph.node(dst_id);
         if matches!(src_node, Node::Handoff { .. }) || matches!(dst_node, Node::Handoff { .. }) {
             continue;
         }
@@ -180,7 +179,7 @@ fn make_subgraphs(
     // Eventually returned directly in the `HydroflowGraph`.
     let grouped_nodes = make_subgraph_collect(partitioned_graph, subgraph_unionfind);
     for (_repr_node, member_nodes) in grouped_nodes {
-        partitioned_graph.create_subgraph(member_nodes).unwrap();
+        partitioned_graph.insert_subgraph(member_nodes).unwrap();
     }
 }
 
@@ -243,13 +242,18 @@ fn can_connect_colorize(
     can_connect
 }
 
+/// Stratification is surprisingly tricky. Basically it is topological sort, but with some nuance.
+///
+/// Returns an error if there is a cycle thru negation.
 fn find_subgraph_strata(
     partitioned_graph: &mut HydroflowGraph,
     barrier_crossers: &SecondaryMap<GraphEdgeId, DelayType>,
 ) -> Result<(), Diagnostic> {
     // Determine subgraphs's stratum number.
-    // Find SCCs ignoring `next_tick()` edges, then do TopoSort on the resulting DAG.
-    // (Cycles on cross-stratum negative edges are an error.)
+    // Find SCCs ignoring `next_tick()` (`DelayType::Tick`) edges, then do TopoSort on the
+    // resulting DAG.
+    // Cycles thru cross-stratum negative edges (both `DelayType::Tick` and `DelayType::Stratum`)
+    // are an error.
 
     // Generate a subgraph graph. I.e. each node is a subgraph.
     // Edges are connections between subgraphs, ignoring tick-crossers.
@@ -263,19 +267,19 @@ fn find_subgraph_strata(
 
     for (node_id, node) in partitioned_graph.nodes() {
         if matches!(node, Node::Handoff { .. }) {
-            assert_eq!(1, partitioned_graph.successors(node_id).count());
-            let (succ_edge, _port, succ) = partitioned_graph.successors(node_id).next().unwrap();
+            assert_eq!(1, partitioned_graph.node_successors(node_id).count());
+            let (succ_edge, succ) = partitioned_graph.node_successors(node_id).next().unwrap();
 
             // Ignore tick edges.
             if Some(&DelayType::Tick) == barrier_crossers.get(succ_edge) {
                 continue;
             }
 
-            assert_eq!(1, partitioned_graph.predecessors(node_id).count());
-            let (_edge_id, _port, pred) = partitioned_graph.predecessors(node_id).next().unwrap();
+            assert_eq!(1, partitioned_graph.node_predecessors(node_id).count());
+            let (_edge_id, pred) = partitioned_graph.node_predecessors(node_id).next().unwrap();
 
-            let pred_sg = partitioned_graph.subgraph(pred).unwrap();
-            let succ_sg = partitioned_graph.subgraph(succ).unwrap();
+            let pred_sg = partitioned_graph.node_subgraph(pred).unwrap();
+            let succ_sg = partitioned_graph.node_subgraph(succ).unwrap();
 
             subgraph_preds.entry(succ_sg).or_default().push(pred_sg);
             subgraph_succs.entry(pred_sg).or_default().push(succ_sg);
@@ -287,11 +291,12 @@ fn find_subgraph_strata(
     }
 
     let scc = graph_algorithms::scc_kosaraju(
-        partitioned_graph.subgraphs(),
+        partitioned_graph.subgraph_ids(),
         |v| subgraph_preds.get(&v).into_iter().flatten().cloned(),
         |u| subgraph_succs.get(&u).into_iter().flatten().cloned(),
     );
 
+    // Topological sort is how we find the (nondecreasing) order of strata.
     let topo_sort_order = {
         // Condensed each SCC into a single node for toposort.
         let mut condensed_preds: BTreeMap<GraphSubgraphId, Vec<GraphSubgraphId>> =
@@ -303,12 +308,13 @@ fn find_subgraph_strata(
                 .extend(preds.iter().map(|v| scc[v]));
         }
 
-        graph_algorithms::topo_sort(partitioned_graph.subgraphs(), |v| {
+        graph_algorithms::topo_sort(partitioned_graph.subgraph_ids(), |v| {
             condensed_preds.get(&v).into_iter().flatten().cloned()
         })
     };
 
-    // Each subgraph stratum is the same as it's predecessors. Unless there is a negative edge, then we increment.
+    // Each subgraph's stratum number is the same as it's predecessors. Unless there is a negative
+    // edge, then we increment.
     for sg_id in topo_sort_order {
         let stratum = subgraph_preds
             .get(&sg_id)
@@ -331,13 +337,17 @@ fn find_subgraph_strata(
     // Re-introduce the `next_tick()` edges, ensuring they actually go to the next tick.
     let extra_stratum = partitioned_graph.max_stratum().unwrap_or(0) + 1; // Used for `next_tick()` delayer subgraphs.
     for (edge_id, &delay_type) in barrier_crossers.iter() {
-        let (hoff, _hoff_port, dst, dst_port) = partitioned_graph.edge(edge_id);
-        // let (hoff, dst) = graph.edge(edge_id).unwrap();
-        assert_eq!(1, partitioned_graph.predecessors(hoff).count());
-        let (_edge, _src_port, src) = partitioned_graph.predecessors(hoff).next().unwrap();
+        let (hoff, dst) = partitioned_graph.edge(edge_id);
+        let (_hoff_port, dst_port) = partitioned_graph.edge_ports(edge_id);
 
-        let src_sg = partitioned_graph.subgraph(src).unwrap();
-        let dst_sg = partitioned_graph.subgraph(dst).unwrap();
+        assert_eq!(1, partitioned_graph.node_predecessors(hoff).count());
+        let src = partitioned_graph
+            .node_predecessor_nodes(hoff)
+            .next()
+            .unwrap();
+
+        let src_sg = partitioned_graph.node_subgraph(src).unwrap();
+        let dst_sg = partitioned_graph.node_subgraph(dst).unwrap();
         let src_stratum = partitioned_graph.subgraph_stratum(src_sg);
         let dst_stratum = partitioned_graph.subgraph_stratum(dst_sg);
         match delay_type {
@@ -367,7 +377,7 @@ fn find_subgraph_strata(
                     // Set stratum number for new intermediate:
                     // Create subgraph.
                     let new_subgraph_id = partitioned_graph
-                        .create_subgraph(vec![new_node_id])
+                        .insert_subgraph(vec![new_node_id])
                         .unwrap();
                     // Assign stratum.
                     partitioned_graph.set_subgraph_stratum(new_subgraph_id, extra_stratum);
@@ -386,6 +396,7 @@ fn find_subgraph_strata(
 }
 
 /// Put `is_external_input: true` operators in separate stratum 0 subgraphs if they are not in stratum 0.
+/// By ripping them out of their subgraph/stratum if they're not already in statum 0.
 fn separate_external_inputs(partitioned_graph: &mut HydroflowGraph) {
     let external_input_nodes: Vec<_> = partitioned_graph
         .nodes()
@@ -412,16 +423,15 @@ fn separate_external_inputs(partitioned_graph: &mut HydroflowGraph) {
             "Cannot move input node that is not in a subgraph, this is a Hydroflow bug."
         );
         // Create new subgraph in stratum 0 for this source.
-        let new_sg_id = partitioned_graph.create_subgraph(vec![node_id]).unwrap();
+        let new_sg_id = partitioned_graph.insert_subgraph(vec![node_id]).unwrap();
         partitioned_graph.set_subgraph_stratum(new_sg_id, 0);
 
         // Insert handoff.
-        let successor_edges: Vec<_> = partitioned_graph
-            .successors(node_id)
-            .map(|(edge_id, _succ_port, _succ_node)| edge_id)
-            .collect();
-        for edge_id in successor_edges {
-            let span = partitioned_graph.node(node_id).0.span();
+        for edge_id in partitioned_graph
+            .node_successor_edges(node_id)
+            .collect::<Vec<_>>()
+        {
+            let span = partitioned_graph.node(node_id).span();
             let hoff = Node::Handoff {
                 src_span: span,
                 dst_span: span,
@@ -438,7 +448,7 @@ pub fn partition_graph(flat_graph: HydroflowGraph) -> Result<HydroflowGraph, Dia
     // Partition into subgraphs.
     make_subgraphs(&mut partitioned_graph, &mut barrier_crossers);
 
-    // Find strata for subgraphs.
+    // Find strata for subgraphs (early returns with error if negative cycle found).
     find_subgraph_strata(&mut partitioned_graph, &barrier_crossers)?;
 
     // Ensure all external inputs are in stratum 0.
