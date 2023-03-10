@@ -11,6 +11,7 @@ use crate::pretty_span::{PrettyRowCol, PrettySpan};
 
 use super::{
     DiMulGraph, GraphEdgeId, GraphNodeId, Node, OperatorInstance, PartitionedGraph, PortIndexValue,
+    HANDOFF_NODE_STR,
 };
 
 /// A graph representing a hydroflow dataflow graph before subgraph partitioning, stratification, and handoff insertion.
@@ -165,7 +166,9 @@ impl FlatGraph {
                         .replace('"', "&quot;")
                         .replace('\n', "<br>"),
                 ),
-                Node::Handoff { .. } => writeln!(write, r#"    {:?}{{"handoff"}}"#, key.data()),
+                Node::Handoff { .. } => {
+                    writeln!(write, r#"    {:?}{{"{}"}}"#, key.data(), HANDOFF_NODE_STR)
+                }
             }?;
         }
         writeln!(write)?;

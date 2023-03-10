@@ -13,8 +13,8 @@ digraph {
         fillcolor="#dddddd"
         style=filled
         label = "sg_2v1\nstratum 1"
-        n2v1 [label="(n2v1) fold :: < 'tick > (Vec :: new(), | mut v, x | { v.push(x) ; v })", fontname=Monaco, shape=house, style = filled, color = "#ffff00"]
-        n3v1 [label="(n3v1) flat_map(| mut vec | { vec.sort() ; vec })", fontname=Monaco, shape=house, style = filled, color = "#ffff00"]
+        n2v1 [label="(n2v1) fold :: < 'tick > (Vec :: new(), | mut v, x | { v.push(x) ; v })", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+        n3v1 [label="(n3v1) flat_map(| mut vec | { vec.sort() ; vec })", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
         n4v1 [label="(n4v1) for_each(| v | print! (\"{:?}, \", v))", fontname=Monaco, shape=house, style = filled, color = "#ffff00"]
         n2v1 -> n3v1
         n3v1 -> n4v1

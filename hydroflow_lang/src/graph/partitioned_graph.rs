@@ -9,7 +9,7 @@ use super::ops::{DelayType, OperatorWriteOutput, WriteContextArgs, OPERATORS};
 use super::serde_graph::{SerdeEdge, SerdeGraph};
 use super::{
     node_color, Color, DiMulGraph, FlatGraph, GraphEdgeId, GraphNodeId, GraphSubgraphId, Node,
-    OperatorInstance, PortIndexValue, CONTEXT, HYDROFLOW,
+    OperatorInstance, PortIndexValue, CONTEXT, HANDOFF_NODE_STR, HYDROFLOW,
 };
 
 #[derive(Default)]
@@ -133,7 +133,7 @@ impl PartitionedGraph {
                         .iter()
                         .position(|&node_id| {
                             node_color(
-                                &self.nodes[node_id],
+                                matches!(self.nodes[node_id], Node::Handoff { .. }),
                                 self.graph.degree_in(node_id),
                                 self.graph.degree_out(node_id),
                             )
@@ -323,7 +323,7 @@ impl PartitionedGraph {
     pub fn node_to_txt(&self, node_id: GraphNodeId) -> String {
         match &self.nodes[node_id] {
             Node::Operator(operator) => operator.to_token_stream().to_string(),
-            Node::Handoff { .. } => "handoff".to_string(),
+            Node::Handoff { .. } => HANDOFF_NODE_STR.to_string(),
         }
     }
     pub fn to_serde_graph(&self) -> SerdeGraph {
@@ -397,7 +397,6 @@ impl PartitionedGraph {
         g.subgraph_nodes = self.subgraph_nodes.clone();
         g.subgraph_stratum = self.subgraph_stratum.clone();
         g.subgraph_internal_handoffs = self.subgraph_internal_handoffs.clone();
-        g.node_color_map = self.node_color.clone();
 
         // add varnames (sort for determinism).
         let mut varnames_sorted = self.node_varnames.iter().collect::<Vec<_>>();

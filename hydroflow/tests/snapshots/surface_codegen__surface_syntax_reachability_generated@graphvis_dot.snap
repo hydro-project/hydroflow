@@ -12,7 +12,7 @@ digraph {
         n2v1 [label="(n2v1) map(| v | (v, ()))", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
         n7v1 [label="(n7v1) source_stream(pairs_recv)", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
         n4v1 [label="(n4v1) join()", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
-        n5v1 [label="(n5v1) map(| (_src, ((), dst)) | dst)", fontname=Monaco, shape=house, style = filled, color = "#ffff00"]
+        n5v1 [label="(n5v1) map(| (_src, ((), dst)) | dst)", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
         n6v1 [label="(n6v1) tee()", fontname=Monaco, shape=house, style = filled, color = "#ffff00"]
         n8v1 [label="(n8v1) for_each(| x | println! (\"Reached: {}\", x))", fontname=Monaco, shape=house, style = filled, color = "#ffff00"]
         n9v1 [label="(n9v1) handoff", fontname=Monaco, shape=parallelogram, style = filled, color = "#ddddff"]
