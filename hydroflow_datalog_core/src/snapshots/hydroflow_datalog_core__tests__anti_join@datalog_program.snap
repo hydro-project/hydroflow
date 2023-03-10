@@ -448,7 +448,22 @@ fn main() {
                     check_pivot_run(op_12v1, op_16v1);
                 },
             );
-            let mut sg_2v1_node_15v1_stream = Box::pin(ints_3);
+            let mut sg_2v1_node_15v1_stream = {
+                #[inline(always)]
+                fn check_stream<
+                    Stream: hydroflow::futures::stream::Stream<Item = Item>,
+                    Item,
+                >(
+                    stream: Stream,
+                ) -> ::std::pin::Pin<
+                    ::std::boxed::Box<
+                        impl hydroflow::futures::stream::Stream<Item = Item>,
+                    >,
+                > {
+                    ::std::boxed::Box::pin(stream)
+                }
+                check_stream(ints_3)
+            };
             let sg_2v1_node_8v1_uniquedata = df
                 .add_state(
                     ::std::cell::RefCell::new(
@@ -570,7 +585,22 @@ fn main() {
                     check_pivot_run(op_24v1, hoff_26v1_send);
                 },
             );
-            let mut sg_3v1_node_13v1_stream = Box::pin(ints_1);
+            let mut sg_3v1_node_13v1_stream = {
+                #[inline(always)]
+                fn check_stream<
+                    Stream: hydroflow::futures::stream::Stream<Item = Item>,
+                    Item,
+                >(
+                    stream: Stream,
+                ) -> ::std::pin::Pin<
+                    ::std::boxed::Box<
+                        impl hydroflow::futures::stream::Stream<Item = Item>,
+                    >,
+                > {
+                    ::std::boxed::Box::pin(stream)
+                }
+                check_stream(ints_1)
+            };
             df.add_subgraph_stratified(
                 "Subgraph GraphSubgraphId(3v1)",
                 0,
@@ -612,7 +642,22 @@ fn main() {
                     check_pivot_run(op_13v1, hoff_27v1_send);
                 },
             );
-            let mut sg_4v1_node_14v1_stream = Box::pin(ints_2);
+            let mut sg_4v1_node_14v1_stream = {
+                #[inline(always)]
+                fn check_stream<
+                    Stream: hydroflow::futures::stream::Stream<Item = Item>,
+                    Item,
+                >(
+                    stream: Stream,
+                ) -> ::std::pin::Pin<
+                    ::std::boxed::Box<
+                        impl hydroflow::futures::stream::Stream<Item = Item>,
+                    >,
+                > {
+                    ::std::boxed::Box::pin(stream)
+                }
+                check_stream(ints_2)
+            };
             df.add_subgraph_stratified(
                 "Subgraph GraphSubgraphId(4v1)",
                 0,
