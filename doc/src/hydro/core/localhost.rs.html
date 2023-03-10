@@ -168,6 +168,11 @@
 <a href="#168" id="168">168</a>
 <a href="#169" id="169">169</a>
 <a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::{path::Path, sync::Arc};
 
 <span class="kw">use </span>anyhow::Result;
@@ -175,11 +180,12 @@
 <span class="kw">use </span>async_process::{Command, Stdio};
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>futures::{io::BufReader, AsyncBufReadExt, AsyncRead, AsyncWriteExt, StreamExt};
-<span class="kw">use </span>hydroflow::util::cli::BindConfig;
+<span class="kw">use </span>hydroflow_cli_integration::BindConfig;
 <span class="kw">use </span>tokio::sync::RwLock;
 
 <span class="kw">use super</span>::{
-    BindType, ConnectionType, Host, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult,
+    BindType, ConnectionType, Host, HostTargetType, LaunchedBinary, LaunchedHost, ResourceBatch,
+    ResourceResult,
 };
 
 <span class="kw">struct </span>LaunchedLocalhostBinary {
@@ -300,6 +306,10 @@
 
 <span class="attr">#[async_trait]
 </span><span class="kw">impl </span>Host <span class="kw">for </span>LocalhostHost {
+    <span class="kw">fn </span>target_type(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; HostTargetType {
+        HostTargetType::Local
+    }
+
     <span class="kw">fn </span>request_port(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _bind_type: <span class="kw-2">&amp;</span>BindType) {}
     <span class="kw">fn </span>collect_resources(<span class="kw-2">&amp;</span><span class="self">self</span>, _resource_batch: <span class="kw-2">&amp;mut </span>ResourceBatch) {}
     <span class="kw">fn </span>request_custom_binary(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {}

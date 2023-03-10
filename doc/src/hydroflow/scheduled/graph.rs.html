@@ -592,6 +592,26 @@
 <a href="#592" id="592">592</a>
 <a href="#593" id="593">593</a>
 <a href="#594" id="594">594</a>
+<a href="#595" id="595">595</a>
+<a href="#596" id="596">596</a>
+<a href="#597" id="597">597</a>
+<a href="#598" id="598">598</a>
+<a href="#599" id="599">599</a>
+<a href="#600" id="600">600</a>
+<a href="#601" id="601">601</a>
+<a href="#602" id="602">602</a>
+<a href="#603" id="603">603</a>
+<a href="#604" id="604">604</a>
+<a href="#605" id="605">605</a>
+<a href="#606" id="606">606</a>
+<a href="#607" id="607">607</a>
+<a href="#608" id="608">608</a>
+<a href="#609" id="609">609</a>
+<a href="#610" id="610">610</a>
+<a href="#611" id="611">611</a>
+<a href="#612" id="612">612</a>
+<a href="#613" id="613">613</a>
+<a href="#614" id="614">614</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::any::Any;
 <span class="kw">use </span>std::borrow::Cow;
 <span class="kw">use </span>std::cell::Cell;
@@ -623,7 +643,8 @@
     <span class="doccomment">/// TODO(mingwei): separate scheduler into its own struct/trait?
     /// Index is stratum, value is FIFO queue for that stratum.
     </span>stratum_queues: Vec&lt;VecDeque&lt;SubgraphId&gt;&gt;,
-    event_queue_recv: UnboundedReceiver&lt;SubgraphId&gt;,
+    <span class="doccomment">/// Receive events, if second arg indicates if it is an external &quot;important&quot; event (true).
+    </span>event_queue_recv: UnboundedReceiver&lt;(SubgraphId, bool)&gt;,
     <span class="doccomment">/// If the events have been received for this tick.
     </span>events_received_tick: bool,
 
@@ -684,6 +705,7 @@
     }
 
     <span class="doccomment">/// Returns a reactor for externally scheduling subgraphs, possibly from another thread.
+    /// Reactor events are considered to be external events.
     </span><span class="kw">pub fn </span>reactor(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Reactor {
         Reactor::new(<span class="self">self</span>.context.event_queue_send.clone())
     }
@@ -712,6 +734,7 @@
     }
 
     <span class="doccomment">/// Runs the dataflow until no more work is immediately available.
+    /// Runs at least one tick of dataflow, even if no external events have been received.
     /// If the dataflow contains loops this method may run forever.
     /// Returns true if any work was done.
     </span><span class="kw">pub fn </span>run_available(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; bool {
@@ -793,10 +816,13 @@
                 <span class="kw">if </span>current_tick_only {
                     <span class="self">self</span>.events_received_tick = <span class="bool-val">false</span>;
                     <span class="kw">return </span><span class="bool-val">false</span>;
-                } <span class="kw">else if </span><span class="number">0 </span>&lt; <span class="self">self</span>.try_recv_events() {
-                    <span class="comment">// Do a full loop more to find where events have been added.
-                    </span>end_stratum = <span class="number">0</span>;
-                    <span class="kw">continue</span>;
+                } <span class="kw">else </span>{
+                    <span class="kw">let </span>(_num_events, has_external) = <span class="self">self</span>.try_recv_events();
+                    <span class="kw">if </span>has_external {
+                        <span class="comment">// Do a full loop more to find where events have been added.
+                        </span>end_stratum = <span class="number">0</span>;
+                        <span class="kw">continue</span>;
+                    }
                 }
             }
 
@@ -837,53 +863,67 @@
         }
     }
 
-    <span class="doccomment">/// Enqueues subgraphs triggered by external events without blocking.
+    <span class="doccomment">/// Enqueues subgraphs triggered by events without blocking.
     ///
-    /// Returns the number of subgraphs enqueued.
-    </span><span class="kw">pub fn </span>try_recv_events(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; usize {
+    /// Returns the number of subgraphs enqueued, and if any were external.
+    </span><span class="kw">pub fn </span>try_recv_events(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; (usize, bool) {
         <span class="self">self</span>.events_received_tick = <span class="bool-val">true</span>;
 
+        <span class="kw">let </span><span class="kw-2">mut </span>events_has_external = <span class="bool-val">false</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>enqueued_count = <span class="number">0</span>;
-        <span class="kw">while let </span><span class="prelude-val">Ok</span>(sg_id) = <span class="self">self</span>.event_queue_recv.try_recv() {
+        <span class="kw">while let </span><span class="prelude-val">Ok</span>((sg_id, is_external)) = <span class="self">self</span>.event_queue_recv.try_recv() {
             <span class="kw">let </span>sg_data = <span class="kw-2">&amp;</span><span class="self">self</span>.subgraphs[sg_id.<span class="number">0</span>];
+            events_has_external |= is_external;
             <span class="kw">if </span>!sg_data.is_scheduled.replace(<span class="bool-val">true</span>) {
                 <span class="self">self</span>.stratum_queues[sg_data.stratum].push_back(sg_id);
                 enqueued_count += <span class="number">1</span>;
             }
         }
-        enqueued_count
+        (enqueued_count, events_has_external)
     }
 
     <span class="doccomment">/// Enqueues subgraphs triggered by external events, blocking until at
-    /// least one subgraph is scheduled.
+    /// least one subgraph is scheduled **from an external event**.
     </span><span class="kw">pub fn </span>recv_events(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;NonZeroUsize&gt; {
         <span class="self">self</span>.events_received_tick = <span class="bool-val">true</span>;
 
+        <span class="kw">let </span><span class="kw-2">mut </span>events_has_external = <span class="bool-val">false</span>;
         <span class="kw">loop </span>{
-            <span class="kw">let </span>sg_id = <span class="self">self</span>.event_queue_recv.blocking_recv()<span class="question-mark">?</span>;
+            <span class="kw">let </span>(sg_id, is_external) = <span class="self">self</span>.event_queue_recv.blocking_recv()<span class="question-mark">?</span>;
+            events_has_external |= is_external;
             <span class="kw">let </span>sg_data = <span class="kw-2">&amp;</span><span class="self">self</span>.subgraphs[sg_id.<span class="number">0</span>];
             <span class="kw">if </span>!sg_data.is_scheduled.replace(<span class="bool-val">true</span>) {
                 <span class="self">self</span>.stratum_queues[sg_data.stratum].push_back(sg_id);
 
                 <span class="comment">// Enqueue any other immediate events.
-                </span><span class="kw">return </span><span class="prelude-val">Some</span>(NonZeroUsize::new(<span class="self">self</span>.try_recv_events() + <span class="number">1</span>).unwrap());
+                </span><span class="kw">let </span>(extra_count, extra_has_external) = <span class="self">self</span>.try_recv_events();
+                events_has_external |= extra_has_external;
+                <span class="kw">if </span>events_has_external {
+                    <span class="kw">return </span><span class="prelude-val">Some</span>(NonZeroUsize::new(extra_count + <span class="number">1</span>).unwrap());
+                }
             }
         }
     }
 
     <span class="doccomment">/// Enqueues subgraphs triggered by external events asynchronously, waiting
-    /// until at least one subgraph is scheduled.
+    /// until at least one subgraph is scheduled **from an external event**.
     </span><span class="kw">pub async fn </span>recv_events_async(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;NonZeroUsize&gt; {
         <span class="self">self</span>.events_received_tick = <span class="bool-val">true</span>;
 
+        <span class="kw">let </span><span class="kw-2">mut </span>events_has_external = <span class="bool-val">false</span>;
         <span class="kw">loop </span>{
-            <span class="kw">let </span>sg_id = <span class="self">self</span>.event_queue_recv.recv().<span class="kw">await</span><span class="question-mark">?</span>;
+            <span class="kw">let </span>(sg_id, is_external) = <span class="self">self</span>.event_queue_recv.recv().<span class="kw">await</span><span class="question-mark">?</span>;
+            events_has_external |= is_external;
             <span class="kw">let </span>sg_data = <span class="kw-2">&amp;</span><span class="self">self</span>.subgraphs[sg_id.<span class="number">0</span>];
             <span class="kw">if </span>!sg_data.is_scheduled.replace(<span class="bool-val">true</span>) {
                 <span class="self">self</span>.stratum_queues[sg_data.stratum].push_back(sg_id);
 
                 <span class="comment">// Enqueue any other immediate events.
-                </span><span class="kw">return </span><span class="prelude-val">Some</span>(NonZeroUsize::new(<span class="self">self</span>.try_recv_events() + <span class="number">1</span>).unwrap());
+                </span><span class="kw">let </span>(extra_count, extra_has_external) = <span class="self">self</span>.try_recv_events();
+                events_has_external |= extra_has_external;
+                <span class="kw">if </span>events_has_external {
+                    <span class="kw">return </span><span class="prelude-val">Some</span>(NonZeroUsize::new(extra_count + <span class="number">1</span>).unwrap());
+                }
             }
         }
     }

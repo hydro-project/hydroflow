@@ -95,7 +95,7 @@
             };
         };
         <span class="kw">let </span>write_iterator_after = <span class="macro">quote_spanned! </span>{op_span=&gt;
-            #context.schedule_subgraph(#context.current_subgraph());
+            #context.schedule_subgraph(#context.current_subgraph(), <span class="bool-val">false</span>);
         };
         <span class="prelude-val">Ok</span>(OperatorWriteOutput {
             write_iterator,

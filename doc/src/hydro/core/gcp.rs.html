@@ -490,6 +490,11 @@
 <a href="#490" id="490">490</a>
 <a href="#491" id="491">491</a>
 <a href="#492" id="492">492</a>
+<a href="#493" id="493">493</a>
+<a href="#494" id="494">494</a>
+<a href="#495" id="495">495</a>
+<a href="#496" id="496">496</a>
+<a href="#497" id="497">497</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::{
     net::SocketAddr,
     path::{Path, PathBuf},
@@ -503,7 +508,7 @@
 <span class="kw">use </span>async_ssh2_lite::{AsyncChannel, AsyncSession, SessionConfiguration};
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>futures::{AsyncWriteExt, StreamExt};
-<span class="kw">use </span>hydroflow::util::cli::BindConfig;
+<span class="kw">use </span>hydroflow_cli_integration::BindConfig;
 <span class="kw">use </span>serde_json::json;
 <span class="kw">use </span>tokio::{net::TcpStream, sync::RwLock};
 
@@ -511,7 +516,8 @@
     localhost::create_broadcast,
     terraform::{TerraformOutput, TerraformProvider},
     util::async_retry,
-    BindType, ConnectionType, Host, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult,
+    BindType, ConnectionType, Host, HostTargetType, LaunchedBinary, LaunchedHost, ResourceBatch,
+    ResourceResult,
 };
 
 <span class="kw">struct </span>LaunchedComputeEngineBinary {
@@ -690,6 +696,10 @@
 
 <span class="attr">#[async_trait]
 </span><span class="kw">impl </span>Host <span class="kw">for </span>GCPComputeEngineHost {
+    <span class="kw">fn </span>target_type(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; HostTargetType {
+        HostTargetType::Linux
+    }
+
     <span class="kw">fn </span>request_port(<span class="kw-2">&amp;mut </span><span class="self">self</span>, bind_type: <span class="kw-2">&amp;</span>BindType) {
         <span class="kw">match </span>bind_type {
             BindType::UnixSocket =&gt; {}

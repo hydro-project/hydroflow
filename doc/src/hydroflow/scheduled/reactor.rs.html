@@ -42,6 +42,8 @@
 <a href="#42" id="42">42</a>
 <a href="#43" id="43">43</a>
 <a href="#44" id="44">44</a>
+<a href="#45" id="45">45</a>
+<a href="#46" id="46">46</a>
 </pre><pre class="rust"><code><span class="kw">use </span>tokio::sync::mpsc::error::SendError;
 <span class="kw">use </span>tokio::sync::mpsc::UnboundedSender;
 
@@ -50,18 +52,20 @@
 <span class="doccomment">/**
  * A handle into a specific [super::graph::Hydroflow] instance for triggering
  * subgraphs to run, possibly from another thread.
+ *
+ * Reactor events are considered to be external events.
  */
 </span><span class="attr">#[derive(Clone)]
 </span><span class="kw">pub struct </span>Reactor {
-    event_queue_send: UnboundedSender&lt;SubgraphId&gt;,
+    event_queue_send: UnboundedSender&lt;(SubgraphId, bool)&gt;,
 }
 <span class="kw">impl </span>Reactor {
-    <span class="kw">pub fn </span>new(event_queue_send: UnboundedSender&lt;SubgraphId&gt;) -&gt; <span class="self">Self </span>{
+    <span class="kw">pub fn </span>new(event_queue_send: UnboundedSender&lt;(SubgraphId, bool)&gt;) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{ event_queue_send }
     }
 
-    <span class="kw">pub fn </span>trigger(<span class="kw-2">&amp;</span><span class="self">self</span>, sg_id: SubgraphId) -&gt; <span class="prelude-ty">Result</span>&lt;(), SendError&lt;SubgraphId&gt;&gt; {
-        <span class="self">self</span>.event_queue_send.send(sg_id)
+    <span class="kw">pub fn </span>trigger(<span class="kw-2">&amp;</span><span class="self">self</span>, sg_id: SubgraphId) -&gt; <span class="prelude-ty">Result</span>&lt;(), SendError&lt;(SubgraphId, bool)&gt;&gt; {
+        <span class="self">self</span>.event_queue_send.send((sg_id, <span class="bool-val">true</span>))
     }
 
     <span class="attr">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]

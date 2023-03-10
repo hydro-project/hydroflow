@@ -140,6 +140,9 @@
 <a href="#140" id="140">140</a>
 <a href="#141" id="141">141</a>
 <a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 
 <span class="kw">use </span>anyhow::{bail, Context, <span class="prelude-ty">Result</span>};
@@ -190,6 +193,7 @@
         <span class="kw">if </span>!Command::new(<span class="string">&quot;terraform&quot;</span>)
             .current_dir(deployment_folder.path())
             .arg(<span class="string">&quot;init&quot;</span>)
+            .kill_on_drop(<span class="bool-val">true</span>)
             .spawn()
             .context(<span class="string">&quot;Failed to spawn `terraform`. Is it installed?&quot;</span>)<span class="question-mark">?
             </span>.status()
@@ -209,6 +213,7 @@
             .current_dir(result.deployment_folder.as_ref().unwrap().path())
             .arg(<span class="string">&quot;apply&quot;</span>)
             .arg(<span class="string">&quot;-auto-approve&quot;</span>)
+            .kill_on_drop(<span class="bool-val">true</span>)
             .spawn()
             .context(<span class="string">&quot;Failed to spawn `terraform`. Is it installed?&quot;</span>)<span class="question-mark">?
             </span>.status()
@@ -223,6 +228,7 @@
             .current_dir(result.deployment_folder.as_ref().unwrap().path())
             .arg(<span class="string">&quot;output&quot;</span>)
             .arg(<span class="string">&quot;-json&quot;</span>)
+            .kill_on_drop(<span class="bool-val">true</span>)
             .output()
             .<span class="kw">await
             </span>.context(<span class="string">&quot;Failed to read Terraform outputs&quot;</span>)<span class="question-mark">?</span>;

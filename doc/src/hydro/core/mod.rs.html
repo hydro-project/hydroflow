@@ -127,12 +127,19 @@
 <a href="#127" id="127">127</a>
 <a href="#128" id="128">128</a>
 <a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::{path::Path, sync::Arc};
 
 <span class="kw">use </span>anyhow::Result;
 <span class="kw">use </span>async_channel::{Receiver, Sender};
 <span class="kw">use </span>async_trait::async_trait;
-<span class="kw">use </span>hydroflow::util::cli::BindConfig;
+<span class="kw">use </span>hydroflow_cli_integration::BindConfig;
 <span class="kw">use </span>tokio::sync::RwLock;
 
 <span class="kw">pub mod </span>deployment;
@@ -216,8 +223,15 @@
     ),
 }
 
+<span class="kw">pub enum </span>HostTargetType {
+    Local,
+    Linux,
+}
+
 <span class="attr">#[async_trait]
 </span><span class="kw">pub trait </span>Host: Send + Sync {
+    <span class="kw">fn </span>target_type(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; HostTargetType;
+
     <span class="kw">fn </span>request_port(<span class="kw-2">&amp;mut </span><span class="self">self</span>, bind_type: <span class="kw-2">&amp;</span>BindType);
 
     <span class="doccomment">/// Configures the host to support copying and running a custom binary.

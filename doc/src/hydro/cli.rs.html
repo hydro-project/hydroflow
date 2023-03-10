@@ -159,7 +159,7 @@
 <span class="kw">fn </span>async_wrapper_module(py: Python) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span>PyModule, PyErr&gt; {
     PyModule::from_code(
         py,
-        <span class="macro">include_str!</span>(<span class="string">&quot;async_wrapper.py&quot;</span>),
+        <span class="macro">include_str!</span>(<span class="string">&quot;../hydro/async_wrapper.py&quot;</span>),
         <span class="string">&quot;wrapper.py&quot;</span>,
         <span class="string">&quot;wrapper&quot;</span>,
     )

@@ -288,6 +288,12 @@
 <a href="#288" id="288">288</a>
 <a href="#289" id="289">289</a>
 <a href="#290" id="290">290</a>
+<a href="#291" id="291">291</a>
+<a href="#292" id="292">292</a>
+<a href="#293" id="293">293</a>
+<a href="#294" id="294">294</a>
+<a href="#295" id="295">295</a>
+<a href="#296" id="296">296</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::{
     collections::HashMap,
     ops::Deref,
@@ -305,10 +311,13 @@
     util::{command_prelude::CompileMode, interning::InternedString},
     Config,
 };
-<span class="kw">use </span>hydroflow::util::cli::ConnectionPipe;
+<span class="kw">use </span>hydroflow_cli_integration::ConnectionPipe;
 <span class="kw">use </span>tokio::{sync::RwLock, task::JoinHandle};
 
-<span class="kw">use super</span>::{BindType, Host, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult, Service};
+<span class="kw">use super</span>::{
+    BindType, Host, HostTargetType, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult,
+    Service,
+};
 
 <span class="attr">#[derive(Clone)]
 </span><span class="kw">pub enum </span>OutgoingPort {
@@ -447,6 +456,7 @@
         <span class="kw">let </span>src_cloned = <span class="self">self</span>.src.join(<span class="string">&quot;Cargo.toml&quot;</span>).canonicalize().unwrap();
         <span class="kw">let </span>example_cloned = <span class="self">self</span>.example.clone();
         <span class="kw">let </span>features_cloned = <span class="self">self</span>.features.clone();
+        <span class="kw">let </span>host = <span class="self">self</span>.on.clone();
 
         tokio::task::spawn_blocking(<span class="kw">move </span>|| {
             <span class="kw">let </span>config = Config::default().unwrap();
@@ -464,14 +474,16 @@
                 benches: FilterRule::Just(<span class="macro">vec!</span>[]),
             };
 
+            <span class="kw">let </span>target_type = host.blocking_read().target_type();
+
             compile_options.build_config = BuildConfig::new(
                 <span class="kw-2">&amp;</span>config,
                 <span class="prelude-val">None</span>,
                 <span class="bool-val">false</span>,
-                <span class="kw-2">&amp;</span>[
-                    <span class="comment">// TODO(shadaj): make configurable
-                    </span><span class="string">&quot;x86_64-unknown-linux-musl&quot;</span>.to_string(),
-                ],
+                <span class="kw-2">&amp;</span>(<span class="kw">match </span>target_type {
+                    HostTargetType::Local =&gt; <span class="macro">vec!</span>[],
+                    HostTargetType::Linux =&gt; <span class="macro">vec!</span>[<span class="string">&quot;x86_64-unknown-linux-musl&quot;</span>.to_string()],
+                }),
                 CompileMode::Build,
             )
             .unwrap();

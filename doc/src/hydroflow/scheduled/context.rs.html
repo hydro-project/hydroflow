@@ -150,6 +150,9 @@
 <a href="#150" id="150">150</a>
 <a href="#151" id="151">151</a>
 <a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::any::Any;
 <span class="kw">use </span>std::marker::PhantomData;
 
@@ -173,7 +176,8 @@
     <span class="kw">pub</span>(<span class="kw">crate</span>) states: Vec&lt;StateData&gt;,
 
     <span class="comment">// TODO(mingwei): as long as this is here, it&#39;s impossible to know when all work is done.
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) event_queue_send: UnboundedSender&lt;SubgraphId&gt;,
+    // Second field (bool) is for if the event is an external &quot;important&quot; event (true).
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) event_queue_send: UnboundedSender&lt;(SubgraphId, bool)&gt;,
 
     <span class="kw">pub</span>(<span class="kw">crate</span>) current_tick: usize,
     <span class="kw">pub</span>(<span class="kw">crate</span>) current_stratum: usize,
@@ -203,22 +207,24 @@
     }
 
     <span class="doccomment">/// Schedules a subgraph.
-    </span><span class="kw">pub fn </span>schedule_subgraph(<span class="kw-2">&amp;</span><span class="self">self</span>, sg_id: SubgraphId) {
-        <span class="self">self</span>.event_queue_send.send(sg_id).unwrap()
+    </span><span class="kw">pub fn </span>schedule_subgraph(<span class="kw-2">&amp;</span><span class="self">self</span>, sg_id: SubgraphId, is_external: bool) {
+        <span class="self">self</span>.event_queue_send.send((sg_id, is_external)).unwrap()
     }
 
     <span class="doccomment">/// Returns a `Waker` for interacting with async Rust.
+    /// Waker events are considered to be extenral.
     </span><span class="kw">pub fn </span>waker(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; std::task::Waker {
         <span class="kw">use </span>futures::task::ArcWake;
         <span class="kw">use </span>std::sync::Arc;
 
         <span class="kw">struct </span>ContextWaker {
             subgraph_id: SubgraphId,
-            event_queue_send: UnboundedSender&lt;SubgraphId&gt;,
+            event_queue_send: UnboundedSender&lt;(SubgraphId, bool)&gt;,
         }
         <span class="kw">impl </span>ArcWake <span class="kw">for </span>ContextWaker {
             <span class="kw">fn </span>wake_by_ref(arc_self: <span class="kw-2">&amp;</span>Arc&lt;<span class="self">Self</span>&gt;) {
-                <span class="kw">let </span>_recv_closed_error = arc_self.event_queue_send.send(arc_self.subgraph_id);
+                <span class="kw">let </span>_recv_closed_error =
+                    arc_self.event_queue_send.send((arc_self.subgraph_id, <span class="bool-val">true</span>));
             }
         }
 

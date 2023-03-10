@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["BindType","ConnectionType"],"mod":["custom_service","deployment","gcp","hydroflow_crate","localhost","terraform","util"],"struct":["ResourceBatch","ResourceResult"],"trait":["Host","LaunchedBinary","LaunchedHost","Service"]};
+window.SIDEBAR_ITEMS = {"enum":["BindType","ConnectionType","HostTargetType"],"mod":["custom_service","deployment","gcp","hydroflow_crate","localhost","terraform","util"],"struct":["ResourceBatch","ResourceResult"],"trait":["Host","LaunchedBinary","LaunchedHost","Service"]};
