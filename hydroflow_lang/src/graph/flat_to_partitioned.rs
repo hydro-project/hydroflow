@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use proc_macro2::Span;
-use slotmap::{Key, SecondaryMap, SparseSecondaryMap};
+use slotmap::{SecondaryMap, SparseSecondaryMap};
 use syn::parse_quote;
 use syn::spanned::Spanned;
 
@@ -434,57 +434,73 @@ fn separate_external_inputs(partitioned_graph: &mut PartitionedGraph) {
 
 // Find the input (recv) and output (send) handoffs for each subgraph.
 fn helper_find_subgraph_handoffs(partitioned_graph: &mut PartitionedGraph) {
-    // TODO(mingwei): These should be invariants maintained by `PartitionedGraph`.
-    {
-        // Get data on handoff src and dst subgraphs.
-        let subgraph_recv_handoffs: SecondaryMap<GraphSubgraphId, Vec<GraphNodeId>> =
-            partitioned_graph
-                .subgraph_nodes
-                .keys()
-                .map(|k| (k, Default::default()))
-                .collect();
-        let subgraph_send_handoffs = subgraph_recv_handoffs.clone();
+    // TODO(mingwei): These should be invariants maintained by `PartitionedGraph`. encapsulate.
 
-        partitioned_graph.subgraph_recv_handoffs = subgraph_recv_handoffs;
-        partitioned_graph.subgraph_send_handoffs = subgraph_send_handoffs;
-    }
+    // Get data on handoff src and dst subgraphs.
+    let mut subgraph_recv_handoffs: SecondaryMap<GraphSubgraphId, Vec<GraphNodeId>> =
+        partitioned_graph
+            .subgraph_nodes
+            .keys()
+            .map(|k| (k, Default::default()))
+            .collect();
+    let mut subgraph_send_handoffs = subgraph_recv_handoffs.clone();
 
-    // For each edge in the graph, if `src` or `dst` are a handoff then assign
-    // that handoff the to neighboring subgraphs (the other of `src`/`dst`).
-    // (Mingwei: alternatively, could iterate nodes instead and just look at pred/succ).
-    for (src, dst) in partitioned_graph
-        .edges()
-        .map(|(_edge_id, (src, _src_port, dst, _dst_port))| (src, dst))
-        .collect::<Vec<_>>()
-    {
-        let (src_node, _src_inst) = partitioned_graph.node(src);
-        let (dst_node, _dst_inst) = partitioned_graph.node(dst);
-        match (src_node, dst_node) {
-            (Node::Operator(_), Node::Operator(_)) => {}
-            (Node::Operator(_), Node::Handoff { .. }) => {
-                // TODO(mingwei): encapsulate
-                let src_sg = partitioned_graph.node_subgraph(src).unwrap();
-                partitioned_graph.subgraph_send_handoffs[src_sg].push(dst);
-            }
-            (Node::Handoff { .. }, Node::Operator(_)) => {
-                // TODO(mingwei): encapsulate
-                let dst_sg = partitioned_graph.node_subgraph(dst).unwrap();
-                partitioned_graph.subgraph_recv_handoffs[dst_sg].push(src);
-            }
-            (Node::Handoff { .. }, Node::Handoff { .. }) => {
-                Diagnostic::spanned(
-                    Span::call_site(),
-                    Level::Error,
-                    format!(
-                        "Internal Error: Consecutive handoffs {:?} -> {:?}",
-                        src.data(),
-                        dst.data()
-                    ),
-                )
-                .emit();
-            }
+    // For each handoff node, add it to the `send`/`recv` lists for the corresponding subgraphs.
+    for (hoff_id, node) in partitioned_graph.nodes() {
+        if !matches!(node, Node::Handoff { .. }) {
+            continue;
+        }
+        // Senders into the handoff. (Should really only be one).
+        for (_edge, _port, pred_id) in partitioned_graph.predecessors(hoff_id) {
+            let pred_sg = partitioned_graph.subgraph(pred_id).unwrap();
+            subgraph_send_handoffs[pred_sg].push(hoff_id);
+        }
+        // Receivers from the handoff. (Should really only be one).
+        for (_edge, _port, succ_id) in partitioned_graph.successors(hoff_id) {
+            let succ_sg = partitioned_graph.subgraph(succ_id).unwrap();
+            subgraph_recv_handoffs[succ_sg].push(hoff_id);
         }
     }
+
+    partitioned_graph.subgraph_recv_handoffs = subgraph_recv_handoffs;
+    partitioned_graph.subgraph_send_handoffs = subgraph_send_handoffs;
+
+    // // For each edge in the graph, if `src` or `dst` are a handoff then assign
+    // // that handoff the to neighboring subgraphs (the other of `src`/`dst`).
+    // // (Mingwei: alternatively, could iterate nodes instead and just look at pred/succ).
+    // for (src, dst) in partitioned_graph
+    //     .edges()
+    //     .map(|(_edge_id, (src, _src_port, dst, _dst_port))| (src, dst))
+    //     .collect::<Vec<_>>()
+    // {
+    //     let (src_node, _src_inst) = partitioned_graph.node(src);
+    //     let (dst_node, _dst_inst) = partitioned_graph.node(dst);
+    //     match (src_node, dst_node) {
+    //         (Node::Operator(_), Node::Operator(_)) => {}
+    //         (Node::Operator(_), Node::Handoff { .. }) => {
+    //             // TODO(mingwei): encapsulate
+    //             let src_sg = partitioned_graph.node_subgraph(src).unwrap();
+    //             partitioned_graph.subgraph_send_handoffs[src_sg].push(dst);
+    //         }
+    //         (Node::Handoff { .. }, Node::Operator(_)) => {
+    //             // TODO(mingwei): encapsulate
+    //             let dst_sg = partitioned_graph.node_subgraph(dst).unwrap();
+    //             partitioned_graph.subgraph_recv_handoffs[dst_sg].push(src);
+    //         }
+    //         (Node::Handoff { .. }, Node::Handoff { .. }) => {
+    //             Diagnostic::spanned(
+    //                 Span::call_site(),
+    //                 Level::Error,
+    //                 format!(
+    //                     "Internal Error: Consecutive handoffs {:?} -> {:?}",
+    //                     src.data(),
+    //                     dst.data()
+    //                 ),
+    //             )
+    //             .emit();
+    //         }
+    //     }
+    // }
 
     // (subgraph_recv_handoffs, subgraph_send_handoffs)
 }
