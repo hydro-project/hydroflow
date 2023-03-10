@@ -1,6 +1,7 @@
 #![feature(proc_macro_diagnostic, proc_macro_span)]
 #![allow(clippy::explicit_auto_deref)]
 
+use hydroflow_lang::graph::flat_to_partitioned::partition_graph;
 use proc_macro2::{Ident, Literal, Span};
 use quote::quote;
 use syn::{parse_macro_input, LitStr};
@@ -26,7 +27,7 @@ pub fn hydroflow_syntax(input: proc_macro::TokenStream) -> proc_macro::TokenStre
     let flat_graph_builder = FlatGraphBuilder::from_hfcode(input);
     let flat_graph_result = flat_graph_builder.build(Level::Help);
     if let Ok(flat_graph) = flat_graph_result {
-        match flat_graph.into_partitioned_graph() {
+        match partition_graph(flat_graph) {
             Ok(part_graph) => return part_graph.as_code(root, true).into(),
             Err(diagnostic) => diagnostic.emit(),
         }
@@ -42,9 +43,9 @@ pub fn hydroflow_parser(input: proc_macro::TokenStream) -> proc_macro::TokenStre
     let flat_graph = flat_graph_builder
         .build(Level::Help)
         .unwrap_or_else(std::convert::identity);
-    let flat_mermaid = flat_graph.mermaid_string();
+    let flat_mermaid = flat_graph.mermaid_string_flat();
 
-    let part_graph = flat_graph.into_partitioned_graph().unwrap();
+    let part_graph = partition_graph(flat_graph).unwrap();
     let part_mermaid = part_graph.to_serde_graph().to_mermaid();
 
     let lit0 = Literal::string(&*flat_mermaid);

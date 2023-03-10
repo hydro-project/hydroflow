@@ -7,19 +7,19 @@ use slotmap::{Key, SecondaryMap, SlotMap, SparseSecondaryMap};
 use syn::spanned::Spanned;
 
 use crate::diagnostic::Diagnostic;
+use crate::pretty_span::{PrettyRowCol, PrettySpan};
 
 use super::ops::{
     find_op_op_constraints, DelayType, OperatorWriteOutput, WriteContextArgs, OPERATORS,
 };
 use super::serde_graph::{SerdeEdge, SerdeGraph};
 use super::{
-    get_operator_generics, node_color, Color, DiMulGraph, FlatGraph, FlatGraphExploded,
-    GraphEdgeId, GraphNodeId, GraphSubgraphId, Node, OperatorInstance, PortIndexValue, CONTEXT,
-    HANDOFF_NODE_STR, HYDROFLOW,
+    get_operator_generics, node_color, Color, DiMulGraph, GraphEdgeId, GraphNodeId,
+    GraphSubgraphId, Node, OperatorInstance, PortIndexValue, CONTEXT, HANDOFF_NODE_STR, HYDROFLOW,
 };
 
-#[derive(Default)]
-#[allow(dead_code)] // TODO(mingwei): remove when no longer needed.
+/// A graph representing a hydroflow dataflow graph (with or without subgraph partitioning, stratification, and handoff insertion).
+#[derive(Default, Debug)]
 pub struct PartitionedGraph {
     /// Each node (operator or handoff).
     pub(crate) nodes: SlotMap<GraphNodeId, Node>,
@@ -45,30 +45,31 @@ impl PartitionedGraph {
         Default::default()
     }
 
-    /// Create a `PartitionedGraph` without partitions from the `FlatGraph`.
-    pub(crate) fn unpartitioned_from_flat_graph(flat_graph: FlatGraph) -> Self {
-        let FlatGraphExploded {
-            nodes,
-            operator_instances,
-            graph,
-            ports,
-            node_varnames,
-        } = flat_graph.explode();
-        Self {
-            nodes,
-            operator_instances,
-            graph,
-            ports,
-
-            node_varnames,
-
-            ..Default::default()
+    /// Insert a node, assigning the given varname.
+    pub fn insert_node(&mut self, node: Node, varname_opt: Option<Ident>) -> GraphNodeId {
+        let node_id = self.nodes.insert(node);
+        if let Some(varname) = varname_opt {
+            self.node_varnames.insert(node_id, varname);
         }
+        node_id
     }
 
-    #[allow(clippy::result_unit_err)]
-    pub fn from_flat_graph(flat_graph: FlatGraph) -> Result<Self, Diagnostic> {
-        flat_graph.try_into()
+    pub fn insert_operator_instance(&mut self, node_id: GraphNodeId, op_inst: OperatorInstance) {
+        assert!(matches!(self.nodes.get(node_id), Some(Node::Operator(_))));
+        self.operator_instances.insert(node_id, op_inst);
+    }
+
+    /// Insert an edge between nodes thru the given ports.
+    pub fn insert_edge(
+        &mut self,
+        src: GraphNodeId,
+        src_port: PortIndexValue,
+        dst: GraphNodeId,
+        dst_port: PortIndexValue,
+    ) -> GraphEdgeId {
+        let edge_id = self.graph.insert_edge(src, dst);
+        self.ports.insert(edge_id, (src_port, dst_port));
+        edge_id
     }
 
     /// Get a node with its operator instance (if applicable).
@@ -699,6 +700,69 @@ impl PartitionedGraph {
     pub fn write_serde_graph(&self, write: &mut impl std::fmt::Write) -> std::fmt::Result {
         let sg = self.to_serde_graph();
         writeln!(write, "{}", serde_json::to_string(&sg).unwrap())?;
+        Ok(())
+    }
+
+    /// Convert back into surface syntax.
+    pub fn surface_syntax_string(&self) -> String {
+        let mut string = String::new();
+        self.write_surface_syntax(&mut string).unwrap();
+        string
+    }
+
+    /// Convert back into surface syntax.
+    pub fn write_surface_syntax(&self, write: &mut impl std::fmt::Write) -> std::fmt::Result {
+        for (key, node) in self.nodes.iter() {
+            match node {
+                Node::Operator(op) => {
+                    writeln!(write, "{:?} = {};", key.data(), op.to_token_stream())?;
+                }
+                Node::Handoff { .. } => unimplemented!("HANDOFF IN FLAT GRAPH."),
+            }
+        }
+        writeln!(write)?;
+        for (_e, (src_key, dst_key)) in self.graph.edges() {
+            writeln!(write, "{:?} -> {:?};", src_key.data(), dst_key.data())?;
+        }
+        Ok(())
+    }
+
+    /// Convert into a [mermaid](https://mermaid-js.github.io/) graph. Ignores subgraphs.
+    pub fn mermaid_string_flat(&self) -> String {
+        let mut string = String::new();
+        self.write_mermaid_flat(&mut string).unwrap();
+        string
+    }
+
+    /// Convert into a [mermaid](https://mermaid-js.github.io/) graph. Ignores subgraphs.
+    pub fn write_mermaid_flat(&self, write: &mut impl std::fmt::Write) -> std::fmt::Result {
+        writeln!(write, "flowchart TB")?;
+        for (key, node) in self.nodes.iter() {
+            match node {
+                Node::Operator(operator) => writeln!(
+                    write,
+                    "    %% {span}\n    {id:?}[\"{row_col} <tt>{code}</tt>\"]",
+                    span = PrettySpan(node.span()),
+                    id = key.data(),
+                    row_col = PrettyRowCol(node.span()),
+                    code = operator
+                        .to_token_stream()
+                        .to_string()
+                        .replace('&', "&amp;")
+                        .replace('<', "&lt;")
+                        .replace('>', "&gt;")
+                        .replace('"', "&quot;")
+                        .replace('\n', "<br>"),
+                ),
+                Node::Handoff { .. } => {
+                    writeln!(write, r#"    {:?}{{"{}"}}"#, key.data(), HANDOFF_NODE_STR)
+                }
+            }?;
+        }
+        writeln!(write)?;
+        for (_e, (src_key, dst_key)) in self.graph.edges() {
+            writeln!(write, "    {:?}-->{:?}", src_key.data(), dst_key.data())?;
+        }
         Ok(())
     }
 }
