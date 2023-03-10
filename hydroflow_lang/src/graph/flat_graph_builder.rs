@@ -14,7 +14,7 @@ use crate::pretty_span::PrettySpan;
 
 use super::ops::find_op_op_constraints;
 use super::{
-    get_operator_generics, GraphNodeId, Node, OperatorInstance, PartitionedGraph, PortIndexValue,
+    get_operator_generics, GraphNodeId, HydroflowGraph, Node, OperatorInstance, PortIndexValue,
 };
 
 #[derive(Clone, Debug)]
@@ -34,8 +34,8 @@ pub struct FlatGraphBuilder {
     /// Spanned error/warning/etc diagnostics to emit.
     diagnostics: Vec<Diagnostic>,
 
-    /// PartitionedGraph being built.
-    flat_graph: PartitionedGraph,
+    /// HydroflowGraph being built.
+    flat_graph: HydroflowGraph,
     /// Variable names, used as [`HfStatement::Named`] are added.
     /// Value will be set to `Err(())` if the name references an illegal self-referential cycle.
     varname_ends: BTreeMap<Ident, Result<Ends, ()>>,
@@ -53,23 +53,23 @@ impl FlatGraphBuilder {
         input.into()
     }
 
-    /// Build into an unpartitioned [`PartitionedGraph`], returning a tuple of a `PartitionedGraph` and any diagnostics.
+    /// Build into an unpartitioned [`HydroflowGraph`], returning a tuple of a `HydroflowGraph` and any diagnostics.
     ///
-    /// Even if there are errors, the `PartitionedGraph` will be returned (potentially in a partial state).
-    pub fn try_build(mut self) -> (PartitionedGraph, Vec<Diagnostic>) {
+    /// Even if there are errors, the `HydroflowGraph` will be returned (potentially in a partial state).
+    pub fn try_build(mut self) -> (HydroflowGraph, Vec<Diagnostic>) {
         self.connect_operator_links();
         self.process_operator_errors();
 
         (self.flat_graph, self.diagnostics)
     }
 
-    /// Build into an unpartitioned [`PartitionedGraph`].
+    /// Build into an unpartitioned [`HydroflowGraph`].
     ///
     /// Emits any diagnostics more severe than `min_diagnostic_level`.
     ///
-    /// Returns `Err(PartitionedGraph)` if there are any errors. Returns `Ok(PartitionedGraph)` if there are no
+    /// Returns `Err(HydroflowGraph)` if there are any errors. Returns `Ok(HydroflowGraph)` if there are no
     /// errors.
-    pub fn build(self, min_diagnostic_level: Level) -> Result<PartitionedGraph, PartitionedGraph> {
+    pub fn build(self, min_diagnostic_level: Level) -> Result<HydroflowGraph, HydroflowGraph> {
         let (result, diagnostics) = self.try_build();
 
         diagnostics
@@ -84,7 +84,7 @@ impl FlatGraphBuilder {
         }
     }
 
-    /// Add a single [`HfStatement`] line to this `PartitionedGraph`.
+    /// Add a single [`HfStatement`] line to this `HydroflowGraph`.
     pub fn add_statement(&mut self, stmt: HfStatement) {
         let stmt_span = stmt.span();
         match stmt {

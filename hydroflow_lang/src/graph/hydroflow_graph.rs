@@ -20,7 +20,7 @@ use super::{
 
 /// A graph representing a hydroflow dataflow graph (with or without subgraph partitioning, stratification, and handoff insertion).
 #[derive(Default, Debug)]
-pub struct PartitionedGraph {
+pub struct HydroflowGraph {
     /// Each node (operator or handoff).
     pub(crate) nodes: SlotMap<GraphNodeId, Node>,
     /// Instance data corresponding to each operator node.
@@ -40,7 +40,7 @@ pub struct PartitionedGraph {
     /// What variable name each graph node belongs to (if any).
     pub(crate) node_varnames: SparseSecondaryMap<GraphNodeId, Ident>,
 }
-impl PartitionedGraph {
+impl HydroflowGraph {
     pub fn new() -> Self {
         Default::default()
     }

@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 
 use hydroflow_lang::{
     diagnostic::{Diagnostic, Level},
-    graph::{flat_to_partitioned::partition_graph, FlatGraphBuilder, PartitionedGraph},
+    graph::{flat_to_partitioned::partition_graph, FlatGraphBuilder, HydroflowGraph},
     parse::{IndexInt, Indexing, Pipeline, PipelineLink},
 };
 use proc_macro2::{Span, TokenStream};
@@ -18,7 +18,7 @@ use util::{repeat_tuple, Counter};
 
 pub fn gen_hydroflow_graph(
     literal: proc_macro2::Literal,
-) -> Result<PartitionedGraph, (Vec<rust_sitter::errors::ParseError>, Vec<Diagnostic>)> {
+) -> Result<HydroflowGraph, (Vec<rust_sitter::errors::ParseError>, Vec<Diagnostic>)> {
     let str_node: syn::LitStr = parse_quote!(#literal);
     let actual_str = str_node.value();
     let program: Program = grammar::datalog::parse(&actual_str).map_err(|e| (e, vec![]))?;
@@ -144,7 +144,7 @@ pub fn gen_hydroflow_graph(
     }
 }
 
-pub fn hydroflow_graph_to_program(flat_graph: PartitionedGraph, root: TokenStream) -> syn::Stmt {
+pub fn hydroflow_graph_to_program(flat_graph: HydroflowGraph, root: TokenStream) -> syn::Stmt {
     let partitioned_graph =
         partition_graph(flat_graph).expect("Failed to partition (cycle detected).");
     let code_tokens = partitioned_graph.as_code(root, true);
