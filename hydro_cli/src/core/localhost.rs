@@ -5,7 +5,7 @@ use async_channel::{Receiver, Sender};
 use async_process::{Command, Stdio};
 use async_trait::async_trait;
 use futures::{io::BufReader, AsyncBufReadExt, AsyncRead, AsyncWriteExt, StreamExt};
-use hydroflow::util::cli::BindConfig;
+use hydroflow_cli_integration::BindConfig;
 use tokio::sync::RwLock;
 
 use super::{
