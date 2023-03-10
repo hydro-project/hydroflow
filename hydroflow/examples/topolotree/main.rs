@@ -71,9 +71,12 @@ async fn main() {
 
     parent_send.send((1, 2)).unwrap();
     left_send.send((1,5)).unwrap();
+<<<<<<< HEAD
     right_send.send((0,0)).unwrap();
     local_send.send((0,0,)).unwrap();
     
+=======
+>>>>>>> 16f4bcb4469e2d61c564fedbef0aba7062bf57ca
 
     let mut df = hydroflow_syntax! {
 
