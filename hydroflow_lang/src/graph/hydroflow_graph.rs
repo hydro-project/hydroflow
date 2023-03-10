@@ -22,23 +22,23 @@ use super::{
 #[derive(Default, Debug)]
 pub struct HydroflowGraph {
     /// Each node (operator or handoff).
-    pub(crate) nodes: SlotMap<GraphNodeId, Node>,
+    nodes: SlotMap<GraphNodeId, Node>,
     /// Instance data corresponding to each operator node.
-    pub(super) operator_instances: SecondaryMap<GraphNodeId, OperatorInstance>,
-    /// Graph
-    pub(crate) graph: DiMulGraph<GraphNodeId, GraphEdgeId>,
+    operator_instances: SecondaryMap<GraphNodeId, OperatorInstance>,
+    /// Graph data structure (two-way adjacency list).
+    graph: DiMulGraph<GraphNodeId, GraphEdgeId>,
     /// Input and output port for each edge.
-    pub(crate) ports: SecondaryMap<GraphEdgeId, (PortIndexValue, PortIndexValue)>,
+    ports: SecondaryMap<GraphEdgeId, (PortIndexValue, PortIndexValue)>,
     /// Which subgraph each node belongs to.
-    pub(crate) node_subgraph: SecondaryMap<GraphNodeId, GraphSubgraphId>,
+    node_subgraph: SecondaryMap<GraphNodeId, GraphSubgraphId>,
 
     /// Which nodes belong to each subgraph.
-    pub(crate) subgraph_nodes: SlotMap<GraphSubgraphId, Vec<GraphNodeId>>,
+    subgraph_nodes: SlotMap<GraphSubgraphId, Vec<GraphNodeId>>,
     /// Which stratum each subgraph belongs to.
-    pub(crate) subgraph_stratum: SecondaryMap<GraphSubgraphId, usize>,
+    subgraph_stratum: SecondaryMap<GraphSubgraphId, usize>,
 
     /// What variable name each graph node belongs to (if any).
-    pub(crate) node_varnames: SparseSecondaryMap<GraphNodeId, Ident>,
+    node_varnames: SparseSecondaryMap<GraphNodeId, Ident>,
 }
 impl HydroflowGraph {
     pub fn new() -> Self {
