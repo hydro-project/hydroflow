@@ -26,6 +26,7 @@ jobs:
 
   check:
     name: Check
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' || github.event_name != 'pull_request' }}
     timeout-minutes: 10
     needs: pre_job
     runs-on: ubuntu-latest
@@ -59,6 +60,7 @@ jobs:
 
   check-wasm:
     name: Check WebAssembly
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' || github.event_name != 'pull_request' }}
     timeout-minutes: 10
     needs: pre_job
     runs-on: ubuntu-latest
@@ -93,6 +95,7 @@ jobs:
 
   test:
     name: Test Suite
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' || github.event_name != 'pull_request' }}
     timeout-minutes: 15
     needs: pre_job
     runs-on: ubuntu-latest
@@ -126,6 +129,7 @@ jobs:
 
   test-wasm:
     name: Test Suite (WebAssembly)
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' || github.event_name != 'pull_request' }}
     timeout-minutes: 15
     needs: pre_job
     runs-on: ubuntu-latest
@@ -168,6 +172,7 @@ jobs:
 
   lints:
     name: Lints
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' || github.event_name != 'pull_request' }}
     timeout-minutes: 10
     needs: pre_job
     runs-on: ubuntu-latest
