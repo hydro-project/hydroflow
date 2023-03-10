@@ -182,4 +182,8 @@ impl<V> EMaxReg<V> {
             val: (),
         }
     }
+
+    pub fn from_raw(clock: EVClock, val: V) -> Self {
+        Self { clock, val }
+    }
 }

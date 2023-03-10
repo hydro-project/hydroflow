@@ -12,6 +12,7 @@ use crate::parse::PortIndex;
 
 use super::{GraphNodeId, GraphSubgraphId, PortIndexValue};
 
+mod batch_iter_fn;
 mod buffer;
 mod cross_join;
 mod demux;
@@ -190,6 +191,7 @@ pub const OPERATORS: &[OperatorConstraints] = &[
     dest_sink::DEST_SINK,
     dest_sink_serde::DEST_SINK_SERDE,
     buffer::BUFFER,
+    batch_iter_fn::BATCH_ITER_FN,
 ];
 
 pub struct WriteContextArgs<'a> {

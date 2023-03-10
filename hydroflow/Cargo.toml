@@ -73,7 +73,7 @@ colored = "2.0"
 criterion = { version = "0.4", features = [ "async_tokio", "html_reports" ] }
 futures = { version = "0.3" }
 itertools = "0.10.3"
-rand = "0.8.4"
+rand = {version = "0.8.4", features = ["small_rng"]}
 textnonce = "1.0.0"
 time = "0.3"
 trybuild = "1.0.71"
