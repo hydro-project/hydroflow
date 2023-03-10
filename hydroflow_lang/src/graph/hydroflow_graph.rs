@@ -1,3 +1,5 @@
+#![deny(missing_docs)]
+
 use std::fmt::Debug;
 use std::iter::FusedIterator;
 
@@ -18,7 +20,14 @@ use super::{
     GraphSubgraphId, Node, OperatorInstance, PortIndexValue, CONTEXT, HANDOFF_NODE_STR, HYDROFLOW,
 };
 
-/// A graph representing a hydroflow dataflow graph (with or without subgraph partitioning, stratification, and handoff insertion).
+/// A graph representing a hydroflow dataflow graph (with or without subgraph partitioning,
+/// stratification, and handoff insertion). This is a "meta" graph used for generating Rust source
+/// code in macros from Hydroflow surface sytnax.
+///
+/// This struct has a lot of methods for manipulating the graph, vaguely grouped together in
+/// separate `impl` blocks. You might notice a few particularly specific arbitray-seeming methods
+/// in here--those are just what was needed for the compilation algorithms. If you need another
+/// method then add it.
 #[derive(Default, Debug)]
 pub struct HydroflowGraph {
     /// Each node (operator or handoff).
@@ -41,8 +50,131 @@ pub struct HydroflowGraph {
     node_varnames: SparseSecondaryMap<GraphNodeId, Ident>,
 }
 impl HydroflowGraph {
+    /// Create a new empty `HydroflowGraph`.
     pub fn new() -> Self {
         Default::default()
+    }
+}
+// Node methods.
+impl HydroflowGraph {
+    /// Get a node with its operator instance (if applicable).
+    pub fn node(&self, node_id: GraphNodeId) -> &Node {
+        self.nodes.get(node_id).expect("Node not found.")
+    }
+
+    /// Get the `OperatorInstance` for a given node. Node must be an operator and have an
+    /// `OperatorInstance` present, otherwise will return `None`.
+    pub fn node_op_inst(&self, node_id: GraphNodeId) -> Option<&OperatorInstance> {
+        self.operator_instances.get(node_id)
+    }
+
+    /// Get subgraph for node.
+    pub fn node_subgraph(&self, node_id: GraphNodeId) -> Option<GraphSubgraphId> {
+        self.node_subgraph.get(node_id).copied()
+    }
+
+    /// Degree into a node, i.e. the number of predecessors.
+    pub fn node_degree_in(&self, node_id: GraphNodeId) -> usize {
+        self.graph.degree_in(node_id)
+    }
+
+    /// Degree out of a node, i.e. the number of successors.
+    pub fn node_degree_out(&self, node_id: GraphNodeId) -> usize {
+        self.graph.degree_out(node_id)
+    }
+
+    /// Successors, iterator of `(GraphEdgeId, GraphNodeId)` of outgoing edges.
+    pub fn node_successors(
+        &self,
+        src: GraphNodeId,
+    ) -> impl '_
+           + Iterator<Item = (GraphEdgeId, GraphNodeId)>
+           + DoubleEndedIterator
+           + ExactSizeIterator
+           + FusedIterator
+           + Clone
+           + Debug {
+        self.graph.successors(src)
+    }
+
+    /// Predecessors, iterator of `(GraphEdgeId, GraphNodeId)` of incoming edges.
+    pub fn node_predecessors(
+        &self,
+        dst: GraphNodeId,
+    ) -> impl '_
+           + Iterator<Item = (GraphEdgeId, GraphNodeId)>
+           + DoubleEndedIterator
+           + ExactSizeIterator
+           + FusedIterator
+           + Clone
+           + Debug {
+        self.graph.predecessors(dst)
+    }
+
+    /// Successor edges, iterator of `GraphEdgeId` of outgoing edges.
+    pub fn node_successor_edges(
+        &self,
+        src: GraphNodeId,
+    ) -> impl '_
+           + Iterator<Item = GraphEdgeId>
+           + DoubleEndedIterator
+           + ExactSizeIterator
+           + FusedIterator
+           + Clone
+           + Debug {
+        self.graph.successor_edges(src)
+    }
+
+    /// Predecessor edges, iterator of `GraphEdgeId` of incoming edges.
+    pub fn node_predecessor_edges(
+        &self,
+        src: GraphNodeId,
+    ) -> impl '_
+           + Iterator<Item = GraphEdgeId>
+           + DoubleEndedIterator
+           + ExactSizeIterator
+           + FusedIterator
+           + Clone
+           + Debug {
+        self.graph.predecessor_edges(src)
+    }
+
+    /// Successor nodes, iterator of `GraphNodeId`.
+    pub fn node_successor_nodes(
+        &self,
+        src: GraphNodeId,
+    ) -> impl '_
+           + Iterator<Item = GraphNodeId>
+           + DoubleEndedIterator
+           + ExactSizeIterator
+           + FusedIterator
+           + Clone
+           + Debug {
+        self.graph.successor_vertices(src)
+    }
+
+    /// Predecessor edges, iterator of `GraphNodeId`.
+    pub fn node_predecessor_nodes(
+        &self,
+        src: GraphNodeId,
+    ) -> impl '_
+           + Iterator<Item = GraphNodeId>
+           + DoubleEndedIterator
+           + ExactSizeIterator
+           + FusedIterator
+           + Clone
+           + Debug {
+        self.graph.predecessor_vertices(src)
+    }
+
+    /// Iterator of node IDs `GraphNodeId`.
+    pub fn node_ids(&self) -> slotmap::basic::Keys<'_, GraphNodeId, Node> {
+        self.nodes.keys()
+    }
+
+    /// Iterator over `(GraphNodeId, &Node)` pairs.
+    pub fn nodes(&self) -> slotmap::basic::Iter<'_, GraphNodeId, Node> {
+        self.nodes.iter()
     }
 
     /// Insert a node, assigning the given varname.
@@ -54,116 +186,15 @@ impl HydroflowGraph {
         node_id
     }
 
-    pub fn insert_operator_instance(&mut self, node_id: GraphNodeId, op_inst: OperatorInstance) {
+    /// Insert an operator instance for the given node. Panics if already set.
+    pub fn insert_node_op_inst(&mut self, node_id: GraphNodeId, op_inst: OperatorInstance) {
         assert!(matches!(self.nodes.get(node_id), Some(Node::Operator(_))));
-        self.operator_instances.insert(node_id, op_inst);
+        let old_inst = self.operator_instances.insert(node_id, op_inst);
+        assert!(old_inst.is_none());
     }
 
-    /// Insert an edge between nodes thru the given ports.
-    pub fn insert_edge(
-        &mut self,
-        src: GraphNodeId,
-        src_port: PortIndexValue,
-        dst: GraphNodeId,
-        dst_port: PortIndexValue,
-    ) -> GraphEdgeId {
-        let edge_id = self.graph.insert_edge(src, dst);
-        self.ports.insert(edge_id, (src_port, dst_port));
-        edge_id
-    }
-
-    /// Get a node with its operator instance (if applicable).
-    pub fn node(&self, node_id: GraphNodeId) -> (&Node, Option<&OperatorInstance>) {
-        (&self.nodes[node_id], self.operator_instances.get(node_id))
-    }
-
-    /// Iterator over `(GraphNodeId, &Node)` pairs.
-    pub fn nodes(&self) -> slotmap::basic::Iter<GraphNodeId, Node> {
-        self.nodes.iter()
-    }
-
-    /// Get edge: `(src GraphNodeId, src &PortIndexValue, dst GraphNodeId, dst &PortIndexValue))`.
-    pub fn edge(
-        &self,
-        edge_id: GraphEdgeId,
-    ) -> (GraphNodeId, &PortIndexValue, GraphNodeId, &PortIndexValue) {
-        let (src, dst) = self.graph.edge(edge_id).expect("Edge not found");
-        let (src_port, dst_port) = &self.ports[edge_id];
-        (src, src_port, dst, dst_port)
-    }
-
-    /// Iterator over all edges: `(GraphEdgeId, (src GraphNodeId, src &PortIndexValue, dst GraphNodeId, dst &PortIndexValue))`.
-    pub fn edges(
-        &self,
-    ) -> impl '_
-           + Iterator<
-        Item = (
-            GraphEdgeId,
-            (GraphNodeId, &PortIndexValue, GraphNodeId, &PortIndexValue),
-        ),
-    >
-           + ExactSizeIterator
-           + FusedIterator
-           + Clone
-           + Debug {
-        self.graph.edges().map(|(edge_id, (src, dst))| {
-            let (src_port, dst_port) = &self.ports[edge_id];
-            (edge_id, (src, src_port, dst, dst_port))
-        })
-    }
-
-    /// Successors, iterator of `(&PortIndexValue, GraphNodeId)` of outgoing edges.
-    /// `PortIndexValue` for the port coming out of `src`.
-    pub fn successors(
-        &self,
-        src: GraphNodeId,
-    ) -> impl '_
-           + Iterator<Item = (GraphEdgeId, &PortIndexValue, GraphNodeId)>
-           + DoubleEndedIterator
-           + FusedIterator
-           + Clone
-           + Debug {
-        self.graph
-            .successors(src)
-            .map(|(e, v)| (e, &self.ports[e].0, v))
-    }
-
-    /// Predecessors, iterator of `(&PortIndexValue, GraphNodeId)` of incoming edges.
-    /// `PortIndexValue` for the port going into `dst`.
-    pub fn predecessors(
-        &self,
-        dst: GraphNodeId,
-    ) -> impl '_
-           + Iterator<Item = (GraphEdgeId, &PortIndexValue, GraphNodeId)>
-           + DoubleEndedIterator
-           + FusedIterator
-           + Clone
-           + Debug {
-        self.graph
-            .predecessors(dst)
-            .map(|(e, v)| (e, &self.ports[e].1, v))
-    }
-
-    /// Degree into a node.
-    pub fn degree_in(&self, dst: GraphNodeId) -> usize {
-        self.graph.degree_in(dst)
-    }
-
-    /// Degree out of a node.
-    pub fn degree_out(&self, src: GraphNodeId) -> usize {
-        self.graph.degree_out(src)
-    }
-
-    /// Get the subgraph of the node.
-    pub fn subgraph(&self, node_id: GraphNodeId) -> Option<GraphSubgraphId> {
-        self.node_subgraph.get(node_id).copied()
-    }
-
-    /// Iterator over all subgraphs.
-    pub fn subgraphs(&self) -> slotmap::basic::Keys<'_, GraphSubgraphId, Vec<GraphNodeId>> {
-        self.subgraph_nodes.keys()
-    }
-
+    /// Inserts a node between two existing nodes connected by the given `edge_id`.
+    ///
     /// `edge`: (src, dst, dst_idx)
     ///
     /// Before: A (src) ------------> B (dst)
@@ -216,14 +247,72 @@ impl HydroflowGraph {
 
         (node_id, e1)
     }
+}
+// Edge methods.
+impl HydroflowGraph {
+    /// Get the `src` and `dst` for an edge: `(src GraphNodeId, dst GraphNodeId)`.
+    pub fn edge(&self, edge_id: GraphEdgeId) -> (GraphNodeId, GraphNodeId) {
+        let (src, dst) = self.graph.edge(edge_id).expect("Edge not found.");
+        (src, dst)
+    }
 
-    /// Get subgraph for node.
-    pub fn node_subgraph(&self, node_id: GraphNodeId) -> Option<GraphSubgraphId> {
-        self.node_subgraph.get(node_id).copied()
+    /// Get the source and destination ports for an edge: `(src &PortIndexValue, dst &PortIndexValue)`.
+    pub fn edge_ports(&self, edge_id: GraphEdgeId) -> (&PortIndexValue, &PortIndexValue) {
+        let (src_port, dst_port) = self.ports.get(edge_id).expect("Edge not found.");
+        (src_port, dst_port)
+    }
+
+    /// Iterator of all edge IDs `GraphEdgeId`.
+    pub fn edge_ids(&self) -> slotmap::basic::Keys<GraphEdgeId, (GraphNodeId, GraphNodeId)> {
+        self.graph.edge_ids()
+    }
+
+    /// Iterator over all edges: `(GraphEdgeId, (src GraphNodeId, dst GraphNodeId))`.
+    pub fn edges(
+        &self,
+    ) -> impl '_
+           + Iterator<Item = (GraphEdgeId, (GraphNodeId, GraphNodeId))>
+           + ExactSizeIterator
+           + FusedIterator
+           + Clone
+           + Debug {
+        self.graph.edges()
+    }
+
+    /// Insert an edge between nodes thru the given ports.
+    pub fn insert_edge(
+        &mut self,
+        src: GraphNodeId,
+        src_port: PortIndexValue,
+        dst: GraphNodeId,
+        dst_port: PortIndexValue,
+    ) -> GraphEdgeId {
+        let edge_id = self.graph.insert_edge(src, dst);
+        self.ports.insert(edge_id, (src_port, dst_port));
+        edge_id
+    }
+}
+// Subgraph methods.
+impl HydroflowGraph {
+    /// Nodes belonging to the given subgraph.
+    pub fn subgraph(&self, subgraph_id: GraphSubgraphId) -> &Vec<GraphNodeId> {
+        self.subgraph_nodes
+            .get(subgraph_id)
+            .expect("Subgraph not found.")
+    }
+
+    /// Iterator over all subgraph IDs.
+    pub fn subgraph_ids(&self) -> slotmap::basic::Keys<'_, GraphSubgraphId, Vec<GraphNodeId>> {
+        self.subgraph_nodes.keys()
+    }
+
+    /// Iterator over all subgraphs, ID and members: `(GraphSubgraphId, Vec<GraphNodeId>)`.
+    pub fn subgraphs(&self) -> slotmap::basic::Iter<'_, GraphSubgraphId, Vec<GraphNodeId>> {
+        self.subgraph_nodes.iter()
     }
 
     /// Create a subgraph consisting of `node_ids`. Returns an error if any of the nodes are already in a subgraph.
-    pub fn create_subgraph(
+    pub fn insert_subgraph(
         &mut self,
         node_ids: Vec<GraphNodeId>,
     ) -> Result<GraphSubgraphId, (GraphNodeId, GraphSubgraphId)> {
@@ -269,26 +358,19 @@ impl HydroflowGraph {
     pub fn max_stratum(&self) -> Option<usize> {
         self.subgraph_stratum.values().copied().max()
     }
-
-    pub fn serde_string(&self) -> String {
-        let mut string = String::new();
-        self.write_serde_graph(&mut string).unwrap();
-        string
-    }
-
-    pub fn node_id_as_string(&self, node_id: GraphNodeId, is_pred: bool) -> String {
-        match &self.nodes[node_id] {
+}
+// Display/output stuff.
+impl HydroflowGraph {
+    /// Helper to generate a deterministic `Ident` for the given node.
+    fn node_as_ident(&self, node_id: GraphNodeId, is_pred: bool) -> Ident {
+        let name = match &self.nodes[node_id] {
             Node::Operator(_) => format!("op_{:?}", node_id.data()),
             Node::Handoff { .. } => format!(
                 "hoff_{:?}_{}",
                 node_id.data(),
                 if is_pred { "recv" } else { "send" }
             ),
-        }
-    }
-
-    pub fn node_id_as_ident(&self, node_id: GraphNodeId, is_pred: bool) -> Ident {
-        let name = self.node_id_as_string(node_id, is_pred);
+        };
         let span = match (is_pred, &self.nodes[node_id]) {
             (_, Node::Operator(operator)) => operator.span(),
             (true, &Node::Handoff { src_span, .. }) => src_span,
@@ -318,13 +400,13 @@ impl HydroflowGraph {
                 continue;
             }
             // Receivers from the handoff. (Should really only be one).
-            for (_edge, _port, succ_id) in self.successors(hoff_id) {
-                let succ_sg = self.subgraph(succ_id).unwrap();
+            for (_edge, succ_id) in self.node_successors(hoff_id) {
+                let succ_sg = self.node_subgraph(succ_id).unwrap();
                 subgraph_handoffs[succ_sg].0.push(hoff_id);
             }
             // Senders into the handoff. (Should really only be one).
-            for (_edge, _port, pred_id) in self.predecessors(hoff_id) {
-                let pred_sg = self.subgraph(pred_id).unwrap();
+            for (_edge, pred_id) in self.node_predecessors(hoff_id) {
+                let pred_sg = self.node_subgraph(pred_id).unwrap();
                 subgraph_handoffs[pred_sg].1.push(hoff_id);
             }
         }
@@ -332,6 +414,7 @@ impl HydroflowGraph {
         subgraph_handoffs
     }
 
+    /// Emit this `HydroflowGraph` as runnable Rust source code tokens.
     pub fn as_code(&self, root: TokenStream, include_type_guards: bool) -> TokenStream {
         let hf = &Ident::new(HYDROFLOW, Span::call_site());
 
@@ -363,11 +446,11 @@ impl HydroflowGraph {
                 let (recv_hoffs, send_hoffs) = &subgraph_handoffs[subgraph_id];
                 let recv_ports: Vec<Ident> = recv_hoffs
                     .iter()
-                    .map(|&hoff_id| self.node_id_as_ident(hoff_id, true))
+                    .map(|&hoff_id| self.node_as_ident(hoff_id, true))
                     .collect();
                 let send_ports: Vec<Ident> = send_hoffs
                     .iter()
-                    .map(|&hoff_id| self.node_id_as_ident(hoff_id, false))
+                    .map(|&hoff_id| self.node_as_ident(hoff_id, false))
                     .collect();
 
                 let recv_port_code = recv_ports
@@ -413,7 +496,7 @@ impl HydroflowGraph {
                             .find(|op| op_name == op.name)
                             .unwrap_or_else(|| panic!("Failed to find op: {}", op_name));
 
-                        let ident = self.node_id_as_ident(node_id, false);
+                        let ident = self.node_as_ident(node_id, false);
 
                         {
                             // TODO clean this up.
@@ -427,7 +510,7 @@ impl HydroflowGraph {
 
                             let inputs: Vec<Ident> = input_edges
                                 .iter()
-                                .map(|&(_port, pred)| self.node_id_as_ident(pred, true))
+                                .map(|&(_port, pred)| self.node_as_ident(pred, true))
                                 .collect();
 
                             // Collect output arguments (successors).
@@ -440,7 +523,7 @@ impl HydroflowGraph {
 
                             let outputs: Vec<Ident> = output_edges
                                 .iter()
-                                .map(|&(_port, succ)| self.node_id_as_ident(succ, false))
+                                .map(|&(_port, succ)| self.node_as_ident(succ, false))
                                 .collect();
 
                             let is_pull = idx < pull_to_push_idx;
@@ -499,13 +582,13 @@ impl HydroflowGraph {
                         // Determine pull and push halves of the `Pivot`.
                         let pull_to_push_idx = pull_to_push_idx;
                         let pull_ident =
-                            self.node_id_as_ident(subgraph_nodes[pull_to_push_idx - 1], false);
+                            self.node_as_ident(subgraph_nodes[pull_to_push_idx - 1], false);
 
                         #[rustfmt::skip]
                         let push_ident = if let Some(&node_id) =
                             subgraph_nodes.get(pull_to_push_idx)
                         {
-                            self.node_id_as_ident(node_id, false)
+                            self.node_as_ident(node_id, false)
                         } else {
                             // Entire subgraph is pull (except for a single send/push handoff output).
                             assert_eq!(
@@ -554,7 +637,9 @@ impl HydroflowGraph {
                 }
             });
 
-        let serde_string = Literal::string(&*self.serde_string());
+        let serde_string = serde_json::to_string(&self.to_serde_graph()).unwrap() + "\n";
+        // Newline left over from old code, snapshot outputs.
+        let serde_string = Literal::string(&*serde_string);
         let code = quote! {
             {
                 use #root::{var_expr, var_args};
@@ -576,19 +661,21 @@ impl HydroflowGraph {
         }
     }
 
-    pub fn node_to_txt(&self, node_id: GraphNodeId) -> String {
-        match &self.nodes[node_id] {
-            Node::Operator(operator) => operator.to_token_stream().to_string(),
-            Node::Handoff { .. } => HANDOFF_NODE_STR.to_string(),
-        }
-    }
+    /// The `SerdeGraph` version of this, sent to the final runnable `Hydroflow` instance via
+    /// serialization and deserialization.
+    ///
+    /// TODO(mingwei): ser/de `HydroflowGraph` directly.
     pub fn to_serde_graph(&self) -> SerdeGraph {
         // TODO(mingwei): Double initialization of SerdeGraph fields.
         let mut g = SerdeGraph::new();
 
         // add nodes
-        for node_id in self.nodes.keys() {
-            g.nodes.insert(node_id, self.node_to_txt(node_id));
+        for (node_id, node) in self.nodes() {
+            let node_txt = match node {
+                Node::Operator(operator) => operator.to_token_stream().to_string(),
+                Node::Handoff { .. } => HANDOFF_NODE_STR.to_string(),
+            };
+            g.nodes.insert(node_id, node_txt);
         }
 
         // add edges
@@ -695,12 +782,6 @@ impl HydroflowGraph {
         }
 
         g
-    }
-
-    pub fn write_serde_graph(&self, write: &mut impl std::fmt::Write) -> std::fmt::Result {
-        let sg = self.to_serde_graph();
-        writeln!(write, "{}", serde_json::to_string(&sg).unwrap())?;
-        Ok(())
     }
 
     /// Convert back into surface syntax.

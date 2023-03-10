@@ -18,13 +18,14 @@ use self::ops::{OperatorConstraints, Persistence};
 
 mod di_mul_graph;
 mod flat_graph_builder;
+mod flat_to_partitioned;
 mod hydroflow_graph;
 
 pub use di_mul_graph::DiMulGraph;
 pub use flat_graph_builder::FlatGraphBuilder;
+pub use flat_to_partitioned::partition_graph;
 pub use hydroflow_graph::HydroflowGraph;
 
-pub mod flat_to_partitioned;
 pub mod graph_algorithms;
 pub mod ops;
 pub mod serde_graph;
@@ -152,8 +153,10 @@ pub enum Color {
     Hoff,
 }
 
+/// Determine op color based on in and out degree. If linear (1 in 1 out), color is None.
+///
+/// Note that this does NOT consider `DelayType` barriers, which generally imply `Pull`.
 pub fn node_color(is_handoff: bool, inn_degree: usize, out_degree: usize) -> Option<Color> {
-    // Determine op color based on in and out degree. If linear (1 in 1 out), color is None.
     if is_handoff {
         Some(Color::Hoff)
     } else {
