@@ -54,8 +54,8 @@ pub struct EAddCtx {
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EMaxReg<V> {
-    clock: EVClock,
-    val: V,
+    pub clock: EVClock,
+    pub val: V,
 }
 
 /// Defines the set of operations over the MVReg

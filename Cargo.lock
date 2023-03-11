@@ -959,6 +959,7 @@ dependencies = [
  "sealed",
  "serde",
  "serde-big-array",
+ "serde_bytes",
  "serde_json",
  "slotmap",
  "static_assertions",
@@ -1967,6 +1968,15 @@ name = "serde-big-array"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f1bb66e1af4481c21cbc943cabb68b98aabb4d7f935e47d1b4de722ca09da0b4"
+dependencies = [
+ "serde",
+]
+
+[[package]]
+name = "serde_bytes"
+version = "0.11.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "416bda436f9aab92e02c8e10d49a15ddd339cea90b6e340fe51ed97abb548294"
 dependencies = [
  "serde",
 ]

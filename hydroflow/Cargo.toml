@@ -65,6 +65,7 @@ rand_distr = "0.4.3"
 tmq = "0.3.2"
 serde-big-array = "0.5.0"
 async-stream = "0.3.4"
+serde_bytes = "0.11"
 
 [dev-dependencies]
 chrono = { version = "0.4.20", features = [ "serde" ], default-features = false }
