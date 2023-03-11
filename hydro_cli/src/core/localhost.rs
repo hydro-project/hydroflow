@@ -94,8 +94,13 @@ impl LaunchedHost for LaunchedLocalhost {
         }
     }
 
-    async fn launch_binary(&self, binary: &Path) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
+    async fn launch_binary(
+        &self,
+        binary: &Path,
+        args: &[String],
+    ) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
         let mut child = Command::new(binary)
+            .args(args)
             .kill_on_drop(true)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())

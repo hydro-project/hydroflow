@@ -1,4 +1,5 @@
 use std::{
+    borrow::Cow,
     net::SocketAddr,
     path::{Path, PathBuf},
     sync::{atomic::AtomicUsize, Arc},
@@ -91,7 +92,11 @@ impl LaunchedHost for LaunchedComputeEngine {
         }
     }
 
-    async fn launch_binary(&self, binary: &Path) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
+    async fn launch_binary(
+        &self,
+        binary: &Path,
+        args: &[String],
+    ) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
         let target_addr = SocketAddr::new(
             self.external_ip
                 .as_ref()
@@ -142,7 +147,14 @@ impl LaunchedHost for LaunchedComputeEngine {
         drop(created_file);
 
         let mut channel = session.channel_session().await?;
-        channel.exec(binary_path.to_str().unwrap()).await?;
+        let binary_path_string = binary_path.to_str().unwrap();
+        let args_string = args
+            .iter()
+            .map(|s| shell_escape::unix::escape(Cow::Owned(s.clone())))
+            .fold("".to_string(), |acc, v| format!("{acc} {v}"));
+        channel
+            .exec(&format!("{binary_path_string}{args_string}"))
+            .await?;
 
         let (stdin_sender, mut stdin_receiver) = async_channel::unbounded::<String>();
         let mut stdin = channel.stream(0); // stream 0 is stdout/stdin, we use it for stdin

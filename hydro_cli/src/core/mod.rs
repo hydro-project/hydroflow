@@ -62,7 +62,11 @@ pub trait LaunchedHost: Send + Sync {
     /// to listen to network connections (such as the IP address to bind to).
     fn get_bind_config(&self, bind_type: &BindType) -> BindConfig;
 
-    async fn launch_binary(&self, binary: &Path) -> Result<Arc<RwLock<dyn LaunchedBinary>>>;
+    async fn launch_binary(
+        &self,
+        binary: &Path,
+        args: &[String],
+    ) -> Result<Arc<RwLock<dyn LaunchedBinary>>>;
 }
 
 /// Types of connections that a host can make to another host.
