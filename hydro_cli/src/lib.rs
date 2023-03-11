@@ -217,6 +217,7 @@ impl PyHydroflowCrate {
         on: &PyHost,
         example: Option<String>,
         features: Option<Vec<String>>,
+        args: Option<Vec<String>>,
     ) -> (Self, PyService) {
         let service =
             deployment
@@ -227,6 +228,7 @@ impl PyHydroflowCrate {
                     on.underlying.clone(),
                     example,
                     features,
+                    args,
                 ));
 
         (
