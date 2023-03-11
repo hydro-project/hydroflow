@@ -4,7 +4,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use tokio::sync::RwLock;
 
-use super::{BindType, Host, LaunchedHost, ResourceBatch, ResourceResult, Service};
+use super::{Host, LaunchedHost, ResourceBatch, ResourceResult, ServerStrategy, Service};
 
 /// Represents an unknown, third-party service that is not part of the Hydroflow ecosystem.
 pub struct CustomService {
@@ -35,7 +35,7 @@ impl Service for CustomService {
             .expect("No one should be reading/writing the host while resources are collected");
 
         for port in self.external_ports.iter() {
-            host.request_port(&BindType::ExternalTcpPort(*port));
+            host.request_port(&ServerStrategy::ExternalTcpPort(*port));
         }
     }
 

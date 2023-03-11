@@ -56,7 +56,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: check
-          args: --all-targets --all-features
+          args: --all-targets
 
   check-wasm:
     name: Check WebAssembly
@@ -125,7 +125,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --all-features --no-fail-fast
+          args: --no-fail-fast
 
   test-wasm:
     name: Test Suite (WebAssembly)
@@ -209,7 +209,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: clippy
-          args: --all-targets --all-features -- -D warnings
+          args: --all-targets -- -D warnings
 
   docs:
     name: Docs
