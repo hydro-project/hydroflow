@@ -213,6 +213,9 @@
 <a href="#213" id="213">213</a>
 <a href="#214" id="214">214</a>
 <a href="#215" id="215">215</a>
+<a href="#216" id="216">216</a>
+<a href="#217" id="217">217</a>
+<a href="#218" id="218">218</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::fmt::Debug;
 <span class="kw">use </span>std::iter::FusedIterator;
 
@@ -226,6 +229,7 @@
 
 <span class="kw">use super</span>::{
     DiMulGraph, GraphEdgeId, GraphNodeId, Node, OperatorInstance, PartitionedGraph, PortIndexValue,
+    HANDOFF_NODE_STR,
 };
 
 <span class="doccomment">/// A graph representing a hydroflow dataflow graph before subgraph partitioning, stratification, and handoff insertion.
@@ -380,7 +384,9 @@
                         .replace(<span class="string">&#39;&quot;&#39;</span>, <span class="string">&quot;&amp;quot;&quot;</span>)
                         .replace(<span class="string">&#39;\n&#39;</span>, <span class="string">&quot;&lt;br&gt;&quot;</span>),
                 ),
-                Node::Handoff { .. } =&gt; <span class="macro">writeln!</span>(write, <span class="string">r#&quot;    {:?}{{&quot;handoff&quot;}}&quot;#</span>, key.data()),
+                Node::Handoff { .. } =&gt; {
+                    <span class="macro">writeln!</span>(write, <span class="string">r#&quot;    {:?}{{&quot;{}&quot;}}&quot;#</span>, key.data(), HANDOFF_NODE_STR)
+                }
             }<span class="question-mark">?</span>;
         }
         <span class="macro">writeln!</span>(write)<span class="question-mark">?</span>;

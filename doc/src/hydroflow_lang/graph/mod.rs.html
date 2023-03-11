@@ -281,6 +281,9 @@
 <a href="#281" id="281">281</a>
 <a href="#282" id="282">282</a>
 <a href="#283" id="283">283</a>
+<a href="#284" id="284">284</a>
+<a href="#285" id="285">285</a>
+<a href="#286" id="286">286</a>
 </pre><pre class="rust"><code><span class="doccomment">//! Graph representation stages for Hydroflow graphs.
 
 </span><span class="kw">use </span>std::hash::Hash;
@@ -330,6 +333,8 @@
 </span><span class="kw">const </span>CONTEXT: <span class="kw-2">&amp;</span>str = <span class="string">&quot;context&quot;</span>;
 <span class="doccomment">/// Hydroflow identifier as a string.
 </span><span class="kw">const </span>HYDROFLOW: <span class="kw-2">&amp;</span>str = <span class="string">&quot;df&quot;</span>;
+
+<span class="kw">const </span>HANDOFF_NODE_STR: <span class="kw-2">&amp;</span>str = <span class="string">&quot;handoff&quot;</span>;
 
 <span class="kw">pub enum </span>Node {
     Operator(Operator),
@@ -436,10 +441,12 @@
     </span>Hoff,
 }
 
-<span class="kw">pub fn </span>node_color(node: <span class="kw-2">&amp;</span>Node, inn_degree: usize, out_degree: usize) -&gt; <span class="prelude-ty">Option</span>&lt;Color&gt; {
+<span class="kw">pub fn </span>node_color(is_handoff: bool, inn_degree: usize, out_degree: usize) -&gt; <span class="prelude-ty">Option</span>&lt;Color&gt; {
     <span class="comment">// Determine op color based on in and out degree. If linear (1 in 1 out), color is None.
-    </span><span class="kw">match </span>node {
-        Node::Operator(<span class="kw">_</span>) =&gt; <span class="kw">match </span>(<span class="number">1 </span>&lt; inn_degree, <span class="number">1 </span>&lt; out_degree) {
+    </span><span class="kw">if </span>is_handoff {
+        <span class="prelude-val">Some</span>(Color::Hoff)
+    } <span class="kw">else </span>{
+        <span class="kw">match </span>(<span class="number">1 </span>&lt; inn_degree, <span class="number">1 </span>&lt; out_degree) {
             (<span class="bool-val">true</span>, <span class="bool-val">true</span>) =&gt; <span class="prelude-val">Some</span>(Color::Comp),
             (<span class="bool-val">true</span>, <span class="bool-val">false</span>) =&gt; <span class="prelude-val">Some</span>(Color::Pull),
             (<span class="bool-val">false</span>, <span class="bool-val">true</span>) =&gt; <span class="prelude-val">Some</span>(Color::Push),
@@ -449,8 +456,7 @@
                 <span class="comment">// (1, 1) =&gt;
                 </span>_both_unary =&gt; <span class="prelude-val">None</span>,
             },
-        },
-        Node::Handoff { .. } =&gt; <span class="prelude-val">Some</span>(Color::Hoff),
+        }
     }
 }
 

@@ -418,7 +418,6 @@
 <a href="#418" id="418">418</a>
 <a href="#419" id="419">419</a>
 <a href="#420" id="420">420</a>
-<a href="#421" id="421">421</a>
 </pre><pre class="rust"><code><span class="kw">use </span>proc_macro2::{Ident, Literal, Span, TokenStream};
 <span class="kw">use </span>quote::{format_ident, quote, quote_spanned, ToTokens};
 <span class="kw">use </span>slotmap::{Key, SecondaryMap, SlotMap, SparseSecondaryMap};
@@ -430,7 +429,7 @@
 <span class="kw">use </span><span class="kw">super</span>::serde_graph::{SerdeEdge, SerdeGraph};
 <span class="kw">use super</span>::{
     node_color, Color, DiMulGraph, FlatGraph, GraphEdgeId, GraphNodeId, GraphSubgraphId, Node,
-    OperatorInstance, PortIndexValue, CONTEXT, HYDROFLOW,
+    OperatorInstance, PortIndexValue, CONTEXT, HANDOFF_NODE_STR, HYDROFLOW,
 };
 
 <span class="attr">#[derive(Default)]
@@ -554,7 +553,7 @@
                         .iter()
                         .position(|<span class="kw-2">&amp;</span>node_id| {
                             node_color(
-                                <span class="kw-2">&amp;</span><span class="self">self</span>.nodes[node_id],
+                                <span class="macro">matches!</span>(<span class="self">self</span>.nodes[node_id], Node::Handoff { .. }),
                                 <span class="self">self</span>.graph.degree_in(node_id),
                                 <span class="self">self</span>.graph.degree_out(node_id),
                             )
@@ -744,7 +743,7 @@
     <span class="kw">pub fn </span>node_to_txt(<span class="kw-2">&amp;</span><span class="self">self</span>, node_id: GraphNodeId) -&gt; String {
         <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.nodes[node_id] {
             Node::Operator(operator) =&gt; operator.to_token_stream().to_string(),
-            Node::Handoff { .. } =&gt; <span class="string">&quot;handoff&quot;</span>.to_string(),
+            Node::Handoff { .. } =&gt; HANDOFF_NODE_STR.to_string(),
         }
     }
     <span class="kw">pub fn </span>to_serde_graph(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SerdeGraph {
@@ -818,7 +817,6 @@
         </span>g.subgraph_nodes = <span class="self">self</span>.subgraph_nodes.clone();
         g.subgraph_stratum = <span class="self">self</span>.subgraph_stratum.clone();
         g.subgraph_internal_handoffs = <span class="self">self</span>.subgraph_internal_handoffs.clone();
-        g.node_color_map = <span class="self">self</span>.node_color.clone();
 
         <span class="comment">// add varnames (sort for determinism).
         </span><span class="kw">let </span><span class="kw-2">mut </span>varnames_sorted = <span class="self">self</span>.node_varnames.iter().collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
