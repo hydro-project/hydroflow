@@ -25,7 +25,7 @@ async fn accept_incoming_connections(
 ) -> HashMap<String, ConnectionPipe> {
     let mut bind_results = HashMap::new();
     for (name, bind) in binds {
-        bind_results.insert(name, ConnectionPipe::Bind(Arc::new(bind)));
+        bind_results.insert(name, ConnectionPipe::Bind(bind));
     }
     bind_results
 }
@@ -97,6 +97,7 @@ async fn accept(bound: &BoundConnection) -> (DynStream, DynSink<Bytes>) {
             let (sink, source) = tcp_bytes(stream);
             (Box::pin(source), Box::pin(sink))
         }
+        BoundConnection::Demux(_) => panic!("Cannot connect to a demux pipe directly"),
     }
 }
 
@@ -224,6 +225,36 @@ where
                 ConnectedDemux {
                     keys,
                     sink: Some(Box::pin(demuxer)),
+                }
+            }
+
+            ConnectionPipe::Bind(bound) => {
+                if let BoundConnection::Demux(demux) = bound {
+                    let mut connected_demux = HashMap::new();
+                    let keys = demux.keys().cloned().collect();
+                    for (id, bound) in demux {
+                        connected_demux.insert(
+                            id,
+                            Arc::new(Mutex::new(
+                                T::from_pipe(ConnectionPipe::Bind(bound)).await.take_sink(),
+                            )),
+                        );
+                    }
+
+                    let demuxer = IoErrorDrain {
+                        marker: PhantomData::default(),
+                    }
+                    .with(move |(id, input)| {
+                        let sink = connected_demux.get_mut(&id).unwrap().clone();
+                        async move { sink.lock().await.feed(input).await }
+                    });
+
+                    ConnectedDemux {
+                        keys,
+                        sink: Some(Box::pin(demuxer)),
+                    }
+                } else {
+                    panic!("Cannot connect to a non-demux pipe as a demux")
                 }
             }
             _ => panic!("Cannot connect to a non-demux pipe as a demux"),
