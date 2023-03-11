@@ -1,4 +1,4 @@
-use std::{path::Path, sync::Arc};
+use std::{collections::HashMap, net::SocketAddr, path::Path, sync::Arc};
 
 use anyhow::Result;
 use async_channel::{Receiver, Sender};
@@ -67,6 +67,8 @@ pub trait LaunchedHost: Send + Sync {
         binary: &Path,
         args: &[String],
     ) -> Result<Arc<RwLock<dyn LaunchedBinary>>>;
+
+    async fn forward_port(&self, port: u16) -> Result<SocketAddr>;
 }
 
 /// Types of connections that a host can make to another host.
@@ -77,17 +79,22 @@ pub enum BindType {
         /// The port number to bind to, which must be explicit to open the firewall.
         u16,
     ),
+    Demux(HashMap<u32, BindType>),
 }
 
 /// Like BindType, but includes metadata for determining whether a connection is possible.
-pub enum ConnectionType {
+pub enum ConnectionType<'a> {
     UnixSocket(
         /// Unique identifier for the host this socket will be on.
         usize,
     ),
     InternalTcpPort(
-        /// Unique identifier for the VPC this port will be on.
-        String,
+        /// The host that this port is available on.
+        &'a dyn Host,
+    ),
+    ForwardedTcpPort(
+        /// The host that this port is available on.
+        &'a dyn Host,
     ),
 }
 
@@ -102,6 +109,12 @@ pub trait Host: Send + Sync {
 
     fn request_port(&mut self, bind_type: &BindType);
 
+    /// An identifier for this host, which is unique within a deployment.
+    fn id(&self) -> usize;
+
+    /// Returns a reference to the host as a trait object.
+    fn as_any(&self) -> &dyn std::any::Any;
+
     /// Configures the host to support copying and running a custom binary.
     fn request_custom_binary(&mut self);
 
@@ -111,8 +124,12 @@ pub trait Host: Send + Sync {
     /// Connects to the acquired resources and prepares the host to run services.
     async fn provision(&mut self, resource_result: &Arc<ResourceResult>) -> Arc<dyn LaunchedHost>;
 
-    /// Identifies a network type that this host can use for connections from the given host.
-    fn get_bind_type(&self, connection_from: &dyn Host) -> BindType;
+    /// Identifies a network type that this host can use for connections from the given source.
+    /// The host will be `None` if the connection is from the same host as the target.
+    fn get_bind_type<'a>(
+        &'a mut self,
+        connection_from: Option<&dyn Host>,
+    ) -> Result<(ConnectionType<'a>, BindType)>;
 
     /// Determins whether this host can connect to another host using the given connection type.
     fn can_connect_to(&self, typ: ConnectionType) -> bool;
