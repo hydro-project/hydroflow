@@ -1,5 +1,6 @@
 use std::{
     borrow::Cow,
+    collections::HashMap,
     net::SocketAddr,
     path::{Path, PathBuf},
     sync::{atomic::AtomicUsize, Arc},
@@ -12,16 +13,19 @@ use async_channel::{Receiver, Sender};
 use async_ssh2_lite::{AsyncChannel, AsyncSession, SessionConfiguration};
 use async_trait::async_trait;
 use futures::{AsyncWriteExt, StreamExt};
-use hydroflow_cli_integration::BindConfig;
+use hydroflow_cli_integration::ServerConfig;
 use serde_json::json;
-use tokio::{net::TcpStream, sync::RwLock};
+use tokio::{
+    net::{TcpListener, TcpStream},
+    sync::RwLock,
+};
 
 use super::{
     localhost::create_broadcast,
     terraform::{TerraformOutput, TerraformProvider},
     util::async_retry,
-    BindType, ConnectionType, Host, HostTargetType, LaunchedBinary, LaunchedHost, ResourceBatch,
-    ResourceResult,
+    ClientStrategy, Host, HostTargetType, LaunchedBinary, LaunchedHost, ResourceBatch,
+    ResourceResult, ServerStrategy,
 };
 
 struct LaunchedComputeEngineBinary {
@@ -80,23 +84,8 @@ impl LaunchedComputeEngine {
             .join(".ssh")
             .join("vm_instance_ssh_key_pem")
     }
-}
 
-#[async_trait]
-impl LaunchedHost for LaunchedComputeEngine {
-    fn get_bind_config(&self, bind_type: &BindType) -> BindConfig {
-        match bind_type {
-            BindType::UnixSocket => BindConfig::UnixSocket,
-            BindType::InternalTcpPort => BindConfig::TcpPort(self.internal_ip.clone()),
-            BindType::ExternalTcpPort(_) => todo!(),
-        }
-    }
-
-    async fn launch_binary(
-        &self,
-        binary: &Path,
-        args: &[String],
-    ) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
+    async fn open_ssh_session(&self) -> Result<AsyncSession<TcpStream>> {
         let target_addr = SocketAddr::new(
             self.external_ip
                 .as_ref()
@@ -105,7 +94,8 @@ impl LaunchedHost for LaunchedComputeEngine {
                 .unwrap(),
             22,
         );
-        let session = async_retry(
+
+        async_retry(
             || async {
                 let mut config = SessionConfiguration::new();
                 config.set_timeout(5000);
@@ -124,7 +114,34 @@ impl LaunchedHost for LaunchedComputeEngine {
             10,
             Duration::from_secs(1),
         )
-        .await?;
+        .await
+    }
+}
+
+#[async_trait]
+impl LaunchedHost for LaunchedComputeEngine {
+    fn server_config(&self, bind_type: &ServerStrategy) -> ServerConfig {
+        match bind_type {
+            ServerStrategy::UnixSocket => ServerConfig::UnixSocket,
+            ServerStrategy::InternalTcpPort => ServerConfig::TcpPort(self.internal_ip.clone()),
+            ServerStrategy::ExternalTcpPort(_) => todo!(),
+            ServerStrategy::Demux(demux) => {
+                let mut config_map = HashMap::new();
+                for (key, bind_type) in demux {
+                    config_map.insert(*key, self.server_config(bind_type));
+                }
+
+                ServerConfig::Demux(config_map)
+            }
+        }
+    }
+
+    async fn launch_binary(
+        &self,
+        binary: &Path,
+        args: &[String],
+    ) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
+        let session = self.open_ssh_session().await?;
 
         let sftp = session.sftp().await?;
 
@@ -177,6 +194,27 @@ impl LaunchedHost for LaunchedComputeEngine {
             stderr_receivers,
         })))
     }
+
+    async fn forward_port(&self, port: u16) -> Result<SocketAddr> {
+        let session = self.open_ssh_session().await?;
+
+        let local_port = TcpListener::bind("127.0.0.1:0").await?;
+        let local_addr = local_port.local_addr()?;
+
+        let internal_ip = self.internal_ip.clone();
+
+        tokio::spawn(async move {
+            while let Ok((mut local_stream, _)) = local_port.accept().await {
+                let mut channel = session
+                    .channel_direct_tcpip(&internal_ip, port, None)
+                    .await
+                    .unwrap();
+                let _ = tokio::io::copy_bidirectional(&mut local_stream, &mut channel).await;
+            }
+        });
+
+        Ok(local_addr)
+    }
 }
 
 pub struct GCPComputeEngineHost {
@@ -215,18 +253,31 @@ impl Host for GCPComputeEngineHost {
         HostTargetType::Linux
     }
 
-    fn request_port(&mut self, bind_type: &BindType) {
+    fn request_port(&mut self, bind_type: &ServerStrategy) {
         match bind_type {
-            BindType::UnixSocket => {}
-            BindType::InternalTcpPort => {}
-            BindType::ExternalTcpPort(port) => {
+            ServerStrategy::UnixSocket => {}
+            ServerStrategy::InternalTcpPort => {}
+            ServerStrategy::ExternalTcpPort(port) => {
                 self.external_ports.push(*port);
+            }
+            ServerStrategy::Demux(demux) => {
+                for bind_type in demux.values() {
+                    self.request_port(bind_type);
+                }
             }
         }
     }
 
     fn request_custom_binary(&mut self) {
-        self.request_port(&BindType::ExternalTcpPort(22));
+        self.request_port(&ServerStrategy::ExternalTcpPort(22));
+    }
+
+    fn id(&self) -> usize {
+        self.id
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
     }
 
     fn collect_resources(&self, resource_batch: &mut ResourceBatch) {
@@ -477,21 +528,35 @@ impl Host for GCPComputeEngineHost {
         self.launched.as_ref().unwrap().clone()
     }
 
-    fn get_bind_type(&self, connection_from: &dyn Host) -> BindType {
-        if connection_from.can_connect_to(ConnectionType::UnixSocket(self.id)) {
-            BindType::UnixSocket
-        } else if connection_from
-            .can_connect_to(ConnectionType::InternalTcpPort(self.project.clone()))
-        {
-            BindType::InternalTcpPort
+    fn strategy_as_server(
+        &mut self,
+        client_host: Option<&dyn Host>,
+    ) -> Result<(ClientStrategy, ServerStrategy)> {
+        let client_host = client_host.unwrap_or(self);
+        if client_host.can_connect_to(ClientStrategy::UnixSocket(self.id)) {
+            Ok((
+                ClientStrategy::UnixSocket(self.id),
+                ServerStrategy::UnixSocket,
+            ))
+        } else if client_host.can_connect_to(ClientStrategy::InternalTcpPort(self)) {
+            Ok((
+                ClientStrategy::InternalTcpPort(self),
+                ServerStrategy::InternalTcpPort,
+            ))
+        } else if client_host.can_connect_to(ClientStrategy::ForwardedTcpPort(self)) {
+            self.request_port(&ServerStrategy::ExternalTcpPort(22)); // needed to forward
+            Ok((
+                ClientStrategy::ForwardedTcpPort(self),
+                ServerStrategy::InternalTcpPort,
+            ))
         } else {
-            todo!()
+            anyhow::bail!("Could not find a strategy to connect to GCP instance")
         }
     }
 
-    fn can_connect_to(&self, typ: ConnectionType) -> bool {
+    fn can_connect_to(&self, typ: ClientStrategy) -> bool {
         match typ {
-            ConnectionType::UnixSocket(id) => {
+            ClientStrategy::UnixSocket(id) => {
                 #[cfg(unix)]
                 {
                     self.id == id
@@ -503,7 +568,16 @@ impl Host for GCPComputeEngineHost {
                     false
                 }
             }
-            ConnectionType::InternalTcpPort(id) => self.project == id,
+            ClientStrategy::InternalTcpPort(target_host) => {
+                if let Some(gcp_target) =
+                    target_host.as_any().downcast_ref::<GCPComputeEngineHost>()
+                {
+                    self.project == gcp_target.project
+                } else {
+                    false
+                }
+            }
+            ClientStrategy::ForwardedTcpPort(_) => false,
         }
     }
 }

@@ -1,16 +1,16 @@
-use std::{path::Path, sync::Arc};
+use std::{collections::HashMap, net::SocketAddr, path::Path, sync::Arc};
 
 use anyhow::Result;
 use async_channel::{Receiver, Sender};
 use async_process::{Command, Stdio};
 use async_trait::async_trait;
 use futures::{io::BufReader, AsyncBufReadExt, AsyncRead, AsyncWriteExt, StreamExt};
-use hydroflow_cli_integration::BindConfig;
+use hydroflow_cli_integration::ServerConfig;
 use tokio::sync::RwLock;
 
 use super::{
-    BindType, ConnectionType, Host, HostTargetType, LaunchedBinary, LaunchedHost, ResourceBatch,
-    ResourceResult,
+    ClientStrategy, Host, HostTargetType, LaunchedBinary, LaunchedHost, ResourceBatch,
+    ResourceResult, ServerStrategy,
 };
 
 struct LaunchedLocalhostBinary {
@@ -86,11 +86,19 @@ pub fn create_broadcast<T: AsyncRead + Send + Unpin + 'static>(
 
 #[async_trait]
 impl LaunchedHost for LaunchedLocalhost {
-    fn get_bind_config(&self, bind_type: &BindType) -> BindConfig {
+    fn server_config(&self, bind_type: &ServerStrategy) -> ServerConfig {
         match bind_type {
-            BindType::UnixSocket => BindConfig::UnixSocket,
-            BindType::InternalTcpPort => BindConfig::TcpPort("127.0.0.1".to_string()),
-            BindType::ExternalTcpPort(_) => panic!("Cannot bind to external port"),
+            ServerStrategy::UnixSocket => ServerConfig::UnixSocket,
+            ServerStrategy::InternalTcpPort => ServerConfig::TcpPort("127.0.0.1".to_string()),
+            ServerStrategy::ExternalTcpPort(_) => panic!("Cannot bind to external port"),
+            ServerStrategy::Demux(demux) => {
+                let mut config_map = HashMap::new();
+                for (key, bind_type) in demux {
+                    config_map.insert(*key, self.server_config(bind_type));
+                }
+
+                ServerConfig::Demux(config_map)
+            }
         }
     }
 
@@ -127,6 +135,10 @@ impl LaunchedHost for LaunchedLocalhost {
             stderr_receivers,
         })))
     }
+
+    async fn forward_port(&self, port: u16) -> Result<SocketAddr> {
+        Ok(SocketAddr::from(([127, 0, 0, 1], port)))
+    }
 }
 
 #[derive(Debug)]
@@ -140,29 +152,45 @@ impl Host for LocalhostHost {
         HostTargetType::Local
     }
 
-    fn request_port(&mut self, _bind_type: &BindType) {}
+    fn request_port(&mut self, _bind_type: &ServerStrategy) {}
     fn collect_resources(&self, _resource_batch: &mut ResourceBatch) {}
     fn request_custom_binary(&mut self) {}
+
+    fn id(&self) -> usize {
+        self.id
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
 
     async fn provision(&mut self, _resource_result: &Arc<ResourceResult>) -> Arc<dyn LaunchedHost> {
         Arc::new(LaunchedLocalhost {})
     }
 
-    fn get_bind_type(&self, connection_from: &dyn Host) -> BindType {
-        if connection_from.can_connect_to(ConnectionType::UnixSocket(self.id)) {
-            BindType::UnixSocket
-        } else if connection_from
-            .can_connect_to(ConnectionType::InternalTcpPort(format!("{}", self.id)))
-        {
-            BindType::InternalTcpPort
+    fn strategy_as_server(
+        &mut self,
+        connection_from: Option<&dyn Host>,
+    ) -> Result<(ClientStrategy, ServerStrategy)> {
+        let connection_from = connection_from.unwrap_or(self);
+        if connection_from.can_connect_to(ClientStrategy::UnixSocket(self.id)) {
+            Ok((
+                ClientStrategy::UnixSocket(self.id),
+                ServerStrategy::UnixSocket,
+            ))
+        } else if connection_from.can_connect_to(ClientStrategy::InternalTcpPort(self)) {
+            Ok((
+                ClientStrategy::InternalTcpPort(self),
+                ServerStrategy::InternalTcpPort,
+            ))
         } else {
-            todo!()
+            anyhow::bail!("Could not find a strategy to connect to localhost")
         }
     }
 
-    fn can_connect_to(&self, typ: ConnectionType) -> bool {
+    fn can_connect_to(&self, typ: ClientStrategy) -> bool {
         match typ {
-            ConnectionType::UnixSocket(id) => {
+            ClientStrategy::UnixSocket(id) => {
                 #[cfg(unix)]
                 {
                     self.id == id
@@ -174,7 +202,8 @@ impl Host for LocalhostHost {
                     false
                 }
             }
-            ConnectionType::InternalTcpPort(id) => format!("{}", self.id) == id,
+            ClientStrategy::InternalTcpPort(target_host) => self.id == target_host.id(),
+            ClientStrategy::ForwardedTcpPort(_) => true,
         }
     }
 }
