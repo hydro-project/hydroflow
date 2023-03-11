@@ -1,4 +1,4 @@
-use std::{path::Path, sync::Arc};
+use std::{collections::HashMap, net::SocketAddr, path::Path, sync::Arc};
 
 use anyhow::Result;
 use async_channel::{Receiver, Sender};
@@ -91,6 +91,14 @@ impl LaunchedHost for LaunchedLocalhost {
             BindType::UnixSocket => BindConfig::UnixSocket,
             BindType::InternalTcpPort => BindConfig::TcpPort("127.0.0.1".to_string()),
             BindType::ExternalTcpPort(_) => panic!("Cannot bind to external port"),
+            BindType::Demux(demux) => {
+                let mut config_map = HashMap::new();
+                for (key, bind_type) in demux {
+                    config_map.insert(*key, self.get_bind_config(bind_type));
+                }
+
+                BindConfig::Demux(config_map)
+            }
         }
     }
 
@@ -127,6 +135,10 @@ impl LaunchedHost for LaunchedLocalhost {
             stderr_receivers,
         })))
     }
+
+    async fn forward_port(&self, port: u16) -> Result<SocketAddr> {
+        Ok(SocketAddr::from(([127, 0, 0, 1], port)))
+    }
 }
 
 #[derive(Debug)]
@@ -144,19 +156,32 @@ impl Host for LocalhostHost {
     fn collect_resources(&self, _resource_batch: &mut ResourceBatch) {}
     fn request_custom_binary(&mut self) {}
 
+    fn id(&self) -> usize {
+        self.id
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
     async fn provision(&mut self, _resource_result: &Arc<ResourceResult>) -> Arc<dyn LaunchedHost> {
         Arc::new(LaunchedLocalhost {})
     }
 
-    fn get_bind_type(&self, connection_from: &dyn Host) -> BindType {
+    fn get_bind_type(
+        &mut self,
+        connection_from: Option<&dyn Host>,
+    ) -> Result<(ConnectionType, BindType)> {
+        let connection_from = connection_from.unwrap_or(self);
         if connection_from.can_connect_to(ConnectionType::UnixSocket(self.id)) {
-            BindType::UnixSocket
-        } else if connection_from
-            .can_connect_to(ConnectionType::InternalTcpPort(format!("{}", self.id)))
-        {
-            BindType::InternalTcpPort
+            Ok((ConnectionType::UnixSocket(self.id), BindType::UnixSocket))
+        } else if connection_from.can_connect_to(ConnectionType::InternalTcpPort(self)) {
+            Ok((
+                ConnectionType::InternalTcpPort(self),
+                BindType::InternalTcpPort,
+            ))
         } else {
-            todo!()
+            anyhow::bail!("Could not find a strategy to connect to localhost")
         }
     }
 
@@ -174,7 +199,8 @@ impl Host for LocalhostHost {
                     false
                 }
             }
-            ConnectionType::InternalTcpPort(id) => format!("{}", self.id) == id,
+            ConnectionType::InternalTcpPort(target_host) => self.id == target_host.id(),
+            ConnectionType::ForwardedTcpPort(_) => true,
         }
     }
 }

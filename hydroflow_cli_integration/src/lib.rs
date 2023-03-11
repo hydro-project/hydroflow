@@ -3,7 +3,7 @@ use std::{collections::HashMap, net::SocketAddr, path::PathBuf};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "runtime")]
-use std::{pin::Pin, sync::Arc};
+use std::pin::Pin;
 
 #[cfg(feature = "runtime")]
 use async_trait::async_trait;
@@ -11,6 +11,9 @@ use async_trait::async_trait;
 use bytes::BytesMut;
 #[cfg(feature = "runtime")]
 use futures::{Sink, Stream};
+
+#[cfg(feature = "runtime")]
+use async_recursion::async_recursion;
 
 #[cfg(feature = "runtime")]
 #[cfg(unix)]
@@ -30,10 +33,12 @@ pub enum BindConfig {
         /// The host the port should be bound on.
         String,
     ),
+    Demux(HashMap<u32, BindConfig>),
 }
 
 impl BindConfig {
     #[cfg(feature = "runtime")]
+    #[async_recursion]
     pub async fn bind(self) -> BoundConnection {
         match self {
             BindConfig::UnixSocket => {
@@ -53,19 +58,26 @@ impl BindConfig {
                 let listener = TcpListener::bind((host, 0)).await.unwrap();
                 BoundConnection::TcpPort(listener)
             }
+            BindConfig::Demux(bindings) => {
+                let mut demux = HashMap::new();
+                for (key, bind) in bindings {
+                    demux.insert(key, bind.bind().await);
+                }
+                BoundConnection::Demux(demux)
+            }
         }
     }
 }
 
 /// Describes a medium through which two Hydroflow services can communicate.
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum ConnectionPipe {
     UnixSocket(PathBuf),
     TcpPort(SocketAddr),
     Demux(HashMap<u32, ConnectionPipe>),
     #[cfg(feature = "runtime")]
     #[serde(skip)]
-    Bind(Arc<BoundConnection>),
+    Bind(BoundConnection),
 }
 
 #[cfg(feature = "runtime")]
@@ -96,6 +108,7 @@ pub trait Connected: Send {
 pub enum BoundConnection {
     UnixSocket(UnixListener, tempfile::TempDir),
     TcpPort(TcpListener),
+    Demux(HashMap<u32, BoundConnection>),
 }
 
 #[cfg(feature = "runtime")]
@@ -124,6 +137,14 @@ impl BoundConnection {
             BoundConnection::TcpPort(listener) => {
                 let addr = listener.local_addr().unwrap();
                 ConnectionPipe::TcpPort(SocketAddr::new(addr.ip(), addr.port()))
+            }
+
+            BoundConnection::Demux(bindings) => {
+                let mut demux = HashMap::new();
+                for (key, bind) in bindings {
+                    demux.insert(*key, bind.connection_pipe());
+                }
+                ConnectionPipe::Demux(demux)
             }
         }
     }
