@@ -1,8 +1,8 @@
 use clap::{Parser, ValueEnum};
 use hydroflow::tokio;
 // use hydroflow::util::{bind_udp_bytes, ipv4_resolve};//Not using bind_udp_bytes yet.
-use hydroflow::util::ipv4_resolve;
 use hydroflow::hydroflow_syntax;
+use hydroflow::util::ipv4_resolve;
 use std::net::SocketAddr;
 
 #[derive(Clone, ValueEnum, Debug)]
@@ -36,16 +36,13 @@ async fn main() {
     let (left_send, left_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
     let (right_send, right_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
     // let (query_send, query_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>(); //Not implemented yet
-    
 
     let (to_right_tx, _to_right_rx) = hydroflow::util::unbounded_channel::<(usize, usize)>();
     let (to_left_tx, _to_left_rx) = hydroflow::util::unbounded_channel::<(usize, usize)>();
     let (to_parent_tx, _to_parent_rx) = hydroflow::util::unbounded_channel::<(usize, usize)>();
     let (to_query_tx, _to_query_rx) = hydroflow::util::unbounded_channel::<(usize, usize)>();
 
-
     println!("Server live!");
-
 
     let my_merge_function = |(mut current_time, mut current_value), (x, y)| {
         if x > current_time {
@@ -68,12 +65,10 @@ async fn main() {
         current_value
     };
 
-
     parent_send.send((1, 2)).unwrap();
-    left_send.send((1,5)).unwrap();
-    right_send.send((0,0)).unwrap();
-    local_send.send((0,0,)).unwrap();
-    
+    left_send.send((1, 5)).unwrap();
+    right_send.send((0, 0)).unwrap();
+    local_send.send((0, 0)).unwrap();
 
     let mut df = hydroflow_syntax! {
 
@@ -89,7 +84,7 @@ async fn main() {
             -> fold::<'static>((0,0), my_merge_function)
             -> map(|(_current_time, current_value)| current_value)
             -> tee();
-        
+
         from_right = source_stream(right_recv)
         -> inspect(|x| println!("from_left: {x:?}"))
         -> fold::<'static>((0,0), my_merge_function)
@@ -101,7 +96,7 @@ async fn main() {
         -> fold::<'static>((0,0), my_merge_function)
         -> map(|(_current_time, current_value)| current_value)
         -> tee();
-        
+
         to_right = merge();
 
         from_parent -> to_right;
@@ -137,7 +132,7 @@ async fn main() {
             -> fold::<'static>((0, 0), time_incrementer)
             -> inspect(|x| println!("to_parent: {x:?}"))
             -> for_each(|x| to_parent_tx.send(x).unwrap()); //send result to output channel
-    
+
         to_query = merge();
 
         from_parent -> to_query;
@@ -195,7 +190,7 @@ async fn main() {
     let serde_graph = df
         .serde_graph()
         .expect("No graph found, maybe failed to parse.");
-            println!("{}", serde_graph.to_mermaid());
+    println!("{}", serde_graph.to_mermaid());
 
     // df.run_async().await.unwrap();
     df.run_tick();
