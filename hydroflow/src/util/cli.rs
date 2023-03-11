@@ -9,7 +9,7 @@ use std::{
 use async_trait::async_trait;
 use bytes::Bytes;
 use futures::{Sink, SinkExt};
-use hydroflow_cli_integration::{BindConfig, BoundConnection, ConnectionPipe, DynSink, DynStream};
+use hydroflow_cli_integration::{ServerConfig, BoundConnection, ConnectionDefn, DynSink, DynStream};
 #[cfg(unix)]
 use tokio::net::UnixStream;
 use tokio::{io, net::TcpStream, sync::Mutex};
@@ -22,27 +22,27 @@ pub use hydroflow_cli_integration::Connected;
 
 async fn accept_incoming_connections(
     binds: HashMap<String, BoundConnection>,
-) -> HashMap<String, ConnectionPipe> {
+) -> HashMap<String, ConnectionDefn> {
     let mut bind_results = HashMap::new();
     for (name, bind) in binds {
-        bind_results.insert(name, ConnectionPipe::Bind(Arc::new(bind)));
+        bind_results.insert(name, ConnectionDefn::Bind(bind));
     }
     bind_results
 }
 
-pub async fn init() -> HashMap<String, ConnectionPipe> {
+pub async fn init() -> HashMap<String, ConnectionDefn> {
     let mut input = String::new();
     std::io::stdin().read_line(&mut input).unwrap();
     let trimmed = input.trim();
 
-    let bind_config = serde_json::from_str::<HashMap<String, BindConfig>>(trimmed).unwrap();
+    let bind_config = serde_json::from_str::<HashMap<String, ServerConfig>>(trimmed).unwrap();
 
     // bind to sockets
-    let mut bind_results: HashMap<String, ConnectionPipe> = HashMap::new();
+    let mut bind_results: HashMap<String, ConnectionDefn> = HashMap::new();
     let mut binds = HashMap::new();
     for (name, config) in bind_config {
         let bound = config.bind().await;
-        bind_results.insert(name.clone(), bound.connection_pipe());
+        bind_results.insert(name.clone(), bound.connection_defn());
         binds.insert(name.clone(), bound);
     }
 
@@ -54,8 +54,8 @@ pub async fn init() -> HashMap<String, ConnectionPipe> {
 
     let mut start_buf = String::new();
     std::io::stdin().read_line(&mut start_buf).unwrap();
-    let connection_pipes = if start_buf.starts_with("start: ") {
-        serde_json::from_str::<HashMap<String, ConnectionPipe>>(
+    let connection_defns = if start_buf.starts_with("start: ") {
+        serde_json::from_str::<HashMap<String, ConnectionDefn>>(
             start_buf.trim_start_matches("start: ").trim(),
         )
         .unwrap()
@@ -64,13 +64,13 @@ pub async fn init() -> HashMap<String, ConnectionPipe> {
     };
 
     let mut all_connected = HashMap::new();
-    for (name, pipe) in connection_pipes {
-        all_connected.insert(name, pipe);
+    for (name, defn) in connection_defns {
+        all_connected.insert(name, defn);
     }
 
     let bind_connected = bind_connected_future.await.unwrap();
-    for (name, pipe) in bind_connected {
-        all_connected.insert(name, pipe);
+    for (name, defn) in bind_connected {
+        all_connected.insert(name, defn);
     }
 
     all_connected
@@ -97,6 +97,7 @@ async fn accept(bound: &BoundConnection) -> (DynStream, DynSink<Bytes>) {
             let (sink, source) = tcp_bytes(stream);
             (Box::pin(source), Box::pin(sink))
         }
+        BoundConnection::Demux(_) => panic!("Cannot connect to a demux pipe directly"),
     }
 }
 
@@ -117,9 +118,9 @@ impl Connected for ConnectedBidi {
         self.sink.take().unwrap()
     }
 
-    async fn from_pipe(pipe: ConnectionPipe) -> Self {
+    async fn from_defn(pipe: ConnectionDefn) -> Self {
         match pipe {
-            ConnectionPipe::UnixSocket(path) => {
+            ConnectionDefn::UnixSocket(path) => {
                 #[cfg(unix)]
                 {
                     let stream = UnixStream::connect(path).await.unwrap();
@@ -136,7 +137,7 @@ impl Connected for ConnectedBidi {
                     panic!("Unix sockets are not supported on this platform");
                 }
             }
-            ConnectionPipe::TcpPort(addr) => {
+            ConnectionDefn::TcpPort(addr) => {
                 let stream = TcpStream::connect(addr).await.unwrap();
                 let (sink, source) = tcp_bytes(stream);
                 ConnectedBidi {
@@ -144,14 +145,14 @@ impl Connected for ConnectedBidi {
                     sink: Some(Box::pin(sink)),
                 }
             }
-            ConnectionPipe::Bind(bound) => {
+            ConnectionDefn::Bind(bound) => {
                 let bound = accept(&bound).await;
                 ConnectedBidi {
                     source: Some(bound.0),
                     sink: Some(bound.1),
                 }
             }
-            ConnectionPipe::Demux(_) => panic!("Cannot connect to a demux pipe directly"),
+            ConnectionDefn::Demux(_) => panic!("Cannot connect to a demux pipe directly"),
         }
     }
 }
@@ -201,15 +202,15 @@ where
         self.sink.take().unwrap()
     }
 
-    async fn from_pipe(pipe: ConnectionPipe) -> Self {
+    async fn from_defn(pipe: ConnectionDefn) -> Self {
         match pipe {
-            ConnectionPipe::Demux(demux) => {
+            ConnectionDefn::Demux(demux) => {
                 let mut connected_demux = HashMap::new();
                 let keys = demux.keys().cloned().collect();
                 for (id, pipe) in demux {
                     connected_demux.insert(
                         id,
-                        Arc::new(Mutex::new(T::from_pipe(pipe).await.take_sink())),
+                        Arc::new(Mutex::new(T::from_defn(pipe).await.take_sink())),
                     );
                 }
 
@@ -224,6 +225,36 @@ where
                 ConnectedDemux {
                     keys,
                     sink: Some(Box::pin(demuxer)),
+                }
+            }
+
+            ConnectionDefn::Bind(bound) => {
+                if let BoundConnection::Demux(demux) = bound {
+                    let mut connected_demux = HashMap::new();
+                    let keys = demux.keys().cloned().collect();
+                    for (id, bound) in demux {
+                        connected_demux.insert(
+                            id,
+                            Arc::new(Mutex::new(
+                                T::from_defn(ConnectionDefn::Bind(bound)).await.take_sink(),
+                            )),
+                        );
+                    }
+
+                    let demuxer = IoErrorDrain {
+                        marker: PhantomData::default(),
+                    }
+                    .with(move |(id, input)| {
+                        let sink = connected_demux.get_mut(&id).unwrap().clone();
+                        async move { sink.lock().await.feed(input).await }
+                    });
+
+                    ConnectedDemux {
+                        keys,
+                        sink: Some(Box::pin(demuxer)),
+                    }
+                } else {
+                    panic!("Cannot connect to a non-demux pipe as a demux")
                 }
             }
             _ => panic!("Cannot connect to a non-demux pipe as a demux"),
