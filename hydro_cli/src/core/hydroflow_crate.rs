@@ -7,6 +7,7 @@ use std::{
 
 use anyhow::{bail, Result};
 use async_channel::Receiver;
+use async_recursion::async_recursion;
 use async_trait::async_trait;
 use cargo::{
     core::{compiler::BuildConfig, resolver::CliFeatures, Workspace},
@@ -14,23 +15,71 @@ use cargo::{
     util::{command_prelude::CompileMode, interning::InternedString},
     Config,
 };
-use hydroflow::util::connection::ConnectionPipe;
+use hydroflow_cli_integration::ConnectionPipe;
 use tokio::{sync::RwLock, task::JoinHandle};
 
-use super::{Host, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult, Service};
+use super::{
+    BindType, Host, HostTargetType, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult,
+    Service,
+};
+
+#[derive(Clone)]
+pub enum OutgoingPort {
+    Direct(Weak<RwLock<HydroflowCrate>>, String),
+    Demux(HashMap<u32, OutgoingPort>),
+}
+
+impl OutgoingPort {
+    #[async_recursion]
+    pub async fn connection_pipe(&self) -> ConnectionPipe {
+        match self {
+            OutgoingPort::Direct(target, target_port) => {
+                let target = target.upgrade().unwrap();
+                let target = target.read().await;
+
+                let conn = target.bound_pipes.get(target_port).unwrap();
+
+                conn.clone()
+            }
+            OutgoingPort::Demux(demux) => {
+                let mut demux_mapping = HashMap::new();
+                for (id, target) in demux {
+                    demux_mapping.insert(*id, target.connection_pipe().await);
+                }
+
+                ConnectionPipe::Demux(demux_mapping)
+            }
+        }
+    }
+
+    pub fn add_incoming_ports(&self, from: &HydroflowCrate) {
+        match self {
+            OutgoingPort::Direct(target, target_port) => {
+                let target = target.upgrade().unwrap();
+                let mut target = target.try_write().unwrap();
+                target.add_incoming_port(target_port.clone(), from);
+            }
+            OutgoingPort::Demux(demux) => {
+                for target in demux.values() {
+                    target.add_incoming_ports(from);
+                }
+            }
+        }
+    }
+}
 
 pub struct HydroflowCrate {
     src: PathBuf,
     on: Arc<RwLock<dyn Host>>,
     example: Option<String>,
     features: Option<Vec<String>>,
+    args: Option<Vec<String>>,
 
     /// A mapping from output ports to the service that the port sends data to.
-    /// Each `dyn Service` is guaranteed to be another `HydroflowCrate`.
-    outgoing_ports: HashMap<String, (Weak<RwLock<dyn Service>>, String)>,
+    outgoing_ports: HashMap<String, OutgoingPort>,
 
     /// A map of port names to the host that will be sending data to the port.
-    incoming_ports: HashMap<String, Arc<RwLock<dyn Host>>>,
+    incoming_ports: HashMap<String, BindType>,
 
     built_binary: Option<JoinHandle<PathBuf>>,
     launched_host: Option<Arc<dyn LaunchedHost>>,
@@ -48,12 +97,14 @@ impl HydroflowCrate {
         on: Arc<RwLock<dyn Host>>,
         example: Option<String>,
         features: Option<Vec<String>>,
+        args: Option<Vec<String>>,
     ) -> Self {
         Self {
             src,
             on,
             example,
             features,
+            args,
             outgoing_ports: HashMap::new(),
             incoming_ports: HashMap::new(),
             built_binary: None,
@@ -64,17 +115,18 @@ impl HydroflowCrate {
     }
 
     pub fn add_incoming_port(&mut self, my_port: String, from: &HydroflowCrate) {
-        self.incoming_ports.insert(my_port, from.host());
+        self.incoming_ports.insert(
+            my_port,
+            self.on
+                .try_read()
+                .unwrap()
+                .get_bind_type(from.on.try_read().unwrap().deref()),
+        );
     }
 
-    pub fn add_outgoing_port(
-        &mut self,
-        my_port: String,
-        to: &Arc<RwLock<dyn Service>>,
-        to_port: String,
-    ) {
-        self.outgoing_ports
-            .insert(my_port, (Arc::downgrade(to), to_port));
+    pub fn add_outgoing_port(&mut self, my_port: String, to: OutgoingPort) {
+        to.add_incoming_ports(self);
+        self.outgoing_ports.insert(my_port, to);
     }
 
     pub async fn stdout(&self) -> Receiver<String> {
@@ -111,9 +163,12 @@ impl HydroflowCrate {
         let src_cloned = self.src.join("Cargo.toml").canonicalize().unwrap();
         let example_cloned = self.example.clone();
         let features_cloned = self.features.clone();
+        let host = self.on.clone();
 
         tokio::task::spawn_blocking(move || {
             let config = Config::default().unwrap();
+            config.shell().set_verbosity(cargo::core::Verbosity::Normal);
+
             let workspace = Workspace::new(&src_cloned, &config).unwrap();
 
             let mut compile_options = CompileOptions::new(&config, CompileMode::Build).unwrap();
@@ -126,14 +181,16 @@ impl HydroflowCrate {
                 benches: FilterRule::Just(vec![]),
             };
 
+            let target_type = host.blocking_read().target_type();
+
             compile_options.build_config = BuildConfig::new(
                 &config,
                 None,
                 false,
-                &[
-                    // TODO(shadaj): make configurable
-                    "x86_64-unknown-linux-musl".to_string(),
-                ],
+                &(match target_type {
+                    HostTargetType::Local => vec![],
+                    HostTargetType::Linux => vec!["x86_64-unknown-linux-musl".to_string()],
+                }),
                 CompileMode::Build,
             )
             .unwrap();
@@ -161,15 +218,19 @@ impl HydroflowCrate {
 
 #[async_trait]
 impl Service for HydroflowCrate {
-    fn collect_resources(&mut self, resource_batch: &mut ResourceBatch) {
+    fn collect_resources(&mut self, _resource_batch: &mut ResourceBatch) {
         let built = self.build();
         self.built_binary = Some(built);
 
-        let host = self
+        let mut host = self
             .on
-            .try_read()
-            .expect("No one should be writing to the host while resources are collected");
-        host.collect_resources(resource_batch);
+            .try_write()
+            .expect("No one should be reading/writing the host while resources are collected");
+
+        host.request_custom_binary();
+        for (_, bind_type) in self.incoming_ports.iter() {
+            host.request_port(bind_type);
+        }
     }
 
     async fn deploy(&mut self, resource_result: &Arc<ResourceResult>) {
@@ -179,25 +240,21 @@ impl Service for HydroflowCrate {
     }
 
     async fn ready(&mut self) -> Result<()> {
-        let binary = self
-            .launched_host
-            .as_ref()
-            .unwrap()
-            .launch_binary(self.built_binary.take().unwrap().await.as_ref().unwrap())
+        let launched_host = self.launched_host.as_ref().unwrap();
+
+        let binary = launched_host
+            .launch_binary(
+                self.built_binary.take().unwrap().await.as_ref().unwrap(),
+                &self.args.as_ref().cloned().unwrap_or_default(),
+            )
             .await?;
 
-        let mut bind_types = HashMap::new();
-        for (port_name, from_host) in self.incoming_ports.iter() {
-            bind_types.insert(
-                port_name.clone(),
-                self.on
-                    .read()
-                    .await
-                    .find_bind_type(from_host.read().await.deref()),
-            );
+        let mut bind_config = HashMap::new();
+        for (port_name, bind_type) in self.incoming_ports.iter() {
+            bind_config.insert(port_name.clone(), launched_host.get_bind_config(bind_type));
         }
 
-        let formatted_bind_types = serde_json::to_string(&bind_types).unwrap();
+        let formatted_bind_config = serde_json::to_string(&bind_config).unwrap();
 
         // request stdout before sending config so we don't miss the "ready" response
         let stdout_receiver = binary.write().await.stdout().await;
@@ -207,7 +264,7 @@ impl Service for HydroflowCrate {
             .await
             .stdin()
             .await
-            .send(format!("{formatted_bind_types}\n"))
+            .send(format!("{formatted_bind_config}\n"))
             .await?;
 
         let ready_line = stdout_receiver.recv().await.unwrap();
@@ -225,14 +282,8 @@ impl Service for HydroflowCrate {
 
     async fn start(&mut self) {
         let mut pipe_config = HashMap::new();
-        for (port_name, (target, target_port)) in self.outgoing_ports.iter() {
-            let target = target.upgrade().unwrap();
-            let target = target.read().await;
-            let target = target.as_any().downcast_ref::<HydroflowCrate>().unwrap();
-
-            let conn = target.bound_pipes.get(target_port).unwrap();
-
-            pipe_config.insert(port_name.clone(), conn.clone());
+        for (port_name, outgoing) in self.outgoing_ports.iter() {
+            pipe_config.insert(port_name.clone(), outgoing.connection_pipe().await);
         }
 
         let formatted_pipe_config = serde_json::to_string(&pipe_config).unwrap();
@@ -247,17 +298,5 @@ impl Service for HydroflowCrate {
             .send(format!("start: {formatted_pipe_config}\n"))
             .await
             .unwrap();
-    }
-
-    fn host(&self) -> Arc<RwLock<dyn Host>> {
-        self.on.clone()
-    }
-
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        self
     }
 }

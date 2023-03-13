@@ -1,54 +1,30 @@
-use std::collections::HashMap;
-
-use hydroflow::{
-    hydroflow_syntax,
-    util::connection::{BindType, ConnectionPipe},
+use hydroflow::util::{
+    cli::{Connected, ConnectedBidi, ConnectedDemux},
+    serialize_to_bytes,
 };
+use hydroflow_datalog::datalog;
 
 #[tokio::main]
 async fn main() {
-    let mut input = String::new();
-    std::io::stdin().read_line(&mut input).unwrap();
-    let trimmed = input.trim();
-
-    #[allow(unused)]
-    let mut bind_types = serde_json::from_str::<HashMap<String, BindType>>(trimmed).unwrap();
-
-    // bind to sockets
-    #[allow(unused)]
-    let mut bind_results: HashMap<String, ConnectionPipe> = HashMap::new();
-
-    let bind_serialized = serde_json::to_string(&bind_results).unwrap();
-    println!("ready: {bind_serialized}");
-
-    // listen for incoming connections
-
-    // receive outgoing connection config
-    let mut start_buf = String::new();
-    std::io::stdin().read_line(&mut start_buf).unwrap();
-    let mut connection_pipes = if start_buf.starts_with("start: ") {
-        serde_json::from_str::<HashMap<String, ConnectionPipe>>(
-            start_buf.trim_start_matches("start: ").trim(),
-        )
+    let mut ports = hydroflow::util::cli::init().await;
+    let mut broadcast_port = ports
+        .remove("broadcast")
         .unwrap()
-    } else {
-        panic!("expected start");
-    };
+        .connect::<ConnectedDemux<ConnectedBidi>>()
+        .await;
 
-    // connect to sockets
-    let (foo_send, _) = connection_pipes.remove("foo").unwrap().connect().await;
+    let peers: Vec<u32> = serde_json::from_str(&std::env::args().nth(1).unwrap()).unwrap();
+    let broadcast_sink = broadcast_port.take_sink();
 
-    // start program
-    let mut df = hydroflow_syntax! {
-        foo = dest_sink(foo_send);
+    let mut df = datalog!(
+        r#"
+        .input repeated `repeat_iter([("Hello".to_string(),), ("world".to_string(),)])`
+        .input peers `repeat_iter(peers.clone()) -> map(|p| (p,))`
+        .async broadcast `map(|(node_id, v)| (node_id, serialize_to_bytes(v))) -> dest_sink(broadcast_sink)` `null::<(String,)>()`
 
-        repeat_iter([
-            "Hello",
-            "World",
-        ]) -> foo;
-    };
-
-    println!("hello from the sender!");
+        broadcast@n(x) :~ repeated(x), peers(n)
+    "#
+    );
 
     df.run_async().await;
 }

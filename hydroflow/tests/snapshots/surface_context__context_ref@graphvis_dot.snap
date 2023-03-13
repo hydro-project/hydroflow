@@ -1,0 +1,15 @@
+---
+source: hydroflow/tests/surface_context.rs
+expression: df.serde_graph().unwrap().to_dot()
+---
+digraph {
+    subgraph "cluster n1v1" {
+        fillcolor="#dddddd"
+        style=filled
+        label = "sg_1v1\nstratum 0"
+        n1v1 [label="(n1v1) source_iter([()])", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+        n2v1 [label="(n2v1) for_each(| () | println!\l(\"Current tick: {}, stratum: {}\", context.current_tick(),\lcontext.current_stratum()))\l", fontname=Monaco, shape=house, style = filled, color = "#ffff00"]
+        n1v1 -> n2v1
+    }
+}
+

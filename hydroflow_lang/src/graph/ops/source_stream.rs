@@ -57,7 +57,15 @@ pub const SOURCE_STREAM: OperatorConstraints = OperatorConstraints {
         let receiver = &arguments[0];
         let stream_ident = wc.make_ident("stream");
         let write_prologue = quote_spanned! {op_span=>
-            let mut #stream_ident = Box::pin(#receiver);
+            let mut #stream_ident = {
+                #[inline(always)]
+                fn check_stream<Stream: #root::futures::stream::Stream<Item = Item>, Item>(stream: Stream)
+                    -> ::std::pin::Pin<::std::boxed::Box<impl #root::futures::stream::Stream<Item = Item>>>
+                {
+                    ::std::boxed::Box::pin(stream)
+                }
+                check_stream(#receiver)
+            };
         };
         let write_iterator = quote_spanned! {op_span=>
             let #ident = std::iter::from_fn(|| {

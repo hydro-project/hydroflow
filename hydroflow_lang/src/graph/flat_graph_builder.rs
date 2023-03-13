@@ -4,29 +4,38 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use proc_macro2::Span;
 use quote::ToTokens;
-use slotmap::{Key, SecondaryMap, SlotMap, SparseSecondaryMap};
 use syn::spanned::Spanned;
 use syn::Ident;
 
 use crate::diagnostic::{Diagnostic, Level};
 use crate::graph::ops::{PortListSpec, RangeTrait};
 use crate::parse::{HfCode, HfStatement, Operator, Pipeline};
-use crate::pretty_span::{PrettyRowCol, PrettySpan};
+use crate::pretty_span::PrettySpan;
 
-use super::di_mul_graph::DiMulGraph;
 use super::ops::find_op_op_constraints;
-use super::partitioned_graph::PartitionedGraph;
 use super::{
-    get_operator_generics, GraphEdgeId, GraphNodeId, Node, OperatorInstance, PortIndexValue,
+    get_operator_generics, GraphNodeId, HydroflowGraph, Node, OperatorInstance, PortIndexValue,
 };
+
+#[derive(Clone, Debug)]
+struct Ends {
+    inn: Option<(PortIndexValue, GraphDet)>,
+    out: Option<(PortIndexValue, GraphDet)>,
+}
+
+#[derive(Clone, Debug)]
+enum GraphDet {
+    Determined(GraphNodeId),
+    Undetermined(Ident),
+}
 
 #[derive(Debug, Default)]
 pub struct FlatGraphBuilder {
     /// Spanned error/warning/etc diagnostics to emit.
     diagnostics: Vec<Diagnostic>,
 
-    /// FlatGraph being built.
-    flat_graph: FlatGraph,
+    /// HydroflowGraph being built.
+    flat_graph: HydroflowGraph,
     /// Variable names, used as [`HfStatement::Named`] are added.
     /// Value will be set to `Err(())` if the name references an illegal self-referential cycle.
     varname_ends: BTreeMap<Ident, Result<Ends, ()>>,
@@ -44,28 +53,38 @@ impl FlatGraphBuilder {
         input.into()
     }
 
-    /// Build into a [`FlatGraph`].
+    /// Build into an unpartitioned [`HydroflowGraph`], returning a tuple of a `HydroflowGraph` and any diagnostics.
     ///
-    /// Emits any diagnostics more severe than `min_diagnostic_level`.
-    ///
-    /// Returns `Err(FlatGraph)` if there are any errors. Returns `Ok(FlatGraph)` if there are no
-    /// errors.
-    pub fn build(mut self, min_diagnostic_level: Level) -> Result<FlatGraph, FlatGraph> {
+    /// Even if there are errors, the `HydroflowGraph` will be returned (potentially in a partial state).
+    pub fn try_build(mut self) -> (HydroflowGraph, Vec<Diagnostic>) {
         self.connect_operator_links();
         self.process_operator_errors();
 
-        self.diagnostics
+        (self.flat_graph, self.diagnostics)
+    }
+
+    /// Build into an unpartitioned [`HydroflowGraph`].
+    ///
+    /// Emits any diagnostics more severe than `min_diagnostic_level`.
+    ///
+    /// Returns `Err(HydroflowGraph)` if there are any errors. Returns `Ok(HydroflowGraph)` if there are no
+    /// errors.
+    pub fn build(self, min_diagnostic_level: Level) -> Result<HydroflowGraph, HydroflowGraph> {
+        let (result, diagnostics) = self.try_build();
+
+        diagnostics
             .iter()
             .filter(|&diag| diag.level <= min_diagnostic_level)
             .for_each(Diagnostic::emit);
-        if self.diagnostics.iter().any(Diagnostic::is_error) {
-            Err(self.flat_graph)
+
+        if diagnostics.iter().any(|diag| diag.level == Level::Error) {
+            Err(result)
         } else {
-            Ok(self.flat_graph)
+            Ok(result)
         }
     }
 
-    /// Add a single [`HfStatement`] line to this `FlatGraph`.
+    /// Add a single [`HfStatement`] line to this `HydroflowGraph`.
     pub fn add_statement(&mut self, stmt: HfStatement) {
         let stmt_span = stmt.span();
         match stmt {
@@ -142,15 +161,12 @@ impl FlatGraphBuilder {
             }
             Pipeline::Operator(operator) => {
                 let op_span = Some(operator.span());
-                let key = self.flat_graph.nodes.insert(Node::Operator(operator));
-                if let Some(current_varname) = current_varname {
-                    self.flat_graph
-                        .node_varnames
-                        .insert(key, current_varname.clone());
-                }
+                let nid = self
+                    .flat_graph
+                    .insert_node(Node::Operator(operator), current_varname.cloned());
                 Ends {
-                    inn: Some((PortIndexValue::Elided(op_span), GraphDet::Determined(key))),
-                    out: Some((PortIndexValue::Elided(op_span), GraphDet::Determined(key))),
+                    inn: Some((PortIndexValue::Elided(op_span), GraphDet::Determined(nid))),
+                    out: Some((PortIndexValue::Elided(op_span), GraphDet::Determined(nid))),
                 }
             }
         }
@@ -285,41 +301,29 @@ impl FlatGraphBuilder {
 
             // Handle src's successor port conflicts:
             if src_port.is_specified() {
-                for conflicting_edge in self
+                for conflicting_port in self
                     .flat_graph
-                    .graph
-                    .successor_edges(src)
-                    .filter(|&e| self.flat_graph.ports[e].0 == src_port)
+                    .node_successor_edges(src)
+                    .map(|edge_id| self.flat_graph.edge_ports(edge_id).0)
+                    .filter(|&port| port == &src_port)
                 {
-                    emit_conflict(
-                        "Output",
-                        &self.flat_graph.ports[conflicting_edge].0,
-                        &src_port,
-                        &mut self.diagnostics,
-                    );
+                    emit_conflict("Output", conflicting_port, &src_port, &mut self.diagnostics);
                 }
             }
 
             // Handle dst's predecessor port conflicts:
             if dst_port.is_specified() {
-                for conflicting_edge in self
+                for conflicting_port in self
                     .flat_graph
-                    .graph
-                    .predecessor_edges(dst)
-                    .filter(|&e| self.flat_graph.ports[e].1 == dst_port)
+                    .node_predecessor_edges(dst)
+                    .map(|edge_id| self.flat_graph.edge_ports(edge_id).1)
+                    .filter(|&port| port == &dst_port)
                 {
-                    emit_conflict(
-                        "Input",
-                        &self.flat_graph.ports[conflicting_edge].1,
-                        &dst_port,
-                        &mut self.diagnostics,
-                    );
+                    emit_conflict("Input", conflicting_port, &dst_port, &mut self.diagnostics);
                 }
             }
         }
-
-        let e = self.flat_graph.graph.insert_edge(src, dst);
-        self.flat_graph.ports.insert(e, (src_port, dst_port));
+        self.flat_graph.insert_edge(src, src_port, dst, dst_port);
     }
 
     /// Process operators and emit operator errors.
@@ -330,7 +334,8 @@ impl FlatGraphBuilder {
 
     /// Make `OperatorInstance`s for each operator node.
     fn make_operator_instances(&mut self) {
-        for (node_id, node) in self.flat_graph.nodes.iter() {
+        let mut op_insts = Vec::new();
+        for (node_id, node) in self.flat_graph.nodes() {
             let Node::Operator(operator) = node else { continue };
 
             // Op constraints.
@@ -347,13 +352,11 @@ impl FlatGraphBuilder {
             let (input_ports, output_ports) = {
                 let mut input_edges: Vec<(&PortIndexValue, GraphNodeId)> = self
                     .flat_graph
-                    .graph
-                    .predecessors(node_id)
-                    .map(|(edge_id, pred)| (&self.flat_graph.ports[edge_id].1, pred))
+                    .node_predecessors(node_id)
+                    .map(|(edge_id, pred_id)| (self.flat_graph.edge_ports(edge_id).1, pred_id))
                     .collect();
                 // Ensure sorted by port index.
                 input_edges.sort();
-
                 let input_ports: Vec<PortIndexValue> = input_edges
                     .into_iter()
                     .map(|(port, _pred)| port)
@@ -363,13 +366,11 @@ impl FlatGraphBuilder {
                 // Collect output arguments (successors).
                 let mut output_edges: Vec<(&PortIndexValue, GraphNodeId)> = self
                     .flat_graph
-                    .graph
-                    .successors(node_id)
-                    .map(|(edge_id, succ)| (&self.flat_graph.ports[edge_id].0, succ))
+                    .node_successors(node_id)
+                    .map(|(edge_id, succ)| (self.flat_graph.edge_ports(edge_id).0, succ))
                     .collect();
                 // Ensure sorted by port index.
                 output_edges.sort();
-
                 let output_ports: Vec<PortIndexValue> = output_edges
                     .into_iter()
                     .map(|(port, _succ)| port)
@@ -412,7 +413,7 @@ impl FlatGraphBuilder {
                 }
             }
 
-            self.flat_graph.operator_instances.insert(
+            op_insts.push((
                 node_id,
                 OperatorInstance {
                     op_constraints,
@@ -421,14 +422,18 @@ impl FlatGraphBuilder {
                     generics,
                     arguments: operator.args.clone(),
                 },
-            );
+            ));
+        }
+
+        for (node_id, op_inst) in op_insts {
+            self.flat_graph.insert_node_op_inst(node_id, op_inst);
         }
     }
 
     /// Validates that operators have valid number of inputs, outputs, & arguments.
     /// Adds errors (and warnings) to `self.diagnostics`.
     fn check_operator_errors(&mut self) {
-        for (node_id, node) in self.flat_graph.nodes.iter() {
+        for (node_id, node) in self.flat_graph.nodes() {
             match node {
                 Node::Operator(operator) => {
                     let Some(op_constraints) = find_op_op_constraints(operator) else { continue };
@@ -479,7 +484,7 @@ impl FlatGraphBuilder {
                         out_of_range
                     }
 
-                    let inn_degree = self.flat_graph.graph.degree_in(node_id);
+                    let inn_degree = self.flat_graph.node_degree_in(node_id);
                     let _ = emit_arity_error(
                         operator,
                         true,
@@ -496,7 +501,7 @@ impl FlatGraphBuilder {
                         &mut self.diagnostics,
                     );
 
-                    let out_degree = self.flat_graph.graph.degree_out(node_id);
+                    let out_degree = self.flat_graph.node_degree_out(node_id);
                     let _ = emit_arity_error(
                         operator,
                         false,
@@ -593,9 +598,8 @@ impl FlatGraphBuilder {
                         operator.span(),
                         op_constraints.ports_inn,
                         self.flat_graph
-                            .graph
-                            .predecessor_edges(node_id)
-                            .map(|edge_id| &self.flat_graph.ports[edge_id].1),
+                            .node_predecessor_edges(node_id)
+                            .map(|edge_id| self.flat_graph.edge_ports(edge_id).1),
                         "input",
                         &mut self.diagnostics,
                     );
@@ -603,9 +607,8 @@ impl FlatGraphBuilder {
                         operator.span(),
                         op_constraints.ports_out,
                         self.flat_graph
-                            .graph
-                            .successor_edges(node_id)
-                            .map(|edge_id| &self.flat_graph.ports[edge_id].0),
+                            .node_successor_edges(node_id)
+                            .map(|edge_id| self.flat_graph.edge_ports(edge_id).0),
                         "output",
                         &mut self.diagnostics,
                     );
@@ -682,106 +685,4 @@ impl From<HfCode> for FlatGraphBuilder {
         }
         builder
     }
-}
-
-/// A graph representing a hydroflow dataflow graph before subgraph partitioning, stratification, and handoff insertion.
-/// I.e. the graph is a simple "flat" without any subgraph heirarchy.
-///
-/// May optionally contain handoffs, but in this stage these are transparent and treated like an identity operator.
-///
-/// Use `Self::into_partitioned_graph()` to convert into a subgraph-partitioned & stratified graph.
-#[derive(Debug, Default)]
-pub struct FlatGraph {
-    /// Each node (operator or handoff).
-    pub(super) nodes: SlotMap<GraphNodeId, Node>,
-    /// Instance data corresponding to each operator node.
-    pub(super) operator_instances: SecondaryMap<GraphNodeId, OperatorInstance>,
-    /// Graph
-    pub(super) graph: DiMulGraph<GraphNodeId, GraphEdgeId>,
-    /// Input and output port for each edge.
-    pub(super) ports: SecondaryMap<GraphEdgeId, (PortIndexValue, PortIndexValue)>,
-
-    /// What variable name each graph node belongs to (if any).
-    pub(super) node_varnames: SparseSecondaryMap<GraphNodeId, Ident>,
-}
-
-impl FlatGraph {
-    /// Convert back into surface syntax.
-    pub fn surface_syntax_string(&self) -> String {
-        let mut string = String::new();
-        self.write_surface_syntax(&mut string).unwrap();
-        string
-    }
-
-    /// Convert back into surface syntax.
-    pub fn write_surface_syntax(&self, write: &mut impl std::fmt::Write) -> std::fmt::Result {
-        for (key, node) in self.nodes.iter() {
-            match node {
-                Node::Operator(op) => {
-                    writeln!(write, "{:?} = {};", key.data(), op.to_token_stream())?;
-                }
-                Node::Handoff { .. } => unimplemented!("HANDOFF IN FLAT GRAPH."),
-            }
-        }
-        writeln!(write)?;
-        for (_e, (src_key, dst_key)) in self.graph.edges() {
-            writeln!(write, "({:?}-->{:?});", src_key.data(), dst_key.data())?;
-        }
-        Ok(())
-    }
-
-    /// Convert into a [mermaid](https://mermaid-js.github.io/) graph.
-    pub fn mermaid_string(&self) -> String {
-        let mut string = String::new();
-        self.write_mermaid(&mut string).unwrap();
-        string
-    }
-
-    /// Convert into a [mermaid](https://mermaid-js.github.io/) graph.
-    pub fn write_mermaid(&self, write: &mut impl std::fmt::Write) -> std::fmt::Result {
-        writeln!(write, "flowchart TB")?;
-        for (key, node) in self.nodes.iter() {
-            match node {
-                Node::Operator(operator) => writeln!(
-                    write,
-                    "    %% {span}\n    {id:?}[\"{row_col} <tt>{code}</tt>\"]",
-                    span = PrettySpan(node.span()),
-                    id = key.data(),
-                    row_col = PrettyRowCol(node.span()),
-                    code = operator
-                        .to_token_stream()
-                        .to_string()
-                        .replace('&', "&amp;")
-                        .replace('<', "&lt;")
-                        .replace('>', "&gt;")
-                        .replace('"', "&quot;")
-                        .replace('\n', "<br>"),
-                ),
-                Node::Handoff { .. } => writeln!(write, r#"    {:?}{{"handoff"}}"#, key.data()),
-            }?;
-        }
-        writeln!(write)?;
-        for (_e, (src_key, dst_key)) in self.graph.edges() {
-            writeln!(write, "    {:?}-->{:?}", src_key.data(), dst_key.data())?;
-        }
-        Ok(())
-    }
-
-    /// Run subgraph partitioning and stratification and convert this graph into a [`PartitionedGraph`].
-    #[allow(clippy::result_unit_err)]
-    pub fn into_partitioned_graph(self) -> Result<PartitionedGraph, Diagnostic> {
-        self.try_into()
-    }
-}
-
-#[derive(Clone, Debug)]
-struct Ends {
-    inn: Option<(PortIndexValue, GraphDet)>,
-    out: Option<(PortIndexValue, GraphDet)>,
-}
-
-#[derive(Clone, Debug)]
-enum GraphDet {
-    Determined(GraphNodeId),
-    Undetermined(Ident),
 }

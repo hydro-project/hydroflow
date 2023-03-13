@@ -4,7 +4,6 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
   schedule:
     - cron: "35 03 * * *" # Daily at 8:35 PM PDT, 7:35 PM PST.
   workflow_dispatch:
@@ -27,9 +26,9 @@ jobs:
 
   check:
     name: Check
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' || github.event_name != 'pull_request' }}
     timeout-minutes: 10
     needs: pre_job
-    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -39,6 +38,7 @@ jobs:
           # and nothing is truthy, so the entire && operator will resolve to
           # 'nothing'. Then the || operator will resolve to 'nothing' so we
           # will exclude 'nothing'. https://stackoverflow.com/a/73822998
+          - rust_release: ${{ (needs.pre_job.outputs.should_skip != 'true' && 'nothing') || 'pinned-nightly' }}
           - rust_release: ${{ (github.event_name != 'pull_request' && 'nothing') || 'latest-nightly' }}
 
     steps:
@@ -60,9 +60,9 @@ jobs:
 
   check-wasm:
     name: Check WebAssembly
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' || github.event_name != 'pull_request' }}
     timeout-minutes: 10
     needs: pre_job
-    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -72,6 +72,7 @@ jobs:
           # and nothing is truthy, so the entire && operator will resolve to
           # 'nothing'. Then the || operator will resolve to 'nothing' so we
           # will exclude 'nothing'. https://stackoverflow.com/a/73822998
+          - rust_release: ${{ (needs.pre_job.outputs.should_skip != 'true' && 'nothing') || 'pinned-nightly' }}
           - rust_release: ${{ (github.event_name != 'pull_request' && 'nothing') || 'latest-nightly' }}
 
     steps:
@@ -94,9 +95,9 @@ jobs:
 
   test:
     name: Test Suite
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' || github.event_name != 'pull_request' }}
     timeout-minutes: 15
     needs: pre_job
-    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -106,6 +107,7 @@ jobs:
           # and nothing is truthy, so the entire && operator will resolve to
           # 'nothing'. Then the || operator will resolve to 'nothing' so we
           # will exclude 'nothing'. https://stackoverflow.com/a/73822998
+          - rust_release: ${{ (needs.pre_job.outputs.should_skip != 'true' && 'nothing') || 'pinned-nightly' }}
           - rust_release: ${{ (github.event_name != 'pull_request' && 'nothing') || 'latest-nightly' }}
 
     steps:
@@ -118,19 +120,18 @@ jobs:
           profile: minimal
           toolchain: nightly
           override: ${{ matrix.rust_release == 'latest-nightly' }}
-          components: rustfmt
 
       - name: Run cargo test
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --all-features
+          args: --all-features --no-fail-fast
 
-  lints:
-    name: Lints
-    timeout-minutes: 10
+  test-wasm:
+    name: Test Suite (WebAssembly)
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' || github.event_name != 'pull_request' }}
+    timeout-minutes: 15
     needs: pre_job
-    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -140,6 +141,50 @@ jobs:
           # and nothing is truthy, so the entire && operator will resolve to
           # 'nothing'. Then the || operator will resolve to 'nothing' so we
           # will exclude 'nothing'. https://stackoverflow.com/a/73822998
+          - rust_release: ${{ (needs.pre_job.outputs.should_skip != 'true' && 'nothing') || 'pinned-nightly' }}
+          - rust_release: ${{ (github.event_name != 'pull_request' && 'nothing') || 'latest-nightly' }}
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install nightly toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          target: wasm32-unknown-unknown
+          override: ${{ matrix.rust_release == 'latest-nightly' }}
+
+      - name: Install WebAssembly test runner
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: wasm-bindgen-cli
+
+      - name: Run cargo test
+        uses: actions-rs/cargo@v1
+        env:
+          CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER: wasm-bindgen-test-runner
+        with:
+          command: test
+          args: -p hydroflow --target wasm32-unknown-unknown --tests --no-fail-fast
+
+  lints:
+    name: Lints
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' || github.event_name != 'pull_request' }}
+    timeout-minutes: 10
+    needs: pre_job
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust_release: [pinned-nightly, latest-nightly]
+        exclude:
+          # For non-pull requests, event_name != 'pull_request' will be true,
+          # and nothing is truthy, so the entire && operator will resolve to
+          # 'nothing'. Then the || operator will resolve to 'nothing' so we
+          # will exclude 'nothing'. https://stackoverflow.com/a/73822998
+          - rust_release: ${{ (needs.pre_job.outputs.should_skip != 'true' && 'nothing') || 'pinned-nightly' }}
           - rust_release: ${{ (github.event_name != 'pull_request' && 'nothing') || 'latest-nightly' }}
 
     steps:

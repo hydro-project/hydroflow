@@ -1,3 +1,5 @@
+#![cfg(not(target_arch = "wasm32"))]
+
 //! Surface syntax tests of asynchrony and networking.
 
 use std::collections::{BTreeSet, HashSet};
@@ -8,7 +10,7 @@ use std::time::Duration;
 use bytes::Bytes;
 use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::util::{collect_ready_async, ready_iter, tcp_lines};
-use hydroflow::{hydroflow_syntax, rassert, rassert_eq};
+use hydroflow::{assert_graphvis_snapshots, hydroflow_syntax, rassert, rassert_eq};
 use tokio::net::{TcpListener, TcpStream, UdpSocket};
 use tokio::task::LocalSet;
 use tokio_util::codec::{BytesCodec, FramedWrite, LinesCodec};
@@ -212,13 +214,7 @@ pub async fn test_echo() {
     let mut df: Hydroflow = hydroflow_syntax! {
         source_stream(lines_recv) -> dest_sink(stdout_lines);
     };
-
-    println!(
-        "{}",
-        df.serde_graph()
-            .expect("No graph found, maybe failed to parse.")
-            .to_mermaid()
-    );
+    assert_graphvis_snapshots!(df);
     df.run_available();
 
     lines_send.send("Hello".to_owned()).unwrap();

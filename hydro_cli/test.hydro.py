@@ -1,23 +1,29 @@
 import hydro
+import json
 
-async def main():
+async def main(args):
+    gcp = args[0] == "gcp"
+
     deployment = hydro.Deployment()
     machine1 = deployment.GCPComputeEngineHost(
         project="autocompartmentalization",
         machine_type="e2-micro",
+        image="debian-cloud/debian-11",
         region="us-west1-a"
-    )
+    ) if gcp else deployment.Localhost()
 
     machine2 = deployment.GCPComputeEngineHost(
         project="autocompartmentalization",
         machine_type="e2-micro",
+        image="debian-cloud/debian-11",
         region="us-west1-a"
-    )
+    ) if gcp else machine1
 
     program = deployment.HydroflowCrate(
         src="../hydroflow",
         example="cli_sender",
         features=["cli_integration"],
+        args=[json.dumps([0])],
         on=machine1
     )
 
@@ -28,7 +34,9 @@ async def main():
         on=machine2
     )
 
-    program.ports.foo.send_to(program2.ports.bar)
+    program.ports.broadcast.send_to(hydro.demux({
+        0: program2.ports.broadcast
+    }))
 
     await deployment.deploy()
 
@@ -48,3 +56,8 @@ async def main():
             break
 
     print(await program.exit_code())
+
+if __name__ == "__main__":
+    import sys
+    import hydro.async_wrapper
+    hydro.async_wrapper.run(main, sys.argv[1:])

@@ -1,6 +1,7 @@
 [workspace]
 
 members = [
+    "multiplatform_test",
     "hydroflow_internalmacro",
     "hydroflow_lang",
     "hydroflow_macro",
@@ -8,15 +9,21 @@ members = [
     "hydroflow_datalog_core",
     "hydroflow_datalog",
     "hydro_cli",
+    "hydroflow_cli_integration",
     "benches",
     "relalg",
     "pusherator",
     "variadics",
 ]
 
+resolver = "2"
+
 [profile.release]
 strip = true      # Strip symbols from the binary
-opt-level = "z"   # Optimize for size
+# Previously this was "z" to minimize docker binary size while sacrificing performance. But "z"
+# doesn't make things that much smaller, `strip` is far more important for binary size. Use "3" for
+# performance.
+opt-level = 3
 
 [profile.profile]
 inherits = "release"

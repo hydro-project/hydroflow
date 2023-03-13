@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 
 use hydroflow_lang::{
     diagnostic::{Diagnostic, Level},
-    graph::flat_graph::{FlatGraph, FlatGraphBuilder},
+    graph::{partition_graph, FlatGraphBuilder, HydroflowGraph},
     parse::{IndexInt, Indexing, Pipeline, PipelineLink},
 };
 use proc_macro2::{Span, TokenStream};
@@ -22,11 +22,29 @@ pub fn gen_hydroflow_graph(
     let str_node: syn::LitStr = parse_quote!(#literal);
     let actual_str = str_node.value();
     let program: Program = grammar::datalog::parse(&actual_str);
-    
-    match program {
+        
+    let str_node: syn::LitStr = parse_quote!(#literal);
+    let actual_str = str_node.value();
+    let program: Program = grammar::datalog::parse(&actual_str).map_err(|e| (e, vec![]))?;
+
+    let mut inputs = Vec::new();
+    let mut outputs = Vec::new();
+    let mut asyncs = Vec::new();
+    let mut rules = Vec::new();
+
+    for stmt in &program.rules {
+        match stmt {
+            Declaration::Input(_, ident, hf_code) => inputs.push((ident, hf_code)),
+            Declaration::Output(_, ident, hf_code) => outputs.push((ident, hf_code)),
+            Declaration::Async(_, ident, send_hf, recv_hf) => {
+                asyncs.push((ident, send_hf, recv_hf))
+            }
+            Declaration::Rule(rule) => rules.push(rule),
+        }
         Result::Err(errors) => {
             return Result::Err(handle_errors(errors, &literal));
         }
+
         Result::Ok(program) => {
             let mut inputs = Vec::new();
             let mut outputs = Vec::new();
@@ -43,56 +61,86 @@ pub fn gen_hydroflow_graph(
             let mut flat_graph_builder = FlatGraphBuilder::new();
             let mut tee_counter = HashMap::new();
             let mut merge_counter = HashMap::new();
+        }
+    }
 
-            let mut created_rules = HashSet::new();
-            for decl in &program.rules {
-                let target_ident = match decl {
-                    Declaration::Input(_, ident) => ident.clone(),
-                    Declaration::Output(_, ident) => ident.clone(),
-                    Declaration::Rule(rule) => rule.target.name.clone(),
-                };
+    let mut created_rules = HashSet::new();
+    for decl in &program.rules {
+        let target_ident = match decl {
+            Declaration::Input(_, ident, _) => ident.clone(),
+            Declaration::Output(_, ident, _) => ident.clone(),
+            Declaration::Async(_, ident, _, _) => ident.clone(),
+            Declaration::Rule(rule) => rule.target.name.clone(),
+        };
 
-                if !created_rules.contains(&target_ident) {
-                    created_rules.insert(target_ident.clone());
-                    let name = syn::Ident::new(&target_ident.name, Span::call_site());
-                    flat_graph_builder.add_statement(parse_quote!(#name = merge() -> tee()));
-                }
-            }
+        if !created_rules.contains(&target_ident) {
+            created_rules.insert(target_ident.clone());
+            let name = syn::Ident::new(&target_ident.name, Span::call_site());
+            flat_graph_builder
+                .add_statement(parse_quote!(#name = merge() -> unique::<'tick>() -> tee()));
+        }
+    }
 
-            for target in inputs {
-                let target_ident = syn::Ident::new(&target.name, Span::call_site());
-
-                let my_merge_index = merge_counter
-                    .entry(target.name.clone())
-                    .or_insert_with(|| 0..)
-                    .next()
-                    .expect("Out of merge indices");
+    for (target, hf_code) in inputs {
+        let my_merge_index = merge_counter
+            .entry(target.name.clone())
+            .or_insert_with(|| 0..)
+            .next()
+            .expect("Out of merge indices");
 
                 let my_merge_index_lit =
                     syn::LitInt::new(&format!("{}", my_merge_index), Span::call_site());
                 let name = syn::Ident::new(&target.name, Span::call_site());
 
-                flat_graph_builder.add_statement(parse_quote! {
-                    source_stream(#target_ident) -> [#my_merge_index_lit] #name
-                });
-            }
+        let input_pipeline: Pipeline = syn::parse_str(&hf_code.code).unwrap();
 
-            for target in outputs {
-                let my_tee_index = tee_counter
-                    .entry(target.name.clone())
-                    .or_insert_with(|| 0..)
-                    .next()
-                    .expect("Out of tee indices");
+        flat_graph_builder.add_statement(parse_quote! {
+            #input_pipeline -> [#my_merge_index_lit] #name
+        });
+    }
 
-                let out_send_ident = syn::Ident::new(&target.name, Span::call_site());
+    for (target, hf_code) in outputs {
+        let my_tee_index = tee_counter
+            .entry(target.name.clone())
+            .or_insert_with(|| 0..)
+            .next()
+            .expect("Out of tee indices");
 
-                let my_tee_index_lit = syn::LitInt::new(&format!("{}", my_tee_index), Span::call_site());
-                let target_ident = syn::Ident::new(&target.name, Span::call_site());
+        let my_tee_index_lit = syn::LitInt::new(&format!("{}", my_tee_index), Span::call_site());
+        let target_ident = syn::Ident::new(&target.name, Span::call_site());
 
-                flat_graph_builder.add_statement(parse_quote! {
-                    #target_ident [#my_tee_index_lit] -> for_each(|v| #out_send_ident.send(v).unwrap())
-                });
-            }
+        let output_pipeline: Pipeline = syn::parse_str(&hf_code.code).unwrap();
+
+        flat_graph_builder.add_statement(parse_quote! {
+            #target_ident [#my_tee_index_lit] -> #output_pipeline
+        });
+    }
+
+    for (target, send_hf, recv_hf) in asyncs {
+        let async_send_pipeline = format!("{}_async_send", target.name);
+        let async_send_pipeline = syn::Ident::new(&async_send_pipeline, Span::call_site());
+
+        let recv_merge_index = merge_counter
+            .entry(target.name.clone())
+            .or_insert_with(|| 0..)
+            .next()
+            .expect("Out of merge indices");
+
+        let recv_merge_index_lit =
+            syn::LitInt::new(&format!("{}", recv_merge_index), Span::call_site());
+        let target_ident = syn::Ident::new(&target.name, Span::call_site());
+
+        let send_pipeline: Pipeline = syn::parse_str(&send_hf.code).unwrap();
+        let recv_pipeline: Pipeline = syn::parse_str(&recv_hf.code).unwrap();
+
+        flat_graph_builder.add_statement(parse_quote! {
+            #async_send_pipeline = merge() -> #send_pipeline
+        });
+
+        flat_graph_builder.add_statement(parse_quote! {
+            #recv_pipeline -> [#recv_merge_index_lit] #target_ident
+        });
+    }
 
             let mut next_join_idx = 0..;
             let mut diagnostics = Vec::new();
@@ -156,11 +204,10 @@ fn handle_errors(errors: Vec<ParseError>, literal: &proc_macro2::Literal)
     return diagnostics;
 }
 
-pub fn hydroflow_graph_to_program(flat_graph: FlatGraph, root: TokenStream) -> syn::Stmt {
-    let code_tokens = flat_graph
-        .into_partitioned_graph()
-        .expect("failed to partition")
-        .as_code(root, true);
+pub fn hydroflow_graph_to_program(flat_graph: HydroflowGraph, root: TokenStream) -> syn::Stmt {
+    let partitioned_graph =
+        partition_graph(flat_graph).expect("Failed to partition (cycle detected).");
+    let code_tokens = partitioned_graph.as_code(root, true);
 
     syn::parse_quote!({
         #code_tokens
@@ -271,18 +318,12 @@ fn generate_rule(
                 rule.target.fields.len() + 1,
             );
 
-            let send_ident = syn::Ident::new(
-                &format!("async_send_{}", &rule.target.name.name),
+            let send_pipeline_ident = syn::Ident::new(
+                &format!("{}_async_send", &rule.target.name.name),
                 Span::call_site(),
             );
 
-            let async_receiver_ident = syn::Ident::new(
-                &format!("async_receive_{}", &rule.target.name.name),
-                Span::call_site(),
-            );
-            flat_graph_builder.add_statement(parse_quote!(source_stream(#async_receiver_ident) -> [#my_merge_index_lit] #target_ident));
-
-            parse_quote!(#after_join -> for_each(|v: #v_type| #send_ident(v.#syn_target_index, (#(#exprs_get_data, )*)).unwrap()))
+            parse_quote!(#after_join -> map(|v: #v_type| (v.#syn_target_index, (#(#exprs_get_data, )*))) -> #send_pipeline_ident)
         }
     };
 
@@ -437,15 +478,14 @@ mod tests {
 
     macro_rules! test_snapshots {
         ($program:literal) => {
-            let graph = gen_hydroflow_graph(parse_quote!($program)).unwrap();
+            let flat_graph = gen_hydroflow_graph(parse_quote!($program)).unwrap();
 
+            let flat_graph_ref = &flat_graph;
             insta::with_settings!({snapshot_suffix => "surface_graph"}, {
-                insta::assert_display_snapshot!(graph.surface_syntax_string());
+                insta::assert_display_snapshot!(flat_graph_ref.surface_syntax_string());
             });
 
-            // Have to make a new graph as the above closure borrows.
-            let graph2 = gen_hydroflow_graph(parse_quote!($program)).unwrap();
-            let out = &hydroflow_graph_to_program(graph2, quote::quote! { hydroflow });
+            let out = &hydroflow_graph_to_program(flat_graph, quote::quote! { hydroflow });
             let wrapped: syn::File = parse_quote! {
                 fn main() {
                     #out
@@ -464,8 +504,8 @@ mod tests {
     fn minimal_program() {
         test_snapshots!(
             r#"
-            .input input
-            .output out
+            .input input `source_stream(input)`
+            .output out `for_each(|v| out.send(v).unwrap())`
 
             out(y, x) :- input(x, y).
             "#
@@ -476,8 +516,8 @@ mod tests {
     fn join_with_self() {
         test_snapshots!(
             r#"
-            .input input
-            .output out
+            .input input `source_stream(input)`
+            .output out `for_each(|v| out.send(v).unwrap())`
 
             out(x, y) :- input(x, y), input(y, x).
             "#
@@ -488,9 +528,9 @@ mod tests {
     fn join_with_other() {
         test_snapshots!(
             r#"
-            .input in1
-            .input in2
-            .output out
+            .input in1 `source_stream(in1)`
+            .input in2 `source_stream(in2)`
+            .output out `for_each(|v| out.send(v).unwrap())`
 
             out(x, y) :- in1(x, y), in2(y, x).
             "#
@@ -501,9 +541,9 @@ mod tests {
     fn multiple_contributors() {
         test_snapshots!(
             r#"
-            .input in1
-            .input in2
-            .output out
+            .input in1 `source_stream(in1)`
+            .input in2 `source_stream(in2)`
+            .output out `for_each(|v| out.send(v).unwrap())`
 
             out(x, y) :- in1(x, y).
             out(x, y) :- in2(y, x).
@@ -515,9 +555,9 @@ mod tests {
     fn transitive_closure() {
         test_snapshots!(
             r#"
-            .input edges
-            .input seed_reachable
-            .output reachable
+            .input edges `source_stream(edges)`
+            .input seed_reachable `source_stream(seed_reachable)`
+            .output reachable `for_each(|v| reachable.send(v).unwrap())`
 
             reachable(x) :- seed_reachable(x).
             reachable(y) :- reachable(x), edges(x, y).
@@ -529,9 +569,9 @@ mod tests {
     fn single_column_program() {
         test_snapshots!(
             r#"
-            .input in1
-            .input in2
-            .output out
+            .input in1 `source_stream(in1)`
+            .input in2 `source_stream(in2)`
+            .output out `for_each(|v| out.send(v).unwrap())`
 
             out(x) :- in1(x), in2(x).
             "#
@@ -542,10 +582,10 @@ mod tests {
     fn triple_relation_join() {
         test_snapshots!(
             r#"
-            .input in1
-            .input in2
-            .input in3
-            .output out
+            .input in1 `source_stream(in1)`
+            .input in2 `source_stream(in2)`
+            .input in3 `source_stream(in3)`
+            .output out `for_each(|v| out.send(v).unwrap())`
 
             out(d, c, b, a) :- in1(a, b), in2(b, c), in3(c, d).
             "#
@@ -556,8 +596,8 @@ mod tests {
     fn local_constraints() {
         test_snapshots!(
             r#"
-            .input input
-            .output out
+            .input input `source_stream(input)`
+            .output out `for_each(|v| out.send(v).unwrap())`
 
             out(x, x) :- input(x, x).
             "#
@@ -565,8 +605,8 @@ mod tests {
 
         test_snapshots!(
             r#"
-            .input input
-            .output out
+            .input input `source_stream(input)`
+            .output out `for_each(|v| out.send(v).unwrap())`
 
             out(x, x, y, y) :- input(x, x, y, y).
             "#
@@ -577,8 +617,8 @@ mod tests {
     fn test_simple_filter() {
         test_snapshots!(
             r#"
-            .input input
-            .output out
+            .input input `source_stream(input)`
+            .output out `for_each(|v| out.send(v).unwrap())`
 
             out(x, y) :- input(x, y), ( x > y ), ( y == x ).
             "#
@@ -589,10 +629,10 @@ mod tests {
     fn test_anti_join() {
         test_snapshots!(
             r#"
-            .input ints_1
-            .input ints_2
-            .input ints_3
-            .output result
+            .input ints_1 `source_stream(ints_1)`
+            .input ints_2 `source_stream(ints_2)`
+            .input ints_3 `source_stream(ints_3)`
+            .output result `for_each(|v| result.send(v).unwrap())`
 
             result(x, z) :- ints_1(x, y), ints_2(y, z), !ints_3(y)
             "#
@@ -603,8 +643,8 @@ mod tests {
     fn test_max() {
         test_snapshots!(
             r#"
-            .input ints
-            .output result
+            .input ints `source_stream(ints)`
+            .output result `for_each(|v| result.send(v).unwrap())`
 
             result(max(a), b) :- ints(a, b)
             "#
@@ -615,8 +655,8 @@ mod tests {
     fn test_max_all() {
         test_snapshots!(
             r#"
-            .input ints
-            .output result
+            .input ints `source_stream(ints)`
+            .output result `for_each(|v| result.send(v).unwrap())`
 
             result(max(a), max(b)) :- ints(a, b)
             "#
@@ -627,8 +667,9 @@ mod tests {
     fn test_send_to_node() {
         test_snapshots!(
             r#"
-            .input ints
-            .output result
+            .input ints `source_stream(ints)`
+            .output result `for_each(|v| result.send(v).unwrap())`
+            .async result `for_each(|(node, data)| async_send_result(node, data))` `source_stream(async_receive_result)`
 
             result@b(a) :~ ints(a, b)
             "#

@@ -1,6 +1,9 @@
 use std::collections::BTreeSet;
 
-#[test]
+use hydroflow::assert_graphvis_snapshots;
+use multiplatform_test::multiplatform_test;
+
+#[multiplatform_test]
 pub fn test_group_by_infer_basic() {
     pub struct SubordResponse {
         pub xid: &'static str,
@@ -19,12 +22,15 @@ pub fn test_group_by_infer_basic() {
             -> group_by::<'static>(|| 0, |old: &mut u32, val: u32| *old += val)
             -> for_each(|(k, v)| println!("{}: {}", k, v));
     };
+    assert_graphvis_snapshots!(df);
     assert_eq!((0, 0), (df.current_tick(), df.current_stratum()));
     df.run_tick();
     assert_eq!((1, 0), (df.current_tick(), df.current_stratum()));
+
+    df.run_available(); // Should return quickly and not hang
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_group_by_tick() {
     let (items_send, items_recv) = hydroflow::util::unbounded_channel::<(u32, Vec<u32>)>();
     let (result_send, mut result_recv) = hydroflow::util::unbounded_channel::<(u32, Vec<u32>)>();
@@ -34,13 +40,7 @@ pub fn test_group_by_tick() {
             -> group_by::<'tick>(Vec::new, |old: &mut Vec<u32>, mut x: Vec<u32>| old.append(&mut x))
             -> for_each(|v| result_send.send(v).unwrap());
     };
-
-    println!(
-        "{}",
-        df.serde_graph()
-            .expect("No graph found, maybe failed to parse.")
-            .to_mermaid()
-    );
+    assert_graphvis_snapshots!(df);
     assert_eq!((0, 0), (df.current_tick(), df.current_stratum()));
     df.run_tick();
     assert_eq!((1, 0), (df.current_tick(), df.current_stratum()));
@@ -72,9 +72,11 @@ pub fn test_group_by_tick() {
             .collect::<BTreeSet<_>>(),
         hydroflow::util::collect_ready::<BTreeSet<_>, _>(&mut result_recv)
     );
+
+    df.run_available(); // Should return quickly and not hang
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_group_by_static() {
     let (items_send, items_recv) = hydroflow::util::unbounded_channel::<(u32, Vec<u32>)>();
     let (result_send, mut result_recv) = hydroflow::util::unbounded_channel::<(u32, Vec<u32>)>();
@@ -84,13 +86,7 @@ pub fn test_group_by_static() {
             -> group_by::<'static>(Vec::new, |old: &mut Vec<u32>, mut x: Vec<u32>| old.append(&mut x))
             -> for_each(|v| result_send.send(v).unwrap());
     };
-
-    println!(
-        "{}",
-        df.serde_graph()
-            .expect("No graph found, maybe failed to parse.")
-            .to_mermaid()
-    );
+    assert_graphvis_snapshots!(df);
     assert_eq!((0, 0), (df.current_tick(), df.current_stratum()));
     df.run_tick();
     assert_eq!((1, 0), (df.current_tick(), df.current_stratum()));
@@ -125,4 +121,6 @@ pub fn test_group_by_static() {
         .collect::<BTreeSet<_>>(),
         hydroflow::util::collect_ready::<BTreeSet<_>, _>(&mut result_recv)
     );
+
+    df.run_available(); // Should return quickly and not hang
 }

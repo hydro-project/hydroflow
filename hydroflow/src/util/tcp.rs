@@ -1,3 +1,5 @@
+#![cfg(not(target_arch = "wasm32"))]
+
 use tokio::net::tcp::{OwnedReadHalf, OwnedWriteHalf};
 use tokio::net::TcpStream;
 use tokio_util::codec::{

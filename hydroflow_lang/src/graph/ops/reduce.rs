@@ -102,7 +102,7 @@ pub const REDUCE: OperatorConstraints = OperatorConstraints {
                     };
                 },
                 quote_spanned! {op_span=>
-                    #context.schedule_subgraph(#context.current_subgraph());
+                    #context.schedule_subgraph(#context.current_subgraph(), false);
                 },
             ),
         };

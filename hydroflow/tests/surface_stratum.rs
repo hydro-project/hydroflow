@@ -1,8 +1,10 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use hydroflow::hydroflow_syntax;
+use multiplatform_test::multiplatform_test;
+
 use hydroflow::scheduled::graph::Hydroflow;
+use hydroflow::{assert_graphvis_snapshots, hydroflow_syntax};
 use tokio::sync::mpsc::error::SendError;
 
 // /// Testing an interesting topology: a self-loop which does nothing.
@@ -16,7 +18,7 @@ use tokio::sync::mpsc::error::SendError;
 // }
 
 /// Basic difference test, test difference between two one-off iterators.
-#[test]
+#[multiplatform_test]
 pub fn test_difference_a() {
     let output = <Rc<RefCell<Vec<usize>>>>::default();
     let output_inner = Rc::clone(&output);
@@ -27,6 +29,7 @@ pub fn test_difference_a() {
         source_iter([1, 3, 5, 7]) -> [neg]a;
         a -> for_each(|x| output_inner.borrow_mut().push(x));
     };
+    assert_graphvis_snapshots!(df);
     df.run_available();
 
     assert_eq!(&[2, 4], &*output.take());
@@ -34,7 +37,7 @@ pub fn test_difference_a() {
 
 /// More complex different test.
 /// Take the difference of each tick of items and subtract the previous tick's items.
-#[test]
+#[multiplatform_test]
 pub fn test_difference_b() -> Result<(), SendError<&'static str>> {
     let (inp_send, inp_recv) = hydroflow::util::unbounded_channel::<&'static str>();
 
@@ -48,8 +51,7 @@ pub fn test_difference_b() -> Result<(), SendError<&'static str>> {
         b[0] -> next_tick() -> [neg]a;
         b[1] -> for_each(|x| output_inner.borrow_mut().push(x));
     };
-
-    println!("{}", df.serde_graph().unwrap().to_mermaid());
+    assert_graphvis_snapshots!(df);
 
     inp_send.send("01")?;
     inp_send.send("02")?;
@@ -72,7 +74,7 @@ pub fn test_difference_b() -> Result<(), SendError<&'static str>> {
     Ok(())
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_tick_loop_1() {
     let output = <Rc<RefCell<Vec<usize>>>>::default();
     let output_inner = Rc::clone(&output);
@@ -85,8 +87,7 @@ pub fn test_tick_loop_1() {
         a[0] -> next_tick() -> map(|x| 2 * x) -> [1]a;
         a[1] -> for_each(|x| output_inner.borrow_mut().push(x));
     };
-
-    println!("{}", df.serde_graph().unwrap().to_mermaid());
+    assert_graphvis_snapshots!(df);
 
     df.run_tick();
     assert_eq!(&[1, 3], &*output.take());
@@ -101,7 +102,7 @@ pub fn test_tick_loop_1() {
     assert_eq!(&[8, 24], &*output.take());
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_tick_loop_2() {
     let output = <Rc<RefCell<Vec<usize>>>>::default();
     let output_inner = Rc::clone(&output);
@@ -112,8 +113,7 @@ pub fn test_tick_loop_2() {
         a[0] -> next_tick() -> next_tick() -> map(|x| 2 * x) -> [1]a;
         a[1] -> for_each(|x| output_inner.borrow_mut().push(x));
     };
-
-    println!("{}", df.serde_graph().unwrap().to_mermaid());
+    assert_graphvis_snapshots!(df);
 
     df.run_tick();
     assert_eq!(&[1, 3], &*output.take());
@@ -131,7 +131,7 @@ pub fn test_tick_loop_2() {
     assert_eq!(&[4, 12], &*output.take());
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_tick_loop_3() {
     let output = <Rc<RefCell<Vec<usize>>>>::default();
     let output_inner = Rc::clone(&output);
@@ -142,8 +142,7 @@ pub fn test_tick_loop_3() {
         a[0] -> next_tick() -> next_tick() -> next_tick() -> map(|x| 2 * x) -> [1]a;
         a[1] -> for_each(|x| output_inner.borrow_mut().push(x));
     };
-
-    println!("{}", df.serde_graph().unwrap().to_mermaid());
+    assert_graphvis_snapshots!(df);
 
     df.run_tick();
     assert_eq!(&[1, 3], &*output.take());
@@ -161,7 +160,7 @@ pub fn test_tick_loop_3() {
     assert!(output.take().is_empty());
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_surface_syntax_graph_unreachability() {
     // TODO(mingwei): may need persistence if we want this to make easier to eyeball.
 
@@ -186,13 +185,7 @@ pub fn test_surface_syntax_graph_unreachability() {
         edges[0] -> flat_map(|(a, b)| [a, b]) -> [pos]diff;
         my_join_tee[1] -> [neg]diff;
     };
-
-    println!(
-        "{}",
-        df.serde_graph()
-            .expect("No graph found, maybe failed to parse.")
-            .to_mermaid()
-    );
+    assert_graphvis_snapshots!(df);
     df.run_available();
 
     println!("A");
@@ -210,7 +203,7 @@ pub fn test_surface_syntax_graph_unreachability() {
 }
 
 /// Test that subgraphs are in the same stratum when possible.
-#[test]
+#[multiplatform_test]
 pub fn test_subgraph_stratum_consolidation() {
     let output = <Rc<RefCell<Vec<usize>>>>::default();
     let output_inner = Rc::clone(&output);
@@ -225,7 +218,7 @@ pub fn test_subgraph_stratum_consolidation() {
         source_iter([0]) -> [0]a[0] -> [0]b[0] -> [0]c[0] -> [0]d;
         source_iter([1]) -> [1]a[1] -> [1]b[1] -> [1]c[1] -> [1]d;
     };
-    println!("{}", df.serde_graph().unwrap().to_mermaid());
+    assert_graphvis_snapshots!(df);
 
     df.run_available();
     assert_eq!(2 * usize::pow(2, 3), output.take().len());

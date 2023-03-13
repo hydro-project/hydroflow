@@ -1,8 +1,11 @@
 //! Helper utilities for the Hydroflow surface syntax.
 
 mod udp;
+#[cfg(not(target_arch = "wasm32"))]
 pub use udp::*;
+
 mod tcp;
+#[cfg(not(target_arch = "wasm32"))]
 pub use tcp::*;
 
 #[cfg(unix)]
@@ -11,7 +14,7 @@ mod socket;
 pub use socket::*;
 
 #[cfg(feature = "cli_integration")]
-pub mod connection;
+pub mod cli;
 
 use std::net::SocketAddr;
 use std::task::{Context, Poll};
@@ -106,11 +109,13 @@ pub fn ipv4_resolve(addr: &str) -> Result<SocketAddr, std::io::Error> {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 pub async fn bind_udp_bytes(addr: SocketAddr) -> (UdpSink, UdpStream, SocketAddr) {
     let socket = tokio::net::UdpSocket::bind(addr).await.unwrap();
     udp_bytes(socket)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 pub async fn bind_udp_lines(addr: SocketAddr) -> (UdpLinesSink, UdpLinesStream, SocketAddr) {
     let socket = tokio::net::UdpSocket::bind(addr).await.unwrap();
     udp_lines(socket)

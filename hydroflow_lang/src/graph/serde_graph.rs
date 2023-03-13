@@ -4,7 +4,7 @@ use slotmap::{Key, SecondaryMap, SlotMap, SparseSecondaryMap};
 
 use serde::{Deserialize, Serialize};
 
-use super::{Color, GraphNodeId, GraphSubgraphId};
+use super::{node_color, Color, GraphNodeId, GraphSubgraphId, HANDOFF_NODE_STR};
 
 #[derive(Default, Serialize, Deserialize, Clone)]
 pub struct SerdeEdge {
@@ -17,7 +17,6 @@ pub struct SerdeEdge {
 #[derive(Default, Serialize, Deserialize)]
 pub struct SerdeGraph {
     pub nodes: SecondaryMap<GraphNodeId, String>,
-    pub node_color_map: SparseSecondaryMap<GraphNodeId, Color>,
     pub edges: SecondaryMap<GraphNodeId, Vec<SerdeEdge>>,
     pub barrier_handoffs: SparseSecondaryMap<GraphNodeId, bool>,
     pub subgraph_nodes: SlotMap<GraphSubgraphId, Vec<GraphNodeId>>,
@@ -181,6 +180,8 @@ impl SerdeGraph {
         }
 
         write_mermaid_prelude(write)?;
+
+        let node_color_map = self.make_node_color_map();
         for (subgraph_id, node_ids) in self.subgraph_nodes.iter() {
             let stratum = self.subgraph_stratum.get(subgraph_id);
             write_mermaid_subgraph_start(subgraph_id, *stratum.unwrap(), tab, write)?;
@@ -190,7 +191,7 @@ impl SerdeGraph {
             for &node_id in node_ids.iter() {
                 write_mermaid_node(
                     node_id,
-                    &self.node_color_map,
+                    &node_color_map,
                     self.nodes.get(node_id).unwrap(),
                     tab,
                     write,
@@ -202,7 +203,7 @@ impl SerdeGraph {
                 for hoff in hoffs.iter() {
                     write_mermaid_node(
                         *hoff,
-                        &self.node_color_map,
+                        &node_color_map,
                         self.nodes.get(*hoff).unwrap(),
                         tab,
                         write,
@@ -254,7 +255,7 @@ impl SerdeGraph {
                     // write out handoff
                     write_mermaid_node(
                         src,
-                        &self.node_color_map,
+                        &node_color_map,
                         self.nodes.get(src).unwrap(),
                         tab,
                         write,
@@ -285,8 +286,8 @@ impl SerdeGraph {
             writeln!(write, "digraph {{")?;
             Ok(())
         }
-        fn write_dot_postlude(tab: usize, write: &mut impl std::fmt::Write) -> std::fmt::Result {
-            writeln!(write, "{:t$}}}", "", t = tab)?;
+        fn write_dot_postlude(write: &mut impl std::fmt::Write) -> std::fmt::Result {
+            writeln!(write, "}}")?;
             Ok(())
         }
 
@@ -401,6 +402,8 @@ impl SerdeGraph {
         }
 
         write_dot_prelude(w)?;
+
+        let node_color_map = self.make_node_color_map();
         for (subgraph_id, node_ids) in self.subgraph_nodes.iter() {
             let stratum = self.subgraph_stratum.get(subgraph_id);
             // subgraph header
@@ -412,7 +415,7 @@ impl SerdeGraph {
                 // write out node
                 write_dot_node(
                     node_id,
-                    &self.node_color_map,
+                    &node_color_map,
                     self.nodes.get(node_id).unwrap(),
                     tab,
                     w,
@@ -423,7 +426,7 @@ impl SerdeGraph {
             if let Some(hoffs) = self.subgraph_internal_handoffs.get(subgraph_id) {
                 for hoff in hoffs {
                     let text = self.nodes.get(*hoff).unwrap();
-                    write_dot_node(*hoff, &self.node_color_map, text, tab, w)?;
+                    write_dot_node(*hoff, &node_color_map, text, tab, w)?;
                     // write out internal handoff edges
                     for edge in self.edges.get(*hoff).unwrap_or(&empty) {
                         write_dot_edge(*hoff, edge, tab, w)?;
@@ -452,7 +455,7 @@ impl SerdeGraph {
                 if self.barrier_handoffs.contains_key(src) {
                     // write out handoff
                     let text = self.nodes.get(src).unwrap();
-                    write_dot_node(src, &self.node_color_map, text, tab, w)?;
+                    write_dot_node(src, &node_color_map, text, tab, w)?;
                     // write out edge
                     write_dot_edge(src, edge, tab, w)?;
                 } else if self.barrier_handoffs.contains_key(edge.dst) {
@@ -463,7 +466,54 @@ impl SerdeGraph {
         }
 
         // outro
-        write_dot_postlude(tab, w)?;
+        write_dot_postlude(w)?;
         Ok(())
+    }
+
+    fn make_node_color_map(&self) -> SparseSecondaryMap<GraphNodeId, Color> {
+        // TODO(mingwei): this repeated code will be unified when `SerdeGraph` is subsumed into `HydroflowGraph`.
+        // TODO(mingwei): REPEATED CODE, COPIED FROM `flat_to_partitioned.rs`
+        // but modified for `serde_graph`...
+        let mut inn_degree: SecondaryMap<GraphNodeId, usize> =
+            SecondaryMap::with_capacity(self.nodes.len());
+        for edge in self.edges.values().flatten() {
+            *inn_degree.entry(edge.dst).unwrap().or_insert(0) += 1;
+        }
+
+        let mut node_color_map: SparseSecondaryMap<GraphNodeId, Color> = self
+            .nodes
+            .iter()
+            .filter_map(|(node_id, node_str)| {
+                let inn_degree = inn_degree.get(node_id).copied().unwrap_or(0);
+                let out_degree = self.edges.get(node_id).map(Vec::len).unwrap_or(0);
+                let is_handoff = HANDOFF_NODE_STR == node_str;
+                let op_color = node_color(is_handoff, inn_degree, out_degree);
+                op_color.map(|op_color| (node_id, op_color))
+            })
+            .collect();
+
+        // Fill in rest via subgraphs.
+        for sg_nodes in self.subgraph_nodes.values() {
+            // TODO(mingwei): REPEATED CODE, COPIED FROM `partitioned_graph.rs` codegen.
+            let pull_to_push_idx = sg_nodes
+                .iter()
+                .position(|&node_id| {
+                    let inn_degree = inn_degree.get(node_id).copied().unwrap_or(0);
+                    let out_degree = self.edges.get(node_id).map(Vec::len).unwrap_or(0);
+                    let node_str = &self.nodes[node_id];
+                    let is_handoff = HANDOFF_NODE_STR == node_str;
+                    node_color(is_handoff, inn_degree, out_degree)
+                        .map(|color| Color::Pull != color)
+                        .unwrap_or(false)
+                })
+                .unwrap_or(sg_nodes.len());
+
+            for (idx, node_id) in sg_nodes.iter().copied().enumerate() {
+                let is_pull = idx < pull_to_push_idx;
+                node_color_map.insert(node_id, if is_pull { Color::Pull } else { Color::Push });
+            }
+        }
+
+        node_color_map
     }
 }

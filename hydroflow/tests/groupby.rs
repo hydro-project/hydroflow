@@ -2,6 +2,8 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
+use multiplatform_test::multiplatform_test;
+
 use hydroflow::lang::collections::Iter;
 use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::scheduled::graph_ext::GraphExt;
@@ -90,7 +92,7 @@ const BATCH_C: &[Employee] = &[
 /// Basic monotonic threshold: find all departments with total salary at least 20_000.
 /// Uses the core API.
 /// SQL: SELECT department FROM employees WHERE 20_000 <= SUM(salary) GROUP BY department
-#[test]
+#[multiplatform_test]
 fn group_by_monotonic_core() {
     let mut hf = Hydroflow::new();
 
@@ -145,6 +147,7 @@ fn group_by_monotonic_core() {
 // /// Uses the surface (builder) API.
 // /// SQL: SELECT department FROM employees WHERE 20_000 <= SUM(salary) GROUP BY department
 // #[test]
+// #[multiplatform_test]
 // fn group_by_monotonic_surface() {
 //     use hydroflow::builder::prelude::*;
 
@@ -197,6 +200,7 @@ fn group_by_monotonic_core() {
 // /// Takes in BATCH_A in the first tick, then BATCH_B *and* BATCH_C in the second tick.
 // /// SQL (per batch): SELECT department, name, salary FROM employees WHERE salary = MAX(salary) GROUP BY department
 // #[test]
+// #[multiplatform_test]
 // fn group_by_nonmon_surface() {
 //     use hydroflow::builder::prelude::*;
 

@@ -4,3 +4,6 @@ rustflags = [
     # TODO(mingwei): Need rust-analyzer support:
     "-Aclippy::uninlined-format-args",
 ]
+
+[target.x86_64-unknown-linux-musl]
+linker = "lld"

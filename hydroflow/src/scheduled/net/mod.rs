@@ -1,3 +1,5 @@
+#![cfg(not(target_arch = "wasm32"))]
+
 //! This module contiains networking code.
 //!
 //! ## How Tokio interacts with Hydroflow (Mingwei 2021-12-07)

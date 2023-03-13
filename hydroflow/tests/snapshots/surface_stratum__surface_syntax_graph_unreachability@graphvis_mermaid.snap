@@ -1,0 +1,70 @@
+---
+source: hydroflow/tests/surface_stratum.rs
+expression: df.serde_graph().unwrap().to_mermaid()
+---
+%%{init:{'theme':'base','themeVariables':{'clusterBkg':'#ddd','clusterBorder':'#888'}}}%%
+flowchart TD
+classDef pullClass fill:#02f,color:#fff,stroke:#000
+classDef pushClass fill:#ff0,stroke:#000
+linkStyle default stroke:#aaa,stroke-width:4px,color:red,font-size:1.5em;
+subgraph sg_1v1 ["sg_1v1 stratum 0"]
+    4v1[\"(4v1) <tt>source_stream(pairs_recv)</tt>"/]:::pullClass
+    5v1[/"(5v1) <tt>tee()</tt>"\]:::pushClass
+    4v1--->5v1
+    subgraph sg_1v1_var_edges ["var <tt>edges</tt>"]
+        4v1
+        5v1
+    end
+end
+subgraph sg_2v1 ["sg_2v1 stratum 0"]
+    3v1[\"(3v1) <tt>source_iter(vec! [0])</tt>"/]:::pullClass
+    1v1[\"(1v1) <tt>merge()</tt>"/]:::pullClass
+    2v1[\"(2v1) <tt>map(| v | (v, ()))</tt>"/]:::pullClass
+    6v1[\"(6v1) <tt>join()</tt>"/]:::pullClass
+    7v1[\"(7v1) <tt>map(| (_src, ((), dst)) | dst)</tt>"/]:::pullClass
+    8v1[\"(8v1) <tt>map(| x | x)</tt>"/]:::pullClass
+    9v1[\"(9v1) <tt>map(| x | x)</tt>"/]:::pullClass
+    10v1[/"(10v1) <tt>tee()</tt>"\]:::pushClass
+    15v1["(15v1) <tt>handoff</tt>"]:::otherClass
+    15v1--1--->1v1
+    3v1--0--->1v1
+    1v1--->2v1
+    2v1--0--->6v1
+    6v1--->7v1
+    7v1--->8v1
+    8v1--->9v1
+    9v1--->10v1
+    10v1--0--->15v1
+    subgraph sg_2v1_var_my_join_tee ["var <tt>my_join_tee</tt>"]
+        6v1
+        7v1
+        8v1
+        9v1
+        10v1
+    end
+    subgraph sg_2v1_var_reached_vertices ["var <tt>reached_vertices</tt>"]
+        1v1
+        2v1
+    end
+end
+subgraph sg_3v1 ["sg_3v1 stratum 1"]
+    13v1[\"(13v1) <tt>flat_map(| (a, b) | [a, b])</tt>"/]:::pullClass
+    11v1[\"(11v1) <tt>difference()</tt>"/]:::pullClass
+    12v1[/"(12v1) <tt>for_each(| x | println! (&quot;Not reached: {}&quot;, x))</tt>"\]:::pushClass
+    13v1--pos--->11v1
+    11v1--->12v1
+    subgraph sg_3v1_var_diff ["var <tt>diff</tt>"]
+        11v1
+        12v1
+    end
+end
+5v1--1--->14v1
+5v1--0--->16v1
+10v1--1--->17v1
+14v1["(14v1) <tt>handoff</tt>"]:::otherClass
+14v1--1--->6v1
+16v1["(16v1) <tt>handoff</tt>"]:::otherClass
+16v1--->13v1
+17v1["(17v1) <tt>handoff</tt>"]:::otherClass
+17v1==neg===o11v1
+

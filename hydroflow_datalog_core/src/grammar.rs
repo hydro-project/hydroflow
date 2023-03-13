@@ -9,9 +9,31 @@ pub mod datalog {
 
     #[derive(Debug, Clone)]
     pub enum Declaration {
-        Input(#[rust_sitter::leaf(text = ".input")] (), Ident),
-        Output(#[rust_sitter::leaf(text = ".output")] (), Ident),
+        Input(#[rust_sitter::leaf(text = ".input")] (), Ident, RustSnippet),
+        Output(
+            #[rust_sitter::leaf(text = ".output")] (),
+            Ident,
+            RustSnippet,
+        ),
+        Async(
+            #[rust_sitter::leaf(text = ".async")] (),
+            Ident,
+            /// A pipeline for data to be sent to another node, which must consume `(NodeID, Data)` pairs.
+            RustSnippet,
+            /// A pipeline for data received from another node, which must produce `Data` values.
+            RustSnippet,
+        ),
         Rule(Rule),
+    }
+
+    #[derive(Debug, Clone)]
+    pub struct RustSnippet {
+        #[rust_sitter::leaf(text = "`")]
+        _start: (),
+        #[rust_sitter::leaf(pattern = r#"[^`]*"#, transform = |s| s.to_string())]
+        pub code: String,
+        #[rust_sitter::leaf(text = "`")]
+        _end: (),
     }
 
     #[derive(Debug, Clone)]

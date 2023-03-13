@@ -3,13 +3,15 @@ use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 use std::sync::mpsc;
 
+use multiplatform_test::multiplatform_test;
+
 use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::scheduled::graph_ext::GraphExt;
 use hydroflow::scheduled::handoff::VecHandoff;
 use hydroflow::scheduled::port::{RecvCtx, SendCtx};
 use hydroflow::{var_args, var_expr};
 
-#[test]
+#[multiplatform_test]
 fn map_filter() {
     use hydroflow::scheduled::handoff::VecHandoff;
     use std::cell::RefCell;
@@ -76,7 +78,7 @@ fn map_filter() {
     assert_eq!((*outputs).borrow().clone(), vec![4, 10]);
 }
 
-#[test]
+#[multiplatform_test]
 fn test_basic_variadic() {
     let mut df = Hydroflow::new();
     let (source_send, sink_recv) = df.make_edge::<_, VecHandoff<usize>>("handoff");
@@ -99,7 +101,7 @@ fn test_basic_variadic() {
     assert_eq!(Some(5), val.get());
 }
 
-#[test]
+#[multiplatform_test]
 fn test_basic_n_m() {
     let mut df = Hydroflow::new();
 
@@ -134,7 +136,7 @@ fn test_basic_n_m() {
     assert_eq!(Some(5), val.get());
 }
 
-#[test]
+#[multiplatform_test]
 fn test_cycle() {
     // A dataflow that represents graph reachability.
 
@@ -280,7 +282,7 @@ fn test_cycle() {
 //     assert_eq!((*out2).borrow().clone(), vec![1, 2, 3, 4]);
 // }
 
-#[test]
+#[multiplatform_test]
 fn test_input_handle() {
     use hydroflow::scheduled::graph_ext::GraphExt;
     use hydroflow::scheduled::handoff::VecHandoff;
@@ -319,6 +321,7 @@ fn test_input_handle() {
 }
 
 #[test]
+// #[multiplatform_test]  // no threads on WASM
 fn test_input_handle_thread() {
     use hydroflow::scheduled::graph_ext::GraphExt;
     use hydroflow::scheduled::handoff::VecHandoff;
@@ -355,6 +358,7 @@ fn test_input_handle_thread() {
 }
 
 #[test]
+// #[multiplatform_test]   // no threads on WASM
 fn test_input_channel() {
     // This test creates two parallel Hydroflow graphs and bounces messages back
     // and forth between them.

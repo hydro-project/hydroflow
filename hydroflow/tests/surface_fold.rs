@@ -1,9 +1,11 @@
 use std::collections::{HashMap, HashSet};
 
-use hydroflow::hydroflow_syntax;
-use hydroflow::util::collect_ready;
+use multiplatform_test::multiplatform_test;
 
-#[test]
+use hydroflow::util::collect_ready;
+use hydroflow::{assert_graphvis_snapshots, hydroflow_syntax};
+
+#[multiplatform_test]
 pub fn test_fold_tick() {
     let (items_send, items_recv) = hydroflow::util::unbounded_channel::<Vec<u32>>();
     let (result_send, mut result_recv) = hydroflow::util::unbounded_channel::<Vec<u32>>();
@@ -13,13 +15,7 @@ pub fn test_fold_tick() {
             -> fold::<'tick>(Vec::new(), |mut old: Vec<u32>, mut x: Vec<u32>| { old.append(&mut x); old })
             -> for_each(|v| result_send.send(v).unwrap());
     };
-
-    println!(
-        "{}",
-        df.serde_graph()
-            .expect("No graph found, maybe failed to parse.")
-            .to_mermaid()
-    );
+    assert_graphvis_snapshots!(df);
 
     assert_eq!((0, 0), (df.current_tick(), df.current_stratum()));
 
@@ -42,9 +38,11 @@ pub fn test_fold_tick() {
         &[vec![5, 6, 7, 8]],
         &*hydroflow::util::collect_ready::<Vec<_>, _>(&mut result_recv)
     );
+
+    df.run_available(); // Should return quickly and not hang
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_fold_static() {
     let (items_send, items_recv) = hydroflow::util::unbounded_channel::<Vec<u32>>();
     let (result_send, mut result_recv) = hydroflow::util::unbounded_channel::<Vec<u32>>();
@@ -54,13 +52,7 @@ pub fn test_fold_static() {
             -> fold::<'static>(Vec::new(), |mut old: Vec<u32>, mut x: Vec<u32>| { old.append(&mut x); old })
             -> for_each(|v| result_send.send(v).unwrap());
     };
-
-    println!(
-        "{}",
-        df.serde_graph()
-            .expect("No graph found, maybe failed to parse.")
-            .to_mermaid()
-    );
+    assert_graphvis_snapshots!(df);
 
     assert_eq!((0, 0), (df.current_tick(), df.current_stratum()));
 
@@ -83,9 +75,11 @@ pub fn test_fold_static() {
         &[vec![1, 2, 3, 4, 5, 6, 7, 8]],
         &*hydroflow::util::collect_ready::<Vec<_>, _>(&mut result_recv)
     );
+
+    df.run_available(); // Should return quickly and not hang
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_fold_flatten() {
     // test pull
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<(u8, u8)>();
@@ -98,6 +92,7 @@ pub fn test_fold_flatten() {
             -> flatten()
             -> for_each(|(k,v)| out_send.send((k,v)).unwrap());
     };
+
     assert_eq!((0, 0), (df_pull.current_tick(), df_pull.current_stratum()));
     df_pull.run_tick();
     assert_eq!((1, 0), (df_pull.current_tick(), df_pull.current_stratum()));
@@ -127,9 +122,12 @@ pub fn test_fold_flatten() {
     for pair in [(1, 4), (2, 8)] {
         assert!(out.contains(&pair));
     }
+
+    df_push.run_available(); // Should return quickly and not hang
+    df_pull.run_available(); // Should return quickly and not hang
 }
 
-#[test]
+#[multiplatform_test]
 pub fn test_fold_sort() {
     let (items_send, items_recv) = hydroflow::util::unbounded_channel::<usize>();
 
@@ -142,13 +140,7 @@ pub fn test_fold_sort() {
             -> flat_map(|mut vec| { vec.sort(); vec })
             -> for_each(|v| print!("{:?}, ", v));
     };
-
-    println!(
-        "{}",
-        df.serde_graph()
-            .expect("No graph found, maybe failed to parse.")
-            .to_mermaid()
-    );
+    assert_graphvis_snapshots!(df);
     assert_eq!((0, 0), (df.current_tick(), df.current_stratum()));
     df.run_tick();
     assert_eq!((1, 0), (df.current_tick(), df.current_stratum()));
@@ -172,4 +164,6 @@ pub fn test_fold_sort() {
     assert_eq!((3, 0), (df.current_tick(), df.current_stratum()));
 
     println!();
+
+    df.run_available(); // Should return quickly and not hang
 }

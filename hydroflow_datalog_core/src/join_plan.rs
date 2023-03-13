@@ -1,6 +1,7 @@
 use std::collections::{btree_map::Entry, BTreeMap, HashMap};
 
-use hydroflow_lang::{graph::flat_graph::FlatGraphBuilder, parse::Pipeline};
+use hydroflow_lang::graph::FlatGraphBuilder;
+use hydroflow_lang::parse::Pipeline;
 use proc_macro2::Span;
 use syn::{self, parse_quote};
 

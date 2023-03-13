@@ -1,4 +1,7 @@
-#[test]
+use hydroflow::assert_graphvis_snapshots;
+use multiplatform_test::multiplatform_test;
+
+#[multiplatform_test]
 pub fn test_diff_timing() {
     // An edge in the input data = a pair of `usize` vertex IDs.
     let (pos_send, pos_recv) = hydroflow::util::unbounded_channel::<usize>();
@@ -17,7 +20,7 @@ pub fn test_diff_timing() {
         negs -> for_each(|x| println!("neg: {:?}", x));
 
     };
-    println!("{}", df.serde_graph().unwrap().to_mermaid());
+    assert_graphvis_snapshots!(df);
 
     df.run_tick();
     println!("{}x{}", df.current_tick(), df.current_stratum());
