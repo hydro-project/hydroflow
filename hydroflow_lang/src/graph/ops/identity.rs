@@ -11,6 +11,14 @@ use super::{
 /// source_iter(vec!["hello", "world"]) -> identity()
 ///     -> for_each(|x| println!("{}", x));
 /// ```
+///
+/// You can also supply a type parameter `identity::<MyType>()` to specify what items flow thru the
+/// the pipeline. This can be useful for helping the compiler infer types.
+///
+/// ```hydroflow
+/// // Use type parameter to ensure items are `i32`s.
+/// source_iter(0..10) -> identity::<i32>() -> for_each(|x| println!("{}", x));
+/// ```
 #[hydroflow_internalmacro::operator_docgen]
 pub const IDENTITY: OperatorConstraints = OperatorConstraints {
     name: "identity",
@@ -20,7 +28,7 @@ pub const IDENTITY: OperatorConstraints = OperatorConstraints {
     soft_range_out: RANGE_1,
     num_args: 0,
     persistence_args: RANGE_0,
-    type_args: RANGE_0,
+    type_args: &(0..=1),
     is_external_input: false,
     ports_inn: None,
     ports_out: None,
