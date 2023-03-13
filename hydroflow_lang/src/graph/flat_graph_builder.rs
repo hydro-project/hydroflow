@@ -14,7 +14,7 @@ use crate::pretty_span::PrettySpan;
 
 use super::ops::find_op_op_constraints;
 use super::{
-    get_operator_generics, FlatGraph, GraphNodeId, Node, OperatorInstance, PortIndexValue,
+    get_operator_generics, GraphNodeId, HydroflowGraph, Node, OperatorInstance, PortIndexValue,
 };
 
 #[derive(Clone, Debug)]
@@ -34,8 +34,8 @@ pub struct FlatGraphBuilder {
     /// Spanned error/warning/etc diagnostics to emit.
     diagnostics: Vec<Diagnostic>,
 
-    /// FlatGraph being built.
-    flat_graph: FlatGraph,
+    /// HydroflowGraph being built.
+    flat_graph: HydroflowGraph,
     /// Variable names, used as [`HfStatement::Named`] are added.
     /// Value will be set to `Err(())` if the name references an illegal self-referential cycle.
     varname_ends: BTreeMap<Ident, Result<Ends, ()>>,
@@ -53,23 +53,23 @@ impl FlatGraphBuilder {
         input.into()
     }
 
-    /// Build into a [`FlatGraph`], returning a tuple of a `FlatGraph` and any diagnostics.
+    /// Build into an unpartitioned [`HydroflowGraph`], returning a tuple of a `HydroflowGraph` and any diagnostics.
     ///
-    /// Even if there are errors, the `FlatGraph` will be returned (potentially in a partial state).
-    pub fn try_build(mut self) -> (FlatGraph, Vec<Diagnostic>) {
+    /// Even if there are errors, the `HydroflowGraph` will be returned (potentially in a partial state).
+    pub fn try_build(mut self) -> (HydroflowGraph, Vec<Diagnostic>) {
         self.connect_operator_links();
         self.process_operator_errors();
 
         (self.flat_graph, self.diagnostics)
     }
 
-    /// Build into a [`FlatGraph`].
+    /// Build into an unpartitioned [`HydroflowGraph`].
     ///
     /// Emits any diagnostics more severe than `min_diagnostic_level`.
     ///
-    /// Returns `Err(FlatGraph)` if there are any errors. Returns `Ok(FlatGraph)` if there are no
+    /// Returns `Err(HydroflowGraph)` if there are any errors. Returns `Ok(HydroflowGraph)` if there are no
     /// errors.
-    pub fn build(self, min_diagnostic_level: Level) -> Result<FlatGraph, FlatGraph> {
+    pub fn build(self, min_diagnostic_level: Level) -> Result<HydroflowGraph, HydroflowGraph> {
         let (result, diagnostics) = self.try_build();
 
         diagnostics
@@ -84,7 +84,7 @@ impl FlatGraphBuilder {
         }
     }
 
-    /// Add a single [`HfStatement`] line to this `FlatGraph`.
+    /// Add a single [`HfStatement`] line to this `HydroflowGraph`.
     pub fn add_statement(&mut self, stmt: HfStatement) {
         let stmt_span = stmt.span();
         match stmt {
@@ -301,10 +301,11 @@ impl FlatGraphBuilder {
 
             // Handle src's successor port conflicts:
             if src_port.is_specified() {
-                for (conflicting_port, _n) in self
+                for conflicting_port in self
                     .flat_graph
-                    .successors(src)
-                    .filter(|&(port, _n)| port == &src_port)
+                    .node_successor_edges(src)
+                    .map(|edge_id| self.flat_graph.edge_ports(edge_id).0)
+                    .filter(|&port| port == &src_port)
                 {
                     emit_conflict("Output", conflicting_port, &src_port, &mut self.diagnostics);
                 }
@@ -312,10 +313,11 @@ impl FlatGraphBuilder {
 
             // Handle dst's predecessor port conflicts:
             if dst_port.is_specified() {
-                for (conflicting_port, _n) in self
+                for conflicting_port in self
                     .flat_graph
-                    .predecessors(dst)
-                    .filter(|&(port, _n)| port == &dst_port)
+                    .node_predecessor_edges(dst)
+                    .map(|edge_id| self.flat_graph.edge_ports(edge_id).1)
+                    .filter(|&port| port == &dst_port)
                 {
                     emit_conflict("Input", conflicting_port, &dst_port, &mut self.diagnostics);
                 }
@@ -350,8 +352,8 @@ impl FlatGraphBuilder {
             let (input_ports, output_ports) = {
                 let mut input_edges: Vec<(&PortIndexValue, GraphNodeId)> = self
                     .flat_graph
-                    .predecessors(node_id)
-                    .map(|(port, pred)| (port, pred))
+                    .node_predecessors(node_id)
+                    .map(|(edge_id, pred_id)| (self.flat_graph.edge_ports(edge_id).1, pred_id))
                     .collect();
                 // Ensure sorted by port index.
                 input_edges.sort();
@@ -364,8 +366,8 @@ impl FlatGraphBuilder {
                 // Collect output arguments (successors).
                 let mut output_edges: Vec<(&PortIndexValue, GraphNodeId)> = self
                     .flat_graph
-                    .successors(node_id)
-                    .map(|(port, succ)| (port, succ))
+                    .node_successors(node_id)
+                    .map(|(edge_id, succ)| (self.flat_graph.edge_ports(edge_id).0, succ))
                     .collect();
                 // Ensure sorted by port index.
                 output_edges.sort();
@@ -424,7 +426,7 @@ impl FlatGraphBuilder {
         }
 
         for (node_id, op_inst) in op_insts {
-            self.flat_graph.insert_operator_instance(node_id, op_inst);
+            self.flat_graph.insert_node_op_inst(node_id, op_inst);
         }
     }
 
@@ -482,7 +484,7 @@ impl FlatGraphBuilder {
                         out_of_range
                     }
 
-                    let inn_degree = self.flat_graph.degree_in(node_id);
+                    let inn_degree = self.flat_graph.node_degree_in(node_id);
                     let _ = emit_arity_error(
                         operator,
                         true,
@@ -499,7 +501,7 @@ impl FlatGraphBuilder {
                         &mut self.diagnostics,
                     );
 
-                    let out_degree = self.flat_graph.degree_out(node_id);
+                    let out_degree = self.flat_graph.node_degree_out(node_id);
                     let _ = emit_arity_error(
                         operator,
                         false,
@@ -595,14 +597,18 @@ impl FlatGraphBuilder {
                     emit_port_error(
                         operator.span(),
                         op_constraints.ports_inn,
-                        self.flat_graph.predecessors(node_id).map(|(port, _n)| port),
+                        self.flat_graph
+                            .node_predecessor_edges(node_id)
+                            .map(|edge_id| self.flat_graph.edge_ports(edge_id).1),
                         "input",
                         &mut self.diagnostics,
                     );
                     emit_port_error(
                         operator.span(),
                         op_constraints.ports_out,
-                        self.flat_graph.successors(node_id).map(|(port, _n)| port),
+                        self.flat_graph
+                            .node_successor_edges(node_id)
+                            .map(|edge_id| self.flat_graph.edge_ports(edge_id).0),
                         "output",
                         &mut self.diagnostics,
                     );

@@ -17,29 +17,27 @@ use crate::pretty_span::PrettySpan;
 use self::ops::{OperatorConstraints, Persistence};
 
 mod di_mul_graph;
-mod flat_graph;
 mod flat_graph_builder;
-mod partitioned_graph;
+mod flat_to_partitioned;
+mod hydroflow_graph;
 
 pub use di_mul_graph::DiMulGraph;
-pub use flat_graph::{FlatGraph, FlatGraphExploded};
 pub use flat_graph_builder::FlatGraphBuilder;
-pub use partitioned_graph::PartitionedGraph;
+pub use flat_to_partitioned::partition_graph;
+pub use hydroflow_graph::HydroflowGraph;
 
-pub mod flat_to_partitioned;
 pub mod graph_algorithms;
 pub mod ops;
 pub mod serde_graph;
 
 new_key_type! {
-    /// ID to identify a node (operator or handoff) in both [`flat_graph::FlatGraph`]
-    /// and [`partitioned_graph::PartitionedGraph`].
+    /// ID to identify a node (operator or handoff) in [`HydroflowGraph`].
     pub struct GraphNodeId;
 
     /// ID to identify an edge.
     pub struct GraphEdgeId;
 
-    /// ID to identify a subgraph in [`partitioned_graph::PartitionedGraph`].
+    /// ID to identify a subgraph in [`HydroflowGraph`].
     pub struct GraphSubgraphId;
 }
 
@@ -57,8 +55,8 @@ pub enum Node {
 impl Spanned for Node {
     fn span(&self) -> Span {
         match self {
-            Node::Operator(op) => op.span(),
-            &Node::Handoff { src_span, dst_span } => src_span.join(dst_span).unwrap_or(src_span),
+            Self::Operator(op) => op.span(),
+            &Self::Handoff { src_span, dst_span } => src_span.join(dst_span).unwrap_or(src_span),
         }
     }
 }
@@ -155,8 +153,10 @@ pub enum Color {
     Hoff,
 }
 
+/// Determine op color based on in and out degree. If linear (1 in 1 out), color is None.
+///
+/// Note that this does NOT consider `DelayType` barriers, which generally imply `Pull`.
 pub fn node_color(is_handoff: bool, inn_degree: usize, out_degree: usize) -> Option<Color> {
-    // Determine op color based on in and out degree. If linear (1 in 1 out), color is None.
     if is_handoff {
         Some(Color::Hoff)
     } else {

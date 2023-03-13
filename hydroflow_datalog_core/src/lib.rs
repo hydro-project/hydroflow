@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 
 use hydroflow_lang::{
     diagnostic::{Diagnostic, Level},
-    graph::{FlatGraph, FlatGraphBuilder},
+    graph::{partition_graph, FlatGraphBuilder, HydroflowGraph},
     parse::{IndexInt, Indexing, Pipeline, PipelineLink},
 };
 use proc_macro2::{Span, TokenStream};
@@ -18,7 +18,7 @@ use util::{repeat_tuple, Counter};
 
 pub fn gen_hydroflow_graph(
     literal: proc_macro2::Literal,
-) -> Result<FlatGraph, (Vec<rust_sitter::errors::ParseError>, Vec<Diagnostic>)> {
+) -> Result<HydroflowGraph, (Vec<rust_sitter::errors::ParseError>, Vec<Diagnostic>)> {
     let str_node: syn::LitStr = parse_quote!(#literal);
     let actual_str = str_node.value();
     let program: Program = grammar::datalog::parse(&actual_str).map_err(|e| (e, vec![]))?;
@@ -144,11 +144,10 @@ pub fn gen_hydroflow_graph(
     }
 }
 
-pub fn hydroflow_graph_to_program(flat_graph: FlatGraph, root: TokenStream) -> syn::Stmt {
-    let code_tokens = flat_graph
-        .into_partitioned_graph()
-        .expect("failed to partition")
-        .as_code(root, true);
+pub fn hydroflow_graph_to_program(flat_graph: HydroflowGraph, root: TokenStream) -> syn::Stmt {
+    let partitioned_graph =
+        partition_graph(flat_graph).expect("Failed to partition (cycle detected).");
+    let code_tokens = partitioned_graph.as_code(root, true);
 
     syn::parse_quote!({
         #code_tokens
@@ -419,15 +418,14 @@ mod tests {
 
     macro_rules! test_snapshots {
         ($program:literal) => {
-            let graph = gen_hydroflow_graph(parse_quote!($program)).unwrap();
+            let flat_graph = gen_hydroflow_graph(parse_quote!($program)).unwrap();
 
+            let flat_graph_ref = &flat_graph;
             insta::with_settings!({snapshot_suffix => "surface_graph"}, {
-                insta::assert_display_snapshot!(graph.surface_syntax_string());
+                insta::assert_display_snapshot!(flat_graph_ref.surface_syntax_string());
             });
 
-            // Have to make a new graph as the above closure borrows.
-            let graph2 = gen_hydroflow_graph(parse_quote!($program)).unwrap();
-            let out = &hydroflow_graph_to_program(graph2, quote::quote! { hydroflow });
+            let out = &hydroflow_graph_to_program(flat_graph, quote::quote! { hydroflow });
             let wrapped: syn::File = parse_quote! {
                 fn main() {
                     #out
