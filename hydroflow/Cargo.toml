@@ -42,14 +42,6 @@ name = "kvs"
 [[example]]
 name = "vector_clock"
 
-[[example]]
-name = "cli_sender"
-required-features = [ "cli_integration" ]
-
-[[example]]
-name = "cli_receiver"
-required-features = [ "cli_integration" ]
-
 [dependencies]
 bincode = "1.3"
 byteorder = "1.4.3"

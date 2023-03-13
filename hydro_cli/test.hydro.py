@@ -23,17 +23,15 @@ async def main(args):
     ) if machine_2_gcp else localhost_machine
 
     sender = deployment.HydroflowCrate(
-        src="../hydroflow",
+        src="../hydro_cli_examples",
         example="cli_sender",
-        features=["cli_integration"],
         args=[json.dumps([0])],
         on=machine1
     )
 
     receiver = deployment.HydroflowCrate(
-        src="../hydroflow",
+        src="../hydro_cli_examples",
         example="cli_receiver",
-        features=["cli_integration"],
         on=machine2
     )
 
