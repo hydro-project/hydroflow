@@ -190,15 +190,23 @@ pub fn run_server(
 
             let mut rng = rand::rngs::SmallRng::from_entropy();
             let dist = rand_distr::Zipf::new(1_000_000, dist).unwrap();
-
-            let buff = Bytes::from_static(&[0; 1024]);
+            let dist_uniform = rand_distr::Uniform::new(u64::MIN, u64::MAX);
 
             let mut df = hydroflow_syntax! {
 
                 hack_iter = batch_iter_fn(20, move || {
+
+                    let mut buff = BytesMut::with_capacity(1024);
+                    buff.resize(1024, 0);
+                    let mut r = rng.sample(dist_uniform) as u64;
+                    for i in 0..8 {
+                        buff[i] = (r % 256) as u8;
+                        r /= 256;
+                    }
+
                     (KVSRequest2::Put {
                         key: rng.sample(dist) as u64,
-                        value: buff.clone()
+                        value: buff.freeze()
                     }, Vec::new())
                 });
 
