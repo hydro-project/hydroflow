@@ -9,6 +9,7 @@ members = [
     "hydroflow_datalog_core",
     "hydroflow_datalog",
     "hydro_cli",
+    "hydro_cli_examples",
     "hydroflow_cli_integration",
     "benches",
     "relalg",
