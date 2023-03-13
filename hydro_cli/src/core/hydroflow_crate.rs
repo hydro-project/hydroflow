@@ -29,13 +29,13 @@ pub enum ClientPortConfig {
 }
 
 impl ClientPortConfig {
-    pub fn instantiate(&self, client: &HydroflowCrate) -> Result<ClientPort> {
+    pub fn instantiate(&self, client_host: &Arc<RwLock<dyn Host>>) -> Result<ClientPort> {
         match self {
             ClientPortConfig::Direct(server_weak, server_port) => {
                 let server = server_weak.upgrade().unwrap();
                 let mut server_write = server.try_write().unwrap();
 
-                let client_host_id = client.on.try_read().unwrap().id();
+                let client_host_id = client_host.try_read().unwrap().id();
 
                 let server_host_clone = server_write.on.clone();
                 let mut server_host = server_host_clone.try_write().unwrap();
@@ -43,7 +43,7 @@ impl ClientPortConfig {
                 let client_host_read = if server_host.id() == client_host_id {
                     None
                 } else {
-                    client.on.try_read().ok()
+                    client_host.try_read().ok()
                 };
 
                 let (conn_type, bind_type) =
@@ -66,7 +66,7 @@ impl ClientPortConfig {
             ClientPortConfig::Demux(demux) => {
                 let mut instantiated_map = HashMap::new();
                 for (key, target) in demux {
-                    instantiated_map.insert(*key, target.instantiate(client)?);
+                    instantiated_map.insert(*key, target.instantiate(client_host)?);
                 }
 
                 Ok(ClientPort::Demux(instantiated_map))
@@ -76,7 +76,7 @@ impl ClientPortConfig {
 
     pub fn instantiate_reverse(
         &self,
-        server_write: &mut HydroflowCrate,
+        server_host: &Arc<RwLock<dyn Host>>,
         server_weak: &Weak<RwLock<HydroflowCrate>>,
         server_port: &String,
         wrap_client_port: &dyn Fn(ClientPort) -> ClientPort,
@@ -88,7 +88,7 @@ impl ClientPortConfig {
 
                 let client_host_id = client_write.on.try_read().unwrap().id();
 
-                let server_host_clone = server_write.on.clone();
+                let server_host_clone = server_host.clone();
                 let mut server_host = server_host_clone.try_write().unwrap();
 
                 let client_host_clone = client_write.on.clone();
@@ -121,7 +121,7 @@ impl ClientPortConfig {
                     instantiated_map.insert(
                         *key,
                         target.instantiate_reverse(
-                            server_write,
+                            server_host,
                             server_weak,
                             server_port,
                             // the parent wrapper selects the demux port for the parent defn, so do that first
@@ -253,12 +253,16 @@ impl HydroflowCrate {
         my_port: String,
         config: ClientPortConfig,
     ) -> Result<()> {
-        if let Ok(instantiated) = config.instantiate(self) {
+        if let Ok(instantiated) = config.instantiate(&self.on) {
             self.client_port.insert(my_port, instantiated);
             Ok(())
         } else {
-            let instantiated =
-                config.instantiate_reverse(self, &Arc::downgrade(self_arc), &my_port, &|p| p)?;
+            let instantiated = config.instantiate_reverse(
+                &self.on,
+                &Arc::downgrade(self_arc),
+                &my_port,
+                &|p| p,
+            )?;
             self.server_ports.insert(my_port, instantiated);
             Ok(())
         }
