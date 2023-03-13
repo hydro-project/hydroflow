@@ -276,7 +276,7 @@ impl PyHydroflowCrate {
 #[pyclass]
 #[derive(Clone)]
 struct PyHydroflowCratePort {
-    pub(crate) underlying: crate::core::hydroflow_crate::OutgoingPort,
+    pub(crate) underlying: crate::core::hydroflow_crate::ClientPortConfig,
 }
 
 #[pymethods]
@@ -284,7 +284,7 @@ impl PyHydroflowCratePort {
     #[staticmethod]
     fn new_direct(to: &PyHydroflowCrate, to_port: String) -> PyHydroflowCratePort {
         PyHydroflowCratePort {
-            underlying: crate::core::hydroflow_crate::OutgoingPort::Direct(
+            underlying: crate::core::hydroflow_crate::ClientPortConfig::Direct(
                 Arc::downgrade(&to.underlying),
                 to_port,
             ),
@@ -294,7 +294,7 @@ impl PyHydroflowCratePort {
     #[staticmethod]
     fn new_demux(mapping: &PyDict) -> PyHydroflowCratePort {
         PyHydroflowCratePort {
-            underlying: crate::core::hydroflow_crate::OutgoingPort::Demux(
+            underlying: crate::core::hydroflow_crate::ClientPortConfig::Demux(
                 mapping
                     .into_iter()
                     .map(|(k, v)| {
@@ -312,7 +312,9 @@ impl PyHydroflowCratePort {
 fn create_connection(from: &PyHydroflowCrate, from_port: String, to: &PyHydroflowCratePort) {
     let from = &from.underlying;
     let mut from_write = from.try_write().unwrap();
-    from_write.add_outgoing_port(from_port, to.underlying.clone());
+    from_write
+        .add_client_port(from, from_port, to.underlying.clone())
+        .unwrap();
 }
 
 #[pymodule]
