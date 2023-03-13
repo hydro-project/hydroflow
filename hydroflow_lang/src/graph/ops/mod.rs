@@ -162,23 +162,40 @@ pub const RANGE_1: &'static dyn RangeTrait<usize> = &(1..=1);
 
 pub fn identity_write_iterator_fn(
     &WriteContextArgs {
+        root,
         op_span,
         ident,
         inputs,
         outputs,
         is_pull,
+        op_inst:
+            OperatorInstance {
+                generics: OpInstGenerics { type_args, .. },
+                ..
+            },
         ..
     }: &WriteContextArgs,
 ) -> TokenStream {
+    let generic_type = type_args
+        .get(0)
+        .map(quote::ToTokens::to_token_stream)
+        .unwrap_or(quote_spanned!(op_span=> _));
+
     if is_pull {
         let input = &inputs[0];
         quote_spanned! {op_span=>
-            let #ident = #input;
+            let #ident = {
+                fn check_input<Iter: ::std::iter::Iterator<Item = Item>, Item>(iter: Iter) -> impl ::std::iter::Iterator<Item = Item> { iter }
+                check_input::<_, #generic_type>(#input)
+            };
         }
     } else {
         let output = &outputs[0];
         quote_spanned! {op_span=>
-            let #ident = #output;
+            let #ident = {
+                fn check_output<Push: #root::pusherator::Pusherator<Item = Item>, Item>(push: Push) -> impl #root::pusherator::Pusherator<Item = Item> { push }
+                check_output::<_, #generic_type>(#output)
+            }
         }
     }
 }
