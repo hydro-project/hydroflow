@@ -303,29 +303,27 @@
 <span class="kw">use </span><span class="self">self</span>::ops::{OperatorConstraints, Persistence};
 
 <span class="kw">mod </span>di_mul_graph;
-<span class="kw">mod </span>flat_graph;
 <span class="kw">mod </span>flat_graph_builder;
-<span class="kw">mod </span>partitioned_graph;
+<span class="kw">mod </span>flat_to_partitioned;
+<span class="kw">mod </span>hydroflow_graph;
 
 <span class="kw">pub use </span>di_mul_graph::DiMulGraph;
-<span class="kw">pub use </span>flat_graph::{FlatGraph, FlatGraphExploded};
 <span class="kw">pub use </span>flat_graph_builder::FlatGraphBuilder;
-<span class="kw">pub use </span>partitioned_graph::PartitionedGraph;
+<span class="kw">pub use </span>flat_to_partitioned::partition_graph;
+<span class="kw">pub use </span>hydroflow_graph::HydroflowGraph;
 
-<span class="kw">pub mod </span>flat_to_partitioned;
 <span class="kw">pub mod </span>graph_algorithms;
 <span class="kw">pub mod </span>ops;
 <span class="kw">pub mod </span>serde_graph;
 
 <span class="macro">new_key_type! </span>{
-    <span class="doccomment">/// ID to identify a node (operator or handoff) in both [`flat_graph::FlatGraph`]
-    /// and [`partitioned_graph::PartitionedGraph`].
+    <span class="doccomment">/// ID to identify a node (operator or handoff) in [`HydroflowGraph`].
     </span><span class="kw">pub struct </span>GraphNodeId;
 
     <span class="doccomment">/// ID to identify an edge.
     </span><span class="kw">pub struct </span>GraphEdgeId;
 
-    <span class="doccomment">/// ID to identify a subgraph in [`partitioned_graph::PartitionedGraph`].
+    <span class="doccomment">/// ID to identify a subgraph in [`HydroflowGraph`].
     </span><span class="kw">pub struct </span>GraphSubgraphId;
 }
 
@@ -343,8 +341,8 @@
 <span class="kw">impl </span>Spanned <span class="kw">for </span>Node {
     <span class="kw">fn </span>span(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Span {
         <span class="kw">match </span><span class="self">self </span>{
-            Node::Operator(op) =&gt; op.span(),
-            <span class="kw-2">&amp;</span>Node::Handoff { src_span, dst_span } =&gt; src_span.join(dst_span).unwrap_or(src_span),
+            <span class="self">Self</span>::Operator(op) =&gt; op.span(),
+            <span class="kw-2">&amp;</span><span class="self">Self</span>::Handoff { src_span, dst_span } =&gt; src_span.join(dst_span).unwrap_or(src_span),
         }
     }
 }
@@ -441,9 +439,11 @@
     </span>Hoff,
 }
 
-<span class="kw">pub fn </span>node_color(is_handoff: bool, inn_degree: usize, out_degree: usize) -&gt; <span class="prelude-ty">Option</span>&lt;Color&gt; {
-    <span class="comment">// Determine op color based on in and out degree. If linear (1 in 1 out), color is None.
-    </span><span class="kw">if </span>is_handoff {
+<span class="doccomment">/// Determine op color based on in and out degree. If linear (1 in 1 out), color is None.
+///
+/// Note that this does NOT consider `DelayType` barriers, which generally imply `Pull`.
+</span><span class="kw">pub fn </span>node_color(is_handoff: bool, inn_degree: usize, out_degree: usize) -&gt; <span class="prelude-ty">Option</span>&lt;Color&gt; {
+    <span class="kw">if </span>is_handoff {
         <span class="prelude-val">Some</span>(Color::Hoff)
     } <span class="kw">else </span>{
         <span class="kw">match </span>(<span class="number">1 </span>&lt; inn_degree, <span class="number">1 </span>&lt; out_degree) {

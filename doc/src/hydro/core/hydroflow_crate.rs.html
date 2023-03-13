@@ -294,6 +294,12 @@
 <a href="#294" id="294">294</a>
 <a href="#295" id="295">295</a>
 <a href="#296" id="296">296</a>
+<a href="#297" id="297">297</a>
+<a href="#298" id="298">298</a>
+<a href="#299" id="299">299</a>
+<a href="#300" id="300">300</a>
+<a href="#301" id="301">301</a>
+<a href="#302" id="302">302</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::{
     collections::HashMap,
     ops::Deref,
@@ -369,6 +375,7 @@
     on: Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;,
     example: <span class="prelude-ty">Option</span>&lt;String&gt;,
     features: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
+    args: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
 
     <span class="doccomment">/// A mapping from output ports to the service that the port sends data to.
     </span>outgoing_ports: HashMap&lt;String, OutgoingPort&gt;,
@@ -392,12 +399,14 @@
         on: Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;,
         example: <span class="prelude-ty">Option</span>&lt;String&gt;,
         features: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
+        args: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
     ) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
             src,
             on,
             example,
             features,
+            args,
             outgoing_ports: HashMap::new(),
             incoming_ports: HashMap::new(),
             built_binary: <span class="prelude-val">None</span>,
@@ -536,7 +545,10 @@
         <span class="kw">let </span>launched_host = <span class="self">self</span>.launched_host.as_ref().unwrap();
 
         <span class="kw">let </span>binary = launched_host
-            .launch_binary(<span class="self">self</span>.built_binary.take().unwrap().<span class="kw">await</span>.as_ref().unwrap())
+            .launch_binary(
+                <span class="self">self</span>.built_binary.take().unwrap().<span class="kw">await</span>.as_ref().unwrap(),
+                <span class="kw-2">&amp;</span><span class="self">self</span>.args.as_ref().cloned().unwrap_or_default(),
+            )
             .<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="kw">let </span><span class="kw-2">mut </span>bind_config = HashMap::new();

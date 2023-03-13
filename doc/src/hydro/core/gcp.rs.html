@@ -495,7 +495,20 @@
 <a href="#495" id="495">495</a>
 <a href="#496" id="496">496</a>
 <a href="#497" id="497">497</a>
+<a href="#498" id="498">498</a>
+<a href="#499" id="499">499</a>
+<a href="#500" id="500">500</a>
+<a href="#501" id="501">501</a>
+<a href="#502" id="502">502</a>
+<a href="#503" id="503">503</a>
+<a href="#504" id="504">504</a>
+<a href="#505" id="505">505</a>
+<a href="#506" id="506">506</a>
+<a href="#507" id="507">507</a>
+<a href="#508" id="508">508</a>
+<a href="#509" id="509">509</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::{
+    borrow::Cow,
     net::SocketAddr,
     path::{Path, PathBuf},
     sync::{atomic::AtomicUsize, Arc},
@@ -588,7 +601,11 @@
         }
     }
 
-    <span class="kw">async fn </span>launch_binary(<span class="kw-2">&amp;</span><span class="self">self</span>, binary: <span class="kw-2">&amp;</span>Path) -&gt; <span class="prelude-ty">Result</span>&lt;Arc&lt;RwLock&lt;<span class="kw">dyn </span>LaunchedBinary&gt;&gt;&gt; {
+    <span class="kw">async fn </span>launch_binary(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        binary: <span class="kw-2">&amp;</span>Path,
+        args: <span class="kw-2">&amp;</span>[String],
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Arc&lt;RwLock&lt;<span class="kw">dyn </span>LaunchedBinary&gt;&gt;&gt; {
         <span class="kw">let </span>target_addr = SocketAddr::new(
             <span class="self">self</span>.external_ip
                 .as_ref()
@@ -639,7 +656,14 @@
         drop(created_file);
 
         <span class="kw">let </span><span class="kw-2">mut </span>channel = session.channel_session().<span class="kw">await</span><span class="question-mark">?</span>;
-        channel.exec(binary_path.to_str().unwrap()).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>binary_path_string = binary_path.to_str().unwrap();
+        <span class="kw">let </span>args_string = args
+            .iter()
+            .map(|s| shell_escape::unix::escape(Cow::from(s)))
+            .fold(<span class="string">&quot;&quot;</span>.to_string(), |acc, v| <span class="macro">format!</span>(<span class="string">&quot;{acc} {v}&quot;</span>));
+        channel
+            .exec(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{binary_path_string}{args_string}&quot;</span>))
+            .<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="kw">let </span>(stdin_sender, <span class="kw-2">mut </span>stdin_receiver) = async_channel::unbounded::&lt;String&gt;();
         <span class="kw">let </span><span class="kw-2">mut </span>stdin = channel.stream(<span class="number">0</span>); <span class="comment">// stream 0 is stdout/stdin, we use it for stdin

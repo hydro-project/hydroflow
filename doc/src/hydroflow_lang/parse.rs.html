@@ -384,7 +384,13 @@
 <a href="#384" id="384">384</a>
 <a href="#385" id="385">385</a>
 <a href="#386" id="386">386</a>
-</pre><pre class="rust"><code><span class="kw">use </span>std::hash::Hash;
+<a href="#387" id="387">387</a>
+<a href="#388" id="388">388</a>
+<a href="#389" id="389">389</a>
+<a href="#390" id="390">390</a>
+</pre><pre class="rust"><code><span class="doccomment">//! AST for surface syntax, modelled on [`syn`]&#39;s ASTs.
+
+</span><span class="kw">use </span>std::hash::Hash;
 
 <span class="kw">use </span>proc_macro2::{Span, TokenStream};
 <span class="kw">use </span>quote::ToTokens;
@@ -542,7 +548,9 @@
 <span class="kw">where
     </span>Inner: Parse,
 {
-    <span class="kw">fn </span>parse_rest(inn: <span class="prelude-ty">Option</span>&lt;Indexing&gt;, input: ParseStream) -&gt; syn::Result&lt;<span class="self">Self</span>&gt; {
+    <span class="doccomment">/// The caller will often parse the first port (`inn`) as part of determining what to parse
+    /// next, so this will do the rest after that.
+    </span><span class="kw">fn </span>parse_rest(inn: <span class="prelude-ty">Option</span>&lt;Indexing&gt;, input: ParseStream) -&gt; syn::Result&lt;<span class="self">Self</span>&gt; {
         <span class="kw">let </span>inner = input.parse()<span class="question-mark">?</span>;
         <span class="kw">let </span>out = input.call(Indexing::parse_opt)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(<span class="self">Self </span>{ inn, inner, out })

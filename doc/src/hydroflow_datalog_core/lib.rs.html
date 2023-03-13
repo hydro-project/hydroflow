@@ -616,13 +616,11 @@
 <a href="#616" id="616">616</a>
 <a href="#617" id="617">617</a>
 <a href="#618" id="618">618</a>
-<a href="#619" id="619">619</a>
-<a href="#620" id="620">620</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::collections::{HashMap, HashSet};
 
 <span class="kw">use </span>hydroflow_lang::{
     diagnostic::{Diagnostic, Level},
-    graph::{FlatGraph, FlatGraphBuilder},
+    graph::{partition_graph, FlatGraphBuilder, HydroflowGraph},
     parse::{IndexInt, Indexing, Pipeline, PipelineLink},
 };
 <span class="kw">use </span>proc_macro2::{Span, TokenStream};
@@ -638,7 +636,7 @@
 
 <span class="kw">pub fn </span>gen_hydroflow_graph(
     literal: proc_macro2::Literal,
-) -&gt; <span class="prelude-ty">Result</span>&lt;FlatGraph, (Vec&lt;rust_sitter::errors::ParseError&gt;, Vec&lt;Diagnostic&gt;)&gt; {
+) -&gt; <span class="prelude-ty">Result</span>&lt;HydroflowGraph, (Vec&lt;rust_sitter::errors::ParseError&gt;, Vec&lt;Diagnostic&gt;)&gt; {
     <span class="kw">let </span>str_node: syn::LitStr = <span class="macro">parse_quote!</span>(#literal);
     <span class="kw">let </span>actual_str = str_node.value();
     <span class="kw">let </span>program: Program = grammar::datalog::parse(<span class="kw-2">&amp;</span>actual_str).map_err(|e| (e, <span class="macro">vec!</span>[]))<span class="question-mark">?</span>;
@@ -764,11 +762,10 @@
     }
 }
 
-<span class="kw">pub fn </span>hydroflow_graph_to_program(flat_graph: FlatGraph, root: TokenStream) -&gt; syn::Stmt {
-    <span class="kw">let </span>code_tokens = flat_graph
-        .into_partitioned_graph()
-        .expect(<span class="string">&quot;failed to partition&quot;</span>)
-        .as_code(root, <span class="bool-val">true</span>);
+<span class="kw">pub fn </span>hydroflow_graph_to_program(flat_graph: HydroflowGraph, root: TokenStream) -&gt; syn::Stmt {
+    <span class="kw">let </span>partitioned_graph =
+        partition_graph(flat_graph).expect(<span class="string">&quot;Failed to partition (cycle detected).&quot;</span>);
+    <span class="kw">let </span>code_tokens = partitioned_graph.as_code(root, <span class="bool-val">true</span>);
 
     <span class="macro">syn::parse_quote!</span>({
         #code_tokens
@@ -1039,15 +1036,14 @@
 
     <span class="macro">macro_rules! </span>test_snapshots {
         (<span class="macro-nonterminal">$program</span>:literal) =&gt; {
-            <span class="kw">let </span>graph = gen_hydroflow_graph(<span class="macro">parse_quote!</span>(<span class="macro-nonterminal">$program</span>)).unwrap();
+            <span class="kw">let </span>flat_graph = gen_hydroflow_graph(<span class="macro">parse_quote!</span>(<span class="macro-nonterminal">$program</span>)).unwrap();
 
+            <span class="kw">let </span>flat_graph_ref = <span class="kw-2">&amp;</span>flat_graph;
             <span class="macro">insta::with_settings!</span>({snapshot_suffix =&gt; <span class="string">&quot;surface_graph&quot;</span>}, {
-                <span class="macro">insta::assert_display_snapshot!</span>(graph.surface_syntax_string());
+                <span class="macro">insta::assert_display_snapshot!</span>(flat_graph_ref.surface_syntax_string());
             });
 
-            <span class="comment">// Have to make a new graph as the above closure borrows.
-            </span><span class="kw">let </span>graph2 = gen_hydroflow_graph(<span class="macro">parse_quote!</span>(<span class="macro-nonterminal">$program</span>)).unwrap();
-            <span class="kw">let </span>out = <span class="kw-2">&amp;</span>hydroflow_graph_to_program(graph2, <span class="macro">quote::quote! </span>{ hydroflow });
+            <span class="kw">let </span>out = <span class="kw-2">&amp;</span>hydroflow_graph_to_program(flat_graph, <span class="macro">quote::quote! </span>{ hydroflow });
             <span class="kw">let </span>wrapped: syn::File = <span class="macro">parse_quote! </span>{
                 <span class="kw">fn </span>main() {
                     #out
