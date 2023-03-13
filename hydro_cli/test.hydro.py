@@ -1,4 +1,5 @@
 import hydro
+import json
 
 async def main(args):
     gcp = args[0] == "gcp"
@@ -22,6 +23,7 @@ async def main(args):
         src="../hydroflow",
         example="cli_sender",
         features=["cli_integration"],
+        args=[json.dumps([0])],
         on=machine1
     )
 

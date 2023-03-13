@@ -73,6 +73,7 @@ pub struct HydroflowCrate {
     on: Arc<RwLock<dyn Host>>,
     example: Option<String>,
     features: Option<Vec<String>>,
+    args: Option<Vec<String>>,
 
     /// A mapping from output ports to the service that the port sends data to.
     outgoing_ports: HashMap<String, OutgoingPort>,
@@ -96,12 +97,14 @@ impl HydroflowCrate {
         on: Arc<RwLock<dyn Host>>,
         example: Option<String>,
         features: Option<Vec<String>>,
+        args: Option<Vec<String>>,
     ) -> Self {
         Self {
             src,
             on,
             example,
             features,
+            args,
             outgoing_ports: HashMap::new(),
             incoming_ports: HashMap::new(),
             built_binary: None,
@@ -240,7 +243,10 @@ impl Service for HydroflowCrate {
         let launched_host = self.launched_host.as_ref().unwrap();
 
         let binary = launched_host
-            .launch_binary(self.built_binary.take().unwrap().await.as_ref().unwrap())
+            .launch_binary(
+                self.built_binary.take().unwrap().await.as_ref().unwrap(),
+                &self.args.as_ref().cloned().unwrap_or_default(),
+            )
             .await?;
 
         let mut bind_config = HashMap::new();

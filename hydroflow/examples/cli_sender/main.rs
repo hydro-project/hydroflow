@@ -13,7 +13,7 @@ async fn main() {
         .connect::<ConnectedDemux<ConnectedBidi>>()
         .await;
 
-    let peers = broadcast_port.keys.clone();
+    let peers: Vec<u32> = serde_json::from_str(&std::env::args().nth(1).unwrap()).unwrap();
     let broadcast_sink = broadcast_port.take_sink();
 
     let mut df = datalog!(
