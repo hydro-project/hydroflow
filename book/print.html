@@ -2382,6 +2382,24 @@ source_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; identity()
 </span><span class="boring">}
 </span><span class="boring">}
 </span></code></pre></pre>
+<p>You can also supply a type parameter <code>identity::&lt;MyType&gt;()</code> to specify what items flow thru the
+the pipeline. This can be useful for helping the compiler infer types.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
+</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
+</span>// Use type parameter to ensure items are `i32`s.
+source_iter(0..10) -&gt; identity::&lt;i32&gt;() -&gt; for_each(|x| println!(&quot;{}&quot;, x));
+<span class="boring">};
+</span><span class="boring">for _ in 0..100 {
+</span><span class="boring">    if !__hf.run_tick() {
+</span><span class="boring">        // No work done.
+</span><span class="boring">        break;
+</span><span class="boring">    }
+</span><span class="boring">}
+</span><span class="boring">}
+</span></code></pre></pre>
 <h2 id="inspect"><a class="header" href="#inspect"><code>inspect</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; inspect(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
