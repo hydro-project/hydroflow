@@ -1,30 +1,37 @@
-use std::{collections::HashMap, net::SocketAddr, path::PathBuf};
+#![feature(never_type)]
 
+use std::{
+    collections::HashMap,
+    marker::PhantomData,
+    net::SocketAddr,
+    path::PathBuf,
+    pin::Pin,
+    sync::Arc,
+    task::{Context, Poll},
+};
+
+use bytes::{Bytes, BytesMut};
 use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "runtime")]
-use std::pin::Pin;
+use futures::{Sink, SinkExt, Stream};
 
-#[cfg(feature = "runtime")]
-use async_trait::async_trait;
-#[cfg(feature = "runtime")]
-use bytes::BytesMut;
-#[cfg(feature = "runtime")]
-use futures::{Sink, Stream};
-
-#[cfg(feature = "runtime")]
 use async_recursion::async_recursion;
+use async_trait::async_trait;
 
-#[cfg(feature = "runtime")]
+use tokio::io;
+use tokio::net::{TcpListener, TcpStream};
+use tokio::sync::Mutex;
+
 #[cfg(unix)]
-use tokio::net::UnixListener;
+use tokio::net::{UnixListener, UnixStream};
 
-#[cfg(feature = "runtime")]
+use tokio_util::codec::{FramedRead, FramedWrite, LengthDelimitedCodec};
+
+#[cfg(not(unix))]
+type UnixStream = !;
+
 #[cfg(not(unix))]
 type UnixListener = !;
-
-#[cfg(feature = "runtime")]
-use tokio::{io, net::TcpListener};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum ServerConfig {
@@ -37,7 +44,6 @@ pub enum ServerConfig {
 }
 
 impl ServerConfig {
-    #[cfg(feature = "runtime")]
     #[async_recursion]
     pub async fn bind(self) -> BoundConnection {
         match self {
@@ -69,30 +75,30 @@ impl ServerConfig {
     }
 }
 
-/// Describes a medium through which two Hydroflow services can communicate.
-#[derive(Serialize, Deserialize, Debug)]
-pub enum ConnectionDefn {
-    UnixSocket(PathBuf),
-    TcpPort(SocketAddr),
-    Demux(HashMap<u32, ConnectionDefn>),
-    #[cfg(feature = "runtime")]
-    #[serde(skip)]
-    Bind(BoundConnection),
+pub enum ServerOrBound {
+    Server(ServerPort),
+    Bound(BoundConnection),
 }
 
-#[cfg(feature = "runtime")]
-impl ConnectionDefn {
+impl ServerOrBound {
     pub async fn connect<T: Connected>(self) -> T {
         T::from_defn(self).await
     }
 }
 
-#[cfg(feature = "runtime")]
+/// Describes a medium through which two Hydroflow services can communicate.
+#[allow(unreachable_code)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub enum ServerPort {
+    UnixSocket(PathBuf),
+    TcpPort(SocketAddr),
+    Demux(HashMap<u32, ServerPort>),
+}
+
 pub type DynStream = Pin<Box<dyn Stream<Item = Result<BytesMut, io::Error>> + Send>>;
-#[cfg(feature = "runtime")]
+
 pub type DynSink<Input> = Pin<Box<dyn Sink<Input, Error = io::Error> + Send + Sync>>;
 
-#[cfg(feature = "runtime")]
 #[async_trait]
 pub trait Connected: Send {
     type Input: Send;
@@ -100,10 +106,9 @@ pub trait Connected: Send {
     fn take_source(&mut self) -> DynStream;
     fn take_sink(&mut self) -> DynSink<Self::Input>;
 
-    async fn from_defn(pipe: ConnectionDefn) -> Self;
+    async fn from_defn(pipe: ServerOrBound) -> Self;
 }
 
-#[cfg(feature = "runtime")]
 #[derive(Debug)]
 pub enum BoundConnection {
     UnixSocket(UnixListener, tempfile::TempDir),
@@ -111,14 +116,13 @@ pub enum BoundConnection {
     Demux(HashMap<u32, BoundConnection>),
 }
 
-#[cfg(feature = "runtime")]
 impl BoundConnection {
-    pub fn connection_defn(&self) -> ConnectionDefn {
+    pub fn connection_defn(&self) -> ServerPort {
         match self {
             BoundConnection::UnixSocket(listener, _) => {
                 #[cfg(unix)]
                 {
-                    ConnectionDefn::UnixSocket(
+                    ServerPort::UnixSocket(
                         listener
                             .local_addr()
                             .unwrap()
@@ -136,7 +140,7 @@ impl BoundConnection {
             }
             BoundConnection::TcpPort(listener) => {
                 let addr = listener.local_addr().unwrap();
-                ConnectionDefn::TcpPort(SocketAddr::new(addr.ip(), addr.port()))
+                ServerPort::TcpPort(SocketAddr::new(addr.ip(), addr.port()))
             }
 
             BoundConnection::Demux(bindings) => {
@@ -144,8 +148,223 @@ impl BoundConnection {
                 for (key, bind) in bindings {
                     demux.insert(*key, bind.connection_defn());
                 }
-                ConnectionDefn::Demux(demux)
+                ServerPort::Demux(demux)
             }
+        }
+    }
+}
+
+async fn accept(bound: &BoundConnection) -> (DynStream, DynSink<Bytes>) {
+    match bound {
+        BoundConnection::UnixSocket(listener, _) => {
+            #[cfg(unix)]
+            {
+                let (stream, _) = listener.accept().await.unwrap();
+                let (sink, source) = unix_bytes(stream);
+                (Box::pin(source), Box::pin(sink))
+            }
+
+            #[cfg(not(unix))]
+            {
+                let _ = listener;
+                panic!("Unix sockets are not supported on this platform")
+            }
+        }
+        BoundConnection::TcpPort(listener) => {
+            let (stream, _) = listener.accept().await.unwrap();
+            let (sink, source) = tcp_bytes(stream);
+            (Box::pin(source), Box::pin(sink))
+        }
+        BoundConnection::Demux(_) => panic!("Cannot connect to a demux pipe directly"),
+    }
+}
+
+fn tcp_bytes(
+    stream: TcpStream,
+) -> (
+    FramedWrite<tokio::net::tcp::OwnedWriteHalf, LengthDelimitedCodec>,
+    FramedRead<tokio::net::tcp::OwnedReadHalf, LengthDelimitedCodec>,
+) {
+    let (recv, send) = stream.into_split();
+    let send = FramedWrite::new(send, LengthDelimitedCodec::new());
+    let recv = FramedRead::new(recv, LengthDelimitedCodec::new());
+    (send, recv)
+}
+
+#[cfg(unix)]
+fn unix_bytes(
+    stream: UnixStream,
+) -> (
+    FramedWrite<tokio::net::unix::OwnedWriteHalf, LengthDelimitedCodec>,
+    FramedRead<tokio::net::unix::OwnedReadHalf, LengthDelimitedCodec>,
+) {
+    let (recv, send) = stream.into_split();
+    let send = FramedWrite::new(send, LengthDelimitedCodec::new());
+    let recv = FramedRead::new(recv, LengthDelimitedCodec::new());
+    (send, recv)
+}
+
+pub struct ConnectedBidi {
+    source: Option<DynStream>,
+    sink: Option<DynSink<Bytes>>,
+}
+
+#[async_trait]
+impl Connected for ConnectedBidi {
+    type Input = Bytes;
+
+    fn take_source(&mut self) -> DynStream {
+        self.source.take().unwrap()
+    }
+
+    fn take_sink(&mut self) -> DynSink<Self::Input> {
+        self.sink.take().unwrap()
+    }
+
+    async fn from_defn(pipe: ServerOrBound) -> Self {
+        match pipe {
+            ServerOrBound::Server(ServerPort::UnixSocket(path)) => {
+                #[cfg(unix)]
+                {
+                    let stream = UnixStream::connect(path).await.unwrap();
+                    let (sink, source) = unix_bytes(stream);
+                    ConnectedBidi {
+                        source: Some(Box::pin(source)),
+                        sink: Some(Box::pin(sink)),
+                    }
+                }
+
+                #[cfg(not(unix))]
+                {
+                    let _ = path;
+                    panic!("Unix sockets are not supported on this platform");
+                }
+            }
+            ServerOrBound::Server(ServerPort::TcpPort(addr)) => {
+                let stream = TcpStream::connect(addr).await.unwrap();
+                let (sink, source) = tcp_bytes(stream);
+                ConnectedBidi {
+                    source: Some(Box::pin(source)),
+                    sink: Some(Box::pin(sink)),
+                }
+            }
+            ServerOrBound::Bound(bound) => {
+                let bound = accept(&bound).await;
+                ConnectedBidi {
+                    source: Some(bound.0),
+                    sink: Some(bound.1),
+                }
+            }
+            ServerOrBound::Server(ServerPort::Demux(_)) => {
+                panic!("Cannot connect to a demux pipe directly")
+            }
+        }
+    }
+}
+
+pub struct ConnectedDemux<T: Connected> {
+    pub keys: Vec<u32>,
+    sink: Option<DynSink<(u32, T::Input)>>,
+}
+
+// a copy of `Drain` that uses `io::Error` instead of `Infallible`
+struct IoErrorDrain<T> {
+    marker: PhantomData<T>,
+}
+
+impl<T> Sink<T> for IoErrorDrain<T> {
+    type Error = io::Error;
+
+    fn poll_ready(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        Poll::Ready(Ok(()))
+    }
+
+    fn start_send(self: Pin<&mut Self>, _item: T) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    fn poll_flush(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        Poll::Ready(Ok(()))
+    }
+
+    fn poll_close(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        Poll::Ready(Ok(()))
+    }
+}
+
+#[async_trait]
+impl<T: Connected> Connected for ConnectedDemux<T>
+where
+    <T as Connected>::Input: 'static + Sync,
+{
+    type Input = (u32, T::Input);
+
+    fn take_source(&mut self) -> DynStream {
+        panic!("Cannot take source from a demux pipe");
+    }
+
+    fn take_sink(&mut self) -> DynSink<Self::Input> {
+        self.sink.take().unwrap()
+    }
+
+    async fn from_defn(pipe: ServerOrBound) -> Self {
+        match pipe {
+            ServerOrBound::Server(ServerPort::Demux(demux)) => {
+                let mut connected_demux = HashMap::new();
+                let keys = demux.keys().cloned().collect();
+                for (id, pipe) in demux {
+                    connected_demux.insert(
+                        id,
+                        Arc::new(Mutex::new(
+                            T::from_defn(ServerOrBound::Server(pipe)).await.take_sink(),
+                        )),
+                    );
+                }
+
+                let demuxer = IoErrorDrain {
+                    marker: PhantomData::default(),
+                }
+                .with(move |(id, input)| {
+                    let sink = connected_demux.get_mut(&id).unwrap().clone();
+                    async move { sink.lock().await.feed(input).await }
+                });
+
+                ConnectedDemux {
+                    keys,
+                    sink: Some(Box::pin(demuxer)),
+                }
+            }
+
+            ServerOrBound::Bound(bound) => {
+                if let BoundConnection::Demux(demux) = bound {
+                    let mut connected_demux = HashMap::new();
+                    let keys = demux.keys().cloned().collect();
+                    for (id, bound) in demux {
+                        connected_demux.insert(
+                            id,
+                            Arc::new(Mutex::new(
+                                T::from_defn(ServerOrBound::Bound(bound)).await.take_sink(),
+                            )),
+                        );
+                    }
+
+                    let demuxer = IoErrorDrain {
+                        marker: PhantomData::default(),
+                    }
+                    .with(move |(id, input)| {
+                        let sink = connected_demux.get_mut(&id).unwrap().clone();
+                        async move { sink.lock().await.feed(input).await }
+                    });
+
+                    ConnectedDemux {
+                        keys,
+                        sink: Some(Box::pin(demuxer)),
+                    }
+                } else {
+                    panic!("Cannot connect to a non-demux pipe as a demux")
+                }
+            }
+            _ => panic!("Cannot connect to a non-demux pipe as a demux"),
         }
     }
 }

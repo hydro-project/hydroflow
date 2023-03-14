@@ -1,15 +1,18 @@
 use std::sync::Arc;
 
 use async_channel::Receiver;
+use bytes::Bytes;
+use futures::SinkExt;
+use hydroflow_cli_integration::{Connected, ConnectedBidi, DynSink};
 use pyo3::exceptions::PyException;
-use pyo3::types::PyDict;
+use pyo3::types::{PyBytes, PyDict};
 use pyo3::{create_exception, prelude::*, wrap_pymodule};
 use tokio::sync::RwLock;
 
 mod cli;
 pub mod core;
 
-use crate::core::hydroflow_crate::ClientPortConfig;
+use crate::core::hydroflow_crate::ports::HydroflowSource;
 
 create_exception!(hydro_cli_core, AnyhowError, PyException);
 
@@ -93,7 +96,7 @@ impl Deployment {
                 _underlying: service.clone(),
             })
             .add_subclass(CustomService {
-                _underlying: service,
+                underlying: service,
             }),
         )?
         .into_py(py))
@@ -238,7 +241,47 @@ impl PyReceiver {
 
 #[pyclass(extends=Service, subclass)]
 struct CustomService {
-    _underlying: Arc<RwLock<crate::core::CustomService>>,
+    underlying: Arc<RwLock<crate::core::CustomService>>,
+}
+
+#[pymethods]
+impl CustomService {
+    fn client_port(&self) -> CustomClientPort {
+        CustomClientPort {
+            underlying: Arc::new(RwLock::new(
+                crate::core::custom_service::CustomClientPort::new(Arc::downgrade(
+                    &self.underlying,
+                )),
+            )),
+        }
+    }
+}
+
+#[pyclass]
+#[derive(Clone)]
+struct CustomClientPort {
+    pub(crate) underlying: Arc<RwLock<crate::core::custom_service::CustomClientPort>>,
+}
+
+#[pymethods]
+impl CustomClientPort {
+    fn send_to(&mut self, to: &HydroflowCratePort) {
+        self.underlying
+            .try_write()
+            .unwrap()
+            .send_to(to.underlying.clone());
+    }
+
+    fn server_port<'p>(&self, py: Python<'p>) -> &'p pyo3::PyAny {
+        let underlying = self.underlying.clone();
+        pyo3_asyncio::tokio::future_into_py(py, async move {
+            let underlying = underlying.read().await;
+            Ok(ServerPort {
+                underlying: Some(underlying.server_port().await),
+            })
+        })
+        .unwrap()
+    }
 }
 
 #[pyclass(extends=Service, subclass)]
@@ -322,7 +365,7 @@ struct HydroflowCratePorts {
 impl HydroflowCratePorts {
     fn __getattribute__(&self, name: String) -> PyResult<HydroflowCratePort> {
         Ok(HydroflowCratePort {
-            underlying: crate::core::hydroflow_crate::ClientPortConfig::Direct(
+            underlying: crate::core::hydroflow_crate::ports::HydroflowPortConfig::Direct(
                 Arc::downgrade(&self.underlying),
                 name,
             ),
@@ -333,29 +376,20 @@ impl HydroflowCratePorts {
 #[pyclass]
 #[derive(Clone)]
 struct HydroflowCratePort {
-    pub(crate) underlying: ClientPortConfig,
+    pub(crate) underlying: crate::core::hydroflow_crate::ports::HydroflowPortConfig,
 }
 
 #[pymethods]
 impl HydroflowCratePort {
-    fn send_to(&self, to: &HydroflowCratePort) -> PyResult<()> {
-        if let ClientPortConfig::Direct(from, from_port) = &self.underlying {
-            let from = from.upgrade().unwrap();
-            let mut from_write = from.try_write().unwrap();
-            from_write
-                .add_client_port(&from, from_port.clone(), to.underlying.clone())
-                .unwrap();
-            Ok(())
-        } else {
-            panic!("Can only send from a direct port");
-        }
+    fn send_to(&mut self, to: &HydroflowCratePort) {
+        self.underlying.send_to(to.underlying.clone());
     }
 }
 
 #[pyfunction]
 fn demux(mapping: &PyDict) -> HydroflowCratePort {
     HydroflowCratePort {
-        underlying: ClientPortConfig::Demux(
+        underlying: crate::core::hydroflow_crate::ports::HydroflowPortConfig::Demux(
             mapping
                 .into_iter()
                 .map(|(k, v)| {
@@ -365,6 +399,45 @@ fn demux(mapping: &PyDict) -> HydroflowCratePort {
                 })
                 .collect(),
         ),
+    }
+}
+
+#[pyclass]
+struct ServerPort {
+    underlying: Option<hydroflow_cli_integration::ServerOrBound>,
+}
+
+#[pymethods]
+impl ServerPort {
+    fn sink<'p>(&mut self, py: Python<'p>) -> &'p pyo3::PyAny {
+        let underlying = self.underlying.take().unwrap();
+        pyo3_asyncio::tokio::future_into_py(py, async move {
+            Ok(ConnectedSink {
+                underlying: Arc::new(RwLock::new(
+                    underlying.connect::<ConnectedBidi>().await.take_sink(),
+                )),
+            })
+        })
+        .unwrap()
+    }
+}
+
+#[pyclass]
+#[derive(Clone)]
+struct ConnectedSink {
+    underlying: Arc<RwLock<DynSink<Bytes>>>,
+}
+
+#[pymethods]
+impl ConnectedSink {
+    fn send<'p>(&mut self, data: Py<PyBytes>, py: Python<'p>) -> &'p PyAny {
+        let underlying = self.underlying.clone();
+        let bytes = Bytes::from(data.as_bytes(py).to_vec());
+        pyo3_asyncio::tokio::future_into_py(py, async move {
+            underlying.write().await.send(bytes).await?;
+            Ok(())
+        })
+        .unwrap()
     }
 }
 
@@ -383,6 +456,9 @@ pub fn _core(py: Python<'_>, module: &PyModule) -> PyResult<()> {
     module.add_class::<CustomService>()?;
     module.add_class::<HydroflowCrate>()?;
     module.add_class::<HydroflowCratePort>()?;
+
+    module.add_class::<ServerPort>()?;
+    module.add_class::<ConnectedSink>()?;
 
     module.add_function(wrap_pyfunction!(demux, module)?)?;
 
