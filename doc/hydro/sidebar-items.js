@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["_core"],"mod":["core"],"struct":["AnyhowError","AnyhowWrapper","PyDeployment","PyHost","PyService"]};
+window.SIDEBAR_ITEMS = {"fn":["_core"],"mod":["core"],"struct":["AnyhowError","AnyhowWrapper","Deployment","Host","Service"]};

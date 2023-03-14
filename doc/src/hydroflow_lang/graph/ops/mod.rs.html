@@ -369,6 +369,8 @@
 <a href="#369" id="369">369</a>
 <a href="#370" id="370">370</a>
 <a href="#371" id="371">371</a>
+<a href="#372" id="372">372</a>
+<a href="#373" id="373">373</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::fmt::{Debug, Display};
 <span class="kw">use </span>std::ops::{Bound, RangeBounds};
@@ -407,6 +409,7 @@
 <span class="kw">mod </span>next_stratum;
 <span class="kw">mod </span>next_tick;
 <span class="kw">mod </span>null;
+<span class="kw">mod </span>persist;
 <span class="kw">mod </span>reduce;
 <span class="kw">mod </span>repeat_iter;
 <span class="kw">mod </span>sort;
@@ -580,38 +583,39 @@
 };
 
 <span class="kw">pub const </span>OPERATORS: <span class="kw-2">&amp;</span>[OperatorConstraints] = <span class="kw-2">&amp;</span>[
-    null::NULL,
-    merge::MERGE,
-    join::JOIN,
+    anti_join::ANTI_JOIN,
     cross_join::CROSS_JOIN,
-    tee::TEE,
-    unzip::UNZIP,
-    identity::IDENTITY,
-    map::MAP,
-    inspect::INSPECT,
+    demux::DEMUX,
+    dest_sink::DEST_SINK,
+    dest_sink_serde::DEST_SINK_SERDE,
+    difference::DIFFERENCE,
+    filter::FILTER,
+    filter_map::FILTER_MAP,
     flat_map::FLAT_MAP,
     flatten::FLATTEN,
-    filter_map::FILTER_MAP,
-    filter::FILTER,
     fold::FOLD,
-    reduce::REDUCE,
+    for_each::FOR_EACH,
     group_by::GROUP_BY,
-    unique::UNIQUE,
+    identity::IDENTITY,
+    inspect::INSPECT,
+    join::JOIN,
+    map::MAP,
+    merge::MERGE,
+    next_stratum::NEXT_STRATUM,
+    next_tick::NEXT_TICK,
+    null::NULL,
+    persist::PERSIST,
+    reduce::REDUCE,
+    repeat_iter::REPEAT_ITER,
     sort::SORT,
     sort_by::SORT_BY,
     source_iter::SOURCE_ITER,
     source_stdin::SOURCE_STDIN,
     source_stream::SOURCE_STREAM,
     source_stream_serde::SOURCE_STREAM_SERDE,
-    repeat_iter::REPEAT_ITER,
-    difference::DIFFERENCE,
-    anti_join::ANTI_JOIN,
-    next_stratum::NEXT_STRATUM,
-    next_tick::NEXT_TICK,
-    for_each::FOR_EACH,
-    demux::DEMUX,
-    dest_sink::DEST_SINK,
-    dest_sink_serde::DEST_SINK_SERDE,
+    tee::TEE,
+    unique::UNIQUE,
+    unzip::UNZIP,
 ];
 <span class="kw">pub fn </span>operator_lookup() -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>HashMap&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str, <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>OperatorConstraints&gt; {
     <span class="kw">pub static </span>OPERATOR_LOOKUP: OnceCell&lt;HashMap&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str, <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>OperatorConstraints&gt;&gt; =

@@ -79,6 +79,8 @@
 <a href="#79" id="79">79</a>
 <a href="#80" id="80">80</a>
 <a href="#81" id="81">81</a>
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
 </pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::graph::{OpInstGenerics, OperatorInstance};
 
 <span class="kw">use super</span>::{
@@ -141,7 +143,9 @@
             <span class="kw">let </span>default_type = <span class="macro">parse_quote_spanned! </span>{op_span=&gt; <span class="kw">_</span>};
             <span class="kw">let </span>iter_type = type_args.get(<span class="number">0</span>).unwrap_or(<span class="kw-2">&amp;</span>default_type);
             <span class="macro">quote_spanned! </span>{op_span=&gt;
-                (#(#inputs.for_each(std::mem::drop)),<span class="kw-2">*</span>);
+                #(
+                    #inputs.for_each(std::mem::drop);
+                )*
                 <span class="kw">let </span>#ident = std::iter::empty::&lt;#iter_type&gt;();
             }
         } <span class="kw">else </span>{

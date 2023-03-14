@@ -964,6 +964,52 @@ source_iter([4,5,6]) -&gt; map(|i| println!(&quot;{}&quot;, i)) -&gt; [0]null_si
 </span><span class="boring">}
 </span><span class="boring">}
 </span></code></pre></pre>
+<h2 id="persist"><a class="header" href="#persist"><code>persist</code></a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
+<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; persist() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
+</tbody></table>
+</div><!-- GENERATED "hydroflow_lang/src/graph/ops/persist.rs" -->
+<p>Stores each item as it passes through, and replays all item every tick.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
+</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
+</span>// Normally `source_iter(...)` only emits once, but with `persist()` will replay the `&quot;hello&quot;`
+// on every tick. This is equivalent to `repeat_iter([&quot;hello&quot;])`.
+source_iter([&quot;hello&quot;])
+    -&gt; persist()
+    -&gt; for_each(|item| println!(&quot;{}: {}&quot;, context.current_tick(), item));
+<span class="boring">};
+</span><span class="boring">for _ in 0..100 {
+</span><span class="boring">    if !__hf.run_tick() {
+</span><span class="boring">        // No work done.
+</span><span class="boring">        break;
+</span><span class="boring">    }
+</span><span class="boring">}
+</span><span class="boring">}
+</span></code></pre></pre>
+<p><code>persist()</code> can be used to introduce statefulness into stateless pipelines. For example this
+join only stores data for single <code>'tick</code>. The <code>persist()</code> operator introduces statefulness
+across ticks. This can be useful for optimization transformations within the hydroflow
+compiler.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let (input_send, input_recv) = hydroflow::util::unbounded_channel::&lt;(&amp;str, &amp;str)&gt;();
+let mut flow = hydroflow::hydroflow_syntax! {
+    repeat_iter([(&quot;hello&quot;, &quot;world&quot;)]) -&gt; [0]my_join;
+    source_stream(input_recv) -&gt; persist() -&gt; [1]my_join;
+    my_join = join::&lt;'tick&gt;() -&gt; for_each(|(k, (v1, v2))| println!(&quot;({}, ({}, {}))&quot;, k, v1, v2));
+};
+input_send.send((&quot;hello&quot;, &quot;oakland&quot;)).unwrap();
+flow.run_tick();
+input_send.send((&quot;hello&quot;, &quot;san francisco&quot;)).unwrap();
+flow.run_tick();
+// (hello, (world, oakland))
+// (hello, (world, oakland))
+// (hello, (world, san francisco))
+<span class="boring">}
+</span></code></pre></pre>
 <h2 id="reduce"><a class="header" href="#reduce"><code>reduce</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; reduce(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Blocking</td></tr>

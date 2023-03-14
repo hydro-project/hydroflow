@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["CustomService"]};
+window.SIDEBAR_ITEMS = {"struct":["CustomClientPort","CustomService"]};

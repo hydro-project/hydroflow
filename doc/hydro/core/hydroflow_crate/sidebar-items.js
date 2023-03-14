@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["ClientPort","ClientPortConfig"],"struct":["HydroflowCrate"]};
+window.SIDEBAR_ITEMS = {"mod":["ports"],"struct":["HydroflowCrate"]};
