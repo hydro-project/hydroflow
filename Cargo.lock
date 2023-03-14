@@ -1438,6 +1438,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "hydro_cli_examples"
+version = "0.1.0"
+dependencies = [
+ "hydroflow",
+ "hydroflow_datalog",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
 name = "hydroflow"
 version = "0.1.0"
 dependencies = [
