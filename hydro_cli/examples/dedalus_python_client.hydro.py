@@ -1,0 +1,53 @@
+import hydro
+import json
+from pathlib import Path
+
+async def main(args):
+    machine_gcp = args[0] == "gcp"
+
+    deployment = hydro.Deployment()
+    localhost_machine = deployment.Localhost()
+
+    machine2 = deployment.GCPComputeEngineHost(
+        project="autocompartmentalization",
+        machine_type="e2-micro",
+        image="debian-cloud/debian-11",
+        region="us-west1-a"
+    ) if machine_gcp else localhost_machine
+
+    sender = deployment.CustomService(
+        external_ports=[],
+        on=localhost_machine,
+    )
+
+    receiver = deployment.HydroflowCrate(
+        src=str((Path(__file__).parent / "../../hydro_cli_examples").absolute()),
+        example="stdout_receiver",
+        on=machine2
+    )
+
+    sender_port = sender.client_port()
+    sender_port.send_to(receiver.ports.echo)
+
+    await deployment.deploy()
+
+    print("deployed!")
+
+    # create this as separate variable to indicate to Hydro that we want to capture all stdout, even after the loop
+    receiver_out = await receiver.stdout()
+
+    await deployment.start()
+    print("started!")
+
+    sender_connection = await (await sender_port.server_port()).sink()
+    await sender_connection.send(bytes("hi!", "utf-8"))
+
+    async for log in receiver_out:
+        print(log)
+        assert log == "echo \"hi!\""
+        break
+
+if __name__ == "__main__":
+    import sys
+    import hydro.async_wrapper
+    hydro.async_wrapper.run(main, sys.argv[1:])

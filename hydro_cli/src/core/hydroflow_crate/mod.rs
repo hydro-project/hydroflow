@@ -1,12 +1,7 @@
-use std::{
-    collections::HashMap,
-    path::PathBuf,
-    sync::{Arc, Weak},
-};
+use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 use anyhow::{bail, Result};
 use async_channel::Receiver;
-use async_recursion::async_recursion;
 use async_trait::async_trait;
 use cargo::{
     core::{compiler::BuildConfig, resolver::CliFeatures, Workspace},
@@ -14,191 +9,17 @@ use cargo::{
     util::{command_prelude::CompileMode, interning::InternedString},
     Config,
 };
-use hydroflow_cli_integration::ConnectionDefn;
+use hydroflow_cli_integration::ServerPort;
 use tokio::{sync::RwLock, task::JoinHandle};
 
+use self::ports::HydroflowPortConfig;
+
 use super::{
-    ClientStrategy, Host, HostTargetType, LaunchedBinary, LaunchedHost, ResourceBatch,
-    ResourceResult, ServerStrategy, Service,
+    Host, HostTargetType, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult,
+    ServerStrategy, Service,
 };
 
-#[derive(Clone)]
-pub enum ClientPortConfig {
-    Direct(Weak<RwLock<HydroflowCrate>>, String),
-    Demux(HashMap<u32, ClientPortConfig>),
-}
-
-impl ClientPortConfig {
-    pub fn instantiate(&self, client_host: &Arc<RwLock<dyn Host>>) -> Result<ClientPort> {
-        match self {
-            ClientPortConfig::Direct(server_weak, server_port) => {
-                let server = server_weak.upgrade().unwrap();
-                let mut server_write = server.try_write().unwrap();
-
-                let client_host_id = client_host.try_read().unwrap().id();
-
-                let server_host_clone = server_write.on.clone();
-                let mut server_host = server_host_clone.try_write().unwrap();
-
-                let client_host_read = if server_host.id() == client_host_id {
-                    None
-                } else {
-                    client_host.try_read().ok()
-                };
-
-                let (conn_type, bind_type) =
-                    server_host.strategy_as_server(client_host_read.as_deref())?;
-
-                server_write
-                    .server_ports
-                    .insert(server_port.clone(), bind_type);
-
-                match conn_type {
-                    ClientStrategy::UnixSocket(_) | ClientStrategy::InternalTcpPort(_) => {
-                        Ok(ClientPort::Direct(server_weak.clone(), server_port.clone()))
-                    }
-                    ClientStrategy::ForwardedTcpPort(_) => Ok(ClientPort::Forwarded(
-                        server_weak.clone(),
-                        server_port.clone(),
-                    )),
-                }
-            }
-            ClientPortConfig::Demux(demux) => {
-                let mut instantiated_map = HashMap::new();
-                for (key, target) in demux {
-                    instantiated_map.insert(*key, target.instantiate(client_host)?);
-                }
-
-                Ok(ClientPort::Demux(instantiated_map))
-            }
-        }
-    }
-
-    pub fn instantiate_reverse(
-        &self,
-        server_host: &Arc<RwLock<dyn Host>>,
-        server_weak: &Weak<RwLock<HydroflowCrate>>,
-        server_port: &String,
-        wrap_client_port: &dyn Fn(ClientPort) -> ClientPort,
-    ) -> Result<ServerStrategy> {
-        match self {
-            ClientPortConfig::Direct(client_weak, client_port) => {
-                let client = client_weak.upgrade().unwrap();
-                let mut client_write = client.try_write().unwrap();
-
-                let client_host_id = client_write.on.try_read().unwrap().id();
-
-                let server_host_clone = server_host.clone();
-                let mut server_host = server_host_clone.try_write().unwrap();
-
-                let client_host_clone = client_write.on.clone();
-                let client_host_read = if server_host.id() == client_host_id {
-                    None
-                } else {
-                    client_host_clone.try_read().ok()
-                };
-
-                let (conn_type, bind_type) =
-                    server_host.strategy_as_server(client_host_read.as_deref())?;
-
-                client_write.client_port.insert(
-                    client_port.clone(),
-                    wrap_client_port(match conn_type {
-                        ClientStrategy::UnixSocket(_) | ClientStrategy::InternalTcpPort(_) => {
-                            ClientPort::Direct(server_weak.clone(), server_port.clone())
-                        }
-                        ClientStrategy::ForwardedTcpPort(_) => {
-                            ClientPort::Forwarded(server_weak.clone(), server_port.clone())
-                        }
-                    }),
-                );
-
-                Ok(bind_type)
-            }
-            ClientPortConfig::Demux(demux) => {
-                let mut instantiated_map = HashMap::new();
-                for (key, target) in demux {
-                    instantiated_map.insert(
-                        *key,
-                        target.instantiate_reverse(
-                            server_host,
-                            server_weak,
-                            server_port,
-                            // the parent wrapper selects the demux port for the parent defn, so do that first
-                            &|p| ClientPort::DemuxSelect(Box::new(wrap_client_port(p)), *key),
-                        )?,
-                    );
-                }
-
-                Ok(ServerStrategy::Demux(instantiated_map))
-            }
-        }
-    }
-}
-
-pub enum ClientPort {
-    Direct(Weak<RwLock<HydroflowCrate>>, String),
-    Forwarded(Weak<RwLock<HydroflowCrate>>, String),
-    Demux(HashMap<u32, ClientPort>),
-    DemuxSelect(Box<ClientPort>, u32),
-}
-
-#[async_recursion]
-async fn forward_connection(conn: &ConnectionDefn, target: &HydroflowCrate) -> ConnectionDefn {
-    match conn {
-        ConnectionDefn::UnixSocket(_) => panic!("Expected a TCP port to be forwarded"),
-        ConnectionDefn::TcpPort(addr) => {
-            let target = target.launched_host.as_ref().unwrap();
-            ConnectionDefn::TcpPort(target.forward_port(addr.port()).await.unwrap())
-        }
-        ConnectionDefn::Demux(demux) => {
-            let mut forwarded_map = HashMap::new();
-            for (key, conn) in demux {
-                forwarded_map.insert(*key, forward_connection(conn, target).await);
-            }
-            ConnectionDefn::Demux(forwarded_map)
-        }
-    }
-}
-
-impl ClientPort {
-    #[async_recursion]
-    pub async fn connection_defn(&self) -> ConnectionDefn {
-        match self {
-            ClientPort::Direct(target, target_port) => {
-                let target = target.upgrade().unwrap();
-                let mut target = target.write().await;
-
-                target.server_defns.remove(target_port).unwrap()
-            }
-
-            ClientPort::Forwarded(target, target_port) => {
-                let target = target.upgrade().unwrap();
-                let target = target.read().await;
-
-                let conn = target.server_defns.get(target_port).unwrap();
-                forward_connection(conn, &target).await
-            }
-
-            ClientPort::Demux(demux) => {
-                let mut demux_mapping = HashMap::new();
-                for (id, target) in demux {
-                    demux_mapping.insert(*id, target.connection_defn().await);
-                }
-
-                ConnectionDefn::Demux(demux_mapping)
-            }
-
-            ClientPort::DemuxSelect(underlying, key) => {
-                if let ConnectionDefn::Demux(mut mapping) = underlying.connection_defn().await {
-                    mapping.remove(key).unwrap()
-                } else {
-                    panic!("Expected a demux connection definition")
-                }
-            }
-        }
-    }
-}
+pub mod ports;
 
 pub struct HydroflowCrate {
     src: PathBuf,
@@ -208,7 +29,7 @@ pub struct HydroflowCrate {
     args: Option<Vec<String>>,
 
     /// Configuration for the ports this service will connect to as a client.
-    client_port: HashMap<String, ClientPort>,
+    client_port: HashMap<String, ports::ClientPort>,
 
     /// Configuration for the ports that this service will listen on a port for.
     server_ports: HashMap<String, ServerStrategy>,
@@ -219,7 +40,7 @@ pub struct HydroflowCrate {
     /// A map of port names to config for how other services can connect to this one.
     /// Only valid after `ready` has been called, only contains ports that are configured
     /// in `server_ports`.
-    server_defns: HashMap<String, ConnectionDefn>,
+    server_defns: HashMap<String, ServerPort>,
 
     launched_binary: Option<Arc<RwLock<dyn LaunchedBinary>>>,
 }
@@ -251,7 +72,7 @@ impl HydroflowCrate {
         &mut self,
         self_arc: &Arc<RwLock<HydroflowCrate>>,
         my_port: String,
-        config: ClientPortConfig,
+        config: ports::HydroflowPortConfig,
     ) -> Result<()> {
         if let Ok(instantiated) = config.instantiate(&self.on) {
             self.client_port.insert(my_port, instantiated);
@@ -259,8 +80,10 @@ impl HydroflowCrate {
         } else {
             let instantiated = config.instantiate_reverse(
                 &self.on,
-                &Arc::downgrade(self_arc),
-                &my_port,
+                Box::new(HydroflowPortConfig::Direct(
+                    Arc::downgrade(self_arc),
+                    my_port.clone(),
+                )),
                 &|p| p,
             )?;
             self.server_ports.insert(my_port, instantiated);
