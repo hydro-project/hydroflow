@@ -60,7 +60,9 @@ pub const NULL: OperatorConstraints = OperatorConstraints {
             let default_type = parse_quote_spanned! {op_span=> _};
             let iter_type = type_args.get(0).unwrap_or(&default_type);
             quote_spanned! {op_span=>
-                (#(#inputs.for_each(std::mem::drop)),*);
+                #(
+                    #inputs.for_each(std::mem::drop);
+                )*
                 let #ident = std::iter::empty::<#iter_type>();
             }
         } else {

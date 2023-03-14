@@ -1,0 +1,42 @@
+---
+source: hydroflow/tests/surface_persist.rs
+expression: hf.serde_graph().unwrap().to_mermaid()
+---
+%%{init:{'theme':'base','themeVariables':{'clusterBkg':'#ddd','clusterBorder':'#888'}}}%%
+flowchart TD
+classDef pullClass fill:#02f,color:#fff,stroke:#000
+classDef pushClass fill:#ff0,stroke:#000
+linkStyle default stroke:#aaa,stroke-width:4px,color:red,font-size:1.5em;
+subgraph sg_1v1 ["sg_1v1 stratum 0"]
+    1v1[\"(1v1) <tt>repeat_iter([1])</tt>"/]:::pullClass
+    2v1[\"(2v1) <tt>null()</tt>"/]:::pullClass
+    3v1[\"(3v1) <tt>merge()</tt>"/]:::pullClass
+    4v1[\"(4v1) <tt>persist()</tt>"/]:::pullClass
+    5v1[\"(5v1) <tt>null()</tt>"/]:::pullClass
+    6v1[\"(6v1) <tt>merge()</tt>"/]:::pullClass
+    1v1--->3v1
+    2v1--->3v1
+    3v1--->4v1
+    4v1--->6v1
+    5v1--->6v1
+    subgraph sg_1v1_var_m0 ["var <tt>m0</tt>"]
+        3v1
+        4v1
+    end
+    subgraph sg_1v1_var_m1 ["var <tt>m1</tt>"]
+        6v1
+    end
+end
+subgraph sg_2v1 ["sg_2v1 stratum 1"]
+    7v1[\"(7v1) <tt>fold(0, | a, b | (a + b))</tt>"/]:::pullClass
+    8v1[/"(8v1) <tt>for_each(| x | result_send.send(x).unwrap())</tt>"\]:::pushClass
+    7v1--->8v1
+    subgraph sg_2v1_var_m1 ["var <tt>m1</tt>"]
+        7v1
+        8v1
+    end
+end
+6v1--->9v1
+9v1["(9v1) <tt>handoff</tt>"]:::otherClass
+9v1===o7v1
+

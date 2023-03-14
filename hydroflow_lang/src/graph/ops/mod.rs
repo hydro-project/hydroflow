@@ -36,6 +36,7 @@ mod merge;
 mod next_stratum;
 mod next_tick;
 mod null;
+mod persist;
 mod reduce;
 mod repeat_iter;
 mod sort;
@@ -192,38 +193,39 @@ pub const IDENTITY_WRITE_FN: WriteFn = |write_context_args, _| {
 };
 
 pub const OPERATORS: &[OperatorConstraints] = &[
-    null::NULL,
-    merge::MERGE,
-    join::JOIN,
+    anti_join::ANTI_JOIN,
     cross_join::CROSS_JOIN,
-    tee::TEE,
-    unzip::UNZIP,
-    identity::IDENTITY,
-    map::MAP,
-    inspect::INSPECT,
+    demux::DEMUX,
+    dest_sink::DEST_SINK,
+    dest_sink_serde::DEST_SINK_SERDE,
+    difference::DIFFERENCE,
+    filter::FILTER,
+    filter_map::FILTER_MAP,
     flat_map::FLAT_MAP,
     flatten::FLATTEN,
-    filter_map::FILTER_MAP,
-    filter::FILTER,
     fold::FOLD,
-    reduce::REDUCE,
+    for_each::FOR_EACH,
     group_by::GROUP_BY,
-    unique::UNIQUE,
+    identity::IDENTITY,
+    inspect::INSPECT,
+    join::JOIN,
+    map::MAP,
+    merge::MERGE,
+    next_stratum::NEXT_STRATUM,
+    next_tick::NEXT_TICK,
+    null::NULL,
+    persist::PERSIST,
+    reduce::REDUCE,
+    repeat_iter::REPEAT_ITER,
     sort::SORT,
     sort_by::SORT_BY,
     source_iter::SOURCE_ITER,
     source_stdin::SOURCE_STDIN,
     source_stream::SOURCE_STREAM,
     source_stream_serde::SOURCE_STREAM_SERDE,
-    repeat_iter::REPEAT_ITER,
-    difference::DIFFERENCE,
-    anti_join::ANTI_JOIN,
-    next_stratum::NEXT_STRATUM,
-    next_tick::NEXT_TICK,
-    for_each::FOR_EACH,
-    demux::DEMUX,
-    dest_sink::DEST_SINK,
-    dest_sink_serde::DEST_SINK_SERDE,
+    tee::TEE,
+    unique::UNIQUE,
+    unzip::UNZIP,
 ];
 pub fn operator_lookup() -> &'static HashMap<&'static str, &'static OperatorConstraints> {
     pub static OPERATOR_LOOKUP: OnceCell<HashMap<&'static str, &'static OperatorConstraints>> =
