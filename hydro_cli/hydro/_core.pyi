@@ -30,7 +30,11 @@ class Service(object):
     pass
 
 class CustomService(Service):
-    pass
+    def client_port(self) -> "CustomServicePort": ...
+
+class CustomServicePort(object):
+    def send_to(self, other: "HydroflowCrate") -> None: ...
+    async def server_port(self) -> ServerPort: ...
 
 class HydroflowCrate(Service):
     ports: HydroflowCratePorts
@@ -43,3 +47,9 @@ class HydroflowCratePorts(object):
 
 class HydroflowCratePort(object):
     def send_to(self, other: HydroflowCratePort) -> None: ...
+
+class ServerPort(object):
+    async def sink() -> "ConnectedSink": ...
+
+class ConnectedSink(object):
+    async def send(self, data: bytes) -> None: ...
