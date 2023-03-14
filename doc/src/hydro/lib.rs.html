@@ -337,6 +337,8 @@
 <a href="#337" id="337">337</a>
 <a href="#338" id="338">338</a>
 <a href="#339" id="339">339</a>
+<a href="#340" id="340">340</a>
+<a href="#341" id="341">341</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::sync::Arc;
 
 <span class="kw">use </span>async_channel::Receiver;
@@ -615,7 +617,7 @@
 <span class="attr">#[pyclass]
 #[derive(Clone)]
 </span><span class="kw">struct </span>PyHydroflowCratePort {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) underlying: <span class="kw">crate</span>::core::hydroflow_crate::OutgoingPort,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) underlying: <span class="kw">crate</span>::core::hydroflow_crate::ClientPortConfig,
 }
 
 <span class="attr">#[pymethods]
@@ -623,7 +625,7 @@
     <span class="attr">#[staticmethod]
     </span><span class="kw">fn </span>new_direct(to: <span class="kw-2">&amp;</span>PyHydroflowCrate, to_port: String) -&gt; PyHydroflowCratePort {
         PyHydroflowCratePort {
-            underlying: <span class="kw">crate</span>::core::hydroflow_crate::OutgoingPort::Direct(
+            underlying: <span class="kw">crate</span>::core::hydroflow_crate::ClientPortConfig::Direct(
                 Arc::downgrade(<span class="kw-2">&amp;</span>to.underlying),
                 to_port,
             ),
@@ -633,7 +635,7 @@
     <span class="attr">#[staticmethod]
     </span><span class="kw">fn </span>new_demux(mapping: <span class="kw-2">&amp;</span>PyDict) -&gt; PyHydroflowCratePort {
         PyHydroflowCratePort {
-            underlying: <span class="kw">crate</span>::core::hydroflow_crate::OutgoingPort::Demux(
+            underlying: <span class="kw">crate</span>::core::hydroflow_crate::ClientPortConfig::Demux(
                 mapping
                     .into_iter()
                     .map(|(k, v)| {
@@ -651,7 +653,9 @@
 </span><span class="kw">fn </span>create_connection(from: <span class="kw-2">&amp;</span>PyHydroflowCrate, from_port: String, to: <span class="kw-2">&amp;</span>PyHydroflowCratePort) {
     <span class="kw">let </span>from = <span class="kw-2">&amp;</span>from.underlying;
     <span class="kw">let </span><span class="kw-2">mut </span>from_write = from.try_write().unwrap();
-    from_write.add_outgoing_port(from_port, to.underlying.clone());
+    from_write
+        .add_client_port(from, from_port, to.underlying.clone())
+        .unwrap();
 }
 
 <span class="attr">#[pymodule]

@@ -138,12 +138,29 @@
 <a href="#138" id="138">138</a>
 <a href="#139" id="139">139</a>
 <a href="#140" id="140">140</a>
-</pre><pre class="rust"><code><span class="kw">use </span>std::{path::Path, sync::Arc};
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+</pre><pre class="rust"><code><span class="kw">use </span>std::{collections::HashMap, net::SocketAddr, path::Path, sync::Arc};
 
 <span class="kw">use </span>anyhow::Result;
 <span class="kw">use </span>async_channel::{Receiver, Sender};
 <span class="kw">use </span>async_trait::async_trait;
-<span class="kw">use </span>hydroflow_cli_integration::BindConfig;
+<span class="kw">use </span>hydroflow_cli_integration::ServerConfig;
 <span class="kw">use </span>tokio::sync::RwLock;
 
 <span class="kw">pub mod </span>deployment;
@@ -200,34 +217,41 @@
 </span><span class="kw">pub trait </span>LaunchedHost: Send + Sync {
     <span class="doccomment">/// Given a pre-selected network type, computes concrete information needed for a service
     /// to listen to network connections (such as the IP address to bind to).
-    </span><span class="kw">fn </span>get_bind_config(<span class="kw-2">&amp;</span><span class="self">self</span>, bind_type: <span class="kw-2">&amp;</span>BindType) -&gt; BindConfig;
+    </span><span class="kw">fn </span>server_config(<span class="kw-2">&amp;</span><span class="self">self</span>, strategy: <span class="kw-2">&amp;</span>ServerStrategy) -&gt; ServerConfig;
 
     <span class="kw">async fn </span>launch_binary(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         binary: <span class="kw-2">&amp;</span>Path,
         args: <span class="kw-2">&amp;</span>[String],
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Arc&lt;RwLock&lt;<span class="kw">dyn </span>LaunchedBinary&gt;&gt;&gt;;
+
+    <span class="kw">async fn </span>forward_port(<span class="kw-2">&amp;</span><span class="self">self</span>, port: u16) -&gt; <span class="prelude-ty">Result</span>&lt;SocketAddr&gt;;
 }
 
 <span class="doccomment">/// Types of connections that a host can make to another host.
-</span><span class="kw">pub enum </span>BindType {
+</span><span class="kw">pub enum </span>ServerStrategy {
     UnixSocket,
     InternalTcpPort,
     ExternalTcpPort(
         <span class="doccomment">/// The port number to bind to, which must be explicit to open the firewall.
         </span>u16,
     ),
+    Demux(HashMap&lt;u32, ServerStrategy&gt;),
 }
 
 <span class="doccomment">/// Like BindType, but includes metadata for determining whether a connection is possible.
-</span><span class="kw">pub enum </span>ConnectionType {
+</span><span class="kw">pub enum </span>ClientStrategy&lt;<span class="lifetime">&#39;a</span>&gt; {
     UnixSocket(
         <span class="doccomment">/// Unique identifier for the host this socket will be on.
         </span>usize,
     ),
     InternalTcpPort(
-        <span class="doccomment">/// Unique identifier for the VPC this port will be on.
-        </span>String,
+        <span class="doccomment">/// The host that this port is available on.
+        </span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw">dyn </span>Host,
+    ),
+    ForwardedTcpPort(
+        <span class="doccomment">/// The host that this port is available on.
+        </span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw">dyn </span>Host,
     ),
 }
 
@@ -240,7 +264,13 @@
 </span><span class="kw">pub trait </span>Host: Send + Sync {
     <span class="kw">fn </span>target_type(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; HostTargetType;
 
-    <span class="kw">fn </span>request_port(<span class="kw-2">&amp;mut </span><span class="self">self</span>, bind_type: <span class="kw-2">&amp;</span>BindType);
+    <span class="kw">fn </span>request_port(<span class="kw-2">&amp;mut </span><span class="self">self</span>, bind_type: <span class="kw-2">&amp;</span>ServerStrategy);
+
+    <span class="doccomment">/// An identifier for this host, which is unique within a deployment.
+    </span><span class="kw">fn </span>id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize;
+
+    <span class="doccomment">/// Returns a reference to the host as a trait object.
+    </span><span class="kw">fn </span>as_any(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="kw">dyn </span>std::any::Any;
 
     <span class="doccomment">/// Configures the host to support copying and running a custom binary.
     </span><span class="kw">fn </span>request_custom_binary(<span class="kw-2">&amp;mut </span><span class="self">self</span>);
@@ -251,11 +281,15 @@
     <span class="doccomment">/// Connects to the acquired resources and prepares the host to run services.
     </span><span class="kw">async fn </span>provision(<span class="kw-2">&amp;mut </span><span class="self">self</span>, resource_result: <span class="kw-2">&amp;</span>Arc&lt;ResourceResult&gt;) -&gt; Arc&lt;<span class="kw">dyn </span>LaunchedHost&gt;;
 
-    <span class="doccomment">/// Identifies a network type that this host can use for connections from the given host.
-    </span><span class="kw">fn </span>get_bind_type(<span class="kw-2">&amp;</span><span class="self">self</span>, connection_from: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Host) -&gt; BindType;
+    <span class="doccomment">/// Identifies a network type that this host can use for connections if it is the server.
+    /// The host will be `None` if the connection is from the same host as the target.
+    </span><span class="kw">fn </span>strategy_as_server&lt;<span class="lifetime">&#39;a</span>&gt;(
+        <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span><span class="self">self</span>,
+        connection_from: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="kw">dyn </span>Host&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(ClientStrategy&lt;<span class="lifetime">&#39;a</span>&gt;, ServerStrategy)&gt;;
 
-    <span class="doccomment">/// Determins whether this host can connect to another host using the given connection type.
-    </span><span class="kw">fn </span>can_connect_to(<span class="kw-2">&amp;</span><span class="self">self</span>, typ: ConnectionType) -&gt; bool;
+    <span class="doccomment">/// Determines whether this host can connect to another host using the given strategy.
+    </span><span class="kw">fn </span>can_connect_to(<span class="kw-2">&amp;</span><span class="self">self</span>, typ: ClientStrategy) -&gt; bool;
 }
 
 <span class="attr">#[async_trait]

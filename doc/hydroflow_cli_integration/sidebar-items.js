@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["BindConfig","ConnectionPipe"]};
+window.SIDEBAR_ITEMS = {"enum":["ConnectionDefn","ServerConfig"]};

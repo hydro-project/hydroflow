@@ -128,12 +128,33 @@
 <a href="#128" id="128">128</a>
 <a href="#129" id="129">129</a>
 <a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::{collections::HashMap, net::SocketAddr, path::PathBuf};
 
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 
 <span class="attr">#[cfg(feature = <span class="string">&quot;runtime&quot;</span>)]
-</span><span class="kw">use </span>std::{pin::Pin, sync::Arc};
+</span><span class="kw">use </span>std::pin::Pin;
 
 <span class="attr">#[cfg(feature = <span class="string">&quot;runtime&quot;</span>)]
 </span><span class="kw">use </span>async_trait::async_trait;
@@ -141,6 +162,9 @@
 </span><span class="kw">use </span>bytes::BytesMut;
 <span class="attr">#[cfg(feature = <span class="string">&quot;runtime&quot;</span>)]
 </span><span class="kw">use </span>futures::{Sink, Stream};
+
+<span class="attr">#[cfg(feature = <span class="string">&quot;runtime&quot;</span>)]
+</span><span class="kw">use </span>async_recursion::async_recursion;
 
 <span class="attr">#[cfg(feature = <span class="string">&quot;runtime&quot;</span>)]
 #[cfg(unix)]
@@ -154,19 +178,21 @@
 </span><span class="kw">use </span>tokio::{io, net::TcpListener};
 
 <span class="attr">#[derive(Serialize, Deserialize, Clone, Debug)]
-</span><span class="kw">pub enum </span>BindConfig {
+</span><span class="kw">pub enum </span>ServerConfig {
     UnixSocket,
     TcpPort(
         <span class="doccomment">/// The host the port should be bound on.
         </span>String,
     ),
+    Demux(HashMap&lt;u32, ServerConfig&gt;),
 }
 
-<span class="kw">impl </span>BindConfig {
+<span class="kw">impl </span>ServerConfig {
     <span class="attr">#[cfg(feature = <span class="string">&quot;runtime&quot;</span>)]
+    #[async_recursion]
     </span><span class="kw">pub async fn </span>bind(<span class="self">self</span>) -&gt; BoundConnection {
         <span class="kw">match </span><span class="self">self </span>{
-            BindConfig::UnixSocket =&gt; {
+            ServerConfig::UnixSocket =&gt; {
                 <span class="attr">#[cfg(unix)]
                 </span>{
                     <span class="kw">let </span>dir = tempfile::tempdir().unwrap();
@@ -179,29 +205,36 @@
                     <span class="macro">panic!</span>(<span class="string">&quot;Unix sockets are not supported on this platform&quot;</span>)
                 }
             }
-            BindConfig::TcpPort(host) =&gt; {
+            ServerConfig::TcpPort(host) =&gt; {
                 <span class="kw">let </span>listener = TcpListener::bind((host, <span class="number">0</span>)).<span class="kw">await</span>.unwrap();
                 BoundConnection::TcpPort(listener)
+            }
+            ServerConfig::Demux(bindings) =&gt; {
+                <span class="kw">let </span><span class="kw-2">mut </span>demux = HashMap::new();
+                <span class="kw">for </span>(key, bind) <span class="kw">in </span>bindings {
+                    demux.insert(key, bind.bind().<span class="kw">await</span>);
+                }
+                BoundConnection::Demux(demux)
             }
         }
     }
 }
 
 <span class="doccomment">/// Describes a medium through which two Hydroflow services can communicate.
-</span><span class="attr">#[derive(Serialize, Deserialize, Clone, Debug)]
-</span><span class="kw">pub enum </span>ConnectionPipe {
+</span><span class="attr">#[derive(Serialize, Deserialize, Debug)]
+</span><span class="kw">pub enum </span>ConnectionDefn {
     UnixSocket(PathBuf),
     TcpPort(SocketAddr),
-    Demux(HashMap&lt;u32, ConnectionPipe&gt;),
+    Demux(HashMap&lt;u32, ConnectionDefn&gt;),
     <span class="attr">#[cfg(feature = <span class="string">&quot;runtime&quot;</span>)]
     #[serde(skip)]
-    </span>Bind(Arc&lt;BoundConnection&gt;),
+    </span>Bind(BoundConnection),
 }
 
 <span class="attr">#[cfg(feature = <span class="string">&quot;runtime&quot;</span>)]
-</span><span class="kw">impl </span>ConnectionPipe {
+</span><span class="kw">impl </span>ConnectionDefn {
     <span class="kw">pub async fn </span>connect&lt;T: Connected&gt;(<span class="self">self</span>) -&gt; T {
-        T::from_pipe(<span class="self">self</span>).<span class="kw">await
+        T::from_defn(<span class="self">self</span>).<span class="kw">await
     </span>}
 }
 
@@ -218,7 +251,7 @@
     <span class="kw">fn </span>take_source(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; DynStream;
     <span class="kw">fn </span>take_sink(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; DynSink&lt;<span class="self">Self</span>::Input&gt;;
 
-    <span class="kw">async fn </span>from_pipe(pipe: ConnectionPipe) -&gt; <span class="self">Self</span>;
+    <span class="kw">async fn </span>from_defn(pipe: ConnectionDefn) -&gt; <span class="self">Self</span>;
 }
 
 <span class="attr">#[cfg(feature = <span class="string">&quot;runtime&quot;</span>)]
@@ -226,16 +259,17 @@
 </span><span class="kw">pub enum </span>BoundConnection {
     UnixSocket(UnixListener, tempfile::TempDir),
     TcpPort(TcpListener),
+    Demux(HashMap&lt;u32, BoundConnection&gt;),
 }
 
 <span class="attr">#[cfg(feature = <span class="string">&quot;runtime&quot;</span>)]
 </span><span class="kw">impl </span>BoundConnection {
-    <span class="kw">pub fn </span>connection_pipe(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ConnectionPipe {
+    <span class="kw">pub fn </span>connection_defn(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ConnectionDefn {
         <span class="kw">match </span><span class="self">self </span>{
             BoundConnection::UnixSocket(listener, <span class="kw">_</span>) =&gt; {
                 <span class="attr">#[cfg(unix)]
                 </span>{
-                    ConnectionPipe::UnixSocket(
+                    ConnectionDefn::UnixSocket(
                         listener
                             .local_addr()
                             .unwrap()
@@ -253,7 +287,15 @@
             }
             BoundConnection::TcpPort(listener) =&gt; {
                 <span class="kw">let </span>addr = listener.local_addr().unwrap();
-                ConnectionPipe::TcpPort(SocketAddr::new(addr.ip(), addr.port()))
+                ConnectionDefn::TcpPort(SocketAddr::new(addr.ip(), addr.port()))
+            }
+
+            BoundConnection::Demux(bindings) =&gt; {
+                <span class="kw">let </span><span class="kw-2">mut </span>demux = HashMap::new();
+                <span class="kw">for </span>(key, bind) <span class="kw">in </span>bindings {
+                    demux.insert(<span class="kw-2">*</span>key, bind.connection_defn());
+                }
+                ConnectionDefn::Demux(demux)
             }
         }
     }

@@ -57,7 +57,7 @@
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>tokio::sync::RwLock;
 
-<span class="kw">use super</span>::{BindType, Host, LaunchedHost, ResourceBatch, ResourceResult, Service};
+<span class="kw">use super</span>::{Host, LaunchedHost, ResourceBatch, ResourceResult, ServerStrategy, Service};
 
 <span class="doccomment">/// Represents an unknown, third-party service that is not part of the Hydroflow ecosystem.
 </span><span class="kw">pub struct </span>CustomService {
@@ -88,7 +88,7 @@
             .expect(<span class="string">&quot;No one should be reading/writing the host while resources are collected&quot;</span>);
 
         <span class="kw">for </span>port <span class="kw">in </span><span class="self">self</span>.external_ports.iter() {
-            host.request_port(<span class="kw-2">&amp;</span>BindType::ExternalTcpPort(<span class="kw-2">*</span>port));
+            host.request_port(<span class="kw-2">&amp;</span>ServerStrategy::ExternalTcpPort(<span class="kw-2">*</span>port));
         }
     }
 
