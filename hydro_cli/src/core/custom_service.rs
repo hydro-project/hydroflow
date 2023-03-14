@@ -1,10 +1,14 @@
-use std::sync::Arc;
+use std::sync::{Arc, Weak};
 
 use anyhow::Result;
 use async_trait::async_trait;
+use hydroflow_cli_integration::ServerPort;
 use tokio::sync::RwLock;
 
-use super::{Host, LaunchedHost, ResourceBatch, ResourceResult, ServerStrategy, Service};
+use super::{
+    hydroflow_crate::ports::{ClientPort, HydroflowPortConfig, HydroflowSource},
+    Host, LaunchedHost, ResourceBatch, ResourceResult, ServerStrategy, Service,
+};
 
 /// Represents an unknown, third-party service that is not part of the Hydroflow ecosystem.
 pub struct CustomService {
@@ -50,4 +54,33 @@ impl Service for CustomService {
     }
 
     async fn start(&mut self) {}
+}
+
+pub struct CustomClientPort {
+    pub on: Weak<RwLock<CustomService>>,
+    client_port: Option<ClientPort>,
+}
+
+impl CustomClientPort {
+    pub fn new(on: Weak<RwLock<CustomService>>) -> Self {
+        Self {
+            on,
+            client_port: None,
+        }
+    }
+
+    pub async fn server_port(&self) -> ServerPort {
+        self.client_port.as_ref().unwrap().connection_defn().await
+    }
+}
+
+impl HydroflowSource for CustomClientPort {
+    fn send_to(&mut self, to: HydroflowPortConfig) {
+        if let Ok(instantiated) = to.instantiate(&self.on.upgrade().unwrap().try_read().unwrap().on)
+        {
+            self.client_port = Some(instantiated);
+        } else {
+            panic!("Custom services cannot be used as the server")
+        }
+    }
 }

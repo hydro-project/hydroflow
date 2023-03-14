@@ -1,0 +1,20 @@
+[package]
+name = "hydro_cli_examples"
+version = "0.1.0"
+edition = "2021"
+
+[[example]]
+name = "stdout_receiver"
+
+[[example]]
+name = "dedalus_sender"
+
+[[example]]
+name = "dedalus_receiver"
+
+[dev-dependencies]
+hydroflow = { path = "../hydroflow", features = [ "cli_integration" ] }
+hydroflow_datalog = { path = "../hydroflow_datalog" }
+
+tokio = { version = "1.16", features = [ "full" ] }
+serde_json = "1"
