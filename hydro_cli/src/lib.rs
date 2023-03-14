@@ -9,6 +9,8 @@ use tokio::sync::RwLock;
 mod cli;
 pub mod core;
 
+use crate::core::hydroflow_crate::ClientPortConfig;
+
 create_exception!(hydro_cli_core, AnyhowError, PyException);
 
 #[pyclass]
@@ -17,21 +19,117 @@ pub struct AnyhowWrapper {
     pub underlying: Arc<RwLock<Option<anyhow::Error>>>,
 }
 
-#[pyclass(name = "PyDeployment")]
-pub struct PyDeployment {
+#[pyclass(name = "Deployment")]
+pub struct Deployment {
     underlying: Arc<RwLock<crate::core::Deployment>>,
 }
 
 #[pymethods]
-impl PyDeployment {
+impl Deployment {
     #[new]
     fn new() -> Self {
-        PyDeployment {
+        Deployment {
             underlying: Arc::new(RwLock::new(crate::core::Deployment {
                 hosts: Vec::new(),
                 services: Vec::new(),
             })),
         }
+    }
+
+    #[allow(non_snake_case)]
+    fn Localhost(&self, py: Python<'_>) -> PyResult<Py<pyo3::PyAny>> {
+        Ok(Py::new(
+            py,
+            PyClassInitializer::from(Host {
+                underlying: self
+                    .underlying
+                    .blocking_write()
+                    .add_host(|id| crate::core::LocalhostHost { id }),
+            })
+            .add_subclass(LocalhostHost {}),
+        )?
+        .into_py(py))
+    }
+
+    #[allow(non_snake_case)]
+    fn GCPComputeEngineHost(
+        &self,
+        py: Python<'_>,
+        project: String,
+        machine_type: String,
+        image: String,
+        region: String,
+    ) -> PyResult<Py<pyo3::PyAny>> {
+        Ok(Py::new(
+            py,
+            PyClassInitializer::from(Host {
+                underlying: self.underlying.blocking_write().add_host(|id| {
+                    crate::core::GCPComputeEngineHost::new(id, project, machine_type, image, region)
+                }),
+            })
+            .add_subclass(LocalhostHost {}),
+        )?
+        .into_py(py))
+    }
+
+    #[allow(non_snake_case)]
+    fn CustomService(
+        &self,
+        py: Python<'_>,
+        on: &Host,
+        external_ports: Vec<u16>,
+    ) -> PyResult<Py<pyo3::PyAny>> {
+        let service =
+            self.underlying
+                .blocking_write()
+                .add_service(crate::core::CustomService::new(
+                    on.underlying.clone(),
+                    external_ports,
+                ));
+
+        Ok(Py::new(
+            py,
+            PyClassInitializer::from(Service {
+                _underlying: service.clone(),
+            })
+            .add_subclass(CustomService {
+                _underlying: service,
+            }),
+        )?
+        .into_py(py))
+    }
+
+    #[allow(non_snake_case)]
+    fn HydroflowCrate(
+        &self,
+        py: Python<'_>,
+        src: String,
+        on: &Host,
+        example: Option<String>,
+        features: Option<Vec<String>>,
+        args: Option<Vec<String>>,
+    ) -> PyResult<Py<pyo3::PyAny>> {
+        let service =
+            self.underlying
+                .blocking_write()
+                .add_service(crate::core::HydroflowCrate::new(
+                    src.into(),
+                    on.underlying.clone(),
+                    example,
+                    features,
+                    args,
+                ));
+
+        Ok(Py::new(
+            py,
+            PyClassInitializer::from(Service {
+                _underlying: service.clone(),
+            })
+            .add_subclass(HydroflowCrate {
+                underlying: service,
+            }),
+        )?
+        .into_py(py))
     }
 
     fn deploy<'p>(&self, py: Python<'p>) -> &'p pyo3::PyAny {
@@ -66,56 +164,20 @@ impl PyDeployment {
 }
 
 #[pyclass(subclass)]
-pub struct PyHost {
+pub struct Host {
     underlying: Arc<RwLock<dyn crate::core::Host>>,
 }
 
-#[pyclass(extends=PyHost, subclass)]
-struct PyLocalhostHost {}
+#[pyclass(extends=Host, subclass)]
+struct LocalhostHost {}
 
-#[pymethods]
-impl PyLocalhostHost {
-    #[new]
-    fn new(deployment: &PyDeployment) -> (Self, PyHost) {
-        (
-            PyLocalhostHost {},
-            PyHost {
-                underlying: deployment
-                    .underlying
-                    .blocking_write()
-                    .add_host(|id| crate::core::LocalhostHost { id }),
-            },
-        )
-    }
-}
-
-#[pyclass(extends=PyHost, subclass)]
-struct PyGCPComputeEngineHost {
+#[pyclass(extends=Host, subclass)]
+struct GCPComputeEngineHost {
     underlying: Arc<RwLock<crate::core::GCPComputeEngineHost>>,
 }
 
 #[pymethods]
-impl PyGCPComputeEngineHost {
-    #[new]
-    fn new(
-        deployment: &PyDeployment,
-        project: String,
-        machine_type: String,
-        image: String,
-        region: String,
-    ) -> (Self, PyHost) {
-        let host = deployment.underlying.blocking_write().add_host(|id| {
-            crate::core::GCPComputeEngineHost::new(id, project, machine_type, image, region)
-        });
-
-        (
-            PyGCPComputeEngineHost {
-                underlying: host.clone(),
-            },
-            PyHost { underlying: host },
-        )
-    }
-
+impl GCPComputeEngineHost {
     #[getter]
     fn internal_ip(&self) -> String {
         self.underlying
@@ -153,7 +215,7 @@ impl PyGCPComputeEngineHost {
 }
 
 #[pyclass(subclass)]
-pub struct PyService {
+pub struct Service {
     _underlying: Arc<RwLock<dyn crate::core::Service>>,
 }
 
@@ -174,78 +236,48 @@ impl PyReceiver {
     }
 }
 
-#[pyclass(extends=PyService, subclass)]
-struct PyCustomService {
+#[pyclass(extends=Service, subclass)]
+struct CustomService {
     _underlying: Arc<RwLock<crate::core::CustomService>>,
 }
 
-#[pymethods]
-impl PyCustomService {
-    #[new]
-    fn new(deployment: &PyDeployment, on: &PyHost, external_ports: Vec<u16>) -> (Self, PyService) {
-        let service =
-            deployment
-                .underlying
-                .blocking_write()
-                .add_service(crate::core::CustomService::new(
-                    on.underlying.clone(),
-                    external_ports,
-                ));
-
-        (
-            PyCustomService {
-                _underlying: service.clone(),
-            },
-            PyService {
-                _underlying: service,
-            },
-        )
-    }
-}
-
-#[pyclass(extends=PyService, subclass)]
-struct PyHydroflowCrate {
+#[pyclass(extends=Service, subclass)]
+struct HydroflowCrate {
     underlying: Arc<RwLock<crate::core::HydroflowCrate>>,
 }
 
+fn convert_py_receiver(receiver: PyReceiver) -> PyResult<PyObject> {
+    Python::with_gil(|py| {
+        // load helper python function as a string
+        let module = PyModule::from_code(
+            py,
+            r#"
+async def pyreceiver_to_async_generator(pyreceiver):
+    while True:
+        res = await pyreceiver.next()
+        if res is None:
+            break
+        else:
+            yield res
+    "#,
+            "converter",
+            "converter",
+        )?;
+
+        Ok(module
+            .call_method1("pyreceiver_to_async_generator", (receiver.into_py(py),))
+            .unwrap()
+            .into())
+    })
+}
+
 #[pymethods]
-impl PyHydroflowCrate {
-    #[new]
-    fn new(
-        deployment: &PyDeployment,
-        src: String,
-        on: &PyHost,
-        example: Option<String>,
-        features: Option<Vec<String>>,
-        args: Option<Vec<String>>,
-    ) -> (Self, PyService) {
-        let service =
-            deployment
-                .underlying
-                .blocking_write()
-                .add_service(crate::core::HydroflowCrate::new(
-                    src.into(),
-                    on.underlying.clone(),
-                    example,
-                    features,
-                    args,
-                ));
-
-        (
-            PyHydroflowCrate {
-                underlying: service.clone(),
-            },
-            PyService {
-                _underlying: service,
-            },
-        )
-    }
-
+impl HydroflowCrate {
     fn stdout<'p>(&self, py: Python<'p>) -> &'p pyo3::PyAny {
         let underlying = self.underlying.clone();
         pyo3_asyncio::tokio::future_into_py(py, async move {
             let underlying = underlying.read().await;
-            Ok(PyReceiver {
+            convert_py_receiver(PyReceiver {
                 receiver: Arc::new(underlying.stdout().await),
             })
         })
@@ -256,7 +288,7 @@ impl PyHydroflowCrate {
         let underlying = self.underlying.clone();
         pyo3_asyncio::tokio::future_into_py(py, async move {
             let underlying = underlying.read().await;
-            Ok(PyReceiver {
+            convert_py_receiver(PyReceiver {
                 receiver: Arc::new(underlying.stderr().await),
             })
         })
@@ -271,50 +303,69 @@ impl PyHydroflowCrate {
         })
         .unwrap()
     }
+
+    #[getter]
+    fn ports(&self) -> HydroflowCratePorts {
+        HydroflowCratePorts {
+            underlying: self.underlying.clone(),
+        }
+    }
 }
 
 #[pyclass]
 #[derive(Clone)]
-struct PyHydroflowCratePort {
-    pub(crate) underlying: crate::core::hydroflow_crate::ClientPortConfig,
+struct HydroflowCratePorts {
+    underlying: Arc<RwLock<crate::core::HydroflowCrate>>,
 }
 
 #[pymethods]
-impl PyHydroflowCratePort {
-    #[staticmethod]
-    fn new_direct(to: &PyHydroflowCrate, to_port: String) -> PyHydroflowCratePort {
-        PyHydroflowCratePort {
+impl HydroflowCratePorts {
+    fn __getattribute__(&self, name: String) -> PyResult<HydroflowCratePort> {
+        Ok(HydroflowCratePort {
             underlying: crate::core::hydroflow_crate::ClientPortConfig::Direct(
-                Arc::downgrade(&to.underlying),
-                to_port,
+                Arc::downgrade(&self.underlying),
+                name,
             ),
-        }
+        })
     }
+}
 
-    #[staticmethod]
-    fn new_demux(mapping: &PyDict) -> PyHydroflowCratePort {
-        PyHydroflowCratePort {
-            underlying: crate::core::hydroflow_crate::ClientPortConfig::Demux(
-                mapping
-                    .into_iter()
-                    .map(|(k, v)| {
-                        let k = k.extract::<u32>().unwrap();
-                        let v = v.extract::<PyHydroflowCratePort>().unwrap();
-                        (k, v.underlying)
-                    })
-                    .collect(),
-            ),
+#[pyclass]
+#[derive(Clone)]
+struct HydroflowCratePort {
+    pub(crate) underlying: ClientPortConfig,
+}
+
+#[pymethods]
+impl HydroflowCratePort {
+    fn send_to(&self, to: &HydroflowCratePort) -> PyResult<()> {
+        if let ClientPortConfig::Direct(from, from_port) = &self.underlying {
+            let from = from.upgrade().unwrap();
+            let mut from_write = from.try_write().unwrap();
+            from_write
+                .add_client_port(&from, from_port.clone(), to.underlying.clone())
+                .unwrap();
+            Ok(())
+        } else {
+            panic!("Can only send from a direct port");
         }
     }
 }
 
 #[pyfunction]
-fn create_connection(from: &PyHydroflowCrate, from_port: String, to: &PyHydroflowCratePort) {
-    let from = &from.underlying;
-    let mut from_write = from.try_write().unwrap();
-    from_write
-        .add_client_port(from, from_port, to.underlying.clone())
-        .unwrap();
+fn demux(mapping: &PyDict) -> HydroflowCratePort {
+    HydroflowCratePort {
+        underlying: ClientPortConfig::Demux(
+            mapping
+                .into_iter()
+                .map(|(k, v)| {
+                    let k = k.extract::<u32>().unwrap();
+                    let v = v.extract::<HydroflowCratePort>().unwrap();
+                    (k, v.underlying)
+                })
+                .collect(),
+        ),
+    }
 }
 
 #[pymodule]
@@ -322,18 +373,18 @@ pub fn _core(py: Python<'_>, module: &PyModule) -> PyResult<()> {
     module.add("AnyhowError", py.get_type::<AnyhowError>())?;
     module.add_class::<AnyhowWrapper>()?;
 
-    module.add_class::<PyDeployment>()?;
+    module.add_class::<Deployment>()?;
 
-    module.add_class::<PyHost>()?;
-    module.add_class::<PyLocalhostHost>()?;
-    module.add_class::<PyGCPComputeEngineHost>()?;
+    module.add_class::<Host>()?;
+    module.add_class::<LocalhostHost>()?;
+    module.add_class::<GCPComputeEngineHost>()?;
 
-    module.add_class::<PyService>()?;
-    module.add_class::<PyCustomService>()?;
-    module.add_class::<PyHydroflowCrate>()?;
-    module.add_class::<PyHydroflowCratePort>()?;
+    module.add_class::<Service>()?;
+    module.add_class::<CustomService>()?;
+    module.add_class::<HydroflowCrate>()?;
+    module.add_class::<HydroflowCratePort>()?;
 
-    module.add_function(wrap_pyfunction!(create_connection, module)?)?;
+    module.add_function(wrap_pyfunction!(demux, module)?)?;
 
     module.add_wrapped(wrap_pymodule!(cli::cli))?;
 
