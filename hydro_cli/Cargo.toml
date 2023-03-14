@@ -30,6 +30,8 @@ serde_json = "1"
 tempfile = "3.3.0"
 async-ssh2-lite = { version = "0.4.2", features = [ "tokio", "vendored-openssl" ] }
 shell-escape = "0.1.5"
+dyn-clone = "1"
+bytes = "1.1.0"
 hydroflow_cli_integration = { path = "../hydroflow_cli_integration" }
 
 [dev-dependencies]

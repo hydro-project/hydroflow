@@ -1,5 +1,6 @@
 import hydro
 import json
+from pathlib import Path
 
 async def main(args):
     machine_1_gcp = args[0] == "gcp"
@@ -23,17 +24,15 @@ async def main(args):
     ) if machine_2_gcp else localhost_machine
 
     sender = deployment.HydroflowCrate(
-        src="../hydroflow",
-        example="cli_sender",
-        features=["cli_integration"],
+        src=str(Path(__file__).parent.absolute()),
+        example="dedalus_sender",
         args=[json.dumps([0])],
         on=machine1
     )
 
     receiver = deployment.HydroflowCrate(
-        src="../hydroflow",
-        example="cli_receiver",
-        features=["cli_integration"],
+        src=str(Path(__file__).parent.absolute()),
+        example="dedalus_receiver",
         on=machine2
     )
 

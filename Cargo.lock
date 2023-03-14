@@ -975,6 +975,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "dyn-clone"
+version = "1.0.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "68b0cf012f1230e43cd00ebb729c6bb58707ecfa8ad08b52ef3a4ccd2697fc30"
+
+[[package]]
 name = "either"
 version = "1.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1422,8 +1428,10 @@ dependencies = [
  "async-recursion",
  "async-ssh2-lite",
  "async-trait",
+ "bytes",
  "cargo",
  "clap 4.1.8",
+ "dyn-clone",
  "futures",
  "futures-core",
  "hydroflow_cli_integration",
@@ -1435,6 +1443,16 @@ dependencies = [
  "tempfile",
  "tokio",
  "tokio-util",
+]
+
+[[package]]
+name = "hydro_cli_examples"
+version = "0.1.0"
+dependencies = [
+ "hydroflow",
+ "hydroflow_datalog",
+ "serde_json",
+ "tokio",
 ]
 
 [[package]]
@@ -1494,6 +1512,7 @@ dependencies = [
  "serde_json",
  "tempfile",
  "tokio",
+ "tokio-util",
 ]
 
 [[package]]
