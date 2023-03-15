@@ -9,7 +9,7 @@ classDef pushClass fill:#ff0,stroke:#000
 linkStyle default stroke:#aaa,stroke-width:4px,color:red,font-size:1.5em;
 subgraph sg_1v1 ["sg_1v1 stratum 0"]
     1v1[\"(1v1) <tt>source_iter([1])</tt>"/]:::pullClass
-    2v1[/"(2v1) <tt>for_each(| v | out_send.send(v).unwrap())</tt>"\]:::pushClass
+    2v1[/"(2v1) <tt>for_each(|v| out_send.send(v).unwrap())</tt>"\]:::pushClass
     1v1--->2v1
 end
 

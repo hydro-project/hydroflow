@@ -23,8 +23,8 @@ digraph {
         fillcolor="#dddddd"
         style=filled
         label = "sg_2v1\nstratum 1"
-        n7v1 [label="(n7v1) fold(0, | a, b | (a + b))", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
-        n8v1 [label="(n8v1) for_each(| x | result_send.send(x).unwrap())", fontname=Monaco, shape=house, style = filled, color = "#ffff00"]
+        n7v1 [label="(n7v1) fold(0, |a, b| (a + b))", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+        n8v1 [label="(n8v1) for_each(|x| result_send.send(x).unwrap())", fontname=Monaco, shape=house, style = filled, color = "#ffff00"]
         n7v1 -> n8v1
     }
     n5v1 -> n9v1

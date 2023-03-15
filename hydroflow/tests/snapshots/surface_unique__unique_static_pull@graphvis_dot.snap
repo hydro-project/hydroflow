@@ -7,13 +7,13 @@ digraph {
         fillcolor="#dddddd"
         style=filled
         label = "sg_1v1\nstratum 0"
-        n1v1 [label="(n1v1) repeat_iter(0 .. 10)", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
-        n2v1 [label="(n2v1) repeat_iter(5 .. 15)", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+        n1v1 [label="(n1v1) repeat_iter(0..10)", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+        n2v1 [label="(n2v1) repeat_iter(5..15)", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
         n3v1 [label="(n3v1) merge()", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
-        n4v1 [label="(n4v1) unique < 'static > ()", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
-        n5v1 [label="(n5v1) repeat_iter(0 .. 0)", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+        n4v1 [label="(n4v1) unique::<'static>()", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+        n5v1 [label="(n5v1) repeat_iter(0..0)", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
         n6v1 [label="(n6v1) merge()", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
-        n7v1 [label="(n7v1) for_each(| v | out_send.send(v).unwrap())", fontname=Monaco, shape=house, style = filled, color = "#ffff00"]
+        n7v1 [label="(n7v1) for_each(|v| out_send.send(v).unwrap())", fontname=Monaco, shape=house, style = filled, color = "#ffff00"]
         n1v1 -> n3v1
         n2v1 -> n3v1
         n3v1 -> n4v1

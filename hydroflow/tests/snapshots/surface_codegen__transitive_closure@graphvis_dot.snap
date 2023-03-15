@@ -15,12 +15,12 @@ digraph {
         fillcolor="#dddddd"
         style=filled
         label = "sg_2v1\nstratum 0"
-        n6v1 [label="(n6v1) map(| (a, k) | (k, a))", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+        n6v1 [label="(n6v1) map(|(a, k)| (k, a))", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
         n5v1 [label="(n5v1) join()", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
-        n7v1 [label="(n7v1) map(| (_k, (a, b)) | (a, b))", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+        n7v1 [label="(n7v1) map(|(_k, (a, b))| (a, b))", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
         n1v1 [label="(n1v1) merge()", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
         n2v1 [label="(n2v1) tee()", fontname=Monaco, shape=house, style = filled, color = "#ffff00"]
-        n8v1 [label="(n8v1) for_each(| (a, b) | println! (\"transitive closure: ({},{})\", a, b))", fontname=Monaco, shape=house, style = filled, color = "#ffff00"]
+        n8v1 [label="(n8v1) for_each(|(a, b)| println!(\"transitive closure: ({},{})\", a, b))", fontname=Monaco, shape=house, style = filled, color = "#ffff00"]
         n10v1 [label="(n10v1) handoff", fontname=Monaco, shape=parallelogram, style = filled, color = "#ddddff"]
         n10v1 -> n6v1
         n6v1 -> n5v1 [label="0"]

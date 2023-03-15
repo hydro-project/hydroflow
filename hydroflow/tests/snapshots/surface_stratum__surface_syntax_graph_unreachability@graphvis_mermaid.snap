@@ -17,13 +17,13 @@ subgraph sg_1v1 ["sg_1v1 stratum 0"]
     end
 end
 subgraph sg_2v1 ["sg_2v1 stratum 0"]
-    3v1[\"(3v1) <tt>source_iter(vec! [0])</tt>"/]:::pullClass
+    3v1[\"(3v1) <tt>source_iter(vec![0])</tt>"/]:::pullClass
     1v1[\"(1v1) <tt>merge()</tt>"/]:::pullClass
-    2v1[\"(2v1) <tt>map(| v | (v, ()))</tt>"/]:::pullClass
+    2v1[\"(2v1) <tt>map(|v| (v, ()))</tt>"/]:::pullClass
     6v1[\"(6v1) <tt>join()</tt>"/]:::pullClass
-    7v1[\"(7v1) <tt>map(| (_src, ((), dst)) | dst)</tt>"/]:::pullClass
-    8v1[\"(8v1) <tt>map(| x | x)</tt>"/]:::pullClass
-    9v1[\"(9v1) <tt>map(| x | x)</tt>"/]:::pullClass
+    7v1[\"(7v1) <tt>map(|(_src, ((), dst))| dst)</tt>"/]:::pullClass
+    8v1[\"(8v1) <tt>map(|x| x)</tt>"/]:::pullClass
+    9v1[\"(9v1) <tt>map(|x| x)</tt>"/]:::pullClass
     10v1[/"(10v1) <tt>tee()</tt>"\]:::pushClass
     15v1["(15v1) <tt>handoff</tt>"]:::otherClass
     15v1--1--->1v1
@@ -48,9 +48,9 @@ subgraph sg_2v1 ["sg_2v1 stratum 0"]
     end
 end
 subgraph sg_3v1 ["sg_3v1 stratum 1"]
-    13v1[\"(13v1) <tt>flat_map(| (a, b) | [a, b])</tt>"/]:::pullClass
+    13v1[\"(13v1) <tt>flat_map(|(a, b)| [a, b])</tt>"/]:::pullClass
     11v1[\"(11v1) <tt>difference()</tt>"/]:::pullClass
-    12v1[/"(12v1) <tt>for_each(| x | println! (&quot;Not reached: {}&quot;, x))</tt>"\]:::pushClass
+    12v1[/"(12v1) <tt>for_each(|x| println!(&quot;Not reached: {}&quot;, x))</tt>"\]:::pushClass
     13v1--pos--->11v1
     11v1--->12v1
     subgraph sg_3v1_var_diff ["var <tt>diff</tt>"]
