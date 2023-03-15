@@ -295,6 +295,20 @@ fn apply_aggregations(
     let mut group_by_exprs = vec![];
     let mut agg_exprs = vec![];
 
+    let mut field_use_count = HashMap::new();
+    for field in rule
+        .target
+        .fields
+        .iter()
+        .chain(rule.target.at_node.iter().map(|n| &n.node))
+    {
+        field_use_count
+            .entry(field.ident().name.clone())
+            .and_modify(|e| *e += 1)
+            .or_insert(1);
+    }
+
+    let mut field_use_cur = HashMap::new();
     for field in rule
         .target
         .fields
@@ -305,8 +319,21 @@ fn apply_aggregations(
             .variable_mapping
             .get(&syn::Ident::new(&field.ident().name, Span::call_site()))
         {
+            let cur_count = field_use_cur
+                .entry(field.ident().name.clone())
+                .and_modify(|e| *e += 1)
+                .or_insert(1);
+
             let source_col_idx = syn::Index::from(*col);
-            parse_quote!(row.#source_col_idx)
+            let base = parse_quote!(row.#source_col_idx);
+
+            if *cur_count < field_use_count[&field.ident().name]
+                && field_use_count[&field.ident().name] > 1
+            {
+                parse_quote!(#base.clone())
+            } else {
+                base
+            }
         } else {
             diagnostics.push(Diagnostic::spanned(
                 Span::call_site(),
@@ -655,6 +682,17 @@ mod tests {
             result(count(a), b) :- ints(a, b)
             result(sum(a), b) :+ ints(a, b)
             result2(choose(a), b) :- ints(a, b)
+            "#
+        );
+    }
+
+    fn test_non_copy_but_clone() {
+        test_snapshots!(
+            r#"
+            .input strings `source_stream(strings)`
+            .output result `for_each(|v| result.send(v).unwrap())`
+
+            result(a, a) :- strings(a)
             "#
         );
     }

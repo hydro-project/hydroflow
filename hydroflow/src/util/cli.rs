@@ -30,8 +30,7 @@ pub async fn init() -> HashMap<String, ServerOrBound> {
         binds.insert(name.clone(), bound);
     }
 
-    let bind_connected_future =
-        tokio::task::spawn(async move { accept_incoming_connections(binds).await });
+    let bind_connected_future = tokio::task::spawn(accept_incoming_connections(binds));
 
     let bind_serialized = serde_json::to_string(&bind_results).unwrap();
     println!("ready: {bind_serialized}");
