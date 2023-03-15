@@ -235,20 +235,20 @@ pub fn test_anti_join() {
 }
 
 #[multiplatform_test]
-pub fn test_buffer() {
-    let (buffer1_tx, buffer1_rx) = hydroflow::util::unbounded_channel::<()>();
-    let (buffer2_tx, buffer2_rx) = hydroflow::util::unbounded_channel::<()>();
+pub fn test_batch() {
+    let (batch1_tx, batch1_rx) = hydroflow::util::unbounded_channel::<()>();
+    let (batch2_tx, batch2_rx) = hydroflow::util::unbounded_channel::<()>();
     let (tx, mut rx) = hydroflow::util::unbounded_channel::<()>();
     let mut df = hydroflow_syntax! {
         my_tee = tee();
 
         source_iter([()])
-            -> buffer(buffer1_rx) // pull
+            -> batch(batch1_rx) // pull
             -> my_tee;
 
         my_tee -> for_each(|x| tx.send(x).unwrap());
         my_tee
-            -> buffer(buffer2_rx) // push
+            -> batch(batch2_rx) // push
             -> for_each(|x| tx.send(x).unwrap());
     };
 
@@ -256,12 +256,12 @@ pub fn test_buffer() {
     let out: Vec<_> = collect_ready(&mut rx);
     assert_eq!(out, Vec::<()>::new());
 
-    buffer1_tx.send(()).unwrap();
+    batch1_tx.send(()).unwrap();
     df.run_available();
     let out: Vec<_> = collect_ready(&mut rx);
     assert_eq!(out, vec![()]);
 
-    buffer2_tx.send(()).unwrap();
+    batch2_tx.send(()).unwrap();
     df.run_available();
     let out: Vec<_> = collect_ready(&mut rx);
     assert_eq!(out, vec![()]);

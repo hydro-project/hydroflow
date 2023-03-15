@@ -8,10 +8,10 @@ use quote::quote_spanned;
 
 /// > 1 input stream, 1 output stream
 ///
-/// > Arguments: The receive end of a tokio channel that signals when to release the buffer downstream.
+/// > Arguments: The receive end of a tokio channel that signals when to release the batch downstream.
 ///
 /// Given a [`Stream`](https://docs.rs/futures/latest/futures/stream/trait.Stream.html)
-/// created in Rust code, `buffer`
+/// created in Rust code, `batch`
 /// is passed the receive end of the channel and when receiving any element
 /// will pass through all received inputs to the output unchanged.
 ///
@@ -20,7 +20,7 @@ use quote::quote_spanned;
 ///
 ///     // Will print 0, 1, 2, 3, 4 each on a new line just once.
 ///     let mut df = hydroflow::hydroflow_syntax! {
-///         repeat_iter(0..5) -> buffer(rx) -> for_each(|x| { println!("{x}"); });
+///         repeat_iter(0..5) -> batch(rx) -> for_each(|x| { println!("{x}"); });
 ///     };
 ///     
 ///     tx.send(()).unwrap();
@@ -28,8 +28,8 @@ use quote::quote_spanned;
 ///     df.run_available();
 /// ```
 #[hydroflow_internalmacro::operator_docgen]
-pub const BUFFER: OperatorConstraints = OperatorConstraints {
-    name: "buffer",
+pub const BATCH: OperatorConstraints = OperatorConstraints {
+    name: "batch",
     persistence_args: RANGE_0,
     type_args: RANGE_0,
     hard_range_inn: RANGE_1,
