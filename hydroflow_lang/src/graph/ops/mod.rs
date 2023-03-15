@@ -16,6 +16,7 @@ use super::{GraphNodeId, GraphSubgraphId, Node, OpInstGenerics, OperatorInstance
 use serde::{Deserialize, Serialize};
 
 mod anti_join;
+mod buffer;
 mod cross_join;
 mod demux;
 mod dest_sink;
@@ -211,6 +212,7 @@ pub const IDENTITY_WRITE_FN: WriteFn = |write_context_args, _| {
 
 pub const OPERATORS: &[OperatorConstraints] = &[
     anti_join::ANTI_JOIN,
+    buffer::BUFFER,
     cross_join::CROSS_JOIN,
     demux::DEMUX,
     dest_sink::DEST_SINK,
