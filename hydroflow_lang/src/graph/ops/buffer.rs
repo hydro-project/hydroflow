@@ -79,10 +79,10 @@ pub const BUFFER: OperatorConstraints = OperatorConstraints {
                 let #ident = match #root::futures::stream::Stream::poll_next(#stream_ident.as_mut(), &mut std::task::Context::from_waker(&context.waker())) {
                     std::task::Poll::Ready(_) => {
                         let mut vec = context.state_ref(#internal_buffer).borrow_mut();
-                        std::mem::replace(&mut *vec, Vec::new())
+                        std::mem::take(&mut *vec)
                     },
                     std::task::Poll::Pending => {
-                        Vec::new()
+                        std::vec::Vec::new()
                     },
                 }.into_iter();
             }
@@ -102,10 +102,10 @@ pub const BUFFER: OperatorConstraints = OperatorConstraints {
                     for x in match #root::futures::stream::Stream::poll_next(#stream_ident.as_mut(), &mut std::task::Context::from_waker(&context.waker())) {
                         std::task::Poll::Ready(_) => {
                             let mut vec = context.state_ref(#internal_buffer).borrow_mut();
-                            std::mem::replace(&mut *vec, Vec::new())
+                            std::mem::take(&mut *vec)
                         },
                         std::task::Poll::Pending => {
-                            Vec::new()
+                            std::vec::Vec::new()
                         },
                     }.into_iter() {
                         use ::pusherator::Pusherator;
