@@ -10,6 +10,7 @@ use tokio_stream::StreamExt;
 use crate::MyVClock;
 use crate::ValueType;
 use bytes::Bytes;
+use bytes::BytesMut;
 use crdts::CmRDT;
 use crdts::CvRDT;
 use crdts::GSet;
@@ -24,7 +25,6 @@ use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use tmq::Context;
 use tokio::select;
-use bytes::BytesMut;
 
 pub fn run_server(
     gossip_addr: usize,
@@ -198,7 +198,7 @@ pub fn run_server(
                                                 KVSRequest2::Get { key } => KVSRequest::Get { key },
                                                 KVSRequest2::Gossip { key, reg } => KVSRequest::Gossip { key, reg: EMaxReg { clock: reg.read_ctx().clock, val: ValueType { data: reg.read().val[..].try_into().unwrap() } } },
                                             };
-                                            
+
                                             socket
                                                 .send(vec![serialize_to_bytes(batch).to_vec()])
                                                 .await
