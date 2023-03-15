@@ -8,10 +8,9 @@ expression: flat_graph_ref.surface_syntax_string()
 4v1 = merge ();
 5v1 = unique :: < 'tick > ();
 6v1 = tee ();
-7v1 = source_stream (input);
-8v1 = for_each (| v | out . send (v) . unwrap ());
-9v1 = filter (| & row : & (_ , _ , _ , _ ,) | row . 0 == row . 1 && row . 2 == row . 3);
-10v1 = map (| row : (_ , _ , _ , _ ,) | (row . 0 . clone () , row . 0 , row . 2 . clone () , row . 2 ,));
+7v1 = source_stream (strings);
+8v1 = for_each (| v | result . send (v) . unwrap ());
+9v1 = map (| row : (_ ,) | (row . 0 . clone () , row . 0 ,));
 
 2v1 -> 3v1;
 1v1 -> 2v1;
@@ -19,7 +18,6 @@ expression: flat_graph_ref.surface_syntax_string()
 4v1 -> 5v1;
 7v1 -> 1v1;
 6v1 -> 8v1;
+9v1 -> 4v1;
 3v1 -> 9v1;
-10v1 -> 4v1;
-9v1 -> 10v1;
 

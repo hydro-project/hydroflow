@@ -740,3 +740,27 @@ fn test_send_to_node() {
     assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result_recv_1), &[]);
     assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result_recv_2), &[(5,)]);
 }
+
+#[multiplatform_test]
+fn test_non_copy_but_clone() {
+    let (strings_send, strings) = hydroflow::util::unbounded_channel::<(String,)>();
+    let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(String, String)>();
+
+    let mut flow = datalog!(
+        r#"
+        .input strings `source_stream(strings)`
+        .output result `for_each(|v| result.send(v).unwrap())`
+
+        result(a, a) :- strings(a), strings(a)
+        "#
+    );
+
+    strings_send.send(("Hello".to_string(),)).unwrap();
+
+    flow.run_tick();
+
+    assert_eq!(
+        &*collect_ready::<Vec<_>, _>(&mut result_recv),
+        &[("Hello".to_string(), "Hello".to_string())]
+    );
+}
