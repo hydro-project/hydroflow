@@ -5,10 +5,11 @@ use std::iter::FusedIterator;
 
 use proc_macro2::{Ident, Literal, Span, TokenStream};
 use quote::{format_ident, quote, quote_spanned, ToTokens};
+use serde::{Deserialize, Serialize};
 use slotmap::{Key, SecondaryMap, SlotMap, SparseSecondaryMap};
 use syn::spanned::Spanned;
 
-use crate::diagnostic::Diagnostic;
+use crate::diagnostic::{Diagnostic, Level};
 use crate::pretty_span::{PrettyRowCol, PrettySpan};
 
 use super::ops::{
@@ -17,7 +18,8 @@ use super::ops::{
 use super::serde_graph::{SerdeEdge, SerdeGraph};
 use super::{
     get_operator_generics, node_color, Color, DiMulGraph, GraphEdgeId, GraphNodeId,
-    GraphSubgraphId, Node, OperatorInstance, PortIndexValue, CONTEXT, HANDOFF_NODE_STR, HYDROFLOW,
+    GraphSubgraphId, Node, OperatorInstance, PortIndexValue, Varname, CONTEXT, HANDOFF_NODE_STR,
+    HYDROFLOW,
 };
 
 /// A graph representing a hydroflow dataflow graph (with or without subgraph partitioning,
@@ -28,11 +30,13 @@ use super::{
 /// separate `impl` blocks. You might notice a few particularly specific arbitray-seeming methods
 /// in here--those are just what was needed for the compilation algorithms. If you need another
 /// method then add it.
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Serialize, Deserialize)]
 pub struct HydroflowGraph {
     /// Each node (operator or handoff).
     nodes: SlotMap<GraphNodeId, Node>,
     /// Instance data corresponding to each operator node.
+    /// This field will be empty after deserialization.
+    #[serde(skip)]
     operator_instances: SecondaryMap<GraphNodeId, OperatorInstance>,
     /// Graph data structure (two-way adjacency list).
     graph: DiMulGraph<GraphNodeId, GraphEdgeId>,
@@ -47,7 +51,7 @@ pub struct HydroflowGraph {
     subgraph_stratum: SecondaryMap<GraphSubgraphId, usize>,
 
     /// What variable name each graph node belongs to (if any).
-    node_varnames: SparseSecondaryMap<GraphNodeId, Ident>,
+    node_varnames: SparseSecondaryMap<GraphNodeId, Varname>,
 }
 impl HydroflowGraph {
     /// Create a new empty `HydroflowGraph`.
@@ -64,6 +68,8 @@ impl HydroflowGraph {
 
     /// Get the `OperatorInstance` for a given node. Node must be an operator and have an
     /// `OperatorInstance` present, otherwise will return `None`.
+    ///
+    /// Note that no operator instances will be persent after deserialization.
     pub fn node_op_inst(&self, node_id: GraphNodeId) -> Option<&OperatorInstance> {
         self.operator_instances.get(node_id)
     }
@@ -181,7 +187,7 @@ impl HydroflowGraph {
     pub fn insert_node(&mut self, node: Node, varname_opt: Option<Ident>) -> GraphNodeId {
         let node_id = self.nodes.insert(node);
         if let Some(varname) = varname_opt {
-            self.node_varnames.insert(node_id, varname);
+            self.node_varnames.insert(node_id, Varname(varname));
         }
         node_id
     }
@@ -191,6 +197,107 @@ impl HydroflowGraph {
         assert!(matches!(self.nodes.get(node_id), Some(Node::Operator(_))));
         let old_inst = self.operator_instances.insert(node_id, op_inst);
         assert!(old_inst.is_none());
+    }
+
+    /// Assign all operator instances if not set. Write diagnostic messages/errors into `diagnostics`.
+    pub fn insert_node_op_insts_all(&mut self, diagnostics: &mut Vec<Diagnostic>) {
+        let mut op_insts = Vec::new();
+        for (node_id, node) in self.nodes() {
+            let Node::Operator(operator) = node else {
+                continue;
+            };
+            if self.node_op_inst(node_id).is_some() {
+                continue;
+            };
+
+            // Op constraints.
+            let Some(op_constraints) = find_op_op_constraints(operator) else {
+                diagnostics.push(Diagnostic::spanned(
+                    operator.path.span(),
+                    Level::Error,
+                    format!("Unknown operator `{}`", operator.name_string()),
+                ));
+                continue;
+            };
+
+            // Input and output ports.
+            let (input_ports, output_ports) = {
+                let mut input_edges: Vec<(&PortIndexValue, GraphNodeId)> = self
+                    .node_predecessors(node_id)
+                    .map(|(edge_id, pred_id)| (self.edge_ports(edge_id).1, pred_id))
+                    .collect();
+                // Ensure sorted by port index.
+                input_edges.sort();
+                let input_ports: Vec<PortIndexValue> = input_edges
+                    .into_iter()
+                    .map(|(port, _pred)| port)
+                    .cloned()
+                    .collect();
+
+                // Collect output arguments (successors).
+                let mut output_edges: Vec<(&PortIndexValue, GraphNodeId)> = self
+                    .node_successors(node_id)
+                    .map(|(edge_id, succ)| (self.edge_ports(edge_id).0, succ))
+                    .collect();
+                // Ensure sorted by port index.
+                output_edges.sort();
+                let output_ports: Vec<PortIndexValue> = output_edges
+                    .into_iter()
+                    .map(|(port, _succ)| port)
+                    .cloned()
+                    .collect();
+
+                (input_ports, output_ports)
+            };
+
+            // Generic arguments.
+            let generics = get_operator_generics(diagnostics, operator);
+            // Generic argument errors.
+            {
+                if !op_constraints
+                    .persistence_args
+                    .contains(&generics.persistence_args.len())
+                {
+                    diagnostics.push(Diagnostic::spanned(
+                        generics.generic_args.span(),
+                        Level::Error,
+                        format!(
+                            "`{}` should have {} persistence lifetime arguments, actually has {}.",
+                            op_constraints.name,
+                            op_constraints.persistence_args.human_string(),
+                            generics.persistence_args.len()
+                        ),
+                    ));
+                }
+                if !op_constraints.type_args.contains(&generics.type_args.len()) {
+                    diagnostics.push(Diagnostic::spanned(
+                        generics.generic_args.span(),
+                        Level::Error,
+                        format!(
+                            "`{}` should have {} generic type arguments, actually has {}.",
+                            op_constraints.name,
+                            op_constraints.type_args.human_string(),
+                            generics.type_args.len()
+                        ),
+                    ));
+                }
+            }
+
+            op_insts.push((
+                node_id,
+                OperatorInstance {
+                    op_constraints,
+                    input_ports,
+                    output_ports,
+                    generics,
+                    arguments: operator.args.clone(),
+                },
+            ));
+        }
+
+        for (node_id, op_inst) in op_insts {
+            self.insert_node_op_inst(node_id, op_inst);
+        }
     }
 
     /// Inserts a node between two existing nodes connected by the given `edge_id`.
@@ -637,7 +744,7 @@ impl HydroflowGraph {
                 }
             });
 
-        let serde_string = serde_json::to_string(&self.to_serde_graph()).unwrap() + "\n";
+        let serde_string = serde_json::to_string(&self).unwrap();
         // Newline left over from old code, snapshot outputs.
         let serde_string = Literal::string(&*serde_string);
         let code = quote! {
@@ -771,7 +878,11 @@ impl HydroflowGraph {
         };
 
         // add varnames (sort for determinism).
-        let mut varnames_sorted = self.node_varnames.iter().collect::<Vec<_>>();
+        let mut varnames_sorted = self
+            .node_varnames
+            .iter()
+            .map(|(node_id, Varname(ident))| (node_id, ident))
+            .collect::<Vec<_>>();
         varnames_sorted.sort();
         for (node_id, varname_ident) in varnames_sorted {
             let node_ids = g
