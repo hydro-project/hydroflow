@@ -91,7 +91,7 @@ pub const BUFFER: OperatorConstraints = OperatorConstraints {
 
             quote_spanned! {op_span=>
 
-                let #ident = hydroflow::pusherator::for_each::ForEach::new(|x| {
+                let #ident = #root::pusherator::for_each::ForEach::new(|x| {
                     let mut vec = context.state_ref(#internal_buffer).borrow_mut();
 
                     vec.push(x);
@@ -108,7 +108,7 @@ pub const BUFFER: OperatorConstraints = OperatorConstraints {
                             ::std::vec::Vec::new()
                         },
                     }.into_iter() {
-                        <_ as ::pusherator::Pusherator>::give(&mut out, x);
+                        <_ as #root::pusherator::Pusherator>::give(&mut out, x);
                     }
                 }
             }
