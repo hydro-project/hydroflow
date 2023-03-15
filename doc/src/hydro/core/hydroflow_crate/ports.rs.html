@@ -225,8 +225,6 @@
 <a href="#225" id="225">225</a>
 <a href="#226" id="226">226</a>
 <a href="#227" id="227">227</a>
-<a href="#228" id="228">228</a>
-<a href="#229" id="229">229</a>
 </pre><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::HydroflowCrate;
 <span class="kw">use </span><span class="kw">crate</span>::core::{ClientStrategy, Host, LaunchedHost, ServerStrategy};
 
@@ -411,9 +409,7 @@
 </span><span class="kw">async fn </span>forward_connection(conn: <span class="kw-2">&amp;</span>ServerPort, target: <span class="kw-2">&amp;</span><span class="kw">dyn </span>LaunchedHost) -&gt; ServerPort {
     <span class="kw">match </span>conn {
         ServerPort::UnixSocket(<span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expected a TCP port to be forwarded&quot;</span>),
-        ServerPort::TcpPort(addr) =&gt; {
-            ServerPort::TcpPort(target.forward_port(addr.port()).<span class="kw">await</span>.unwrap())
-        }
+        ServerPort::TcpPort(addr) =&gt; ServerPort::TcpPort(target.forward_port(addr).<span class="kw">await</span>.unwrap()),
         ServerPort::Demux(demux) =&gt; {
             <span class="kw">let </span><span class="kw-2">mut </span>forwarded_map = HashMap::new();
             <span class="kw">for </span>(key, conn) <span class="kw">in </span>demux {

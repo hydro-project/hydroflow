@@ -345,8 +345,8 @@
         })))
     }
 
-    <span class="kw">async fn </span>forward_port(<span class="kw-2">&amp;</span><span class="self">self</span>, port: u16) -&gt; <span class="prelude-ty">Result</span>&lt;SocketAddr&gt; {
-        <span class="prelude-val">Ok</span>(SocketAddr::from(([<span class="number">127</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>], port)))
+    <span class="kw">async fn </span>forward_port(<span class="kw-2">&amp;</span><span class="self">self</span>, addr: <span class="kw-2">&amp;</span>SocketAddr) -&gt; <span class="prelude-ty">Result</span>&lt;SocketAddr&gt; {
+        <span class="prelude-val">Ok</span>(<span class="kw-2">*</span>addr)
     }
 }
 

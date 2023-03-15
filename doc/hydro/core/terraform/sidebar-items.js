@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["TerraformBatch","TerraformConfig","TerraformOutput","TerraformProvider","TerraformResult","TerraformResultOutput"]};
+window.SIDEBAR_ITEMS = {"static":["TERRAFORM_ALPHABET"],"struct":["TerraformBatch","TerraformConfig","TerraformOutput","TerraformPool","TerraformProvider","TerraformResult","TerraformResultOutput"]};

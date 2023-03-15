@@ -581,6 +581,55 @@
 <a href="#581" id="581">581</a>
 <a href="#582" id="582">582</a>
 <a href="#583" id="583">583</a>
+<a href="#584" id="584">584</a>
+<a href="#585" id="585">585</a>
+<a href="#586" id="586">586</a>
+<a href="#587" id="587">587</a>
+<a href="#588" id="588">588</a>
+<a href="#589" id="589">589</a>
+<a href="#590" id="590">590</a>
+<a href="#591" id="591">591</a>
+<a href="#592" id="592">592</a>
+<a href="#593" id="593">593</a>
+<a href="#594" id="594">594</a>
+<a href="#595" id="595">595</a>
+<a href="#596" id="596">596</a>
+<a href="#597" id="597">597</a>
+<a href="#598" id="598">598</a>
+<a href="#599" id="599">599</a>
+<a href="#600" id="600">600</a>
+<a href="#601" id="601">601</a>
+<a href="#602" id="602">602</a>
+<a href="#603" id="603">603</a>
+<a href="#604" id="604">604</a>
+<a href="#605" id="605">605</a>
+<a href="#606" id="606">606</a>
+<a href="#607" id="607">607</a>
+<a href="#608" id="608">608</a>
+<a href="#609" id="609">609</a>
+<a href="#610" id="610">610</a>
+<a href="#611" id="611">611</a>
+<a href="#612" id="612">612</a>
+<a href="#613" id="613">613</a>
+<a href="#614" id="614">614</a>
+<a href="#615" id="615">615</a>
+<a href="#616" id="616">616</a>
+<a href="#617" id="617">617</a>
+<a href="#618" id="618">618</a>
+<a href="#619" id="619">619</a>
+<a href="#620" id="620">620</a>
+<a href="#621" id="621">621</a>
+<a href="#622" id="622">622</a>
+<a href="#623" id="623">623</a>
+<a href="#624" id="624">624</a>
+<a href="#625" id="625">625</a>
+<a href="#626" id="626">626</a>
+<a href="#627" id="627">627</a>
+<a href="#628" id="628">628</a>
+<a href="#629" id="629">629</a>
+<a href="#630" id="630">630</a>
+<a href="#631" id="631">631</a>
+<a href="#632" id="632">632</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::{
     borrow::Cow,
     collections::HashMap,
@@ -597,6 +646,7 @@
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>futures::{AsyncWriteExt, StreamExt};
 <span class="kw">use </span>hydroflow_cli_integration::ServerConfig;
+<span class="kw">use </span>nanoid::nanoid;
 <span class="kw">use </span>serde_json::json;
 <span class="kw">use </span>tokio::{
     net::{TcpListener, TcpStream},
@@ -605,13 +655,13 @@
 
 <span class="kw">use super</span>::{
     localhost::create_broadcast,
-    terraform::{TerraformOutput, TerraformProvider},
+    terraform::{TerraformOutput, TerraformProvider, TERRAFORM_ALPHABET},
     util::async_retry,
     ClientStrategy, Host, HostTargetType, LaunchedBinary, LaunchedHost, ResourceBatch,
     ResourceResult, ServerStrategy,
 };
 
-<span class="kw">struct </span>LaunchedComputeEngineBinary {
+<span class="kw">struct </span>LaunchedSSHBinary {
     _resource_result: Arc&lt;ResourceResult&gt;,
     channel: AsyncChannel&lt;TcpStream&gt;,
     stdin_sender: Sender&lt;String&gt;,
@@ -620,7 +670,7 @@
 }
 
 <span class="attr">#[async_trait]
-</span><span class="kw">impl </span>LaunchedBinary <span class="kw">for </span>LaunchedComputeEngineBinary {
+</span><span class="kw">impl </span>LaunchedBinary <span class="kw">for </span>LaunchedSSHBinary {
     <span class="kw">async fn </span>stdin(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Sender&lt;String&gt; {
         <span class="self">self</span>.stdin_sender.clone()
     }
@@ -769,7 +819,7 @@
         <span class="kw">let </span>stdout_receivers = create_broadcast(channel.stream(<span class="number">0</span>), |s| <span class="macro">println!</span>(<span class="string">&quot;{s}&quot;</span>));
         <span class="kw">let </span>stderr_receivers = create_broadcast(channel.stderr(), |s| <span class="macro">eprintln!</span>(<span class="string">&quot;{s}&quot;</span>));
 
-        <span class="prelude-val">Ok</span>(Arc::new(RwLock::new(LaunchedComputeEngineBinary {
+        <span class="prelude-val">Ok</span>(Arc::new(RwLock::new(LaunchedSSHBinary {
             _resource_result: <span class="self">self</span>.resource_result.clone(),
             channel,
             stdin_sender,
@@ -778,13 +828,14 @@
         })))
     }
 
-    <span class="kw">async fn </span>forward_port(<span class="kw-2">&amp;</span><span class="self">self</span>, port: u16) -&gt; <span class="prelude-ty">Result</span>&lt;SocketAddr&gt; {
+    <span class="kw">async fn </span>forward_port(<span class="kw-2">&amp;</span><span class="self">self</span>, addr: <span class="kw-2">&amp;</span>SocketAddr) -&gt; <span class="prelude-ty">Result</span>&lt;SocketAddr&gt; {
         <span class="kw">let </span>session = <span class="self">self</span>.open_ssh_session().<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="kw">let </span>local_port = TcpListener::bind(<span class="string">&quot;127.0.0.1:0&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">let </span>local_addr = local_port.local_addr()<span class="question-mark">?</span>;
 
-        <span class="kw">let </span>internal_ip = <span class="self">self</span>.internal_ip.clone();
+        <span class="kw">let </span>internal_ip = addr.ip().to_string();
+        <span class="kw">let </span>port = addr.port();
 
         tokio::spawn(<span class="kw">async move </span>{
             <span class="kw">while let </span><span class="prelude-val">Ok</span>((<span class="kw-2">mut </span>local_stream, <span class="kw">_</span>)) = local_port.accept().<span class="kw">await </span>{
@@ -800,12 +851,100 @@
     }
 }
 
+<span class="kw">pub struct </span>GCPNetwork {
+    <span class="kw">pub </span>project: String,
+    <span class="kw">pub </span>vpc_id: <span class="prelude-ty">Option</span>&lt;String&gt;,
+}
+
+<span class="kw">impl </span>GCPNetwork {
+    <span class="kw">fn </span>collect_resources(<span class="kw-2">&amp;mut </span><span class="self">self</span>, resource_batch: <span class="kw-2">&amp;mut </span>ResourceBatch) {
+        <span class="kw">if </span><span class="self">self</span>.vpc_id.is_some() {
+            <span class="kw">return</span>;
+        }
+
+        resource_batch
+            .terraform
+            .terraform
+            .required_providers
+            .insert(
+                <span class="string">&quot;google&quot;</span>.to_string(),
+                TerraformProvider {
+                    source: <span class="string">&quot;hashicorp/google&quot;</span>.to_string(),
+                    version: <span class="string">&quot;4.53.1&quot;</span>.to_string(),
+                },
+            );
+
+        <span class="kw">let </span>vpc_network = <span class="macro">format!</span>(<span class="string">&quot;hydro-vpc-network-{}&quot;</span>, <span class="macro">nanoid!</span>(<span class="number">8</span>, <span class="kw-2">&amp;</span>TERRAFORM_ALPHABET));
+        <span class="self">self</span>.vpc_id = <span class="prelude-val">Some</span>(vpc_network.clone());
+        resource_batch
+            .terraform
+            .resource
+            .entry(<span class="string">&quot;google_compute_network&quot;</span>.to_string())
+            .or_default()
+            .insert(
+                vpc_network.clone(),
+                <span class="macro">json!</span>({
+                    <span class="string">&quot;name&quot;</span>: vpc_network,
+                    <span class="string">&quot;project&quot;</span>: <span class="self">self</span>.project,
+                    <span class="string">&quot;auto_create_subnetworks&quot;</span>: <span class="bool-val">true
+                </span>}),
+            );
+
+        <span class="kw">let </span>firewall_entries = resource_batch
+            .terraform
+            .resource
+            .entry(<span class="string">&quot;google_compute_firewall&quot;</span>.to_string())
+            .or_default();
+
+        <span class="comment">// allow all VMs to communicate with each other over internal IPs
+        </span>firewall_entries.insert(
+            <span class="macro">format!</span>(<span class="string">&quot;{vpc_network}-default-allow-internal&quot;</span>),
+            <span class="macro">json!</span>({
+                <span class="string">&quot;name&quot;</span>: <span class="macro">format!</span>(<span class="string">&quot;{vpc_network}-default-allow-internal&quot;</span>),
+                <span class="string">&quot;project&quot;</span>: <span class="self">self</span>.project,
+                <span class="string">&quot;network&quot;</span>: <span class="macro">format!</span>(<span class="string">&quot;${{google_compute_network.{vpc_network}.name}}&quot;</span>),
+                <span class="string">&quot;source_ranges&quot;</span>: [<span class="string">&quot;10.128.0.0/9&quot;</span>],
+                <span class="string">&quot;allow&quot;</span>: [
+                    {
+                        <span class="string">&quot;protocol&quot;</span>: <span class="string">&quot;tcp&quot;</span>,
+                        <span class="string">&quot;ports&quot;</span>: [<span class="string">&quot;0-65535&quot;</span>]
+                    },
+                    {
+                        <span class="string">&quot;protocol&quot;</span>: <span class="string">&quot;udp&quot;</span>,
+                        <span class="string">&quot;ports&quot;</span>: [<span class="string">&quot;0-65535&quot;</span>]
+                    },
+                    {
+                        <span class="string">&quot;protocol&quot;</span>: <span class="string">&quot;icmp&quot;
+                    </span>}
+                ]
+            }),
+        );
+
+        <span class="comment">// allow external pings to all VMs
+        </span>firewall_entries.insert(
+            <span class="macro">format!</span>(<span class="string">&quot;{vpc_network}-default-allow-ping&quot;</span>),
+            <span class="macro">json!</span>({
+                <span class="string">&quot;name&quot;</span>: <span class="macro">format!</span>(<span class="string">&quot;{vpc_network}-default-allow-ping&quot;</span>),
+                <span class="string">&quot;project&quot;</span>: <span class="self">self</span>.project,
+                <span class="string">&quot;network&quot;</span>: <span class="macro">format!</span>(<span class="string">&quot;${{google_compute_network.{vpc_network}.name}}&quot;</span>),
+                <span class="string">&quot;source_ranges&quot;</span>: [<span class="string">&quot;0.0.0.0/0&quot;</span>],
+                <span class="string">&quot;allow&quot;</span>: [
+                    {
+                        <span class="string">&quot;protocol&quot;</span>: <span class="string">&quot;icmp&quot;
+                    </span>}
+                ]
+            }),
+        );
+    }
+}
+
 <span class="kw">pub struct </span>GCPComputeEngineHost {
     <span class="kw">pub </span>id: usize,
     <span class="kw">pub </span>project: String,
     <span class="kw">pub </span>machine_type: String,
     <span class="kw">pub </span>image: String,
     <span class="kw">pub </span>region: String,
+    <span class="kw">pub </span>network: Arc&lt;RwLock&lt;GCPNetwork&gt;&gt;,
     <span class="kw">pub </span>launched: <span class="prelude-ty">Option</span>&lt;Arc&lt;LaunchedComputeEngine&gt;&gt;,
     external_ports: Vec&lt;u16&gt;,
 }
@@ -817,6 +956,7 @@
         machine_type: String,
         image: String,
         region: String,
+        network: Arc&lt;RwLock&lt;GCPNetwork&gt;&gt;,
     ) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
             id,
@@ -824,6 +964,7 @@
             machine_type,
             image,
             region,
+            network,
             launched: <span class="prelude-val">None</span>,
             external_ports: <span class="macro">vec!</span>[],
         }
@@ -864,8 +1005,12 @@
     </span>}
 
     <span class="kw">fn </span>collect_resources(<span class="kw-2">&amp;</span><span class="self">self</span>, resource_batch: <span class="kw-2">&amp;mut </span>ResourceBatch) {
+        <span class="self">self</span>.network
+            .try_write()
+            .unwrap()
+            .collect_resources(resource_batch);
+
         <span class="kw">let </span>project = <span class="self">self</span>.project.as_str();
-        <span class="kw">let </span>id = <span class="self">self</span>.id;
 
         <span class="comment">// first, we import the providers we need
         </span>resource_batch
@@ -933,68 +1078,17 @@
             );
 
         <span class="comment">// we use a single VPC for all VMs
-        </span><span class="kw">let </span>vpc_network = <span class="macro">format!</span>(<span class="string">&quot;vpc-network-{project}&quot;</span>);
-        resource_batch
-            .terraform
-            .resource
-            .entry(<span class="string">&quot;google_compute_network&quot;</span>.to_string())
-            .or_default()
-            .insert(
-                vpc_network.clone(),
-                <span class="macro">json!</span>({
-                    <span class="string">&quot;name&quot;</span>: vpc_network,
-                    <span class="string">&quot;project&quot;</span>: project,
-                    <span class="string">&quot;auto_create_subnetworks&quot;</span>: <span class="bool-val">true
-                </span>}),
-            );
+        </span><span class="kw">let </span>vpc_network = <span class="self">self
+            </span>.network
+            .try_read()
+            .unwrap()
+            .vpc_id
+            .as_ref()
+            .unwrap()
+            .clone();
 
-        <span class="kw">let </span>firewall_entries = resource_batch
-            .terraform
-            .resource
-            .entry(<span class="string">&quot;google_compute_firewall&quot;</span>.to_string())
-            .or_default();
-
-        <span class="comment">// allow all VMs to communicate with each other over internal IPs
-        </span>firewall_entries.insert(
-            <span class="macro">format!</span>(<span class="string">&quot;{vpc_network}-default-allow-internal&quot;</span>),
-            <span class="macro">json!</span>({
-                <span class="string">&quot;name&quot;</span>: <span class="macro">format!</span>(<span class="string">&quot;{vpc_network}-default-allow-internal&quot;</span>),
-                <span class="string">&quot;project&quot;</span>: project,
-                <span class="string">&quot;network&quot;</span>: <span class="macro">format!</span>(<span class="string">&quot;${{google_compute_network.{vpc_network}.name}}&quot;</span>),
-                <span class="string">&quot;source_ranges&quot;</span>: [<span class="string">&quot;10.128.0.0/9&quot;</span>],
-                <span class="string">&quot;allow&quot;</span>: [
-                    {
-                        <span class="string">&quot;protocol&quot;</span>: <span class="string">&quot;tcp&quot;</span>,
-                        <span class="string">&quot;ports&quot;</span>: [<span class="string">&quot;0-65535&quot;</span>]
-                    },
-                    {
-                        <span class="string">&quot;protocol&quot;</span>: <span class="string">&quot;udp&quot;</span>,
-                        <span class="string">&quot;ports&quot;</span>: [<span class="string">&quot;0-65535&quot;</span>]
-                    },
-                    {
-                        <span class="string">&quot;protocol&quot;</span>: <span class="string">&quot;icmp&quot;
-                    </span>}
-                ]
-            }),
-        );
-
-        <span class="comment">// allow external pings to all VMs
-        </span>firewall_entries.insert(
-            <span class="macro">format!</span>(<span class="string">&quot;{vpc_network}-default-allow-ping&quot;</span>),
-            <span class="macro">json!</span>({
-                <span class="string">&quot;name&quot;</span>: <span class="macro">format!</span>(<span class="string">&quot;{vpc_network}-default-allow-ping&quot;</span>),
-                <span class="string">&quot;project&quot;</span>: project,
-                <span class="string">&quot;network&quot;</span>: <span class="macro">format!</span>(<span class="string">&quot;${{google_compute_network.{vpc_network}.name}}&quot;</span>),
-                <span class="string">&quot;source_ranges&quot;</span>: [<span class="string">&quot;0.0.0.0/0&quot;</span>],
-                <span class="string">&quot;allow&quot;</span>: [
-                    {
-                        <span class="string">&quot;protocol&quot;</span>: <span class="string">&quot;icmp&quot;
-                    </span>}
-                ]
-            }),
-        );
-
-        <span class="kw">let </span>vm_instance = <span class="macro">format!</span>(<span class="string">&quot;vm-instance-{project}-{id}&quot;</span>);
+        <span class="kw">let </span>vm_key = <span class="macro">format!</span>(<span class="string">&quot;vm-instance-{}&quot;</span>, <span class="self">self</span>.id);
+        <span class="kw">let </span>vm_name = <span class="macro">format!</span>(<span class="string">&quot;hydro-vm-instance-{}&quot;</span>, <span class="macro">nanoid!</span>(<span class="number">8</span>, <span class="kw-2">&amp;</span>TERRAFORM_ALPHABET));
 
         <span class="kw">let </span><span class="kw-2">mut </span>tags = <span class="macro">vec!</span>[];
         <span class="kw">let </span><span class="kw-2">mut </span>external_interfaces = <span class="macro">vec!</span>[];
@@ -1014,8 +1108,13 @@
             }));
 
             <span class="comment">// open the external ports that were requested
-            </span><span class="kw">let </span>open_external_ports_rule = <span class="macro">format!</span>(<span class="string">&quot;{vm_instance}-open-external-ports&quot;</span>);
-            firewall_entries.insert(
+            </span><span class="kw">let </span>open_external_ports_rule = <span class="macro">format!</span>(<span class="string">&quot;{vm_name}-open-external-ports&quot;</span>);
+            resource_batch
+                .terraform
+                .resource
+                .entry(<span class="string">&quot;google_compute_firewall&quot;</span>.to_string())
+                .or_default()
+                .insert(
                 open_external_ports_rule.clone(),
                 <span class="macro">json!</span>({
                     <span class="string">&quot;name&quot;</span>: open_external_ports_rule,
@@ -1035,9 +1134,9 @@
             tags.push(open_external_ports_rule);
 
             resource_batch.terraform.output.insert(
-                <span class="macro">format!</span>(<span class="string">&quot;{vm_instance}-public-ip&quot;</span>),
+                <span class="macro">format!</span>(<span class="string">&quot;{vm_key}-public-ip&quot;</span>),
                 TerraformOutput {
-                    value: <span class="macro">format!</span>(<span class="string">&quot;${{google_compute_instance.{vm_instance}.network_interface[0].access_config[0].nat_ip}}&quot;</span>)
+                    value: <span class="macro">format!</span>(<span class="string">&quot;${{google_compute_instance.{vm_key}.network_interface[0].access_config[0].nat_ip}}&quot;</span>)
                 }
             );
         }
@@ -1048,9 +1147,9 @@
             .entry(<span class="string">&quot;google_compute_instance&quot;</span>.to_string())
             .or_default()
             .insert(
-                vm_instance.clone(),
+                vm_key.clone(),
                 <span class="macro">json!</span>({
-                    <span class="string">&quot;name&quot;</span>: vm_instance,
+                    <span class="string">&quot;name&quot;</span>: vm_name,
                     <span class="string">&quot;project&quot;</span>: project,
                     <span class="string">&quot;machine_type&quot;</span>: <span class="self">self</span>.machine_type,
                     <span class="string">&quot;zone&quot;</span>: <span class="self">self</span>.region,
@@ -1072,10 +1171,10 @@
             );
 
         resource_batch.terraform.output.insert(
-            <span class="macro">format!</span>(<span class="string">&quot;{vm_instance}-internal-ip&quot;</span>),
+            <span class="macro">format!</span>(<span class="string">&quot;{vm_key}-internal-ip&quot;</span>),
             TerraformOutput {
                 value: <span class="macro">format!</span>(
-                    <span class="string">&quot;${{google_compute_instance.{vm_instance}.network_interface[0].network_ip}}&quot;
+                    <span class="string">&quot;${{google_compute_instance.{vm_key}.network_interface[0].network_ip}}&quot;
                 </span>),
             },
         );
@@ -1083,13 +1182,12 @@
 
     <span class="kw">async fn </span>provision(<span class="kw-2">&amp;mut </span><span class="self">self</span>, resource_result: <span class="kw-2">&amp;</span>Arc&lt;ResourceResult&gt;) -&gt; Arc&lt;<span class="kw">dyn </span>LaunchedHost&gt; {
         <span class="kw">if </span><span class="self">self</span>.launched.is_none() {
-            <span class="kw">let </span>project = <span class="self">self</span>.project.as_str();
             <span class="kw">let </span>id = <span class="self">self</span>.id;
 
             <span class="kw">let </span>internal_ip = resource_result
                 .terraform
                 .outputs
-                .get(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;vm-instance-{project}-{id}-internal-ip&quot;</span>))
+                .get(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;vm-instance-{id}-internal-ip&quot;</span>))
                 .unwrap()
                 .value
                 .clone();
@@ -1097,7 +1195,7 @@
             <span class="kw">let </span>external_ip = resource_result
                 .terraform
                 .outputs
-                .get(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;vm-instance-{project}-{id}-public-ip&quot;</span>))
+                .get(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;vm-instance-{id}-public-ip&quot;</span>))
                 .map(|v| v.value.clone());
 
             <span class="self">self</span>.launched = <span class="prelude-val">Some</span>(Arc::new(LaunchedComputeEngine {

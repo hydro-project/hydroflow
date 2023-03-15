@@ -155,6 +155,11 @@
 <a href="#155" id="155">155</a>
 <a href="#156" id="156">156</a>
 <a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::{collections::HashMap, net::SocketAddr, path::Path, sync::Arc};
 
 <span class="kw">use </span>anyhow::Result;
@@ -182,6 +187,11 @@
 
 <span class="kw">pub mod </span>util;
 
+<span class="attr">#[derive(Default)]
+</span><span class="kw">pub struct </span>ResourcePool {
+    <span class="kw">pub </span>terraform: terraform::TerraformPool,
+}
+
 <span class="kw">pub struct </span>ResourceBatch {
     <span class="kw">pub </span>terraform: terraform::TerraformBatch,
 }
@@ -193,9 +203,9 @@
         }
     }
 
-    <span class="kw">async fn </span>provision(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;ResourceResult&gt; {
+    <span class="kw">async fn </span>provision(<span class="self">self</span>, pool: <span class="kw-2">&amp;mut </span>ResourcePool) -&gt; <span class="prelude-ty">Result</span>&lt;ResourceResult&gt; {
         <span class="prelude-val">Ok</span>(ResourceResult {
-            terraform: <span class="self">self</span>.terraform.provision().<span class="kw">await</span><span class="question-mark">?</span>,
+            terraform: <span class="self">self</span>.terraform.provision(<span class="kw-2">&amp;mut </span>pool.terraform).<span class="kw">await</span><span class="question-mark">?</span>,
         })
     }
 }
@@ -225,7 +235,7 @@
         args: <span class="kw-2">&amp;</span>[String],
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Arc&lt;RwLock&lt;<span class="kw">dyn </span>LaunchedBinary&gt;&gt;&gt;;
 
-    <span class="kw">async fn </span>forward_port(<span class="kw-2">&amp;</span><span class="self">self</span>, port: u16) -&gt; <span class="prelude-ty">Result</span>&lt;SocketAddr&gt;;
+    <span class="kw">async fn </span>forward_port(<span class="kw-2">&amp;</span><span class="self">self</span>, addr: <span class="kw-2">&amp;</span>SocketAddr) -&gt; <span class="prelude-ty">Result</span>&lt;SocketAddr&gt;;
 }
 
 <span class="doccomment">/// Types of connections that a host can make to another host.

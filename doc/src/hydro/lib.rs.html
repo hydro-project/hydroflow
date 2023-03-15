@@ -466,6 +466,37 @@
 <a href="#466" id="466">466</a>
 <a href="#467" id="467">467</a>
 <a href="#468" id="468">468</a>
+<a href="#469" id="469">469</a>
+<a href="#470" id="470">470</a>
+<a href="#471" id="471">471</a>
+<a href="#472" id="472">472</a>
+<a href="#473" id="473">473</a>
+<a href="#474" id="474">474</a>
+<a href="#475" id="475">475</a>
+<a href="#476" id="476">476</a>
+<a href="#477" id="477">477</a>
+<a href="#478" id="478">478</a>
+<a href="#479" id="479">479</a>
+<a href="#480" id="480">480</a>
+<a href="#481" id="481">481</a>
+<a href="#482" id="482">482</a>
+<a href="#483" id="483">483</a>
+<a href="#484" id="484">484</a>
+<a href="#485" id="485">485</a>
+<a href="#486" id="486">486</a>
+<a href="#487" id="487">487</a>
+<a href="#488" id="488">488</a>
+<a href="#489" id="489">489</a>
+<a href="#490" id="490">490</a>
+<a href="#491" id="491">491</a>
+<a href="#492" id="492">492</a>
+<a href="#493" id="493">493</a>
+<a href="#494" id="494">494</a>
+<a href="#495" id="495">495</a>
+<a href="#496" id="496">496</a>
+<a href="#497" id="497">497</a>
+<a href="#498" id="498">498</a>
+<a href="#499" id="499">499</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::sync::Arc;
 
 <span class="kw">use </span>async_channel::Receiver;
@@ -500,10 +531,7 @@
     <span class="attr">#[new]
     </span><span class="kw">fn </span>new() -&gt; <span class="self">Self </span>{
         Deployment {
-            underlying: Arc::new(RwLock::new(<span class="kw">crate</span>::core::Deployment {
-                hosts: Vec::new(),
-                services: Vec::new(),
-            })),
+            underlying: Arc::new(RwLock::new(<span class="kw">crate</span>::core::Deployment::default())),
         }
     }
 
@@ -530,12 +558,20 @@
         machine_type: String,
         image: String,
         region: String,
+        network: GCPNetwork,
     ) -&gt; PyResult&lt;Py&lt;pyo3::PyAny&gt;&gt; {
         <span class="prelude-val">Ok</span>(Py::new(
             py,
             PyClassInitializer::from(Host {
                 underlying: <span class="self">self</span>.underlying.blocking_write().add_host(|id| {
-                    <span class="kw">crate</span>::core::GCPComputeEngineHost::new(id, project, machine_type, image, region)
+                    <span class="kw">crate</span>::core::GCPComputeEngineHost::new(
+                        id,
+                        project,
+                        machine_type,
+                        image,
+                        region,
+                        network.underlying,
+                    )
                 }),
             })
             .add_subclass(LocalhostHost {}),
@@ -641,6 +677,25 @@
 
 <span class="attr">#[pyclass(extends=Host, subclass)]
 </span><span class="kw">struct </span>LocalhostHost {}
+
+<span class="attr">#[pyclass]
+#[derive(Clone)]
+</span><span class="kw">struct </span>GCPNetwork {
+    underlying: Arc&lt;RwLock&lt;<span class="kw">crate</span>::core::gcp::GCPNetwork&gt;&gt;,
+}
+
+<span class="attr">#[pymethods]
+</span><span class="kw">impl </span>GCPNetwork {
+    <span class="attr">#[new]
+    </span><span class="kw">fn </span>new(project: String) -&gt; <span class="self">Self </span>{
+        GCPNetwork {
+            underlying: Arc::new(RwLock::new(<span class="kw">crate</span>::core::gcp::GCPNetwork {
+                project,
+                vpc_id: <span class="prelude-val">None</span>,
+            })),
+        }
+    }
+}
 
 <span class="attr">#[pyclass(extends=Host, subclass)]
 </span><span class="kw">struct </span>GCPComputeEngineHost {
@@ -911,6 +966,11 @@ async def pyreceiver_to_async_generator(pyreceiver):
 
 <span class="attr">#[pymodule]
 </span><span class="kw">pub fn </span>_core(py: Python&lt;<span class="lifetime">&#39;_</span>&gt;, module: <span class="kw-2">&amp;</span>PyModule) -&gt; PyResult&lt;()&gt; {
+    ctrlc::set_handler(<span class="kw">move </span>|| {
+        <span class="macro">eprintln!</span>(<span class="string">&quot;Received Ctrl-C, cleaning up...&quot;</span>);
+    })
+    .unwrap();
+
     module.add(<span class="string">&quot;AnyhowError&quot;</span>, py.get_type::&lt;AnyhowError&gt;())<span class="question-mark">?</span>;
     module.add_class::&lt;AnyhowWrapper&gt;()<span class="question-mark">?</span>;
 
@@ -918,6 +978,8 @@ async def pyreceiver_to_async_generator(pyreceiver):
 
     module.add_class::&lt;Host&gt;()<span class="question-mark">?</span>;
     module.add_class::&lt;LocalhostHost&gt;()<span class="question-mark">?</span>;
+
+    module.add_class::&lt;GCPNetwork&gt;()<span class="question-mark">?</span>;
     module.add_class::&lt;GCPComputeEngineHost&gt;()<span class="question-mark">?</span>;
 
     module.add_class::&lt;Service&gt;()<span class="question-mark">?</span>;

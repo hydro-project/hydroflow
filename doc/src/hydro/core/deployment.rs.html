@@ -74,7 +74,10 @@
 <a href="#74" id="74">74</a>
 <a href="#75" id="75">75</a>
 <a href="#76" id="76">76</a>
-</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::Service;
+<a href="#77" id="77">77</a>
+<a href="#78" id="78">78</a>
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::ResourcePool;
+<span class="kw">use </span><span class="kw">super</span>::Service;
 
 <span class="kw">use </span><span class="kw">super</span>::Host;
 
@@ -83,24 +86,25 @@
 
 <span class="kw">use </span>std::sync::Arc;
 
-<span class="attr">#[derive(Clone)]
+<span class="attr">#[derive(Default)]
 </span><span class="kw">pub struct </span>Deployment {
     <span class="kw">pub </span>hosts: Vec&lt;Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;&gt;,
     <span class="kw">pub </span>services: Vec&lt;Arc&lt;RwLock&lt;<span class="kw">dyn </span>Service&gt;&gt;&gt;,
+    <span class="kw">pub </span>resource_pool: ResourcePool,
 }
 
 <span class="kw">impl </span>Deployment {
     <span class="kw">pub async fn </span>deploy(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="kw">let </span><span class="kw-2">mut </span>resource_pool = <span class="kw">super</span>::ResourceBatch::new();
+        <span class="kw">let </span><span class="kw-2">mut </span>resource_batch = <span class="kw">super</span>::ResourceBatch::new();
         <span class="kw">for </span>service <span class="kw">in </span><span class="self">self</span>.services.iter_mut() {
-            service.write().<span class="kw">await</span>.collect_resources(<span class="kw-2">&amp;mut </span>resource_pool);
+            service.write().<span class="kw">await</span>.collect_resources(<span class="kw-2">&amp;mut </span>resource_batch);
         }
 
         <span class="kw">for </span>host <span class="kw">in </span><span class="self">self</span>.hosts.iter_mut() {
-            host.write().<span class="kw">await</span>.collect_resources(<span class="kw-2">&amp;mut </span>resource_pool);
+            host.write().<span class="kw">await</span>.collect_resources(<span class="kw-2">&amp;mut </span>resource_batch);
         }
 
-        <span class="kw">let </span>result = Arc::new(resource_pool.provision().<span class="kw">await</span><span class="question-mark">?</span>);
+        <span class="kw">let </span>result = Arc::new(resource_batch.provision(<span class="kw-2">&amp;mut </span><span class="self">self</span>.resource_pool).<span class="kw">await</span><span class="question-mark">?</span>);
 
         <span class="kw">let </span>services_future =
             <span class="self">self</span>.services
