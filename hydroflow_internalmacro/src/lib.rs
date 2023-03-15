@@ -13,6 +13,13 @@ use syn::{
     parse_macro_input, parse_quote, AttrStyle, Expr, ExprLit, ItemConst, Lit, Member, Path, Type,
 };
 
+#[proc_macro]
+pub fn quote_to_str(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let lit = proc_macro::Literal::string(&*item.to_string());
+    let tt = proc_macro::TokenTree::from(lit);
+    [tt].into_iter().collect()
+}
+
 #[proc_macro_attribute]
 pub fn operator_docgen(
     _attr: proc_macro::TokenStream,
