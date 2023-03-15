@@ -5,7 +5,7 @@ class Deployment(object):
 
     def Localhost(self) -> "LocalhostHost": ...
 
-    def GCPComputeEngineHost(self, project: str, machine_type: str, image: str, region: str) -> "GCPComputeEngineHost": ...
+    def GCPComputeEngineHost(self, project: str, machine_type: str, image: str, region: str, network: "GCPNetwork") -> "GCPComputeEngineHost": ...
 
     def CustomService(self, on: "Host", external_ports: List[int]) -> "CustomService": ...
 
@@ -19,6 +19,9 @@ class Host(object):
     pass
 
 class LocalhostHost(Host):
+    pass
+
+class GCPNetwork(object):
     pass
 
 class GCPComputeEngineHost(Host):

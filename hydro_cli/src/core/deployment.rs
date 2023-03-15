@@ -1,3 +1,4 @@
+use super::ResourcePool;
 use super::Service;
 
 use super::Host;
@@ -11,20 +12,22 @@ use std::sync::Arc;
 pub struct Deployment {
     pub hosts: Vec<Arc<RwLock<dyn Host>>>,
     pub services: Vec<Arc<RwLock<dyn Service>>>,
+    pub resource_pool: Arc<RwLock<ResourcePool>>,
 }
 
 impl Deployment {
     pub async fn deploy(&mut self) -> Result<()> {
-        let mut resource_pool = super::ResourceBatch::new();
+        let mut resource_batch = super::ResourceBatch::new();
         for service in self.services.iter_mut() {
-            service.write().await.collect_resources(&mut resource_pool);
+            service.write().await.collect_resources(&mut resource_batch);
         }
 
         for host in self.hosts.iter_mut() {
-            host.write().await.collect_resources(&mut resource_pool);
+            host.write().await.collect_resources(&mut resource_batch);
         }
 
-        let result = Arc::new(resource_pool.provision().await?);
+        let mut pool_write = self.resource_pool.write().await;
+        let result = Arc::new(resource_batch.provision(&mut pool_write).await?);
 
         let services_future =
             self.services
