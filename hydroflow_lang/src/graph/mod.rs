@@ -3,7 +3,7 @@
 use std::borrow::Cow;
 use std::hash::Hash;
 
-use proc_macro2::Span;
+use proc_macro2::{Ident, Span};
 use quote::ToTokens;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
@@ -50,9 +50,39 @@ const HYDROFLOW: &str = "df";
 
 const HANDOFF_NODE_STR: &str = "handoff";
 
+mod serde_syn {
+    use serde::{Deserialize, Deserializer, Serializer};
+
+    pub fn serialize<S, T>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+        T: quote::ToTokens,
+    {
+        serializer.serialize_str(&*value.to_token_stream().to_string())
+    }
+
+    pub fn deserialize<'de, D, T>(deserializer: D) -> Result<T, D::Error>
+    where
+        D: Deserializer<'de>,
+        T: syn::parse::Parse,
+    {
+        let s = String::deserialize(deserializer)?;
+        syn::parse_str(&*s).map_err(<D::Error as serde::de::Error>::custom)
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+struct Varname(#[serde(with = "serde_syn")] pub Ident);
+
+#[derive(Clone, Serialize, Deserialize)]
 pub enum Node {
-    Operator(Operator),
-    Handoff { src_span: Span, dst_span: Span },
+    Operator(#[serde(with = "serde_syn")] Operator),
+    Handoff {
+        #[serde(skip, default = "Span::call_site")]
+        src_span: Span,
+        #[serde(skip, default = "Span::call_site")]
+        dst_span: Span,
+    },
 }
 impl Node {
     pub fn to_pretty_string(&self) -> Cow<'static, str> {
@@ -185,11 +215,11 @@ pub fn node_color(is_handoff: bool, inn_degree: usize, out_degree: usize) -> Opt
 }
 
 /// Helper struct for [`PortIndex`] which keeps span information for elided ports.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum PortIndexValue {
-    Int(IndexInt),
-    Path(ExprPath),
-    Elided(Option<Span>),
+    Int(#[serde(with = "serde_syn")] IndexInt),
+    Path(#[serde(with = "serde_syn")] ExprPath),
+    Elided(#[serde(skip)] Option<Span>),
 }
 impl PortIndexValue {
     pub fn from_ported<Inner>(ported: Ported<Inner>) -> (Self, Inner, Self)

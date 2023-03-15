@@ -7,6 +7,7 @@ use std::marker::PhantomData;
 use std::num::NonZeroUsize;
 
 use hydroflow_lang::graph::serde_graph::SerdeGraph;
+use hydroflow_lang::graph::HydroflowGraph;
 use ref_cast::RefCast;
 use tokio::runtime::TryCurrentError;
 use tokio::sync::mpsc::{self, UnboundedReceiver};
@@ -34,7 +35,7 @@ pub struct Hydroflow {
     /// If the events have been received for this tick.
     events_received_tick: bool,
 
-    serde_graph: Option<SerdeGraph>,
+    meta_graph: Option<HydroflowGraph>,
 }
 impl Default for Hydroflow {
     fn default() -> Self {
@@ -62,7 +63,7 @@ impl Default for Hydroflow {
             event_queue_recv,
             events_received_tick: false,
 
-            serde_graph: None,
+            meta_graph: None,
         }
     }
 }
@@ -73,21 +74,23 @@ impl Hydroflow {
     }
 
     /// Create a new empty Hydroflow graph with the given serde_graph JSON string.
-    pub fn new_with_graph(serde_graph: &'static str) -> Self {
-        let mut graph = Self::new();
-        graph.serde_graph = serde_json::from_str(serde_graph)
-            .map_err(|e| {
-                // TODO: use .inspect_err() when stable.
-                eprintln!("Failed to deserialize serde_graph {}", e);
-                e
-            })
-            .ok();
+    pub fn new_with_graph(hydroflow_graph_str: &'static str) -> Self {
+        let mut hydroflow_graph: HydroflowGraph = serde_json::from_str(hydroflow_graph_str)
+            .expect("`new_with_graph` failed to deserialize graph.");
 
+        let mut op_inst_diagnostics = Vec::new();
+        hydroflow_graph.insert_node_op_insts_all(&mut op_inst_diagnostics);
+        assert!(op_inst_diagnostics.is_empty());
+
+        let mut graph = Self::new();
+        graph.meta_graph.replace(hydroflow_graph);
         graph
     }
 
-    pub fn meta_graph(&self) -> Option<&SerdeGraph> {
-        self.serde_graph.as_ref()
+    pub fn meta_graph(&self) -> Option<SerdeGraph> {
+        self.meta_graph
+            .as_ref()
+            .map(|hf_graph| hf_graph.to_serde_graph())
     }
 
     /// Returns a reactor for externally scheduling subgraphs, possibly from another thread.
