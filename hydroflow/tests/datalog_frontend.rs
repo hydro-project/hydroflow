@@ -770,11 +770,11 @@ fn test_aggregations_and_comments() {
 
     let mut res = collect_ready::<Vec<_>, _>(&mut result_recv);
     res.sort_by_key(|v| v.0);
-    assert_eq!(&res, &[(1, 1), (4, 3)]); 
+    assert_eq!(&res, &[(1, 1), (4, 3)]);
 
     let mut res2 = collect_ready::<Vec<_>, _>(&mut result_recv2); // Assumes deterministic choose
     res2.sort_by_key(|v| v.0);
-    assert_eq!(&res2, &[(1, 3), (3, 1)]); 
+    assert_eq!(&res2, &[(1, 3), (3, 1)]);
 
     flow.run_tick();
 

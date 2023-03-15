@@ -358,31 +358,34 @@ fn apply_aggregations(
                     TargetExpr::Aggregation(Aggregation { tpe, .. }) => match tpe {
                         AggregationType::Min(_) => {
                             parse_quote!(std::cmp::min(prev, #val_at_index))
-                        },
+                        }
                         AggregationType::Max(_) => {
                             parse_quote!(std::cmp::max(prev, #val_at_index))
-                        },
+                        }
                         AggregationType::Sum(_) => {
                             parse_quote!(prev + #val_at_index)
-                        },
+                        }
                         AggregationType::Count(_) => {
-                            parse_quote!(prev+1)
-                        },
+                            parse_quote!(prev + 1)
+                        }
                         AggregationType::Choose(_) => {
                             parse_quote!(prev) // choose = select any 1 element from the relation. By default we select the 1st.
-                        },
+                        }
                     },
                     _ => panic!(),
                 };
 
                 let agg_initial: syn::Expr = match agg {
                     TargetExpr::Aggregation(Aggregation { tpe, .. }) => match tpe {
-                        AggregationType::Min(_) | AggregationType::Max(_) | AggregationType::Sum(_) | AggregationType::Choose(_) => {
+                        AggregationType::Min(_)
+                        | AggregationType::Max(_)
+                        | AggregationType::Sum(_)
+                        | AggregationType::Choose(_) => {
                             parse_quote!(#val_at_index)
-                        },
+                        }
                         AggregationType::Count(_) => {
                             parse_quote!(1)
-                        },
+                        }
                     },
                     _ => panic!(),
                 };
