@@ -108,7 +108,7 @@ pub const BUFFER: OperatorConstraints = OperatorConstraints {
                             ::std::vec::Vec::new()
                         },
                     }.into_iter() {
-                        <_ as #root::pusherator::Pusherator>::give(&mut out, x);
+                        #root::pusherator::Pusherator::give(&mut out, x);
                     }
                 }
             }
