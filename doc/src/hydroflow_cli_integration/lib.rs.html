@@ -368,6 +368,7 @@
 <a href="#368" id="368">368</a>
 <a href="#369" id="369">369</a>
 <a href="#370" id="370">370</a>
+<a href="#371" id="371">371</a>
 </pre><pre class="rust"><code><span class="attr">#![feature(never_type)]
 
 </span><span class="kw">use </span>std::{
@@ -398,6 +399,7 @@
 <span class="kw">use </span>tokio_util::codec::{FramedRead, FramedWrite, LengthDelimitedCodec};
 
 <span class="attr">#[cfg(not(unix))]
+#[allow(dead_code)]
 </span><span class="kw">type </span>UnixStream = !;
 
 <span class="attr">#[cfg(not(unix))]

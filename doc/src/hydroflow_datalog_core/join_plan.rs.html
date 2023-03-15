@@ -376,6 +376,67 @@
 <a href="#376" id="376">376</a>
 <a href="#377" id="377">377</a>
 <a href="#378" id="378">378</a>
+<a href="#379" id="379">379</a>
+<a href="#380" id="380">380</a>
+<a href="#381" id="381">381</a>
+<a href="#382" id="382">382</a>
+<a href="#383" id="383">383</a>
+<a href="#384" id="384">384</a>
+<a href="#385" id="385">385</a>
+<a href="#386" id="386">386</a>
+<a href="#387" id="387">387</a>
+<a href="#388" id="388">388</a>
+<a href="#389" id="389">389</a>
+<a href="#390" id="390">390</a>
+<a href="#391" id="391">391</a>
+<a href="#392" id="392">392</a>
+<a href="#393" id="393">393</a>
+<a href="#394" id="394">394</a>
+<a href="#395" id="395">395</a>
+<a href="#396" id="396">396</a>
+<a href="#397" id="397">397</a>
+<a href="#398" id="398">398</a>
+<a href="#399" id="399">399</a>
+<a href="#400" id="400">400</a>
+<a href="#401" id="401">401</a>
+<a href="#402" id="402">402</a>
+<a href="#403" id="403">403</a>
+<a href="#404" id="404">404</a>
+<a href="#405" id="405">405</a>
+<a href="#406" id="406">406</a>
+<a href="#407" id="407">407</a>
+<a href="#408" id="408">408</a>
+<a href="#409" id="409">409</a>
+<a href="#410" id="410">410</a>
+<a href="#411" id="411">411</a>
+<a href="#412" id="412">412</a>
+<a href="#413" id="413">413</a>
+<a href="#414" id="414">414</a>
+<a href="#415" id="415">415</a>
+<a href="#416" id="416">416</a>
+<a href="#417" id="417">417</a>
+<a href="#418" id="418">418</a>
+<a href="#419" id="419">419</a>
+<a href="#420" id="420">420</a>
+<a href="#421" id="421">421</a>
+<a href="#422" id="422">422</a>
+<a href="#423" id="423">423</a>
+<a href="#424" id="424">424</a>
+<a href="#425" id="425">425</a>
+<a href="#426" id="426">426</a>
+<a href="#427" id="427">427</a>
+<a href="#428" id="428">428</a>
+<a href="#429" id="429">429</a>
+<a href="#430" id="430">430</a>
+<a href="#431" id="431">431</a>
+<a href="#432" id="432">432</a>
+<a href="#433" id="433">433</a>
+<a href="#434" id="434">434</a>
+<a href="#435" id="435">435</a>
+<a href="#436" id="436">436</a>
+<a href="#437" id="437">437</a>
+<a href="#438" id="438">438</a>
+<a href="#439" id="439">439</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::collections::{btree_map::Entry, BTreeMap, HashMap};
 
 <span class="kw">use </span>hydroflow_lang::graph::FlatGraphBuilder;
@@ -430,6 +491,7 @@
 </span><span class="kw">fn </span>emit_join_input_pipeline(
     <span class="comment">// The identifiers of the input node that the key should be populated with.
     </span>identifiers_to_join: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>syn::Ident],
+    identifiers_to_not_join: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>syn::Ident],
     <span class="comment">// The Hydroflow node that is one side of the join.
     </span>source_expanded: <span class="kw-2">&amp;</span>IntermediateJoinNode,
     <span class="comment">// The Hydroflow node for the join operator.
@@ -453,6 +515,18 @@
         })
         .collect();
 
+    <span class="kw">let </span>not_hash_keys: Vec&lt;syn::Expr&gt; = identifiers_to_not_join
+        .iter()
+        .map(|ident| {
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(idx) = source_expanded.variable_mapping.get(ident) {
+                <span class="kw">let </span>idx_ident = syn::Index::from(<span class="kw-2">*</span>idx);
+                <span class="macro">parse_quote!</span>(v.#idx_ident)
+            } <span class="kw">else </span>{
+                <span class="macro">panic!</span>(<span class="string">&quot;Could not find key that is being joined on: {:?}&quot;</span>, ident);
+            }
+        })
+        .collect();
+
     <span class="kw">let </span>out_index = syn::Index::from(join_side.index());
 
     <span class="kw">let </span>source_name = <span class="kw-2">&amp;</span>source_expanded.name;
@@ -461,14 +535,14 @@
     <span class="kw">let </span>rhs: Pipeline = <span class="kw">if </span>anti_join {
         <span class="kw">match </span>join_side {
             JoinSide::Left =&gt; {
-                <span class="macro">parse_quote!</span>(map(|v: #source_type| ((#(#hash_keys, )<span class="kw-2">*</span>), v)) -&gt; [pos] #join_node)
+                <span class="macro">parse_quote!</span>(map(|v: #source_type| ((#(#hash_keys, )<span class="kw-2">*</span>), (#(#not_hash_keys, )<span class="kw-2">*</span>))) -&gt; [pos] #join_node)
             }
             JoinSide::Right =&gt; {
                 <span class="macro">parse_quote!</span>(map(|v: #source_type| (#(#hash_keys, )<span class="kw-2">*</span>)) -&gt; [neg] #join_node)
             }
         }
     } <span class="kw">else </span>{
-        <span class="macro">parse_quote!</span>(map(|v: #source_type| ((#(#hash_keys, )<span class="kw-2">*</span>), v)) -&gt; [#out_index] #join_node)
+        <span class="macro">parse_quote!</span>(map(|v: #source_type| ((#(#hash_keys, )<span class="kw-2">*</span>), (#(#not_hash_keys, )<span class="kw-2">*</span>))) -&gt; [#out_index] #join_node)
     };
 
     <span class="kw">let </span>statement = <span class="kw">match </span>source_expanded.tee_idx {
@@ -612,13 +686,37 @@
                 .variable_mapping
                 .keys()
                 .filter(|i| left_expanded.variable_mapping.contains_key(i))
-                .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+                .enumerate()
+                .map(|t| (t.<span class="number">1</span>, t.<span class="number">0</span>))
+                .collect::&lt;BTreeMap&lt;<span class="kw">_</span>, <span class="kw">_</span>&gt;&gt;();
+
+            <span class="kw">let </span>left_non_joined_identifiers = left_expanded
+                .variable_mapping
+                .keys()
+                .filter(|i| !right_expanded.variable_mapping.contains_key(i))
+                .enumerate()
+                .map(|t| (t.<span class="number">1</span>, t.<span class="number">0</span>))
+                .collect::&lt;BTreeMap&lt;<span class="kw">_</span>, <span class="kw">_</span>&gt;&gt;();
+
+            <span class="kw">let </span>right_non_joined_identifiers = right_expanded
+                .variable_mapping
+                .keys()
+                .filter(|i| !left_expanded.variable_mapping.contains_key(i))
+                .enumerate()
+                .map(|t| (t.<span class="number">1</span>, t.<span class="number">0</span>))
+                .collect::&lt;BTreeMap&lt;<span class="kw">_</span>, <span class="kw">_</span>&gt;&gt;();
 
             <span class="kw">let </span>key_type =
                 repeat_tuple::&lt;syn::Type, syn::Type&gt;(|| <span class="macro">parse_quote!</span>(<span class="kw">_</span>), identifiers_to_join.len());
 
-            <span class="kw">let </span>left_type = <span class="kw-2">&amp;</span>left_expanded.tuple_type;
-            <span class="kw">let </span>right_type = <span class="kw-2">&amp;</span>right_expanded.tuple_type;
+            <span class="kw">let </span>left_type = repeat_tuple::&lt;syn::Type, syn::Type&gt;(
+                || <span class="macro">parse_quote!</span>(<span class="kw">_</span>),
+                left_non_joined_identifiers.len(),
+            );
+            <span class="kw">let </span>right_type = repeat_tuple::&lt;syn::Type, syn::Type&gt;(
+                || <span class="macro">parse_quote!</span>(<span class="kw">_</span>),
+                right_non_joined_identifiers.len(),
+            );
 
             <span class="kw">let </span>join_node = syn::Ident::new(
                 <span class="kw-2">&amp;</span><span class="macro">format!</span>(
@@ -628,68 +726,88 @@
                 Span::call_site(),
             );
 
-            <span class="kw">let </span>intermediate = <span class="kw">if </span>is_anti {
-                <span class="kw">let </span>flatten_closure: syn::Expr = <span class="macro">parse_quote!</span>(|kv: (#key_type, #left_type)| kv.<span class="number">1</span>);
+            <span class="comment">// We start by defining the pipeline from the `join()` operator onwards. The main logic
+            // here is to flatten the tuples from the left and right sides of the join into a
+            // single tuple that is used by downstream joins or the final output.
+            </span><span class="kw">let </span><span class="kw-2">mut </span>flattened_tuple_elems: Vec&lt;syn::Expr&gt; = <span class="macro">vec!</span>[];
+            <span class="kw">let </span><span class="kw-2">mut </span>flattened_mapping = BTreeMap::new();
 
-                flat_graph_builder
-                    .add_statement(<span class="macro">parse_quote!</span>(#join_node = anti_join() -&gt; map(#flatten_closure)));
+            <span class="kw">for </span>(ident, idx) <span class="kw">in </span><span class="kw-2">&amp;</span>identifiers_to_join {
+                <span class="kw">if </span>!flattened_mapping.contains_key(<span class="kw-2">*</span>ident) {
+                    <span class="kw">let </span>idx = syn::Index::from(<span class="kw-2">*</span>idx);
+                    <span class="kw">let </span>value_expr: syn::Expr = <span class="macro">parse_quote!</span>(kv.<span class="number">0.</span>#idx);
 
-                IntermediateJoinNode {
-                    name: join_node.clone(),
-                    tee_idx: <span class="prelude-val">None</span>,
-                    variable_mapping: left_expanded.variable_mapping.clone(),
-                    tuple_type: left_expanded.tuple_type.clone(),
+                    flattened_mapping.insert((<span class="kw-2">*</span>ident).clone(), flattened_tuple_elems.len());
+                    flattened_tuple_elems.push(value_expr);
+                }
+            }
+
+            <span class="kw">if </span>is_anti {
+                <span class="kw">for </span>(ident, idx) <span class="kw">in </span><span class="kw-2">&amp;</span>left_non_joined_identifiers {
+                    <span class="kw">if </span>!flattened_mapping.contains_key(<span class="kw-2">*</span>ident) {
+                        <span class="kw">let </span>idx = syn::Index::from(<span class="kw-2">*</span>idx);
+                        <span class="kw">let </span>value_expr: syn::Expr = <span class="macro">parse_quote!</span>(kv.<span class="number">1.</span>#idx);
+
+                        flattened_mapping.insert((<span class="kw-2">*</span>ident).clone(), flattened_tuple_elems.len());
+                        flattened_tuple_elems.push(value_expr);
+                    }
                 }
             } <span class="kw">else </span>{
-                <span class="comment">// We start by defining the pipeline from the `join()` operator onwards. The main logic
-                // here is to flatten the tuples from the left and right sides of the join into a
-                // single tuple that is used by downstream joins or the final output.
-                </span><span class="kw">let </span><span class="kw-2">mut </span>flattened_tuple_elems: Vec&lt;syn::Expr&gt; = <span class="macro">vec!</span>[];
-                <span class="kw">let </span><span class="kw-2">mut </span>flattened_mapping = BTreeMap::new();
-
-                <span class="kw">for </span>(ident, source_idx) <span class="kw">in </span>left_expanded
-                    .variable_mapping
+                <span class="kw">for </span>(ident, source_idx) <span class="kw">in </span>left_non_joined_identifiers
                     .keys()
                     .map(|l| (l, <span class="number">0</span>))
-                    .chain(right_expanded.variable_mapping.keys().map(|l| (l, <span class="number">1</span>)))
+                    .chain(right_non_joined_identifiers.keys().map(|l| (l, <span class="number">1</span>)))
                 {
-                    <span class="kw">if </span>!flattened_mapping.contains_key(ident) {
+                    <span class="kw">if </span>!flattened_mapping.contains_key(<span class="kw-2">*</span>ident) {
                         <span class="kw">let </span>syn_source_index = syn::Index::from(source_idx);
                         <span class="kw">let </span>source_expr: syn::Expr = <span class="macro">parse_quote!</span>(kv.<span class="number">1.</span>#syn_source_index);
                         <span class="kw">let </span>bindings = <span class="kw">if </span>source_idx == <span class="number">0 </span>{
-                            <span class="kw-2">&amp;</span>left_expanded.variable_mapping
+                            <span class="kw-2">&amp;</span>left_non_joined_identifiers
                         } <span class="kw">else </span>{
-                            <span class="kw-2">&amp;</span>right_expanded.variable_mapping
+                            <span class="kw-2">&amp;</span>right_non_joined_identifiers
                         };
 
                         <span class="kw">let </span>source_col_idx = syn::Index::from(<span class="kw-2">*</span>bindings.get(ident).unwrap());
 
-                        flattened_mapping.insert(ident.clone(), flattened_tuple_elems.len());
+                        flattened_mapping.insert((<span class="kw-2">*</span>ident).clone(), flattened_tuple_elems.len());
                         flattened_tuple_elems.push(<span class="macro">parse_quote!</span>(#source_expr.#source_col_idx));
                     }
                 }
+            }
 
-                <span class="kw">let </span>flatten_closure: syn::Expr = <span class="macro">parse_quote!</span>(|kv: (#key_type, (#left_type, #right_type))| (#(#flattened_tuple_elems, )<span class="kw-2">*</span>));
+            <span class="kw">let </span>flatten_closure: syn::Expr = <span class="kw">if </span>is_anti {
+                <span class="macro">parse_quote!</span>(|kv: (#key_type, #left_type)| (#(#flattened_tuple_elems, )<span class="kw-2">*</span>))
+            } <span class="kw">else </span>{
+                <span class="macro">parse_quote!</span>(|kv: (#key_type, (#left_type, #right_type))| (#(#flattened_tuple_elems, )<span class="kw-2">*</span>))
+            };
 
+            <span class="kw">if </span>is_anti {
+                flat_graph_builder
+                    .add_statement(<span class="macro">parse_quote!</span>(#join_node = anti_join() -&gt; map(#flatten_closure)));
+            } <span class="kw">else </span>{
                 flat_graph_builder.add_statement(
                     <span class="macro">parse_quote!</span>(#join_node = join::&lt;<span class="lifetime">&#39;tick</span>&gt;() -&gt; map(#flatten_closure)),
                 );
+            }
 
-                <span class="kw">let </span>output_type = repeat_tuple::&lt;syn::Type, syn::Type&gt;(
-                    || <span class="macro">parse_quote!</span>(<span class="kw">_</span>),
-                    flattened_tuple_elems.len(),
-                );
+            <span class="kw">let </span>output_type = repeat_tuple::&lt;syn::Type, syn::Type&gt;(
+                || <span class="macro">parse_quote!</span>(<span class="kw">_</span>),
+                flattened_tuple_elems.len(),
+            );
 
-                IntermediateJoinNode {
-                    name: join_node.clone(),
-                    tee_idx: <span class="prelude-val">None</span>,
-                    variable_mapping: flattened_mapping,
-                    tuple_type: output_type,
-                }
+            <span class="kw">let </span>intermediate = IntermediateJoinNode {
+                name: join_node.clone(),
+                tee_idx: <span class="prelude-val">None</span>,
+                variable_mapping: flattened_mapping,
+                tuple_type: output_type,
             };
 
             emit_join_input_pipeline(
-                <span class="kw-2">&amp;</span>identifiers_to_join,
+                <span class="kw-2">&amp;</span>identifiers_to_join.keys().cloned().collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;(),
+                <span class="kw-2">&amp;</span>left_non_joined_identifiers
+                    .keys()
+                    .cloned()
+                    .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;(),
                 <span class="kw-2">&amp;</span>left_expanded,
                 <span class="kw-2">&amp;</span>join_node,
                 JoinSide::Left,
@@ -698,7 +816,11 @@
             );
 
             emit_join_input_pipeline(
-                <span class="kw-2">&amp;</span>identifiers_to_join,
+                <span class="kw-2">&amp;</span>identifiers_to_join.keys().cloned().collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;(),
+                <span class="kw-2">&amp;</span>right_non_joined_identifiers
+                    .keys()
+                    .cloned()
+                    .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;(),
                 <span class="kw-2">&amp;</span>right_expanded,
                 <span class="kw-2">&amp;</span>join_node,
                 JoinSide::Right,
