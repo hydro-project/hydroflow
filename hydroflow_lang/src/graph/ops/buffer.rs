@@ -16,15 +16,16 @@ use quote::quote_spanned;
 /// will pass through all received inputs to the output unchanged.
 ///
 /// ```rustbook
-///     let timer = tokio_stream::wrappers::IntervalStream::new(tokio::time::interval(
-///         Duration::from_millis(1000),
-///     ));
+///     let (tx, rx) = hydroflow::util::unbounded_channel::<()>();
 ///
-///     let mut df = hydroflow_syntax! {
-///         repeat_iter(0..5) -> buffer(timer) -> for_each(|x| { println!("{x}"); });
+///     // Will print 0, 1, 2, 3, 4 each on a new line just once.
+///     let mut df = hydroflow::hydroflow_syntax! {
+///         repeat_iter(0..5) -> buffer(rx) -> for_each(|x| { println!("{x}"); });
 ///     };
+///     
+///     tx.send(()).unwrap();
 ///
-///     df.run_async().await;
+///     df.run_available();
 /// ```
 #[hydroflow_internalmacro::operator_docgen]
 pub const BUFFER: OperatorConstraints = OperatorConstraints {
