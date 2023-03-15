@@ -32,10 +32,7 @@ impl Deployment {
     #[new]
     fn new() -> Self {
         Deployment {
-            underlying: Arc::new(RwLock::new(crate::core::Deployment {
-                hosts: Vec::new(),
-                services: Vec::new(),
-            })),
+            underlying: Arc::new(RwLock::new(crate::core::Deployment::default())),
         }
     }
 
@@ -62,12 +59,20 @@ impl Deployment {
         machine_type: String,
         image: String,
         region: String,
+        network: GCPNetwork,
     ) -> PyResult<Py<pyo3::PyAny>> {
         Ok(Py::new(
             py,
             PyClassInitializer::from(Host {
                 underlying: self.underlying.blocking_write().add_host(|id| {
-                    crate::core::GCPComputeEngineHost::new(id, project, machine_type, image, region)
+                    crate::core::GCPComputeEngineHost::new(
+                        id,
+                        project,
+                        machine_type,
+                        image,
+                        region,
+                        network.underlying,
+                    )
                 }),
             })
             .add_subclass(LocalhostHost {}),
@@ -173,6 +178,25 @@ pub struct Host {
 
 #[pyclass(extends=Host, subclass)]
 struct LocalhostHost {}
+
+#[pyclass]
+#[derive(Clone)]
+struct GCPNetwork {
+    underlying: Arc<RwLock<crate::core::gcp::GCPNetwork>>,
+}
+
+#[pymethods]
+impl GCPNetwork {
+    #[new]
+    fn new(project: String) -> Self {
+        GCPNetwork {
+            underlying: Arc::new(RwLock::new(crate::core::gcp::GCPNetwork {
+                project,
+                vpc_id: None,
+            })),
+        }
+    }
+}
 
 #[pyclass(extends=Host, subclass)]
 struct GCPComputeEngineHost {
@@ -443,6 +467,11 @@ impl ConnectedSink {
 
 #[pymodule]
 pub fn _core(py: Python<'_>, module: &PyModule) -> PyResult<()> {
+    ctrlc::set_handler(move || {
+        eprintln!("Received Ctrl-C, cleaning up...");
+    })
+    .unwrap();
+
     module.add("AnyhowError", py.get_type::<AnyhowError>())?;
     module.add_class::<AnyhowWrapper>()?;
 
@@ -450,6 +479,8 @@ pub fn _core(py: Python<'_>, module: &PyModule) -> PyResult<()> {
 
     module.add_class::<Host>()?;
     module.add_class::<LocalhostHost>()?;
+
+    module.add_class::<GCPNetwork>()?;
     module.add_class::<GCPComputeEngineHost>()?;
 
     module.add_class::<Service>()?;
