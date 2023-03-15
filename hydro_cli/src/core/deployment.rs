@@ -1,3 +1,4 @@
+use super::ResourcePool;
 use super::Service;
 
 use super::Host;
@@ -7,24 +8,25 @@ use tokio::sync::RwLock;
 
 use std::sync::Arc;
 
-#[derive(Clone)]
+#[derive(Default)]
 pub struct Deployment {
     pub hosts: Vec<Arc<RwLock<dyn Host>>>,
     pub services: Vec<Arc<RwLock<dyn Service>>>,
+    pub resource_pool: ResourcePool,
 }
 
 impl Deployment {
     pub async fn deploy(&mut self) -> Result<()> {
-        let mut resource_pool = super::ResourceBatch::new();
+        let mut resource_batch = super::ResourceBatch::new();
         for service in self.services.iter_mut() {
-            service.write().await.collect_resources(&mut resource_pool);
+            service.write().await.collect_resources(&mut resource_batch);
         }
 
         for host in self.hosts.iter_mut() {
-            host.write().await.collect_resources(&mut resource_pool);
+            host.write().await.collect_resources(&mut resource_batch);
         }
 
-        let result = Arc::new(resource_pool.provision().await?);
+        let result = Arc::new(resource_batch.provision(&mut self.resource_pool).await?);
 
         let services_future =
             self.services
