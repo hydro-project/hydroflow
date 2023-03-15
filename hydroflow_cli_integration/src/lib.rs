@@ -28,6 +28,7 @@ use tokio::net::{UnixListener, UnixStream};
 use tokio_util::codec::{FramedRead, FramedWrite, LengthDelimitedCodec};
 
 #[cfg(not(unix))]
+#[allow(dead_code)]
 type UnixStream = !;
 
 #[cfg(not(unix))]
