@@ -62,7 +62,7 @@ pub const BUFFER: OperatorConstraints = OperatorConstraints {
         let stream_ident = wc.make_ident("stream");
 
         let write_prologue = quote_spanned! {op_span=>
-            let mut #stream_ident = Box::pin(#receiver);
+            let mut #stream_ident = ::std::boxed::Box::pin(#receiver);
             let #internal_buffer = df.add_state(::std::cell::RefCell::new(::std::vec::Vec::new()));
         };
 
@@ -76,13 +76,13 @@ pub const BUFFER: OperatorConstraints = OperatorConstraints {
                     vec.extend(#input);
                 }
 
-                let #ident = match #root::futures::stream::Stream::poll_next(#stream_ident.as_mut(), &mut std::task::Context::from_waker(&context.waker())) {
-                    std::task::Poll::Ready(_) => {
+                let #ident = match #root::futures::stream::Stream::poll_next(#stream_ident.as_mut(), &mut ::std::task::Context::from_waker(&context.waker())) {
+                    ::std::task::Poll::Ready(_) => {
                         let mut vec = context.state_ref(#internal_buffer).borrow_mut();
-                        std::mem::take(&mut *vec)
+                        ::std::mem::take(&mut *vec)
                     },
-                    std::task::Poll::Pending => {
-                        std::vec::Vec::new()
+                    ::std::task::Poll::Pending => {
+                        ::std::vec::Vec::new()
                     },
                 }.into_iter();
             }
@@ -99,17 +99,16 @@ pub const BUFFER: OperatorConstraints = OperatorConstraints {
 
                 {
                     let mut out = #output;
-                    for x in match #root::futures::stream::Stream::poll_next(#stream_ident.as_mut(), &mut std::task::Context::from_waker(&context.waker())) {
-                        std::task::Poll::Ready(_) => {
+                    for x in match #root::futures::stream::Stream::poll_next(#stream_ident.as_mut(), &mut ::std::task::Context::from_waker(&context.waker())) {
+                        ::std::task::Poll::Ready(_) => {
                             let mut vec = context.state_ref(#internal_buffer).borrow_mut();
-                            std::mem::take(&mut *vec)
+                            ::std::mem::take(&mut *vec)
                         },
-                        std::task::Poll::Pending => {
-                            std::vec::Vec::new()
+                        ::std::task::Poll::Pending => {
+                            ::std::vec::Vec::new()
                         },
                     }.into_iter() {
-                        use ::pusherator::Pusherator;
-                        out.give(x);
+                        <_ as ::pusherator::Pusherator>::give(&mut out, x);
                     }
                 }
             }
