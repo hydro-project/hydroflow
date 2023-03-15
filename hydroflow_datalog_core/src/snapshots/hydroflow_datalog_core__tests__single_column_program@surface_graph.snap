@@ -1,6 +1,6 @@
 ---
 source: hydroflow_datalog_core/src/lib.rs
-expression: graph.surface_syntax_string()
+expression: flat_graph_ref.surface_syntax_string()
 ---
 1v1 = merge ();
 2v1 = unique :: < 'tick > ();
@@ -15,9 +15,9 @@ expression: graph.surface_syntax_string()
 11v1 = source_stream (in2);
 12v1 = for_each (| v | out . send (v) . unwrap ());
 13v1 = join :: < 'tick > ();
-14v1 = map (| kv : ((_ ,) , ((_ ,) , (_ ,))) | (kv . 1 . 0 . 0 ,));
-15v1 = map (| v : (_ ,) | ((v . 0 ,) , v));
-16v1 = map (| v : (_ ,) | ((v . 0 ,) , v));
+14v1 = map (| kv : ((_ ,) , (() , ())) | (kv . 0 . 0 ,));
+15v1 = map (| v : (_ ,) | ((v . 0 ,) , ()));
+16v1 = map (| v : (_ ,) | ((v . 0 ,) , ()));
 17v1 = map (| row : (_ ,) | (row . 0 ,));
 
 2v1 -> 3v1;
