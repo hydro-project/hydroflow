@@ -9,18 +9,24 @@ async def main(args):
     deployment = hydro.Deployment()
     localhost_machine = deployment.Localhost()
 
+    gcp_vpc = hydro.GCPNetwork(
+        project="autocompartmentalization",
+    )
+
     machine1 = deployment.GCPComputeEngineHost(
         project="autocompartmentalization",
         machine_type="e2-micro",
         image="debian-cloud/debian-11",
-        region="us-west1-a"
+        region="us-west1-a",
+        network=gcp_vpc
     ) if machine_1_gcp else localhost_machine
 
     machine2 = deployment.GCPComputeEngineHost(
         project="autocompartmentalization",
         machine_type="e2-micro",
         image="debian-cloud/debian-11",
-        region="us-west1-a"
+        region="us-west1-a",
+        network=gcp_vpc
     ) if machine_2_gcp else localhost_machine
 
     sender = deployment.HydroflowCrate(

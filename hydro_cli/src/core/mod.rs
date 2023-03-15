@@ -25,6 +25,11 @@ pub mod terraform;
 
 pub mod util;
 
+#[derive(Default)]
+pub struct ResourcePool {
+    pub terraform: terraform::TerraformPool,
+}
+
 pub struct ResourceBatch {
     pub terraform: terraform::TerraformBatch,
 }
@@ -36,9 +41,9 @@ impl ResourceBatch {
         }
     }
 
-    async fn provision(self) -> Result<ResourceResult> {
+    async fn provision(self, pool: &mut ResourcePool) -> Result<ResourceResult> {
         Ok(ResourceResult {
-            terraform: self.terraform.provision().await?,
+            terraform: self.terraform.provision(&mut pool.terraform).await?,
         })
     }
 }

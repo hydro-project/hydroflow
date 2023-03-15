@@ -32,6 +32,9 @@ async-ssh2-lite = { version = "0.4.2", features = [ "tokio", "vendored-openssl" 
 shell-escape = "0.1.5"
 dyn-clone = "1"
 bytes = "1.1.0"
+nanoid = "0.4.0"
+ctrlc = "3.2.5"
+nix = "0.26.2"
 hydroflow_cli_integration = { path = "../hydroflow_cli_integration" }
 
 [dev-dependencies]

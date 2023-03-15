@@ -14,6 +14,7 @@ use async_ssh2_lite::{AsyncChannel, AsyncSession, SessionConfiguration};
 use async_trait::async_trait;
 use futures::{AsyncWriteExt, StreamExt};
 use hydroflow_cli_integration::ServerConfig;
+use nanoid::nanoid;
 use serde_json::json;
 use tokio::{
     net::{TcpListener, TcpStream},
@@ -22,7 +23,7 @@ use tokio::{
 
 use super::{
     localhost::create_broadcast,
-    terraform::{TerraformOutput, TerraformProvider},
+    terraform::{TerraformOutput, TerraformProvider, TERRAFORM_ALPHABET},
     util::async_retry,
     ClientStrategy, Host, HostTargetType, LaunchedBinary, LaunchedHost, ResourceBatch,
     ResourceResult, ServerStrategy,
@@ -217,12 +218,42 @@ impl LaunchedHost for LaunchedComputeEngine {
     }
 }
 
+pub struct GCPNetwork {
+    pub project: String,
+    pub vpc_id: Option<String>,
+}
+
+impl GCPNetwork {
+    fn collect_resources(&mut self, resource_batch: &mut ResourceBatch) {
+        if self.vpc_id.is_some() {
+            return;
+        }
+
+        let vpc_network = format!("vpc-network-{}", nanoid!(8, &TERRAFORM_ALPHABET));
+        self.vpc_id = Some(vpc_network.clone());
+        resource_batch
+            .terraform
+            .resource
+            .entry("google_compute_network".to_string())
+            .or_default()
+            .insert(
+                vpc_network.clone(),
+                json!({
+                    "name": vpc_network,
+                    "project": self.project,
+                    "auto_create_subnetworks": true
+                }),
+            );
+    }
+}
+
 pub struct GCPComputeEngineHost {
     pub id: usize,
     pub project: String,
     pub machine_type: String,
     pub image: String,
     pub region: String,
+    pub network: Arc<RwLock<GCPNetwork>>,
     pub launched: Option<Arc<LaunchedComputeEngine>>,
     external_ports: Vec<u16>,
 }
@@ -234,6 +265,7 @@ impl GCPComputeEngineHost {
         machine_type: String,
         image: String,
         region: String,
+        network: Arc<RwLock<GCPNetwork>>,
     ) -> Self {
         Self {
             id,
@@ -241,6 +273,7 @@ impl GCPComputeEngineHost {
             machine_type,
             image,
             region,
+            network,
             launched: None,
             external_ports: vec![],
         }
@@ -281,8 +314,12 @@ impl Host for GCPComputeEngineHost {
     }
 
     fn collect_resources(&self, resource_batch: &mut ResourceBatch) {
+        self.network
+            .try_write()
+            .unwrap()
+            .collect_resources(resource_batch);
+
         let project = self.project.as_str();
-        let id = self.id;
 
         // first, we import the providers we need
         resource_batch
@@ -350,20 +387,14 @@ impl Host for GCPComputeEngineHost {
             );
 
         // we use a single VPC for all VMs
-        let vpc_network = format!("vpc-network-{project}");
-        resource_batch
-            .terraform
-            .resource
-            .entry("google_compute_network".to_string())
-            .or_default()
-            .insert(
-                vpc_network.clone(),
-                json!({
-                    "name": vpc_network,
-                    "project": project,
-                    "auto_create_subnetworks": true
-                }),
-            );
+        let vpc_network = self
+            .network
+            .try_read()
+            .unwrap()
+            .vpc_id
+            .as_ref()
+            .unwrap()
+            .clone();
 
         let firewall_entries = resource_batch
             .terraform
@@ -411,7 +442,8 @@ impl Host for GCPComputeEngineHost {
             }),
         );
 
-        let vm_instance = format!("vm-instance-{project}-{id}");
+        let vm_id = nanoid!(8, &TERRAFORM_ALPHABET);
+        let vm_instance = format!("vm-instance-{}", vm_id);
 
         let mut tags = vec![];
         let mut external_interfaces = vec![];
