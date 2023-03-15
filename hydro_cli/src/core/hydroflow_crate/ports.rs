@@ -182,9 +182,7 @@ pub enum ClientPort {
 async fn forward_connection(conn: &ServerPort, target: &dyn LaunchedHost) -> ServerPort {
     match conn {
         ServerPort::UnixSocket(_) => panic!("Expected a TCP port to be forwarded"),
-        ServerPort::TcpPort(addr) => {
-            ServerPort::TcpPort(target.forward_port(addr.port()).await.unwrap())
-        }
+        ServerPort::TcpPort(addr) => ServerPort::TcpPort(target.forward_port(addr).await.unwrap()),
         ServerPort::Demux(demux) => {
             let mut forwarded_map = HashMap::new();
             for (key, conn) in demux {

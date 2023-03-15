@@ -136,8 +136,8 @@ impl LaunchedHost for LaunchedLocalhost {
         })))
     }
 
-    async fn forward_port(&self, port: u16) -> Result<SocketAddr> {
-        Ok(SocketAddr::from(([127, 0, 0, 1], port)))
+    async fn forward_port(&self, addr: &SocketAddr) -> Result<SocketAddr> {
+        Ok(addr.clone())
     }
 }
 
