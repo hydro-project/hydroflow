@@ -60,7 +60,7 @@ pub(crate) async fn run_subordinate(
 
     if let Some(graph) = graph {
         let serde_graph = df
-            .serde_graph()
+            .meta_graph()
             .expect("No graph found, maybe failed to parse.");
         match graph {
             GraphType::Mermaid => {

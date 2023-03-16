@@ -1,6 +1,6 @@
 ---
 source: hydroflow/tests/surface_codegen.rs
-expression: df.serde_graph().unwrap().to_mermaid()
+expression: df.meta_graph().unwrap().to_mermaid()
 ---
 %%{init:{'theme':'base','themeVariables':{'clusterBkg':'#ddd','clusterBorder':'#888'}}}%%
 flowchart TD

@@ -158,7 +158,7 @@ and the code to run the flow graph. To follow along, paste the following into th
 
     if let Some(graph) = graph {
         let serde_graph = df
-            .serde_graph()
+            .meta_graph()
             .expect("No graph found, maybe failed to parse.");
         match graph {
             GraphType::Mermaid => {
@@ -334,7 +334,7 @@ Finish up the file by pasting the code below for optionally generating the graph
     // optionally print the dataflow graph
     if let Some(graph) = opts.graph {
         let serde_graph = hf
-            .serde_graph()
+            .meta_graph()
             .expect("No graph found, maybe failed to parse.");
         match graph {
             GraphType::Mermaid => {

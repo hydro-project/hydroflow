@@ -57,7 +57,7 @@ pub(crate) async fn run_client(
 
     if let Some(graph) = opts.graph {
         let serde_graph = flow
-            .serde_graph()
+            .meta_graph()
             .expect("No graph found, maybe failed to parse.");
         match graph {
             GraphType::Mermaid => {
