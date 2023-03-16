@@ -40,7 +40,7 @@ pub fn test_unique_tick_pull() {
     let mut df = hydroflow_syntax! {
         repeat_iter(0..10) -> m1;
         repeat_iter(5..15) -> m1;
-        m1 = merge() -> unique<'tick>() -> m2;
+        m1 = merge() -> unique::<'tick>() -> m2;
         repeat_iter(0..0) -> m2; // Extra merge to force `unique()` to be pull.
         m2 = merge() -> for_each(|v| out_send.send(v).unwrap());
     };
@@ -63,7 +63,7 @@ pub fn test_unique_static_pull() {
     let mut df = hydroflow_syntax! {
         repeat_iter(0..10) -> m1;
         repeat_iter(5..15) -> m1;
-        m1 = merge() -> unique<'static>() -> m2;
+        m1 = merge() -> unique::<'static>() -> m2;
         repeat_iter(0..0) -> m2; // Extra merge to force `unique()` to be pull.
         m2 = merge() -> for_each(|v| out_send.send(v).unwrap());
     };
@@ -87,7 +87,7 @@ pub fn test_unique_tick_push() {
         repeat_iter(0..10) -> pivot;
         repeat_iter(5..15) -> pivot;
         pivot = merge() -> tee();
-        pivot -> unique<'tick>() -> for_each(|v| out_send.send(v).unwrap());
+        pivot -> unique::<'tick>() -> for_each(|v| out_send.send(v).unwrap());
         pivot -> for_each(std::mem::drop); // Force to be push.
     };
     assert_graphvis_snapshots!(df);
@@ -110,7 +110,7 @@ pub fn test_unique_static_push() {
         repeat_iter(0..10) -> pivot;
         repeat_iter(5..15) -> pivot;
         pivot = merge() -> tee();
-        pivot -> unique<'static>() -> for_each(|v| out_send.send(v).unwrap());
+        pivot -> unique::<'static>() -> for_each(|v| out_send.send(v).unwrap());
         pivot -> for_each(std::mem::drop); // Force to be push.
     };
     assert_graphvis_snapshots!(df);

@@ -1,76 +1,26 @@
-use std::{
-    borrow::Cow,
-    collections::HashMap,
-    net::SocketAddr,
-    path::{Path, PathBuf},
-    sync::{atomic::AtomicUsize, Arc},
-    time::Duration,
-};
+use std::{collections::HashMap, net::SocketAddr, path::PathBuf, sync::Arc, time::Duration};
 
 use anyhow::{Context, Result};
-use async_channel::{Receiver, Sender};
 
-use async_ssh2_lite::{AsyncChannel, AsyncSession, SessionConfiguration};
+use async_ssh2_lite::{AsyncSession, SessionConfiguration};
 use async_trait::async_trait;
-use futures::{AsyncWriteExt, StreamExt};
 use hydroflow_cli_integration::ServerConfig;
+use nanoid::nanoid;
 use serde_json::json;
-use tokio::{
-    net::{TcpListener, TcpStream},
-    sync::RwLock,
-};
+use tokio::{net::TcpStream, sync::RwLock};
 
 use super::{
-    localhost::create_broadcast,
-    terraform::{TerraformOutput, TerraformProvider},
+    ssh::LaunchedSSHHost,
+    terraform::{TerraformOutput, TerraformProvider, TERRAFORM_ALPHABET},
     util::async_retry,
-    ClientStrategy, Host, HostTargetType, LaunchedBinary, LaunchedHost, ResourceBatch,
-    ResourceResult, ServerStrategy,
+    ClientStrategy, Host, HostTargetType, LaunchedHost, ResourceBatch, ResourceResult,
+    ServerStrategy,
 };
-
-struct LaunchedComputeEngineBinary {
-    _resource_result: Arc<ResourceResult>,
-    channel: AsyncChannel<TcpStream>,
-    stdin_sender: Sender<String>,
-    stdout_receivers: Arc<RwLock<Vec<Sender<String>>>>,
-    stderr_receivers: Arc<RwLock<Vec<Sender<String>>>>,
-}
-
-#[async_trait]
-impl LaunchedBinary for LaunchedComputeEngineBinary {
-    async fn stdin(&self) -> Sender<String> {
-        self.stdin_sender.clone()
-    }
-
-    async fn stdout(&self) -> Receiver<String> {
-        let mut receivers = self.stdout_receivers.write().await;
-        let (sender, receiver) = async_channel::unbounded::<String>();
-        receivers.push(sender);
-        receiver
-    }
-
-    async fn stderr(&self) -> Receiver<String> {
-        let mut receivers = self.stderr_receivers.write().await;
-        let (sender, receiver) = async_channel::unbounded::<String>();
-        receivers.push(sender);
-        receiver
-    }
-
-    async fn exit_code(&self) -> Option<i32> {
-        // until the program exits, the exit status is meaningless
-        if self.channel.eof() {
-            self.channel.exit_status().ok()
-        } else {
-            None
-        }
-    }
-}
 
 pub struct LaunchedComputeEngine {
     resource_result: Arc<ResourceResult>,
     pub internal_ip: String,
     pub external_ip: Option<String>,
-    binary_counter: AtomicUsize,
 }
 
 impl LaunchedComputeEngine {
@@ -83,6 +33,29 @@ impl LaunchedComputeEngine {
             .path()
             .join(".ssh")
             .join("vm_instance_ssh_key_pem")
+    }
+}
+
+#[async_trait]
+impl LaunchedSSHHost for LaunchedComputeEngine {
+    fn server_config(&self, bind_type: &ServerStrategy) -> ServerConfig {
+        match bind_type {
+            ServerStrategy::UnixSocket => ServerConfig::UnixSocket,
+            ServerStrategy::InternalTcpPort => ServerConfig::TcpPort(self.internal_ip.clone()),
+            ServerStrategy::ExternalTcpPort(_) => todo!(),
+            ServerStrategy::Demux(demux) => {
+                let mut config_map = HashMap::new();
+                for (key, bind_type) in demux {
+                    config_map.insert(*key, LaunchedSSHHost::server_config(self, bind_type));
+                }
+
+                ServerConfig::Demux(config_map)
+            }
+        }
+    }
+
+    fn resource_result(&self) -> &Arc<ResourceResult> {
+        &self.resource_result
     }
 
     async fn open_ssh_session(&self) -> Result<AsyncSession<TcpStream>> {
@@ -118,102 +91,90 @@ impl LaunchedComputeEngine {
     }
 }
 
-#[async_trait]
-impl LaunchedHost for LaunchedComputeEngine {
-    fn server_config(&self, bind_type: &ServerStrategy) -> ServerConfig {
-        match bind_type {
-            ServerStrategy::UnixSocket => ServerConfig::UnixSocket,
-            ServerStrategy::InternalTcpPort => ServerConfig::TcpPort(self.internal_ip.clone()),
-            ServerStrategy::ExternalTcpPort(_) => todo!(),
-            ServerStrategy::Demux(demux) => {
-                let mut config_map = HashMap::new();
-                for (key, bind_type) in demux {
-                    config_map.insert(*key, self.server_config(bind_type));
-                }
+pub struct GCPNetwork {
+    pub project: String,
+    pub vpc_id: Option<String>,
+}
 
-                ServerConfig::Demux(config_map)
-            }
+impl GCPNetwork {
+    fn collect_resources(&mut self, resource_batch: &mut ResourceBatch) {
+        if self.vpc_id.is_some() {
+            return;
         }
-    }
 
-    async fn launch_binary(
-        &self,
-        binary: &Path,
-        args: &[String],
-    ) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
-        let session = self.open_ssh_session().await?;
+        resource_batch
+            .terraform
+            .terraform
+            .required_providers
+            .insert(
+                "google".to_string(),
+                TerraformProvider {
+                    source: "hashicorp/google".to_string(),
+                    version: "4.53.1".to_string(),
+                },
+            );
 
-        let sftp = session.sftp().await?;
+        let vpc_network = format!("hydro-vpc-network-{}", nanoid!(8, &TERRAFORM_ALPHABET));
+        self.vpc_id = Some(vpc_network.clone());
+        resource_batch
+            .terraform
+            .resource
+            .entry("google_compute_network".to_string())
+            .or_default()
+            .insert(
+                vpc_network.clone(),
+                json!({
+                    "name": vpc_network,
+                    "project": self.project,
+                    "auto_create_subnetworks": true
+                }),
+            );
 
-        // we may be deploying multiple binaries, so give each a unique name
-        let my_binary_counter = self
-            .binary_counter
-            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let firewall_entries = resource_batch
+            .terraform
+            .resource
+            .entry("google_compute_firewall".to_string())
+            .or_default();
 
-        let binary_path = PathBuf::from(format!("/home/hydro/hydro-{my_binary_counter}"));
+        // allow all VMs to communicate with each other over internal IPs
+        firewall_entries.insert(
+            format!("{vpc_network}-default-allow-internal"),
+            json!({
+                "name": format!("{vpc_network}-default-allow-internal"),
+                "project": self.project,
+                "network": format!("${{google_compute_network.{vpc_network}.name}}"),
+                "source_ranges": ["10.128.0.0/9"],
+                "allow": [
+                    {
+                        "protocol": "tcp",
+                        "ports": ["0-65535"]
+                    },
+                    {
+                        "protocol": "udp",
+                        "ports": ["0-65535"]
+                    },
+                    {
+                        "protocol": "icmp"
+                    }
+                ]
+            }),
+        );
 
-        let mut created_file = sftp.create(&binary_path).await?;
-        created_file
-            .write_all(std::fs::read(binary).unwrap().as_slice())
-            .await?;
-
-        let mut orig_file_stat = sftp.stat(&binary_path).await?;
-        orig_file_stat.perm = Some(0o755); // allow the copied binary to be executed by anyone
-        created_file.setstat(orig_file_stat).await?;
-        created_file.close().await?;
-        drop(created_file);
-
-        let mut channel = session.channel_session().await?;
-        let binary_path_string = binary_path.to_str().unwrap();
-        let args_string = args
-            .iter()
-            .map(|s| shell_escape::unix::escape(Cow::from(s)))
-            .fold("".to_string(), |acc, v| format!("{acc} {v}"));
-        channel
-            .exec(&format!("{binary_path_string}{args_string}"))
-            .await?;
-
-        let (stdin_sender, mut stdin_receiver) = async_channel::unbounded::<String>();
-        let mut stdin = channel.stream(0); // stream 0 is stdout/stdin, we use it for stdin
-        tokio::spawn(async move {
-            while let Some(line) = stdin_receiver.next().await {
-                if stdin.write_all(line.as_bytes()).await.is_err() {
-                    break;
-                }
-            }
-        });
-
-        let stdout_receivers = create_broadcast(channel.stream(0), |s| println!("{s}"));
-        let stderr_receivers = create_broadcast(channel.stderr(), |s| eprintln!("{s}"));
-
-        Ok(Arc::new(RwLock::new(LaunchedComputeEngineBinary {
-            _resource_result: self.resource_result.clone(),
-            channel,
-            stdin_sender,
-            stdout_receivers,
-            stderr_receivers,
-        })))
-    }
-
-    async fn forward_port(&self, port: u16) -> Result<SocketAddr> {
-        let session = self.open_ssh_session().await?;
-
-        let local_port = TcpListener::bind("127.0.0.1:0").await?;
-        let local_addr = local_port.local_addr()?;
-
-        let internal_ip = self.internal_ip.clone();
-
-        tokio::spawn(async move {
-            while let Ok((mut local_stream, _)) = local_port.accept().await {
-                let mut channel = session
-                    .channel_direct_tcpip(&internal_ip, port, None)
-                    .await
-                    .unwrap();
-                let _ = tokio::io::copy_bidirectional(&mut local_stream, &mut channel).await;
-            }
-        });
-
-        Ok(local_addr)
+        // allow external pings to all VMs
+        firewall_entries.insert(
+            format!("{vpc_network}-default-allow-ping"),
+            json!({
+                "name": format!("{vpc_network}-default-allow-ping"),
+                "project": self.project,
+                "network": format!("${{google_compute_network.{vpc_network}.name}}"),
+                "source_ranges": ["0.0.0.0/0"],
+                "allow": [
+                    {
+                        "protocol": "icmp"
+                    }
+                ]
+            }),
+        );
     }
 }
 
@@ -223,6 +184,7 @@ pub struct GCPComputeEngineHost {
     pub machine_type: String,
     pub image: String,
     pub region: String,
+    pub network: Arc<RwLock<GCPNetwork>>,
     pub launched: Option<Arc<LaunchedComputeEngine>>,
     external_ports: Vec<u16>,
 }
@@ -234,6 +196,7 @@ impl GCPComputeEngineHost {
         machine_type: String,
         image: String,
         region: String,
+        network: Arc<RwLock<GCPNetwork>>,
     ) -> Self {
         Self {
             id,
@@ -241,6 +204,7 @@ impl GCPComputeEngineHost {
             machine_type,
             image,
             region,
+            network,
             launched: None,
             external_ports: vec![],
         }
@@ -281,8 +245,12 @@ impl Host for GCPComputeEngineHost {
     }
 
     fn collect_resources(&self, resource_batch: &mut ResourceBatch) {
+        self.network
+            .try_write()
+            .unwrap()
+            .collect_resources(resource_batch);
+
         let project = self.project.as_str();
-        let id = self.id;
 
         // first, we import the providers we need
         resource_batch
@@ -350,68 +318,17 @@ impl Host for GCPComputeEngineHost {
             );
 
         // we use a single VPC for all VMs
-        let vpc_network = format!("vpc-network-{project}");
-        resource_batch
-            .terraform
-            .resource
-            .entry("google_compute_network".to_string())
-            .or_default()
-            .insert(
-                vpc_network.clone(),
-                json!({
-                    "name": vpc_network,
-                    "project": project,
-                    "auto_create_subnetworks": true
-                }),
-            );
+        let vpc_network = self
+            .network
+            .try_read()
+            .unwrap()
+            .vpc_id
+            .as_ref()
+            .unwrap()
+            .clone();
 
-        let firewall_entries = resource_batch
-            .terraform
-            .resource
-            .entry("google_compute_firewall".to_string())
-            .or_default();
-
-        // allow all VMs to communicate with each other over internal IPs
-        firewall_entries.insert(
-            format!("{vpc_network}-default-allow-internal"),
-            json!({
-                "name": format!("{vpc_network}-default-allow-internal"),
-                "project": project,
-                "network": format!("${{google_compute_network.{vpc_network}.name}}"),
-                "source_ranges": ["10.128.0.0/9"],
-                "allow": [
-                    {
-                        "protocol": "tcp",
-                        "ports": ["0-65535"]
-                    },
-                    {
-                        "protocol": "udp",
-                        "ports": ["0-65535"]
-                    },
-                    {
-                        "protocol": "icmp"
-                    }
-                ]
-            }),
-        );
-
-        // allow external pings to all VMs
-        firewall_entries.insert(
-            format!("{vpc_network}-default-allow-ping"),
-            json!({
-                "name": format!("{vpc_network}-default-allow-ping"),
-                "project": project,
-                "network": format!("${{google_compute_network.{vpc_network}.name}}"),
-                "source_ranges": ["0.0.0.0/0"],
-                "allow": [
-                    {
-                        "protocol": "icmp"
-                    }
-                ]
-            }),
-        );
-
-        let vm_instance = format!("vm-instance-{project}-{id}");
+        let vm_key = format!("vm-instance-{}", self.id);
+        let vm_name = format!("hydro-vm-instance-{}", nanoid!(8, &TERRAFORM_ALPHABET));
 
         let mut tags = vec![];
         let mut external_interfaces = vec![];
@@ -431,8 +348,13 @@ impl Host for GCPComputeEngineHost {
             }));
 
             // open the external ports that were requested
-            let open_external_ports_rule = format!("{vm_instance}-open-external-ports");
-            firewall_entries.insert(
+            let open_external_ports_rule = format!("{vm_name}-open-external-ports");
+            resource_batch
+                .terraform
+                .resource
+                .entry("google_compute_firewall".to_string())
+                .or_default()
+                .insert(
                 open_external_ports_rule.clone(),
                 json!({
                     "name": open_external_ports_rule,
@@ -452,9 +374,9 @@ impl Host for GCPComputeEngineHost {
             tags.push(open_external_ports_rule);
 
             resource_batch.terraform.output.insert(
-                format!("{vm_instance}-public-ip"),
+                format!("{vm_key}-public-ip"),
                 TerraformOutput {
-                    value: format!("${{google_compute_instance.{vm_instance}.network_interface[0].access_config[0].nat_ip}}")
+                    value: format!("${{google_compute_instance.{vm_key}.network_interface[0].access_config[0].nat_ip}}")
                 }
             );
         }
@@ -465,9 +387,9 @@ impl Host for GCPComputeEngineHost {
             .entry("google_compute_instance".to_string())
             .or_default()
             .insert(
-                vm_instance.clone(),
+                vm_key.clone(),
                 json!({
-                    "name": vm_instance,
+                    "name": vm_name,
                     "project": project,
                     "machine_type": self.machine_type,
                     "zone": self.region,
@@ -489,10 +411,10 @@ impl Host for GCPComputeEngineHost {
             );
 
         resource_batch.terraform.output.insert(
-            format!("{vm_instance}-internal-ip"),
+            format!("{vm_key}-internal-ip"),
             TerraformOutput {
                 value: format!(
-                    "${{google_compute_instance.{vm_instance}.network_interface[0].network_ip}}"
+                    "${{google_compute_instance.{vm_key}.network_interface[0].network_ip}}"
                 ),
             },
         );
@@ -500,13 +422,12 @@ impl Host for GCPComputeEngineHost {
 
     async fn provision(&mut self, resource_result: &Arc<ResourceResult>) -> Arc<dyn LaunchedHost> {
         if self.launched.is_none() {
-            let project = self.project.as_str();
             let id = self.id;
 
             let internal_ip = resource_result
                 .terraform
                 .outputs
-                .get(&format!("vm-instance-{project}-{id}-internal-ip"))
+                .get(&format!("vm-instance-{id}-internal-ip"))
                 .unwrap()
                 .value
                 .clone();
@@ -514,14 +435,13 @@ impl Host for GCPComputeEngineHost {
             let external_ip = resource_result
                 .terraform
                 .outputs
-                .get(&format!("vm-instance-{project}-{id}-public-ip"))
+                .get(&format!("vm-instance-{id}-public-ip"))
                 .map(|v| v.value.clone());
 
             self.launched = Some(Arc::new(LaunchedComputeEngine {
                 resource_result: resource_result.clone(),
                 internal_ip,
                 external_ip,
-                binary_counter: AtomicUsize::new(0),
             }))
         }
 

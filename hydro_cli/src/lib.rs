@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use async_channel::Receiver;
 use bytes::Bytes;
-use futures::SinkExt;
-use hydroflow_cli_integration::{Connected, ConnectedBidi, DynSink};
+use futures::{Future, SinkExt};
+use hydroflow_cli_integration::{ConnectedBidi, DynSink};
 use pyo3::exceptions::PyException;
 use pyo3::types::{PyBytes, PyDict};
 use pyo3::{create_exception, prelude::*, wrap_pymodule};
@@ -15,6 +15,19 @@ pub mod core;
 use crate::core::hydroflow_crate::ports::HydroflowSource;
 
 create_exception!(hydro_cli_core, AnyhowError, PyException);
+
+fn interruptible_future_to_py<F, T>(py: Python<'_>, fut: F) -> PyResult<&PyAny>
+where
+    F: Future<Output = PyResult<T>> + Send + 'static,
+    T: IntoPy<PyObject>,
+{
+    pyo3_asyncio::tokio::future_into_py(py, async move {
+        tokio::select! {
+            _ = tokio::signal::ctrl_c() => Err(PyErr::new::<pyo3::exceptions::PyKeyboardInterrupt, _>("received Ctrl-C")),
+            r = fut => r,
+        }
+    })
+}
 
 #[pyclass]
 #[derive(Clone)]
@@ -32,10 +45,7 @@ impl Deployment {
     #[new]
     fn new() -> Self {
         Deployment {
-            underlying: Arc::new(RwLock::new(crate::core::Deployment {
-                hosts: Vec::new(),
-                services: Vec::new(),
-            })),
+            underlying: Arc::new(RwLock::new(crate::core::Deployment::default())),
         }
     }
 
@@ -62,12 +72,20 @@ impl Deployment {
         machine_type: String,
         image: String,
         region: String,
+        network: GCPNetwork,
     ) -> PyResult<Py<pyo3::PyAny>> {
         Ok(Py::new(
             py,
             PyClassInitializer::from(Host {
                 underlying: self.underlying.blocking_write().add_host(|id| {
-                    crate::core::GCPComputeEngineHost::new(id, project, machine_type, image, region)
+                    crate::core::GCPComputeEngineHost::new(
+                        id,
+                        project,
+                        machine_type,
+                        image,
+                        region,
+                        network.underlying,
+                    )
                 }),
             })
             .add_subclass(LocalhostHost {}),
@@ -137,7 +155,7 @@ impl Deployment {
 
     fn deploy<'p>(&self, py: Python<'p>) -> &'p pyo3::PyAny {
         let underlying = self.underlying.clone();
-        pyo3_asyncio::tokio::future_into_py(py, async move {
+        interruptible_future_to_py(py, async move {
             underlying.write().await.deploy().await.map_err(|e| {
                 Python::with_gil(|py| {
                     AnyhowError::new_err(
@@ -158,7 +176,7 @@ impl Deployment {
 
     fn start<'p>(&self, py: Python<'p>) -> &'p pyo3::PyAny {
         let underlying = self.underlying.clone();
-        pyo3_asyncio::tokio::future_into_py(py, async move {
+        interruptible_future_to_py(py, async move {
             underlying.write().await.start().await;
             Ok(Python::with_gil(|py| py.None()))
         })
@@ -173,6 +191,25 @@ pub struct Host {
 
 #[pyclass(extends=Host, subclass)]
 struct LocalhostHost {}
+
+#[pyclass]
+#[derive(Clone)]
+struct GCPNetwork {
+    underlying: Arc<RwLock<crate::core::gcp::GCPNetwork>>,
+}
+
+#[pymethods]
+impl GCPNetwork {
+    #[new]
+    fn new(project: String) -> Self {
+        GCPNetwork {
+            underlying: Arc::new(RwLock::new(crate::core::gcp::GCPNetwork {
+                project,
+                vpc_id: None,
+            })),
+        }
+    }
+}
 
 #[pyclass(extends=Host, subclass)]
 struct GCPComputeEngineHost {
@@ -231,7 +268,7 @@ struct PyReceiver {
 impl PyReceiver {
     fn next<'p>(&self, py: Python<'p>) -> &'p pyo3::PyAny {
         let my_receiver = self.receiver.clone();
-        pyo3_asyncio::tokio::future_into_py(py, async move {
+        interruptible_future_to_py(py, async move {
             let underlying = my_receiver.recv();
             Ok(underlying.await.map(Some).unwrap_or(None))
         })
@@ -274,7 +311,7 @@ impl CustomClientPort {
 
     fn server_port<'p>(&self, py: Python<'p>) -> &'p pyo3::PyAny {
         let underlying = self.underlying.clone();
-        pyo3_asyncio::tokio::future_into_py(py, async move {
+        interruptible_future_to_py(py, async move {
             let underlying = underlying.read().await;
             Ok(ServerPort {
                 underlying: Some(underlying.server_port().await),
@@ -318,7 +355,7 @@ async def pyreceiver_to_async_generator(pyreceiver):
 impl HydroflowCrate {
     fn stdout<'p>(&self, py: Python<'p>) -> &'p pyo3::PyAny {
         let underlying = self.underlying.clone();
-        pyo3_asyncio::tokio::future_into_py(py, async move {
+        interruptible_future_to_py(py, async move {
             let underlying = underlying.read().await;
             convert_py_receiver(PyReceiver {
                 receiver: Arc::new(underlying.stdout().await),
@@ -329,7 +366,7 @@ impl HydroflowCrate {
 
     fn stderr<'p>(&self, py: Python<'p>) -> &'p pyo3::PyAny {
         let underlying = self.underlying.clone();
-        pyo3_asyncio::tokio::future_into_py(py, async move {
+        interruptible_future_to_py(py, async move {
             let underlying = underlying.read().await;
             convert_py_receiver(PyReceiver {
                 receiver: Arc::new(underlying.stderr().await),
@@ -340,7 +377,7 @@ impl HydroflowCrate {
 
     fn exit_code<'p>(&self, py: Python<'p>) -> &'p pyo3::PyAny {
         let underlying = self.underlying.clone();
-        pyo3_asyncio::tokio::future_into_py(py, async move {
+        interruptible_future_to_py(py, async move {
             let underlying = underlying.read().await;
             Ok(underlying.exit_code().await)
         })
@@ -411,11 +448,14 @@ struct ServerPort {
 impl ServerPort {
     fn sink<'p>(&mut self, py: Python<'p>) -> &'p pyo3::PyAny {
         let underlying = self.underlying.take().unwrap();
-        pyo3_asyncio::tokio::future_into_py(py, async move {
+        interruptible_future_to_py(py, async move {
+            let connected = {
+                use hydroflow_cli_integration::ConnectedSink;
+                underlying.connect::<ConnectedBidi>().await.take_sink()
+            };
+
             Ok(ConnectedSink {
-                underlying: Arc::new(RwLock::new(
-                    underlying.connect::<ConnectedBidi>().await.take_sink(),
-                )),
+                underlying: Arc::new(RwLock::new(connected)),
             })
         })
         .unwrap()
@@ -433,7 +473,7 @@ impl ConnectedSink {
     fn send<'p>(&mut self, data: Py<PyBytes>, py: Python<'p>) -> &'p PyAny {
         let underlying = self.underlying.clone();
         let bytes = Bytes::from(data.as_bytes(py).to_vec());
-        pyo3_asyncio::tokio::future_into_py(py, async move {
+        interruptible_future_to_py(py, async move {
             underlying.write().await.send(bytes).await?;
             Ok(())
         })
@@ -443,6 +483,11 @@ impl ConnectedSink {
 
 #[pymodule]
 pub fn _core(py: Python<'_>, module: &PyModule) -> PyResult<()> {
+    ctrlc::set_handler(move || {
+        eprintln!("Received Ctrl-C, cleaning up...");
+    })
+    .unwrap();
+
     module.add("AnyhowError", py.get_type::<AnyhowError>())?;
     module.add_class::<AnyhowWrapper>()?;
 
@@ -450,6 +495,8 @@ pub fn _core(py: Python<'_>, module: &PyModule) -> PyResult<()> {
 
     module.add_class::<Host>()?;
     module.add_class::<LocalhostHost>()?;
+
+    module.add_class::<GCPNetwork>()?;
     module.add_class::<GCPComputeEngineHost>()?;
 
     module.add_class::<Service>()?;
