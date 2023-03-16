@@ -1,6 +1,7 @@
 import hydro
 import json
 from pathlib import Path
+from aiostream import stream
 
 async def main(args):
     machine_1_gcp = args[0] == "gcp"
@@ -32,18 +33,25 @@ async def main(args):
     sender = deployment.HydroflowCrate(
         src=str(Path(__file__).parent.absolute()),
         example="dedalus_sender",
-        args=[json.dumps([0])],
+        args=[json.dumps([0, 1])],
         on=machine1
     )
 
-    receiver = deployment.HydroflowCrate(
+    receiver1 = deployment.HydroflowCrate(
+        src=str(Path(__file__).parent.absolute()),
+        example="dedalus_receiver",
+        on=machine2
+    )
+
+    receiver2 = deployment.HydroflowCrate(
         src=str(Path(__file__).parent.absolute()),
         example="dedalus_receiver",
         on=machine2
     )
 
     sender.ports.broadcast.send_to(hydro.demux({
-        0: receiver.ports.broadcast
+        0: receiver1.ports.broadcast,
+        1: receiver2.ports.broadcast
     }))
 
     await deployment.deploy()
@@ -51,17 +59,19 @@ async def main(args):
     print("deployed!")
 
     # create this as separate variable to indicate to Hydro that we want to capture all stdout, even after the loop
-    receiver_out = await receiver.stdout()
+    receiver_1_out = await receiver1.stdout()
+    receiver_2_out = await receiver2.stdout()
 
     await deployment.start()
     print("started!")
 
     counter = 0
-    async for log in receiver_out:
-        print(f"{counter}: {log}")
-        counter += 1
-        if counter == 10:
-            break
+    async with stream.merge(stream.map(receiver_1_out, lambda x: f"RECEIVER 1: {x}"), stream.map(receiver_2_out, lambda x: f"RECEIVER 2: {x}")).stream() as merged:
+        async for log in merged:
+            print(log)
+            counter += 1
+            if counter == 10:
+                break
 
     print(await sender.exit_code())
 
