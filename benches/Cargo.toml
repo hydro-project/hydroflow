@@ -59,3 +59,7 @@ harness = false
 [[bench]]
 name = "symmetric_hash_join"
 harness = false
+
+[[bench]]
+name = "mapjoinperf"
+harness = false
