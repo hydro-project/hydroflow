@@ -86,7 +86,7 @@ impl ServerOrBound {
     }
 }
 
-/// Describes a medium through which two Hydroflow services can communicate.
+/// Describes how to connect to a service which is listening on some port.
 #[allow(unreachable_code)]
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum ServerPort {
@@ -95,7 +95,7 @@ pub enum ServerPort {
     Demux(HashMap<u32, ServerPort>),
 }
 
-pub type DynStream = Pin<Box<dyn Stream<Item = Result<BytesMut, io::Error>> + Send>>;
+pub type DynStream = Pin<Box<dyn Stream<Item = Result<BytesMut, io::Error>> + Send + Sync>>;
 
 pub type DynSink<Input> = Pin<Box<dyn Sink<Input, Error = io::Error> + Send + Sync>>;
 
@@ -123,7 +123,7 @@ pub enum BoundConnection {
 }
 
 impl BoundConnection {
-    pub fn connection_defn(&self) -> ServerPort {
+    pub fn sink_port(&self) -> ServerPort {
         match self {
             BoundConnection::UnixSocket(listener, _) => {
                 #[cfg(unix)]
@@ -152,7 +152,7 @@ impl BoundConnection {
             BoundConnection::Demux(bindings) => {
                 let mut demux = HashMap::new();
                 for (key, bind) in bindings {
-                    demux.insert(*key, bind.connection_defn());
+                    demux.insert(*key, bind.sink_port());
                 }
                 ServerPort::Demux(demux)
             }
