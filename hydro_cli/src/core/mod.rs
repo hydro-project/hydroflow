@@ -3,7 +3,7 @@ use std::{collections::HashMap, net::SocketAddr, path::Path, sync::Arc};
 use anyhow::Result;
 use async_channel::{Receiver, Sender};
 use async_trait::async_trait;
-use hydroflow_cli_integration::ServerConfig;
+use hydroflow_cli_integration::ServerBindConfig;
 use tokio::sync::RwLock;
 
 pub mod deployment;
@@ -67,7 +67,7 @@ pub trait LaunchedBinary: Send + Sync {
 pub trait LaunchedHost: Send + Sync {
     /// Given a pre-selected network type, computes concrete information needed for a service
     /// to listen to network connections (such as the IP address to bind to).
-    fn server_config(&self, strategy: &ServerStrategy) -> ServerConfig;
+    fn server_config(&self, strategy: &ServerStrategy) -> ServerBindConfig;
 
     async fn launch_binary(
         &self,
@@ -87,6 +87,7 @@ pub enum ServerStrategy {
         u16,
     ),
     Demux(HashMap<u32, ServerStrategy>),
+    Merge(Vec<ServerStrategy>),
 }
 
 /// Like BindType, but includes metadata for determining whether a connection is possible.
