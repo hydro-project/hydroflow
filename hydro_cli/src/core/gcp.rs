@@ -4,7 +4,7 @@ use anyhow::{Context, Result};
 
 use async_ssh2_lite::{AsyncSession, SessionConfiguration};
 use async_trait::async_trait;
-use hydroflow_cli_integration::ServerConfig;
+use hydroflow_cli_integration::ServerBindConfig;
 use nanoid::nanoid;
 use serde_json::json;
 use tokio::{net::TcpStream, sync::RwLock};
@@ -38,10 +38,10 @@ impl LaunchedComputeEngine {
 
 #[async_trait]
 impl LaunchedSSHHost for LaunchedComputeEngine {
-    fn server_config(&self, bind_type: &ServerStrategy) -> ServerConfig {
+    fn server_config(&self, bind_type: &ServerStrategy) -> ServerBindConfig {
         match bind_type {
-            ServerStrategy::UnixSocket => ServerConfig::UnixSocket,
-            ServerStrategy::InternalTcpPort => ServerConfig::TcpPort(self.internal_ip.clone()),
+            ServerStrategy::UnixSocket => ServerBindConfig::UnixSocket,
+            ServerStrategy::InternalTcpPort => ServerBindConfig::TcpPort(self.internal_ip.clone()),
             ServerStrategy::ExternalTcpPort(_) => todo!(),
             ServerStrategy::Demux(demux) => {
                 let mut config_map = HashMap::new();
@@ -49,7 +49,15 @@ impl LaunchedSSHHost for LaunchedComputeEngine {
                     config_map.insert(*key, LaunchedSSHHost::server_config(self, bind_type));
                 }
 
-                ServerConfig::Demux(config_map)
+                ServerBindConfig::Demux(config_map)
+            }
+            ServerStrategy::Merge(merge) => {
+                let mut configs = vec![];
+                for bind_type in merge {
+                    configs.push(LaunchedSSHHost::server_config(self, bind_type));
+                }
+
+                ServerBindConfig::Merge(configs)
             }
         }
     }
@@ -226,6 +234,11 @@ impl Host for GCPComputeEngineHost {
             }
             ServerStrategy::Demux(demux) => {
                 for bind_type in demux.values() {
+                    self.request_port(bind_type);
+                }
+            }
+            ServerStrategy::Merge(merge) => {
+                for bind_type in merge {
                     self.request_port(bind_type);
                 }
             }

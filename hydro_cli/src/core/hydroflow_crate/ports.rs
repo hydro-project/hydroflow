@@ -77,6 +77,17 @@ impl HydroflowSink for DemuxSink {
 pub struct HydroflowPortConfig {
     pub service: Weak<RwLock<HydroflowCrate>>,
     pub port: String,
+    pub merge: bool,
+}
+
+impl HydroflowPortConfig {
+    pub fn merge(&self) -> Self {
+        Self {
+            service: self.service.clone(),
+            port: self.port.clone(),
+            merge: true,
+        }
+    }
 }
 
 impl HydroflowSource for HydroflowPortConfig {
@@ -120,16 +131,38 @@ impl HydroflowSink for HydroflowPortConfig {
             client_host.try_read().ok()
         };
 
+        // TODO(shadaj): this could pass for some, fail for others, should plan then mutate
         let (conn_type, bind_type) = server_host.strategy_as_server(client_host_read.as_deref())?;
 
-        server_write
-            .port_to_bind
-            .insert(self.port.clone(), bind_type);
+        if self.merge {
+            let merge_config = server_write
+                .port_to_bind
+                .entry(self.port.clone())
+                .or_insert(ServerStrategy::Merge(vec![]));
+            let merge_index = if let ServerStrategy::Merge(merge) = merge_config {
+                merge.push(bind_type);
+                merge.len() - 1
+            } else {
+                panic!()
+            };
 
-        Ok(ServerConfig::from_strategy(
-            &conn_type,
-            Box::new(self.clone()),
-        ))
+            Ok(ServerConfig::MergeSelect(
+                Box::new(ServerConfig::from_strategy(
+                    &conn_type,
+                    Box::new(self.clone()),
+                )),
+                merge_index,
+            ))
+        } else {
+            assert!(!server_write.port_to_bind.contains_key(&self.port));
+            server_write
+                .port_to_bind
+                .insert(self.port.clone(), bind_type);
+            Ok(ServerConfig::from_strategy(
+                &conn_type,
+                Box::new(self.clone()),
+            ))
+        }
     }
 
     fn instantiate_reverse(
@@ -155,6 +188,7 @@ impl HydroflowSink for HydroflowPortConfig {
 
         let (conn_type, bind_type) = server_host.strategy_as_server(client_host_read.as_deref())?;
 
+        assert!(!client_write.port_to_server.contains_key(&self.port));
         client_write.port_to_server.insert(
             self.port.clone(),
             wrap_client_port(ServerConfig::from_strategy(&conn_type, server_sink)),
@@ -167,10 +201,14 @@ impl HydroflowSink for HydroflowPortConfig {
 pub enum ServerConfig {
     Direct(Box<dyn HydroflowServer>),
     Forwarded(Box<dyn HydroflowServer>),
-    /// A demux that will be used at runtime.
+    /// A demux that will be used at runtime to listen to many connections.
     Demux(HashMap<u32, ServerConfig>),
     /// The other side of a demux, with a port to extract the appropriate connection.
     DemuxSelect(Box<ServerConfig>, u32),
+    /// A merge that will be used at runtime to combine many connections.
+    Merge(Vec<ServerConfig>),
+    /// The other side of a merge, with a port to extract the appropriate connection.
+    MergeSelect(Box<ServerConfig>, usize),
 }
 
 impl ServerConfig {
@@ -198,6 +236,13 @@ async fn forward_connection(conn: &ServerPort, target: &dyn LaunchedHost) -> Ser
                 forwarded_map.insert(*key, forward_connection(conn, target).await);
             }
             ServerPort::Demux(forwarded_map)
+        }
+        ServerPort::Merge(merge) => {
+            let mut forwarded_vec = Vec::new();
+            for conn in merge {
+                forwarded_vec.push(forward_connection(conn, target).await);
+            }
+            ServerPort::Merge(forwarded_vec)
         }
     }
 }
@@ -229,6 +274,22 @@ impl ServerConfig {
                     mapping.remove(key).unwrap()
                 } else {
                     panic!("Expected a demux connection definition")
+                }
+            }
+
+            ServerConfig::Merge(merge) => {
+                let mut merge_vec = Vec::new();
+                for conn in merge {
+                    merge_vec.push(conn.sink_port().await);
+                }
+                ServerPort::Merge(merge_vec)
+            }
+
+            ServerConfig::MergeSelect(underlying, key) => {
+                if let ServerPort::Merge(mut mapping) = underlying.sink_port().await {
+                    mapping.remove(*key)
+                } else {
+                    panic!("Expected a merge connection definition")
                 }
             }
         }
