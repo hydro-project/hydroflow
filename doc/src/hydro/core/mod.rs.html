@@ -160,6 +160,8 @@
 <a href="#160" id="160">160</a>
 <a href="#161" id="161">161</a>
 <a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::{collections::HashMap, net::SocketAddr, path::Path, sync::Arc};
 
 <span class="kw">use </span>anyhow::Result;
@@ -173,6 +175,8 @@
 
 <span class="kw">pub mod </span>localhost;
 <span class="kw">pub use </span>localhost::LocalhostHost;
+
+<span class="kw">pub mod </span>ssh;
 
 <span class="kw">pub mod </span>gcp;
 <span class="kw">pub use </span>gcp::GCPComputeEngineHost;

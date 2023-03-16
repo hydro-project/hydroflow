@@ -1521,7 +1521,7 @@
         <span class="comment">// add nodes
         </span><span class="kw">for </span>(node_id, node) <span class="kw">in </span><span class="self">self</span>.nodes() {
             <span class="kw">let </span>node_txt = <span class="kw">match </span>node {
-                Node::Operator(operator) =&gt; operator.to_token_stream().to_string(),
+                Node::Operator(operator) =&gt; operator.to_pretty_string(),
                 Node::Handoff { .. } =&gt; HANDOFF_NODE_STR.to_string(),
             };
             g.nodes.insert(node_id, node_txt);

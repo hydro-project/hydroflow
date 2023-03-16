@@ -1,5 +1,5 @@
 var sourcesIndex = JSON.parse('{\
-"hydro":["",[["core",[["hydroflow_crate",[],["mod.rs","ports.rs"]]],["custom_service.rs","deployment.rs","gcp.rs","localhost.rs","mod.rs","terraform.rs","util.rs"]]],["cli.rs","lib.rs"]],\
+"hydro":["",[["core",[["hydroflow_crate",[],["mod.rs","ports.rs"]]],["custom_service.rs","deployment.rs","gcp.rs","localhost.rs","mod.rs","ssh.rs","terraform.rs","util.rs"]]],["cli.rs","lib.rs"]],\
 "hydroflow":["",[["compiled",[["pull",[],["batch_join.rs","cross_join.rs","mod.rs","symmetric_hash_join.rs"]]],["mod.rs","push_handoff.rs"]],["lang",[["lattice",[],["bottom.rs","dom_pair.rs","map_union.rs","mod.rs","ord.rs","pair.rs","set_union.rs","top.rs"]]],["clear.rs","collections.rs","mod.rs","monotonic_map.rs","tag.rs"]],["props",[],["mod.rs","wrap.rs"]],["scheduled",[["handoff",[],["handoff_list.rs","mod.rs","tee.rs","vector.rs"]],["net",[],["mod.rs","network_vertex.rs"]]],["context.rs","graph.rs","graph_ext.rs","input.rs","mod.rs","port.rs","query.rs","reactor.rs","state.rs","subgraph.rs","util.rs"]],["util",[],["mod.rs","socket.rs","tcp.rs","udp.rs"]]],["declarative_macro.rs","lib.rs"]],\
 "hydroflow_cli_integration":["",[],["lib.rs"]],\
 "hydroflow_datalog":["",[],["lib.rs"]],\
