@@ -12,6 +12,8 @@ pub use deployment::Deployment;
 pub mod localhost;
 pub use localhost::LocalhostHost;
 
+pub mod ssh;
+
 pub mod gcp;
 pub use gcp::GCPComputeEngineHost;
 

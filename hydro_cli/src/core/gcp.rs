@@ -1,77 +1,26 @@
-use std::{
-    borrow::Cow,
-    collections::HashMap,
-    net::SocketAddr,
-    path::{Path, PathBuf},
-    sync::{atomic::AtomicUsize, Arc},
-    time::Duration,
-};
+use std::{collections::HashMap, net::SocketAddr, path::PathBuf, sync::Arc, time::Duration};
 
 use anyhow::{Context, Result};
-use async_channel::{Receiver, Sender};
 
-use async_ssh2_lite::{AsyncChannel, AsyncSession, SessionConfiguration};
+use async_ssh2_lite::{AsyncSession, SessionConfiguration};
 use async_trait::async_trait;
-use futures::{AsyncWriteExt, StreamExt};
 use hydroflow_cli_integration::ServerConfig;
 use nanoid::nanoid;
 use serde_json::json;
-use tokio::{
-    net::{TcpListener, TcpStream},
-    sync::RwLock,
-};
+use tokio::{net::TcpStream, sync::RwLock};
 
 use super::{
-    localhost::create_broadcast,
+    ssh::LaunchedSSHHost,
     terraform::{TerraformOutput, TerraformProvider, TERRAFORM_ALPHABET},
     util::async_retry,
-    ClientStrategy, Host, HostTargetType, LaunchedBinary, LaunchedHost, ResourceBatch,
-    ResourceResult, ServerStrategy,
+    ClientStrategy, Host, HostTargetType, LaunchedHost, ResourceBatch, ResourceResult,
+    ServerStrategy,
 };
-
-struct LaunchedSSHBinary {
-    _resource_result: Arc<ResourceResult>,
-    channel: AsyncChannel<TcpStream>,
-    stdin_sender: Sender<String>,
-    stdout_receivers: Arc<RwLock<Vec<Sender<String>>>>,
-    stderr_receivers: Arc<RwLock<Vec<Sender<String>>>>,
-}
-
-#[async_trait]
-impl LaunchedBinary for LaunchedSSHBinary {
-    async fn stdin(&self) -> Sender<String> {
-        self.stdin_sender.clone()
-    }
-
-    async fn stdout(&self) -> Receiver<String> {
-        let mut receivers = self.stdout_receivers.write().await;
-        let (sender, receiver) = async_channel::unbounded::<String>();
-        receivers.push(sender);
-        receiver
-    }
-
-    async fn stderr(&self) -> Receiver<String> {
-        let mut receivers = self.stderr_receivers.write().await;
-        let (sender, receiver) = async_channel::unbounded::<String>();
-        receivers.push(sender);
-        receiver
-    }
-
-    async fn exit_code(&self) -> Option<i32> {
-        // until the program exits, the exit status is meaningless
-        if self.channel.eof() {
-            self.channel.exit_status().ok()
-        } else {
-            None
-        }
-    }
-}
 
 pub struct LaunchedComputeEngine {
     resource_result: Arc<ResourceResult>,
     pub internal_ip: String,
     pub external_ip: Option<String>,
-    binary_counter: AtomicUsize,
 }
 
 impl LaunchedComputeEngine {
@@ -84,6 +33,29 @@ impl LaunchedComputeEngine {
             .path()
             .join(".ssh")
             .join("vm_instance_ssh_key_pem")
+    }
+}
+
+#[async_trait]
+impl LaunchedSSHHost for LaunchedComputeEngine {
+    fn server_config(&self, bind_type: &ServerStrategy) -> ServerConfig {
+        match bind_type {
+            ServerStrategy::UnixSocket => ServerConfig::UnixSocket,
+            ServerStrategy::InternalTcpPort => ServerConfig::TcpPort(self.internal_ip.clone()),
+            ServerStrategy::ExternalTcpPort(_) => todo!(),
+            ServerStrategy::Demux(demux) => {
+                let mut config_map = HashMap::new();
+                for (key, bind_type) in demux {
+                    config_map.insert(*key, LaunchedSSHHost::server_config(self, bind_type));
+                }
+
+                ServerConfig::Demux(config_map)
+            }
+        }
+    }
+
+    fn resource_result(&self) -> &Arc<ResourceResult> {
+        &self.resource_result
     }
 
     async fn open_ssh_session(&self) -> Result<AsyncSession<TcpStream>> {
@@ -116,106 +88,6 @@ impl LaunchedComputeEngine {
             Duration::from_secs(1),
         )
         .await
-    }
-}
-
-#[async_trait]
-impl LaunchedHost for LaunchedComputeEngine {
-    fn server_config(&self, bind_type: &ServerStrategy) -> ServerConfig {
-        match bind_type {
-            ServerStrategy::UnixSocket => ServerConfig::UnixSocket,
-            ServerStrategy::InternalTcpPort => ServerConfig::TcpPort(self.internal_ip.clone()),
-            ServerStrategy::ExternalTcpPort(_) => todo!(),
-            ServerStrategy::Demux(demux) => {
-                let mut config_map = HashMap::new();
-                for (key, bind_type) in demux {
-                    config_map.insert(*key, self.server_config(bind_type));
-                }
-
-                ServerConfig::Demux(config_map)
-            }
-        }
-    }
-
-    async fn launch_binary(
-        &self,
-        binary: &Path,
-        args: &[String],
-    ) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
-        let session = self.open_ssh_session().await?;
-
-        let sftp = session.sftp().await?;
-
-        // we may be deploying multiple binaries, so give each a unique name
-        let my_binary_counter = self
-            .binary_counter
-            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-
-        let binary_path = PathBuf::from(format!("/home/hydro/hydro-{my_binary_counter}"));
-
-        let mut created_file = sftp.create(&binary_path).await?;
-        created_file
-            .write_all(std::fs::read(binary).unwrap().as_slice())
-            .await?;
-
-        let mut orig_file_stat = sftp.stat(&binary_path).await?;
-        orig_file_stat.perm = Some(0o755); // allow the copied binary to be executed by anyone
-        created_file.setstat(orig_file_stat).await?;
-        created_file.close().await?;
-        drop(created_file);
-
-        let mut channel = session.channel_session().await?;
-        let binary_path_string = binary_path.to_str().unwrap();
-        let args_string = args
-            .iter()
-            .map(|s| shell_escape::unix::escape(Cow::from(s)))
-            .fold("".to_string(), |acc, v| format!("{acc} {v}"));
-        channel
-            .exec(&format!("{binary_path_string}{args_string}"))
-            .await?;
-
-        let (stdin_sender, mut stdin_receiver) = async_channel::unbounded::<String>();
-        let mut stdin = channel.stream(0); // stream 0 is stdout/stdin, we use it for stdin
-        tokio::spawn(async move {
-            while let Some(line) = stdin_receiver.next().await {
-                if stdin.write_all(line.as_bytes()).await.is_err() {
-                    break;
-                }
-            }
-        });
-
-        let stdout_receivers = create_broadcast(channel.stream(0), |s| println!("{s}"));
-        let stderr_receivers = create_broadcast(channel.stderr(), |s| eprintln!("{s}"));
-
-        Ok(Arc::new(RwLock::new(LaunchedSSHBinary {
-            _resource_result: self.resource_result.clone(),
-            channel,
-            stdin_sender,
-            stdout_receivers,
-            stderr_receivers,
-        })))
-    }
-
-    async fn forward_port(&self, addr: &SocketAddr) -> Result<SocketAddr> {
-        let session = self.open_ssh_session().await?;
-
-        let local_port = TcpListener::bind("127.0.0.1:0").await?;
-        let local_addr = local_port.local_addr()?;
-
-        let internal_ip = addr.ip().to_string();
-        let port = addr.port();
-
-        tokio::spawn(async move {
-            while let Ok((mut local_stream, _)) = local_port.accept().await {
-                let mut channel = session
-                    .channel_direct_tcpip(&internal_ip, port, None)
-                    .await
-                    .unwrap();
-                let _ = tokio::io::copy_bidirectional(&mut local_stream, &mut channel).await;
-            }
-        });
-
-        Ok(local_addr)
     }
 }
 
@@ -570,7 +442,6 @@ impl Host for GCPComputeEngineHost {
                 resource_result: resource_result.clone(),
                 internal_ip,
                 external_ip,
-                binary_counter: AtomicUsize::new(0),
             }))
         }
 
