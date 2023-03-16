@@ -6,21 +6,20 @@ use std::{
     net::SocketAddr,
     path::PathBuf,
     pin::Pin,
-    sync::Arc,
     task::{Context, Poll},
 };
 
 use bytes::{Bytes, BytesMut};
 use serde::{Deserialize, Serialize};
 
-use futures::{Sink, SinkExt, Stream};
+use futures::{ready, Sink, Stream};
 
 use async_recursion::async_recursion;
 use async_trait::async_trait;
+use pin_project::pin_project;
 
 use tokio::io;
 use tokio::net::{TcpListener, TcpStream};
-use tokio::sync::Mutex;
 
 #[cfg(unix)]
 use tokio::net::{UnixListener, UnixStream};
@@ -268,27 +267,49 @@ pub struct ConnectedDemux<T: Connected> {
     sink: Option<DynSink<(u32, T::Input)>>,
 }
 
-// a copy of `Drain` that uses `io::Error` instead of `Infallible`
-struct IoErrorDrain<T> {
+#[pin_project]
+struct DemuxDrain<T> {
     marker: PhantomData<T>,
+    #[pin]
+    sinks: HashMap<u32, DynSink<T>>,
 }
 
-impl<T> Sink<T> for IoErrorDrain<T> {
+impl<T> Sink<(u32, T)> for DemuxDrain<T> {
     type Error = io::Error;
 
     fn poll_ready(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        for sink in self.project().sinks.values_mut() {
+            ready!(Sink::poll_ready(sink.as_mut(), _cx))?;
+        }
+
         Poll::Ready(Ok(()))
     }
 
-    fn start_send(self: Pin<&mut Self>, _item: T) -> Result<(), Self::Error> {
-        Ok(())
+    fn start_send(self: Pin<&mut Self>, item: (u32, T)) -> Result<(), Self::Error> {
+        Sink::start_send(
+            self.project()
+                .sinks
+                .get_mut()
+                .get_mut(&item.0)
+                .unwrap()
+                .as_mut(),
+            item.1,
+        )
     }
 
     fn poll_flush(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        for sink in self.project().sinks.values_mut() {
+            ready!(Sink::poll_flush(sink.as_mut(), _cx))?;
+        }
+
         Poll::Ready(Ok(()))
     }
 
     fn poll_close(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        for sink in self.project().sinks.values_mut() {
+            ready!(Sink::poll_close(sink.as_mut(), _cx))?;
+        }
+
         Poll::Ready(Ok(()))
     }
 }
@@ -316,19 +337,14 @@ where
                 for (id, pipe) in demux {
                     connected_demux.insert(
                         id,
-                        Arc::new(Mutex::new(
-                            T::from_defn(ServerOrBound::Server(pipe)).await.take_sink(),
-                        )),
+                        T::from_defn(ServerOrBound::Server(pipe)).await.take_sink(),
                     );
                 }
 
-                let demuxer = IoErrorDrain {
+                let demuxer = DemuxDrain {
                     marker: PhantomData::default(),
-                }
-                .with(move |(id, input)| {
-                    let sink = connected_demux.get_mut(&id).unwrap().clone();
-                    async move { sink.lock().await.feed(input).await }
-                });
+                    sinks: connected_demux,
+                };
 
                 ConnectedDemux {
                     keys,
@@ -343,19 +359,14 @@ where
                     for (id, bound) in demux {
                         connected_demux.insert(
                             id,
-                            Arc::new(Mutex::new(
-                                T::from_defn(ServerOrBound::Bound(bound)).await.take_sink(),
-                            )),
+                            T::from_defn(ServerOrBound::Bound(bound)).await.take_sink(),
                         );
                     }
 
-                    let demuxer = IoErrorDrain {
+                    let demuxer = DemuxDrain {
                         marker: PhantomData::default(),
-                    }
-                    .with(move |(id, input)| {
-                        let sink = connected_demux.get_mut(&id).unwrap().clone();
-                        async move { sink.lock().await.feed(input).await }
-                    });
+                        sinks: connected_demux,
+                    };
 
                     ConnectedDemux {
                         keys,
