@@ -14,7 +14,9 @@ async fn main() {
         .take_source();
 
     let mut df = hydroflow_syntax! {
-        source_stream(echo_recv) -> map(|x| String::from_utf8(x.unwrap().to_vec()).unwrap()) -> for_each(|x| println!("echo {:?}", x));
+        source_stream(echo_recv) ->
+            map(|x| String::from_utf8(x.unwrap().to_vec()).unwrap()) ->
+            for_each(|x| println!("echo {:?}", x));
     };
 
     df.run_async().await;
