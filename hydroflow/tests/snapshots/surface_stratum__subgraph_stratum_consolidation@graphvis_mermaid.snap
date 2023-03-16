@@ -40,7 +40,7 @@ subgraph sg_3v1 ["sg_3v1 stratum 0"]
 end
 subgraph sg_4v1 ["sg_4v1 stratum 0"]
     7v1[\"(7v1) <tt>merge()</tt>"/]:::pullClass
-    8v1[/"(8v1) <tt>for_each(| x | output_inner.borrow_mut().push(x))</tt>"\]:::pushClass
+    8v1[/"(8v1) <tt>for_each(|x| output_inner.borrow_mut().push(x))</tt>"\]:::pushClass
     7v1--->8v1
     subgraph sg_4v1_var_d ["var <tt>d</tt>"]
         7v1

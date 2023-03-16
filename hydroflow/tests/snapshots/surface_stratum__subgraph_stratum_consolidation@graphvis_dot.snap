@@ -36,7 +36,7 @@ digraph {
         style=filled
         label = "sg_4v1\nstratum 0"
         n7v1 [label="(n7v1) merge()", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
-        n8v1 [label="(n8v1) for_each(| x | output_inner.borrow_mut().push(x))", fontname=Monaco, shape=house, style = filled, color = "#ffff00"]
+        n8v1 [label="(n8v1) for_each(|x| output_inner.borrow_mut().push(x))", fontname=Monaco, shape=house, style = filled, color = "#ffff00"]
         n7v1 -> n8v1
     }
     n2v1 -> n13v1 [label="0"]

@@ -49,7 +49,7 @@ pub(crate) async fn run_client(
         // stamp each input with the latest local vc (as of this tick!)
         input[send] -> [0]stamped_output;
         mergevc[useful] -> [1]stamped_output;
-        stamped_output = cross_join<'tick, 'tick>() -> map(|(l, the_vc): (String, <VecClock as LatticeRepr>::Repr)| (EchoMsg { payload: l, vc: the_vc }, server_addr));
+        stamped_output = cross_join::<'tick, 'tick>() -> map(|(l, the_vc): (String, <VecClock as LatticeRepr>::Repr)| (EchoMsg { payload: l, vc: the_vc }, server_addr));
 
         // and send to server
         stamped_output[send] -> outbound_chan;

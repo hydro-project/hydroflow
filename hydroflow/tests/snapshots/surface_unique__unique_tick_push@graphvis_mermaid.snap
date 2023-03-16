@@ -8,13 +8,13 @@ classDef pullClass fill:#02f,color:#fff,stroke:#000
 classDef pushClass fill:#ff0,stroke:#000
 linkStyle default stroke:#aaa,stroke-width:4px,color:red,font-size:1.5em;
 subgraph sg_1v1 ["sg_1v1 stratum 0"]
-    1v1[\"(1v1) <tt>repeat_iter(0 .. 10)</tt>"/]:::pullClass
-    2v1[\"(2v1) <tt>repeat_iter(5 .. 15)</tt>"/]:::pullClass
+    1v1[\"(1v1) <tt>repeat_iter(0..10)</tt>"/]:::pullClass
+    2v1[\"(2v1) <tt>repeat_iter(5..15)</tt>"/]:::pullClass
     3v1[\"(3v1) <tt>merge()</tt>"/]:::pullClass
     4v1[/"(4v1) <tt>tee()</tt>"\]:::pushClass
-    5v1[/"(5v1) <tt>unique &lt; 'tick &gt; ()</tt>"\]:::pushClass
-    6v1[/"(6v1) <tt>for_each(| v | out_send.send(v).unwrap())</tt>"\]:::pushClass
-    7v1[/"(7v1) <tt>for_each(std :: mem :: drop)</tt>"\]:::pushClass
+    5v1[/"(5v1) <tt>unique::&lt;'tick&gt;()</tt>"\]:::pushClass
+    6v1[/"(6v1) <tt>for_each(|v| out_send.send(v).unwrap())</tt>"\]:::pushClass
+    7v1[/"(7v1) <tt>for_each(std::mem::drop)</tt>"\]:::pushClass
     1v1--->3v1
     2v1--->3v1
     3v1--->4v1
