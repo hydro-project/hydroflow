@@ -225,6 +225,15 @@
 <a href="#225" id="225">225</a>
 <a href="#226" id="226">226</a>
 <a href="#227" id="227">227</a>
+<a href="#228" id="228">228</a>
+<a href="#229" id="229">229</a>
+<a href="#230" id="230">230</a>
+<a href="#231" id="231">231</a>
+<a href="#232" id="232">232</a>
+<a href="#233" id="233">233</a>
+<a href="#234" id="234">234</a>
+<a href="#235" id="235">235</a>
+<a href="#236" id="236">236</a>
 </pre><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::HydroflowCrate;
 <span class="kw">use </span><span class="kw">crate</span>::core::{ClientStrategy, Host, LaunchedHost, ServerStrategy};
 
@@ -240,169 +249,178 @@
 
 <span class="kw">use </span>hydroflow_cli_integration::ServerPort;
 
-<span class="kw">pub trait </span>HydroflowSource {
-    <span class="kw">fn </span>send_to(<span class="kw-2">&amp;mut </span><span class="self">self</span>, to: HydroflowPortConfig);
+<span class="kw">pub trait </span>HydroflowSource: Send + Sync {
+    <span class="kw">fn </span>send_to(<span class="kw-2">&amp;mut </span><span class="self">self</span>, to: <span class="kw-2">&amp;mut </span><span class="kw">dyn </span>HydroflowSink);
 }
 
 <span class="attr">#[async_trait]
-</span><span class="kw">pub trait </span>HydroflowSink: DynClone + Send + Sync {
-    <span class="kw">async fn </span>get_server_port(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ServerPort;
+</span><span class="kw">pub trait </span>HydroflowServer: DynClone + Send + Sync {
+    <span class="kw">async fn </span>get_port(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ServerPort;
     <span class="kw">async fn </span>launched_host(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Arc&lt;<span class="kw">dyn </span>LaunchedHost&gt;;
 }
 
-<span class="attr">#[derive(Clone)]
-</span><span class="kw">pub enum </span>HydroflowPortConfig {
-    Direct(Weak&lt;RwLock&lt;HydroflowCrate&gt;&gt;, String),
-    Demux(HashMap&lt;u32, HydroflowPortConfig&gt;),
+<span class="kw">pub trait </span>HydroflowSink: Send + Sync {
+    <span class="doccomment">/// Instantiate the sink as the source host connecting to the sink host.
+    </span><span class="kw">fn </span>instantiate(<span class="kw-2">&amp;</span><span class="self">self</span>, client_host: <span class="kw-2">&amp;</span>Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;ServerConfig&gt;;
+
+    <span class="doccomment">/// Instantiate the sink, but as the sink host connecting to the source host.
+    </span><span class="kw">fn </span>instantiate_reverse(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        server_host: <span class="kw-2">&amp;</span>Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;,
+        server_sink: Box&lt;<span class="kw">dyn </span>HydroflowServer&gt;,
+        wrap_client_port: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Fn(ServerConfig) -&gt; ServerConfig,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;ServerStrategy&gt;;
 }
 
-<span class="kw">impl </span>HydroflowPortConfig {
-    <span class="kw">pub fn </span>instantiate(<span class="kw-2">&amp;</span><span class="self">self</span>, client_host: <span class="kw-2">&amp;</span>Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;ClientPort&gt; {
-        <span class="kw">match </span><span class="self">self </span>{
-            HydroflowPortConfig::Direct(server_weak, server_port) =&gt; {
-                <span class="kw">let </span>server = server_weak.upgrade().unwrap();
-                <span class="kw">let </span><span class="kw-2">mut </span>server_write = server.try_write().unwrap();
+<span class="kw">pub struct </span>DemuxSink {
+    <span class="kw">pub </span>demux: HashMap&lt;u32, Arc&lt;RwLock&lt;<span class="kw">dyn </span>HydroflowSink&gt;&gt;&gt;,
+}
 
-                <span class="kw">let </span>client_host_id = client_host.try_read().unwrap().id();
-
-                <span class="kw">let </span>server_host_clone = server_write.on.clone();
-                <span class="kw">let </span><span class="kw-2">mut </span>server_host = server_host_clone.try_write().unwrap();
-
-                <span class="kw">let </span>client_host_read = <span class="kw">if </span>server_host.id() == client_host_id {
-                    <span class="prelude-val">None
-                </span>} <span class="kw">else </span>{
-                    client_host.try_read().ok()
-                };
-
-                <span class="kw">let </span>(conn_type, bind_type) =
-                    server_host.strategy_as_server(client_host_read.as_deref())<span class="question-mark">?</span>;
-
-                server_write
-                    .server_ports
-                    .insert(server_port.clone(), bind_type);
-
-                <span class="kw">match </span>conn_type {
-                    ClientStrategy::UnixSocket(<span class="kw">_</span>) | ClientStrategy::InternalTcpPort(<span class="kw">_</span>) =&gt; {
-                        <span class="prelude-val">Ok</span>(ClientPort::Direct(Box::new(<span class="self">self</span>.clone())))
-                    }
-                    ClientStrategy::ForwardedTcpPort(<span class="kw">_</span>) =&gt; {
-                        <span class="prelude-val">Ok</span>(ClientPort::Forwarded(Box::new(<span class="self">self</span>.clone())))
-                    }
-                }
-            }
-            HydroflowPortConfig::Demux(demux) =&gt; {
-                <span class="kw">let </span><span class="kw-2">mut </span>instantiated_map = HashMap::new();
-                <span class="kw">for </span>(key, target) <span class="kw">in </span>demux {
-                    instantiated_map.insert(<span class="kw-2">*</span>key, target.instantiate(client_host)<span class="question-mark">?</span>);
-                }
-
-                <span class="prelude-val">Ok</span>(ClientPort::Demux(instantiated_map))
-            }
+<span class="kw">impl </span>HydroflowSink <span class="kw">for </span>DemuxSink {
+    <span class="kw">fn </span>instantiate(<span class="kw-2">&amp;</span><span class="self">self</span>, client_host: <span class="kw-2">&amp;</span>Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;ServerConfig&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>instantiated_map = HashMap::new();
+        <span class="kw">for </span>(key, target) <span class="kw">in </span><span class="kw-2">&amp;</span><span class="self">self</span>.demux {
+            instantiated_map.insert(<span class="kw-2">*</span>key, target.try_read().unwrap().instantiate(client_host)<span class="question-mark">?</span>);
         }
+
+        <span class="prelude-val">Ok</span>(ServerConfig::Demux(instantiated_map))
     }
 
-    <span class="kw">pub fn </span>instantiate_reverse(
-        <span class="kw-2">&amp;</span><span class="self">self</span>,
+    <span class="kw">fn </span>instantiate_reverse(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         server_host: <span class="kw-2">&amp;</span>Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;,
-        server_sink: Box&lt;<span class="kw">dyn </span>HydroflowSink&gt;,
-        wrap_client_port: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Fn(ClientPort) -&gt; ClientPort,
+        server_sink: Box&lt;<span class="kw">dyn </span>HydroflowServer&gt;,
+        wrap_client_port: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Fn(ServerConfig) -&gt; ServerConfig,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;ServerStrategy&gt; {
-        <span class="kw">match </span><span class="self">self </span>{
-            HydroflowPortConfig::Direct(client_weak, client_port) =&gt; {
-                <span class="kw">let </span>client = client_weak.upgrade().unwrap();
-                <span class="kw">let </span><span class="kw-2">mut </span>client_write = client.try_write().unwrap();
-
-                <span class="kw">let </span>client_host_id = client_write.on.try_read().unwrap().id();
-
-                <span class="kw">let </span>server_host_clone = server_host.clone();
-                <span class="kw">let </span><span class="kw-2">mut </span>server_host = server_host_clone.try_write().unwrap();
-
-                <span class="kw">let </span>client_host_clone = client_write.on.clone();
-                <span class="kw">let </span>client_host_read = <span class="kw">if </span>server_host.id() == client_host_id {
-                    <span class="prelude-val">None
-                </span>} <span class="kw">else </span>{
-                    client_host_clone.try_read().ok()
-                };
-
-                <span class="kw">let </span>(conn_type, bind_type) =
-                    server_host.strategy_as_server(client_host_read.as_deref())<span class="question-mark">?</span>;
-
-                client_write.client_port.insert(
-                    client_port.clone(),
-                    wrap_client_port(<span class="kw">match </span>conn_type {
-                        ClientStrategy::UnixSocket(<span class="kw">_</span>) | ClientStrategy::InternalTcpPort(<span class="kw">_</span>) =&gt; {
-                            ClientPort::Direct(server_sink)
-                        }
-                        ClientStrategy::ForwardedTcpPort(<span class="kw">_</span>) =&gt; ClientPort::Forwarded(server_sink),
-                    }),
-                );
-
-                <span class="prelude-val">Ok</span>(bind_type)
-            }
-            HydroflowPortConfig::Demux(demux) =&gt; {
-                <span class="kw">let </span><span class="kw-2">mut </span>instantiated_map = HashMap::new();
-                <span class="kw">for </span>(key, target) <span class="kw">in </span>demux {
-                    instantiated_map.insert(
-                        <span class="kw-2">*</span>key,
-                        target.instantiate_reverse(
-                            server_host,
-                            dyn_clone::clone_box(<span class="kw-2">&amp;*</span>server_sink),
-                            <span class="comment">// the parent wrapper selects the demux port for the parent defn, so do that first
-                            </span><span class="kw-2">&amp;</span>|p| ClientPort::DemuxSelect(Box::new(wrap_client_port(p)), <span class="kw-2">*</span>key),
-                        )<span class="question-mark">?</span>,
-                    );
-                }
-
-                <span class="prelude-val">Ok</span>(ServerStrategy::Demux(instantiated_map))
-            }
+        <span class="kw">let </span><span class="kw-2">mut </span>instantiated_map = HashMap::new();
+        <span class="kw">for </span>(key, target) <span class="kw">in </span><span class="kw-2">&amp;</span><span class="self">self</span>.demux {
+            instantiated_map.insert(
+                <span class="kw-2">*</span>key,
+                target.try_write().unwrap().instantiate_reverse(
+                    server_host,
+                    dyn_clone::clone_box(<span class="kw-2">&amp;*</span>server_sink),
+                    <span class="comment">// the parent wrapper selects the demux port for the parent defn, so do that first
+                    </span><span class="kw-2">&amp;</span>|p| ServerConfig::DemuxSelect(Box::new(wrap_client_port(p)), <span class="kw-2">*</span>key),
+                )<span class="question-mark">?</span>,
+            );
         }
+
+        <span class="prelude-val">Ok</span>(ServerStrategy::Demux(instantiated_map))
     }
+}
+
+<span class="attr">#[derive(Clone)]
+</span><span class="kw">pub struct </span>HydroflowPortConfig {
+    <span class="kw">pub </span>service: Weak&lt;RwLock&lt;HydroflowCrate&gt;&gt;,
+    <span class="kw">pub </span>port: String,
 }
 
 <span class="kw">impl </span>HydroflowSource <span class="kw">for </span>HydroflowPortConfig {
-    <span class="kw">fn </span>send_to(<span class="kw-2">&amp;mut </span><span class="self">self</span>, to: HydroflowPortConfig) {
-        <span class="kw">if let </span>HydroflowPortConfig::Direct(from, from_port) = <span class="self">self </span>{
-            <span class="kw">let </span>from = from.upgrade().unwrap();
-            <span class="kw">let </span><span class="kw-2">mut </span>from_write = from.try_write().unwrap();
-            from_write
-                .add_client_port(<span class="kw-2">&amp;</span>from, from_port.clone(), to)
-                .unwrap();
-        } <span class="kw">else </span>{
-            <span class="macro">panic!</span>(<span class="string">&quot;Can only send to a direct port&quot;</span>)
-        }
+    <span class="kw">fn </span>send_to(<span class="kw-2">&amp;mut </span><span class="self">self</span>, sink: <span class="kw-2">&amp;mut </span><span class="kw">dyn </span>HydroflowSink) {
+        <span class="kw">let </span>from = <span class="self">self</span>.service.upgrade().unwrap();
+        <span class="kw">let </span><span class="kw-2">mut </span>from_write = from.try_write().unwrap();
+        from_write
+            .add_connection(<span class="kw-2">&amp;</span>from, <span class="self">self</span>.port.clone(), sink)
+            .unwrap();
     }
 }
 
 <span class="attr">#[async_trait]
-</span><span class="kw">impl </span>HydroflowSink <span class="kw">for </span>HydroflowPortConfig {
-    <span class="kw">async fn </span>get_server_port(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ServerPort {
-        <span class="kw">match </span><span class="self">self </span>{
-            HydroflowPortConfig::Direct(server_weak, server_port) =&gt; {
-                <span class="kw">let </span>server = server_weak.upgrade().unwrap();
-                <span class="kw">let </span>server = server.read().<span class="kw">await</span>;
-                server.server_defns.get(server_port).unwrap().clone()
-            }
-            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Can only get server port from a direct port&quot;</span>),
-        }
+</span><span class="kw">impl </span>HydroflowServer <span class="kw">for </span>HydroflowPortConfig {
+    <span class="kw">async fn </span>get_port(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ServerPort {
+        <span class="kw">let </span>server = <span class="self">self</span>.service.upgrade().unwrap();
+        <span class="kw">let </span>server = server.read().<span class="kw">await</span>;
+        server.server_defns.get(<span class="kw-2">&amp;</span><span class="self">self</span>.port).unwrap().clone()
     }
 
     <span class="kw">async fn </span>launched_host(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Arc&lt;<span class="kw">dyn </span>LaunchedHost&gt; {
-        <span class="kw">match </span><span class="self">self </span>{
-            HydroflowPortConfig::Direct(server_weak, <span class="kw">_</span>) =&gt; {
-                <span class="kw">let </span>server = server_weak.upgrade().unwrap();
-                <span class="kw">let </span>server_read = server.read().<span class="kw">await</span>;
-                server_read.launched_host.as_ref().unwrap().clone()
-            }
-            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Can only get server port from a direct port&quot;</span>),
-        }
+        <span class="kw">let </span>server = <span class="self">self</span>.service.upgrade().unwrap();
+        <span class="kw">let </span>server_read = server.read().<span class="kw">await</span>;
+        server_read.launched_host.as_ref().unwrap().clone()
     }
 }
 
-<span class="kw">pub enum </span>ClientPort {
-    Direct(Box&lt;<span class="kw">dyn </span>HydroflowSink&gt;),
-    Forwarded(Box&lt;<span class="kw">dyn </span>HydroflowSink&gt;),
-    Demux(HashMap&lt;u32, ClientPort&gt;),
-    DemuxSelect(Box&lt;ClientPort&gt;, u32),
+<span class="kw">impl </span>HydroflowSink <span class="kw">for </span>HydroflowPortConfig {
+    <span class="kw">fn </span>instantiate(<span class="kw-2">&amp;</span><span class="self">self</span>, client_host: <span class="kw-2">&amp;</span>Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;ServerConfig&gt; {
+        <span class="kw">let </span>server = <span class="self">self</span>.service.upgrade().unwrap();
+        <span class="kw">let </span><span class="kw-2">mut </span>server_write = server.try_write().unwrap();
+
+        <span class="kw">let </span>client_host_id = client_host.try_read().unwrap().id();
+
+        <span class="kw">let </span>server_host_clone = server_write.on.clone();
+        <span class="kw">let </span><span class="kw-2">mut </span>server_host = server_host_clone.try_write().unwrap();
+
+        <span class="kw">let </span>client_host_read = <span class="kw">if </span>server_host.id() == client_host_id {
+            <span class="prelude-val">None
+        </span>} <span class="kw">else </span>{
+            client_host.try_read().ok()
+        };
+
+        <span class="kw">let </span>(conn_type, bind_type) = server_host.strategy_as_server(client_host_read.as_deref())<span class="question-mark">?</span>;
+
+        server_write
+            .port_to_bind
+            .insert(<span class="self">self</span>.port.clone(), bind_type);
+
+        <span class="prelude-val">Ok</span>(ServerConfig::from_strategy(
+            <span class="kw-2">&amp;</span>conn_type,
+            Box::new(<span class="self">self</span>.clone()),
+        ))
+    }
+
+    <span class="kw">fn </span>instantiate_reverse(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        server_host: <span class="kw-2">&amp;</span>Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;,
+        server_sink: Box&lt;<span class="kw">dyn </span>HydroflowServer&gt;,
+        wrap_client_port: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Fn(ServerConfig) -&gt; ServerConfig,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;ServerStrategy&gt; {
+        <span class="kw">let </span>client = <span class="self">self</span>.service.upgrade().unwrap();
+        <span class="kw">let </span><span class="kw-2">mut </span>client_write = client.try_write().unwrap();
+
+        <span class="kw">let </span>client_host_id = client_write.on.try_read().unwrap().id();
+
+        <span class="kw">let </span>server_host_clone = server_host.clone();
+        <span class="kw">let </span><span class="kw-2">mut </span>server_host = server_host_clone.try_write().unwrap();
+
+        <span class="kw">let </span>client_host_clone = client_write.on.clone();
+        <span class="kw">let </span>client_host_read = <span class="kw">if </span>server_host.id() == client_host_id {
+            <span class="prelude-val">None
+        </span>} <span class="kw">else </span>{
+            client_host_clone.try_read().ok()
+        };
+
+        <span class="kw">let </span>(conn_type, bind_type) = server_host.strategy_as_server(client_host_read.as_deref())<span class="question-mark">?</span>;
+
+        client_write.port_to_server.insert(
+            <span class="self">self</span>.port.clone(),
+            wrap_client_port(ServerConfig::from_strategy(<span class="kw-2">&amp;</span>conn_type, server_sink)),
+        );
+
+        <span class="prelude-val">Ok</span>(bind_type)
+    }
+}
+
+<span class="kw">pub enum </span>ServerConfig {
+    Direct(Box&lt;<span class="kw">dyn </span>HydroflowServer&gt;),
+    Forwarded(Box&lt;<span class="kw">dyn </span>HydroflowServer&gt;),
+    <span class="doccomment">/// A demux that will be used at runtime.
+    </span>Demux(HashMap&lt;u32, ServerConfig&gt;),
+    <span class="doccomment">/// The other side of a demux, with a port to extract the appropriate connection.
+    </span>DemuxSelect(Box&lt;ServerConfig&gt;, u32),
+}
+
+<span class="kw">impl </span>ServerConfig {
+    <span class="kw">pub fn </span>from_strategy(
+        strategy: <span class="kw-2">&amp;</span>ClientStrategy,
+        server: Box&lt;<span class="kw">dyn </span>HydroflowServer&gt;,
+    ) -&gt; ServerConfig {
+        <span class="kw">match </span>strategy {
+            ClientStrategy::UnixSocket(<span class="kw">_</span>) | ClientStrategy::InternalTcpPort(<span class="kw">_</span>) =&gt; {
+                ServerConfig::Direct(server)
+            }
+            ClientStrategy::ForwardedTcpPort(<span class="kw">_</span>) =&gt; ServerConfig::Forwarded(server),
+        }
+    }
 }
 
 <span class="attr">#[async_recursion]
@@ -420,30 +438,30 @@
     }
 }
 
-<span class="kw">impl </span>ClientPort {
+<span class="kw">impl </span>ServerConfig {
     <span class="attr">#[async_recursion]
-    </span><span class="kw">pub async fn </span>connection_defn(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ServerPort {
+    </span><span class="kw">pub async fn </span>sink_port(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ServerPort {
         <span class="kw">match </span><span class="self">self </span>{
-            ClientPort::Direct(sink) =&gt; sink.get_server_port().<span class="kw">await</span>,
+            ServerConfig::Direct(server) =&gt; server.get_port().<span class="kw">await</span>,
 
-            ClientPort::Forwarded(sink) =&gt; {
+            ServerConfig::Forwarded(server) =&gt; {
                 forward_connection(
-                    <span class="kw-2">&amp;</span>sink.get_server_port().<span class="kw">await</span>,
-                    sink.launched_host().<span class="kw">await</span>.as_ref(),
+                    <span class="kw-2">&amp;</span>server.get_port().<span class="kw">await</span>,
+                    server.launched_host().<span class="kw">await</span>.as_ref(),
                 )
                 .<span class="kw">await
             </span>}
 
-            ClientPort::Demux(demux) =&gt; {
+            ServerConfig::Demux(demux) =&gt; {
                 <span class="kw">let </span><span class="kw-2">mut </span>demux_map = HashMap::new();
                 <span class="kw">for </span>(key, conn) <span class="kw">in </span>demux {
-                    demux_map.insert(<span class="kw-2">*</span>key, conn.connection_defn().<span class="kw">await</span>);
+                    demux_map.insert(<span class="kw-2">*</span>key, conn.sink_port().<span class="kw">await</span>);
                 }
                 ServerPort::Demux(demux_map)
             }
 
-            ClientPort::DemuxSelect(underlying, key) =&gt; {
-                <span class="kw">if let </span>ServerPort::Demux(<span class="kw-2">mut </span>mapping) = underlying.connection_defn().<span class="kw">await </span>{
+            ServerConfig::DemuxSelect(underlying, key) =&gt; {
+                <span class="kw">if let </span>ServerPort::Demux(<span class="kw-2">mut </span>mapping) = underlying.sink_port().<span class="kw">await </span>{
                     mapping.remove(key).unwrap()
                 } <span class="kw">else </span>{
                     <span class="macro">panic!</span>(<span class="string">&quot;Expected a demux connection definition&quot;</span>)

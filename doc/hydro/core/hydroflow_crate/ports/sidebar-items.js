@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["ClientPort","HydroflowPortConfig"],"trait":["HydroflowSink","HydroflowSource"]};
+window.SIDEBAR_ITEMS = {"enum":["ServerConfig"],"struct":["DemuxSink","HydroflowPortConfig"],"trait":["HydroflowServer","HydroflowSink","HydroflowSource"]};

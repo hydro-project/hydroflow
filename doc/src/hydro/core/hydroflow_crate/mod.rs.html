@@ -276,7 +276,7 @@
 <span class="kw">use </span>hydroflow_cli_integration::ServerPort;
 <span class="kw">use </span>tokio::{sync::RwLock, task::JoinHandle};
 
-<span class="kw">use </span><span class="self">self</span>::ports::HydroflowPortConfig;
+<span class="kw">use </span><span class="self">self</span>::ports::{HydroflowPortConfig, HydroflowSink};
 
 <span class="kw">use super</span>::{
     Host, HostTargetType, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult,
@@ -293,10 +293,10 @@
     args: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
 
     <span class="doccomment">/// Configuration for the ports this service will connect to as a client.
-    </span>client_port: HashMap&lt;String, ports::ClientPort&gt;,
+    </span>port_to_server: HashMap&lt;String, ports::ServerConfig&gt;,
 
     <span class="doccomment">/// Configuration for the ports that this service will listen on a port for.
-    </span>server_ports: HashMap&lt;String, ServerStrategy&gt;,
+    </span>port_to_bind: HashMap&lt;String, ServerStrategy&gt;,
 
     built_binary: <span class="prelude-ty">Option</span>&lt;JoinHandle&lt;PathBuf&gt;&gt;,
     launched_host: <span class="prelude-ty">Option</span>&lt;Arc&lt;<span class="kw">dyn </span>LaunchedHost&gt;&gt;,
@@ -323,8 +323,8 @@
             example,
             features,
             args,
-            client_port: HashMap::new(),
-            server_ports: HashMap::new(),
+            port_to_server: HashMap::new(),
+            port_to_bind: HashMap::new(),
             built_binary: <span class="prelude-val">None</span>,
             launched_host: <span class="prelude-val">None</span>,
             server_defns: HashMap::new(),
@@ -332,25 +332,25 @@
         }
     }
 
-    <span class="kw">pub fn </span>add_client_port(
+    <span class="kw">pub fn </span>add_connection(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         self_arc: <span class="kw-2">&amp;</span>Arc&lt;RwLock&lt;HydroflowCrate&gt;&gt;,
         my_port: String,
-        config: ports::HydroflowPortConfig,
+        sink: <span class="kw-2">&amp;mut </span><span class="kw">dyn </span>HydroflowSink,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="kw">if let </span><span class="prelude-val">Ok</span>(instantiated) = config.instantiate(<span class="kw-2">&amp;</span><span class="self">self</span>.on) {
-            <span class="self">self</span>.client_port.insert(my_port, instantiated);
+        <span class="kw">if let </span><span class="prelude-val">Ok</span>(instantiated) = sink.instantiate(<span class="kw-2">&amp;</span><span class="self">self</span>.on) {
+            <span class="self">self</span>.port_to_server.insert(my_port, instantiated);
             <span class="prelude-val">Ok</span>(())
         } <span class="kw">else </span>{
-            <span class="kw">let </span>instantiated = config.instantiate_reverse(
+            <span class="kw">let </span>instantiated = sink.instantiate_reverse(
                 <span class="kw-2">&amp;</span><span class="self">self</span>.on,
-                Box::new(HydroflowPortConfig::Direct(
-                    Arc::downgrade(self_arc),
-                    my_port.clone(),
-                )),
+                Box::new(HydroflowPortConfig {
+                    service: Arc::downgrade(self_arc),
+                    port: my_port.clone(),
+                }),
                 <span class="kw-2">&amp;</span>|p| p,
             )<span class="question-mark">?</span>;
-            <span class="self">self</span>.server_ports.insert(my_port, instantiated);
+            <span class="self">self</span>.port_to_bind.insert(my_port, instantiated);
             <span class="prelude-val">Ok</span>(())
         }
     }
@@ -454,7 +454,7 @@
             .expect(<span class="string">&quot;No one should be reading/writing the host while resources are collected&quot;</span>);
 
         host.request_custom_binary();
-        <span class="kw">for </span>(<span class="kw">_</span>, bind_type) <span class="kw">in </span><span class="self">self</span>.server_ports.iter() {
+        <span class="kw">for </span>(<span class="kw">_</span>, bind_type) <span class="kw">in </span><span class="self">self</span>.port_to_bind.iter() {
             host.request_port(bind_type);
         }
     }
@@ -476,7 +476,7 @@
             .<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="kw">let </span><span class="kw-2">mut </span>bind_config = HashMap::new();
-        <span class="kw">for </span>(port_name, bind_type) <span class="kw">in </span><span class="self">self</span>.server_ports.iter() {
+        <span class="kw">for </span>(port_name, bind_type) <span class="kw">in </span><span class="self">self</span>.port_to_bind.iter() {
             bind_config.insert(port_name.clone(), launched_host.server_config(bind_type));
         }
 
@@ -507,12 +507,12 @@
     }
 
     <span class="kw">async fn </span>start(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-        <span class="kw">let </span><span class="kw-2">mut </span>connection_defns = HashMap::new();
-        <span class="kw">for </span>(port_name, outgoing) <span class="kw">in </span><span class="self">self</span>.client_port.drain() {
-            connection_defns.insert(port_name.clone(), outgoing.connection_defn().<span class="kw">await</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>sink_ports = HashMap::new();
+        <span class="kw">for </span>(port_name, outgoing) <span class="kw">in </span><span class="self">self</span>.port_to_server.drain() {
+            sink_ports.insert(port_name.clone(), outgoing.sink_port().<span class="kw">await</span>);
         }
 
-        <span class="kw">let </span>formatted_defns = serde_json::to_string(<span class="kw-2">&amp;</span>connection_defns).unwrap();
+        <span class="kw">let </span>formatted_defns = serde_json::to_string(<span class="kw-2">&amp;</span>sink_ports).unwrap();
 
         <span class="self">self</span>.launched_binary
             .as_mut()
