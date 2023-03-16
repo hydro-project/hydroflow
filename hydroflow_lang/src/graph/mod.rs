@@ -30,7 +30,6 @@ pub use hydroflow_graph::HydroflowGraph;
 
 pub mod graph_algorithms;
 pub mod ops;
-pub mod serde_graph;
 
 new_key_type! {
     /// ID to identify a node (operator or handoff) in [`HydroflowGraph`].
@@ -71,7 +70,7 @@ mod serde_syn {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialOrd, Ord, PartialEq, Eq)]
 struct Varname(#[serde(with = "serde_syn")] pub Ident);
 
 #[derive(Clone, Serialize, Deserialize)]
