@@ -8,8 +8,8 @@ use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
 use syn::token::{Bracket, Paren};
 use syn::{
-    bracketed, parenthesized, Expr, ExprPath, GenericArgument, Ident, LitInt, Path, PathArguments,
-    PathSegment, Token,
+    bracketed, parenthesized, AngleBracketedGenericArguments, Expr, ExprPath, GenericArgument,
+    Ident, LitInt, Path, PathArguments, PathSegment, Token,
 };
 
 pub struct HfCode {
@@ -321,10 +321,45 @@ impl Operator {
     pub fn args(&self) -> &Punctuated<Expr, Token![,]> {
         &self.args
     }
+
+    /// Output the operator as a formatted string using `prettyplease`.
+    pub fn to_pretty_string(&self) -> String {
+        let file: syn::File = syn::parse_quote! {
+            fn main() {
+                #self
+            }
+        };
+        let str = prettyplease::unparse(&file);
+        str.trim_start()
+            .trim_start_matches("fn main()")
+            .trim_start()
+            .trim_start_matches('{')
+            .trim_start()
+            .trim_end()
+            .trim_end_matches('}')
+            .trim_end()
+            .lines()
+            .map(|line| line.trim_start_matches("    "))
+            .collect()
+    }
 }
 impl Parse for Operator {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        let path = input.parse()?;
+        let path: Path = input.parse()?;
+        if let Some(path_seg) = path.segments.iter().find(|path_seg| {
+            matches!(
+                &path_seg.arguments,
+                PathArguments::AngleBracketed(AngleBracketedGenericArguments {
+                    colon2_token: None,
+                    ..
+                })
+            )
+        }) {
+            return Err(syn::Error::new_spanned(
+                path_seg,
+                "Missing `::` before `<...>` generic arguments",
+            ));
+        }
 
         let content;
         let paren_token = parenthesized!(content in input);

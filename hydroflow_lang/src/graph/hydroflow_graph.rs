@@ -672,7 +672,7 @@ impl HydroflowGraph {
         // add nodes
         for (node_id, node) in self.nodes() {
             let node_txt = match node {
-                Node::Operator(operator) => operator.to_token_stream().to_string(),
+                Node::Operator(operator) => operator.to_pretty_string(),
                 Node::Handoff { .. } => HANDOFF_NODE_STR.to_string(),
             };
             g.nodes.insert(node_id, node_txt);
