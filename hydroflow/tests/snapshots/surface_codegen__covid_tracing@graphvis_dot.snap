@@ -8,13 +8,13 @@ digraph {
         style=filled
         label = "sg_1v1\nstratum 0"
         n1v1 [label="(n1v1) source_stream(contacts_recv)", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
-        n2v1 [label="(n2v1) flat_map(| (pid_a, pid_b, time) |\l[(pid_a, (pid_b, time)), (pid_b, (pid_a, time))])\l", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+        n2v1 [label="(n2v1) flat_map(|(pid_a, pid_b, time)| [(pid_a, (pid_b, time)), (pid_b, (pid_a, time))])", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
         n4v1 [label="(n4v1) source_stream(diagnosed_recv)", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
-        n9v1 [label="(n9v1) map(| (pid, t) | (pid, (t, t + TRANSMISSIBLE_DURATION)))", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+        n9v1 [label="(n9v1) map(|(pid, t)| (pid, (t, t + TRANSMISSIBLE_DURATION)))", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
         n3v1 [label="(n3v1) merge()", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
         n5v1 [label="(n5v1) join()", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
-        n6v1 [label="(n6v1) filter(| (_pid_a, ((_pid_b, t_contact), (t_from, t_to))) |\l{ (t_from ..= t_to).contains(& t_contact) })\l", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
-        n7v1 [label="(n7v1) map(| (_pid_a, (pid_b_t_contact, _t_from_to)) | pid_b_t_contact)", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+        n6v1 [label="(n6v1) filter(|(_pid_a, ((_pid_b, t_contact), (t_from, t_to)))| {(t_from..=t_to).contains(&t_contact)})", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+        n7v1 [label="(n7v1) map(|(_pid_a, (pid_b_t_contact, _t_from_to))| pid_b_t_contact)", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
         n8v1 [label="(n8v1) tee()", fontname=Monaco, shape=house, style = filled, color = "#ffff00"]
         n13v1 [label="(n13v1) handoff", fontname=Monaco, shape=parallelogram, style = filled, color = "#ddddff"]
         n13v1 -> n9v1
@@ -34,7 +34,7 @@ digraph {
         label = "sg_2v1\nstratum 0"
         n12v1 [label="(n12v1) source_stream(people_recv)", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
         n10v1 [label="(n10v1) join()", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
-        n11v1 [label="(n11v1) for_each(| (_pid, ((name, phone), exposure)) |\l{\l    println!\l    (\"[{}] To {}: Possible Exposure at t = {}\", name, phone, exposure) ;\l})\l", fontname=Monaco, shape=house, style = filled, color = "#ffff00"]
+        n11v1 [label="(n11v1) for_each(|(_pid, ((name, phone), exposure))| {println!(\"[{}] To {}: Possible Exposure at t = {}\", name, phone, exposure);})", fontname=Monaco, shape=house, style = filled, color = "#ffff00"]
         n12v1 -> n10v1 [label="0"]
         n10v1 -> n11v1
     }
