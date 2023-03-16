@@ -12,7 +12,7 @@ use cargo::{
 use hydroflow_cli_integration::ServerPort;
 use tokio::{sync::RwLock, task::JoinHandle};
 
-use self::ports::HydroflowPortConfig;
+use self::ports::{HydroflowPortConfig, HydroflowSink};
 
 use super::{
     Host, HostTargetType, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult,
@@ -29,10 +29,10 @@ pub struct HydroflowCrate {
     args: Option<Vec<String>>,
 
     /// Configuration for the ports this service will connect to as a client.
-    client_port: HashMap<String, ports::ClientPort>,
+    port_to_server: HashMap<String, ports::ServerConfig>,
 
     /// Configuration for the ports that this service will listen on a port for.
-    server_ports: HashMap<String, ServerStrategy>,
+    port_to_bind: HashMap<String, ServerStrategy>,
 
     built_binary: Option<JoinHandle<PathBuf>>,
     launched_host: Option<Arc<dyn LaunchedHost>>,
@@ -59,8 +59,8 @@ impl HydroflowCrate {
             example,
             features,
             args,
-            client_port: HashMap::new(),
-            server_ports: HashMap::new(),
+            port_to_server: HashMap::new(),
+            port_to_bind: HashMap::new(),
             built_binary: None,
             launched_host: None,
             server_defns: HashMap::new(),
@@ -68,25 +68,25 @@ impl HydroflowCrate {
         }
     }
 
-    pub fn add_client_port(
+    pub fn add_connection(
         &mut self,
         self_arc: &Arc<RwLock<HydroflowCrate>>,
         my_port: String,
-        config: ports::HydroflowPortConfig,
+        sink: &mut dyn HydroflowSink,
     ) -> Result<()> {
-        if let Ok(instantiated) = config.instantiate(&self.on) {
-            self.client_port.insert(my_port, instantiated);
+        if let Ok(instantiated) = sink.instantiate(&self.on) {
+            self.port_to_server.insert(my_port, instantiated);
             Ok(())
         } else {
-            let instantiated = config.instantiate_reverse(
+            let instantiated = sink.instantiate_reverse(
                 &self.on,
-                Box::new(HydroflowPortConfig::Direct(
-                    Arc::downgrade(self_arc),
-                    my_port.clone(),
-                )),
+                Box::new(HydroflowPortConfig {
+                    service: Arc::downgrade(self_arc),
+                    port: my_port.clone(),
+                }),
                 &|p| p,
             )?;
-            self.server_ports.insert(my_port, instantiated);
+            self.port_to_bind.insert(my_port, instantiated);
             Ok(())
         }
     }
@@ -190,7 +190,7 @@ impl Service for HydroflowCrate {
             .expect("No one should be reading/writing the host while resources are collected");
 
         host.request_custom_binary();
-        for (_, bind_type) in self.server_ports.iter() {
+        for (_, bind_type) in self.port_to_bind.iter() {
             host.request_port(bind_type);
         }
     }
@@ -212,7 +212,7 @@ impl Service for HydroflowCrate {
             .await?;
 
         let mut bind_config = HashMap::new();
-        for (port_name, bind_type) in self.server_ports.iter() {
+        for (port_name, bind_type) in self.port_to_bind.iter() {
             bind_config.insert(port_name.clone(), launched_host.server_config(bind_type));
         }
 
@@ -243,12 +243,12 @@ impl Service for HydroflowCrate {
     }
 
     async fn start(&mut self) {
-        let mut connection_defns = HashMap::new();
-        for (port_name, outgoing) in self.client_port.drain() {
-            connection_defns.insert(port_name.clone(), outgoing.connection_defn().await);
+        let mut sink_ports = HashMap::new();
+        for (port_name, outgoing) in self.port_to_server.drain() {
+            sink_ports.insert(port_name.clone(), outgoing.sink_port().await);
         }
 
-        let formatted_defns = serde_json::to_string(&connection_defns).unwrap();
+        let formatted_defns = serde_json::to_string(&sink_ports).unwrap();
 
         self.launched_binary
             .as_mut()
