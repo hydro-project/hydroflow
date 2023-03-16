@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use async_channel::Receiver;
 use bytes::Bytes;
-use futures::SinkExt;
+use futures::{Future, SinkExt};
 use hydroflow_cli_integration::{Connected, ConnectedBidi, DynSink};
 use pyo3::exceptions::PyException;
 use pyo3::types::{PyBytes, PyDict};
@@ -15,6 +15,19 @@ pub mod core;
 use crate::core::hydroflow_crate::ports::HydroflowSource;
 
 create_exception!(hydro_cli_core, AnyhowError, PyException);
+
+fn interruptible_future_to_py<F, T>(py: Python<'_>, fut: F) -> PyResult<&PyAny>
+where
+    F: Future<Output = PyResult<T>> + Send + 'static,
+    T: IntoPy<PyObject>,
+{
+    pyo3_asyncio::tokio::future_into_py(py, async move {
+        tokio::select! {
+            _ = tokio::signal::ctrl_c() => Err(PyErr::new::<pyo3::exceptions::PyKeyboardInterrupt, _>("received Ctrl-C")),
+            r = fut => r,
+        }
+    })
+}
 
 #[pyclass]
 #[derive(Clone)]
@@ -142,7 +155,7 @@ impl Deployment {
 
     fn deploy<'p>(&self, py: Python<'p>) -> &'p pyo3::PyAny {
         let underlying = self.underlying.clone();
-        pyo3_asyncio::tokio::future_into_py(py, async move {
+        interruptible_future_to_py(py, async move {
             underlying.write().await.deploy().await.map_err(|e| {
                 Python::with_gil(|py| {
                     AnyhowError::new_err(
@@ -163,7 +176,7 @@ impl Deployment {
 
     fn start<'p>(&self, py: Python<'p>) -> &'p pyo3::PyAny {
         let underlying = self.underlying.clone();
-        pyo3_asyncio::tokio::future_into_py(py, async move {
+        interruptible_future_to_py(py, async move {
             underlying.write().await.start().await;
             Ok(Python::with_gil(|py| py.None()))
         })
@@ -255,7 +268,7 @@ struct PyReceiver {
 impl PyReceiver {
     fn next<'p>(&self, py: Python<'p>) -> &'p pyo3::PyAny {
         let my_receiver = self.receiver.clone();
-        pyo3_asyncio::tokio::future_into_py(py, async move {
+        interruptible_future_to_py(py, async move {
             let underlying = my_receiver.recv();
             Ok(underlying.await.map(Some).unwrap_or(None))
         })
@@ -298,7 +311,7 @@ impl CustomClientPort {
 
     fn server_port<'p>(&self, py: Python<'p>) -> &'p pyo3::PyAny {
         let underlying = self.underlying.clone();
-        pyo3_asyncio::tokio::future_into_py(py, async move {
+        interruptible_future_to_py(py, async move {
             let underlying = underlying.read().await;
             Ok(ServerPort {
                 underlying: Some(underlying.server_port().await),
@@ -342,7 +355,7 @@ async def pyreceiver_to_async_generator(pyreceiver):
 impl HydroflowCrate {
     fn stdout<'p>(&self, py: Python<'p>) -> &'p pyo3::PyAny {
         let underlying = self.underlying.clone();
-        pyo3_asyncio::tokio::future_into_py(py, async move {
+        interruptible_future_to_py(py, async move {
             let underlying = underlying.read().await;
             convert_py_receiver(PyReceiver {
                 receiver: Arc::new(underlying.stdout().await),
@@ -353,7 +366,7 @@ impl HydroflowCrate {
 
     fn stderr<'p>(&self, py: Python<'p>) -> &'p pyo3::PyAny {
         let underlying = self.underlying.clone();
-        pyo3_asyncio::tokio::future_into_py(py, async move {
+        interruptible_future_to_py(py, async move {
             let underlying = underlying.read().await;
             convert_py_receiver(PyReceiver {
                 receiver: Arc::new(underlying.stderr().await),
@@ -364,7 +377,7 @@ impl HydroflowCrate {
 
     fn exit_code<'p>(&self, py: Python<'p>) -> &'p pyo3::PyAny {
         let underlying = self.underlying.clone();
-        pyo3_asyncio::tokio::future_into_py(py, async move {
+        interruptible_future_to_py(py, async move {
             let underlying = underlying.read().await;
             Ok(underlying.exit_code().await)
         })
@@ -435,7 +448,7 @@ struct ServerPort {
 impl ServerPort {
     fn sink<'p>(&mut self, py: Python<'p>) -> &'p pyo3::PyAny {
         let underlying = self.underlying.take().unwrap();
-        pyo3_asyncio::tokio::future_into_py(py, async move {
+        interruptible_future_to_py(py, async move {
             Ok(ConnectedSink {
                 underlying: Arc::new(RwLock::new(
                     underlying.connect::<ConnectedBidi>().await.take_sink(),
@@ -457,7 +470,7 @@ impl ConnectedSink {
     fn send<'p>(&mut self, data: Py<PyBytes>, py: Python<'p>) -> &'p PyAny {
         let underlying = self.underlying.clone();
         let bytes = Bytes::from(data.as_bytes(py).to_vec());
-        pyo3_asyncio::tokio::future_into_py(py, async move {
+        interruptible_future_to_py(py, async move {
             underlying.write().await.send(bytes).await?;
             Ok(())
         })
