@@ -742,6 +742,48 @@ fn test_send_to_node() {
 }
 
 #[multiplatform_test]
+fn test_aggregations_and_comments() {
+    let (ints_send, ints) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (result2, mut result_recv2) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+
+    let mut flow = datalog!(
+        r#"
+        # david doesn't think this line of code will execute
+        .input ints `source_stream(ints)`
+        .output result `for_each(|v| result.send(v).unwrap())`
+        .output result2 `for_each(|v| result2.send(v).unwrap())`
+
+        result(count(a), b) :- ints(a, b)
+        result(sum(a), b) :+ ints(a, b)
+        result2(choose(a), b) :- ints(a, b)
+        "#
+    );
+
+    ints_send.send((1, 3)).unwrap();
+    ints_send.send((2, 3)).unwrap();
+    ints_send.send((3, 3)).unwrap();
+    ints_send.send((4, 3)).unwrap();
+    ints_send.send((3, 1)).unwrap();
+
+    flow.run_tick();
+
+    let mut res = collect_ready::<Vec<_>, _>(&mut result_recv);
+    res.sort_by_key(|v| v.0);
+    assert_eq!(&res, &[(1, 1), (4, 3)]);
+
+    let mut res2 = collect_ready::<Vec<_>, _>(&mut result_recv2); // Assumes deterministic choose
+    res2.sort_by_key(|v| v.0);
+    assert_eq!(&res2, &[(1, 3), (3, 1)]);
+
+    flow.run_tick();
+
+    let mut res = collect_ready::<Vec<_>, _>(&mut result_recv);
+    res.sort_by_key(|v| v.0);
+    assert_eq!(&res, &[(3, 1), (10, 3)]);
+}
+
+#[multiplatform_test]
 fn test_non_copy_but_clone() {
     let (strings_send, strings) = hydroflow::util::unbounded_channel::<(String,)>();
     let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(String, String)>();

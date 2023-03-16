@@ -141,7 +141,11 @@ pub mod datalog {
 
     #[derive(Debug, Clone)]
     pub enum AggregationType {
+        Min(#[rust_sitter::leaf(text = "min")] ()),
         Max(#[rust_sitter::leaf(text = "max")] ()),
+        Sum(#[rust_sitter::leaf(text = "sum")] ()),
+        Count(#[rust_sitter::leaf(text = "count")] ()),
+        Choose(#[rust_sitter::leaf(text = "choose")] ()),
     }
 
     #[derive(Clone, PartialEq, Eq, Hash, Ord, PartialOrd, Debug)]
@@ -154,6 +158,12 @@ pub mod datalog {
     struct Whitespace {
         #[rust_sitter::leaf(pattern = r"\s")]
         _whitespace: (),
+    }
+
+    #[rust_sitter::extra]
+    struct Comment {
+        #[rust_sitter::leaf(pattern = r"#.*")]
+        _comment: (),
     }
 
     #[derive(Debug, Clone)]

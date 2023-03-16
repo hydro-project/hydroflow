@@ -383,8 +383,35 @@ fn apply_aggregations(
 
                 let agg_expr: syn::Expr = match agg {
                     TargetExpr::Aggregation(Aggregation { tpe, .. }) => match tpe {
+                        AggregationType::Min(_) => {
+                            parse_quote!(std::cmp::min(prev, #val_at_index))
+                        }
                         AggregationType::Max(_) => {
                             parse_quote!(std::cmp::max(prev, #val_at_index))
+                        }
+                        AggregationType::Sum(_) => {
+                            parse_quote!(prev + #val_at_index)
+                        }
+                        AggregationType::Count(_) => {
+                            parse_quote!(prev + 1)
+                        }
+                        AggregationType::Choose(_) => {
+                            parse_quote!(prev) // choose = select any 1 element from the relation. By default we select the 1st.
+                        }
+                    },
+                    _ => panic!(),
+                };
+
+                let agg_initial: syn::Expr = match agg {
+                    TargetExpr::Aggregation(Aggregation { tpe, .. }) => match tpe {
+                        AggregationType::Min(_)
+                        | AggregationType::Max(_)
+                        | AggregationType::Sum(_)
+                        | AggregationType::Choose(_) => {
+                            parse_quote!(#val_at_index)
+                        }
+                        AggregationType::Count(_) => {
+                            parse_quote!(1)
                         }
                     },
                     _ => panic!(),
@@ -394,7 +421,7 @@ fn apply_aggregations(
                     #old_at_index = if let Some(prev) = #old_at_index {
                         Some(#agg_expr)
                     } else {
-                        Some(#val_at_index)
+                        Some(#agg_initial)
                     };
                 }
             })
@@ -639,6 +666,22 @@ mod tests {
             .async result `for_each(|(node, data)| async_send_result(node, data))` `source_stream(async_receive_result)`
 
             result@b(a) :~ ints(a, b)
+            "#
+        );
+    }
+
+    #[test]
+    fn test_aggregations_and_comments() {
+        test_snapshots!(
+            r#"
+            # david doesn't think this line of code will execute
+            .input ints `source_stream(ints)`
+            .output result `for_each(|v| result.send(v).unwrap())`
+            .output result2 `for_each(|v| result2.send(v).unwrap())`
+
+            result(count(a), b) :- ints(a, b)
+            result(sum(a), b) :+ ints(a, b)
+            result2(choose(a), b) :- ints(a, b)
             "#
         );
     }
