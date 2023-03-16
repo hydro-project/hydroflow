@@ -21,12 +21,12 @@ pub async fn init() -> HashMap<String, ServerOrBound> {
 
     let bind_config = serde_json::from_str::<HashMap<String, ServerConfig>>(trimmed).unwrap();
 
-    // bind to sockets
+    // config telling other services how to connect to me
     let mut bind_results: HashMap<String, ServerPort> = HashMap::new();
     let mut binds = HashMap::new();
     for (name, config) in bind_config {
         let bound = config.bind().await;
-        bind_results.insert(name.clone(), bound.connection_defn());
+        bind_results.insert(name.clone(), bound.sink_port());
         binds.insert(name.clone(), bound);
     }
 
