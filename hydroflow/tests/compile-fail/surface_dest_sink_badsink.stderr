@@ -13,6 +13,7 @@ error[E0277]: the trait bound `&str: hydroflow::futures::Sink<_>` is not satisfi
             <Box<S> as hydroflow::futures::Sink<Item>>
             <BufferUnordered<S> as hydroflow::futures::Sink<Item>>
             <Buffered<S> as hydroflow::futures::Sink<Item>>
+            <DemuxDrain<T, S> as hydroflow::futures::Sink<(u32, T)>>
             <Fanout<Si1, Si2> as hydroflow::futures::Sink<Item>>
             <FlattenSink<Fut, Si> as hydroflow::futures::Sink<_Item>>
             <FlattenStream<F> as hydroflow::futures::Sink<_Item>>

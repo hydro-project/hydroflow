@@ -1,5 +1,6 @@
 use std::{
     collections::HashMap,
+    io::{BufRead, BufReader},
     process::{Child, Command},
     sync::{Arc, RwLock},
 };
@@ -8,9 +9,9 @@ use std::{
 use std::os::unix::process::CommandExt;
 
 use anyhow::{bail, Context, Result};
+use async_process::Stdio;
 use serde::{Deserialize, Serialize};
 use tempfile::TempDir;
-use tokio::signal;
 
 pub static TERRAFORM_ALPHABET: [char; 16] = [
     '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'a', 'b', 'c', 'd', 'e', 'f',
@@ -36,7 +37,8 @@ impl TerraformPool {
         apply_command
             .current_dir(deployment_folder.path())
             .arg("apply")
-            .arg("-auto-approve");
+            .arg("-auto-approve")
+            .arg("-no-color");
 
         #[cfg(unix)]
         {
@@ -44,6 +46,7 @@ impl TerraformPool {
         }
 
         let spawned_child = apply_command
+            .stdout(Stdio::piped())
             .spawn()
             .context("Failed to spawn `terraform`. Is it installed?")?;
 
@@ -68,8 +71,6 @@ impl Drop for TerraformPool {
     fn drop(&mut self) {
         for (_, apply) in self.active_applies.drain() {
             debug_assert_eq!(Arc::strong_count(&apply), 1);
-            // make sure we can write, because that means we own this apply
-            let _ = apply.blocking_write();
         }
     }
 }
@@ -118,6 +119,7 @@ impl TerraformBatch {
         if !Command::new("terraform")
             .current_dir(deployment_folder.path())
             .arg("init")
+            .stdout(Stdio::null())
             .spawn()
             .context("Failed to spawn `terraform`. Is it installed?")?
             .wait()
@@ -140,46 +142,95 @@ struct TerraformApply {
     deployment_folder: Option<tempfile::TempDir>,
 }
 
+fn filter_terraform_logs(child: &mut Child) {
+    let lines = BufReader::new(child.stdout.take().unwrap()).lines();
+    for line in lines {
+        if let Ok(line) = line {
+            let mut split = line.split(':');
+            if let Some(first) = split.next() {
+                if first.chars().all(|c| c != ' ')
+                    && split.next().is_some()
+                    && split.next().is_none()
+                {
+                    println!("[terraform] {}", line);
+                }
+            }
+        } else {
+            break;
+        }
+    }
+}
+
 impl TerraformApply {
     async fn output(&mut self) -> Result<TerraformResult> {
         let (_, child) = self.child.as_ref().unwrap().clone();
 
-        let wait_channel = tokio::task::spawn_blocking(move || {
+        let status = tokio::task::spawn_blocking(move || {
+            filter_terraform_logs(&mut child.write().unwrap());
+
             // it is okay for this thread to keep running even if the future is cancelled
             child.write().unwrap().wait().unwrap()
-        });
+        })
+        .await;
+        self.child = None;
 
-        tokio::select! {
-            _ = signal::ctrl_c() => {
-                bail!("Received Ctrl-C")
-            },
-            status = wait_channel => {
-                self.child = None;
-
-                if !status.unwrap().success() {
-                    bail!("Terraform deployment failed");
-                }
-
-                let mut output_command = Command::new("terraform");
-                output_command
-                    .current_dir(self.deployment_folder.as_ref().unwrap().path())
-                    .arg("output")
-                    .arg("-json");
-
-                #[cfg(unix)]
-                {
-                    output_command.process_group(0);
-                }
-
-                let output = output_command.output()
-                    .context("Failed to read Terraform outputs")?;
-
-                Ok(TerraformResult {
-                    outputs: serde_json::from_slice(&output.stdout).unwrap(),
-                    deployment_folder: self.deployment_folder.take(),
-                })
-            },
+        if !status.unwrap().success() {
+            bail!("Terraform deployment failed");
         }
+
+        let mut output_command = Command::new("terraform");
+        output_command
+            .current_dir(self.deployment_folder.as_ref().unwrap().path())
+            .arg("output")
+            .arg("-json");
+
+        #[cfg(unix)]
+        {
+            output_command.process_group(0);
+        }
+
+        let output = output_command
+            .output()
+            .context("Failed to read Terraform outputs")?;
+
+        Ok(TerraformResult {
+            outputs: serde_json::from_slice(&output.stdout).unwrap(),
+            deployment_folder: self.deployment_folder.take(),
+        })
+    }
+}
+
+fn destroy_deployment(deployment_folder: &TempDir) {
+    println!(
+        "Destroying terraform deployment at {}",
+        deployment_folder.path().display()
+    );
+
+    let mut destroy_command = Command::new("terraform");
+    destroy_command
+        .current_dir(deployment_folder.path())
+        .arg("destroy")
+        .arg("-auto-approve")
+        .arg("-no-color")
+        .stdout(Stdio::piped());
+
+    #[cfg(unix)]
+    {
+        destroy_command.process_group(0);
+    }
+
+    let mut destroy_child = destroy_command
+        .spawn()
+        .expect("Failed to spawn terraform destroy command");
+
+    filter_terraform_logs(&mut destroy_child);
+
+    if !destroy_child
+        .wait()
+        .expect("Failed to destroy terraform deployment")
+        .success()
+    {
+        eprintln!("WARNING: failed to destroy terraform deployment");
     }
 }
 
@@ -189,7 +240,7 @@ impl Drop for TerraformApply {
             #[cfg(unix)]
             nix::sys::signal::kill(
                 nix::unistd::Pid::from_raw(pid as i32),
-                nix::sys::signal::Signal::SIGTERM,
+                nix::sys::signal::Signal::SIGINT,
             )
             .unwrap();
 
@@ -201,23 +252,7 @@ impl Drop for TerraformApply {
         }
 
         if let Some(deployment_folder) = &self.deployment_folder {
-            println!(
-                "Destroying terraform deployment at {}",
-                deployment_folder.path().display()
-            );
-
-            if !Command::new("terraform")
-                .current_dir(deployment_folder)
-                .arg("destroy")
-                .arg("-auto-approve")
-                .spawn()
-                .expect("Failed to spawn terraform destroy command")
-                .wait()
-                .expect("Failed to destroy terraform deployment")
-                .success()
-            {
-                eprintln!("WARNING: failed to destroy terraform deployment");
-            }
+            destroy_deployment(deployment_folder);
         }
     }
 }
@@ -246,23 +281,8 @@ pub struct TerraformResult {
 
 impl Drop for TerraformResult {
     fn drop(&mut self) {
-        if let Some(folder) = &self.deployment_folder {
-            println!(
-                "Destroying terraform deployment at {}",
-                folder.path().display()
-            );
-            if !Command::new("terraform")
-                .current_dir(folder)
-                .arg("destroy")
-                .arg("-auto-approve")
-                .spawn()
-                .expect("Failed to spawn terraform destroy command")
-                .wait()
-                .expect("Failed to destroy terraform deployment")
-                .success()
-            {
-                eprintln!("WARNING: failed to destroy terraform deployment");
-            }
+        if let Some(deployment_folder) = &self.deployment_folder {
+            destroy_deployment(deployment_folder);
         }
     }
 }
