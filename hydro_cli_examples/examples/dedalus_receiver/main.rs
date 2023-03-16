@@ -1,5 +1,5 @@
 use hydroflow::util::{
-    cli::{Connected, ConnectedBidi},
+    cli::{ConnectedBidi, ConnectedSource},
     deserialize_from_bytes,
 };
 use hydroflow_datalog::datalog;

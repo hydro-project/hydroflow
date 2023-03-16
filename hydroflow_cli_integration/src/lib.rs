@@ -6,21 +6,20 @@ use std::{
     net::SocketAddr,
     path::PathBuf,
     pin::Pin,
-    sync::Arc,
     task::{Context, Poll},
 };
 
 use bytes::{Bytes, BytesMut};
 use serde::{Deserialize, Serialize};
 
-use futures::{Sink, SinkExt, Stream};
+use futures::{ready, Sink, Stream};
 
 use async_recursion::async_recursion;
 use async_trait::async_trait;
+use pin_project::pin_project;
 
 use tokio::io;
 use tokio::net::{TcpListener, TcpStream};
-use tokio::sync::Mutex;
 
 #[cfg(unix)]
 use tokio::net::{UnixListener, UnixStream};
@@ -102,12 +101,18 @@ pub type DynSink<Input> = Pin<Box<dyn Sink<Input, Error = io::Error> + Send + Sy
 
 #[async_trait]
 pub trait Connected: Send {
-    type Input: Send;
-
-    fn take_source(&mut self) -> DynStream;
-    fn take_sink(&mut self) -> DynSink<Self::Input>;
-
     async fn from_defn(pipe: ServerOrBound) -> Self;
+}
+
+pub trait ConnectedSink {
+    type Input: Send;
+    type Sink: Sink<Self::Input, Error = io::Error> + Send + Sync;
+
+    fn take_sink(&mut self) -> Self::Sink;
+}
+
+pub trait ConnectedSource {
+    fn take_source(&mut self) -> DynStream;
 }
 
 #[derive(Debug)]
@@ -212,16 +217,6 @@ pub struct ConnectedBidi {
 
 #[async_trait]
 impl Connected for ConnectedBidi {
-    type Input = Bytes;
-
-    fn take_source(&mut self) -> DynStream {
-        self.source.take().unwrap()
-    }
-
-    fn take_sink(&mut self) -> DynSink<Self::Input> {
-        self.sink.take().unwrap()
-    }
-
     async fn from_defn(pipe: ServerOrBound) -> Self {
         match pipe {
             ServerOrBound::Server(ServerPort::UnixSocket(path)) => {
@@ -263,51 +258,78 @@ impl Connected for ConnectedBidi {
     }
 }
 
-pub struct ConnectedDemux<T: Connected> {
+impl ConnectedSource for ConnectedBidi {
+    fn take_source(&mut self) -> DynStream {
+        self.source.take().unwrap()
+    }
+}
+
+impl ConnectedSink for ConnectedBidi {
+    type Input = Bytes;
+    type Sink = DynSink<Bytes>;
+
+    fn take_sink(&mut self) -> DynSink<Self::Input> {
+        self.sink.take().unwrap()
+    }
+}
+
+pub struct ConnectedDemux<T: ConnectedSink> {
     pub keys: Vec<u32>,
-    sink: Option<DynSink<(u32, T::Input)>>,
+    sink: Option<DemuxDrain<T::Input, T::Sink>>,
 }
 
-// a copy of `Drain` that uses `io::Error` instead of `Infallible`
-struct IoErrorDrain<T> {
+#[pin_project]
+pub struct DemuxDrain<T, S: Sink<T, Error = io::Error> + Send + Sync + ?Sized> {
     marker: PhantomData<T>,
+    #[pin]
+    sinks: HashMap<u32, Pin<Box<S>>>,
 }
 
-impl<T> Sink<T> for IoErrorDrain<T> {
+impl<T, S: Sink<T, Error = io::Error> + Send + Sync> Sink<(u32, T)> for DemuxDrain<T, S> {
     type Error = io::Error;
 
     fn poll_ready(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        for sink in self.project().sinks.values_mut() {
+            ready!(Sink::poll_ready(sink.as_mut(), _cx))?;
+        }
+
         Poll::Ready(Ok(()))
     }
 
-    fn start_send(self: Pin<&mut Self>, _item: T) -> Result<(), Self::Error> {
-        Ok(())
+    fn start_send(self: Pin<&mut Self>, item: (u32, T)) -> Result<(), Self::Error> {
+        Sink::start_send(
+            self.project()
+                .sinks
+                .get_mut()
+                .get_mut(&item.0)
+                .unwrap()
+                .as_mut(),
+            item.1,
+        )
     }
 
     fn poll_flush(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        for sink in self.project().sinks.values_mut() {
+            ready!(Sink::poll_flush(sink.as_mut(), _cx))?;
+        }
+
         Poll::Ready(Ok(()))
     }
 
     fn poll_close(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        for sink in self.project().sinks.values_mut() {
+            ready!(Sink::poll_close(sink.as_mut(), _cx))?;
+        }
+
         Poll::Ready(Ok(()))
     }
 }
 
 #[async_trait]
-impl<T: Connected> Connected for ConnectedDemux<T>
+impl<T: Connected + ConnectedSink> Connected for ConnectedDemux<T>
 where
-    <T as Connected>::Input: 'static + Sync,
+    <T as ConnectedSink>::Input: 'static + Sync,
 {
-    type Input = (u32, T::Input);
-
-    fn take_source(&mut self) -> DynStream {
-        panic!("Cannot take source from a demux pipe");
-    }
-
-    fn take_sink(&mut self) -> DynSink<Self::Input> {
-        self.sink.take().unwrap()
-    }
-
     async fn from_defn(pipe: ServerOrBound) -> Self {
         match pipe {
             ServerOrBound::Server(ServerPort::Demux(demux)) => {
@@ -316,23 +338,18 @@ where
                 for (id, pipe) in demux {
                     connected_demux.insert(
                         id,
-                        Arc::new(Mutex::new(
-                            T::from_defn(ServerOrBound::Server(pipe)).await.take_sink(),
-                        )),
+                        Box::pin(T::from_defn(ServerOrBound::Server(pipe)).await.take_sink()),
                     );
                 }
 
-                let demuxer = IoErrorDrain {
+                let demuxer = DemuxDrain {
                     marker: PhantomData::default(),
-                }
-                .with(move |(id, input)| {
-                    let sink = connected_demux.get_mut(&id).unwrap().clone();
-                    async move { sink.lock().await.feed(input).await }
-                });
+                    sinks: connected_demux,
+                };
 
                 ConnectedDemux {
                     keys,
-                    sink: Some(Box::pin(demuxer)),
+                    sink: Some(demuxer),
                 }
             }
 
@@ -343,23 +360,18 @@ where
                     for (id, bound) in demux {
                         connected_demux.insert(
                             id,
-                            Arc::new(Mutex::new(
-                                T::from_defn(ServerOrBound::Bound(bound)).await.take_sink(),
-                            )),
+                            Box::pin(T::from_defn(ServerOrBound::Bound(bound)).await.take_sink()),
                         );
                     }
 
-                    let demuxer = IoErrorDrain {
+                    let demuxer = DemuxDrain {
                         marker: PhantomData::default(),
-                    }
-                    .with(move |(id, input)| {
-                        let sink = connected_demux.get_mut(&id).unwrap().clone();
-                        async move { sink.lock().await.feed(input).await }
-                    });
+                        sinks: connected_demux,
+                    };
 
                     ConnectedDemux {
                         keys,
-                        sink: Some(Box::pin(demuxer)),
+                        sink: Some(demuxer),
                     }
                 } else {
                     panic!("Cannot connect to a non-demux pipe as a demux")
@@ -367,5 +379,17 @@ where
             }
             _ => panic!("Cannot connect to a non-demux pipe as a demux"),
         }
+    }
+}
+
+impl<T: ConnectedSink> ConnectedSink for ConnectedDemux<T>
+where
+    <T as ConnectedSink>::Input: 'static + Sync,
+{
+    type Input = (u32, T::Input);
+    type Sink = DemuxDrain<T::Input, T::Sink>;
+
+    fn take_sink(&mut self) -> Self::Sink {
+        self.sink.take().unwrap()
     }
 }
