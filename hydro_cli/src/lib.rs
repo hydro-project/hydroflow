@@ -38,6 +38,13 @@ pub struct AnyhowWrapper {
     pub underlying: Arc<RwLock<Option<anyhow::Error>>>,
 }
 
+#[pymethods]
+impl AnyhowWrapper {
+    fn __str__(&self) -> PyResult<String> {
+        Ok(format!("{:?}", self.underlying.try_read().unwrap().as_ref().unwrap()))
+    }
+}
+
 #[pyclass(subclass)]
 #[derive(Clone)]
 struct HydroflowSink {
