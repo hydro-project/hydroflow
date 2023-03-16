@@ -8,6 +8,7 @@ default = []
 diagnostics = []
 
 [dependencies]
+auto_impl = "1.0.1"
 hydroflow_internalmacro = { path = "../hydroflow_internalmacro" }
 once_cell = "1.17"
 prettyplease = { version = "0.1.22", features = [ "verbatim" ] }

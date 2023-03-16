@@ -1,5 +1,6 @@
 //! Graph representation stages for Hydroflow graphs.
 
+use std::borrow::Cow;
 use std::hash::Hash;
 
 use proc_macro2::Span;
@@ -19,6 +20,7 @@ use self::ops::{OperatorConstraints, Persistence};
 mod di_mul_graph;
 mod flat_graph_builder;
 mod flat_to_partitioned;
+mod graph_write;
 mod hydroflow_graph;
 
 pub use di_mul_graph::DiMulGraph;
@@ -51,6 +53,14 @@ const HANDOFF_NODE_STR: &str = "handoff";
 pub enum Node {
     Operator(Operator),
     Handoff { src_span: Span, dst_span: Span },
+}
+impl Node {
+    pub fn to_pretty_string(&self) -> Cow<'static, str> {
+        match self {
+            Node::Operator(op) => op.to_pretty_string().into(),
+            Node::Handoff { .. } => HANDOFF_NODE_STR.into(),
+        }
+    }
 }
 impl Spanned for Node {
     fn span(&self) -> Span {
