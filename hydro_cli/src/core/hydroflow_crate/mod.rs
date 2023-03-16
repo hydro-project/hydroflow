@@ -75,6 +75,8 @@ impl HydroflowCrate {
         sink: &mut dyn HydroflowSink,
     ) -> Result<()> {
         if let Ok(instantiated) = sink.instantiate(&self.on) {
+            // TODO(shadaj): if already in this map, we want to broadcast
+            assert!(!self.port_to_server.contains_key(&my_port));
             self.port_to_server.insert(my_port, instantiated);
             Ok(())
         } else {
@@ -83,10 +85,14 @@ impl HydroflowCrate {
                 Box::new(HydroflowPortConfig {
                     service: Arc::downgrade(self_arc),
                     port: my_port.clone(),
+                    merge: false,
                 }),
                 &|p| p,
             )?;
+
+            assert!(!self.port_to_bind.contains_key(&my_port));
             self.port_to_bind.insert(my_port, instantiated);
+
             Ok(())
         }
     }
