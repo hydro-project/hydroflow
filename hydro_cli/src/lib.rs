@@ -1,18 +1,19 @@
+use std::ops::Deref;
 use std::sync::Arc;
 
 use async_channel::Receiver;
 use bytes::Bytes;
-use futures::{Future, SinkExt};
-use hydroflow_cli_integration::{Connected, ConnectedBidi, DynSink};
+use futures::{Future, SinkExt, StreamExt};
+use hydroflow_cli_integration::{Connected, ConnectedBidi, DynSink, DynStream};
 use pyo3::exceptions::PyException;
 use pyo3::types::{PyBytes, PyDict};
 use pyo3::{create_exception, prelude::*, wrap_pymodule};
 use tokio::sync::RwLock;
 
+use crate::core::hydroflow_crate::ports::HydroflowSource;
+
 mod cli;
 pub mod core;
-
-use crate::core::hydroflow_crate::ports::HydroflowSource;
 
 create_exception!(hydro_cli_core, AnyhowError, PyException);
 
@@ -33,6 +34,12 @@ where
 #[derive(Clone)]
 pub struct AnyhowWrapper {
     pub underlying: Arc<RwLock<Option<anyhow::Error>>>,
+}
+
+#[pyclass(subclass)]
+#[derive(Clone)]
+struct HydroflowSink {
+    underlying: Arc<RwLock<dyn crate::core::hydroflow_crate::ports::HydroflowSink>>,
 }
 
 #[pyclass(name = "Deployment")]
@@ -283,30 +290,35 @@ struct CustomService {
 
 #[pymethods]
 impl CustomService {
-    fn client_port(&self) -> CustomClientPort {
-        CustomClientPort {
-            underlying: Arc::new(RwLock::new(
-                crate::core::custom_service::CustomClientPort::new(Arc::downgrade(
-                    &self.underlying,
-                )),
-            )),
-        }
+    fn client_port(&self, py: Python<'_>) -> PyResult<Py<pyo3::PyAny>> {
+        let arc = Arc::new(RwLock::new(
+            crate::core::custom_service::CustomClientPort::new(Arc::downgrade(&self.underlying)),
+        ));
+
+        Ok(Py::new(
+            py,
+            PyClassInitializer::from(HydroflowSink {
+                underlying: arc.clone(),
+            })
+            .add_subclass(CustomClientPort { underlying: arc }),
+        )?
+        .into_py(py))
     }
 }
 
-#[pyclass]
+#[pyclass(extends=HydroflowSink, subclass)]
 #[derive(Clone)]
 struct CustomClientPort {
-    pub(crate) underlying: Arc<RwLock<crate::core::custom_service::CustomClientPort>>,
+    underlying: Arc<RwLock<crate::core::custom_service::CustomClientPort>>,
 }
 
 #[pymethods]
 impl CustomClientPort {
-    fn send_to(&mut self, to: &HydroflowCratePort) {
+    fn send_to(&mut self, to: &HydroflowSink) {
         self.underlying
             .try_write()
             .unwrap()
-            .send_to(to.underlying.clone());
+            .send_to(to.underlying.try_read().unwrap().deref());
     }
 
     fn server_port<'p>(&self, py: Python<'p>) -> &'p pyo3::PyAny {
@@ -400,42 +412,56 @@ struct HydroflowCratePorts {
 
 #[pymethods]
 impl HydroflowCratePorts {
-    fn __getattribute__(&self, name: String) -> PyResult<HydroflowCratePort> {
-        Ok(HydroflowCratePort {
-            underlying: crate::core::hydroflow_crate::ports::HydroflowPortConfig::Direct(
-                Arc::downgrade(&self.underlying),
-                name,
-            ),
-        })
+    fn __getattribute__(&self, name: String, py: Python<'_>) -> PyResult<Py<pyo3::PyAny>> {
+        let arc = Arc::new(RwLock::new(
+            crate::core::hydroflow_crate::ports::HydroflowPortConfig {
+                service: Arc::downgrade(&self.underlying),
+                port: name,
+            },
+        ));
+
+        Ok(Py::new(
+            py,
+            PyClassInitializer::from(HydroflowSink {
+                underlying: arc.clone(),
+            })
+            .add_subclass(HydroflowCratePort { underlying: arc }),
+        )?
+        .into_py(py))
     }
 }
 
-#[pyclass]
+#[pyclass(extends=HydroflowSink, subclass)]
 #[derive(Clone)]
 struct HydroflowCratePort {
-    pub(crate) underlying: crate::core::hydroflow_crate::ports::HydroflowPortConfig,
+    underlying: Arc<RwLock<crate::core::hydroflow_crate::ports::HydroflowPortConfig>>,
 }
 
 #[pymethods]
 impl HydroflowCratePort {
-    fn send_to(&mut self, to: &HydroflowCratePort) {
-        self.underlying.send_to(to.underlying.clone());
+    fn send_to(&mut self, to: &mut HydroflowSink) {
+        self.underlying
+            .try_write()
+            .unwrap()
+            .send_to(to.underlying.try_read().unwrap().deref());
     }
 }
 
 #[pyfunction]
-fn demux(mapping: &PyDict) -> HydroflowCratePort {
-    HydroflowCratePort {
-        underlying: crate::core::hydroflow_crate::ports::HydroflowPortConfig::Demux(
-            mapping
-                .into_iter()
-                .map(|(k, v)| {
-                    let k = k.extract::<u32>().unwrap();
-                    let v = v.extract::<HydroflowCratePort>().unwrap();
-                    (k, v.underlying)
-                })
-                .collect(),
-        ),
+fn demux(mapping: &PyDict) -> HydroflowSink {
+    HydroflowSink {
+        underlying: Arc::new(RwLock::new(
+            crate::core::hydroflow_crate::ports::DemuxSink {
+                demux: mapping
+                    .into_iter()
+                    .map(|(k, v)| {
+                        let k = k.extract::<u32>().unwrap();
+                        let v = v.extract::<HydroflowSink>().unwrap();
+                        (k, v.underlying)
+                    })
+                    .collect(),
+            },
+        )),
     }
 }
 
@@ -446,6 +472,18 @@ struct ServerPort {
 
 #[pymethods]
 impl ServerPort {
+    fn source<'p>(&mut self, py: Python<'p>) -> &'p pyo3::PyAny {
+        let underlying = self.underlying.take().unwrap();
+        interruptible_future_to_py(py, async move {
+            Ok(ConnectedStream {
+                underlying: Arc::new(RwLock::new(
+                    underlying.connect::<ConnectedBidi>().await.take_source(),
+                )),
+            })
+        })
+        .unwrap()
+    }
+
     fn sink<'p>(&mut self, py: Python<'p>) -> &'p pyo3::PyAny {
         let underlying = self.underlying.take().unwrap();
         interruptible_future_to_py(py, async move {
@@ -478,6 +516,29 @@ impl ConnectedSink {
     }
 }
 
+#[pyclass]
+#[derive(Clone)]
+struct ConnectedStream {
+    underlying: Arc<RwLock<DynStream>>,
+}
+
+#[pymethods]
+impl ConnectedStream {
+    fn next<'p>(&mut self, py: Python<'p>) -> &'p PyAny {
+        let underlying = self.underlying.clone();
+        interruptible_future_to_py(py, async move {
+            let read_res = underlying.write().await.next().await;
+            Python::with_gil(|py| {
+                Ok(read_res
+                    .map(|b| b.map(|b| Some(PyBytes::new(py, &b))).unwrap_or(None))
+                    .unwrap_or(None)
+                    .into_py(py))
+            })
+        })
+        .unwrap()
+    }
+}
+
 #[pymodule]
 pub fn _core(py: Python<'_>, module: &PyModule) -> PyResult<()> {
     ctrlc::set_handler(move || {
@@ -488,6 +549,7 @@ pub fn _core(py: Python<'_>, module: &PyModule) -> PyResult<()> {
     module.add("AnyhowError", py.get_type::<AnyhowError>())?;
     module.add_class::<AnyhowWrapper>()?;
 
+    module.add_class::<HydroflowSink>()?;
     module.add_class::<Deployment>()?;
 
     module.add_class::<Host>()?;
@@ -498,11 +560,13 @@ pub fn _core(py: Python<'_>, module: &PyModule) -> PyResult<()> {
 
     module.add_class::<Service>()?;
     module.add_class::<CustomService>()?;
+    module.add_class::<CustomClientPort>()?;
     module.add_class::<HydroflowCrate>()?;
     module.add_class::<HydroflowCratePort>()?;
 
     module.add_class::<ServerPort>()?;
     module.add_class::<ConnectedSink>()?;
+    module.add_class::<ConnectedStream>()?;
 
     module.add_function(wrap_pyfunction!(demux, module)?)?;
 
