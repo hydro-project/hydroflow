@@ -6,7 +6,6 @@ use std::future::Future;
 use std::marker::PhantomData;
 use std::num::NonZeroUsize;
 
-use hydroflow_lang::graph::serde_graph::SerdeGraph;
 use hydroflow_lang::graph::HydroflowGraph;
 use ref_cast::RefCast;
 use tokio::runtime::TryCurrentError;
@@ -87,10 +86,8 @@ impl Hydroflow {
         graph
     }
 
-    pub fn meta_graph(&self) -> Option<SerdeGraph> {
-        self.meta_graph
-            .as_ref()
-            .map(|hf_graph| hf_graph.to_serde_graph())
+    pub fn meta_graph(&self) -> Option<&HydroflowGraph> {
+        self.meta_graph.as_ref()
     }
 
     /// Returns a reactor for externally scheduling subgraphs, possibly from another thread.
