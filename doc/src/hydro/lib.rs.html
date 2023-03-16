@@ -497,12 +497,28 @@
 <a href="#497" id="497">497</a>
 <a href="#498" id="498">498</a>
 <a href="#499" id="499">499</a>
+<a href="#500" id="500">500</a>
+<a href="#501" id="501">501</a>
+<a href="#502" id="502">502</a>
+<a href="#503" id="503">503</a>
+<a href="#504" id="504">504</a>
+<a href="#505" id="505">505</a>
+<a href="#506" id="506">506</a>
+<a href="#507" id="507">507</a>
+<a href="#508" id="508">508</a>
+<a href="#509" id="509">509</a>
+<a href="#510" id="510">510</a>
+<a href="#511" id="511">511</a>
+<a href="#512" id="512">512</a>
+<a href="#513" id="513">513</a>
+<a href="#514" id="514">514</a>
+<a href="#515" id="515">515</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::sync::Arc;
 
 <span class="kw">use </span>async_channel::Receiver;
 <span class="kw">use </span>bytes::Bytes;
-<span class="kw">use </span>futures::SinkExt;
-<span class="kw">use </span>hydroflow_cli_integration::{Connected, ConnectedBidi, DynSink};
+<span class="kw">use </span>futures::{Future, SinkExt};
+<span class="kw">use </span>hydroflow_cli_integration::{ConnectedBidi, DynSink};
 <span class="kw">use </span>pyo3::exceptions::PyException;
 <span class="kw">use </span>pyo3::types::{PyBytes, PyDict};
 <span class="kw">use </span>pyo3::{create_exception, prelude::<span class="kw-2">*</span>, wrap_pymodule};
@@ -514,6 +530,19 @@
 <span class="kw">use </span><span class="kw">crate</span>::core::hydroflow_crate::ports::HydroflowSource;
 
 <span class="macro">create_exception!</span>(hydro_cli_core, AnyhowError, PyException);
+
+<span class="kw">fn </span>interruptible_future_to_py&lt;F, T&gt;(py: Python&lt;<span class="lifetime">&#39;_</span>&gt;, fut: F) -&gt; PyResult&lt;<span class="kw-2">&amp;</span>PyAny&gt;
+<span class="kw">where
+    </span>F: Future&lt;Output = PyResult&lt;T&gt;&gt; + Send + <span class="lifetime">&#39;static</span>,
+    T: IntoPy&lt;PyObject&gt;,
+{
+    pyo3_asyncio::tokio::future_into_py(py, <span class="kw">async move </span>{
+        <span class="macro">tokio::select! </span>{
+            <span class="kw">_ </span>= tokio::signal::ctrl_c() =&gt; <span class="prelude-val">Err</span>(PyErr::new::&lt;pyo3::exceptions::PyKeyboardInterrupt, <span class="kw">_</span>&gt;(<span class="string">&quot;received Ctrl-C&quot;</span>)),
+            r = fut =&gt; r,
+        }
+    })
+}
 
 <span class="attr">#[pyclass]
 #[derive(Clone)]
@@ -641,7 +670,7 @@
 
     <span class="kw">fn </span>deploy&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny {
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.clone();
-        pyo3_asyncio::tokio::future_into_py(py, <span class="kw">async move </span>{
+        interruptible_future_to_py(py, <span class="kw">async move </span>{
             underlying.write().<span class="kw">await</span>.deploy().<span class="kw">await</span>.map_err(|e| {
                 Python::with_gil(|py| {
                     AnyhowError::new_err(
@@ -662,7 +691,7 @@
 
     <span class="kw">fn </span>start&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny {
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.clone();
-        pyo3_asyncio::tokio::future_into_py(py, <span class="kw">async move </span>{
+        interruptible_future_to_py(py, <span class="kw">async move </span>{
             underlying.write().<span class="kw">await</span>.start().<span class="kw">await</span>;
             <span class="prelude-val">Ok</span>(Python::with_gil(|py| py.<span class="prelude-val">None</span>()))
         })
@@ -754,7 +783,7 @@
 </span><span class="kw">impl </span>PyReceiver {
     <span class="kw">fn </span>next&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny {
         <span class="kw">let </span>my_receiver = <span class="self">self</span>.receiver.clone();
-        pyo3_asyncio::tokio::future_into_py(py, <span class="kw">async move </span>{
+        interruptible_future_to_py(py, <span class="kw">async move </span>{
             <span class="kw">let </span>underlying = my_receiver.recv();
             <span class="prelude-val">Ok</span>(underlying.<span class="kw">await</span>.map(<span class="prelude-val">Some</span>).unwrap_or(<span class="prelude-val">None</span>))
         })
@@ -797,7 +826,7 @@
 
     <span class="kw">fn </span>server_port&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny {
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.clone();
-        pyo3_asyncio::tokio::future_into_py(py, <span class="kw">async move </span>{
+        interruptible_future_to_py(py, <span class="kw">async move </span>{
             <span class="kw">let </span>underlying = underlying.read().<span class="kw">await</span>;
             <span class="prelude-val">Ok</span>(ServerPort {
                 underlying: <span class="prelude-val">Some</span>(underlying.server_port().<span class="kw">await</span>),
@@ -841,7 +870,7 @@ async def pyreceiver_to_async_generator(pyreceiver):
 </span><span class="kw">impl </span>HydroflowCrate {
     <span class="kw">fn </span>stdout&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny {
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.clone();
-        pyo3_asyncio::tokio::future_into_py(py, <span class="kw">async move </span>{
+        interruptible_future_to_py(py, <span class="kw">async move </span>{
             <span class="kw">let </span>underlying = underlying.read().<span class="kw">await</span>;
             convert_py_receiver(PyReceiver {
                 receiver: Arc::new(underlying.stdout().<span class="kw">await</span>),
@@ -852,7 +881,7 @@ async def pyreceiver_to_async_generator(pyreceiver):
 
     <span class="kw">fn </span>stderr&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny {
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.clone();
-        pyo3_asyncio::tokio::future_into_py(py, <span class="kw">async move </span>{
+        interruptible_future_to_py(py, <span class="kw">async move </span>{
             <span class="kw">let </span>underlying = underlying.read().<span class="kw">await</span>;
             convert_py_receiver(PyReceiver {
                 receiver: Arc::new(underlying.stderr().<span class="kw">await</span>),
@@ -863,7 +892,7 @@ async def pyreceiver_to_async_generator(pyreceiver):
 
     <span class="kw">fn </span>exit_code&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny {
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.clone();
-        pyo3_asyncio::tokio::future_into_py(py, <span class="kw">async move </span>{
+        interruptible_future_to_py(py, <span class="kw">async move </span>{
             <span class="kw">let </span>underlying = underlying.read().<span class="kw">await</span>;
             <span class="prelude-val">Ok</span>(underlying.exit_code().<span class="kw">await</span>)
         })
@@ -934,11 +963,14 @@ async def pyreceiver_to_async_generator(pyreceiver):
 </span><span class="kw">impl </span>ServerPort {
     <span class="kw">fn </span>sink&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny {
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.take().unwrap();
-        pyo3_asyncio::tokio::future_into_py(py, <span class="kw">async move </span>{
+        interruptible_future_to_py(py, <span class="kw">async move </span>{
+            <span class="kw">let </span>connected = {
+                <span class="kw">use </span>hydroflow_cli_integration::ConnectedSink;
+                underlying.connect::&lt;ConnectedBidi&gt;().<span class="kw">await</span>.take_sink()
+            };
+
             <span class="prelude-val">Ok</span>(ConnectedSink {
-                underlying: Arc::new(RwLock::new(
-                    underlying.connect::&lt;ConnectedBidi&gt;().<span class="kw">await</span>.take_sink(),
-                )),
+                underlying: Arc::new(RwLock::new(connected)),
             })
         })
         .unwrap()
@@ -956,7 +988,7 @@ async def pyreceiver_to_async_generator(pyreceiver):
     <span class="kw">fn </span>send&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, data: Py&lt;PyBytes&gt;, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>PyAny {
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.clone();
         <span class="kw">let </span>bytes = Bytes::from(data.as_bytes(py).to_vec());
-        pyo3_asyncio::tokio::future_into_py(py, <span class="kw">async move </span>{
+        interruptible_future_to_py(py, <span class="kw">async move </span>{
             underlying.write().<span class="kw">await</span>.send(bytes).<span class="kw">await</span><span class="question-mark">?</span>;
             <span class="prelude-val">Ok</span>(())
         })

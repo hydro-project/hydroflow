@@ -369,6 +369,30 @@
 <a href="#369" id="369">369</a>
 <a href="#370" id="370">370</a>
 <a href="#371" id="371">371</a>
+<a href="#372" id="372">372</a>
+<a href="#373" id="373">373</a>
+<a href="#374" id="374">374</a>
+<a href="#375" id="375">375</a>
+<a href="#376" id="376">376</a>
+<a href="#377" id="377">377</a>
+<a href="#378" id="378">378</a>
+<a href="#379" id="379">379</a>
+<a href="#380" id="380">380</a>
+<a href="#381" id="381">381</a>
+<a href="#382" id="382">382</a>
+<a href="#383" id="383">383</a>
+<a href="#384" id="384">384</a>
+<a href="#385" id="385">385</a>
+<a href="#386" id="386">386</a>
+<a href="#387" id="387">387</a>
+<a href="#388" id="388">388</a>
+<a href="#389" id="389">389</a>
+<a href="#390" id="390">390</a>
+<a href="#391" id="391">391</a>
+<a href="#392" id="392">392</a>
+<a href="#393" id="393">393</a>
+<a href="#394" id="394">394</a>
+<a href="#395" id="395">395</a>
 </pre><pre class="rust"><code><span class="attr">#![feature(never_type)]
 
 </span><span class="kw">use </span>std::{
@@ -377,21 +401,20 @@
     net::SocketAddr,
     path::PathBuf,
     pin::Pin,
-    sync::Arc,
     task::{Context, Poll},
 };
 
 <span class="kw">use </span>bytes::{Bytes, BytesMut};
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 
-<span class="kw">use </span>futures::{Sink, SinkExt, Stream};
+<span class="kw">use </span>futures::{ready, Sink, Stream};
 
 <span class="kw">use </span>async_recursion::async_recursion;
 <span class="kw">use </span>async_trait::async_trait;
+<span class="kw">use </span>pin_project::pin_project;
 
 <span class="kw">use </span>tokio::io;
 <span class="kw">use </span>tokio::net::{TcpListener, TcpStream};
-<span class="kw">use </span>tokio::sync::Mutex;
 
 <span class="attr">#[cfg(unix)]
 </span><span class="kw">use </span>tokio::net::{UnixListener, UnixStream};
@@ -473,12 +496,18 @@
 
 <span class="attr">#[async_trait]
 </span><span class="kw">pub trait </span>Connected: Send {
-    <span class="kw">type </span>Input: Send;
-
-    <span class="kw">fn </span>take_source(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; DynStream;
-    <span class="kw">fn </span>take_sink(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; DynSink&lt;<span class="self">Self</span>::Input&gt;;
-
     <span class="kw">async fn </span>from_defn(pipe: ServerOrBound) -&gt; <span class="self">Self</span>;
+}
+
+<span class="kw">pub trait </span>ConnectedSink {
+    <span class="kw">type </span>Input: Send;
+    <span class="kw">type </span>Sink: Sink&lt;<span class="self">Self</span>::Input, Error = io::Error&gt; + Send + Sync;
+
+    <span class="kw">fn </span>take_sink(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Sink;
+}
+
+<span class="kw">pub trait </span>ConnectedSource {
+    <span class="kw">fn </span>take_source(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; DynStream;
 }
 
 <span class="attr">#[derive(Debug)]
@@ -583,16 +612,6 @@
 
 <span class="attr">#[async_trait]
 </span><span class="kw">impl </span>Connected <span class="kw">for </span>ConnectedBidi {
-    <span class="kw">type </span>Input = Bytes;
-
-    <span class="kw">fn </span>take_source(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; DynStream {
-        <span class="self">self</span>.source.take().unwrap()
-    }
-
-    <span class="kw">fn </span>take_sink(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; DynSink&lt;<span class="self">Self</span>::Input&gt; {
-        <span class="self">self</span>.sink.take().unwrap()
-    }
-
     <span class="kw">async fn </span>from_defn(pipe: ServerOrBound) -&gt; <span class="self">Self </span>{
         <span class="kw">match </span>pipe {
             ServerOrBound::Server(ServerPort::UnixSocket(path)) =&gt; {
@@ -634,51 +653,78 @@
     }
 }
 
-<span class="kw">pub struct </span>ConnectedDemux&lt;T: Connected&gt; {
+<span class="kw">impl </span>ConnectedSource <span class="kw">for </span>ConnectedBidi {
+    <span class="kw">fn </span>take_source(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; DynStream {
+        <span class="self">self</span>.source.take().unwrap()
+    }
+}
+
+<span class="kw">impl </span>ConnectedSink <span class="kw">for </span>ConnectedBidi {
+    <span class="kw">type </span>Input = Bytes;
+    <span class="kw">type </span>Sink = DynSink&lt;Bytes&gt;;
+
+    <span class="kw">fn </span>take_sink(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; DynSink&lt;<span class="self">Self</span>::Input&gt; {
+        <span class="self">self</span>.sink.take().unwrap()
+    }
+}
+
+<span class="kw">pub struct </span>ConnectedDemux&lt;T: ConnectedSink&gt; {
     <span class="kw">pub </span>keys: Vec&lt;u32&gt;,
-    sink: <span class="prelude-ty">Option</span>&lt;DynSink&lt;(u32, T::Input)&gt;&gt;,
+    sink: <span class="prelude-ty">Option</span>&lt;DemuxDrain&lt;T::Input, T::Sink&gt;&gt;,
 }
 
-<span class="comment">// a copy of `Drain` that uses `io::Error` instead of `Infallible`
-</span><span class="kw">struct </span>IoErrorDrain&lt;T&gt; {
+<span class="attr">#[pin_project]
+</span><span class="kw">pub struct </span>DemuxDrain&lt;T, S: Sink&lt;T, Error = io::Error&gt; + Send + Sync + <span class="question-mark">?</span>Sized&gt; {
     marker: PhantomData&lt;T&gt;,
+    <span class="attr">#[pin]
+    </span>sinks: HashMap&lt;u32, Pin&lt;Box&lt;S&gt;&gt;&gt;,
 }
 
-<span class="kw">impl</span>&lt;T&gt; Sink&lt;T&gt; <span class="kw">for </span>IoErrorDrain&lt;T&gt; {
+<span class="kw">impl</span>&lt;T, S: Sink&lt;T, Error = io::Error&gt; + Send + Sync&gt; Sink&lt;(u32, T)&gt; <span class="kw">for </span>DemuxDrain&lt;T, S&gt; {
     <span class="kw">type </span>Error = io::Error;
 
     <span class="kw">fn </span>poll_ready(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, _cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt;&gt; {
+        <span class="kw">for </span>sink <span class="kw">in </span><span class="self">self</span>.project().sinks.values_mut() {
+            <span class="macro">ready!</span>(Sink::poll_ready(sink.as_mut(), _cx))<span class="question-mark">?</span>;
+        }
+
         Poll::Ready(<span class="prelude-val">Ok</span>(()))
     }
 
-    <span class="kw">fn </span>start_send(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, _item: T) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt; {
-        <span class="prelude-val">Ok</span>(())
+    <span class="kw">fn </span>start_send(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, item: (u32, T)) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt; {
+        Sink::start_send(
+            <span class="self">self</span>.project()
+                .sinks
+                .get_mut()
+                .get_mut(<span class="kw-2">&amp;</span>item.<span class="number">0</span>)
+                .unwrap()
+                .as_mut(),
+            item.<span class="number">1</span>,
+        )
     }
 
     <span class="kw">fn </span>poll_flush(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, _cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt;&gt; {
+        <span class="kw">for </span>sink <span class="kw">in </span><span class="self">self</span>.project().sinks.values_mut() {
+            <span class="macro">ready!</span>(Sink::poll_flush(sink.as_mut(), _cx))<span class="question-mark">?</span>;
+        }
+
         Poll::Ready(<span class="prelude-val">Ok</span>(()))
     }
 
     <span class="kw">fn </span>poll_close(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, _cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt;&gt; {
+        <span class="kw">for </span>sink <span class="kw">in </span><span class="self">self</span>.project().sinks.values_mut() {
+            <span class="macro">ready!</span>(Sink::poll_close(sink.as_mut(), _cx))<span class="question-mark">?</span>;
+        }
+
         Poll::Ready(<span class="prelude-val">Ok</span>(()))
     }
 }
 
 <span class="attr">#[async_trait]
-</span><span class="kw">impl</span>&lt;T: Connected&gt; Connected <span class="kw">for </span>ConnectedDemux&lt;T&gt;
+</span><span class="kw">impl</span>&lt;T: Connected + ConnectedSink&gt; Connected <span class="kw">for </span>ConnectedDemux&lt;T&gt;
 <span class="kw">where
-    </span>&lt;T <span class="kw">as </span>Connected&gt;::Input: <span class="lifetime">&#39;static </span>+ Sync,
+    </span>&lt;T <span class="kw">as </span>ConnectedSink&gt;::Input: <span class="lifetime">&#39;static </span>+ Sync,
 {
-    <span class="kw">type </span>Input = (u32, T::Input);
-
-    <span class="kw">fn </span>take_source(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; DynStream {
-        <span class="macro">panic!</span>(<span class="string">&quot;Cannot take source from a demux pipe&quot;</span>);
-    }
-
-    <span class="kw">fn </span>take_sink(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; DynSink&lt;<span class="self">Self</span>::Input&gt; {
-        <span class="self">self</span>.sink.take().unwrap()
-    }
-
     <span class="kw">async fn </span>from_defn(pipe: ServerOrBound) -&gt; <span class="self">Self </span>{
         <span class="kw">match </span>pipe {
             ServerOrBound::Server(ServerPort::Demux(demux)) =&gt; {
@@ -687,23 +733,18 @@
                 <span class="kw">for </span>(id, pipe) <span class="kw">in </span>demux {
                     connected_demux.insert(
                         id,
-                        Arc::new(Mutex::new(
-                            T::from_defn(ServerOrBound::Server(pipe)).<span class="kw">await</span>.take_sink(),
-                        )),
+                        Box::pin(T::from_defn(ServerOrBound::Server(pipe)).<span class="kw">await</span>.take_sink()),
                     );
                 }
 
-                <span class="kw">let </span>demuxer = IoErrorDrain {
+                <span class="kw">let </span>demuxer = DemuxDrain {
                     marker: PhantomData::default(),
-                }
-                .with(<span class="kw">move </span>|(id, input)| {
-                    <span class="kw">let </span>sink = connected_demux.get_mut(<span class="kw-2">&amp;</span>id).unwrap().clone();
-                    <span class="kw">async move </span>{ sink.lock().<span class="kw">await</span>.feed(input).<span class="kw">await </span>}
-                });
+                    sinks: connected_demux,
+                };
 
                 ConnectedDemux {
                     keys,
-                    sink: <span class="prelude-val">Some</span>(Box::pin(demuxer)),
+                    sink: <span class="prelude-val">Some</span>(demuxer),
                 }
             }
 
@@ -714,23 +755,18 @@
                     <span class="kw">for </span>(id, bound) <span class="kw">in </span>demux {
                         connected_demux.insert(
                             id,
-                            Arc::new(Mutex::new(
-                                T::from_defn(ServerOrBound::Bound(bound)).<span class="kw">await</span>.take_sink(),
-                            )),
+                            Box::pin(T::from_defn(ServerOrBound::Bound(bound)).<span class="kw">await</span>.take_sink()),
                         );
                     }
 
-                    <span class="kw">let </span>demuxer = IoErrorDrain {
+                    <span class="kw">let </span>demuxer = DemuxDrain {
                         marker: PhantomData::default(),
-                    }
-                    .with(<span class="kw">move </span>|(id, input)| {
-                        <span class="kw">let </span>sink = connected_demux.get_mut(<span class="kw-2">&amp;</span>id).unwrap().clone();
-                        <span class="kw">async move </span>{ sink.lock().<span class="kw">await</span>.feed(input).<span class="kw">await </span>}
-                    });
+                        sinks: connected_demux,
+                    };
 
                     ConnectedDemux {
                         keys,
-                        sink: <span class="prelude-val">Some</span>(Box::pin(demuxer)),
+                        sink: <span class="prelude-val">Some</span>(demuxer),
                     }
                 } <span class="kw">else </span>{
                     <span class="macro">panic!</span>(<span class="string">&quot;Cannot connect to a non-demux pipe as a demux&quot;</span>)
@@ -738,6 +774,18 @@
             }
             <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Cannot connect to a non-demux pipe as a demux&quot;</span>),
         }
+    }
+}
+
+<span class="kw">impl</span>&lt;T: ConnectedSink&gt; ConnectedSink <span class="kw">for </span>ConnectedDemux&lt;T&gt;
+<span class="kw">where
+    </span>&lt;T <span class="kw">as </span>ConnectedSink&gt;::Input: <span class="lifetime">&#39;static </span>+ Sync,
+{
+    <span class="kw">type </span>Input = (u32, T::Input);
+    <span class="kw">type </span>Sink = DemuxDrain&lt;T::Input, T::Sink&gt;;
+
+    <span class="kw">fn </span>take_sink(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Sink {
+        <span class="self">self</span>.sink.take().unwrap()
     }
 }
 </code></pre></div>

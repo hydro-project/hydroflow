@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["BoundConnection","ServerConfig","ServerOrBound","ServerPort"],"struct":["ConnectedBidi","ConnectedDemux"],"trait":["Connected"],"type":["DynSink","DynStream"]};
+window.SIDEBAR_ITEMS = {"enum":["BoundConnection","ServerConfig","ServerOrBound","ServerPort"],"struct":["ConnectedBidi","ConnectedDemux","DemuxDrain"],"trait":["Connected","ConnectedSink","ConnectedSource"],"type":["DynSink","DynStream"]};

@@ -271,8 +271,29 @@
 <a href="#271" id="271">271</a>
 <a href="#272" id="272">272</a>
 <a href="#273" id="273">273</a>
+<a href="#274" id="274">274</a>
+<a href="#275" id="275">275</a>
+<a href="#276" id="276">276</a>
+<a href="#277" id="277">277</a>
+<a href="#278" id="278">278</a>
+<a href="#279" id="279">279</a>
+<a href="#280" id="280">280</a>
+<a href="#281" id="281">281</a>
+<a href="#282" id="282">282</a>
+<a href="#283" id="283">283</a>
+<a href="#284" id="284">284</a>
+<a href="#285" id="285">285</a>
+<a href="#286" id="286">286</a>
+<a href="#287" id="287">287</a>
+<a href="#288" id="288">288</a>
+<a href="#289" id="289">289</a>
+<a href="#290" id="290">290</a>
+<a href="#291" id="291">291</a>
+<a href="#292" id="292">292</a>
+<a href="#293" id="293">293</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::{
     collections::HashMap,
+    io::{BufRead, BufReader},
     process::{Child, Command},
     sync::{Arc, RwLock},
 };
@@ -281,9 +302,9 @@
 </span><span class="kw">use </span>std::os::unix::process::CommandExt;
 
 <span class="kw">use </span>anyhow::{bail, Context, <span class="prelude-ty">Result</span>};
+<span class="kw">use </span>async_process::Stdio;
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>tempfile::TempDir;
-<span class="kw">use </span>tokio::signal;
 
 <span class="kw">pub static </span>TERRAFORM_ALPHABET: [char; <span class="number">16</span>] = [
     <span class="string">&#39;1&#39;</span>, <span class="string">&#39;2&#39;</span>, <span class="string">&#39;3&#39;</span>, <span class="string">&#39;4&#39;</span>, <span class="string">&#39;5&#39;</span>, <span class="string">&#39;6&#39;</span>, <span class="string">&#39;7&#39;</span>, <span class="string">&#39;8&#39;</span>, <span class="string">&#39;9&#39;</span>, <span class="string">&#39;0&#39;</span>, <span class="string">&#39;a&#39;</span>, <span class="string">&#39;b&#39;</span>, <span class="string">&#39;c&#39;</span>, <span class="string">&#39;d&#39;</span>, <span class="string">&#39;e&#39;</span>, <span class="string">&#39;f&#39;</span>,
@@ -309,7 +330,8 @@
         apply_command
             .current_dir(deployment_folder.path())
             .arg(<span class="string">&quot;apply&quot;</span>)
-            .arg(<span class="string">&quot;-auto-approve&quot;</span>);
+            .arg(<span class="string">&quot;-auto-approve&quot;</span>)
+            .arg(<span class="string">&quot;-no-color&quot;</span>);
 
         <span class="attr">#[cfg(unix)]
         </span>{
@@ -317,6 +339,7 @@
         }
 
         <span class="kw">let </span>spawned_child = apply_command
+            .stdout(Stdio::piped())
             .spawn()
             .context(<span class="string">&quot;Failed to spawn `terraform`. Is it installed?&quot;</span>)<span class="question-mark">?</span>;
 
@@ -341,8 +364,6 @@
     <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="kw">for </span>(<span class="kw">_</span>, apply) <span class="kw">in </span><span class="self">self</span>.active_applies.drain() {
             <span class="macro">debug_assert_eq!</span>(Arc::strong_count(<span class="kw-2">&amp;</span>apply), <span class="number">1</span>);
-            <span class="comment">// make sure we can write, because that means we own this apply
-            </span><span class="kw">let _ </span>= apply.blocking_write();
         }
     }
 }
@@ -391,6 +412,7 @@
         <span class="kw">if </span>!Command::new(<span class="string">&quot;terraform&quot;</span>)
             .current_dir(deployment_folder.path())
             .arg(<span class="string">&quot;init&quot;</span>)
+            .stdout(Stdio::null())
             .spawn()
             .context(<span class="string">&quot;Failed to spawn `terraform`. Is it installed?&quot;</span>)<span class="question-mark">?
             </span>.wait()
@@ -413,46 +435,95 @@
     deployment_folder: <span class="prelude-ty">Option</span>&lt;tempfile::TempDir&gt;,
 }
 
+<span class="kw">fn </span>filter_terraform_logs(child: <span class="kw-2">&amp;mut </span>Child) {
+    <span class="kw">let </span>lines = BufReader::new(child.stdout.take().unwrap()).lines();
+    <span class="kw">for </span>line <span class="kw">in </span>lines {
+        <span class="kw">if let </span><span class="prelude-val">Ok</span>(line) = line {
+            <span class="kw">let </span><span class="kw-2">mut </span>split = line.split(<span class="string">&#39;:&#39;</span>);
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(first) = split.next() {
+                <span class="kw">if </span>first.chars().all(|c| c != <span class="string">&#39; &#39;</span>)
+                    &amp;&amp; split.next().is_some()
+                    &amp;&amp; split.next().is_none()
+                {
+                    <span class="macro">println!</span>(<span class="string">&quot;[terraform] {}&quot;</span>, line);
+                }
+            }
+        } <span class="kw">else </span>{
+            <span class="kw">break</span>;
+        }
+    }
+}
+
 <span class="kw">impl </span>TerraformApply {
     <span class="kw">async fn </span>output(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;TerraformResult&gt; {
         <span class="kw">let </span>(<span class="kw">_</span>, child) = <span class="self">self</span>.child.as_ref().unwrap().clone();
 
-        <span class="kw">let </span>wait_channel = tokio::task::spawn_blocking(<span class="kw">move </span>|| {
+        <span class="kw">let </span>status = tokio::task::spawn_blocking(<span class="kw">move </span>|| {
+            filter_terraform_logs(<span class="kw-2">&amp;mut </span>child.write().unwrap());
+
             <span class="comment">// it is okay for this thread to keep running even if the future is cancelled
             </span>child.write().unwrap().wait().unwrap()
-        });
+        })
+        .<span class="kw">await</span>;
+        <span class="self">self</span>.child = <span class="prelude-val">None</span>;
 
-        <span class="macro">tokio::select! </span>{
-            <span class="kw">_ </span>= signal::ctrl_c() =&gt; {
-                <span class="macro">bail!</span>(<span class="string">&quot;Received Ctrl-C&quot;</span>)
-            },
-            status = wait_channel =&gt; {
-                <span class="self">self</span>.child = <span class="prelude-val">None</span>;
-
-                <span class="kw">if </span>!status.unwrap().success() {
-                    <span class="macro">bail!</span>(<span class="string">&quot;Terraform deployment failed&quot;</span>);
-                }
-
-                <span class="kw">let </span><span class="kw-2">mut </span>output_command = Command::new(<span class="string">&quot;terraform&quot;</span>);
-                output_command
-                    .current_dir(<span class="self">self</span>.deployment_folder.as_ref().unwrap().path())
-                    .arg(<span class="string">&quot;output&quot;</span>)
-                    .arg(<span class="string">&quot;-json&quot;</span>);
-
-                <span class="attr">#[cfg(unix)]
-                </span>{
-                    output_command.process_group(<span class="number">0</span>);
-                }
-
-                <span class="kw">let </span>output = output_command.output()
-                    .context(<span class="string">&quot;Failed to read Terraform outputs&quot;</span>)<span class="question-mark">?</span>;
-
-                <span class="prelude-val">Ok</span>(TerraformResult {
-                    outputs: serde_json::from_slice(<span class="kw-2">&amp;</span>output.stdout).unwrap(),
-                    deployment_folder: <span class="self">self</span>.deployment_folder.take(),
-                })
-            },
+        <span class="kw">if </span>!status.unwrap().success() {
+            <span class="macro">bail!</span>(<span class="string">&quot;Terraform deployment failed&quot;</span>);
         }
+
+        <span class="kw">let </span><span class="kw-2">mut </span>output_command = Command::new(<span class="string">&quot;terraform&quot;</span>);
+        output_command
+            .current_dir(<span class="self">self</span>.deployment_folder.as_ref().unwrap().path())
+            .arg(<span class="string">&quot;output&quot;</span>)
+            .arg(<span class="string">&quot;-json&quot;</span>);
+
+        <span class="attr">#[cfg(unix)]
+        </span>{
+            output_command.process_group(<span class="number">0</span>);
+        }
+
+        <span class="kw">let </span>output = output_command
+            .output()
+            .context(<span class="string">&quot;Failed to read Terraform outputs&quot;</span>)<span class="question-mark">?</span>;
+
+        <span class="prelude-val">Ok</span>(TerraformResult {
+            outputs: serde_json::from_slice(<span class="kw-2">&amp;</span>output.stdout).unwrap(),
+            deployment_folder: <span class="self">self</span>.deployment_folder.take(),
+        })
+    }
+}
+
+<span class="kw">fn </span>destroy_deployment(deployment_folder: <span class="kw-2">&amp;</span>TempDir) {
+    <span class="macro">println!</span>(
+        <span class="string">&quot;Destroying terraform deployment at {}&quot;</span>,
+        deployment_folder.path().display()
+    );
+
+    <span class="kw">let </span><span class="kw-2">mut </span>destroy_command = Command::new(<span class="string">&quot;terraform&quot;</span>);
+    destroy_command
+        .current_dir(deployment_folder.path())
+        .arg(<span class="string">&quot;destroy&quot;</span>)
+        .arg(<span class="string">&quot;-auto-approve&quot;</span>)
+        .arg(<span class="string">&quot;-no-color&quot;</span>)
+        .stdout(Stdio::piped());
+
+    <span class="attr">#[cfg(unix)]
+    </span>{
+        destroy_command.process_group(<span class="number">0</span>);
+    }
+
+    <span class="kw">let </span><span class="kw-2">mut </span>destroy_child = destroy_command
+        .spawn()
+        .expect(<span class="string">&quot;Failed to spawn terraform destroy command&quot;</span>);
+
+    filter_terraform_logs(<span class="kw-2">&amp;mut </span>destroy_child);
+
+    <span class="kw">if </span>!destroy_child
+        .wait()
+        .expect(<span class="string">&quot;Failed to destroy terraform deployment&quot;</span>)
+        .success()
+    {
+        <span class="macro">eprintln!</span>(<span class="string">&quot;WARNING: failed to destroy terraform deployment&quot;</span>);
     }
 }
 
@@ -462,7 +533,7 @@
             <span class="attr">#[cfg(unix)]
             </span>nix::sys::signal::kill(
                 nix::unistd::Pid::from_raw(pid <span class="kw">as </span>i32),
-                nix::sys::signal::Signal::SIGTERM,
+                nix::sys::signal::Signal::SIGINT,
             )
             .unwrap();
 
@@ -474,23 +545,7 @@
         }
 
         <span class="kw">if let </span><span class="prelude-val">Some</span>(deployment_folder) = <span class="kw-2">&amp;</span><span class="self">self</span>.deployment_folder {
-            <span class="macro">println!</span>(
-                <span class="string">&quot;Destroying terraform deployment at {}&quot;</span>,
-                deployment_folder.path().display()
-            );
-
-            <span class="kw">if </span>!Command::new(<span class="string">&quot;terraform&quot;</span>)
-                .current_dir(deployment_folder)
-                .arg(<span class="string">&quot;destroy&quot;</span>)
-                .arg(<span class="string">&quot;-auto-approve&quot;</span>)
-                .spawn()
-                .expect(<span class="string">&quot;Failed to spawn terraform destroy command&quot;</span>)
-                .wait()
-                .expect(<span class="string">&quot;Failed to destroy terraform deployment&quot;</span>)
-                .success()
-            {
-                <span class="macro">eprintln!</span>(<span class="string">&quot;WARNING: failed to destroy terraform deployment&quot;</span>);
-            }
+            destroy_deployment(deployment_folder);
         }
     }
 }
@@ -519,23 +574,8 @@
 
 <span class="kw">impl </span>Drop <span class="kw">for </span>TerraformResult {
     <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(folder) = <span class="kw-2">&amp;</span><span class="self">self</span>.deployment_folder {
-            <span class="macro">println!</span>(
-                <span class="string">&quot;Destroying terraform deployment at {}&quot;</span>,
-                folder.path().display()
-            );
-            <span class="kw">if </span>!Command::new(<span class="string">&quot;terraform&quot;</span>)
-                .current_dir(folder)
-                .arg(<span class="string">&quot;destroy&quot;</span>)
-                .arg(<span class="string">&quot;-auto-approve&quot;</span>)
-                .spawn()
-                .expect(<span class="string">&quot;Failed to spawn terraform destroy command&quot;</span>)
-                .wait()
-                .expect(<span class="string">&quot;Failed to destroy terraform deployment&quot;</span>)
-                .success()
-            {
-                <span class="macro">eprintln!</span>(<span class="string">&quot;WARNING: failed to destroy terraform deployment&quot;</span>);
-            }
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(deployment_folder) = <span class="kw-2">&amp;</span><span class="self">self</span>.deployment_folder {
+            destroy_deployment(deployment_folder);
         }
     }
 }
