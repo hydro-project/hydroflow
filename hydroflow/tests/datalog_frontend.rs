@@ -741,6 +741,7 @@ fn test_send_to_node() {
     assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result_recv_2), &[(5,)]);
 }
 
+#[multiplatform_test]
 fn test_aggregations_and_comments() {
     let (ints_send, ints) = hydroflow::util::unbounded_channel::<(usize, usize)>();
     let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
@@ -782,6 +783,7 @@ fn test_aggregations_and_comments() {
     assert_eq!(&res, &[(3, 1), (10, 3)]);
 }
 
+#[multiplatform_test]
 fn test_non_copy_but_clone() {
     let (strings_send, strings) = hydroflow::util::unbounded_channel::<(String,)>();
     let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(String, String)>();

@@ -686,6 +686,7 @@ mod tests {
         );
     }
 
+    #[test]
     fn test_non_copy_but_clone() {
         test_snapshots!(
             r#"
