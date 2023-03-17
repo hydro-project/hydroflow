@@ -12,3 +12,20 @@ fn test_surface_flows_1() {
     assert_graphvis_snapshots!(df);
     df.run_available();
 }
+
+#[tokio::test]
+async fn test_source_interval() {
+    use std::time::Duration;
+
+    use hydroflow::hydroflow_syntax;
+
+    let mut hf = hydroflow_syntax! {
+        source_interval(Duration::from_secs(1))
+            -> for_each(|time| println!("This runs every second: {:?}", time));
+    };
+
+    // Will print 4 times (fencepost counting).
+    tokio::time::timeout(Duration::from_secs_f32(3.5), hf.run_async())
+        .await
+        .expect_err("Expected time out");
+}
