@@ -34,20 +34,21 @@ type UnixStream = !;
 type UnixListener = !;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub enum ServerConfig {
+pub enum ServerBindConfig {
     UnixSocket,
     TcpPort(
         /// The host the port should be bound on.
         String,
     ),
-    Demux(HashMap<u32, ServerConfig>),
+    Demux(HashMap<u32, ServerBindConfig>),
+    Merge(Vec<ServerBindConfig>),
 }
 
-impl ServerConfig {
+impl ServerBindConfig {
     #[async_recursion]
     pub async fn bind(self) -> BoundConnection {
         match self {
-            ServerConfig::UnixSocket => {
+            ServerBindConfig::UnixSocket => {
                 #[cfg(unix)]
                 {
                     let dir = tempfile::tempdir().unwrap();
@@ -60,16 +61,23 @@ impl ServerConfig {
                     panic!("Unix sockets are not supported on this platform")
                 }
             }
-            ServerConfig::TcpPort(host) => {
+            ServerBindConfig::TcpPort(host) => {
                 let listener = TcpListener::bind((host, 0)).await.unwrap();
                 BoundConnection::TcpPort(listener)
             }
-            ServerConfig::Demux(bindings) => {
+            ServerBindConfig::Demux(bindings) => {
                 let mut demux = HashMap::new();
                 for (key, bind) in bindings {
                     demux.insert(key, bind.bind().await);
                 }
                 BoundConnection::Demux(demux)
+            }
+            ServerBindConfig::Merge(bindings) => {
+                let mut merge = Vec::new();
+                for bind in bindings {
+                    merge.push(bind.bind().await);
+                }
+                BoundConnection::Merge(merge)
             }
         }
     }
@@ -93,6 +101,7 @@ pub enum ServerPort {
     UnixSocket(PathBuf),
     TcpPort(SocketAddr),
     Demux(HashMap<u32, ServerPort>),
+    Merge(Vec<ServerPort>),
 }
 
 pub type DynStream = Pin<Box<dyn Stream<Item = Result<BytesMut, io::Error>> + Send + Sync>>;
@@ -112,7 +121,9 @@ pub trait ConnectedSink {
 }
 
 pub trait ConnectedSource {
-    fn take_source(&mut self) -> DynStream;
+    type Output: Send;
+    type Stream: Stream<Item = Result<Self::Output, io::Error>> + Send + Sync;
+    fn take_source(&mut self) -> Self::Stream;
 }
 
 #[derive(Debug)]
@@ -120,6 +131,7 @@ pub enum BoundConnection {
     UnixSocket(UnixListener, tempfile::TempDir),
     TcpPort(TcpListener),
     Demux(HashMap<u32, BoundConnection>),
+    Merge(Vec<BoundConnection>),
 }
 
 impl BoundConnection {
@@ -156,18 +168,29 @@ impl BoundConnection {
                 }
                 ServerPort::Demux(demux)
             }
+
+            BoundConnection::Merge(bindings) => {
+                let mut merge = Vec::new();
+                for bind in bindings {
+                    merge.push(bind.sink_port());
+                }
+                ServerPort::Merge(merge)
+            }
         }
     }
 }
 
-async fn accept(bound: &BoundConnection) -> (DynStream, DynSink<Bytes>) {
+#[async_recursion]
+async fn accept(bound: &BoundConnection) -> (Option<DynStream>, Option<DynSink<Bytes>>) {
     match bound {
         BoundConnection::UnixSocket(listener, _) => {
             #[cfg(unix)]
             {
                 let (stream, _) = listener.accept().await.unwrap();
                 let (sink, source) = unix_bytes(stream);
-                (Box::pin(source), Box::pin(sink))
+                let out: (Option<DynStream>, Option<DynSink<Bytes>>) =
+                    (Some(Box::pin(source)), Some(Box::pin(sink)));
+                out
             }
 
             #[cfg(not(unix))]
@@ -179,7 +202,22 @@ async fn accept(bound: &BoundConnection) -> (DynStream, DynSink<Bytes>) {
         BoundConnection::TcpPort(listener) => {
             let (stream, _) = listener.accept().await.unwrap();
             let (sink, source) = tcp_bytes(stream);
-            (Box::pin(source), Box::pin(sink))
+            let out: (Option<DynStream>, Option<DynSink<Bytes>>) =
+                (Some(Box::pin(source)), Some(Box::pin(sink)));
+            out
+        }
+        BoundConnection::Merge(merge) => {
+            let mut sources = vec![];
+            for bound in merge {
+                sources.push(accept(bound).await.0.unwrap());
+            }
+
+            let merge_source: DynStream = Box::pin(MergeSource {
+                marker: PhantomData::default(),
+                sources,
+            });
+
+            (Some(merge_source), None)
         }
         BoundConnection::Demux(_) => panic!("Cannot connect to a demux pipe directly"),
     }
@@ -247,8 +285,26 @@ impl Connected for ConnectedBidi {
             ServerOrBound::Bound(bound) => {
                 let bound = accept(&bound).await;
                 ConnectedBidi {
-                    source: Some(bound.0),
-                    sink: Some(bound.1),
+                    source: bound.0,
+                    sink: bound.1,
+                }
+            }
+            ServerOrBound::Server(ServerPort::Merge(merge)) => {
+                let sources = futures::future::join_all(merge.iter().map(|port| async {
+                    ConnectedBidi::from_defn(ServerOrBound::Server(port.clone()))
+                        .await
+                        .take_source()
+                }))
+                .await;
+
+                let merged = MergeSource {
+                    marker: PhantomData::default(),
+                    sources,
+                };
+
+                ConnectedBidi {
+                    source: Some(Box::pin(merged)),
+                    sink: None,
                 }
             }
             ServerOrBound::Server(ServerPort::Demux(_)) => {
@@ -259,6 +315,9 @@ impl Connected for ConnectedBidi {
 }
 
 impl ConnectedSource for ConnectedBidi {
+    type Output = BytesMut;
+    type Stream = DynStream;
+
     fn take_source(&mut self) -> DynStream {
         self.source.take().unwrap()
     }
@@ -353,28 +412,24 @@ where
                 }
             }
 
-            ServerOrBound::Bound(bound) => {
-                if let BoundConnection::Demux(demux) = bound {
-                    let mut connected_demux = HashMap::new();
-                    let keys = demux.keys().cloned().collect();
-                    for (id, bound) in demux {
-                        connected_demux.insert(
-                            id,
-                            Box::pin(T::from_defn(ServerOrBound::Bound(bound)).await.take_sink()),
-                        );
-                    }
+            ServerOrBound::Bound(BoundConnection::Demux(demux)) => {
+                let mut connected_demux = HashMap::new();
+                let keys = demux.keys().cloned().collect();
+                for (id, bound) in demux {
+                    connected_demux.insert(
+                        id,
+                        Box::pin(T::from_defn(ServerOrBound::Bound(bound)).await.take_sink()),
+                    );
+                }
 
-                    let demuxer = DemuxDrain {
-                        marker: PhantomData::default(),
-                        sinks: connected_demux,
-                    };
+                let demuxer = DemuxDrain {
+                    marker: PhantomData::default(),
+                    sinks: connected_demux,
+                };
 
-                    ConnectedDemux {
-                        keys,
-                        sink: Some(demuxer),
-                    }
-                } else {
-                    panic!("Cannot connect to a non-demux pipe as a demux")
+                ConnectedDemux {
+                    keys,
+                    sink: Some(demuxer),
                 }
             }
             _ => panic!("Cannot connect to a non-demux pipe as a demux"),
@@ -391,5 +446,44 @@ where
 
     fn take_sink(&mut self) -> Self::Sink {
         self.sink.take().unwrap()
+    }
+}
+
+pub struct MergeSource<T: Unpin, S: Stream<Item = T> + Send + Sync + ?Sized> {
+    marker: PhantomData<T>,
+    sources: Vec<Pin<Box<S>>>,
+}
+
+impl<T: Unpin, S: Stream<Item = T> + Send + Sync + ?Sized> Stream for MergeSource<T, S> {
+    type Item = T;
+
+    fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        let sources = &mut self.get_mut().sources;
+        let mut next = None;
+
+        let mut i = 0;
+        while i < sources.len() {
+            match sources[i].as_mut().poll_next(cx) {
+                Poll::Ready(Some(v)) => {
+                    next = Some(v);
+                    break;
+                }
+                Poll::Ready(None) => {
+                    // this happens infrequently, so OK to be O(n)
+                    sources.remove(i);
+                }
+                Poll::Pending => {
+                    i += 1;
+                }
+            }
+        }
+
+        if sources.is_empty() {
+            Poll::Ready(None)
+        } else if next.is_none() {
+            Poll::Pending
+        } else {
+            Poll::Ready(next)
+        }
     }
 }

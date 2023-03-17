@@ -30,8 +30,11 @@ async def main(args):
         on=machine2
     )
 
-    sender_port = sender.client_port()
-    sender_port.send_to(receiver.ports.echo)
+    sender_port_1 = sender.client_port()
+    sender_port_1.send_to(receiver.ports.echo.merge())
+
+    sender_port_2 = sender.client_port()
+    sender_port_2.send_to(receiver.ports.echo.merge())
 
     await deployment.deploy()
 
@@ -43,12 +46,22 @@ async def main(args):
     await deployment.start()
     print("started!")
 
-    sender_connection = await (await sender_port.server_port()).sink()
-    await sender_connection.send(bytes("hi!", "utf-8"))
+    sender_1_connection = await (await sender_port_1.server_port()).sink()
+    sender_2_connection = await (await sender_port_2.server_port()).sink()
+    print("got sink!")
+
+    await sender_1_connection.send(bytes("hi 1!", "utf-8"))
+    print("sent data!")
 
     async for log in receiver_out:
         print(log)
-        assert log == "echo \"hi!\""
+        assert log == "echo \"hi 1!\""
+        break
+
+    await sender_2_connection.send(bytes("hi 2!", "utf-8"))
+    async for log in receiver_out:
+        print(log)
+        assert log == "echo \"hi 2!\""
         break
 
 if __name__ == "__main__":
