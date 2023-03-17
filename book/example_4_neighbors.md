@@ -4,7 +4,7 @@
 > * Our first multi-input operator, [`join`](./surface_ops.gen.md#join)
 > * Indexing multi-input operators by prepending a bracket expression
 > * The [`unique`](./surface_ops.gen.md#unique) operator for removing duplicates from a stream
-> * Visualizing hydroflow code via `flow.serde_graph().to_mermaid()`
+> * Visualizing hydroflow code via `flow.meta_graph().to_mermaid()`
 > * A first exposure to the concepts of _strata_ and _ticks_
 
 So far all the operators we've used have one input and one output and therefore
@@ -74,7 +74,7 @@ pub fn main() {
 
     println!(
         "{}",
-        flow.serde_graph()
+        flow.meta_graph()
             .expect("No graph found, maybe failed to parse.")
             .to_mermaid()
     );
@@ -144,7 +144,7 @@ Finally we print the neighbor vertices as follows:
 The [unique](./surface_ops.gen.md#unique) operator removes duplicates from the stream to make things more readable. Note that `unique` does not run in a streaming fashion, which we will talk about more [below](#strata-and-ticks).
 
 There's
-also some extra code here, `flow.serde_graph().expect(...).to_mermaid()`, which tells
+also some extra code here, `flow.meta_graph().expect(...).to_mermaid()`, which tells
 Hydroflow to
 generate a diagram rendered by [Mermaid](https://mermaid-js.github.io/) showing
 the structure of the graph, and print it to stdout. You can copy that text and paste it into the [Mermaid Live Editor](https://mermaid-js.github.io/mermaid-live-editor/) to see the graph, which should look as follows:

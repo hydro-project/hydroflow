@@ -86,7 +86,7 @@ impl Hydroflow {
         graph
     }
 
-    pub fn serde_graph(&self) -> Option<&SerdeGraph> {
+    pub fn meta_graph(&self) -> Option<&SerdeGraph> {
         self.serde_graph.as_ref()
     }
 
