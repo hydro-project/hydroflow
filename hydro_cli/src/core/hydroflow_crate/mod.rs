@@ -270,4 +270,26 @@ impl Service for HydroflowCrate {
             .await
             .unwrap();
     }
+
+    async fn stop(&mut self) -> Result<()> {
+        self.launched_binary
+            .as_mut()
+            .unwrap()
+            .write()
+            .await
+            .stdin()
+            .await
+            .send("stop\n".to_string())
+            .await?;
+
+        self.launched_binary
+            .as_mut()
+            .unwrap()
+            .write()
+            .await
+            .wait()
+            .await;
+
+        Ok(())
+    }
 }

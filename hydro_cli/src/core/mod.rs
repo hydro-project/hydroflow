@@ -61,6 +61,8 @@ pub trait LaunchedBinary: Send + Sync {
     async fn stderr(&self) -> Receiver<String>;
 
     async fn exit_code(&self) -> Option<i32>;
+
+    async fn wait(&mut self) -> Option<i32>;
 }
 
 #[async_trait]
@@ -167,4 +169,7 @@ pub trait Service: Send + Sync {
 
     /// Starts the service by having it connect to other services and start computations.
     async fn start(&mut self);
+
+    /// Stops the service by having it disconnect from other services and stop computations.
+    async fn stop(&mut self) -> Result<()>;
 }

@@ -75,7 +75,9 @@ async def main(args):
             if counter == 10:
                 break
 
-    print(await sender.exit_code())
+    for sender in senders:
+        await sender.stop()
+        print(await sender.exit_code())
 
 if __name__ == "__main__":
     import sys
