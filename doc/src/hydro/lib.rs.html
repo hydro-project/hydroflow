@@ -576,6 +576,16 @@
 <a href="#576" id="576">576</a>
 <a href="#577" id="577">577</a>
 <a href="#578" id="578">578</a>
+<a href="#579" id="579">579</a>
+<a href="#580" id="580">580</a>
+<a href="#581" id="581">581</a>
+<a href="#582" id="582">582</a>
+<a href="#583" id="583">583</a>
+<a href="#584" id="584">584</a>
+<a href="#585" id="585">585</a>
+<a href="#586" id="586">586</a>
+<a href="#587" id="587">587</a>
+<a href="#588" id="588">588</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::ops::DerefMut;
 <span class="kw">use </span>std::sync::Arc;
 
@@ -614,6 +624,16 @@
 #[derive(Clone)]
 </span><span class="kw">pub struct </span>AnyhowWrapper {
     <span class="kw">pub </span>underlying: Arc&lt;RwLock&lt;<span class="prelude-ty">Option</span>&lt;anyhow::Error&gt;&gt;&gt;,
+}
+
+<span class="attr">#[pymethods]
+</span><span class="kw">impl </span>AnyhowWrapper {
+    <span class="kw">fn </span>__str__(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; PyResult&lt;String&gt; {
+        <span class="prelude-val">Ok</span>(<span class="macro">format!</span>(
+            <span class="string">&quot;{:?}&quot;</span>,
+            <span class="self">self</span>.underlying.try_read().unwrap().as_ref().unwrap()
+        ))
+    }
 }
 
 <span class="attr">#[pyclass(subclass)]
