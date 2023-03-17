@@ -122,7 +122,22 @@
 <a href="#122" id="122">122</a>
 <a href="#123" id="123">123</a>
 <a href="#124" id="124">124</a>
-</pre><pre class="rust"><code><span class="kw">use </span>std::sync::{Arc, Weak};
+<a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+</pre><pre class="rust"><code><span class="kw">use </span>std::{
+    any::Any,
+    sync::{Arc, Weak},
+};
 
 <span class="kw">use </span>anyhow::{bail, <span class="prelude-ty">Result</span>};
 <span class="kw">use </span>async_trait::async_trait;
@@ -202,7 +217,7 @@
     <span class="kw">fn </span>send_to(<span class="kw-2">&amp;mut </span><span class="self">self</span>, to: <span class="kw-2">&amp;mut </span><span class="kw">dyn </span>HydroflowSink) {
         <span class="kw">if let </span><span class="prelude-val">Ok</span>(instantiated) = to.instantiate(<span class="kw-2">&amp;</span><span class="self">self</span>.on.upgrade().unwrap().try_read().unwrap().on)
         {
-            <span class="self">self</span>.client_port = <span class="prelude-val">Some</span>(instantiated);
+            <span class="self">self</span>.client_port = <span class="prelude-val">Some</span>(instantiated());
         } <span class="kw">else </span>{
             <span class="macro">panic!</span>(<span class="string">&quot;Custom services cannot be used as the server&quot;</span>)
         }
@@ -211,23 +226,30 @@
 
 <span class="attr">#[async_trait]
 </span><span class="kw">impl </span>HydroflowSink <span class="kw">for </span>CustomClientPort {
-    <span class="kw">fn </span>instantiate(<span class="kw-2">&amp;</span><span class="self">self</span>, _client_host: <span class="kw-2">&amp;</span>Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;ServerConfig&gt; {
+    <span class="kw">fn </span>as_any_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span><span class="kw">dyn </span>Any {
+        <span class="self">self
+    </span>}
+
+    <span class="kw">fn </span>instantiate(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        _client_host: <span class="kw-2">&amp;</span>Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Box&lt;<span class="kw">dyn </span>FnOnce() -&gt; ServerConfig&gt;&gt; {
         <span class="macro">bail!</span>(<span class="string">&quot;Custom services cannot be used as the server&quot;</span>)
     }
 
     <span class="kw">fn </span>instantiate_reverse(
-        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
         server_host: <span class="kw-2">&amp;</span>Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;,
         server_sink: Box&lt;<span class="kw">dyn </span>HydroflowServer&gt;,
         wrap_client_port: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Fn(ServerConfig) -&gt; ServerConfig,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;ServerStrategy&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Box&lt;<span class="kw">dyn </span>FnOnce(<span class="kw-2">&amp;mut </span><span class="kw">dyn </span>Any) -&gt; ServerStrategy&gt;&gt; {
         <span class="kw">let </span>client = <span class="self">self</span>.on.upgrade().unwrap();
         <span class="kw">let </span>client_read = client.try_read().unwrap();
 
         <span class="kw">let </span>client_host_id = client_read.on.try_read().unwrap().id();
 
         <span class="kw">let </span>server_host_clone = server_host.clone();
-        <span class="kw">let </span><span class="kw-2">mut </span>server_host = server_host_clone.try_write().unwrap();
+        <span class="kw">let </span>server_host = server_host_clone.try_read().unwrap();
 
         <span class="kw">let </span>client_host_clone = client_read.on.clone();
         <span class="kw">let </span>client_host_read = <span class="kw">if </span>server_host.id() == client_host_id {
@@ -238,12 +260,14 @@
 
         <span class="kw">let </span>(conn_type, bind_type) = server_host.strategy_as_server(client_host_read.as_deref())<span class="question-mark">?</span>;
 
-        <span class="self">self</span>.client_port = <span class="prelude-val">Some</span>(wrap_client_port(ServerConfig::from_strategy(
-            <span class="kw-2">&amp;</span>conn_type,
-            server_sink,
-        )));
+        <span class="kw">let </span>client_port = wrap_client_port(ServerConfig::from_strategy(<span class="kw-2">&amp;</span>conn_type, server_sink));
 
-        <span class="prelude-val">Ok</span>(bind_type)
+        <span class="kw">let </span>server_host_clone = server_host_clone.clone();
+        <span class="prelude-val">Ok</span>(Box::new(<span class="kw">move </span>|me| {
+            <span class="kw">let </span><span class="kw-2">mut </span>server_host = server_host_clone.try_write().unwrap();
+            me.downcast_mut::&lt;CustomClientPort&gt;().unwrap().client_port = <span class="prelude-val">Some</span>(client_port);
+            bind_type(server_host.as_any_mut())
+        }))
     }
 }
 </code></pre></div>

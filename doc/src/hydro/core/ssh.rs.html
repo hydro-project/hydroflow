@@ -162,7 +162,7 @@
 <span class="kw">use </span>async_ssh2_lite::{AsyncChannel, AsyncSession};
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>futures::{AsyncWriteExt, StreamExt};
-<span class="kw">use </span>hydroflow_cli_integration::ServerConfig;
+<span class="kw">use </span>hydroflow_cli_integration::ServerBindConfig;
 <span class="kw">use </span>nanoid::nanoid;
 <span class="kw">use </span>tokio::{
     net::{TcpListener, TcpStream},
@@ -213,14 +213,14 @@
 
 <span class="attr">#[async_trait]
 </span><span class="kw">pub trait </span>LaunchedSSHHost: Send + Sync {
-    <span class="kw">fn </span>server_config(<span class="kw-2">&amp;</span><span class="self">self</span>, bind_type: <span class="kw-2">&amp;</span>ServerStrategy) -&gt; ServerConfig;
+    <span class="kw">fn </span>server_config(<span class="kw-2">&amp;</span><span class="self">self</span>, bind_type: <span class="kw-2">&amp;</span>ServerStrategy) -&gt; ServerBindConfig;
     <span class="kw">fn </span>resource_result(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Arc&lt;ResourceResult&gt;;
     <span class="kw">async fn </span>open_ssh_session(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;AsyncSession&lt;TcpStream&gt;&gt;;
 }
 
 <span class="attr">#[async_trait]
 </span><span class="kw">impl</span>&lt;T: LaunchedSSHHost&gt; LaunchedHost <span class="kw">for </span>T {
-    <span class="kw">fn </span>server_config(<span class="kw-2">&amp;</span><span class="self">self</span>, bind_type: <span class="kw-2">&amp;</span>ServerStrategy) -&gt; ServerConfig {
+    <span class="kw">fn </span>server_config(<span class="kw-2">&amp;</span><span class="self">self</span>, bind_type: <span class="kw-2">&amp;</span>ServerStrategy) -&gt; ServerBindConfig {
         LaunchedSSHHost::server_config(<span class="self">self</span>, bind_type)
     }
 

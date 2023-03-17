@@ -501,13 +501,37 @@
 <a href="#501" id="501">501</a>
 <a href="#502" id="502">502</a>
 <a href="#503" id="503">503</a>
+<a href="#504" id="504">504</a>
+<a href="#505" id="505">505</a>
+<a href="#506" id="506">506</a>
+<a href="#507" id="507">507</a>
+<a href="#508" id="508">508</a>
+<a href="#509" id="509">509</a>
+<a href="#510" id="510">510</a>
+<a href="#511" id="511">511</a>
+<a href="#512" id="512">512</a>
+<a href="#513" id="513">513</a>
+<a href="#514" id="514">514</a>
+<a href="#515" id="515">515</a>
+<a href="#516" id="516">516</a>
+<a href="#517" id="517">517</a>
+<a href="#518" id="518">518</a>
+<a href="#519" id="519">519</a>
+<a href="#520" id="520">520</a>
+<a href="#521" id="521">521</a>
+<a href="#522" id="522">522</a>
+<a href="#523" id="523">523</a>
+<a href="#524" id="524">524</a>
+<a href="#525" id="525">525</a>
+<a href="#526" id="526">526</a>
+<a href="#527" id="527">527</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::{collections::HashMap, net::SocketAddr, path::PathBuf, sync::Arc, time::Duration};
 
 <span class="kw">use </span>anyhow::{Context, <span class="prelude-ty">Result</span>};
 
 <span class="kw">use </span>async_ssh2_lite::{AsyncSession, SessionConfiguration};
 <span class="kw">use </span>async_trait::async_trait;
-<span class="kw">use </span>hydroflow_cli_integration::ServerConfig;
+<span class="kw">use </span>hydroflow_cli_integration::ServerBindConfig;
 <span class="kw">use </span>nanoid::nanoid;
 <span class="kw">use </span>serde_json::json;
 <span class="kw">use </span>tokio::{net::TcpStream, sync::RwLock};
@@ -541,10 +565,10 @@
 
 <span class="attr">#[async_trait]
 </span><span class="kw">impl </span>LaunchedSSHHost <span class="kw">for </span>LaunchedComputeEngine {
-    <span class="kw">fn </span>server_config(<span class="kw-2">&amp;</span><span class="self">self</span>, bind_type: <span class="kw-2">&amp;</span>ServerStrategy) -&gt; ServerConfig {
+    <span class="kw">fn </span>server_config(<span class="kw-2">&amp;</span><span class="self">self</span>, bind_type: <span class="kw-2">&amp;</span>ServerStrategy) -&gt; ServerBindConfig {
         <span class="kw">match </span>bind_type {
-            ServerStrategy::UnixSocket =&gt; ServerConfig::UnixSocket,
-            ServerStrategy::InternalTcpPort =&gt; ServerConfig::TcpPort(<span class="self">self</span>.internal_ip.clone()),
+            ServerStrategy::UnixSocket =&gt; ServerBindConfig::UnixSocket,
+            ServerStrategy::InternalTcpPort =&gt; ServerBindConfig::TcpPort(<span class="self">self</span>.internal_ip.clone()),
             ServerStrategy::ExternalTcpPort(<span class="kw">_</span>) =&gt; <span class="macro">todo!</span>(),
             ServerStrategy::Demux(demux) =&gt; {
                 <span class="kw">let </span><span class="kw-2">mut </span>config_map = HashMap::new();
@@ -552,7 +576,15 @@
                     config_map.insert(<span class="kw-2">*</span>key, LaunchedSSHHost::server_config(<span class="self">self</span>, bind_type));
                 }
 
-                ServerConfig::Demux(config_map)
+                ServerBindConfig::Demux(config_map)
+            }
+            ServerStrategy::Merge(merge) =&gt; {
+                <span class="kw">let </span><span class="kw-2">mut </span>configs = <span class="macro">vec!</span>[];
+                <span class="kw">for </span>bind_type <span class="kw">in </span>merge {
+                    configs.push(LaunchedSSHHost::server_config(<span class="self">self</span>, bind_type));
+                }
+
+                ServerBindConfig::Merge(configs)
             }
         }
     }
@@ -732,6 +764,11 @@
                     <span class="self">self</span>.request_port(bind_type);
                 }
             }
+            ServerStrategy::Merge(merge) =&gt; {
+                <span class="kw">for </span>bind_type <span class="kw">in </span>merge {
+                    <span class="self">self</span>.request_port(bind_type);
+                }
+            }
         }
     }
 
@@ -744,6 +781,10 @@
     }
 
     <span class="kw">fn </span>as_any(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="kw">dyn </span>std::any::Any {
+        <span class="self">self
+    </span>}
+
+    <span class="kw">fn </span>as_any_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span><span class="kw">dyn </span>std::any::Any {
         <span class="self">self
     </span>}
 
@@ -951,26 +992,33 @@
         <span class="self">self</span>.launched.as_ref().unwrap().clone()
     }
 
-    <span class="kw">fn </span>strategy_as_server(
-        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+    <span class="kw">fn </span>strategy_as_server&lt;<span class="lifetime">&#39;a</span>&gt;(
+        <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>,
         client_host: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="kw">dyn </span>Host&gt;,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;(ClientStrategy, ServerStrategy)&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(
+        ClientStrategy&lt;<span class="lifetime">&#39;a</span>&gt;,
+        Box&lt;<span class="kw">dyn </span>FnOnce(<span class="kw-2">&amp;mut </span><span class="kw">dyn </span>std::any::Any) -&gt; ServerStrategy&gt;,
+    )&gt; {
         <span class="kw">let </span>client_host = client_host.unwrap_or(<span class="self">self</span>);
         <span class="kw">if </span>client_host.can_connect_to(ClientStrategy::UnixSocket(<span class="self">self</span>.id)) {
             <span class="prelude-val">Ok</span>((
                 ClientStrategy::UnixSocket(<span class="self">self</span>.id),
-                ServerStrategy::UnixSocket,
+                Box::new(|<span class="kw">_</span>| ServerStrategy::UnixSocket),
             ))
         } <span class="kw">else if </span>client_host.can_connect_to(ClientStrategy::InternalTcpPort(<span class="self">self</span>)) {
             <span class="prelude-val">Ok</span>((
                 ClientStrategy::InternalTcpPort(<span class="self">self</span>),
-                ServerStrategy::InternalTcpPort,
+                Box::new(|<span class="kw">_</span>| ServerStrategy::InternalTcpPort),
             ))
         } <span class="kw">else if </span>client_host.can_connect_to(ClientStrategy::ForwardedTcpPort(<span class="self">self</span>)) {
-            <span class="self">self</span>.request_port(<span class="kw-2">&amp;</span>ServerStrategy::ExternalTcpPort(<span class="number">22</span>)); <span class="comment">// needed to forward
-            </span><span class="prelude-val">Ok</span>((
+            <span class="prelude-val">Ok</span>((
                 ClientStrategy::ForwardedTcpPort(<span class="self">self</span>),
-                ServerStrategy::InternalTcpPort,
+                Box::new(|me| {
+                    me.downcast_mut::&lt;GCPComputeEngineHost&gt;()
+                        .unwrap()
+                        .request_port(<span class="kw-2">&amp;</span>ServerStrategy::ExternalTcpPort(<span class="number">22</span>)); <span class="comment">// needed to forward
+                    </span>ServerStrategy::InternalTcpPort
+                }),
             ))
         } <span class="kw">else </span>{
             <span class="macro">anyhow::bail!</span>(<span class="string">&quot;Could not find a strategy to connect to GCP instance&quot;</span>)

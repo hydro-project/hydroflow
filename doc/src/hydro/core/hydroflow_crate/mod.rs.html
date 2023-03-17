@@ -262,6 +262,15 @@
 <a href="#262" id="262">262</a>
 <a href="#263" id="263">263</a>
 <a href="#264" id="264">264</a>
+<a href="#265" id="265">265</a>
+<a href="#266" id="266">266</a>
+<a href="#267" id="267">267</a>
+<a href="#268" id="268">268</a>
+<a href="#269" id="269">269</a>
+<a href="#270" id="270">270</a>
+<a href="#271" id="271">271</a>
+<a href="#272" id="272">272</a>
+<a href="#273" id="273">273</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 <span class="kw">use </span>anyhow::{bail, <span class="prelude-ty">Result</span>};
@@ -338,19 +347,28 @@
         my_port: String,
         sink: <span class="kw-2">&amp;mut </span><span class="kw">dyn </span>HydroflowSink,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="kw">if let </span><span class="prelude-val">Ok</span>(instantiated) = sink.instantiate(<span class="kw-2">&amp;</span><span class="self">self</span>.on) {
-            <span class="self">self</span>.port_to_server.insert(my_port, instantiated);
+        <span class="kw">let </span>forward_res = sink.instantiate(<span class="kw-2">&amp;</span><span class="self">self</span>.on);
+        <span class="kw">if let </span><span class="prelude-val">Ok</span>(instantiated) = forward_res {
+            <span class="comment">// TODO(shadaj): if already in this map, we want to broadcast
+            </span><span class="macro">assert!</span>(!<span class="self">self</span>.port_to_server.contains_key(<span class="kw-2">&amp;</span>my_port));
+            <span class="self">self</span>.port_to_server.insert(my_port, instantiated());
             <span class="prelude-val">Ok</span>(())
         } <span class="kw">else </span>{
+            drop(forward_res);
             <span class="kw">let </span>instantiated = sink.instantiate_reverse(
                 <span class="kw-2">&amp;</span><span class="self">self</span>.on,
                 Box::new(HydroflowPortConfig {
                     service: Arc::downgrade(self_arc),
                     port: my_port.clone(),
+                    merge: <span class="bool-val">false</span>,
                 }),
                 <span class="kw-2">&amp;</span>|p| p,
             )<span class="question-mark">?</span>;
-            <span class="self">self</span>.port_to_bind.insert(my_port, instantiated);
+
+            <span class="macro">assert!</span>(!<span class="self">self</span>.port_to_bind.contains_key(<span class="kw-2">&amp;</span>my_port));
+            <span class="self">self</span>.port_to_bind
+                .insert(my_port, instantiated(sink.as_any_mut()));
+
             <span class="prelude-val">Ok</span>(())
         }
     }

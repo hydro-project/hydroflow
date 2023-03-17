@@ -162,12 +162,18 @@
 <a href="#162" id="162">162</a>
 <a href="#163" id="163">163</a>
 <a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
+<a href="#166" id="166">166</a>
+<a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::{collections::HashMap, net::SocketAddr, path::Path, sync::Arc};
 
 <span class="kw">use </span>anyhow::Result;
 <span class="kw">use </span>async_channel::{Receiver, Sender};
 <span class="kw">use </span>async_trait::async_trait;
-<span class="kw">use </span>hydroflow_cli_integration::ServerConfig;
+<span class="kw">use </span>hydroflow_cli_integration::ServerBindConfig;
 <span class="kw">use </span>tokio::sync::RwLock;
 
 <span class="kw">pub mod </span>deployment;
@@ -231,7 +237,7 @@
 </span><span class="kw">pub trait </span>LaunchedHost: Send + Sync {
     <span class="doccomment">/// Given a pre-selected network type, computes concrete information needed for a service
     /// to listen to network connections (such as the IP address to bind to).
-    </span><span class="kw">fn </span>server_config(<span class="kw-2">&amp;</span><span class="self">self</span>, strategy: <span class="kw-2">&amp;</span>ServerStrategy) -&gt; ServerConfig;
+    </span><span class="kw">fn </span>server_config(<span class="kw-2">&amp;</span><span class="self">self</span>, strategy: <span class="kw-2">&amp;</span>ServerStrategy) -&gt; ServerBindConfig;
 
     <span class="kw">async fn </span>launch_binary(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
@@ -251,6 +257,7 @@
         </span>u16,
     ),
     Demux(HashMap&lt;u32, ServerStrategy&gt;),
+    Merge(Vec&lt;ServerStrategy&gt;),
 }
 
 <span class="doccomment">/// Like BindType, but includes metadata for determining whether a connection is possible.
@@ -274,6 +281,8 @@
     Linux,
 }
 
+<span class="kw">pub type </span>HostStrategyGetter = Box&lt;<span class="kw">dyn </span>FnOnce(<span class="kw-2">&amp;mut </span><span class="kw">dyn </span>std::any::Any) -&gt; ServerStrategy&gt;;
+
 <span class="attr">#[async_trait]
 </span><span class="kw">pub trait </span>Host: Send + Sync {
     <span class="kw">fn </span>target_type(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; HostTargetType;
@@ -285,6 +294,9 @@
 
     <span class="doccomment">/// Returns a reference to the host as a trait object.
     </span><span class="kw">fn </span>as_any(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="kw">dyn </span>std::any::Any;
+
+    <span class="doccomment">/// Returns a reference to the host as a trait object.
+    </span><span class="kw">fn </span>as_any_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span><span class="kw">dyn </span>std::any::Any;
 
     <span class="doccomment">/// Configures the host to support copying and running a custom binary.
     </span><span class="kw">fn </span>request_custom_binary(<span class="kw-2">&amp;mut </span><span class="self">self</span>);
@@ -298,9 +310,9 @@
     <span class="doccomment">/// Identifies a network type that this host can use for connections if it is the server.
     /// The host will be `None` if the connection is from the same host as the target.
     </span><span class="kw">fn </span>strategy_as_server&lt;<span class="lifetime">&#39;a</span>&gt;(
-        <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span><span class="self">self</span>,
+        <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>,
         connection_from: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="kw">dyn </span>Host&gt;,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;(ClientStrategy&lt;<span class="lifetime">&#39;a</span>&gt;, ServerStrategy)&gt;;
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(ClientStrategy&lt;<span class="lifetime">&#39;a</span>&gt;, HostStrategyGetter)&gt;;
 
     <span class="doccomment">/// Determines whether this host can connect to another host using the given strategy.
     </span><span class="kw">fn </span>can_connect_to(<span class="kw-2">&amp;</span><span class="self">self</span>, typ: ClientStrategy) -&gt; bool;
