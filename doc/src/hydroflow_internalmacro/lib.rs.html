@@ -125,6 +125,13 @@
 <a href="#125" id="125">125</a>
 <a href="#126" id="126">126</a>
 <a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
 </pre><pre class="rust"><code><span class="attr">#![feature(proc_macro_diagnostic, proc_macro_span)]
 #![allow(clippy::explicit_auto_deref)]
 
@@ -139,6 +146,13 @@
 <span class="kw">use </span>syn::{
     parse_macro_input, parse_quote, AttrStyle, Expr, ExprLit, ItemConst, Lit, Member, Path, Type,
 };
+
+<span class="attr">#[proc_macro]
+</span><span class="kw">pub fn </span>quote_to_str(item: proc_macro::TokenStream) -&gt; proc_macro::TokenStream {
+    <span class="kw">let </span>lit = proc_macro::Literal::string(<span class="kw-2">&amp;*</span>item.to_string());
+    <span class="kw">let </span>tt = proc_macro::TokenTree::from(lit);
+    [tt].into_iter().collect()
+}
 
 <span class="attr">#[proc_macro_attribute]
 </span><span class="kw">pub fn </span>operator_docgen(

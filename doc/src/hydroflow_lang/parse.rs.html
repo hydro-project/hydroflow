@@ -423,6 +423,7 @@
 <a href="#423" id="423">423</a>
 <a href="#424" id="424">424</a>
 <a href="#425" id="425">425</a>
+<a href="#426" id="426">426</a>
 </pre><pre class="rust"><code><span class="doccomment">//! AST for surface syntax, modelled on [`syn`]&#39;s ASTs.
 
 </span><span class="kw">use </span>std::hash::Hash;
@@ -709,7 +710,8 @@
     }
 }
 
-<span class="kw">pub struct </span>Operator {
+<span class="attr">#[derive(Clone)]
+</span><span class="kw">pub struct </span>Operator {
     <span class="kw">pub </span>path: Path,
     <span class="kw">pub </span>paren_token: Paren,
     <span class="kw">pub </span>args: Punctuated&lt;Expr, <span class="macro">Token!</span>[,]&gt;,

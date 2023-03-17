@@ -120,7 +120,7 @@
     <span class="kw">let </span>flat_mermaid = flat_graph.mermaid_string_flat();
 
     <span class="kw">let </span>part_graph = partition_graph(flat_graph).unwrap();
-    <span class="kw">let </span>part_mermaid = part_graph.to_serde_graph().to_mermaid();
+    <span class="kw">let </span>part_mermaid = part_graph.to_mermaid();
 
     <span class="kw">let </span>lit0 = Literal::string(<span class="kw-2">&amp;*</span>flat_mermaid);
     <span class="kw">let </span>lit1 = Literal::string(<span class="kw-2">&amp;*</span>part_mermaid);

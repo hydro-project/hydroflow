@@ -620,7 +620,7 @@
 <span class="kw">use </span>std::marker::PhantomData;
 <span class="kw">use </span>std::num::NonZeroUsize;
 
-<span class="kw">use </span>hydroflow_lang::graph::serde_graph::SerdeGraph;
+<span class="kw">use </span>hydroflow_lang::graph::HydroflowGraph;
 <span class="kw">use </span>ref_cast::RefCast;
 <span class="kw">use </span>tokio::runtime::TryCurrentError;
 <span class="kw">use </span>tokio::sync::mpsc::{<span class="self">self</span>, UnboundedReceiver};
@@ -648,7 +648,7 @@
     <span class="doccomment">/// If the events have been received for this tick.
     </span>events_received_tick: bool,
 
-    serde_graph: <span class="prelude-ty">Option</span>&lt;SerdeGraph&gt;,
+    meta_graph: <span class="prelude-ty">Option</span>&lt;HydroflowGraph&gt;,
 }
 <span class="kw">impl </span>Default <span class="kw">for </span>Hydroflow {
     <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
@@ -676,7 +676,7 @@
             event_queue_recv,
             events_received_tick: <span class="bool-val">false</span>,
 
-            serde_graph: <span class="prelude-val">None</span>,
+            meta_graph: <span class="prelude-val">None</span>,
         }
     }
 }
@@ -687,21 +687,21 @@
     }
 
     <span class="doccomment">/// Create a new empty Hydroflow graph with the given serde_graph JSON string.
-    </span><span class="kw">pub fn </span>new_with_graph(serde_graph: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str) -&gt; <span class="self">Self </span>{
-        <span class="kw">let </span><span class="kw-2">mut </span>graph = <span class="self">Self</span>::new();
-        graph.serde_graph = serde_json::from_str(serde_graph)
-            .map_err(|e| {
-                <span class="comment">// TODO: use .inspect_err() when stable.
-                </span><span class="macro">eprintln!</span>(<span class="string">&quot;Failed to deserialize serde_graph {}&quot;</span>, e);
-                e
-            })
-            .ok();
+    </span><span class="kw">pub fn </span>new_with_graph(hydroflow_graph_str: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str) -&gt; <span class="self">Self </span>{
+        <span class="kw">let </span><span class="kw-2">mut </span>hydroflow_graph: HydroflowGraph = serde_json::from_str(hydroflow_graph_str)
+            .expect(<span class="string">&quot;`new_with_graph` failed to deserialize graph.&quot;</span>);
 
+        <span class="kw">let </span><span class="kw-2">mut </span>op_inst_diagnostics = Vec::new();
+        hydroflow_graph.insert_node_op_insts_all(<span class="kw-2">&amp;mut </span>op_inst_diagnostics);
+        <span class="macro">assert!</span>(op_inst_diagnostics.is_empty());
+
+        <span class="kw">let </span><span class="kw-2">mut </span>graph = <span class="self">Self</span>::new();
+        graph.meta_graph.replace(hydroflow_graph);
         graph
     }
 
-    <span class="kw">pub fn </span>meta_graph(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>SerdeGraph&gt; {
-        <span class="self">self</span>.serde_graph.as_ref()
+    <span class="kw">pub fn </span>meta_graph(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>HydroflowGraph&gt; {
+        <span class="self">self</span>.meta_graph.as_ref()
     }
 
     <span class="doccomment">/// Returns a reactor for externally scheduling subgraphs, possibly from another thread.

@@ -284,11 +284,51 @@
 <a href="#284" id="284">284</a>
 <a href="#285" id="285">285</a>
 <a href="#286" id="286">286</a>
+<a href="#287" id="287">287</a>
+<a href="#288" id="288">288</a>
+<a href="#289" id="289">289</a>
+<a href="#290" id="290">290</a>
+<a href="#291" id="291">291</a>
+<a href="#292" id="292">292</a>
+<a href="#293" id="293">293</a>
+<a href="#294" id="294">294</a>
+<a href="#295" id="295">295</a>
+<a href="#296" id="296">296</a>
+<a href="#297" id="297">297</a>
+<a href="#298" id="298">298</a>
+<a href="#299" id="299">299</a>
+<a href="#300" id="300">300</a>
+<a href="#301" id="301">301</a>
+<a href="#302" id="302">302</a>
+<a href="#303" id="303">303</a>
+<a href="#304" id="304">304</a>
+<a href="#305" id="305">305</a>
+<a href="#306" id="306">306</a>
+<a href="#307" id="307">307</a>
+<a href="#308" id="308">308</a>
+<a href="#309" id="309">309</a>
+<a href="#310" id="310">310</a>
+<a href="#311" id="311">311</a>
+<a href="#312" id="312">312</a>
+<a href="#313" id="313">313</a>
+<a href="#314" id="314">314</a>
+<a href="#315" id="315">315</a>
+<a href="#316" id="316">316</a>
+<a href="#317" id="317">317</a>
+<a href="#318" id="318">318</a>
+<a href="#319" id="319">319</a>
+<a href="#320" id="320">320</a>
+<a href="#321" id="321">321</a>
+<a href="#322" id="322">322</a>
+<a href="#323" id="323">323</a>
+<a href="#324" id="324">324</a>
+<a href="#325" id="325">325</a>
 </pre><pre class="rust"><code><span class="doccomment">//! Graph representation stages for Hydroflow graphs.
 
-</span><span class="kw">use </span>std::hash::Hash;
+</span><span class="kw">use </span>std::borrow::Cow;
+<span class="kw">use </span>std::hash::Hash;
 
-<span class="kw">use </span>proc_macro2::Span;
+<span class="kw">use </span>proc_macro2::{Ident, Span};
 <span class="kw">use </span>quote::ToTokens;
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>slotmap::new_key_type;
@@ -305,6 +345,7 @@
 <span class="kw">mod </span>di_mul_graph;
 <span class="kw">mod </span>flat_graph_builder;
 <span class="kw">mod </span>flat_to_partitioned;
+<span class="kw">mod </span>graph_write;
 <span class="kw">mod </span>hydroflow_graph;
 
 <span class="kw">pub use </span>di_mul_graph::DiMulGraph;
@@ -314,7 +355,6 @@
 
 <span class="kw">pub mod </span>graph_algorithms;
 <span class="kw">pub mod </span>ops;
-<span class="kw">pub mod </span>serde_graph;
 
 <span class="macro">new_key_type! </span>{
     <span class="doccomment">/// ID to identify a node (operator or handoff) in [`HydroflowGraph`].
@@ -334,9 +374,47 @@
 
 <span class="kw">const </span>HANDOFF_NODE_STR: <span class="kw-2">&amp;</span>str = <span class="string">&quot;handoff&quot;</span>;
 
-<span class="kw">pub enum </span>Node {
-    Operator(Operator),
-    Handoff { src_span: Span, dst_span: Span },
+<span class="kw">mod </span>serde_syn {
+    <span class="kw">use </span>serde::{Deserialize, Deserializer, Serializer};
+
+    <span class="kw">pub fn </span>serialize&lt;S, T&gt;(value: <span class="kw-2">&amp;</span>T, serializer: S) -&gt; <span class="prelude-ty">Result</span>&lt;S::Ok, S::Error&gt;
+    <span class="kw">where
+        </span>S: Serializer,
+        T: quote::ToTokens,
+    {
+        serializer.serialize_str(<span class="kw-2">&amp;*</span>value.to_token_stream().to_string())
+    }
+
+    <span class="kw">pub fn </span>deserialize&lt;<span class="lifetime">&#39;de</span>, D, T&gt;(deserializer: D) -&gt; <span class="prelude-ty">Result</span>&lt;T, D::Error&gt;
+    <span class="kw">where
+        </span>D: Deserializer&lt;<span class="lifetime">&#39;de</span>&gt;,
+        T: syn::parse::Parse,
+    {
+        <span class="kw">let </span>s = String::deserialize(deserializer)<span class="question-mark">?</span>;
+        syn::parse_str(<span class="kw-2">&amp;*</span>s).map_err(&lt;D::Error <span class="kw">as </span>serde::de::Error&gt;::custom)
+    }
+}
+
+<span class="attr">#[derive(Clone, Debug, Serialize, Deserialize, PartialOrd, Ord, PartialEq, Eq)]
+</span><span class="kw">struct </span>Varname(<span class="attr">#[serde(with = <span class="string">&quot;serde_syn&quot;</span>)] </span><span class="kw">pub </span>Ident);
+
+<span class="attr">#[derive(Clone, Serialize, Deserialize)]
+</span><span class="kw">pub enum </span>Node {
+    Operator(<span class="attr">#[serde(with = <span class="string">&quot;serde_syn&quot;</span>)] </span>Operator),
+    Handoff {
+        <span class="attr">#[serde(skip, default = <span class="string">&quot;Span::call_site&quot;</span>)]
+        </span>src_span: Span,
+        <span class="attr">#[serde(skip, default = <span class="string">&quot;Span::call_site&quot;</span>)]
+        </span>dst_span: Span,
+    },
+}
+<span class="kw">impl </span>Node {
+    <span class="kw">pub fn </span>to_pretty_string(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Cow&lt;<span class="lifetime">&#39;static</span>, str&gt; {
+        <span class="kw">match </span><span class="self">self </span>{
+            Node::Operator(op) =&gt; op.to_pretty_string().into(),
+            Node::Handoff { .. } =&gt; HANDOFF_NODE_STR.into(),
+        }
+    }
 }
 <span class="kw">impl </span>Spanned <span class="kw">for </span>Node {
     <span class="kw">fn </span>span(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Span {
@@ -461,11 +539,11 @@
 }
 
 <span class="doccomment">/// Helper struct for [`PortIndex`] which keeps span information for elided ports.
-</span><span class="attr">#[derive(Clone, Debug)]
+</span><span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
 </span><span class="kw">pub enum </span>PortIndexValue {
-    Int(IndexInt),
-    Path(ExprPath),
-    Elided(<span class="prelude-ty">Option</span>&lt;Span&gt;),
+    Int(<span class="attr">#[serde(with = <span class="string">&quot;serde_syn&quot;</span>)] </span>IndexInt),
+    Path(<span class="attr">#[serde(with = <span class="string">&quot;serde_syn&quot;</span>)] </span>ExprPath),
+    Elided(<span class="attr">#[serde(skip)] </span><span class="prelude-ty">Option</span>&lt;Span&gt;),
 }
 <span class="kw">impl </span>PortIndexValue {
     <span class="kw">pub fn </span>from_ported&lt;Inner&gt;(ported: Ported&lt;Inner&gt;) -&gt; (<span class="self">Self</span>, Inner, <span class="self">Self</span>)
