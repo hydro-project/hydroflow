@@ -57,6 +57,11 @@ impl LaunchedBinary for LaunchedSSHBinary {
             None
         }
     }
+
+    async fn wait(&mut self) -> Option<i32> {
+        self.channel.wait_eof().await.unwrap();
+        self.exit_code().await
+    }
 }
 
 #[async_trait]

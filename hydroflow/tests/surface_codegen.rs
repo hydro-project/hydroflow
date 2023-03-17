@@ -235,6 +235,39 @@ pub fn test_anti_join() {
 }
 
 #[multiplatform_test]
+pub fn test_batch() {
+    let (batch1_tx, batch1_rx) = hydroflow::util::unbounded_channel::<()>();
+    let (batch2_tx, batch2_rx) = hydroflow::util::unbounded_channel::<()>();
+    let (tx, mut rx) = hydroflow::util::unbounded_channel::<()>();
+    let mut df = hydroflow_syntax! {
+        my_tee = tee();
+
+        source_iter([()])
+            -> batch(batch1_rx) // pull
+            -> my_tee;
+
+        my_tee -> for_each(|x| tx.send(x).unwrap());
+        my_tee
+            -> batch(batch2_rx) // push
+            -> for_each(|x| tx.send(x).unwrap());
+    };
+
+    df.run_available();
+    let out: Vec<_> = collect_ready(&mut rx);
+    assert_eq!(out, Vec::<()>::new());
+
+    batch1_tx.send(()).unwrap();
+    df.run_available();
+    let out: Vec<_> = collect_ready(&mut rx);
+    assert_eq!(out, vec![()]);
+
+    batch2_tx.send(()).unwrap();
+    df.run_available();
+    let out: Vec<_> = collect_ready(&mut rx);
+    assert_eq!(out, vec![()]);
+}
+
+#[multiplatform_test]
 pub fn test_sort() {
     let (items_send, items_recv) = hydroflow::util::unbounded_channel::<usize>();
 

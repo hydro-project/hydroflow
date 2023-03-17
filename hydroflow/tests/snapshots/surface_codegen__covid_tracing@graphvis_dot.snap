@@ -1,6 +1,6 @@
 ---
 source: hydroflow/tests/surface_codegen.rs
-expression: hydroflow.serde_graph().unwrap().to_dot()
+expression: hydroflow.meta_graph().unwrap().to_dot()
 ---
 digraph {
     subgraph "cluster n1v1" {

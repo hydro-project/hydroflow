@@ -72,7 +72,7 @@ pub fn main() {
 
     println!(
         "{}",
-        flow.serde_graph()
+        flow.meta_graph()
             .expect("No graph found, maybe failed to parse.")
             .to_mermaid()
     );

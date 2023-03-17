@@ -38,6 +38,16 @@ pub struct AnyhowWrapper {
     pub underlying: Arc<RwLock<Option<anyhow::Error>>>,
 }
 
+#[pymethods]
+impl AnyhowWrapper {
+    fn __str__(&self) -> PyResult<String> {
+        Ok(format!(
+            "{:?}",
+            self.underlying.try_read().unwrap().as_ref().unwrap()
+        ))
+    }
+}
+
 #[pyclass(subclass)]
 #[derive(Clone)]
 struct HydroflowSink {
@@ -120,7 +130,7 @@ impl Deployment {
         Ok(Py::new(
             py,
             PyClassInitializer::from(Service {
-                _underlying: service.clone(),
+                underlying: service.clone(),
             })
             .add_subclass(CustomService {
                 underlying: service,
@@ -153,7 +163,7 @@ impl Deployment {
         Ok(Py::new(
             py,
             PyClassInitializer::from(Service {
-                _underlying: service.clone(),
+                underlying: service.clone(),
             })
             .add_subclass(HydroflowCrate {
                 underlying: service,
@@ -265,7 +275,19 @@ impl GCPComputeEngineHost {
 
 #[pyclass(subclass)]
 pub struct Service {
-    _underlying: Arc<RwLock<dyn crate::core::Service>>,
+    underlying: Arc<RwLock<dyn crate::core::Service>>,
+}
+
+#[pymethods]
+impl Service {
+    fn stop<'p>(&self, py: Python<'p>) -> &'p pyo3::PyAny {
+        let underlying = self.underlying.clone();
+        interruptible_future_to_py(py, async move {
+            underlying.write().await.stop().await.unwrap();
+            Ok(Python::with_gil(|py| py.None()))
+        })
+        .unwrap()
+    }
 }
 
 #[pyclass]

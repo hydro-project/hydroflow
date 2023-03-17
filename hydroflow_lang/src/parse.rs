@@ -284,6 +284,7 @@ impl ToTokens for PortIndex {
     }
 }
 
+#[derive(Clone)]
 pub struct Operator {
     pub path: Path,
     pub paren_token: Paren,

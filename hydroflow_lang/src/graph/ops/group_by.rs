@@ -78,7 +78,6 @@ pub const GROUP_BY: OperatorConstraints = OperatorConstraints {
     input_delaytype_fn: |_| Some(DelayType::Stratum),
     write_fn: |wc @ &WriteContextArgs {
                    context,
-                   hydroflow,
                    op_span,
                    ident,
                    inputs,
@@ -119,7 +118,6 @@ pub const GROUP_BY: OperatorConstraints = OperatorConstraints {
         let input = &inputs[0];
         let initfn = &arguments[0];
         let aggfn = &arguments[1];
-        let groupbydata_ident = wc.make_ident("groupbydata");
 
         let (write_prologue, write_iterator, write_iterator_after) = match persistence {
             Persistence::Tick => (
@@ -137,32 +135,35 @@ pub const GROUP_BY: OperatorConstraints = OperatorConstraints {
                 },
                 Default::default(),
             ),
-            Persistence::Static => (
-                quote_spanned! {op_span=>
-                    let #groupbydata_ident = #hydroflow.add_state(::std::cell::RefCell::new(::std::collections::HashMap::<#( #generic_type_args ),*>::new()));
-                },
-                quote_spanned! {op_span=>
-                    let #ident = {
-                        let mut ht = #context.state_ref(#groupbydata_ident).borrow_mut();
-                        #[inline(always)]
-                        fn check_input<Iter: ::std::iter::Iterator<Item = (A, B)>, A: ::std::clone::Clone, B: ::std::clone::Clone>(iter: Iter)
-                            -> impl ::std::iter::Iterator<Item = (A, B)> { iter }
+            Persistence::Static => {
+                let groupbydata_ident = wc.make_ident("groupbydata");
+                let hashtable_ident = wc.make_ident("hashtable");
+
+                (
+                    quote_spanned! {op_span=>
+                        let #groupbydata_ident = df.add_state(::std::cell::RefCell::new(::std::collections::HashMap::<#( #generic_type_args ),*>::new()));
+                    },
+                    quote_spanned! {op_span=>
+                    let mut #hashtable_ident = #context.state_ref(#groupbydata_ident).borrow_mut();
+
+                    #[inline(always)]
+                    fn check_input<Iter: ::std::iter::Iterator<Item = (A, B)>, A: ::std::clone::Clone, B: ::std::clone::Clone>(iter: Iter)
+                        -> impl ::std::iter::Iterator<Item = (A, B)> { iter }
+
                         for kv in check_input(#input) {
-                            let entry = ht.entry(kv.0).or_insert_with(#initfn);
+                            let entry = #hashtable_ident.entry(kv.0).or_insert_with(#initfn);
                             #[allow(clippy::redundant_closure_call)] (#aggfn)(entry, kv.1);
                         }
-                        ::std::iter::IntoIterator::into_iter(
-                            // TODO(mingwei): extra collect here, could be avoided by keeping the `BorrowMut` alive (risky?).
-                            ht.iter()
-                                .map(#[allow(clippy::clone_on_copy, clippy::clone_double_ref)] |(k, v)| (k.clone(), v.clone()))
-                                .collect::<::std::vec::Vec::<_>>()
-                        )
-                    };
-                },
-                quote_spanned! {op_span=>
-                    #context.schedule_subgraph(#context.current_subgraph(), false);
-                },
-            ),
+
+                        let #ident = #hashtable_ident
+                            .iter()
+                            .map(#[allow(clippy::clone_on_copy, clippy::clone_double_ref)] |(k, v)| (k.clone(), v.clone()));
+                    },
+                    quote_spanned! {op_span=>
+                        #context.schedule_subgraph(#context.current_subgraph(), false);
+                    },
+                )
+            }
         };
 
         Ok(OperatorWriteOutput {

@@ -1,7 +1,10 @@
+#![deny(missing_docs)]
+
 use std::collections::BTreeSet;
 use std::fmt::Debug;
 use std::iter::FusedIterator;
 
+use serde::{Deserialize, Serialize};
 use slotmap::{Key, SecondaryMap, SlotMap};
 
 /// A directed multigraph where an vertex's inbound and outbound edges are indexed.
@@ -12,13 +15,14 @@ use slotmap::{Key, SecondaryMap, SlotMap};
 ///
 /// `DiMulGraph` **does** allocate edges `E` as they are added. Additional data can be associated
 /// with edges via an external [`SecondaryMap<E, _>`].
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(from = "EdgeList<V, E>", into = "EdgeList<V, E>")]
 pub struct DiMulGraph<V, E>
 where
     V: Key,
     E: Key,
 {
-    /// Edges (src, dst).
+    /// Edge list (src, dst).
     edges: SlotMap<E, (V, V)>,
 
     /// Successors for each vert.
@@ -258,3 +262,39 @@ where
         self.preds.get(v).map(Vec::len).unwrap_or_default()
     }
 }
+
+impl<V, E> From<DiMulGraph<V, E>> for EdgeList<V, E>
+where
+    V: Key,
+    E: Key,
+{
+    fn from(value: DiMulGraph<V, E>) -> Self {
+        value.edges
+    }
+}
+
+impl<V, E> From<EdgeList<V, E>> for DiMulGraph<V, E>
+where
+    V: Key,
+    E: Key,
+{
+    fn from(edges: EdgeList<V, E>) -> Self {
+        let mut out = Self {
+            edges,
+            ..Default::default()
+        };
+        for (edge, &(src, dst)) in out.edges.iter() {
+            out.succs.entry(src).unwrap().or_default().push(edge);
+            out.preds.entry(dst).unwrap().or_default().push(edge);
+        }
+        out
+    }
+}
+
+/// A compact edge list representation of a [`DiMulGraph`], used for serialization.
+#[allow(type_alias_bounds)]
+pub type EdgeList<V, E>
+where
+    V: Key,
+    E: Key,
+= SlotMap<E, (V, V)>;

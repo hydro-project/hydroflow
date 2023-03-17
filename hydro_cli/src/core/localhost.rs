@@ -1,5 +1,8 @@
 use std::{collections::HashMap, net::SocketAddr, path::Path, sync::Arc};
 
+#[cfg(unix)]
+use std::os::unix::process::ExitStatusExt;
+
 use anyhow::Result;
 use async_channel::{Receiver, Sender};
 use async_process::{Command, Stdio};
@@ -45,8 +48,27 @@ impl LaunchedBinary for LaunchedLocalhostBinary {
             .write()
             .await
             .try_status()
-            .map(|s| s.and_then(|c| c.code()))
+            .map(|s| {
+                s.and_then(|c| {
+                    c.code().or({
+                        #[cfg(unix)]
+                        {
+                            c.signal()
+                        }
+
+                        #[cfg(not(unix))]
+                        {
+                            None
+                        }
+                    })
+                })
+            })
             .unwrap_or(None)
+    }
+
+    async fn wait(&mut self) -> Option<i32> {
+        let _ = self.child.get_mut().status().await;
+        self.exit_code().await
     }
 }
 
