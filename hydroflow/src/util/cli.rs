@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use hydroflow_cli_integration::{BoundConnection, ServerConfig, ServerPort};
+use hydroflow_cli_integration::{BoundConnection, ServerBindConfig, ServerPort};
 
 pub use hydroflow_cli_integration::*;
 
@@ -19,7 +19,7 @@ pub async fn init() -> HashMap<String, ServerOrBound> {
     std::io::stdin().read_line(&mut input).unwrap();
     let trimmed = input.trim();
 
-    let bind_config = serde_json::from_str::<HashMap<String, ServerConfig>>(trimmed).unwrap();
+    let bind_config = serde_json::from_str::<HashMap<String, ServerBindConfig>>(trimmed).unwrap();
 
     // config telling other services how to connect to me
     let mut bind_results: HashMap<String, ServerPort> = HashMap::new();
