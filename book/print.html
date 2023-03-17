@@ -555,7 +555,7 @@ allow for data coming in over a network.</p>
 <li>Our first multi-input operator, <a href="./surface_ops.gen.html#join"><code>join</code></a></li>
 <li>Indexing multi-input operators by prepending a bracket expression</li>
 <li>The <a href="./surface_ops.gen.html#unique"><code>unique</code></a> operator for removing duplicates from a stream</li>
-<li>Visualizing hydroflow code via <code>flow.serde_graph().to_mermaid()</code></li>
+<li>Visualizing hydroflow code via <code>flow.meta_graph().to_mermaid()</code></li>
 <li>A first exposure to the concepts of <em>strata</em> and <em>ticks</em></li>
 </ul>
 </blockquote>
@@ -619,7 +619,7 @@ pub fn main() {
 
     println!(
         &quot;{}&quot;,
-        flow.serde_graph()
+        flow.meta_graph()
             .expect(&quot;No graph found, maybe failed to parse.&quot;)
             .to_mermaid()
     );
@@ -680,7 +680,7 @@ Finally we print the neighbor vertices as follows:</p>
 </code></pre>
 <p>The <a href="./surface_ops.gen.html#unique">unique</a> operator removes duplicates from the stream to make things more readable. Note that <code>unique</code> does not run in a streaming fashion, which we will talk about more <a href="example_4_neighbors.html#strata-and-ticks">below</a>.</p>
 <p>There's
-also some extra code here, <code>flow.serde_graph().expect(...).to_mermaid()</code>, which tells
+also some extra code here, <code>flow.meta_graph().expect(...).to_mermaid()</code>, which tells
 Hydroflow to
 generate a diagram rendered by <a href="https://mermaid-js.github.io/">Mermaid</a> showing
 the structure of the graph, and print it to stdout. You can copy that text and paste it into the <a href="https://mermaid-js.github.io/mermaid-live-editor/">Mermaid Live Editor</a> to see the graph, which should look as follows:</p>
@@ -800,7 +800,7 @@ pub fn main() {
 
     println!(
         &quot;{}&quot;,
-        flow.serde_graph()
+        flow.meta_graph()
             .expect(&quot;No graph found, maybe failed to parse.&quot;)
             .to_mermaid()
     );
@@ -962,7 +962,7 @@ pub fn main() {
 
     println!(
         &quot;{}&quot;,
-        flow.serde_graph()
+        flow.meta_graph()
             .expect(&quot;No graph found, maybe failed to parse.&quot;)
             .to_mermaid()
     );
@@ -1404,7 +1404,7 @@ and the code to run the flow graph. To follow along, paste the following into th
 
     if let Some(graph) = graph {
         let serde_graph = df
-            .serde_graph()
+            .meta_graph()
             .expect(&quot;No graph found, maybe failed to parse.&quot;);
         match graph {
             GraphType::Mermaid =&gt; {
@@ -1570,7 +1570,7 @@ when the client receives its sole <code>ConnectResponse</code>.</p>
 <pre><code class="language-rust ignore">    // optionally print the dataflow graph
     if let Some(graph) = opts.graph {
         let serde_graph = hf
-            .serde_graph()
+            .meta_graph()
             .expect(&quot;No graph found, maybe failed to parse.&quot;);
         match graph {
             GraphType::Mermaid =&gt; {

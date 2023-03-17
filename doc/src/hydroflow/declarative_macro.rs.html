@@ -105,10 +105,10 @@
             <span class="attr">#[cfg(not(target_arch = <span class="string">&quot;wasm32&quot;</span>))]
             </span>{
                 <span class="macro">insta::with_settings!</span>({snapshot_suffix =&gt; <span class="string">&quot;graphvis_mermaid&quot;</span>}, {
-                    <span class="macro">insta::assert_snapshot!</span>(<span class="macro-nonterminal">$df</span>.serde_graph().unwrap().to_mermaid());
+                    <span class="macro">insta::assert_snapshot!</span>(<span class="macro-nonterminal">$df</span>.meta_graph().unwrap().to_mermaid());
                 });
                 <span class="macro">insta::with_settings!</span>({snapshot_suffix =&gt; <span class="string">&quot;graphvis_dot&quot;</span>}, {
-                    <span class="macro">insta::assert_snapshot!</span>(<span class="macro-nonterminal">$df</span>.serde_graph().unwrap().to_dot());
+                    <span class="macro">insta::assert_snapshot!</span>(<span class="macro-nonterminal">$df</span>.meta_graph().unwrap().to_dot());
                 });
             }
         }
