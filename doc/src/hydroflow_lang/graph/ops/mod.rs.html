@@ -373,6 +373,9 @@
 <a href="#373" id="373">373</a>
 <a href="#374" id="374">374</a>
 <a href="#375" id="375">375</a>
+<a href="#376" id="376">376</a>
+<a href="#377" id="377">377</a>
+<a href="#378" id="378">378</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::fmt::{Debug, Display};
 <span class="kw">use </span>std::ops::{Bound, RangeBounds};
@@ -405,6 +408,7 @@
 <span class="kw">mod </span>for_each;
 <span class="kw">mod </span>group_by;
 <span class="kw">mod </span>identity;
+<span class="kw">mod </span>initialize;
 <span class="kw">mod </span>inspect;
 <span class="kw">mod </span>join;
 <span class="kw">mod </span>map;
@@ -471,7 +475,7 @@
     </span><span class="kw">pub </span>num_args: usize,
     <span class="doccomment">/// How many persistence lifetime arguments can be provided.
     </span><span class="kw">pub </span>persistence_args: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span><span class="kw">dyn </span>RangeTrait&lt;usize&gt;,
-    <span class="comment">// /// How many (non-persistence) lifetime arguemtns can be provided.
+    <span class="comment">// /// How many (non-persistence) lifetime arguments can be provided.
     // pub lifetime_args: &amp;&#39;static dyn RangeTrait&lt;usize&gt;,
     </span><span class="doccomment">/// How many generic type arguments can be provided.
     </span><span class="kw">pub </span>type_args: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span><span class="kw">dyn </span>RangeTrait&lt;usize&gt;,
@@ -601,6 +605,7 @@
     for_each::FOR_EACH,
     group_by::GROUP_BY,
     identity::IDENTITY,
+    initialize::INITIALIZE,
     inspect::INSPECT,
     join::JOIN,
     map::MAP,
@@ -638,7 +643,8 @@
     operator_lookup().get(name).copied()
 }
 
-<span class="kw">pub struct </span>WriteContextArgs&lt;<span class="lifetime">&#39;a</span>&gt; {
+<span class="attr">#[derive(Clone)]
+</span><span class="kw">pub struct </span>WriteContextArgs&lt;<span class="lifetime">&#39;a</span>&gt; {
     <span class="doccomment">/// `hydroflow` crate name for `use #root::something`.
     </span><span class="kw">pub </span>root: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>TokenStream,
     <span class="doccomment">/// `context` ident, the name of the provided
