@@ -4,7 +4,7 @@ use anyhow::{Context, Result};
 
 use async_ssh2_lite::{AsyncSession, SessionConfiguration};
 use async_trait::async_trait;
-use hydroflow_cli_integration::ServerConfig;
+use hydroflow_cli_integration::ServerBindConfig;
 use nanoid::nanoid;
 use serde_json::json;
 use tokio::{net::TcpStream, sync::RwLock};
@@ -38,10 +38,10 @@ impl LaunchedComputeEngine {
 
 #[async_trait]
 impl LaunchedSSHHost for LaunchedComputeEngine {
-    fn server_config(&self, bind_type: &ServerStrategy) -> ServerConfig {
+    fn server_config(&self, bind_type: &ServerStrategy) -> ServerBindConfig {
         match bind_type {
-            ServerStrategy::UnixSocket => ServerConfig::UnixSocket,
-            ServerStrategy::InternalTcpPort => ServerConfig::TcpPort(self.internal_ip.clone()),
+            ServerStrategy::UnixSocket => ServerBindConfig::UnixSocket,
+            ServerStrategy::InternalTcpPort => ServerBindConfig::TcpPort(self.internal_ip.clone()),
             ServerStrategy::ExternalTcpPort(_) => todo!(),
             ServerStrategy::Demux(demux) => {
                 let mut config_map = HashMap::new();
@@ -49,7 +49,15 @@ impl LaunchedSSHHost for LaunchedComputeEngine {
                     config_map.insert(*key, LaunchedSSHHost::server_config(self, bind_type));
                 }
 
-                ServerConfig::Demux(config_map)
+                ServerBindConfig::Demux(config_map)
+            }
+            ServerStrategy::Merge(merge) => {
+                let mut configs = vec![];
+                for bind_type in merge {
+                    configs.push(LaunchedSSHHost::server_config(self, bind_type));
+                }
+
+                ServerBindConfig::Merge(configs)
             }
         }
     }
@@ -229,6 +237,11 @@ impl Host for GCPComputeEngineHost {
                     self.request_port(bind_type);
                 }
             }
+            ServerStrategy::Merge(merge) => {
+                for bind_type in merge {
+                    self.request_port(bind_type);
+                }
+            }
         }
     }
 
@@ -241,6 +254,10 @@ impl Host for GCPComputeEngineHost {
     }
 
     fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
         self
     }
 
@@ -448,26 +465,33 @@ impl Host for GCPComputeEngineHost {
         self.launched.as_ref().unwrap().clone()
     }
 
-    fn strategy_as_server(
-        &mut self,
+    fn strategy_as_server<'a>(
+        &'a self,
         client_host: Option<&dyn Host>,
-    ) -> Result<(ClientStrategy, ServerStrategy)> {
+    ) -> Result<(
+        ClientStrategy<'a>,
+        Box<dyn FnOnce(&mut dyn std::any::Any) -> ServerStrategy>,
+    )> {
         let client_host = client_host.unwrap_or(self);
         if client_host.can_connect_to(ClientStrategy::UnixSocket(self.id)) {
             Ok((
                 ClientStrategy::UnixSocket(self.id),
-                ServerStrategy::UnixSocket,
+                Box::new(|_| ServerStrategy::UnixSocket),
             ))
         } else if client_host.can_connect_to(ClientStrategy::InternalTcpPort(self)) {
             Ok((
                 ClientStrategy::InternalTcpPort(self),
-                ServerStrategy::InternalTcpPort,
+                Box::new(|_| ServerStrategy::InternalTcpPort),
             ))
         } else if client_host.can_connect_to(ClientStrategy::ForwardedTcpPort(self)) {
-            self.request_port(&ServerStrategy::ExternalTcpPort(22)); // needed to forward
             Ok((
                 ClientStrategy::ForwardedTcpPort(self),
-                ServerStrategy::InternalTcpPort,
+                Box::new(|me| {
+                    me.downcast_mut::<GCPComputeEngineHost>()
+                        .unwrap()
+                        .request_port(&ServerStrategy::ExternalTcpPort(22)); // needed to forward
+                    ServerStrategy::InternalTcpPort
+                }),
             ))
         } else {
             anyhow::bail!("Could not find a strategy to connect to GCP instance")

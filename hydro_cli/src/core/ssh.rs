@@ -10,7 +10,7 @@ use async_channel::{Receiver, Sender};
 use async_ssh2_lite::{AsyncChannel, AsyncSession};
 use async_trait::async_trait;
 use futures::{AsyncWriteExt, StreamExt};
-use hydroflow_cli_integration::ServerConfig;
+use hydroflow_cli_integration::ServerBindConfig;
 use nanoid::nanoid;
 use tokio::{
     net::{TcpListener, TcpStream},
@@ -61,14 +61,14 @@ impl LaunchedBinary for LaunchedSSHBinary {
 
 #[async_trait]
 pub trait LaunchedSSHHost: Send + Sync {
-    fn server_config(&self, bind_type: &ServerStrategy) -> ServerConfig;
+    fn server_config(&self, bind_type: &ServerStrategy) -> ServerBindConfig;
     fn resource_result(&self) -> &Arc<ResourceResult>;
     async fn open_ssh_session(&self) -> Result<AsyncSession<TcpStream>>;
 }
 
 #[async_trait]
 impl<T: LaunchedSSHHost> LaunchedHost for T {
-    fn server_config(&self, bind_type: &ServerStrategy) -> ServerConfig {
+    fn server_config(&self, bind_type: &ServerStrategy) -> ServerBindConfig {
         LaunchedSSHHost::server_config(self, bind_type)
     }
 

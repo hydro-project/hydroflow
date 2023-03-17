@@ -3,7 +3,7 @@ use std::{collections::HashMap, net::SocketAddr, path::Path, sync::Arc};
 use anyhow::Result;
 use async_channel::{Receiver, Sender};
 use async_trait::async_trait;
-use hydroflow_cli_integration::ServerConfig;
+use hydroflow_cli_integration::ServerBindConfig;
 use tokio::sync::RwLock;
 
 pub mod deployment;
@@ -67,7 +67,7 @@ pub trait LaunchedBinary: Send + Sync {
 pub trait LaunchedHost: Send + Sync {
     /// Given a pre-selected network type, computes concrete information needed for a service
     /// to listen to network connections (such as the IP address to bind to).
-    fn server_config(&self, strategy: &ServerStrategy) -> ServerConfig;
+    fn server_config(&self, strategy: &ServerStrategy) -> ServerBindConfig;
 
     async fn launch_binary(
         &self,
@@ -87,6 +87,7 @@ pub enum ServerStrategy {
         u16,
     ),
     Demux(HashMap<u32, ServerStrategy>),
+    Merge(Vec<ServerStrategy>),
 }
 
 /// Like BindType, but includes metadata for determining whether a connection is possible.
@@ -110,6 +111,8 @@ pub enum HostTargetType {
     Linux,
 }
 
+pub type HostStrategyGetter = Box<dyn FnOnce(&mut dyn std::any::Any) -> ServerStrategy>;
+
 #[async_trait]
 pub trait Host: Send + Sync {
     fn target_type(&self) -> HostTargetType;
@@ -121,6 +124,9 @@ pub trait Host: Send + Sync {
 
     /// Returns a reference to the host as a trait object.
     fn as_any(&self) -> &dyn std::any::Any;
+
+    /// Returns a reference to the host as a trait object.
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any;
 
     /// Configures the host to support copying and running a custom binary.
     fn request_custom_binary(&mut self);
@@ -134,9 +140,9 @@ pub trait Host: Send + Sync {
     /// Identifies a network type that this host can use for connections if it is the server.
     /// The host will be `None` if the connection is from the same host as the target.
     fn strategy_as_server<'a>(
-        &'a mut self,
+        &'a self,
         connection_from: Option<&dyn Host>,
-    ) -> Result<(ClientStrategy<'a>, ServerStrategy)>;
+    ) -> Result<(ClientStrategy<'a>, HostStrategyGetter)>;
 
     /// Determines whether this host can connect to another host using the given strategy.
     fn can_connect_to(&self, typ: ClientStrategy) -> bool;

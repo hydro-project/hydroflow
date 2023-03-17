@@ -1,4 +1,7 @@
-use std::sync::{Arc, Weak};
+use std::{
+    any::Any,
+    sync::{Arc, Weak},
+};
 
 use anyhow::{bail, Result};
 use async_trait::async_trait;
@@ -78,7 +81,7 @@ impl HydroflowSource for CustomClientPort {
     fn send_to(&mut self, to: &mut dyn HydroflowSink) {
         if let Ok(instantiated) = to.instantiate(&self.on.upgrade().unwrap().try_read().unwrap().on)
         {
-            self.client_port = Some(instantiated);
+            self.client_port = Some(instantiated());
         } else {
             panic!("Custom services cannot be used as the server")
         }
@@ -87,23 +90,30 @@ impl HydroflowSource for CustomClientPort {
 
 #[async_trait]
 impl HydroflowSink for CustomClientPort {
-    fn instantiate(&self, _client_host: &Arc<RwLock<dyn Host>>) -> Result<ServerConfig> {
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
+    }
+
+    fn instantiate(
+        &self,
+        _client_host: &Arc<RwLock<dyn Host>>,
+    ) -> Result<Box<dyn FnOnce() -> ServerConfig>> {
         bail!("Custom services cannot be used as the server")
     }
 
     fn instantiate_reverse(
-        &mut self,
+        &self,
         server_host: &Arc<RwLock<dyn Host>>,
         server_sink: Box<dyn HydroflowServer>,
         wrap_client_port: &dyn Fn(ServerConfig) -> ServerConfig,
-    ) -> Result<ServerStrategy> {
+    ) -> Result<Box<dyn FnOnce(&mut dyn Any) -> ServerStrategy>> {
         let client = self.on.upgrade().unwrap();
         let client_read = client.try_read().unwrap();
 
         let client_host_id = client_read.on.try_read().unwrap().id();
 
         let server_host_clone = server_host.clone();
-        let mut server_host = server_host_clone.try_write().unwrap();
+        let server_host = server_host_clone.try_read().unwrap();
 
         let client_host_clone = client_read.on.clone();
         let client_host_read = if server_host.id() == client_host_id {
@@ -114,11 +124,13 @@ impl HydroflowSink for CustomClientPort {
 
         let (conn_type, bind_type) = server_host.strategy_as_server(client_host_read.as_deref())?;
 
-        self.client_port = Some(wrap_client_port(ServerConfig::from_strategy(
-            &conn_type,
-            server_sink,
-        )));
+        let client_port = wrap_client_port(ServerConfig::from_strategy(&conn_type, server_sink));
 
-        Ok(bind_type)
+        let server_host_clone = server_host_clone.clone();
+        Ok(Box::new(move |me| {
+            let mut server_host = server_host_clone.try_write().unwrap();
+            me.downcast_mut::<CustomClientPort>().unwrap().client_port = Some(client_port);
+            bind_type(server_host.as_any_mut())
+        }))
     }
 }
