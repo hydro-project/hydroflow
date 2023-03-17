@@ -5,7 +5,7 @@ use async_channel::{Receiver, Sender};
 use async_process::{Command, Stdio};
 use async_trait::async_trait;
 use futures::{io::BufReader, AsyncBufReadExt, AsyncRead, AsyncWriteExt, StreamExt};
-use hydroflow_cli_integration::ServerConfig;
+use hydroflow_cli_integration::ServerBindConfig;
 use tokio::sync::RwLock;
 
 use super::{
@@ -86,10 +86,10 @@ pub fn create_broadcast<T: AsyncRead + Send + Unpin + 'static>(
 
 #[async_trait]
 impl LaunchedHost for LaunchedLocalhost {
-    fn server_config(&self, bind_type: &ServerStrategy) -> ServerConfig {
+    fn server_config(&self, bind_type: &ServerStrategy) -> ServerBindConfig {
         match bind_type {
-            ServerStrategy::UnixSocket => ServerConfig::UnixSocket,
-            ServerStrategy::InternalTcpPort => ServerConfig::TcpPort("127.0.0.1".to_string()),
+            ServerStrategy::UnixSocket => ServerBindConfig::UnixSocket,
+            ServerStrategy::InternalTcpPort => ServerBindConfig::TcpPort("127.0.0.1".to_string()),
             ServerStrategy::ExternalTcpPort(_) => panic!("Cannot bind to external port"),
             ServerStrategy::Demux(demux) => {
                 let mut config_map = HashMap::new();
@@ -97,7 +97,15 @@ impl LaunchedHost for LaunchedLocalhost {
                     config_map.insert(*key, self.server_config(bind_type));
                 }
 
-                ServerConfig::Demux(config_map)
+                ServerBindConfig::Demux(config_map)
+            }
+            ServerStrategy::Merge(merge) => {
+                let mut configs = vec![];
+                for bind_type in merge {
+                    configs.push(self.server_config(bind_type));
+                }
+
+                ServerBindConfig::Merge(configs)
             }
         }
     }
@@ -164,24 +172,31 @@ impl Host for LocalhostHost {
         self
     }
 
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+        self
+    }
+
     async fn provision(&mut self, _resource_result: &Arc<ResourceResult>) -> Arc<dyn LaunchedHost> {
         Arc::new(LaunchedLocalhost {})
     }
 
-    fn strategy_as_server(
-        &mut self,
+    fn strategy_as_server<'a>(
+        &'a self,
         connection_from: Option<&dyn Host>,
-    ) -> Result<(ClientStrategy, ServerStrategy)> {
+    ) -> Result<(
+        ClientStrategy<'a>,
+        Box<dyn FnOnce(&mut dyn std::any::Any) -> ServerStrategy>,
+    )> {
         let connection_from = connection_from.unwrap_or(self);
         if connection_from.can_connect_to(ClientStrategy::UnixSocket(self.id)) {
             Ok((
                 ClientStrategy::UnixSocket(self.id),
-                ServerStrategy::UnixSocket,
+                Box::new(|_| ServerStrategy::UnixSocket),
             ))
         } else if connection_from.can_connect_to(ClientStrategy::InternalTcpPort(self)) {
             Ok((
                 ClientStrategy::InternalTcpPort(self),
-                ServerStrategy::InternalTcpPort,
+                Box::new(|_| ServerStrategy::InternalTcpPort),
             ))
         } else {
             anyhow::bail!("Could not find a strategy to connect to localhost")

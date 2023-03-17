@@ -429,6 +429,7 @@ impl HydroflowCratePorts {
             crate::core::hydroflow_crate::ports::HydroflowPortConfig {
                 service: Arc::downgrade(&self.underlying),
                 port: name,
+                merge: false,
             },
         ));
 
@@ -451,6 +452,21 @@ struct HydroflowCratePort {
 
 #[pymethods]
 impl HydroflowCratePort {
+    fn merge(&self, py: Python<'_>) -> PyResult<Py<pyo3::PyAny>> {
+        let arc = Arc::new(RwLock::new(
+            self.underlying.try_read().unwrap().clone().merge(),
+        ));
+
+        Ok(Py::new(
+            py,
+            PyClassInitializer::from(HydroflowSink {
+                underlying: arc.clone(),
+            })
+            .add_subclass(HydroflowCratePort { underlying: arc }),
+        )?
+        .into_py(py))
+    }
+
     fn send_to(&mut self, to: &mut HydroflowSink) {
         self.underlying
             .try_write()

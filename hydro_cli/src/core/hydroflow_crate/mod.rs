@@ -74,19 +74,28 @@ impl HydroflowCrate {
         my_port: String,
         sink: &mut dyn HydroflowSink,
     ) -> Result<()> {
-        if let Ok(instantiated) = sink.instantiate(&self.on) {
-            self.port_to_server.insert(my_port, instantiated);
+        let forward_res = sink.instantiate(&self.on);
+        if let Ok(instantiated) = forward_res {
+            // TODO(shadaj): if already in this map, we want to broadcast
+            assert!(!self.port_to_server.contains_key(&my_port));
+            self.port_to_server.insert(my_port, instantiated());
             Ok(())
         } else {
+            drop(forward_res);
             let instantiated = sink.instantiate_reverse(
                 &self.on,
                 Box::new(HydroflowPortConfig {
                     service: Arc::downgrade(self_arc),
                     port: my_port.clone(),
+                    merge: false,
                 }),
                 &|p| p,
             )?;
-            self.port_to_bind.insert(my_port, instantiated);
+
+            assert!(!self.port_to_bind.contains_key(&my_port));
+            self.port_to_bind
+                .insert(my_port, instantiated(sink.as_any_mut()));
+
             Ok(())
         }
     }
