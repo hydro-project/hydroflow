@@ -51,6 +51,17 @@
 <a href="#51" id="51">51</a>
 <a href="#52" id="52">52</a>
 <a href="#53" id="53">53</a>
+<a href="#54" id="54">54</a>
+<a href="#55" id="55">55</a>
+<a href="#56" id="56">56</a>
+<a href="#57" id="57">57</a>
+<a href="#58" id="58">58</a>
+<a href="#59" id="59">59</a>
+<a href="#60" id="60">60</a>
+<a href="#61" id="61">61</a>
+<a href="#62" id="62">62</a>
+<a href="#63" id="63">63</a>
+<a href="#64" id="64">64</a>
 </pre><pre class="rust"><code><span class="kw">use super</span>::{
     FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorInstance, OperatorWriteOutput,
     WriteContextArgs, RANGE_0, RANGE_1,
@@ -58,7 +69,18 @@
 
 <span class="kw">use </span>quote::quote_spanned;
 
-<span class="attr">#[hydroflow_internalmacro::operator_docgen]
+<span class="doccomment">/// &gt; 0 input streams, 1 output stream
+///
+/// &gt; Arguments: An iterable Rust object.
+/// Similar to `source_iter`, but delivers all elements from the iterable object
+/// on every tick (where `source_iter` only delivers on the first tick).
+///
+///
+/// ```hydroflow
+///     repeat_iter(vec![&quot;Hello&quot;, &quot;World&quot;])
+///         -&gt; for_each(|x| println!(&quot;{}&quot;, x));
+/// ```
+</span><span class="attr">#[hydroflow_internalmacro::operator_docgen]
 </span><span class="kw">pub const </span>REPEAT_ITER: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;repeat_iter&quot;</span>,
     hard_range_inn: RANGE_0,
