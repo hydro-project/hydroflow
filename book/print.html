@@ -2876,6 +2876,46 @@ source_iter(vec![(2, 'y'), (3, 'x'), (1, 'z')])
 </span><span class="boring">}
 </span><span class="boring">}
 </span></code></pre></pre>
+<h2 id="source_interval"><a class="header" href="#source_interval"><code>source_interval</code></a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
+<tr><td><span title="exactly 0">exactly 0</span></td><td><code>source_interval(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
+</tbody></table>
+</div><!-- GENERATED "hydroflow_lang/src/graph/ops/source_interval.rs" -->
+<blockquote>
+<p>0 input streams, 1 output stream</p>
+</blockquote>
+<blockquote>
+<p>Arguments: A <a href="https://doc.rust-lang.org/stable/std/time/struct.Duration.html"><code>Duration</code></a> for this interval.</p>
+</blockquote>
+<p>Emits <a href="https://docs.rs/tokio/1/tokio/time/struct.Instant.html">Tokio time <code>Instant</code>s</a> on a
+repeated interval. The first tick completes imediately. Missed ticks will be scheduled as soon
+as possible, and the <code>Instant</code> will be the missed time, not the late time.</p>
+<p>Note that this requires the hydroflow instance be run within a <a href="https://docs.rs/tokio/1/tokio/runtime/struct.Runtime.html">Tokio <code>Runtime</code></a>.
+The easiest way to do this is with a <a href="https://docs.rs/tokio/1/tokio/attr.main.html"><code>#[tokio::main]</code></a>
+annotation on <code>async fn main() { ... }</code>.</p>
+<pre><pre class="playground"><code class="language-rust">use std::time::Duration;
+
+use hydroflow::hydroflow_syntax;
+
+#[tokio::main]
+async fn main() {
+    let mut hf = hydroflow_syntax! {
+        source_interval(Duration::from_secs(1))
+            -&gt; for_each(|time| println!(&quot;This runs every second: {:?}&quot;, time));
+    };
+
+    // Will print 4 times (fencepost counting).
+    tokio::time::timeout(Duration::from_secs_f32(3.5), hf.run_async())
+        .await
+        .expect_err(&quot;Expected time out&quot;);
+
+    // Example output:
+    // This runs every second: Instant { t: 27471.704813s }
+    // This runs every second: Instant { t: 27472.704813s }
+    // This runs every second: Instant { t: 27473.704813s }
+    // This runs every second: Instant { t: 27474.704813s }
+}
+</code></pre></pre>
 <h2 id="source_iter-1"><a class="header" href="#source_iter-1"><code>source_iter</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 0">exactly 0</span></td><td><code>source_iter(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
