@@ -43,6 +43,7 @@ mod reduce;
 mod repeat_iter;
 mod sort;
 mod sort_by;
+mod source_interval;
 mod source_iter;
 mod source_stdin;
 mod source_stream;
@@ -240,6 +241,7 @@ pub const OPERATORS: &[OperatorConstraints] = &[
     repeat_iter::REPEAT_ITER,
     sort::SORT,
     sort_by::SORT_BY,
+    source_interval::SOURCE_INTERVAL,
     source_iter::SOURCE_ITER,
     source_stdin::SOURCE_STDIN,
     source_stream::SOURCE_STREAM,
