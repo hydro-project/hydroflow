@@ -26,7 +26,7 @@ async fn main() {
         (format!("world {sender_i}"),),
     ];
 
-    let mut df = datalog!(
+    let df = datalog!(
         r#"
         .input repeated `repeat_iter(&to_repeat) -> map(|v| v.clone())`
         .input periodic `source_stream(periodic) -> map(|_| () )`
@@ -37,5 +37,5 @@ async fn main() {
     "#
     );
 
-    df.run_async().await;
+    hydroflow::util::cli::launch_flow(df).await;
 }
