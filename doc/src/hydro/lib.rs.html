@@ -602,6 +602,18 @@
 <a href="#602" id="602">602</a>
 <a href="#603" id="603">603</a>
 <a href="#604" id="604">604</a>
+<a href="#605" id="605">605</a>
+<a href="#606" id="606">606</a>
+<a href="#607" id="607">607</a>
+<a href="#608" id="608">608</a>
+<a href="#609" id="609">609</a>
+<a href="#610" id="610">610</a>
+<a href="#611" id="611">611</a>
+<a href="#612" id="612">612</a>
+<a href="#613" id="613">613</a>
+<a href="#614" id="614">614</a>
+<a href="#615" id="615">615</a>
+<a href="#616" id="616">616</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::ops::DerefMut;
 <span class="kw">use </span>std::sync::Arc;
 
@@ -734,7 +746,7 @@
         <span class="prelude-val">Ok</span>(Py::new(
             py,
             PyClassInitializer::from(Service {
-                _underlying: service.clone(),
+                underlying: service.clone(),
             })
             .add_subclass(CustomService {
                 underlying: service,
@@ -767,7 +779,7 @@
         <span class="prelude-val">Ok</span>(Py::new(
             py,
             PyClassInitializer::from(Service {
-                _underlying: service.clone(),
+                underlying: service.clone(),
             })
             .add_subclass(HydroflowCrate {
                 underlying: service,
@@ -879,7 +891,19 @@
 
 <span class="attr">#[pyclass(subclass)]
 </span><span class="kw">pub struct </span>Service {
-    _underlying: Arc&lt;RwLock&lt;<span class="kw">dyn </span><span class="kw">crate</span>::core::Service&gt;&gt;,
+    underlying: Arc&lt;RwLock&lt;<span class="kw">dyn </span><span class="kw">crate</span>::core::Service&gt;&gt;,
+}
+
+<span class="attr">#[pymethods]
+</span><span class="kw">impl </span>Service {
+    <span class="kw">fn </span>stop&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny {
+        <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.clone();
+        interruptible_future_to_py(py, <span class="kw">async move </span>{
+            underlying.write().<span class="kw">await</span>.stop().<span class="kw">await</span>.unwrap();
+            <span class="prelude-val">Ok</span>(Python::with_gil(|py| py.<span class="prelude-val">None</span>()))
+        })
+        .unwrap()
+    }
 }
 
 <span class="attr">#[pyclass]
