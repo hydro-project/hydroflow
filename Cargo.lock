@@ -1471,6 +1471,7 @@ dependencies = [
  "nix",
  "pyo3",
  "pyo3-asyncio",
+ "pythonize",
  "serde",
  "serde_json",
  "shell-escape",
@@ -2485,6 +2486,16 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "pythonize"
+version = "0.18.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9a0e1bbcd2a3856284bf4f4ef09ccb1157e9467847792754556f153ea3fe6b42"
+dependencies = [
+ "pyo3",
+ "serde",
 ]
 
 [[package]]

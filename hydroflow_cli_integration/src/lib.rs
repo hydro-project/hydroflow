@@ -117,13 +117,13 @@ pub trait ConnectedSink {
     type Input: Send;
     type Sink: Sink<Self::Input, Error = io::Error> + Send + Sync;
 
-    fn take_sink(&mut self) -> Self::Sink;
+    fn take_sink(self) -> Self::Sink;
 }
 
 pub trait ConnectedSource {
     type Output: Send;
     type Stream: Stream<Item = Result<Self::Output, io::Error>> + Send + Sync;
-    fn take_source(&mut self) -> Self::Stream;
+    fn take_source(self) -> Self::Stream;
 }
 
 #[derive(Debug)]
@@ -318,7 +318,7 @@ impl ConnectedSource for ConnectedBidi {
     type Output = BytesMut;
     type Stream = DynStream;
 
-    fn take_source(&mut self) -> DynStream {
+    fn take_source(mut self) -> DynStream {
         self.source.take().unwrap()
     }
 }
@@ -327,7 +327,7 @@ impl ConnectedSink for ConnectedBidi {
     type Input = Bytes;
     type Sink = DynSink<Bytes>;
 
-    fn take_sink(&mut self) -> DynSink<Self::Input> {
+    fn take_sink(mut self) -> DynSink<Self::Input> {
         self.sink.take().unwrap()
     }
 }
@@ -444,7 +444,7 @@ where
     type Input = (u32, T::Input);
     type Sink = DemuxDrain<T::Input, T::Sink>;
 
-    fn take_sink(&mut self) -> Self::Sink {
+    fn take_sink(mut self) -> Self::Sink {
         self.sink.take().unwrap()
     }
 }
