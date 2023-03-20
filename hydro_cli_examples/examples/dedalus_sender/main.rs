@@ -10,7 +10,7 @@ use hydroflow_datalog::datalog;
 #[tokio::main]
 async fn main() {
     let mut ports = hydroflow::util::cli::init().await;
-    let mut broadcast_port = ports
+    let broadcast_port = ports
         .remove("broadcast")
         .unwrap()
         .connect::<ConnectedDemux<ConnectedBidi>>()
