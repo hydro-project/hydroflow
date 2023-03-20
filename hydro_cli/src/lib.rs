@@ -5,7 +5,7 @@ use async_channel::Receiver;
 use bytes::Bytes;
 use futures::{Future, SinkExt, StreamExt};
 use hydroflow_cli_integration::{
-    ConnectedBidi, ConnectedSink, ConnectedSource, DynSink, DynStream,
+    ConnectedBidi, ConnectedSink, ConnectedSource, DynSink, DynStream, ServerOrBound,
 };
 use pyo3::exceptions::PyException;
 use pyo3::types::{PyBytes, PyDict};
@@ -355,6 +355,19 @@ impl CustomClientPort {
         })
         .unwrap()
     }
+
+    fn server_port_json<'p>(&self, py: Python<'p>) -> &'p pyo3::PyAny {
+        let underlying = self.underlying.clone();
+        interruptible_future_to_py(py, async move {
+            let underlying = underlying.read().await;
+            if let ServerOrBound::Server(server) = underlying.server_port().await {
+                Ok(serde_json::to_string(&server).unwrap())
+            } else {
+                panic!()
+            }
+        })
+        .unwrap()
+    }
 }
 
 #[pyclass(extends=Service, subclass)]
@@ -512,7 +525,7 @@ struct ServerPort {
 
 #[pymethods]
 impl ServerPort {
-    fn source<'p>(&mut self, py: Python<'p>) -> &'p pyo3::PyAny {
+    fn take_source<'p>(&mut self, py: Python<'p>) -> &'p pyo3::PyAny {
         let underlying = self.underlying.take().unwrap();
         interruptible_future_to_py(py, async move {
             convert_next_to_generator(PythonStream {
@@ -524,7 +537,7 @@ impl ServerPort {
         .unwrap()
     }
 
-    fn sink<'p>(&mut self, py: Python<'p>) -> &'p pyo3::PyAny {
+    fn take_sink<'p>(&mut self, py: Python<'p>) -> &'p pyo3::PyAny {
         let underlying = self.underlying.take().unwrap();
         interruptible_future_to_py(py, async move {
             let connected = underlying.connect::<ConnectedBidi>().await.take_sink();

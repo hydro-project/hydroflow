@@ -29,7 +29,7 @@ async def main(args):
     sender = deployment.HydroflowCrate(
         src=str(Path(__file__).parent.absolute()),
         example="dedalus_sender",
-        args=[json.dumps([0])],
+        args=[json.dumps(([0], 123))],
         on=machine2
     )
 
@@ -45,7 +45,8 @@ async def main(args):
     await deployment.start()
     print("started!")
 
-    receiver_connection = await (await sender_port.server_port()).source()
+    print(await sender_port.server_port_json())
+    receiver_connection = await (await sender_port.server_port()).take_source()
     async for received in receiver_connection:
         print(decode(received, "utf-8"))
 
