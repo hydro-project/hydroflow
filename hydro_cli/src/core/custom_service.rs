@@ -57,6 +57,10 @@ impl Service for CustomService {
     }
 
     async fn start(&mut self) {}
+
+    async fn stop(&mut self) -> Result<()> {
+        Ok(())
+    }
 }
 
 pub struct CustomClientPort {
