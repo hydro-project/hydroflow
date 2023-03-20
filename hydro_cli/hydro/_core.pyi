@@ -33,7 +33,7 @@ class GCPComputeEngineHost(Host):
     ssh_key_path: str
 
 class Service(object):
-    pass
+    async def stop(self) -> None: ...
 
 class CustomService(Service):
     def client_port(self) -> "CustomServicePort": ...
