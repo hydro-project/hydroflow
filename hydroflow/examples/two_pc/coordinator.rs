@@ -1,20 +1,22 @@
 use crate::helpers::parse_out;
 use crate::protocol::{CoordMsg, MsgType, SubordResponse};
-use crate::GraphType;
+use crate::{Addresses, GraphType};
 use hydroflow::hydroflow_syntax;
 use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::util::{UdpSink, UdpStream};
 use std::net::SocketAddr;
+use std::path::Path;
 
 pub(crate) async fn run_coordinator(
     outbound: UdpSink,
     inbound: UdpStream,
-    subordinates: Vec<String>,
+    path: impl AsRef<Path>,
     graph: Option<GraphType>,
 ) {
     let mut df: Hydroflow = hydroflow_syntax! {
         // fetch subordinates from file, convert ip:port to a SocketAddr, and tee
-        subords = source_iter(subordinates)
+        subords = source_json(path)
+            -> flat_map(|json: Addresses| json.subordinates)
             -> map(|s| s.parse::<SocketAddr>().unwrap())
             -> tee();
 
