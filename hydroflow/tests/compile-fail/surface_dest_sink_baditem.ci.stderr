@@ -10,7 +10,7 @@ error[E0271]: type mismatch resolving `<impl Pusherator<Item = (Bytes, SocketAdd
    |                  expected `Bytes`, found `(Bytes, SocketAddr)`
    |
    = note: expected struct `bytes::Bytes`
-               found tuple `(bytes::Bytes, SocketAddr)`
+               found tuple `(bytes::Bytes, std::net::SocketAddr)`
 note: required by a bound in `check_pivot_run`
   --> tests/compile-fail/surface_dest_sink_baditem.rs:13:16
    |

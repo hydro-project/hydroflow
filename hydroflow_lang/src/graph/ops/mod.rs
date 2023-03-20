@@ -30,6 +30,7 @@ mod fold;
 mod for_each;
 mod group_by;
 mod identity;
+mod initialize;
 mod inspect;
 mod join;
 mod map;
@@ -42,6 +43,7 @@ mod reduce;
 mod repeat_iter;
 mod sort;
 mod sort_by;
+mod source_interval;
 mod source_iter;
 mod source_stdin;
 mod source_stream;
@@ -96,7 +98,7 @@ pub struct OperatorConstraints {
     pub num_args: usize,
     /// How many persistence lifetime arguments can be provided.
     pub persistence_args: &'static dyn RangeTrait<usize>,
-    // /// How many (non-persistence) lifetime arguemtns can be provided.
+    // /// How many (non-persistence) lifetime arguments can be provided.
     // pub lifetime_args: &'static dyn RangeTrait<usize>,
     /// How many generic type arguments can be provided.
     pub type_args: &'static dyn RangeTrait<usize>,
@@ -226,6 +228,7 @@ pub const OPERATORS: &[OperatorConstraints] = &[
     for_each::FOR_EACH,
     group_by::GROUP_BY,
     identity::IDENTITY,
+    initialize::INITIALIZE,
     inspect::INSPECT,
     join::JOIN,
     map::MAP,
@@ -238,6 +241,7 @@ pub const OPERATORS: &[OperatorConstraints] = &[
     repeat_iter::REPEAT_ITER,
     sort::SORT,
     sort_by::SORT_BY,
+    source_interval::SOURCE_INTERVAL,
     source_iter::SOURCE_ITER,
     source_stdin::SOURCE_STDIN,
     source_stream::SOURCE_STREAM,
@@ -263,6 +267,7 @@ pub fn find_op_op_constraints(operator: &Operator) -> Option<&'static OperatorCo
     operator_lookup().get(name).copied()
 }
 
+#[derive(Clone)]
 pub struct WriteContextArgs<'a> {
     /// `hydroflow` crate name for `use #root::something`.
     pub root: &'a TokenStream,

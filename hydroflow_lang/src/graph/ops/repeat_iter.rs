@@ -5,6 +5,17 @@ use super::{
 
 use quote::quote_spanned;
 
+/// > 0 input streams, 1 output stream
+///
+/// > Arguments: An iterable Rust object.
+/// Similar to `source_iter`, but delivers all elements from the iterable object
+/// on every tick (where `source_iter` only delivers on the first tick).
+///
+///
+/// ```hydroflow
+///     repeat_iter(vec!["Hello", "World"])
+///         -> for_each(|x| println!("{}", x));
+/// ```
 #[hydroflow_internalmacro::operator_docgen]
 pub const REPEAT_ITER: OperatorConstraints = OperatorConstraints {
     name: "repeat_iter",
