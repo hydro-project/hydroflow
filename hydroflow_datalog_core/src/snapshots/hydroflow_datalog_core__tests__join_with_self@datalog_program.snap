@@ -190,8 +190,10 @@ fn main() {
                 var_expr!(hoff_14v1_recv, hoff_15v1_recv),
                 var_expr!(),
                 move |context, var_args!(hoff_14v1_recv, hoff_15v1_recv), var_args!()| {
-                    let hoff_14v1_recv = hoff_14v1_recv.take_inner().into_iter();
-                    let hoff_15v1_recv = hoff_15v1_recv.take_inner().into_iter();
+                    let mut hoff_14v1_recv = hoff_14v1_recv.borrow_mut_swap();
+                    let hoff_14v1_recv = hoff_14v1_recv.drain(..);
+                    let mut hoff_15v1_recv = hoff_15v1_recv.borrow_mut_swap();
+                    let hoff_15v1_recv = hoff_15v1_recv.drain(..);
                     let op_11v1 = hoff_14v1_recv.map(|v: (_, _)| ((v.0, v.1), ()));
                     let op_11v1 = {
                         #[inline(always)]

@@ -267,21 +267,65 @@ fn ops(c: &mut Criterion) {
         )
     });
 
-    c.bench_function("micro/ops/next_tick", |b| {
-        const DATA: [usize; 1024] = [0; 1024];
+    c.bench_function("micro/ops/next_tick/small", |b| {
+        const DATA: [u64; 1024] = [0; 1024];
+
+        let mut df = hydroflow_syntax! {
+            repeat_iter(black_box(DATA))
+                -> map(black_box)
+                -> next_tick()
+                -> map(black_box)
+                -> next_tick()
+                -> map(black_box)
+                -> next_tick()
+                -> map(black_box)
+                -> next_tick()
+                -> map(black_box)
+                -> next_tick()
+                -> map(black_box)
+                -> next_tick()
+                -> map(black_box)
+                -> next_tick()
+                -> map(black_box)
+                -> next_tick()
+                -> map(black_box)
+                -> next_tick()
+                -> map(black_box)
+                -> next_tick()
+                -> map(black_box)
+                -> for_each(|x| { black_box(x); });
+        };
+
+        b.iter(|| {
+            df.run_tick();
+        })
+    });
+
+    c.bench_function("micro/ops/next_tick/big", |b| {
+        const DATA: [[u8; 8192]; 1] = [[0; 8192]; 1];
 
         let mut df = hydroflow_syntax! {
             repeat_iter(black_box(DATA))
                 -> next_tick()
+                -> map(black_box)
                 -> next_tick()
+                -> map(black_box)
                 -> next_tick()
+                -> map(black_box)
                 -> next_tick()
+                -> map(black_box)
                 -> next_tick()
+                -> map(black_box)
                 -> next_tick()
+                -> map(black_box)
                 -> next_tick()
+                -> map(black_box)
                 -> next_tick()
+                -> map(black_box)
                 -> next_tick()
+                -> map(black_box)
                 -> next_tick()
+                -> map(black_box)
                 -> for_each(|x| { black_box(x); });
         };
 

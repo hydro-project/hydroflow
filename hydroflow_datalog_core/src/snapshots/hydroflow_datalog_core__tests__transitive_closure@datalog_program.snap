@@ -99,7 +99,8 @@ fn main() {
                 var_expr!(hoff_19v1_recv),
                 var_expr!(hoff_19v1_send),
                 move |context, var_args!(hoff_19v1_recv), var_args!(hoff_19v1_send)| {
-                    let hoff_19v1_recv = hoff_19v1_recv.take_inner().into_iter();
+                    let mut hoff_19v1_recv = hoff_19v1_recv.borrow_mut_swap();
+                    let hoff_19v1_recv = hoff_19v1_recv.drain(..);
                     let hoff_19v1_send = hydroflow::pusherator::for_each::ForEach::new(|
                         v|
                     {
