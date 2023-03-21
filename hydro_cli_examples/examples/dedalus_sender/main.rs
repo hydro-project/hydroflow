@@ -10,7 +10,7 @@ use hydroflow_datalog::datalog;
 #[tokio::main]
 async fn main() {
     let mut ports = hydroflow::util::cli::init().await;
-    let mut broadcast_port = ports
+    let broadcast_port = ports
         .remove("broadcast")
         .unwrap()
         .connect::<ConnectedDemux<ConnectedBidi>>()
@@ -18,7 +18,7 @@ async fn main() {
 
     let (peers, sender_i): (Vec<u32>, u32) =
         serde_json::from_str(&std::env::args().nth(1).unwrap()).unwrap();
-    let broadcast_sink = broadcast_port.take_sink();
+    let broadcast_sink = broadcast_port.into_sink();
 
     let periodic = IntervalStream::new(tokio::time::interval(std::time::Duration::from_secs(1)));
     let to_repeat = vec![
