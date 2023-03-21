@@ -561,7 +561,12 @@ impl HydroflowGraph {
 
                 let recv_port_code = recv_ports
                     .iter()
-                    .map(|ident| quote! { let #ident = #ident.take_inner().into_iter(); });
+                    .map(|ident| {
+                        quote! {
+                            let mut #ident = #ident.borrow_mut_swap();
+                            let #ident = #ident.drain(..);
+                        }
+                    });
                 let send_port_code = send_ports.iter().map(|ident| {
                     quote! {
                         let #ident = #root::pusherator::for_each::ForEach::new(|v| {
