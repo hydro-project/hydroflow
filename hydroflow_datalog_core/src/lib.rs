@@ -1,3 +1,4 @@
+use rust_sitter::errors::{ParseError, ParseErrorReason};
 use std::collections::{HashMap, HashSet};
 
 use hydroflow_lang::{
@@ -18,14 +19,11 @@ use util::{repeat_tuple, Counter};
 
 pub fn gen_hydroflow_graph(
     literal: proc_macro2::Literal,
-) -> Result<FlatGraph, Vec<Diagnostic>> {
+) -> Result<HydroflowGraph, Vec<Diagnostic>> {
     let str_node: syn::LitStr = parse_quote!(#literal);
     let actual_str = str_node.value();
-    let program: Program = grammar::datalog::parse(&actual_str);
-        
-    let str_node: syn::LitStr = parse_quote!(#literal);
-    let actual_str = str_node.value();
-    let program: Program = grammar::datalog::parse(&actual_str).map_err(|e| (e, vec![]))?;
+    let program: Program =
+        grammar::datalog::parse(&actual_str).map_err(|e| handle_errors(e, &literal))?;
 
     let mut inputs = Vec::new();
     let mut outputs = Vec::new();
@@ -41,28 +39,11 @@ pub fn gen_hydroflow_graph(
             }
             Declaration::Rule(rule) => rules.push(rule),
         }
-        Result::Err(errors) => {
-            return Result::Err(handle_errors(errors, &literal));
-        }
-
-        Result::Ok(program) => {
-            let mut inputs = Vec::new();
-            let mut outputs = Vec::new();
-            let mut rules = Vec::new();
-
-            for stmt in &program.rules {
-                match stmt {
-                    Declaration::Input(_, ident) => inputs.push(ident),
-                    Declaration::Output(_, ident) => outputs.push(ident),
-                    Declaration::Rule(rule) => rules.push(rule),
-                }
-            }
-
-            let mut flat_graph_builder = FlatGraphBuilder::new();
-            let mut tee_counter = HashMap::new();
-            let mut merge_counter = HashMap::new();
-        }
     }
+
+    let mut flat_graph_builder = FlatGraphBuilder::new();
+    let mut tee_counter = HashMap::new();
+    let mut merge_counter = HashMap::new();
 
     let mut created_rules = HashSet::new();
     for decl in &program.rules {
@@ -88,9 +69,9 @@ pub fn gen_hydroflow_graph(
             .next()
             .expect("Out of merge indices");
 
-                let my_merge_index_lit =
-                    syn::LitInt::new(&format!("{}", my_merge_index), Span::call_site());
-                let name = syn::Ident::new(&target.name, Span::call_site());
+        let my_merge_index_lit =
+            syn::LitInt::new(&format!("{}", my_merge_index), Span::call_site());
+        let name = syn::Ident::new(&target.name, Span::call_site());
 
         let input_pipeline: Pipeline = syn::parse_str(&hf_code.code).unwrap();
 
@@ -142,33 +123,30 @@ pub fn gen_hydroflow_graph(
         });
     }
 
-            let mut next_join_idx = 0..;
-            let mut diagnostics = Vec::new();
-            for rule in rules {
-                generate_rule(
-                    rule,
-                    &mut flat_graph_builder,
-                    &mut tee_counter,
-                    &mut merge_counter,
-                    &mut next_join_idx,
-                    &mut diagnostics,
-                );
-            }
+    let mut next_join_idx = 0..;
+    let mut diagnostics = Vec::new();
+    for rule in rules {
+        generate_rule(
+            rule,
+            &mut flat_graph_builder,
+            &mut tee_counter,
+            &mut merge_counter,
+            &mut next_join_idx,
+            &mut diagnostics,
+        );
+    }
 
-            if !diagnostics.is_empty() {
-                Err(diagnostics)
-            } else {
-                let flat_graph = flat_graph_builder
-                    .build(Level::Error)
-                    .unwrap_or_else(std::convert::identity);
-                Ok(flat_graph)
-            }
-        }
+    if !diagnostics.is_empty() {
+        Err(diagnostics)
+    } else {
+        let flat_graph = flat_graph_builder
+            .build(Level::Error)
+            .unwrap_or_else(std::convert::identity);
+        Ok(flat_graph)
     }
 }
 
-fn handle_errors(errors: Vec<ParseError>, literal: &proc_macro2::Literal)
--> Vec<Diagnostic> {
+fn handle_errors(errors: Vec<ParseError>, literal: &proc_macro2::Literal) -> Vec<Diagnostic> {
     let mut diagnostics = vec![];
     for error in errors {
         let reason = error.reason;
@@ -176,27 +154,27 @@ fn handle_errors(errors: Vec<ParseError>, literal: &proc_macro2::Literal)
         match reason {
             ParseErrorReason::UnexpectedToken(msg) => {
                 diagnostics.push(Diagnostic::spanned(
-                    my_span.unwrap(),
-                    proc_macro::Level::Error,
+                    my_span,
+                    Level::Error,
                     format!("Unexpected Token: '{msg}'", msg = msg),
                 ));
             }
             ParseErrorReason::MissingToken(msg) => {
                 diagnostics.push(Diagnostic::spanned(
-                    my_span.unwrap(),
-                    proc_macro::Level::Error,
+                    my_span,
+                    Level::Error,
                     format!("Missing Token: '{msg}'", msg = msg),
                 ));
             }
             ParseErrorReason::FailedNode(_vec) => {
                 if _vec.is_empty() {
                     diagnostics.push(Diagnostic::spanned(
-                        my_span.unwrap(),
-                        proc_macro::Level::Error,
+                        my_span,
+                        Level::Error,
                         "Failed to parse",
                     ));
                 } else {
-                    diagnostics.push_all(handle_errors(_vec, literal));
+                    diagnostics.extend(handle_errors(_vec, literal));
                 }
             }
         }
