@@ -29,8 +29,8 @@ fn main() {
                 var_expr!(hoff_12v1_recv),
                 var_expr!(),
                 move |context, var_args!(hoff_12v1_recv), var_args!()| {
-                    let mut hoff_12v1_recv_borrow = hoff_12v1_recv.borrow_mut_swap();
-                    let hoff_12v1_recv = hoff_12v1_recv_borrow.drain(..);
+                    let mut hoff_12v1_recv = hoff_12v1_recv.borrow_mut_swap();
+                    let hoff_12v1_recv = hoff_12v1_recv.drain(..);
                     let op_10v1 = {
                         #[inline(always)]
                         fn check_input<Iter: ::std::iter::Iterator<Item = (A, B)>, A, B>(

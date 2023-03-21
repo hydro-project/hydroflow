@@ -7,7 +7,7 @@ use crate::lang::collections::Iter;
 use super::{CanReceive, Handoff, HandoffMeta};
 
 /**
- * A [VecDeque]-based FIFO handoff.
+ * A [Vec]-based FIFO handoff.
  */
 pub struct VecHandoff<T>
 where

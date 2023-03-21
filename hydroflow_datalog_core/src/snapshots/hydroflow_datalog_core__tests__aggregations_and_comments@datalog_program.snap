@@ -54,10 +54,10 @@ fn main() {
                 var_expr!(hoff_23v1_recv, hoff_29v1_recv),
                 var_expr!(),
                 move |context, var_args!(hoff_23v1_recv, hoff_29v1_recv), var_args!()| {
-                    let mut hoff_23v1_recv_borrow = hoff_23v1_recv.borrow_mut_swap();
-                    let hoff_23v1_recv = hoff_23v1_recv_borrow.drain(..);
-                    let mut hoff_29v1_recv_borrow = hoff_29v1_recv.borrow_mut_swap();
-                    let hoff_29v1_recv = hoff_29v1_recv_borrow.drain(..);
+                    let mut hoff_23v1_recv = hoff_23v1_recv.borrow_mut_swap();
+                    let hoff_23v1_recv = hoff_23v1_recv.drain(..);
+                    let mut hoff_29v1_recv = hoff_29v1_recv.borrow_mut_swap();
+                    let hoff_29v1_recv = hoff_29v1_recv.drain(..);
                     let op_14v1 = {
                         #[inline(always)]
                         fn check_input<Iter: ::std::iter::Iterator<Item = (A, B)>, A, B>(
@@ -224,8 +224,8 @@ fn main() {
                 var_expr!(hoff_27v1_recv),
                 var_expr!(),
                 move |context, var_args!(hoff_27v1_recv), var_args!()| {
-                    let mut hoff_27v1_recv_borrow = hoff_27v1_recv.borrow_mut_swap();
-                    let hoff_27v1_recv = hoff_27v1_recv_borrow.drain(..);
+                    let mut hoff_27v1_recv = hoff_27v1_recv.borrow_mut_swap();
+                    let hoff_27v1_recv = hoff_27v1_recv.drain(..);
                     let op_21v1 = {
                         #[inline(always)]
                         fn check_input<Iter: ::std::iter::Iterator<Item = (A, B)>, A, B>(
@@ -365,8 +365,8 @@ fn main() {
                 var_expr!(hoff_26v1_recv),
                 var_expr!(hoff_25v1_send),
                 move |context, var_args!(hoff_26v1_recv), var_args!(hoff_25v1_send)| {
-                    let mut hoff_26v1_recv_borrow = hoff_26v1_recv.borrow_mut_swap();
-                    let hoff_26v1_recv = hoff_26v1_recv_borrow.drain(..);
+                    let mut hoff_26v1_recv = hoff_26v1_recv.borrow_mut_swap();
+                    let hoff_26v1_recv = hoff_26v1_recv.drain(..);
                     let hoff_25v1_send = hydroflow::pusherator::for_each::ForEach::new(|
                         v|
                     {
@@ -425,8 +425,8 @@ fn main() {
                 var_expr!(hoff_25v1_recv),
                 var_expr!(hoff_24v1_send),
                 move |context, var_args!(hoff_25v1_recv), var_args!(hoff_24v1_send)| {
-                    let mut hoff_25v1_recv_borrow = hoff_25v1_recv.borrow_mut_swap();
-                    let hoff_25v1_recv = hoff_25v1_recv_borrow.drain(..);
+                    let mut hoff_25v1_recv = hoff_25v1_recv.borrow_mut_swap();
+                    let hoff_25v1_recv = hoff_25v1_recv.drain(..);
                     let hoff_24v1_send = hydroflow::pusherator::for_each::ForEach::new(|
                         v|
                     {
@@ -653,8 +653,8 @@ fn main() {
                 var_expr!(hoff_24v1_recv),
                 var_expr!(hoff_29v1_send),
                 move |context, var_args!(hoff_24v1_recv), var_args!(hoff_29v1_send)| {
-                    let mut hoff_24v1_recv_borrow = hoff_24v1_recv.borrow_mut_swap();
-                    let hoff_24v1_recv = hoff_24v1_recv_borrow.drain(..);
+                    let mut hoff_24v1_recv = hoff_24v1_recv.borrow_mut_swap();
+                    let hoff_24v1_recv = hoff_24v1_recv.drain(..);
                     let hoff_29v1_send = hydroflow::pusherator::for_each::ForEach::new(|
                         v|
                     {
