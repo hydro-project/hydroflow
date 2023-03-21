@@ -5,11 +5,12 @@ use async_channel::Receiver;
 use bytes::Bytes;
 use futures::{Future, SinkExt, StreamExt};
 use hydroflow_cli_integration::{
-    ConnectedBidi, ConnectedSink, ConnectedSource, DynSink, DynStream,
+    ConnectedBidi, ConnectedSink, ConnectedSource, DynSink, DynStream, ServerOrBound,
 };
 use pyo3::exceptions::PyException;
 use pyo3::types::{PyBytes, PyDict};
 use pyo3::{create_exception, prelude::*, wrap_pymodule};
+use pythonize::pythonize;
 use tokio::sync::RwLock;
 
 use crate::core::hydroflow_crate::ports::HydroflowSource;
@@ -512,22 +513,32 @@ struct ServerPort {
 
 #[pymethods]
 impl ServerPort {
-    fn source<'p>(&mut self, py: Python<'p>) -> &'p pyo3::PyAny {
+    fn json(&self, py: Python<'_>) -> Py<pyo3::PyAny> {
+        if let ServerOrBound::Server(server) = self.underlying.as_ref().unwrap() {
+            pythonize(py, &server).unwrap()
+        } else {
+            panic!()
+        }
+    }
+
+    #[allow(clippy::wrong_self_convention)]
+    fn into_source<'p>(&mut self, py: Python<'p>) -> &'p pyo3::PyAny {
         let underlying = self.underlying.take().unwrap();
         interruptible_future_to_py(py, async move {
             convert_next_to_generator(PythonStream {
                 underlying: Arc::new(RwLock::new(
-                    underlying.connect::<ConnectedBidi>().await.take_source(),
+                    underlying.connect::<ConnectedBidi>().await.into_source(),
                 )),
             })
         })
         .unwrap()
     }
 
-    fn sink<'p>(&mut self, py: Python<'p>) -> &'p pyo3::PyAny {
+    #[allow(clippy::wrong_self_convention)]
+    fn into_sink<'p>(&mut self, py: Python<'p>) -> &'p pyo3::PyAny {
         let underlying = self.underlying.take().unwrap();
         interruptible_future_to_py(py, async move {
-            let connected = underlying.connect::<ConnectedBidi>().await.take_sink();
+            let connected = underlying.connect::<ConnectedBidi>().await.into_sink();
 
             Ok(PythonSink {
                 underlying: Arc::new(RwLock::new(connected)),
