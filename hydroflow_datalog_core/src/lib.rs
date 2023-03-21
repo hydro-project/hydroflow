@@ -139,9 +139,11 @@ pub fn gen_hydroflow_graph(
     if !diagnostics.is_empty() {
         Err(diagnostics)
     } else {
-        let flat_graph = flat_graph_builder
-            .build(Level::Error)
-            .unwrap_or_else(std::convert::identity);
+        let (flat_graph, diagnostics) = flat_graph_builder.build();
+        diagnostics
+            .iter()
+            .filter(|diag| diag.is_error())
+            .for_each(Diagnostic::emit);
         Ok(flat_graph)
     }
 }
@@ -186,7 +188,14 @@ fn handle_errors(errors: Vec<ParseError>, literal: &proc_macro2::Literal) -> Vec
 pub fn hydroflow_graph_to_program(flat_graph: HydroflowGraph, root: TokenStream) -> syn::Stmt {
     let partitioned_graph =
         partition_graph(flat_graph).expect("Failed to partition (cycle detected).");
-    let code_tokens = partitioned_graph.as_code(root, true);
+
+    let mut diagnostics = Vec::new();
+    let code_tokens = partitioned_graph.as_code(&root, true, &mut diagnostics);
+    assert_eq!(
+        0,
+        diagnostics.len(),
+        "Operator diagnostic occured during codegen"
+    );
 
     syn::parse_quote!({
         #code_tokens

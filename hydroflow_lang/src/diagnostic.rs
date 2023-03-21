@@ -1,7 +1,12 @@
+use std::borrow::Cow;
+
 use proc_macro2::Span;
+use serde::{Deserialize, Serialize};
+
+use crate::pretty_span::PrettySpan;
 
 #[non_exhaustive]
-#[derive(Debug, Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Debug, Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Level {
     /// An error.
     ///
@@ -26,11 +31,16 @@ impl Level {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct Diagnostic {
-    pub span: Span,
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Diagnostic<S = Span> {
+    pub span: S,
     pub level: Level,
     pub message: String,
+}
+impl<S> Diagnostic<S> {
+    pub fn is_error(&self) -> bool {
+        self.level.is_error()
+    }
 }
 impl Diagnostic {
     pub fn spanned(span: Span, level: Level, message: impl Into<String>) -> Self {
@@ -40,9 +50,6 @@ impl Diagnostic {
             level,
             message,
         }
-    }
-    pub fn is_error(&self) -> bool {
-        self.level.is_error()
     }
     pub fn emit(&self) {
         #[cfg(feature = "diagnostics")]
@@ -56,9 +63,70 @@ impl Diagnostic {
             pm_diag.emit();
         }
     }
+    pub fn to_serde(&self) -> Diagnostic<SerdeSpan> {
+        let Self {
+            span,
+            level,
+            message,
+        } = self;
+        Diagnostic {
+            span: (*span).into(),
+            level: *level,
+            message: message.clone(),
+        }
+    }
 }
 impl From<syn::Error> for Diagnostic {
     fn from(value: syn::Error) -> Self {
         Self::spanned(value.span(), Level::Error, value.to_string())
+    }
+}
+impl std::fmt::Display for Diagnostic {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "{:?}: {}", self.level, self.message)?;
+        write!(f, "  --> {}", PrettySpan(self.span))?;
+        Ok(())
+    }
+}
+impl std::fmt::Display for Diagnostic<SerdeSpan> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "{:?}: {}", self.level, self.message)?;
+        write!(f, "  --> {}", self.span)?;
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SerdeSpan {
+    // https://github.com/serde-rs/serde/issues/1852#issuecomment-904840811
+    #[serde(borrow)]
+    pub path: Cow<'static, str>,
+    pub line: usize,
+    pub column: usize,
+}
+impl From<Span> for SerdeSpan {
+    fn from(span: Span) -> Self {
+        #[cfg(feature = "diagnostics")]
+        let path = span
+            .unwrap()
+            .source_file()
+            .path()
+            .display()
+            .to_string()
+            .into();
+
+        #[cfg(not(feature = "diagnostics"))]
+        let path = "unknown".into();
+
+        Self {
+            path,
+            line: span.start().line,
+            column: span.start().column,
+        }
+    }
+}
+impl std::fmt::Display for SerdeSpan {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}:{}:{}", self.path, self.line, self.column)
     }
 }
