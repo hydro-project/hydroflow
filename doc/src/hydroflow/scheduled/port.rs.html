@@ -75,8 +75,12 @@
 <a href="#75" id="75">75</a>
 <a href="#76" id="76">76</a>
 <a href="#77" id="77">77</a>
+<a href="#78" id="78">78</a>
+<a href="#79" id="79">79</a>
+<a href="#80" id="80">80</a>
+<a href="#81" id="81">81</a>
 </pre><pre class="rust"><code><span class="doccomment">//! Organizational module for Hydroflow Send/RecvCtx structs and Input/OutputPort structs.
-</span><span class="kw">use </span>std::marker::PhantomData;
+</span><span class="kw">use </span>std::{cell::RefMut, marker::PhantomData};
 
 <span class="kw">use </span>ref_cast::RefCast;
 <span class="kw">use </span>sealed::sealed;
@@ -150,6 +154,10 @@
 </span><span class="kw">impl</span>&lt;H: Handoff&gt; RecvCtx&lt;H&gt; {
     <span class="kw">pub fn </span>take_inner(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; H::Inner {
         <span class="self">self</span>.handoff.take_inner()
+    }
+
+    <span class="kw">pub fn </span>borrow_mut_swap(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; RefMut&lt;H::Inner&gt; {
+        <span class="self">self</span>.handoff.borrow_mut_swap()
     }
 }
 </code></pre></div>

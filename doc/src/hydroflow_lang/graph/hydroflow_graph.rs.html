@@ -1070,6 +1070,11 @@
 <a href="#1070" id="1070">1070</a>
 <a href="#1071" id="1071">1071</a>
 <a href="#1072" id="1072">1072</a>
+<a href="#1073" id="1073">1073</a>
+<a href="#1074" id="1074">1074</a>
+<a href="#1075" id="1075">1075</a>
+<a href="#1076" id="1076">1076</a>
+<a href="#1077" id="1077">1077</a>
 </pre><pre class="rust"><code><span class="attr">#![deny(missing_docs)]
 
 </span><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet, HashSet};
@@ -1633,7 +1638,12 @@
 
                 <span class="kw">let </span>recv_port_code = recv_ports
                     .iter()
-                    .map(|ident| <span class="macro">quote! </span>{ <span class="kw">let </span>#ident = #ident.take_inner().into_iter(); });
+                    .map(|ident| {
+                        <span class="macro">quote! </span>{
+                            <span class="kw">let </span><span class="kw-2">mut </span>#ident = #ident.borrow_mut_swap();
+                            <span class="kw">let </span>#ident = #ident.drain(..);
+                        }
+                    });
                 <span class="kw">let </span>send_port_code = send_ports.iter().map(|ident| {
                     <span class="macro">quote! </span>{
                         <span class="kw">let </span>#ident = #root::pusherator::for_each::ForEach::new(|v| {

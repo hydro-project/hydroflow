@@ -90,6 +90,11 @@
 <a href="#90" id="90">90</a>
 <a href="#91" id="91">91</a>
 <a href="#92" id="92">92</a>
+<a href="#93" id="93">93</a>
+<a href="#94" id="94">94</a>
+<a href="#95" id="95">95</a>
+<a href="#96" id="96">96</a>
+<a href="#97" id="97">97</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::any::Any;
 <span class="kw">use </span>std::{cell::RefCell, collections::VecDeque, rc::Rc};
 
@@ -163,8 +168,13 @@
 
 <span class="kw">impl</span>&lt;T&gt; Handoff <span class="kw">for </span>TeeingHandoff&lt;T&gt; {
     <span class="kw">type </span>Inner = VecDeque&lt;Vec&lt;T&gt;&gt;;
+
     <span class="kw">fn </span>take_inner(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Inner {
         std::mem::take(<span class="kw-2">&amp;mut </span>(<span class="kw-2">*</span><span class="self">self</span>.internal).borrow_mut().readers[<span class="self">self</span>.read_from].contents)
+    }
+
+    <span class="kw">fn </span>borrow_mut_swap(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; std::cell::RefMut&lt;<span class="self">Self</span>::Inner&gt; {
+        <span class="macro">todo!</span>()
     }
 }
 
