@@ -698,6 +698,59 @@
 <a href="#698" id="698">698</a>
 <a href="#699" id="699">699</a>
 <a href="#700" id="700">700</a>
+<a href="#701" id="701">701</a>
+<a href="#702" id="702">702</a>
+<a href="#703" id="703">703</a>
+<a href="#704" id="704">704</a>
+<a href="#705" id="705">705</a>
+<a href="#706" id="706">706</a>
+<a href="#707" id="707">707</a>
+<a href="#708" id="708">708</a>
+<a href="#709" id="709">709</a>
+<a href="#710" id="710">710</a>
+<a href="#711" id="711">711</a>
+<a href="#712" id="712">712</a>
+<a href="#713" id="713">713</a>
+<a href="#714" id="714">714</a>
+<a href="#715" id="715">715</a>
+<a href="#716" id="716">716</a>
+<a href="#717" id="717">717</a>
+<a href="#718" id="718">718</a>
+<a href="#719" id="719">719</a>
+<a href="#720" id="720">720</a>
+<a href="#721" id="721">721</a>
+<a href="#722" id="722">722</a>
+<a href="#723" id="723">723</a>
+<a href="#724" id="724">724</a>
+<a href="#725" id="725">725</a>
+<a href="#726" id="726">726</a>
+<a href="#727" id="727">727</a>
+<a href="#728" id="728">728</a>
+<a href="#729" id="729">729</a>
+<a href="#730" id="730">730</a>
+<a href="#731" id="731">731</a>
+<a href="#732" id="732">732</a>
+<a href="#733" id="733">733</a>
+<a href="#734" id="734">734</a>
+<a href="#735" id="735">735</a>
+<a href="#736" id="736">736</a>
+<a href="#737" id="737">737</a>
+<a href="#738" id="738">738</a>
+<a href="#739" id="739">739</a>
+<a href="#740" id="740">740</a>
+<a href="#741" id="741">741</a>
+<a href="#742" id="742">742</a>
+<a href="#743" id="743">743</a>
+<a href="#744" id="744">744</a>
+<a href="#745" id="745">745</a>
+<a href="#746" id="746">746</a>
+<a href="#747" id="747">747</a>
+<a href="#748" id="748">748</a>
+<a href="#749" id="749">749</a>
+<a href="#750" id="750">750</a>
+<a href="#751" id="751">751</a>
+<a href="#752" id="752">752</a>
+<a href="#753" id="753">753</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::collections::{HashMap, HashSet};
 
 <span class="kw">use </span>hydroflow_lang::{
@@ -986,6 +1039,80 @@
     ));
 }
 
+<span class="kw">fn </span>gen_value_expr(
+    expr: <span class="kw-2">&amp;</span>ValueExpr,
+    field_use_count: <span class="kw-2">&amp;</span>HashMap&lt;String, i32&gt;,
+    field_use_cur: <span class="kw-2">&amp;mut </span>HashMap&lt;String, i32&gt;,
+    out_expanded: <span class="kw-2">&amp;</span>IntermediateJoinNode,
+    diagnostics: <span class="kw-2">&amp;mut </span>Vec&lt;Diagnostic&gt;,
+) -&gt; syn::Expr {
+    <span class="kw">match </span>expr {
+        ValueExpr::Ident(ident) =&gt; {
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(col) = out_expanded
+                .variable_mapping
+                .get(<span class="kw-2">&amp;</span>syn::Ident::new(<span class="kw-2">&amp;</span>ident.name, Span::call_site()))
+            {
+                <span class="kw">let </span>cur_count = field_use_cur
+                    .entry(ident.name.clone())
+                    .and_modify(|e| <span class="kw-2">*</span>e += <span class="number">1</span>)
+                    .or_insert(<span class="number">1</span>);
+
+                <span class="kw">let </span>source_col_idx = syn::Index::from(<span class="kw-2">*</span>col);
+                <span class="kw">let </span>base = <span class="macro">parse_quote!</span>(row.#source_col_idx);
+
+                <span class="kw">if </span><span class="kw-2">*</span>cur_count &lt; field_use_count[<span class="kw-2">&amp;</span>ident.name] &amp;&amp; field_use_count[<span class="kw-2">&amp;</span>ident.name] &gt; <span class="number">1 </span>{
+                    <span class="macro">parse_quote!</span>(#base.clone())
+                } <span class="kw">else </span>{
+                    base
+                }
+            } <span class="kw">else </span>{
+                diagnostics.push(Diagnostic::spanned(
+                    Span::call_site(),
+                    Level::Error,
+                    <span class="macro">format!</span>(<span class="string">&quot;Could not find column {} in RHS of rule&quot;</span>, <span class="kw-2">&amp;</span>ident.name),
+                ));
+                <span class="macro">parse_quote!</span>(())
+            }
+        }
+        ValueExpr::Integer(i) =&gt; <span class="macro">parse_quote!</span>(#i),
+        ValueExpr::Add(l, <span class="kw">_</span>, r) =&gt; {
+            <span class="kw">let </span>l = gen_value_expr(l, field_use_count, field_use_cur, out_expanded, diagnostics);
+            <span class="kw">let </span>r = gen_value_expr(r, field_use_count, field_use_cur, out_expanded, diagnostics);
+            <span class="macro">parse_quote!</span>(#l + #r)
+        }
+        ValueExpr::Sub(l, <span class="kw">_</span>, r) =&gt; {
+            <span class="kw">let </span>l = gen_value_expr(l, field_use_count, field_use_cur, out_expanded, diagnostics);
+            <span class="kw">let </span>r = gen_value_expr(r, field_use_count, field_use_cur, out_expanded, diagnostics);
+            <span class="macro">parse_quote!</span>(#l - #r)
+        }
+    }
+}
+
+<span class="kw">fn </span>gen_target_expr(
+    expr: <span class="kw-2">&amp;</span>TargetExpr,
+    field_use_count: <span class="kw-2">&amp;</span>HashMap&lt;String, i32&gt;,
+    field_use_cur: <span class="kw-2">&amp;mut </span>HashMap&lt;String, i32&gt;,
+    out_expanded: <span class="kw-2">&amp;</span>IntermediateJoinNode,
+    diagnostics: <span class="kw-2">&amp;mut </span>Vec&lt;Diagnostic&gt;,
+) -&gt; syn::Expr {
+    <span class="kw">match </span>expr {
+        TargetExpr::Expr(expr) =&gt; gen_value_expr(
+            expr,
+            field_use_count,
+            field_use_cur,
+            out_expanded,
+            diagnostics,
+        ),
+        TargetExpr::Aggregation(Aggregation { ident, .. }) =&gt; gen_value_expr(
+            <span class="kw-2">&amp;</span>ValueExpr::Ident(ident.clone()),
+            field_use_count,
+            field_use_cur,
+            out_expanded,
+            diagnostics,
+        ),
+    }
+}
+
 <span class="kw">fn </span>apply_aggregations(
     rule: <span class="kw-2">&amp;</span>Rule,
     out_expanded: <span class="kw-2">&amp;</span>IntermediateJoinNode,
@@ -1002,10 +1129,12 @@
         .iter()
         .chain(rule.target.at_node.iter().map(|n| <span class="kw-2">&amp;</span>n.node))
     {
-        field_use_count
-            .entry(field.ident().name.clone())
-            .and_modify(|e| <span class="kw-2">*</span>e += <span class="number">1</span>)
-            .or_insert(<span class="number">1</span>);
+        <span class="kw">for </span>ident <span class="kw">in </span>field.idents() {
+            field_use_count
+                .entry(ident.name.clone())
+                .and_modify(|e| <span class="kw-2">*</span>e += <span class="number">1</span>)
+                .or_insert(<span class="number">1</span>);
+        }
     }
 
     <span class="kw">let </span><span class="kw-2">mut </span>field_use_cur = HashMap::new();
@@ -1015,39 +1144,16 @@
         .iter()
         .chain(rule.target.at_node.iter().map(|n| <span class="kw-2">&amp;</span>n.node))
     {
-        <span class="kw">let </span>expr: syn::Expr = <span class="kw">if let </span><span class="prelude-val">Some</span>(col) = out_expanded
-            .variable_mapping
-            .get(<span class="kw-2">&amp;</span>syn::Ident::new(<span class="kw-2">&amp;</span>field.ident().name, Span::call_site()))
-        {
-            <span class="kw">let </span>cur_count = field_use_cur
-                .entry(field.ident().name.clone())
-                .and_modify(|e| <span class="kw-2">*</span>e += <span class="number">1</span>)
-                .or_insert(<span class="number">1</span>);
-
-            <span class="kw">let </span>source_col_idx = syn::Index::from(<span class="kw-2">*</span>col);
-            <span class="kw">let </span>base = <span class="macro">parse_quote!</span>(row.#source_col_idx);
-
-            <span class="kw">if </span><span class="kw-2">*</span>cur_count &lt; field_use_count[<span class="kw-2">&amp;</span>field.ident().name]
-                &amp;&amp; field_use_count[<span class="kw-2">&amp;</span>field.ident().name] &gt; <span class="number">1
-            </span>{
-                <span class="macro">parse_quote!</span>(#base.clone())
-            } <span class="kw">else </span>{
-                base
-            }
-        } <span class="kw">else </span>{
-            diagnostics.push(Diagnostic::spanned(
-                Span::call_site(),
-                Level::Error,
-                <span class="macro">format!</span>(
-                    <span class="string">&quot;Could not find column {} in RHS of rule&quot;</span>,
-                    <span class="kw-2">&amp;</span>field.ident().name
-                ),
-            ));
-            <span class="macro">parse_quote!</span>(())
-        };
+        <span class="kw">let </span>expr: syn::Expr = gen_target_expr(
+            field,
+            <span class="kw-2">&amp;</span>field_use_count,
+            <span class="kw-2">&amp;mut </span>field_use_cur,
+            out_expanded,
+            diagnostics,
+        );
 
         <span class="kw">match </span>field {
-            TargetExpr::Ident(<span class="kw">_</span>) =&gt; {
+            TargetExpr::Expr(<span class="kw">_</span>) =&gt; {
                 group_by_exprs.push(expr);
             }
             TargetExpr::Aggregation(<span class="kw">_</span>) =&gt; {
@@ -1141,7 +1247,7 @@
             .chain(rule.target.at_node.iter().map(|n| <span class="kw-2">&amp;</span>n.node))
         {
             <span class="kw">match </span>field {
-                TargetExpr::Ident(<span class="kw">_</span>) =&gt; {
+                TargetExpr::Expr(<span class="kw">_</span>) =&gt; {
                     <span class="kw">let </span>idx = syn::Index::from(group_key_idx);
                     after_group_lookups.push(<span class="macro">parse_quote!</span>(g.#idx));
                     group_key_idx += <span class="number">1</span>;
