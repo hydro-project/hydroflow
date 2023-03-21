@@ -116,15 +116,15 @@ pub mod datalog {
 
     #[derive(Debug, Clone)]
     pub enum TargetExpr {
-        Ident(Ident),
+        Expr(ValueExpr),
         Aggregation(Aggregation),
     }
 
     impl TargetExpr {
-        pub fn ident(&self) -> &Ident {
+        pub fn idents(&self) -> Vec<&Ident> {
             match self {
-                TargetExpr::Ident(ident) => ident,
-                TargetExpr::Aggregation(a) => &a.ident,
+                TargetExpr::Expr(e) => e.idents(),
+                TargetExpr::Aggregation(a) => vec![&a.ident],
             }
         }
     }
@@ -186,5 +186,42 @@ pub mod datalog {
 
         #[rust_sitter::leaf(text = ")")]
         _r_brace: (),
+    }
+
+    #[derive(Debug, Clone)]
+    pub enum ValueExpr {
+        Ident(Ident),
+        Integer(#[rust_sitter::leaf(pattern = r"[0-9]+", transform = |s| s.parse().unwrap())] i64),
+        #[rust_sitter::prec_left(1)]
+        Add(
+            Box<ValueExpr>,
+            #[rust_sitter::leaf(text = "+")] (),
+            Box<ValueExpr>,
+        ),
+        #[rust_sitter::prec_left(1)]
+        Sub(
+            Box<ValueExpr>,
+            #[rust_sitter::leaf(text = "-")] (),
+            Box<ValueExpr>,
+        ),
+    }
+
+    impl ValueExpr {
+        pub fn idents(&self) -> Vec<&Ident> {
+            match self {
+                ValueExpr::Ident(i) => vec![i],
+                ValueExpr::Integer(_) => vec![],
+                ValueExpr::Add(l, _, r) => {
+                    let mut idents = l.idents();
+                    idents.extend(r.idents());
+                    idents
+                }
+                ValueExpr::Sub(l, _, r) => {
+                    let mut idents = l.idents();
+                    idents.extend(r.idents());
+                    idents
+                }
+            }
+        }
     }
 }
