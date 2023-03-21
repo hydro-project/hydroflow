@@ -614,6 +614,17 @@
 <a href="#614" id="614">614</a>
 <a href="#615" id="615">615</a>
 <a href="#616" id="616">616</a>
+<a href="#617" id="617">617</a>
+<a href="#618" id="618">618</a>
+<a href="#619" id="619">619</a>
+<a href="#620" id="620">620</a>
+<a href="#621" id="621">621</a>
+<a href="#622" id="622">622</a>
+<a href="#623" id="623">623</a>
+<a href="#624" id="624">624</a>
+<a href="#625" id="625">625</a>
+<a href="#626" id="626">626</a>
+<a href="#627" id="627">627</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::ops::DerefMut;
 <span class="kw">use </span>std::sync::Arc;
 
@@ -621,11 +632,12 @@
 <span class="kw">use </span>bytes::Bytes;
 <span class="kw">use </span>futures::{Future, SinkExt, StreamExt};
 <span class="kw">use </span>hydroflow_cli_integration::{
-    ConnectedBidi, ConnectedSink, ConnectedSource, DynSink, DynStream,
+    ConnectedBidi, ConnectedSink, ConnectedSource, DynSink, DynStream, ServerOrBound,
 };
 <span class="kw">use </span>pyo3::exceptions::PyException;
 <span class="kw">use </span>pyo3::types::{PyBytes, PyDict};
 <span class="kw">use </span>pyo3::{create_exception, prelude::<span class="kw-2">*</span>, wrap_pymodule};
+<span class="kw">use </span>pythonize::pythonize;
 <span class="kw">use </span>tokio::sync::RwLock;
 
 <span class="kw">use </span><span class="kw">crate</span>::core::hydroflow_crate::ports::HydroflowSource;
@@ -1128,22 +1140,32 @@ async def pyreceiver_to_async_generator(pyreceiver):
 
 <span class="attr">#[pymethods]
 </span><span class="kw">impl </span>ServerPort {
-    <span class="kw">fn </span>source&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny {
+    <span class="kw">fn </span>json(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Py&lt;pyo3::PyAny&gt; {
+        <span class="kw">if let </span>ServerOrBound::Server(server) = <span class="self">self</span>.underlying.as_ref().unwrap() {
+            pythonize(py, <span class="kw-2">&amp;</span>server).unwrap()
+        } <span class="kw">else </span>{
+            <span class="macro">panic!</span>()
+        }
+    }
+
+    <span class="attr">#[allow(clippy::wrong_self_convention)]
+    </span><span class="kw">fn </span>into_source&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny {
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.take().unwrap();
         interruptible_future_to_py(py, <span class="kw">async move </span>{
             convert_next_to_generator(PythonStream {
                 underlying: Arc::new(RwLock::new(
-                    underlying.connect::&lt;ConnectedBidi&gt;().<span class="kw">await</span>.take_source(),
+                    underlying.connect::&lt;ConnectedBidi&gt;().<span class="kw">await</span>.into_source(),
                 )),
             })
         })
         .unwrap()
     }
 
-    <span class="kw">fn </span>sink&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny {
+    <span class="attr">#[allow(clippy::wrong_self_convention)]
+    </span><span class="kw">fn </span>into_sink&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny {
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.take().unwrap();
         interruptible_future_to_py(py, <span class="kw">async move </span>{
-            <span class="kw">let </span>connected = underlying.connect::&lt;ConnectedBidi&gt;().<span class="kw">await</span>.take_sink();
+            <span class="kw">let </span>connected = underlying.connect::&lt;ConnectedBidi&gt;().<span class="kw">await</span>.into_sink();
 
             <span class="prelude-val">Ok</span>(PythonSink {
                 underlying: Arc::new(RwLock::new(connected)),

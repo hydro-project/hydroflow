@@ -606,13 +606,13 @@
     <span class="kw">type </span>Input: Send;
     <span class="kw">type </span>Sink: Sink&lt;<span class="self">Self</span>::Input, Error = io::Error&gt; + Send + Sync;
 
-    <span class="kw">fn </span>take_sink(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Sink;
+    <span class="kw">fn </span>into_sink(<span class="self">self</span>) -&gt; <span class="self">Self</span>::Sink;
 }
 
 <span class="kw">pub trait </span>ConnectedSource {
     <span class="kw">type </span>Output: Send;
     <span class="kw">type </span>Stream: Stream&lt;Item = <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Output, io::Error&gt;&gt; + Send + Sync;
-    <span class="kw">fn </span>take_source(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Stream;
+    <span class="kw">fn </span>into_source(<span class="self">self</span>) -&gt; <span class="self">Self</span>::Stream;
 }
 
 <span class="attr">#[derive(Debug)]
@@ -782,7 +782,7 @@
                 <span class="kw">let </span>sources = futures::future::join_all(merge.iter().map(|port| <span class="kw">async </span>{
                     ConnectedBidi::from_defn(ServerOrBound::Server(port.clone()))
                         .<span class="kw">await
-                        </span>.take_source()
+                        </span>.into_source()
                 }))
                 .<span class="kw">await</span>;
 
@@ -807,7 +807,7 @@
     <span class="kw">type </span>Output = BytesMut;
     <span class="kw">type </span>Stream = DynStream;
 
-    <span class="kw">fn </span>take_source(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; DynStream {
+    <span class="kw">fn </span>into_source(<span class="kw-2">mut </span><span class="self">self</span>) -&gt; DynStream {
         <span class="self">self</span>.source.take().unwrap()
     }
 }
@@ -816,7 +816,7 @@
     <span class="kw">type </span>Input = Bytes;
     <span class="kw">type </span>Sink = DynSink&lt;Bytes&gt;;
 
-    <span class="kw">fn </span>take_sink(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; DynSink&lt;<span class="self">Self</span>::Input&gt; {
+    <span class="kw">fn </span>into_sink(<span class="kw-2">mut </span><span class="self">self</span>) -&gt; DynSink&lt;<span class="self">Self</span>::Input&gt; {
         <span class="self">self</span>.sink.take().unwrap()
     }
 }
@@ -886,7 +886,7 @@
                 <span class="kw">for </span>(id, pipe) <span class="kw">in </span>demux {
                     connected_demux.insert(
                         id,
-                        Box::pin(T::from_defn(ServerOrBound::Server(pipe)).<span class="kw">await</span>.take_sink()),
+                        Box::pin(T::from_defn(ServerOrBound::Server(pipe)).<span class="kw">await</span>.into_sink()),
                     );
                 }
 
@@ -907,7 +907,7 @@
                 <span class="kw">for </span>(id, bound) <span class="kw">in </span>demux {
                     connected_demux.insert(
                         id,
-                        Box::pin(T::from_defn(ServerOrBound::Bound(bound)).<span class="kw">await</span>.take_sink()),
+                        Box::pin(T::from_defn(ServerOrBound::Bound(bound)).<span class="kw">await</span>.into_sink()),
                     );
                 }
 
@@ -933,7 +933,7 @@
     <span class="kw">type </span>Input = (u32, T::Input);
     <span class="kw">type </span>Sink = DemuxDrain&lt;T::Input, T::Sink&gt;;
 
-    <span class="kw">fn </span>take_sink(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Sink {
+    <span class="kw">fn </span>into_sink(<span class="kw-2">mut </span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Sink {
         <span class="self">self</span>.sink.take().unwrap()
     }
 }
