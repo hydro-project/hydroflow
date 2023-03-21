@@ -2,6 +2,8 @@ pub mod handoff_list;
 mod tee;
 mod vector;
 
+use std::cell::RefMut;
+
 pub use tee::TeeingHandoff;
 pub use vector::VecHandoff;
 
@@ -28,6 +30,8 @@ pub trait Handoff: Default + HandoffMeta {
     type Inner;
 
     fn take_inner(&self) -> Self::Inner;
+
+    fn borrow_mut_swap(&self) -> RefMut<Self::Inner>;
 
     fn give<T>(&self, item: T) -> T
     where

@@ -90,9 +90,12 @@ fn main() {
                     var_args!(hoff_26v1_recv, hoff_27v1_recv, hoff_28v1_recv),
                     var_args!()|
                 {
-                    let hoff_26v1_recv = hoff_26v1_recv.take_inner().into_iter();
-                    let hoff_27v1_recv = hoff_27v1_recv.take_inner().into_iter();
-                    let hoff_28v1_recv = hoff_28v1_recv.take_inner().into_iter();
+                    let mut hoff_26v1_recv_borrow = hoff_26v1_recv.borrow_mut_swap();
+                    let hoff_26v1_recv = hoff_26v1_recv_borrow.drain(..);
+                    let mut hoff_27v1_recv_borrow = hoff_27v1_recv.borrow_mut_swap();
+                    let hoff_27v1_recv = hoff_27v1_recv_borrow.drain(..);
+                    let mut hoff_28v1_recv_borrow = hoff_28v1_recv.borrow_mut_swap();
+                    let hoff_28v1_recv = hoff_28v1_recv_borrow.drain(..);
                     let op_1v1 = {
                         #[allow(unused)]
                         #[inline(always)]
