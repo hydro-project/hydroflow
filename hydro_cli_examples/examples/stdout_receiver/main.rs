@@ -11,7 +11,7 @@ async fn main() {
         .unwrap()
         .connect::<ConnectedBidi>()
         .await
-        .take_source();
+        .into_source();
 
     let df = hydroflow_syntax! {
         source_stream(echo_recv) ->

@@ -12,7 +12,7 @@ async fn main() {
         .unwrap()
         .connect::<ConnectedBidi>()
         .await
-        .take_source();
+        .into_source();
 
     let df = datalog!(
         r#"
