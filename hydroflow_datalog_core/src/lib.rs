@@ -286,6 +286,80 @@ fn generate_rule(
     ));
 }
 
+fn gen_value_expr(
+    expr: &ValueExpr,
+    field_use_count: &HashMap<String, i32>,
+    field_use_cur: &mut HashMap<String, i32>,
+    out_expanded: &IntermediateJoinNode,
+    diagnostics: &mut Vec<Diagnostic>,
+) -> syn::Expr {
+    match expr {
+        ValueExpr::Ident(ident) => {
+            if let Some(col) = out_expanded
+                .variable_mapping
+                .get(&syn::Ident::new(&ident.name, Span::call_site()))
+            {
+                let cur_count = field_use_cur
+                    .entry(ident.name.clone())
+                    .and_modify(|e| *e += 1)
+                    .or_insert(1);
+
+                let source_col_idx = syn::Index::from(*col);
+                let base = parse_quote!(row.#source_col_idx);
+
+                if *cur_count < field_use_count[&ident.name] && field_use_count[&ident.name] > 1 {
+                    parse_quote!(#base.clone())
+                } else {
+                    base
+                }
+            } else {
+                diagnostics.push(Diagnostic::spanned(
+                    Span::call_site(),
+                    Level::Error,
+                    format!("Could not find column {} in RHS of rule", &ident.name),
+                ));
+                parse_quote!(())
+            }
+        }
+        ValueExpr::Integer(i) => parse_quote!(#i),
+        ValueExpr::Add(l, _, r) => {
+            let l = gen_value_expr(l, field_use_count, field_use_cur, out_expanded, diagnostics);
+            let r = gen_value_expr(r, field_use_count, field_use_cur, out_expanded, diagnostics);
+            parse_quote!(#l + #r)
+        }
+        ValueExpr::Sub(l, _, r) => {
+            let l = gen_value_expr(l, field_use_count, field_use_cur, out_expanded, diagnostics);
+            let r = gen_value_expr(r, field_use_count, field_use_cur, out_expanded, diagnostics);
+            parse_quote!(#l - #r)
+        }
+    }
+}
+
+fn gen_target_expr(
+    expr: &TargetExpr,
+    field_use_count: &HashMap<String, i32>,
+    field_use_cur: &mut HashMap<String, i32>,
+    out_expanded: &IntermediateJoinNode,
+    diagnostics: &mut Vec<Diagnostic>,
+) -> syn::Expr {
+    match expr {
+        TargetExpr::Expr(expr) => gen_value_expr(
+            expr,
+            field_use_count,
+            field_use_cur,
+            out_expanded,
+            diagnostics,
+        ),
+        TargetExpr::Aggregation(Aggregation { ident, .. }) => gen_value_expr(
+            &ValueExpr::Ident(ident.clone()),
+            field_use_count,
+            field_use_cur,
+            out_expanded,
+            diagnostics,
+        ),
+    }
+}
+
 fn apply_aggregations(
     rule: &Rule,
     out_expanded: &IntermediateJoinNode,
@@ -302,10 +376,12 @@ fn apply_aggregations(
         .iter()
         .chain(rule.target.at_node.iter().map(|n| &n.node))
     {
-        field_use_count
-            .entry(field.ident().name.clone())
-            .and_modify(|e| *e += 1)
-            .or_insert(1);
+        for ident in field.idents() {
+            field_use_count
+                .entry(ident.name.clone())
+                .and_modify(|e| *e += 1)
+                .or_insert(1);
+        }
     }
 
     let mut field_use_cur = HashMap::new();
@@ -315,39 +391,16 @@ fn apply_aggregations(
         .iter()
         .chain(rule.target.at_node.iter().map(|n| &n.node))
     {
-        let expr: syn::Expr = if let Some(col) = out_expanded
-            .variable_mapping
-            .get(&syn::Ident::new(&field.ident().name, Span::call_site()))
-        {
-            let cur_count = field_use_cur
-                .entry(field.ident().name.clone())
-                .and_modify(|e| *e += 1)
-                .or_insert(1);
-
-            let source_col_idx = syn::Index::from(*col);
-            let base = parse_quote!(row.#source_col_idx);
-
-            if *cur_count < field_use_count[&field.ident().name]
-                && field_use_count[&field.ident().name] > 1
-            {
-                parse_quote!(#base.clone())
-            } else {
-                base
-            }
-        } else {
-            diagnostics.push(Diagnostic::spanned(
-                Span::call_site(),
-                Level::Error,
-                format!(
-                    "Could not find column {} in RHS of rule",
-                    &field.ident().name
-                ),
-            ));
-            parse_quote!(())
-        };
+        let expr: syn::Expr = gen_target_expr(
+            field,
+            &field_use_count,
+            &mut field_use_cur,
+            out_expanded,
+            diagnostics,
+        );
 
         match field {
-            TargetExpr::Ident(_) => {
+            TargetExpr::Expr(_) => {
                 group_by_exprs.push(expr);
             }
             TargetExpr::Aggregation(_) => {
@@ -441,7 +494,7 @@ fn apply_aggregations(
             .chain(rule.target.at_node.iter().map(|n| &n.node))
         {
             match field {
-                TargetExpr::Ident(_) => {
+                TargetExpr::Expr(_) => {
                     let idx = syn::Index::from(group_key_idx);
                     after_group_lookups.push(parse_quote!(g.#idx));
                     group_key_idx += 1;

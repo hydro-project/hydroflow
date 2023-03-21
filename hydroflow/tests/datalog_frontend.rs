@@ -806,3 +806,30 @@ fn test_non_copy_but_clone() {
         &[("Hello".to_string(), "Hello".to_string())]
     );
 }
+
+#[multiplatform_test]
+fn test_expr_lhs() {
+    let (ints_send, ints) = hydroflow::util::unbounded_channel::<(i64,)>();
+    let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(i64,)>();
+
+    let mut flow = datalog!(
+        r#"
+        .input ints `source_stream(ints)`
+        .output result `for_each(|v| result.send(v).unwrap())`
+
+        result(123) :- ints(a)
+        result(a + 123) :- ints(a)
+        result(a + a) :- ints(a)
+        result(123 - a) :- ints(a)
+        "#
+    );
+
+    ints_send.send((1,)).unwrap();
+
+    flow.run_tick();
+
+    assert_eq!(
+        &*collect_ready::<Vec<_>, _>(&mut result_recv),
+        &[(123,), (124,), (2,), (122,)]
+    );
+}
