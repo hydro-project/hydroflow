@@ -85,7 +85,13 @@ pub fn gen_hydroflow_graph(
             syn::LitInt::new(&format!("{}", my_merge_index), Span::call_site());
         let name = syn::Ident::new(&target.name, Span::call_site());
 
-        let input_pipeline: Pipeline = syn::parse_str(&hf_code.code).unwrap();
+        let input_pipeline: Pipeline = syn::parse_str(&hf_code.code).map_err(|err| {
+            vec![Diagnostic {
+                span: err.span(),
+                level: Level::Error,
+                message: format!("Failed to parse input pipeline: {}", err),
+            }]
+        })?;
 
         flat_graph_builder.add_statement(parse_quote! {
             #input_pipeline -> [#my_merge_index_lit] #name
@@ -102,7 +108,13 @@ pub fn gen_hydroflow_graph(
         let my_tee_index_lit = syn::LitInt::new(&format!("{}", my_tee_index), Span::call_site());
         let target_ident = syn::Ident::new(&target.name, Span::call_site());
 
-        let output_pipeline: Pipeline = syn::parse_str(&hf_code.code).unwrap();
+        let output_pipeline: Pipeline = syn::parse_str(&hf_code.code).map_err(|err| {
+            vec![Diagnostic {
+                span: err.span(),
+                level: Level::Error,
+                message: format!("Failed to parse output pipeline: {}", err),
+            }]
+        })?;
 
         flat_graph_builder.add_statement(parse_quote! {
             #target_ident [#my_tee_index_lit] -> #output_pipeline
