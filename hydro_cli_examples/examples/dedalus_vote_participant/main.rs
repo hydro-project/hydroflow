@@ -12,16 +12,16 @@ async fn main() {
         .unwrap()
         .connect::<ConnectedBidi>()
         .await
-        .take_source();
+        .into_source();
 
-    let mut from_replica_port = ports
+    let from_replica_port = ports
         .remove("from_replica")
         .unwrap()
         .connect::<ConnectedDemux<ConnectedBidi>>()
         .await;
 
     let peers = from_replica_port.keys.clone();
-    let from_replica_sink = from_replica_port.take_sink();
+    let from_replica_sink = from_replica_port.into_sink();
 
     let my_id: Vec<u32> = serde_json::from_str(&std::env::args().nth(1).unwrap()).unwrap();
     println!("my_id: {:?}", my_id);

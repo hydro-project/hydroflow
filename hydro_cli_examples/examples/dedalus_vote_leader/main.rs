@@ -7,7 +7,7 @@ use hydroflow_datalog::datalog;
 #[tokio::main]
 async fn main() {
     let mut ports = hydroflow::util::cli::init().await;
-    let mut to_replica_port = ports
+    let to_replica_port = ports
         .remove("to_replica")
         .unwrap()
         .connect::<ConnectedDemux<ConnectedBidi>>()
@@ -15,14 +15,14 @@ async fn main() {
 
     let peers = to_replica_port.keys.clone();
     println!("peers: {:?}", peers);
-    let to_replica_sink = to_replica_port.take_sink();
+    let to_replica_sink = to_replica_port.into_sink();
 
     let from_replica_source = ports
         .remove("from_replica")
         .unwrap()
         .connect::<ConnectedBidi>()
         .await
-        .take_source();
+        .into_source();
 
     let mut df = datalog!(
         r#"
