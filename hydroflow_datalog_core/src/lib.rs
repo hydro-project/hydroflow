@@ -1,3 +1,4 @@
+use rust_sitter::errors::{ParseError, ParseErrorReason};
 use std::collections::{HashMap, HashSet};
 
 use hydroflow_lang::{
@@ -18,10 +19,11 @@ use util::{repeat_tuple, Counter};
 
 pub fn gen_hydroflow_graph(
     literal: proc_macro2::Literal,
-) -> Result<HydroflowGraph, (Vec<rust_sitter::errors::ParseError>, Vec<Diagnostic>)> {
+) -> Result<HydroflowGraph, Vec<Diagnostic>> {
     let str_node: syn::LitStr = parse_quote!(#literal);
     let actual_str = str_node.value();
-    let program: Program = grammar::datalog::parse(&actual_str).map_err(|e| (e, vec![]))?;
+    let program: Program =
+        grammar::datalog::parse(&actual_str).map_err(|e| handle_errors(e, &literal))?;
 
     let mut inputs = Vec::new();
     let mut outputs = Vec::new();
@@ -135,13 +137,50 @@ pub fn gen_hydroflow_graph(
     }
 
     if !diagnostics.is_empty() {
-        Err((vec![], diagnostics))
+        Err(diagnostics)
     } else {
         let flat_graph = flat_graph_builder
             .build(Level::Error)
             .unwrap_or_else(std::convert::identity);
         Ok(flat_graph)
     }
+}
+
+fn handle_errors(errors: Vec<ParseError>, literal: &proc_macro2::Literal) -> Vec<Diagnostic> {
+    let mut diagnostics = vec![];
+    for error in errors {
+        let reason = error.reason;
+        let my_span = literal.subspan(error.start + 3..error.end + 3).unwrap();
+        match reason {
+            ParseErrorReason::UnexpectedToken(msg) => {
+                diagnostics.push(Diagnostic::spanned(
+                    my_span,
+                    Level::Error,
+                    format!("Unexpected Token: '{msg}'", msg = msg),
+                ));
+            }
+            ParseErrorReason::MissingToken(msg) => {
+                diagnostics.push(Diagnostic::spanned(
+                    my_span,
+                    Level::Error,
+                    format!("Missing Token: '{msg}'", msg = msg),
+                ));
+            }
+            ParseErrorReason::FailedNode(_vec) => {
+                if _vec.is_empty() {
+                    diagnostics.push(Diagnostic::spanned(
+                        my_span,
+                        Level::Error,
+                        "Failed to parse",
+                    ));
+                } else {
+                    diagnostics.extend(handle_errors(_vec, literal));
+                }
+            }
+        }
+    }
+
+    diagnostics
 }
 
 pub fn hydroflow_graph_to_program(flat_graph: HydroflowGraph, root: TokenStream) -> syn::Stmt {
