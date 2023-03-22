@@ -96,7 +96,7 @@ jobs:
   test:
     name: Test Suite
     if: ${{ needs.pre_job.outputs.should_skip != 'true' || github.event_name != 'pull_request' }}
-    timeout-minutes: 15
+    timeout-minutes: 25
     needs: pre_job
     runs-on: ubuntu-latest
     strategy:

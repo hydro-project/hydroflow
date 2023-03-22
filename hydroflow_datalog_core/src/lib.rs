@@ -16,6 +16,8 @@ use grammar::datalog::*;
 use join_plan::*;
 use util::{repeat_tuple, Counter};
 
+static MAGIC_RELATIONS: [&str; 1] = ["less_than"];
+
 pub fn gen_hydroflow_graph(
     literal: proc_macro2::Literal,
 ) -> Result<HydroflowGraph, (Vec<rust_sitter::errors::ParseError>, Vec<Diagnostic>)> {
@@ -30,12 +32,22 @@ pub fn gen_hydroflow_graph(
 
     for stmt in &program.rules {
         match stmt {
-            Declaration::Input(_, ident, hf_code) => inputs.push((ident, hf_code)),
-            Declaration::Output(_, ident, hf_code) => outputs.push((ident, hf_code)),
+            Declaration::Input(_, ident, hf_code) => {
+                assert!(!MAGIC_RELATIONS.contains(&ident.name.as_str()));
+                inputs.push((ident, hf_code))
+            }
+            Declaration::Output(_, ident, hf_code) => {
+                assert!(!MAGIC_RELATIONS.contains(&ident.name.as_str()));
+                outputs.push((ident, hf_code))
+            }
             Declaration::Async(_, ident, send_hf, recv_hf) => {
+                assert!(!MAGIC_RELATIONS.contains(&ident.name.as_str()));
                 asyncs.push((ident, send_hf, recv_hf))
             }
-            Declaration::Rule(rule) => rules.push(rule),
+            Declaration::Rule(rule) => {
+                assert!(!MAGIC_RELATIONS.contains(&rule.target.name.name.as_str()));
+                rules.push(rule)
+            }
         }
     }
 
@@ -172,7 +184,7 @@ fn generate_rule(
         .iter()
         .filter_map(|x| match x {
             Atom::Relation(negated, e) => {
-                if negated.is_none() {
+                if negated.is_none() && !MAGIC_RELATIONS.contains(&e.name.name.as_str()) {
                     Some(JoinPlan::Source(e))
                 } else {
                     None
@@ -208,6 +220,27 @@ fn generate_rule(
     if !predicates.is_empty() {
         plan = JoinPlan::Predicate(predicates, Box::new(plan))
     }
+
+    plan = sources.iter().fold(plan, |acc, atom| match atom {
+        Atom::Relation(negated, e) => {
+            if MAGIC_RELATIONS.contains(&e.name.name.as_str()) {
+                match e.name.name.as_str() {
+                    "less_than" => {
+                        assert!(negated.is_none());
+                        JoinPlan::MagicNatLt(
+                            Box::new(acc),
+                            e.fields[0].clone(),
+                            e.fields[1].clone(),
+                        )
+                    }
+                    o => panic!("Unknown magic relation {}", o),
+                }
+            } else {
+                acc
+            }
+        }
+        _ => acc,
+    });
 
     let out_expanded = expand_join_plan(&plan, flat_graph_builder, tee_counter, next_join_idx);
 
@@ -286,6 +319,80 @@ fn generate_rule(
     ));
 }
 
+fn gen_value_expr(
+    expr: &ValueExpr,
+    field_use_count: &HashMap<String, i32>,
+    field_use_cur: &mut HashMap<String, i32>,
+    out_expanded: &IntermediateJoinNode,
+    diagnostics: &mut Vec<Diagnostic>,
+) -> syn::Expr {
+    match expr {
+        ValueExpr::Ident(ident) => {
+            if let Some(col) = out_expanded
+                .variable_mapping
+                .get(&syn::Ident::new(&ident.name, Span::call_site()))
+            {
+                let cur_count = field_use_cur
+                    .entry(ident.name.clone())
+                    .and_modify(|e| *e += 1)
+                    .or_insert(1);
+
+                let source_col_idx = syn::Index::from(*col);
+                let base = parse_quote!(row.#source_col_idx);
+
+                if *cur_count < field_use_count[&ident.name] && field_use_count[&ident.name] > 1 {
+                    parse_quote!(#base.clone())
+                } else {
+                    base
+                }
+            } else {
+                diagnostics.push(Diagnostic::spanned(
+                    Span::call_site(),
+                    Level::Error,
+                    format!("Could not find column {} in RHS of rule", &ident.name),
+                ));
+                parse_quote!(())
+            }
+        }
+        ValueExpr::Integer(i) => parse_quote!(#i),
+        ValueExpr::Add(l, _, r) => {
+            let l = gen_value_expr(l, field_use_count, field_use_cur, out_expanded, diagnostics);
+            let r = gen_value_expr(r, field_use_count, field_use_cur, out_expanded, diagnostics);
+            parse_quote!(#l + #r)
+        }
+        ValueExpr::Sub(l, _, r) => {
+            let l = gen_value_expr(l, field_use_count, field_use_cur, out_expanded, diagnostics);
+            let r = gen_value_expr(r, field_use_count, field_use_cur, out_expanded, diagnostics);
+            parse_quote!(#l - #r)
+        }
+    }
+}
+
+fn gen_target_expr(
+    expr: &TargetExpr,
+    field_use_count: &HashMap<String, i32>,
+    field_use_cur: &mut HashMap<String, i32>,
+    out_expanded: &IntermediateJoinNode,
+    diagnostics: &mut Vec<Diagnostic>,
+) -> syn::Expr {
+    match expr {
+        TargetExpr::Expr(expr) => gen_value_expr(
+            expr,
+            field_use_count,
+            field_use_cur,
+            out_expanded,
+            diagnostics,
+        ),
+        TargetExpr::Aggregation(Aggregation { ident, .. }) => gen_value_expr(
+            &ValueExpr::Ident(ident.clone()),
+            field_use_count,
+            field_use_cur,
+            out_expanded,
+            diagnostics,
+        ),
+    }
+}
+
 fn apply_aggregations(
     rule: &Rule,
     out_expanded: &IntermediateJoinNode,
@@ -302,10 +409,12 @@ fn apply_aggregations(
         .iter()
         .chain(rule.target.at_node.iter().map(|n| &n.node))
     {
-        field_use_count
-            .entry(field.ident().name.clone())
-            .and_modify(|e| *e += 1)
-            .or_insert(1);
+        for ident in field.idents() {
+            field_use_count
+                .entry(ident.name.clone())
+                .and_modify(|e| *e += 1)
+                .or_insert(1);
+        }
     }
 
     let mut field_use_cur = HashMap::new();
@@ -315,39 +424,16 @@ fn apply_aggregations(
         .iter()
         .chain(rule.target.at_node.iter().map(|n| &n.node))
     {
-        let expr: syn::Expr = if let Some(col) = out_expanded
-            .variable_mapping
-            .get(&syn::Ident::new(&field.ident().name, Span::call_site()))
-        {
-            let cur_count = field_use_cur
-                .entry(field.ident().name.clone())
-                .and_modify(|e| *e += 1)
-                .or_insert(1);
-
-            let source_col_idx = syn::Index::from(*col);
-            let base = parse_quote!(row.#source_col_idx);
-
-            if *cur_count < field_use_count[&field.ident().name]
-                && field_use_count[&field.ident().name] > 1
-            {
-                parse_quote!(#base.clone())
-            } else {
-                base
-            }
-        } else {
-            diagnostics.push(Diagnostic::spanned(
-                Span::call_site(),
-                Level::Error,
-                format!(
-                    "Could not find column {} in RHS of rule",
-                    &field.ident().name
-                ),
-            ));
-            parse_quote!(())
-        };
+        let expr: syn::Expr = gen_target_expr(
+            field,
+            &field_use_count,
+            &mut field_use_cur,
+            out_expanded,
+            diagnostics,
+        );
 
         match field {
-            TargetExpr::Ident(_) => {
+            TargetExpr::Expr(_) => {
                 group_by_exprs.push(expr);
             }
             TargetExpr::Aggregation(_) => {
@@ -441,7 +527,7 @@ fn apply_aggregations(
             .chain(rule.target.at_node.iter().map(|n| &n.node))
         {
             match field {
-                TargetExpr::Ident(_) => {
+                TargetExpr::Expr(_) => {
                     let idx = syn::Index::from(group_key_idx);
                     after_group_lookups.push(parse_quote!(g.#idx));
                     group_key_idx += 1;
