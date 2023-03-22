@@ -1,6 +1,5 @@
 use std::any::Any;
-use std::cell::RefCell;
-use std::collections::VecDeque;
+use std::cell::{RefCell, RefMut};
 use std::rc::Rc;
 
 use crate::lang::collections::Iter;
@@ -8,13 +7,14 @@ use crate::lang::collections::Iter;
 use super::{CanReceive, Handoff, HandoffMeta};
 
 /**
- * A [VecDeque]-based FIFO handoff.
+ * A [Vec]-based FIFO handoff.
  */
 pub struct VecHandoff<T>
 where
     T: 'static,
 {
-    pub(crate) deque: Rc<RefCell<VecDeque<T>>>,
+    pub(crate) input: Rc<RefCell<Vec<T>>>,
+    pub(crate) output: Rc<RefCell<Vec<T>>>,
 }
 impl<T> Default for VecHandoff<T>
 where
@@ -22,22 +22,32 @@ where
 {
     fn default() -> Self {
         Self {
-            deque: Default::default(),
+            input: Default::default(),
+            output: Default::default(),
         }
     }
 }
 impl<T> Handoff for VecHandoff<T> {
-    type Inner = VecDeque<T>;
+    type Inner = Vec<T>;
 
     fn take_inner(&self) -> Self::Inner {
-        self.deque.take()
+        self.input.take()
+    }
+
+    fn borrow_mut_swap(&self) -> RefMut<Self::Inner> {
+        let mut input = self.input.borrow_mut();
+        let mut output = self.output.borrow_mut();
+
+        std::mem::swap(&mut *input, &mut *output);
+
+        output
     }
 }
 
 impl<T> CanReceive<Option<T>> for VecHandoff<T> {
     fn give(&self, mut item: Option<T>) -> Option<T> {
         if let Some(item) = item.take() {
-            (*self.deque).borrow_mut().push_back(item)
+            (*self.input).borrow_mut().push(item)
         }
         None
     }
@@ -47,16 +57,16 @@ where
     I: Iterator<Item = T>,
 {
     fn give(&self, mut iter: Iter<I>) -> Iter<I> {
-        (*self.deque).borrow_mut().extend(&mut iter.0);
+        (*self.input).borrow_mut().extend(&mut iter.0);
         iter
     }
 }
-impl<T> CanReceive<VecDeque<T>> for VecHandoff<T> {
-    fn give(&self, mut vec: VecDeque<T>) -> VecDeque<T> {
-        (*self.deque).borrow_mut().extend(vec.drain(..));
-        vec
-    }
-}
+// impl<T> CanReceive<Vec<T>> for VecHandoff<T> {
+//     fn give(&self, mut vec: Vec<T>) -> Vec<T> {
+//         (*self.input).borrow_mut().extend(vec.drain(..));
+//         vec
+//     }
+// }
 
 impl<T> HandoffMeta for VecHandoff<T> {
     fn any_ref(&self) -> &dyn Any {
@@ -64,7 +74,7 @@ impl<T> HandoffMeta for VecHandoff<T> {
     }
 
     fn is_bottom(&self) -> bool {
-        (*self.deque).borrow_mut().is_empty()
+        (*self.input).borrow_mut().is_empty()
     }
 }
 

@@ -13,9 +13,7 @@ use crate::parse::{HfCode, HfStatement, Operator, Pipeline};
 use crate::pretty_span::PrettySpan;
 
 use super::ops::find_op_op_constraints;
-use super::{
-    get_operator_generics, GraphNodeId, HydroflowGraph, Node, OperatorInstance, PortIndexValue,
-};
+use super::{GraphNodeId, HydroflowGraph, Node, PortIndexValue};
 
 #[derive(Clone, Debug)]
 struct Ends {
@@ -334,100 +332,8 @@ impl FlatGraphBuilder {
 
     /// Make `OperatorInstance`s for each operator node.
     fn make_operator_instances(&mut self) {
-        let mut op_insts = Vec::new();
-        for (node_id, node) in self.flat_graph.nodes() {
-            let Node::Operator(operator) = node else { continue };
-
-            // Op constraints.
-            let Some(op_constraints) = find_op_op_constraints(operator) else {
-                self.diagnostics.push(Diagnostic::spanned(
-                    operator.path.span(),
-                    Level::Error,
-                    format!("Unknown operator `{}`", operator.name_string()),
-                ));
-                continue;
-            };
-
-            // Input and output ports.
-            let (input_ports, output_ports) = {
-                let mut input_edges: Vec<(&PortIndexValue, GraphNodeId)> = self
-                    .flat_graph
-                    .node_predecessors(node_id)
-                    .map(|(edge_id, pred_id)| (self.flat_graph.edge_ports(edge_id).1, pred_id))
-                    .collect();
-                // Ensure sorted by port index.
-                input_edges.sort();
-                let input_ports: Vec<PortIndexValue> = input_edges
-                    .into_iter()
-                    .map(|(port, _pred)| port)
-                    .cloned()
-                    .collect();
-
-                // Collect output arguments (successors).
-                let mut output_edges: Vec<(&PortIndexValue, GraphNodeId)> = self
-                    .flat_graph
-                    .node_successors(node_id)
-                    .map(|(edge_id, succ)| (self.flat_graph.edge_ports(edge_id).0, succ))
-                    .collect();
-                // Ensure sorted by port index.
-                output_edges.sort();
-                let output_ports: Vec<PortIndexValue> = output_edges
-                    .into_iter()
-                    .map(|(port, _succ)| port)
-                    .cloned()
-                    .collect();
-
-                (input_ports, output_ports)
-            };
-
-            // Generic arguments.
-            let generics = get_operator_generics(&mut self.diagnostics, operator);
-            // Generic argument errors.
-            {
-                if !op_constraints
-                    .persistence_args
-                    .contains(&generics.persistence_args.len())
-                {
-                    self.diagnostics.push(Diagnostic::spanned(
-                        generics.generic_args.span(),
-                        Level::Error,
-                        format!(
-                            "`{}` should have {} persistence lifetime arguments, actually has {}.",
-                            op_constraints.name,
-                            op_constraints.persistence_args.human_string(),
-                            generics.persistence_args.len()
-                        ),
-                    ));
-                }
-                if !op_constraints.type_args.contains(&generics.type_args.len()) {
-                    self.diagnostics.push(Diagnostic::spanned(
-                        generics.generic_args.span(),
-                        Level::Error,
-                        format!(
-                            "`{}` should have {} generic type arguments, actually has {}.",
-                            op_constraints.name,
-                            op_constraints.type_args.human_string(),
-                            generics.type_args.len()
-                        ),
-                    ));
-                }
-            }
-
-            op_insts.push((
-                node_id,
-                OperatorInstance {
-                    op_constraints,
-                    input_ports,
-                    output_ports,
-                    generics,
-                    arguments: operator.args.clone(),
-                },
-            ));
-        }
-
-        for (node_id, op_inst) in op_insts {
-            self.flat_graph.insert_node_op_inst(node_id, op_inst);
-        }
+        self.flat_graph
+            .insert_node_op_insts_all(&mut self.diagnostics);
     }
 
     /// Validates that operators have valid number of inputs, outputs, & arguments.

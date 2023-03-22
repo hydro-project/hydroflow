@@ -257,6 +257,10 @@ impl Host for GCPComputeEngineHost {
         self
     }
 
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+        self
+    }
+
     fn collect_resources(&self, resource_batch: &mut ResourceBatch) {
         self.network
             .try_write()
@@ -461,26 +465,33 @@ impl Host for GCPComputeEngineHost {
         self.launched.as_ref().unwrap().clone()
     }
 
-    fn strategy_as_server(
-        &mut self,
+    fn strategy_as_server<'a>(
+        &'a self,
         client_host: Option<&dyn Host>,
-    ) -> Result<(ClientStrategy, ServerStrategy)> {
+    ) -> Result<(
+        ClientStrategy<'a>,
+        Box<dyn FnOnce(&mut dyn std::any::Any) -> ServerStrategy>,
+    )> {
         let client_host = client_host.unwrap_or(self);
         if client_host.can_connect_to(ClientStrategy::UnixSocket(self.id)) {
             Ok((
                 ClientStrategy::UnixSocket(self.id),
-                ServerStrategy::UnixSocket,
+                Box::new(|_| ServerStrategy::UnixSocket),
             ))
         } else if client_host.can_connect_to(ClientStrategy::InternalTcpPort(self)) {
             Ok((
                 ClientStrategy::InternalTcpPort(self),
-                ServerStrategy::InternalTcpPort,
+                Box::new(|_| ServerStrategy::InternalTcpPort),
             ))
         } else if client_host.can_connect_to(ClientStrategy::ForwardedTcpPort(self)) {
-            self.request_port(&ServerStrategy::ExternalTcpPort(22)); // needed to forward
             Ok((
                 ClientStrategy::ForwardedTcpPort(self),
-                ServerStrategy::InternalTcpPort,
+                Box::new(|me| {
+                    me.downcast_mut::<GCPComputeEngineHost>()
+                        .unwrap()
+                        .request_port(&ServerStrategy::ExternalTcpPort(22)); // needed to forward
+                    ServerStrategy::InternalTcpPort
+                }),
             ))
         } else {
             anyhow::bail!("Could not find a strategy to connect to GCP instance")

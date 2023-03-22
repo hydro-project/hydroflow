@@ -19,6 +19,7 @@ clap = { version = "4.1.8", features = ["derive"] }
 cargo = { version = "0.68.0", features = ["vendored-openssl", "vendored-libgit2"] }
 pyo3 = { version = "0.18.1", features = ["abi3-py37"] }
 pyo3-asyncio = { version = "0.18.0", features = ["attributes", "unstable-streams", "tokio-runtime"] }
+pythonize = "0.18.0"
 async-trait = "0.1.64"
 async-process = "1.6.0"
 async-recursion = "1"

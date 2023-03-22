@@ -4,6 +4,8 @@ use hydroflow_cli_integration::{BoundConnection, ServerBindConfig, ServerPort};
 
 pub use hydroflow_cli_integration::*;
 
+use crate::scheduled::graph::Hydroflow;
+
 async fn accept_incoming_connections(
     binds: HashMap<String, BoundConnection>,
 ) -> HashMap<String, ServerOrBound> {
@@ -12,6 +14,21 @@ async fn accept_incoming_connections(
         bind_results.insert(name, ServerOrBound::Bound(bind));
     }
     bind_results
+}
+
+pub async fn launch_flow(mut flow: Hydroflow) {
+    let stop = tokio::sync::oneshot::channel();
+    tokio::task::spawn_blocking(|| {
+        let mut line = String::new();
+        std::io::stdin().read_line(&mut line).unwrap();
+        assert!(line.starts_with("stop"));
+        stop.0.send(()).unwrap();
+    });
+
+    tokio::select! {
+        _ = stop.1 => {},
+        _ = flow.run_async() => {}
+    }
 }
 
 pub async fn init() -> HashMap<String, ServerOrBound> {

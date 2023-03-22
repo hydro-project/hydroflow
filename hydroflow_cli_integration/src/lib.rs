@@ -117,13 +117,13 @@ pub trait ConnectedSink {
     type Input: Send;
     type Sink: Sink<Self::Input, Error = io::Error> + Send + Sync;
 
-    fn take_sink(&mut self) -> Self::Sink;
+    fn into_sink(self) -> Self::Sink;
 }
 
 pub trait ConnectedSource {
     type Output: Send;
     type Stream: Stream<Item = Result<Self::Output, io::Error>> + Send + Sync;
-    fn take_source(&mut self) -> Self::Stream;
+    fn into_source(self) -> Self::Stream;
 }
 
 #[derive(Debug)]
@@ -293,7 +293,7 @@ impl Connected for ConnectedBidi {
                 let sources = futures::future::join_all(merge.iter().map(|port| async {
                     ConnectedBidi::from_defn(ServerOrBound::Server(port.clone()))
                         .await
-                        .take_source()
+                        .into_source()
                 }))
                 .await;
 
@@ -318,7 +318,7 @@ impl ConnectedSource for ConnectedBidi {
     type Output = BytesMut;
     type Stream = DynStream;
 
-    fn take_source(&mut self) -> DynStream {
+    fn into_source(mut self) -> DynStream {
         self.source.take().unwrap()
     }
 }
@@ -327,7 +327,7 @@ impl ConnectedSink for ConnectedBidi {
     type Input = Bytes;
     type Sink = DynSink<Bytes>;
 
-    fn take_sink(&mut self) -> DynSink<Self::Input> {
+    fn into_sink(mut self) -> DynSink<Self::Input> {
         self.sink.take().unwrap()
     }
 }
@@ -397,7 +397,7 @@ where
                 for (id, pipe) in demux {
                     connected_demux.insert(
                         id,
-                        Box::pin(T::from_defn(ServerOrBound::Server(pipe)).await.take_sink()),
+                        Box::pin(T::from_defn(ServerOrBound::Server(pipe)).await.into_sink()),
                     );
                 }
 
@@ -418,7 +418,7 @@ where
                 for (id, bound) in demux {
                     connected_demux.insert(
                         id,
-                        Box::pin(T::from_defn(ServerOrBound::Bound(bound)).await.take_sink()),
+                        Box::pin(T::from_defn(ServerOrBound::Bound(bound)).await.into_sink()),
                     );
                 }
 
@@ -444,19 +444,17 @@ where
     type Input = (u32, T::Input);
     type Sink = DemuxDrain<T::Input, T::Sink>;
 
-    fn take_sink(&mut self) -> Self::Sink {
+    fn into_sink(mut self) -> Self::Sink {
         self.sink.take().unwrap()
     }
 }
 
-#[pin_project]
-pub struct MergeSource<T, S: Stream<Item = T> + Send + Sync + ?Sized> {
+pub struct MergeSource<T: Unpin, S: Stream<Item = T> + Send + Sync + ?Sized> {
     marker: PhantomData<T>,
-    #[pin]
     sources: Vec<Pin<Box<S>>>,
 }
 
-impl<T, S: Stream<Item = T> + Send + Sync + ?Sized> Stream for MergeSource<T, S> {
+impl<T: Unpin, S: Stream<Item = T> + Send + Sync + ?Sized> Stream for MergeSource<T, S> {
     type Item = T;
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {

@@ -11,13 +11,13 @@ async fn main() {
         .unwrap()
         .connect::<ConnectedBidi>()
         .await
-        .take_source();
+        .into_source();
 
-    let mut df = hydroflow_syntax! {
+    let df = hydroflow_syntax! {
         source_stream(echo_recv) ->
             map(|x| String::from_utf8(x.unwrap().to_vec()).unwrap()) ->
             for_each(|x| println!("echo {:?}", x));
     };
 
-    df.run_async().await;
+    hydroflow::util::cli::launch_flow(df).await;
 }

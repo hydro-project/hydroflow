@@ -1,5 +1,8 @@
 use std::{collections::HashMap, net::SocketAddr, path::Path, sync::Arc};
 
+#[cfg(unix)]
+use std::os::unix::process::ExitStatusExt;
+
 use anyhow::Result;
 use async_channel::{Receiver, Sender};
 use async_process::{Command, Stdio};
@@ -45,8 +48,19 @@ impl LaunchedBinary for LaunchedLocalhostBinary {
             .write()
             .await
             .try_status()
-            .map(|s| s.and_then(|c| c.code()))
-            .unwrap_or(None)
+            .ok()
+            .flatten()
+            .and_then(|c| {
+                #[cfg(unix)]
+                return c.code().or(c.signal());
+                #[cfg(not(unix))]
+                return c.code();
+            })
+    }
+
+    async fn wait(&mut self) -> Option<i32> {
+        let _ = self.child.get_mut().status().await;
+        self.exit_code().await
     }
 }
 
@@ -172,24 +186,31 @@ impl Host for LocalhostHost {
         self
     }
 
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+        self
+    }
+
     async fn provision(&mut self, _resource_result: &Arc<ResourceResult>) -> Arc<dyn LaunchedHost> {
         Arc::new(LaunchedLocalhost {})
     }
 
-    fn strategy_as_server(
-        &mut self,
+    fn strategy_as_server<'a>(
+        &'a self,
         connection_from: Option<&dyn Host>,
-    ) -> Result<(ClientStrategy, ServerStrategy)> {
+    ) -> Result<(
+        ClientStrategy<'a>,
+        Box<dyn FnOnce(&mut dyn std::any::Any) -> ServerStrategy>,
+    )> {
         let connection_from = connection_from.unwrap_or(self);
         if connection_from.can_connect_to(ClientStrategy::UnixSocket(self.id)) {
             Ok((
                 ClientStrategy::UnixSocket(self.id),
-                ServerStrategy::UnixSocket,
+                Box::new(|_| ServerStrategy::UnixSocket),
             ))
         } else if connection_from.can_connect_to(ClientStrategy::InternalTcpPort(self)) {
             Ok((
                 ClientStrategy::InternalTcpPort(self),
-                ServerStrategy::InternalTcpPort,
+                Box::new(|_| ServerStrategy::InternalTcpPort),
             ))
         } else {
             anyhow::bail!("Could not find a strategy to connect to localhost")

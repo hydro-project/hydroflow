@@ -1,6 +1,6 @@
 ---
 source: hydroflow/tests/surface_reduce.rs
-expression: df.serde_graph().unwrap().to_dot()
+expression: df.meta_graph().unwrap().to_dot()
 ---
 digraph {
     subgraph "cluster n1v1" {

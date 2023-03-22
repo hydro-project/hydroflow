@@ -241,6 +241,98 @@ fn ops(c: &mut Criterion) {
             BatchSize::LargeInput,
         )
     });
+
+    c.bench_function("micro/ops/anti_join", |b| {
+        b.iter_batched_ref(
+            || {
+                const NUM_INTS: usize = 1000;
+                let dist = Uniform::new(0, 100);
+                let input0: Vec<(usize, ())> =
+                    (0..NUM_INTS).map(|_| (dist.sample(&mut rng), ())).collect();
+                let input1: Vec<usize> = (0..NUM_INTS).map(|_| dist.sample(&mut rng)).collect();
+
+                hydroflow_syntax! {
+                    my_antijoin = anti_join();
+
+                    source_iter(black_box(input0)) -> [pos]my_antijoin;
+                    source_iter(black_box(input1)) -> [neg]my_antijoin;
+
+                    my_antijoin -> for_each(|x| { black_box(x); });
+                }
+            },
+            |df| {
+                df.run_available();
+            },
+            BatchSize::LargeInput,
+        )
+    });
+
+    c.bench_function("micro/ops/next_tick/small", |b| {
+        const DATA: [u64; 1024] = [0; 1024];
+
+        let mut df = hydroflow_syntax! {
+            repeat_iter(black_box(DATA))
+                -> map(black_box)
+                -> next_tick()
+                -> map(black_box)
+                -> next_tick()
+                -> map(black_box)
+                -> next_tick()
+                -> map(black_box)
+                -> next_tick()
+                -> map(black_box)
+                -> next_tick()
+                -> map(black_box)
+                -> next_tick()
+                -> map(black_box)
+                -> next_tick()
+                -> map(black_box)
+                -> next_tick()
+                -> map(black_box)
+                -> next_tick()
+                -> map(black_box)
+                -> next_tick()
+                -> map(black_box)
+                -> for_each(|x| { black_box(x); });
+        };
+
+        b.iter(|| {
+            df.run_tick();
+        })
+    });
+
+    c.bench_function("micro/ops/next_tick/big", |b| {
+        const DATA: [[u8; 8192]; 1] = [[0; 8192]; 1];
+
+        let mut df = hydroflow_syntax! {
+            repeat_iter(black_box(DATA))
+                -> next_tick()
+                -> map(black_box)
+                -> next_tick()
+                -> map(black_box)
+                -> next_tick()
+                -> map(black_box)
+                -> next_tick()
+                -> map(black_box)
+                -> next_tick()
+                -> map(black_box)
+                -> next_tick()
+                -> map(black_box)
+                -> next_tick()
+                -> map(black_box)
+                -> next_tick()
+                -> map(black_box)
+                -> next_tick()
+                -> map(black_box)
+                -> next_tick()
+                -> map(black_box)
+                -> for_each(|x| { black_box(x); });
+        };
+
+        b.iter(|| {
+            df.run_tick();
+        })
+    });
 }
 
 criterion_group!(micro_ops, ops,);

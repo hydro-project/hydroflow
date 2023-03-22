@@ -30,12 +30,13 @@ async def main(args):
         network=gcp_vpc
     ) if machine_2_gcp else localhost_machine
 
-    sender = deployment.HydroflowCrate(
+    sender_count = 2
+    senders = [deployment.HydroflowCrate(
         src=str(Path(__file__).parent.absolute()),
         example="dedalus_sender",
-        args=[json.dumps([0, 1])],
+        args=[json.dumps(([0, 1], i))],
         on=machine1
-    )
+    ) for i in range(sender_count)]
 
     receiver1 = deployment.HydroflowCrate(
         src=str(Path(__file__).parent.absolute()),
@@ -49,10 +50,11 @@ async def main(args):
         on=machine2
     )
 
-    sender.ports.broadcast.send_to(hydro.demux({
-        0: receiver1.ports.broadcast,
-        1: receiver2.ports.broadcast
-    }))
+    for sender in senders:
+        sender.ports.broadcast.send_to(hydro.demux({
+            0: receiver1.ports.broadcast.merge(),
+            1: receiver2.ports.broadcast.merge()
+        }))
 
     await deployment.deploy()
 
@@ -73,7 +75,9 @@ async def main(args):
             if counter == 10:
                 break
 
-    print(await sender.exit_code())
+    for sender in senders:
+        await sender.stop()
+        print(await sender.exit_code())
 
 if __name__ == "__main__":
     import sys

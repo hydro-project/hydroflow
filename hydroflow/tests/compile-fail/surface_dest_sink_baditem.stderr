@@ -1,4 +1,4 @@
-error[E0271]: type mismatch resolving `<impl Pusherator<Item = (bytes::Bytes, SocketAddr)> as Pusherator>::Item == bytes::Bytes`
+error[E0271]: type mismatch resolving `<impl Pusherator<Item = (Bytes, SocketAddr)> as Pusherator>::Item == Bytes`
   --> tests/compile-fail/surface_dest_sink_baditem.rs:14:16
    |
 13 |               -> map(|i| bytes::Bytes::from_static(&b"hello world!"[i..(i + 2)]))
@@ -7,7 +7,7 @@ error[E0271]: type mismatch resolving `<impl Pusherator<Item = (bytes::Bytes, So
    | |                ^^^^^^^^^^^^^^^^^^-
    | |________________|_________________|
    |                  |                 required by a bound introduced by this call
-   |                  expected struct `Bytes`, found tuple
+   |                  expected `Bytes`, found `(Bytes, SocketAddr)`
    |
    = note: expected struct `bytes::Bytes`
                found tuple `(bytes::Bytes, SocketAddr)`

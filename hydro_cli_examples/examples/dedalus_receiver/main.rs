@@ -12,9 +12,9 @@ async fn main() {
         .unwrap()
         .connect::<ConnectedBidi>()
         .await
-        .take_source();
+        .into_source();
 
-    let mut df = datalog!(
+    let df = datalog!(
         r#"
         .async broadcast `null::<(String,)>()` `source_stream(broadcast_recv) -> map(|x| deserialize_from_bytes::<(String,)>(x.unwrap()))`
         .output stdout `for_each(|tup| println!("echo {:?}", tup))`
@@ -23,5 +23,5 @@ async fn main() {
     "#
     );
 
-    df.run_async().await;
+    hydroflow::util::cli::launch_flow(df).await;
 }

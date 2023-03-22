@@ -243,6 +243,8 @@ impl Drop for TerraformApply {
                 nix::sys::signal::Signal::SIGINT,
             )
             .unwrap();
+            #[cfg(not(unix))]
+            let _ = pid;
 
             let mut child_write = child.write().unwrap();
             if child_write.try_wait().unwrap().is_none() {

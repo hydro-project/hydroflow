@@ -74,12 +74,14 @@ impl HydroflowCrate {
         my_port: String,
         sink: &mut dyn HydroflowSink,
     ) -> Result<()> {
-        if let Ok(instantiated) = sink.instantiate(&self.on) {
+        let forward_res = sink.instantiate(&self.on);
+        if let Ok(instantiated) = forward_res {
             // TODO(shadaj): if already in this map, we want to broadcast
             assert!(!self.port_to_server.contains_key(&my_port));
-            self.port_to_server.insert(my_port, instantiated);
+            self.port_to_server.insert(my_port, instantiated());
             Ok(())
         } else {
+            drop(forward_res);
             let instantiated = sink.instantiate_reverse(
                 &self.on,
                 Box::new(HydroflowPortConfig {
@@ -91,7 +93,8 @@ impl HydroflowCrate {
             )?;
 
             assert!(!self.port_to_bind.contains_key(&my_port));
-            self.port_to_bind.insert(my_port, instantiated);
+            self.port_to_bind
+                .insert(my_port, instantiated(sink.as_any_mut()));
 
             Ok(())
         }
@@ -266,5 +269,27 @@ impl Service for HydroflowCrate {
             .send(format!("start: {formatted_defns}\n"))
             .await
             .unwrap();
+    }
+
+    async fn stop(&mut self) -> Result<()> {
+        self.launched_binary
+            .as_mut()
+            .unwrap()
+            .write()
+            .await
+            .stdin()
+            .await
+            .send("stop\n".to_string())
+            .await?;
+
+        self.launched_binary
+            .as_mut()
+            .unwrap()
+            .write()
+            .await
+            .wait()
+            .await;
+
+        Ok(())
     }
 }

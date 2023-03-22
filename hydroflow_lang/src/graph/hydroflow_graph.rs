@@ -1,23 +1,24 @@
 #![deny(missing_docs)]
 
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::fmt::Debug;
 use std::iter::FusedIterator;
 
 use proc_macro2::{Ident, Literal, Span, TokenStream};
 use quote::{format_ident, quote, quote_spanned, ToTokens};
+use serde::{Deserialize, Serialize};
 use slotmap::{Key, SecondaryMap, SlotMap, SparseSecondaryMap};
 use syn::spanned::Spanned;
 
-use crate::diagnostic::Diagnostic;
+use crate::diagnostic::{Diagnostic, Level};
 use crate::pretty_span::{PrettyRowCol, PrettySpan};
 
-use super::ops::{
-    find_op_op_constraints, DelayType, OperatorWriteOutput, WriteContextArgs, OPERATORS,
-};
-use super::serde_graph::{SerdeEdge, SerdeGraph};
+use super::graph_write::{Dot, GraphWrite, Mermaid};
+use super::ops::{find_op_op_constraints, OperatorWriteOutput, WriteContextArgs, OPERATORS};
 use super::{
     get_operator_generics, node_color, Color, DiMulGraph, GraphEdgeId, GraphNodeId,
-    GraphSubgraphId, Node, OperatorInstance, PortIndexValue, CONTEXT, HANDOFF_NODE_STR, HYDROFLOW,
+    GraphSubgraphId, Node, OperatorInstance, PortIndexValue, Varname, CONTEXT, HANDOFF_NODE_STR,
+    HYDROFLOW,
 };
 
 /// A graph representing a hydroflow dataflow graph (with or without subgraph partitioning,
@@ -28,11 +29,13 @@ use super::{
 /// separate `impl` blocks. You might notice a few particularly specific arbitray-seeming methods
 /// in here--those are just what was needed for the compilation algorithms. If you need another
 /// method then add it.
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Serialize, Deserialize)]
 pub struct HydroflowGraph {
     /// Each node (operator or handoff).
     nodes: SlotMap<GraphNodeId, Node>,
     /// Instance data corresponding to each operator node.
+    /// This field will be empty after deserialization.
+    #[serde(skip)]
     operator_instances: SecondaryMap<GraphNodeId, OperatorInstance>,
     /// Graph data structure (two-way adjacency list).
     graph: DiMulGraph<GraphNodeId, GraphEdgeId>,
@@ -47,7 +50,7 @@ pub struct HydroflowGraph {
     subgraph_stratum: SecondaryMap<GraphSubgraphId, usize>,
 
     /// What variable name each graph node belongs to (if any).
-    node_varnames: SparseSecondaryMap<GraphNodeId, Ident>,
+    node_varnames: SparseSecondaryMap<GraphNodeId, Varname>,
 }
 impl HydroflowGraph {
     /// Create a new empty `HydroflowGraph`.
@@ -64,6 +67,8 @@ impl HydroflowGraph {
 
     /// Get the `OperatorInstance` for a given node. Node must be an operator and have an
     /// `OperatorInstance` present, otherwise will return `None`.
+    ///
+    /// Note that no operator instances will be persent after deserialization.
     pub fn node_op_inst(&self, node_id: GraphNodeId) -> Option<&OperatorInstance> {
         self.operator_instances.get(node_id)
     }
@@ -181,7 +186,7 @@ impl HydroflowGraph {
     pub fn insert_node(&mut self, node: Node, varname_opt: Option<Ident>) -> GraphNodeId {
         let node_id = self.nodes.insert(node);
         if let Some(varname) = varname_opt {
-            self.node_varnames.insert(node_id, varname);
+            self.node_varnames.insert(node_id, Varname(varname));
         }
         node_id
     }
@@ -191,6 +196,107 @@ impl HydroflowGraph {
         assert!(matches!(self.nodes.get(node_id), Some(Node::Operator(_))));
         let old_inst = self.operator_instances.insert(node_id, op_inst);
         assert!(old_inst.is_none());
+    }
+
+    /// Assign all operator instances if not set. Write diagnostic messages/errors into `diagnostics`.
+    pub fn insert_node_op_insts_all(&mut self, diagnostics: &mut Vec<Diagnostic>) {
+        let mut op_insts = Vec::new();
+        for (node_id, node) in self.nodes() {
+            let Node::Operator(operator) = node else {
+                continue;
+            };
+            if self.node_op_inst(node_id).is_some() {
+                continue;
+            };
+
+            // Op constraints.
+            let Some(op_constraints) = find_op_op_constraints(operator) else {
+                diagnostics.push(Diagnostic::spanned(
+                    operator.path.span(),
+                    Level::Error,
+                    format!("Unknown operator `{}`", operator.name_string()),
+                ));
+                continue;
+            };
+
+            // Input and output ports.
+            let (input_ports, output_ports) = {
+                let mut input_edges: Vec<(&PortIndexValue, GraphNodeId)> = self
+                    .node_predecessors(node_id)
+                    .map(|(edge_id, pred_id)| (self.edge_ports(edge_id).1, pred_id))
+                    .collect();
+                // Ensure sorted by port index.
+                input_edges.sort();
+                let input_ports: Vec<PortIndexValue> = input_edges
+                    .into_iter()
+                    .map(|(port, _pred)| port)
+                    .cloned()
+                    .collect();
+
+                // Collect output arguments (successors).
+                let mut output_edges: Vec<(&PortIndexValue, GraphNodeId)> = self
+                    .node_successors(node_id)
+                    .map(|(edge_id, succ)| (self.edge_ports(edge_id).0, succ))
+                    .collect();
+                // Ensure sorted by port index.
+                output_edges.sort();
+                let output_ports: Vec<PortIndexValue> = output_edges
+                    .into_iter()
+                    .map(|(port, _succ)| port)
+                    .cloned()
+                    .collect();
+
+                (input_ports, output_ports)
+            };
+
+            // Generic arguments.
+            let generics = get_operator_generics(diagnostics, operator);
+            // Generic argument errors.
+            {
+                if !op_constraints
+                    .persistence_args
+                    .contains(&generics.persistence_args.len())
+                {
+                    diagnostics.push(Diagnostic::spanned(
+                        generics.generic_args.span(),
+                        Level::Error,
+                        format!(
+                            "`{}` should have {} persistence lifetime arguments, actually has {}.",
+                            op_constraints.name,
+                            op_constraints.persistence_args.human_string(),
+                            generics.persistence_args.len()
+                        ),
+                    ));
+                }
+                if !op_constraints.type_args.contains(&generics.type_args.len()) {
+                    diagnostics.push(Diagnostic::spanned(
+                        generics.generic_args.span(),
+                        Level::Error,
+                        format!(
+                            "`{}` should have {} generic type arguments, actually has {}.",
+                            op_constraints.name,
+                            op_constraints.type_args.human_string(),
+                            generics.type_args.len()
+                        ),
+                    ));
+                }
+            }
+
+            op_insts.push((
+                node_id,
+                OperatorInstance {
+                    op_constraints,
+                    input_ports,
+                    output_ports,
+                    generics,
+                    arguments: operator.args.clone(),
+                },
+            ));
+        }
+
+        for (node_id, op_inst) in op_insts {
+            self.insert_node_op_inst(node_id, op_inst);
+        }
     }
 
     /// Inserts a node between two existing nodes connected by the given `edge_id`.
@@ -455,7 +561,12 @@ impl HydroflowGraph {
 
                 let recv_port_code = recv_ports
                     .iter()
-                    .map(|ident| quote! { let #ident = #ident.take_inner().into_iter(); });
+                    .map(|ident| {
+                        quote! {
+                            let mut #ident = #ident.borrow_mut_swap();
+                            let #ident = #ident.drain(..);
+                        }
+                    });
                 let send_port_code = send_ports.iter().map(|ident| {
                     quote! {
                         let #ident = #root::pusherator::for_each::ForEach::new(|v| {
@@ -637,7 +748,7 @@ impl HydroflowGraph {
                 }
             });
 
-        let serde_string = serde_json::to_string(&self.to_serde_graph()).unwrap() + "\n";
+        let serde_string = serde_json::to_string(&self).unwrap();
         // Newline left over from old code, snapshot outputs.
         let serde_string = Literal::string(&*serde_string);
         let code = quote! {
@@ -661,45 +772,91 @@ impl HydroflowGraph {
         }
     }
 
-    /// The `SerdeGraph` version of this, sent to the final runnable `Hydroflow` instance via
-    /// serialization and deserialization.
-    ///
-    /// TODO(mingwei): ser/de `HydroflowGraph` directly.
-    pub fn to_serde_graph(&self) -> SerdeGraph {
-        // TODO(mingwei): Double initialization of SerdeGraph fields.
-        let mut g = SerdeGraph::new();
+    /// Color mode (pull vs. push, handoff vs. comp) for nodes. Some nodes can be push *OR* pull;
+    /// those nodes will not be set in the returned map.
+    pub fn node_color_map(&self) -> SparseSecondaryMap<GraphNodeId, Color> {
+        // TODO(mingwei): this repeated code will be unified when `SerdeGraph` is subsumed into `HydroflowGraph`.
+        // TODO(mingwei): REPEATED CODE, COPIED FROM `flat_to_partitioned.rs`
 
-        // add nodes
-        for (node_id, node) in self.nodes() {
-            let node_txt = match node {
-                Node::Operator(operator) => operator.to_pretty_string(),
-                Node::Handoff { .. } => HANDOFF_NODE_STR.to_string(),
-            };
-            g.nodes.insert(node_id, node_txt);
+        let mut node_color_map: SparseSecondaryMap<GraphNodeId, Color> = self
+            .nodes
+            .iter()
+            .filter_map(|(node_id, node)| {
+                let inn_degree = self.node_degree_in(node_id);
+                let out_degree = self.node_degree_out(node_id);
+                let is_handoff = matches!(node, Node::Handoff { .. });
+                let op_color = node_color(is_handoff, inn_degree, out_degree);
+                op_color.map(|op_color| (node_id, op_color))
+            })
+            .collect();
+
+        // Fill in rest via subgraphs.
+        for sg_nodes in self.subgraph_nodes.values() {
+            // TODO(mingwei): REPEATED CODE, COPIED FROM `partitioned_graph.rs` codegen.
+            let pull_to_push_idx = sg_nodes
+                .iter()
+                .position(|&node_id| {
+                    let inn_degree = self.node_degree_in(node_id);
+                    let out_degree = self.node_degree_out(node_id);
+                    let node = &self.nodes[node_id];
+                    let is_handoff = matches!(node, Node::Handoff { .. });
+                    node_color(is_handoff, inn_degree, out_degree)
+                        .map(|color| Color::Pull != color)
+                        .unwrap_or(false)
+                })
+                .unwrap_or(sg_nodes.len());
+
+            for (idx, node_id) in sg_nodes.iter().copied().enumerate() {
+                let is_pull = idx < pull_to_push_idx;
+                node_color_map.insert(node_id, if is_pull { Color::Pull } else { Color::Push });
+            }
         }
 
-        // add edges
-        for (edge_id, (src, dst)) in self.graph.edges() {
-            let mut blocking = false;
-            let the_ports = &self.ports[edge_id];
-            if let Node::Operator(dest_op) = &self.nodes[dst] {
-                let op_name = &*dest_op.name_string();
-                let op_constraints = OPERATORS
-                    .iter()
-                    .find(|op| op_name == op.name)
-                    .unwrap_or_else(|| panic!("Failed to find op: {}", op_name));
-                if let Some(delay) = (op_constraints.input_delaytype_fn)(&the_ports.1) {
-                    if delay == DelayType::Stratum {
-                        blocking = true;
-                    }
-                }
-            }
-            let src_label = match &the_ports.0 {
+        node_color_map
+    }
+
+    /// Writes this graph as mermaid into a string.
+    pub fn to_mermaid(&self) -> String {
+        let mut output = String::new();
+        self.write_mermaid(&mut output).unwrap();
+        output
+    }
+
+    /// Writes this graph as mermaid into the given `Write`.
+    pub fn write_mermaid(&self, output: impl std::fmt::Write) -> std::fmt::Result {
+        let mut graph_write = Mermaid::new(output);
+        self.write_graph(&mut graph_write)
+    }
+
+    /// Writes this graph as DOT (graphviz) into a string.
+    pub fn to_dot(&self) -> String {
+        let mut output = String::new();
+        let mut graph_write = Dot::new(&mut output);
+        self.write_graph(&mut graph_write).unwrap();
+        output
+    }
+
+    /// Writes this graph as DOT (graphviz) into the given `Write`.
+    pub fn write_dot(&self, output: impl std::fmt::Write) -> std::fmt::Result {
+        let mut graph_write = Dot::new(output);
+        self.write_graph(&mut graph_write)
+    }
+
+    /// Write out this `HydroflowGraph` using the given `GraphWrite`. E.g. `Mermaid` or `Dot.
+    pub fn write_graph<W>(&self, mut graph_write: W) -> Result<(), W::Err>
+    where
+        W: GraphWrite,
+    {
+        fn helper_edge_label(
+            src_port: &PortIndexValue,
+            dst_port: &PortIndexValue,
+        ) -> Option<String> {
+            let src_label = match src_port {
                 PortIndexValue::Path(path) => Some(path.to_token_stream().to_string()),
                 PortIndexValue::Int(index) => Some(index.value.to_string()),
                 _ => None,
             };
-            let dst_label = match &the_ports.1 {
+            let dst_label = match dst_port {
                 PortIndexValue::Path(path) => Some(path.to_token_stream().to_string()),
                 PortIndexValue::Int(index) => Some(index.value.to_string()),
                 _ => None,
@@ -710,78 +867,149 @@ impl HydroflowGraph {
                 (None, Some(l2)) => Some(l2),
                 (None, None) => None,
             };
-
-            let serde_edge = SerdeEdge {
-                src,
-                dst,
-                blocking,
-                label,
-            };
-            if let Some(adj) = g.edges.get_mut(src) {
-                adj.push(serde_edge);
-            } else {
-                g.edges.insert(src, vec![serde_edge]);
-            }
+            label
         }
 
         let subgraph_handoffs = self.helper_collect_subgraph_handoffs();
-
-        // add barrier_handoffs, i.e. handoffs that are *not* in the subgraph_recv_handoffs and
-        // subgraph_send_handoffs for the same subgraph
-        for sg in self.subgraph_nodes.keys() {
-            let (recvs, sends) = &subgraph_handoffs[sg];
-            for recv in recvs {
-                if !sends.contains(recv) {
-                    g.barrier_handoffs.insert(*recv, true);
-                }
-            }
+        let node_color_map = self.node_color_map();
+        let mut sg_varname_nodes =
+            SparseSecondaryMap::<GraphSubgraphId, BTreeMap<Varname, BTreeSet<GraphNodeId>>>::new();
+        for (node_id, varname) in self.node_varnames.iter() {
+            let Some(sg_id) = self.node_subgraph(node_id) else { continue; };
+            let varname_map = sg_varname_nodes.entry(sg_id).unwrap().or_default();
+            varname_map
+                .entry(varname.clone())
+                .or_default()
+                .insert(node_id);
         }
+        let barrier_handoffs: HashSet<_> = self
+            .node_ids()
+            .filter(|&node_id| matches!(self.node(node_id), Node::Handoff { .. }))
+            .filter(|&hoff_id| {
+                assert_eq!(1, self.node_degree_in(hoff_id));
+                assert_eq!(1, self.node_degree_out(hoff_id));
+                let src_id = self.node_predecessor_nodes(hoff_id).next().unwrap();
+                let dst_id = self.node_successor_nodes(hoff_id).next().unwrap();
+                // Only include handoffs between different subgraphs.
+                self.node_subgraph(src_id) != self.node_subgraph(dst_id)
+            })
+            .collect();
 
-        // add subgraphs
-        g.subgraph_nodes = self.subgraph_nodes.clone();
-        g.subgraph_stratum = self.subgraph_stratum.clone();
-        g.subgraph_internal_handoffs = {
-            let mut subgraph_internal_handoffs: SecondaryMap<GraphSubgraphId, Vec<GraphNodeId>> =
-                SecondaryMap::new();
-            // iterate through edges, find internal handoffs and their inbound/outbound edges
-            for e in self.graph.edges() {
-                let (src, dst) = e.1;
-                if let Node::Handoff { .. } = self.nodes[src] {
-                    // Should only be one inbound_src, since it's a handoff.
-                    for inbound_src in self.graph.predecessor_vertices(src) {
-                        // Found an inbound edge to this handoff. Check if it's in the same subgraph as dst
-                        if let Some(inbound_src_subgraph) = self.node_subgraph.get(inbound_src) {
-                            if let Some(dst_subgraph) = self.node_subgraph.get(dst) {
-                                if inbound_src_subgraph == dst_subgraph {
-                                    // Found an internal handoff
-                                    if let Node::Handoff { .. } = self.nodes[src] {
-                                        subgraph_internal_handoffs
-                                            .entry(*inbound_src_subgraph)
-                                            .unwrap()
-                                            .or_insert(Vec::new())
-                                            .push(src);
-                                    }
-                                }
-                            }
-                        }
+        graph_write.write_prologue()?;
+
+        for (subgraph_id, subgraph_node_ids) in self.subgraph_nodes.iter() {
+            let stratum = self.subgraph_stratum.get(subgraph_id);
+            graph_write.write_subgraph_start(subgraph_id, *stratum.unwrap())?;
+
+            // write out nodes
+            for &node_id in subgraph_node_ids.iter() {
+                graph_write.write_node(
+                    node_id,
+                    &*self.nodes.get(node_id).unwrap().to_pretty_string(),
+                    node_color_map.get(node_id).copied().unwrap_or(Color::Comp),
+                    Some(subgraph_id),
+                )?;
+            }
+            // write out internal handoffs
+            let internal_handoffs = {
+                let (recvs, sends) = &subgraph_handoffs[subgraph_id];
+                recvs.iter().filter(move |recv| sends.contains(recv))
+            };
+            for &hoff_id in internal_handoffs {
+                graph_write.write_node(
+                    hoff_id,
+                    &*self.nodes.get(hoff_id).unwrap().to_pretty_string(),
+                    Color::Hoff,
+                    Some(subgraph_id),
+                )?;
+                // write out internal handoff edges. should only be one.
+                assert_eq!(1, self.node_degree_out(hoff_id));
+                let (edge_id, dst_id) = self.node_successors(hoff_id).next().unwrap();
+                let (src_port, dst_port) = self.edge_ports(edge_id);
+                let delay_type = self
+                    .node_op_inst(dst_id)
+                    .and_then(|op_inst| (op_inst.op_constraints.input_delaytype_fn)(dst_port));
+                let label = helper_edge_label(src_port, dst_port);
+                graph_write.write_edge(
+                    hoff_id,
+                    dst_id,
+                    delay_type,
+                    label.as_deref(),
+                    Some(subgraph_id),
+                )?;
+            }
+
+            // write out edges. Includes edges leaving the subgraph.
+            for &src_id in subgraph_node_ids.iter() {
+                for (edge_id, dst_id) in self.node_successors(src_id) {
+                    if !barrier_handoffs.contains(&dst_id) {
+                        let (src_port, dst_port) = self.edge_ports(edge_id);
+                        let delay_type = self.node_op_inst(dst_id).and_then(|op_inst| {
+                            (op_inst.op_constraints.input_delaytype_fn)(dst_port)
+                        });
+                        let label = helper_edge_label(src_port, dst_port);
+                        graph_write.write_edge(
+                            src_id,
+                            dst_id,
+                            delay_type,
+                            label.as_deref(),
+                            Some(subgraph_id),
+                        )?;
                     }
                 }
             }
-            subgraph_internal_handoffs
-        };
 
-        // add varnames (sort for determinism).
-        let mut varnames_sorted = self.node_varnames.iter().collect::<Vec<_>>();
-        varnames_sorted.sort();
-        for (node_id, varname_ident) in varnames_sorted {
-            let node_ids = g
-                .varname_nodes
-                .entry(varname_ident.to_string())
-                .or_default();
-            node_ids.push(node_id);
+            // write out any variable names
+            for (varname, varname_node_ids) in
+                sg_varname_nodes.get(subgraph_id).into_iter().flatten()
+            {
+                assert!(!varname_node_ids.is_empty());
+                graph_write.write_subgraph_varname(
+                    subgraph_id,
+                    &*varname.0.to_string(),
+                    varname_node_ids.iter().cloned(),
+                )?;
+            }
+
+            graph_write.write_subgraph_end()?;
         }
 
-        g
+        // Write out external handoffs (handoffs between different subgraphs).
+        // This is set up in an awkward way in order to preserve the old write order.
+        //write out handoffs outside the clusters and adjacent edges
+        for (src_id, src_node) in self.nodes() {
+            for (edge_id, dst_id) in self.node_successors(src_id) {
+                if barrier_handoffs.contains(&src_id) {
+                    // write out handoff
+                    graph_write.write_node(
+                        src_id,
+                        &*src_node.to_pretty_string(),
+                        Color::Hoff,
+                        None,
+                    )?;
+
+                    // write out edge
+                    let (src_port, dst_port) = self.edge_ports(edge_id);
+                    let delay_type = self
+                        .node_op_inst(dst_id)
+                        .and_then(|op_inst| (op_inst.op_constraints.input_delaytype_fn)(dst_port));
+                    let label = helper_edge_label(src_port, dst_port);
+                    graph_write.write_edge(src_id, dst_id, delay_type, label.as_deref(), None)?;
+                } else if barrier_handoffs.contains(&dst_id) {
+                    // write out edge
+                    let (src_port, dst_port) = self.edge_ports(edge_id);
+                    let delay_type = self
+                        .node_op_inst(dst_id)
+                        .and_then(|op_inst| (op_inst.op_constraints.input_delaytype_fn)(dst_port));
+                    let label = helper_edge_label(src_port, dst_port);
+                    graph_write.write_edge(src_id, dst_id, delay_type, label.as_deref(), None)?;
+                }
+            }
+        }
+
+        graph_write.write_epilogue()?;
+
+        Ok(())
     }
 
     /// Convert back into surface syntax.
