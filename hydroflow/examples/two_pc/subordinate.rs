@@ -1,8 +1,9 @@
 use std::net::SocketAddr;
+use std::path::Path;
 
 use crate::helpers::decide;
 use crate::protocol::{CoordMsg, MsgType, SubordResponse};
-use crate::GraphType;
+use crate::{Addresses, GraphType};
 use hydroflow::hydroflow_syntax;
 use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::util::{UdpSink, UdpStream};
@@ -10,12 +11,20 @@ use hydroflow::util::{UdpSink, UdpStream};
 pub(crate) async fn run_subordinate(
     outbound: UdpSink,
     inbound: UdpStream,
-    server_addr: SocketAddr,
+    path: impl AsRef<Path>,
     graph: Option<GraphType>,
 ) {
     let mut df: Hydroflow = hydroflow_syntax! {
-         // set up channels
-        outbound_chan = merge() -> tee();
+        // Outbound address
+        server_addr = source_json(path)
+            -> map(|json: Addresses| json.coordinator)
+            -> map(|s| s.parse::<SocketAddr>().unwrap())
+            -> inspect(|coordinator| println!("Coordinator: {}", coordinator));
+        server_addr_join = cross_join();
+        server_addr -> [1]server_addr_join;
+
+        // set up channels
+        outbound_chan = merge() -> [0]server_addr_join -> tee();
         outbound_chan[0] -> dest_sink_serde(outbound);
         inbound_chan = source_stream_serde(inbound) -> map(|(m, _a)| m) -> tee();
         msgs = inbound_chan[0] ->  demux(|m:CoordMsg, var_args!(prepares, p2, ends, errs)| match m.mtype {
@@ -34,28 +43,24 @@ pub(crate) async fn run_subordinate(
 
         // handle p1 message: choose vote and respond
         // in this prototype we choose randomly whether to abort via decide()
-        report_chan = msgs[prepares] -> map(|m: CoordMsg| (
-            SubordResponse{
-                xid: m.xid,
-                mtype: if decide(67) {MsgType::Commit} else {MsgType::Abort}
-            },
-            server_addr));
+        report_chan = msgs[prepares] -> map(|m: CoordMsg| SubordResponse {
+            xid: m.xid,
+            mtype: if decide(67) { MsgType::Commit } else { MsgType::Abort }
+        });
         report_chan -> [0]outbound_chan;
 
         // handle p2 message: acknowledge (and print)
-        p2_response = map(|(m, t)| (SubordResponse{
+        p2_response = map(|(m, t)| SubordResponse {
             xid: m.xid,
             mtype: t,
-        }, server_addr)) -> [1]outbound_chan;
+        }) -> [1]outbound_chan;
         msgs[p2] -> map(|m:CoordMsg| (m, MsgType::AckP2)) -> p2_response;
 
         // handle end message: acknowledge (and print)
-        msgs[ends] -> map(|m:CoordMsg| (SubordResponse{
+        msgs[ends] -> map(|m:CoordMsg| SubordResponse {
             xid: m.xid,
             mtype: MsgType::Ended,
-        }, server_addr)) -> [2]outbound_chan;
-
-
+        }) -> [2]outbound_chan;
     };
 
     if let Some(graph) = graph {
