@@ -2970,6 +2970,34 @@ one by one.</p>
 </span><span class="boring">}
 </span><span class="boring">}
 </span></code></pre></pre>
+<h2 id="source_json"><a class="header" href="#source_json"><code>source_json</code></a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
+<tr><td><span title="exactly 0">exactly 0</span></td><td><code>source_json(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
+</tbody></table>
+</div><!-- GENERATED "hydroflow_lang/src/graph/ops/source_json.rs" -->
+<blockquote>
+<p>0 input streams, 1 output stream</p>
+</blockquote>
+<blockquote>
+<p>Arguments: An <a href="https://doc.rust-lang.org/std/convert/trait.AsRef.html"><code>AsRef</code></a><code>&lt;</code><a href="https://doc.rust-lang.org/nightly/std/path/struct.Path.html"><code>Path</code></a><code>&gt;</code>
+for a file to read as json. This will emit the parsed value one time.</p>
+</blockquote>
+<p><code>source_json</code> may take one generic type argument, the type of the value to be parsed, which must implement <a href="https://docs.rs/serde/latest/serde/de/trait.Deserialize.html"><code>Deserialize</code></a>.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
+</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
+</span>source_json(&quot;example.json&quot;) -&gt; for_each(|json: hydroflow::serde_json::Value| println!(&quot;{:#?}&quot;, json));
+<span class="boring">};
+</span><span class="boring">for _ in 0..100 {
+</span><span class="boring">    if !__hf.run_tick() {
+</span><span class="boring">        // No work done.
+</span><span class="boring">        break;
+</span><span class="boring">    }
+</span><span class="boring">}
+</span><span class="boring">}
+</span></code></pre></pre>
 <h2 id="source_stdin"><a class="header" href="#source_stdin"><code>source_stdin</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 0">exactly 0</span></td><td><code>source_stdin() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
