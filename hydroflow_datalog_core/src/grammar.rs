@@ -1,6 +1,8 @@
 #[rust_sitter::grammar("datalog")]
 #[allow(dead_code)]
 pub mod datalog {
+    use rust_sitter::Spanned;
+
     #[rust_sitter::language]
     #[derive(Debug)]
     pub struct Program {
@@ -30,10 +32,15 @@ pub mod datalog {
     pub struct RustSnippet {
         #[rust_sitter::leaf(text = "`")]
         _start: (),
-        #[rust_sitter::leaf(pattern = r#"[^`]*"#, transform = |s| s.to_string())]
-        pub code: String,
+        pub code: Spanned<RustSnippetInner>,
         #[rust_sitter::leaf(text = "`")]
         _end: (),
+    }
+
+    #[derive(Debug, Clone)]
+    pub struct RustSnippetInner {
+        #[rust_sitter::leaf(pattern = r#"[^`]*"#, transform = |s| s.to_string())]
+        pub value: String,
     }
 
     #[derive(Debug, Clone)]

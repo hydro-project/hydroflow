@@ -19,13 +19,47 @@ use util::{repeat_tuple, Counter};
 
 static MAGIC_RELATIONS: [&str; 1] = ["less_than"];
 
+pub fn parse_pipeline(
+    code_str: &rust_sitter::Spanned<RustSnippetInner>,
+    literal: &proc_macro2::Literal,
+    offset: usize,
+) -> Result<Pipeline, Vec<Diagnostic>> {
+    syn::parse_str(&code_str.value.value).map_err(|err| {
+        let (start, end) = code_str.span;
+        // TODO(mingwei): incorporate `err.span()` somehow
+        let subspan = literal.subspan(start + offset..end + offset);
+        vec![Diagnostic {
+            span: subspan.unwrap_or(Span::call_site()),
+            level: Level::Error,
+            message: format!("Failed to parse input pipeline: {}", err),
+        }]
+    })
+}
+
 pub fn gen_hydroflow_graph(
     literal: proc_macro2::Literal,
 ) -> Result<HydroflowGraph, Vec<Diagnostic>> {
+    let offset = {
+        // This includes the quotes, i.e. 'r#"my test"#' or '"hello\nworld"'.
+        let source_str = literal.to_string();
+        let mut source_chars = source_str.chars();
+        if Some('r') != source_chars.next() {
+            return Err(vec![Diagnostic {
+                span: literal.span(),
+                level: Level::Error,
+                message:
+                    r##"Input must be a raw string `r#"..."#` for correct diagnostic messages."##
+                        .to_owned(),
+            }]);
+        }
+        let hashes = source_chars.take_while(|&c| '#' == c).count();
+        2 + hashes
+    };
+
     let str_node: syn::LitStr = parse_quote!(#literal);
     let actual_str = str_node.value();
     let program: Program =
-        grammar::datalog::parse(&actual_str).map_err(|e| handle_errors(e, &literal))?;
+        grammar::datalog::parse(&actual_str).map_err(|e| handle_errors(e, &literal, offset))?;
 
     let mut inputs = Vec::new();
     let mut outputs = Vec::new();
@@ -85,13 +119,7 @@ pub fn gen_hydroflow_graph(
             syn::LitInt::new(&format!("{}", my_merge_index), Span::call_site());
         let name = syn::Ident::new(&target.name, Span::call_site());
 
-        let input_pipeline: Pipeline = syn::parse_str(&hf_code.code).map_err(|err| {
-            vec![Diagnostic {
-                span: err.span(),
-                level: Level::Error,
-                message: format!("Failed to parse input pipeline: {}", err),
-            }]
-        })?;
+        let input_pipeline: Pipeline = parse_pipeline(&hf_code.code, &literal, offset)?;
 
         flat_graph_builder.add_statement(parse_quote! {
             #input_pipeline -> [#my_merge_index_lit] #name
@@ -108,13 +136,7 @@ pub fn gen_hydroflow_graph(
         let my_tee_index_lit = syn::LitInt::new(&format!("{}", my_tee_index), Span::call_site());
         let target_ident = syn::Ident::new(&target.name, Span::call_site());
 
-        let output_pipeline: Pipeline = syn::parse_str(&hf_code.code).map_err(|err| {
-            vec![Diagnostic {
-                span: err.span(),
-                level: Level::Error,
-                message: format!("Failed to parse output pipeline: {}", err),
-            }]
-        })?;
+        let output_pipeline: Pipeline = parse_pipeline(&hf_code.code, &literal, offset)?;
 
         flat_graph_builder.add_statement(parse_quote! {
             #target_ident [#my_tee_index_lit] -> #output_pipeline
@@ -135,8 +157,8 @@ pub fn gen_hydroflow_graph(
             syn::LitInt::new(&format!("{}", recv_merge_index), Span::call_site());
         let target_ident = syn::Ident::new(&target.name, Span::call_site());
 
-        let send_pipeline: Pipeline = syn::parse_str(&send_hf.code).unwrap();
-        let recv_pipeline: Pipeline = syn::parse_str(&recv_hf.code).unwrap();
+        let send_pipeline: Pipeline = parse_pipeline(&send_hf.code, &literal, offset)?;
+        let recv_pipeline: Pipeline = parse_pipeline(&recv_hf.code, &literal, offset)?;
 
         flat_graph_builder.add_statement(parse_quote! {
             #async_send_pipeline = merge() -> unique::<'tick>() -> #send_pipeline
@@ -173,11 +195,17 @@ pub fn gen_hydroflow_graph(
     }
 }
 
-fn handle_errors(errors: Vec<ParseError>, literal: &proc_macro2::Literal) -> Vec<Diagnostic> {
+fn handle_errors(
+    errors: Vec<ParseError>,
+    literal: &proc_macro2::Literal,
+    offset: usize,
+) -> Vec<Diagnostic> {
     let mut diagnostics = vec![];
     for error in errors {
         let reason = error.reason;
-        let my_span = literal.subspan(error.start + 3..error.end + 3).unwrap();
+        let my_span = literal
+            .subspan(error.start + offset..error.end + offset)
+            .unwrap_or(literal.span());
         match reason {
             ParseErrorReason::UnexpectedToken(msg) => {
                 diagnostics.push(Diagnostic::spanned(
@@ -193,15 +221,15 @@ fn handle_errors(errors: Vec<ParseError>, literal: &proc_macro2::Literal) -> Vec
                     format!("Missing Token: '{msg}'", msg = msg),
                 ));
             }
-            ParseErrorReason::FailedNode(_vec) => {
-                if _vec.is_empty() {
+            ParseErrorReason::FailedNode(parse_errors) => {
+                if parse_errors.is_empty() {
                     diagnostics.push(Diagnostic::spanned(
                         my_span,
                         Level::Error,
                         "Failed to parse",
                     ));
                 } else {
-                    diagnostics.extend(handle_errors(_vec, literal));
+                    diagnostics.extend(handle_errors(parse_errors, literal, offset));
                 }
             }
         }
