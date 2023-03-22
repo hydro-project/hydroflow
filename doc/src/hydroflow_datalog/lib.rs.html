@@ -24,6 +24,15 @@
 <a href="#24" id="24">24</a>
 <a href="#25" id="25">25</a>
 <a href="#26" id="26">26</a>
+<a href="#27" id="27">27</a>
+<a href="#28" id="28">28</a>
+<a href="#29" id="29">29</a>
+<a href="#30" id="30">30</a>
+<a href="#31" id="31">31</a>
+<a href="#32" id="32">32</a>
+<a href="#33" id="33">33</a>
+<a href="#34" id="34">34</a>
+<a href="#35" id="35">35</a>
 </pre><pre class="rust"><code><span class="kw">use </span>proc_macro2::Span;
 <span class="kw">use </span>quote::{quote, ToTokens};
 
@@ -46,9 +55,18 @@
         }
     };
 
-    <span class="kw">let </span>graph = gen_hydroflow_graph(literal).unwrap();
-    <span class="kw">let </span>program = hydroflow_graph_to_program(graph, root);
-    proc_macro::TokenStream::from(program.to_token_stream())
+    <span class="kw">match </span>gen_hydroflow_graph(literal) {
+        <span class="prelude-val">Ok</span>(graph) =&gt; {
+            <span class="kw">let </span>program = hydroflow_graph_to_program(graph, root);
+            proc_macro::TokenStream::from(program.to_token_stream())
+        }
+        <span class="prelude-val">Err</span>(diagnostics) =&gt; {
+            <span class="kw">for </span>diagnostic <span class="kw">in </span>diagnostics {
+                diagnostic.emit();
+            }
+            proc_macro::TokenStream::from(<span class="macro">quote!</span>(()))
+        }
+    }
 }
 </code></pre></div>
 </section></main><div id="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="hydroflow_datalog" data-themes="" data-resource-suffix="" data-rustdoc-version="1.69.0-nightly (31f858d9a 2023-02-28)" data-search-js="search-d5a6cd8418084717.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-0bcba95ff279c1db.css" ></div></body></html>
