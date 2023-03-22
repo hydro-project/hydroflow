@@ -230,6 +230,10 @@ impl Host for GCPComputeEngineHost {
             ServerStrategy::UnixSocket => {}
             ServerStrategy::InternalTcpPort => {}
             ServerStrategy::ExternalTcpPort(port) => {
+                if self.launched.is_some() {
+                    todo!("Cannot adjust firewall after host has been launched");
+                }
+
                 self.external_ports.push(*port);
             }
             ServerStrategy::Demux(demux) => {
@@ -262,6 +266,10 @@ impl Host for GCPComputeEngineHost {
     }
 
     fn collect_resources(&self, resource_batch: &mut ResourceBatch) {
+        if self.launched.is_some() {
+            return;
+        }
+
         self.network
             .try_write()
             .unwrap()

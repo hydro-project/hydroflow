@@ -45,6 +45,14 @@ async def main(args):
     await deployment.start()
     print("started!")
 
+    await deployment.deploy()
+    await deployment.start()
+    print("again!")
+
+    await deployment.deploy()
+    await deployment.start()
+    print("and again!")
+
     print((await sender_port.server_port()).json())
     receiver_connection = await (await sender_port.server_port()).into_source()
     async for received in receiver_connection:
