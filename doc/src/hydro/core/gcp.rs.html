@@ -525,6 +525,14 @@
 <a href="#525" id="525">525</a>
 <a href="#526" id="526">526</a>
 <a href="#527" id="527">527</a>
+<a href="#528" id="528">528</a>
+<a href="#529" id="529">529</a>
+<a href="#530" id="530">530</a>
+<a href="#531" id="531">531</a>
+<a href="#532" id="532">532</a>
+<a href="#533" id="533">533</a>
+<a href="#534" id="534">534</a>
+<a href="#535" id="535">535</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::{collections::HashMap, net::SocketAddr, path::PathBuf, sync::Arc, time::Duration};
 
 <span class="kw">use </span>anyhow::{Context, <span class="prelude-ty">Result</span>};
@@ -757,6 +765,10 @@
             ServerStrategy::UnixSocket =&gt; {}
             ServerStrategy::InternalTcpPort =&gt; {}
             ServerStrategy::ExternalTcpPort(port) =&gt; {
+                <span class="kw">if </span><span class="self">self</span>.launched.is_some() {
+                    <span class="macro">todo!</span>(<span class="string">&quot;Cannot adjust firewall after host has been launched&quot;</span>);
+                }
+
                 <span class="self">self</span>.external_ports.push(<span class="kw-2">*</span>port);
             }
             ServerStrategy::Demux(demux) =&gt; {
@@ -789,6 +801,10 @@
     </span>}
 
     <span class="kw">fn </span>collect_resources(<span class="kw-2">&amp;</span><span class="self">self</span>, resource_batch: <span class="kw-2">&amp;mut </span>ResourceBatch) {
+        <span class="kw">if </span><span class="self">self</span>.launched.is_some() {
+            <span class="kw">return</span>;
+        }
+
         <span class="self">self</span>.network
             .try_write()
             .unwrap()
