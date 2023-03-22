@@ -24,6 +24,9 @@ pub use variadics::{self, var_args, var_expr, var_type};
 
 mod declarative_macro;
 pub use declarative_macro::*;
+#[cfg(feature = "hydroflow_datalog")]
+pub use hydroflow_datalog::*;
+#[cfg(feature = "hydroflow_macro")]
 pub use hydroflow_macro::*;
 
 #[cfg(doctest)]
