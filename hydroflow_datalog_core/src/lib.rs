@@ -179,7 +179,8 @@ fn handle_errors(errors: Vec<ParseError>, literal: &proc_macro2::Literal) -> Vec
             }
         }
     }
-    return diagnostics;
+
+    diagnostics
 }
 
 pub fn hydroflow_graph_to_program(flat_graph: HydroflowGraph, root: TokenStream) -> syn::Stmt {
