@@ -151,12 +151,13 @@ pub fn gen_hydroflow_graph(
     if !diagnostics.is_empty() {
         Err(diagnostics)
     } else {
-        let (flat_graph, diagnostics) = flat_graph_builder.build();
-        diagnostics
-            .iter()
-            .filter(|diag| diag.is_error())
-            .for_each(Diagnostic::emit);
-        Ok(flat_graph)
+        let (flat_graph, mut diagnostics) = flat_graph_builder.build();
+        diagnostics.retain(Diagnostic::is_error);
+        if !diagnostics.is_empty() {
+            Err(diagnostics)
+        } else {
+            Ok(flat_graph)
+        }
     }
 }
 
