@@ -8,9 +8,14 @@ fn main() {
             use hydroflow::{var_expr, var_args};
             let mut df = hydroflow::scheduled::graph::Hydroflow::new();
             df.__assign_meta_graph(
-                "{\"nodes\":[{\"value\":null,\"version\":0},{\"value\":{\"Operator\":\"merge ()\"},\"version\":1},{\"value\":{\"Operator\":\"unique :: < 'tick > ()\"},\"version\":1},{\"value\":{\"Operator\":\"tee ()\"},\"version\":1},{\"value\":{\"Operator\":\"merge ()\"},\"version\":1},{\"value\":{\"Operator\":\"unique :: < 'tick > ()\"},\"version\":1},{\"value\":{\"Operator\":\"tee ()\"},\"version\":1},{\"value\":{\"Operator\":\"source_stream (input)\"},\"version\":1},{\"value\":{\"Operator\":\"for_each (| v | out . send (v) . unwrap ())\"},\"version\":1},{\"value\":{\"Operator\":\"join :: < 'tick > ()\"},\"version\":1},{\"value\":{\"Operator\":\"map (| kv : ((_ , _ ,) , (() , ())) | (kv . 0 . 0 , kv . 0 . 1 ,))\"},\"version\":1},{\"value\":{\"Operator\":\"map (| v : (_ , _ ,) | ((v . 0 , v . 1 ,) , ()))\"},\"version\":1},{\"value\":{\"Operator\":\"map (| v : (_ , _ ,) | ((v . 1 , v . 0 ,) , ()))\"},\"version\":1},{\"value\":{\"Operator\":\"map (| row : (_ , _ ,) | (row . 0 , row . 1 ,))\"},\"version\":1},{\"value\":{\"Handoff\":{}},\"version\":1},{\"value\":{\"Handoff\":{}},\"version\":1}],\"graph\":[{\"value\":null,\"version\":0},{\"value\":[{\"idx\":2,\"version\":1},{\"idx\":3,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":1,\"version\":1},{\"idx\":2,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":5,\"version\":1},{\"idx\":6,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":4,\"version\":1},{\"idx\":5,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":7,\"version\":1},{\"idx\":1,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":6,\"version\":1},{\"idx\":8,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":9,\"version\":1},{\"idx\":10,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":11,\"version\":1},{\"idx\":9,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":3,\"version\":1},{\"idx\":14,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":12,\"version\":1},{\"idx\":9,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":3,\"version\":1},{\"idx\":15,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":13,\"version\":1},{\"idx\":4,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":10,\"version\":1},{\"idx\":13,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":14,\"version\":1},{\"idx\":11,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":15,\"version\":1},{\"idx\":12,\"version\":1}],\"version\":1}],\"ports\":[{\"value\":null,\"version\":0},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",{\"Int\":\"0\"}],\"version\":1},{\"value\":[{\"Int\":\"0\"},\"Elided\"],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",{\"Int\":\"0\"}],\"version\":1},{\"value\":[{\"Int\":\"0\"},\"Elided\"],\"version\":3},{\"value\":[\"Elided\",{\"Int\":\"1\"}],\"version\":1},{\"value\":[{\"Int\":\"1\"},\"Elided\"],\"version\":3},{\"value\":[\"Elided\",{\"Int\":\"0\"}],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":1}],\"node_subgraph\":[{\"value\":null,\"version\":0},{\"value\":{\"idx\":1,\"version\":1},\"version\":1},{\"value\":{\"idx\":1,\"version\":1},\"version\":1},{\"value\":{\"idx\":1,\"version\":1},\"version\":1},{\"value\":{\"idx\":2,\"version\":1},\"version\":1},{\"value\":{\"idx\":2,\"version\":1},\"version\":1},{\"value\":{\"idx\":2,\"version\":1},\"version\":1},{\"value\":{\"idx\":1,\"version\":1},\"version\":1},{\"value\":{\"idx\":2,\"version\":1},\"version\":1},{\"value\":{\"idx\":2,\"version\":1},\"version\":1},{\"value\":{\"idx\":2,\"version\":1},\"version\":1},{\"value\":{\"idx\":2,\"version\":1},\"version\":1},{\"value\":{\"idx\":2,\"version\":1},\"version\":1},{\"value\":{\"idx\":2,\"version\":1},\"version\":1}],\"subgraph_nodes\":[{\"value\":null,\"version\":0},{\"value\":[{\"idx\":7,\"version\":1},{\"idx\":1,\"version\":1},{\"idx\":2,\"version\":1},{\"idx\":3,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":11,\"version\":1},{\"idx\":12,\"version\":1},{\"idx\":9,\"version\":1},{\"idx\":10,\"version\":1},{\"idx\":13,\"version\":1},{\"idx\":4,\"version\":1},{\"idx\":5,\"version\":1},{\"idx\":6,\"version\":1},{\"idx\":8,\"version\":1}],\"version\":1}],\"subgraph_stratum\":[{\"value\":null,\"version\":0},{\"value\":0,\"version\":1},{\"value\":0,\"version\":1}],\"node_varnames\":[{\"value\":null,\"version\":0},{\"value\":\"input\",\"version\":1},{\"value\":\"input\",\"version\":1},{\"value\":\"input\",\"version\":1},{\"value\":\"out\",\"version\":1},{\"value\":\"out\",\"version\":1},{\"value\":\"out\",\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":\"join_0\",\"version\":1},{\"value\":\"join_0\",\"version\":1}]}",
+                "{\"nodes\":[{\"value\":null,\"version\":0},{\"value\":{\"Operator\":\"merge ()\"},\"version\":1},{\"value\":{\"Operator\":\"unique :: < 'tick > ()\"},\"version\":1},{\"value\":{\"Operator\":\"tee ()\"},\"version\":1},{\"value\":{\"Operator\":\"merge ()\"},\"version\":1},{\"value\":{\"Operator\":\"unique :: < 'tick > ()\"},\"version\":1},{\"value\":{\"Operator\":\"tee ()\"},\"version\":1},{\"value\":{\"Operator\":\"source_stream (ints)\"},\"version\":1},{\"value\":{\"Operator\":\"for_each (| v | result . send (v) . unwrap ())\"},\"version\":1},{\"value\":{\"Operator\":\"map (| row : (_ ,) | (123 ,))\"},\"version\":1},{\"value\":{\"Operator\":\"map (| row : (_ ,) | (row . 0 + 123 ,))\"},\"version\":1},{\"value\":{\"Operator\":\"map (| row : (_ ,) | (row . 0 . clone () + row . 0 ,))\"},\"version\":1},{\"value\":{\"Operator\":\"map (| row : (_ ,) | (123 - row . 0 ,))\"},\"version\":1},{\"value\":{\"Handoff\":{}},\"version\":1},{\"value\":{\"Handoff\":{}},\"version\":1},{\"value\":{\"Handoff\":{}},\"version\":1},{\"value\":{\"Handoff\":{}},\"version\":1}],\"graph\":[{\"value\":null,\"version\":0},{\"value\":[{\"idx\":2,\"version\":1},{\"idx\":3,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":1,\"version\":1},{\"idx\":2,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":5,\"version\":1},{\"idx\":6,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":4,\"version\":1},{\"idx\":5,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":7,\"version\":1},{\"idx\":1,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":6,\"version\":1},{\"idx\":8,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":9,\"version\":1},{\"idx\":4,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":3,\"version\":1},{\"idx\":13,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":10,\"version\":1},{\"idx\":4,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":3,\"version\":1},{\"idx\":14,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":11,\"version\":1},{\"idx\":4,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":3,\"version\":1},{\"idx\":15,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":12,\"version\":1},{\"idx\":4,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":3,\"version\":1},{\"idx\":16,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":13,\"version\":1},{\"idx\":9,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":14,\"version\":1},{\"idx\":10,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":15,\"version\":1},{\"idx\":11,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":16,\"version\":1},{\"idx\":12,\"version\":1}],\"version\":1}],\"ports\":[{\"value\":null,\"version\":0},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",{\"Int\":\"0\"}],\"version\":1},{\"value\":[{\"Int\":\"0\"},\"Elided\"],\"version\":1},{\"value\":[\"Elided\",{\"Int\":\"0\"}],\"version\":1},{\"value\":[{\"Int\":\"0\"},\"Elided\"],\"version\":3},{\"value\":[\"Elided\",{\"Int\":\"1\"}],\"version\":1},{\"value\":[{\"Int\":\"1\"},\"Elided\"],\"version\":3},{\"value\":[\"Elided\",{\"Int\":\"2\"}],\"version\":1},{\"value\":[{\"Int\":\"2\"},\"Elided\"],\"version\":3},{\"value\":[\"Elided\",{\"Int\":\"3\"}],\"version\":1},{\"value\":[{\"Int\":\"3\"},\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":1}],\"node_subgraph\":[{\"value\":null,\"version\":0},{\"value\":{\"idx\":1,\"version\":1},\"version\":1},{\"value\":{\"idx\":1,\"version\":1},\"version\":1},{\"value\":{\"idx\":1,\"version\":1},\"version\":1},{\"value\":{\"idx\":2,\"version\":1},\"version\":1},{\"value\":{\"idx\":2,\"version\":1},\"version\":1},{\"value\":{\"idx\":2,\"version\":1},\"version\":1},{\"value\":{\"idx\":1,\"version\":1},\"version\":1},{\"value\":{\"idx\":2,\"version\":1},\"version\":1},{\"value\":{\"idx\":2,\"version\":1},\"version\":1},{\"value\":{\"idx\":2,\"version\":1},\"version\":1},{\"value\":{\"idx\":2,\"version\":1},\"version\":1},{\"value\":{\"idx\":2,\"version\":1},\"version\":1}],\"subgraph_nodes\":[{\"value\":null,\"version\":0},{\"value\":[{\"idx\":7,\"version\":1},{\"idx\":1,\"version\":1},{\"idx\":2,\"version\":1},{\"idx\":3,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":9,\"version\":1},{\"idx\":10,\"version\":1},{\"idx\":11,\"version\":1},{\"idx\":12,\"version\":1},{\"idx\":4,\"version\":1},{\"idx\":5,\"version\":1},{\"idx\":6,\"version\":1},{\"idx\":8,\"version\":1}],\"version\":1}],\"subgraph_stratum\":[{\"value\":null,\"version\":0},{\"value\":0,\"version\":1},{\"value\":0,\"version\":1}],\"node_varnames\":[{\"value\":null,\"version\":0},{\"value\":\"ints\",\"version\":1},{\"value\":\"ints\",\"version\":1},{\"value\":\"ints\",\"version\":1},{\"value\":\"result\",\"version\":1},{\"value\":\"result\",\"version\":1},{\"value\":\"result\",\"version\":1}]}",
             );
             df.__assign_diagnostics("[]");
+            let (hoff_13v1_send, hoff_13v1_recv) = df
+                .make_edge::<
+                    _,
+                    hydroflow::scheduled::handoff::VecHandoff<_>,
+                >("handoff GraphNodeId(13v1)");
             let (hoff_14v1_send, hoff_14v1_recv) = df
                 .make_edge::<
                     _,
@@ -21,6 +26,11 @@ fn main() {
                     _,
                     hydroflow::scheduled::handoff::VecHandoff<_>,
                 >("handoff GraphNodeId(15v1)");
+            let (hoff_16v1_send, hoff_16v1_recv) = df
+                .make_edge::<
+                    _,
+                    hydroflow::scheduled::handoff::VecHandoff<_>,
+                >("handoff GraphNodeId(16v1)");
             let mut sg_1v1_node_7v1_stream = {
                 #[inline(always)]
                 fn check_stream<
@@ -35,7 +45,7 @@ fn main() {
                 > {
                     ::std::boxed::Box::pin(stream)
                 }
-                check_stream(input)
+                check_stream(ints)
             };
             let sg_1v1_node_2v1_uniquedata = df
                 .add_state(
@@ -50,8 +60,21 @@ fn main() {
                 "Subgraph GraphSubgraphId(1v1)",
                 0,
                 var_expr!(),
-                var_expr!(hoff_14v1_send, hoff_15v1_send),
-                move |context, var_args!(), var_args!(hoff_14v1_send, hoff_15v1_send)| {
+                var_expr!(
+                    hoff_13v1_send, hoff_14v1_send, hoff_15v1_send, hoff_16v1_send
+                ),
+                move |
+                    context,
+                    var_args!(),
+                    var_args!(
+                        hoff_13v1_send, hoff_14v1_send, hoff_15v1_send, hoff_16v1_send
+                    )|
+                {
+                    let hoff_13v1_send = hydroflow::pusherator::for_each::ForEach::new(|
+                        v|
+                    {
+                        hoff_13v1_send.give(Some(v));
+                    });
                     let hoff_14v1_send = hydroflow::pusherator::for_each::ForEach::new(|
                         v|
                     {
@@ -61,6 +84,11 @@ fn main() {
                         v|
                     {
                         hoff_15v1_send.give(Some(v));
+                    });
+                    let hoff_16v1_send = hydroflow::pusherator::for_each::ForEach::new(|
+                        v|
+                    {
+                        hoff_16v1_send.give(Some(v));
                     });
                     let op_7v1 = std::iter::from_fn(|| {
                         match hydroflow::futures::stream::Stream::poll_next(
@@ -131,8 +159,14 @@ fn main() {
                         check_op_2v1(op_2v1)
                     };
                     let op_3v1 = hydroflow::pusherator::tee::Tee::new(
-                        hoff_14v1_send,
-                        hoff_15v1_send,
+                        hoff_13v1_send,
+                        hydroflow::pusherator::tee::Tee::new(
+                            hoff_14v1_send,
+                            hydroflow::pusherator::tee::Tee::new(
+                                hoff_15v1_send,
+                                hoff_16v1_send,
+                            ),
+                        ),
                     );
                     let op_3v1 = {
                         #[inline(always)]
@@ -157,26 +191,6 @@ fn main() {
                     check_pivot_run(op_2v1, op_3v1);
                 },
             );
-            let sg_2v1_node_9v1_joindata_lhs = df
-                .add_state(
-                    std::cell::RefCell::new(
-                        hydroflow::lang::monotonic_map::MonotonicMap::new_init(
-                            hydroflow::lang::clear::ClearDefault(
-                                hydroflow::compiled::pull::HalfJoinState::default(),
-                            ),
-                        ),
-                    ),
-                );
-            let sg_2v1_node_9v1_joindata_rhs = df
-                .add_state(
-                    std::cell::RefCell::new(
-                        hydroflow::lang::monotonic_map::MonotonicMap::new_init(
-                            hydroflow::lang::clear::ClearDefault(
-                                hydroflow::compiled::pull::HalfJoinState::default(),
-                            ),
-                        ),
-                    ),
-                );
             let sg_2v1_node_5v1_uniquedata = df
                 .add_state(
                     ::std::cell::RefCell::new(
@@ -189,83 +203,26 @@ fn main() {
             df.add_subgraph_stratified(
                 "Subgraph GraphSubgraphId(2v1)",
                 0,
-                var_expr!(hoff_14v1_recv, hoff_15v1_recv),
+                var_expr!(
+                    hoff_13v1_recv, hoff_14v1_recv, hoff_15v1_recv, hoff_16v1_recv
+                ),
                 var_expr!(),
-                move |context, var_args!(hoff_14v1_recv, hoff_15v1_recv), var_args!()| {
+                move |
+                    context,
+                    var_args!(
+                        hoff_13v1_recv, hoff_14v1_recv, hoff_15v1_recv, hoff_16v1_recv
+                    ),
+                    var_args!()|
+                {
+                    let mut hoff_13v1_recv = hoff_13v1_recv.borrow_mut_swap();
+                    let hoff_13v1_recv = hoff_13v1_recv.drain(..);
                     let mut hoff_14v1_recv = hoff_14v1_recv.borrow_mut_swap();
                     let hoff_14v1_recv = hoff_14v1_recv.drain(..);
                     let mut hoff_15v1_recv = hoff_15v1_recv.borrow_mut_swap();
                     let hoff_15v1_recv = hoff_15v1_recv.drain(..);
-                    let op_11v1 = hoff_14v1_recv.map(|v: (_, _)| ((v.0, v.1), ()));
-                    let op_11v1 = {
-                        #[inline(always)]
-                        pub fn check_op_11v1<
-                            Input: ::std::iter::Iterator<Item = Item>,
-                            Item,
-                        >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
-                            input
-                        }
-                        check_op_11v1(op_11v1)
-                    };
-                    let op_12v1 = hoff_15v1_recv.map(|v: (_, _)| ((v.1, v.0), ()));
-                    let op_12v1 = {
-                        #[inline(always)]
-                        pub fn check_op_12v1<
-                            Input: ::std::iter::Iterator<Item = Item>,
-                            Item,
-                        >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
-                            input
-                        }
-                        check_op_12v1(op_12v1)
-                    };
-                    let mut sg_2v1_node_9v1_joindata_lhs_borrow = context
-                        .state_ref(sg_2v1_node_9v1_joindata_lhs)
-                        .borrow_mut();
-                    let mut sg_2v1_node_9v1_joindata_rhs_borrow = context
-                        .state_ref(sg_2v1_node_9v1_joindata_rhs)
-                        .borrow_mut();
-                    let op_9v1 = {
-                        /// Limit error propagation by bounding locally, erasing output iterator type.
-                        #[inline(always)]
-                        fn check_inputs<'a, K, I1, V1, I2, V2>(
-                            lhs: I1,
-                            rhs: I2,
-                            lhs_state: &'a mut hydroflow::compiled::pull::HalfJoinState<
-                                K,
-                                V1,
-                                V2,
-                            >,
-                            rhs_state: &'a mut hydroflow::compiled::pull::HalfJoinState<
-                                K,
-                                V2,
-                                V1,
-                            >,
-                        ) -> impl 'a + Iterator<Item = (K, (V1, V2))>
-                        where
-                            K: Eq + std::hash::Hash + Clone,
-                            V1: Eq + Clone,
-                            V2: Eq + Clone,
-                            I1: 'a + Iterator<Item = (K, V1)>,
-                            I2: 'a + Iterator<Item = (K, V2)>,
-                        {
-                            hydroflow::compiled::pull::SymmetricHashJoin::new_from_mut(
-                                lhs,
-                                rhs,
-                                lhs_state,
-                                rhs_state,
-                            )
-                        }
-                        check_inputs(
-                            op_11v1,
-                            op_12v1,
-                            &mut sg_2v1_node_9v1_joindata_lhs_borrow
-                                .try_insert_with(context.current_tick(), Default::default)
-                                .0,
-                            &mut sg_2v1_node_9v1_joindata_rhs_borrow
-                                .try_insert_with(context.current_tick(), Default::default)
-                                .0,
-                        )
-                    };
+                    let mut hoff_16v1_recv = hoff_16v1_recv.borrow_mut_swap();
+                    let hoff_16v1_recv = hoff_16v1_recv.drain(..);
+                    let op_9v1 = hoff_13v1_recv.map(|row: (_,)| (123,));
                     let op_9v1 = {
                         #[inline(always)]
                         pub fn check_op_9v1<
@@ -276,7 +233,7 @@ fn main() {
                         }
                         check_op_9v1(op_9v1)
                     };
-                    let op_10v1 = op_9v1.map(|kv: ((_, _), ((), ()))| (kv.0.0, kv.0.1));
+                    let op_10v1 = hoff_14v1_recv.map(|row: (_,)| (row.0 + 123,));
                     let op_10v1 = {
                         #[inline(always)]
                         pub fn check_op_10v1<
@@ -287,16 +244,28 @@ fn main() {
                         }
                         check_op_10v1(op_10v1)
                     };
-                    let op_13v1 = op_10v1.map(|row: (_, _)| (row.0, row.1));
-                    let op_13v1 = {
+                    let op_11v1 = hoff_15v1_recv
+                        .map(|row: (_,)| (row.0.clone() + row.0,));
+                    let op_11v1 = {
                         #[inline(always)]
-                        pub fn check_op_13v1<
+                        pub fn check_op_11v1<
                             Input: ::std::iter::Iterator<Item = Item>,
                             Item,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
                             input
                         }
-                        check_op_13v1(op_13v1)
+                        check_op_11v1(op_11v1)
+                    };
+                    let op_12v1 = hoff_16v1_recv.map(|row: (_,)| (123 - row.0,));
+                    let op_12v1 = {
+                        #[inline(always)]
+                        pub fn check_op_12v1<
+                            Input: ::std::iter::Iterator<Item = Item>,
+                            Item,
+                        >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            input
+                        }
+                        check_op_12v1(op_12v1)
                     };
                     let op_4v1 = {
                         #[allow(unused)]
@@ -308,7 +277,10 @@ fn main() {
                         >(a: A, b: B) -> impl ::std::iter::Iterator<Item = Item> {
                             a.chain(b)
                         }
-                        op_13v1
+                        check_inputs(
+                            check_inputs(check_inputs(op_9v1, op_10v1), op_11v1),
+                            op_12v1,
+                        )
                     };
                     let op_4v1 = {
                         #[inline(always)]
@@ -359,7 +331,7 @@ fn main() {
                         check_op_6v1(op_6v1)
                     };
                     let op_8v1 = hydroflow::pusherator::for_each::ForEach::new(|v| {
-                        out.send(v).unwrap()
+                        result.send(v).unwrap()
                     });
                     let op_8v1 = {
                         #[inline(always)]

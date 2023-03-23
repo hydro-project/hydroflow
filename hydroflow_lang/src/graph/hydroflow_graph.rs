@@ -521,8 +521,14 @@ impl HydroflowGraph {
     }
 
     /// Emit this `HydroflowGraph` as runnable Rust source code tokens.
-    pub fn as_code(&self, root: TokenStream, include_type_guards: bool) -> TokenStream {
-        let hf = &Ident::new(HYDROFLOW, Span::call_site());
+    pub fn as_code(
+        &self,
+        root: &TokenStream,
+        include_type_guards: bool,
+        diagnostics: &mut Vec<Diagnostic>,
+    ) -> TokenStream {
+        let hf = Ident::new(HYDROFLOW, Span::call_site());
+        let context = Ident::new(CONTEXT, Span::call_site());
 
         let handoffs = self
             .nodes
@@ -540,8 +546,6 @@ impl HydroflowGraph {
                         #hf.make_edge::<_, #root::scheduled::handoff::VecHandoff<_>>(#hoff_name);
                 }
             });
-
-        let mut diagnostics = Vec::new();
 
         let subgraph_handoffs = self.helper_collect_subgraph_handoffs();
 
@@ -640,9 +644,17 @@ impl HydroflowGraph {
                             let is_pull = idx < pull_to_push_idx;
 
                             let context_args = WriteContextArgs {
-                                root: &root,
-                                context: &Ident::new(CONTEXT, op_span),
-                                hydroflow: &Ident::new(HYDROFLOW, op_span),
+                                root,
+                                // There's a bit of dark magic hidden in `Span`s... you'd think it's just a `file:line:column`,
+                                // but it has one extra bit of info for _name resolution_, used for `Ident`s. `Span::call_site()`
+                                // has the (unhygienic) resolution we want, an ident is just solely determined by its string name,
+                                // which is what you'd expect out of unhygienic proc macros like this. Meanwhile, declarative macros
+                                // use `Span::mixed_site()` which is weird and I don't understand it. It turns out that if you call
+                                // the hydroflow syntax proc macro from _within_ a declarative macro then `op_span` will have the
+                                // bad `Span::mixed_site()` name resolution and cause "Cannot find value `df/context`" errors. So
+                                // we call `.resolved_at()` to fix resolution back to `Span::call_site()`. -Mingwei
+                                hydroflow: &Ident::new(HYDROFLOW, op_span.resolved_at(hf.span())),
+                                context: &Ident::new(CONTEXT, op_span.resolved_at(context.span())),
                                 subgraph_id,
                                 node_id,
                                 op_span,
@@ -654,7 +666,7 @@ impl HydroflowGraph {
                                 op_inst,
                             };
 
-                            let write_result = (op_constraints.write_fn)(&context_args, &mut diagnostics);
+                            let write_result = (op_constraints.write_fn)(&context_args, diagnostics);
                             let Ok(OperatorWriteOutput {
                                 write_prologue,
                                 write_iterator,
@@ -729,7 +741,6 @@ impl HydroflowGraph {
                 let stratum = Literal::usize_unsuffixed(
                     self.subgraph_stratum.get(subgraph_id).cloned().unwrap_or(0),
                 );
-                let context = Ident::new(CONTEXT, Span::call_site());
                 quote! {
                     #( #op_prologue_code )*
 
@@ -748,27 +759,34 @@ impl HydroflowGraph {
                 }
             });
 
-        let serde_string = serde_json::to_string(&self).unwrap();
-        // Newline left over from old code, snapshot outputs.
-        let serde_string = Literal::string(&*serde_string);
+        // These two are quoted separately here because iterators are lazily evaluated, so this
+        // forces them to do their work. This work includes populating some data, namely
+        // `diagonstics`, which we need to determine if it compilation was actually successful.
+        // -Mingwei
         let code = quote! {
+            #( #handoffs )*
+            #( #subgraphs )*
+        };
+
+        let meta_graph_json = serde_json::to_string(&self).unwrap();
+        let meta_graph_json = Literal::string(&*meta_graph_json);
+
+        let serde_diagnostics: Vec<_> = diagnostics.iter().map(Diagnostic::to_serde).collect();
+        let diagnostics_json = serde_json::to_string(&*serde_diagnostics).unwrap();
+        let diagnostics_json = Literal::string(&*diagnostics_json);
+
+        quote! {
             {
                 use #root::{var_expr, var_args};
 
-                let mut #hf = #root::scheduled::graph::Hydroflow::new_with_graph(#serde_string);
+                let mut #hf = #root::scheduled::graph::Hydroflow::new();
+                #hf.__assign_meta_graph(#meta_graph_json);
+                #hf.__assign_diagnostics(#diagnostics_json);
 
-                #( #handoffs )*
-                #( #subgraphs )*
+                #code
 
                 #hf
             }
-        };
-
-        diagnostics.iter().for_each(Diagnostic::emit);
-        if diagnostics.iter().any(Diagnostic::is_error) {
-            quote! { #root::scheduled::graph::Hydroflow::new() }
-        } else {
-            code
         }
     }
 

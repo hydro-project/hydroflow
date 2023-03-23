@@ -45,6 +45,7 @@ mod sort;
 mod sort_by;
 mod source_interval;
 mod source_iter;
+mod source_json;
 mod source_stdin;
 mod source_stream;
 mod source_stream_serde;
@@ -243,6 +244,7 @@ pub const OPERATORS: &[OperatorConstraints] = &[
     sort_by::SORT_BY,
     source_interval::SOURCE_INTERVAL,
     source_iter::SOURCE_ITER,
+    source_json::SOURCE_JSON,
     source_stdin::SOURCE_STDIN,
     source_stream::SOURCE_STREAM,
     source_stream_serde::SOURCE_STREAM_SERDE,

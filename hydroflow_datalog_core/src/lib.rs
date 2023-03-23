@@ -1,3 +1,4 @@
+use rust_sitter::errors::{ParseError, ParseErrorReason};
 use std::collections::{HashMap, HashSet};
 
 use hydroflow_lang::{
@@ -16,12 +17,15 @@ use grammar::datalog::*;
 use join_plan::*;
 use util::{repeat_tuple, Counter};
 
+static MAGIC_RELATIONS: [&str; 1] = ["less_than"];
+
 pub fn gen_hydroflow_graph(
     literal: proc_macro2::Literal,
-) -> Result<HydroflowGraph, (Vec<rust_sitter::errors::ParseError>, Vec<Diagnostic>)> {
+) -> Result<HydroflowGraph, Vec<Diagnostic>> {
     let str_node: syn::LitStr = parse_quote!(#literal);
     let actual_str = str_node.value();
-    let program: Program = grammar::datalog::parse(&actual_str).map_err(|e| (e, vec![]))?;
+    let program: Program =
+        grammar::datalog::parse(&actual_str).map_err(|e| handle_errors(e, &literal))?;
 
     let mut inputs = Vec::new();
     let mut outputs = Vec::new();
@@ -30,12 +34,22 @@ pub fn gen_hydroflow_graph(
 
     for stmt in &program.rules {
         match stmt {
-            Declaration::Input(_, ident, hf_code) => inputs.push((ident, hf_code)),
-            Declaration::Output(_, ident, hf_code) => outputs.push((ident, hf_code)),
+            Declaration::Input(_, ident, hf_code) => {
+                assert!(!MAGIC_RELATIONS.contains(&ident.name.as_str()));
+                inputs.push((ident, hf_code))
+            }
+            Declaration::Output(_, ident, hf_code) => {
+                assert!(!MAGIC_RELATIONS.contains(&ident.name.as_str()));
+                outputs.push((ident, hf_code))
+            }
             Declaration::Async(_, ident, send_hf, recv_hf) => {
+                assert!(!MAGIC_RELATIONS.contains(&ident.name.as_str()));
                 asyncs.push((ident, send_hf, recv_hf))
             }
-            Declaration::Rule(rule) => rules.push(rule),
+            Declaration::Rule(rule) => {
+                assert!(!MAGIC_RELATIONS.contains(&rule.target.name.name.as_str()));
+                rules.push(rule)
+            }
         }
     }
 
@@ -135,19 +149,65 @@ pub fn gen_hydroflow_graph(
     }
 
     if !diagnostics.is_empty() {
-        Err((vec![], diagnostics))
+        Err(diagnostics)
     } else {
-        let flat_graph = flat_graph_builder
-            .build(Level::Error)
-            .unwrap_or_else(std::convert::identity);
+        let (flat_graph, diagnostics) = flat_graph_builder.build();
+        diagnostics
+            .iter()
+            .filter(|diag| diag.is_error())
+            .for_each(Diagnostic::emit);
         Ok(flat_graph)
     }
+}
+
+fn handle_errors(errors: Vec<ParseError>, literal: &proc_macro2::Literal) -> Vec<Diagnostic> {
+    let mut diagnostics = vec![];
+    for error in errors {
+        let reason = error.reason;
+        let my_span = literal.subspan(error.start + 3..error.end + 3).unwrap();
+        match reason {
+            ParseErrorReason::UnexpectedToken(msg) => {
+                diagnostics.push(Diagnostic::spanned(
+                    my_span,
+                    Level::Error,
+                    format!("Unexpected Token: '{msg}'", msg = msg),
+                ));
+            }
+            ParseErrorReason::MissingToken(msg) => {
+                diagnostics.push(Diagnostic::spanned(
+                    my_span,
+                    Level::Error,
+                    format!("Missing Token: '{msg}'", msg = msg),
+                ));
+            }
+            ParseErrorReason::FailedNode(_vec) => {
+                if _vec.is_empty() {
+                    diagnostics.push(Diagnostic::spanned(
+                        my_span,
+                        Level::Error,
+                        "Failed to parse",
+                    ));
+                } else {
+                    diagnostics.extend(handle_errors(_vec, literal));
+                }
+            }
+        }
+    }
+
+    diagnostics
 }
 
 pub fn hydroflow_graph_to_program(flat_graph: HydroflowGraph, root: TokenStream) -> syn::Stmt {
     let partitioned_graph =
         partition_graph(flat_graph).expect("Failed to partition (cycle detected).");
-    let code_tokens = partitioned_graph.as_code(root, true);
+
+    let mut diagnostics = Vec::new();
+    let code_tokens = partitioned_graph.as_code(&root, true, &mut diagnostics);
+    assert_eq!(
+        0,
+        diagnostics.len(),
+        "Operator diagnostic occured during codegen"
+    );
 
     syn::parse_quote!({
         #code_tokens
@@ -172,7 +232,7 @@ fn generate_rule(
         .iter()
         .filter_map(|x| match x {
             Atom::Relation(negated, e) => {
-                if negated.is_none() {
+                if negated.is_none() && !MAGIC_RELATIONS.contains(&e.name.name.as_str()) {
                     Some(JoinPlan::Source(e))
                 } else {
                     None
@@ -208,6 +268,27 @@ fn generate_rule(
     if !predicates.is_empty() {
         plan = JoinPlan::Predicate(predicates, Box::new(plan))
     }
+
+    plan = sources.iter().fold(plan, |acc, atom| match atom {
+        Atom::Relation(negated, e) => {
+            if MAGIC_RELATIONS.contains(&e.name.name.as_str()) {
+                match e.name.name.as_str() {
+                    "less_than" => {
+                        assert!(negated.is_none());
+                        JoinPlan::MagicNatLt(
+                            Box::new(acc),
+                            e.fields[0].clone(),
+                            e.fields[1].clone(),
+                        )
+                    }
+                    o => panic!("Unknown magic relation {}", o),
+                }
+            } else {
+                acc
+            }
+        }
+        _ => acc,
+    });
 
     let out_expanded = expand_join_plan(&plan, flat_graph_builder, tee_counter, next_join_idx);
 
@@ -321,7 +402,10 @@ fn gen_value_expr(
                 parse_quote!(())
             }
         }
-        ValueExpr::Integer(i) => parse_quote!(#i),
+        ValueExpr::Integer(i) => syn::Expr::Lit(syn::ExprLit {
+            attrs: Vec::new(),
+            lit: syn::Lit::Int(syn::LitInt::new(&i.to_string(), Span::call_site())),
+        }),
         ValueExpr::Add(l, _, r) => {
             let l = gen_value_expr(l, field_use_count, field_use_cur, out_expanded, diagnostics);
             let r = gen_value_expr(r, field_use_count, field_use_cur, out_expanded, diagnostics);
@@ -747,6 +831,21 @@ mod tests {
             .output result `for_each(|v| result.send(v).unwrap())`
 
             result(a, a) :- strings(a)
+            "#
+        );
+    }
+
+    #[test]
+    fn test_expr_lhs() {
+        test_snapshots!(
+            r#"
+            .input ints `source_stream(ints)`
+            .output result `for_each(|v| result.send(v).unwrap())`
+
+            result(123) :- ints(a)
+            result(a + 123) :- ints(a)
+            result(a + a) :- ints(a)
+            result(123 - a) :- ints(a)
             "#
         );
     }

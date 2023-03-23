@@ -77,6 +77,7 @@ pub const GROUP_BY: OperatorConstraints = OperatorConstraints {
     },
     input_delaytype_fn: |_| Some(DelayType::Stratum),
     write_fn: |wc @ &WriteContextArgs {
+                   hydroflow,
                    context,
                    op_span,
                    ident,
@@ -141,7 +142,7 @@ pub const GROUP_BY: OperatorConstraints = OperatorConstraints {
 
                 (
                     quote_spanned! {op_span=>
-                        let #groupbydata_ident = df.add_state(::std::cell::RefCell::new(::std::collections::HashMap::<#( #generic_type_args ),*>::new()));
+                        let #groupbydata_ident = #hydroflow.add_state(::std::cell::RefCell::new(::std::collections::HashMap::<#( #generic_type_args ),*>::new()));
                     },
                     quote_spanned! {op_span=>
                     let mut #hashtable_ident = #context.state_ref(#groupbydata_ident).borrow_mut();

@@ -43,6 +43,7 @@ pub struct HydroflowCrate {
     server_defns: HashMap<String, ServerPort>,
 
     launched_binary: Option<Arc<RwLock<dyn LaunchedBinary>>>,
+    started: bool,
 }
 
 impl HydroflowCrate {
@@ -65,6 +66,7 @@ impl HydroflowCrate {
             launched_host: None,
             server_defns: HashMap::new(),
             launched_binary: None,
+            started: false,
         }
     }
 
@@ -190,6 +192,10 @@ impl HydroflowCrate {
 #[async_trait]
 impl Service for HydroflowCrate {
     fn collect_resources(&mut self, _resource_batch: &mut ResourceBatch) {
+        if self.launched_host.is_some() {
+            return;
+        }
+
         let built = self.build();
         self.built_binary = Some(built);
 
@@ -205,12 +211,20 @@ impl Service for HydroflowCrate {
     }
 
     async fn deploy(&mut self, resource_result: &Arc<ResourceResult>) {
+        if self.launched_host.is_some() {
+            return;
+        }
+
         let mut host_write = self.on.write().await;
         let launched = host_write.provision(resource_result);
         self.launched_host = Some(launched.await);
     }
 
     async fn ready(&mut self) -> Result<()> {
+        if self.launched_binary.is_some() {
+            return Ok(());
+        }
+
         let launched_host = self.launched_host.as_ref().unwrap();
 
         let binary = launched_host
@@ -252,6 +266,10 @@ impl Service for HydroflowCrate {
     }
 
     async fn start(&mut self) {
+        if self.started {
+            return;
+        }
+
         let mut sink_ports = HashMap::new();
         for (port_name, outgoing) in self.port_to_server.drain() {
             sink_ports.insert(port_name.clone(), outgoing.sink_port().await);
@@ -269,6 +287,8 @@ impl Service for HydroflowCrate {
             .send(format!("start: {formatted_defns}\n"))
             .await
             .unwrap();
+
+        self.started = true;
     }
 
     async fn stop(&mut self) -> Result<()> {
