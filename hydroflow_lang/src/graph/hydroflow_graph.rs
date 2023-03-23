@@ -11,6 +11,7 @@ use slotmap::{Key, SecondaryMap, SlotMap, SparseSecondaryMap};
 use syn::spanned::Spanned;
 
 use crate::diagnostic::{Diagnostic, Level};
+use crate::graph::ops::null_write_iterator_fn;
 use crate::pretty_span::{PrettyRowCol, PrettySpan};
 
 use super::graph_write::{Dot, GraphWrite, Mermaid};
@@ -667,13 +668,11 @@ impl HydroflowGraph {
                             };
 
                             let write_result = (op_constraints.write_fn)(&context_args, diagnostics);
-                            let Ok(OperatorWriteOutput {
+                            let OperatorWriteOutput {
                                 write_prologue,
                                 write_iterator,
                                 write_iterator_after,
-                            }) = write_result else {
-                                continue;
-                            };
+                            } = write_result.unwrap_or_else(|()| OperatorWriteOutput { write_iterator: null_write_iterator_fn(&context_args), ..Default::default() });
 
                             op_prologue_code.push(write_prologue);
                             subgraph_op_iter_code.push(write_iterator);
