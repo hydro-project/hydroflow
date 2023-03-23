@@ -127,7 +127,7 @@ pub fn gen_hydroflow_graph(
         let recv_pipeline: Pipeline = syn::parse_str(&recv_hf.code).unwrap();
 
         flat_graph_builder.add_statement(parse_quote! {
-            #async_send_pipeline = merge() -> #send_pipeline
+            #async_send_pipeline = merge() -> unique::<'tick>() -> #send_pipeline
         });
 
         flat_graph_builder.add_statement(parse_quote! {
@@ -555,7 +555,7 @@ fn apply_aggregations(
                 };
 
                 parse_quote! {
-                    #old_at_index = if let Some(prev) = #old_at_index {
+                    #old_at_index = if let Some(prev) = #old_at_index.take() {
                         Some(#agg_expr)
                     } else {
                         Some(#agg_initial)

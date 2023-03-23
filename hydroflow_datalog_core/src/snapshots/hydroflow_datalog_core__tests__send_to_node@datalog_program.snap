@@ -8,10 +8,10 @@ fn main() {
             use hydroflow::{var_expr, var_args};
             let mut df = hydroflow::scheduled::graph::Hydroflow::new();
             df.__assign_meta_graph(
-                "{\"nodes\":[{\"value\":null,\"version\":0},{\"value\":{\"Operator\":\"merge ()\"},\"version\":1},{\"value\":{\"Operator\":\"unique :: < 'tick > ()\"},\"version\":1},{\"value\":{\"Operator\":\"tee ()\"},\"version\":1},{\"value\":{\"Operator\":\"merge ()\"},\"version\":1},{\"value\":{\"Operator\":\"unique :: < 'tick > ()\"},\"version\":1},{\"value\":{\"Operator\":\"tee ()\"},\"version\":1},{\"value\":{\"Operator\":\"source_stream (ints)\"},\"version\":1},{\"value\":{\"Operator\":\"for_each (| v | result . send (v) . unwrap ())\"},\"version\":1},{\"value\":{\"Operator\":\"merge ()\"},\"version\":1},{\"value\":{\"Operator\":\"for_each (| (node , data) | async_send_result (node , data))\"},\"version\":1},{\"value\":{\"Operator\":\"source_stream (async_receive_result)\"},\"version\":1},{\"value\":{\"Operator\":\"map (| row : (_ , _ ,) | (row . 0 , row . 1 ,))\"},\"version\":1},{\"value\":{\"Operator\":\"map (| v : (_ , _ ,) | (v . 1 , (v . 0 ,)))\"},\"version\":1}],\"graph\":[{\"value\":null,\"version\":0},{\"value\":[{\"idx\":2,\"version\":1},{\"idx\":3,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":1,\"version\":1},{\"idx\":2,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":5,\"version\":1},{\"idx\":6,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":4,\"version\":1},{\"idx\":5,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":7,\"version\":1},{\"idx\":1,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":6,\"version\":1},{\"idx\":8,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":9,\"version\":1},{\"idx\":10,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":11,\"version\":1},{\"idx\":4,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":13,\"version\":1},{\"idx\":9,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":12,\"version\":1},{\"idx\":13,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":3,\"version\":1},{\"idx\":12,\"version\":1}],\"version\":1}],\"ports\":[{\"value\":null,\"version\":0},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",{\"Int\":\"0\"}],\"version\":1},{\"value\":[{\"Int\":\"0\"},\"Elided\"],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",{\"Int\":\"0\"}],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[{\"Int\":\"0\"},\"Elided\"],\"version\":1}],\"node_subgraph\":[{\"value\":null,\"version\":0},{\"value\":{\"idx\":2,\"version\":1},\"version\":1},{\"value\":{\"idx\":2,\"version\":1},\"version\":1},{\"value\":{\"idx\":2,\"version\":1},\"version\":1},{\"value\":{\"idx\":1,\"version\":1},\"version\":1},{\"value\":{\"idx\":1,\"version\":1},\"version\":1},{\"value\":{\"idx\":1,\"version\":1},\"version\":1},{\"value\":{\"idx\":2,\"version\":1},\"version\":1},{\"value\":{\"idx\":1,\"version\":1},\"version\":1},{\"value\":{\"idx\":2,\"version\":1},\"version\":1},{\"value\":{\"idx\":2,\"version\":1},\"version\":1},{\"value\":{\"idx\":1,\"version\":1},\"version\":1},{\"value\":{\"idx\":2,\"version\":1},\"version\":1},{\"value\":{\"idx\":2,\"version\":1},\"version\":1}],\"subgraph_nodes\":[{\"value\":null,\"version\":0},{\"value\":[{\"idx\":11,\"version\":1},{\"idx\":4,\"version\":1},{\"idx\":5,\"version\":1},{\"idx\":6,\"version\":1},{\"idx\":8,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":7,\"version\":1},{\"idx\":1,\"version\":1},{\"idx\":2,\"version\":1},{\"idx\":3,\"version\":1},{\"idx\":12,\"version\":1},{\"idx\":13,\"version\":1},{\"idx\":9,\"version\":1},{\"idx\":10,\"version\":1}],\"version\":1}],\"subgraph_stratum\":[{\"value\":null,\"version\":0},{\"value\":0,\"version\":1},{\"value\":0,\"version\":1}],\"node_varnames\":[{\"value\":null,\"version\":0},{\"value\":\"ints\",\"version\":1},{\"value\":\"ints\",\"version\":1},{\"value\":\"ints\",\"version\":1},{\"value\":\"result\",\"version\":1},{\"value\":\"result\",\"version\":1},{\"value\":\"result\",\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":\"result_async_send\",\"version\":1},{\"value\":\"result_async_send\",\"version\":1}]}",
+                "{\"nodes\":[{\"value\":null,\"version\":0},{\"value\":{\"Operator\":\"merge ()\"},\"version\":1},{\"value\":{\"Operator\":\"unique :: < 'tick > ()\"},\"version\":1},{\"value\":{\"Operator\":\"tee ()\"},\"version\":1},{\"value\":{\"Operator\":\"merge ()\"},\"version\":1},{\"value\":{\"Operator\":\"unique :: < 'tick > ()\"},\"version\":1},{\"value\":{\"Operator\":\"tee ()\"},\"version\":1},{\"value\":{\"Operator\":\"source_stream (ints)\"},\"version\":1},{\"value\":{\"Operator\":\"for_each (| v | result . send (v) . unwrap ())\"},\"version\":1},{\"value\":{\"Operator\":\"merge ()\"},\"version\":1},{\"value\":{\"Operator\":\"unique :: < 'tick > ()\"},\"version\":1},{\"value\":{\"Operator\":\"for_each (| (node , data) | async_send_result (node , data))\"},\"version\":1},{\"value\":{\"Operator\":\"source_stream (async_receive_result)\"},\"version\":1},{\"value\":{\"Operator\":\"map (| row : (_ , _ ,) | (row . 0 , row . 1 ,))\"},\"version\":1},{\"value\":{\"Operator\":\"map (| v : (_ , _ ,) | (v . 1 , (v . 0 ,)))\"},\"version\":1}],\"graph\":[{\"value\":null,\"version\":0},{\"value\":[{\"idx\":2,\"version\":1},{\"idx\":3,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":1,\"version\":1},{\"idx\":2,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":5,\"version\":1},{\"idx\":6,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":4,\"version\":1},{\"idx\":5,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":7,\"version\":1},{\"idx\":1,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":6,\"version\":1},{\"idx\":8,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":10,\"version\":1},{\"idx\":11,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":9,\"version\":1},{\"idx\":10,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":12,\"version\":1},{\"idx\":4,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":14,\"version\":1},{\"idx\":9,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":13,\"version\":1},{\"idx\":14,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":3,\"version\":1},{\"idx\":13,\"version\":1}],\"version\":1}],\"ports\":[{\"value\":null,\"version\":0},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",{\"Int\":\"0\"}],\"version\":1},{\"value\":[{\"Int\":\"0\"},\"Elided\"],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",{\"Int\":\"0\"}],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[{\"Int\":\"0\"},\"Elided\"],\"version\":1}],\"node_subgraph\":[{\"value\":null,\"version\":0},{\"value\":{\"idx\":2,\"version\":1},\"version\":1},{\"value\":{\"idx\":2,\"version\":1},\"version\":1},{\"value\":{\"idx\":2,\"version\":1},\"version\":1},{\"value\":{\"idx\":1,\"version\":1},\"version\":1},{\"value\":{\"idx\":1,\"version\":1},\"version\":1},{\"value\":{\"idx\":1,\"version\":1},\"version\":1},{\"value\":{\"idx\":2,\"version\":1},\"version\":1},{\"value\":{\"idx\":1,\"version\":1},\"version\":1},{\"value\":{\"idx\":2,\"version\":1},\"version\":1},{\"value\":{\"idx\":2,\"version\":1},\"version\":1},{\"value\":{\"idx\":2,\"version\":1},\"version\":1},{\"value\":{\"idx\":1,\"version\":1},\"version\":1},{\"value\":{\"idx\":2,\"version\":1},\"version\":1},{\"value\":{\"idx\":2,\"version\":1},\"version\":1}],\"subgraph_nodes\":[{\"value\":null,\"version\":0},{\"value\":[{\"idx\":12,\"version\":1},{\"idx\":4,\"version\":1},{\"idx\":5,\"version\":1},{\"idx\":6,\"version\":1},{\"idx\":8,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":7,\"version\":1},{\"idx\":1,\"version\":1},{\"idx\":2,\"version\":1},{\"idx\":3,\"version\":1},{\"idx\":13,\"version\":1},{\"idx\":14,\"version\":1},{\"idx\":9,\"version\":1},{\"idx\":10,\"version\":1},{\"idx\":11,\"version\":1}],\"version\":1}],\"subgraph_stratum\":[{\"value\":null,\"version\":0},{\"value\":0,\"version\":1},{\"value\":0,\"version\":1}],\"node_varnames\":[{\"value\":null,\"version\":0},{\"value\":\"ints\",\"version\":1},{\"value\":\"ints\",\"version\":1},{\"value\":\"ints\",\"version\":1},{\"value\":\"result\",\"version\":1},{\"value\":\"result\",\"version\":1},{\"value\":\"result\",\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":\"result_async_send\",\"version\":1},{\"value\":\"result_async_send\",\"version\":1},{\"value\":\"result_async_send\",\"version\":1}]}",
             );
             df.__assign_diagnostics("[]");
-            let mut sg_1v1_node_11v1_stream = {
+            let mut sg_1v1_node_12v1_stream = {
                 #[inline(always)]
                 fn check_stream<
                     Stream: hydroflow::futures::stream::Stream<Item = Item>,
@@ -42,24 +42,24 @@ fn main() {
                 var_expr!(),
                 var_expr!(),
                 move |context, var_args!(), var_args!()| {
-                    let op_11v1 = std::iter::from_fn(|| {
+                    let op_12v1 = std::iter::from_fn(|| {
                         match hydroflow::futures::stream::Stream::poll_next(
-                            sg_1v1_node_11v1_stream.as_mut(),
+                            sg_1v1_node_12v1_stream.as_mut(),
                             &mut std::task::Context::from_waker(&context.waker()),
                         ) {
                             std::task::Poll::Ready(maybe) => maybe,
                             std::task::Poll::Pending => None,
                         }
                     });
-                    let op_11v1 = {
+                    let op_12v1 = {
                         #[inline(always)]
-                        pub fn check_op_11v1<
+                        pub fn check_op_12v1<
                             Input: ::std::iter::Iterator<Item = Item>,
                             Item,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
                             input
                         }
-                        check_op_11v1(op_11v1)
+                        check_op_12v1(op_12v1)
                     };
                     let op_4v1 = {
                         #[allow(unused)]
@@ -71,7 +71,7 @@ fn main() {
                         >(a: A, b: B) -> impl ::std::iter::Iterator<Item = Item> {
                             a.chain(b)
                         }
-                        op_11v1
+                        op_12v1
                     };
                     let op_4v1 = {
                         #[inline(always)]
@@ -172,6 +172,15 @@ fn main() {
                         >::default(),
                     ),
                 );
+            let sg_2v1_node_10v1_uniquedata = df
+                .add_state(
+                    ::std::cell::RefCell::new(
+                        hydroflow::lang::monotonic_map::MonotonicMap::<
+                            _,
+                            ::std::collections::HashSet<_>,
+                        >::default(),
+                    ),
+                );
             df.add_subgraph_stratified(
                 "Subgraph GraphSubgraphId(2v1)",
                 0,
@@ -257,18 +266,7 @@ fn main() {
                         }
                         check_op_3v1(op_3v1)
                     };
-                    let op_12v1 = op_3v1.map(|row: (_, _)| (row.0, row.1));
-                    let op_12v1 = {
-                        #[inline(always)]
-                        pub fn check_op_12v1<
-                            Input: ::std::iter::Iterator<Item = Item>,
-                            Item,
-                        >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
-                            input
-                        }
-                        check_op_12v1(op_12v1)
-                    };
-                    let op_13v1 = op_12v1.map(|v: (_, _)| (v.1, (v.0,)));
+                    let op_13v1 = op_3v1.map(|row: (_, _)| (row.0, row.1));
                     let op_13v1 = {
                         #[inline(always)]
                         pub fn check_op_13v1<
@@ -278,6 +276,17 @@ fn main() {
                             input
                         }
                         check_op_13v1(op_13v1)
+                    };
+                    let op_14v1 = op_13v1.map(|v: (_, _)| (v.1, (v.0,)));
+                    let op_14v1 = {
+                        #[inline(always)]
+                        pub fn check_op_14v1<
+                            Input: ::std::iter::Iterator<Item = Item>,
+                            Item,
+                        >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            input
+                        }
+                        check_op_14v1(op_14v1)
                     };
                     let op_9v1 = {
                         #[allow(unused)]
@@ -289,7 +298,7 @@ fn main() {
                         >(a: A, b: B) -> impl ::std::iter::Iterator<Item = Item> {
                             a.chain(b)
                         }
-                        op_13v1
+                        op_14v1
                     };
                     let op_9v1 = {
                         #[inline(always)]
@@ -301,12 +310,39 @@ fn main() {
                         }
                         check_op_9v1(op_9v1)
                     };
-                    let op_10v1 = hydroflow::pusherator::for_each::ForEach::new(|
-                        (node, data)|
-                    async_send_result(node, data));
+                    let op_10v1 = op_9v1
+                        .filter(|item| {
+                            let mut borrow = context
+                                .state_ref(sg_2v1_node_10v1_uniquedata)
+                                .borrow_mut();
+                            let set = borrow
+                                .try_insert_with(
+                                    (context.current_tick(), context.current_stratum()),
+                                    ::std::collections::HashSet::new,
+                                );
+                            if !set.contains(item) {
+                                set.insert(::std::clone::Clone::clone(item));
+                                true
+                            } else {
+                                false
+                            }
+                        });
                     let op_10v1 = {
                         #[inline(always)]
                         pub fn check_op_10v1<
+                            Input: ::std::iter::Iterator<Item = Item>,
+                            Item,
+                        >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            input
+                        }
+                        check_op_10v1(op_10v1)
+                    };
+                    let op_11v1 = hydroflow::pusherator::for_each::ForEach::new(|
+                        (node, data)|
+                    async_send_result(node, data));
+                    let op_11v1 = {
+                        #[inline(always)]
+                        pub fn check_op_11v1<
                             Input: hydroflow::pusherator::Pusherator<Item = Item>,
                             Item,
                         >(
@@ -314,7 +350,7 @@ fn main() {
                         ) -> impl hydroflow::pusherator::Pusherator<Item = Item> {
                             input
                         }
-                        check_op_10v1(op_10v1)
+                        check_op_11v1(op_11v1)
                     };
                     #[inline(always)]
                     fn check_pivot_run<
@@ -324,7 +360,7 @@ fn main() {
                     >(pull: Pull, push: Push) {
                         hydroflow::pusherator::pivot::Pivot::new(pull, push).run();
                     }
-                    check_pivot_run(op_9v1, op_10v1);
+                    check_pivot_run(op_10v1, op_11v1);
                 },
             );
             df
