@@ -17,6 +17,8 @@ use grammar::datalog::*;
 use join_plan::*;
 use util::{repeat_tuple, Counter};
 
+static MAGIC_RELATIONS: [&str; 1] = ["less_than"];
+
 pub fn gen_hydroflow_graph(
     literal: proc_macro2::Literal,
 ) -> Result<HydroflowGraph, Vec<Diagnostic>> {
@@ -32,12 +34,22 @@ pub fn gen_hydroflow_graph(
 
     for stmt in &program.rules {
         match stmt {
-            Declaration::Input(_, ident, hf_code) => inputs.push((ident, hf_code)),
-            Declaration::Output(_, ident, hf_code) => outputs.push((ident, hf_code)),
+            Declaration::Input(_, ident, hf_code) => {
+                assert!(!MAGIC_RELATIONS.contains(&ident.name.as_str()));
+                inputs.push((ident, hf_code))
+            }
+            Declaration::Output(_, ident, hf_code) => {
+                assert!(!MAGIC_RELATIONS.contains(&ident.name.as_str()));
+                outputs.push((ident, hf_code))
+            }
             Declaration::Async(_, ident, send_hf, recv_hf) => {
+                assert!(!MAGIC_RELATIONS.contains(&ident.name.as_str()));
                 asyncs.push((ident, send_hf, recv_hf))
             }
-            Declaration::Rule(rule) => rules.push(rule),
+            Declaration::Rule(rule) => {
+                assert!(!MAGIC_RELATIONS.contains(&rule.target.name.name.as_str()));
+                rules.push(rule)
+            }
         }
     }
 
@@ -211,7 +223,7 @@ fn generate_rule(
         .iter()
         .filter_map(|x| match x {
             Atom::Relation(negated, e) => {
-                if negated.is_none() {
+                if negated.is_none() && !MAGIC_RELATIONS.contains(&e.name.name.as_str()) {
                     Some(JoinPlan::Source(e))
                 } else {
                     None
@@ -247,6 +259,27 @@ fn generate_rule(
     if !predicates.is_empty() {
         plan = JoinPlan::Predicate(predicates, Box::new(plan))
     }
+
+    plan = sources.iter().fold(plan, |acc, atom| match atom {
+        Atom::Relation(negated, e) => {
+            if MAGIC_RELATIONS.contains(&e.name.name.as_str()) {
+                match e.name.name.as_str() {
+                    "less_than" => {
+                        assert!(negated.is_none());
+                        JoinPlan::MagicNatLt(
+                            Box::new(acc),
+                            e.fields[0].clone(),
+                            e.fields[1].clone(),
+                        )
+                    }
+                    o => panic!("Unknown magic relation {}", o),
+                }
+            } else {
+                acc
+            }
+        }
+        _ => acc,
+    });
 
     let out_expanded = expand_join_plan(&plan, flat_graph_builder, tee_counter, next_join_idx);
 

@@ -833,3 +833,27 @@ fn test_expr_lhs() {
         &[(123,), (124,), (2,), (122,)]
     );
 }
+
+#[multiplatform_test]
+fn test_less_than_relation() {
+    let (ints_send, ints) = hydroflow::util::unbounded_channel::<(i64,)>();
+    let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(i64,)>();
+
+    let mut flow = datalog!(
+        r#"
+        .input ints `source_stream(ints)`
+        .output result `for_each(|v| result.send(v).unwrap())`
+
+        result(b) :- ints(a), less_than(b, a)
+        "#
+    );
+
+    ints_send.send((5,)).unwrap();
+
+    flow.run_tick();
+
+    assert_eq!(
+        &*collect_ready::<Vec<_>, _>(&mut result_recv),
+        &[(0,), (1,), (2,), (3,), (4,)]
+    );
+}
