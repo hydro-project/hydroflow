@@ -555,7 +555,7 @@ fn apply_aggregations(
                 };
 
                 parse_quote! {
-                    #old_at_index = if let Some(prev) = #old_at_index {
+                    #old_at_index = if let Some(prev) = #old_at_index.take() {
                         Some(#agg_expr)
                     } else {
                         Some(#agg_initial)
