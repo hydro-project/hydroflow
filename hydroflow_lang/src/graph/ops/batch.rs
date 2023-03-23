@@ -22,7 +22,7 @@ use quote::quote_spanned;
 ///     let mut df = hydroflow::hydroflow_syntax! {
 ///         repeat_iter(0..5) -> batch(rx) -> for_each(|x| { println!("{x}"); });
 ///     };
-///     
+///
 ///     tx.send(()).unwrap();
 ///
 ///     df.run_available();
@@ -47,6 +47,8 @@ pub const BATCH: OperatorConstraints = OperatorConstraints {
     },
     input_delaytype_fn: |_| None,
     write_fn: |wc @ &WriteContextArgs {
+                   context,
+                   hydroflow,
                    ident,
                    op_span,
                    root,
@@ -64,7 +66,7 @@ pub const BATCH: OperatorConstraints = OperatorConstraints {
 
         let write_prologue = quote_spanned! {op_span=>
             let mut #stream_ident = ::std::boxed::Box::pin(#receiver);
-            let #internal_buffer = df.add_state(::std::cell::RefCell::new(::std::vec::Vec::new()));
+            let #internal_buffer = #hydroflow.add_state(::std::cell::RefCell::new(::std::vec::Vec::new()));
         };
 
         let write_iterator = if is_pull {
@@ -73,13 +75,13 @@ pub const BATCH: OperatorConstraints = OperatorConstraints {
             quote_spanned! {op_span=>
 
                 {
-                    let mut vec = context.state_ref(#internal_buffer).borrow_mut();
+                    let mut vec = #context.state_ref(#internal_buffer).borrow_mut();
                     vec.extend(#input);
                 }
 
                 let #ident = match #root::futures::stream::Stream::poll_next(#stream_ident.as_mut(), &mut ::std::task::Context::from_waker(&context.waker())) {
                     ::std::task::Poll::Ready(_) => {
-                        let mut vec = context.state_ref(#internal_buffer).borrow_mut();
+                        let mut vec = #context.state_ref(#internal_buffer).borrow_mut();
                         ::std::mem::take(&mut *vec)
                     },
                     ::std::task::Poll::Pending => {
@@ -93,7 +95,7 @@ pub const BATCH: OperatorConstraints = OperatorConstraints {
             quote_spanned! {op_span=>
 
                 let #ident = #root::pusherator::for_each::ForEach::new(|x| {
-                    let mut vec = context.state_ref(#internal_buffer).borrow_mut();
+                    let mut vec = #context.state_ref(#internal_buffer).borrow_mut();
 
                     vec.push(x);
                 });
@@ -102,7 +104,7 @@ pub const BATCH: OperatorConstraints = OperatorConstraints {
                     let mut out = #output;
                     for x in match #root::futures::stream::Stream::poll_next(#stream_ident.as_mut(), &mut ::std::task::Context::from_waker(&context.waker())) {
                         ::std::task::Poll::Ready(_) => {
-                            let mut vec = context.state_ref(#internal_buffer).borrow_mut();
+                            let mut vec = #context.state_ref(#internal_buffer).borrow_mut();
                             ::std::mem::take(&mut *vec)
                         },
                         ::std::task::Poll::Pending => {

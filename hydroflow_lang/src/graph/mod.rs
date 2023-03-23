@@ -3,7 +3,7 @@
 use std::borrow::Cow;
 use std::hash::Hash;
 
-use proc_macro2::{Ident, Span};
+use proc_macro2::{Ident, Span, TokenStream};
 use quote::ToTokens;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
@@ -12,7 +12,7 @@ use syn::spanned::Spanned;
 use syn::{Expr, ExprPath, GenericArgument, Token, Type};
 
 use crate::diagnostic::{Diagnostic, Level};
-use crate::parse::{IndexInt, Operator, PortIndex, Ported};
+use crate::parse::{HfCode, IndexInt, Operator, PortIndex, Ported};
 use crate::pretty_span::PrettySpan;
 
 use self::ops::{OperatorConstraints, Persistence};
@@ -322,4 +322,25 @@ impl Ord for PortIndexValue {
             (Self::Elided(_), _) => std::cmp::Ordering::Greater,
         }
     }
+}
+
+pub fn build_hfcode(
+    hf_code: HfCode,
+    root: &TokenStream,
+) -> (Option<(HydroflowGraph, TokenStream)>, Vec<Diagnostic>) {
+    let flat_graph_builder = FlatGraphBuilder::from_hfcode(hf_code);
+    let (flat_graph, mut diagnostics) = flat_graph_builder.build();
+    if !diagnostics.iter().any(Diagnostic::is_error) {
+        match partition_graph(flat_graph) {
+            Ok(part_graph) => {
+                let code = part_graph.as_code(root, true, &mut diagnostics);
+                if !diagnostics.iter().any(Diagnostic::is_error) {
+                    // Success.
+                    return (Some((part_graph, code)), diagnostics);
+                }
+            }
+            Err(diagnostic) => diagnostics.push(diagnostic),
+        }
+    }
+    (None, diagnostics)
 }
