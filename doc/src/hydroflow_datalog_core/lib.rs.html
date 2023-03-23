@@ -823,6 +823,15 @@
 <a href="#823" id="823">823</a>
 <a href="#824" id="824">824</a>
 <a href="#825" id="825">825</a>
+<a href="#826" id="826">826</a>
+<a href="#827" id="827">827</a>
+<a href="#828" id="828">828</a>
+<a href="#829" id="829">829</a>
+<a href="#830" id="830">830</a>
+<a href="#831" id="831">831</a>
+<a href="#832" id="832">832</a>
+<a href="#833" id="833">833</a>
+<a href="#834" id="834">834</a>
 </pre><pre class="rust"><code><span class="kw">use </span>rust_sitter::errors::{ParseError, ParseErrorReason};
 <span class="kw">use </span>std::collections::{HashMap, HashSet};
 
@@ -976,9 +985,11 @@
     <span class="kw">if </span>!diagnostics.is_empty() {
         <span class="prelude-val">Err</span>(diagnostics)
     } <span class="kw">else </span>{
-        <span class="kw">let </span>flat_graph = flat_graph_builder
-            .build(Level::Error)
-            .unwrap_or_else(std::convert::identity);
+        <span class="kw">let </span>(flat_graph, diagnostics) = flat_graph_builder.build();
+        diagnostics
+            .iter()
+            .filter(|diag| diag.is_error())
+            .for_each(Diagnostic::emit);
         <span class="prelude-val">Ok</span>(flat_graph)
     }
 }
@@ -1023,7 +1034,14 @@
 <span class="kw">pub fn </span>hydroflow_graph_to_program(flat_graph: HydroflowGraph, root: TokenStream) -&gt; syn::Stmt {
     <span class="kw">let </span>partitioned_graph =
         partition_graph(flat_graph).expect(<span class="string">&quot;Failed to partition (cycle detected).&quot;</span>);
-    <span class="kw">let </span>code_tokens = partitioned_graph.as_code(root, <span class="bool-val">true</span>);
+
+    <span class="kw">let </span><span class="kw-2">mut </span>diagnostics = Vec::new();
+    <span class="kw">let </span>code_tokens = partitioned_graph.as_code(<span class="kw-2">&amp;</span>root, <span class="bool-val">true</span>, <span class="kw-2">&amp;mut </span>diagnostics);
+    <span class="macro">assert_eq!</span>(
+        <span class="number">0</span>,
+        diagnostics.len(),
+        <span class="string">&quot;Operator diagnostic occured during codegen&quot;
+    </span>);
 
     <span class="macro">syn::parse_quote!</span>({
         #code_tokens

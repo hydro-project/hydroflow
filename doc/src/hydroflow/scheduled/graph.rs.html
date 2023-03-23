@@ -612,6 +612,28 @@
 <a href="#612" id="612">612</a>
 <a href="#613" id="613">613</a>
 <a href="#614" id="614">614</a>
+<a href="#615" id="615">615</a>
+<a href="#616" id="616">616</a>
+<a href="#617" id="617">617</a>
+<a href="#618" id="618">618</a>
+<a href="#619" id="619">619</a>
+<a href="#620" id="620">620</a>
+<a href="#621" id="621">621</a>
+<a href="#622" id="622">622</a>
+<a href="#623" id="623">623</a>
+<a href="#624" id="624">624</a>
+<a href="#625" id="625">625</a>
+<a href="#626" id="626">626</a>
+<a href="#627" id="627">627</a>
+<a href="#628" id="628">628</a>
+<a href="#629" id="629">629</a>
+<a href="#630" id="630">630</a>
+<a href="#631" id="631">631</a>
+<a href="#632" id="632">632</a>
+<a href="#633" id="633">633</a>
+<a href="#634" id="634">634</a>
+<a href="#635" id="635">635</a>
+<a href="#636" id="636">636</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::any::Any;
 <span class="kw">use </span>std::borrow::Cow;
 <span class="kw">use </span>std::cell::Cell;
@@ -620,6 +642,7 @@
 <span class="kw">use </span>std::marker::PhantomData;
 <span class="kw">use </span>std::num::NonZeroUsize;
 
+<span class="kw">use </span>hydroflow_lang::diagnostic::{Diagnostic, SerdeSpan};
 <span class="kw">use </span>hydroflow_lang::graph::HydroflowGraph;
 <span class="kw">use </span>ref_cast::RefCast;
 <span class="kw">use </span>tokio::runtime::TryCurrentError;
@@ -648,15 +671,17 @@
     <span class="doccomment">/// If the events have been received for this tick.
     </span>events_received_tick: bool,
 
-    meta_graph: <span class="prelude-ty">Option</span>&lt;HydroflowGraph&gt;,
+    <span class="doccomment">/// See [`Self::meta_graph()`].
+    </span>meta_graph: <span class="prelude-ty">Option</span>&lt;HydroflowGraph&gt;,
+    <span class="doccomment">/// See [`Self::diagnostics()`].
+    </span>diagnostics: <span class="prelude-ty">Option</span>&lt;Vec&lt;Diagnostic&lt;SerdeSpan&gt;&gt;&gt;,
 }
 <span class="kw">impl </span>Default <span class="kw">for </span>Hydroflow {
     <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
-        <span class="kw">let </span>(subgraphs, handoffs, states, task_join_handles) = Default::default();
         <span class="kw">let </span>stratum_queues = <span class="macro">vec!</span>[Default::default()]; <span class="comment">// Always initialize stratum #0.
         </span><span class="kw">let </span>(event_queue_send, event_queue_recv) = mpsc::unbounded_channel();
         <span class="kw">let </span>context = Context {
-            states,
+            states: Vec::new(),
 
             event_queue_send,
 
@@ -665,18 +690,19 @@
 
             subgraph_id: SubgraphId(<span class="number">0</span>),
 
-            task_join_handles,
+            task_join_handles: Vec::new(),
         };
         <span class="self">Self </span>{
-            subgraphs,
+            subgraphs: Vec::new(),
             context,
-            handoffs,
+            handoffs: Vec::new(),
 
             stratum_queues,
             event_queue_recv,
             events_received_tick: <span class="bool-val">false</span>,
 
             meta_graph: <span class="prelude-val">None</span>,
+            diagnostics: <span class="prelude-val">None</span>,
         }
     }
 }
@@ -686,22 +712,40 @@
         Default::default()
     }
 
-    <span class="doccomment">/// Create a new empty Hydroflow graph with the given serde_graph JSON string.
-    </span><span class="kw">pub fn </span>new_with_graph(hydroflow_graph_str: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str) -&gt; <span class="self">Self </span>{
-        <span class="kw">let </span><span class="kw-2">mut </span>hydroflow_graph: HydroflowGraph = serde_json::from_str(hydroflow_graph_str)
-            .expect(<span class="string">&quot;`new_with_graph` failed to deserialize graph.&quot;</span>);
+    <span class="doccomment">/// Assign the `HydroflowGraph` via JSON string.
+    </span><span class="attr">#[doc(hidden)]
+    </span><span class="kw">pub fn </span>__assign_meta_graph(<span class="kw-2">&amp;mut </span><span class="self">self</span>, meta_graph_json: <span class="kw-2">&amp;</span>str) {
+        <span class="kw">let </span><span class="kw-2">mut </span>meta_graph: HydroflowGraph =
+            serde_json::from_str(meta_graph_json).expect(<span class="string">&quot;Failed to deserialize graph.&quot;</span>);
 
         <span class="kw">let </span><span class="kw-2">mut </span>op_inst_diagnostics = Vec::new();
-        hydroflow_graph.insert_node_op_insts_all(<span class="kw-2">&amp;mut </span>op_inst_diagnostics);
+        meta_graph.insert_node_op_insts_all(<span class="kw-2">&amp;mut </span>op_inst_diagnostics);
         <span class="macro">assert!</span>(op_inst_diagnostics.is_empty());
 
-        <span class="kw">let </span><span class="kw-2">mut </span>graph = <span class="self">Self</span>::new();
-        graph.meta_graph.replace(hydroflow_graph);
-        graph
+        <span class="macro">assert!</span>(<span class="self">self</span>.meta_graph.replace(meta_graph).is_none());
+    }
+    <span class="doccomment">/// Assign the diagnostics via JSON string.
+    </span><span class="attr">#[doc(hidden)]
+    </span><span class="kw">pub fn </span>__assign_diagnostics(<span class="kw-2">&amp;mut </span><span class="self">self</span>, diagnostics_json: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str) {
+        <span class="kw">let </span>diagnostics: Vec&lt;Diagnostic&lt;SerdeSpan&gt;&gt; =
+            serde_json::from_str(diagnostics_json).expect(<span class="string">&quot;Failed to deserialize diagnostics.&quot;</span>);
+
+        <span class="macro">assert!</span>(<span class="self">self</span>.diagnostics.replace(diagnostics).is_none());
     }
 
-    <span class="kw">pub fn </span>meta_graph(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>HydroflowGraph&gt; {
+    <span class="doccomment">/// Return a handle to the meta `HydroflowGraph` if set. The `HydroflowGraph is a
+    /// representation of all the operators, subgraphs, and handoffs in this `Hydroflow` instance.
+    /// Will only be set if this graph was constructed using a surface syntax macro.
+    </span><span class="kw">pub fn </span>meta_graph(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>HydroflowGraph&gt; {
         <span class="self">self</span>.meta_graph.as_ref()
+    }
+
+    <span class="doccomment">/// Returns any diagnostics generated by the surface syntax macro. Each diagnostic is a pair of
+    /// (1) a `Diagnostic` with span info reset and (2) the `ToString` version of the diagnostic
+    /// with original span info.
+    /// Will only be set if this graph was constructed using a surface syntax macro.
+    </span><span class="kw">pub fn </span>diagnostics(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>[Diagnostic&lt;SerdeSpan&gt;]&gt; {
+        <span class="self">self</span>.diagnostics.as_deref()
     }
 
     <span class="doccomment">/// Returns a reactor for externally scheduling subgraphs, possibly from another thread.

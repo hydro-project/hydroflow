@@ -573,25 +573,6 @@
 <a href="#573" id="573">573</a>
 <a href="#574" id="574">574</a>
 <a href="#575" id="575">575</a>
-<a href="#576" id="576">576</a>
-<a href="#577" id="577">577</a>
-<a href="#578" id="578">578</a>
-<a href="#579" id="579">579</a>
-<a href="#580" id="580">580</a>
-<a href="#581" id="581">581</a>
-<a href="#582" id="582">582</a>
-<a href="#583" id="583">583</a>
-<a href="#584" id="584">584</a>
-<a href="#585" id="585">585</a>
-<a href="#586" id="586">586</a>
-<a href="#587" id="587">587</a>
-<a href="#588" id="588">588</a>
-<a href="#589" id="589">589</a>
-<a href="#590" id="590">590</a>
-<a href="#591" id="591">591</a>
-<a href="#592" id="592">592</a>
-<a href="#593" id="593">593</a>
-<a href="#594" id="594">594</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::borrow::Cow;
 <span class="kw">use </span>std::collections::btree_map::Entry;
 <span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
@@ -645,35 +626,16 @@
         input.into()
     }
 
-    <span class="doccomment">/// Build into an unpartitioned [`HydroflowGraph`], returning a tuple of a `HydroflowGraph` and any diagnostics.
+    <span class="doccomment">/// Build into an unpartitioned [`HydroflowGraph`], returning a tuple of a `HydroflowGraph` and
+    /// any diagnostics.
     ///
-    /// Even if there are errors, the `HydroflowGraph` will be returned (potentially in a partial state).
-    </span><span class="kw">pub fn </span>try_build(<span class="kw-2">mut </span><span class="self">self</span>) -&gt; (HydroflowGraph, Vec&lt;Diagnostic&gt;) {
+    /// Even if there are errors, the `HydroflowGraph` will be returned (potentially in a invalid
+    /// state). Does not call `emit` on any diagnostics.
+    </span><span class="kw">pub fn </span>build(<span class="kw-2">mut </span><span class="self">self</span>) -&gt; (HydroflowGraph, Vec&lt;Diagnostic&gt;) {
         <span class="self">self</span>.connect_operator_links();
         <span class="self">self</span>.process_operator_errors();
 
         (<span class="self">self</span>.flat_graph, <span class="self">self</span>.diagnostics)
-    }
-
-    <span class="doccomment">/// Build into an unpartitioned [`HydroflowGraph`].
-    ///
-    /// Emits any diagnostics more severe than `min_diagnostic_level`.
-    ///
-    /// Returns `Err(HydroflowGraph)` if there are any errors. Returns `Ok(HydroflowGraph)` if there are no
-    /// errors.
-    </span><span class="kw">pub fn </span>build(<span class="self">self</span>, min_diagnostic_level: Level) -&gt; <span class="prelude-ty">Result</span>&lt;HydroflowGraph, HydroflowGraph&gt; {
-        <span class="kw">let </span>(result, diagnostics) = <span class="self">self</span>.try_build();
-
-        diagnostics
-            .iter()
-            .filter(|<span class="kw-2">&amp;</span>diag| diag.level &lt;= min_diagnostic_level)
-            .for_each(Diagnostic::emit);
-
-        <span class="kw">if </span>diagnostics.iter().any(|diag| diag.level == Level::Error) {
-            <span class="prelude-val">Err</span>(result)
-        } <span class="kw">else </span>{
-            <span class="prelude-val">Ok</span>(result)
-        }
     }
 
     <span class="doccomment">/// Add a single [`HfStatement`] line to this `HydroflowGraph`.

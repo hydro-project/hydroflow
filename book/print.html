@@ -1886,7 +1886,7 @@ will pass through all received inputs to the output unchanged.</p>
     let mut df = hydroflow::hydroflow_syntax! {
         repeat_iter(0..5) -&gt; batch(rx) -&gt; for_each(|x| { println!(&quot;{x}&quot;); });
     };
-    
+
     tx.send(()).unwrap();
 
     df.run_available();

@@ -1075,6 +1075,24 @@
 <a href="#1075" id="1075">1075</a>
 <a href="#1076" id="1076">1076</a>
 <a href="#1077" id="1077">1077</a>
+<a href="#1078" id="1078">1078</a>
+<a href="#1079" id="1079">1079</a>
+<a href="#1080" id="1080">1080</a>
+<a href="#1081" id="1081">1081</a>
+<a href="#1082" id="1082">1082</a>
+<a href="#1083" id="1083">1083</a>
+<a href="#1084" id="1084">1084</a>
+<a href="#1085" id="1085">1085</a>
+<a href="#1086" id="1086">1086</a>
+<a href="#1087" id="1087">1087</a>
+<a href="#1088" id="1088">1088</a>
+<a href="#1089" id="1089">1089</a>
+<a href="#1090" id="1090">1090</a>
+<a href="#1091" id="1091">1091</a>
+<a href="#1092" id="1092">1092</a>
+<a href="#1093" id="1093">1093</a>
+<a href="#1094" id="1094">1094</a>
+<a href="#1095" id="1095">1095</a>
 </pre><pre class="rust"><code><span class="attr">#![deny(missing_docs)]
 
 </span><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet, HashSet};
@@ -1598,8 +1616,14 @@
     }
 
     <span class="doccomment">/// Emit this `HydroflowGraph` as runnable Rust source code tokens.
-    </span><span class="kw">pub fn </span>as_code(<span class="kw-2">&amp;</span><span class="self">self</span>, root: TokenStream, include_type_guards: bool) -&gt; TokenStream {
-        <span class="kw">let </span>hf = <span class="kw-2">&amp;</span>Ident::new(HYDROFLOW, Span::call_site());
+    </span><span class="kw">pub fn </span>as_code(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        root: <span class="kw-2">&amp;</span>TokenStream,
+        include_type_guards: bool,
+        diagnostics: <span class="kw-2">&amp;mut </span>Vec&lt;Diagnostic&gt;,
+    ) -&gt; TokenStream {
+        <span class="kw">let </span>hf = Ident::new(HYDROFLOW, Span::call_site());
+        <span class="kw">let </span>context = Ident::new(CONTEXT, Span::call_site());
 
         <span class="kw">let </span>handoffs = <span class="self">self
             </span>.nodes
@@ -1617,8 +1641,6 @@
                         #hf.make_edge::&lt;<span class="kw">_</span>, #root::scheduled::handoff::VecHandoff&lt;<span class="kw">_</span>&gt;&gt;(#hoff_name);
                 }
             });
-
-        <span class="kw">let </span><span class="kw-2">mut </span>diagnostics = Vec::new();
 
         <span class="kw">let </span>subgraph_handoffs = <span class="self">self</span>.helper_collect_subgraph_handoffs();
 
@@ -1717,9 +1739,17 @@
                             <span class="kw">let </span>is_pull = idx &lt; pull_to_push_idx;
 
                             <span class="kw">let </span>context_args = WriteContextArgs {
-                                root: <span class="kw-2">&amp;</span>root,
-                                context: <span class="kw-2">&amp;</span>Ident::new(CONTEXT, op_span),
-                                hydroflow: <span class="kw-2">&amp;</span>Ident::new(HYDROFLOW, op_span),
+                                root,
+                                <span class="comment">// There&#39;s a bit of dark magic hidden in `Span`s... you&#39;d think it&#39;s just a `file:line:column`,
+                                // but it has one extra bit of info for _name resolution_, used for `Ident`s. `Span::call_site()`
+                                // has the (unhygienic) resolution we want, an ident is just solely determined by its string name,
+                                // which is what you&#39;d expect out of unhygienic proc macros like this. Meanwhile, declarative macros
+                                // use `Span::mixed_site()` which is weird and I don&#39;t understand it. It turns out that if you call
+                                // the hydroflow syntax proc macro from _within_ a declarative macro then `op_span` will have the
+                                // bad `Span::mixed_site()` name resolution and cause &quot;Cannot find value `df/context`&quot; errors. So
+                                // we call `.resolved_at()` to fix resolution back to `Span::call_site()`. -Mingwei
+                                </span>hydroflow: <span class="kw-2">&amp;</span>Ident::new(HYDROFLOW, op_span.resolved_at(hf.span())),
+                                context: <span class="kw-2">&amp;</span>Ident::new(CONTEXT, op_span.resolved_at(context.span())),
                                 subgraph_id,
                                 node_id,
                                 op_span,
@@ -1731,7 +1761,7 @@
                                 op_inst,
                             };
 
-                            <span class="kw">let </span>write_result = (op_constraints.write_fn)(<span class="kw-2">&amp;</span>context_args, <span class="kw-2">&amp;mut </span>diagnostics);
+                            <span class="kw">let </span>write_result = (op_constraints.write_fn)(<span class="kw-2">&amp;</span>context_args, diagnostics);
                             <span class="kw">let </span><span class="prelude-val">Ok</span>(OperatorWriteOutput {
                                 write_prologue,
                                 write_iterator,
@@ -1806,7 +1836,6 @@
                 <span class="kw">let </span>stratum = Literal::usize_unsuffixed(
                     <span class="self">self</span>.subgraph_stratum.get(subgraph_id).cloned().unwrap_or(<span class="number">0</span>),
                 );
-                <span class="kw">let </span>context = Ident::new(CONTEXT, Span::call_site());
                 <span class="macro">quote! </span>{
                     #( #op_prologue_code )*
 
@@ -1825,27 +1854,34 @@
                 }
             });
 
-        <span class="kw">let </span>serde_string = serde_json::to_string(<span class="kw-2">&amp;</span><span class="self">self</span>).unwrap();
-        <span class="comment">// Newline left over from old code, snapshot outputs.
-        </span><span class="kw">let </span>serde_string = Literal::string(<span class="kw-2">&amp;*</span>serde_string);
-        <span class="kw">let </span>code = <span class="macro">quote! </span>{
+        <span class="comment">// These two are quoted separately here because iterators are lazily evaluated, so this
+        // forces them to do their work. This work includes populating some data, namely
+        // `diagonstics`, which we need to determine if it compilation was actually successful.
+        // -Mingwei
+        </span><span class="kw">let </span>code = <span class="macro">quote! </span>{
+            #( #handoffs )*
+            #( #subgraphs )*
+        };
+
+        <span class="kw">let </span>meta_graph_json = serde_json::to_string(<span class="kw-2">&amp;</span><span class="self">self</span>).unwrap();
+        <span class="kw">let </span>meta_graph_json = Literal::string(<span class="kw-2">&amp;*</span>meta_graph_json);
+
+        <span class="kw">let </span>serde_diagnostics: Vec&lt;<span class="kw">_</span>&gt; = diagnostics.iter().map(Diagnostic::to_serde).collect();
+        <span class="kw">let </span>diagnostics_json = serde_json::to_string(<span class="kw-2">&amp;*</span>serde_diagnostics).unwrap();
+        <span class="kw">let </span>diagnostics_json = Literal::string(<span class="kw-2">&amp;*</span>diagnostics_json);
+
+        <span class="macro">quote! </span>{
             {
                 <span class="kw">use </span>#root::{var_expr, var_args};
 
-                <span class="kw">let </span><span class="kw-2">mut </span>#hf = #root::scheduled::graph::Hydroflow::new_with_graph(#serde_string);
+                <span class="kw">let </span><span class="kw-2">mut </span>#hf = #root::scheduled::graph::Hydroflow::new();
+                #hf.__assign_meta_graph(#meta_graph_json);
+                #hf.__assign_diagnostics(#diagnostics_json);
 
-                #( #handoffs )*
-                #( #subgraphs )*
+                #code
 
                 #hf
             }
-        };
-
-        diagnostics.iter().for_each(Diagnostic::emit);
-        <span class="kw">if </span>diagnostics.iter().any(Diagnostic::is_error) {
-            <span class="macro">quote! </span>{ #root::scheduled::graph::Hydroflow::new() }
-        } <span class="kw">else </span>{
-            code
         }
     }
 

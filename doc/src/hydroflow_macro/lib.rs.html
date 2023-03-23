@@ -72,20 +72,40 @@
 <a href="#72" id="72">72</a>
 <a href="#73" id="73">73</a>
 <a href="#74" id="74">74</a>
-</pre><pre class="rust"><code><span class="attr">#![feature(proc_macro_diagnostic, proc_macro_span)]
+<a href="#75" id="75">75</a>
+<a href="#76" id="76">76</a>
+<a href="#77" id="77">77</a>
+<a href="#78" id="78">78</a>
+<a href="#79" id="79">79</a>
+<a href="#80" id="80">80</a>
+<a href="#81" id="81">81</a>
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
+</pre><pre class="rust"><code><span class="attr">#![feature(proc_macro_diagnostic, proc_macro_span, proc_macro_def_site)]
 #![allow(clippy::explicit_auto_deref)]
 
-</span><span class="kw">use </span>hydroflow_lang::graph::partition_graph;
-<span class="kw">use </span>proc_macro2::{Ident, Literal, Span};
+</span><span class="kw">use </span>proc_macro2::{Ident, Literal, Span};
 <span class="kw">use </span>quote::quote;
 <span class="kw">use </span>syn::{parse_macro_input, LitStr};
 
-<span class="kw">use </span>hydroflow_lang::diagnostic::Level;
-<span class="kw">use </span>hydroflow_lang::graph::FlatGraphBuilder;
+<span class="kw">use </span>hydroflow_lang::diagnostic::{Diagnostic, Level};
+<span class="kw">use </span>hydroflow_lang::graph::{build_hfcode, partition_graph, FlatGraphBuilder};
 <span class="kw">use </span>hydroflow_lang::parse::HfCode;
 
 <span class="attr">#[proc_macro]
 </span><span class="kw">pub fn </span>hydroflow_syntax(input: proc_macro::TokenStream) -&gt; proc_macro::TokenStream {
+    hydroflow_syntax_internal(input, <span class="prelude-val">Some</span>(Level::Help))
+}
+
+<span class="attr">#[proc_macro]
+</span><span class="kw">pub fn </span>hydroflow_syntax_noemit(input: proc_macro::TokenStream) -&gt; proc_macro::TokenStream {
+    hydroflow_syntax_internal(input, <span class="prelude-val">None</span>)
+}
+
+<span class="kw">fn </span>hydroflow_syntax_internal(
+    input: proc_macro::TokenStream,
+    min_diagnostic_level: <span class="prelude-ty">Option</span>&lt;Level&gt;,
+) -&gt; proc_macro::TokenStream {
     <span class="kw">let </span>hydroflow_crate = proc_macro_crate::crate_name(<span class="string">&quot;hydroflow&quot;</span>)
         .expect(<span class="string">&quot;hydroflow should be present in `Cargo.toml`&quot;</span>);
     <span class="kw">let </span>root = <span class="kw">match </span>hydroflow_crate {
@@ -97,16 +117,15 @@
     };
 
     <span class="kw">let </span>input = <span class="macro">parse_macro_input!</span>(input <span class="kw">as </span>HfCode);
-
-    <span class="kw">let </span>flat_graph_builder = FlatGraphBuilder::from_hfcode(input);
-    <span class="kw">let </span>flat_graph_result = flat_graph_builder.build(Level::Help);
-    <span class="kw">if let </span><span class="prelude-val">Ok</span>(flat_graph) = flat_graph_result {
-        <span class="kw">match </span>partition_graph(flat_graph) {
-            <span class="prelude-val">Ok</span>(part_graph) =&gt; <span class="kw">return </span>part_graph.as_code(root, <span class="bool-val">true</span>).into(),
-            <span class="prelude-val">Err</span>(diagnostic) =&gt; diagnostic.emit(),
-        }
-    }
-    <span class="macro">quote! </span>{ #root::scheduled::graph::Hydroflow::new() }.into()
+    <span class="kw">let </span>(graph_code_opt, diagnostics) = build_hfcode(input, <span class="kw-2">&amp;</span>root);
+    diagnostics
+        .iter()
+        .filter(|diag| <span class="prelude-val">Some</span>(diag.level) &lt;= min_diagnostic_level)
+        .for_each(Diagnostic::emit);
+    graph_code_opt
+        .map(|(_graph, code)| code)
+        .unwrap_or_else(|| <span class="macro">quote! </span>{ #root::scheduled::graph::Hydroflow::new() })
+        .into()
 }
 
 <span class="attr">#[proc_macro]
@@ -114,9 +133,8 @@
     <span class="kw">let </span>input = <span class="macro">parse_macro_input!</span>(input <span class="kw">as </span>HfCode);
 
     <span class="kw">let </span>flat_graph_builder = FlatGraphBuilder::from_hfcode(input);
-    <span class="kw">let </span>flat_graph = flat_graph_builder
-        .build(Level::Help)
-        .unwrap_or_else(std::convert::identity);
+    <span class="kw">let </span>(flat_graph, diagnostics) = flat_graph_builder.build();
+    diagnostics.iter().for_each(Diagnostic::emit);
     <span class="kw">let </span>flat_mermaid = flat_graph.mermaid_string_flat();
 
     <span class="kw">let </span>part_graph = partition_graph(flat_graph).unwrap();

@@ -122,6 +122,8 @@
 <a href="#122" id="122">122</a>
 <a href="#123" id="123">123</a>
 <a href="#124" id="124">124</a>
+<a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
 </pre><pre class="rust"><code><span class="kw">use super</span>::{
     FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
     RANGE_0, RANGE_1,
@@ -146,7 +148,7 @@
 ///     let mut df = hydroflow::hydroflow_syntax! {
 ///         repeat_iter(0..5) -&gt; batch(rx) -&gt; for_each(|x| { println!(&quot;{x}&quot;); });
 ///     };
-///     
+///
 ///     tx.send(()).unwrap();
 ///
 ///     df.run_available();
@@ -171,6 +173,8 @@
     },
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">None</span>,
     write_fn: |wc @ <span class="kw-2">&amp;</span>WriteContextArgs {
+                   context,
+                   hydroflow,
                    ident,
                    op_span,
                    root,
@@ -188,7 +192,7 @@
 
         <span class="kw">let </span>write_prologue = <span class="macro">quote_spanned! </span>{op_span=&gt;
             <span class="kw">let </span><span class="kw-2">mut </span>#stream_ident = ::std::boxed::Box::pin(#receiver);
-            <span class="kw">let </span>#internal_buffer = df.add_state(::std::cell::RefCell::new(::std::vec::Vec::new()));
+            <span class="kw">let </span>#internal_buffer = #hydroflow.add_state(::std::cell::RefCell::new(::std::vec::Vec::new()));
         };
 
         <span class="kw">let </span>write_iterator = <span class="kw">if </span>is_pull {
@@ -197,13 +201,13 @@
             <span class="macro">quote_spanned! </span>{op_span=&gt;
 
                 {
-                    <span class="kw">let </span><span class="kw-2">mut </span>vec = context.state_ref(#internal_buffer).borrow_mut();
+                    <span class="kw">let </span><span class="kw-2">mut </span>vec = #context.state_ref(#internal_buffer).borrow_mut();
                     vec.extend(#input);
                 }
 
                 <span class="kw">let </span>#ident = <span class="kw">match </span>#root::futures::stream::Stream::poll_next(#stream_ident.as_mut(), <span class="kw-2">&amp;mut </span>::std::task::Context::from_waker(<span class="kw-2">&amp;</span>context.waker())) {
                     ::std::task::Poll::Ready(<span class="kw">_</span>) =&gt; {
-                        <span class="kw">let </span><span class="kw-2">mut </span>vec = context.state_ref(#internal_buffer).borrow_mut();
+                        <span class="kw">let </span><span class="kw-2">mut </span>vec = #context.state_ref(#internal_buffer).borrow_mut();
                         ::std::mem::take(<span class="kw-2">&amp;mut *</span>vec)
                     },
                     ::std::task::Poll::Pending =&gt; {
@@ -217,7 +221,7 @@
             <span class="macro">quote_spanned! </span>{op_span=&gt;
 
                 <span class="kw">let </span>#ident = #root::pusherator::for_each::ForEach::new(|x| {
-                    <span class="kw">let </span><span class="kw-2">mut </span>vec = context.state_ref(#internal_buffer).borrow_mut();
+                    <span class="kw">let </span><span class="kw-2">mut </span>vec = #context.state_ref(#internal_buffer).borrow_mut();
 
                     vec.push(x);
                 });
@@ -226,7 +230,7 @@
                     <span class="kw">let </span><span class="kw-2">mut </span>out = #output;
                     <span class="kw">for </span>x <span class="kw">in match </span>#root::futures::stream::Stream::poll_next(#stream_ident.as_mut(), <span class="kw-2">&amp;mut </span>::std::task::Context::from_waker(<span class="kw-2">&amp;</span>context.waker())) {
                         ::std::task::Poll::Ready(<span class="kw">_</span>) =&gt; {
-                            <span class="kw">let </span><span class="kw-2">mut </span>vec = context.state_ref(#internal_buffer).borrow_mut();
+                            <span class="kw">let </span><span class="kw-2">mut </span>vec = #context.state_ref(#internal_buffer).borrow_mut();
                             ::std::mem::take(<span class="kw-2">&amp;mut *</span>vec)
                         },
                         ::std::task::Poll::Pending =&gt; {
