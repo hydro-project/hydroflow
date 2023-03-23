@@ -402,7 +402,10 @@ fn gen_value_expr(
                 parse_quote!(())
             }
         }
-        ValueExpr::Integer(i) => parse_quote!(#i),
+        ValueExpr::Integer(i) => syn::Expr::Lit(syn::ExprLit {
+            attrs: Vec::new(),
+            lit: syn::Lit::Int(syn::LitInt::new(&i.to_string(), Span::call_site())),
+        }),
         ValueExpr::Add(l, _, r) => {
             let l = gen_value_expr(l, field_use_count, field_use_cur, out_expanded, diagnostics);
             let r = gen_value_expr(r, field_use_count, field_use_cur, out_expanded, diagnostics);
@@ -828,6 +831,21 @@ mod tests {
             .output result `for_each(|v| result.send(v).unwrap())`
 
             result(a, a) :- strings(a)
+            "#
+        );
+    }
+
+    #[test]
+    fn test_expr_lhs() {
+        test_snapshots!(
+            r#"
+            .input ints `source_stream(ints)`
+            .output result `for_each(|v| result.send(v).unwrap())`
+
+            result(123) :- ints(a)
+            result(a + 123) :- ints(a)
+            result(a + a) :- ints(a)
+            result(123 - a) :- ints(a)
             "#
         );
     }
