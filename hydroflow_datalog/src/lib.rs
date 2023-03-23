@@ -20,7 +20,16 @@ pub fn datalog(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
         }
     };
 
-    let graph = gen_hydroflow_graph(literal).unwrap();
-    let program = hydroflow_graph_to_program(graph, root);
-    proc_macro::TokenStream::from(program.to_token_stream())
+    match gen_hydroflow_graph(literal) {
+        Ok(graph) => {
+            let program = hydroflow_graph_to_program(graph, root);
+            proc_macro::TokenStream::from(program.to_token_stream())
+        }
+        Err(diagnostics) => {
+            for diagnostic in diagnostics {
+                diagnostic.emit();
+            }
+            proc_macro::TokenStream::from(quote!(()))
+        }
+    }
 }

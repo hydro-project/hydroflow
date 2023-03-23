@@ -51,35 +51,16 @@ impl FlatGraphBuilder {
         input.into()
     }
 
-    /// Build into an unpartitioned [`HydroflowGraph`], returning a tuple of a `HydroflowGraph` and any diagnostics.
+    /// Build into an unpartitioned [`HydroflowGraph`], returning a tuple of a `HydroflowGraph` and
+    /// any diagnostics.
     ///
-    /// Even if there are errors, the `HydroflowGraph` will be returned (potentially in a partial state).
-    pub fn try_build(mut self) -> (HydroflowGraph, Vec<Diagnostic>) {
+    /// Even if there are errors, the `HydroflowGraph` will be returned (potentially in a invalid
+    /// state). Does not call `emit` on any diagnostics.
+    pub fn build(mut self) -> (HydroflowGraph, Vec<Diagnostic>) {
         self.connect_operator_links();
         self.process_operator_errors();
 
         (self.flat_graph, self.diagnostics)
-    }
-
-    /// Build into an unpartitioned [`HydroflowGraph`].
-    ///
-    /// Emits any diagnostics more severe than `min_diagnostic_level`.
-    ///
-    /// Returns `Err(HydroflowGraph)` if there are any errors. Returns `Ok(HydroflowGraph)` if there are no
-    /// errors.
-    pub fn build(self, min_diagnostic_level: Level) -> Result<HydroflowGraph, HydroflowGraph> {
-        let (result, diagnostics) = self.try_build();
-
-        diagnostics
-            .iter()
-            .filter(|&diag| diag.level <= min_diagnostic_level)
-            .for_each(Diagnostic::emit);
-
-        if diagnostics.iter().any(|diag| diag.level == Level::Error) {
-            Err(result)
-        } else {
-            Ok(result)
-        }
     }
 
     /// Add a single [`HfStatement`] line to this `HydroflowGraph`.

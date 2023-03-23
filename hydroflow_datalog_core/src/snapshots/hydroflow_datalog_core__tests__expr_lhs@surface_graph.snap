@@ -1,0 +1,32 @@
+---
+source: hydroflow_datalog_core/src/lib.rs
+expression: flat_graph_ref.surface_syntax_string()
+---
+1v1 = merge ();
+2v1 = unique :: < 'tick > ();
+3v1 = tee ();
+4v1 = merge ();
+5v1 = unique :: < 'tick > ();
+6v1 = tee ();
+7v1 = source_stream (ints);
+8v1 = for_each (| v | result . send (v) . unwrap ());
+9v1 = map (| row : (_ ,) | (123 ,));
+10v1 = map (| row : (_ ,) | (row . 0 + 123 ,));
+11v1 = map (| row : (_ ,) | (row . 0 . clone () + row . 0 ,));
+12v1 = map (| row : (_ ,) | (123 - row . 0 ,));
+
+2v1 -> 3v1;
+1v1 -> 2v1;
+5v1 -> 6v1;
+4v1 -> 5v1;
+7v1 -> 1v1;
+6v1 -> 8v1;
+9v1 -> 4v1;
+3v1 -> 9v1;
+10v1 -> 4v1;
+3v1 -> 10v1;
+11v1 -> 4v1;
+3v1 -> 11v1;
+12v1 -> 4v1;
+3v1 -> 12v1;
+
