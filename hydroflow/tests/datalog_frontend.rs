@@ -784,6 +784,30 @@ fn test_aggregations_and_comments() {
 }
 
 #[multiplatform_test]
+fn test_choose_strings() {
+    let (strings_send, strings) = hydroflow::util::unbounded_channel::<(String,)>();
+    let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(String,)>();
+
+    let mut flow = datalog!(
+        r#"
+        .input strings `source_stream(strings)`
+        .output result `for_each(|v| result.send(v).unwrap())`
+
+        result(choose(a)) :- strings(a)
+        "#
+    );
+
+    strings_send.send(("hello".to_string(),)).unwrap();
+
+    flow.run_tick();
+
+    assert_eq!(
+        &collect_ready::<Vec<_>, _>(&mut result_recv),
+        &[("hello".to_string(),)]
+    );
+}
+
+#[multiplatform_test]
 fn test_non_copy_but_clone() {
     let (strings_send, strings) = hydroflow::util::unbounded_channel::<(String,)>();
     let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(String, String)>();
