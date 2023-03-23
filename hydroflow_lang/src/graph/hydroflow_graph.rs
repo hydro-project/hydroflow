@@ -666,14 +666,11 @@ impl HydroflowGraph {
                                 op_inst,
                             };
 
-                            let write_result = (op_constraints.write_fn)(&context_args, diagnostics);
-                            let Ok(OperatorWriteOutput {
+                            let OperatorWriteOutput {
                                 write_prologue,
                                 write_iterator,
                                 write_iterator_after,
-                            }) = write_result else {
-                                continue;
-                            };
+                            } = (op_constraints.write_fn)(&context_args, diagnostics);
 
                             op_prologue_code.push(write_prologue);
                             subgraph_op_iter_code.push(write_iterator);

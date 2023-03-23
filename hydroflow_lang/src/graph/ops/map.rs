@@ -60,9 +60,9 @@ pub const MAP: OperatorConstraints = OperatorConstraints {
                 let #ident = #root::pusherator::map::Map::new(#arguments, #output);
             }
         };
-        Ok(OperatorWriteOutput {
+        OperatorWriteOutput {
             write_iterator,
             ..Default::default()
-        })
+        }
     },
 };

@@ -75,10 +75,10 @@ pub const DIFFERENCE: OperatorConstraints = OperatorConstraints {
                 let #ident = #input_pos.filter(move |x| !#negset_ident.contains(x));
             }
         };
-        Ok(OperatorWriteOutput {
+        OperatorWriteOutput {
             write_prologue,
             write_iterator,
             ..Default::default()
-        })
+        }
     },
 };

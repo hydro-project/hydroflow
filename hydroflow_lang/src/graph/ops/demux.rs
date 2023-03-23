@@ -62,7 +62,7 @@ pub const DEMUX: OperatorConstraints = OperatorConstraints {
         inconsistency_tainted: false,
     },
     input_delaytype_fn: |_| None,
-    write_fn: |&WriteContextArgs {
+    write_fn: |wc @ &WriteContextArgs {
                    root,
                    op_span,
                    ident,
@@ -86,7 +86,7 @@ pub const DEMUX: OperatorConstraints = OperatorConstraints {
                 Level::Error,
                 "Second argument must be a two-argument closure expression"),
             );
-            return Err(());
+            return (super::null::NULL.write_fn)(wc, diagnostics);
         };
         if 2 != func.inputs.len() {
             diagnostics.push(Diagnostic::spanned(
@@ -98,7 +98,7 @@ pub const DEMUX: OperatorConstraints = OperatorConstraints {
                     op_name
                 ),
             ));
-            return Err(());
+            return (super::null::NULL.write_fn)(wc, diagnostics);
         }
 
         // Port idents specified in the closure's second argument.
@@ -159,18 +159,17 @@ pub const DEMUX: OperatorConstraints = OperatorConstraints {
                         op_name, closure_ident,
                     ),
                 ));
+                // Emit error but still output (broken) code.
             }
         }
 
-        if diagnostics.iter().any(Diagnostic::is_error) {
-            return Err(());
-        }
-
-        assert_eq!(outputs.len(), port_idents.len());
-        assert_eq!(outputs.len(), closure_idents.len());
-
         let mut sort_permute: Vec<_> = (0..outputs.len()).collect();
-        sort_permute.sort_by_key(|&i| closure_idents[&port_idents[i]]);
+        sort_permute.sort_by_key(|&i| {
+            port_idents
+                .get(i)
+                .and_then(|port_ident| closure_idents.get(port_ident))
+                .copied()
+        });
 
         let sorted_outputs = sort_permute.iter().map(|&i| &outputs[i]);
 
@@ -181,10 +180,10 @@ pub const DEMUX: OperatorConstraints = OperatorConstraints {
             };
         };
 
-        Ok(OperatorWriteOutput {
+        OperatorWriteOutput {
             write_iterator,
             ..Default::default()
-        })
+        }
     },
 };
 

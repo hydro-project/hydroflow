@@ -66,9 +66,9 @@ pub const TEE: OperatorConstraints = OperatorConstraints {
                 let #ident = #input;
             }
         };
-        Ok(OperatorWriteOutput {
+        OperatorWriteOutput {
             write_iterator,
             ..Default::default()
-        })
+        }
     },
 };

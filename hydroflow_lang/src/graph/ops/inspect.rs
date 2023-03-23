@@ -58,9 +58,9 @@ pub const INSPECT: OperatorConstraints = OperatorConstraints {
                 let #ident = #root::pusherator::inspect::Inspect::new(#arguments, #output);
             }
         };
-        Ok(OperatorWriteOutput {
+        OperatorWriteOutput {
             write_iterator,
             ..Default::default()
-        })
+        }
     },
 };

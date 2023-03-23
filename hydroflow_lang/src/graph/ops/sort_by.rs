@@ -54,9 +54,9 @@ pub const SORT_BY: OperatorConstraints = OperatorConstraints {
             #root::util::sort_unstable_by_key_hrtb(&mut tmp, #arguments);
             let #ident = tmp.into_iter();
         };
-        Ok(OperatorWriteOutput {
+        OperatorWriteOutput {
             write_iterator,
             ..Default::default()
-        })
+        }
     },
 };

@@ -50,9 +50,9 @@ pub const UNZIP: OperatorConstraints = OperatorConstraints {
         let write_iterator = quote_spanned! {op_span=>
             let #ident = #root::pusherator::unzip::Unzip::new(#output0, #output1);
         };
-        Ok(OperatorWriteOutput {
+        OperatorWriteOutput {
             write_iterator,
             ..Default::default()
-        })
+        }
     },
 };

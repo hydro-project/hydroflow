@@ -167,10 +167,10 @@ pub const GROUP_BY: OperatorConstraints = OperatorConstraints {
             }
         };
 
-        Ok(OperatorWriteOutput {
+        OperatorWriteOutput {
             write_prologue,
             write_iterator,
             write_iterator_after,
-        })
+        }
     },
 };

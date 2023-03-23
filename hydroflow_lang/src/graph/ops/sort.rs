@@ -97,10 +97,10 @@ pub const SORT: OperatorConstraints = OperatorConstraints {
                         v.into_iter()
                     };
                 };
-                Ok(OperatorWriteOutput {
+                OperatorWriteOutput {
                     write_iterator,
                     ..Default::default()
-                })
+                }
             }
             Persistence::Static => {
                 let sortdata_ident = wc.make_ident("sortdata");
@@ -118,11 +118,11 @@ pub const SORT: OperatorConstraints = OperatorConstraints {
                     };
                 };
 
-                Ok(OperatorWriteOutput {
+                OperatorWriteOutput {
                     write_prologue,
                     write_iterator,
                     ..Default::default()
-                })
+                }
             }
         }
     },

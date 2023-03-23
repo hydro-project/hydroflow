@@ -82,11 +82,11 @@ pub const SOURCE_INTERVAL: OperatorConstraints = OperatorConstraints {
             },
             ..wc.clone()
         };
-        let write_output = (super::source_stream::SOURCE_STREAM.write_fn)(&wc, diagnostics)?;
+        let write_output = (super::source_stream::SOURCE_STREAM.write_fn)(&wc, diagnostics);
         write_prologue.extend(write_output.write_prologue);
-        Ok(OperatorWriteOutput {
+        OperatorWriteOutput {
             write_prologue,
             ..write_output
-        })
+        }
     },
 };

@@ -85,7 +85,6 @@ pub const PERSIST: OperatorConstraints = OperatorConstraints {
                 Level::Error,
                 format!("`{}()` can only have `'static` persistence.", op_name),
             ));
-            return Err(());
         };
 
         let persistdata_ident = wc.make_ident("persistdata");
@@ -124,10 +123,10 @@ pub const PERSIST: OperatorConstraints = OperatorConstraints {
             }
         };
 
-        Ok(OperatorWriteOutput {
+        OperatorWriteOutput {
             write_prologue,
             write_iterator,
             ..Default::default()
-        })
+        }
     },
 };

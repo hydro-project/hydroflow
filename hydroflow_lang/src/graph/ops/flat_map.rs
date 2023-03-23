@@ -63,9 +63,9 @@ pub const FLAT_MAP: OperatorConstraints = OperatorConstraints {
                 );
             }
         };
-        Ok(OperatorWriteOutput {
+        OperatorWriteOutput {
             write_iterator,
             ..Default::default()
-        })
+        }
     },
 };

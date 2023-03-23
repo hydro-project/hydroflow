@@ -70,9 +70,9 @@ pub const MERGE: OperatorConstraints = OperatorConstraints {
                 let #ident = #output;
             }
         };
-        Ok(OperatorWriteOutput {
+        OperatorWriteOutput {
             write_iterator,
             ..Default::default()
-        })
+        }
     },
 };

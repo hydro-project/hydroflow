@@ -59,9 +59,9 @@ pub const FILTER: OperatorConstraints = OperatorConstraints {
                 let #ident = #root::pusherator::filter::Filter::new(#arguments, #output);
             }
         };
-        Ok(OperatorWriteOutput {
+        OperatorWriteOutput {
             write_iterator,
             ..Default::default()
-        })
+        }
     },
 };

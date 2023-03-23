@@ -115,10 +115,10 @@ pub const FOLD: OperatorConstraints = OperatorConstraints {
             ),
         };
 
-        Ok(OperatorWriteOutput {
+        OperatorWriteOutput {
             write_prologue,
             write_iterator,
             write_iterator_after,
-        })
+        }
     },
 };

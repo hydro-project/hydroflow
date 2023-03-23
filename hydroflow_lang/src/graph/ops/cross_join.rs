@@ -60,7 +60,7 @@ pub const CROSS_JOIN: OperatorConstraints = OperatorConstraints {
                    ..
                },
                diagnostics| {
-        let mut output = (super::join::JOIN.write_fn)(wc, diagnostics)?;
+        let mut output = (super::join::JOIN.write_fn)(wc, diagnostics);
 
         let lhs = &inputs[0];
         let rhs = &inputs[1];
@@ -71,7 +71,6 @@ pub const CROSS_JOIN: OperatorConstraints = OperatorConstraints {
             #write_iterator
             let #ident = #ident.map(|((), (a, b))| (a, b));
         );
-
-        Ok(output)
+        output
     },
 };

@@ -78,10 +78,10 @@ pub const ANTI_JOIN: OperatorConstraints = OperatorConstraints {
                 let #ident = #input_pos.filter(move |x| !#negset_ident.contains(&x.0));
             }
         };
-        Ok(OperatorWriteOutput {
+        OperatorWriteOutput {
             write_prologue,
             write_iterator,
             ..Default::default()
-        })
+        }
     },
 };

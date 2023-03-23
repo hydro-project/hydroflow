@@ -64,10 +64,10 @@ pub const SOURCE_JSON: OperatorConstraints = OperatorConstraints {
         let write_iterator = quote_spanned! {op_span=>
             let #ident = #ident_jsonread.by_ref();
         };
-        Ok(OperatorWriteOutput {
+        OperatorWriteOutput {
             write_prologue,
             write_iterator,
             ..Default::default()
-        })
+        }
     },
 };

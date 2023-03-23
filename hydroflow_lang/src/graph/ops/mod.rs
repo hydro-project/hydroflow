@@ -141,8 +141,9 @@ impl Debug for OperatorConstraints {
     }
 }
 
-pub type WriteFn =
-    fn(&WriteContextArgs<'_>, &mut Vec<Diagnostic>) -> Result<OperatorWriteOutput, ()>;
+/// Operator write function. If an error occurs the operator should push a `Diagnostic` error but
+/// should still try to produce reasonable output.
+pub type WriteFn = fn(&WriteContextArgs<'_>, &mut Vec<Diagnostic>) -> OperatorWriteOutput;
 
 #[derive(Default)]
 #[non_exhaustive]
@@ -207,10 +208,10 @@ pub fn identity_write_iterator_fn(
 
 pub const IDENTITY_WRITE_FN: WriteFn = |write_context_args, _| {
     let write_iterator = identity_write_iterator_fn(write_context_args);
-    Ok(OperatorWriteOutput {
+    OperatorWriteOutput {
         write_iterator,
         ..Default::default()
-    })
+    }
 };
 
 pub const OPERATORS: &[OperatorConstraints] = &[

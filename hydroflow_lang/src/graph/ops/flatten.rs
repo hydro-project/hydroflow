@@ -55,9 +55,9 @@ pub const FLATTEN: OperatorConstraints = OperatorConstraints {
                 let #ident = #root::pusherator::flatten::Flatten::new(#output);
             }
         };
-        Ok(OperatorWriteOutput {
+        OperatorWriteOutput {
             write_iterator,
             ..Default::default()
-        })
+        }
     },
 };

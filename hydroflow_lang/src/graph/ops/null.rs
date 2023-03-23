@@ -75,9 +75,9 @@ pub const NULL: OperatorConstraints = OperatorConstraints {
                 let #ident = #root::pusherator::for_each::ForEach::<_, #iter_type>::new(std::mem::drop);
             }
         };
-        Ok(OperatorWriteOutput {
+        OperatorWriteOutput {
             write_iterator,
             ..Default::default()
-        })
+        }
     },
 };

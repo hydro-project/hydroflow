@@ -75,10 +75,10 @@ pub const SOURCE_STREAM: OperatorConstraints = OperatorConstraints {
                 }
             });
         };
-        Ok(OperatorWriteOutput {
+        OperatorWriteOutput {
             write_prologue,
             write_iterator,
             ..Default::default()
-        })
+        }
     },
 };

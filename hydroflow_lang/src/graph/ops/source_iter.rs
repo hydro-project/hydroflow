@@ -58,10 +58,10 @@ pub const SOURCE_ITER: OperatorConstraints = OperatorConstraints {
         let write_iterator = quote_spanned! {op_span=>
             let #ident = #iter_ident.by_ref();
         };
-        Ok(OperatorWriteOutput {
+        OperatorWriteOutput {
             write_prologue,
             write_iterator,
             ..Default::default()
-        })
+        }
     },
 };

@@ -55,10 +55,10 @@ pub const REPEAT_ITER: OperatorConstraints = OperatorConstraints {
         let write_iterator_after = quote_spanned! {op_span=>
             #context.schedule_subgraph(#context.current_subgraph(), false);
         };
-        Ok(OperatorWriteOutput {
+        OperatorWriteOutput {
             write_iterator,
             write_iterator_after,
             ..Default::default()
-        })
+        }
     },
 };

@@ -48,9 +48,9 @@ pub const FOR_EACH: OperatorConstraints = OperatorConstraints {
         let write_iterator = quote_spanned! {op_span=>
             let #ident = #root::pusherator::for_each::ForEach::new(#arguments);
         };
-        Ok(OperatorWriteOutput {
+        OperatorWriteOutput {
             write_iterator,
             ..Default::default()
-        })
+        }
     },
 };
