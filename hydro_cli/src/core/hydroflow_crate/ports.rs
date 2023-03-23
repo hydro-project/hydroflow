@@ -182,7 +182,6 @@ impl HydroflowSink for HydroflowPortConfig {
             client_host.try_read().ok()
         };
 
-        // TODO(shadaj): this could pass for some, fail for others, should plan then mutate
         let (conn_type, bind_type) = server_host.strategy_as_server(client_host_read.as_deref())?;
         let base_config = ServerConfig::from_strategy(&conn_type, Box::new(self.clone()));
 
