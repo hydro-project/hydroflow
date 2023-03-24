@@ -506,6 +506,38 @@ fn demux(mapping: &PyDict) -> HydroflowSink {
     }
 }
 
+#[pyclass(extends=HydroflowSink, subclass)]
+#[derive(Clone)]
+struct HydroflowNull {
+    underlying: Arc<RwLock<crate::core::hydroflow_crate::ports::NullSourceSink>>,
+}
+
+#[pymethods]
+impl HydroflowNull {
+    fn send_to(&mut self, to: &mut HydroflowSink) {
+        self.underlying
+            .try_write()
+            .unwrap()
+            .send_to(to.underlying.try_write().unwrap().deref_mut());
+    }
+}
+
+#[pyfunction]
+fn null(py: Python<'_>) -> PyResult<Py<pyo3::PyAny>> {
+    let arc = Arc::new(RwLock::new(
+        crate::core::hydroflow_crate::ports::NullSourceSink,
+    ));
+
+    Ok(Py::new(
+        py,
+        PyClassInitializer::from(HydroflowSink {
+            underlying: arc.clone(),
+        })
+        .add_subclass(HydroflowNull { underlying: arc }),
+    )?
+    .into_py(py))
+}
+
 #[pyclass]
 struct ServerPort {
     underlying: Option<hydroflow_cli_integration::ServerOrBound>,
@@ -620,6 +652,7 @@ pub fn _core(py: Python<'_>, module: &PyModule) -> PyResult<()> {
     module.add_class::<PythonStream>()?;
 
     module.add_function(wrap_pyfunction!(demux, module)?)?;
+    module.add_function(wrap_pyfunction!(null, module)?)?;
 
     module.add_wrapped(wrap_pymodule!(cli::cli))?;
 
