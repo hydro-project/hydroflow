@@ -1,5 +1,5 @@
 {
-  "lastUpdate": 1679543449298,
+  "lastUpdate": 1679629994034,
   "repoUrl": "https://github.com/hydro-project/hydroflow",
   "entries": {
     "Benchmark": [
@@ -45091,6 +45091,208 @@
             "name": "micro/ops/next_tick/big",
             "value": 100143,
             "range": "± 6037",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "David Chu",
+            "username": "davidchuyaya",
+            "email": "davidchuyaya@gmail.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "c078ced09dc79002a229ae1033459e5a729d0553",
+          "message": "Dedalus voting, 2pc implementation (#486)",
+          "timestamp": "2023-03-24T00:50:23Z",
+          "url": "https://github.com/hydro-project/hydroflow/commit/c078ced09dc79002a229ae1033459e5a729d0553"
+        },
+        "date": 1679629994016,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "arithmetic/hydroflow/compiled",
+            "value": 463742,
+            "range": "± 13802",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "arithmetic/hydroflow/compiled_no_cheating",
+            "value": 20501372,
+            "range": "± 855800",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "arithmetic/hydroflow/surface",
+            "value": 20446604,
+            "range": "± 639020",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fan_in/hydroflow",
+            "value": 166954739,
+            "range": "± 5333557",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fan_in/hydroflow/surface",
+            "value": 200328288,
+            "range": "± 1873925",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fan_out/hydroflow/scheduled",
+            "value": 95497174,
+            "range": "± 1651566",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fan_out/hydroflow/surface",
+            "value": 9108830,
+            "range": "± 28843",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fork_join/hydroflow",
+            "value": 9750280,
+            "range": "± 38809",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fork_join/hydroflow_builder",
+            "value": 11285976,
+            "range": "± 16778",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "identity/hydroflow",
+            "value": 18746197,
+            "range": "± 841518",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "identity/hydroflow/compiled",
+            "value": 18188619,
+            "range": "± 684093",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "identity/hydroflow/surface",
+            "value": 18517275,
+            "range": "± 594450",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "reachability/hydroflow/scheduled",
+            "value": 3064471,
+            "range": "± 126945",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "reachability/hydroflow",
+            "value": 3096451,
+            "range": "± 2789",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "reachability/hydroflow/surface",
+            "value": 8841386,
+            "range": "± 388313",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "reachability/hydroflow/surface_cheating",
+            "value": 2433334,
+            "range": "± 14361",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "micro/ops/identity",
+            "value": 8571,
+            "range": "± 698",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "micro/ops/unique",
+            "value": 369039,
+            "range": "± 11575",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "micro/ops/map",
+            "value": 10846,
+            "range": "± 759",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "micro/ops/flat_map",
+            "value": 32567,
+            "range": "± 364",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "micro/ops/join",
+            "value": 157032,
+            "range": "± 683",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "micro/ops/difference",
+            "value": 504044,
+            "range": "± 3060",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "micro/ops/merge",
+            "value": 42776,
+            "range": "± 129",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "micro/ops/tee",
+            "value": 11084,
+            "range": "± 30",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "micro/ops/fold",
+            "value": 52283,
+            "range": "± 5658",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "micro/ops/sort",
+            "value": 181332,
+            "range": "± 5536",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "micro/ops/crossjoin",
+            "value": 234472,
+            "range": "± 433",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "micro/ops/anti_join",
+            "value": 54189,
+            "range": "± 309",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "micro/ops/next_tick/small",
+            "value": 130048,
+            "range": "± 9465",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "micro/ops/next_tick/big",
+            "value": 116328,
+            "range": "± 7571",
             "unit": "ns/iter"
           }
         ]
