@@ -389,7 +389,7 @@
 
     <span class="attr">#[rust_sitter::extra]
     </span><span class="kw">struct </span>Comment {
-        <span class="attr">#[rust_sitter::leaf(pattern = <span class="string">r&quot;#.*&quot;</span>)]
+        <span class="attr">#[rust_sitter::leaf(pattern = <span class="string">r&quot;(#|\/\/).*&quot;</span>)]
         </span>_comment: (),
     }
 
