@@ -12,6 +12,18 @@ name = "dedalus_sender"
 [[example]]
 name = "dedalus_receiver"
 
+[[example]]
+name = "dedalus_vote_leader"
+
+[[example]]
+name = "dedalus_vote_participant"
+
+[[example]]
+name = "dedalus_2pc_coordinator"
+
+[[example]]
+name = "dedalus_2pc_participant"
+
 [dev-dependencies]
 hydroflow = { path = "../hydroflow", features = [ "cli_integration" ] }
 hydroflow_datalog = { path = "../hydroflow_datalog" }
