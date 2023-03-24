@@ -14,6 +14,7 @@ pub mod util;
 pub use bytes;
 pub use futures;
 pub use pusherator;
+pub use rustc_hash;
 pub use serde;
 pub use serde_json;
 pub use static_assertions;

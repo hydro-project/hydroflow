@@ -83,6 +83,7 @@ pub const GROUP_BY: OperatorConstraints = OperatorConstraints {
                    ident,
                    inputs,
                    is_pull,
+                   root,
                    op_inst:
                        OperatorInstance {
                            arguments,
@@ -127,7 +128,7 @@ pub const GROUP_BY: OperatorConstraints = OperatorConstraints {
                     let #ident = {
                         #[inline(always)]
                         fn check_input<Iter: ::std::iter::Iterator<Item = (A, B)>, A, B>(iter: Iter) -> impl ::std::iter::Iterator<Item = (A, B)> { iter }
-                        check_input(#input).fold(::std::collections::HashMap::<#( #generic_type_args ),*>::new(), |mut ht, kv| {
+                        check_input(#input).fold(#root::rustc_hash::FxHashMap::<#( #generic_type_args ),*>::default(), |mut ht, kv| {
                             let entry = ht.entry(kv.0).or_insert_with(#initfn);
                             #[allow(clippy::redundant_closure_call)] (#aggfn)(entry, kv.1);
                             ht
@@ -142,7 +143,7 @@ pub const GROUP_BY: OperatorConstraints = OperatorConstraints {
 
                 (
                     quote_spanned! {op_span=>
-                        let #groupbydata_ident = #hydroflow.add_state(::std::cell::RefCell::new(::std::collections::HashMap::<#( #generic_type_args ),*>::new()));
+                        let #groupbydata_ident = #hydroflow.add_state(::std::cell::RefCell::new(#root::rustc_hash::FxHashMap::<#( #generic_type_args ),*>::default()));
                     },
                     quote_spanned! {op_span=>
                     let mut #hashtable_ident = #context.state_ref(#groupbydata_ident).borrow_mut();
