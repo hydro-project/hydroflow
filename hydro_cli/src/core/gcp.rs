@@ -59,6 +59,7 @@ impl LaunchedSSHHost for LaunchedComputeEngine {
 
                 ServerBindConfig::Merge(configs)
             }
+            ServerStrategy::Null => ServerBindConfig::Null,
         }
     }
 
@@ -246,6 +247,7 @@ impl Host for GCPComputeEngineHost {
                     self.request_port(bind_type);
                 }
             }
+            ServerStrategy::Null => {}
         }
     }
 

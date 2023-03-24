@@ -106,6 +106,10 @@ impl HydroflowSink for CustomClientPort {
         self
     }
 
+    fn instantiate_null(&mut self) {
+        self.client_port = Some(ServerConfig::Null);
+    }
+
     fn instantiate(
         &self,
         _client_host: &Arc<RwLock<dyn Host>>,

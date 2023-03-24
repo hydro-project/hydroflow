@@ -29,6 +29,8 @@ pub type ReverseSinkInstantiator = Box<dyn FnOnce(&mut dyn Any) -> ServerStrateg
 pub trait HydroflowSink: Send + Sync {
     fn as_any_mut(&mut self) -> &mut dyn std::any::Any;
 
+    fn instantiate_null(&mut self);
+
     /// Instantiate the sink as the source host connecting to the sink host.
     /// Returns a thunk that can be called to perform mutations that instantiate the sink.
     fn instantiate(
@@ -46,6 +48,38 @@ pub trait HydroflowSink: Send + Sync {
     ) -> Result<ReverseSinkInstantiator>;
 }
 
+pub struct NullSourceSink;
+
+impl HydroflowSource for NullSourceSink {
+    fn send_to(&mut self, to: &mut dyn HydroflowSink) {
+        to.instantiate_null();
+    }
+}
+
+impl HydroflowSink for NullSourceSink {
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
+    }
+
+    fn instantiate_null(&mut self) {}
+
+    fn instantiate(
+        &self,
+        _client_host: &Arc<RwLock<dyn Host>>,
+    ) -> Result<Box<dyn FnOnce() -> ServerConfig>> {
+        Ok(Box::new(|| ServerConfig::Null))
+    }
+
+    fn instantiate_reverse(
+        &self,
+        _server_host: &Arc<RwLock<dyn Host>>,
+        _server_sink: Box<dyn HydroflowServer>,
+        _wrap_client_port: &dyn Fn(ServerConfig) -> ServerConfig,
+    ) -> Result<ReverseSinkInstantiator> {
+        Ok(Box::new(|_| ServerStrategy::Null))
+    }
+}
+
 pub struct DemuxSink {
     pub demux: HashMap<u32, Arc<RwLock<dyn HydroflowSink>>>,
 }
@@ -53,6 +87,12 @@ pub struct DemuxSink {
 impl HydroflowSink for DemuxSink {
     fn as_any_mut(&mut self) -> &mut dyn Any {
         self
+    }
+
+    fn instantiate_null(&mut self) {
+        self.demux
+            .values_mut()
+            .for_each(|sink| sink.try_write().unwrap().instantiate_null());
     }
 
     fn instantiate(
@@ -162,6 +202,22 @@ impl HydroflowServer for HydroflowPortConfig {
 impl HydroflowSink for HydroflowPortConfig {
     fn as_any_mut(&mut self) -> &mut dyn Any {
         self
+    }
+
+    fn instantiate_null(&mut self) {
+        let service = self.service.upgrade().unwrap();
+        let mut service_write = service.try_write().unwrap();
+        if self.merge {
+            service_write
+                .port_to_bind
+                .entry(self.port.clone())
+                .or_insert(ServerStrategy::Merge(vec![]));
+        } else {
+            assert!(!service_write.port_to_bind.contains_key(&self.port));
+            service_write
+                .port_to_bind
+                .insert(self.port.clone(), ServerStrategy::Null);
+        }
     }
 
     fn instantiate(
@@ -278,6 +334,7 @@ pub enum ServerConfig {
     Merge(Vec<ServerConfig>),
     /// The other side of a merge, with a port to extract the appropriate connection.
     MergeSelect(Box<ServerConfig>, usize),
+    Null,
 }
 
 impl ServerConfig {
@@ -313,6 +370,7 @@ async fn forward_connection(conn: &ServerPort, target: &dyn LaunchedHost) -> Ser
             }
             ServerPort::Merge(forwarded_vec)
         }
+        ServerPort::Null => ServerPort::Null,
     }
 }
 
@@ -361,6 +419,8 @@ impl ServerConfig {
                     panic!("Expected a merge connection definition")
                 }
             }
+
+            ServerConfig::Null => ServerPort::Null,
         }
     }
 }
