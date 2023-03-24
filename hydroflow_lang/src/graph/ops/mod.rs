@@ -7,7 +7,7 @@ use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote_spanned;
 use slotmap::Key;
 use syn::punctuated::Punctuated;
-use syn::Token;
+use syn::{parse_quote_spanned, Token};
 
 use crate::diagnostic::Diagnostic;
 use crate::parse::{Operator, PortIndex};
@@ -207,6 +207,48 @@ pub fn identity_write_iterator_fn(
 
 pub const IDENTITY_WRITE_FN: WriteFn = |write_context_args, _| {
     let write_iterator = identity_write_iterator_fn(write_context_args);
+    Ok(OperatorWriteOutput {
+        write_iterator,
+        ..Default::default()
+    })
+};
+
+pub fn null_write_iterator_fn(
+    &WriteContextArgs {
+        root,
+        op_span,
+        ident,
+        inputs,
+        outputs,
+        is_pull,
+        op_inst:
+            OperatorInstance {
+                generics: OpInstGenerics { type_args, .. },
+                ..
+            },
+        ..
+    }: &WriteContextArgs,
+) -> TokenStream {
+    let default_type = parse_quote_spanned! {op_span=> _};
+    let iter_type = type_args.get(0).unwrap_or(&default_type);
+    if is_pull {
+        quote_spanned! {op_span=>
+            #(
+                #inputs.for_each(std::mem::drop);
+            )*
+            let #ident = std::iter::empty::<#iter_type>();
+        }
+    } else {
+        quote_spanned! {op_span=>
+            #[allow(clippy::let_unit_value)]
+            let _ = (#(#outputs),*);
+            let #ident = #root::pusherator::for_each::ForEach::<_, #iter_type>::new(std::mem::drop);
+        }
+    }
+}
+
+pub const NULL_WRITE_FN: WriteFn = |write_context_args, _| {
+    let write_iterator = null_write_iterator_fn(write_context_args);
     Ok(OperatorWriteOutput {
         write_iterator,
         ..Default::default()

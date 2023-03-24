@@ -131,7 +131,7 @@ pub fn gen_hydroflow_graph(
         });
 
         flat_graph_builder.add_statement(parse_quote! {
-            #recv_pipeline -> [#recv_merge_index_lit] #target_ident
+            #recv_pipeline -> unique::<'tick>() -> [#recv_merge_index_lit] #target_ident
         });
     }
 

@@ -14,8 +14,9 @@ expression: flat_graph_ref.surface_syntax_string()
 10v1 = unique :: < 'tick > ();
 11v1 = for_each (| (node , data) | async_send_result (node , data));
 12v1 = source_stream (async_receive_result);
-13v1 = map (| row : (_ , _ ,) | (row . 0 , row . 1 ,));
-14v1 = map (| v : (_ , _ ,) | (v . 1 , (v . 0 ,)));
+13v1 = unique :: < 'tick > ();
+14v1 = map (| row : (_ , _ ,) | (row . 0 , row . 1 ,));
+15v1 = map (| v : (_ , _ ,) | (v . 1 , (v . 0 ,)));
 
 2v1 -> 3v1;
 1v1 -> 2v1;
@@ -25,8 +26,9 @@ expression: flat_graph_ref.surface_syntax_string()
 6v1 -> 8v1;
 10v1 -> 11v1;
 9v1 -> 10v1;
-12v1 -> 4v1;
-14v1 -> 9v1;
-13v1 -> 14v1;
-3v1 -> 13v1;
+13v1 -> 4v1;
+12v1 -> 13v1;
+15v1 -> 9v1;
+14v1 -> 15v1;
+3v1 -> 14v1;
 
