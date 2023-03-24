@@ -10,6 +10,11 @@ digraph {
         n1v1 [label="(n1v1) difference()", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
         n2v1 [label="(n2v1) for_each(|x| println!(\"diff: {:?}\", x))", fontname=Monaco, shape=house, style = filled, color = "#ffff00"]
         n1v1 -> n2v1
+        subgraph "cluster sg_1v1_var_diff" {
+            label="var diff"
+            n1v1
+            n2v1
+        }
     }
     subgraph "cluster n2v1" {
         fillcolor="#dddddd"
@@ -20,12 +25,21 @@ digraph {
         n6v1 [label="(n6v1) for_each(|x| println!(\"neg: {:?}\", x))", fontname=Monaco, shape=house, style = filled, color = "#ffff00"]
         n4v1 -> n5v1
         n5v1 -> n6v1
+        subgraph "cluster sg_2v1_var_negs" {
+            label="var negs"
+            n4v1
+            n5v1
+        }
     }
     subgraph "cluster n3v1" {
         fillcolor="#dddddd"
         style=filled
         label = "sg_3v1\nstratum 0"
         n3v1 [label="(n3v1) source_stream(pos_recv)", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+        subgraph "cluster sg_3v1_var_poss" {
+            label="var poss"
+            n3v1
+        }
     }
     n3v1 -> n8v1
     n5v1 -> n7v1

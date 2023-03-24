@@ -27,6 +27,22 @@ digraph {
         n6v1 -> n7v1
         n7v1 -> n8v1
         n8v1 -> n13v1 [label="0"]
+        subgraph "cluster sg_1v1_var_contacts" {
+            label="var contacts"
+            n1v1
+            n2v1
+        }
+        subgraph "cluster sg_1v1_var_exposed" {
+            label="var exposed"
+            n3v1
+        }
+        subgraph "cluster sg_1v1_var_new_exposed" {
+            label="var new_exposed"
+            n5v1
+            n6v1
+            n7v1
+            n8v1
+        }
     }
     subgraph "cluster n2v1" {
         fillcolor="#dddddd"
@@ -37,6 +53,11 @@ digraph {
         n11v1 [label="(n11v1) for_each(|(_pid, ((name, phone), exposure))| {\l    println!(\"[{}] To {}: Possible Exposure at t = {}\", name, phone, exposure);\l})\l", fontname=Monaco, shape=house, style = filled, color = "#ffff00"]
         n12v1 -> n10v1 [label="0"]
         n10v1 -> n11v1
+        subgraph "cluster sg_2v1_var_notifs" {
+            label="var notifs"
+            n10v1
+            n11v1
+        }
     }
     n8v1 -> n14v1 [label="1"]
     n14v1 [label="(n14v1) handoff", fontname=Monaco, shape=parallelogram, style = filled, color = "#ddddff"]
