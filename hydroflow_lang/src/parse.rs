@@ -339,9 +339,7 @@ impl Operator {
             .trim_end()
             .trim_end_matches('}')
             .trim_end()
-            .lines()
-            .map(|line| line.trim_start_matches("    "))
-            .collect()
+            .replace("\n    ", "\n") // Remove extra leading indent
     }
 }
 impl Parse for Operator {
@@ -422,5 +420,36 @@ impl Eq for IndexInt {}
 impl Ord for IndexInt {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.value.cmp(&other.value)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    use syn::parse_quote;
+
+    #[test]
+    fn test_operator_to_pretty_string() {
+        let op: Operator = parse_quote! {
+            demux(|(msg, addr), var_args!(clients, msgs, errs)|
+                match msg {
+                    Message::ConnectRequest => clients.give(addr),
+                    Message::ChatMsg {..} => msgs.give(msg),
+                    _ => errs.give(msg),
+                }
+            )
+        };
+        assert_eq!(
+            r"
+demux(|(msg, addr), var_args!(clients, msgs, errs)| match msg {
+    Message::ConnectRequest => clients.give(addr),
+    Message::ChatMsg { .. } => msgs.give(msg),
+    _ => errs.give(msg),
+})
+"
+            .trim(),
+            op.to_pretty_string()
+        );
     }
 }

@@ -8,7 +8,7 @@ digraph {
         style=filled
         label = "sg_1v1\nstratum 0"
         n1v1 [label="(n1v1) source_iter([()])", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
-        n2v1 [label="(n2v1) for_each(|()| {println!(\"Current tick: {}, stratum: {}\", context.current_tick(), context.current_stratum())})", fontname=Monaco, shape=house, style = filled, color = "#ffff00"]
+        n2v1 [label="(n2v1) for_each(|()| {\l    println!(\l        \"Current tick: {}, stratum: {}\", context.current_tick(), context\l        .current_stratum()\l    )\l})\l", fontname=Monaco, shape=house, style = filled, color = "#ffff00"]
         n1v1 -> n2v1
     }
 }
