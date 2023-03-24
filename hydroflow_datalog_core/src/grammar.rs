@@ -162,7 +162,7 @@ pub mod datalog {
 
     #[rust_sitter::extra]
     struct Comment {
-        #[rust_sitter::leaf(pattern = r"#.*")]
+        #[rust_sitter::leaf(pattern = r"(#|\/\/).*")]
         _comment: (),
     }
 

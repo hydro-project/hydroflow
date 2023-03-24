@@ -48,6 +48,7 @@ async def main(args):
 
     sender_1_connection = await (await sender_port_1.server_port()).into_sink()
     sender_2_connection = await (await sender_port_2.server_port()).into_sink()
+    
     print("got sink!")
 
     await sender_1_connection.send(bytes("hi 1!", "utf-8"))

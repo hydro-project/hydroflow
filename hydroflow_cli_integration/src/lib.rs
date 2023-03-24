@@ -12,7 +12,7 @@ use std::{
 use bytes::{Bytes, BytesMut};
 use serde::{Deserialize, Serialize};
 
-use futures::{ready, Sink, Stream};
+use futures::{ready, stream, Sink, Stream};
 
 use async_recursion::async_recursion;
 use async_trait::async_trait;
@@ -42,6 +42,7 @@ pub enum ServerBindConfig {
     ),
     Demux(HashMap<u32, ServerBindConfig>),
     Merge(Vec<ServerBindConfig>),
+    Null,
 }
 
 impl ServerBindConfig {
@@ -79,6 +80,7 @@ impl ServerBindConfig {
                 }
                 BoundConnection::Merge(merge)
             }
+            ServerBindConfig::Null => BoundConnection::Null,
         }
     }
 }
@@ -102,6 +104,7 @@ pub enum ServerPort {
     TcpPort(SocketAddr),
     Demux(HashMap<u32, ServerPort>),
     Merge(Vec<ServerPort>),
+    Null,
 }
 
 pub type DynStream = Pin<Box<dyn Stream<Item = Result<BytesMut, io::Error>> + Send + Sync>>;
@@ -132,6 +135,7 @@ pub enum BoundConnection {
     TcpPort(TcpListener),
     Demux(HashMap<u32, BoundConnection>),
     Merge(Vec<BoundConnection>),
+    Null,
 }
 
 impl BoundConnection {
@@ -176,21 +180,24 @@ impl BoundConnection {
                 }
                 ServerPort::Merge(merge)
             }
+
+            BoundConnection::Null => ServerPort::Null,
         }
     }
 }
 
 #[async_recursion]
-async fn accept(bound: &BoundConnection) -> (Option<DynStream>, Option<DynSink<Bytes>>) {
+async fn accept(bound: &BoundConnection) -> ConnectedBidi {
     match bound {
         BoundConnection::UnixSocket(listener, _) => {
             #[cfg(unix)]
             {
                 let (stream, _) = listener.accept().await.unwrap();
                 let (sink, source) = unix_bytes(stream);
-                let out: (Option<DynStream>, Option<DynSink<Bytes>>) =
-                    (Some(Box::pin(source)), Some(Box::pin(sink)));
-                out
+                ConnectedBidi {
+                    source: Some(Box::pin(source)),
+                    sink: Some(Box::pin(sink)),
+                }
             }
 
             #[cfg(not(unix))]
@@ -202,14 +209,15 @@ async fn accept(bound: &BoundConnection) -> (Option<DynStream>, Option<DynSink<B
         BoundConnection::TcpPort(listener) => {
             let (stream, _) = listener.accept().await.unwrap();
             let (sink, source) = tcp_bytes(stream);
-            let out: (Option<DynStream>, Option<DynSink<Bytes>>) =
-                (Some(Box::pin(source)), Some(Box::pin(sink)));
-            out
+            ConnectedBidi {
+                source: Some(Box::pin(source)),
+                sink: Some(Box::pin(sink)),
+            }
         }
         BoundConnection::Merge(merge) => {
             let mut sources = vec![];
             for bound in merge {
-                sources.push(accept(bound).await.0.unwrap());
+                sources.push(accept(bound).await.source.unwrap());
             }
 
             let merge_source: DynStream = Box::pin(MergeSource {
@@ -217,9 +225,15 @@ async fn accept(bound: &BoundConnection) -> (Option<DynStream>, Option<DynSink<B
                 sources,
             });
 
-            (Some(merge_source), None)
+            ConnectedBidi {
+                source: Some(merge_source),
+                sink: None,
+            }
         }
         BoundConnection::Demux(_) => panic!("Cannot connect to a demux pipe directly"),
+        BoundConnection::Null => {
+            ConnectedBidi::from_defn(ServerOrBound::Server(ServerPort::Null)).await
+        }
     }
 }
 
@@ -246,6 +260,30 @@ fn unix_bytes(
     let send = FramedWrite::new(send, LengthDelimitedCodec::new());
     let recv = FramedRead::new(recv, LengthDelimitedCodec::new());
     (send, recv)
+}
+
+struct IoErrorDrain<T> {
+    marker: PhantomData<T>,
+}
+
+impl<T> Sink<T> for IoErrorDrain<T> {
+    type Error = io::Error;
+
+    fn poll_ready(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        Poll::Ready(Ok(()))
+    }
+
+    fn start_send(self: Pin<&mut Self>, _item: T) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    fn poll_flush(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        Poll::Ready(Ok(()))
+    }
+
+    fn poll_close(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        Poll::Ready(Ok(()))
+    }
 }
 
 pub struct ConnectedBidi {
@@ -282,13 +320,6 @@ impl Connected for ConnectedBidi {
                     sink: Some(Box::pin(sink)),
                 }
             }
-            ServerOrBound::Bound(bound) => {
-                let bound = accept(&bound).await;
-                ConnectedBidi {
-                    source: bound.0,
-                    sink: bound.1,
-                }
-            }
             ServerOrBound::Server(ServerPort::Merge(merge)) => {
                 let sources = futures::future::join_all(merge.iter().map(|port| async {
                     ConnectedBidi::from_defn(ServerOrBound::Server(port.clone()))
@@ -310,6 +341,15 @@ impl Connected for ConnectedBidi {
             ServerOrBound::Server(ServerPort::Demux(_)) => {
                 panic!("Cannot connect to a demux pipe directly")
             }
+
+            ServerOrBound::Server(ServerPort::Null) => ConnectedBidi {
+                source: Some(Box::pin(stream::empty())),
+                sink: Some(Box::pin(IoErrorDrain {
+                    marker: PhantomData::default(),
+                })),
+            },
+
+            ServerOrBound::Bound(bound) => accept(&bound).await,
         }
     }
 }

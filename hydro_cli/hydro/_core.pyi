@@ -1,4 +1,8 @@
-from typing import AsyncGenerator, List, Optional
+from typing import AsyncGenerator, Dict, List, Optional
+
+def demux(mapping: Dict[int, "HydroflowSink"]) -> "HydroflowSink": ...
+
+def null() -> "HydroflowNull": ...
 
 class HydroflowSink(object):
     pass
@@ -54,6 +58,9 @@ class HydroflowCratePorts(object):
 class HydroflowCratePort(HydroflowSink):
     def send_to(self, other: HydroflowSink) -> None: ...
     def merge(self) -> "HydroflowCratePort": ...
+
+class HydroflowNull(HydroflowSink):
+    def send_to(self, other: HydroflowSink) -> None: ...
 
 class ServerPort(object):
     def json() -> object: ...
