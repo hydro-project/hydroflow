@@ -20,6 +20,11 @@ digraph {
         n4v1 -> n5v1
         n4v1 -> n7v1
         n5v1 -> n6v1
+        subgraph "cluster sg_1v1_var_pivot" {
+            label="var pivot"
+            n3v1
+            n4v1
+        }
     }
 }
 

@@ -18,6 +18,16 @@ digraph {
         n2v1 -> n4v1
         n4v1 -> n5v1
         n5v1 -> n6v1
+        subgraph "cluster sg_1v1_var_t0" {
+            label="var t0"
+            n1v1
+            n2v1
+        }
+        subgraph "cluster sg_1v1_var_t1" {
+            label="var t1"
+            n4v1
+            n5v1
+        }
     }
     subgraph "cluster n2v1" {
         fillcolor="#dddddd"

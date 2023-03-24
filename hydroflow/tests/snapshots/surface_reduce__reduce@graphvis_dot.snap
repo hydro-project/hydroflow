@@ -23,6 +23,17 @@ digraph {
         n4v1 -> n5v1
         n5v1 -> n6v1
         n6v1 -> n10v1 [label="0"]
+        subgraph "cluster sg_1v1_var_my_join_tee" {
+            label="var my_join_tee"
+            n4v1
+            n5v1
+            n6v1
+        }
+        subgraph "cluster sg_1v1_var_reached_vertices" {
+            label="var reached_vertices"
+            n1v1
+            n2v1
+        }
     }
     subgraph "cluster n2v1" {
         fillcolor="#dddddd"
