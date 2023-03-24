@@ -7,7 +7,7 @@ digraph {
         fillcolor="#dddddd"
         style=filled
         label = "sg_1v1\nstratum 0"
-        n1v1 [label="(n1v1) source_iter([SubordResponse {xid: \"123\",mtype: 33,},SubordResponse {xid: \"123\",mtype: 52,},SubordResponse {xid: \"123\",mtype: 72,},SubordResponse {xid: \"123\",mtype: 83,},SubordResponse {xid: \"123\",mtype: 78,},])", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+        n1v1 [label="(n1v1) source_iter([\l    SubordResponse {\l        xid: \"123\",\l        mtype: 33,\l    },\l    SubordResponse {\l        xid: \"123\",\l        mtype: 52,\l    },\l    SubordResponse {\l        xid: \"123\",\l        mtype: 72,\l    },\l    SubordResponse {\l        xid: \"123\",\l        mtype: 83,\l    },\l    SubordResponse {\l        xid: \"123\",\l        mtype: 78,\l    },\l])\l", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
         n2v1 [label="(n2v1) map(|m: SubordResponse| (m.xid, 1))", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
         n1v1 -> n2v1
     }

@@ -75,9 +75,12 @@ where
         writeln!(self.write, "flowchart TD")?;
         writeln!(
             self.write,
-            "classDef pullClass fill:#02f,color:#fff,stroke:#000"
+            "classDef pullClass fill:#02f,color:#fff,stroke:#000,text-align:left,white-space:pre"
         )?;
-        writeln!(self.write, "classDef pushClass fill:#ff0,stroke:#000")?;
+        writeln!(
+            self.write,
+            "classDef pushClass fill:#ff0,stroke:#000,text-align:left,white-space:pre"
+        )?;
 
         writeln!(
             self.write,
@@ -113,12 +116,16 @@ where
             Color::Push => "pushClass",
             Color::Pull => "pullClass",
             _ => "otherClass",
-        }
-        .to_string();
+        };
         let label = format!(
-            r#"{:t$}{id:?}{lbracket}"({id:?}) <tt>{code}</tt>"{rbracket}:::{class}"#,
+            r#"{:t$}{id:?}{lbracket}"{id_label} <code>{code}</code>"{rbracket}:::{class}"#,
             "",
             id = node_id.data(),
+            id_label = if node.contains('\n') {
+                format!("<div style=text-align:center>({:?})</div>", node_id.data())
+            } else {
+                format!("({:?})", node_id.data())
+            },
             class = class_str,
             lbracket = match node_color {
                 Color::Push => r"[/",
@@ -126,12 +133,22 @@ where
                 _ => "[",
             },
             code = node
-                // .to_pretty_string()
                 .replace('&', "&amp;")
                 .replace('<', "&lt;")
                 .replace('>', "&gt;")
                 .replace('"', "&quot;")
-                .replace('\n', "<br>"),
+                // Mermaid entity codes
+                // https://mermaid.js.org/syntax/flowchart.html#entity-codes-to-escape-characters
+                .replace('#', "&num;")
+                // Not really needed, newline literals seem to work
+                .replace('\n', "<br>")
+                // Mermaid font awesome fa
+                // https://github.com/mermaid-js/mermaid/blob/e4d2118d4bfa023628a020b7ab1f8c491e6dc523/packages/mermaid/src/diagrams/flowchart/flowRenderer-v2.js#L62
+                .replace("fa:fa", "fa:<wbr>fa")
+                .replace("fab:fa", "fab:<wbr>fa")
+                .replace("fal:fa", "fal:<wbr>fa")
+                .replace("far:fa", "far:<wbr>fa")
+                .replace("fas:fa", "fas:<wbr>fa"),
             rbracket = match node_color {
                 Color::Push => r"\]",
                 Color::Pull => r"/]",
@@ -155,10 +172,10 @@ where
         let dest_str = format!("{:?}", dst_id.data());
         writeln!(
             self.write,
-            "{:t$}{}{}{}{}",
+            "{:t$}{src}{label}{delay}{dst}",
             "",
-            src_str.trim(),
-            if let Some(label) = &label {
+            src = src_str.trim(),
+            label = if let Some(label) = &label {
                 if Some(DelayType::Stratum) == delay_type {
                     format!("=={}", label.trim())
                 } else {
@@ -167,12 +184,12 @@ where
             } else {
                 "".to_string()
             },
-            if Some(DelayType::Stratum) == delay_type {
+            delay = if Some(DelayType::Stratum) == delay_type {
                 "===o"
             } else {
                 "--->"
             },
-            dest_str.trim(),
+            dst = dest_str.trim(),
             t = if in_subgraph.is_some() { 4 } else { 0 },
         )?;
         Ok(())
@@ -264,8 +281,6 @@ where
         let nm = node.replace('"', "\\\"").replace('\n', "\\l");
         let label = format!("n{:?}", node_id.data());
         let shape_str = match node_color {
-            // Color::Push => "polygon, sides=4, distortion=-0.1",
-            // Color::Pull => "polygon, sides=4, distortion=0.1",
             Color::Push => "house",
             Color::Pull => "invhouse",
             Color::Hoff => "parallelogram",
