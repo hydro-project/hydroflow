@@ -121,6 +121,7 @@ impl LaunchedHost for LaunchedLocalhost {
 
                 ServerBindConfig::Merge(configs)
             }
+            ServerStrategy::Null => ServerBindConfig::Null,
         }
     }
 

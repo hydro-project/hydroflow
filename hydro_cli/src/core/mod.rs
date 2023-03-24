@@ -90,6 +90,7 @@ pub enum ServerStrategy {
     ),
     Demux(HashMap<u32, ServerStrategy>),
     Merge(Vec<ServerStrategy>),
+    Null,
 }
 
 /// Like BindType, but includes metadata for determining whether a connection is possible.
