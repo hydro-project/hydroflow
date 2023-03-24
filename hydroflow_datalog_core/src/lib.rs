@@ -127,11 +127,11 @@ pub fn gen_hydroflow_graph(
         let recv_pipeline: Pipeline = syn::parse_str(&recv_hf.code).unwrap();
 
         flat_graph_builder.add_statement(parse_quote! {
-            #async_send_pipeline = merge() -> #send_pipeline
+            #async_send_pipeline = merge() -> unique::<'tick>() -> #send_pipeline
         });
 
         flat_graph_builder.add_statement(parse_quote! {
-            #recv_pipeline -> [#recv_merge_index_lit] #target_ident
+            #recv_pipeline -> unique::<'tick>() -> [#recv_merge_index_lit] #target_ident
         });
     }
 
