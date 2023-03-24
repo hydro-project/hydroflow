@@ -32,15 +32,10 @@ pub mod datalog {
     pub struct RustSnippet {
         #[rust_sitter::leaf(text = "`")]
         _start: (),
-        pub code: Spanned<RustSnippetInner>,
+        #[rust_sitter::leaf(pattern = r#"[^`]*"#, transform = |s| s.to_string())]
+        pub code: Spanned<String>,
         #[rust_sitter::leaf(text = "`")]
         _end: (),
-    }
-
-    #[derive(Debug, Clone)]
-    pub struct RustSnippetInner {
-        #[rust_sitter::leaf(pattern = r#"[^`]*"#, transform = |s| s.to_string())]
-        pub value: String,
     }
 
     #[derive(Debug, Clone)]
