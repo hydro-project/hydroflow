@@ -4,12 +4,12 @@ expression: df.meta_graph().unwrap().to_mermaid()
 ---
 %%{init:{'theme':'base','themeVariables':{'clusterBkg':'#ddd','clusterBorder':'#888'}}}%%
 flowchart TD
-classDef pullClass fill:#02f,color:#fff,stroke:#000
-classDef pushClass fill:#ff0,stroke:#000
+classDef pullClass fill:#02f,color:#fff,stroke:#000,text-align:left,white-space:pre
+classDef pushClass fill:#ff0,stroke:#000,text-align:left,white-space:pre
 linkStyle default stroke:#aaa,stroke-width:4px,color:red,font-size:1.5em;
 subgraph sg_1v1 ["sg_1v1 stratum 0"]
-    1v1[\"(1v1) <tt>source_iter([()])</tt>"/]:::pullClass
-    2v1[/"(2v1) <tt>for_each(|()| {println!(&quot;Current tick: {}, stratum: {}&quot;, context.current_tick(), context.current_stratum())})</tt>"\]:::pushClass
+    1v1[\"(1v1) <code>source_iter([()])</code>"/]:::pullClass
+    2v1[/"<div style=text-align:center>(2v1)</div> <code>for_each(|()| {<br>    println!(<br>        &quot;Current tick: {}, stratum: {}&quot;, context.current_tick(), context<br>        .current_stratum()<br>    )<br>})</code>"\]:::pushClass
     1v1--->2v1
 end
 
