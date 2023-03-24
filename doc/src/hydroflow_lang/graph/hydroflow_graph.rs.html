@@ -1092,7 +1092,6 @@
 <a href="#1092" id="1092">1092</a>
 <a href="#1093" id="1093">1093</a>
 <a href="#1094" id="1094">1094</a>
-<a href="#1095" id="1095">1095</a>
 </pre><pre class="rust"><code><span class="attr">#![deny(missing_docs)]
 
 </span><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet, HashSet};
@@ -1106,6 +1105,7 @@
 <span class="kw">use </span>syn::spanned::Spanned;
 
 <span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
+<span class="kw">use </span><span class="kw">crate</span>::graph::ops::null_write_iterator_fn;
 <span class="kw">use </span><span class="kw">crate</span>::pretty_span::{PrettyRowCol, PrettySpan};
 
 <span class="kw">use </span><span class="kw">super</span>::graph_write::{Dot, GraphWrite, Mermaid};
@@ -1762,13 +1762,11 @@
                             };
 
                             <span class="kw">let </span>write_result = (op_constraints.write_fn)(<span class="kw-2">&amp;</span>context_args, diagnostics);
-                            <span class="kw">let </span><span class="prelude-val">Ok</span>(OperatorWriteOutput {
+                            <span class="kw">let </span>OperatorWriteOutput {
                                 write_prologue,
                                 write_iterator,
                                 write_iterator_after,
-                            }) = write_result <span class="kw">else </span>{
-                                <span class="kw">continue</span>;
-                            };
+                            } = write_result.unwrap_or_else(|()| OperatorWriteOutput { write_iterator: null_write_iterator_fn(<span class="kw-2">&amp;</span>context_args), ..Default::default() });
 
                             op_prologue_code.push(write_prologue);
                             subgraph_op_iter_code.push(write_iterator);

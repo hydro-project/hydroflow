@@ -832,6 +832,24 @@
 <a href="#832" id="832">832</a>
 <a href="#833" id="833">833</a>
 <a href="#834" id="834">834</a>
+<a href="#835" id="835">835</a>
+<a href="#836" id="836">836</a>
+<a href="#837" id="837">837</a>
+<a href="#838" id="838">838</a>
+<a href="#839" id="839">839</a>
+<a href="#840" id="840">840</a>
+<a href="#841" id="841">841</a>
+<a href="#842" id="842">842</a>
+<a href="#843" id="843">843</a>
+<a href="#844" id="844">844</a>
+<a href="#845" id="845">845</a>
+<a href="#846" id="846">846</a>
+<a href="#847" id="847">847</a>
+<a href="#848" id="848">848</a>
+<a href="#849" id="849">849</a>
+<a href="#850" id="850">850</a>
+<a href="#851" id="851">851</a>
+<a href="#852" id="852">852</a>
 </pre><pre class="rust"><code><span class="kw">use </span>rust_sitter::errors::{ParseError, ParseErrorReason};
 <span class="kw">use </span>std::collections::{HashMap, HashSet};
 
@@ -1236,7 +1254,10 @@
                 <span class="macro">parse_quote!</span>(())
             }
         }
-        ValueExpr::Integer(i) =&gt; <span class="macro">parse_quote!</span>(#i),
+        ValueExpr::Integer(i) =&gt; syn::Expr::Lit(syn::ExprLit {
+            attrs: Vec::new(),
+            lit: syn::Lit::Int(syn::LitInt::new(<span class="kw-2">&amp;</span>i.to_string(), Span::call_site())),
+        }),
         ValueExpr::Add(l, <span class="kw">_</span>, r) =&gt; {
             <span class="kw">let </span>l = gen_value_expr(l, field_use_count, field_use_cur, out_expanded, diagnostics);
             <span class="kw">let </span>r = gen_value_expr(r, field_use_count, field_use_cur, out_expanded, diagnostics);
@@ -1386,7 +1407,7 @@
                 };
 
                 <span class="macro">parse_quote! </span>{
-                    #old_at_index = <span class="kw">if let </span><span class="prelude-val">Some</span>(prev) = #old_at_index {
+                    #old_at_index = <span class="kw">if let </span><span class="prelude-val">Some</span>(prev) = #old_at_index.take() {
                         <span class="prelude-val">Some</span>(#agg_expr)
                     } <span class="kw">else </span>{
                         <span class="prelude-val">Some</span>(#agg_initial)
@@ -1662,6 +1683,21 @@
             .output result `for_each(|v| result.send(v).unwrap())`
 
             result(a, a) :- strings(a)
+            &quot;#
+        </span>);
+    }
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>test_expr_lhs() {
+        <span class="macro">test_snapshots!</span>(
+            <span class="string">r#&quot;
+            .input ints `source_stream(ints)`
+            .output result `for_each(|v| result.send(v).unwrap())`
+
+            result(123) :- ints(a)
+            result(a + 123) :- ints(a)
+            result(a + a) :- ints(a)
+            result(123 - a) :- ints(a)
             &quot;#
         </span>);
     }
