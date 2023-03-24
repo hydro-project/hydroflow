@@ -64,7 +64,7 @@
             <span class="kw">for </span>diagnostic <span class="kw">in </span>diagnostics {
                 diagnostic.emit();
             }
-            proc_macro::TokenStream::from(<span class="macro">quote!</span>(()))
+            proc_macro::TokenStream::from(<span class="macro">quote!</span>(hydroflow::scheduled::graph::Hydroflow::new()))
         }
     }
 }

@@ -173,6 +173,7 @@
 <a href="#173" id="173">173</a>
 <a href="#174" id="174">174</a>
 <a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::{collections::HashMap, net::SocketAddr, path::Path, sync::Arc};
 
 <span class="kw">use </span>anyhow::Result;
@@ -265,6 +266,7 @@
     ),
     Demux(HashMap&lt;u32, ServerStrategy&gt;),
     Merge(Vec&lt;ServerStrategy&gt;),
+    Null,
 }
 
 <span class="doccomment">/// Like BindType, but includes metadata for determining whether a connection is possible.

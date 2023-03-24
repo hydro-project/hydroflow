@@ -850,6 +850,47 @@
 <a href="#850" id="850">850</a>
 <a href="#851" id="851">851</a>
 <a href="#852" id="852">852</a>
+<a href="#853" id="853">853</a>
+<a href="#854" id="854">854</a>
+<a href="#855" id="855">855</a>
+<a href="#856" id="856">856</a>
+<a href="#857" id="857">857</a>
+<a href="#858" id="858">858</a>
+<a href="#859" id="859">859</a>
+<a href="#860" id="860">860</a>
+<a href="#861" id="861">861</a>
+<a href="#862" id="862">862</a>
+<a href="#863" id="863">863</a>
+<a href="#864" id="864">864</a>
+<a href="#865" id="865">865</a>
+<a href="#866" id="866">866</a>
+<a href="#867" id="867">867</a>
+<a href="#868" id="868">868</a>
+<a href="#869" id="869">869</a>
+<a href="#870" id="870">870</a>
+<a href="#871" id="871">871</a>
+<a href="#872" id="872">872</a>
+<a href="#873" id="873">873</a>
+<a href="#874" id="874">874</a>
+<a href="#875" id="875">875</a>
+<a href="#876" id="876">876</a>
+<a href="#877" id="877">877</a>
+<a href="#878" id="878">878</a>
+<a href="#879" id="879">879</a>
+<a href="#880" id="880">880</a>
+<a href="#881" id="881">881</a>
+<a href="#882" id="882">882</a>
+<a href="#883" id="883">883</a>
+<a href="#884" id="884">884</a>
+<a href="#885" id="885">885</a>
+<a href="#886" id="886">886</a>
+<a href="#887" id="887">887</a>
+<a href="#888" id="888">888</a>
+<a href="#889" id="889">889</a>
+<a href="#890" id="890">890</a>
+<a href="#891" id="891">891</a>
+<a href="#892" id="892">892</a>
+<a href="#893" id="893">893</a>
 </pre><pre class="rust"><code><span class="kw">use </span>rust_sitter::errors::{ParseError, ParseErrorReason};
 <span class="kw">use </span>std::collections::{HashMap, HashSet};
 
@@ -871,13 +912,47 @@
 
 <span class="kw">static </span>MAGIC_RELATIONS: [<span class="kw-2">&amp;</span>str; <span class="number">1</span>] = [<span class="string">&quot;less_than&quot;</span>];
 
+<span class="kw">pub fn </span>parse_pipeline(
+    code_str: <span class="kw-2">&amp;</span>rust_sitter::Spanned&lt;String&gt;,
+    literal: <span class="kw-2">&amp;</span>proc_macro2::Literal,
+    offset: usize,
+) -&gt; <span class="prelude-ty">Result</span>&lt;Pipeline, Vec&lt;Diagnostic&gt;&gt; {
+    syn::parse_str(<span class="kw-2">&amp;</span>code_str.value).map_err(|err| {
+        <span class="kw">let </span>(start, end) = code_str.span;
+        <span class="comment">// TODO(mingwei): incorporate `err.span()` somehow
+        </span><span class="kw">let </span>subspan = literal.subspan(start + offset..end + offset);
+        <span class="macro">vec!</span>[Diagnostic {
+            span: subspan.unwrap_or(Span::call_site()),
+            level: Level::Error,
+            message: <span class="macro">format!</span>(<span class="string">&quot;Failed to parse input pipeline: {}&quot;</span>, err),
+        }]
+    })
+}
+
 <span class="kw">pub fn </span>gen_hydroflow_graph(
     literal: proc_macro2::Literal,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;HydroflowGraph, Vec&lt;Diagnostic&gt;&gt; {
+    <span class="kw">let </span>offset = {
+        <span class="comment">// This includes the quotes, i.e. &#39;r#&quot;my test&quot;#&#39; or &#39;&quot;hello\nworld&quot;&#39;.
+        </span><span class="kw">let </span>source_str = literal.to_string();
+        <span class="kw">let </span><span class="kw-2">mut </span>source_chars = source_str.chars();
+        <span class="kw">if </span><span class="prelude-val">Some</span>(<span class="string">&#39;r&#39;</span>) != source_chars.next() {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">vec!</span>[Diagnostic {
+                span: literal.span(),
+                level: Level::Error,
+                message:
+                    <span class="string">r##&quot;Input must be a raw string `r#&quot;...&quot;#` for correct diagnostic messages.&quot;##
+                        </span>.to_owned(),
+            }]);
+        }
+        <span class="kw">let </span>hashes = source_chars.take_while(|<span class="kw-2">&amp;</span>c| <span class="string">&#39;#&#39; </span>== c).count();
+        <span class="number">2 </span>+ hashes
+    };
+
     <span class="kw">let </span>str_node: syn::LitStr = <span class="macro">parse_quote!</span>(#literal);
     <span class="kw">let </span>actual_str = str_node.value();
     <span class="kw">let </span>program: Program =
-        grammar::datalog::parse(<span class="kw-2">&amp;</span>actual_str).map_err(|e| handle_errors(e, <span class="kw-2">&amp;</span>literal))<span class="question-mark">?</span>;
+        grammar::datalog::parse(<span class="kw-2">&amp;</span>actual_str).map_err(|e| handle_errors(e, <span class="kw-2">&amp;</span>literal, offset))<span class="question-mark">?</span>;
 
     <span class="kw">let </span><span class="kw-2">mut </span>inputs = Vec::new();
     <span class="kw">let </span><span class="kw-2">mut </span>outputs = Vec::new();
@@ -937,7 +1012,7 @@
             syn::LitInt::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, my_merge_index), Span::call_site());
         <span class="kw">let </span>name = syn::Ident::new(<span class="kw-2">&amp;</span>target.name, Span::call_site());
 
-        <span class="kw">let </span>input_pipeline: Pipeline = syn::parse_str(<span class="kw-2">&amp;</span>hf_code.code).unwrap();
+        <span class="kw">let </span>input_pipeline: Pipeline = parse_pipeline(<span class="kw-2">&amp;</span>hf_code.code, <span class="kw-2">&amp;</span>literal, offset)<span class="question-mark">?</span>;
 
         flat_graph_builder.add_statement(<span class="macro">parse_quote! </span>{
             #input_pipeline -&gt; [#my_merge_index_lit] #name
@@ -954,7 +1029,7 @@
         <span class="kw">let </span>my_tee_index_lit = syn::LitInt::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, my_tee_index), Span::call_site());
         <span class="kw">let </span>target_ident = syn::Ident::new(<span class="kw-2">&amp;</span>target.name, Span::call_site());
 
-        <span class="kw">let </span>output_pipeline: Pipeline = syn::parse_str(<span class="kw-2">&amp;</span>hf_code.code).unwrap();
+        <span class="kw">let </span>output_pipeline: Pipeline = parse_pipeline(<span class="kw-2">&amp;</span>hf_code.code, <span class="kw-2">&amp;</span>literal, offset)<span class="question-mark">?</span>;
 
         flat_graph_builder.add_statement(<span class="macro">parse_quote! </span>{
             #target_ident [#my_tee_index_lit] -&gt; #output_pipeline
@@ -975,8 +1050,8 @@
             syn::LitInt::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, recv_merge_index), Span::call_site());
         <span class="kw">let </span>target_ident = syn::Ident::new(<span class="kw-2">&amp;</span>target.name, Span::call_site());
 
-        <span class="kw">let </span>send_pipeline: Pipeline = syn::parse_str(<span class="kw-2">&amp;</span>send_hf.code).unwrap();
-        <span class="kw">let </span>recv_pipeline: Pipeline = syn::parse_str(<span class="kw-2">&amp;</span>recv_hf.code).unwrap();
+        <span class="kw">let </span>send_pipeline: Pipeline = parse_pipeline(<span class="kw-2">&amp;</span>send_hf.code, <span class="kw-2">&amp;</span>literal, offset)<span class="question-mark">?</span>;
+        <span class="kw">let </span>recv_pipeline: Pipeline = parse_pipeline(<span class="kw-2">&amp;</span>recv_hf.code, <span class="kw-2">&amp;</span>literal, offset)<span class="question-mark">?</span>;
 
         flat_graph_builder.add_statement(<span class="macro">parse_quote! </span>{
             #async_send_pipeline = merge() -&gt; unique::&lt;<span class="lifetime">&#39;tick</span>&gt;() -&gt; #send_pipeline
@@ -1003,20 +1078,27 @@
     <span class="kw">if </span>!diagnostics.is_empty() {
         <span class="prelude-val">Err</span>(diagnostics)
     } <span class="kw">else </span>{
-        <span class="kw">let </span>(flat_graph, diagnostics) = flat_graph_builder.build();
-        diagnostics
-            .iter()
-            .filter(|diag| diag.is_error())
-            .for_each(Diagnostic::emit);
-        <span class="prelude-val">Ok</span>(flat_graph)
+        <span class="kw">let </span>(flat_graph, <span class="kw-2">mut </span>diagnostics) = flat_graph_builder.build();
+        diagnostics.retain(Diagnostic::is_error);
+        <span class="kw">if </span>!diagnostics.is_empty() {
+            <span class="prelude-val">Err</span>(diagnostics)
+        } <span class="kw">else </span>{
+            <span class="prelude-val">Ok</span>(flat_graph)
+        }
     }
 }
 
-<span class="kw">fn </span>handle_errors(errors: Vec&lt;ParseError&gt;, literal: <span class="kw-2">&amp;</span>proc_macro2::Literal) -&gt; Vec&lt;Diagnostic&gt; {
+<span class="kw">fn </span>handle_errors(
+    errors: Vec&lt;ParseError&gt;,
+    literal: <span class="kw-2">&amp;</span>proc_macro2::Literal,
+    offset: usize,
+) -&gt; Vec&lt;Diagnostic&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>diagnostics = <span class="macro">vec!</span>[];
     <span class="kw">for </span>error <span class="kw">in </span>errors {
         <span class="kw">let </span>reason = error.reason;
-        <span class="kw">let </span>my_span = literal.subspan(error.start + <span class="number">3</span>..error.end + <span class="number">3</span>).unwrap();
+        <span class="kw">let </span>my_span = literal
+            .subspan(error.start + offset..error.end + offset)
+            .unwrap_or(literal.span());
         <span class="kw">match </span>reason {
             ParseErrorReason::UnexpectedToken(msg) =&gt; {
                 diagnostics.push(Diagnostic::spanned(
@@ -1032,15 +1114,15 @@
                     <span class="macro">format!</span>(<span class="string">&quot;Missing Token: &#39;{msg}&#39;&quot;</span>, msg = msg),
                 ));
             }
-            ParseErrorReason::FailedNode(_vec) =&gt; {
-                <span class="kw">if </span>_vec.is_empty() {
+            ParseErrorReason::FailedNode(parse_errors) =&gt; {
+                <span class="kw">if </span>parse_errors.is_empty() {
                     diagnostics.push(Diagnostic::spanned(
                         my_span,
                         Level::Error,
                         <span class="string">&quot;Failed to parse&quot;</span>,
                     ));
                 } <span class="kw">else </span>{
-                    diagnostics.extend(handle_errors(_vec, literal));
+                    diagnostics.extend(handle_errors(parse_errors, literal, offset));
                 }
             }
         }

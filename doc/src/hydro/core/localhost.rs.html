@@ -236,6 +236,7 @@
 <a href="#236" id="236">236</a>
 <a href="#237" id="237">237</a>
 <a href="#238" id="238">238</a>
+<a href="#239" id="239">239</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::{collections::HashMap, net::SocketAddr, path::Path, sync::Arc};
 
 <span class="attr">#[cfg(unix)]
@@ -359,6 +360,7 @@
 
                 ServerBindConfig::Merge(configs)
             }
+            ServerStrategy::Null =&gt; ServerBindConfig::Null,
         }
     }
 

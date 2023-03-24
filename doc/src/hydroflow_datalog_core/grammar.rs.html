@@ -225,9 +225,13 @@
 <a href="#225" id="225">225</a>
 <a href="#226" id="226">226</a>
 <a href="#227" id="227">227</a>
+<a href="#228" id="228">228</a>
+<a href="#229" id="229">229</a>
 </pre><pre class="rust"><code><span class="attr">#[rust_sitter::grammar(<span class="string">&quot;datalog&quot;</span>)]
 #[allow(dead_code)]
 </span><span class="kw">pub mod </span>datalog {
+    <span class="kw">use </span>rust_sitter::Spanned;
+
     <span class="attr">#[rust_sitter::language]
     #[derive(Debug)]
     </span><span class="kw">pub struct </span>Program {
@@ -258,7 +262,7 @@
         <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;`&quot;</span>)]
         </span>_start: (),
         <span class="attr">#[rust_sitter::leaf(pattern = <span class="string">r#&quot;[^`]*&quot;#</span>, transform = |s| s.to_string())]
-        </span><span class="kw">pub </span>code: String,
+        </span><span class="kw">pub </span>code: Spanned&lt;String&gt;,
         <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;`&quot;</span>)]
         </span>_end: (),
     }

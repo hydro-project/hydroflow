@@ -533,6 +533,8 @@
 <a href="#533" id="533">533</a>
 <a href="#534" id="534">534</a>
 <a href="#535" id="535">535</a>
+<a href="#536" id="536">536</a>
+<a href="#537" id="537">537</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::{collections::HashMap, net::SocketAddr, path::PathBuf, sync::Arc, time::Duration};
 
 <span class="kw">use </span>anyhow::{Context, <span class="prelude-ty">Result</span>};
@@ -594,6 +596,7 @@
 
                 ServerBindConfig::Merge(configs)
             }
+            ServerStrategy::Null =&gt; ServerBindConfig::Null,
         }
     }
 
@@ -781,6 +784,7 @@
                     <span class="self">self</span>.request_port(bind_type);
                 }
             }
+            ServerStrategy::Null =&gt; {}
         }
     }
 

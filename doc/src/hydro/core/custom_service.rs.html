@@ -146,6 +146,10 @@
 <a href="#146" id="146">146</a>
 <a href="#147" id="147">147</a>
 <a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::{
     any::Any,
     sync::{Arc, Weak},
@@ -253,6 +257,10 @@
     <span class="kw">fn </span>as_any_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span><span class="kw">dyn </span>Any {
         <span class="self">self
     </span>}
+
+    <span class="kw">fn </span>instantiate_null(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="self">self</span>.client_port = <span class="prelude-val">Some</span>(ServerConfig::Null);
+    }
 
     <span class="kw">fn </span>instantiate(
         <span class="kw-2">&amp;</span><span class="self">self</span>,

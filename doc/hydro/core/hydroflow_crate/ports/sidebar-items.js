@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["ServerConfig"],"struct":["DemuxSink","HydroflowPortConfig"],"trait":["HydroflowServer","HydroflowSink","HydroflowSource"],"type":["ReverseSinkInstantiator"]};
+window.SIDEBAR_ITEMS = {"enum":["ServerConfig"],"struct":["DemuxSink","HydroflowPortConfig","NullSourceSink"],"trait":["HydroflowServer","HydroflowSink","HydroflowSource"],"type":["ReverseSinkInstantiator"]};
