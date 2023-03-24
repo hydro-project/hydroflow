@@ -7,6 +7,7 @@ edition = "2021"
 anyhow = "1.0"
 datadriven = "0.6.0"
 hydroflow = { path = "../hydroflow" }
+proc-macro2 = "1.0"
 quote = "1.0"
 syn = { version = "1.0.0", features = [ "parsing", "extra-traits" ] }
 prettyplease = "0.1.21"

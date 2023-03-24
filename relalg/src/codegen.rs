@@ -1,7 +1,5 @@
-use quote::{
-    __private::{Ident, TokenStream},
-    format_ident, quote, ToTokens,
-};
+use proc_macro2::{Ident, TokenStream};
+use quote::{format_ident, quote, ToTokens};
 use syn::parse_quote;
 
 use crate::{Datum, RelExpr, ScalarExpr};

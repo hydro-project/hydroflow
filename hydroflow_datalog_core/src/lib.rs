@@ -20,11 +20,11 @@ use util::{repeat_tuple, Counter};
 static MAGIC_RELATIONS: [&str; 1] = ["less_than"];
 
 pub fn parse_pipeline(
-    code_str: &rust_sitter::Spanned<RustSnippetInner>,
+    code_str: &rust_sitter::Spanned<String>,
     literal: &proc_macro2::Literal,
     offset: usize,
 ) -> Result<Pipeline, Vec<Diagnostic>> {
-    syn::parse_str(&code_str.value.value).map_err(|err| {
+    syn::parse_str(&code_str.value).map_err(|err| {
         let (start, end) = code_str.span;
         // TODO(mingwei): incorporate `err.span()` somehow
         let subspan = literal.subspan(start + offset..end + offset);
