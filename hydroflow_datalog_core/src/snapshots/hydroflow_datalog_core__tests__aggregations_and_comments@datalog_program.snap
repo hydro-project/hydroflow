@@ -69,7 +69,10 @@ fn main() {
                         }
                         check_input(hoff_23v1_recv)
                             .fold(
-                                ::std::collections::HashMap::<(_,), (Option<_>,)>::new(),
+                                hydroflow::rustc_hash::FxHashMap::<
+                                    (_,),
+                                    (Option<_>,),
+                                >::default(),
                                 |mut ht, kv| {
                                     let entry = ht.entry(kv.0).or_insert_with(|| (None,));
                                     #[allow(clippy::redundant_closure_call)]
@@ -237,7 +240,10 @@ fn main() {
                         }
                         check_input(hoff_27v1_recv)
                             .fold(
-                                ::std::collections::HashMap::<(_,), (Option<_>,)>::new(),
+                                hydroflow::rustc_hash::FxHashMap::<
+                                    (_,),
+                                    (Option<_>,),
+                                >::default(),
                                 |mut ht, kv| {
                                     let entry = ht.entry(kv.0).or_insert_with(|| (None,));
                                     #[allow(clippy::redundant_closure_call)]
@@ -383,7 +389,10 @@ fn main() {
                         }
                         check_input(hoff_26v1_recv)
                             .fold(
-                                ::std::collections::HashMap::<(_,), (Option<_>,)>::new(),
+                                hydroflow::rustc_hash::FxHashMap::<
+                                    (_,),
+                                    (Option<_>,),
+                                >::default(),
                                 |mut ht, kv| {
                                     let entry = ht.entry(kv.0).or_insert_with(|| (None,));
                                     #[allow(clippy::redundant_closure_call)]
