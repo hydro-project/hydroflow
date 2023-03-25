@@ -15,44 +15,6 @@ use crate::parse::{Operator, PortIndex};
 use super::{GraphNodeId, GraphSubgraphId, Node, OpInstGenerics, OperatorInstance, PortIndexValue};
 use serde::{Deserialize, Serialize};
 
-mod anti_join;
-mod batch;
-mod cross_join;
-mod demux;
-mod dest_sink;
-mod dest_sink_serde;
-mod difference;
-mod filter;
-mod filter_map;
-mod flat_map;
-mod flatten;
-mod fold;
-mod for_each;
-mod group_by;
-mod identity;
-mod initialize;
-mod inspect;
-mod join;
-mod map;
-mod merge;
-mod next_stratum;
-mod next_tick;
-mod null;
-mod persist;
-mod reduce;
-mod repeat_iter;
-mod sort;
-mod sort_by;
-mod source_interval;
-mod source_iter;
-mod source_json;
-mod source_stdin;
-mod source_stream;
-mod source_stream_serde;
-mod tee;
-mod unique;
-mod unzip;
-
 #[derive(Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Debug)]
 pub enum DelayType {
     Stratum,
@@ -255,7 +217,15 @@ pub const NULL_WRITE_FN: WriteFn = |write_context_args, _| {
     })
 };
 
-pub const OPERATORS: &[OperatorConstraints] = &[
+macro_rules! declare_ops {
+    ( $( $mod:ident :: $op:ident, )* ) => {
+        $( mod $mod; )*
+        pub const OPERATORS: &[OperatorConstraints] = &[
+            $( $mod :: $op, )*
+        ];
+    };
+}
+declare_ops![
     anti_join::ANTI_JOIN,
     batch::BATCH,
     cross_join::CROSS_JOIN,
@@ -294,6 +264,7 @@ pub const OPERATORS: &[OperatorConstraints] = &[
     unique::UNIQUE,
     unzip::UNZIP,
 ];
+
 pub fn operator_lookup() -> &'static HashMap<&'static str, &'static OperatorConstraints> {
     pub static OPERATOR_LOOKUP: OnceCell<HashMap<&'static str, &'static OperatorConstraints>> =
         OnceCell::new();
