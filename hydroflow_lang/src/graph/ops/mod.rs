@@ -3,7 +3,7 @@ use std::fmt::{Debug, Display};
 use std::ops::{Bound, RangeBounds};
 
 use once_cell::sync::OnceCell;
-use proc_macro2::{Ident, Span, TokenStream};
+use proc_macro2::{Ident, Literal, Span, TokenStream};
 use quote::quote_spanned;
 use slotmap::Key;
 use syn::punctuated::Punctuated;
@@ -392,4 +392,8 @@ where
 pub enum Persistence {
     Tick,
     Static,
+}
+
+fn make_missing_runtime_msg(op_name: &str) -> Literal {
+    Literal::string(&*format!("`{}()` must be used within a Tokio runtime. For example, use `#[tokio::main]` on your main method.", op_name))
 }

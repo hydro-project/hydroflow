@@ -1,4 +1,4 @@
-use super::{FlowProperties, FlowPropertyVal};
+use super::{make_missing_runtime_msg, FlowProperties, FlowPropertyVal};
 
 use super::{
     OperatorConstraints, OperatorInstance, OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
@@ -47,6 +47,7 @@ pub const DEST_SINK_SERDE: OperatorConstraints = OperatorConstraints {
                    hydroflow,
                    op_span,
                    ident,
+                   op_name,
                    op_inst: OperatorInstance { arguments, .. },
                    ..
                },
@@ -55,6 +56,8 @@ pub const DEST_SINK_SERDE: OperatorConstraints = OperatorConstraints {
 
         let send_ident = wc.make_ident("item_send");
         let recv_ident = wc.make_ident("item_recv");
+
+        let missing_runtime_msg = make_missing_runtime_msg(op_name);
 
         let write_prologue = quote_spanned! {op_span=>
             let (#send_ident, #recv_ident) = #root::tokio::sync::mpsc::unbounded_channel();
@@ -75,7 +78,7 @@ pub const DEST_SINK_SERDE: OperatorConstraints = OperatorConstraints {
                         sink.flush().await.expect("Failed to flush async sink.");
                     }
                 })
-                .expect("dest_sink() must be used within a tokio runtime");
+                .expect(#missing_runtime_msg);
         };
 
         let write_iterator = quote_spanned! {op_span=>
