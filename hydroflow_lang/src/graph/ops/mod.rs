@@ -254,6 +254,7 @@ declare_ops![
     repeat_iter::REPEAT_ITER,
     sort::SORT,
     sort_by::SORT_BY,
+    source_file::SOURCE_FILE,
     source_interval::SOURCE_INTERVAL,
     source_iter::SOURCE_ITER,
     source_json::SOURCE_JSON,
