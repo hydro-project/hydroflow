@@ -230,6 +230,7 @@ declare_ops![
     batch::BATCH,
     cross_join::CROSS_JOIN,
     demux::DEMUX,
+    dest_file::DEST_FILE,
     dest_sink::DEST_SINK,
     dest_sink_serde::DEST_SINK_SERDE,
     difference::DIFFERENCE,
