@@ -174,6 +174,7 @@
 <a href="#174" id="174">174</a>
 <a href="#175" id="175">175</a>
 <a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
 </pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::graph::{OpInstGenerics, OperatorInstance};
 
 <span class="kw">use super</span>::{
@@ -259,6 +260,7 @@
                    ident,
                    inputs,
                    is_pull,
+                   root,
                    op_inst:
                        OperatorInstance {
                            arguments,
@@ -303,7 +305,7 @@
                     <span class="kw">let </span>#ident = {
                         <span class="attr">#[inline(always)]
                         </span><span class="kw">fn </span>check_input&lt;Iter: ::std::iter::Iterator&lt;Item = (A, B)&gt;, A, B&gt;(iter: Iter) -&gt; <span class="kw">impl </span>::std::iter::Iterator&lt;Item = (A, B)&gt; { iter }
-                        check_input(#input).fold(::std::collections::HashMap::&lt;#( #generic_type_args ),<span class="kw-2">*</span>&gt;::new(), |<span class="kw-2">mut </span>ht, kv| {
+                        check_input(#input).fold(#root::rustc_hash::FxHashMap::&lt;#( #generic_type_args ),<span class="kw-2">*</span>&gt;::default(), |<span class="kw-2">mut </span>ht, kv| {
                             <span class="kw">let </span>entry = ht.entry(kv.<span class="number">0</span>).or_insert_with(#initfn);
                             <span class="attr">#[allow(clippy::redundant_closure_call)] </span>(#aggfn)(entry, kv.<span class="number">1</span>);
                             ht
@@ -318,7 +320,7 @@
 
                 (
                     <span class="macro">quote_spanned! </span>{op_span=&gt;
-                        <span class="kw">let </span>#groupbydata_ident = #hydroflow.add_state(::std::cell::RefCell::new(::std::collections::HashMap::&lt;#( #generic_type_args ),<span class="kw-2">*</span>&gt;::new()));
+                        <span class="kw">let </span>#groupbydata_ident = #hydroflow.add_state(::std::cell::RefCell::new(#root::rustc_hash::FxHashMap::&lt;#( #generic_type_args ),<span class="kw-2">*</span>&gt;::default()));
                     },
                     <span class="macro">quote_spanned! </span>{op_span=&gt;
                     <span class="kw">let </span><span class="kw-2">mut </span>#hashtable_ident = #context.state_ref(#groupbydata_ident).borrow_mut();
