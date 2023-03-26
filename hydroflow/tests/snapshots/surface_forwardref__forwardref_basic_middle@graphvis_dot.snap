@@ -12,6 +12,10 @@ digraph {
         n2v1 [label="(n2v1) for_each(|v| out_send.send(v).unwrap())", fontname=Monaco, shape=house, style = filled, color = "#ffff00"]
         n1v1 -> n3v1
         n3v1 -> n2v1
+        subgraph "cluster sg_1v1_var_forward_ref" {
+            label="var forward_ref"
+            n3v1
+        }
     }
 }
 

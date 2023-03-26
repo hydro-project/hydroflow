@@ -16,11 +16,11 @@ slotmap = "1.0.6"
 syn = { version = "1.0.0", features = [ "parsing", "extra-traits" ] }
 proc-macro2 = "1.0.27"
 proc-macro-crate = "1.1.0"
-rust-sitter = "0.2.1"
+rust-sitter = "0.3.1"
 hydroflow_lang = { path = "../hydroflow_lang" }
 
 [build-dependencies]
-rust-sitter-tool = "0.2.1"
+rust-sitter-tool = "0.3.1"
 
 [dev-dependencies]
 insta = "1.7.1"

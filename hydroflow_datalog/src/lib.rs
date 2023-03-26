@@ -29,7 +29,7 @@ pub fn datalog(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
             for diagnostic in diagnostics {
                 diagnostic.emit();
             }
-            proc_macro::TokenStream::from(quote!(()))
+            proc_macro::TokenStream::from(quote!(hydroflow::scheduled::graph::Hydroflow::new()))
         }
     }
 }

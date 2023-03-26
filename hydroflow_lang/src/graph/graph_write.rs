@@ -285,8 +285,7 @@ where
             Color::Pull => "invhouse",
             Color::Hoff => "parallelogram",
             Color::Comp => "circle",
-        }
-        .to_string();
+        };
         let color_str = match node_color {
             Color::Push => "style = filled, color = \"#ffff00\"",
             Color::Pull => "style = filled, color = \"#0022ff\", fontcolor = \"#ffffff\"",
@@ -348,8 +347,31 @@ where
         varname: &str,
         varname_nodes: impl Iterator<Item = GraphNodeId>,
     ) -> Result<(), Self::Err> {
-        // TODO(mingwei): do something here #385 (#327)
-        let _ = (sg_id, varname, varname_nodes);
+        writeln!(
+            self.write,
+            "{:t$}subgraph \"cluster sg_{sg:?}_var_{var}\" {{",
+            "",
+            sg = sg_id.data(),
+            var = varname,
+            t = 8,
+        )?;
+        writeln!(
+            self.write,
+            "{:t$}label=\"var {var}\"",
+            "",
+            var = varname,
+            t = 12,
+        )?;
+        for local_named_node in varname_nodes {
+            writeln!(
+                self.write,
+                "{:t$}n{:?}",
+                "",
+                local_named_node.data(),
+                t = 12
+            )?;
+        }
+        writeln!(self.write, "{:t$}}}", "", t = 8)?;
         Ok(())
     }
 
