@@ -42,10 +42,10 @@ fn main() {
                         }
                         check_input(hoff_12v1_recv)
                             .fold(
-                                ::std::collections::HashMap::<
+                                hydroflow::rustc_hash::FxHashMap::<
                                     (),
                                     (Option<_>, Option<_>),
-                                >::new(),
+                                >::default(),
                                 |mut ht, kv| {
                                     let entry = ht.entry(kv.0).or_insert_with(|| (None, None));
                                     #[allow(clippy::redundant_closure_call)]
