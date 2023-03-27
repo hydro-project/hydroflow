@@ -2690,9 +2690,9 @@ dependencies = [
 
 [[package]]
 name = "rust-sitter"
-version = "0.3.1"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b60facd4d74dd1b7679ab7d77ff52ce8bc46be9a04ed79f6726c2b026c64e2d2"
+checksum = "27fac3bd28bfd717686f21701fe06d2ffc559523ec2928b3628a6457eb956b8f"
 dependencies = [
  "rust-sitter-macro",
  "tree-sitter-c2rust",
@@ -2700,9 +2700,9 @@ dependencies = [
 
 [[package]]
 name = "rust-sitter-common"
-version = "0.3.1"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d71998b0ab9d159e5f99c474cdaa5d02bdedfab53e921a2e030ec95d9328181a"
+checksum = "f1e9745a1f472a5449c1cd54bc6db2c6f788ac6ccf68fea03259528d65eb8638"
 dependencies = [
  "quote",
  "syn 1.0.109",
@@ -2710,9 +2710,9 @@ dependencies = [
 
 [[package]]
 name = "rust-sitter-macro"
-version = "0.3.1"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fc44fd9bed03a1bbafc4db638da80a9da8a62ea3ab3c69748ce5adeb5ffce4c7"
+checksum = "49a48a6bb47a99653680a736df653cdeaef66b72540d7468d20d9080f48394bc"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2722,9 +2722,9 @@ dependencies = [
 
 [[package]]
 name = "rust-sitter-tool"
-version = "0.3.1"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "51d7b74902cb1df9b4d8eba096f8cd734c67dac415246245650c64279a6db717"
+checksum = "30639eac096fb662d559b4fa703d0c4566f685f9b4d66a5fd7c4cfcca93f98a7"
 dependencies = [
  "cc",
  "rust-sitter-common",
