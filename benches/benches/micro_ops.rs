@@ -218,6 +218,9 @@ fn ops(c: &mut Criterion) {
         )
     });
 
+    // TODO:
+    // This should've been called cross_join to be consistent with the rest of the benchmark names.
+    // At some point we will have to edit the benchmark history to give it the correct name.
     c.bench_function("micro/ops/crossjoin", |b| {
         b.iter_batched_ref(
             || {
@@ -332,6 +335,30 @@ fn ops(c: &mut Criterion) {
         b.iter(|| {
             df.run_tick();
         })
+    });
+
+    c.bench_function("micro/ops/group_by", |b| {
+        b.iter_batched_ref(
+            || {
+                const NUM_INTS: usize = 1000;
+                let dist = Uniform::new(0, 100);
+                let input0: Vec<(usize, usize)> = (0..NUM_INTS)
+                    .map(|_| (dist.sample(&mut rng), dist.sample(&mut rng)))
+                    .collect();
+
+                hydroflow_syntax! {
+                    source_iter(black_box(input0))
+                        -> group_by(|| 0, |x: &mut usize, n: usize| {
+                            *x += n;
+                        })
+                        -> for_each(|x| { black_box(x); });
+                }
+            },
+            |df| {
+                df.run_available();
+            },
+            BatchSize::LargeInput,
+        )
     });
 }
 
