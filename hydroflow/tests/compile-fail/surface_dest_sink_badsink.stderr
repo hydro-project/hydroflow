@@ -15,7 +15,7 @@ error[E0277]: the trait bound `&str: hydroflow::futures::Sink<_>` is not satisfi
             <Buffered<S> as hydroflow::futures::Sink<Item>>
             <DemuxDrain<T, S> as hydroflow::futures::Sink<(u32, T)>>
             <Fanout<Si1, Si2> as hydroflow::futures::Sink<Item>>
-            <FlattenSink<Fut, Si> as hydroflow::futures::Sink<_Item>>
+            <FlatMapUnordered<St, U, F> as hydroflow::futures::Sink<_Item>>
           and $N others
 note: required by a bound in `sink_feed_flush`
  --> tests/compile-fail/surface_dest_sink_badsink.rs:5:18
