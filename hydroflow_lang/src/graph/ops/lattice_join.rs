@@ -49,23 +49,21 @@ use syn::parse_quote;
 /// ### Examples
 ///
 /// ```rustbook
-/// async fn test_lattice_join() {
-///     use hydroflow::lang::lattice::ord::MaxRepr;
+/// use hydroflow::lang::lattice::ord::MaxRepr;
 ///
-///     let (input_send, input_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
-///     let (out_tx, mut out_rx) = hydroflow::util::unbounded_channel::<(usize, (usize, usize))>();
+/// let (input_send, input_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+/// let (out_tx, mut out_rx) = hydroflow::util::unbounded_channel::<(usize, (usize, usize))>();
 ///
-///     let mut df = hydroflow::hydroflow_syntax! {
-///         my_join = lattice_join::<'tick, MaxRepr<usize>, MaxRepr<usize>>();
-///         source_iter([(7, 2), (7, 1)]) -> [0]my_join;
-///         source_stream(input_recv) -> [1]my_join;
-///         my_join -> for_each(|v| out_tx.send(v).unwrap());
-///     };
-///     input_send.send((7, 5)).unwrap();
-///     df.run_tick();
-///     let out: Vec<_> = hydroflow::util::collect_ready(&mut out_rx);
-///     assert_eq!(out, vec![(7, (2, 5))]);
-/// }
+/// let mut df = hydroflow::hydroflow_syntax! {
+///     my_join = lattice_join::<'tick, MaxRepr<usize>, MaxRepr<usize>>();
+///     source_iter([(7, 2), (7, 1)]) -> [0]my_join;
+///     source_stream(input_recv) -> [1]my_join;
+///     my_join -> for_each(|v| out_tx.send(v).unwrap());
+/// };
+/// input_send.send((7, 5)).unwrap();
+/// df.run_tick();
+/// let out: Vec<_> = hydroflow::util::collect_ready(&mut out_rx);
+/// assert_eq!(out, vec![(7, (2, 5))]);
 /// ```
 #[hydroflow_internalmacro::operator_docgen]
 pub const LATTICE_JOIN: OperatorConstraints = OperatorConstraints {
