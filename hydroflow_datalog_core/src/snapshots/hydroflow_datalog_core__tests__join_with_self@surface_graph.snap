@@ -12,8 +12,8 @@ expression: flat_graph_ref.surface_syntax_string()
 8v1 = for_each (| v | out . send (v) . unwrap ());
 9v1 = join :: < 'tick > ();
 10v1 = map (| kv : ((_ , _ ,) , (() , ())) | (kv . 0 . 0 , kv . 0 . 1 ,));
-11v1 = map (| v : (_ , _ ,) | ((v . 0 , v . 1 ,) , ()));
-12v1 = map (| v : (_ , _ ,) | ((v . 1 , v . 0 ,) , ()));
+11v1 = map (| _v : (_ , _ ,) | ((_v . 0 , _v . 1 ,) , ()));
+12v1 = map (| _v : (_ , _ ,) | ((_v . 1 , _v . 0 ,) , ()));
 13v1 = map (| row : (_ , _ ,) | (row . 0 , row . 1 ,));
 
 2v1 -> 3v1;
