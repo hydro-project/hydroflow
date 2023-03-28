@@ -170,4 +170,24 @@ mod tests {
             ]
         );
     }
+
+    #[test]
+    fn hash_join_subsequent_ticks_dont_produce_if_nothing_is_changed() {
+        let (lhs_tx, lhs_rx) = std::sync::mpsc::channel::<(usize, usize)>();
+        let (rhs_tx, rhs_rx) = std::sync::mpsc::channel::<(usize, usize)>();
+
+        let mut state = JoinState::default();
+        let mut join = SymmetricHashJoin::new(lhs_rx.try_iter(), rhs_rx.try_iter(), &mut state);
+
+        lhs_tx.send((7, 3)).unwrap();
+        rhs_tx.send((7, 3)).unwrap();
+
+        assert_eq!(join.next(), Some((7, (3, 3))));
+        assert_eq!(join.next(), None);
+
+        lhs_tx.send((7, 3)).unwrap();
+        rhs_tx.send((7, 3)).unwrap();
+
+        assert_eq!(join.next(), None);
+    }
 }
