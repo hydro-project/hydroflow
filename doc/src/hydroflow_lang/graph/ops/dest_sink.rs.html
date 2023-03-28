@@ -159,7 +159,10 @@
 <a href="#159" id="159">159</a>
 <a href="#160" id="160">160</a>
 <a href="#161" id="161">161</a>
-</pre><pre class="rust"><code><span class="kw">use super</span>::{FlowProperties, FlowPropertyVal};
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
+</pre><pre class="rust"><code><span class="kw">use super</span>::{make_missing_runtime_msg, FlowProperties, FlowPropertyVal};
 
 <span class="kw">use super</span>::{
     OperatorConstraints, OperatorInstance, OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
@@ -267,6 +270,7 @@
                    hydroflow,
                    op_span,
                    ident,
+                   op_name,
                    op_inst: OperatorInstance { arguments, .. },
                    ..
                },
@@ -275,6 +279,8 @@
 
         <span class="kw">let </span>send_ident = wc.make_ident(<span class="string">&quot;item_send&quot;</span>);
         <span class="kw">let </span>recv_ident = wc.make_ident(<span class="string">&quot;item_recv&quot;</span>);
+
+        <span class="kw">let </span>missing_runtime_msg = make_missing_runtime_msg(op_name);
 
         <span class="kw">let </span>write_prologue = <span class="macro">quote_spanned! </span>{op_span=&gt;
             <span class="kw">let </span>(#send_ident, #recv_ident) = #root::tokio::sync::mpsc::unbounded_channel();
@@ -303,7 +309,7 @@
                 }
                 #hydroflow
                     .spawn_task(sink_feed_flush(#recv_ident, #sink_arg))
-                    .expect(<span class="string">&quot;dest_sink() must be used within a tokio runtime&quot;</span>);
+                    .expect(#missing_runtime_msg);
             }
         };
 

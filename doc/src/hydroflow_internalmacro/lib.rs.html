@@ -132,6 +132,10 @@
 <a href="#132" id="132">132</a>
 <a href="#133" id="133">133</a>
 <a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
 </pre><pre class="rust"><code><span class="attr">#![feature(proc_macro_diagnostic, proc_macro_span)]
 #![allow(clippy::explicit_auto_deref)]
 
@@ -257,14 +261,18 @@
 ```rust
 # #[allow(unused_imports)] use hydroflow::{var_args, var_expr};
 # #[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
+# let __rt = hydroflow::tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
+# __rt.block_on(async {
 # let mut __hf = hydroflow::hydroflow_syntax! {&quot;</span>;
 <span class="kw">const </span>DOCTEST_HYDROFLOW_SUFFIX: <span class="kw-2">&amp;</span>str = <span class="string">&quot;\
 # };
 # for _ in 0..100 {
+#     hydroflow::tokio::task::yield_now().await;
 #     if !__hf.run_tick() {
 #         // No work done.
 #         break;
 #     }
-# }&quot;</span>;
+# }
+# })&quot;</span>;
 </code></pre></div>
 </section></main><div id="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="hydroflow_internalmacro" data-themes="" data-resource-suffix="" data-rustdoc-version="1.69.0-nightly (31f858d9a 2023-02-28)" data-search-js="search-d5a6cd8418084717.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-0bcba95ff279c1db.css" ></div></body></html>
