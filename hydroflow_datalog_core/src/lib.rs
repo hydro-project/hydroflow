@@ -1,4 +1,7 @@
-use rust_sitter::errors::{ParseError, ParseErrorReason};
+use rust_sitter::{
+    errors::{ParseError, ParseErrorReason},
+    Spanned,
+};
 use std::collections::{HashMap, HashSet};
 
 use hydroflow_lang::{
@@ -7,7 +10,7 @@ use hydroflow_lang::{
     parse::{IndexInt, Indexing, Pipeline, PipelineLink},
 };
 use proc_macro2::{Span, TokenStream};
-use syn::parse_quote;
+use syn::{parse_quote, parse_quote_spanned};
 
 mod grammar;
 mod join_plan;
@@ -21,19 +24,17 @@ static MAGIC_RELATIONS: [&str; 1] = ["less_than"];
 
 pub fn parse_pipeline(
     code_str: &rust_sitter::Spanned<String>,
-    literal: &proc_macro2::Literal,
-    offset: usize,
+    get_span: &impl Fn((usize, usize)) -> Span,
 ) -> Result<Pipeline, Vec<Diagnostic>> {
-    syn::parse_str(&code_str.value).map_err(|err| {
-        let (start, end) = code_str.span;
-        // TODO(mingwei): incorporate `err.span()` somehow
-        let subspan = literal.subspan(start + offset..end + offset);
-        vec![Diagnostic {
-            span: subspan.unwrap_or(Span::call_site()),
-            level: Level::Error,
-            message: format!("Failed to parse input pipeline: {}", err),
-        }]
-    })
+    syn::LitStr::new(&code_str.value, get_span(code_str.span))
+        .parse()
+        .map_err(|err| {
+            vec![Diagnostic {
+                span: err.span(),
+                level: Level::Error,
+                message: format!("Failed to parse input pipeline: {}", err),
+            }]
+        })
 }
 
 pub fn gen_hydroflow_graph(
@@ -56,10 +57,15 @@ pub fn gen_hydroflow_graph(
         2 + hashes
     };
 
+    let get_span = |(start, end): (usize, usize)| {
+        let subspan = literal.subspan(start + offset..end + offset);
+        subspan.unwrap_or(Span::call_site())
+    };
+
     let str_node: syn::LitStr = parse_quote!(#literal);
     let actual_str = str_node.value();
     let program: Program =
-        grammar::datalog::parse(&actual_str).map_err(|e| handle_errors(e, &literal, offset))?;
+        grammar::datalog::parse(&actual_str).map_err(|e| handle_errors(e, &get_span))?;
 
     let mut inputs = Vec::new();
     let mut outputs = Vec::new();
@@ -100,11 +106,11 @@ pub fn gen_hydroflow_graph(
             Declaration::Rule(rule) => rule.target.name.clone(),
         };
 
-        if !created_rules.contains(&target_ident) {
-            created_rules.insert(target_ident.clone());
-            let name = syn::Ident::new(&target_ident.name, Span::call_site());
+        if !created_rules.contains(&target_ident.value) {
+            created_rules.insert(target_ident.value.clone());
+            let name = syn::Ident::new(&target_ident.name, get_span(target_ident.span));
             flat_graph_builder
-                .add_statement(parse_quote!(#name = merge() -> unique::<'tick>() -> tee()));
+                .add_statement(parse_quote_spanned!(get_span(target_ident.span)=> #name = merge() -> unique::<'tick>() -> tee()));
         }
     }
 
@@ -116,12 +122,12 @@ pub fn gen_hydroflow_graph(
             .expect("Out of merge indices");
 
         let my_merge_index_lit =
-            syn::LitInt::new(&format!("{}", my_merge_index), Span::call_site());
-        let name = syn::Ident::new(&target.name, Span::call_site());
+            syn::LitInt::new(&format!("{}", my_merge_index), get_span(target.span));
+        let name = syn::Ident::new(&target.name, get_span(target.span));
 
-        let input_pipeline: Pipeline = parse_pipeline(&hf_code.code, &literal, offset)?;
+        let input_pipeline: Pipeline = parse_pipeline(&hf_code.code, &get_span)?;
 
-        flat_graph_builder.add_statement(parse_quote! {
+        flat_graph_builder.add_statement(parse_quote_spanned! {get_span(target.span)=>
             #input_pipeline -> [#my_merge_index_lit] #name
         });
     }
@@ -133,19 +139,20 @@ pub fn gen_hydroflow_graph(
             .next()
             .expect("Out of tee indices");
 
-        let my_tee_index_lit = syn::LitInt::new(&format!("{}", my_tee_index), Span::call_site());
-        let target_ident = syn::Ident::new(&target.name, Span::call_site());
+        let my_tee_index_lit =
+            syn::LitInt::new(&format!("{}", my_tee_index), get_span(target.span));
+        let target_ident = syn::Ident::new(&target.name, get_span(target.span));
 
-        let output_pipeline: Pipeline = parse_pipeline(&hf_code.code, &literal, offset)?;
+        let output_pipeline: Pipeline = parse_pipeline(&hf_code.code, &get_span)?;
 
-        flat_graph_builder.add_statement(parse_quote! {
+        flat_graph_builder.add_statement(parse_quote_spanned! {get_span(target.span)=>
             #target_ident [#my_tee_index_lit] -> #output_pipeline
         });
     }
 
     for (target, send_hf, recv_hf) in asyncs {
         let async_send_pipeline = format!("{}_async_send", target.name);
-        let async_send_pipeline = syn::Ident::new(&async_send_pipeline, Span::call_site());
+        let async_send_pipeline = syn::Ident::new(&async_send_pipeline, get_span(target.span));
 
         let recv_merge_index = merge_counter
             .entry(target.name.clone())
@@ -154,17 +161,17 @@ pub fn gen_hydroflow_graph(
             .expect("Out of merge indices");
 
         let recv_merge_index_lit =
-            syn::LitInt::new(&format!("{}", recv_merge_index), Span::call_site());
-        let target_ident = syn::Ident::new(&target.name, Span::call_site());
+            syn::LitInt::new(&format!("{}", recv_merge_index), get_span(target.span));
+        let target_ident = syn::Ident::new(&target.name, get_span(target.span));
 
-        let send_pipeline: Pipeline = parse_pipeline(&send_hf.code, &literal, offset)?;
-        let recv_pipeline: Pipeline = parse_pipeline(&recv_hf.code, &literal, offset)?;
+        let send_pipeline: Pipeline = parse_pipeline(&send_hf.code, &get_span)?;
+        let recv_pipeline: Pipeline = parse_pipeline(&recv_hf.code, &get_span)?;
 
-        flat_graph_builder.add_statement(parse_quote! {
+        flat_graph_builder.add_statement(parse_quote_spanned! {get_span(target.span)=>
             #async_send_pipeline = merge() -> unique::<'tick>() -> #send_pipeline
         });
 
-        flat_graph_builder.add_statement(parse_quote! {
+        flat_graph_builder.add_statement(parse_quote_spanned! {get_span(target.span)=>
             #recv_pipeline -> unique::<'tick>() -> [#recv_merge_index_lit] #target_ident
         });
     }
@@ -179,6 +186,7 @@ pub fn gen_hydroflow_graph(
             &mut merge_counter,
             &mut next_join_idx,
             &mut diagnostics,
+            &get_span,
         );
     }
 
@@ -197,15 +205,12 @@ pub fn gen_hydroflow_graph(
 
 fn handle_errors(
     errors: Vec<ParseError>,
-    literal: &proc_macro2::Literal,
-    offset: usize,
+    get_span: &impl Fn((usize, usize)) -> Span,
 ) -> Vec<Diagnostic> {
     let mut diagnostics = vec![];
     for error in errors {
         let reason = error.reason;
-        let my_span = literal
-            .subspan(error.start + offset..error.end + offset)
-            .unwrap_or(literal.span());
+        let my_span = get_span((error.start, error.end));
         match reason {
             ParseErrorReason::UnexpectedToken(msg) => {
                 diagnostics.push(Diagnostic::spanned(
@@ -229,7 +234,7 @@ fn handle_errors(
                         "Failed to parse",
                     ));
                 } else {
-                    diagnostics.extend(handle_errors(parse_errors, literal, offset));
+                    diagnostics.extend(handle_errors(parse_errors, get_span));
                 }
             }
         }
@@ -238,7 +243,7 @@ fn handle_errors(
     diagnostics
 }
 
-pub fn hydroflow_graph_to_program(flat_graph: HydroflowGraph, root: TokenStream) -> syn::Stmt {
+pub fn hydroflow_graph_to_program(flat_graph: HydroflowGraph, root: TokenStream) -> TokenStream {
     let partitioned_graph =
         partition_graph(flat_graph).expect("Failed to partition (cycle detected).");
 
@@ -250,21 +255,20 @@ pub fn hydroflow_graph_to_program(flat_graph: HydroflowGraph, root: TokenStream)
         "Operator diagnostic occured during codegen"
     );
 
-    syn::parse_quote!({
-        #code_tokens
-    })
+    code_tokens
 }
 
 fn generate_rule(
-    rule: &Rule,
+    rule: &Spanned<Rule>,
     flat_graph_builder: &mut FlatGraphBuilder,
     tee_counter: &mut HashMap<String, Counter>,
     merge_counter: &mut HashMap<String, Counter>,
     next_join_idx: &mut Counter,
     diagnostics: &mut Vec<Diagnostic>,
+    get_span: &impl Fn((usize, usize)) -> Span,
 ) {
     let target = &rule.target.name;
-    let target_ident = syn::Ident::new(&target.name, Span::call_site());
+    let target_ident = syn::Ident::new(&target.name, get_span(target.span));
 
     let sources: Vec<Atom> = rule.sources.to_vec();
 
@@ -318,8 +322,8 @@ fn generate_rule(
                         assert!(negated.is_none());
                         JoinPlan::MagicNatLt(
                             Box::new(acc),
-                            e.fields[0].clone(),
-                            e.fields[1].clone(),
+                            e.fields[0].value.clone(),
+                            e.fields[1].value.clone(),
                         )
                     }
                     o => panic!("Unknown magic relation {}", o),
@@ -331,9 +335,16 @@ fn generate_rule(
         _ => acc,
     });
 
-    let out_expanded = expand_join_plan(&plan, flat_graph_builder, tee_counter, next_join_idx);
+    let out_expanded = expand_join_plan(
+        &plan,
+        flat_graph_builder,
+        tee_counter,
+        next_join_idx,
+        rule.span,
+        get_span,
+    );
 
-    let after_join = apply_aggregations(rule, &out_expanded, diagnostics);
+    let after_join = apply_aggregations(rule, &out_expanded, diagnostics, get_span);
 
     let my_merge_index = merge_counter
         .entry(target.name.clone())
@@ -343,20 +354,20 @@ fn generate_rule(
 
     let my_merge_index_lit = syn::LitInt::new(&format!("{}", my_merge_index), Span::call_site());
 
-    let after_join_and_send: Pipeline = match rule.rule_type {
+    let after_join_and_send: Pipeline = match rule.rule_type.value {
         RuleType::Sync(_) => {
             if rule.target.at_node.is_some() {
                 panic!("Rule must be async to send data to other nodes")
             }
 
-            parse_quote!(#after_join -> [#my_merge_index_lit] #target_ident)
+            parse_quote_spanned!(get_span(rule.rule_type.span)=> #after_join -> [#my_merge_index_lit] #target_ident)
         }
         RuleType::NextTick(_) => {
             if rule.target.at_node.is_some() {
                 panic!("Rule must be async to send data to other nodes")
             }
 
-            parse_quote!(#after_join -> next_tick() -> [#my_merge_index_lit] #target_ident)
+            parse_quote_spanned!(get_span(rule.rule_type.span)=> #after_join -> next_tick() -> [#my_merge_index_lit] #target_ident)
         }
         RuleType::Async(_) => {
             if rule.target.at_node.is_none() {
@@ -368,9 +379,9 @@ fn generate_rule(
                 .fields
                 .iter()
                 .enumerate()
-                .map(|(i, _)| -> syn::Expr {
+                .map(|(i, f)| -> syn::Expr {
                     let syn_index = syn::Index::from(i);
-                    parse_quote!(v.#syn_index)
+                    parse_quote_spanned!(get_span(f.span)=> v.#syn_index)
                 });
 
             let syn_target_index = syn::Index::from(rule.target.fields.len());
@@ -382,10 +393,10 @@ fn generate_rule(
 
             let send_pipeline_ident = syn::Ident::new(
                 &format!("{}_async_send", &rule.target.name.name),
-                Span::call_site(),
+                get_span(rule.target.name.span),
             );
 
-            parse_quote!(#after_join -> map(|v: #v_type| (v.#syn_target_index, (#(#exprs_get_data, )*))) -> #send_pipeline_ident)
+            parse_quote_spanned!(get_span(rule.rule_type.span)=> #after_join -> map(|v: #v_type| (v.#syn_target_index, (#(#exprs_get_data, )*))) -> #send_pipeline_ident)
         }
     };
 
@@ -414,20 +425,18 @@ fn gen_value_expr(
     field_use_cur: &mut HashMap<String, i32>,
     out_expanded: &IntermediateJoinNode,
     diagnostics: &mut Vec<Diagnostic>,
+    get_span: &dyn Fn((usize, usize)) -> Span,
 ) -> syn::Expr {
     match expr {
         ValueExpr::Ident(ident) => {
-            if let Some(col) = out_expanded
-                .variable_mapping
-                .get(&syn::Ident::new(&ident.name, Span::call_site()))
-            {
+            if let Some(col) = out_expanded.variable_mapping.get(&ident.name) {
                 let cur_count = field_use_cur
                     .entry(ident.name.clone())
                     .and_modify(|e| *e += 1)
                     .or_insert(1);
 
                 let source_col_idx = syn::Index::from(*col);
-                let base = parse_quote!(row.#source_col_idx);
+                let base = parse_quote_spanned!(get_span(ident.span)=> row.#source_col_idx);
 
                 if *cur_count < field_use_count[&ident.name] && field_use_count[&ident.name] > 1 {
                     parse_quote!(#base.clone())
@@ -436,7 +445,7 @@ fn gen_value_expr(
                 }
             } else {
                 diagnostics.push(Diagnostic::spanned(
-                    Span::call_site(),
+                    get_span(ident.span),
                     Level::Error,
                     format!("Could not find column {} in RHS of rule", &ident.name),
                 ));
@@ -445,16 +454,44 @@ fn gen_value_expr(
         }
         ValueExpr::Integer(i) => syn::Expr::Lit(syn::ExprLit {
             attrs: Vec::new(),
-            lit: syn::Lit::Int(syn::LitInt::new(&i.to_string(), Span::call_site())),
+            lit: syn::Lit::Int(syn::LitInt::new(&i.to_string(), get_span(i.span))),
         }),
         ValueExpr::Add(l, _, r) => {
-            let l = gen_value_expr(l, field_use_count, field_use_cur, out_expanded, diagnostics);
-            let r = gen_value_expr(r, field_use_count, field_use_cur, out_expanded, diagnostics);
+            let l = gen_value_expr(
+                l,
+                field_use_count,
+                field_use_cur,
+                out_expanded,
+                diagnostics,
+                get_span,
+            );
+            let r = gen_value_expr(
+                r,
+                field_use_count,
+                field_use_cur,
+                out_expanded,
+                diagnostics,
+                get_span,
+            );
             parse_quote!(#l + #r)
         }
         ValueExpr::Sub(l, _, r) => {
-            let l = gen_value_expr(l, field_use_count, field_use_cur, out_expanded, diagnostics);
-            let r = gen_value_expr(r, field_use_count, field_use_cur, out_expanded, diagnostics);
+            let l = gen_value_expr(
+                l,
+                field_use_count,
+                field_use_cur,
+                out_expanded,
+                diagnostics,
+                get_span,
+            );
+            let r = gen_value_expr(
+                r,
+                field_use_count,
+                field_use_cur,
+                out_expanded,
+                diagnostics,
+                get_span,
+            );
             parse_quote!(#l - #r)
         }
     }
@@ -466,6 +503,7 @@ fn gen_target_expr(
     field_use_cur: &mut HashMap<String, i32>,
     out_expanded: &IntermediateJoinNode,
     diagnostics: &mut Vec<Diagnostic>,
+    get_span: &dyn Fn((usize, usize)) -> Span,
 ) -> syn::Expr {
     match expr {
         TargetExpr::Expr(expr) => gen_value_expr(
@@ -474,6 +512,7 @@ fn gen_target_expr(
             field_use_cur,
             out_expanded,
             diagnostics,
+            get_span,
         ),
         TargetExpr::Aggregation(Aggregation { ident, .. }) => gen_value_expr(
             &ValueExpr::Ident(ident.clone()),
@@ -481,6 +520,7 @@ fn gen_target_expr(
             field_use_cur,
             out_expanded,
             diagnostics,
+            get_span,
         ),
     }
 }
@@ -489,6 +529,7 @@ fn apply_aggregations(
     rule: &Rule,
     out_expanded: &IntermediateJoinNode,
     diagnostics: &mut Vec<Diagnostic>,
+    get_span: &impl Fn((usize, usize)) -> Span,
 ) -> Pipeline {
     let mut aggregations = vec![];
     let mut group_by_exprs = vec![];
@@ -522,9 +563,10 @@ fn apply_aggregations(
             &mut field_use_cur,
             out_expanded,
             diagnostics,
+            get_span,
         );
 
-        match field {
+        match field.value {
             TargetExpr::Expr(_) => {
                 group_by_exprs.push(expr);
             }
@@ -559,7 +601,7 @@ fn apply_aggregations(
                 let old_at_index: syn::Expr = parse_quote!(old.#idx);
                 let val_at_index: syn::Expr = parse_quote!(val.#idx);
 
-                let agg_expr: syn::Expr = match agg {
+                let agg_expr: syn::Expr = match &agg.value {
                     TargetExpr::Aggregation(Aggregation { tpe, .. }) => match tpe {
                         AggregationType::Min(_) => {
                             parse_quote!(std::cmp::min(prev, #val_at_index))
@@ -580,7 +622,7 @@ fn apply_aggregations(
                     _ => panic!(),
                 };
 
-                let agg_initial: syn::Expr = match agg {
+                let agg_initial: syn::Expr = match &agg.value {
                     TargetExpr::Aggregation(Aggregation { tpe, .. }) => match tpe {
                         AggregationType::Min(_)
                         | AggregationType::Max(_)
@@ -595,7 +637,7 @@ fn apply_aggregations(
                     _ => panic!(),
                 };
 
-                parse_quote! {
+                parse_quote_spanned! {get_span(agg.span) =>
                     #old_at_index = if let Some(prev) = #old_at_index.take() {
                         Some(#agg_expr)
                     } else {
@@ -618,15 +660,16 @@ fn apply_aggregations(
             .iter()
             .chain(rule.target.at_node.iter().map(|n| &n.node))
         {
-            match field {
+            match field.value {
                 TargetExpr::Expr(_) => {
                     let idx = syn::Index::from(group_key_idx);
-                    after_group_lookups.push(parse_quote!(g.#idx));
+                    after_group_lookups.push(parse_quote_spanned!(get_span(field.span)=> g.#idx));
                     group_key_idx += 1;
                 }
                 TargetExpr::Aggregation(_) => {
                     let idx = syn::Index::from(agg_idx);
-                    after_group_lookups.push(parse_quote!(a.#idx.unwrap()));
+                    after_group_lookups
+                        .push(parse_quote_spanned!(get_span(field.span)=> a.#idx.unwrap()));
                     agg_idx += 1;
                 }
             }
@@ -657,7 +700,8 @@ mod tests {
                 insta::assert_display_snapshot!(flat_graph_ref.surface_syntax_string());
             });
 
-            let out = &hydroflow_graph_to_program(flat_graph, quote::quote! { hydroflow });
+            let tokens = hydroflow_graph_to_program(flat_graph, quote::quote! { hydroflow });
+            let out: syn::Stmt = syn::parse_quote!(#tokens);
             let wrapped: syn::File = parse_quote! {
                 fn main() {
                     #out

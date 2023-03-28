@@ -3,7 +3,8 @@ use std::collections::{btree_map::Entry, BTreeMap, HashMap};
 use hydroflow_lang::graph::FlatGraphBuilder;
 use hydroflow_lang::parse::Pipeline;
 use proc_macro2::Span;
-use syn::{self, parse_quote};
+use rust_sitter::Spanned;
+use syn::{self, parse_quote, parse_quote_spanned};
 
 use crate::{
     grammar::datalog::{BoolOp, Ident, InputRelationExpr, PredicateExpr},
@@ -13,11 +14,11 @@ use crate::{
 /// Captures the tree of joins used to compute contributions from a single rule.
 pub enum JoinPlan<'a> {
     /// A single relation without any joins, leaves of the tree.
-    Source(&'a InputRelationExpr),
+    Source(&'a Spanned<InputRelationExpr>),
     /// A join between two subtrees.
     Join(Box<JoinPlan<'a>>, Box<JoinPlan<'a>>),
     AntiJoin(Box<JoinPlan<'a>>, Box<JoinPlan<'a>>),
-    Predicate(Vec<&'a PredicateExpr>, Box<JoinPlan<'a>>),
+    Predicate(Vec<&'a Spanned<PredicateExpr>>, Box<JoinPlan<'a>>),
     /// A join between some relation and a magic relation that emits values between
     /// 0 and some value in the input relation (upper-exclusive).
     MagicNatLt(Box<JoinPlan<'a>>, Ident, Ident),
@@ -31,9 +32,11 @@ pub struct IntermediateJoinNode {
     /// (this is only used for cases where we are directly reading a relation)
     pub tee_idx: Option<isize>,
     /// A mapping from variables in the rule to the index of the corresponding element in the flattened tuples this node emits.
-    pub variable_mapping: BTreeMap<syn::Ident, usize>,
+    pub variable_mapping: BTreeMap<String, usize>,
     /// The type of the flattened tuples this node emits.
     pub tuple_type: syn::Type,
+    /// The span corresponding to the original sources resulting in this node.
+    pub span: Span,
 }
 
 enum JoinSide {
@@ -54,8 +57,8 @@ impl JoinSide {
 /// to emit key-value tuples that can be fed into a join operator.
 fn emit_join_input_pipeline(
     // The identifiers of the input node that the key should be populated with.
-    identifiers_to_join: &[&syn::Ident],
-    identifiers_to_not_join: &[&syn::Ident],
+    identifiers_to_join: &[String],
+    identifiers_to_not_join: &[String],
     // The Hydroflow node that is one side of the join.
     source_expanded: &IntermediateJoinNode,
     // The Hydroflow node for the join operator.
@@ -72,7 +75,7 @@ fn emit_join_input_pipeline(
         .map(|ident| {
             if let Some(idx) = source_expanded.variable_mapping.get(ident) {
                 let idx_ident = syn::Index::from(*idx);
-                parse_quote!(v.#idx_ident)
+                parse_quote!(_v.#idx_ident)
             } else {
                 panic!("Could not find key that is being joined on: {:?}", ident);
             }
@@ -84,7 +87,7 @@ fn emit_join_input_pipeline(
         .map(|ident| {
             if let Some(idx) = source_expanded.variable_mapping.get(ident) {
                 let idx_ident = syn::Index::from(*idx);
-                parse_quote!(v.#idx_ident)
+                parse_quote!(_v.#idx_ident)
             } else {
                 panic!("Could not find key that is being joined on: {:?}", ident);
             }
@@ -99,22 +102,22 @@ fn emit_join_input_pipeline(
     let rhs: Pipeline = if anti_join {
         match join_side {
             JoinSide::Left => {
-                parse_quote!(map(|v: #source_type| ((#(#hash_keys, )*), (#(#not_hash_keys, )*))) -> [pos] #join_node)
+                parse_quote_spanned!(source_expanded.span=> map(|_v: #source_type| ((#(#hash_keys, )*), (#(#not_hash_keys, )*))) -> [pos] #join_node)
             }
             JoinSide::Right => {
-                parse_quote!(map(|v: #source_type| (#(#hash_keys, )*)) -> [neg] #join_node)
+                parse_quote_spanned!(source_expanded.span=> map(|_v: #source_type| (#(#hash_keys, )*)) -> [neg] #join_node)
             }
         }
     } else {
-        parse_quote!(map(|v: #source_type| ((#(#hash_keys, )*), (#(#not_hash_keys, )*))) -> [#out_index] #join_node)
+        parse_quote_spanned!(source_expanded.span=> map(|_v: #source_type| ((#(#hash_keys, )*), (#(#not_hash_keys, )*))) -> [#out_index] #join_node)
     };
 
     let statement = match source_expanded.tee_idx {
         Some(i) => {
             let in_index = syn::LitInt::new(&format!("{}", i), Span::call_site());
-            parse_quote!(#source_name [#in_index] -> #rhs)
+            parse_quote_spanned!(source_expanded.span=> #source_name [#in_index] -> #rhs)
         }
-        None => parse_quote!(#source_name -> #rhs),
+        None => parse_quote_spanned!(source_expanded.span=> #source_name -> #rhs),
     };
 
     flat_graph_builder.add_statement(statement);
@@ -128,11 +131,11 @@ fn emit_join_input_pipeline(
 /// For example, `rel(a, b, a) := ...` requires that the values in the 0th and 2nd slots be the
 /// same, so we would return a map `{ "a" => [0, 2] }`. Note that since `b` is not repeated, it is
 /// not in the map.
-fn find_relation_local_constraints(
-    fields: &[crate::grammar::datalog::Ident],
+fn find_relation_local_constraints<'a>(
+    fields: impl Iterator<Item = &'a Spanned<crate::grammar::datalog::Ident>>,
 ) -> BTreeMap<String, Vec<usize>> {
     let mut indices_grouped_by_var = BTreeMap::new();
-    for (i, ident) in fields.iter().enumerate() {
+    for (i, ident) in fields.enumerate() {
         let entry = indices_grouped_by_var
             // TODO(shadaj): Can we avoid cloning here?
             .entry(ident.name.clone())
@@ -179,19 +182,20 @@ pub fn expand_join_plan(
     flat_graph_builder: &mut FlatGraphBuilder,
     tee_counter: &mut HashMap<String, Counter>,
     next_join_idx: &mut Counter,
+    rule_span: (usize, usize),
+    get_span: &impl Fn((usize, usize)) -> Span,
 ) -> IntermediateJoinNode {
     match plan {
         JoinPlan::Source(target) => {
             let mut variable_mapping = BTreeMap::new();
             let mut row_types: Vec<syn::Type> = vec![];
 
-            let local_constraints = find_relation_local_constraints(&target.fields);
+            let local_constraints = find_relation_local_constraints(target.fields.iter());
 
             for (i, ident) in target.fields.iter().enumerate() {
                 row_types.push(parse_quote!(_));
 
-                let variable_ident = syn::Ident::new(&ident.name, Span::call_site());
-                if let Entry::Vacant(e) = variable_mapping.entry(variable_ident) {
+                if let Entry::Vacant(e) = variable_mapping.entry(ident.name.clone()) {
                     e.insert(i);
                 }
             }
@@ -207,14 +211,15 @@ pub fn expand_join_plan(
 
             if local_constraints.is_empty() {
                 return IntermediateJoinNode {
-                    name: syn::Ident::new(&target.name.name, Span::call_site()),
+                    name: syn::Ident::new(&target.name.name, get_span(target.name.span)),
                     tee_idx: Some(tee_index),
                     variable_mapping,
                     tuple_type: row_type,
+                    span: get_span(target.span),
                 };
             }
 
-            let relation_node = syn::Ident::new(&target.name.name, Span::call_site());
+            let relation_node = syn::Ident::new(&target.name.name, get_span(target.name.span));
             let relation_idx = syn::LitInt::new(&tee_index.to_string(), Span::call_site());
 
             let filter_node = syn::Ident::new(
@@ -227,7 +232,7 @@ pub fn expand_join_plan(
 
             let conditions = build_local_constraint_conditions(&local_constraints);
 
-            flat_graph_builder.add_statement(parse_quote! {
+            flat_graph_builder.add_statement(parse_quote_spanned! {get_span(rule_span)=>
                 #filter_node = #relation_node [#relation_idx] -> filter(|&row: &#row_type| #conditions)
             });
 
@@ -236,20 +241,33 @@ pub fn expand_join_plan(
                 tee_idx: None,
                 variable_mapping,
                 tuple_type: row_type,
+                span: get_span(target.span),
             }
         }
         JoinPlan::Join(lhs, rhs) | JoinPlan::AntiJoin(lhs, rhs) => {
             let is_anti = matches!(plan, JoinPlan::AntiJoin(_, _));
 
-            let left_expanded =
-                expand_join_plan(lhs, flat_graph_builder, tee_counter, next_join_idx);
-            let right_expanded =
-                expand_join_plan(rhs, flat_graph_builder, tee_counter, next_join_idx);
+            let left_expanded = expand_join_plan(
+                lhs,
+                flat_graph_builder,
+                tee_counter,
+                next_join_idx,
+                rule_span,
+                get_span,
+            );
+            let right_expanded = expand_join_plan(
+                rhs,
+                flat_graph_builder,
+                tee_counter,
+                next_join_idx,
+                rule_span,
+                get_span,
+            );
 
             let identifiers_to_join = right_expanded
                 .variable_mapping
                 .keys()
-                .filter(|i| left_expanded.variable_mapping.contains_key(i))
+                .filter(|i| left_expanded.variable_mapping.contains_key(*i))
                 .enumerate()
                 .map(|t| (t.1, t.0))
                 .collect::<BTreeMap<_, _>>();
@@ -257,7 +275,7 @@ pub fn expand_join_plan(
             let left_non_joined_identifiers = left_expanded
                 .variable_mapping
                 .keys()
-                .filter(|i| !right_expanded.variable_mapping.contains_key(i))
+                .filter(|i| !right_expanded.variable_mapping.contains_key(*i))
                 .enumerate()
                 .map(|t| (t.1, t.0))
                 .collect::<BTreeMap<_, _>>();
@@ -265,7 +283,7 @@ pub fn expand_join_plan(
             let right_non_joined_identifiers = right_expanded
                 .variable_mapping
                 .keys()
-                .filter(|i| !left_expanded.variable_mapping.contains_key(i))
+                .filter(|i| !left_expanded.variable_mapping.contains_key(*i))
                 .enumerate()
                 .map(|t| (t.1, t.0))
                 .collect::<BTreeMap<_, _>>();
@@ -347,10 +365,10 @@ pub fn expand_join_plan(
 
             if is_anti {
                 flat_graph_builder
-                    .add_statement(parse_quote!(#join_node = anti_join() -> map(#flatten_closure)));
+                    .add_statement(parse_quote_spanned!(get_span(rule_span)=> #join_node = anti_join() -> map(#flatten_closure)));
             } else {
                 flat_graph_builder.add_statement(
-                    parse_quote!(#join_node = join::<'tick>() -> map(#flatten_closure)),
+                    parse_quote_spanned!(get_span(rule_span)=> #join_node = join::<'tick>() -> map(#flatten_closure)),
                 );
             }
 
@@ -364,12 +382,21 @@ pub fn expand_join_plan(
                 tee_idx: None,
                 variable_mapping: flattened_mapping,
                 tuple_type: output_type,
+                span: left_expanded
+                    .span
+                    .join(right_expanded.span)
+                    .unwrap_or(get_span(rule_span)),
             };
 
             emit_join_input_pipeline(
-                &identifiers_to_join.keys().cloned().collect::<Vec<_>>(),
+                &identifiers_to_join
+                    .keys()
+                    .cloned()
+                    .cloned()
+                    .collect::<Vec<_>>(),
                 &left_non_joined_identifiers
                     .keys()
+                    .cloned()
                     .cloned()
                     .collect::<Vec<_>>(),
                 &left_expanded,
@@ -380,9 +407,14 @@ pub fn expand_join_plan(
             );
 
             emit_join_input_pipeline(
-                &identifiers_to_join.keys().cloned().collect::<Vec<_>>(),
+                &identifiers_to_join
+                    .keys()
+                    .cloned()
+                    .cloned()
+                    .collect::<Vec<_>>(),
                 &right_non_joined_identifiers
                     .keys()
+                    .cloned()
                     .cloned()
                     .collect::<Vec<_>>(),
                 &right_expanded,
@@ -395,8 +427,14 @@ pub fn expand_join_plan(
             intermediate
         }
         JoinPlan::Predicate(predicates, inner) => {
-            let inner_expanded =
-                expand_join_plan(inner, flat_graph_builder, tee_counter, next_join_idx);
+            let inner_expanded = expand_join_plan(
+                inner,
+                flat_graph_builder,
+                tee_counter,
+                next_join_idx,
+                rule_span,
+                get_span,
+            );
             let inner_name = inner_expanded.name.clone();
             let row_type = inner_expanded.tuple_type;
             let variable_mapping = &inner_expanded.variable_mapping;
@@ -404,16 +442,17 @@ pub fn expand_join_plan(
             let conditions = predicates
                 .iter()
                 .map(|p| {
-                    let l_ident = syn::Ident::new(&p.left.name, Span::call_site());
-                    let r_ident = syn::Ident::new(&p.right.name, Span::call_site());
-                    let l = syn::Index::from(*variable_mapping.get(&l_ident).unwrap());
-                    let r = syn::Index::from(*variable_mapping.get(&r_ident).unwrap());
+                    let l = syn::Index::from(*variable_mapping.get(&p.left.name).unwrap());
+                    let l: syn::Expr = parse_quote_spanned!(get_span(p.left.span)=> row.#l);
+                    let r = syn::Index::from(*variable_mapping.get(&p.right.name).unwrap());
+                    let r: syn::Expr = parse_quote_spanned!(get_span(p.right.span)=> row.#r);
+
                     match &p.op {
-                        BoolOp::Lt(_) => parse_quote!(row.#l < row.#r),
-                        BoolOp::LtEq(_) => parse_quote!(row.#l <= row.#r),
-                        BoolOp::Gt(_) => parse_quote!(row.#l > row.#r),
-                        BoolOp::GtEq(_) => parse_quote!(row.#l >= row.#r),
-                        BoolOp::Eq(_) => parse_quote!(row.#l == row.#r),
+                        BoolOp::Lt(_) => parse_quote_spanned!(get_span(p.span)=> #l < #r),
+                        BoolOp::LtEq(_) => parse_quote_spanned!(get_span(p.span)=> #l <= #r),
+                        BoolOp::Gt(_) => parse_quote_spanned!(get_span(p.span)=> #l > #r),
+                        BoolOp::GtEq(_) => parse_quote_spanned!(get_span(p.span)=> #l >= #r),
+                        BoolOp::Eq(_) => parse_quote_spanned!(get_span(p.span)=> #l == #r),
                     }
                 })
                 .reduce(|a: syn::Expr, b| parse_quote!(#a && #b))
@@ -427,7 +466,7 @@ pub fn expand_join_plan(
                 Span::call_site(),
             );
 
-            flat_graph_builder.add_statement(parse_quote! {
+            flat_graph_builder.add_statement(parse_quote_spanned! { get_span(rule_span)=>
                 #predicate_filter_node = #inner_name -> filter(|&row: &#row_type| #conditions )
             });
 
@@ -436,6 +475,7 @@ pub fn expand_join_plan(
                 tee_idx: None,
                 variable_mapping: inner_expanded.variable_mapping,
                 tuple_type: row_type,
+                span: get_span(rule_span),
             }
         }
         JoinPlan::MagicNatLt(inner, less_than, threshold) => {
@@ -447,21 +487,27 @@ pub fn expand_join_plan(
                 Span::call_site(),
             );
 
-            let inner_expanded =
-                expand_join_plan(inner, flat_graph_builder, tee_counter, next_join_idx);
+            let inner_expanded = expand_join_plan(
+                inner,
+                flat_graph_builder,
+                tee_counter,
+                next_join_idx,
+                rule_span,
+                get_span,
+            );
             let inner_name = inner_expanded.name.clone();
             let row_type = inner_expanded.tuple_type;
 
             if inner_expanded
                 .variable_mapping
-                .contains_key(&syn::Ident::new(&less_than.name, Span::call_site()))
+                .contains_key(&less_than.name)
             {
                 todo!("The values generated by less_than cannot currently be used in other parts of the query");
             }
 
             let threshold_index = inner_expanded
                 .variable_mapping
-                .get(&syn::Ident::new(&threshold.name, Span::call_site()))
+                .get(&threshold.name)
                 .expect("Threshold variable not found in inner plan");
             let threshold_index = syn::Index::from(*threshold_index);
 
@@ -474,12 +520,9 @@ pub fn expand_join_plan(
             }
 
             flattened_elements.push(parse_quote!(v));
-            flattened_mapping.insert(
-                syn::Ident::new(&less_than.name, Span::call_site()),
-                flattened_elements.len() - 1,
-            );
+            flattened_mapping.insert(less_than.name.clone(), flattened_elements.len() - 1);
 
-            flat_graph_builder.add_statement(parse_quote! {
+            flat_graph_builder.add_statement(parse_quote_spanned! {get_span(rule_span)=>
                 #magic_node = #inner_name -> flat_map(|row: #row_type| (0..(row.#threshold_index)).map(move |v| (#(#flattened_elements, )*)) )
             });
 
@@ -491,6 +534,7 @@ pub fn expand_join_plan(
                     || parse_quote!(_),
                     flattened_elements.len(),
                 ),
+                span: get_span(rule_span),
             }
         }
     }

@@ -550,10 +550,20 @@ impl HydroflowGraph {
 
         let subgraph_handoffs = self.helper_collect_subgraph_handoffs();
 
-        let subgraphs = self
+        // we first generate the subgraphs that have no inputs to guide type inference
+        let (subgraphs_without_preds, subgraphs_with_preds) = self
             .subgraph_nodes
             .iter()
-            .map(|(subgraph_id, subgraph_nodes)| {
+            .partition::<Vec<_>, _>(|(_, nodes)| {
+                nodes
+                    .iter()
+                    .any(|&node_id| self.node_degree_in(node_id) == 0)
+            });
+
+        let subgraphs = subgraphs_without_preds
+            .iter()
+            .chain(subgraphs_with_preds.iter())
+            .map(|&(subgraph_id, subgraph_nodes)| {
                 let (recv_hoffs, send_hoffs) = &subgraph_handoffs[subgraph_id];
                 let recv_ports: Vec<Ident> = recv_hoffs
                     .iter()
