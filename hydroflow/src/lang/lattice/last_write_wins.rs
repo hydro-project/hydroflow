@@ -86,14 +86,14 @@ mod tests {
     #[test]
     fn lattice_doesnt_move_backward() {
         let mut x = (1, 2);
-        assert!(<Lww as Merge<Lww>>::merge(&mut x, (0, 0)));
+        assert!(!<Lww as Merge<Lww>>::merge(&mut x, (0, 0)));
         assert_eq!(x, (1, 2));
     }
 
     #[test]
     fn equal_marker_does_nothing() {
         let mut x = (0, 0);
-        assert!(<Lww as Merge<Lww>>::merge(&mut x, (0, 1)));
+        assert!(!<Lww as Merge<Lww>>::merge(&mut x, (0, 1)));
         assert_eq!(x, (0, 0));
     }
 }
