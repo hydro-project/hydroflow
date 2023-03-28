@@ -467,7 +467,7 @@ pub fn expand_join_plan(
             );
 
             flat_graph_builder.add_statement(parse_quote_spanned! { get_span(rule_span)=>
-                #predicate_filter_node = #inner_name -> filter(|&row: &#row_type| #conditions )
+                #predicate_filter_node = #inner_name -> filter(|row: &#row_type| #conditions )
             });
 
             IntermediateJoinNode {
