@@ -495,12 +495,57 @@
 <a href="#495" id="495">495</a>
 <a href="#496" id="496">496</a>
 <a href="#497" id="497">497</a>
+<a href="#498" id="498">498</a>
+<a href="#499" id="499">499</a>
+<a href="#500" id="500">500</a>
+<a href="#501" id="501">501</a>
+<a href="#502" id="502">502</a>
+<a href="#503" id="503">503</a>
+<a href="#504" id="504">504</a>
+<a href="#505" id="505">505</a>
+<a href="#506" id="506">506</a>
+<a href="#507" id="507">507</a>
+<a href="#508" id="508">508</a>
+<a href="#509" id="509">509</a>
+<a href="#510" id="510">510</a>
+<a href="#511" id="511">511</a>
+<a href="#512" id="512">512</a>
+<a href="#513" id="513">513</a>
+<a href="#514" id="514">514</a>
+<a href="#515" id="515">515</a>
+<a href="#516" id="516">516</a>
+<a href="#517" id="517">517</a>
+<a href="#518" id="518">518</a>
+<a href="#519" id="519">519</a>
+<a href="#520" id="520">520</a>
+<a href="#521" id="521">521</a>
+<a href="#522" id="522">522</a>
+<a href="#523" id="523">523</a>
+<a href="#524" id="524">524</a>
+<a href="#525" id="525">525</a>
+<a href="#526" id="526">526</a>
+<a href="#527" id="527">527</a>
+<a href="#528" id="528">528</a>
+<a href="#529" id="529">529</a>
+<a href="#530" id="530">530</a>
+<a href="#531" id="531">531</a>
+<a href="#532" id="532">532</a>
+<a href="#533" id="533">533</a>
+<a href="#534" id="534">534</a>
+<a href="#535" id="535">535</a>
+<a href="#536" id="536">536</a>
+<a href="#537" id="537">537</a>
+<a href="#538" id="538">538</a>
+<a href="#539" id="539">539</a>
+<a href="#540" id="540">540</a>
+<a href="#541" id="541">541</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::collections::{btree_map::Entry, BTreeMap, HashMap};
 
 <span class="kw">use </span>hydroflow_lang::graph::FlatGraphBuilder;
 <span class="kw">use </span>hydroflow_lang::parse::Pipeline;
 <span class="kw">use </span>proc_macro2::Span;
-<span class="kw">use </span>syn::{<span class="self">self</span>, parse_quote};
+<span class="kw">use </span>rust_sitter::Spanned;
+<span class="kw">use </span>syn::{<span class="self">self</span>, parse_quote, parse_quote_spanned};
 
 <span class="kw">use crate</span>::{
     grammar::datalog::{BoolOp, Ident, InputRelationExpr, PredicateExpr},
@@ -510,11 +555,11 @@
 <span class="doccomment">/// Captures the tree of joins used to compute contributions from a single rule.
 </span><span class="kw">pub enum </span>JoinPlan&lt;<span class="lifetime">&#39;a</span>&gt; {
     <span class="doccomment">/// A single relation without any joins, leaves of the tree.
-    </span>Source(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>InputRelationExpr),
+    </span>Source(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Spanned&lt;InputRelationExpr&gt;),
     <span class="doccomment">/// A join between two subtrees.
     </span>Join(Box&lt;JoinPlan&lt;<span class="lifetime">&#39;a</span>&gt;&gt;, Box&lt;JoinPlan&lt;<span class="lifetime">&#39;a</span>&gt;&gt;),
     AntiJoin(Box&lt;JoinPlan&lt;<span class="lifetime">&#39;a</span>&gt;&gt;, Box&lt;JoinPlan&lt;<span class="lifetime">&#39;a</span>&gt;&gt;),
-    Predicate(Vec&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>PredicateExpr&gt;, Box&lt;JoinPlan&lt;<span class="lifetime">&#39;a</span>&gt;&gt;),
+    Predicate(Vec&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Spanned&lt;PredicateExpr&gt;&gt;, Box&lt;JoinPlan&lt;<span class="lifetime">&#39;a</span>&gt;&gt;),
     <span class="doccomment">/// A join between some relation and a magic relation that emits values between
     /// 0 and some value in the input relation (upper-exclusive).
     </span>MagicNatLt(Box&lt;JoinPlan&lt;<span class="lifetime">&#39;a</span>&gt;&gt;, Ident, Ident),
@@ -528,9 +573,11 @@
     /// (this is only used for cases where we are directly reading a relation)
     </span><span class="kw">pub </span>tee_idx: <span class="prelude-ty">Option</span>&lt;isize&gt;,
     <span class="doccomment">/// A mapping from variables in the rule to the index of the corresponding element in the flattened tuples this node emits.
-    </span><span class="kw">pub </span>variable_mapping: BTreeMap&lt;syn::Ident, usize&gt;,
+    </span><span class="kw">pub </span>variable_mapping: BTreeMap&lt;String, usize&gt;,
     <span class="doccomment">/// The type of the flattened tuples this node emits.
     </span><span class="kw">pub </span>tuple_type: syn::Type,
+    <span class="doccomment">/// The span corresponding to the original sources resulting in this node.
+    </span><span class="kw">pub </span>span: Span,
 }
 
 <span class="kw">enum </span>JoinSide {
@@ -551,8 +598,8 @@
 /// to emit key-value tuples that can be fed into a join operator.
 </span><span class="kw">fn </span>emit_join_input_pipeline(
     <span class="comment">// The identifiers of the input node that the key should be populated with.
-    </span>identifiers_to_join: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>syn::Ident],
-    identifiers_to_not_join: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>syn::Ident],
+    </span>identifiers_to_join: <span class="kw-2">&amp;</span>[String],
+    identifiers_to_not_join: <span class="kw-2">&amp;</span>[String],
     <span class="comment">// The Hydroflow node that is one side of the join.
     </span>source_expanded: <span class="kw-2">&amp;</span>IntermediateJoinNode,
     <span class="comment">// The Hydroflow node for the join operator.
@@ -569,7 +616,7 @@
         .map(|ident| {
             <span class="kw">if let </span><span class="prelude-val">Some</span>(idx) = source_expanded.variable_mapping.get(ident) {
                 <span class="kw">let </span>idx_ident = syn::Index::from(<span class="kw-2">*</span>idx);
-                <span class="macro">parse_quote!</span>(v.#idx_ident)
+                <span class="macro">parse_quote!</span>(_v.#idx_ident)
             } <span class="kw">else </span>{
                 <span class="macro">panic!</span>(<span class="string">&quot;Could not find key that is being joined on: {:?}&quot;</span>, ident);
             }
@@ -581,7 +628,7 @@
         .map(|ident| {
             <span class="kw">if let </span><span class="prelude-val">Some</span>(idx) = source_expanded.variable_mapping.get(ident) {
                 <span class="kw">let </span>idx_ident = syn::Index::from(<span class="kw-2">*</span>idx);
-                <span class="macro">parse_quote!</span>(v.#idx_ident)
+                <span class="macro">parse_quote!</span>(_v.#idx_ident)
             } <span class="kw">else </span>{
                 <span class="macro">panic!</span>(<span class="string">&quot;Could not find key that is being joined on: {:?}&quot;</span>, ident);
             }
@@ -596,22 +643,22 @@
     <span class="kw">let </span>rhs: Pipeline = <span class="kw">if </span>anti_join {
         <span class="kw">match </span>join_side {
             JoinSide::Left =&gt; {
-                <span class="macro">parse_quote!</span>(map(|v: #source_type| ((#(#hash_keys, )<span class="kw-2">*</span>), (#(#not_hash_keys, )<span class="kw-2">*</span>))) -&gt; [pos] #join_node)
+                <span class="macro">parse_quote_spanned!</span>(source_expanded.span=&gt; map(|_v: #source_type| ((#(#hash_keys, )<span class="kw-2">*</span>), (#(#not_hash_keys, )<span class="kw-2">*</span>))) -&gt; [pos] #join_node)
             }
             JoinSide::Right =&gt; {
-                <span class="macro">parse_quote!</span>(map(|v: #source_type| (#(#hash_keys, )<span class="kw-2">*</span>)) -&gt; [neg] #join_node)
+                <span class="macro">parse_quote_spanned!</span>(source_expanded.span=&gt; map(|_v: #source_type| (#(#hash_keys, )<span class="kw-2">*</span>)) -&gt; [neg] #join_node)
             }
         }
     } <span class="kw">else </span>{
-        <span class="macro">parse_quote!</span>(map(|v: #source_type| ((#(#hash_keys, )<span class="kw-2">*</span>), (#(#not_hash_keys, )<span class="kw-2">*</span>))) -&gt; [#out_index] #join_node)
+        <span class="macro">parse_quote_spanned!</span>(source_expanded.span=&gt; map(|_v: #source_type| ((#(#hash_keys, )<span class="kw-2">*</span>), (#(#not_hash_keys, )<span class="kw-2">*</span>))) -&gt; [#out_index] #join_node)
     };
 
     <span class="kw">let </span>statement = <span class="kw">match </span>source_expanded.tee_idx {
         <span class="prelude-val">Some</span>(i) =&gt; {
             <span class="kw">let </span>in_index = syn::LitInt::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, i), Span::call_site());
-            <span class="macro">parse_quote!</span>(#source_name [#in_index] -&gt; #rhs)
+            <span class="macro">parse_quote_spanned!</span>(source_expanded.span=&gt; #source_name [#in_index] -&gt; #rhs)
         }
-        <span class="prelude-val">None </span>=&gt; <span class="macro">parse_quote!</span>(#source_name -&gt; #rhs),
+        <span class="prelude-val">None </span>=&gt; <span class="macro">parse_quote_spanned!</span>(source_expanded.span=&gt; #source_name -&gt; #rhs),
     };
 
     flat_graph_builder.add_statement(statement);
@@ -625,11 +672,11 @@
 /// For example, `rel(a, b, a) := ...` requires that the values in the 0th and 2nd slots be the
 /// same, so we would return a map `{ &quot;a&quot; =&gt; [0, 2] }`. Note that since `b` is not repeated, it is
 /// not in the map.
-</span><span class="kw">fn </span>find_relation_local_constraints(
-    fields: <span class="kw-2">&amp;</span>[<span class="kw">crate</span>::grammar::datalog::Ident],
+</span><span class="kw">fn </span>find_relation_local_constraints&lt;<span class="lifetime">&#39;a</span>&gt;(
+    fields: <span class="kw">impl </span>Iterator&lt;Item = <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Spanned&lt;<span class="kw">crate</span>::grammar::datalog::Ident&gt;&gt;,
 ) -&gt; BTreeMap&lt;String, Vec&lt;usize&gt;&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>indices_grouped_by_var = BTreeMap::new();
-    <span class="kw">for </span>(i, ident) <span class="kw">in </span>fields.iter().enumerate() {
+    <span class="kw">for </span>(i, ident) <span class="kw">in </span>fields.enumerate() {
         <span class="kw">let </span>entry = indices_grouped_by_var
             <span class="comment">// TODO(shadaj): Can we avoid cloning here?
             </span>.entry(ident.name.clone())
@@ -676,19 +723,20 @@
     </span>flat_graph_builder: <span class="kw-2">&amp;mut </span>FlatGraphBuilder,
     tee_counter: <span class="kw-2">&amp;mut </span>HashMap&lt;String, Counter&gt;,
     next_join_idx: <span class="kw-2">&amp;mut </span>Counter,
+    rule_span: (usize, usize),
+    get_span: <span class="kw-2">&amp;</span><span class="kw">impl </span>Fn((usize, usize)) -&gt; Span,
 ) -&gt; IntermediateJoinNode {
     <span class="kw">match </span>plan {
         JoinPlan::Source(target) =&gt; {
             <span class="kw">let </span><span class="kw-2">mut </span>variable_mapping = BTreeMap::new();
             <span class="kw">let </span><span class="kw-2">mut </span>row_types: Vec&lt;syn::Type&gt; = <span class="macro">vec!</span>[];
 
-            <span class="kw">let </span>local_constraints = find_relation_local_constraints(<span class="kw-2">&amp;</span>target.fields);
+            <span class="kw">let </span>local_constraints = find_relation_local_constraints(target.fields.iter());
 
             <span class="kw">for </span>(i, ident) <span class="kw">in </span>target.fields.iter().enumerate() {
                 row_types.push(<span class="macro">parse_quote!</span>(<span class="kw">_</span>));
 
-                <span class="kw">let </span>variable_ident = syn::Ident::new(<span class="kw-2">&amp;</span>ident.name, Span::call_site());
-                <span class="kw">if let </span>Entry::Vacant(e) = variable_mapping.entry(variable_ident) {
+                <span class="kw">if let </span>Entry::Vacant(e) = variable_mapping.entry(ident.name.clone()) {
                     e.insert(i);
                 }
             }
@@ -704,14 +752,15 @@
 
             <span class="kw">if </span>local_constraints.is_empty() {
                 <span class="kw">return </span>IntermediateJoinNode {
-                    name: syn::Ident::new(<span class="kw-2">&amp;</span>target.name.name, Span::call_site()),
+                    name: syn::Ident::new(<span class="kw-2">&amp;</span>target.name.name, get_span(target.name.span)),
                     tee_idx: <span class="prelude-val">Some</span>(tee_index),
                     variable_mapping,
                     tuple_type: row_type,
+                    span: get_span(target.span),
                 };
             }
 
-            <span class="kw">let </span>relation_node = syn::Ident::new(<span class="kw-2">&amp;</span>target.name.name, Span::call_site());
+            <span class="kw">let </span>relation_node = syn::Ident::new(<span class="kw-2">&amp;</span>target.name.name, get_span(target.name.span));
             <span class="kw">let </span>relation_idx = syn::LitInt::new(<span class="kw-2">&amp;</span>tee_index.to_string(), Span::call_site());
 
             <span class="kw">let </span>filter_node = syn::Ident::new(
@@ -724,7 +773,7 @@
 
             <span class="kw">let </span>conditions = build_local_constraint_conditions(<span class="kw-2">&amp;</span>local_constraints);
 
-            flat_graph_builder.add_statement(<span class="macro">parse_quote! </span>{
+            flat_graph_builder.add_statement(<span class="macro">parse_quote_spanned! </span>{get_span(rule_span)=&gt;
                 #filter_node = #relation_node [#relation_idx] -&gt; filter(|<span class="kw-2">&amp;</span>row: <span class="kw-2">&amp;</span>#row_type| #conditions)
             });
 
@@ -733,20 +782,33 @@
                 tee_idx: <span class="prelude-val">None</span>,
                 variable_mapping,
                 tuple_type: row_type,
+                span: get_span(target.span),
             }
         }
         JoinPlan::Join(lhs, rhs) | JoinPlan::AntiJoin(lhs, rhs) =&gt; {
             <span class="kw">let </span>is_anti = <span class="macro">matches!</span>(plan, JoinPlan::AntiJoin(<span class="kw">_</span>, <span class="kw">_</span>));
 
-            <span class="kw">let </span>left_expanded =
-                expand_join_plan(lhs, flat_graph_builder, tee_counter, next_join_idx);
-            <span class="kw">let </span>right_expanded =
-                expand_join_plan(rhs, flat_graph_builder, tee_counter, next_join_idx);
+            <span class="kw">let </span>left_expanded = expand_join_plan(
+                lhs,
+                flat_graph_builder,
+                tee_counter,
+                next_join_idx,
+                rule_span,
+                get_span,
+            );
+            <span class="kw">let </span>right_expanded = expand_join_plan(
+                rhs,
+                flat_graph_builder,
+                tee_counter,
+                next_join_idx,
+                rule_span,
+                get_span,
+            );
 
             <span class="kw">let </span>identifiers_to_join = right_expanded
                 .variable_mapping
                 .keys()
-                .filter(|i| left_expanded.variable_mapping.contains_key(i))
+                .filter(|i| left_expanded.variable_mapping.contains_key(<span class="kw-2">*</span>i))
                 .enumerate()
                 .map(|t| (t.<span class="number">1</span>, t.<span class="number">0</span>))
                 .collect::&lt;BTreeMap&lt;<span class="kw">_</span>, <span class="kw">_</span>&gt;&gt;();
@@ -754,7 +816,7 @@
             <span class="kw">let </span>left_non_joined_identifiers = left_expanded
                 .variable_mapping
                 .keys()
-                .filter(|i| !right_expanded.variable_mapping.contains_key(i))
+                .filter(|i| !right_expanded.variable_mapping.contains_key(<span class="kw-2">*</span>i))
                 .enumerate()
                 .map(|t| (t.<span class="number">1</span>, t.<span class="number">0</span>))
                 .collect::&lt;BTreeMap&lt;<span class="kw">_</span>, <span class="kw">_</span>&gt;&gt;();
@@ -762,7 +824,7 @@
             <span class="kw">let </span>right_non_joined_identifiers = right_expanded
                 .variable_mapping
                 .keys()
-                .filter(|i| !left_expanded.variable_mapping.contains_key(i))
+                .filter(|i| !left_expanded.variable_mapping.contains_key(<span class="kw-2">*</span>i))
                 .enumerate()
                 .map(|t| (t.<span class="number">1</span>, t.<span class="number">0</span>))
                 .collect::&lt;BTreeMap&lt;<span class="kw">_</span>, <span class="kw">_</span>&gt;&gt;();
@@ -844,10 +906,10 @@
 
             <span class="kw">if </span>is_anti {
                 flat_graph_builder
-                    .add_statement(<span class="macro">parse_quote!</span>(#join_node = anti_join() -&gt; map(#flatten_closure)));
+                    .add_statement(<span class="macro">parse_quote_spanned!</span>(get_span(rule_span)=&gt; #join_node = anti_join() -&gt; map(#flatten_closure)));
             } <span class="kw">else </span>{
                 flat_graph_builder.add_statement(
-                    <span class="macro">parse_quote!</span>(#join_node = join::&lt;<span class="lifetime">&#39;tick</span>&gt;() -&gt; map(#flatten_closure)),
+                    <span class="macro">parse_quote_spanned!</span>(get_span(rule_span)=&gt; #join_node = join::&lt;<span class="lifetime">&#39;tick</span>&gt;() -&gt; map(#flatten_closure)),
                 );
             }
 
@@ -861,12 +923,21 @@
                 tee_idx: <span class="prelude-val">None</span>,
                 variable_mapping: flattened_mapping,
                 tuple_type: output_type,
+                span: left_expanded
+                    .span
+                    .join(right_expanded.span)
+                    .unwrap_or(get_span(rule_span)),
             };
 
             emit_join_input_pipeline(
-                <span class="kw-2">&amp;</span>identifiers_to_join.keys().cloned().collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;(),
+                <span class="kw-2">&amp;</span>identifiers_to_join
+                    .keys()
+                    .cloned()
+                    .cloned()
+                    .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;(),
                 <span class="kw-2">&amp;</span>left_non_joined_identifiers
                     .keys()
+                    .cloned()
                     .cloned()
                     .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;(),
                 <span class="kw-2">&amp;</span>left_expanded,
@@ -877,9 +948,14 @@
             );
 
             emit_join_input_pipeline(
-                <span class="kw-2">&amp;</span>identifiers_to_join.keys().cloned().collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;(),
+                <span class="kw-2">&amp;</span>identifiers_to_join
+                    .keys()
+                    .cloned()
+                    .cloned()
+                    .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;(),
                 <span class="kw-2">&amp;</span>right_non_joined_identifiers
                     .keys()
+                    .cloned()
                     .cloned()
                     .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;(),
                 <span class="kw-2">&amp;</span>right_expanded,
@@ -892,8 +968,14 @@
             intermediate
         }
         JoinPlan::Predicate(predicates, inner) =&gt; {
-            <span class="kw">let </span>inner_expanded =
-                expand_join_plan(inner, flat_graph_builder, tee_counter, next_join_idx);
+            <span class="kw">let </span>inner_expanded = expand_join_plan(
+                inner,
+                flat_graph_builder,
+                tee_counter,
+                next_join_idx,
+                rule_span,
+                get_span,
+            );
             <span class="kw">let </span>inner_name = inner_expanded.name.clone();
             <span class="kw">let </span>row_type = inner_expanded.tuple_type;
             <span class="kw">let </span>variable_mapping = <span class="kw-2">&amp;</span>inner_expanded.variable_mapping;
@@ -901,16 +983,17 @@
             <span class="kw">let </span>conditions = predicates
                 .iter()
                 .map(|p| {
-                    <span class="kw">let </span>l_ident = syn::Ident::new(<span class="kw-2">&amp;</span>p.left.name, Span::call_site());
-                    <span class="kw">let </span>r_ident = syn::Ident::new(<span class="kw-2">&amp;</span>p.right.name, Span::call_site());
-                    <span class="kw">let </span>l = syn::Index::from(<span class="kw-2">*</span>variable_mapping.get(<span class="kw-2">&amp;</span>l_ident).unwrap());
-                    <span class="kw">let </span>r = syn::Index::from(<span class="kw-2">*</span>variable_mapping.get(<span class="kw-2">&amp;</span>r_ident).unwrap());
+                    <span class="kw">let </span>l = syn::Index::from(<span class="kw-2">*</span>variable_mapping.get(<span class="kw-2">&amp;</span>p.left.name).unwrap());
+                    <span class="kw">let </span>l: syn::Expr = <span class="macro">parse_quote_spanned!</span>(get_span(p.left.span)=&gt; row.#l);
+                    <span class="kw">let </span>r = syn::Index::from(<span class="kw-2">*</span>variable_mapping.get(<span class="kw-2">&amp;</span>p.right.name).unwrap());
+                    <span class="kw">let </span>r: syn::Expr = <span class="macro">parse_quote_spanned!</span>(get_span(p.right.span)=&gt; row.#r);
+
                     <span class="kw">match </span><span class="kw-2">&amp;</span>p.op {
-                        BoolOp::Lt(<span class="kw">_</span>) =&gt; <span class="macro">parse_quote!</span>(row.#l &lt; row.#r),
-                        BoolOp::LtEq(<span class="kw">_</span>) =&gt; <span class="macro">parse_quote!</span>(row.#l &lt;= row.#r),
-                        BoolOp::Gt(<span class="kw">_</span>) =&gt; <span class="macro">parse_quote!</span>(row.#l &gt; row.#r),
-                        BoolOp::GtEq(<span class="kw">_</span>) =&gt; <span class="macro">parse_quote!</span>(row.#l &gt;= row.#r),
-                        BoolOp::Eq(<span class="kw">_</span>) =&gt; <span class="macro">parse_quote!</span>(row.#l == row.#r),
+                        BoolOp::Lt(<span class="kw">_</span>) =&gt; <span class="macro">parse_quote_spanned!</span>(get_span(p.span)=&gt; #l &lt; #r),
+                        BoolOp::LtEq(<span class="kw">_</span>) =&gt; <span class="macro">parse_quote_spanned!</span>(get_span(p.span)=&gt; #l &lt;= #r),
+                        BoolOp::Gt(<span class="kw">_</span>) =&gt; <span class="macro">parse_quote_spanned!</span>(get_span(p.span)=&gt; #l &gt; #r),
+                        BoolOp::GtEq(<span class="kw">_</span>) =&gt; <span class="macro">parse_quote_spanned!</span>(get_span(p.span)=&gt; #l &gt;= #r),
+                        BoolOp::Eq(<span class="kw">_</span>) =&gt; <span class="macro">parse_quote_spanned!</span>(get_span(p.span)=&gt; #l == #r),
                     }
                 })
                 .reduce(|a: syn::Expr, b| <span class="macro">parse_quote!</span>(#a &amp;&amp; #b))
@@ -924,7 +1007,7 @@
                 Span::call_site(),
             );
 
-            flat_graph_builder.add_statement(<span class="macro">parse_quote! </span>{
+            flat_graph_builder.add_statement(<span class="macro">parse_quote_spanned! </span>{ get_span(rule_span)=&gt;
                 #predicate_filter_node = #inner_name -&gt; filter(|<span class="kw-2">&amp;</span>row: <span class="kw-2">&amp;</span>#row_type| #conditions )
             });
 
@@ -933,6 +1016,7 @@
                 tee_idx: <span class="prelude-val">None</span>,
                 variable_mapping: inner_expanded.variable_mapping,
                 tuple_type: row_type,
+                span: get_span(rule_span),
             }
         }
         JoinPlan::MagicNatLt(inner, less_than, threshold) =&gt; {
@@ -944,21 +1028,27 @@
                 Span::call_site(),
             );
 
-            <span class="kw">let </span>inner_expanded =
-                expand_join_plan(inner, flat_graph_builder, tee_counter, next_join_idx);
+            <span class="kw">let </span>inner_expanded = expand_join_plan(
+                inner,
+                flat_graph_builder,
+                tee_counter,
+                next_join_idx,
+                rule_span,
+                get_span,
+            );
             <span class="kw">let </span>inner_name = inner_expanded.name.clone();
             <span class="kw">let </span>row_type = inner_expanded.tuple_type;
 
             <span class="kw">if </span>inner_expanded
                 .variable_mapping
-                .contains_key(<span class="kw-2">&amp;</span>syn::Ident::new(<span class="kw-2">&amp;</span>less_than.name, Span::call_site()))
+                .contains_key(<span class="kw-2">&amp;</span>less_than.name)
             {
                 <span class="macro">todo!</span>(<span class="string">&quot;The values generated by less_than cannot currently be used in other parts of the query&quot;</span>);
             }
 
             <span class="kw">let </span>threshold_index = inner_expanded
                 .variable_mapping
-                .get(<span class="kw-2">&amp;</span>syn::Ident::new(<span class="kw-2">&amp;</span>threshold.name, Span::call_site()))
+                .get(<span class="kw-2">&amp;</span>threshold.name)
                 .expect(<span class="string">&quot;Threshold variable not found in inner plan&quot;</span>);
             <span class="kw">let </span>threshold_index = syn::Index::from(<span class="kw-2">*</span>threshold_index);
 
@@ -971,12 +1061,9 @@
             }
 
             flattened_elements.push(<span class="macro">parse_quote!</span>(v));
-            flattened_mapping.insert(
-                syn::Ident::new(<span class="kw-2">&amp;</span>less_than.name, Span::call_site()),
-                flattened_elements.len() - <span class="number">1</span>,
-            );
+            flattened_mapping.insert(less_than.name.clone(), flattened_elements.len() - <span class="number">1</span>);
 
-            flat_graph_builder.add_statement(<span class="macro">parse_quote! </span>{
+            flat_graph_builder.add_statement(<span class="macro">parse_quote_spanned! </span>{get_span(rule_span)=&gt;
                 #magic_node = #inner_name -&gt; flat_map(|row: #row_type| (<span class="number">0</span>..(row.#threshold_index)).map(<span class="kw">move </span>|v| (#(#flattened_elements, )<span class="kw-2">*</span>)) )
             });
 
@@ -988,6 +1075,7 @@
                     || <span class="macro">parse_quote!</span>(<span class="kw">_</span>),
                     flattened_elements.len(),
                 ),
+                span: get_span(rule_span),
             }
         }
     }

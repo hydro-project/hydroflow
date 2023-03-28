@@ -891,7 +891,54 @@
 <a href="#891" id="891">891</a>
 <a href="#892" id="892">892</a>
 <a href="#893" id="893">893</a>
-</pre><pre class="rust"><code><span class="kw">use </span>rust_sitter::errors::{ParseError, ParseErrorReason};
+<a href="#894" id="894">894</a>
+<a href="#895" id="895">895</a>
+<a href="#896" id="896">896</a>
+<a href="#897" id="897">897</a>
+<a href="#898" id="898">898</a>
+<a href="#899" id="899">899</a>
+<a href="#900" id="900">900</a>
+<a href="#901" id="901">901</a>
+<a href="#902" id="902">902</a>
+<a href="#903" id="903">903</a>
+<a href="#904" id="904">904</a>
+<a href="#905" id="905">905</a>
+<a href="#906" id="906">906</a>
+<a href="#907" id="907">907</a>
+<a href="#908" id="908">908</a>
+<a href="#909" id="909">909</a>
+<a href="#910" id="910">910</a>
+<a href="#911" id="911">911</a>
+<a href="#912" id="912">912</a>
+<a href="#913" id="913">913</a>
+<a href="#914" id="914">914</a>
+<a href="#915" id="915">915</a>
+<a href="#916" id="916">916</a>
+<a href="#917" id="917">917</a>
+<a href="#918" id="918">918</a>
+<a href="#919" id="919">919</a>
+<a href="#920" id="920">920</a>
+<a href="#921" id="921">921</a>
+<a href="#922" id="922">922</a>
+<a href="#923" id="923">923</a>
+<a href="#924" id="924">924</a>
+<a href="#925" id="925">925</a>
+<a href="#926" id="926">926</a>
+<a href="#927" id="927">927</a>
+<a href="#928" id="928">928</a>
+<a href="#929" id="929">929</a>
+<a href="#930" id="930">930</a>
+<a href="#931" id="931">931</a>
+<a href="#932" id="932">932</a>
+<a href="#933" id="933">933</a>
+<a href="#934" id="934">934</a>
+<a href="#935" id="935">935</a>
+<a href="#936" id="936">936</a>
+<a href="#937" id="937">937</a>
+</pre><pre class="rust"><code><span class="kw">use </span>rust_sitter::{
+    errors::{ParseError, ParseErrorReason},
+    Spanned,
+};
 <span class="kw">use </span>std::collections::{HashMap, HashSet};
 
 <span class="kw">use </span>hydroflow_lang::{
@@ -900,7 +947,7 @@
     parse::{IndexInt, Indexing, Pipeline, PipelineLink},
 };
 <span class="kw">use </span>proc_macro2::{Span, TokenStream};
-<span class="kw">use </span>syn::parse_quote;
+<span class="kw">use </span>syn::{parse_quote, parse_quote_spanned};
 
 <span class="kw">mod </span>grammar;
 <span class="kw">mod </span>join_plan;
@@ -914,19 +961,17 @@
 
 <span class="kw">pub fn </span>parse_pipeline(
     code_str: <span class="kw-2">&amp;</span>rust_sitter::Spanned&lt;String&gt;,
-    literal: <span class="kw-2">&amp;</span>proc_macro2::Literal,
-    offset: usize,
+    get_span: <span class="kw-2">&amp;</span><span class="kw">impl </span>Fn((usize, usize)) -&gt; Span,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;Pipeline, Vec&lt;Diagnostic&gt;&gt; {
-    syn::parse_str(<span class="kw-2">&amp;</span>code_str.value).map_err(|err| {
-        <span class="kw">let </span>(start, end) = code_str.span;
-        <span class="comment">// TODO(mingwei): incorporate `err.span()` somehow
-        </span><span class="kw">let </span>subspan = literal.subspan(start + offset..end + offset);
-        <span class="macro">vec!</span>[Diagnostic {
-            span: subspan.unwrap_or(Span::call_site()),
-            level: Level::Error,
-            message: <span class="macro">format!</span>(<span class="string">&quot;Failed to parse input pipeline: {}&quot;</span>, err),
-        }]
-    })
+    syn::LitStr::new(<span class="kw-2">&amp;</span>code_str.value, get_span(code_str.span))
+        .parse()
+        .map_err(|err| {
+            <span class="macro">vec!</span>[Diagnostic {
+                span: err.span(),
+                level: Level::Error,
+                message: <span class="macro">format!</span>(<span class="string">&quot;Failed to parse input pipeline: {}&quot;</span>, err),
+            }]
+        })
 }
 
 <span class="kw">pub fn </span>gen_hydroflow_graph(
@@ -949,10 +994,15 @@
         <span class="number">2 </span>+ hashes
     };
 
+    <span class="kw">let </span>get_span = |(start, end): (usize, usize)| {
+        <span class="kw">let </span>subspan = literal.subspan(start + offset..end + offset);
+        subspan.unwrap_or(Span::call_site())
+    };
+
     <span class="kw">let </span>str_node: syn::LitStr = <span class="macro">parse_quote!</span>(#literal);
     <span class="kw">let </span>actual_str = str_node.value();
     <span class="kw">let </span>program: Program =
-        grammar::datalog::parse(<span class="kw-2">&amp;</span>actual_str).map_err(|e| handle_errors(e, <span class="kw-2">&amp;</span>literal, offset))<span class="question-mark">?</span>;
+        grammar::datalog::parse(<span class="kw-2">&amp;</span>actual_str).map_err(|e| handle_errors(e, <span class="kw-2">&amp;</span>get_span))<span class="question-mark">?</span>;
 
     <span class="kw">let </span><span class="kw-2">mut </span>inputs = Vec::new();
     <span class="kw">let </span><span class="kw-2">mut </span>outputs = Vec::new();
@@ -993,11 +1043,11 @@
             Declaration::Rule(rule) =&gt; rule.target.name.clone(),
         };
 
-        <span class="kw">if </span>!created_rules.contains(<span class="kw-2">&amp;</span>target_ident) {
-            created_rules.insert(target_ident.clone());
-            <span class="kw">let </span>name = syn::Ident::new(<span class="kw-2">&amp;</span>target_ident.name, Span::call_site());
+        <span class="kw">if </span>!created_rules.contains(<span class="kw-2">&amp;</span>target_ident.value) {
+            created_rules.insert(target_ident.value.clone());
+            <span class="kw">let </span>name = syn::Ident::new(<span class="kw-2">&amp;</span>target_ident.name, get_span(target_ident.span));
             flat_graph_builder
-                .add_statement(<span class="macro">parse_quote!</span>(#name = merge() -&gt; unique::&lt;<span class="lifetime">&#39;tick</span>&gt;() -&gt; tee()));
+                .add_statement(<span class="macro">parse_quote_spanned!</span>(get_span(target_ident.span)=&gt; #name = merge() -&gt; unique::&lt;<span class="lifetime">&#39;tick</span>&gt;() -&gt; tee()));
         }
     }
 
@@ -1009,12 +1059,12 @@
             .expect(<span class="string">&quot;Out of merge indices&quot;</span>);
 
         <span class="kw">let </span>my_merge_index_lit =
-            syn::LitInt::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, my_merge_index), Span::call_site());
-        <span class="kw">let </span>name = syn::Ident::new(<span class="kw-2">&amp;</span>target.name, Span::call_site());
+            syn::LitInt::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, my_merge_index), get_span(target.span));
+        <span class="kw">let </span>name = syn::Ident::new(<span class="kw-2">&amp;</span>target.name, get_span(target.span));
 
-        <span class="kw">let </span>input_pipeline: Pipeline = parse_pipeline(<span class="kw-2">&amp;</span>hf_code.code, <span class="kw-2">&amp;</span>literal, offset)<span class="question-mark">?</span>;
+        <span class="kw">let </span>input_pipeline: Pipeline = parse_pipeline(<span class="kw-2">&amp;</span>hf_code.code, <span class="kw-2">&amp;</span>get_span)<span class="question-mark">?</span>;
 
-        flat_graph_builder.add_statement(<span class="macro">parse_quote! </span>{
+        flat_graph_builder.add_statement(<span class="macro">parse_quote_spanned! </span>{get_span(target.span)=&gt;
             #input_pipeline -&gt; [#my_merge_index_lit] #name
         });
     }
@@ -1026,19 +1076,20 @@
             .next()
             .expect(<span class="string">&quot;Out of tee indices&quot;</span>);
 
-        <span class="kw">let </span>my_tee_index_lit = syn::LitInt::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, my_tee_index), Span::call_site());
-        <span class="kw">let </span>target_ident = syn::Ident::new(<span class="kw-2">&amp;</span>target.name, Span::call_site());
+        <span class="kw">let </span>my_tee_index_lit =
+            syn::LitInt::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, my_tee_index), get_span(target.span));
+        <span class="kw">let </span>target_ident = syn::Ident::new(<span class="kw-2">&amp;</span>target.name, get_span(target.span));
 
-        <span class="kw">let </span>output_pipeline: Pipeline = parse_pipeline(<span class="kw-2">&amp;</span>hf_code.code, <span class="kw-2">&amp;</span>literal, offset)<span class="question-mark">?</span>;
+        <span class="kw">let </span>output_pipeline: Pipeline = parse_pipeline(<span class="kw-2">&amp;</span>hf_code.code, <span class="kw-2">&amp;</span>get_span)<span class="question-mark">?</span>;
 
-        flat_graph_builder.add_statement(<span class="macro">parse_quote! </span>{
+        flat_graph_builder.add_statement(<span class="macro">parse_quote_spanned! </span>{get_span(target.span)=&gt;
             #target_ident [#my_tee_index_lit] -&gt; #output_pipeline
         });
     }
 
     <span class="kw">for </span>(target, send_hf, recv_hf) <span class="kw">in </span>asyncs {
         <span class="kw">let </span>async_send_pipeline = <span class="macro">format!</span>(<span class="string">&quot;{}_async_send&quot;</span>, target.name);
-        <span class="kw">let </span>async_send_pipeline = syn::Ident::new(<span class="kw-2">&amp;</span>async_send_pipeline, Span::call_site());
+        <span class="kw">let </span>async_send_pipeline = syn::Ident::new(<span class="kw-2">&amp;</span>async_send_pipeline, get_span(target.span));
 
         <span class="kw">let </span>recv_merge_index = merge_counter
             .entry(target.name.clone())
@@ -1047,17 +1098,17 @@
             .expect(<span class="string">&quot;Out of merge indices&quot;</span>);
 
         <span class="kw">let </span>recv_merge_index_lit =
-            syn::LitInt::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, recv_merge_index), Span::call_site());
-        <span class="kw">let </span>target_ident = syn::Ident::new(<span class="kw-2">&amp;</span>target.name, Span::call_site());
+            syn::LitInt::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, recv_merge_index), get_span(target.span));
+        <span class="kw">let </span>target_ident = syn::Ident::new(<span class="kw-2">&amp;</span>target.name, get_span(target.span));
 
-        <span class="kw">let </span>send_pipeline: Pipeline = parse_pipeline(<span class="kw-2">&amp;</span>send_hf.code, <span class="kw-2">&amp;</span>literal, offset)<span class="question-mark">?</span>;
-        <span class="kw">let </span>recv_pipeline: Pipeline = parse_pipeline(<span class="kw-2">&amp;</span>recv_hf.code, <span class="kw-2">&amp;</span>literal, offset)<span class="question-mark">?</span>;
+        <span class="kw">let </span>send_pipeline: Pipeline = parse_pipeline(<span class="kw-2">&amp;</span>send_hf.code, <span class="kw-2">&amp;</span>get_span)<span class="question-mark">?</span>;
+        <span class="kw">let </span>recv_pipeline: Pipeline = parse_pipeline(<span class="kw-2">&amp;</span>recv_hf.code, <span class="kw-2">&amp;</span>get_span)<span class="question-mark">?</span>;
 
-        flat_graph_builder.add_statement(<span class="macro">parse_quote! </span>{
+        flat_graph_builder.add_statement(<span class="macro">parse_quote_spanned! </span>{get_span(target.span)=&gt;
             #async_send_pipeline = merge() -&gt; unique::&lt;<span class="lifetime">&#39;tick</span>&gt;() -&gt; #send_pipeline
         });
 
-        flat_graph_builder.add_statement(<span class="macro">parse_quote! </span>{
+        flat_graph_builder.add_statement(<span class="macro">parse_quote_spanned! </span>{get_span(target.span)=&gt;
             #recv_pipeline -&gt; unique::&lt;<span class="lifetime">&#39;tick</span>&gt;() -&gt; [#recv_merge_index_lit] #target_ident
         });
     }
@@ -1072,6 +1123,7 @@
             <span class="kw-2">&amp;mut </span>merge_counter,
             <span class="kw-2">&amp;mut </span>next_join_idx,
             <span class="kw-2">&amp;mut </span>diagnostics,
+            <span class="kw-2">&amp;</span>get_span,
         );
     }
 
@@ -1090,15 +1142,12 @@
 
 <span class="kw">fn </span>handle_errors(
     errors: Vec&lt;ParseError&gt;,
-    literal: <span class="kw-2">&amp;</span>proc_macro2::Literal,
-    offset: usize,
+    get_span: <span class="kw-2">&amp;</span><span class="kw">impl </span>Fn((usize, usize)) -&gt; Span,
 ) -&gt; Vec&lt;Diagnostic&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>diagnostics = <span class="macro">vec!</span>[];
     <span class="kw">for </span>error <span class="kw">in </span>errors {
         <span class="kw">let </span>reason = error.reason;
-        <span class="kw">let </span>my_span = literal
-            .subspan(error.start + offset..error.end + offset)
-            .unwrap_or(literal.span());
+        <span class="kw">let </span>my_span = get_span((error.start, error.end));
         <span class="kw">match </span>reason {
             ParseErrorReason::UnexpectedToken(msg) =&gt; {
                 diagnostics.push(Diagnostic::spanned(
@@ -1122,7 +1171,7 @@
                         <span class="string">&quot;Failed to parse&quot;</span>,
                     ));
                 } <span class="kw">else </span>{
-                    diagnostics.extend(handle_errors(parse_errors, literal, offset));
+                    diagnostics.extend(handle_errors(parse_errors, get_span));
                 }
             }
         }
@@ -1131,7 +1180,7 @@
     diagnostics
 }
 
-<span class="kw">pub fn </span>hydroflow_graph_to_program(flat_graph: HydroflowGraph, root: TokenStream) -&gt; syn::Stmt {
+<span class="kw">pub fn </span>hydroflow_graph_to_program(flat_graph: HydroflowGraph, root: TokenStream) -&gt; TokenStream {
     <span class="kw">let </span>partitioned_graph =
         partition_graph(flat_graph).expect(<span class="string">&quot;Failed to partition (cycle detected).&quot;</span>);
 
@@ -1143,21 +1192,20 @@
         <span class="string">&quot;Operator diagnostic occured during codegen&quot;
     </span>);
 
-    <span class="macro">syn::parse_quote!</span>({
-        #code_tokens
-    })
+    code_tokens
 }
 
 <span class="kw">fn </span>generate_rule(
-    rule: <span class="kw-2">&amp;</span>Rule,
+    rule: <span class="kw-2">&amp;</span>Spanned&lt;Rule&gt;,
     flat_graph_builder: <span class="kw-2">&amp;mut </span>FlatGraphBuilder,
     tee_counter: <span class="kw-2">&amp;mut </span>HashMap&lt;String, Counter&gt;,
     merge_counter: <span class="kw-2">&amp;mut </span>HashMap&lt;String, Counter&gt;,
     next_join_idx: <span class="kw-2">&amp;mut </span>Counter,
     diagnostics: <span class="kw-2">&amp;mut </span>Vec&lt;Diagnostic&gt;,
+    get_span: <span class="kw-2">&amp;</span><span class="kw">impl </span>Fn((usize, usize)) -&gt; Span,
 ) {
     <span class="kw">let </span>target = <span class="kw-2">&amp;</span>rule.target.name;
-    <span class="kw">let </span>target_ident = syn::Ident::new(<span class="kw-2">&amp;</span>target.name, Span::call_site());
+    <span class="kw">let </span>target_ident = syn::Ident::new(<span class="kw-2">&amp;</span>target.name, get_span(target.span));
 
     <span class="kw">let </span>sources: Vec&lt;Atom&gt; = rule.sources.to_vec();
 
@@ -1211,8 +1259,8 @@
                         <span class="macro">assert!</span>(negated.is_none());
                         JoinPlan::MagicNatLt(
                             Box::new(acc),
-                            e.fields[<span class="number">0</span>].clone(),
-                            e.fields[<span class="number">1</span>].clone(),
+                            e.fields[<span class="number">0</span>].value.clone(),
+                            e.fields[<span class="number">1</span>].value.clone(),
                         )
                     }
                     o =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Unknown magic relation {}&quot;</span>, o),
@@ -1224,9 +1272,16 @@
         <span class="kw">_ </span>=&gt; acc,
     });
 
-    <span class="kw">let </span>out_expanded = expand_join_plan(<span class="kw-2">&amp;</span>plan, flat_graph_builder, tee_counter, next_join_idx);
+    <span class="kw">let </span>out_expanded = expand_join_plan(
+        <span class="kw-2">&amp;</span>plan,
+        flat_graph_builder,
+        tee_counter,
+        next_join_idx,
+        rule.span,
+        get_span,
+    );
 
-    <span class="kw">let </span>after_join = apply_aggregations(rule, <span class="kw-2">&amp;</span>out_expanded, diagnostics);
+    <span class="kw">let </span>after_join = apply_aggregations(rule, <span class="kw-2">&amp;</span>out_expanded, diagnostics, get_span);
 
     <span class="kw">let </span>my_merge_index = merge_counter
         .entry(target.name.clone())
@@ -1236,20 +1291,20 @@
 
     <span class="kw">let </span>my_merge_index_lit = syn::LitInt::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, my_merge_index), Span::call_site());
 
-    <span class="kw">let </span>after_join_and_send: Pipeline = <span class="kw">match </span>rule.rule_type {
+    <span class="kw">let </span>after_join_and_send: Pipeline = <span class="kw">match </span>rule.rule_type.value {
         RuleType::Sync(<span class="kw">_</span>) =&gt; {
             <span class="kw">if </span>rule.target.at_node.is_some() {
                 <span class="macro">panic!</span>(<span class="string">&quot;Rule must be async to send data to other nodes&quot;</span>)
             }
 
-            <span class="macro">parse_quote!</span>(#after_join -&gt; [#my_merge_index_lit] #target_ident)
+            <span class="macro">parse_quote_spanned!</span>(get_span(rule.rule_type.span)=&gt; #after_join -&gt; [#my_merge_index_lit] #target_ident)
         }
         RuleType::NextTick(<span class="kw">_</span>) =&gt; {
             <span class="kw">if </span>rule.target.at_node.is_some() {
                 <span class="macro">panic!</span>(<span class="string">&quot;Rule must be async to send data to other nodes&quot;</span>)
             }
 
-            <span class="macro">parse_quote!</span>(#after_join -&gt; next_tick() -&gt; [#my_merge_index_lit] #target_ident)
+            <span class="macro">parse_quote_spanned!</span>(get_span(rule.rule_type.span)=&gt; #after_join -&gt; next_tick() -&gt; [#my_merge_index_lit] #target_ident)
         }
         RuleType::Async(<span class="kw">_</span>) =&gt; {
             <span class="kw">if </span>rule.target.at_node.is_none() {
@@ -1261,9 +1316,9 @@
                 .fields
                 .iter()
                 .enumerate()
-                .map(|(i, <span class="kw">_</span>)| -&gt; syn::Expr {
+                .map(|(i, f)| -&gt; syn::Expr {
                     <span class="kw">let </span>syn_index = syn::Index::from(i);
-                    <span class="macro">parse_quote!</span>(v.#syn_index)
+                    <span class="macro">parse_quote_spanned!</span>(get_span(f.span)=&gt; v.#syn_index)
                 });
 
             <span class="kw">let </span>syn_target_index = syn::Index::from(rule.target.fields.len());
@@ -1275,10 +1330,10 @@
 
             <span class="kw">let </span>send_pipeline_ident = syn::Ident::new(
                 <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}_async_send&quot;</span>, <span class="kw-2">&amp;</span>rule.target.name.name),
-                Span::call_site(),
+                get_span(rule.target.name.span),
             );
 
-            <span class="macro">parse_quote!</span>(#after_join -&gt; map(|v: #v_type| (v.#syn_target_index, (#(#exprs_get_data, )<span class="kw-2">*</span>))) -&gt; #send_pipeline_ident)
+            <span class="macro">parse_quote_spanned!</span>(get_span(rule.rule_type.span)=&gt; #after_join -&gt; map(|v: #v_type| (v.#syn_target_index, (#(#exprs_get_data, )<span class="kw-2">*</span>))) -&gt; #send_pipeline_ident)
         }
     };
 
@@ -1307,20 +1362,18 @@
     field_use_cur: <span class="kw-2">&amp;mut </span>HashMap&lt;String, i32&gt;,
     out_expanded: <span class="kw-2">&amp;</span>IntermediateJoinNode,
     diagnostics: <span class="kw-2">&amp;mut </span>Vec&lt;Diagnostic&gt;,
+    get_span: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Fn((usize, usize)) -&gt; Span,
 ) -&gt; syn::Expr {
     <span class="kw">match </span>expr {
         ValueExpr::Ident(ident) =&gt; {
-            <span class="kw">if let </span><span class="prelude-val">Some</span>(col) = out_expanded
-                .variable_mapping
-                .get(<span class="kw-2">&amp;</span>syn::Ident::new(<span class="kw-2">&amp;</span>ident.name, Span::call_site()))
-            {
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(col) = out_expanded.variable_mapping.get(<span class="kw-2">&amp;</span>ident.name) {
                 <span class="kw">let </span>cur_count = field_use_cur
                     .entry(ident.name.clone())
                     .and_modify(|e| <span class="kw-2">*</span>e += <span class="number">1</span>)
                     .or_insert(<span class="number">1</span>);
 
                 <span class="kw">let </span>source_col_idx = syn::Index::from(<span class="kw-2">*</span>col);
-                <span class="kw">let </span>base = <span class="macro">parse_quote!</span>(row.#source_col_idx);
+                <span class="kw">let </span>base = <span class="macro">parse_quote_spanned!</span>(get_span(ident.span)=&gt; row.#source_col_idx);
 
                 <span class="kw">if </span><span class="kw-2">*</span>cur_count &lt; field_use_count[<span class="kw-2">&amp;</span>ident.name] &amp;&amp; field_use_count[<span class="kw-2">&amp;</span>ident.name] &gt; <span class="number">1 </span>{
                     <span class="macro">parse_quote!</span>(#base.clone())
@@ -1329,7 +1382,7 @@
                 }
             } <span class="kw">else </span>{
                 diagnostics.push(Diagnostic::spanned(
-                    Span::call_site(),
+                    get_span(ident.span),
                     Level::Error,
                     <span class="macro">format!</span>(<span class="string">&quot;Could not find column {} in RHS of rule&quot;</span>, <span class="kw-2">&amp;</span>ident.name),
                 ));
@@ -1338,16 +1391,44 @@
         }
         ValueExpr::Integer(i) =&gt; syn::Expr::Lit(syn::ExprLit {
             attrs: Vec::new(),
-            lit: syn::Lit::Int(syn::LitInt::new(<span class="kw-2">&amp;</span>i.to_string(), Span::call_site())),
+            lit: syn::Lit::Int(syn::LitInt::new(<span class="kw-2">&amp;</span>i.to_string(), get_span(i.span))),
         }),
         ValueExpr::Add(l, <span class="kw">_</span>, r) =&gt; {
-            <span class="kw">let </span>l = gen_value_expr(l, field_use_count, field_use_cur, out_expanded, diagnostics);
-            <span class="kw">let </span>r = gen_value_expr(r, field_use_count, field_use_cur, out_expanded, diagnostics);
+            <span class="kw">let </span>l = gen_value_expr(
+                l,
+                field_use_count,
+                field_use_cur,
+                out_expanded,
+                diagnostics,
+                get_span,
+            );
+            <span class="kw">let </span>r = gen_value_expr(
+                r,
+                field_use_count,
+                field_use_cur,
+                out_expanded,
+                diagnostics,
+                get_span,
+            );
             <span class="macro">parse_quote!</span>(#l + #r)
         }
         ValueExpr::Sub(l, <span class="kw">_</span>, r) =&gt; {
-            <span class="kw">let </span>l = gen_value_expr(l, field_use_count, field_use_cur, out_expanded, diagnostics);
-            <span class="kw">let </span>r = gen_value_expr(r, field_use_count, field_use_cur, out_expanded, diagnostics);
+            <span class="kw">let </span>l = gen_value_expr(
+                l,
+                field_use_count,
+                field_use_cur,
+                out_expanded,
+                diagnostics,
+                get_span,
+            );
+            <span class="kw">let </span>r = gen_value_expr(
+                r,
+                field_use_count,
+                field_use_cur,
+                out_expanded,
+                diagnostics,
+                get_span,
+            );
             <span class="macro">parse_quote!</span>(#l - #r)
         }
     }
@@ -1359,6 +1440,7 @@
     field_use_cur: <span class="kw-2">&amp;mut </span>HashMap&lt;String, i32&gt;,
     out_expanded: <span class="kw-2">&amp;</span>IntermediateJoinNode,
     diagnostics: <span class="kw-2">&amp;mut </span>Vec&lt;Diagnostic&gt;,
+    get_span: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Fn((usize, usize)) -&gt; Span,
 ) -&gt; syn::Expr {
     <span class="kw">match </span>expr {
         TargetExpr::Expr(expr) =&gt; gen_value_expr(
@@ -1367,6 +1449,7 @@
             field_use_cur,
             out_expanded,
             diagnostics,
+            get_span,
         ),
         TargetExpr::Aggregation(Aggregation { ident, .. }) =&gt; gen_value_expr(
             <span class="kw-2">&amp;</span>ValueExpr::Ident(ident.clone()),
@@ -1374,6 +1457,7 @@
             field_use_cur,
             out_expanded,
             diagnostics,
+            get_span,
         ),
     }
 }
@@ -1382,6 +1466,7 @@
     rule: <span class="kw-2">&amp;</span>Rule,
     out_expanded: <span class="kw-2">&amp;</span>IntermediateJoinNode,
     diagnostics: <span class="kw-2">&amp;mut </span>Vec&lt;Diagnostic&gt;,
+    get_span: <span class="kw-2">&amp;</span><span class="kw">impl </span>Fn((usize, usize)) -&gt; Span,
 ) -&gt; Pipeline {
     <span class="kw">let </span><span class="kw-2">mut </span>aggregations = <span class="macro">vec!</span>[];
     <span class="kw">let </span><span class="kw-2">mut </span>group_by_exprs = <span class="macro">vec!</span>[];
@@ -1415,9 +1500,10 @@
             <span class="kw-2">&amp;mut </span>field_use_cur,
             out_expanded,
             diagnostics,
+            get_span,
         );
 
-        <span class="kw">match </span>field {
+        <span class="kw">match </span>field.value {
             TargetExpr::Expr(<span class="kw">_</span>) =&gt; {
                 group_by_exprs.push(expr);
             }
@@ -1452,7 +1538,7 @@
                 <span class="kw">let </span>old_at_index: syn::Expr = <span class="macro">parse_quote!</span>(old.#idx);
                 <span class="kw">let </span>val_at_index: syn::Expr = <span class="macro">parse_quote!</span>(val.#idx);
 
-                <span class="kw">let </span>agg_expr: syn::Expr = <span class="kw">match </span>agg {
+                <span class="kw">let </span>agg_expr: syn::Expr = <span class="kw">match </span><span class="kw-2">&amp;</span>agg.value {
                     TargetExpr::Aggregation(Aggregation { tpe, .. }) =&gt; <span class="kw">match </span>tpe {
                         AggregationType::Min(<span class="kw">_</span>) =&gt; {
                             <span class="macro">parse_quote!</span>(std::cmp::min(prev, #val_at_index))
@@ -1473,7 +1559,7 @@
                     <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(),
                 };
 
-                <span class="kw">let </span>agg_initial: syn::Expr = <span class="kw">match </span>agg {
+                <span class="kw">let </span>agg_initial: syn::Expr = <span class="kw">match </span><span class="kw-2">&amp;</span>agg.value {
                     TargetExpr::Aggregation(Aggregation { tpe, .. }) =&gt; <span class="kw">match </span>tpe {
                         AggregationType::Min(<span class="kw">_</span>)
                         | AggregationType::Max(<span class="kw">_</span>)
@@ -1488,7 +1574,7 @@
                     <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(),
                 };
 
-                <span class="macro">parse_quote! </span>{
+                <span class="macro">parse_quote_spanned! </span>{get_span(agg.span) =&gt;
                     #old_at_index = <span class="kw">if let </span><span class="prelude-val">Some</span>(prev) = #old_at_index.take() {
                         <span class="prelude-val">Some</span>(#agg_expr)
                     } <span class="kw">else </span>{
@@ -1511,15 +1597,16 @@
             .iter()
             .chain(rule.target.at_node.iter().map(|n| <span class="kw-2">&amp;</span>n.node))
         {
-            <span class="kw">match </span>field {
+            <span class="kw">match </span>field.value {
                 TargetExpr::Expr(<span class="kw">_</span>) =&gt; {
                     <span class="kw">let </span>idx = syn::Index::from(group_key_idx);
-                    after_group_lookups.push(<span class="macro">parse_quote!</span>(g.#idx));
+                    after_group_lookups.push(<span class="macro">parse_quote_spanned!</span>(get_span(field.span)=&gt; g.#idx));
                     group_key_idx += <span class="number">1</span>;
                 }
                 TargetExpr::Aggregation(<span class="kw">_</span>) =&gt; {
                     <span class="kw">let </span>idx = syn::Index::from(agg_idx);
-                    after_group_lookups.push(<span class="macro">parse_quote!</span>(a.#idx.unwrap()));
+                    after_group_lookups
+                        .push(<span class="macro">parse_quote_spanned!</span>(get_span(field.span)=&gt; a.#idx.unwrap()));
                     agg_idx += <span class="number">1</span>;
                 }
             }
@@ -1550,7 +1637,8 @@
                 <span class="macro">insta::assert_display_snapshot!</span>(flat_graph_ref.surface_syntax_string());
             });
 
-            <span class="kw">let </span>out = <span class="kw-2">&amp;</span>hydroflow_graph_to_program(flat_graph, <span class="macro">quote::quote! </span>{ hydroflow });
+            <span class="kw">let </span>tokens = hydroflow_graph_to_program(flat_graph, <span class="macro">quote::quote! </span>{ hydroflow });
+            <span class="kw">let </span>out: syn::Stmt = <span class="macro">syn::parse_quote!</span>(#tokens);
             <span class="kw">let </span>wrapped: syn::File = <span class="macro">parse_quote! </span>{
                 <span class="kw">fn </span>main() {
                     #out

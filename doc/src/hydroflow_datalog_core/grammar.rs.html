@@ -227,6 +227,13 @@
 <a href="#227" id="227">227</a>
 <a href="#228" id="228">228</a>
 <a href="#229" id="229">229</a>
+<a href="#230" id="230">230</a>
+<a href="#231" id="231">231</a>
+<a href="#232" id="232">232</a>
+<a href="#233" id="233">233</a>
+<a href="#234" id="234">234</a>
+<a href="#235" id="235">235</a>
+<a href="#236" id="236">236</a>
 </pre><pre class="rust"><code><span class="attr">#[rust_sitter::grammar(<span class="string">&quot;datalog&quot;</span>)]
 #[allow(dead_code)]
 </span><span class="kw">pub mod </span>datalog {
@@ -240,21 +247,25 @@
 
     <span class="attr">#[derive(Debug, Clone)]
     </span><span class="kw">pub enum </span>Declaration {
-        Input(<span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;.input&quot;</span>)] </span>(), Ident, RustSnippet),
+        Input(
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;.input&quot;</span>)] </span>(),
+            Spanned&lt;Ident&gt;,
+            RustSnippet,
+        ),
         Output(
             <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;.output&quot;</span>)] </span>(),
-            Ident,
+            Spanned&lt;Ident&gt;,
             RustSnippet,
         ),
         Async(
             <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;.async&quot;</span>)] </span>(),
-            Ident,
+            Spanned&lt;Ident&gt;,
             <span class="doccomment">/// A pipeline for data to be sent to another node, which must consume `(NodeID, Data)` pairs.
             </span>RustSnippet,
             <span class="doccomment">/// A pipeline for data received from another node, which must produce `Data` values.
             </span>RustSnippet,
         ),
-        Rule(Rule),
+        Rule(Spanned&lt;Rule&gt;),
     }
 
     <span class="attr">#[derive(Debug, Clone)]
@@ -271,7 +282,7 @@
     </span><span class="kw">pub struct </span>Rule {
         <span class="kw">pub </span>target: TargetRelationExpr,
 
-        <span class="kw">pub </span>rule_type: RuleType,
+        <span class="kw">pub </span>rule_type: Spanned&lt;RuleType&gt;,
 
         <span class="attr">#[rust_sitter::repeat(non_empty = <span class="bool-val">true</span>)]
         #[rust_sitter::delimited(
@@ -295,14 +306,14 @@
     </span><span class="kw">pub enum </span>Atom {
         Relation(
             <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;!&quot;</span>)] </span><span class="prelude-ty">Option</span>&lt;()&gt;,
-            InputRelationExpr,
+            Spanned&lt;InputRelationExpr&gt;,
         ),
-        Predicate(PredicateExpr),
+        Predicate(Spanned&lt;PredicateExpr&gt;),
     }
 
     <span class="attr">#[derive(Debug, Clone)]
     </span><span class="kw">pub struct </span>InputRelationExpr {
-        <span class="kw">pub </span>name: Ident,
+        <span class="kw">pub </span>name: Spanned&lt;Ident&gt;,
 
         <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;(&quot;</span>)]
         </span>_l_paren: (),
@@ -311,7 +322,7 @@
             <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;,&quot;</span>)]
             </span>()
         )]
-        <span class="kw">pub </span>fields: Vec&lt;Ident&gt;,
+        <span class="kw">pub </span>fields: Vec&lt;Spanned&lt;Ident&gt;&gt;,
 
         <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;)&quot;</span>)]
         </span>_r_paren: (),
@@ -319,7 +330,7 @@
 
     <span class="attr">#[derive(Debug, Clone)]
     </span><span class="kw">pub struct </span>TargetRelationExpr {
-        <span class="kw">pub </span>name: Ident,
+        <span class="kw">pub </span>name: Spanned&lt;Ident&gt;,
 
         <span class="kw">pub </span>at_node: <span class="prelude-ty">Option</span>&lt;AtNode&gt;,
 
@@ -330,7 +341,7 @@
             <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;,&quot;</span>)]
             </span>()
         )]
-        <span class="kw">pub </span>fields: Vec&lt;TargetExpr&gt;,
+        <span class="kw">pub </span>fields: Vec&lt;Spanned&lt;TargetExpr&gt;&gt;,
 
         <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;)&quot;</span>)]
         </span>_r_paren: (),
@@ -342,7 +353,7 @@
         <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;@&quot;</span>)]
         </span>_at: (),
 
-        <span class="kw">pub </span>node: TargetExpr,
+        <span class="kw">pub </span>node: Spanned&lt;TargetExpr&gt;,
     }
 
     <span class="attr">#[derive(Debug, Clone)]
@@ -365,7 +376,7 @@
         <span class="kw">pub </span>tpe: AggregationType,
         <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;(&quot;</span>)]
         </span>_lparen: (),
-        <span class="kw">pub </span>ident: Ident,
+        <span class="kw">pub </span>ident: Spanned&lt;Ident&gt;,
         <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;)&quot;</span>)]
         </span>_rparen: (),
     }
@@ -411,9 +422,9 @@
         <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;(&quot;</span>)]
         </span>_l_brace: (),
 
-        <span class="kw">pub </span>left: Ident,
+        <span class="kw">pub </span>left: Spanned&lt;Ident&gt;,
         <span class="kw">pub </span>op: BoolOp,
-        <span class="kw">pub </span>right: Ident,
+        <span class="kw">pub </span>right: Spanned&lt;Ident&gt;,
 
         <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;)&quot;</span>)]
         </span>_r_brace: (),
@@ -421,8 +432,11 @@
 
     <span class="attr">#[derive(Debug, Clone)]
     </span><span class="kw">pub enum </span>ValueExpr {
-        Ident(Ident),
-        Integer(<span class="attr">#[rust_sitter::leaf(pattern = <span class="string">r&quot;[0-9]+&quot;</span>, transform = |s| s.parse().unwrap())] </span>i64),
+        Ident(Spanned&lt;Ident&gt;),
+        Integer(
+            <span class="attr">#[rust_sitter::leaf(pattern = <span class="string">r&quot;[0-9]+&quot;</span>, transform = |s| s.parse().unwrap())]
+            </span>Spanned&lt;i64&gt;,
+        ),
         <span class="attr">#[rust_sitter::prec_left(<span class="number">1</span>)]
         </span>Add(
             Box&lt;ValueExpr&gt;,

@@ -58,7 +58,7 @@
     <span class="kw">match </span>gen_hydroflow_graph(literal) {
         <span class="prelude-val">Ok</span>(graph) =&gt; {
             <span class="kw">let </span>program = hydroflow_graph_to_program(graph, root);
-            proc_macro::TokenStream::from(program.to_token_stream())
+            program.to_token_stream().into()
         }
         <span class="prelude-val">Err</span>(diagnostics) =&gt; {
             <span class="kw">for </span>diagnostic <span class="kw">in </span>diagnostics {

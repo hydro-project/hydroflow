@@ -1092,6 +1092,16 @@
 <a href="#1092" id="1092">1092</a>
 <a href="#1093" id="1093">1093</a>
 <a href="#1094" id="1094">1094</a>
+<a href="#1095" id="1095">1095</a>
+<a href="#1096" id="1096">1096</a>
+<a href="#1097" id="1097">1097</a>
+<a href="#1098" id="1098">1098</a>
+<a href="#1099" id="1099">1099</a>
+<a href="#1100" id="1100">1100</a>
+<a href="#1101" id="1101">1101</a>
+<a href="#1102" id="1102">1102</a>
+<a href="#1103" id="1103">1103</a>
+<a href="#1104" id="1104">1104</a>
 </pre><pre class="rust"><code><span class="attr">#![deny(missing_docs)]
 
 </span><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet, HashSet};
@@ -1644,10 +1654,20 @@
 
         <span class="kw">let </span>subgraph_handoffs = <span class="self">self</span>.helper_collect_subgraph_handoffs();
 
-        <span class="kw">let </span>subgraphs = <span class="self">self
+        <span class="comment">// we first generate the subgraphs that have no inputs to guide type inference
+        </span><span class="kw">let </span>(subgraphs_without_preds, subgraphs_with_preds) = <span class="self">self
             </span>.subgraph_nodes
             .iter()
-            .map(|(subgraph_id, subgraph_nodes)| {
+            .partition::&lt;Vec&lt;<span class="kw">_</span>&gt;, <span class="kw">_</span>&gt;(|(<span class="kw">_</span>, nodes)| {
+                nodes
+                    .iter()
+                    .any(|<span class="kw-2">&amp;</span>node_id| <span class="self">self</span>.node_degree_in(node_id) == <span class="number">0</span>)
+            });
+
+        <span class="kw">let </span>subgraphs = subgraphs_without_preds
+            .iter()
+            .chain(subgraphs_with_preds.iter())
+            .map(|<span class="kw-2">&amp;</span>(subgraph_id, subgraph_nodes)| {
                 <span class="kw">let </span>(recv_hoffs, send_hoffs) = <span class="kw-2">&amp;</span>subgraph_handoffs[subgraph_id];
                 <span class="kw">let </span>recv_ports: Vec&lt;Ident&gt; = recv_hoffs
                     .iter()

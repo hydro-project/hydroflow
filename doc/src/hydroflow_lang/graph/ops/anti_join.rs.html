@@ -85,6 +85,27 @@
 <a href="#85" id="85">85</a>
 <a href="#86" id="86">86</a>
 <a href="#87" id="87">87</a>
+<a href="#88" id="88">88</a>
+<a href="#89" id="89">89</a>
+<a href="#90" id="90">90</a>
+<a href="#91" id="91">91</a>
+<a href="#92" id="92">92</a>
+<a href="#93" id="93">93</a>
+<a href="#94" id="94">94</a>
+<a href="#95" id="95">95</a>
+<a href="#96" id="96">96</a>
+<a href="#97" id="97">97</a>
+<a href="#98" id="98">98</a>
+<a href="#99" id="99">99</a>
+<a href="#100" id="100">100</a>
+<a href="#101" id="101">101</a>
+<a href="#102" id="102">102</a>
+<a href="#103" id="103">103</a>
+<a href="#104" id="104">104</a>
+<a href="#105" id="105">105</a>
+<a href="#106" id="106">106</a>
+<a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
 </pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::graph::PortIndexValue;
 
 <span class="kw">use super</span>::{FlowProperties, FlowPropertyVal};
@@ -152,17 +173,38 @@
         };
         <span class="kw">let </span>write_iterator = {
             <span class="kw">let </span>borrow_ident = wc.make_ident(<span class="string">&quot;borrow&quot;</span>);
-            <span class="kw">let </span>negset_ident = wc.make_ident(<span class="string">&quot;negset&quot;</span>);
 
             <span class="kw">let </span>input_neg = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>]; <span class="comment">// N before P
             </span><span class="kw">let </span>input_pos = <span class="kw-2">&amp;</span>inputs[<span class="number">1</span>];
             <span class="macro">quote_spanned! </span>{op_span=&gt;
                 <span class="kw">let </span><span class="kw-2">mut </span>#borrow_ident = #context.state_ref(#handle_ident).borrow_mut();
-                <span class="kw">let </span>#negset_ident = #borrow_ident
-                    .try_insert_with((#context.current_tick(), #context.current_stratum()), || {
-                        #input_neg.collect()
-                    });
-                <span class="kw">let </span>#ident = #input_pos.filter(<span class="kw">move </span>|x| !#negset_ident.contains(<span class="kw-2">&amp;</span>x.<span class="number">0</span>));
+                <span class="kw">let </span>#ident = {
+                    <span class="doccomment">/// Limit error propagation by bounding locally, erasing output iterator type.
+                    </span><span class="attr">#[inline(always)]
+                    </span><span class="kw">fn </span>check_inputs&lt;<span class="lifetime">&#39;a</span>, K, I1, V, I2&gt;(
+                        input_pos: I1,
+                        input_neg: I2,
+                        borrow_state: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>std::collections::HashSet&lt;K&gt;,
+                    ) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;a </span>+ Iterator&lt;Item = (K, V)&gt;
+                    <span class="kw">where
+                        </span>K: Eq + std::hash::Hash + Clone,
+                        V: Eq + Clone,
+                        I1: <span class="lifetime">&#39;a </span>+ Iterator&lt;Item = (K, V)&gt;,
+                        I2: <span class="lifetime">&#39;a </span>+ Iterator&lt;Item = K&gt;,
+                    {
+                        borrow_state.extend(input_neg);
+                        input_pos.filter(<span class="kw">move </span>|x| !borrow_state.contains(<span class="kw-2">&amp;</span>x.<span class="number">0</span>))
+                    }
+
+                    check_inputs(
+                        #input_pos,
+                        #input_neg,
+                        #borrow_ident.try_insert_with(
+                            (#context.current_tick(), #context.current_stratum()),
+                            Default::default
+                        )
+                    )
+                };
             }
         };
         <span class="prelude-val">Ok</span>(OperatorWriteOutput {
