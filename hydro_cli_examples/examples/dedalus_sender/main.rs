@@ -28,8 +28,8 @@ async fn main() {
 
     let df = datalog!(
         r#"
-        .input repeated `repeat_iter(&to_repeat) -> map(|v| v.clone())`
-        .input periodic `source_stream(periodic) -> map(|_| () )`
+        .input repeated `repeat_iter(to_repeat.iter().cloned())`
+        .input periodic `source_stream(periodic) -> map(|_| ())`
         .input peers `repeat_iter(peers.clone()) -> map(|p| (p,))`
         .async broadcast `map(|(node_id, v)| (node_id, serialize_to_bytes(v))) -> dest_sink(broadcast_sink)` `null::<(String,)>()`
 
