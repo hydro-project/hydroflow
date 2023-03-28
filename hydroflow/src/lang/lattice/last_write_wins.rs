@@ -1,15 +1,15 @@
-use std::cmp::Ordering;
+use std::{cmp::Ordering, marker::PhantomData};
 
 use super::Convert;
 use crate::lang::lattice::{Compare, Lattice, LatticeRepr, Merge};
 
 pub struct LastWriteWins<M: Ord, T> {
-    _phantom: std::marker::PhantomData<(M, T)>,
+    _phantom: PhantomData<(M, T)>,
 }
 impl<M: Ord, T> Lattice for LastWriteWins<M, T> {}
 
 pub struct LastWriteWinsRepr<M: Ord, T> {
-    _phantom: std::marker::PhantomData<(M, T)>,
+    _phantom: PhantomData<(M, T)>,
 }
 impl<M: Ord + Clone, T: Clone> LatticeRepr for LastWriteWinsRepr<M, T> {
     type Lattice = LastWriteWins<M, T>;
@@ -74,26 +74,26 @@ mod tests {
     use super::LastWriteWinsRepr;
     use crate::lang::lattice::Merge;
 
-    type LWW = LastWriteWinsRepr<usize, usize>;
+    type Lww = LastWriteWinsRepr<usize, usize>;
 
     #[test]
     fn lattice_moves_forward() {
         let mut x = (0, 0);
-        assert_eq!(<LWW as Merge<LWW>>::merge(&mut x, (1, 2)), true);
+        assert!(<Lww as Merge<Lww>>::merge(&mut x, (1, 2)));
         assert_eq!(x, (1, 2));
     }
 
     #[test]
     fn lattice_doesnt_move_backward() {
         let mut x = (1, 2);
-        assert_eq!(<LWW as Merge<LWW>>::merge(&mut x, (0, 0)), false);
+        assert!(<Lww as Merge<Lww>>::merge(&mut x, (0, 0)));
         assert_eq!(x, (1, 2));
     }
 
     #[test]
     fn equal_marker_does_nothing() {
         let mut x = (0, 0);
-        assert_eq!(<LWW as Merge<LWW>>::merge(&mut x, (0, 1)), false);
+        assert!(<Lww as Merge<Lww>>::merge(&mut x, (0, 1)));
         assert_eq!(x, (0, 0));
     }
 }
