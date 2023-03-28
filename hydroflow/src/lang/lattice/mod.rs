@@ -1,5 +1,6 @@
 pub mod bottom;
 pub mod dom_pair;
+pub mod last_write_wins;
 pub mod map_union;
 pub mod ord;
 pub mod pair;
