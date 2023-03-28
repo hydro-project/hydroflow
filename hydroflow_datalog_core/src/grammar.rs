@@ -11,21 +11,25 @@ pub mod datalog {
 
     #[derive(Debug, Clone)]
     pub enum Declaration {
-        Input(#[rust_sitter::leaf(text = ".input")] (), Ident, RustSnippet),
+        Input(
+            #[rust_sitter::leaf(text = ".input")] (),
+            Spanned<Ident>,
+            RustSnippet,
+        ),
         Output(
             #[rust_sitter::leaf(text = ".output")] (),
-            Ident,
+            Spanned<Ident>,
             RustSnippet,
         ),
         Async(
             #[rust_sitter::leaf(text = ".async")] (),
-            Ident,
+            Spanned<Ident>,
             /// A pipeline for data to be sent to another node, which must consume `(NodeID, Data)` pairs.
             RustSnippet,
             /// A pipeline for data received from another node, which must produce `Data` values.
             RustSnippet,
         ),
-        Rule(Rule),
+        Rule(Spanned<Rule>),
     }
 
     #[derive(Debug, Clone)]
@@ -42,7 +46,7 @@ pub mod datalog {
     pub struct Rule {
         pub target: TargetRelationExpr,
 
-        pub rule_type: RuleType,
+        pub rule_type: Spanned<RuleType>,
 
         #[rust_sitter::repeat(non_empty = true)]
         #[rust_sitter::delimited(
@@ -66,14 +70,14 @@ pub mod datalog {
     pub enum Atom {
         Relation(
             #[rust_sitter::leaf(text = "!")] Option<()>,
-            InputRelationExpr,
+            Spanned<InputRelationExpr>,
         ),
-        Predicate(PredicateExpr),
+        Predicate(Spanned<PredicateExpr>),
     }
 
     #[derive(Debug, Clone)]
     pub struct InputRelationExpr {
-        pub name: Ident,
+        pub name: Spanned<Ident>,
 
         #[rust_sitter::leaf(text = "(")]
         _l_paren: (),
@@ -82,7 +86,7 @@ pub mod datalog {
             #[rust_sitter::leaf(text = ",")]
             ()
         )]
-        pub fields: Vec<Ident>,
+        pub fields: Vec<Spanned<Ident>>,
 
         #[rust_sitter::leaf(text = ")")]
         _r_paren: (),
@@ -90,7 +94,7 @@ pub mod datalog {
 
     #[derive(Debug, Clone)]
     pub struct TargetRelationExpr {
-        pub name: Ident,
+        pub name: Spanned<Ident>,
 
         pub at_node: Option<AtNode>,
 
@@ -101,7 +105,7 @@ pub mod datalog {
             #[rust_sitter::leaf(text = ",")]
             ()
         )]
-        pub fields: Vec<TargetExpr>,
+        pub fields: Vec<Spanned<TargetExpr>>,
 
         #[rust_sitter::leaf(text = ")")]
         _r_paren: (),
@@ -113,7 +117,7 @@ pub mod datalog {
         #[rust_sitter::leaf(text = "@")]
         _at: (),
 
-        pub node: TargetExpr,
+        pub node: Spanned<TargetExpr>,
     }
 
     #[derive(Debug, Clone)]
@@ -136,7 +140,7 @@ pub mod datalog {
         pub tpe: AggregationType,
         #[rust_sitter::leaf(text = "(")]
         _lparen: (),
-        pub ident: Ident,
+        pub ident: Spanned<Ident>,
         #[rust_sitter::leaf(text = ")")]
         _rparen: (),
     }
@@ -182,9 +186,9 @@ pub mod datalog {
         #[rust_sitter::leaf(text = "(")]
         _l_brace: (),
 
-        pub left: Ident,
+        pub left: Spanned<Ident>,
         pub op: BoolOp,
-        pub right: Ident,
+        pub right: Spanned<Ident>,
 
         #[rust_sitter::leaf(text = ")")]
         _r_brace: (),
@@ -192,8 +196,11 @@ pub mod datalog {
 
     #[derive(Debug, Clone)]
     pub enum ValueExpr {
-        Ident(Ident),
-        Integer(#[rust_sitter::leaf(pattern = r"[0-9]+", transform = |s| s.parse().unwrap())] i64),
+        Ident(Spanned<Ident>),
+        Integer(
+            #[rust_sitter::leaf(pattern = r"[0-9]+", transform = |s| s.parse().unwrap())]
+            Spanned<i64>,
+        ),
         #[rust_sitter::prec_left(1)]
         Add(
             Box<ValueExpr>,

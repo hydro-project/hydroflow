@@ -44,7 +44,7 @@ async fn main() {
         .output clientOut `for_each(|(i,msg):(u32,String,)| println!("committed {:?}: {:?}", i, msg))`
 
         # EDBs
-        .input startIndex `repeat_iter([(1 as u32,),])`
+        .input startIndex `repeat_iter([(1u32,),])`
         .input participants `repeat_iter(peers.clone()) -> map(|p| (p,))`
         .input success `repeat_iter([(true,),])`
         .input reject `repeat_iter([(false,),])`

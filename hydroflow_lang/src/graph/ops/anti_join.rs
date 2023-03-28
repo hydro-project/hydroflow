@@ -65,17 +65,38 @@ pub const ANTI_JOIN: OperatorConstraints = OperatorConstraints {
         };
         let write_iterator = {
             let borrow_ident = wc.make_ident("borrow");
-            let negset_ident = wc.make_ident("negset");
 
             let input_neg = &inputs[0]; // N before P
             let input_pos = &inputs[1];
             quote_spanned! {op_span=>
                 let mut #borrow_ident = #context.state_ref(#handle_ident).borrow_mut();
-                let #negset_ident = #borrow_ident
-                    .try_insert_with((#context.current_tick(), #context.current_stratum()), || {
-                        #input_neg.collect()
-                    });
-                let #ident = #input_pos.filter(move |x| !#negset_ident.contains(&x.0));
+                let #ident = {
+                    /// Limit error propagation by bounding locally, erasing output iterator type.
+                    #[inline(always)]
+                    fn check_inputs<'a, K, I1, V, I2>(
+                        input_pos: I1,
+                        input_neg: I2,
+                        borrow_state: &'a mut std::collections::HashSet<K>,
+                    ) -> impl 'a + Iterator<Item = (K, V)>
+                    where
+                        K: Eq + std::hash::Hash + Clone,
+                        V: Eq + Clone,
+                        I1: 'a + Iterator<Item = (K, V)>,
+                        I2: 'a + Iterator<Item = K>,
+                    {
+                        borrow_state.extend(input_neg);
+                        input_pos.filter(move |x| !borrow_state.contains(&x.0))
+                    }
+
+                    check_inputs(
+                        #input_pos,
+                        #input_neg,
+                        #borrow_ident.try_insert_with(
+                            (#context.current_tick(), #context.current_stratum()),
+                            Default::default
+                        )
+                    )
+                };
             }
         };
         Ok(OperatorWriteOutput {
