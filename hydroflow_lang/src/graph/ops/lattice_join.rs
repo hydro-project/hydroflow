@@ -7,8 +7,6 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 use quote::{quote_spanned, ToTokens};
 use syn::parse_quote;
 
-// lattice_join::<'static, 'tick, MaxRepr<usize>, MaxRepr<usize>>();
-
 /// > 2 input streams of type <(K, V1)> and <(K, V2)>, 1 output stream of type <(K, (V1, V2))>
 ///
 /// Performs a group-by with lattice-merge aggregate function on LHS and RHS inputs and then forms the
@@ -18,7 +16,7 @@ use syn::parse_quote;
 ///
 /// ```hydroflow
 /// // should print `(key, (2, 1))`
-/// my_join = lattice_join::<MaxRepr<usize>, MaxRepr<usize>>();
+/// my_join = lattice_join::<hydroflow::lang::lattice::ord::MaxRepr<usize>, hydroflow::lang::lattice::ord::MaxRepr<usize>>();
 /// source_iter(vec![("key", 0), ("key", 2)]) -> [0]my_join;
 /// source_iter(vec![("key", 1)]) -> [1]my_join;
 /// my_join -> for_each(|(k, (v1, v2))| println!("({}, ({}, {}))", k, v1, v2));
@@ -51,18 +49,23 @@ use syn::parse_quote;
 /// ### Examples
 ///
 /// ```rustbook
-/// let (input_send, input_recv) = hydroflow::util::unbounded_channel::<(&str, usize)>();
-/// let (out_tx, mut out_rx) = hydroflow::util::unbounded_channel::<(usize, (usize, usize))>();
+/// async fn test_lattice_join() {
+///     use hydroflow::lang::lattice::ord::MaxRepr;
 ///
-/// let mut df = hydroflow::hydroflow_syntax! {
-///     my_join = lattice_join::<'tick, MaxRepr<usize>, MaxRepr<usize>>();
-///     source_iter([("hello", 0)]) -> [0]my_join;
-///     source_stream(input_recv) -> [1]my_join;
-///     my_join -> for_each(|v| out_tx.send(v).unwrap());
-/// };
-/// input_send.send(("hello", 0)).unwrap();
-/// df.run_tick();
-/// assert_eq!(out_rx.recv().unwrap(), ("hello", (0, 0)));
+///     let (input_send, input_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+///     let (out_tx, mut out_rx) = hydroflow::util::unbounded_channel::<(usize, (usize, usize))>();
+///
+///     let mut df = hydroflow::hydroflow_syntax! {
+///         my_join = lattice_join::<'tick, MaxRepr<usize>, MaxRepr<usize>>();
+///         source_iter([(7, 2), (7, 1)]) -> [0]my_join;
+///         source_stream(input_recv) -> [1]my_join;
+///         my_join -> for_each(|v| out_tx.send(v).unwrap());
+///     };
+///     input_send.send((7, 5)).unwrap();
+///     df.run_tick();
+///     let out: Vec<_> = hydroflow::util::collect_ready(&mut out_rx);
+///     assert_eq!(out, vec![(7, (2, 5))]);
+/// }
 /// ```
 #[hydroflow_internalmacro::operator_docgen]
 pub const LATTICE_JOIN: OperatorConstraints = OperatorConstraints {

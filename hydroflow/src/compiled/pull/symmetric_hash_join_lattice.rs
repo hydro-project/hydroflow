@@ -32,13 +32,13 @@ where
 
         match entry {
             Entry::Occupied(mut e) => {
-                return <LR as Merge<LRD>>::merge(e.get_mut(), <LR as Convert<LRD>>::convert(v));
+                <LR as Merge<LRD>>::merge(e.get_mut(), <LR as Convert<LRD>>::convert(v))
             }
             Entry::Vacant(e) => {
                 e.insert(v);
-                return true;
+                true
             }
-        };
+        }
     }
 }
 
