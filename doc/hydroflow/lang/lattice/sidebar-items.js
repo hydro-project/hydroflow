@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["bottom","dom_pair","map_union","ord","pair","set_union","top"],"trait":["Compare","Convert","Debottom","Lattice","LatticeRepr","Merge","Top"]};
+window.SIDEBAR_ITEMS = {"mod":["bottom","dom_pair","last_write_wins","map_union","ord","pair","set_union","top"],"trait":["Compare","Convert","Debottom","Lattice","LatticeRepr","Merge","Top"]};
