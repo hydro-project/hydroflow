@@ -27,6 +27,7 @@ impl Deployment {
         }
 
         let result = Arc::new(resource_batch.provision(&mut self.resource_pool).await?);
+        println!("[hydro] provisioned resources");
 
         let services_future =
             self.services
@@ -36,6 +37,7 @@ impl Deployment {
                 });
 
         futures::future::join_all(services_future).await;
+        println!("[hydro] deployed services");
 
         let all_services_ready =
             self.services
@@ -46,6 +48,7 @@ impl Deployment {
                 });
 
         futures::future::try_join_all(all_services_ready).await?;
+        println!("[hydro] services ready");
 
         Ok(())
     }
