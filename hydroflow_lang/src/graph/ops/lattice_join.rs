@@ -170,24 +170,24 @@ pub const LATTICE_JOIN: OperatorConstraints = OperatorConstraints {
             let #ident = {
                 /// Limit error propagation by bounding locally, erasing output iterator type.
                 #[inline(always)]
-                fn check_inputs<'a, Key, I1, V1, V1D, I2, V2, V2D>(
+                fn check_inputs<'a, Key, I1, LHS, LHSDelta, I2, RHS, RHSDelta>(
                     lhs: I1,
                     rhs: I2,
-                    lhs_state: &'a mut #root::compiled::pull::HalfJoinStateLattice<Key, V1, V1D>,
-                    rhs_state: &'a mut #root::compiled::pull::HalfJoinStateLattice<Key, V2, V2D>,
-                ) -> impl 'a + Iterator<Item = (Key, (V1::Repr, V2::Repr))>
+                    lhs_state: &'a mut #root::compiled::pull::HalfJoinStateLattice<Key, LHS, LHSDelta>,
+                    rhs_state: &'a mut #root::compiled::pull::HalfJoinStateLattice<Key, RHS, RHSDelta>,
+                ) -> impl 'a + Iterator<Item = (Key, (LHS::Repr, RHS::Repr))>
                 where
                     Key: Eq + std::hash::Hash + Clone,
-                    V1: #root::lang::lattice::Merge<V1D> + #root::lang::lattice::Convert<V1D>,
-                    V1::Repr: Eq + Clone,
-                    V1D: #root::lang::lattice::LatticeRepr,
-                    V1D::Repr: Eq + Clone,
-                    V2: #root::lang::lattice::Merge<V2D> + #root::lang::lattice::Convert<V2D>,
-                    V2::Repr: Eq + Clone,
-                    V2D: #root::lang::lattice::LatticeRepr,
-                    V2D::Repr: Eq + Clone,
-                    I1: Iterator<Item = (Key, V1::Repr)>,
-                    I2: Iterator<Item = (Key, V2::Repr)>,
+                    LHS: #root::lang::lattice::Merge<LHSDelta> + #root::lang::lattice::Convert<LHSDelta>,
+                    LHS::Repr: Eq + Clone,
+                    LHSDelta: #root::lang::lattice::LatticeRepr,
+                    LHSDelta::Repr: Eq + Clone,
+                    RHS: #root::lang::lattice::Merge<RHSDelta> + #root::lang::lattice::Convert<RHSDelta>,
+                    RHS::Repr: Eq + Clone,
+                    RHSDelta: #root::lang::lattice::LatticeRepr,
+                    RHSDelta::Repr: Eq + Clone,
+                    I1: Iterator<Item = (Key, LHS::Repr)>,
+                    I2: Iterator<Item = (Key, RHS::Repr)>,
                 {
                     #root::compiled::pull::SymmetricHashJoinLattice::new_from_mut(lhs, rhs, lhs_state, rhs_state)
                 }

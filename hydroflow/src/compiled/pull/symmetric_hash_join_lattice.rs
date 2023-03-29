@@ -6,13 +6,13 @@ use std::{
 };
 
 #[derive(Debug)]
-pub struct HalfJoinStateLattice<Key, LR: LatticeRepr + Merge<LRD>, LRD: LatticeRepr> {
+pub struct HalfJoinStateLattice<Key, LR: LatticeRepr + Merge<LRDelta>, LRDelta: LatticeRepr> {
     table: FxHashMap<Key, LR::Repr>,
-    _marker: PhantomData<*const LRD>,
+    _marker: PhantomData<*const LRDelta>,
 }
 
-impl<Key, LR: LatticeRepr + Merge<LRD>, LRD: LatticeRepr> Default
-    for HalfJoinStateLattice<Key, LR, LRD>
+impl<Key, LR: LatticeRepr + Merge<LRDelta>, LRDelta: LatticeRepr> Default
+    for HalfJoinStateLattice<Key, LR, LRDelta>
 {
     fn default() -> Self {
         Self {
@@ -21,8 +21,8 @@ impl<Key, LR: LatticeRepr + Merge<LRD>, LRD: LatticeRepr> Default
         }
     }
 }
-impl<Key, LR: LatticeRepr + Merge<LRD> + Convert<LRD>, LRD: LatticeRepr>
-    HalfJoinStateLattice<Key, LR, LRD>
+impl<Key, LR: LatticeRepr + Merge<LRDelta> + Convert<LRDelta>, LRDelta: LatticeRepr>
+    HalfJoinStateLattice<Key, LR, LRDelta>
 where
     Key: Clone + Eq + std::hash::Hash,
     LR::Repr: Clone + Eq,
@@ -32,7 +32,7 @@ where
 
         match entry {
             Entry::Occupied(mut e) => {
-                <LR as Merge<LRD>>::merge(e.get_mut(), <LR as Convert<LRD>>::convert(v))
+                <LR as Merge<LRDelta>>::merge(e.get_mut(), <LR as Convert<LRDelta>>::convert(v))
             }
             Entry::Vacant(e) => {
                 e.insert(v);
@@ -42,44 +42,41 @@ where
     }
 }
 
-pub type _JoinStateLattice<Key, V1: LatticeRepr, V1D, V2: LatticeRepr, V2D> = (
-    HalfJoinStateLattice<Key, V1, V1D>,
-    HalfJoinStateLattice<Key, V2, V2D>,
-);
-pub type JoinStateLatticeMut<'a, Key, V1: LatticeRepr, V1D, V2: LatticeRepr, V2D> = (
-    &'a mut HalfJoinStateLattice<Key, V1, V1D>,
-    &'a mut HalfJoinStateLattice<Key, V2, V2D>,
+pub type JoinStateLatticeMut<'a, Key, LHS: LatticeRepr, LHSDelta, RHS: LatticeRepr, RHSDelta> = (
+    &'a mut HalfJoinStateLattice<Key, LHS, LHSDelta>,
+    &'a mut HalfJoinStateLattice<Key, RHS, RHSDelta>,
 );
 
-pub struct SymmetricHashJoinLattice<'a, Key, V1, V1D, V2, V2D>
+pub struct SymmetricHashJoinLattice<'a, Key, LHS, LHSDelta, RHS, RHSDelta>
 where
     Key: Eq + std::hash::Hash + Clone,
-    V1: Merge<V1D>,
-    V1::Repr: Eq + Clone,
-    V1D: LatticeRepr,
-    V1D::Repr: Eq + Clone,
-    V2: Merge<V2D>,
-    V2::Repr: Eq + Clone,
-    V2D: LatticeRepr,
-    V2D::Repr: Eq + Clone,
+    LHS: Merge<LHSDelta>,
+    LHS::Repr: Eq + Clone,
+    LHSDelta: LatticeRepr,
+    LHSDelta::Repr: Eq + Clone,
+    RHS: Merge<RHSDelta>,
+    RHS::Repr: Eq + Clone,
+    RHSDelta: LatticeRepr,
+    RHSDelta::Repr: Eq + Clone,
 {
-    state: JoinStateLatticeMut<'a, Key, V1, V1D, V2, V2D>,
+    state: JoinStateLatticeMut<'a, Key, LHS, LHSDelta, RHS, RHSDelta>,
     updated_keys: hash_set::IntoIter<Key>,
 }
 
-impl<'a, Key, V1, V1D, V2, V2D> Iterator for SymmetricHashJoinLattice<'a, Key, V1, V1D, V2, V2D>
+impl<'a, Key, LHS, LHSDelta, RHS, RHSDelta> Iterator
+    for SymmetricHashJoinLattice<'a, Key, LHS, LHSDelta, RHS, RHSDelta>
 where
     Key: Eq + std::hash::Hash + Clone,
-    V1: Merge<V1D> + Convert<V1D>,
-    V1::Repr: Eq + Clone,
-    V1D: LatticeRepr,
-    V1D::Repr: Eq + Clone,
-    V2: Merge<V2D> + Convert<V2D>,
-    V2::Repr: Eq + Clone,
-    V2D: LatticeRepr,
-    V2D::Repr: Eq + Clone,
+    LHS: Merge<LHSDelta> + Convert<LHSDelta>,
+    LHS::Repr: Eq + Clone,
+    LHSDelta: LatticeRepr,
+    LHSDelta::Repr: Eq + Clone,
+    RHS: Merge<RHSDelta> + Convert<RHSDelta>,
+    RHS::Repr: Eq + Clone,
+    RHSDelta: LatticeRepr,
+    RHSDelta::Repr: Eq + Clone,
 {
-    type Item = (Key, (V1::Repr, V2::Repr));
+    type Item = (Key, (LHS::Repr, RHS::Repr));
 
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(key) = self.updated_keys.next() {
@@ -93,27 +90,28 @@ where
         None
     }
 }
-impl<'a, Key, V1, V1D, V2, V2D> SymmetricHashJoinLattice<'a, Key, V1, V1D, V2, V2D>
+impl<'a, Key, LHS, LHSDelta, RHS, RHSDelta>
+    SymmetricHashJoinLattice<'a, Key, LHS, LHSDelta, RHS, RHSDelta>
 where
     Key: Eq + std::hash::Hash + Clone,
-    V1: Merge<V1D> + Convert<V1D>,
-    V1::Repr: Eq + Clone,
-    V1D: LatticeRepr,
-    V1D::Repr: Eq + Clone,
-    V2: Merge<V2D> + Convert<V2D>,
-    V2::Repr: Eq + Clone,
-    V2D: LatticeRepr,
-    V2D::Repr: Eq + Clone,
+    LHS: Merge<LHSDelta> + Convert<LHSDelta>,
+    LHS::Repr: Eq + Clone,
+    LHSDelta: LatticeRepr,
+    LHSDelta::Repr: Eq + Clone,
+    RHS: Merge<RHSDelta> + Convert<RHSDelta>,
+    RHS::Repr: Eq + Clone,
+    RHSDelta: LatticeRepr,
+    RHSDelta::Repr: Eq + Clone,
 {
     pub fn new_from_mut<I1, I2>(
         mut lhs: I1,
         mut rhs: I2,
-        state_lhs: &'a mut HalfJoinStateLattice<Key, V1, V1D>,
-        state_rhs: &'a mut HalfJoinStateLattice<Key, V2, V2D>,
+        state_lhs: &'a mut HalfJoinStateLattice<Key, LHS, LHSDelta>,
+        state_rhs: &'a mut HalfJoinStateLattice<Key, RHS, RHSDelta>,
     ) -> Self
     where
-        I1: Iterator<Item = (Key, V1::Repr)>,
-        I2: Iterator<Item = (Key, V2::Repr)>,
+        I1: Iterator<Item = (Key, LHS::Repr)>,
+        I2: Iterator<Item = (Key, RHS::Repr)>,
     {
         let mut keys = FxHashSet::default();
 
@@ -144,16 +142,21 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::{SymmetricHashJoinLattice, _JoinStateLattice as JoinStateLattice};
-    use crate::lang::lattice::ord::MaxRepr;
+    pub type JoinStateLattice<Key, LHS: LatticeRepr, LHSDelta, RHS: LatticeRepr, RHSDelta> = (
+        HalfJoinStateLattice<Key, LHS, LHSDelta>,
+        HalfJoinStateLattice<Key, RHS, RHSDelta>,
+    );
+
+    use super::{HalfJoinStateLattice, SymmetricHashJoinLattice};
+    use crate::lang::lattice::{ord::MaxRepr, LatticeRepr};
 
     type JoinStateMaxLattice =
         JoinStateLattice<usize, MaxRepr<usize>, MaxRepr<usize>, MaxRepr<usize>, MaxRepr<usize>>;
 
-    fn join<X: IntoIterator<Item = (usize, usize)>, Y: IntoIterator<Item = (usize, usize)>>(
+    fn join<LHS: IntoIterator<Item = (usize, usize)>, RHS: IntoIterator<Item = (usize, usize)>>(
         state: &mut JoinStateMaxLattice,
-        lhs: X,
-        rhs: Y,
+        lhs: LHS,
+        rhs: RHS,
     ) -> Vec<(usize, (usize, usize))> {
         SymmetricHashJoinLattice::new_from_mut(
             lhs.into_iter(),
