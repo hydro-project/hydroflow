@@ -774,7 +774,7 @@
             <span class="kw">let </span>conditions = build_local_constraint_conditions(<span class="kw-2">&amp;</span>local_constraints);
 
             flat_graph_builder.add_statement(<span class="macro">parse_quote_spanned! </span>{get_span(rule_span)=&gt;
-                #filter_node = #relation_node [#relation_idx] -&gt; filter(|<span class="kw-2">&amp;</span>row: <span class="kw-2">&amp;</span>#row_type| #conditions)
+                #filter_node = #relation_node [#relation_idx] -&gt; filter(|row: <span class="kw-2">&amp;</span>#row_type| #conditions)
             });
 
             IntermediateJoinNode {
@@ -1008,7 +1008,7 @@
             );
 
             flat_graph_builder.add_statement(<span class="macro">parse_quote_spanned! </span>{ get_span(rule_span)=&gt;
-                #predicate_filter_node = #inner_name -&gt; filter(|<span class="kw-2">&amp;</span>row: <span class="kw-2">&amp;</span>#row_type| #conditions )
+                #predicate_filter_node = #inner_name -&gt; filter(|row: <span class="kw-2">&amp;</span>#row_type| #conditions )
             });
 
             IntermediateJoinNode {

@@ -37,6 +37,12 @@
 <a href="#37" id="37">37</a>
 <a href="#38" id="38">38</a>
 <a href="#39" id="39">39</a>
+<a href="#40" id="40">40</a>
+<a href="#41" id="41">41</a>
+<a href="#42" id="42">42</a>
+<a href="#43" id="43">43</a>
+<a href="#44" id="44">44</a>
+<a href="#45" id="45">45</a>
 </pre><pre class="rust"><code><span class="kw">pub mod </span>bottom;
 <span class="kw">pub mod </span>dom_pair;
 <span class="kw">pub mod </span>map_union;
@@ -53,8 +59,14 @@
 }
 
 <span class="kw">pub trait </span>Merge&lt;Delta: LatticeRepr&gt;: LatticeRepr&lt;Lattice = Delta::Lattice&gt; {
-    <span class="doccomment">/// Merge DELTA into THIS. Return TRUE if THIS changed, FALSE if THIS was unchanged.
+    <span class="doccomment">/// Merge `delta` into `this`. Return `true` if `this` changed, `false` if `this` was unchanged.
     </span><span class="kw">fn </span>merge(this: <span class="kw-2">&amp;mut </span><span class="self">Self</span>::Repr, delta: Delta::Repr) -&gt; bool;
+
+    <span class="doccomment">/// Merge `this` and `delta` together, returning the new value.
+    </span><span class="kw">fn </span>merge_owned(<span class="kw-2">mut </span>this: <span class="self">Self</span>::Repr, delta: Delta::Repr) -&gt; <span class="self">Self</span>::Repr {
+        <span class="self">Self</span>::merge(<span class="kw-2">&amp;mut </span>this, delta);
+        this
+    }
 }
 
 <span class="kw">pub trait </span>Convert&lt;Target: LatticeRepr&lt;Lattice = <span class="self">Self</span>::Lattice&gt;&gt;: LatticeRepr {
