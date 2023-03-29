@@ -2670,6 +2670,84 @@ flow.run_tick();
 </span></code></pre></pre>
 <p>Prints out <code>&quot;(hello, (world, oakland))&quot;</code> and <code>&quot;(hello, (world, san francisco))&quot;</code> since the
 inputs are peristed across ticks.</p>
+<h2 id="lattice_join"><a class="header" href="#lattice_join"><code>lattice_join</code></a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
+<tr><td><span title="exactly 2">exactly 2</span></td><td><code>-&gt; [&lt;input_port&gt;]lattice_join() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
+</tbody></table>
+</div>
+<blockquote>
+<p>Input port names: <code>0</code> (streaming), <code>1</code> (streaming)</p>
+</blockquote>
+<!-- GENERATED "hydroflow_lang/src/graph/ops/lattice_join.rs" -->
+<blockquote>
+<p>2 input streams of type &lt;(K, V1)&gt; and &lt;(K, V2)&gt;, 1 output stream of type &lt;(K, (V1, V2))&gt;</p>
+</blockquote>
+<p>Performs a group-by with lattice-merge aggregate function on LHS and RHS inputs and then forms the
+equijoin of the tuples in the input streams by their first (key) attribute. Note that the result nests the 2nd input field (values) into a tuple in the 2nd output field.</p>
+<p>You must specify the LHS and RHS lattice types, they cannot be inferred.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
+</span><span class="boring">let __rt = hydroflow::tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
+</span><span class="boring">__rt.block_on(async {
+</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
+</span>// should print `(key, (2, 1))`
+my_join = lattice_join::&lt;hydroflow::lang::lattice::ord::MaxRepr&lt;usize&gt;, hydroflow::lang::lattice::ord::MaxRepr&lt;usize&gt;&gt;();
+source_iter(vec![(&quot;key&quot;, 0), (&quot;key&quot;, 2)]) -&gt; [0]my_join;
+source_iter(vec![(&quot;key&quot;, 1)]) -&gt; [1]my_join;
+my_join -&gt; for_each(|(k, (v1, v2))| println!(&quot;({}, ({}, {}))&quot;, k, v1, v2));
+<span class="boring">};
+</span><span class="boring">for _ in 0..100 {
+</span><span class="boring">    hydroflow::tokio::task::yield_now().await;
+</span><span class="boring">    if !__hf.run_tick() {
+</span><span class="boring">        // No work done.
+</span><span class="boring">        break;
+</span><span class="boring">    }
+</span><span class="boring">}
+</span><span class="boring">})
+</span><span class="boring">}
+</span></code></pre></pre>
+<p><code>lattice_join</code> can also be provided with one or two generic lifetime persistence arguments, either
+<code>'tick</code> or <code>'static</code>, to specify how join data persists. With <code>'tick</code>, pairs will only be
+joined with corresponding pairs within the same tick. With <code>'static</code>, pairs will be remembered
+across ticks and will be joined with pairs arriving in later ticks. When not explicitly
+specified persistence defaults to `static.</p>
+<p>When two persistence arguments are supplied the first maps to port <code>0</code> and the second maps to
+port <code>1</code>.
+When a single persistence argument is supplied, it is applied to both input ports.
+When no persistence arguments are applied it defaults to <code>'static</code> for both.</p>
+<p>The syntax is as follows:</p>
+<pre><code class="language-hydroflow ignore">lattice_join::&lt;MaxRepr&lt;usize&gt;, MaxRepr&lt;usize&gt;&gt;(); // Or
+lattice_join::&lt;'static, MaxRepr&lt;usize&gt;, MaxRepr&lt;usize&gt;&gt;();
+
+lattice_join::&lt;'tick, MaxRepr&lt;usize&gt;, MaxRepr&lt;usize&gt;&gt;();
+
+lattice_join::&lt;'static, 'tick, MaxRepr&lt;usize&gt;, MaxRepr&lt;usize&gt;&gt;();
+
+lattice_join::&lt;'tick, 'static, MaxRepr&lt;usize&gt;, MaxRepr&lt;usize&gt;&gt;();
+// etc.
+</code></pre>
+<h3 id="examples-1"><a class="header" href="#examples-1">Examples</a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use hydroflow::lang::lattice::ord::MaxRepr;
+
+let (input_send, input_recv) = hydroflow::util::unbounded_channel::&lt;(usize, usize)&gt;();
+let (out_tx, mut out_rx) = hydroflow::util::unbounded_channel::&lt;(usize, (usize, usize))&gt;();
+
+let mut df = hydroflow::hydroflow_syntax! {
+    my_join = lattice_join::&lt;'tick, MaxRepr&lt;usize&gt;, MaxRepr&lt;usize&gt;&gt;();
+    source_iter([(7, 2), (7, 1)]) -&gt; [0]my_join;
+    source_stream(input_recv) -&gt; [1]my_join;
+    my_join -&gt; for_each(|v| out_tx.send(v).unwrap());
+};
+input_send.send((7, 5)).unwrap();
+df.run_tick();
+let out: Vec&lt;_&gt; = hydroflow::util::collect_ready(&amp;mut out_rx);
+assert_eq!(out, vec![(7, (2, 5))]);
+<span class="boring">}
+</span></code></pre></pre>
 <h2 id="map"><a class="header" href="#map"><code>map</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; map(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
