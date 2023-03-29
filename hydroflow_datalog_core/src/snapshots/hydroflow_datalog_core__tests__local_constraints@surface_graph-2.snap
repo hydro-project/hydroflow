@@ -10,7 +10,7 @@ expression: flat_graph_ref.surface_syntax_string()
 6v1 = tee ();
 7v1 = source_stream (input);
 8v1 = for_each (| v | out . send (v) . unwrap ());
-9v1 = filter (| & row : & (_ , _ , _ , _ ,) | row . 0 == row . 1 && row . 2 == row . 3);
+9v1 = filter (| row : & (_ , _ , _ , _ ,) | row . 0 == row . 1 && row . 2 == row . 3);
 10v1 = map (| row : (_ , _ , _ , _ ,) | (row . 0 . clone () , row . 0 , row . 2 . clone () , row . 2 ,));
 
 2v1 -> 3v1;
