@@ -155,6 +155,7 @@ async fn main() {
                 println!("to_right: {:?}", ts.map(|x| x.elapsed()));
                 v
             })
+            ->inspect(|x| println!("to_right bytes: {:?}", x.len())) //Measure the byte size of messages sent over the network
             -> dest_sink(to_right); //send result to output channel
 
         to_left = merge();
@@ -173,6 +174,7 @@ async fn main() {
                 println!("to_left: {:?}", ts.map(|x| x.elapsed()));
                 v
             })
+            ->inspect(|x| println!("to_left bytes: {:?}", x.len())) //Measure the byte size of messages sent over the network
             -> dest_sink(to_left); //send result to output channel
 
         to_parent = merge();
@@ -191,6 +193,7 @@ async fn main() {
                 println!("to_parent: {:?}", ts.map(|x| x.elapsed()));
                 v
             })
+            ->inspect(|x| println!("to_parent bytes: {:?}", x.len())) //Measure the byte size of messages sent over the network
             -> dest_sink(to_parent); //send result to output channel
 
         to_query = merge();
