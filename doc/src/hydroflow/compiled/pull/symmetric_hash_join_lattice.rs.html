@@ -234,13 +234,13 @@
 };
 
 <span class="attr">#[derive(Debug)]
-</span><span class="kw">pub struct </span>HalfJoinStateLattice&lt;Key, LR: LatticeRepr + Merge&lt;LRDelta&gt;, LRDelta: LatticeRepr&gt; {
-    table: FxHashMap&lt;Key, LR::Repr&gt;,
-    _marker: PhantomData&lt;<span class="kw-2">*const </span>LRDelta&gt;,
+</span><span class="kw">pub struct </span>HalfJoinStateLattice&lt;Key, Lr: LatticeRepr + Merge&lt;LrDelta&gt;, LrDelta: LatticeRepr&gt; {
+    table: FxHashMap&lt;Key, Lr::Repr&gt;,
+    _marker: PhantomData&lt;<span class="kw-2">*const </span>LrDelta&gt;,
 }
 
-<span class="kw">impl</span>&lt;Key, LR: LatticeRepr + Merge&lt;LRDelta&gt;, LRDelta: LatticeRepr&gt; Default
-    <span class="kw">for </span>HalfJoinStateLattice&lt;Key, LR, LRDelta&gt;
+<span class="kw">impl</span>&lt;Key, Lr: LatticeRepr + Merge&lt;LrDelta&gt;, LrDelta: LatticeRepr&gt; Default
+    <span class="kw">for </span>HalfJoinStateLattice&lt;Key, Lr, LrDelta&gt;
 {
     <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
@@ -249,18 +249,18 @@
         }
     }
 }
-<span class="kw">impl</span>&lt;Key, LR: LatticeRepr + Merge&lt;LRDelta&gt; + Convert&lt;LRDelta&gt;, LRDelta: LatticeRepr&gt;
-    HalfJoinStateLattice&lt;Key, LR, LRDelta&gt;
+<span class="kw">impl</span>&lt;Key, Lr: LatticeRepr + Merge&lt;LrDelta&gt; + Convert&lt;LrDelta&gt;, LrDelta: LatticeRepr&gt;
+    HalfJoinStateLattice&lt;Key, Lr, LrDelta&gt;
 <span class="kw">where
     </span>Key: Clone + Eq + std::hash::Hash,
-    LR::Repr: Clone + Eq,
+    Lr::Repr: Clone + Eq,
 {
-    <span class="kw">fn </span>build(<span class="kw-2">&amp;mut </span><span class="self">self</span>, k: Key, v: LR::Repr) -&gt; bool {
+    <span class="kw">fn </span>build(<span class="kw-2">&amp;mut </span><span class="self">self</span>, k: Key, v: Lr::Repr) -&gt; bool {
         <span class="kw">let </span>entry = <span class="self">self</span>.table.entry(k);
 
         <span class="kw">match </span>entry {
             Entry::Occupied(<span class="kw-2">mut </span>e) =&gt; {
-                &lt;LR <span class="kw">as </span>Merge&lt;LRDelta&gt;&gt;::merge(e.get_mut(), &lt;LR <span class="kw">as </span>Convert&lt;LRDelta&gt;&gt;::convert(v))
+                &lt;Lr <span class="kw">as </span>Merge&lt;LrDelta&gt;&gt;::merge(e.get_mut(), &lt;Lr <span class="kw">as </span>Convert&lt;LrDelta&gt;&gt;::convert(v))
             }
             Entry::Vacant(e) =&gt; {
                 e.insert(v);
@@ -270,41 +270,41 @@
     }
 }
 
-<span class="kw">pub type </span>JoinStateLatticeMut&lt;<span class="lifetime">&#39;a</span>, Key, LHS: LatticeRepr, LHSDelta, RHS: LatticeRepr, RHSDelta&gt; = (
-    <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>HalfJoinStateLattice&lt;Key, LHS, LHSDelta&gt;,
-    <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>HalfJoinStateLattice&lt;Key, RHS, RHSDelta&gt;,
+<span class="kw">pub type </span>JoinStateLatticeMut&lt;<span class="lifetime">&#39;a</span>, Key, Lhs: LatticeRepr, LhsDelta, Rhs: LatticeRepr, RhsDelta&gt; = (
+    <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>HalfJoinStateLattice&lt;Key, Lhs, LhsDelta&gt;,
+    <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>HalfJoinStateLattice&lt;Key, Rhs, RhsDelta&gt;,
 );
 
-<span class="kw">pub struct </span>SymmetricHashJoinLattice&lt;<span class="lifetime">&#39;a</span>, Key, LHS, LHSDelta, RHS, RHSDelta&gt;
+<span class="kw">pub struct </span>SymmetricHashJoinLattice&lt;<span class="lifetime">&#39;a</span>, Key, Lhs, LhsDelta, Rhs, RhsDelta&gt;
 <span class="kw">where
     </span>Key: Eq + std::hash::Hash + Clone,
-    LHS: Merge&lt;LHSDelta&gt;,
-    LHS::Repr: Eq + Clone,
-    LHSDelta: LatticeRepr,
-    LHSDelta::Repr: Eq + Clone,
-    RHS: Merge&lt;RHSDelta&gt;,
-    RHS::Repr: Eq + Clone,
-    RHSDelta: LatticeRepr,
-    RHSDelta::Repr: Eq + Clone,
+    Lhs: Merge&lt;LhsDelta&gt;,
+    Lhs::Repr: Eq + Clone,
+    LhsDelta: LatticeRepr,
+    LhsDelta::Repr: Eq + Clone,
+    Rhs: Merge&lt;RhsDelta&gt;,
+    Rhs::Repr: Eq + Clone,
+    RhsDelta: LatticeRepr,
+    RhsDelta::Repr: Eq + Clone,
 {
-    state: JoinStateLatticeMut&lt;<span class="lifetime">&#39;a</span>, Key, LHS, LHSDelta, RHS, RHSDelta&gt;,
+    state: JoinStateLatticeMut&lt;<span class="lifetime">&#39;a</span>, Key, Lhs, LhsDelta, Rhs, RhsDelta&gt;,
     updated_keys: hash_set::IntoIter&lt;Key&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, Key, LHS, LHSDelta, RHS, RHSDelta&gt; Iterator
-    <span class="kw">for </span>SymmetricHashJoinLattice&lt;<span class="lifetime">&#39;a</span>, Key, LHS, LHSDelta, RHS, RHSDelta&gt;
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, Key, Lhs, LhsDelta, Rhs, RhsDelta&gt; Iterator
+    <span class="kw">for </span>SymmetricHashJoinLattice&lt;<span class="lifetime">&#39;a</span>, Key, Lhs, LhsDelta, Rhs, RhsDelta&gt;
 <span class="kw">where
     </span>Key: Eq + std::hash::Hash + Clone,
-    LHS: Merge&lt;LHSDelta&gt; + Convert&lt;LHSDelta&gt;,
-    LHS::Repr: Eq + Clone,
-    LHSDelta: LatticeRepr,
-    LHSDelta::Repr: Eq + Clone,
-    RHS: Merge&lt;RHSDelta&gt; + Convert&lt;RHSDelta&gt;,
-    RHS::Repr: Eq + Clone,
-    RHSDelta: LatticeRepr,
-    RHSDelta::Repr: Eq + Clone,
+    Lhs: Merge&lt;LhsDelta&gt; + Convert&lt;LhsDelta&gt;,
+    Lhs::Repr: Eq + Clone,
+    LhsDelta: LatticeRepr,
+    LhsDelta::Repr: Eq + Clone,
+    Rhs: Merge&lt;RhsDelta&gt; + Convert&lt;RhsDelta&gt;,
+    Rhs::Repr: Eq + Clone,
+    RhsDelta: LatticeRepr,
+    RhsDelta::Repr: Eq + Clone,
 {
-    <span class="kw">type </span>Item = (Key, (LHS::Repr, RHS::Repr));
+    <span class="kw">type </span>Item = (Key, (Lhs::Repr, Rhs::Repr));
 
     <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Item&gt; {
         <span class="kw">if let </span><span class="prelude-val">Some</span>(key) = <span class="self">self</span>.updated_keys.next() {
@@ -318,28 +318,28 @@
         <span class="prelude-val">None
     </span>}
 }
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, Key, LHS, LHSDelta, RHS, RHSDelta&gt;
-    SymmetricHashJoinLattice&lt;<span class="lifetime">&#39;a</span>, Key, LHS, LHSDelta, RHS, RHSDelta&gt;
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, Key, Lhs, LhsDelta, Rhs, RhsDelta&gt;
+    SymmetricHashJoinLattice&lt;<span class="lifetime">&#39;a</span>, Key, Lhs, LhsDelta, Rhs, RhsDelta&gt;
 <span class="kw">where
     </span>Key: Eq + std::hash::Hash + Clone,
-    LHS: Merge&lt;LHSDelta&gt; + Convert&lt;LHSDelta&gt;,
-    LHS::Repr: Eq + Clone,
-    LHSDelta: LatticeRepr,
-    LHSDelta::Repr: Eq + Clone,
-    RHS: Merge&lt;RHSDelta&gt; + Convert&lt;RHSDelta&gt;,
-    RHS::Repr: Eq + Clone,
-    RHSDelta: LatticeRepr,
-    RHSDelta::Repr: Eq + Clone,
+    Lhs: Merge&lt;LhsDelta&gt; + Convert&lt;LhsDelta&gt;,
+    Lhs::Repr: Eq + Clone,
+    LhsDelta: LatticeRepr,
+    LhsDelta::Repr: Eq + Clone,
+    Rhs: Merge&lt;RhsDelta&gt; + Convert&lt;RhsDelta&gt;,
+    Rhs::Repr: Eq + Clone,
+    RhsDelta: LatticeRepr,
+    RhsDelta::Repr: Eq + Clone,
 {
     <span class="kw">pub fn </span>new_from_mut&lt;I1, I2&gt;(
         <span class="kw-2">mut </span>lhs: I1,
         <span class="kw-2">mut </span>rhs: I2,
-        state_lhs: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>HalfJoinStateLattice&lt;Key, LHS, LHSDelta&gt;,
-        state_rhs: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>HalfJoinStateLattice&lt;Key, RHS, RHSDelta&gt;,
+        state_lhs: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>HalfJoinStateLattice&lt;Key, Lhs, LhsDelta&gt;,
+        state_rhs: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>HalfJoinStateLattice&lt;Key, Rhs, RhsDelta&gt;,
     ) -&gt; <span class="self">Self
     </span><span class="kw">where
-        </span>I1: Iterator&lt;Item = (Key, LHS::Repr)&gt;,
-        I2: Iterator&lt;Item = (Key, RHS::Repr)&gt;,
+        </span>I1: Iterator&lt;Item = (Key, Lhs::Repr)&gt;,
+        I2: Iterator&lt;Item = (Key, Rhs::Repr)&gt;,
     {
         <span class="kw">let </span><span class="kw-2">mut </span>keys = FxHashSet::default();
 
@@ -370,9 +370,9 @@
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>tests {
-    <span class="kw">pub type </span>JoinStateLattice&lt;Key, LHS: LatticeRepr, LHSDelta, RHS: LatticeRepr, RHSDelta&gt; = (
-        HalfJoinStateLattice&lt;Key, LHS, LHSDelta&gt;,
-        HalfJoinStateLattice&lt;Key, RHS, RHSDelta&gt;,
+    <span class="kw">pub type </span>JoinStateLattice&lt;Key, Lhs: LatticeRepr, LhsDelta, Rhs: LatticeRepr, RhsDelta&gt; = (
+        HalfJoinStateLattice&lt;Key, Lhs, LhsDelta&gt;,
+        HalfJoinStateLattice&lt;Key, Rhs, RhsDelta&gt;,
     );
 
     <span class="kw">use super</span>::{HalfJoinStateLattice, SymmetricHashJoinLattice};
@@ -381,10 +381,10 @@
     <span class="kw">type </span>JoinStateMaxLattice =
         JoinStateLattice&lt;usize, MaxRepr&lt;usize&gt;, MaxRepr&lt;usize&gt;, MaxRepr&lt;usize&gt;, MaxRepr&lt;usize&gt;&gt;;
 
-    <span class="kw">fn </span>join&lt;LHS: IntoIterator&lt;Item = (usize, usize)&gt;, RHS: IntoIterator&lt;Item = (usize, usize)&gt;&gt;(
+    <span class="kw">fn </span>join&lt;Lhs: IntoIterator&lt;Item = (usize, usize)&gt;, Rhs: IntoIterator&lt;Item = (usize, usize)&gt;&gt;(
         state: <span class="kw-2">&amp;mut </span>JoinStateMaxLattice,
-        lhs: LHS,
-        rhs: RHS,
+        lhs: Lhs,
+        rhs: Rhs,
     ) -&gt; Vec&lt;(usize, (usize, usize))&gt; {
         SymmetricHashJoinLattice::new_from_mut(
             lhs.into_iter(),

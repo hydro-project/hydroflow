@@ -374,24 +374,24 @@
             <span class="kw">let </span>#ident = {
                 <span class="doccomment">/// Limit error propagation by bounding locally, erasing output iterator type.
                 </span><span class="attr">#[inline(always)]
-                </span><span class="kw">fn </span>check_inputs&lt;<span class="lifetime">&#39;a</span>, Key, I1, LHS, LHSDelta, I2, RHS, RHSDelta&gt;(
+                </span><span class="kw">fn </span>check_inputs&lt;<span class="lifetime">&#39;a</span>, Key, I1, Lhs, LhsDelta, I2, Rhs, RhsDelta&gt;(
                     lhs: I1,
                     rhs: I2,
-                    lhs_state: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>#root::compiled::pull::HalfJoinStateLattice&lt;Key, LHS, LHSDelta&gt;,
-                    rhs_state: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>#root::compiled::pull::HalfJoinStateLattice&lt;Key, RHS, RHSDelta&gt;,
-                ) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;a </span>+ Iterator&lt;Item = (Key, (LHS::Repr, RHS::Repr))&gt;
+                    lhs_state: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>#root::compiled::pull::HalfJoinStateLattice&lt;Key, Lhs, LhsDelta&gt;,
+                    rhs_state: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>#root::compiled::pull::HalfJoinStateLattice&lt;Key, Rhs, RhsDelta&gt;,
+                ) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;a </span>+ Iterator&lt;Item = (Key, (Lhs::Repr, Rhs::Repr))&gt;
                 <span class="kw">where
                     </span>Key: Eq + std::hash::Hash + Clone,
-                    LHS: #root::lang::lattice::Merge&lt;LHSDelta&gt; + #root::lang::lattice::Convert&lt;LHSDelta&gt;,
-                    LHS::Repr: Eq + Clone,
-                    LHSDelta: #root::lang::lattice::LatticeRepr,
-                    LHSDelta::Repr: Eq + Clone,
-                    RHS: #root::lang::lattice::Merge&lt;RHSDelta&gt; + #root::lang::lattice::Convert&lt;RHSDelta&gt;,
-                    RHS::Repr: Eq + Clone,
-                    RHSDelta: #root::lang::lattice::LatticeRepr,
-                    RHSDelta::Repr: Eq + Clone,
-                    I1: Iterator&lt;Item = (Key, LHS::Repr)&gt;,
-                    I2: Iterator&lt;Item = (Key, RHS::Repr)&gt;,
+                    Lhs: #root::lang::lattice::Merge&lt;LhsDelta&gt; + #root::lang::lattice::Convert&lt;LhsDelta&gt;,
+                    Lhs::Repr: Eq + Clone,
+                    LhsDelta: #root::lang::lattice::LatticeRepr,
+                    LhsDelta::Repr: Eq + Clone,
+                    Rhs: #root::lang::lattice::Merge&lt;RhsDelta&gt; + #root::lang::lattice::Convert&lt;RhsDelta&gt;,
+                    Rhs::Repr: Eq + Clone,
+                    RhsDelta: #root::lang::lattice::LatticeRepr,
+                    RhsDelta::Repr: Eq + Clone,
+                    I1: Iterator&lt;Item = (Key, Lhs::Repr)&gt;,
+                    I2: Iterator&lt;Item = (Key, Rhs::Repr)&gt;,
                 {
                     #root::compiled::pull::SymmetricHashJoinLattice::new_from_mut(lhs, rhs, lhs_state, rhs_state)
                 }

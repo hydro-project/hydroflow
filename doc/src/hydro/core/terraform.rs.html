@@ -293,6 +293,9 @@
 <a href="#293" id="293">293</a>
 <a href="#294" id="294">294</a>
 <a href="#295" id="295">295</a>
+<a href="#296" id="296">296</a>
+<a href="#297" id="297">297</a>
+<a href="#298" id="298">298</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::{
     collections::HashMap,
     io::{BufRead, BufReader},
@@ -373,6 +376,7 @@
 <span class="attr">#[derive(Serialize, Deserialize)]
 </span><span class="kw">pub struct </span>TerraformBatch {
     <span class="kw">pub </span>terraform: TerraformConfig,
+    <span class="kw">pub </span>data: HashMap&lt;String, HashMap&lt;String, serde_json::Value&gt;&gt;,
     <span class="kw">pub </span>resource: HashMap&lt;String, HashMap&lt;String, serde_json::Value&gt;&gt;,
     <span class="kw">pub </span>output: HashMap&lt;String, TerraformOutput&gt;,
 }
@@ -383,6 +387,7 @@
             terraform: TerraformConfig {
                 required_providers: HashMap::new(),
             },
+            data: HashMap::new(),
             resource: HashMap::new(),
             output: HashMap::new(),
         }
@@ -397,6 +402,7 @@
 
         <span class="kw">if </span><span class="self">self</span>.terraform.required_providers.is_empty()
             &amp;&amp; <span class="self">self</span>.resource.is_empty()
+            &amp;&amp; <span class="self">self</span>.data.is_empty()
             &amp;&amp; <span class="self">self</span>.output.is_empty()
         {
             <span class="kw">return </span><span class="prelude-val">Ok</span>(TerraformResult {

@@ -658,6 +658,7 @@
 <a href="#658" id="658">658</a>
 <a href="#659" id="659">659</a>
 <a href="#660" id="660">660</a>
+<a href="#661" id="661">661</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::ops::DerefMut;
 <span class="kw">use </span>std::sync::Arc;
 
@@ -881,11 +882,12 @@
 <span class="attr">#[pymethods]
 </span><span class="kw">impl </span>GCPNetwork {
     <span class="attr">#[new]
-    </span><span class="kw">fn </span>new(project: String) -&gt; <span class="self">Self </span>{
+    </span><span class="kw">fn </span>new(project: String, existing: <span class="prelude-ty">Option</span>&lt;String&gt;) -&gt; <span class="self">Self </span>{
         GCPNetwork {
             underlying: Arc::new(RwLock::new(<span class="kw">crate</span>::core::gcp::GCPNetwork {
                 project,
-                vpc_id: <span class="prelude-val">None</span>,
+                tf_path: <span class="prelude-val">None</span>,
+                existing_vpc: existing,
             })),
         }
     }

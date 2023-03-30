@@ -535,6 +535,21 @@
 <a href="#535" id="535">535</a>
 <a href="#536" id="536">536</a>
 <a href="#537" id="537">537</a>
+<a href="#538" id="538">538</a>
+<a href="#539" id="539">539</a>
+<a href="#540" id="540">540</a>
+<a href="#541" id="541">541</a>
+<a href="#542" id="542">542</a>
+<a href="#543" id="543">543</a>
+<a href="#544" id="544">544</a>
+<a href="#545" id="545">545</a>
+<a href="#546" id="546">546</a>
+<a href="#547" id="547">547</a>
+<a href="#548" id="548">548</a>
+<a href="#549" id="549">549</a>
+<a href="#550" id="550">550</a>
+<a href="#551" id="551">551</a>
+<a href="#552" id="552">552</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::{collections::HashMap, net::SocketAddr, path::PathBuf, sync::Arc, time::Duration};
 
 <span class="kw">use </span>anyhow::{Context, <span class="prelude-ty">Result</span>};
@@ -639,12 +654,13 @@
 
 <span class="kw">pub struct </span>GCPNetwork {
     <span class="kw">pub </span>project: String,
-    <span class="kw">pub </span>vpc_id: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    <span class="kw">pub </span>tf_path: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    <span class="kw">pub </span>existing_vpc: <span class="prelude-ty">Option</span>&lt;String&gt;,
 }
 
 <span class="kw">impl </span>GCPNetwork {
     <span class="kw">fn </span>collect_resources(<span class="kw-2">&amp;mut </span><span class="self">self</span>, resource_batch: <span class="kw-2">&amp;mut </span>ResourceBatch) {
-        <span class="kw">if </span><span class="self">self</span>.vpc_id.is_some() {
+        <span class="kw">if </span><span class="self">self</span>.tf_path.is_some() {
             <span class="kw">return</span>;
         }
 
@@ -661,66 +677,83 @@
             );
 
         <span class="kw">let </span>vpc_network = <span class="macro">format!</span>(<span class="string">&quot;hydro-vpc-network-{}&quot;</span>, <span class="macro">nanoid!</span>(<span class="number">8</span>, <span class="kw-2">&amp;</span>TERRAFORM_ALPHABET));
-        <span class="self">self</span>.vpc_id = <span class="prelude-val">Some</span>(vpc_network.clone());
-        resource_batch
-            .terraform
-            .resource
-            .entry(<span class="string">&quot;google_compute_network&quot;</span>.to_string())
-            .or_default()
-            .insert(
-                vpc_network.clone(),
+
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(existing) = <span class="self">self</span>.existing_vpc.as_ref() {
+            <span class="self">self</span>.tf_path = <span class="prelude-val">Some</span>(<span class="macro">format!</span>(<span class="string">&quot;data.google_compute_network.{vpc_network}&quot;</span>));
+            resource_batch
+                .terraform
+                .data
+                .entry(<span class="string">&quot;google_compute_network&quot;</span>.to_string())
+                .or_default()
+                .insert(
+                    vpc_network,
+                    <span class="macro">json!</span>({
+                        <span class="string">&quot;name&quot;</span>: existing,
+                        <span class="string">&quot;project&quot;</span>: <span class="self">self</span>.project,
+                    }),
+                );
+        } <span class="kw">else </span>{
+            <span class="self">self</span>.tf_path = <span class="prelude-val">Some</span>(<span class="macro">format!</span>(<span class="string">&quot;google_compute_network.{vpc_network}&quot;</span>));
+            resource_batch
+                .terraform
+                .resource
+                .entry(<span class="string">&quot;google_compute_network&quot;</span>.to_string())
+                .or_default()
+                .insert(
+                    vpc_network.clone(),
+                    <span class="macro">json!</span>({
+                        <span class="string">&quot;name&quot;</span>: vpc_network,
+                        <span class="string">&quot;project&quot;</span>: <span class="self">self</span>.project,
+                        <span class="string">&quot;auto_create_subnetworks&quot;</span>: <span class="bool-val">true
+                    </span>}),
+                );
+
+            <span class="kw">let </span>firewall_entries = resource_batch
+                .terraform
+                .resource
+                .entry(<span class="string">&quot;google_compute_firewall&quot;</span>.to_string())
+                .or_default();
+
+            <span class="comment">// allow all VMs to communicate with each other over internal IPs
+            </span>firewall_entries.insert(
+                <span class="macro">format!</span>(<span class="string">&quot;{vpc_network}-default-allow-internal&quot;</span>),
                 <span class="macro">json!</span>({
-                    <span class="string">&quot;name&quot;</span>: vpc_network,
+                    <span class="string">&quot;name&quot;</span>: <span class="macro">format!</span>(<span class="string">&quot;{vpc_network}-default-allow-internal&quot;</span>),
                     <span class="string">&quot;project&quot;</span>: <span class="self">self</span>.project,
-                    <span class="string">&quot;auto_create_subnetworks&quot;</span>: <span class="bool-val">true
-                </span>}),
+                    <span class="string">&quot;network&quot;</span>: <span class="macro">format!</span>(<span class="string">&quot;${{google_compute_network.{vpc_network}.name}}&quot;</span>),
+                    <span class="string">&quot;source_ranges&quot;</span>: [<span class="string">&quot;10.128.0.0/9&quot;</span>],
+                    <span class="string">&quot;allow&quot;</span>: [
+                        {
+                            <span class="string">&quot;protocol&quot;</span>: <span class="string">&quot;tcp&quot;</span>,
+                            <span class="string">&quot;ports&quot;</span>: [<span class="string">&quot;0-65535&quot;</span>]
+                        },
+                        {
+                            <span class="string">&quot;protocol&quot;</span>: <span class="string">&quot;udp&quot;</span>,
+                            <span class="string">&quot;ports&quot;</span>: [<span class="string">&quot;0-65535&quot;</span>]
+                        },
+                        {
+                            <span class="string">&quot;protocol&quot;</span>: <span class="string">&quot;icmp&quot;
+                        </span>}
+                    ]
+                }),
             );
 
-        <span class="kw">let </span>firewall_entries = resource_batch
-            .terraform
-            .resource
-            .entry(<span class="string">&quot;google_compute_firewall&quot;</span>.to_string())
-            .or_default();
-
-        <span class="comment">// allow all VMs to communicate with each other over internal IPs
-        </span>firewall_entries.insert(
-            <span class="macro">format!</span>(<span class="string">&quot;{vpc_network}-default-allow-internal&quot;</span>),
-            <span class="macro">json!</span>({
-                <span class="string">&quot;name&quot;</span>: <span class="macro">format!</span>(<span class="string">&quot;{vpc_network}-default-allow-internal&quot;</span>),
-                <span class="string">&quot;project&quot;</span>: <span class="self">self</span>.project,
-                <span class="string">&quot;network&quot;</span>: <span class="macro">format!</span>(<span class="string">&quot;${{google_compute_network.{vpc_network}.name}}&quot;</span>),
-                <span class="string">&quot;source_ranges&quot;</span>: [<span class="string">&quot;10.128.0.0/9&quot;</span>],
-                <span class="string">&quot;allow&quot;</span>: [
-                    {
-                        <span class="string">&quot;protocol&quot;</span>: <span class="string">&quot;tcp&quot;</span>,
-                        <span class="string">&quot;ports&quot;</span>: [<span class="string">&quot;0-65535&quot;</span>]
-                    },
-                    {
-                        <span class="string">&quot;protocol&quot;</span>: <span class="string">&quot;udp&quot;</span>,
-                        <span class="string">&quot;ports&quot;</span>: [<span class="string">&quot;0-65535&quot;</span>]
-                    },
-                    {
-                        <span class="string">&quot;protocol&quot;</span>: <span class="string">&quot;icmp&quot;
-                    </span>}
-                ]
-            }),
-        );
-
-        <span class="comment">// allow external pings to all VMs
-        </span>firewall_entries.insert(
-            <span class="macro">format!</span>(<span class="string">&quot;{vpc_network}-default-allow-ping&quot;</span>),
-            <span class="macro">json!</span>({
-                <span class="string">&quot;name&quot;</span>: <span class="macro">format!</span>(<span class="string">&quot;{vpc_network}-default-allow-ping&quot;</span>),
-                <span class="string">&quot;project&quot;</span>: <span class="self">self</span>.project,
-                <span class="string">&quot;network&quot;</span>: <span class="macro">format!</span>(<span class="string">&quot;${{google_compute_network.{vpc_network}.name}}&quot;</span>),
-                <span class="string">&quot;source_ranges&quot;</span>: [<span class="string">&quot;0.0.0.0/0&quot;</span>],
-                <span class="string">&quot;allow&quot;</span>: [
-                    {
-                        <span class="string">&quot;protocol&quot;</span>: <span class="string">&quot;icmp&quot;
-                    </span>}
-                ]
-            }),
-        );
+            <span class="comment">// allow external pings to all VMs
+            </span>firewall_entries.insert(
+                <span class="macro">format!</span>(<span class="string">&quot;{vpc_network}-default-allow-ping&quot;</span>),
+                <span class="macro">json!</span>({
+                    <span class="string">&quot;name&quot;</span>: <span class="macro">format!</span>(<span class="string">&quot;{vpc_network}-default-allow-ping&quot;</span>),
+                    <span class="string">&quot;project&quot;</span>: <span class="self">self</span>.project,
+                    <span class="string">&quot;network&quot;</span>: <span class="macro">format!</span>(<span class="string">&quot;${{google_compute_network.{vpc_network}.name}}&quot;</span>),
+                    <span class="string">&quot;source_ranges&quot;</span>: [<span class="string">&quot;0.0.0.0/0&quot;</span>],
+                    <span class="string">&quot;allow&quot;</span>: [
+                        {
+                            <span class="string">&quot;protocol&quot;</span>: <span class="string">&quot;icmp&quot;
+                        </span>}
+                    ]
+                }),
+            );
+        }
     }
 }
 
@@ -881,12 +914,11 @@
                 </span>}),
             );
 
-        <span class="comment">// we use a single VPC for all VMs
-        </span><span class="kw">let </span>vpc_network = <span class="self">self
+        <span class="kw">let </span>vpc_path = <span class="self">self
             </span>.network
             .try_read()
             .unwrap()
-            .vpc_id
+            .tf_path
             .as_ref()
             .unwrap()
             .clone();
@@ -898,12 +930,10 @@
         <span class="kw">let </span><span class="kw-2">mut </span>external_interfaces = <span class="macro">vec!</span>[];
 
         <span class="kw">if </span><span class="self">self</span>.external_ports.is_empty() {
-            external_interfaces.push(<span class="macro">json!</span>({
-                <span class="string">&quot;network&quot;</span>: <span class="macro">format!</span>(<span class="string">&quot;${{google_compute_network.{vpc_network}.self_link}}&quot;</span>)
-            }));
+            external_interfaces.push(<span class="macro">json!</span>({ <span class="string">&quot;network&quot;</span>: <span class="macro">format!</span>(<span class="string">&quot;${{{vpc_path}.self_link}}&quot;</span>) }));
         } <span class="kw">else </span>{
             external_interfaces.push(<span class="macro">json!</span>({
-                <span class="string">&quot;network&quot;</span>: <span class="macro">format!</span>(<span class="string">&quot;${{google_compute_network.{vpc_network}.self_link}}&quot;</span>),
+                <span class="string">&quot;network&quot;</span>: <span class="macro">format!</span>(<span class="string">&quot;${{{vpc_path}.self_link}}&quot;</span>),
                 <span class="string">&quot;access_config&quot;</span>: [
                     {
                         <span class="string">&quot;network_tier&quot;</span>: <span class="string">&quot;STANDARD&quot;
@@ -923,7 +953,7 @@
                 <span class="macro">json!</span>({
                     <span class="string">&quot;name&quot;</span>: open_external_ports_rule,
                     <span class="string">&quot;project&quot;</span>: project,
-                    <span class="string">&quot;network&quot;</span>: <span class="macro">format!</span>(<span class="string">&quot;${{google_compute_network.{vpc_network}.name}}&quot;</span>),
+                    <span class="string">&quot;network&quot;</span>: <span class="macro">format!</span>(<span class="string">&quot;${{{vpc_path}.name}}&quot;</span>),
                     <span class="string">&quot;target_tags&quot;</span>: [open_external_ports_rule],
                     <span class="string">&quot;source_ranges&quot;</span>: [<span class="string">&quot;0.0.0.0/0&quot;</span>],
                     <span class="string">&quot;allow&quot;</span>: [
