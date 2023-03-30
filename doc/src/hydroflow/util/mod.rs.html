@@ -248,11 +248,11 @@
     bytes::Bytes::from(bincode::serialize(<span class="kw-2">&amp;</span>msg).unwrap())
 }
 
-<span class="kw">pub fn </span>deserialize_from_bytes&lt;T&gt;(msg: bytes::BytesMut) -&gt; T
+<span class="kw">pub fn </span>deserialize_from_bytes&lt;T&gt;(msg: <span class="kw">impl </span>AsRef&lt;[u8]&gt;) -&gt; T
 <span class="kw">where
     </span>T: Serialize + <span class="kw">for</span>&lt;<span class="lifetime">&#39;a</span>&gt; Deserialize&lt;<span class="lifetime">&#39;a</span>&gt; + Clone,
 {
-    bincode::deserialize(<span class="kw-2">&amp;</span>msg).unwrap()
+    bincode::deserialize(msg.as_ref()).unwrap()
 }
 
 <span class="kw">pub fn </span>ipv4_resolve(addr: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;SocketAddr, std::io::Error&gt; {

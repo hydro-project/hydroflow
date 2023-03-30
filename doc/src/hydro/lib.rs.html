@@ -659,6 +659,8 @@
 <a href="#659" id="659">659</a>
 <a href="#660" id="660">660</a>
 <a href="#661" id="661">661</a>
+<a href="#662" id="662">662</a>
+<a href="#663" id="663">663</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::ops::DerefMut;
 <span class="kw">use </span>std::sync::Arc;
 
@@ -755,21 +757,23 @@
         region: String,
         network: GCPNetwork,
     ) -&gt; PyResult&lt;Py&lt;pyo3::PyAny&gt;&gt; {
+        <span class="kw">let </span>arc = <span class="self">self</span>.underlying.blocking_write().add_host(|id| {
+            <span class="kw">crate</span>::core::GCPComputeEngineHost::new(
+                id,
+                project,
+                machine_type,
+                image,
+                region,
+                network.underlying,
+            )
+        });
+
         <span class="prelude-val">Ok</span>(Py::new(
             py,
             PyClassInitializer::from(Host {
-                underlying: <span class="self">self</span>.underlying.blocking_write().add_host(|id| {
-                    <span class="kw">crate</span>::core::GCPComputeEngineHost::new(
-                        id,
-                        project,
-                        machine_type,
-                        image,
-                        region,
-                        network.underlying,
-                    )
-                }),
+                underlying: arc.clone(),
             })
-            .add_subclass(LocalhostHost {}),
+            .add_subclass(GCPComputeEngineHost { underlying: arc }),
         )<span class="question-mark">?
         </span>.into_py(py))
     }
