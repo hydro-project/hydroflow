@@ -80,7 +80,7 @@ impl LaunchedSSHHost for LaunchedComputeEngine {
         async_retry(
             || async {
                 let mut config = SessionConfiguration::new();
-                config.set_timeout(5000);
+                config.set_timeout(1000);
 
                 let mut session =
                     AsyncSession::<TcpStream>::connect(target_addr, Some(config)).await?;
