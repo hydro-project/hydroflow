@@ -632,7 +632,7 @@
         async_retry(
             || <span class="kw">async </span>{
                 <span class="kw">let </span><span class="kw-2">mut </span>config = SessionConfiguration::new();
-                config.set_timeout(<span class="number">5000</span>);
+                config.set_timeout(<span class="number">1000</span>);
 
                 <span class="kw">let </span><span class="kw-2">mut </span>session =
                     AsyncSession::&lt;TcpStream&gt;::connect(target_addr, <span class="prelude-val">Some</span>(config)).<span class="kw">await</span><span class="question-mark">?</span>;
