@@ -102,12 +102,13 @@ impl LaunchedSSHHost for LaunchedComputeEngine {
 
 pub struct GCPNetwork {
     pub project: String,
-    pub vpc_id: Option<String>,
+    pub tf_path: Option<String>,
+    pub existing_vpc: Option<String>,
 }
 
 impl GCPNetwork {
     fn collect_resources(&mut self, resource_batch: &mut ResourceBatch) {
-        if self.vpc_id.is_some() {
+        if self.tf_path.is_some() {
             return;
         }
 
@@ -124,66 +125,83 @@ impl GCPNetwork {
             );
 
         let vpc_network = format!("hydro-vpc-network-{}", nanoid!(8, &TERRAFORM_ALPHABET));
-        self.vpc_id = Some(vpc_network.clone());
-        resource_batch
-            .terraform
-            .resource
-            .entry("google_compute_network".to_string())
-            .or_default()
-            .insert(
-                vpc_network.clone(),
+
+        if let Some(existing) = self.existing_vpc.as_ref() {
+            self.tf_path = Some(format!("data.google_compute_network.{vpc_network}"));
+            resource_batch
+                .terraform
+                .data
+                .entry("google_compute_network".to_string())
+                .or_default()
+                .insert(
+                    vpc_network,
+                    json!({
+                        "name": existing,
+                        "project": self.project,
+                    }),
+                );
+        } else {
+            self.tf_path = Some(format!("google_compute_network.{vpc_network}"));
+            resource_batch
+                .terraform
+                .resource
+                .entry("google_compute_network".to_string())
+                .or_default()
+                .insert(
+                    vpc_network.clone(),
+                    json!({
+                        "name": vpc_network,
+                        "project": self.project,
+                        "auto_create_subnetworks": true
+                    }),
+                );
+
+            let firewall_entries = resource_batch
+                .terraform
+                .resource
+                .entry("google_compute_firewall".to_string())
+                .or_default();
+
+            // allow all VMs to communicate with each other over internal IPs
+            firewall_entries.insert(
+                format!("{vpc_network}-default-allow-internal"),
                 json!({
-                    "name": vpc_network,
+                    "name": format!("{vpc_network}-default-allow-internal"),
                     "project": self.project,
-                    "auto_create_subnetworks": true
+                    "network": format!("${{google_compute_network.{vpc_network}.name}}"),
+                    "source_ranges": ["10.128.0.0/9"],
+                    "allow": [
+                        {
+                            "protocol": "tcp",
+                            "ports": ["0-65535"]
+                        },
+                        {
+                            "protocol": "udp",
+                            "ports": ["0-65535"]
+                        },
+                        {
+                            "protocol": "icmp"
+                        }
+                    ]
                 }),
             );
 
-        let firewall_entries = resource_batch
-            .terraform
-            .resource
-            .entry("google_compute_firewall".to_string())
-            .or_default();
-
-        // allow all VMs to communicate with each other over internal IPs
-        firewall_entries.insert(
-            format!("{vpc_network}-default-allow-internal"),
-            json!({
-                "name": format!("{vpc_network}-default-allow-internal"),
-                "project": self.project,
-                "network": format!("${{google_compute_network.{vpc_network}.name}}"),
-                "source_ranges": ["10.128.0.0/9"],
-                "allow": [
-                    {
-                        "protocol": "tcp",
-                        "ports": ["0-65535"]
-                    },
-                    {
-                        "protocol": "udp",
-                        "ports": ["0-65535"]
-                    },
-                    {
-                        "protocol": "icmp"
-                    }
-                ]
-            }),
-        );
-
-        // allow external pings to all VMs
-        firewall_entries.insert(
-            format!("{vpc_network}-default-allow-ping"),
-            json!({
-                "name": format!("{vpc_network}-default-allow-ping"),
-                "project": self.project,
-                "network": format!("${{google_compute_network.{vpc_network}.name}}"),
-                "source_ranges": ["0.0.0.0/0"],
-                "allow": [
-                    {
-                        "protocol": "icmp"
-                    }
-                ]
-            }),
-        );
+            // allow external pings to all VMs
+            firewall_entries.insert(
+                format!("{vpc_network}-default-allow-ping"),
+                json!({
+                    "name": format!("{vpc_network}-default-allow-ping"),
+                    "project": self.project,
+                    "network": format!("${{google_compute_network.{vpc_network}.name}}"),
+                    "source_ranges": ["0.0.0.0/0"],
+                    "allow": [
+                        {
+                            "protocol": "icmp"
+                        }
+                    ]
+                }),
+            );
+        }
     }
 }
 
@@ -344,12 +362,11 @@ impl Host for GCPComputeEngineHost {
                 }),
             );
 
-        // we use a single VPC for all VMs
-        let vpc_network = self
+        let vpc_path = self
             .network
             .try_read()
             .unwrap()
-            .vpc_id
+            .tf_path
             .as_ref()
             .unwrap()
             .clone();
@@ -361,12 +378,10 @@ impl Host for GCPComputeEngineHost {
         let mut external_interfaces = vec![];
 
         if self.external_ports.is_empty() {
-            external_interfaces.push(json!({
-                "network": format!("${{google_compute_network.{vpc_network}.self_link}}")
-            }));
+            external_interfaces.push(json!({ "network": format!("${{{vpc_path}.self_link}}") }));
         } else {
             external_interfaces.push(json!({
-                "network": format!("${{google_compute_network.{vpc_network}.self_link}}"),
+                "network": format!("${{{vpc_path}.self_link}}"),
                 "access_config": [
                     {
                         "network_tier": "STANDARD"
@@ -386,7 +401,7 @@ impl Host for GCPComputeEngineHost {
                 json!({
                     "name": open_external_ports_rule,
                     "project": project,
-                    "network": format!("${{google_compute_network.{vpc_network}.name}}"),
+                    "network": format!("${{{vpc_path}.name}}"),
                     "target_tags": [open_external_ports_rule],
                     "source_ranges": ["0.0.0.0/0"],
                     "allow": [

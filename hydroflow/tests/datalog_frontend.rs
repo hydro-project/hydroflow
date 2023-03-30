@@ -809,7 +809,7 @@ fn test_choose_strings() {
 
 #[multiplatform_test]
 fn test_non_copy_but_clone() {
-    let (strings_send, strings) = hydroflow::util::unbounded_channel::<(String,)>();
+    let (strings_send, strings) = hydroflow::util::unbounded_channel::<(String, String)>();
     let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(String, String)>();
 
     let mut flow = datalog!(
@@ -817,11 +817,13 @@ fn test_non_copy_but_clone() {
         .input strings `source_stream(strings)`
         .output result `for_each(|v| result.send(v).unwrap())`
 
-        result(a, a) :- strings(a), strings(a)
+        result(a, a) :- strings(a, a), strings(a, a), (a == a)
         "#
     );
 
-    strings_send.send(("Hello".to_string(),)).unwrap();
+    strings_send
+        .send(("Hello".to_string(), "Hello".to_string()))
+        .unwrap();
 
     flow.run_tick();
 

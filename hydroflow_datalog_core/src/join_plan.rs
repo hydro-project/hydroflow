@@ -233,7 +233,7 @@ pub fn expand_join_plan(
             let conditions = build_local_constraint_conditions(&local_constraints);
 
             flat_graph_builder.add_statement(parse_quote_spanned! {get_span(rule_span)=>
-                #filter_node = #relation_node [#relation_idx] -> filter(|&row: &#row_type| #conditions)
+                #filter_node = #relation_node [#relation_idx] -> filter(|row: &#row_type| #conditions)
             });
 
             IntermediateJoinNode {
@@ -467,7 +467,7 @@ pub fn expand_join_plan(
             );
 
             flat_graph_builder.add_statement(parse_quote_spanned! { get_span(rule_span)=>
-                #predicate_filter_node = #inner_name -> filter(|&row: &#row_type| #conditions )
+                #predicate_filter_node = #inner_name -> filter(|row: &#row_type| #conditions )
             });
 
             IntermediateJoinNode {
