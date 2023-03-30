@@ -32,8 +32,8 @@ pub const REPEAT_FN: OperatorConstraints = OperatorConstraints {
     ports_inn: None,
     ports_out: None,
     properties: FlowProperties {
-        deterministic: FlowPropertyVal::DependsOnArgs,
-        monotonic: FlowPropertyVal::DependsOnArgs,
+        deterministic: FlowPropertyVal::No,
+        monotonic: FlowPropertyVal::No,
         inconsistency_tainted: false,
     },
     input_delaytype_fn: |_| None,
