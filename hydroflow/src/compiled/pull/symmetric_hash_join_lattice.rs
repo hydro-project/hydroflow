@@ -6,13 +6,13 @@ use std::{
 };
 
 #[derive(Debug)]
-pub struct HalfJoinStateLattice<Key, LR: LatticeRepr + Merge<LRDelta>, LRDelta: LatticeRepr> {
-    table: FxHashMap<Key, LR::Repr>,
-    _marker: PhantomData<*const LRDelta>,
+pub struct HalfJoinStateLattice<Key, Lr: LatticeRepr + Merge<LrDelta>, LrDelta: LatticeRepr> {
+    table: FxHashMap<Key, Lr::Repr>,
+    _marker: PhantomData<*const LrDelta>,
 }
 
-impl<Key, LR: LatticeRepr + Merge<LRDelta>, LRDelta: LatticeRepr> Default
-    for HalfJoinStateLattice<Key, LR, LRDelta>
+impl<Key, Lr: LatticeRepr + Merge<LrDelta>, LrDelta: LatticeRepr> Default
+    for HalfJoinStateLattice<Key, Lr, LrDelta>
 {
     fn default() -> Self {
         Self {
@@ -21,18 +21,18 @@ impl<Key, LR: LatticeRepr + Merge<LRDelta>, LRDelta: LatticeRepr> Default
         }
     }
 }
-impl<Key, LR: LatticeRepr + Merge<LRDelta> + Convert<LRDelta>, LRDelta: LatticeRepr>
-    HalfJoinStateLattice<Key, LR, LRDelta>
+impl<Key, Lr: LatticeRepr + Merge<LrDelta> + Convert<LrDelta>, LrDelta: LatticeRepr>
+    HalfJoinStateLattice<Key, Lr, LrDelta>
 where
     Key: Clone + Eq + std::hash::Hash,
-    LR::Repr: Clone + Eq,
+    Lr::Repr: Clone + Eq,
 {
-    fn build(&mut self, k: Key, v: LR::Repr) -> bool {
+    fn build(&mut self, k: Key, v: Lr::Repr) -> bool {
         let entry = self.table.entry(k);
 
         match entry {
             Entry::Occupied(mut e) => {
-                <LR as Merge<LRDelta>>::merge(e.get_mut(), <LR as Convert<LRDelta>>::convert(v))
+                <Lr as Merge<LrDelta>>::merge(e.get_mut(), <Lr as Convert<LrDelta>>::convert(v))
             }
             Entry::Vacant(e) => {
                 e.insert(v);
@@ -42,41 +42,41 @@ where
     }
 }
 
-pub type JoinStateLatticeMut<'a, Key, LHS: LatticeRepr, LHSDelta, RHS: LatticeRepr, RHSDelta> = (
-    &'a mut HalfJoinStateLattice<Key, LHS, LHSDelta>,
-    &'a mut HalfJoinStateLattice<Key, RHS, RHSDelta>,
+pub type JoinStateLatticeMut<'a, Key, Lhs: LatticeRepr, LhsDelta, Rhs: LatticeRepr, RhsDelta> = (
+    &'a mut HalfJoinStateLattice<Key, Lhs, LhsDelta>,
+    &'a mut HalfJoinStateLattice<Key, Rhs, RhsDelta>,
 );
 
-pub struct SymmetricHashJoinLattice<'a, Key, LHS, LHSDelta, RHS, RHSDelta>
+pub struct SymmetricHashJoinLattice<'a, Key, Lhs, LhsDelta, Rhs, RhsDelta>
 where
     Key: Eq + std::hash::Hash + Clone,
-    LHS: Merge<LHSDelta>,
-    LHS::Repr: Eq + Clone,
-    LHSDelta: LatticeRepr,
-    LHSDelta::Repr: Eq + Clone,
-    RHS: Merge<RHSDelta>,
-    RHS::Repr: Eq + Clone,
-    RHSDelta: LatticeRepr,
-    RHSDelta::Repr: Eq + Clone,
+    Lhs: Merge<LhsDelta>,
+    Lhs::Repr: Eq + Clone,
+    LhsDelta: LatticeRepr,
+    LhsDelta::Repr: Eq + Clone,
+    Rhs: Merge<RhsDelta>,
+    Rhs::Repr: Eq + Clone,
+    RhsDelta: LatticeRepr,
+    RhsDelta::Repr: Eq + Clone,
 {
-    state: JoinStateLatticeMut<'a, Key, LHS, LHSDelta, RHS, RHSDelta>,
+    state: JoinStateLatticeMut<'a, Key, Lhs, LhsDelta, Rhs, RhsDelta>,
     updated_keys: hash_set::IntoIter<Key>,
 }
 
-impl<'a, Key, LHS, LHSDelta, RHS, RHSDelta> Iterator
-    for SymmetricHashJoinLattice<'a, Key, LHS, LHSDelta, RHS, RHSDelta>
+impl<'a, Key, Lhs, LhsDelta, Rhs, RhsDelta> Iterator
+    for SymmetricHashJoinLattice<'a, Key, Lhs, LhsDelta, Rhs, RhsDelta>
 where
     Key: Eq + std::hash::Hash + Clone,
-    LHS: Merge<LHSDelta> + Convert<LHSDelta>,
-    LHS::Repr: Eq + Clone,
-    LHSDelta: LatticeRepr,
-    LHSDelta::Repr: Eq + Clone,
-    RHS: Merge<RHSDelta> + Convert<RHSDelta>,
-    RHS::Repr: Eq + Clone,
-    RHSDelta: LatticeRepr,
-    RHSDelta::Repr: Eq + Clone,
+    Lhs: Merge<LhsDelta> + Convert<LhsDelta>,
+    Lhs::Repr: Eq + Clone,
+    LhsDelta: LatticeRepr,
+    LhsDelta::Repr: Eq + Clone,
+    Rhs: Merge<RhsDelta> + Convert<RhsDelta>,
+    Rhs::Repr: Eq + Clone,
+    RhsDelta: LatticeRepr,
+    RhsDelta::Repr: Eq + Clone,
 {
-    type Item = (Key, (LHS::Repr, RHS::Repr));
+    type Item = (Key, (Lhs::Repr, Rhs::Repr));
 
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(key) = self.updated_keys.next() {
@@ -90,28 +90,28 @@ where
         None
     }
 }
-impl<'a, Key, LHS, LHSDelta, RHS, RHSDelta>
-    SymmetricHashJoinLattice<'a, Key, LHS, LHSDelta, RHS, RHSDelta>
+impl<'a, Key, Lhs, LhsDelta, Rhs, RhsDelta>
+    SymmetricHashJoinLattice<'a, Key, Lhs, LhsDelta, Rhs, RhsDelta>
 where
     Key: Eq + std::hash::Hash + Clone,
-    LHS: Merge<LHSDelta> + Convert<LHSDelta>,
-    LHS::Repr: Eq + Clone,
-    LHSDelta: LatticeRepr,
-    LHSDelta::Repr: Eq + Clone,
-    RHS: Merge<RHSDelta> + Convert<RHSDelta>,
-    RHS::Repr: Eq + Clone,
-    RHSDelta: LatticeRepr,
-    RHSDelta::Repr: Eq + Clone,
+    Lhs: Merge<LhsDelta> + Convert<LhsDelta>,
+    Lhs::Repr: Eq + Clone,
+    LhsDelta: LatticeRepr,
+    LhsDelta::Repr: Eq + Clone,
+    Rhs: Merge<RhsDelta> + Convert<RhsDelta>,
+    Rhs::Repr: Eq + Clone,
+    RhsDelta: LatticeRepr,
+    RhsDelta::Repr: Eq + Clone,
 {
     pub fn new_from_mut<I1, I2>(
         mut lhs: I1,
         mut rhs: I2,
-        state_lhs: &'a mut HalfJoinStateLattice<Key, LHS, LHSDelta>,
-        state_rhs: &'a mut HalfJoinStateLattice<Key, RHS, RHSDelta>,
+        state_lhs: &'a mut HalfJoinStateLattice<Key, Lhs, LhsDelta>,
+        state_rhs: &'a mut HalfJoinStateLattice<Key, Rhs, RhsDelta>,
     ) -> Self
     where
-        I1: Iterator<Item = (Key, LHS::Repr)>,
-        I2: Iterator<Item = (Key, RHS::Repr)>,
+        I1: Iterator<Item = (Key, Lhs::Repr)>,
+        I2: Iterator<Item = (Key, Rhs::Repr)>,
     {
         let mut keys = FxHashSet::default();
 
@@ -142,9 +142,9 @@ where
 
 #[cfg(test)]
 mod tests {
-    pub type JoinStateLattice<Key, LHS: LatticeRepr, LHSDelta, RHS: LatticeRepr, RHSDelta> = (
-        HalfJoinStateLattice<Key, LHS, LHSDelta>,
-        HalfJoinStateLattice<Key, RHS, RHSDelta>,
+    pub type JoinStateLattice<Key, Lhs: LatticeRepr, LhsDelta, Rhs: LatticeRepr, RhsDelta> = (
+        HalfJoinStateLattice<Key, Lhs, LhsDelta>,
+        HalfJoinStateLattice<Key, Rhs, RhsDelta>,
     );
 
     use super::{HalfJoinStateLattice, SymmetricHashJoinLattice};
@@ -153,10 +153,10 @@ mod tests {
     type JoinStateMaxLattice =
         JoinStateLattice<usize, MaxRepr<usize>, MaxRepr<usize>, MaxRepr<usize>, MaxRepr<usize>>;
 
-    fn join<LHS: IntoIterator<Item = (usize, usize)>, RHS: IntoIterator<Item = (usize, usize)>>(
+    fn join<Lhs: IntoIterator<Item = (usize, usize)>, Rhs: IntoIterator<Item = (usize, usize)>>(
         state: &mut JoinStateMaxLattice,
-        lhs: LHS,
-        rhs: RHS,
+        lhs: Lhs,
+        rhs: Rhs,
     ) -> Vec<(usize, (usize, usize))> {
         SymmetricHashJoinLattice::new_from_mut(
             lhs.into_iter(),
