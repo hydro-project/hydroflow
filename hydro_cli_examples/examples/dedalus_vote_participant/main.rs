@@ -30,7 +30,7 @@ async fn main() {
         r#"
             .input myID `repeat_iter(my_id.clone()) -> map(|p| (p,))`
             .input leader `repeat_iter(peers.clone()) -> map(|p| (p,))`
-            .async voteToReplica `null::<(String,)>()` `source_stream(to_replica_source) -> map(|x| deserialize_from_bytes::<(String,)>(x.unwrap()))`
+            .async voteToReplica `null::<(String,)>()` `source_stream(to_replica_source) -> map(|x| deserialize_from_bytes::<(String,)>(&x.unwrap()))`
             .async voteFromReplica `map(|(node_id, v)| (node_id, serialize_to_bytes(v))) -> dest_sink(from_replica_sink)` `null::<(u32,String,)>()`
             
             voteFromReplica@addr(i, v) :~ voteToReplica(v), leader(addr), myID(i)

@@ -16,7 +16,7 @@ async fn main() {
 
     let df = datalog!(
         r#"
-        .async broadcast `null::<(String,)>()` `source_stream(broadcast_recv) -> map(|x| deserialize_from_bytes::<(String,)>(x.unwrap()))`
+        .async broadcast `null::<(String,)>()` `source_stream(broadcast_recv) -> map(|x| deserialize_from_bytes::<(String,)>(&x.unwrap()))`
         .output stdout `for_each(|tup| println!("echo {:?}", tup))`
 
         stdout(x) :- broadcast(x)

@@ -31,7 +31,7 @@ async fn main() {
         .input replicas `repeat_iter(peers.clone()) -> map(|p| (p,))`
 
         .async voteToReplica `map(|(node_id, v)| (node_id, serialize_to_bytes(v))) -> dest_sink(to_replica_sink)` `null::<(String,)>()`
-        .async voteFromReplica `null::<(u32,String,)>()` `source_stream(from_replica_source) -> map(|v| deserialize_from_bytes::<(u32,String,)>(v.unwrap()))`
+        .async voteFromReplica `null::<(u32,String,)>()` `source_stream(from_replica_source) -> map(|v| deserialize_from_bytes::<(u32,String,)>(&v.unwrap()))`
         
         voteToReplica@addr(v) :~ clientIn(v), replicas(addr)
         allVotes(s, v) :- voteFromReplica(s, v)

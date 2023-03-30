@@ -32,6 +32,17 @@ pub fn unbounded_channel<T>() -> (
     (send, recv)
 }
 
+pub fn bounded_channel<T>(
+    capacity: usize,
+) -> (
+    tokio::sync::mpsc::Sender<T>,
+    tokio_stream::wrappers::ReceiverStream<T>,
+) {
+    let (send, recv) = tokio::sync::mpsc::channel(capacity);
+    let recv = tokio_stream::wrappers::ReceiverStream::new(recv);
+    (send, recv)
+}
+
 pub fn ready_iter<S>(stream: S) -> impl Iterator<Item = S::Item>
 where
     S: Stream,
@@ -89,11 +100,11 @@ where
     bytes::Bytes::from(bincode::serialize(&msg).unwrap())
 }
 
-pub fn deserialize_from_bytes<T>(msg: bytes::BytesMut) -> T
+pub fn deserialize_from_bytes<T>(msg: &[u8]) -> T
 where
     T: Serialize + for<'a> Deserialize<'a> + Clone,
 {
-    bincode::deserialize(&msg).unwrap()
+    bincode::deserialize(msg).unwrap()
 }
 
 pub fn ipv4_resolve(addr: &str) -> Result<SocketAddr, std::io::Error> {
