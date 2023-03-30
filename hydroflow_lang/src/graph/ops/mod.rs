@@ -246,6 +246,7 @@ declare_ops![
     inspect::INSPECT,
     join::JOIN,
     lattice_join::LATTICE_JOIN,
+    lattice_merge::LATTICE_MERGE,
     map::MAP,
     merge::MERGE,
     next_stratum::NEXT_STRATUM,
