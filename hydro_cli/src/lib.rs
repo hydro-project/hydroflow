@@ -221,11 +221,12 @@ struct GCPNetwork {
 #[pymethods]
 impl GCPNetwork {
     #[new]
-    fn new(project: String) -> Self {
+    fn new(project: String, existing: Option<String>) -> Self {
         GCPNetwork {
             underlying: Arc::new(RwLock::new(crate::core::gcp::GCPNetwork {
                 project,
-                vpc_id: None,
+                tf_path: None,
+                existing_vpc: existing,
             })),
         }
     }
