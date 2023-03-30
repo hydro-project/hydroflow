@@ -94,21 +94,23 @@ impl Deployment {
         region: String,
         network: GCPNetwork,
     ) -> PyResult<Py<pyo3::PyAny>> {
+        let arc = self.underlying.blocking_write().add_host(|id| {
+            crate::core::GCPComputeEngineHost::new(
+                id,
+                project,
+                machine_type,
+                image,
+                region,
+                network.underlying,
+            )
+        });
+
         Ok(Py::new(
             py,
             PyClassInitializer::from(Host {
-                underlying: self.underlying.blocking_write().add_host(|id| {
-                    crate::core::GCPComputeEngineHost::new(
-                        id,
-                        project,
-                        machine_type,
-                        image,
-                        region,
-                        network.underlying,
-                    )
-                }),
+                underlying: arc.clone(),
             })
-            .add_subclass(LocalhostHost {}),
+            .add_subclass(GCPComputeEngineHost { underlying: arc }),
         )?
         .into_py(py))
     }
