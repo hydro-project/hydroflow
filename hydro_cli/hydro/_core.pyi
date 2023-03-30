@@ -29,7 +29,7 @@ class LocalhostHost(Host):
     pass
 
 class GCPNetwork(object):
-    pass
+    def __init__(self, project: str, existing: Optional[str] = None) -> None: ...
 
 class GCPComputeEngineHost(Host):
     internal_ip: str
