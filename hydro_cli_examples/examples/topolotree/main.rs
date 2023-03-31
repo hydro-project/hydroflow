@@ -3,6 +3,7 @@ use hydroflow::hydroflow_syntax;
 use hydroflow::tokio;
 use hydroflow::util::cli::{ConnectedBidi, ConnectedSink, ConnectedSource};
 use hydroflow::util::{deserialize_from_bytes, serialize_to_bytes};
+use std::time::Duration;
 use std::time::Instant;
 
 #[tokio::main]
@@ -14,6 +15,16 @@ async fn main() {
         .connect::<ConnectedBidi>()
         .await
         .into_source();
+
+    let f1 = async {
+        loop {
+            let x = procinfo::pid::stat_self().unwrap();
+
+            println!("memory: {} bytes", x.rss * 1024 * 4);
+
+            tokio::time::sleep(Duration::from_secs(1)).await;
+        }
+    };
 
     // let query_requests = ports
     //     .remove("query_requests")
@@ -216,5 +227,7 @@ async fn main() {
             -> dest_sink(query_responses); //send result to output channel
     };
 
-    df.run_async().await.unwrap();
+    let f2 = df.run_async();
+
+    futures::join!(f1, f2);
 }

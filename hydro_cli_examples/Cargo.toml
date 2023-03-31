@@ -33,3 +33,6 @@ hydroflow_datalog = { path = "../hydroflow_datalog" }
 
 tokio = { version = "1.16", features = [ "full" ] }
 serde_json = "1"
+
+procinfo = "0.4.2"
+futures = "0.3.28"
