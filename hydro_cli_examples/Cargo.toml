@@ -7,6 +7,9 @@ edition = "2021"
 name = "stdout_receiver"
 
 [[example]]
+name = "mux_stdout_receiver"
+
+[[example]]
 name = "dedalus_sender"
 
 [[example]]
