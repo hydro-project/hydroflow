@@ -1059,6 +1059,46 @@ let out: Vec&lt;_&gt; = hydroflow::util::collect_ready(&amp;mut out_rx);
 assert_eq!(out, vec![(7, (2, 5))]);
 <span class="boring">}
 </span></code></pre></pre>
+<h2 id="lattice_merge"><a class="header" href="#lattice_merge"><code>lattice_merge</code></a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
+<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; lattice_merge() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Blocking</td></tr>
+</tbody></table>
+</div><!-- GENERATED "hydroflow_lang/src/graph/ops/lattice_merge.rs" -->
+<blockquote>
+<p>1 input stream, 1 output stream</p>
+</blockquote>
+<blockquote>
+<p>Generic parameters: A <a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/lang/lattice/trait.LatticeRepr.html"><code>LatticeRepr</code></a>
+type.</p>
+</blockquote>
+<p>A specialized operator for merging lattices together into a accumulated value. Like <a href="#fold"><code>fold()</code></a>
+but specialized for lattice types. <code>lattice_merge::&lt;MyLatRepr&gt;()</code> is equivalent to <code>fold(Default::default, &lt;MyLatRepr as LatticeRepr&gt;::merge_owned)</code>.</p>
+<p><code>lattice_merge</code> can also be provided with one generic lifetime persistence argument, either
+<code>'tick</code> or <code>'static</code>, to specify how data persists. With <code>'tick</code>, values will only be collected
+within the same tick. With <code>'static</code>, values will be remembered across ticks and will be
+aggregated with pairs arriving in later ticks. When not explicitly specified persistence
+defaults to <code>'static</code>.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
+</span><span class="boring">let __rt = hydroflow::tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
+</span><span class="boring">__rt.block_on(async {
+</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
+</span>source_iter([1,2,3,4,5])
+    -&gt; lattice_merge::&lt;'static, hydroflow::lang::lattice::ord::MaxRepr&lt;usize&gt;&gt;()
+    -&gt; for_each(|x| println!(&quot;Least upper bound: {}&quot;, x));
+<span class="boring">};
+</span><span class="boring">for _ in 0..100 {
+</span><span class="boring">    hydroflow::tokio::task::yield_now().await;
+</span><span class="boring">    if !__hf.run_tick() {
+</span><span class="boring">        // No work done.
+</span><span class="boring">        break;
+</span><span class="boring">    }
+</span><span class="boring">}
+</span><span class="boring">})
+</span><span class="boring">}
+</span></code></pre></pre>
 <h2 id="map"><a class="header" href="#map"><code>map</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; map(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
