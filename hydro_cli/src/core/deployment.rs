@@ -29,6 +29,15 @@ impl Deployment {
         let result = Arc::new(resource_batch.provision(&mut self.resource_pool).await?);
         println!("[hydro] provisioned resources");
 
+        let hosts_provisioned =
+            self.hosts
+                .iter_mut()
+                .map(|host: &mut Arc<RwLock<dyn Host>>| async {
+                    host.write().await.provision(&result).await;
+                });
+        futures::future::join_all(hosts_provisioned).await;
+        println!("[hydro] provisioned resources");
+
         let services_future =
             self.services
                 .iter_mut()
