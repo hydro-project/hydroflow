@@ -309,6 +309,51 @@ pub fn test_anti_join() {
 }
 
 #[multiplatform_test]
+pub fn test_repeat_fn() {
+    // regular Fn closure
+    {
+        let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
+        let mut df = hydroflow::hydroflow_syntax! {
+            repeat_fn(3, || 1) -> for_each(|x| out_send.send(x).unwrap());
+        };
+
+        df.run_tick();
+        let out: Vec<_> = collect_ready(&mut out_recv);
+        assert_eq!(vec![1, 1, 1], out);
+
+        df.run_tick();
+        let out: Vec<_> = collect_ready(&mut out_recv);
+        assert_eq!(vec![1, 1, 1], out);
+
+        df.run_tick();
+        let out: Vec<_> = collect_ready(&mut out_recv);
+        assert_eq!(vec![1, 1, 1], out);
+    }
+
+    // FnMut closure
+    {
+        let mut x = 0;
+
+        let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
+        let mut df = hydroflow::hydroflow_syntax! {
+            repeat_fn(3, move || { x += 1; x }) -> for_each(|x| out_send.send(x).unwrap());
+        };
+
+        df.run_tick();
+        let out: Vec<_> = collect_ready(&mut out_recv);
+        assert_eq!(vec![1, 2, 3], out);
+
+        df.run_tick();
+        let out: Vec<_> = collect_ready(&mut out_recv);
+        assert_eq!(vec![4, 5, 6], out);
+
+        df.run_tick();
+        let out: Vec<_> = collect_ready(&mut out_recv);
+        assert_eq!(vec![7, 8, 9], out);
+    }
+}
+
+#[multiplatform_test]
 pub fn test_batch() {
     let (batch1_tx, batch1_rx) = hydroflow::util::unbounded_channel::<()>();
     let (batch2_tx, batch2_rx) = hydroflow::util::unbounded_channel::<()>();
