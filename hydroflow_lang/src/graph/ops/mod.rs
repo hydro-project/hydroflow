@@ -253,6 +253,7 @@ declare_ops![
     null::NULL,
     persist::PERSIST,
     reduce::REDUCE,
+    repeat_fn::REPEAT_FN,
     repeat_iter::REPEAT_ITER,
     sort::SORT,
     sort_by::SORT_BY,
