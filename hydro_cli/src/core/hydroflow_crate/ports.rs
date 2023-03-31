@@ -1,5 +1,5 @@
 use super::HydroflowCrate;
-use crate::core::{ClientStrategy, Host, LaunchedHost, ServerStrategy};
+use crate::core::{ClientStrategy, Host, HostStrategyGetter, LaunchedHost, ServerStrategy};
 
 use anyhow::Result;
 use async_recursion::async_recursion;
@@ -29,14 +29,9 @@ pub type ReverseSinkInstantiator = Box<dyn FnOnce(&mut dyn Any) -> ServerStrateg
 pub trait HydroflowSink: Send + Sync {
     fn as_any_mut(&mut self) -> &mut dyn std::any::Any;
 
-    fn instantiate_null(&mut self);
-
     /// Instantiate the sink as the source host connecting to the sink host.
     /// Returns a thunk that can be called to perform mutations that instantiate the sink.
-    fn instantiate(
-        &self,
-        client_host: &Arc<RwLock<dyn Host>>,
-    ) -> Result<Box<dyn FnOnce() -> ServerConfig>>;
+    fn instantiate(&self, client_path: &SourcePath) -> Result<Box<dyn FnOnce() -> ServerConfig>>;
 
     /// Instantiate the sink, but as the sink host connecting to the source host.
     /// Returns a thunk that can be called to perform mutations that instantiate the sink, taking a mutable reference to this sink.
@@ -52,7 +47,7 @@ pub struct NullSourceSink;
 
 impl HydroflowSource for NullSourceSink {
     fn send_to(&mut self, to: &mut dyn HydroflowSink) {
-        to.instantiate_null();
+        to.instantiate(&SourcePath::Null).unwrap()();
     }
 }
 
@@ -61,12 +56,7 @@ impl HydroflowSink for NullSourceSink {
         self
     }
 
-    fn instantiate_null(&mut self) {}
-
-    fn instantiate(
-        &self,
-        _client_host: &Arc<RwLock<dyn Host>>,
-    ) -> Result<Box<dyn FnOnce() -> ServerConfig>> {
+    fn instantiate(&self, _client_path: &SourcePath) -> Result<Box<dyn FnOnce() -> ServerConfig>> {
         Ok(Box::new(|| ServerConfig::Null))
     }
 
@@ -89,16 +79,7 @@ impl HydroflowSink for DemuxSink {
         self
     }
 
-    fn instantiate_null(&mut self) {
-        self.demux
-            .values_mut()
-            .for_each(|sink| sink.try_write().unwrap().instantiate_null());
-    }
-
-    fn instantiate(
-        &self,
-        client_host: &Arc<RwLock<dyn Host>>,
-    ) -> Result<Box<dyn FnOnce() -> ServerConfig>> {
+    fn instantiate(&self, client_host: &SourcePath) -> Result<Box<dyn FnOnce() -> ServerConfig>> {
         let mut thunk_map = HashMap::new();
         for (key, target) in &self.demux {
             thunk_map.insert(*key, target.try_read().unwrap().instantiate(client_host)?);
@@ -199,47 +180,44 @@ impl HydroflowServer for HydroflowPortConfig {
     }
 }
 
+pub enum SourcePath {
+    Null,
+    Direct(Arc<RwLock<dyn Host>>),
+}
+
 impl HydroflowSink for HydroflowPortConfig {
     fn as_any_mut(&mut self) -> &mut dyn Any {
         self
     }
 
-    fn instantiate_null(&mut self) {
-        let service = self.service.upgrade().unwrap();
-        let mut service_write = service.try_write().unwrap();
-        if self.merge {
-            service_write
-                .port_to_bind
-                .entry(self.port.clone())
-                .or_insert(ServerStrategy::Merge(vec![]));
-        } else {
-            assert!(!service_write.port_to_bind.contains_key(&self.port));
-            service_write
-                .port_to_bind
-                .insert(self.port.clone(), ServerStrategy::Null);
-        }
-    }
-
-    fn instantiate(
-        &self,
-        client_host: &Arc<RwLock<dyn Host>>,
-    ) -> Result<Box<dyn FnOnce() -> ServerConfig>> {
+    fn instantiate(&self, client_path: &SourcePath) -> Result<Box<dyn FnOnce() -> ServerConfig>> {
         let server = self.service.upgrade().unwrap();
         let server_read = server.try_read().unwrap();
 
-        let client_host_id = client_host.try_read().unwrap().id();
+        let (bind_type, base_config) = match client_path {
+            SourcePath::Direct(client_host) => {
+                let client_host_id = client_host.try_read().unwrap().id();
 
-        let server_host_clone = server_read.on.clone();
-        let server_host = server_host_clone.try_read().unwrap();
+                let server_host_clone = server_read.on.clone();
+                let server_host = server_host_clone.try_read().unwrap();
 
-        let client_host_read = if server_host.id() == client_host_id {
-            None
-        } else {
-            client_host.try_read().ok()
+                let client_host_read = if server_host.id() == client_host_id {
+                    None
+                } else {
+                    client_host.try_read().ok()
+                };
+
+                let (conn_type, bind_type) =
+                    server_host.strategy_as_server(client_host_read.as_deref())?;
+                let base_config = ServerConfig::from_strategy(&conn_type, Box::new(self.clone()));
+                (bind_type, base_config)
+            }
+
+            SourcePath::Null => {
+                let strategy_getter: HostStrategyGetter = Box::new(|_| ServerStrategy::Null);
+                (strategy_getter, ServerConfig::Null)
+            }
         };
-
-        let (conn_type, bind_type) = server_host.strategy_as_server(client_host_read.as_deref())?;
-        let base_config = ServerConfig::from_strategy(&conn_type, Box::new(self.clone()));
 
         let server = server.clone();
         let merge = self.merge;
