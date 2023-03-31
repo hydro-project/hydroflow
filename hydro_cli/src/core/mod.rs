@@ -90,6 +90,7 @@ pub enum ServerStrategy {
     ),
     Demux(HashMap<u32, ServerStrategy>),
     Merge(Vec<ServerStrategy>),
+    Mux(HashMap<u32, ServerStrategy>),
     Null,
 }
 

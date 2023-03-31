@@ -86,7 +86,7 @@ impl HydroflowCrate {
             drop(forward_res);
             let instantiated = sink.instantiate_reverse(
                 &self.on,
-                Box::new(HydroflowPortConfig {
+                Arc::new(HydroflowPortConfig {
                     service: Arc::downgrade(self_arc),
                     port: my_port.clone(),
                     merge: false,
@@ -272,7 +272,7 @@ impl Service for HydroflowCrate {
 
         let mut sink_ports = HashMap::new();
         for (port_name, outgoing) in self.port_to_server.drain() {
-            sink_ports.insert(port_name.clone(), outgoing.sink_port().await);
+            sink_ports.insert(port_name.clone(), outgoing.load_instantiated().await);
         }
 
         let formatted_defns = serde_json::to_string(&sink_ports).unwrap();

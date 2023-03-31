@@ -87,19 +87,27 @@ impl CustomClientPort {
     }
 
     pub async fn server_port(&self) -> ServerOrBound {
-        ServerOrBound::Server(self.client_port.as_ref().unwrap().sink_port().await)
+        ServerOrBound::Server(self.client_port.as_ref().unwrap().load_instantiated().await)
     }
 }
 
 impl HydroflowSource for CustomClientPort {
+    fn source_path(&self) -> SourcePath {
+        SourcePath::Direct(self.on.upgrade().unwrap().try_read().unwrap().on.clone())
+    }
+
     fn send_to(&mut self, to: &mut dyn HydroflowSink) {
         if let Ok(instantiated) = to.instantiate(&SourcePath::Direct(
             self.on.upgrade().unwrap().try_read().unwrap().on.clone(),
         )) {
-            self.client_port = Some(instantiated());
+            self.record_server_config(instantiated());
         } else {
             panic!("Custom services cannot be used as the server")
         }
+    }
+
+    fn record_server_config(&mut self, config: ServerConfig) {
+        self.client_port = Some(config);
     }
 }
 
@@ -116,7 +124,7 @@ impl HydroflowSink for CustomClientPort {
     fn instantiate_reverse(
         &self,
         server_host: &Arc<RwLock<dyn Host>>,
-        server_sink: Box<dyn HydroflowServer>,
+        server_sink: Arc<dyn HydroflowServer>,
         wrap_client_port: &dyn Fn(ServerConfig) -> ServerConfig,
     ) -> Result<Box<dyn FnOnce(&mut dyn Any) -> ServerStrategy>> {
         let client = self.on.upgrade().unwrap();
