@@ -90,7 +90,7 @@ impl Deployment {
         .into_py(py))
     }
 
-    #[allow(non_snake_case)]
+    #[allow(non_snake_case, clippy::too_many_arguments)]
     fn GCPComputeEngineHost(
         &self,
         py: Python<'_>,
