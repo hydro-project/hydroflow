@@ -144,10 +144,12 @@ async def main(args):
 
     await asyncio.sleep(1)
 
-    for i in range(5):
+    for i in range(1000000):
         print("sending increment")
-        await tree_increment_channels.node.send(bytes("1", "utf-8"))
-        await asyncio.sleep(1)
+        await tree_increment_channels.node.send(bytes("{\"tweet_id\": " + str(i) + ", \"likes\": " + str(i % 2 * 2 - 1) + "}", "utf-8"))
+        print("temp")
+        # await tree_increment_channels.node.send(bytes(F"""{"tweet_id": 1, "likes": {i % 2}}""", "utf-8"))
+        #await asyncio.sleep(1)
 
     print_task.cancel()
     await print_task
