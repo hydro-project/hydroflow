@@ -19,6 +19,7 @@ use super::{
 
 pub struct LaunchedComputeEngine {
     resource_result: Arc<ResourceResult>,
+    user: String,
     pub internal_ip: String,
     pub external_ip: Option<String>,
 }
@@ -88,7 +89,12 @@ impl LaunchedSSHHost for LaunchedComputeEngine {
                 session.handshake().await?;
 
                 session
-                    .userauth_pubkey_file("hydro", None, self.ssh_key_path().as_path(), None)
+                    .userauth_pubkey_file(
+                        self.user.as_str(),
+                        None,
+                        self.ssh_key_path().as_path(),
+                        None,
+                    )
                     .await?;
 
                 Ok(session)
@@ -212,6 +218,7 @@ pub struct GCPComputeEngineHost {
     pub image: String,
     pub region: String,
     pub network: Arc<RwLock<GCPNetwork>>,
+    pub user: Option<String>,
     pub launched: Option<Arc<LaunchedComputeEngine>>,
     external_ports: Vec<u16>,
 }
@@ -224,6 +231,7 @@ impl GCPComputeEngineHost {
         image: String,
         region: String,
         network: Arc<RwLock<GCPNetwork>>,
+        user: Option<String>,
     ) -> Self {
         Self {
             id,
@@ -232,6 +240,7 @@ impl GCPComputeEngineHost {
             image,
             region,
             network,
+            user,
             launched: None,
             external_ports: vec![],
         }
@@ -423,6 +432,7 @@ impl Host for GCPComputeEngineHost {
             );
         }
 
+        let user = self.user.as_ref().cloned().unwrap_or("hydro".to_string());
         resource_batch
             .terraform
             .resource
@@ -437,7 +447,7 @@ impl Host for GCPComputeEngineHost {
                     "zone": self.region,
                     "tags": tags,
                     "metadata": {
-                    "ssh-keys": "hydro:${tls_private_key.vm_instance_ssh_key.public_key_openssh}"
+                        "ssh-keys": format!("{user}:${{tls_private_key.vm_instance_ssh_key.public_key_openssh}}")
                     },
                     "boot_disk": [
                         {
@@ -482,6 +492,7 @@ impl Host for GCPComputeEngineHost {
 
             self.launched = Some(Arc::new(LaunchedComputeEngine {
                 resource_result: resource_result.clone(),
+                user: self.user.as_ref().cloned().unwrap_or("hydro".to_string()),
                 internal_ip,
                 external_ip,
             }))

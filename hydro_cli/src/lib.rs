@@ -84,7 +84,7 @@ impl Deployment {
         .into_py(py))
     }
 
-    #[allow(non_snake_case)]
+    #[allow(non_snake_case, clippy::too_many_arguments)]
     fn GCPComputeEngineHost(
         &self,
         py: Python<'_>,
@@ -93,6 +93,7 @@ impl Deployment {
         image: String,
         region: String,
         network: GCPNetwork,
+        user: Option<String>,
     ) -> PyResult<Py<pyo3::PyAny>> {
         let arc = self.underlying.blocking_write().add_host(|id| {
             crate::core::GCPComputeEngineHost::new(
@@ -102,6 +103,7 @@ impl Deployment {
                 image,
                 region,
                 network.underlying,
+                user,
             )
         });
 
