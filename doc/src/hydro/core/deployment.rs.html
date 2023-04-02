@@ -79,6 +79,14 @@
 <a href="#79" id="79">79</a>
 <a href="#80" id="80">80</a>
 <a href="#81" id="81">81</a>
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
+<a href="#86" id="86">86</a>
+<a href="#87" id="87">87</a>
+<a href="#88" id="88">88</a>
+<a href="#89" id="89">89</a>
 </pre><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::ResourcePool;
 <span class="kw">use </span><span class="kw">super</span>::Service;
 
@@ -108,6 +116,14 @@
         }
 
         <span class="kw">let </span>result = Arc::new(resource_batch.provision(<span class="kw-2">&amp;mut </span><span class="self">self</span>.resource_pool).<span class="kw">await</span><span class="question-mark">?</span>);
+
+        <span class="kw">let </span>hosts_provisioned =
+            <span class="self">self</span>.hosts
+                .iter_mut()
+                .map(|host: <span class="kw-2">&amp;mut </span>Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;| <span class="kw">async </span>{
+                    host.write().<span class="kw">await</span>.provision(<span class="kw-2">&amp;</span>result).<span class="kw">await</span>;
+                });
+        futures::future::join_all(hosts_provisioned).<span class="kw">await</span>;
         <span class="macro">println!</span>(<span class="string">&quot;[hydro] provisioned resources&quot;</span>);
 
         <span class="kw">let </span>services_future =
