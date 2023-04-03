@@ -266,11 +266,13 @@ impl Host for GCPComputeEngineHost {
             ServerStrategy::UnixSocket => {}
             ServerStrategy::InternalTcpPort => {}
             ServerStrategy::ExternalTcpPort(port) => {
-                if self.launched.is_some() {
-                    todo!("Cannot adjust firewall after host has been launched");
-                }
+                if !self.external_ports.contains(port) {
+                    if self.launched.is_some() {
+                        todo!("Cannot adjust firewall after host has been launched");
+                    }
 
-                self.external_ports.push(*port);
+                    self.external_ports.push(*port);
+                }
             }
             ServerStrategy::Demux(demux) => {
                 for bind_type in demux.values() {
