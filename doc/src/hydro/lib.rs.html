@@ -661,6 +661,8 @@
 <a href="#661" id="661">661</a>
 <a href="#662" id="662">662</a>
 <a href="#663" id="663">663</a>
+<a href="#664" id="664">664</a>
+<a href="#665" id="665">665</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::ops::DerefMut;
 <span class="kw">use </span>std::sync::Arc;
 
@@ -747,7 +749,7 @@
         </span>.into_py(py))
     }
 
-    <span class="attr">#[allow(non_snake_case)]
+    <span class="attr">#[allow(non_snake_case, clippy::too_many_arguments)]
     </span><span class="kw">fn </span>GCPComputeEngineHost(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         py: Python&lt;<span class="lifetime">&#39;_</span>&gt;,
@@ -756,6 +758,7 @@
         image: String,
         region: String,
         network: GCPNetwork,
+        user: <span class="prelude-ty">Option</span>&lt;String&gt;,
     ) -&gt; PyResult&lt;Py&lt;pyo3::PyAny&gt;&gt; {
         <span class="kw">let </span>arc = <span class="self">self</span>.underlying.blocking_write().add_host(|id| {
             <span class="kw">crate</span>::core::GCPComputeEngineHost::new(
@@ -765,6 +768,7 @@
                 image,
                 region,
                 network.underlying,
+                user,
             )
         });
 

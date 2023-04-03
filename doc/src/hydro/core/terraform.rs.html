@@ -296,6 +296,7 @@
 <a href="#296" id="296">296</a>
 <a href="#297" id="297">297</a>
 <a href="#298" id="298">298</a>
+<a href="#299" id="299">299</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::{
     collections::HashMap,
     io::{BufRead, BufReader},
@@ -376,7 +377,8 @@
 <span class="attr">#[derive(Serialize, Deserialize)]
 </span><span class="kw">pub struct </span>TerraformBatch {
     <span class="kw">pub </span>terraform: TerraformConfig,
-    <span class="kw">pub </span>data: HashMap&lt;String, HashMap&lt;String, serde_json::Value&gt;&gt;,
+    <span class="attr">#[serde(skip_serializing_if = <span class="string">&quot;HashMap::is_empty&quot;</span>)]
+    </span><span class="kw">pub </span>data: HashMap&lt;String, HashMap&lt;String, serde_json::Value&gt;&gt;,
     <span class="kw">pub </span>resource: HashMap&lt;String, HashMap&lt;String, serde_json::Value&gt;&gt;,
     <span class="kw">pub </span>output: HashMap&lt;String, TerraformOutput&gt;,
 }

@@ -550,6 +550,17 @@
 <a href="#550" id="550">550</a>
 <a href="#551" id="551">551</a>
 <a href="#552" id="552">552</a>
+<a href="#553" id="553">553</a>
+<a href="#554" id="554">554</a>
+<a href="#555" id="555">555</a>
+<a href="#556" id="556">556</a>
+<a href="#557" id="557">557</a>
+<a href="#558" id="558">558</a>
+<a href="#559" id="559">559</a>
+<a href="#560" id="560">560</a>
+<a href="#561" id="561">561</a>
+<a href="#562" id="562">562</a>
+<a href="#563" id="563">563</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::{collections::HashMap, net::SocketAddr, path::PathBuf, sync::Arc, time::Duration};
 
 <span class="kw">use </span>anyhow::{Context, <span class="prelude-ty">Result</span>};
@@ -571,6 +582,7 @@
 
 <span class="kw">pub struct </span>LaunchedComputeEngine {
     resource_result: Arc&lt;ResourceResult&gt;,
+    user: String,
     <span class="kw">pub </span>internal_ip: String,
     <span class="kw">pub </span>external_ip: <span class="prelude-ty">Option</span>&lt;String&gt;,
 }
@@ -640,7 +652,12 @@
                 session.handshake().<span class="kw">await</span><span class="question-mark">?</span>;
 
                 session
-                    .userauth_pubkey_file(<span class="string">&quot;hydro&quot;</span>, <span class="prelude-val">None</span>, <span class="self">self</span>.ssh_key_path().as_path(), <span class="prelude-val">None</span>)
+                    .userauth_pubkey_file(
+                        <span class="self">self</span>.user.as_str(),
+                        <span class="prelude-val">None</span>,
+                        <span class="self">self</span>.ssh_key_path().as_path(),
+                        <span class="prelude-val">None</span>,
+                    )
                     .<span class="kw">await</span><span class="question-mark">?</span>;
 
                 <span class="prelude-val">Ok</span>(session)
@@ -764,6 +781,7 @@
     <span class="kw">pub </span>image: String,
     <span class="kw">pub </span>region: String,
     <span class="kw">pub </span>network: Arc&lt;RwLock&lt;GCPNetwork&gt;&gt;,
+    <span class="kw">pub </span>user: <span class="prelude-ty">Option</span>&lt;String&gt;,
     <span class="kw">pub </span>launched: <span class="prelude-ty">Option</span>&lt;Arc&lt;LaunchedComputeEngine&gt;&gt;,
     external_ports: Vec&lt;u16&gt;,
 }
@@ -776,6 +794,7 @@
         image: String,
         region: String,
         network: Arc&lt;RwLock&lt;GCPNetwork&gt;&gt;,
+        user: <span class="prelude-ty">Option</span>&lt;String&gt;,
     ) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
             id,
@@ -784,6 +803,7 @@
             image,
             region,
             network,
+            user,
             launched: <span class="prelude-val">None</span>,
             external_ports: <span class="macro">vec!</span>[],
         }
@@ -975,6 +995,7 @@
             );
         }
 
+        <span class="kw">let </span>user = <span class="self">self</span>.user.as_ref().cloned().unwrap_or(<span class="string">&quot;hydro&quot;</span>.to_string());
         resource_batch
             .terraform
             .resource
@@ -989,8 +1010,8 @@
                     <span class="string">&quot;zone&quot;</span>: <span class="self">self</span>.region,
                     <span class="string">&quot;tags&quot;</span>: tags,
                     <span class="string">&quot;metadata&quot;</span>: {
-                    <span class="string">&quot;ssh-keys&quot;</span>: <span class="string">&quot;hydro:${tls_private_key.vm_instance_ssh_key.public_key_openssh}&quot;
-                    </span>},
+                        <span class="string">&quot;ssh-keys&quot;</span>: <span class="macro">format!</span>(<span class="string">&quot;{user}:${{tls_private_key.vm_instance_ssh_key.public_key_openssh}}&quot;</span>)
+                    },
                     <span class="string">&quot;boot_disk&quot;</span>: [
                         {
                             <span class="string">&quot;initialize_params&quot;</span>: [
@@ -1034,6 +1055,7 @@
 
             <span class="self">self</span>.launched = <span class="prelude-val">Some</span>(Arc::new(LaunchedComputeEngine {
                 resource_result: resource_result.clone(),
+                user: <span class="self">self</span>.user.as_ref().cloned().unwrap_or(<span class="string">&quot;hydro&quot;</span>.to_string()),
                 internal_ip,
                 external_ip,
             }))
