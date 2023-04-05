@@ -1,4 +1,4 @@
 [toolchain]
-channel = "nightly-2023-03-01"
+channel = "nightly-2023-03-01" # make sure to update ci.yml/test-cli!
 components = ["rustfmt", "clippy"]
 targets = ["wasm32-unknown-unknown"]
