@@ -12,7 +12,7 @@ use cargo::{
 use hydroflow_cli_integration::ServerPort;
 use tokio::{sync::RwLock, task::JoinHandle};
 
-use self::ports::{HydroflowPortConfig, HydroflowSink};
+use self::ports::{HydroflowPortConfig, HydroflowSink, SourcePath};
 
 use super::{
     Host, HostTargetType, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult,
@@ -76,7 +76,7 @@ impl HydroflowCrate {
         my_port: String,
         sink: &mut dyn HydroflowSink,
     ) -> Result<()> {
-        let forward_res = sink.instantiate(&self.on);
+        let forward_res = sink.instantiate(&SourcePath::Direct(self.on.clone()));
         if let Ok(instantiated) = forward_res {
             // TODO(shadaj): if already in this map, we want to broadcast
             assert!(!self.port_to_server.contains_key(&my_port));
