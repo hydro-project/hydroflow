@@ -60,6 +60,14 @@ impl LaunchedSSHHost for LaunchedComputeEngine {
 
                 ServerBindConfig::Merge(configs)
             }
+            ServerStrategy::Mux(mux) => {
+                let mut config_map = HashMap::new();
+                for (key, bind_type) in mux {
+                    config_map.insert(*key, LaunchedSSHHost::server_config(self, bind_type));
+                }
+
+                ServerBindConfig::Mux(config_map)
+            }
             ServerStrategy::Null => ServerBindConfig::Null,
         }
     }
@@ -277,6 +285,11 @@ impl Host for GCPComputeEngineHost {
             }
             ServerStrategy::Merge(merge) => {
                 for bind_type in merge {
+                    self.request_port(bind_type);
+                }
+            }
+            ServerStrategy::Mux(mux) => {
+                for bind_type in mux.values() {
                     self.request_port(bind_type);
                 }
             }
@@ -509,12 +522,11 @@ impl Host for GCPComputeEngineHost {
 
     fn strategy_as_server<'a>(
         &'a self,
-        client_host: Option<&dyn Host>,
+        client_host: &dyn Host,
     ) -> Result<(
         ClientStrategy<'a>,
         Box<dyn FnOnce(&mut dyn std::any::Any) -> ServerStrategy>,
     )> {
-        let client_host = client_host.unwrap_or(self);
         if client_host.can_connect_to(ClientStrategy::UnixSocket(self.id)) {
             Ok((
                 ClientStrategy::UnixSocket(self.id),
