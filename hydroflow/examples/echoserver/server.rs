@@ -10,7 +10,7 @@ pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, _opts: cra
 
     let mut flow: Hydroflow = hydroflow_syntax! {
         // Define a shared inbound channel
-        inbound_chan = source_stream_serde(inbound) -> filter_map(Result::ok) -> tee();
+        inbound_chan = source_stream_serde(inbound) -> map(Result::unwrap) -> tee();
 
         // Print all messages for debugging purposes
         inbound_chan[0]

@@ -13,7 +13,7 @@ pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, graph: Opt
         // NW channels
         outbound_chan = merge() -> dest_sink_serde(outbound);
         inbound_chan = source_stream_serde(inbound)
-            -> filter_map(Result::ok)
+            -> map(Result::unwrap)
             -> demux(|(m, a), var_args!(puts, gets, errs)| match m {
                     KVSMessage::Put {..} => puts.give((m, a)),
                     KVSMessage::Get {..} => gets.give((m, a)),

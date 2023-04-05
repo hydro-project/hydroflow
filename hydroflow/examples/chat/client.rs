@@ -34,7 +34,7 @@ pub(crate) async fn run_client(outbound: UdpSink, inbound: UdpStream, opts: Opts
     let mut hf = hydroflow_syntax! {
         // set up channels
         outbound_chan = merge() -> dest_sink_serde(outbound);
-        inbound_chan = source_stream_serde(inbound) -> filter_map(Result::ok) -> map(|(m, _)| m)
+        inbound_chan = source_stream_serde(inbound) -> map(Result::unwrap) -> map(|(m, _)| m)
             ->  demux(|m, var_args!(acks, msgs, errs)|
                     match m {
                         Message::ConnectResponse => acks.give(m),
