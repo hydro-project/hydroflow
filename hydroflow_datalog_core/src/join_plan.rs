@@ -148,12 +148,13 @@ fn find_relation_local_constraints<'a>(
     indices_grouped_by_var
 }
 
-/// Given a mapping from variable names to their repeated indices, builds a Rust expression that
-/// tests whether the values at those indices are equal for each variable.
+/// Builds a Rust expression that evaluates whether a relation's local constraints are satisfied.
 ///
-/// For example, `rel(a, b, a, a, b)` would give us the map `{ "a" => [0, 2, 3], "b" => [1, 4] }`.
-/// Then we would want to generate the code `row.0 == row.2 && row.0 == row.3 && row.1 == row.4`.
-fn build_local_constraint_conditions(constraints: &BTreeMap<String, Vec<usize>>) -> syn::Expr {
+/// For example, suppose we have the Datalog relation `rel(a, b, a, a, b)`. Calling
+/// `find_relation_local_constraints` gives us the map `{ "a" => [0, 2, 3], "b" => [1, 4] }`. A
+/// Rust expression that tests whether these local constraints are satisfied is `row.0 == row.2 &&
+/// row.0 == row.3 && row.1 == row.4`.
+fn build_rust_local_constraint_expr(constraints: &BTreeMap<String, Vec<usize>>) -> syn::Expr {
     constraints
         .values()
         .flat_map(|indices| {
@@ -169,6 +170,37 @@ fn build_local_constraint_conditions(constraints: &BTreeMap<String, Vec<usize>>)
                 .skip(1)
                 .map(|i| parse_quote!(row.#first_index == row.#i))
                 .collect::<Vec<_>>()
+        })
+        .reduce(|a: syn::Expr, b| parse_quote!(#a && #b))
+        .unwrap()
+}
+
+/// Builds a Rust expression that computes the Dataflow predicates.
+///
+/// For example, given Dataflow predicates like `( a >= b + 1 ), ( b > 0 )`, builds a Rust
+/// expression equivalent to `(a >= b + 1) && (b > 0)`. ("Equivalent" because instead of emitting
+/// `a` and `b`, we emit `row.<a-idx>` and `row.<b-idx>`, where a-idx and b-idx are `a`'s and `b`'s
+/// indices in the variable mapping).
+fn build_rust_predicate_expr(
+    predicates: &Vec<&Spanned<PredicateExpr>>,
+    variable_mapping: &BTreeMap<String, usize>,
+    get_span: &impl Fn((usize, usize)) -> Span,
+) -> syn::Expr {
+    predicates
+        .iter()
+        .map(|p| {
+            let l = syn::Index::from(*variable_mapping.get(&p.left.name).unwrap());
+            let l: syn::Expr = parse_quote_spanned!(get_span(p.left.span)=> row.#l);
+            let r = syn::Index::from(*variable_mapping.get(&p.right.name).unwrap());
+            let r: syn::Expr = parse_quote_spanned!(get_span(p.right.span)=> row.#r);
+
+            match &p.op {
+                BoolOp::Lt(_) => parse_quote_spanned!(get_span(p.span)=> #l < #r),
+                BoolOp::LtEq(_) => parse_quote_spanned!(get_span(p.span)=> #l <= #r),
+                BoolOp::Gt(_) => parse_quote_spanned!(get_span(p.span)=> #l > #r),
+                BoolOp::GtEq(_) => parse_quote_spanned!(get_span(p.span)=> #l >= #r),
+                BoolOp::Eq(_) => parse_quote_spanned!(get_span(p.span)=> #l == #r),
+            }
         })
         .reduce(|a: syn::Expr, b| parse_quote!(#a && #b))
         .unwrap()
@@ -230,7 +262,7 @@ pub fn expand_join_plan(
                 Span::call_site(),
             );
 
-            let conditions = build_local_constraint_conditions(&local_constraints);
+            let conditions = build_rust_local_constraint_expr(&local_constraints);
 
             flat_graph_builder.add_statement(parse_quote_spanned! {get_span(rule_span)=>
                 #filter_node = #relation_node [#relation_idx] -> filter(|row: &#row_type| #conditions)
@@ -439,25 +471,7 @@ pub fn expand_join_plan(
             let row_type = inner_expanded.tuple_type;
             let variable_mapping = &inner_expanded.variable_mapping;
 
-            let conditions = predicates
-                .iter()
-                .map(|p| {
-                    let l = syn::Index::from(*variable_mapping.get(&p.left.name).unwrap());
-                    let l: syn::Expr = parse_quote_spanned!(get_span(p.left.span)=> row.#l);
-                    let r = syn::Index::from(*variable_mapping.get(&p.right.name).unwrap());
-                    let r: syn::Expr = parse_quote_spanned!(get_span(p.right.span)=> row.#r);
-
-                    match &p.op {
-                        BoolOp::Lt(_) => parse_quote_spanned!(get_span(p.span)=> #l < #r),
-                        BoolOp::LtEq(_) => parse_quote_spanned!(get_span(p.span)=> #l <= #r),
-                        BoolOp::Gt(_) => parse_quote_spanned!(get_span(p.span)=> #l > #r),
-                        BoolOp::GtEq(_) => parse_quote_spanned!(get_span(p.span)=> #l >= #r),
-                        BoolOp::Eq(_) => parse_quote_spanned!(get_span(p.span)=> #l == #r),
-                    }
-                })
-                .reduce(|a: syn::Expr, b| parse_quote!(#a && #b))
-                .unwrap();
-
+            let predicate_expr = build_rust_predicate_expr(predicates, variable_mapping, get_span);
             let predicate_filter_node = syn::Ident::new(
                 &format!(
                     "predicate_{}_filter",
@@ -467,7 +481,7 @@ pub fn expand_join_plan(
             );
 
             flat_graph_builder.add_statement(parse_quote_spanned! { get_span(rule_span)=>
-                #predicate_filter_node = #inner_name -> filter(|row: &#row_type| #conditions )
+                #predicate_filter_node = #inner_name -> filter(|row: &#row_type| #predicate_expr )
             });
 
             IntermediateJoinNode {
