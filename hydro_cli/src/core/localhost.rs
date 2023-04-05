@@ -121,6 +121,14 @@ impl LaunchedHost for LaunchedLocalhost {
 
                 ServerBindConfig::Merge(configs)
             }
+            ServerStrategy::Mux(mux) => {
+                let mut config_map = HashMap::new();
+                for (key, bind_type) in mux {
+                    config_map.insert(*key, self.server_config(bind_type));
+                }
+
+                ServerBindConfig::Mux(config_map)
+            }
             ServerStrategy::Null => ServerBindConfig::Null,
         }
     }
@@ -167,6 +175,23 @@ impl LaunchedHost for LaunchedLocalhost {
 #[derive(Debug)]
 pub struct LocalhostHost {
     pub id: usize,
+    client_only: bool,
+}
+
+impl LocalhostHost {
+    pub fn new(id: usize) -> LocalhostHost {
+        LocalhostHost {
+            id,
+            client_only: false,
+        }
+    }
+
+    pub fn client_only(&self) -> LocalhostHost {
+        LocalhostHost {
+            id: self.id,
+            client_only: true,
+        }
+    }
 }
 
 #[async_trait]
@@ -197,12 +222,15 @@ impl Host for LocalhostHost {
 
     fn strategy_as_server<'a>(
         &'a self,
-        connection_from: Option<&dyn Host>,
+        connection_from: &dyn Host,
     ) -> Result<(
         ClientStrategy<'a>,
         Box<dyn FnOnce(&mut dyn std::any::Any) -> ServerStrategy>,
     )> {
-        let connection_from = connection_from.unwrap_or(self);
+        if self.client_only {
+            anyhow::bail!("Localhost cannot be a server if it is client only")
+        }
+
         if connection_from.can_connect_to(ClientStrategy::UnixSocket(self.id)) {
             Ok((
                 ClientStrategy::UnixSocket(self.id),
