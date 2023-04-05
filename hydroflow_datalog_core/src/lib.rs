@@ -830,7 +830,7 @@ mod tests {
     }
 
     #[test]
-    fn test_simple_filter() {
+    fn test_simple_boolean_relation_filter() {
         test_snapshots!(
             r#"
             .input input `source_stream(input)`
