@@ -341,6 +341,7 @@ fn generate_rule(
         tee_counter,
         next_join_idx,
         rule.span,
+        diagnostics,
         get_span,
     );
 
@@ -931,6 +932,21 @@ mod tests {
             result(a + 123) :- ints(a)
             result(a + a) :- ints(a)
             result(123 - a) :- ints(a)
+            "#
+        );
+    }
+
+    #[test]
+    fn test_expr_predicate() {
+        test_snapshots!(
+            r#"
+            .input ints `source_stream(ints)`
+            .output result `for_each(|v| result.send(v).unwrap())`
+
+            result(1) :- ints(a), (a == 0)
+            result(2) :- ints(a), (a != 0)
+            result(3) :- ints(a), (a - 1 == 0)
+            result(4) :- ints(a), (a - 1 == 1 - 1)
             "#
         );
     }
