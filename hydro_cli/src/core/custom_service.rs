@@ -9,7 +9,9 @@ use hydroflow_cli_integration::ServerOrBound;
 use tokio::sync::RwLock;
 
 use super::{
-    hydroflow_crate::ports::{HydroflowServer, HydroflowSink, HydroflowSource, ServerConfig},
+    hydroflow_crate::ports::{
+        HydroflowServer, HydroflowSink, HydroflowSource, ServerConfig, SourcePath,
+    },
     Host, LaunchedHost, ResourceBatch, ResourceResult, ServerStrategy, Service,
 };
 
@@ -91,8 +93,9 @@ impl CustomClientPort {
 
 impl HydroflowSource for CustomClientPort {
     fn send_to(&mut self, to: &mut dyn HydroflowSink) {
-        if let Ok(instantiated) = to.instantiate(&self.on.upgrade().unwrap().try_read().unwrap().on)
-        {
+        if let Ok(instantiated) = to.instantiate(&SourcePath::Direct(
+            self.on.upgrade().unwrap().try_read().unwrap().on.clone(),
+        )) {
             self.client_port = Some(instantiated());
         } else {
             panic!("Custom services cannot be used as the server")
@@ -106,14 +109,7 @@ impl HydroflowSink for CustomClientPort {
         self
     }
 
-    fn instantiate_null(&mut self) {
-        self.client_port = Some(ServerConfig::Null);
-    }
-
-    fn instantiate(
-        &self,
-        _client_host: &Arc<RwLock<dyn Host>>,
-    ) -> Result<Box<dyn FnOnce() -> ServerConfig>> {
+    fn instantiate(&self, _client_path: &SourcePath) -> Result<Box<dyn FnOnce() -> ServerConfig>> {
         bail!("Custom services cannot be used as the server")
     }
 
