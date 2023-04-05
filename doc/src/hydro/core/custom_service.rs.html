@@ -146,10 +146,6 @@
 <a href="#146" id="146">146</a>
 <a href="#147" id="147">147</a>
 <a href="#148" id="148">148</a>
-<a href="#149" id="149">149</a>
-<a href="#150" id="150">150</a>
-<a href="#151" id="151">151</a>
-<a href="#152" id="152">152</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::{
     any::Any,
     sync::{Arc, Weak},
@@ -161,7 +157,9 @@
 <span class="kw">use </span>tokio::sync::RwLock;
 
 <span class="kw">use super</span>::{
-    hydroflow_crate::ports::{HydroflowServer, HydroflowSink, HydroflowSource, ServerConfig},
+    hydroflow_crate::ports::{
+        HydroflowServer, HydroflowSink, HydroflowSource, ServerConfig, SourcePath,
+    },
     Host, LaunchedHost, ResourceBatch, ResourceResult, ServerStrategy, Service,
 };
 
@@ -243,8 +241,9 @@
 
 <span class="kw">impl </span>HydroflowSource <span class="kw">for </span>CustomClientPort {
     <span class="kw">fn </span>send_to(<span class="kw-2">&amp;mut </span><span class="self">self</span>, to: <span class="kw-2">&amp;mut </span><span class="kw">dyn </span>HydroflowSink) {
-        <span class="kw">if let </span><span class="prelude-val">Ok</span>(instantiated) = to.instantiate(<span class="kw-2">&amp;</span><span class="self">self</span>.on.upgrade().unwrap().try_read().unwrap().on)
-        {
+        <span class="kw">if let </span><span class="prelude-val">Ok</span>(instantiated) = to.instantiate(<span class="kw-2">&amp;</span>SourcePath::Direct(
+            <span class="self">self</span>.on.upgrade().unwrap().try_read().unwrap().on.clone(),
+        )) {
             <span class="self">self</span>.client_port = <span class="prelude-val">Some</span>(instantiated());
         } <span class="kw">else </span>{
             <span class="macro">panic!</span>(<span class="string">&quot;Custom services cannot be used as the server&quot;</span>)
@@ -258,14 +257,7 @@
         <span class="self">self
     </span>}
 
-    <span class="kw">fn </span>instantiate_null(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-        <span class="self">self</span>.client_port = <span class="prelude-val">Some</span>(ServerConfig::Null);
-    }
-
-    <span class="kw">fn </span>instantiate(
-        <span class="kw-2">&amp;</span><span class="self">self</span>,
-        _client_host: <span class="kw-2">&amp;</span>Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;Box&lt;<span class="kw">dyn </span>FnOnce() -&gt; ServerConfig&gt;&gt; {
+    <span class="kw">fn </span>instantiate(<span class="kw-2">&amp;</span><span class="self">self</span>, _client_path: <span class="kw-2">&amp;</span>SourcePath) -&gt; <span class="prelude-ty">Result</span>&lt;Box&lt;<span class="kw">dyn </span>FnOnce() -&gt; ServerConfig&gt;&gt; {
         <span class="macro">bail!</span>(<span class="string">&quot;Custom services cannot be used as the server&quot;</span>)
     }
 

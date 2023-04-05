@@ -327,7 +327,7 @@
 <span class="kw">use </span>hydroflow_cli_integration::ServerPort;
 <span class="kw">use </span>tokio::{sync::RwLock, task::JoinHandle};
 
-<span class="kw">use </span><span class="self">self</span>::ports::{HydroflowPortConfig, HydroflowSink};
+<span class="kw">use </span><span class="self">self</span>::ports::{HydroflowPortConfig, HydroflowSink, SourcePath};
 
 <span class="kw">use super</span>::{
     Host, HostTargetType, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult,
@@ -391,7 +391,7 @@
         my_port: String,
         sink: <span class="kw-2">&amp;mut </span><span class="kw">dyn </span>HydroflowSink,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="kw">let </span>forward_res = sink.instantiate(<span class="kw-2">&amp;</span><span class="self">self</span>.on);
+        <span class="kw">let </span>forward_res = sink.instantiate(<span class="kw-2">&amp;</span>SourcePath::Direct(<span class="self">self</span>.on.clone()));
         <span class="kw">if let </span><span class="prelude-val">Ok</span>(instantiated) = forward_res {
             <span class="comment">// TODO(shadaj): if already in this map, we want to broadcast
             </span><span class="macro">assert!</span>(!<span class="self">self</span>.port_to_server.contains_key(<span class="kw-2">&amp;</span>my_port));
