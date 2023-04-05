@@ -13,6 +13,7 @@ pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, opts: Opts
         // Define shared inbound and outbound channels
         outbound_chan = merge() -> dest_sink_serde(outbound);
         inbound_chan = source_stream_serde(inbound)
+            -> map(Result::unwrap)
             ->  demux(|(msg, addr), var_args!(clients, msgs, errs)|
                     match msg {
                         Message::ConnectRequest => clients.give(addr),
