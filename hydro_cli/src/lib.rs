@@ -55,6 +55,12 @@ struct HydroflowSink {
     underlying: Arc<RwLock<dyn crate::core::hydroflow_crate::ports::HydroflowSink>>,
 }
 
+#[pyclass(subclass)]
+#[derive(Clone)]
+struct WrappedHydroflowSource {
+    pub underlying: Arc<RwLock<dyn HydroflowSource>>,
+}
+
 #[pyclass(name = "Deployment")]
 pub struct Deployment {
     underlying: Arc<RwLock<crate::core::Deployment>>,
@@ -71,15 +77,17 @@ impl Deployment {
 
     #[allow(non_snake_case)]
     fn Localhost(&self, py: Python<'_>) -> PyResult<Py<pyo3::PyAny>> {
+        let arc = self
+            .underlying
+            .blocking_write()
+            .add_host(crate::core::LocalhostHost::new);
+
         Ok(Py::new(
             py,
             PyClassInitializer::from(Host {
-                underlying: self
-                    .underlying
-                    .blocking_write()
-                    .add_host(|id| crate::core::LocalhostHost { id }),
+                underlying: arc.clone(),
             })
-            .add_subclass(LocalhostHost {}),
+            .add_subclass(LocalhostHost { underlying: arc }),
         )?
         .into_py(py))
     }
@@ -214,7 +222,27 @@ pub struct Host {
 }
 
 #[pyclass(extends=Host, subclass)]
-struct LocalhostHost {}
+struct LocalhostHost {
+    underlying: Arc<RwLock<crate::core::LocalhostHost>>,
+}
+
+#[pymethods]
+impl LocalhostHost {
+    fn client_only(&self, py: Python<'_>) -> PyResult<Py<pyo3::PyAny>> {
+        let arc = Arc::new(RwLock::new(
+            self.underlying.try_read().unwrap().client_only(),
+        ));
+
+        Ok(Py::new(
+            py,
+            PyClassInitializer::from(Host {
+                underlying: arc.clone(),
+            })
+            .add_subclass(LocalhostHost { underlying: arc }),
+        )?
+        .into_py(py))
+    }
+}
 
 #[pyclass]
 #[derive(Clone)]
@@ -349,6 +377,13 @@ impl CustomClientPort {
             .try_write()
             .unwrap()
             .send_to(to.underlying.try_write().unwrap().deref_mut());
+    }
+
+    #[getter]
+    fn __underlying_source(&self) -> WrappedHydroflowSource {
+        WrappedHydroflowSource {
+            underlying: self.underlying.clone(),
+        }
     }
 
     fn server_port<'p>(&self, py: Python<'p>) -> &'p pyo3::PyAny {
@@ -491,6 +526,13 @@ impl HydroflowCratePort {
             .unwrap()
             .send_to(to.underlying.try_write().unwrap().deref_mut());
     }
+
+    #[getter]
+    fn __underlying_source(&self) -> WrappedHydroflowSource {
+        WrappedHydroflowSource {
+            underlying: self.underlying.clone(),
+        }
+    }
 }
 
 #[pyfunction]
@@ -511,6 +553,51 @@ fn demux(mapping: &PyDict) -> HydroflowSink {
     }
 }
 
+#[pyclass(subclass)]
+#[derive(Clone)]
+struct MuxSource {
+    underlying: Arc<RwLock<crate::core::hydroflow_crate::ports::MuxSource>>,
+}
+
+#[pymethods]
+impl MuxSource {
+    fn send_to(&mut self, to: &mut HydroflowSink) {
+        self.underlying
+            .try_write()
+            .unwrap()
+            .send_to(to.underlying.try_write().unwrap().deref_mut());
+    }
+
+    #[getter]
+    fn __underlying_source(&self) -> WrappedHydroflowSource {
+        WrappedHydroflowSource {
+            underlying: self.underlying.clone(),
+        }
+    }
+}
+
+#[pyfunction]
+fn mux(mapping: &PyDict) -> MuxSource {
+    MuxSource {
+        underlying: Arc::new(RwLock::new(
+            crate::core::hydroflow_crate::ports::MuxSource {
+                mux: mapping
+                    .into_iter()
+                    .map(|(k, v)| {
+                        let k = k.extract::<u32>().unwrap();
+                        let v = v
+                            .getattr("__underlying_source")
+                            .unwrap()
+                            .extract::<WrappedHydroflowSource>()
+                            .unwrap();
+                        (k, v.underlying.clone())
+                    })
+                    .collect(),
+            },
+        )),
+    }
+}
+
 #[pyclass(extends=HydroflowSink, subclass)]
 #[derive(Clone)]
 struct HydroflowNull {
@@ -524,6 +611,13 @@ impl HydroflowNull {
             .try_write()
             .unwrap()
             .send_to(to.underlying.try_write().unwrap().deref_mut());
+    }
+
+    #[getter]
+    fn __underlying_source(&self) -> WrappedHydroflowSource {
+        WrappedHydroflowSource {
+            underlying: self.underlying.clone(),
+        }
     }
 }
 
@@ -657,6 +751,7 @@ pub fn _core(py: Python<'_>, module: &PyModule) -> PyResult<()> {
     module.add_class::<PythonStream>()?;
 
     module.add_function(wrap_pyfunction!(demux, module)?)?;
+    module.add_function(wrap_pyfunction!(mux, module)?)?;
     module.add_function(wrap_pyfunction!(null, module)?)?;
 
     module.add_wrapped(wrap_pymodule!(cli::cli))?;
