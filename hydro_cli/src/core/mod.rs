@@ -90,6 +90,7 @@ pub enum ServerStrategy {
     ),
     Demux(HashMap<u32, ServerStrategy>),
     Merge(Vec<ServerStrategy>),
+    Mux(HashMap<u32, ServerStrategy>),
     Null,
 }
 
@@ -144,7 +145,7 @@ pub trait Host: Send + Sync {
     /// The host will be `None` if the connection is from the same host as the target.
     fn strategy_as_server<'a>(
         &'a self,
-        connection_from: Option<&dyn Host>,
+        connection_from: &dyn Host,
     ) -> Result<(ClientStrategy<'a>, HostStrategyGetter)>;
 
     /// Determines whether this host can connect to another host using the given strategy.
