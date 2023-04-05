@@ -170,6 +170,39 @@ jobs:
           command: test
           args: -p hydroflow --target wasm32-unknown-unknown --tests --no-fail-fast
 
+  test-cli:
+    name: Test CLI
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' || github.event_name != 'pull_request' }}
+    timeout-minutes: 25
+    needs: pre_job
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install nightly toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+
+      - name: Build CLI
+        run: |
+          cd hydro_cli
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install maturin
+          maturin develop
+
+      - name: Run Python tests
+        run: |
+          cd hydro_cli
+          source .venv/bin/activate
+          cd python_tests
+          pip install -r requirements.txt
+          rustup run nightly-2023-03-01-x86_64-unknown-linux-gnu pytest *.py
+
   lints:
     name: Lints
     if: ${{ needs.pre_job.outputs.should_skip != 'true' || github.event_name != 'pull_request' }}

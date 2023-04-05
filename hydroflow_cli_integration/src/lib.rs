@@ -42,6 +42,7 @@ pub enum ServerBindConfig {
     ),
     Demux(HashMap<u32, ServerBindConfig>),
     Merge(Vec<ServerBindConfig>),
+    Mux(HashMap<u32, ServerBindConfig>),
     Null,
 }
 
@@ -80,11 +81,19 @@ impl ServerBindConfig {
                 }
                 BoundConnection::Merge(merge)
             }
+            ServerBindConfig::Mux(bindings) => {
+                let mut mux = HashMap::new();
+                for (key, bind) in bindings {
+                    mux.insert(key, bind.bind().await);
+                }
+                BoundConnection::Mux(mux)
+            }
             ServerBindConfig::Null => BoundConnection::Null,
         }
     }
 }
 
+#[derive(Debug)]
 pub enum ServerOrBound {
     Server(ServerPort),
     Bound(BoundConnection),
@@ -104,6 +113,7 @@ pub enum ServerPort {
     TcpPort(SocketAddr),
     Demux(HashMap<u32, ServerPort>),
     Merge(Vec<ServerPort>),
+    Mux(HashMap<u32, ServerPort>),
     Null,
 }
 
@@ -135,6 +145,7 @@ pub enum BoundConnection {
     TcpPort(TcpListener),
     Demux(HashMap<u32, BoundConnection>),
     Merge(Vec<BoundConnection>),
+    Mux(HashMap<u32, BoundConnection>),
     Null,
 }
 
@@ -179,6 +190,14 @@ impl BoundConnection {
                     merge.push(bind.sink_port());
                 }
                 ServerPort::Merge(merge)
+            }
+
+            BoundConnection::Mux(bindings) => {
+                let mut mux = HashMap::new();
+                for (key, bind) in bindings {
+                    mux.insert(*key, bind.sink_port());
+                }
+                ServerPort::Mux(mux)
             }
 
             BoundConnection::Null => ServerPort::Null,
@@ -231,6 +250,7 @@ async fn accept(bound: &BoundConnection) -> ConnectedBidi {
             }
         }
         BoundConnection::Demux(_) => panic!("Cannot connect to a demux pipe directly"),
+        BoundConnection::Mux(_) => panic!("Cannot connect to a mux pipe directly"),
         BoundConnection::Null => {
             ConnectedBidi::from_defn(ServerOrBound::Server(ServerPort::Null)).await
         }
@@ -340,6 +360,10 @@ impl Connected for ConnectedBidi {
             }
             ServerOrBound::Server(ServerPort::Demux(_)) => {
                 panic!("Cannot connect to a demux pipe directly")
+            }
+
+            ServerOrBound::Server(ServerPort::Mux(_)) => {
+                panic!("Cannot connect to a mux pipe directly")
             }
 
             ServerOrBound::Server(ServerPort::Null) => ConnectedBidi {
@@ -525,5 +549,106 @@ impl<T: Unpin, S: Stream<Item = T> + Send + Sync + ?Sized> Stream for MergeSourc
         } else {
             Poll::Ready(next)
         }
+    }
+}
+
+pub struct MuxSource<T: Unpin, S: Stream<Item = Result<T, io::Error>> + Send + Sync + ?Sized> {
+    marker: PhantomData<T>,
+    id: u32,
+    source: Pin<Box<S>>,
+}
+
+impl<T: Unpin, S: Stream<Item = Result<T, io::Error>> + Send + Sync + ?Sized> Stream
+    for MuxSource<T, S>
+{
+    type Item = Result<(u32, T), io::Error>;
+
+    fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        let id = self.as_ref().id;
+        let source = &mut self.get_mut().source;
+        match source.as_mut().poll_next(cx) {
+            Poll::Ready(Some(v)) => Poll::Ready(Some(v.map(|d| (id, d)))),
+            Poll::Ready(None) => Poll::Ready(None),
+            Poll::Pending => Poll::Pending,
+        }
+    }
+}
+
+type MergedMux<T> = MergeSource<
+    Result<(u32, <T as ConnectedSource>::Output), io::Error>,
+    MuxSource<<T as ConnectedSource>::Output, <T as ConnectedSource>::Stream>
+>;
+
+pub struct ConnectedMux<T: ConnectedSource>
+where
+    <T as ConnectedSource>::Output: 'static + Sync + Unpin,
+{
+    source: MergedMux<T>,
+}
+
+#[async_trait]
+impl<T: Connected + ConnectedSource> Connected for ConnectedMux<T>
+where
+    <T as ConnectedSource>::Output: 'static + Sync + Unpin,
+{
+    async fn from_defn(pipe: ServerOrBound) -> Self {
+        match pipe {
+            ServerOrBound::Server(ServerPort::Mux(mux)) => {
+                let mut connected_mux = Vec::new();
+                for (id, pipe) in mux {
+                    connected_mux.push(Box::pin(MuxSource {
+                        marker: PhantomData::default(),
+                        id,
+                        source: Box::pin(
+                            T::from_defn(ServerOrBound::Server(pipe))
+                                .await
+                                .into_source(),
+                        ),
+                    }));
+                }
+
+                let muxer = MergeSource {
+                    marker: PhantomData::default(),
+                    sources: connected_mux,
+                };
+
+                ConnectedMux { source: muxer }
+            }
+
+            ServerOrBound::Bound(BoundConnection::Mux(mux)) => {
+                let mut connected_mux = Vec::new();
+                for (id, bound) in mux {
+                    connected_mux.push(Box::pin(MuxSource {
+                        marker: PhantomData::default(),
+                        id,
+                        source: Box::pin(
+                            T::from_defn(ServerOrBound::Bound(bound))
+                                .await
+                                .into_source(),
+                        ),
+                    }));
+                }
+
+                let muxer = MergeSource {
+                    marker: PhantomData::default(),
+                    sources: connected_mux,
+                };
+
+                ConnectedMux { source: muxer }
+            }
+            _ => panic!("Cannot connect to a non-mux pipe as a mux"),
+        }
+    }
+}
+
+impl<T: ConnectedSource> ConnectedSource for ConnectedMux<T>
+where
+    <T as ConnectedSource>::Output: 'static + Sync + Unpin,
+{
+    type Output = (u32, T::Output);
+    type Stream = MergeSource<Result<Self::Output, io::Error>, MuxSource<T::Output, T::Stream>>;
+
+    fn into_source(self) -> Self::Stream {
+        self.source
     }
 }
