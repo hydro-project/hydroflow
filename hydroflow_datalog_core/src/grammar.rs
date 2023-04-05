@@ -72,7 +72,7 @@ pub mod datalog {
             #[rust_sitter::leaf(text = "!")] Option<()>,
             Spanned<InputRelationExpr>,
         ),
-        Predicate(Spanned<PredicateExpr>),
+        Predicate(Spanned<BoolExpr>),
     }
 
     #[derive(Debug, Clone)]
@@ -122,7 +122,7 @@ pub mod datalog {
 
     #[derive(Debug, Clone)]
     pub enum TargetExpr {
-        Expr(ValueExpr),
+        Expr(IntExpr),
         Aggregation(Aggregation),
     }
 
@@ -179,23 +179,24 @@ pub mod datalog {
         Gt(#[rust_sitter::leaf(text = ">")] ()),
         GtEq(#[rust_sitter::leaf(text = ">=")] ()),
         Eq(#[rust_sitter::leaf(text = "==")] ()),
+        Neq(#[rust_sitter::leaf(text = "!=")] ()),
     }
 
     #[derive(Debug, Clone)]
-    pub struct PredicateExpr {
+    pub struct BoolExpr {
         #[rust_sitter::leaf(text = "(")]
         _l_brace: (),
 
-        pub left: Spanned<Ident>,
+        pub left: Spanned<IntExpr>,
         pub op: BoolOp,
-        pub right: Spanned<Ident>,
+        pub right: Spanned<IntExpr>,
 
         #[rust_sitter::leaf(text = ")")]
         _r_brace: (),
     }
 
     #[derive(Debug, Clone)]
-    pub enum ValueExpr {
+    pub enum IntExpr {
         Ident(Spanned<Ident>),
         Integer(
             #[rust_sitter::leaf(pattern = r"[0-9]+", transform = |s| s.parse().unwrap())]
@@ -203,29 +204,29 @@ pub mod datalog {
         ),
         #[rust_sitter::prec_left(1)]
         Add(
-            Box<ValueExpr>,
+            Box<IntExpr>,
             #[rust_sitter::leaf(text = "+")] (),
-            Box<ValueExpr>,
+            Box<IntExpr>,
         ),
         #[rust_sitter::prec_left(1)]
         Sub(
-            Box<ValueExpr>,
+            Box<IntExpr>,
             #[rust_sitter::leaf(text = "-")] (),
-            Box<ValueExpr>,
+            Box<IntExpr>,
         ),
     }
 
-    impl ValueExpr {
+    impl IntExpr {
         pub fn idents(&self) -> Vec<&Ident> {
             match self {
-                ValueExpr::Ident(i) => vec![i],
-                ValueExpr::Integer(_) => vec![],
-                ValueExpr::Add(l, _, r) => {
+                IntExpr::Ident(i) => vec![i],
+                IntExpr::Integer(_) => vec![],
+                IntExpr::Add(l, _, r) => {
                     let mut idents = l.idents();
                     idents.extend(r.idents());
                     idents
                 }
-                ValueExpr::Sub(l, _, r) => {
+                IntExpr::Sub(l, _, r) => {
                     let mut idents = l.idents();
                     idents.extend(r.idents());
                     idents
