@@ -50,7 +50,7 @@ pub fn run_server(
             let (client_to_transducer_tx, client_to_transducer_rx) =
                 hydroflow::util::unbounded_channel::<(KvsRequest, Vec<u8>)>();
             let (transducer_to_client_tx, mut _transducer_to_client_rx) =
-                hydroflow::util::bounded_channel::<(KvsResponse, Vec<u8>)>(500000);
+                hydroflow::util::unbounded_channel::<(KvsResponse, Vec<u8>)>();
 
             let localset = tokio::task::LocalSet::new();
 
@@ -62,7 +62,6 @@ pub fn run_server(
                     task::spawn_local({
 
                         async move {
-                            // println!("binding gossip to: {gossip_addr:?}");
                             let mut router_socket = tmq::router(&ctx).bind(&format!("inproc://S{gossip_addr}")).unwrap();
 
                             loop {
@@ -137,8 +136,6 @@ pub fn run_server(
             let batch_interval_ticker = tokio_stream::wrappers::IntervalStream::new(tokio::time::interval(
                 Duration::from_millis(100),
             ));
-
-            let transducer_to_client_tx = tokio_util::sync::PollSender::new(transducer_to_client_tx);
 
             let mut rng = rand::rngs::SmallRng::from_entropy();
             let dist = rand_distr::Zipf::new(1_000_000, dist).unwrap();
@@ -254,7 +251,7 @@ pub fn run_server(
                     })
                     -> flatten()
                     // -> inspect(|x| println!("{gossip_addr}:{:5}: Response to client: {x:?}", context.current_tick()))
-                    -> dest_sink(transducer_to_client_tx);
+                    -> for_each(|x| transducer_to_client_tx.send(x).unwrap());
 
             };
 

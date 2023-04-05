@@ -1,8 +1,10 @@
-use crate::broadcast_receiver_stream::ReceiverStream;
 use tokio::sync::broadcast::{channel, Sender};
+use tokio_stream::wrappers::BroadcastStream;
 
-pub fn bounded_broadcast_channel<T: Clone>(capacity: usize) -> (Sender<T>, ReceiverStream<T>) {
+pub fn bounded_broadcast_channel<T: 'static + Clone + Send>(
+    capacity: usize,
+) -> (Sender<T>, BroadcastStream<T>) {
     let (send, recv) = channel(capacity);
-    let recv = ReceiverStream::new(recv);
+    let recv = BroadcastStream::new(recv);
     (send, recv)
 }

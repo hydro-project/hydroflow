@@ -34,14 +34,14 @@ impl<'de> DeserializeSeed<'de> for AutoReturnBufferDeserializer {
             type Value = BufferType;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-                formatter.write_str("[u8; _]")
+                formatter.write_str(std::any::type_name::<Self::Value>())
             }
 
             fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E>
             where
                 E: serde::de::Error,
             {
-                Ok(v.try_into().unwrap()) // TODO: proper error mapping
+                v.try_into().map_err(E::custom)
             }
 
             fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
@@ -54,7 +54,7 @@ impl<'de> DeserializeSeed<'de> for AutoReturnBufferDeserializer {
                     vec.push(e);
                 }
 
-                Ok(vec.as_slice().try_into().unwrap()) // TODO: proper error mapping
+                vec.as_slice().try_into().map_err(serde::de::Error::custom)
             }
         }
 

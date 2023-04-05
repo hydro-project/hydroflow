@@ -29,6 +29,3 @@ WORKDIR /usr/src/myapp
 COPY --from=build /usr/src/myapp/xfer/examples/* .
 RUN mkdir -p example_utils
 COPY --from=build /usr/src/myapp/xfer/example_utils/* ./example_utils/.
-
-
-# docker run -ti --rm --entrypoint /bin/bash hydroflow
