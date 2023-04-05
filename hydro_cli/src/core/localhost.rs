@@ -121,6 +121,14 @@ impl LaunchedHost for LaunchedLocalhost {
 
                 ServerBindConfig::Merge(configs)
             }
+            ServerStrategy::Mux(mux) => {
+                let mut config_map = HashMap::new();
+                for (key, bind_type) in mux {
+                    config_map.insert(*key, self.server_config(bind_type));
+                }
+
+                ServerBindConfig::Mux(config_map)
+            }
             ServerStrategy::Null => ServerBindConfig::Null,
         }
     }

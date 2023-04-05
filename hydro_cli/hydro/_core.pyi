@@ -1,8 +1,13 @@
 from typing import AsyncGenerator, Dict, List, Optional
 
+def mux(sources: Dict[int, "HydroflowSource"]) -> "HydroflowSource": ...
+
 def demux(mapping: Dict[int, "HydroflowSink"]) -> "HydroflowSink": ...
 
 def null() -> "HydroflowNull": ...
+
+class HydroflowSource(object):
+    pass
 
 class HydroflowSink(object):
     pass
@@ -38,6 +43,9 @@ class GCPComputeEngineHost(Host):
 
 class Service(object):
     async def stop(self) -> None: ...
+
+class MuxSource(object):
+    def send_to(self, other: HydroflowSink) -> None: ...
 
 class CustomService(Service):
     def client_port(self) -> "CustomServicePort": ...
