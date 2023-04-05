@@ -28,6 +28,12 @@ name = "dedalus_2pc_coordinator"
 name = "dedalus_2pc_participant"
 
 [[example]]
+name = "dedalus_paxos_acceptor"
+
+[[example]]
+name = "dedalus_paxos_proposer"
+
+[[example]]
 name = "topolotree"
 
 [dev-dependencies]
