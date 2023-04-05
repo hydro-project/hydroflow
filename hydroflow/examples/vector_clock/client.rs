@@ -22,7 +22,7 @@ pub(crate) async fn run_client(
 
     let mut flow = hydroflow_syntax! {
         // Define shared inbound and outbound channels
-        inbound_chan = source_stream_serde(inbound) -> tee();
+        inbound_chan = source_stream_serde(inbound) -> filter_map(Result::ok) -> tee();
         outbound_chan = // merge() ->  // commented out since we only use this once in the client template
             dest_sink_serde(outbound);
 
