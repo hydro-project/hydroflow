@@ -1,13 +1,14 @@
 use std::collections::{btree_map::Entry, BTreeMap, HashMap};
 
-use hydroflow_lang::graph::FlatGraphBuilder;
+use hydroflow_lang::diagnostic::Level;
+use hydroflow_lang::{graph::FlatGraphBuilder, diagnostic::Diagnostic};
 use hydroflow_lang::parse::Pipeline;
 use proc_macro2::Span;
 use rust_sitter::Spanned;
 use syn::{self, parse_quote, parse_quote_spanned};
 
 use crate::{
-    grammar::datalog::{BoolOp, Ident, InputRelationExpr, PredicateExpr},
+    grammar::datalog::{BoolOp, Ident, InputRelationExpr, PredicateExpr, ValueExpr},
     util::{repeat_tuple, Counter},
 };
 
@@ -174,6 +175,63 @@ fn build_local_constraint_conditions(constraints: &BTreeMap<String, Vec<usize>>)
         .unwrap()
 }
 
+fn gen_predicate_value_expr(
+    expr: &ValueExpr,
+    variable_mapping: &BTreeMap<String, usize>,
+    diagnostics: &mut Vec<Diagnostic>,
+    get_span: &dyn Fn((usize, usize)) -> Span,
+) -> syn::Expr {
+    match expr {
+        ValueExpr::Ident(ident) => {
+            if let Some(col) = variable_mapping.get(&ident.name) {
+                let idx = syn::Index::from(*col);
+                parse_quote_spanned!(get_span(ident.span)=> row.#idx)
+            } else {
+                diagnostics.push(Diagnostic::spanned(
+                    get_span(ident.span),
+                    Level::Error,
+                    format!("Could not resolve reference to variable {}", &ident.name),
+                ));
+                parse_quote!(())
+            }
+        }
+        ValueExpr::Integer(i) => syn::Expr::Lit(syn::ExprLit {
+            attrs: Vec::new(),
+            lit: syn::Lit::Int(syn::LitInt::new(&i.to_string(), get_span(i.span))),
+        }),
+        ValueExpr::Add(l, _, r) => {
+            let l = gen_predicate_value_expr(
+                l,
+                variable_mapping,
+                diagnostics,
+                get_span,
+            );
+            let r = gen_predicate_value_expr(
+                r,
+                variable_mapping,
+                diagnostics,
+                get_span,
+            );
+            parse_quote!(#l + #r)
+        }
+        ValueExpr::Sub(l, _, r) => {
+            let l = gen_predicate_value_expr(
+                l,
+                variable_mapping,
+                diagnostics,
+                get_span,
+            );
+            let r = gen_predicate_value_expr(
+                r,
+                variable_mapping,
+                diagnostics,
+                get_span,
+            );
+            parse_quote!(#l - #r)
+        }
+    }
+}
+
 /// Generates a Hydroflow pipeline that computes the output to a given [`JoinPlan`].
 pub fn expand_join_plan(
     // The plan we are converting to a Hydroflow pipeline.
@@ -183,6 +241,7 @@ pub fn expand_join_plan(
     tee_counter: &mut HashMap<String, Counter>,
     next_join_idx: &mut Counter,
     rule_span: (usize, usize),
+    diagnostics: &mut Vec<Diagnostic>,
     get_span: &impl Fn((usize, usize)) -> Span,
 ) -> IntermediateJoinNode {
     match plan {
@@ -253,6 +312,7 @@ pub fn expand_join_plan(
                 tee_counter,
                 next_join_idx,
                 rule_span,
+                diagnostics,
                 get_span,
             );
             let right_expanded = expand_join_plan(
@@ -261,6 +321,7 @@ pub fn expand_join_plan(
                 tee_counter,
                 next_join_idx,
                 rule_span,
+                diagnostics,
                 get_span,
             );
 
@@ -433,6 +494,7 @@ pub fn expand_join_plan(
                 tee_counter,
                 next_join_idx,
                 rule_span,
+                diagnostics,
                 get_span,
             );
             let inner_name = inner_expanded.name.clone();
@@ -442,10 +504,8 @@ pub fn expand_join_plan(
             let conditions = predicates
                 .iter()
                 .map(|p| {
-                    let l = syn::Index::from(*variable_mapping.get(&p.left.name).unwrap());
-                    let l: syn::Expr = parse_quote_spanned!(get_span(p.left.span)=> row.#l);
-                    let r = syn::Index::from(*variable_mapping.get(&p.right.name).unwrap());
-                    let r: syn::Expr = parse_quote_spanned!(get_span(p.right.span)=> row.#r);
+                    let l = gen_predicate_value_expr(&p.left, variable_mapping, diagnostics, get_span);
+                    let r = gen_predicate_value_expr(&p.right, variable_mapping, diagnostics, get_span);
 
                     match &p.op {
                         BoolOp::Lt(_) => parse_quote_spanned!(get_span(p.span)=> #l < #r),
@@ -453,6 +513,7 @@ pub fn expand_join_plan(
                         BoolOp::Gt(_) => parse_quote_spanned!(get_span(p.span)=> #l > #r),
                         BoolOp::GtEq(_) => parse_quote_spanned!(get_span(p.span)=> #l >= #r),
                         BoolOp::Eq(_) => parse_quote_spanned!(get_span(p.span)=> #l == #r),
+                        BoolOp::Neq(_) => parse_quote_spanned!(get_span(p.span)=> #l != #r),
                     }
                 })
                 .reduce(|a: syn::Expr, b| parse_quote!(#a && #b))
@@ -493,6 +554,7 @@ pub fn expand_join_plan(
                 tee_counter,
                 next_join_idx,
                 rule_span,
+                diagnostics,
                 get_span,
             );
             let inner_name = inner_expanded.name.clone();

@@ -76,6 +76,10 @@ impl LaunchedSSHHost for LaunchedComputeEngine {
         &self.resource_result
     }
 
+    fn ssh_user(&self) -> &str {
+        self.user.as_str()
+    }
+
     async fn open_ssh_session(&self) -> Result<AsyncSession<TcpStream>> {
         let target_addr = SocketAddr::new(
             self.external_ip

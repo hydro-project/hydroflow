@@ -179,6 +179,7 @@ pub mod datalog {
         Gt(#[rust_sitter::leaf(text = ">")] ()),
         GtEq(#[rust_sitter::leaf(text = ">=")] ()),
         Eq(#[rust_sitter::leaf(text = "==")] ()),
+        Neq(#[rust_sitter::leaf(text = "!=")] ()),
     }
 
     #[derive(Debug, Clone)]
@@ -186,9 +187,9 @@ pub mod datalog {
         #[rust_sitter::leaf(text = "(")]
         _l_brace: (),
 
-        pub left: Spanned<Ident>,
+        pub left: Spanned<ValueExpr>,
         pub op: BoolOp,
-        pub right: Spanned<Ident>,
+        pub right: Spanned<ValueExpr>,
 
         #[rust_sitter::leaf(text = ")")]
         _r_brace: (),

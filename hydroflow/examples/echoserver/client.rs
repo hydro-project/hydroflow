@@ -20,6 +20,7 @@ pub(crate) async fn run_client(outbound: UdpSink, inbound: UdpStream, opts: Opts
 
         // Print all messages for debugging purposes
         inbound_chan
+            -> map(Result::unwrap)
             -> for_each(|(m, a): (EchoMsg, SocketAddr)| println!("{}: Got {:?} from {:?}", Utc::now(), m, a));
 
         // take stdin and send to server as an Message::Echo

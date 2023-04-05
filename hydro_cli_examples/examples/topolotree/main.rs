@@ -96,21 +96,21 @@ async fn main() {
 
     let mut df = hydroflow_syntax! {
         from_parent = source_stream(from_parent)
-            -> map(|x| deserialize_from_bytes::<(i32,i32)>(x.unwrap()))
+            -> map(|x| deserialize_from_bytes::<(i32,i32)>(x.unwrap()).unwrap())
             // -> inspect(|x| println!("from_parent: {x:?}"))
             -> fold::<'static>((0,0), my_merge_function)
             -> map(|(_current_time, current_value)| current_value)
             -> tee();
 
         from_left = source_stream(from_left)
-            -> map(|x| deserialize_from_bytes::<(i32,i32)>(x.unwrap()))
+            -> map(|x| deserialize_from_bytes::<(i32,i32)>(x.unwrap()).unwrap())
             // -> inspect(|x| println!("from_left: {x:?}"))
             -> fold::<'static>((0,0), my_merge_function)
             -> map(|(_current_time, current_value)| current_value)
             -> tee();
 
         from_right = source_stream(from_right)
-            -> map(|x| deserialize_from_bytes::<(i32,i32)>(x.unwrap()))
+            -> map(|x| deserialize_from_bytes::<(i32,i32)>(x.unwrap()).unwrap())
             // -> inspect(|x| println!("from_right: {x:?}"))
             -> fold::<'static>((0,0), my_merge_function)
             -> map(|(_current_time, current_value)| current_value)
