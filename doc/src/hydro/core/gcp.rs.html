@@ -561,6 +561,8 @@
 <a href="#561" id="561">561</a>
 <a href="#562" id="562">562</a>
 <a href="#563" id="563">563</a>
+<a href="#564" id="564">564</a>
+<a href="#565" id="565">565</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::{collections::HashMap, net::SocketAddr, path::PathBuf, sync::Arc, time::Duration};
 
 <span class="kw">use </span>anyhow::{Context, <span class="prelude-ty">Result</span>};
@@ -821,11 +823,13 @@
             ServerStrategy::UnixSocket =&gt; {}
             ServerStrategy::InternalTcpPort =&gt; {}
             ServerStrategy::ExternalTcpPort(port) =&gt; {
-                <span class="kw">if </span><span class="self">self</span>.launched.is_some() {
-                    <span class="macro">todo!</span>(<span class="string">&quot;Cannot adjust firewall after host has been launched&quot;</span>);
-                }
+                <span class="kw">if </span>!<span class="self">self</span>.external_ports.contains(port) {
+                    <span class="kw">if </span><span class="self">self</span>.launched.is_some() {
+                        <span class="macro">todo!</span>(<span class="string">&quot;Cannot adjust firewall after host has been launched&quot;</span>);
+                    }
 
-                <span class="self">self</span>.external_ports.push(<span class="kw-2">*</span>port);
+                    <span class="self">self</span>.external_ports.push(<span class="kw-2">*</span>port);
+                }
             }
             ServerStrategy::Demux(demux) =&gt; {
                 <span class="kw">for </span>bind_type <span class="kw">in </span>demux.values() {
