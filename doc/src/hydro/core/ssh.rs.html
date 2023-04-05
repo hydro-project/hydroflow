@@ -155,6 +155,9 @@
 <a href="#155" id="155">155</a>
 <a href="#156" id="156">156</a>
 <a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::{
     borrow::Cow,
     net::SocketAddr,
@@ -225,6 +228,7 @@
 </span><span class="kw">pub trait </span>LaunchedSSHHost: Send + Sync {
     <span class="kw">fn </span>server_config(<span class="kw-2">&amp;</span><span class="self">self</span>, bind_type: <span class="kw-2">&amp;</span>ServerStrategy) -&gt; ServerBindConfig;
     <span class="kw">fn </span>resource_result(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Arc&lt;ResourceResult&gt;;
+    <span class="kw">fn </span>ssh_user(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>str;
     <span class="kw">async fn </span>open_ssh_session(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;AsyncSession&lt;TcpStream&gt;&gt;;
 }
 
@@ -245,7 +249,9 @@
 
         <span class="comment">// we may be deploying multiple binaries, so give each a unique name
         </span><span class="kw">let </span>unique_name = <span class="macro">nanoid!</span>(<span class="number">8</span>);
-        <span class="kw">let </span>binary_path = PathBuf::from(<span class="macro">format!</span>(<span class="string">&quot;/home/hydro/hydro-{unique_name}&quot;</span>));
+
+        <span class="kw">let </span>user = <span class="self">self</span>.ssh_user();
+        <span class="kw">let </span>binary_path = PathBuf::from(<span class="macro">format!</span>(<span class="string">&quot;/home/{user}/hydro-{unique_name}&quot;</span>));
 
         <span class="kw">let </span><span class="kw-2">mut </span>created_file = sftp.create(<span class="kw-2">&amp;</span>binary_path).<span class="kw">await</span><span class="question-mark">?</span>;
         created_file

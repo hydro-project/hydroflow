@@ -663,6 +663,101 @@
 <a href="#663" id="663">663</a>
 <a href="#664" id="664">664</a>
 <a href="#665" id="665">665</a>
+<a href="#666" id="666">666</a>
+<a href="#667" id="667">667</a>
+<a href="#668" id="668">668</a>
+<a href="#669" id="669">669</a>
+<a href="#670" id="670">670</a>
+<a href="#671" id="671">671</a>
+<a href="#672" id="672">672</a>
+<a href="#673" id="673">673</a>
+<a href="#674" id="674">674</a>
+<a href="#675" id="675">675</a>
+<a href="#676" id="676">676</a>
+<a href="#677" id="677">677</a>
+<a href="#678" id="678">678</a>
+<a href="#679" id="679">679</a>
+<a href="#680" id="680">680</a>
+<a href="#681" id="681">681</a>
+<a href="#682" id="682">682</a>
+<a href="#683" id="683">683</a>
+<a href="#684" id="684">684</a>
+<a href="#685" id="685">685</a>
+<a href="#686" id="686">686</a>
+<a href="#687" id="687">687</a>
+<a href="#688" id="688">688</a>
+<a href="#689" id="689">689</a>
+<a href="#690" id="690">690</a>
+<a href="#691" id="691">691</a>
+<a href="#692" id="692">692</a>
+<a href="#693" id="693">693</a>
+<a href="#694" id="694">694</a>
+<a href="#695" id="695">695</a>
+<a href="#696" id="696">696</a>
+<a href="#697" id="697">697</a>
+<a href="#698" id="698">698</a>
+<a href="#699" id="699">699</a>
+<a href="#700" id="700">700</a>
+<a href="#701" id="701">701</a>
+<a href="#702" id="702">702</a>
+<a href="#703" id="703">703</a>
+<a href="#704" id="704">704</a>
+<a href="#705" id="705">705</a>
+<a href="#706" id="706">706</a>
+<a href="#707" id="707">707</a>
+<a href="#708" id="708">708</a>
+<a href="#709" id="709">709</a>
+<a href="#710" id="710">710</a>
+<a href="#711" id="711">711</a>
+<a href="#712" id="712">712</a>
+<a href="#713" id="713">713</a>
+<a href="#714" id="714">714</a>
+<a href="#715" id="715">715</a>
+<a href="#716" id="716">716</a>
+<a href="#717" id="717">717</a>
+<a href="#718" id="718">718</a>
+<a href="#719" id="719">719</a>
+<a href="#720" id="720">720</a>
+<a href="#721" id="721">721</a>
+<a href="#722" id="722">722</a>
+<a href="#723" id="723">723</a>
+<a href="#724" id="724">724</a>
+<a href="#725" id="725">725</a>
+<a href="#726" id="726">726</a>
+<a href="#727" id="727">727</a>
+<a href="#728" id="728">728</a>
+<a href="#729" id="729">729</a>
+<a href="#730" id="730">730</a>
+<a href="#731" id="731">731</a>
+<a href="#732" id="732">732</a>
+<a href="#733" id="733">733</a>
+<a href="#734" id="734">734</a>
+<a href="#735" id="735">735</a>
+<a href="#736" id="736">736</a>
+<a href="#737" id="737">737</a>
+<a href="#738" id="738">738</a>
+<a href="#739" id="739">739</a>
+<a href="#740" id="740">740</a>
+<a href="#741" id="741">741</a>
+<a href="#742" id="742">742</a>
+<a href="#743" id="743">743</a>
+<a href="#744" id="744">744</a>
+<a href="#745" id="745">745</a>
+<a href="#746" id="746">746</a>
+<a href="#747" id="747">747</a>
+<a href="#748" id="748">748</a>
+<a href="#749" id="749">749</a>
+<a href="#750" id="750">750</a>
+<a href="#751" id="751">751</a>
+<a href="#752" id="752">752</a>
+<a href="#753" id="753">753</a>
+<a href="#754" id="754">754</a>
+<a href="#755" id="755">755</a>
+<a href="#756" id="756">756</a>
+<a href="#757" id="757">757</a>
+<a href="#758" id="758">758</a>
+<a href="#759" id="759">759</a>
+<a href="#760" id="760">760</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::ops::DerefMut;
 <span class="kw">use </span>std::sync::Arc;
 
@@ -720,6 +815,12 @@
     underlying: Arc&lt;RwLock&lt;<span class="kw">dyn </span><span class="kw">crate</span>::core::hydroflow_crate::ports::HydroflowSink&gt;&gt;,
 }
 
+<span class="attr">#[pyclass(subclass)]
+#[derive(Clone)]
+</span><span class="kw">struct </span>WrappedHydroflowSource {
+    <span class="kw">pub </span>underlying: Arc&lt;RwLock&lt;<span class="kw">dyn </span>HydroflowSource&gt;&gt;,
+}
+
 <span class="attr">#[pyclass(name = <span class="string">&quot;Deployment&quot;</span>)]
 </span><span class="kw">pub struct </span>Deployment {
     underlying: Arc&lt;RwLock&lt;<span class="kw">crate</span>::core::Deployment&gt;&gt;,
@@ -736,15 +837,17 @@
 
     <span class="attr">#[allow(non_snake_case)]
     </span><span class="kw">fn </span>Localhost(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; PyResult&lt;Py&lt;pyo3::PyAny&gt;&gt; {
+        <span class="kw">let </span>arc = <span class="self">self
+            </span>.underlying
+            .blocking_write()
+            .add_host(<span class="kw">crate</span>::core::LocalhostHost::new);
+
         <span class="prelude-val">Ok</span>(Py::new(
             py,
             PyClassInitializer::from(Host {
-                underlying: <span class="self">self
-                    </span>.underlying
-                    .blocking_write()
-                    .add_host(|id| <span class="kw">crate</span>::core::LocalhostHost { id }),
+                underlying: arc.clone(),
             })
-            .add_subclass(LocalhostHost {}),
+            .add_subclass(LocalhostHost { underlying: arc }),
         )<span class="question-mark">?
         </span>.into_py(py))
     }
@@ -879,7 +982,27 @@
 }
 
 <span class="attr">#[pyclass(extends=Host, subclass)]
-</span><span class="kw">struct </span>LocalhostHost {}
+</span><span class="kw">struct </span>LocalhostHost {
+    underlying: Arc&lt;RwLock&lt;<span class="kw">crate</span>::core::LocalhostHost&gt;&gt;,
+}
+
+<span class="attr">#[pymethods]
+</span><span class="kw">impl </span>LocalhostHost {
+    <span class="kw">fn </span>client_only(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; PyResult&lt;Py&lt;pyo3::PyAny&gt;&gt; {
+        <span class="kw">let </span>arc = Arc::new(RwLock::new(
+            <span class="self">self</span>.underlying.try_read().unwrap().client_only(),
+        ));
+
+        <span class="prelude-val">Ok</span>(Py::new(
+            py,
+            PyClassInitializer::from(Host {
+                underlying: arc.clone(),
+            })
+            .add_subclass(LocalhostHost { underlying: arc }),
+        )<span class="question-mark">?
+        </span>.into_py(py))
+    }
+}
 
 <span class="attr">#[pyclass]
 #[derive(Clone)]
@@ -1014,6 +1137,13 @@
             .try_write()
             .unwrap()
             .send_to(to.underlying.try_write().unwrap().deref_mut());
+    }
+
+    <span class="attr">#[getter]
+    </span><span class="kw">fn </span>__underlying_source(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; WrappedHydroflowSource {
+        WrappedHydroflowSource {
+            underlying: <span class="self">self</span>.underlying.clone(),
+        }
     }
 
     <span class="kw">fn </span>server_port&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny {
@@ -1156,6 +1286,13 @@ async def pyreceiver_to_async_generator(pyreceiver):
             .unwrap()
             .send_to(to.underlying.try_write().unwrap().deref_mut());
     }
+
+    <span class="attr">#[getter]
+    </span><span class="kw">fn </span>__underlying_source(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; WrappedHydroflowSource {
+        WrappedHydroflowSource {
+            underlying: <span class="self">self</span>.underlying.clone(),
+        }
+    }
 }
 
 <span class="attr">#[pyfunction]
@@ -1176,6 +1313,51 @@ async def pyreceiver_to_async_generator(pyreceiver):
     }
 }
 
+<span class="attr">#[pyclass(subclass)]
+#[derive(Clone)]
+</span><span class="kw">struct </span>MuxSource {
+    underlying: Arc&lt;RwLock&lt;<span class="kw">crate</span>::core::hydroflow_crate::ports::MuxSource&gt;&gt;,
+}
+
+<span class="attr">#[pymethods]
+</span><span class="kw">impl </span>MuxSource {
+    <span class="kw">fn </span>send_to(<span class="kw-2">&amp;mut </span><span class="self">self</span>, to: <span class="kw-2">&amp;mut </span>HydroflowSink) {
+        <span class="self">self</span>.underlying
+            .try_write()
+            .unwrap()
+            .send_to(to.underlying.try_write().unwrap().deref_mut());
+    }
+
+    <span class="attr">#[getter]
+    </span><span class="kw">fn </span>__underlying_source(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; WrappedHydroflowSource {
+        WrappedHydroflowSource {
+            underlying: <span class="self">self</span>.underlying.clone(),
+        }
+    }
+}
+
+<span class="attr">#[pyfunction]
+</span><span class="kw">fn </span>mux(mapping: <span class="kw-2">&amp;</span>PyDict) -&gt; MuxSource {
+    MuxSource {
+        underlying: Arc::new(RwLock::new(
+            <span class="kw">crate</span>::core::hydroflow_crate::ports::MuxSource {
+                mux: mapping
+                    .into_iter()
+                    .map(|(k, v)| {
+                        <span class="kw">let </span>k = k.extract::&lt;u32&gt;().unwrap();
+                        <span class="kw">let </span>v = v
+                            .getattr(<span class="string">&quot;__underlying_source&quot;</span>)
+                            .unwrap()
+                            .extract::&lt;WrappedHydroflowSource&gt;()
+                            .unwrap();
+                        (k, v.underlying.clone())
+                    })
+                    .collect(),
+            },
+        )),
+    }
+}
+
 <span class="attr">#[pyclass(extends=HydroflowSink, subclass)]
 #[derive(Clone)]
 </span><span class="kw">struct </span>HydroflowNull {
@@ -1189,6 +1371,13 @@ async def pyreceiver_to_async_generator(pyreceiver):
             .try_write()
             .unwrap()
             .send_to(to.underlying.try_write().unwrap().deref_mut());
+    }
+
+    <span class="attr">#[getter]
+    </span><span class="kw">fn </span>__underlying_source(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; WrappedHydroflowSource {
+        WrappedHydroflowSource {
+            underlying: <span class="self">self</span>.underlying.clone(),
+        }
     }
 }
 
@@ -1322,6 +1511,7 @@ async def pyreceiver_to_async_generator(pyreceiver):
     module.add_class::&lt;PythonStream&gt;()<span class="question-mark">?</span>;
 
     module.add_function(<span class="macro">wrap_pyfunction!</span>(demux, module)<span class="question-mark">?</span>)<span class="question-mark">?</span>;
+    module.add_function(<span class="macro">wrap_pyfunction!</span>(mux, module)<span class="question-mark">?</span>)<span class="question-mark">?</span>;
     module.add_function(<span class="macro">wrap_pyfunction!</span>(null, module)<span class="question-mark">?</span>)<span class="question-mark">?</span>;
 
     module.add_wrapped(<span class="macro">wrap_pymodule!</span>(cli::cli))<span class="question-mark">?</span>;

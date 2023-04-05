@@ -146,8 +146,10 @@
 <a href="#146" id="146">146</a>
 <a href="#147" id="147">147</a>
 <a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::{
     any::Any,
+    ops::Deref,
     sync::{Arc, Weak},
 };
 
@@ -235,19 +237,27 @@
     }
 
     <span class="kw">pub async fn </span>server_port(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ServerOrBound {
-        ServerOrBound::Server(<span class="self">self</span>.client_port.as_ref().unwrap().sink_port().<span class="kw">await</span>)
+        ServerOrBound::Server(<span class="self">self</span>.client_port.as_ref().unwrap().load_instantiated().<span class="kw">await</span>)
     }
 }
 
 <span class="kw">impl </span>HydroflowSource <span class="kw">for </span>CustomClientPort {
+    <span class="kw">fn </span>source_path(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SourcePath {
+        SourcePath::Direct(<span class="self">self</span>.on.upgrade().unwrap().try_read().unwrap().on.clone())
+    }
+
     <span class="kw">fn </span>send_to(<span class="kw-2">&amp;mut </span><span class="self">self</span>, to: <span class="kw-2">&amp;mut </span><span class="kw">dyn </span>HydroflowSink) {
         <span class="kw">if let </span><span class="prelude-val">Ok</span>(instantiated) = to.instantiate(<span class="kw-2">&amp;</span>SourcePath::Direct(
             <span class="self">self</span>.on.upgrade().unwrap().try_read().unwrap().on.clone(),
         )) {
-            <span class="self">self</span>.client_port = <span class="prelude-val">Some</span>(instantiated());
+            <span class="self">self</span>.record_server_config(instantiated());
         } <span class="kw">else </span>{
             <span class="macro">panic!</span>(<span class="string">&quot;Custom services cannot be used as the server&quot;</span>)
         }
+    }
+
+    <span class="kw">fn </span>record_server_config(<span class="kw-2">&amp;mut </span><span class="self">self</span>, config: ServerConfig) {
+        <span class="self">self</span>.client_port = <span class="prelude-val">Some</span>(config);
     }
 }
 
@@ -264,25 +274,17 @@
     <span class="kw">fn </span>instantiate_reverse(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         server_host: <span class="kw-2">&amp;</span>Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;,
-        server_sink: Box&lt;<span class="kw">dyn </span>HydroflowServer&gt;,
+        server_sink: Arc&lt;<span class="kw">dyn </span>HydroflowServer&gt;,
         wrap_client_port: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Fn(ServerConfig) -&gt; ServerConfig,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Box&lt;<span class="kw">dyn </span>FnOnce(<span class="kw-2">&amp;mut </span><span class="kw">dyn </span>Any) -&gt; ServerStrategy&gt;&gt; {
         <span class="kw">let </span>client = <span class="self">self</span>.on.upgrade().unwrap();
         <span class="kw">let </span>client_read = client.try_read().unwrap();
 
-        <span class="kw">let </span>client_host_id = client_read.on.try_read().unwrap().id();
-
         <span class="kw">let </span>server_host_clone = server_host.clone();
         <span class="kw">let </span>server_host = server_host_clone.try_read().unwrap();
 
-        <span class="kw">let </span>client_host_clone = client_read.on.clone();
-        <span class="kw">let </span>client_host_read = <span class="kw">if </span>server_host.id() == client_host_id {
-            <span class="prelude-val">None
-        </span>} <span class="kw">else </span>{
-            client_host_clone.try_read().ok()
-        };
-
-        <span class="kw">let </span>(conn_type, bind_type) = server_host.strategy_as_server(client_host_read.as_deref())<span class="question-mark">?</span>;
+        <span class="kw">let </span>(conn_type, bind_type) =
+            server_host.strategy_as_server(client_read.on.try_read().unwrap().deref())<span class="question-mark">?</span>;
 
         <span class="kw">let </span>client_port = wrap_client_port(ServerConfig::from_strategy(<span class="kw-2">&amp;</span>conn_type, server_sink));
 
