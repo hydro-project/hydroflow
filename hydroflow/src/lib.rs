@@ -11,6 +11,7 @@ pub mod props;
 pub mod scheduled;
 pub mod util;
 
+pub use bincode;
 pub use bytes;
 pub use futures;
 pub use pusherator;
