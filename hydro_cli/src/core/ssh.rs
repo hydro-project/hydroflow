@@ -68,6 +68,7 @@ impl LaunchedBinary for LaunchedSSHBinary {
 pub trait LaunchedSSHHost: Send + Sync {
     fn server_config(&self, bind_type: &ServerStrategy) -> ServerBindConfig;
     fn resource_result(&self) -> &Arc<ResourceResult>;
+    fn ssh_user(&self) -> &str;
     async fn open_ssh_session(&self) -> Result<AsyncSession<TcpStream>>;
 }
 
@@ -88,7 +89,9 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
 
         // we may be deploying multiple binaries, so give each a unique name
         let unique_name = nanoid!(8);
-        let binary_path = PathBuf::from(format!("/home/hydro/hydro-{unique_name}"));
+
+        let user = self.ssh_user();
+        let binary_path = PathBuf::from(format!("/home/{user}/hydro-{unique_name}"));
 
         let mut created_file = sftp.create(&binary_path).await?;
         created_file
