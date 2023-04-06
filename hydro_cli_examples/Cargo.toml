@@ -4,6 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [[example]]
+name = "empty_program"
+
+[[example]]
 name = "stdout_receiver"
 
 [[example]]

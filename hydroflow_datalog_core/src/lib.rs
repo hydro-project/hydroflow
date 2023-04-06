@@ -69,6 +69,7 @@ pub fn gen_hydroflow_graph(
 
     let mut inputs = Vec::new();
     let mut outputs = Vec::new();
+    let mut persists = HashSet::new();
     let mut asyncs = Vec::new();
     let mut rules = Vec::new();
 
@@ -81,6 +82,9 @@ pub fn gen_hydroflow_graph(
             Declaration::Output(_, ident, hf_code) => {
                 assert!(!MAGIC_RELATIONS.contains(&ident.name.as_str()));
                 outputs.push((ident, hf_code))
+            }
+            Declaration::Persist(_, ident) => {
+                persists.insert(ident.name.clone());
             }
             Declaration::Async(_, ident, send_hf, recv_hf) => {
                 assert!(!MAGIC_RELATIONS.contains(&ident.name.as_str()));
@@ -102,6 +106,7 @@ pub fn gen_hydroflow_graph(
         let target_ident = match decl {
             Declaration::Input(_, ident, _) => ident.clone(),
             Declaration::Output(_, ident, _) => ident.clone(),
+            Declaration::Persist(_, ident) => ident.clone(),
             Declaration::Async(_, ident, _, _) => ident.clone(),
             Declaration::Rule(rule) => rule.target.name.clone(),
         };
@@ -109,6 +114,7 @@ pub fn gen_hydroflow_graph(
         if !created_rules.contains(&target_ident.value) {
             created_rules.insert(target_ident.value.clone());
             let name = syn::Ident::new(&target_ident.name, get_span(target_ident.span));
+
             flat_graph_builder
                 .add_statement(parse_quote_spanned!(get_span(target_ident.span)=> #name = merge() -> unique::<'tick>() -> tee()));
         }
@@ -144,6 +150,11 @@ pub fn gen_hydroflow_graph(
         let target_ident = syn::Ident::new(&target.name, get_span(target.span));
 
         let output_pipeline: Pipeline = parse_pipeline(&hf_code.code, &get_span)?;
+        let output_pipeline = if persists.contains(&target.name) {
+            parse_quote_spanned! {get_span(target.span)=> persist() -> #output_pipeline}
+        } else {
+            output_pipeline
+        };
 
         flat_graph_builder.add_statement(parse_quote_spanned! {get_span(target.span)=>
             #target_ident [#my_tee_index_lit] -> #output_pipeline
@@ -179,7 +190,9 @@ pub fn gen_hydroflow_graph(
     let mut next_join_idx = 0..;
     let mut diagnostics = Vec::new();
     for rule in rules {
+        let plan = compute_join_plan(&rule.sources, &persists);
         generate_rule(
+            plan,
             rule,
             &mut flat_graph_builder,
             &mut tee_counter,
@@ -258,7 +271,9 @@ pub fn hydroflow_graph_to_program(flat_graph: HydroflowGraph, root: TokenStream)
     code_tokens
 }
 
+#[allow(clippy::too_many_arguments)]
 fn generate_rule(
+    plan: JoinPlan<'_>,
     rule: &Spanned<Rule>,
     flat_graph_builder: &mut FlatGraphBuilder,
     tee_counter: &mut HashMap<String, Counter>,
@@ -269,71 +284,6 @@ fn generate_rule(
 ) {
     let target = &rule.target.name;
     let target_ident = syn::Ident::new(&target.name, get_span(target.span));
-
-    let sources: Vec<Atom> = rule.sources.to_vec();
-
-    // TODO(shadaj): smarter plans
-    let mut plan: JoinPlan = sources
-        .iter()
-        .filter_map(|x| match x {
-            Atom::Relation(negated, e) => {
-                if negated.is_none() && !MAGIC_RELATIONS.contains(&e.name.name.as_str()) {
-                    Some(JoinPlan::Source(e))
-                } else {
-                    None
-                }
-            }
-            _ => None,
-        })
-        .reduce(|a, b| JoinPlan::Join(Box::new(a), Box::new(b)))
-        .unwrap();
-
-    plan = sources
-        .iter()
-        .filter_map(|x| match x {
-            Atom::Relation(negated, e) => {
-                if negated.is_some() {
-                    Some(JoinPlan::Source(e))
-                } else {
-                    None
-                }
-            }
-            _ => None,
-        })
-        .fold(plan, |a, b| JoinPlan::AntiJoin(Box::new(a), Box::new(b)));
-
-    let predicates = sources
-        .iter()
-        .filter_map(|x| match x {
-            Atom::Predicate(e) => Some(e),
-            _ => None,
-        })
-        .collect::<Vec<_>>();
-
-    if !predicates.is_empty() {
-        plan = JoinPlan::Predicate(predicates, Box::new(plan))
-    }
-
-    plan = sources.iter().fold(plan, |acc, atom| match atom {
-        Atom::Relation(negated, e) => {
-            if MAGIC_RELATIONS.contains(&e.name.name.as_str()) {
-                match e.name.name.as_str() {
-                    "less_than" => {
-                        assert!(negated.is_none());
-                        JoinPlan::MagicNatLt(
-                            Box::new(acc),
-                            e.fields[0].value.clone(),
-                            e.fields[1].value.clone(),
-                        )
-                    }
-                    o => panic!("Unknown magic relation {}", o),
-                }
-            } else {
-                acc
-            }
-        }
-        _ => acc,
-    });
 
     let out_expanded = expand_join_plan(
         &plan,
@@ -418,6 +368,73 @@ fn generate_rule(
             rhs: Box::new(after_join_and_send),
         }),
     ));
+}
+
+fn compute_join_plan<'a>(sources: &'a [Atom], persisted_rules: &HashSet<String>) -> JoinPlan<'a> {
+    // TODO(shadaj): smarter plans
+    let mut plan: JoinPlan = sources
+        .iter()
+        .filter_map(|x| match x {
+            Atom::Relation(negated, e) => {
+                if negated.is_none() && !MAGIC_RELATIONS.contains(&e.name.name.as_str()) {
+                    Some(JoinPlan::Source(e, persisted_rules.contains(&e.name.name)))
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        })
+        .reduce(|a, b| JoinPlan::Join(Box::new(a), Box::new(b)))
+        .unwrap();
+
+    plan = sources
+        .iter()
+        .filter_map(|x| match x {
+            Atom::Relation(negated, e) => {
+                if negated.is_some() {
+                    Some(JoinPlan::Source(e, persisted_rules.contains(&e.name.name)))
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        })
+        .fold(plan, |a, b| JoinPlan::AntiJoin(Box::new(a), Box::new(b)));
+
+    let predicates = sources
+        .iter()
+        .filter_map(|x| match x {
+            Atom::Predicate(e) => Some(e),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+
+    if !predicates.is_empty() {
+        plan = JoinPlan::Predicate(predicates, Box::new(plan))
+    }
+
+    plan = sources.iter().fold(plan, |acc, atom| match atom {
+        Atom::Relation(negated, e) => {
+            if MAGIC_RELATIONS.contains(&e.name.name.as_str()) {
+                match e.name.name.as_str() {
+                    "less_than" => {
+                        assert!(negated.is_none());
+                        JoinPlan::MagicNatLt(
+                            Box::new(acc),
+                            e.fields[0].value.clone(),
+                            e.fields[1].value.clone(),
+                        )
+                    }
+                    o => panic!("Unknown magic relation {}", o),
+                }
+            } else {
+                acc
+            }
+        }
+        _ => acc,
+    });
+
+    plan
 }
 
 fn gen_value_expr(
@@ -580,7 +597,7 @@ fn apply_aggregations(
 
     let flattened_tuple_type = &out_expanded.tuple_type;
 
-    if agg_exprs.is_empty() {
+    let without_persist: Pipeline = if agg_exprs.is_empty() {
         parse_quote!(map(|row: #flattened_tuple_type| (#(#group_by_exprs, )*)))
     } else {
         let agg_initial =
@@ -682,6 +699,12 @@ fn apply_aggregations(
         parse_quote! {
             map(#pre_group_by_map) -> group_by::<'tick, #group_by_input_type, #agg_type>(|| #agg_initial, #group_by_fn) -> map(#after_group_map)
         }
+    };
+
+    if out_expanded.persisted {
+        parse_quote!(persist() -> #without_persist)
+    } else {
+        without_persist
     }
 }
 
@@ -947,6 +970,25 @@ mod tests {
             result(2) :- ints(a), (a != 0)
             result(3) :- ints(a), (a - 1 == 0)
             result(4) :- ints(a), (a - 1 == 1 - 1)
+            "#
+        );
+    }
+
+    #[test]
+    fn test_persist() {
+        test_snapshots!(
+            r#"
+            .input ints1 `source_stream(ints1)`
+            .persist ints1
+    
+            .input ints2 `source_stream(ints2)`
+            .persist ints2
+    
+            .input ints3 `source_stream(ints3)`
+            
+            .output result `for_each(|v| result.send(v).unwrap())`
+    
+            result(a, b, c) :- ints1(a), ints2(b), ints3(c)
             "#
         );
     }
