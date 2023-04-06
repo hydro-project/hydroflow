@@ -56,11 +56,11 @@ async fn main() {
 .input id `repeat_iter(my_id.clone()) -> map(|p| (p,))`
 
 # Debug
-.output p1aOut `for_each(|(a,pid,id,num):(u32,u32,u32,u32,)| println!("p1a received at {:?}: [{:?},{:?},{:?}]", a, pid, id, num))`
-.output p1bOut `for_each(|(pid,a,log_size,id,num,max_id,max_num):(u32,u32,u32,u32,u32,u32,u32,)| println!("p1b sent from {:?} to {:?}: [{:?},{:?},{:?},{:?},{:?},{:?}]", a, pid, a, log_size, id, num, max_id, max_num))`
-.output p1bLogOut `for_each(|(pid,a,payload,slot,payload_id,payload_num,id,num):(u32,u32,String,u32,u32,u32,u32,u32,)| println!("p1bLog sent from {:?} to {:?}: [{:?},{:?},{:?},{:?},{:?},{:?},{:?}]", a, pid, a, payload, slot, payload_id, payload_num, id, num))`
-.output p2aOut `for_each(|(a,pid,payload,slot,id,num):(u32,u32,String,u32,u32,u32,)| println!("p2a received at {:?}: [{:?},{:?},{:?},{:?},{:?}]", a, pid, payload, slot, id, num))`
-.output p2bOut `for_each(|(pid,a,payload,slot,id,num,max_id,max_num):(u32,u32,String,u32,u32,u32,u32,u32,)| println!("p2b sent from {:?} to {:?}: [{:?},{:?},{:?},{:?},{:?},{:?},{:?}]]", a, pid, a, payload, slot, id, num, max_id, max_num))`
+.output p1aOut `for_each(|(a,pid,id,num):(u32,u32,u32,u32,)| println!("acceptor {:?} received p1a: [{:?},{:?},{:?}]", a, pid, id, num))`
+.output p1bOut `for_each(|(pid,a,log_size,id,num,max_id,max_num):(u32,u32,u32,u32,u32,u32,u32,)| println!("acceptor {:?} sent p1b to {:?}: [{:?},{:?},{:?},{:?},{:?},{:?}]", a, pid, a, log_size, id, num, max_id, max_num))`
+.output p1bLogOut `for_each(|(pid,a,payload,slot,payload_id,payload_num,id,num):(u32,u32,String,u32,u32,u32,u32,u32,)| println!("acceptor {:?} sent p1bLog to {:?}: [{:?},{:?},{:?},{:?},{:?},{:?},{:?}]", a, pid, a, payload, slot, payload_id, payload_num, id, num))`
+.output p2aOut `for_each(|(a,pid,payload,slot,id,num):(u32,u32,String,u32,u32,u32,)| println!("acceptor {:?} received p2a: [{:?},{:?},{:?},{:?},{:?}]", a, pid, payload, slot, id, num))`
+.output p2bOut `for_each(|(pid,a,payload,slot,id,num,max_id,max_num):(u32,u32,String,u32,u32,u32,u32,u32,)| println!("acceptor {:?} sent p2b to {:?}: [{:?},{:?},{:?},{:?},{:?},{:?},{:?}]]", a, pid, a, payload, slot, id, num, max_id, max_num))`
 
 
 # p1a: proposerID, ballotID, ballotNum
@@ -81,12 +81,12 @@ ballots(i, n) :+ ballots(i, n)
 log(p, slot, ballotID, ballotNum) :+ log(p, slot, ballotID, ballotNum)
 
 # Debug
-p1aOut(a, pid, id, num) :- p1a(pid, id, num), id(a)
-p1bOut(pid, i, size, ballotID, ballotNum, maxBallotID, maxBallotNum) :- p1a(pid, ballotID, ballotNum), id(i), LogSize(size), MaxBallot(maxBallotID, maxBallotNum)
-p1bOut(pid, i, 0, ballotID, ballotNum, maxBallotID, maxBallotNum) :- p1a(pid, ballotID, ballotNum), id(i), !LogSize(size), MaxBallot(maxBallotID, maxBallotNum)
-p1bLogOut(pid, i, payload, slot, payloadBallotID, payloadBallotNum, ballotID, ballotNum) :- p1a(pid, ballotID, ballotNum), id(i), log(payload, slot, payloadBallotID, payloadBallotNum), LogEntryMaxBallot(slot, payloadBallotID, payloadBallotNum)
-p2aOut(a, pid, payload, slot, id, num) :- p2a(pid, payload, slot, id, num), id(a)
-p2bOut(pid, i, payload, slot, ballotID, ballotNum, maxBallotID, maxBallotNum) :- p2a(pid, payload, slot, ballotID, ballotNum), id(i), MaxBallot(maxBallotID, maxBallotNum)
+// p1aOut(a, pid, id, num) :- p1a(pid, id, num), id(a)
+// p1bOut(pid, i, size, ballotID, ballotNum, maxBallotID, maxBallotNum) :- p1a(pid, ballotID, ballotNum), id(i), LogSize(size), MaxBallot(maxBallotID, maxBallotNum)
+// p1bOut(pid, i, 0, ballotID, ballotNum, maxBallotID, maxBallotNum) :- p1a(pid, ballotID, ballotNum), id(i), !LogSize(size), MaxBallot(maxBallotID, maxBallotNum)
+// p1bLogOut(pid, i, payload, slot, payloadBallotID, payloadBallotNum, ballotID, ballotNum) :- p1a(pid, ballotID, ballotNum), id(i), log(payload, slot, payloadBallotID, payloadBallotNum), LogEntryMaxBallot(slot, payloadBallotID, payloadBallotNum)
+// p2aOut(a, pid, payload, slot, id, num) :- p2a(pid, payload, slot, id, num), id(a)
+// p2bOut(pid, i, payload, slot, ballotID, ballotNum, maxBallotID, maxBallotNum) :- p2a(pid, payload, slot, ballotID, ballotNum), id(i), MaxBallot(maxBallotID, maxBallotNum)
 
 
 

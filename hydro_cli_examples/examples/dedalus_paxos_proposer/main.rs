@@ -6,6 +6,7 @@ use hydroflow::util::{
 use hydroflow::bytes::BytesMut;
 use hydroflow::tokio_stream::wrappers::IntervalStream;
 use hydroflow_datalog::datalog;
+use tokio::time::{interval_at, Duration, Instant};
 
 #[tokio::main]
 async fn main() {
@@ -66,9 +67,12 @@ async fn main() {
         .await
         .into_source();
 
-    let (my_id, quorum, heartbeat_timeout_const, p1a_timeout_const):(u32, u32, u32, u32) = 
+    let (my_id, quorum, heartbeat_timeout_const, p1a_timeout_const, i_am_leader_timeout_const):(u32, u32, u32, u32, u32) = 
         serde_json::from_str(&std::env::args().nth(1).unwrap()).unwrap();
-    let p1a_timeout = IntervalStream::new(tokio::time::interval(std::time::Duration::from_secs(p1a_timeout_const.into())));
+    let p1a_timeout_start = Instant::now() + Duration::from_secs(p1a_timeout_const.into());
+    let p1a_timeout = IntervalStream::new(interval_at(p1a_timeout_start, Duration::from_secs(p1a_timeout_const.into())));
+    let i_am_leader_timeout_start = Instant::now() + Duration::from_secs(i_am_leader_timeout_const.into());
+    let i_am_leader_timeout = IntervalStream::new(interval_at(i_am_leader_timeout_start, Duration::from_secs(i_am_leader_timeout_const.into())));
     
     let mut df = datalog!(
         r#"
@@ -83,19 +87,21 @@ async fn main() {
 .input noop `repeat_iter([("noop".to_string(),),])`
 
 # Debug
-.output p1aOut `for_each(|(a,pid,id,num):(u32,u32,u32,u32,)| println!("p1a sent from {:?} to {:?}: [{:?},{:?},{:?}]", pid, a, pid, id, num))`
-.output p1bOut `for_each(|(pid,a,log_size,id,num,max_id,max_num):(u32,u32,u32,u32,u32,u32,u32,)| println!("p1b received at {:?}: [{:?},{:?},{:?},{:?},{:?},{:?}]", pid, a, log_size, id, num, max_id, max_num))`
-.output p1bLogOut `for_each(|(pid,a,payload,slot,payload_id,payload_num,id,num):(u32,u32,String,u32,u32,u32,u32,u32,)| println!("p1bLog received at {:?}: [{:?},{:?},{:?},{:?},{:?},{:?},{:?}]", pid, a, payload, slot, payload_id, payload_num, id, num))`
-.output p2aOut `for_each(|(a,pid,payload,slot,id,num):(u32,u32,String,u32,u32,u32,)| println!("p2a sent from {:?} to {:?}: [{:?},{:?},{:?},{:?},{:?}]", pid, a, pid, payload, slot, id, num))`
-.output p2bOut `for_each(|(pid,a,payload,slot,id,num,max_id,max_num):(u32,u32,String,u32,u32,u32,u32,u32,)| println!("p2b received at {:?}: [{:?},{:?},{:?},{:?},{:?},{:?},{:?}]]", pid, a, payload, slot, id, num, max_id, max_num))`
-.output iAmLeaderSendOut `for_each(|(dest,pid,num):(u32,u32,u32,)| println!("iAmLeader sent from {:?} to {:?}: [{:?},{:?}]", pid, dest, pid, num))`
-.output iAmLeaderReceiveOut `for_each(|(my_id,pid,num):(u32,u32,u32,)| println!("iAmLeader received at {:?}: [{:?},{:?}]", my_id, pid, num))`
+.output p1aOut `for_each(|(a,pid,id,num):(u32,u32,u32,u32,)| println!("proposer {:?} sent p1a to {:?}: [{:?},{:?},{:?}]", pid, a, pid, id, num))`
+.output p1bOut `for_each(|(pid,a,log_size,id,num,max_id,max_num):(u32,u32,u32,u32,u32,u32,u32,)| println!("proposer {:?} received p1b: [{:?},{:?},{:?},{:?},{:?},{:?}]", pid, a, log_size, id, num, max_id, max_num))`
+.output p1bLogOut `for_each(|(pid,a,payload,slot,payload_id,payload_num,id,num):(u32,u32,String,u32,u32,u32,u32,u32,)| println!("proposer {:?} received p1bLog: [{:?},{:?},{:?},{:?},{:?},{:?},{:?}]", pid, a, payload, slot, payload_id, payload_num, id, num))`
+.output p2aOut `for_each(|(a,pid,payload,slot,id,num):(u32,u32,String,u32,u32,u32,)| println!("proposer {:?} sent p2a to {:?}: [{:?},{:?},{:?},{:?},{:?}]", pid, a, pid, payload, slot, id, num))`
+.output p2bOut `for_each(|(pid,a,payload,slot,id,num,max_id,max_num):(u32,u32,String,u32,u32,u32,u32,u32,)| println!("proposer {:?} received p2b: [{:?},{:?},{:?},{:?},{:?},{:?},{:?}]", pid, a, payload, slot, id, num, max_id, max_num))`
+.output iAmLeaderSendOut `for_each(|(dest,pid,num):(u32,u32,u32,)| println!("proposer {:?} sent iAmLeader to {:?}: [{:?},{:?}]", pid, dest, pid, num))`
+.output iAmLeaderReceiveOut `for_each(|(my_id,pid,num):(u32,u32,u32,)| println!("proposer {:?} received iAmLeader: [{:?},{:?}]", my_id, pid, num))`
 
 # IDB
-.input clientIn `repeat_iter([("vote".to_string(),),])`
+// .input clientIn `repeat_iter([("vote".to_string(),),])`
+.input clientIn `repeat_iter(vec![()]) -> map(|_| (SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs().to_string(),))` # wall-clock time
 .output clientOut `for_each(|(payload,slot):(String,u32)| println!("committed {:?}: {:?}", slot, payload))`
 
 .input startBallot `repeat_iter([(0 as u32,),])`
+.input startSlot `repeat_iter([(0 as u32,),])`
 
 # p1a: proposerID, ballotID, ballotNum
 .async p1a `map(|(node_id, v):(u32,(u32,u32,u32))| (node_id, serialize_to_bytes(v))) -> dest_sink(p1a_sink)` `null::<(u32,u32,u32)>()` 
@@ -108,7 +114,8 @@ async fn main() {
 # p2b: acceptorID, payload, slot, ballotID, ballotNum, maxBallotID, maxBallotNum
 .async p2bU `null::<(u32,String,u32,u32,u32,u32,u32)>()` `source_stream(p2b_source) -> map(|v: Result<BytesMut, _>| deserialize_from_bytes::<(u32,String,u32,u32,u32,u32,u32,)>(v.unwrap()).unwrap())`
 
-.input timeout `source_stream(p1a_timeout) -> map(|_| () )` # periodic timer to send p1a
+.input p1aTimeout `source_stream(p1a_timeout) -> map(|_| () )` # periodic timer to send p1a
+.input iAmLeaderTimeout `source_stream(i_am_leader_timeout) -> map(|_| () )` # periodic timer to send iAmLeader
 .input currTime `repeat_iter(vec![()]) -> map(|_| (SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() as u32,))` # wall-clock time
 # iAmLeader: ballotID, ballotNum. Note: this is both a source and a sink
 .async iAmLeaderU `map(|(node_id, v):(u32,(u32,u32))| (node_id, serialize_to_bytes(v))) -> dest_sink(i_am_leader_sink)` `source_stream(i_am_leader_source) -> map(|v: Result<BytesMut, _>| deserialize_from_bytes::<(u32,u32,)>(v.unwrap()).unwrap())`
@@ -131,17 +138,19 @@ iAmLeader(i, n, arrivalTime) :+ iAmLeader(i, n, arrivalTime)
 # Initialize
 ballot(zero) :- startBallot(zero)
 iAmLeader(zero, zero, zero) :- startBallot(zero)
+ProposedSlots(slot) :- startSlot(slot)
 
 # Debug
-p1aOut(a, i, i, num) :- id(i), NewBallot(num), timeout(), LeaderExpired(), acceptors(a)
-p1aOut(a, i, i, num) :- id(i), ballot(num), !NewBallot(newNum), timeout(), LeaderExpired(), acceptors(a)
-p1bOut(pid, a, logSize, id, num, maxID, maxNum) :- id(pid), p1bU(a, logSize, id, num, maxID, maxNum)
-p1bLogOut(pid, a, payload, slot, payloadBallotID, payloadBallotNum, id, num) :- id(pid), p1bLogU(a, payload, slot, payloadBallotID, payloadBallotNum, id, num)
-p2aOut(a, i, payload, slot, i, num) :- id(pid), ResentEntries(payload, slot), id(i), ballot(num), acceptors(a)
-p2aOut(a, i, no, slot, i, num) :- FilledHoles(no, slot), id(i), ballot(num), acceptors(a)
-p2aOut(a, i, payload, slot + 1, i, num) :- ChosenPayload(payload), MaxProposedSlot(slot), id(i), ballot(num), acceptors(a)
-iAmLeaderSendOut(pid, i, num) :- id(i), ballot(num), IsLeader(), proposers(pid), !id(pid)
-iAmLeaderReceiveOut(pid, i, num) :- id(pid), iAmLeaderU(i, num)
+// p1aOut(a, i, i, num) :- id(i), NewBallot(num), p1aTimeout(), LeaderExpired(), acceptors(a)
+// p1aOut(a, i, i, num) :- id(i), ballot(num), !NewBallot(newNum), p1aTimeout(), LeaderExpired(), acceptors(a)
+// p1bOut(pid, a, logSize, id, num, maxID, maxNum) :- id(pid), p1bU(a, logSize, id, num, maxID, maxNum)
+// p1bLogOut(pid, a, payload, slot, payloadBallotID, payloadBallotNum, id, num) :- id(pid), p1bLogU(a, payload, slot, payloadBallotID, payloadBallotNum, id, num)
+// p2aOut(a, i, payload, slot, i, num) :- ResentEntries(payload, slot), id(i), ballot(num), acceptors(a)
+// p2aOut(a, i, no, slot, i, num) :- FilledHoles(no, slot), id(i), ballot(num), acceptors(a)
+// p2aOut(a, i, payload, slot + 1, i, num) :- ChosenPayload(payload), MaxProposedSlot(slot), id(i), ballot(num), acceptors(a)
+// p2bOut(pid, a, payload, slot, id, num, maxID, maxNum) :- id(pid), p2bU(a, payload, slot, id, num, maxID, maxNum)
+// iAmLeaderSendOut(pid, i, num) :- id(i), ballot(num), IsLeader(), proposers(pid), iAmLeaderTimeout(), !id(pid)
+// iAmLeaderReceiveOut(pid, i, num) :- id(pid), iAmLeaderU(i, num)
 
 
 ######################## stable leader election
@@ -153,18 +162,18 @@ receivedBallots(maxBallotID, maxBallotNum) :- p2b(acceptorID, payload, slot, bal
 MaxReceivedBallotNum(max(num)) :- receivedBallots(id, num)
 MaxReceivedBallot(max(id), num) :- MaxReceivedBallotNum(num), receivedBallots(id, num)
 IsLeader() :- CountMatchingP1bs(c), quorum(size), (c >= size), id(i), ballot(num), MaxReceivedBallot(maxId, maxNum), (num > maxNum)
-IsLeader() :- CountMatchingP1bs(c), quorum(size), (c >= size), id(i), ballot(num), MaxReceivedBallot(maxId, maxNum), (num == maxNum), (i > maxId)
+IsLeader() :- CountMatchingP1bs(c), quorum(size), (c >= size), id(i), ballot(num), MaxReceivedBallot(maxId, maxNum), (num == maxNum), (i >= maxId)
 
 # send heartbeat if we're the leader.
-iAmLeaderU@pid(i, num) :~ id(i), ballot(num), IsLeader(), proposers(pid), !id(pid) # don't send to self
+iAmLeaderU@pid(i, num) :~ id(i), ballot(num), IsLeader(), proposers(pid), iAmLeaderTimeout(), !id(pid) # don't send to self
 LatestIAmLeader(max(arrivalTime)) :- iAmLeader(i, num, arrivalTime)
 TimeBetweenHeartbeat(t - arrivalTime) :- LatestIAmLeader(arrivalTime), currTime(t)
 LeaderExpired() :- TimeBetweenHeartbeat(t), leaderTimeout(timeout), (t > timeout), !IsLeader()
 
 
 # Resend p1a if we waited a random amount of time (timeout) AND leader heartbeat timed out. Send NewBallot if it was just triggered (ballot is updated in t+1), otherwise send ballot.
-p1a@a(i, i, num) :~ id(i), NewBallot(num), timeout(), LeaderExpired(), acceptors(a)
-p1a@a(i, i, num) :~ id(i), ballot(num), !NewBallot(newNum), timeout(), LeaderExpired(), acceptors(a)
+p1a@a(i, i, num) :~ id(i), NewBallot(num), p1aTimeout(), LeaderExpired(), acceptors(a)
+p1a@a(i, i, num) :~ id(i), ballot(num), !NewBallot(newNum), p1aTimeout(), LeaderExpired(), acceptors(a)
 
 # ballot = max + 1. If anothe proposer sends iAmLeader, that contains its ballot, which updates our ballot (to be even higher), so we are no longer the leader (RelevantP1bs no longer relevant)
 NewBallot(maxNum + 1) :- MaxReceivedBallot(maxId, maxNum), id(i), ballot(num), (maxNum >= num), (maxId != i)
@@ -225,7 +234,10 @@ proposedLog(payload, slot + 1) :+ ChosenPayload(payload), MaxProposedSlot(slot)
 
 ######################## process p2bs
 CountMatchingP2bs(payload, slot, count(acceptorID), i, num) :- p2b(acceptorID, payload, slot, i, num, payloadBallotID, payloadBallotNum)
-client_out(payload, slot) :- CountMatchingP2bs(payload, slot, c, i, num), quorum(size), (c >= size)
+commit(payload, slot) :- CountMatchingP2bs(payload, slot, c, i, num), quorum(size), (c >= size)
+committed(payload, slot) :+ commit(payload, slot)
+committed(payload, slot) :+ committed(payload, slot)
+clientOut(payload, slot) :- commit(payload, slot), !committed(payload, slot)
 ######################## end process p2bs    
 "#
     );
