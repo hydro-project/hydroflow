@@ -5,6 +5,22 @@ import pytest
 import hydro
 
 @pytest.mark.asyncio
+async def test_connect_to_self():
+    deployment = hydro.Deployment()
+    localhost_machine = deployment.Localhost()
+
+    program = deployment.HydroflowCrate(
+        src=str((Path(__file__).parent.parent.parent / "hydro_cli_examples").absolute()),
+        example="empty_program",
+        on=localhost_machine
+    )
+
+    program.ports.out.send_to(program.ports.input)
+
+    await deployment.deploy()
+    await deployment.start()
+
+@pytest.mark.asyncio
 async def test_python_sender():
     deployment = hydro.Deployment()
     localhost_machine = deployment.Localhost()
