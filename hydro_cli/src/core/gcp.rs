@@ -17,6 +17,7 @@ use super::{
     ServerStrategy,
 };
 
+#[derive(Debug)]
 pub struct LaunchedComputeEngine {
     resource_result: Arc<ResourceResult>,
     user: String,
@@ -118,6 +119,7 @@ impl LaunchedSSHHost for LaunchedComputeEngine {
     }
 }
 
+#[derive(Debug)]
 pub struct GCPNetwork {
     pub project: String,
     pub tf_path: Option<String>,
@@ -223,6 +225,7 @@ impl GCPNetwork {
     }
 }
 
+#[derive(Debug)]
 pub struct GCPComputeEngineHost {
     pub id: usize,
     pub project: String,
@@ -489,6 +492,12 @@ impl Host for GCPComputeEngineHost {
                 ),
             },
         );
+    }
+
+    fn launched(&self) -> Option<Arc<dyn LaunchedHost>> {
+        self.launched
+            .as_ref()
+            .map(|a| a.clone() as Arc<dyn LaunchedHost>)
     }
 
     async fn provision(&mut self, resource_result: &Arc<ResourceResult>) -> Arc<dyn LaunchedHost> {
