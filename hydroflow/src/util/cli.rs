@@ -1,20 +1,10 @@
 use std::collections::HashMap;
 
-use hydroflow_cli_integration::{BoundConnection, ServerBindConfig, ServerPort};
+use hydroflow_cli_integration::{ServerBindConfig, ServerPort};
 
 pub use hydroflow_cli_integration::*;
 
 use crate::scheduled::graph::Hydroflow;
-
-async fn accept_incoming_connections(
-    binds: HashMap<String, BoundConnection>,
-) -> HashMap<String, ServerOrBound> {
-    let mut bind_results = HashMap::new();
-    for (name, bind) in binds {
-        bind_results.insert(name, ServerOrBound::Bound(bind));
-    }
-    bind_results
-}
 
 pub async fn launch_flow(mut flow: Hydroflow) {
     let stop = tokio::sync::oneshot::channel();
@@ -47,8 +37,6 @@ pub async fn init() -> HashMap<String, ServerOrBound> {
         binds.insert(name.clone(), bound);
     }
 
-    let bind_connected_future = tokio::task::spawn(accept_incoming_connections(binds));
-
     let bind_serialized = serde_json::to_string(&bind_results).unwrap();
     println!("ready: {bind_serialized}");
 
@@ -68,9 +56,8 @@ pub async fn init() -> HashMap<String, ServerOrBound> {
         all_connected.insert(name, ServerOrBound::Server(defn));
     }
 
-    let bind_connected = bind_connected_future.await.unwrap();
-    for (name, defn) in bind_connected {
-        all_connected.insert(name, defn);
+    for (name, defn) in binds {
+        all_connected.insert(name, ServerOrBound::Bound(defn));
     }
 
     all_connected
