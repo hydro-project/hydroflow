@@ -479,11 +479,10 @@ struct HydroflowCratePorts {
 impl HydroflowCratePorts {
     fn __getattribute__(&self, name: String, py: Python<'_>) -> PyResult<Py<pyo3::PyAny>> {
         let arc = Arc::new(RwLock::new(
-            crate::core::hydroflow_crate::ports::HydroflowPortConfig {
-                service: Arc::downgrade(&self.underlying),
-                port: name,
-                merge: false,
-            },
+            self.underlying
+                .try_read()
+                .unwrap()
+                .get_port(name, &self.underlying),
         ));
 
         Ok(Py::new(
