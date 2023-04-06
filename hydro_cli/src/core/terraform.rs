@@ -274,11 +274,12 @@ pub struct TerraformProvider {
     pub version: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct TerraformOutput {
     pub value: String,
 }
 
+#[derive(Debug)]
 pub struct TerraformResult {
     pub outputs: HashMap<String, TerraformOutput>,
     /// `None` if no deployment was performed
