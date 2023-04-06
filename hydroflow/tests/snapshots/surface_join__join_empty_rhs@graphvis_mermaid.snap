@@ -1,0 +1,25 @@
+---
+source: hydroflow/tests/surface_join.rs
+expression: hf.meta_graph().unwrap().to_mermaid()
+---
+%%{init:{'theme':'base','themeVariables':{'clusterBkg':'#ddd','clusterBorder':'#888'}}}%%
+flowchart TD
+classDef pullClass fill:#02f,color:#fff,stroke:#000,text-align:left,white-space:pre
+classDef pushClass fill:#ff0,stroke:#000,text-align:left,white-space:pre
+linkStyle default stroke:#aaa,stroke-width:4px,color:red,font-size:1.5em;
+subgraph sg_1v1 ["sg_1v1 stratum 0"]
+    3v1[\"(3v1) <code>repeat_iter(1..)</code>"/]:::pullClass
+    4v1[\"(4v1) <code>map(|x| (x, x))</code>"/]:::pullClass
+    5v1[\"(5v1) <code>null()</code>"/]:::pullClass
+    1v1[\"(1v1) <code>join::&lt;'tick, 'tick&gt;()</code>"/]:::pullClass
+    2v1[/"(2v1) <code>for_each(|x: (u32, (u32, u32))| result_send.send(x.1).unwrap())</code>"\]:::pushClass
+    3v1--->4v1
+    4v1--0--->1v1
+    5v1--1--->1v1
+    1v1--->2v1
+    subgraph sg_1v1_var_join_node ["var <tt>join_node</tt>"]
+        1v1
+        2v1
+    end
+end
+
