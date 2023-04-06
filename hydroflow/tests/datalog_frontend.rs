@@ -910,3 +910,45 @@ fn test_expr_predicate() {
         &[(2,), (3,), (4,)]
     );
 }
+
+#[multiplatform_test]
+fn test_persist() {
+    let (ints1_send, ints1) = hydroflow::util::unbounded_channel::<(i64,)>();
+    let (ints2_send, ints2) = hydroflow::util::unbounded_channel::<(i64,)>();
+    let (ints3_send, ints3) = hydroflow::util::unbounded_channel::<(i64,)>();
+    let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(i64, i64, i64)>();
+
+    let mut flow = datalog!(
+        r#"
+        .input ints1 `source_stream(ints1)`
+        .persist ints1
+
+        .input ints2 `source_stream(ints2)`
+        .persist ints2
+
+        .input ints3 `source_stream(ints3)`
+        
+        .output result `for_each(|v| result.send(v).unwrap())`
+
+        result(a, b, c) :- ints1(a), ints2(b), ints3(c)
+        "#
+    );
+
+    ints1_send.send((1,)).unwrap();
+    ints2_send.send((2,)).unwrap();
+    ints3_send.send((5,)).unwrap();
+
+    flow.run_tick();
+
+    assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result_recv), &[(1, 2, 5)]);
+
+    ints2_send.send((3,)).unwrap();
+    ints3_send.send((6,)).unwrap();
+
+    flow.run_tick();
+
+    assert_eq!(
+        &*collect_ready::<Vec<_>, _>(&mut result_recv),
+        &[(1, 2, 6), (1, 3, 6)]
+    );
+}
