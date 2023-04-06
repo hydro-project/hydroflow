@@ -32,35 +32,35 @@ error[E0277]: the trait bound `usize: LatticeRepr` is not satisfied
             SetUnionRepr<Tag, T>
             TopRepr<Lr>
 
-error[E0277]: the trait bound `usize: Merge<usize>` is not satisfied
+error[E0277]: the trait bound `usize: hydroflow::lang::lattice::Merge<usize>` is not satisfied
  --> tests/compile-fail/surface_lattice_merge_badgeneric.rs:6:41
   |
 6 |             -> lattice_merge::<'static, usize>()
-  |                                         ^^^^^ the trait `Merge<usize>` is not implemented for `usize`
+  |                                         ^^^^^ the trait `hydroflow::lang::lattice::Merge<usize>` is not implemented for `usize`
   |
-  = help: the following other types implement trait `Merge<Delta>`:
-            <BottomRepr<SelfLr> as Merge<BottomRepr<DeltaLr>>>
-            <DomPairRepr<SelfRA, SelfRB> as Merge<DomPairRepr<DeltaRA, DeltaRB>>>
-            <LastWriteWinsRepr<M, T> as Merge<LastWriteWinsRepr<M, T>>>
-            <MapUnionRepr<SelfTag, K, SelfLr> as Merge<MapUnionRepr<DeltaTag, K, DeltaLr>>>
-            <MaxRepr<T> as Merge<MaxRepr<T>>>
-            <MinRepr<T> as Merge<MinRepr<T>>>
-            <PairRepr<SelfRA, SelfRB> as Merge<PairRepr<DeltaRA, DeltaRB>>>
-            <SetUnionRepr<SelfTag, T> as Merge<SetUnionRepr<DeltaTag, T>>>
+  = help: the following other types implement trait `hydroflow::lang::lattice::Merge<Delta>`:
+            <BottomRepr<SelfLr> as hydroflow::lang::lattice::Merge<BottomRepr<DeltaLr>>>
+            <DomPairRepr<SelfRA, SelfRB> as hydroflow::lang::lattice::Merge<DomPairRepr<DeltaRA, DeltaRB>>>
+            <LastWriteWinsRepr<M, T> as hydroflow::lang::lattice::Merge<LastWriteWinsRepr<M, T>>>
+            <MapUnionRepr<SelfTag, K, SelfLr> as hydroflow::lang::lattice::Merge<MapUnionRepr<DeltaTag, K, DeltaLr>>>
+            <MaxRepr<T> as hydroflow::lang::lattice::Merge<MaxRepr<T>>>
+            <MinRepr<T> as hydroflow::lang::lattice::Merge<MinRepr<T>>>
+            <PairRepr<SelfRA, SelfRB> as hydroflow::lang::lattice::Merge<PairRepr<DeltaRA, DeltaRB>>>
+            <SetUnionRepr<SelfTag, T> as hydroflow::lang::lattice::Merge<SetUnionRepr<DeltaTag, T>>>
 
-error[E0277]: the trait bound `usize: Merge<usize>` is not satisfied
+error[E0277]: the trait bound `usize: hydroflow::lang::lattice::Merge<usize>` is not satisfied
  --> tests/compile-fail/surface_lattice_merge_badgeneric.rs:5:9
   |
 5 | /         source_iter([1,2,3,4,5])
 6 | |             -> lattice_merge::<'static, usize>()
-  | |________________________________________________^ the trait `Merge<usize>` is not implemented for `usize`
+  | |________________________________________________^ the trait `hydroflow::lang::lattice::Merge<usize>` is not implemented for `usize`
   |
-  = help: the following other types implement trait `Merge<Delta>`:
-            <BottomRepr<SelfLr> as Merge<BottomRepr<DeltaLr>>>
-            <DomPairRepr<SelfRA, SelfRB> as Merge<DomPairRepr<DeltaRA, DeltaRB>>>
-            <LastWriteWinsRepr<M, T> as Merge<LastWriteWinsRepr<M, T>>>
-            <MapUnionRepr<SelfTag, K, SelfLr> as Merge<MapUnionRepr<DeltaTag, K, DeltaLr>>>
-            <MaxRepr<T> as Merge<MaxRepr<T>>>
-            <MinRepr<T> as Merge<MinRepr<T>>>
-            <PairRepr<SelfRA, SelfRB> as Merge<PairRepr<DeltaRA, DeltaRB>>>
-            <SetUnionRepr<SelfTag, T> as Merge<SetUnionRepr<DeltaTag, T>>>
+  = help: the following other types implement trait `hydroflow::lang::lattice::Merge<Delta>`:
+            <BottomRepr<SelfLr> as hydroflow::lang::lattice::Merge<BottomRepr<DeltaLr>>>
+            <DomPairRepr<SelfRA, SelfRB> as hydroflow::lang::lattice::Merge<DomPairRepr<DeltaRA, DeltaRB>>>
+            <LastWriteWinsRepr<M, T> as hydroflow::lang::lattice::Merge<LastWriteWinsRepr<M, T>>>
+            <MapUnionRepr<SelfTag, K, SelfLr> as hydroflow::lang::lattice::Merge<MapUnionRepr<DeltaTag, K, DeltaLr>>>
+            <MaxRepr<T> as hydroflow::lang::lattice::Merge<MaxRepr<T>>>
+            <MinRepr<T> as hydroflow::lang::lattice::Merge<MinRepr<T>>>
+            <PairRepr<SelfRA, SelfRB> as hydroflow::lang::lattice::Merge<PairRepr<DeltaRA, DeltaRB>>>
+            <SetUnionRepr<SelfTag, T> as hydroflow::lang::lattice::Merge<SetUnionRepr<DeltaTag, T>>>
