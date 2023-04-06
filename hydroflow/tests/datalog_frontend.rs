@@ -910,3 +910,35 @@ fn test_expr_predicate() {
         &[(2,), (3,), (4,)]
     );
 }
+
+#[multiplatform_test]
+fn test_persist() {
+    let (ints_send, ints) = hydroflow::util::unbounded_channel::<(i64,)>();
+    let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(i64,)>();
+
+    let mut flow = datalog!(
+        r#"
+        .input ints `source_stream(ints)`
+        .output result `for_each(|v| result.send(v).unwrap())`
+        .persist ints_persisted
+
+        ints_persisted(a) :- ints(a)
+        result(a) :- ints_persisted(a)
+        "#
+    );
+
+    ints_send.send((1,)).unwrap();
+
+    flow.run_tick();
+
+    assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result_recv), &[(1,)]);
+
+    ints_send.send((2,)).unwrap();
+
+    flow.run_tick();
+
+    assert_eq!(
+        &*collect_ready::<Vec<_>, _>(&mut result_recv),
+        &[(1,), (2,)]
+    );
+}

@@ -82,6 +82,7 @@ pub fn gen_hydroflow_graph(
                 assert!(!MAGIC_RELATIONS.contains(&ident.name.as_str()));
                 outputs.push((ident, hf_code))
             }
+            Declaration::Persist(_, _) => {}
             Declaration::Async(_, ident, send_hf, recv_hf) => {
                 assert!(!MAGIC_RELATIONS.contains(&ident.name.as_str()));
                 asyncs.push((ident, send_hf, recv_hf))
@@ -99,18 +100,25 @@ pub fn gen_hydroflow_graph(
 
     let mut created_rules = HashSet::new();
     for decl in &program.rules {
-        let target_ident = match decl {
-            Declaration::Input(_, ident, _) => ident.clone(),
-            Declaration::Output(_, ident, _) => ident.clone(),
-            Declaration::Async(_, ident, _, _) => ident.clone(),
-            Declaration::Rule(rule) => rule.target.name.clone(),
+        let (target_ident, is_persist) = match decl {
+            Declaration::Input(_, ident, _) => (ident.clone(), false),
+            Declaration::Output(_, ident, _) => (ident.clone(), false),
+            Declaration::Persist(_, ident) => (ident.clone(), true),
+            Declaration::Async(_, ident, _, _) => (ident.clone(), false),
+            Declaration::Rule(rule) => (rule.target.name.clone(), false),
         };
 
         if !created_rules.contains(&target_ident.value) {
             created_rules.insert(target_ident.value.clone());
             let name = syn::Ident::new(&target_ident.name, get_span(target_ident.span));
-            flat_graph_builder
-                .add_statement(parse_quote_spanned!(get_span(target_ident.span)=> #name = merge() -> unique::<'tick>() -> tee()));
+
+            if is_persist {
+                flat_graph_builder
+                    .add_statement(parse_quote_spanned!(get_span(target_ident.span)=> #name = merge() -> unique::<'tick>() -> persist() -> tee()));
+            } else {
+                flat_graph_builder
+                    .add_statement(parse_quote_spanned!(get_span(target_ident.span)=> #name = merge() -> unique::<'tick>() -> tee()));
+            }
         }
     }
 
@@ -947,6 +955,20 @@ mod tests {
             result(2) :- ints(a), (a != 0)
             result(3) :- ints(a), (a - 1 == 0)
             result(4) :- ints(a), (a - 1 == 1 - 1)
+            "#
+        );
+    }
+
+    #[test]
+    fn test_persist() {
+        test_snapshots!(
+            r#"
+            .input ints `source_stream(ints)`
+            .output result `for_each(|v| result.send(v).unwrap())`
+            .persist ints_persisted
+
+            ints_persisted(a) :- ints(a)
+            result(a) :- ints_persisted(a)
             "#
         );
     }
