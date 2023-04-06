@@ -23,7 +23,7 @@ pub trait HydroflowSource: Send + Sync {
 
 #[async_trait]
 pub trait HydroflowServer: DynClone + Send + Sync + std::fmt::Debug {
-    async fn get_port(&self) -> ServerPort;
+    fn get_port(&self) -> ServerPort;
     async fn launched_host(&self) -> Arc<dyn LaunchedHost>;
 }
 
@@ -64,7 +64,6 @@ impl HydroflowSource for MuxSource {
         if let ServerConfig::Mux(mut mux) = config {
             for (key, target) in &self.mux {
                 let mut target = target.try_write().unwrap();
-                dbg!("recording mux select!");
                 target.record_server_config(ServerConfig::MuxSelect(
                     Box::new(mux.remove(key).unwrap()),
                     *key,
@@ -184,6 +183,8 @@ impl HydroflowSink for DemuxSink {
 #[derive(Clone, Debug)]
 pub struct HydroflowPortConfig {
     pub service: Weak<RwLock<HydroflowCrate>>,
+    pub service_host: Arc<RwLock<dyn Host>>,
+    pub service_server_defns: Arc<RwLock<HashMap<String, ServerPort>>>,
     pub port: String,
     pub merge: bool,
 }
@@ -192,6 +193,8 @@ impl HydroflowPortConfig {
     pub fn merge(&self) -> Self {
         Self {
             service: self.service.clone(),
+            service_host: self.service_host.clone(),
+            service_server_defns: self.service_server_defns.clone(),
             port: self.port.clone(),
             merge: true,
         }
@@ -226,6 +229,8 @@ impl HydroflowSource for HydroflowPortConfig {
                     &from_write.on,
                     Arc::new(HydroflowPortConfig {
                         service: Arc::downgrade(&from),
+                        service_host: from_write.on.clone(),
+                        service_server_defns: from_write.server_defns.clone(),
                         port: self.port.clone(),
                         merge: false,
                     }),
@@ -252,16 +257,14 @@ impl HydroflowSource for HydroflowPortConfig {
 
 #[async_trait]
 impl HydroflowServer for HydroflowPortConfig {
-    async fn get_port(&self) -> ServerPort {
-        let server = self.service.upgrade().unwrap();
-        let server = server.read().await;
-        server.server_defns.get(&self.port).unwrap().clone()
+    fn get_port(&self) -> ServerPort {
+        // we are in `deployment.start()`, so no one should be writing
+        let server_defns = self.service_server_defns.try_read().unwrap();
+        server_defns.get(&self.port).unwrap().clone()
     }
 
     async fn launched_host(&self) -> Arc<dyn LaunchedHost> {
-        let server = self.service.upgrade().unwrap();
-        let server_read = server.read().await;
-        server_read.launched_host.as_ref().unwrap().clone()
+        self.service_host.read().await.launched().unwrap()
     }
 }
 
@@ -467,14 +470,10 @@ impl ServerConfig {
     #[async_recursion]
     pub async fn load_instantiated(&self) -> ServerPort {
         match self {
-            ServerConfig::Direct(server) => server.get_port().await,
+            ServerConfig::Direct(server) => server.get_port(),
 
             ServerConfig::Forwarded(server) => {
-                forward_connection(
-                    &server.get_port().await,
-                    server.launched_host().await.as_ref(),
-                )
-                .await
+                forward_connection(&server.get_port(), server.launched_host().await.as_ref()).await
             }
 
             ServerConfig::Demux(demux) => {
@@ -510,7 +509,6 @@ impl ServerConfig {
             }
 
             ServerConfig::Mux(mux) => {
-                dbg!(mux);
                 let mut mux_map = HashMap::new();
                 for (key, conn) in mux {
                     mux_map.insert(*key, conn.load_instantiated().await);
