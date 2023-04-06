@@ -421,7 +421,7 @@ fn generate_rule(
 }
 
 fn gen_value_expr(
-    expr: &ValueExpr,
+    expr: &IntExpr,
     field_use_count: &HashMap<String, i32>,
     field_use_cur: &mut HashMap<String, i32>,
     out_expanded: &IntermediateJoinNode,
@@ -429,7 +429,7 @@ fn gen_value_expr(
     get_span: &dyn Fn((usize, usize)) -> Span,
 ) -> syn::Expr {
     match expr {
-        ValueExpr::Ident(ident) => {
+        IntExpr::Ident(ident) => {
             if let Some(col) = out_expanded.variable_mapping.get(&ident.name) {
                 let cur_count = field_use_cur
                     .entry(ident.name.clone())
@@ -453,11 +453,11 @@ fn gen_value_expr(
                 parse_quote!(())
             }
         }
-        ValueExpr::Integer(i) => syn::Expr::Lit(syn::ExprLit {
+        IntExpr::Integer(i) => syn::Expr::Lit(syn::ExprLit {
             attrs: Vec::new(),
             lit: syn::Lit::Int(syn::LitInt::new(&i.to_string(), get_span(i.span))),
         }),
-        ValueExpr::Add(l, _, r) => {
+        IntExpr::Add(l, _, r) => {
             let l = gen_value_expr(
                 l,
                 field_use_count,
@@ -476,7 +476,7 @@ fn gen_value_expr(
             );
             parse_quote!(#l + #r)
         }
-        ValueExpr::Sub(l, _, r) => {
+        IntExpr::Sub(l, _, r) => {
             let l = gen_value_expr(
                 l,
                 field_use_count,
@@ -516,7 +516,7 @@ fn gen_target_expr(
             get_span,
         ),
         TargetExpr::Aggregation(Aggregation { ident, .. }) => gen_value_expr(
-            &ValueExpr::Ident(ident.clone()),
+            &IntExpr::Ident(ident.clone()),
             field_use_count,
             field_use_cur,
             out_expanded,

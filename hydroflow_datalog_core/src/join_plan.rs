@@ -8,7 +8,7 @@ use rust_sitter::Spanned;
 use syn::{self, parse_quote, parse_quote_spanned};
 
 use crate::{
-    grammar::datalog::{BoolOp, Ident, InputRelationExpr, PredicateExpr, ValueExpr},
+    grammar::datalog::{BoolExpr, BoolOp, Ident, InputRelationExpr, IntExpr},
     util::{repeat_tuple, Counter},
 };
 
@@ -19,7 +19,7 @@ pub enum JoinPlan<'a> {
     /// A join between two subtrees.
     Join(Box<JoinPlan<'a>>, Box<JoinPlan<'a>>),
     AntiJoin(Box<JoinPlan<'a>>, Box<JoinPlan<'a>>),
-    Predicate(Vec<&'a Spanned<PredicateExpr>>, Box<JoinPlan<'a>>),
+    Predicate(Vec<&'a Spanned<BoolExpr>>, Box<JoinPlan<'a>>),
     /// A join between some relation and a magic relation that emits values between
     /// 0 and some value in the input relation (upper-exclusive).
     MagicNatLt(Box<JoinPlan<'a>>, Ident, Ident),
@@ -176,13 +176,13 @@ fn build_local_constraint_conditions(constraints: &BTreeMap<String, Vec<usize>>)
 }
 
 fn gen_predicate_value_expr(
-    expr: &ValueExpr,
+    expr: &IntExpr,
     variable_mapping: &BTreeMap<String, usize>,
     diagnostics: &mut Vec<Diagnostic>,
     get_span: &dyn Fn((usize, usize)) -> Span,
 ) -> syn::Expr {
     match expr {
-        ValueExpr::Ident(ident) => {
+        IntExpr::Ident(ident) => {
             if let Some(col) = variable_mapping.get(&ident.name) {
                 let idx = syn::Index::from(*col);
                 parse_quote_spanned!(get_span(ident.span)=> row.#idx)
@@ -195,16 +195,16 @@ fn gen_predicate_value_expr(
                 parse_quote!(())
             }
         }
-        ValueExpr::Integer(i) => syn::Expr::Lit(syn::ExprLit {
+        IntExpr::Integer(i) => syn::Expr::Lit(syn::ExprLit {
             attrs: Vec::new(),
             lit: syn::Lit::Int(syn::LitInt::new(&i.to_string(), get_span(i.span))),
         }),
-        ValueExpr::Add(l, _, r) => {
+        IntExpr::Add(l, _, r) => {
             let l = gen_predicate_value_expr(l, variable_mapping, diagnostics, get_span);
             let r = gen_predicate_value_expr(r, variable_mapping, diagnostics, get_span);
             parse_quote!(#l + #r)
         }
-        ValueExpr::Sub(l, _, r) => {
+        IntExpr::Sub(l, _, r) => {
             let l = gen_predicate_value_expr(l, variable_mapping, diagnostics, get_span);
             let r = gen_predicate_value_expr(r, variable_mapping, diagnostics, get_span);
             parse_quote!(#l - #r)
