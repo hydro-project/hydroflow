@@ -116,6 +116,12 @@ fn emit_join_input_pipeline(
         parse_quote_spanned!(source_expanded.span=> map(|_v: #source_type| ((#(#hash_keys, )*), (#(#not_hash_keys, )*))) -> [#out_index] #join_node)
     };
 
+    let rhs = if anti_join && source_expanded.persisted {
+        parse_quote_spanned!(source_expanded.span=> persist() -> unique::<'tick>() -> #rhs)
+    } else {
+        rhs
+    };
+
     let statement = match source_expanded.tee_idx {
         Some(i) => {
             let in_index = syn::LitInt::new(&format!("{}", i), Span::call_site());
@@ -132,6 +138,9 @@ fn emit_join_input_pipeline(
             } else {
                 parse_quote_spanned!(source_expanded.span=> #source_name -> #rhs)
             }
+        }
+        None => {
+            parse_quote_spanned!(source_expanded.span=> #source_name -> #rhs)
         }
     };
 

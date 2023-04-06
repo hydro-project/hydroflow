@@ -917,6 +917,7 @@ fn test_persist() {
     let (ints2_send, ints2) = hydroflow::util::unbounded_channel::<(i64,)>();
     let (ints3_send, ints3) = hydroflow::util::unbounded_channel::<(i64,)>();
     let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(i64, i64, i64)>();
+    let (result2, mut result2_recv) = hydroflow::util::unbounded_channel::<(i64,)>();
 
     let mut flow = datalog!(
         r#"
@@ -929,8 +930,10 @@ fn test_persist() {
         .input ints3 `source_stream(ints3)`
         
         .output result `for_each(|v| result.send(v).unwrap())`
+        .output result2 `for_each(|v| result2.send(v).unwrap())`
 
         result(a, b, c) :- ints1(a), ints2(b), ints3(c)
+        result2(a) :- ints1(a), !ints2(a)
         "#
     );
 
@@ -941,7 +944,9 @@ fn test_persist() {
     flow.run_tick();
 
     assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result_recv), &[(1, 2, 5)]);
+    assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result2_recv), &[(1,)]);
 
+    ints2_send.send((1,)).unwrap();
     ints2_send.send((3,)).unwrap();
     ints3_send.send((6,)).unwrap();
 
@@ -949,6 +954,39 @@ fn test_persist() {
 
     assert_eq!(
         &*collect_ready::<Vec<_>, _>(&mut result_recv),
-        &[(1, 2, 6), (1, 3, 6)]
+        &[(1, 2, 6), (1, 1, 6), (1, 3, 6)]
     );
+    assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result2_recv), &[]);
+}
+
+#[multiplatform_test]
+fn test_persist_uniqueness() {
+    let (ints2_send, ints2) = hydroflow::util::unbounded_channel::<(i64,)>();
+    let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(i64,)>();
+
+    let mut flow = datalog!(
+        r#"
+        .persist ints1
+
+        .input ints2 `source_stream(ints2)`
+        
+        ints1(a) :- ints2(a)
+        
+        .output result `for_each(|v| result.send(v).unwrap())`
+
+        result(count(a)) :- ints1(a)
+        "#
+    );
+
+    ints2_send.send((1,)).unwrap();
+
+    flow.run_tick();
+
+    assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result_recv), &[(1,)]);
+
+    ints2_send.send((1,)).unwrap();
+
+    flow.run_tick();
+
+    assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result_recv), &[(1,)]);
 }

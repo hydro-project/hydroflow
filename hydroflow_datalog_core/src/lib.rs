@@ -151,7 +151,7 @@ pub fn gen_hydroflow_graph(
 
         let output_pipeline: Pipeline = parse_pipeline(&hf_code.code, &get_span)?;
         let output_pipeline = if persists.contains(&target.name) {
-            parse_quote_spanned! {get_span(target.span)=> persist() -> #output_pipeline}
+            parse_quote_spanned! {get_span(target.span)=> persist() -> unique::<'tick>() -> #output_pipeline}
         } else {
             output_pipeline
         };
@@ -702,7 +702,7 @@ fn apply_aggregations(
     };
 
     if out_expanded.persisted {
-        parse_quote!(persist() -> #without_persist)
+        parse_quote!(persist() -> unique::<'tick>() -> #without_persist)
     } else {
         without_persist
     }
@@ -980,15 +980,34 @@ mod tests {
             r#"
             .input ints1 `source_stream(ints1)`
             .persist ints1
-    
+
             .input ints2 `source_stream(ints2)`
             .persist ints2
-    
+
             .input ints3 `source_stream(ints3)`
             
             .output result `for_each(|v| result.send(v).unwrap())`
-    
+            .output result2 `for_each(|v| result2.send(v).unwrap())`
+
             result(a, b, c) :- ints1(a), ints2(b), ints3(c)
+            result2(a) :- ints1(a), !ints2(a)
+            "#
+        );
+    }
+
+    #[test]
+    fn test_persist_uniqueness() {
+        test_snapshots!(
+            r#"
+            .persist ints1
+
+            .input ints2 `source_stream(ints2)`
+            
+            ints1(a) :- ints2(a)
+            
+            .output result `for_each(|v| result.send(v).unwrap())`
+
+            result(count(a)) :- ints1(a)
             "#
         );
     }
