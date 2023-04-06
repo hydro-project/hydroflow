@@ -18,7 +18,7 @@ use async_recursion::async_recursion;
 use async_trait::async_trait;
 use pin_project::pin_project;
 
-use tokio::io;
+use tokio::{io, task::JoinHandle};
 use tokio::net::{TcpListener, TcpStream};
 
 #[cfg(unix)]
@@ -55,7 +55,10 @@ impl ServerBindConfig {
                 {
                     let dir = tempfile::tempdir().unwrap();
                     let socket_path = dir.path().join("socket");
-                    BoundConnection::UnixSocket(UnixListener::bind(socket_path).unwrap(), dir)
+                    let bound = UnixListener::bind(socket_path).unwrap();
+                    BoundConnection::UnixSocket(tokio::spawn(async move {
+                        Ok(bound.accept().await?.0)
+                    }), dir)
                 }
 
                 #[cfg(not(unix))]
@@ -65,7 +68,10 @@ impl ServerBindConfig {
             }
             ServerBindConfig::TcpPort(host) => {
                 let listener = TcpListener::bind((host, 0)).await.unwrap();
-                BoundConnection::TcpPort(listener)
+                let addr = listener.local_addr().unwrap();
+                BoundConnection::TcpPort(tokio::spawn(async move {
+                    Ok(listener.accept().await?.0)
+                }), addr)
             }
             ServerBindConfig::Demux(bindings) => {
                 let mut demux = HashMap::new();
@@ -141,8 +147,8 @@ pub trait ConnectedSource {
 
 #[derive(Debug)]
 pub enum BoundConnection {
-    UnixSocket(UnixListener, tempfile::TempDir),
-    TcpPort(TcpListener),
+    UnixSocket(JoinHandle<io::Result<UnixStream>>, tempfile::TempDir),
+    TcpPort(JoinHandle<io::Result<TcpStream>>, SocketAddr),
     Demux(HashMap<u32, BoundConnection>),
     Merge(Vec<BoundConnection>),
     Mux(HashMap<u32, BoundConnection>),
@@ -152,16 +158,11 @@ pub enum BoundConnection {
 impl BoundConnection {
     pub fn sink_port(&self) -> ServerPort {
         match self {
-            BoundConnection::UnixSocket(listener, _) => {
+            BoundConnection::UnixSocket(_, tempdir) => {
                 #[cfg(unix)]
                 {
                     ServerPort::UnixSocket(
-                        listener
-                            .local_addr()
-                            .unwrap()
-                            .as_pathname()
-                            .unwrap()
-                            .to_path_buf(),
+                        tempdir.path().join("socket"),
                     )
                 }
 
@@ -171,8 +172,7 @@ impl BoundConnection {
                     panic!("Unix sockets are not supported on this platform")
                 }
             }
-            BoundConnection::TcpPort(listener) => {
-                let addr = listener.local_addr().unwrap();
+            BoundConnection::TcpPort(_, addr) => {
                 ServerPort::TcpPort(SocketAddr::new(addr.ip(), addr.port()))
             }
 
@@ -206,12 +206,12 @@ impl BoundConnection {
 }
 
 #[async_recursion]
-async fn accept(bound: &BoundConnection) -> ConnectedBidi {
+async fn accept(bound: BoundConnection) -> ConnectedBidi {
     match bound {
         BoundConnection::UnixSocket(listener, _) => {
             #[cfg(unix)]
             {
-                let (stream, _) = listener.accept().await.unwrap();
+                let stream = listener.await.unwrap().unwrap();
                 let (sink, source) = unix_bytes(stream);
                 ConnectedBidi {
                     source: Some(Box::pin(source)),
@@ -225,8 +225,8 @@ async fn accept(bound: &BoundConnection) -> ConnectedBidi {
                 panic!("Unix sockets are not supported on this platform")
             }
         }
-        BoundConnection::TcpPort(listener) => {
-            let (stream, _) = listener.accept().await.unwrap();
+        BoundConnection::TcpPort(listener, _) => {
+            let stream = listener.await.unwrap().unwrap();
             let (sink, source) = tcp_bytes(stream);
             ConnectedBidi {
                 source: Some(Box::pin(source)),
@@ -373,7 +373,7 @@ impl Connected for ConnectedBidi {
                 })),
             },
 
-            ServerOrBound::Bound(bound) => accept(&bound).await,
+            ServerOrBound::Bound(bound) => accept(bound).await,
         }
     }
 }
