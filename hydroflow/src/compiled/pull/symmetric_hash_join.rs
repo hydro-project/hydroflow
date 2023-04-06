@@ -1,4 +1,7 @@
-use std::collections::{hash_map::Entry, VecDeque};
+use std::{
+    collections::{hash_map::Entry, VecDeque},
+    iter::Peekable,
+};
 
 type HashMap<K, V> = rustc_hash::FxHashMap<K, V>;
 
@@ -72,8 +75,8 @@ where
     I1: Iterator<Item = (Key, V1)>,
     I2: Iterator<Item = (Key, V2)>,
 {
-    lhs: I1,
-    rhs: I2,
+    lhs: Peekable<I1>,
+    rhs: Peekable<I2>,
     state: JoinStateMut<'a, Key, V1, V2>,
 }
 
@@ -88,6 +91,14 @@ where
     type Item = (Key, (V1, V2));
 
     fn next(&mut self) -> Option<Self::Item> {
+        if self.state.0.table.is_empty() && self.lhs.peek().is_none() {
+            return None;
+        }
+
+        if self.state.1.table.is_empty() && self.rhs.peek().is_none() {
+            return None;
+        }
+
         loop {
             if let Some((k, v2, v1)) = self.state.0.current_matches.pop_front() {
                 return Some((k, (v1, v2)));
@@ -123,8 +134,8 @@ where
 {
     pub fn new(lhs: I1, rhs: I2, state: &'a mut JoinState<Key, V1, V2>) -> Self {
         Self {
-            lhs,
-            rhs,
+            lhs: lhs.peekable(),
+            rhs: rhs.peekable(),
             state: (&mut state.0, &mut state.1),
         }
     }
@@ -136,8 +147,8 @@ where
         state_rhs: &'a mut HalfJoinState<Key, V2, V1>,
     ) -> Self {
         Self {
-            lhs,
-            rhs,
+            lhs: lhs.peekable(),
+            rhs: rhs.peekable(),
             state: (state_lhs, state_rhs),
         }
     }
