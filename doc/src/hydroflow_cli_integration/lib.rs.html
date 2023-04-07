@@ -674,17 +674,17 @@
 
 <span class="kw">use </span>tokio::net::{TcpListener, TcpStream};
 <span class="kw">use </span>tokio::{io, task::JoinHandle};
+<span class="kw">use </span>tokio_util::codec::{FramedRead, FramedWrite, LengthDelimitedCodec};
 
 <span class="attr">#[cfg(unix)]
 </span><span class="kw">use </span>tokio::net::{UnixListener, UnixStream};
-
-<span class="kw">use </span>tokio_util::codec::{FramedRead, FramedWrite, LengthDelimitedCodec};
 
 <span class="attr">#[cfg(not(unix))]
 #[allow(dead_code)]
 </span><span class="kw">type </span>UnixStream = !;
 
 <span class="attr">#[cfg(not(unix))]
+#[allow(dead_code)]
 </span><span class="kw">type </span>UnixListener = !;
 
 <span class="attr">#[derive(Serialize, Deserialize, Clone, Debug)]
@@ -822,7 +822,7 @@
 
                 <span class="attr">#[cfg(not(unix))]
                 </span>{
-                    <span class="kw">let _ </span>= listener;
+                    <span class="kw">let _ </span>= tempdir;
                     <span class="macro">panic!</span>(<span class="string">&quot;Unix sockets are not supported on this platform&quot;</span>)
                 }
             }
