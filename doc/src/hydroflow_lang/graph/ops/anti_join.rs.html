@@ -167,8 +167,8 @@
                <span class="kw">_</span>| {
         <span class="kw">let </span>handle_ident = wc.make_ident(<span class="string">&quot;diffdata_handle&quot;</span>);
         <span class="kw">let </span>write_prologue = <span class="macro">quote_spanned! </span>{op_span=&gt;
-            <span class="kw">let </span>#handle_ident = #hydroflow.add_state(std::cell::RefCell::new(
-                #root::lang::monotonic_map::MonotonicMap::&lt;<span class="kw">_</span>, std::collections::HashSet&lt;<span class="kw">_</span>&gt;&gt;::default(),
+            <span class="kw">let </span>#handle_ident = #hydroflow.add_state(::std::cell::RefCell::new(
+                #root::lang::monotonic_map::MonotonicMap::&lt;<span class="kw">_</span>, #root::rustc_hash::FxHashSet&lt;<span class="kw">_</span>&gt;&gt;::default(),
             ));
         };
         <span class="kw">let </span>write_iterator = {
@@ -184,10 +184,10 @@
                     </span><span class="kw">fn </span>check_inputs&lt;<span class="lifetime">&#39;a</span>, K, I1, V, I2&gt;(
                         input_pos: I1,
                         input_neg: I2,
-                        borrow_state: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>std::collections::HashSet&lt;K&gt;,
+                        borrow_state: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>#root::rustc_hash::FxHashSet&lt;K&gt;,
                     ) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;a </span>+ Iterator&lt;Item = (K, V)&gt;
                     <span class="kw">where
-                        </span>K: Eq + std::hash::Hash + Clone,
+                        </span>K: Eq + ::std::hash::Hash + Clone,
                         V: Eq + Clone,
                         I1: <span class="lifetime">&#39;a </span>+ Iterator&lt;Item = (K, V)&gt;,
                         I2: <span class="lifetime">&#39;a </span>+ Iterator&lt;Item = K&gt;,

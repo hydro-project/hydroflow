@@ -64,13 +64,7 @@
 <a href="#64" id="64">64</a>
 <a href="#65" id="65">65</a>
 <a href="#66" id="66">66</a>
-<a href="#67" id="67">67</a>
-<a href="#68" id="68">68</a>
-<a href="#69" id="69">69</a>
-<a href="#70" id="70">70</a>
-</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::clear::Clear;
-
-<span class="doccomment">/// A map-like interface which in reality only stores one value at a time. The keys must be
+</pre><pre class="rust"><code><span class="doccomment">/// A map-like interface which in reality only stores one value at a time. The keys must be
 /// monotonically increasing (i.e. timestamps). For Hydroflow, this allows state to be stored which
 /// resets each tick by using the tick counter as the key. In the generic `Map` case it can be
 /// swapped out for a true map to allow processing of multiple ticks of data at once.
@@ -78,7 +72,6 @@
 </span><span class="kw">pub struct </span>MonotonicMap&lt;K, V&gt;
 <span class="kw">where
     </span>K: PartialOrd,
-    V: Clear,
 {
     key: <span class="prelude-ty">Option</span>&lt;K&gt;,
     val: V,
@@ -87,7 +80,7 @@
 <span class="kw">impl</span>&lt;K, V&gt; Default <span class="kw">for </span>MonotonicMap&lt;K, V&gt;
 <span class="kw">where
     </span>K: PartialOrd,
-    V: Clear + Default,
+    V: Default,
 {
     <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
@@ -100,7 +93,6 @@
 <span class="kw">impl</span>&lt;K, V&gt; MonotonicMap&lt;K, V&gt;
 <span class="kw">where
     </span>K: PartialOrd,
-    V: Clear,
 {
     <span class="doccomment">/// Creates a new `MonotonicMap` initialized with the given value. The
     /// vaue will be `Clear`ed before it is accessed.
