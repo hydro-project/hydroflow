@@ -4,7 +4,6 @@ import json
 async def main(args):
     machine_1_gcp = args[0] == "gcp"
     machine_2_gcp = args[1] == "gcp"
-    num_participants = int(args[2])
 
     deployment = hydro.Deployment()
     localhost_machine = deployment.Localhost()
@@ -25,26 +24,21 @@ async def main(args):
 
     program = deployment.HydroflowCrate(
         src=".",
-        example="dedalus_vote_leader",
+        example="dedalus_echo_leader",
         on=machine1
     )
 
-    participant_programs = []
-    participant_ports = {}
-    for i in range(0, num_participants):
-        program2 = deployment.HydroflowCrate(
+    program2 = deployment.HydroflowCrate(
             src=".",
-            example="dedalus_vote_participant",
-            args=[json.dumps([i])],
+            example="dedalus_echo_participant",
             on=machine2
         )
-        program2.ports.from_replica.send_to(hydro.demux({
-            0: program.ports.from_replica.merge()
-        }))
-        participant_programs.append(program2)
-        participant_ports[i] = program2.ports.to_replica
-
-    program.ports.to_replica.send_to(hydro.demux(participant_ports))
+    program2.ports.from_replica.send_to(hydro.demux({
+        0: program.ports.from_replica.merge()
+    }))
+    program.ports.to_replica.send_to(hydro.demux({
+        0: program2.ports.to_replica
+    }))
 
     await deployment.deploy()
 

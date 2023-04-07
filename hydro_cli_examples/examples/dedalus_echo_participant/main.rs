@@ -23,17 +23,13 @@ async fn main() {
     let peers = from_replica_port.keys.clone();
     let from_replica_sink = from_replica_port.into_sink();
 
-    let my_id: Vec<u32> = serde_json::from_str(&std::env::args().nth(1).unwrap()).unwrap();
-    println!("my_id: {:?}", my_id);
-
     let mut df = datalog!(
         r#"
-        .input myID `repeat_iter(my_id.clone()) -> map(|p| (p,))`
         .input leader `repeat_iter(peers.clone()) -> map(|p| (p,))`
-        .async voteToReplica `null::<(u32,)>()` `source_stream(to_replica_source) -> map(|x| deserialize_from_bytes::<(u32,)>(x.unwrap()).unwrap())`
-        .async voteFromReplica `map(|(node_id, v)| (node_id, serialize_to_bytes(v))) -> dest_sink(from_replica_sink)` `null::<(u32,u32,)>()`
-                    
-        voteFromReplica@addr(i, v) :~ voteToReplica(v), leader(addr), myID(i)
+.async voteToReplica `null::<(u32,)>()` `source_stream(to_replica_source) -> map(|x| deserialize_from_bytes::<(u32,)>(x.unwrap()).unwrap())`
+.async voteFromReplica `map(|(node_id, v)| (node_id, serialize_to_bytes(v))) -> dest_sink(from_replica_sink)` `null::<(u32,)>()`
+            
+voteFromReplica@addr(v) :~ voteToReplica(v), leader(addr)
         "#
     );
 

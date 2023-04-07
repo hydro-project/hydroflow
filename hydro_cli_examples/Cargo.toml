@@ -25,6 +25,12 @@ name = "dedalus_vote_leader"
 name = "dedalus_vote_participant"
 
 [[example]]
+name = "dedalus_echo_leader"
+
+[[example]]
+name = "dedalus_echo_participant"
+
+[[example]]
 name = "dedalus_2pc_coordinator"
 
 [[example]]
@@ -35,6 +41,9 @@ name = "dedalus_paxos_acceptor"
 
 [[example]]
 name = "dedalus_paxos_proposer"
+
+[[example]]
+name = "dedalus_tick"
 
 [[example]]
 name = "topolotree"

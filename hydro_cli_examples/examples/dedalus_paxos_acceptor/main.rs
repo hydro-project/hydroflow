@@ -58,27 +58,30 @@ async fn main() {
 # Debug
 .output p1aOut `for_each(|(a,pid,id,num):(u32,u32,u32,u32,)| println!("acceptor {:?} received p1a: [{:?},{:?},{:?}]", a, pid, id, num))`
 .output p1bOut `for_each(|(pid,a,log_size,id,num,max_id,max_num):(u32,u32,u32,u32,u32,u32,u32,)| println!("acceptor {:?} sent p1b to {:?}: [{:?},{:?},{:?},{:?},{:?},{:?}]", a, pid, a, log_size, id, num, max_id, max_num))`
-.output p1bLogOut `for_each(|(pid,a,payload,slot,payload_id,payload_num,id,num):(u32,u32,String,u32,u32,u32,u32,u32,)| println!("acceptor {:?} sent p1bLog to {:?}: [{:?},{:?},{:?},{:?},{:?},{:?},{:?}]", a, pid, a, payload, slot, payload_id, payload_num, id, num))`
-.output p2aOut `for_each(|(a,pid,payload,slot,id,num):(u32,u32,String,u32,u32,u32,)| println!("acceptor {:?} received p2a: [{:?},{:?},{:?},{:?},{:?}]", a, pid, payload, slot, id, num))`
-.output p2bOut `for_each(|(pid,a,payload,slot,id,num,max_id,max_num):(u32,u32,String,u32,u32,u32,u32,u32,)| println!("acceptor {:?} sent p2b to {:?}: [{:?},{:?},{:?},{:?},{:?},{:?},{:?}]]", a, pid, a, payload, slot, id, num, max_id, max_num))`
-
+.output p1bLogOut `for_each(|(pid,a,payload,slot,payload_id,payload_num,id,num):(u32,u32,u32,u32,u32,u32,u32,u32,)| println!("acceptor {:?} sent p1bLog to {:?}: [{:?},{:?},{:?},{:?},{:?},{:?},{:?}]", a, pid, a, payload, slot, payload_id, payload_num, id, num))`
+.output p2aOut `for_each(|(a,pid,payload,slot,id,num):(u32,u32,u32,u32,u32,u32,)| println!("acceptor {:?} received p2a: [{:?},{:?},{:?},{:?},{:?}]", a, pid, payload, slot, id, num))`
+.output p2bOut `for_each(|(pid,a,payload,slot,id,num,max_id,max_num):(u32,u32,u32,u32,u32,u32,u32,u32,)| println!("acceptor {:?} sent p2b to {:?}: [{:?},{:?},{:?},{:?},{:?},{:?},{:?}]]", a, pid, a, payload, slot, id, num, max_id, max_num))`
+// .output MaxBallot `for_each(|(id,num):(u32,u32)| println!("ballot: [{:?},{:?}]", id, num))`
+// .output id `for_each(|(id):(u32,)| println!("id: [{:?}]", id))`
 
 # p1a: proposerID, ballotID, ballotNum
 .async p1a `null::<(u32,u32,u32,)>()` `source_stream(p1a_source) -> map(|v: Result<BytesMut, _>| deserialize_from_bytes::<(u32,u32,u32,)>(v.unwrap()).unwrap())`
 # p1b: acceptorID, logSize, ballotID, ballotNum, maxBallotID, maxBallotNum
 .async p1b `map(|(node_id, v):(u32,(u32,u32,u32,u32,u32,u32))| (node_id, serialize_to_bytes(v))) -> dest_sink(p1b_sink)` `null::<(u32,u32,u32,u32,u32,u32)>()`
 # p1bLog: acceptorID, payload, slot, payloadBallotID, payloadBallotNum, ballotID, ballotNum
-.async p1bLog `map(|(node_id, v):(u32,(u32,String,u32,u32,u32,u32,u32))| (node_id, serialize_to_bytes(v))) -> dest_sink(p1b_log_sink)` `null::<(u32,String,u32,u32,u32,u32,u32)>()`
+.async p1bLog `map(|(node_id, v):(u32,(u32,u32,u32,u32,u32,u32,u32))| (node_id, serialize_to_bytes(v))) -> dest_sink(p1b_log_sink)` `null::<(u32,u32,u32,u32,u32,u32,u32)>()`
 # p2a: proposerID, payload, slot, ballotID, ballotNum
-.async p2a `null::<(u32,String,u32,u32,u32,)>()` `source_stream(p2a_source) -> map(|v: Result<BytesMut, _>| deserialize_from_bytes::<(u32,String,u32,u32,u32,)>(v.unwrap()).unwrap())`
+.async p2a `null::<(u32,u32,u32,u32,u32,)>()` `source_stream(p2a_source) -> map(|v: Result<BytesMut, _>| deserialize_from_bytes::<(u32,u32,u32,u32,u32,)>(v.unwrap()).unwrap())`
 # p2b: acceptorID, payload, slot, ballotID, ballotNum, maxBallotID, maxBallotNum
-.async p2b `map(|(node_id, v):(u32,(u32,String,u32,u32,u32,u32,u32))| (node_id, serialize_to_bytes(v))) -> dest_sink(p2b_sink)` `null::<(u32,String,u32,u32,u32,u32,u32)>()`
+.async p2b `map(|(node_id, v):(u32,(u32,u32,u32,u32,u32,u32,u32))| (node_id, serialize_to_bytes(v))) -> dest_sink(p2b_sink)` `null::<(u32,u32,u32,u32,u32,u32,u32)>()`
 ######################## end relation definitions
 
 
+// ballots(id, num) :+ ballots(id, num)
+// .persist log
+.persist ballots
+log(payload, slot, payloadBallotID, payloadBallotNum) :+ log(payload, slot, payloadBallotID, payloadBallotNum)
 
-ballots(i, n) :+ ballots(i, n)
-log(p, slot, ballotID, ballotNum) :+ log(p, slot, ballotID, ballotNum)
 
 # Debug
 // p1aOut(a, pid, id, num) :- p1a(pid, id, num), id(a)
@@ -87,7 +90,6 @@ log(p, slot, ballotID, ballotNum) :+ log(p, slot, ballotID, ballotNum)
 // p1bLogOut(pid, i, payload, slot, payloadBallotID, payloadBallotNum, ballotID, ballotNum) :- p1a(pid, ballotID, ballotNum), id(i), log(payload, slot, payloadBallotID, payloadBallotNum), LogEntryMaxBallot(slot, payloadBallotID, payloadBallotNum)
 // p2aOut(a, pid, payload, slot, id, num) :- p2a(pid, payload, slot, id, num), id(a)
 // p2bOut(pid, i, payload, slot, ballotID, ballotNum, maxBallotID, maxBallotNum) :- p2a(pid, payload, slot, ballotID, ballotNum), id(i), MaxBallot(maxBallotID, maxBallotNum)
-
 
 
 ######################## reply to p1a 
@@ -112,7 +114,7 @@ log(payload, slot, ballotID, ballotNum) :- p2a(pid, payload, slot, ballotID, bal
 p2b@pid(i, payload, slot, ballotID, ballotNum, maxBallotID, maxBallotNum) :~ p2a(pid, payload, slot, ballotID, ballotNum), id(i), MaxBallot(maxBallotID, maxBallotNum)
 ######################## end reply to p2a
         "#
-    );
+       );
 
     df.run_async().await;
 }

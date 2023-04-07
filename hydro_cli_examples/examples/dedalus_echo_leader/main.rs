@@ -40,17 +40,12 @@ async fn main() {
 .output throughputOut `for_each(|(num,):(u32,)| println!("committed {:?} entries", num))`
 
 .async voteToReplica `map(|(node_id, v)| (node_id, serialize_to_bytes(v))) -> dest_sink(to_replica_sink)` `null::<(u32,)>()`
-.async voteFromReplica `null::<(u32,u32,)>()` `source_stream(from_replica_source) -> map(|v| deserialize_from_bytes::<(u32,u32,)>(v.unwrap()).unwrap())`
+.async voteFromReplica `null::<(u32,)>()` `source_stream(from_replica_source) -> map(|v| deserialize_from_bytes::<(u32,)>(v.unwrap()).unwrap())`
 
 voteToReplica@addr(v) :~ clientIn(v), replicas(addr)
-allVotes(l, v) :- voteFromReplica(l, v)
-allVotes(l, v) :+ allVotes(l, v), !committed(v)
-voteCounts(count(l), v) :- allVotes(l, v)
-numReplicas(count(addr)) :- replicas(addr)
-committed(v) :- voteCounts(n, v), numReplicas(n)
-// stdout(v) :- committed(v)
+// stdout(v) :- voteFromReplica(l, v)
 
-NumCommits(count(v)) :- committed(v)
+NumCommits(count(v)) :- voteFromReplica(v)
 totalCommitted(new) :+ !totalCommitted(prev), NumCommits(new)
 totalCommitted(prev) :+ totalCommitted(prev), !NumCommits(new)
 totalCommitted(prev + new) :+ totalCommitted(prev), NumCommits(new)

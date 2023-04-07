@@ -13,12 +13,12 @@ async def main(args):
     machine_1_gcp = args[0] == "gcp"
     machine_2_gcp = args[1] == "gcp"
     f = int(args[2])
-    heartbeat_timeout = int(args[3]) # in seconds
-    leader_retry_node_0_timeout = int(args[4])
-    leader_retry_other_nodes_timeout = int(args[5])
-    i_am_leader_timeout = int(args[6])
-    # Heartbeat timeout should >> I am leader timeout, so the current leader has time to send a heartbeat
-    # Leader election time (out of our control) should >> leader retry timeout, so the leader doesn't spam acceptors. Leader retry timeout should differ between proposers to avoid contention
+    p1a_node_0_timeout = int(args[3])
+    p1a_other_nodes_timeout = int(args[4])
+    i_am_leader_resend_timeout = int(args[5])
+    i_am_leader_check_timeout = int(args[6])
+    # i_am_leader_check_timeout should >> i_am_leader_resend_timeout, so the current leader has time to send a heartbeat
+    # Leader election time (out of our control) should >> p1a_timeout, so the leader doesn't spam acceptors. p1a_timeout should differ between proposers to avoid contention
 
     deployment = hydro.Deployment()
     localhost_machine = deployment.Localhost()
@@ -35,12 +35,12 @@ async def main(args):
     for i in range(0, f+1):
         machine1 = gcp_machine(deployment=deployment) if machine_1_gcp else localhost_machine
         proposer_machine.append(machine1)
-        leader_retry_timeout = leader_retry_node_0_timeout if i == 0 else leader_retry_other_nodes_timeout # proposer with id 0 is much more likely to be the leader
+        p1a_timeout = p1a_node_0_timeout if i == 0 else p1a_other_nodes_timeout # proposer with id 0 is much more likely to be the leader
 
         proposer = deployment.HydroflowCrate(
             src=".",
             example="dedalus_paxos_proposer",
-            args=[json.dumps((i, 2*f+1, heartbeat_timeout, leader_retry_timeout, i_am_leader_timeout))], # my_id, quorum, heartbeat_timeout_const, p1a_timeout_const, i_am_leader_timeout_const
+            args=[json.dumps((i, 2*f+1, p1a_timeout, i_am_leader_resend_timeout, i_am_leader_check_timeout))], # my_id, quorum, p1a_timeout_const, i_am_leader_resend_timeout_const, i_am_leader_check_timeout_const 
             on=machine1
         )
         proposer_programs.append(proposer)
@@ -92,7 +92,7 @@ async def main(args):
     async for log in program_out:
         print(log)
         counter += 1
-        if counter == 100:
+        if counter == 1000:
             break
 
     print(await proposer_programs[0].exit_code())
