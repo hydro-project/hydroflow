@@ -6,7 +6,7 @@ use std::collections::{HashMap, HashSet};
 
 use hydroflow_lang::{
     diagnostic::{Diagnostic, Level},
-    graph::{partition_graph, FlatGraphBuilder, HydroflowGraph},
+    graph::{eliminate_extra_merges_tees, partition_graph, FlatGraphBuilder, HydroflowGraph},
     parse::{IndexInt, Indexing, Pipeline, PipelineLink},
 };
 use proc_macro2::{Span, TokenStream};
@@ -193,11 +193,12 @@ pub fn gen_hydroflow_graph(
     if !diagnostics.is_empty() {
         Err(diagnostics)
     } else {
-        let (flat_graph, mut diagnostics) = flat_graph_builder.build();
+        let (mut flat_graph, mut diagnostics) = flat_graph_builder.build();
         diagnostics.retain(Diagnostic::is_error);
         if !diagnostics.is_empty() {
             Err(diagnostics)
         } else {
+            eliminate_extra_merges_tees(&mut flat_graph);
             Ok(flat_graph)
         }
     }
