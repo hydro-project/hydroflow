@@ -142,6 +142,9 @@ fn emit_join_input_pipeline(
         None => {
             parse_quote_spanned!(source_expanded.span=> #source_name -> #rhs)
         }
+        None => {
+            parse_quote_spanned!(source_expanded.span=> #source_name -> #rhs)
+        }
     };
 
     flat_graph_builder.add_statement(statement);
