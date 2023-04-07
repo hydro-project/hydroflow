@@ -234,6 +234,7 @@
 <a href="#234" id="234">234</a>
 <a href="#235" id="235">235</a>
 <a href="#236" id="236">236</a>
+<a href="#237" id="237">237</a>
 </pre><pre class="rust"><code><span class="attr">#[rust_sitter::grammar(<span class="string">&quot;datalog&quot;</span>)]
 #[allow(dead_code)]
 </span><span class="kw">pub mod </span>datalog {
@@ -308,7 +309,7 @@
             <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;!&quot;</span>)] </span><span class="prelude-ty">Option</span>&lt;()&gt;,
             Spanned&lt;InputRelationExpr&gt;,
         ),
-        Predicate(Spanned&lt;PredicateExpr&gt;),
+        Predicate(Spanned&lt;BoolExpr&gt;),
     }
 
     <span class="attr">#[derive(Debug, Clone)]
@@ -358,7 +359,7 @@
 
     <span class="attr">#[derive(Debug, Clone)]
     </span><span class="kw">pub enum </span>TargetExpr {
-        Expr(ValueExpr),
+        Expr(IntExpr),
         Aggregation(Aggregation),
     }
 
@@ -415,23 +416,24 @@
         Gt(<span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;&gt;&quot;</span>)] </span>()),
         GtEq(<span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;&gt;=&quot;</span>)] </span>()),
         Eq(<span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;==&quot;</span>)] </span>()),
+        Neq(<span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;!=&quot;</span>)] </span>()),
     }
 
     <span class="attr">#[derive(Debug, Clone)]
-    </span><span class="kw">pub struct </span>PredicateExpr {
+    </span><span class="kw">pub struct </span>BoolExpr {
         <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;(&quot;</span>)]
         </span>_l_brace: (),
 
-        <span class="kw">pub </span>left: Spanned&lt;Ident&gt;,
+        <span class="kw">pub </span>left: Spanned&lt;IntExpr&gt;,
         <span class="kw">pub </span>op: BoolOp,
-        <span class="kw">pub </span>right: Spanned&lt;Ident&gt;,
+        <span class="kw">pub </span>right: Spanned&lt;IntExpr&gt;,
 
         <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;)&quot;</span>)]
         </span>_r_brace: (),
     }
 
     <span class="attr">#[derive(Debug, Clone)]
-    </span><span class="kw">pub enum </span>ValueExpr {
+    </span><span class="kw">pub enum </span>IntExpr {
         Ident(Spanned&lt;Ident&gt;),
         Integer(
             <span class="attr">#[rust_sitter::leaf(pattern = <span class="string">r&quot;[0-9]+&quot;</span>, transform = |s| s.parse().unwrap())]
@@ -439,29 +441,29 @@
         ),
         <span class="attr">#[rust_sitter::prec_left(<span class="number">1</span>)]
         </span>Add(
-            Box&lt;ValueExpr&gt;,
+            Box&lt;IntExpr&gt;,
             <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;+&quot;</span>)] </span>(),
-            Box&lt;ValueExpr&gt;,
+            Box&lt;IntExpr&gt;,
         ),
         <span class="attr">#[rust_sitter::prec_left(<span class="number">1</span>)]
         </span>Sub(
-            Box&lt;ValueExpr&gt;,
+            Box&lt;IntExpr&gt;,
             <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;-&quot;</span>)] </span>(),
-            Box&lt;ValueExpr&gt;,
+            Box&lt;IntExpr&gt;,
         ),
     }
 
-    <span class="kw">impl </span>ValueExpr {
+    <span class="kw">impl </span>IntExpr {
         <span class="kw">pub fn </span>idents(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;<span class="kw-2">&amp;</span>Ident&gt; {
             <span class="kw">match </span><span class="self">self </span>{
-                ValueExpr::Ident(i) =&gt; <span class="macro">vec!</span>[i],
-                ValueExpr::Integer(<span class="kw">_</span>) =&gt; <span class="macro">vec!</span>[],
-                ValueExpr::Add(l, <span class="kw">_</span>, r) =&gt; {
+                IntExpr::Ident(i) =&gt; <span class="macro">vec!</span>[i],
+                IntExpr::Integer(<span class="kw">_</span>) =&gt; <span class="macro">vec!</span>[],
+                IntExpr::Add(l, <span class="kw">_</span>, r) =&gt; {
                     <span class="kw">let </span><span class="kw-2">mut </span>idents = l.idents();
                     idents.extend(r.idents());
                     idents
                 }
-                ValueExpr::Sub(l, <span class="kw">_</span>, r) =&gt; {
+                IntExpr::Sub(l, <span class="kw">_</span>, r) =&gt; {
                     <span class="kw">let </span><span class="kw-2">mut </span>idents = l.idents();
                     idents.extend(r.idents());
                     idents

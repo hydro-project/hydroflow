@@ -175,6 +175,9 @@
 <a href="#175" id="175">175</a>
 <a href="#176" id="176">176</a>
 <a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::{collections::HashMap, net::SocketAddr, path::Path, sync::Arc};
 
 <span class="kw">use </span>anyhow::Result;
@@ -227,7 +230,8 @@
     }
 }
 
-<span class="kw">pub struct </span>ResourceResult {
+<span class="attr">#[derive(Debug)]
+</span><span class="kw">pub struct </span>ResourceResult {
     <span class="kw">pub </span>terraform: terraform::TerraformResult,
 }
 
@@ -295,7 +299,7 @@
 <span class="kw">pub type </span>HostStrategyGetter = Box&lt;<span class="kw">dyn </span>FnOnce(<span class="kw-2">&amp;mut </span><span class="kw">dyn </span>std::any::Any) -&gt; ServerStrategy&gt;;
 
 <span class="attr">#[async_trait]
-</span><span class="kw">pub trait </span>Host: Send + Sync {
+</span><span class="kw">pub trait </span>Host: Send + Sync + std::fmt::Debug {
     <span class="kw">fn </span>target_type(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; HostTargetType;
 
     <span class="kw">fn </span>request_port(<span class="kw-2">&amp;mut </span><span class="self">self</span>, bind_type: <span class="kw-2">&amp;</span>ServerStrategy);
@@ -317,6 +321,8 @@
 
     <span class="doccomment">/// Connects to the acquired resources and prepares the host to run services.
     </span><span class="kw">async fn </span>provision(<span class="kw-2">&amp;mut </span><span class="self">self</span>, resource_result: <span class="kw-2">&amp;</span>Arc&lt;ResourceResult&gt;) -&gt; Arc&lt;<span class="kw">dyn </span>LaunchedHost&gt;;
+
+    <span class="kw">fn </span>launched(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Arc&lt;<span class="kw">dyn </span>LaunchedHost&gt;&gt;;
 
     <span class="doccomment">/// Identifies a network type that this host can use for connections if it is the server.
     /// The host will be `None` if the connection is from the same host as the target.

@@ -297,6 +297,7 @@
 <a href="#297" id="297">297</a>
 <a href="#298" id="298">298</a>
 <a href="#299" id="299">299</a>
+<a href="#300" id="300">300</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::{
     collections::HashMap,
     io::{BufRead, BufReader},
@@ -573,12 +574,13 @@
     <span class="kw">pub </span>version: String,
 }
 
-<span class="attr">#[derive(Serialize, Deserialize)]
+<span class="attr">#[derive(Serialize, Deserialize, Debug)]
 </span><span class="kw">pub struct </span>TerraformOutput {
     <span class="kw">pub </span>value: String,
 }
 
-<span class="kw">pub struct </span>TerraformResult {
+<span class="attr">#[derive(Debug)]
+</span><span class="kw">pub struct </span>TerraformResult {
     <span class="kw">pub </span>outputs: HashMap&lt;String, TerraformOutput&gt;,
     <span class="doccomment">/// `None` if no deployment was performed
     </span><span class="kw">pub </span>deployment_folder: <span class="prelude-ty">Option</span>&lt;tempfile::TempDir&gt;,

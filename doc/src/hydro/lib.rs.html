@@ -757,7 +757,6 @@
 <a href="#757" id="757">757</a>
 <a href="#758" id="758">758</a>
 <a href="#759" id="759">759</a>
-<a href="#760" id="760">760</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::ops::DerefMut;
 <span class="kw">use </span>std::sync::Arc;
 
@@ -1239,11 +1238,10 @@ async def pyreceiver_to_async_generator(pyreceiver):
 </span><span class="kw">impl </span>HydroflowCratePorts {
     <span class="kw">fn </span>__getattribute__(<span class="kw-2">&amp;</span><span class="self">self</span>, name: String, py: Python&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; PyResult&lt;Py&lt;pyo3::PyAny&gt;&gt; {
         <span class="kw">let </span>arc = Arc::new(RwLock::new(
-            <span class="kw">crate</span>::core::hydroflow_crate::ports::HydroflowPortConfig {
-                service: Arc::downgrade(<span class="kw-2">&amp;</span><span class="self">self</span>.underlying),
-                port: name,
-                merge: <span class="bool-val">false</span>,
-            },
+            <span class="self">self</span>.underlying
+                .try_read()
+                .unwrap()
+                .get_port(name, <span class="kw-2">&amp;</span><span class="self">self</span>.underlying),
         ));
 
         <span class="prelude-val">Ok</span>(Py::new(

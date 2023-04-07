@@ -672,8 +672,8 @@
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>pin_project::pin_project;
 
-<span class="kw">use </span>tokio::io;
 <span class="kw">use </span>tokio::net::{TcpListener, TcpStream};
+<span class="kw">use </span>tokio::{io, task::JoinHandle};
 
 <span class="attr">#[cfg(unix)]
 </span><span class="kw">use </span>tokio::net::{UnixListener, UnixStream};
@@ -709,7 +709,11 @@
                 </span>{
                     <span class="kw">let </span>dir = tempfile::tempdir().unwrap();
                     <span class="kw">let </span>socket_path = dir.path().join(<span class="string">&quot;socket&quot;</span>);
-                    BoundConnection::UnixSocket(UnixListener::bind(socket_path).unwrap(), dir)
+                    <span class="kw">let </span>bound = UnixListener::bind(socket_path).unwrap();
+                    BoundConnection::UnixSocket(
+                        tokio::spawn(<span class="kw">async move </span>{ <span class="prelude-val">Ok</span>(bound.accept().<span class="kw">await</span><span class="question-mark">?</span>.<span class="number">0</span>) }),
+                        dir,
+                    )
                 }
 
                 <span class="attr">#[cfg(not(unix))]
@@ -719,7 +723,11 @@
             }
             ServerBindConfig::TcpPort(host) =&gt; {
                 <span class="kw">let </span>listener = TcpListener::bind((host, <span class="number">0</span>)).<span class="kw">await</span>.unwrap();
-                BoundConnection::TcpPort(listener)
+                <span class="kw">let </span>addr = listener.local_addr().unwrap();
+                BoundConnection::TcpPort(
+                    tokio::spawn(<span class="kw">async move </span>{ <span class="prelude-val">Ok</span>(listener.accept().<span class="kw">await</span><span class="question-mark">?</span>.<span class="number">0</span>) }),
+                    addr,
+                )
             }
             ServerBindConfig::Demux(bindings) =&gt; {
                 <span class="kw">let </span><span class="kw-2">mut </span>demux = HashMap::new();
@@ -795,8 +803,8 @@
 
 <span class="attr">#[derive(Debug)]
 </span><span class="kw">pub enum </span>BoundConnection {
-    UnixSocket(UnixListener, tempfile::TempDir),
-    TcpPort(TcpListener),
+    UnixSocket(JoinHandle&lt;io::Result&lt;UnixStream&gt;&gt;, tempfile::TempDir),
+    TcpPort(JoinHandle&lt;io::Result&lt;TcpStream&gt;&gt;, SocketAddr),
     Demux(HashMap&lt;u32, BoundConnection&gt;),
     Merge(Vec&lt;BoundConnection&gt;),
     Mux(HashMap&lt;u32, BoundConnection&gt;),
@@ -806,17 +814,10 @@
 <span class="kw">impl </span>BoundConnection {
     <span class="kw">pub fn </span>sink_port(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ServerPort {
         <span class="kw">match </span><span class="self">self </span>{
-            BoundConnection::UnixSocket(listener, <span class="kw">_</span>) =&gt; {
+            BoundConnection::UnixSocket(<span class="kw">_</span>, tempdir) =&gt; {
                 <span class="attr">#[cfg(unix)]
                 </span>{
-                    ServerPort::UnixSocket(
-                        listener
-                            .local_addr()
-                            .unwrap()
-                            .as_pathname()
-                            .unwrap()
-                            .to_path_buf(),
-                    )
+                    ServerPort::UnixSocket(tempdir.path().join(<span class="string">&quot;socket&quot;</span>))
                 }
 
                 <span class="attr">#[cfg(not(unix))]
@@ -825,8 +826,7 @@
                     <span class="macro">panic!</span>(<span class="string">&quot;Unix sockets are not supported on this platform&quot;</span>)
                 }
             }
-            BoundConnection::TcpPort(listener) =&gt; {
-                <span class="kw">let </span>addr = listener.local_addr().unwrap();
+            BoundConnection::TcpPort(<span class="kw">_</span>, addr) =&gt; {
                 ServerPort::TcpPort(SocketAddr::new(addr.ip(), addr.port()))
             }
 
@@ -860,12 +860,12 @@
 }
 
 <span class="attr">#[async_recursion]
-</span><span class="kw">async fn </span>accept(bound: <span class="kw-2">&amp;</span>BoundConnection) -&gt; ConnectedBidi {
+</span><span class="kw">async fn </span>accept(bound: BoundConnection) -&gt; ConnectedBidi {
     <span class="kw">match </span>bound {
         BoundConnection::UnixSocket(listener, <span class="kw">_</span>) =&gt; {
             <span class="attr">#[cfg(unix)]
             </span>{
-                <span class="kw">let </span>(stream, <span class="kw">_</span>) = listener.accept().<span class="kw">await</span>.unwrap();
+                <span class="kw">let </span>stream = listener.<span class="kw">await</span>.unwrap().unwrap();
                 <span class="kw">let </span>(sink, source) = unix_bytes(stream);
                 ConnectedBidi {
                     source: <span class="prelude-val">Some</span>(Box::pin(source)),
@@ -879,8 +879,8 @@
                 <span class="macro">panic!</span>(<span class="string">&quot;Unix sockets are not supported on this platform&quot;</span>)
             }
         }
-        BoundConnection::TcpPort(listener) =&gt; {
-            <span class="kw">let </span>(stream, <span class="kw">_</span>) = listener.accept().<span class="kw">await</span>.unwrap();
+        BoundConnection::TcpPort(listener, <span class="kw">_</span>) =&gt; {
+            <span class="kw">let </span>stream = listener.<span class="kw">await</span>.unwrap().unwrap();
             <span class="kw">let </span>(sink, source) = tcp_bytes(stream);
             ConnectedBidi {
                 source: <span class="prelude-val">Some</span>(Box::pin(source)),
@@ -1027,7 +1027,7 @@
                 })),
             },
 
-            ServerOrBound::Bound(bound) =&gt; accept(<span class="kw-2">&amp;</span>bound).<span class="kw">await</span>,
+            ServerOrBound::Bound(bound) =&gt; accept(bound).<span class="kw">await</span>,
         }
     }
 }

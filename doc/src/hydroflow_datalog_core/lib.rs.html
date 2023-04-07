@@ -935,6 +935,22 @@
 <a href="#935" id="935">935</a>
 <a href="#936" id="936">936</a>
 <a href="#937" id="937">937</a>
+<a href="#938" id="938">938</a>
+<a href="#939" id="939">939</a>
+<a href="#940" id="940">940</a>
+<a href="#941" id="941">941</a>
+<a href="#942" id="942">942</a>
+<a href="#943" id="943">943</a>
+<a href="#944" id="944">944</a>
+<a href="#945" id="945">945</a>
+<a href="#946" id="946">946</a>
+<a href="#947" id="947">947</a>
+<a href="#948" id="948">948</a>
+<a href="#949" id="949">949</a>
+<a href="#950" id="950">950</a>
+<a href="#951" id="951">951</a>
+<a href="#952" id="952">952</a>
+<a href="#953" id="953">953</a>
 </pre><pre class="rust"><code><span class="kw">use </span>rust_sitter::{
     errors::{ParseError, ParseErrorReason},
     Spanned,
@@ -1278,6 +1294,7 @@
         tee_counter,
         next_join_idx,
         rule.span,
+        diagnostics,
         get_span,
     );
 
@@ -1357,7 +1374,7 @@
 }
 
 <span class="kw">fn </span>gen_value_expr(
-    expr: <span class="kw-2">&amp;</span>ValueExpr,
+    expr: <span class="kw-2">&amp;</span>IntExpr,
     field_use_count: <span class="kw-2">&amp;</span>HashMap&lt;String, i32&gt;,
     field_use_cur: <span class="kw-2">&amp;mut </span>HashMap&lt;String, i32&gt;,
     out_expanded: <span class="kw-2">&amp;</span>IntermediateJoinNode,
@@ -1365,7 +1382,7 @@
     get_span: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Fn((usize, usize)) -&gt; Span,
 ) -&gt; syn::Expr {
     <span class="kw">match </span>expr {
-        ValueExpr::Ident(ident) =&gt; {
+        IntExpr::Ident(ident) =&gt; {
             <span class="kw">if let </span><span class="prelude-val">Some</span>(col) = out_expanded.variable_mapping.get(<span class="kw-2">&amp;</span>ident.name) {
                 <span class="kw">let </span>cur_count = field_use_cur
                     .entry(ident.name.clone())
@@ -1389,11 +1406,11 @@
                 <span class="macro">parse_quote!</span>(())
             }
         }
-        ValueExpr::Integer(i) =&gt; syn::Expr::Lit(syn::ExprLit {
+        IntExpr::Integer(i) =&gt; syn::Expr::Lit(syn::ExprLit {
             attrs: Vec::new(),
             lit: syn::Lit::Int(syn::LitInt::new(<span class="kw-2">&amp;</span>i.to_string(), get_span(i.span))),
         }),
-        ValueExpr::Add(l, <span class="kw">_</span>, r) =&gt; {
+        IntExpr::Add(l, <span class="kw">_</span>, r) =&gt; {
             <span class="kw">let </span>l = gen_value_expr(
                 l,
                 field_use_count,
@@ -1412,7 +1429,7 @@
             );
             <span class="macro">parse_quote!</span>(#l + #r)
         }
-        ValueExpr::Sub(l, <span class="kw">_</span>, r) =&gt; {
+        IntExpr::Sub(l, <span class="kw">_</span>, r) =&gt; {
             <span class="kw">let </span>l = gen_value_expr(
                 l,
                 field_use_count,
@@ -1452,7 +1469,7 @@
             get_span,
         ),
         TargetExpr::Aggregation(Aggregation { ident, .. }) =&gt; gen_value_expr(
-            <span class="kw-2">&amp;</span>ValueExpr::Ident(ident.clone()),
+            <span class="kw-2">&amp;</span>IntExpr::Ident(ident.clone()),
             field_use_count,
             field_use_cur,
             out_expanded,
@@ -1868,6 +1885,21 @@
             result(a + 123) :- ints(a)
             result(a + a) :- ints(a)
             result(123 - a) :- ints(a)
+            &quot;#
+        </span>);
+    }
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>test_expr_predicate() {
+        <span class="macro">test_snapshots!</span>(
+            <span class="string">r#&quot;
+            .input ints `source_stream(ints)`
+            .output result `for_each(|v| result.send(v).unwrap())`
+
+            result(1) :- ints(a), (a == 0)
+            result(2) :- ints(a), (a != 0)
+            result(3) :- ints(a), (a - 1 == 0)
+            result(4) :- ints(a), (a - 1 == 1 - 1)
             &quot;#
         </span>);
     }

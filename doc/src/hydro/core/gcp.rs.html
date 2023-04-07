@@ -579,6 +579,15 @@
 <a href="#579" id="579">579</a>
 <a href="#580" id="580">580</a>
 <a href="#581" id="581">581</a>
+<a href="#582" id="582">582</a>
+<a href="#583" id="583">583</a>
+<a href="#584" id="584">584</a>
+<a href="#585" id="585">585</a>
+<a href="#586" id="586">586</a>
+<a href="#587" id="587">587</a>
+<a href="#588" id="588">588</a>
+<a href="#589" id="589">589</a>
+<a href="#590" id="590">590</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::{collections::HashMap, net::SocketAddr, path::PathBuf, sync::Arc, time::Duration};
 
 <span class="kw">use </span>anyhow::{Context, <span class="prelude-ty">Result</span>};
@@ -598,7 +607,8 @@
     ServerStrategy,
 };
 
-<span class="kw">pub struct </span>LaunchedComputeEngine {
+<span class="attr">#[derive(Debug)]
+</span><span class="kw">pub struct </span>LaunchedComputeEngine {
     resource_result: Arc&lt;ResourceResult&gt;,
     user: String,
     <span class="kw">pub </span>internal_ip: String,
@@ -699,7 +709,8 @@
     </span>}
 }
 
-<span class="kw">pub struct </span>GCPNetwork {
+<span class="attr">#[derive(Debug)]
+</span><span class="kw">pub struct </span>GCPNetwork {
     <span class="kw">pub </span>project: String,
     <span class="kw">pub </span>tf_path: <span class="prelude-ty">Option</span>&lt;String&gt;,
     <span class="kw">pub </span>existing_vpc: <span class="prelude-ty">Option</span>&lt;String&gt;,
@@ -804,7 +815,8 @@
     }
 }
 
-<span class="kw">pub struct </span>GCPComputeEngineHost {
+<span class="attr">#[derive(Debug)]
+</span><span class="kw">pub struct </span>GCPComputeEngineHost {
     <span class="kw">pub </span>id: usize,
     <span class="kw">pub </span>project: String,
     <span class="kw">pub </span>machine_type: String,
@@ -1070,6 +1082,12 @@
                 </span>),
             },
         );
+    }
+
+    <span class="kw">fn </span>launched(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Arc&lt;<span class="kw">dyn </span>LaunchedHost&gt;&gt; {
+        <span class="self">self</span>.launched
+            .as_ref()
+            .map(|a| a.clone() <span class="kw">as </span>Arc&lt;<span class="kw">dyn </span>LaunchedHost&gt;)
     }
 
     <span class="kw">async fn </span>provision(<span class="kw-2">&amp;mut </span><span class="self">self</span>, resource_result: <span class="kw-2">&amp;</span>Arc&lt;ResourceResult&gt;) -&gt; Arc&lt;<span class="kw">dyn </span>LaunchedHost&gt; {

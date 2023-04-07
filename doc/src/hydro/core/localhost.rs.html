@@ -265,6 +265,10 @@
 <a href="#265" id="265">265</a>
 <a href="#266" id="266">266</a>
 <a href="#267" id="267">267</a>
+<a href="#268" id="268">268</a>
+<a href="#269" id="269">269</a>
+<a href="#270" id="270">270</a>
+<a href="#271" id="271">271</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::{collections::HashMap, net::SocketAddr, path::Path, sync::Arc};
 
 <span class="attr">#[cfg(unix)]
@@ -482,6 +486,10 @@
     <span class="kw">fn </span>as_any_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span><span class="kw">dyn </span>std::any::Any {
         <span class="self">self
     </span>}
+
+    <span class="kw">fn </span>launched(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Arc&lt;<span class="kw">dyn </span>LaunchedHost&gt;&gt; {
+        <span class="prelude-val">Some</span>(Arc::new(LaunchedLocalhost {}))
+    }
 
     <span class="kw">async fn </span>provision(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _resource_result: <span class="kw-2">&amp;</span>Arc&lt;ResourceResult&gt;) -&gt; Arc&lt;<span class="kw">dyn </span>LaunchedHost&gt; {
         Arc::new(LaunchedLocalhost {})

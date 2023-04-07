@@ -528,8 +528,6 @@
 <a href="#528" id="528">528</a>
 <a href="#529" id="529">529</a>
 <a href="#530" id="530">530</a>
-<a href="#531" id="531">531</a>
-<a href="#532" id="532">532</a>
 </pre><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::HydroflowCrate;
 <span class="kw">use </span><span class="kw">crate</span>::core::{ClientStrategy, Host, HostStrategyGetter, LaunchedHost, ServerStrategy};
 
@@ -555,7 +553,7 @@
 
 <span class="attr">#[async_trait]
 </span><span class="kw">pub trait </span>HydroflowServer: DynClone + Send + Sync + std::fmt::Debug {
-    <span class="kw">async fn </span>get_port(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ServerPort;
+    <span class="kw">fn </span>get_port(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ServerPort;
     <span class="kw">async fn </span>launched_host(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Arc&lt;<span class="kw">dyn </span>LaunchedHost&gt;;
 }
 
@@ -596,7 +594,6 @@
         <span class="kw">if let </span>ServerConfig::Mux(<span class="kw-2">mut </span>mux) = config {
             <span class="kw">for </span>(key, target) <span class="kw">in </span><span class="kw-2">&amp;</span><span class="self">self</span>.mux {
                 <span class="kw">let </span><span class="kw-2">mut </span>target = target.try_write().unwrap();
-                <span class="macro">dbg!</span>(<span class="string">&quot;recording mux select!&quot;</span>);
                 target.record_server_config(ServerConfig::MuxSelect(
                     Box::new(mux.remove(key).unwrap()),
                     <span class="kw-2">*</span>key,
@@ -716,6 +713,8 @@
 <span class="attr">#[derive(Clone, Debug)]
 </span><span class="kw">pub struct </span>HydroflowPortConfig {
     <span class="kw">pub </span>service: Weak&lt;RwLock&lt;HydroflowCrate&gt;&gt;,
+    <span class="kw">pub </span>service_host: Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;,
+    <span class="kw">pub </span>service_server_defns: Arc&lt;RwLock&lt;HashMap&lt;String, ServerPort&gt;&gt;&gt;,
     <span class="kw">pub </span>port: String,
     <span class="kw">pub </span>merge: bool,
 }
@@ -724,6 +723,8 @@
     <span class="kw">pub fn </span>merge(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
             service: <span class="self">self</span>.service.clone(),
+            service_host: <span class="self">self</span>.service_host.clone(),
+            service_server_defns: <span class="self">self</span>.service_server_defns.clone(),
             port: <span class="self">self</span>.port.clone(),
             merge: <span class="bool-val">true</span>,
         }
@@ -758,6 +759,8 @@
                     <span class="kw-2">&amp;</span>from_write.on,
                     Arc::new(HydroflowPortConfig {
                         service: Arc::downgrade(<span class="kw-2">&amp;</span>from),
+                        service_host: from_write.on.clone(),
+                        service_server_defns: from_write.server_defns.clone(),
                         port: <span class="self">self</span>.port.clone(),
                         merge: <span class="bool-val">false</span>,
                     }),
@@ -784,16 +787,14 @@
 
 <span class="attr">#[async_trait]
 </span><span class="kw">impl </span>HydroflowServer <span class="kw">for </span>HydroflowPortConfig {
-    <span class="kw">async fn </span>get_port(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ServerPort {
-        <span class="kw">let </span>server = <span class="self">self</span>.service.upgrade().unwrap();
-        <span class="kw">let </span>server = server.read().<span class="kw">await</span>;
-        server.server_defns.get(<span class="kw-2">&amp;</span><span class="self">self</span>.port).unwrap().clone()
+    <span class="kw">fn </span>get_port(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ServerPort {
+        <span class="comment">// we are in `deployment.start()`, so no one should be writing
+        </span><span class="kw">let </span>server_defns = <span class="self">self</span>.service_server_defns.try_read().unwrap();
+        server_defns.get(<span class="kw-2">&amp;</span><span class="self">self</span>.port).unwrap().clone()
     }
 
     <span class="kw">async fn </span>launched_host(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Arc&lt;<span class="kw">dyn </span>LaunchedHost&gt; {
-        <span class="kw">let </span>server = <span class="self">self</span>.service.upgrade().unwrap();
-        <span class="kw">let </span>server_read = server.read().<span class="kw">await</span>;
-        server_read.launched_host.as_ref().unwrap().clone()
+        <span class="self">self</span>.service_host.read().<span class="kw">await</span>.launched().unwrap()
     }
 }
 
@@ -999,14 +1000,10 @@
     <span class="attr">#[async_recursion]
     </span><span class="kw">pub async fn </span>load_instantiated(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ServerPort {
         <span class="kw">match </span><span class="self">self </span>{
-            ServerConfig::Direct(server) =&gt; server.get_port().<span class="kw">await</span>,
+            ServerConfig::Direct(server) =&gt; server.get_port(),
 
             ServerConfig::Forwarded(server) =&gt; {
-                forward_connection(
-                    <span class="kw-2">&amp;</span>server.get_port().<span class="kw">await</span>,
-                    server.launched_host().<span class="kw">await</span>.as_ref(),
-                )
-                .<span class="kw">await
+                forward_connection(<span class="kw-2">&amp;</span>server.get_port(), server.launched_host().<span class="kw">await</span>.as_ref()).<span class="kw">await
             </span>}
 
             ServerConfig::Demux(demux) =&gt; {
@@ -1042,7 +1039,6 @@
             }
 
             ServerConfig::Mux(mux) =&gt; {
-                <span class="macro">dbg!</span>(mux);
                 <span class="kw">let </span><span class="kw-2">mut </span>mux_map = HashMap::new();
                 <span class="kw">for </span>(key, conn) <span class="kw">in </span>mux {
                     mux_map.insert(<span class="kw-2">*</span>key, conn.load_instantiated().<span class="kw">await</span>);
