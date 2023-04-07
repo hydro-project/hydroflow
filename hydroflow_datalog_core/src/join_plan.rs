@@ -148,11 +148,13 @@ fn find_relation_local_constraints<'a>(
 ) -> BTreeMap<String, Vec<usize>> {
     let mut indices_grouped_by_var = BTreeMap::new();
     for (i, ident) in fields.enumerate() {
-        let entry = indices_grouped_by_var
-            // TODO(shadaj): Can we avoid cloning here?
-            .entry(ident.name.clone())
-            .or_insert_with(Vec::new);
-        entry.push(i);
+        if ident.name != "_" {
+            let entry = indices_grouped_by_var
+                // TODO(shadaj): Can we avoid cloning here?
+                .entry(ident.name.clone())
+                .or_insert_with(Vec::new);
+            entry.push(i);
+        }
     }
 
     indices_grouped_by_var.retain(|_, v| v.len() > 1);
@@ -245,8 +247,10 @@ pub fn expand_join_plan(
             for (i, ident) in target.fields.iter().enumerate() {
                 row_types.push(parse_quote!(_));
 
-                if let Entry::Vacant(e) = variable_mapping.entry(ident.name.clone()) {
-                    e.insert(i);
+                if ident.name != "_" {
+                    if let Entry::Vacant(e) = variable_mapping.entry(ident.name.clone()) {
+                        e.insert(i);
+                    }
                 }
             }
 
@@ -591,7 +595,12 @@ pub fn expand_join_plan(
             }
 
             flattened_elements.push(parse_quote!(v));
-            flattened_mapping.insert(less_than.name.clone(), flattened_elements.len() - 1);
+
+            if less_than.name == threshold.name {
+                panic!("The threshold and less_than variables must be different")
+            } else if less_than.name != "_" {
+                flattened_mapping.insert(less_than.name.clone(), flattened_elements.len() - 1);
+            }
 
             flat_graph_builder.add_statement(parse_quote_spanned! {get_span(rule_span)=>
                 #magic_node = #inner_name -> flat_map(|row: #row_type| (0..(row.#threshold_index)).map(move |v| (#(#flattened_elements, )*)) )
