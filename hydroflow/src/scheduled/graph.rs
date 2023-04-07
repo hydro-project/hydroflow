@@ -306,6 +306,20 @@ impl Hydroflow {
                     });
             }
         }
+
+        if events_has_external {
+            self.subgraphs
+                .iter()
+                .enumerate()
+                .filter(|(_, s)| s.stratum == 0)
+                .for_each(|(s_id, s)| {
+                    if !s.is_scheduled.replace(true) {
+                        self.stratum_queues[s.stratum].push_back(SubgraphId(s_id));
+                        enqueued_count += 1;
+                    }
+                });
+        }
+
         (enqueued_count, events_has_external)
     }
 
