@@ -235,6 +235,12 @@
 <a href="#235" id="235">235</a>
 <a href="#236" id="236">236</a>
 <a href="#237" id="237">237</a>
+<a href="#238" id="238">238</a>
+<a href="#239" id="239">239</a>
+<a href="#240" id="240">240</a>
+<a href="#241" id="241">241</a>
+<a href="#242" id="242">242</a>
+<a href="#243" id="243">243</a>
 </pre><pre class="rust"><code><span class="attr">#[rust_sitter::grammar(<span class="string">&quot;datalog&quot;</span>)]
 #[allow(dead_code)]
 </span><span class="kw">pub mod </span>datalog {
@@ -313,6 +319,12 @@
     }
 
     <span class="attr">#[derive(Debug, Clone)]
+    </span><span class="kw">pub enum </span>IdentOrUnderscore {
+        Ident(Spanned&lt;Ident&gt;),
+        Underscore(<span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;_&quot;</span>)] </span>Spanned&lt;()&gt;),
+    }
+
+    <span class="attr">#[derive(Debug, Clone)]
     </span><span class="kw">pub struct </span>InputRelationExpr {
         <span class="kw">pub </span>name: Spanned&lt;Ident&gt;,
 
@@ -323,7 +335,7 @@
             <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;,&quot;</span>)]
             </span>()
         )]
-        <span class="kw">pub </span>fields: Vec&lt;Spanned&lt;Ident&gt;&gt;,
+        <span class="kw">pub </span>fields: Vec&lt;Spanned&lt;IdentOrUnderscore&gt;&gt;,
 
         <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;)&quot;</span>)]
         </span>_r_paren: (),
@@ -393,7 +405,7 @@
 
     <span class="attr">#[derive(Clone, PartialEq, Eq, Hash, Ord, PartialOrd, Debug)]
     </span><span class="kw">pub struct </span>Ident {
-        <span class="attr">#[rust_sitter::leaf(pattern = <span class="string">r&quot;[a-zA-Z_][a-zA-Z0-9_]*&quot;</span>, transform = |s| s.to_string())]
+        <span class="attr">#[rust_sitter::leaf(pattern = <span class="string">r&quot;[a-zA-Z][a-zA-Z0-9_]*&quot;</span>, transform = |s| s.to_string())]
         </span><span class="kw">pub </span>name: String,
     }
 
