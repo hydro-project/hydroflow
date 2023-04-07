@@ -123,11 +123,14 @@ async fn main() {
         # inputs that are persisted must have an alias. Format: inputU = unpersisted input.
         p1b(a, l, i, n, mi, mn) :- p1bU(a, l, i, n, mi, mn)
 p1b(a, l, i, n, mi, mn) :+ p1b(a, l, i, n, mi, mn)
+// .persist p1b
 p1bLog(a, p, s, pi, pn, i, n) :- p1bLogU(a, p, s, pi, pn, i, n)
-p1bLog(a, p, s, pi, pn, i, n) :+ p1bLog(a, p, s, pi, pn, i, n)
+p1bLog(a, p, s, pi, pn, i, n) :+ p1bLog(a, p, s, pi, pn, i, n) # drop all p1bLogs if slot s is committed
+// .persist p1bLog
 p2b(a, p, s, i, n, mi, mn) :- p2bU(a, p, s, i, n, mi, mn)
 p2b(a, p, s, i, n, mi, mn) :+ p2b(a, p, s, i, n, mi, mn), !commit(p2, s) # drop all p2bs if slot s is committed
 receivedBallots(i, n) :+ receivedBallots(i, n)
+// .persist receivedBallots
 iAmLeader(i, n) :- iAmLeaderU(i, n)
 iAmLeader(i, n) :+ iAmLeader(i, n), !iAmLeaderCheckTimeout() # clear iAmLeader periodically (like LRU clocks)
         
@@ -236,6 +239,9 @@ totalCommitted(prev + new) :+ totalCommitted(prev), NumCommits(new)
         ######################## end process p2bs
 "#
     );
+
+    // use std::fs;
+    // fs::write("mermaid.txt", df.meta_graph().unwrap().to_mermaid()).expect("Unable to write file");
 
     df.run_async().await;
 }

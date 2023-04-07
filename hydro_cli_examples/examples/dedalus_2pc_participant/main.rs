@@ -46,22 +46,14 @@ async fn main() {
         .input myID `repeat_iter(my_id.clone()) -> map(|p| (p,))`
         .input coordinator `repeat_iter(peers.clone()) -> map(|p| (p,))`
         .input verdict `repeat_iter([(true,),])`
-        // .output voteOut `for_each(|(i,myID):(u32,u32,)| println!("participant {:?}: message {:?}", myID, i))`
         
-        .async voteToParticipant `null::<(u32,String,)>()` `source_stream(vote_to_participant_source) -> map(|x| deserialize_from_bytes::<(u32,String,)>(x.unwrap()).unwrap())`
-        .async voteFromParticipant `map(|(node_id, v)| (node_id, serialize_to_bytes(v))) -> dest_sink(vote_from_participant_sink)` `null::<(u32,String,)>()`
-        .async instructToParticipant `null::<(u32,String,bool,)>()` `source_stream(instruct_to_participant_source) -> map(|x| deserialize_from_bytes::<(u32,String,bool,)>(x.unwrap()).unwrap())`
-        .async ackFromParticipant `map(|(node_id, v)| (node_id, serialize_to_bytes(v))) -> dest_sink(ack_from_participant_sink)` `null::<(u32,String,u32,)>()`
-    
-        # .output verdictRequest    
-        # .output log
-        
-        # verdictRequest(i, msg) :- voteToParticipant(i, msg)
-        voteFromParticipant@addr(i, msg, res, l_from) :~ voteToParticipant(i, msg), coordinator(addr), myID(l_from), verdict(res)
-        ackFromParticipant@addr(i, msg, l_from) :~ instructToParticipant(i, msg, b), coordinator(addr), myID(l_from)
-        // voteOut(i, l) :- voteToParticipant(i, msg), myID(l)
-        
-        # log(i, msg, type) :- instructToParticipant(i, msg, type) # the log channel will sort everything out
+        .async voteToParticipant `null::<(u32,u32,)>()` `source_stream(vote_to_participant_source) -> map(|x| deserialize_from_bytes::<(u32,u32,)>(x.unwrap()).unwrap())`
+        .async voteFromParticipant `map(|(node_id, v)| (node_id, serialize_to_bytes(v))) -> dest_sink(vote_from_participant_sink)` `null::<(u32,u32,)>()`
+        .async instructToParticipant `null::<(u32,u32,bool,)>()` `source_stream(instruct_to_participant_source) -> map(|x| deserialize_from_bytes::<(u32,u32,bool,)>(x.unwrap()).unwrap())`
+        .async ackFromParticipant `map(|(node_id, v)| (node_id, serialize_to_bytes(v))) -> dest_sink(ack_from_participant_sink)` `null::<(u32,u32,u32,)>()`
+            
+        voteFromParticipant@addr(s, p, res, i) :~ voteToParticipant(s, p), coordinator(addr), myID(i), verdict(res)
+        ackFromParticipant@addr(s, p, i) :~ instructToParticipant(s, p, b), coordinator(addr), myID(i) 
         "#
     );
 

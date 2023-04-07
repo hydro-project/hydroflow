@@ -66,7 +66,7 @@ async def main(args):
     async for log in program_out:
         print(log)
         counter += 1
-        if counter == 25:
+        if counter == 1000:
             break
 
     print(await program.exit_code())

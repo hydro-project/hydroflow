@@ -78,9 +78,9 @@ async fn main() {
 
 
 // ballots(id, num) :+ ballots(id, num)
-// .persist log
+.persist log
 .persist ballots
-log(payload, slot, payloadBallotID, payloadBallotNum) :+ log(payload, slot, payloadBallotID, payloadBallotNum)
+// log(payload, slot, payloadBallotID, payloadBallotNum) :+ log(payload, slot, payloadBallotID, payloadBallotNum)
 
 
 # Debug

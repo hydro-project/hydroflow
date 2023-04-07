@@ -2,7 +2,9 @@ use hydroflow::util::{
     cli::{ConnectedBidi, ConnectedDemux, ConnectedSink, ConnectedSource},
     deserialize_from_bytes, serialize_to_bytes,
 };
+use hydroflow::tokio_stream::wrappers::IntervalStream;
 use hydroflow_datalog::datalog;
+use tokio::time::{interval_at, Duration, Instant};
 
 #[tokio::main]
 async fn main() {
@@ -38,56 +40,67 @@ async fn main() {
         .await
         .into_source();
 
+    let frequency = 1;
+    let start = Instant::now() + Duration::from_secs(frequency);
+    let periodic_source = IntervalStream::new(interval_at(start, Duration::from_secs(frequency)));
+
     let mut df = datalog!(
-        r#"
-        .input clientIn `repeat_iter([("vote".to_string(),),])`
-        .output clientOut `for_each(|(i,msg):(u32,String,)| println!("committed {:?}: {:?}", i, msg))`
+        r#" 
+        .input clientIn `repeat_iter(vec![()]) -> map(|_| (context.current_tick() as u32,))`
+.output clientOut `for_each(|(slot,payload):(u32,u32)| println!("completed {:?}: {:?}", slot, payload))`
 
-        # EDBs
-        .input startIndex `repeat_iter([(1u32,),])`
-        .input participants `repeat_iter(peers.clone()) -> map(|p| (p,))`
-        .input success `repeat_iter([(true,),])`
-        .input reject `repeat_iter([(false,),])`
-        .input commitInstruct `repeat_iter([(true,),])`
-        .input rollbackInstruct `repeat_iter([(false,),])`
+.input periodic `source_stream(periodic_source) -> map(|_| ())`
+.output throughputOut `for_each(|(num,):(u32,)| println!("completed {:?} entries", num))`
 
-        .async voteToParticipant `map(|(node_id, v):(u32,(u32,String))| (node_id, serialize_to_bytes(v))) -> dest_sink(vote_to_participant_sink)` `null::<(u32,String,)>()`
-        .async voteFromParticipant `null::<(u32,String,bool,u32,)>()` `source_stream(vote_from_participant_source) -> map(|v| deserialize_from_bytes::<(u32,String,bool,u32,)>(v.unwrap()).unwrap())`
-        .async instructToParticipant `map(|(node_id, v):(u32,(u32,String,bool))| (node_id, serialize_to_bytes(v))) -> dest_sink(instruct_to_participant_sink)` `null::<(u32,String,bool,)>()`
-        .async ackFromParticipant `null::<(u32,String,u32,)>()` `source_stream(ack_from_participant_source) -> map(|v| deserialize_from_bytes::<(u32,String,u32,)>(v.unwrap()).unwrap())`
+# EDBs
+.input startSlot `repeat_iter([(0 as u32,),])`
+.input participants `repeat_iter(peers.clone()) -> map(|p| (p,))`
+.input success `repeat_iter([(true,),])`
+.input reject `repeat_iter([(false,),])`
+.input commitInstruct `repeat_iter([(true,),])`
+.input rollbackInstruct `repeat_iter([(false,),])`
 
-        # Persistence rules
-        AllMsg(msg) :+ AllMsg(msg), !NextMsgToAssign(msg)
-        AllVotes(i, msg, res, l_from) :+ AllVotes(i, msg, res, l_from)
-        AllAcks(i, msg, l_from) :+ AllAcks(i, msg, l_from)
-        indices(i) :+ indices(i)
+.async voteToParticipant `map(|(node_id, v):(u32,(u32,u32))| (node_id, serialize_to_bytes(v))) -> dest_sink(vote_to_participant_sink)` `null::<(u32,u32,)>()`
+.async voteFromParticipant `null::<(u32,u32,bool,u32,)>()` `source_stream(vote_from_participant_source) -> map(|v| deserialize_from_bytes::<(u32,u32,bool,u32,)>(v.unwrap()).unwrap())`
+.async instructToParticipant `map(|(node_id, v):(u32,(u32,u32,bool))| (node_id, serialize_to_bytes(v))) -> dest_sink(instruct_to_participant_sink)` `null::<(u32,u32,bool,)>()`
+.async ackFromParticipant `null::<(u32,u32,u32,)>()` `source_stream(ack_from_participant_source) -> map(|v| deserialize_from_bytes::<(u32,u32,u32,)>(v.unwrap()).unwrap())`
 
-        # Non-EDBs with initialized values
-        indices(i) :- startIndex(i)
+# Phase 1a
+nextSlot(s) :+ !nextSlot(s2), startSlot(s)
+nextSlot(s+1) :+ nextSlot(s), ChosenPayload(payload)
+nextSlot(s) :+ nextSlot(s), !ChosenPayload(payload)
 
-        # Phase 1a
-        AllMsg(msg) :- clientIn(msg)
-        NextMsgToAssign(choose(msg)) :- AllMsg(msg)
-        MaxID(max(i)) :- indices(i)
-        indices(i+1) :+ NextMsgToAssign(msg), MaxID(i)
-        voteToParticipant@addr(i, msg) :~ participants(addr), NextMsgToAssign(msg), MaxID(i)
+ChosenPayload(choose(payload)) :- clientIn(payload)
+voteToParticipant@addr(s, p) :~ participants(addr), ChosenPayload(p), nextSlot(s)
 
-        // # Phase 1b, Phase 2a
-        AllVotes(i, msg, res, l_from) :- voteFromParticipant(i, msg, res, l_from)
-        unanimous(count(addr)) :- participants(addr)
 
-        NumYesVotes(i, msg, count(l_from)) :- AllVotes(i, msg, res, l_from), success(res)
-        msgCommitted(i, msg) :- NumYesVotes(i, msg, size), unanimous(size)
-        instructToParticipant@addr(i, msg, type) :~ msgCommitted(i, msg), participants(addr), commitInstruct(type)
+# Phase 1b, Phase 2a
+unanimous(count(addr)) :- participants(addr)
 
-        msgAborted(i, msg) :- AllVotes(i, msg, res, l_from), reject(res)
-        instructToParticipant@addr(i, msg, type) :~ msgAborted(i, msg), participants(addr),rollbackInstruct(type)
+AllVotes(s, payload, res, src) :+ AllVotes(s, payload, res, src), !committed(s, payload), !aborted(s, payload)
+AllVotes(i, msg, res, l_from) :- voteFromParticipant(i, msg, res, l_from)
 
-        # Phase 2b
-        AllAcks(i, msg, l_from) :- ackFromParticipant(i, msg, l_from)
-        NumAcks(i, msg, count(l_from)) :- AllAcks(i, msg, l_from)
-        outputted(i) :+ NumAcks(i, msg, size), unanimous(size)
-        clientOut(i, msg) :- NumAcks(i, msg, size), unanimous(size), !outputted(i)
+NumYesVotes(s, payload, count(src)) :- AllVotes(s, payload, res, src), success(res)
+committed(s, payload) :- NumYesVotes(s, payload, num), unanimous(num)
+instructToParticipant@addr(s, payload, commit) :~ committed(s, payload), participants(addr), commitInstruct(commit)
+
+aborted(s, payload) :- AllVotes(s, payload, res, src), reject(res)
+instructToParticipant@addr(s, payload, rollback) :~ aborted(s, payload), participants(addr), rollbackInstruct(rollback)
+
+
+# Phase 2b
+AllAcks(s, payload, src) :+ AllAcks(s, payload, src), !completed(s, payload)
+AllAcks(s, payload, src) :- ackFromParticipant(s, payload, src)
+
+NumAcks(s, payload, count(src)) :- AllAcks(s, payload, src)
+completed(s, payload) :- NumAcks(s, payload, num), unanimous(num)
+// clientOut(s, payload) :- completed(s, payload)
+
+NumCompleted(count(s)) :- completed(s, payload)
+totalCompleted(new) :+ !totalCompleted(prev), NumCompleted(new)
+totalCompleted(prev) :+ totalCompleted(prev), !NumCompleted(new)
+totalCompleted(prev + new) :+ totalCompleted(prev), NumCompleted(new)
+throughputOut(num) :- totalCompleted(num), periodic()
     "#
     );
 
