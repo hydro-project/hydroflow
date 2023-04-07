@@ -282,11 +282,26 @@ impl Hydroflow {
         while let Ok((sg_id, is_external)) = self.event_queue_recv.try_recv() {
             let sg_data = &self.subgraphs[sg_id.0];
             events_has_external |= is_external;
+
             if !sg_data.is_scheduled.replace(true) {
                 self.stratum_queues[sg_data.stratum].push_back(sg_id);
                 enqueued_count += 1;
             }
         }
+
+        if events_has_external {
+            self.subgraphs
+                .iter()
+                .enumerate()
+                .filter(|(_, s)| s.stratum == 0)
+                .for_each(|(s_id, s)| {
+                    if !s.is_scheduled.replace(true) {
+                        self.stratum_queues[s.stratum].push_back(SubgraphId(s_id));
+                        enqueued_count += 1;
+                    }
+                });
+        }
+
         (enqueued_count, events_has_external)
     }
 
