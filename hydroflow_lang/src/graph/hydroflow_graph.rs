@@ -354,6 +354,35 @@ impl HydroflowGraph {
 
         (node_id, e1)
     }
+
+    /// Remove the node `node_id` but preserves and connects the single predecessor and single successor.
+    /// Panics if the node does not have exactly one predecessor and one successor, or is not in the graph.
+    pub fn remove_intermediate_node(&mut self, node_id: GraphNodeId) {
+        assert_eq!(
+            1,
+            self.node_degree_in(node_id),
+            "Removed intermediate node must have one predecessor"
+        );
+        assert_eq!(
+            1,
+            self.node_degree_out(node_id),
+            "Removed intermediate node must have one successor"
+        );
+        assert!(
+            self.node_subgraph.is_empty() && self.subgraph_nodes.is_empty(),
+            "Should not remove intermediate node after subgraph partitioning"
+        );
+
+        assert!(self.nodes.remove(node_id).is_some());
+        let (new_edge_id, (pred_edge_id, succ_edge_id)) =
+            self.graph.remove_intermediate_vertex(node_id).unwrap();
+        self.operator_instances.remove(node_id);
+        self.node_varnames.remove(node_id);
+
+        let (src_port, _) = self.ports.remove(pred_edge_id).unwrap();
+        let (_, dst_port) = self.ports.remove(succ_edge_id).unwrap();
+        self.ports.insert(new_edge_id, (src_port, dst_port));
+    }
 }
 // Edge methods.
 impl HydroflowGraph {
