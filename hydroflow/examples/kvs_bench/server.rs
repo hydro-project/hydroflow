@@ -13,6 +13,8 @@ use crate::protocol::MyLastWriteWins;
 use crate::protocol::MyLastWriteWinsRepr;
 use crate::protocol::SetUnion;
 use bincode::options;
+use hydroflow::lang::lattice::bottom::BottomRepr;
+use hydroflow::lang::lattice::LatticeRepr;
 use hydroflow::lang::lattice::Merge;
 use rand::Rng;
 use rand::SeedableRng;
@@ -205,15 +207,8 @@ pub fn run_server(
                 // broadcast out locally generated changes to other nodes.
                 client_input[broadcast]
                     -> batch(batch_interval_ticker)
-                    -> group_by::<'tick>(|| Option::<MyLastWriteWinsRepr>::None, |accum: &mut Option<MyLastWriteWinsRepr>, reg: MyLastWriteWinsRepr| {
-                        // TODO: Could turn this into the BottomRepr lattice rather than having the external Option wrapping.
-                        // If multiple writes have hit the same key then they can be merged before sending.
-                        if accum.is_none() {
-                            *accum = Some(reg);
-                        } else {
-                            <MyLastWriteWins as Merge<MyLastWriteWins>>::merge(accum.as_mut().unwrap(), reg);
-                        }
-                    })
+                    -> map(|(key, reg)| (key, Some(reg)))
+                    -> group_by::<'tick>(<BottomRepr<MyLastWriteWins> as LatticeRepr>::Repr::default, <BottomRepr<MyLastWriteWins> as Merge<BottomRepr<MyLastWriteWins>>>::merge)
                     -> filter_map(|(key, opt_reg)| opt_reg.map(|reg| (key, reg))) // to filter out bottom types since they carry no useful info.
                     // -> inspect(|x| println!("{gossip_addr}:{:5}: sending to peers: {x:?}", context.current_tick()))
                     -> for_each(|x| { transducer_to_peers_tx.send(x).unwrap(); });
