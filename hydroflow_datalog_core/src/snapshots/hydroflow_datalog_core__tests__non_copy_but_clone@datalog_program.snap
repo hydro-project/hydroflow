@@ -7,7 +7,7 @@ fn main() {
         use hydroflow::{var_expr, var_args};
         let mut df = hydroflow::scheduled::graph::Hydroflow::new();
         df.__assign_meta_graph(
-            "{\"nodes\":[{\"value\":null,\"version\":0},{\"value\":{\"Operator\":\"merge ()\"},\"version\":1},{\"value\":{\"Operator\":\"unique :: < 'tick > ()\"},\"version\":1},{\"value\":{\"Operator\":\"tee ()\"},\"version\":1},{\"value\":{\"Operator\":\"merge ()\"},\"version\":1},{\"value\":{\"Operator\":\"unique :: < 'tick > ()\"},\"version\":1},{\"value\":{\"Operator\":\"tee ()\"},\"version\":1},{\"value\":{\"Operator\":\"source_stream (strings)\"},\"version\":1},{\"value\":{\"Operator\":\"for_each (| v | result . send (v) . unwrap ())\"},\"version\":1},{\"value\":{\"Operator\":\"map (| row : (_ ,) | (row . 0 . clone () , row . 0 ,))\"},\"version\":1}],\"graph\":[{\"value\":null,\"version\":0},{\"value\":[{\"idx\":2,\"version\":1},{\"idx\":3,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":1,\"version\":1},{\"idx\":2,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":5,\"version\":1},{\"idx\":6,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":4,\"version\":1},{\"idx\":5,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":7,\"version\":1},{\"idx\":1,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":6,\"version\":1},{\"idx\":8,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":9,\"version\":1},{\"idx\":4,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":3,\"version\":1},{\"idx\":9,\"version\":1}],\"version\":1}],\"ports\":[{\"value\":null,\"version\":0},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",{\"Int\":\"0\"}],\"version\":1},{\"value\":[{\"Int\":\"0\"},\"Elided\"],\"version\":1},{\"value\":[\"Elided\",{\"Int\":\"0\"}],\"version\":1},{\"value\":[{\"Int\":\"0\"},\"Elided\"],\"version\":1}],\"node_subgraph\":[{\"value\":null,\"version\":0},{\"value\":{\"idx\":1,\"version\":1},\"version\":1},{\"value\":{\"idx\":1,\"version\":1},\"version\":1},{\"value\":{\"idx\":1,\"version\":1},\"version\":1},{\"value\":{\"idx\":1,\"version\":1},\"version\":1},{\"value\":{\"idx\":1,\"version\":1},\"version\":1},{\"value\":{\"idx\":1,\"version\":1},\"version\":1},{\"value\":{\"idx\":1,\"version\":1},\"version\":1},{\"value\":{\"idx\":1,\"version\":1},\"version\":1},{\"value\":{\"idx\":1,\"version\":1},\"version\":1}],\"subgraph_nodes\":[{\"value\":null,\"version\":0},{\"value\":[{\"idx\":7,\"version\":1},{\"idx\":1,\"version\":1},{\"idx\":2,\"version\":1},{\"idx\":3,\"version\":1},{\"idx\":9,\"version\":1},{\"idx\":4,\"version\":1},{\"idx\":5,\"version\":1},{\"idx\":6,\"version\":1},{\"idx\":8,\"version\":1}],\"version\":1}],\"subgraph_stratum\":[{\"value\":null,\"version\":0},{\"value\":0,\"version\":1}],\"node_varnames\":[{\"value\":null,\"version\":0},{\"value\":\"strings\",\"version\":1},{\"value\":\"strings\",\"version\":1},{\"value\":\"strings\",\"version\":1},{\"value\":\"result\",\"version\":1},{\"value\":\"result\",\"version\":1},{\"value\":\"result\",\"version\":1}]}",
+            "{\"nodes\":[{\"value\":null,\"version\":0},{\"value\":null,\"version\":2},{\"value\":{\"Operator\":\"unique :: < 'tick > ()\"},\"version\":1},{\"value\":null,\"version\":2},{\"value\":null,\"version\":2},{\"value\":{\"Operator\":\"unique :: < 'tick > ()\"},\"version\":1},{\"value\":null,\"version\":2},{\"value\":{\"Operator\":\"source_stream (strings)\"},\"version\":1},{\"value\":{\"Operator\":\"for_each (| v | result . send (v) . unwrap ())\"},\"version\":1},{\"value\":{\"Operator\":\"map (| row : (_ ,) | (row . 0 . clone () , row . 0 ,))\"},\"version\":1}],\"graph\":[{\"value\":null,\"version\":0},{\"value\":null,\"version\":2},{\"value\":[{\"idx\":7,\"version\":1},{\"idx\":2,\"version\":1}],\"version\":3},{\"value\":null,\"version\":2},{\"value\":[{\"idx\":9,\"version\":1},{\"idx\":5,\"version\":1}],\"version\":3},{\"value\":null,\"version\":2},{\"value\":[{\"idx\":5,\"version\":1},{\"idx\":8,\"version\":1}],\"version\":3},{\"value\":null,\"version\":2},{\"value\":[{\"idx\":2,\"version\":1},{\"idx\":9,\"version\":1}],\"version\":3}],\"ports\":[{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":null,\"version\":0},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":null,\"version\":0},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":null,\"version\":0},{\"value\":[\"Elided\",\"Elided\"],\"version\":3}],\"node_subgraph\":[{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":{\"idx\":1,\"version\":1},\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":{\"idx\":1,\"version\":1},\"version\":1},{\"value\":null,\"version\":0},{\"value\":{\"idx\":1,\"version\":1},\"version\":1},{\"value\":{\"idx\":1,\"version\":1},\"version\":1},{\"value\":{\"idx\":1,\"version\":1},\"version\":1}],\"subgraph_nodes\":[{\"value\":null,\"version\":0},{\"value\":[{\"idx\":7,\"version\":1},{\"idx\":2,\"version\":1},{\"idx\":9,\"version\":1},{\"idx\":5,\"version\":1},{\"idx\":8,\"version\":1}],\"version\":1}],\"subgraph_stratum\":[{\"value\":null,\"version\":0},{\"value\":0,\"version\":1}],\"node_varnames\":[{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":\"strings\",\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":\"result\",\"version\":1}]}",
         );
         df.__assign_diagnostics("[]");
         let mut sg_1v1_node_7v1_stream = {
@@ -66,28 +66,7 @@ fn main() {
                     }
                     check_op_7v1(op_7v1)
                 };
-                let op_1v1 = {
-                    #[allow(unused)]
-                    #[inline(always)]
-                    fn check_inputs<
-                        A: ::std::iter::Iterator<Item = Item>,
-                        B: ::std::iter::Iterator<Item = Item>,
-                        Item,
-                    >(a: A, b: B) -> impl ::std::iter::Iterator<Item = Item> {
-                        a.chain(b)
-                    }
-                    op_7v1
-                };
-                let op_1v1 = {
-                    #[inline(always)]
-                    pub fn check_op_1v1<Input: ::std::iter::Iterator<Item = Item>, Item>(
-                        input: Input,
-                    ) -> impl ::std::iter::Iterator<Item = Item> {
-                        input
-                    }
-                    check_op_1v1(op_1v1)
-                };
-                let op_2v1 = op_1v1
+                let op_2v1 = op_7v1
                     .filter(|item| {
                         let mut borrow = context
                             .state_ref(sg_1v1_node_2v1_uniquedata)
@@ -113,17 +92,7 @@ fn main() {
                     }
                     check_op_2v1(op_2v1)
                 };
-                let op_3v1 = op_2v1;
-                let op_3v1 = {
-                    #[inline(always)]
-                    pub fn check_op_3v1<Input: ::std::iter::Iterator<Item = Item>, Item>(
-                        input: Input,
-                    ) -> impl ::std::iter::Iterator<Item = Item> {
-                        input
-                    }
-                    check_op_3v1(op_3v1)
-                };
-                let op_9v1 = op_3v1.map(|row: (_,)| (row.0.clone(), row.0));
+                let op_9v1 = op_2v1.map(|row: (_,)| (row.0.clone(), row.0));
                 let op_9v1 = {
                     #[inline(always)]
                     pub fn check_op_9v1<Input: ::std::iter::Iterator<Item = Item>, Item>(
@@ -133,28 +102,7 @@ fn main() {
                     }
                     check_op_9v1(op_9v1)
                 };
-                let op_4v1 = {
-                    #[allow(unused)]
-                    #[inline(always)]
-                    fn check_inputs<
-                        A: ::std::iter::Iterator<Item = Item>,
-                        B: ::std::iter::Iterator<Item = Item>,
-                        Item,
-                    >(a: A, b: B) -> impl ::std::iter::Iterator<Item = Item> {
-                        a.chain(b)
-                    }
-                    op_9v1
-                };
-                let op_4v1 = {
-                    #[inline(always)]
-                    pub fn check_op_4v1<Input: ::std::iter::Iterator<Item = Item>, Item>(
-                        input: Input,
-                    ) -> impl ::std::iter::Iterator<Item = Item> {
-                        input
-                    }
-                    check_op_4v1(op_4v1)
-                };
-                let op_5v1 = op_4v1
+                let op_5v1 = op_9v1
                     .filter(|item| {
                         let mut borrow = context
                             .state_ref(sg_1v1_node_5v1_uniquedata)
@@ -180,16 +128,6 @@ fn main() {
                     }
                     check_op_5v1(op_5v1)
                 };
-                let op_6v1 = op_5v1;
-                let op_6v1 = {
-                    #[inline(always)]
-                    pub fn check_op_6v1<Input: ::std::iter::Iterator<Item = Item>, Item>(
-                        input: Input,
-                    ) -> impl ::std::iter::Iterator<Item = Item> {
-                        input
-                    }
-                    check_op_6v1(op_6v1)
-                };
                 let op_8v1 = hydroflow::pusherator::for_each::ForEach::new(|v| {
                     result.send(v).unwrap()
                 });
@@ -213,7 +151,7 @@ fn main() {
                 >(pull: Pull, push: Push) {
                     hydroflow::pusherator::pivot::Pivot::new(pull, push).run();
                 }
-                check_pivot_run(op_6v1, op_8v1);
+                check_pivot_run(op_5v1, op_8v1);
             },
         );
         df

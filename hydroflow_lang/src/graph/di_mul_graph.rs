@@ -84,8 +84,8 @@ where
             assert_eq!(set.len(), pred_list.len());
         }
 
-        // Missing edges and duplicate edges could cancel each other out. But this would be caught
-        // by the above.
+        // Note: Missing edges and duplicate edges could cancel each other out. But that case is
+        // caught by the above.
         assert_eq!(
             self.edges.len(),
             self.succs.values().map(|vec| vec.len()).sum::<usize>(),
@@ -155,6 +155,25 @@ where
 
         self.assert_valid();
         Some((e0, e1))
+    }
+
+    /// For a vertex with one incoming edge and one outgoing edge, removes the vertex. Inserts a new edge.
+    /// Returns `(new edge, (old edge in, old edge out))`.
+    /// Returns `None` if `vertex` is not in the graph or does not have the right degree in/out.
+    pub fn remove_intermediate_vertex(&mut self, vertex: V) -> Option<(E, (E, E))> {
+        let preds = self.preds.remove(vertex)?;
+        let &[pred_edge] = &*preds else { return None; };
+        let succs = self.succs.remove(vertex).unwrap();
+        let &[succ_edge] = &*succs else { return None; };
+
+        let (src, _v) = self.edges.remove(pred_edge).unwrap();
+        let (_v, dst) = self.edges.remove(succ_edge).unwrap();
+
+        self.succs[src].retain(|&e| e != pred_edge);
+        self.preds[dst].retain(|&e| e != succ_edge);
+
+        let new_edge = self.insert_edge(src, dst);
+        Some((new_edge, (pred_edge, succ_edge)))
     }
 
     /// Get the source and destination vertex IDs for the given edge ID.

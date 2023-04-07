@@ -18,12 +18,14 @@ use crate::pretty_span::PrettySpan;
 use self::ops::{OperatorConstraints, Persistence};
 
 mod di_mul_graph;
+mod eliminate_extra_merges_tees;
 mod flat_graph_builder;
 mod flat_to_partitioned;
 mod graph_write;
 mod hydroflow_graph;
 
 pub use di_mul_graph::DiMulGraph;
+pub use eliminate_extra_merges_tees::eliminate_extra_merges_tees;
 pub use flat_graph_builder::FlatGraphBuilder;
 pub use flat_to_partitioned::partition_graph;
 pub use hydroflow_graph::HydroflowGraph;
@@ -329,7 +331,8 @@ pub fn build_hfcode(
     root: &TokenStream,
 ) -> (Option<(HydroflowGraph, TokenStream)>, Vec<Diagnostic>) {
     let flat_graph_builder = FlatGraphBuilder::from_hfcode(hf_code);
-    let (flat_graph, mut diagnostics) = flat_graph_builder.build();
+    let (mut flat_graph, mut diagnostics) = flat_graph_builder.build();
+    eliminate_extra_merges_tees(&mut flat_graph);
     if !diagnostics.iter().any(Diagnostic::is_error) {
         match partition_graph(flat_graph) {
             Ok(part_graph) => {
