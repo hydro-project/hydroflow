@@ -743,6 +743,18 @@ mod tests {
     }
 
     #[test]
+    fn wildcard_fields() {
+        test_snapshots!(
+            r#"
+            .input input `source_stream(input)`
+            .output out `for_each(|v| out.send(v).unwrap())`
+
+            out(x) :- input(x, _), input(_, x).
+            "#
+        );
+    }
+
+    #[test]
     fn join_with_other() {
         test_snapshots!(
             r#"
