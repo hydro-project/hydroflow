@@ -21,6 +21,7 @@ pub mod datalog {
             Spanned<Ident>,
             RustSnippet,
         ),
+        Persist(#[rust_sitter::leaf(text = ".persist")] (), Spanned<Ident>),
         Async(
             #[rust_sitter::leaf(text = ".async")] (),
             Spanned<Ident>,
