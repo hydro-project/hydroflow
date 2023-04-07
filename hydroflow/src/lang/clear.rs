@@ -1,3 +1,4 @@
+use rustc_hash::{FxHashMap, FxHashSet};
 use std::collections::{BTreeMap, BTreeSet, BinaryHeap, HashMap, HashSet, LinkedList, VecDeque};
 use std::ffi::OsString;
 
@@ -46,7 +47,9 @@ clear_impl!(BTreeMap<K, V>);
 clear_impl!(BTreeSet<T>);
 clear_impl!(BinaryHeap<T>);
 clear_impl!(HashMap<K, V>);
+clear_impl!(FxHashMap<K, V>);
 clear_impl!(HashSet<T>);
+clear_impl!(FxHashSet<T>);
 clear_impl!(LinkedList<T>);
 clear_impl!(OsString);
 clear_impl!(String);
