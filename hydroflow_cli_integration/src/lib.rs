@@ -20,17 +20,17 @@ use pin_project::pin_project;
 
 use tokio::net::{TcpListener, TcpStream};
 use tokio::{io, task::JoinHandle};
+use tokio_util::codec::{FramedRead, FramedWrite, LengthDelimitedCodec};
 
 #[cfg(unix)]
 use tokio::net::{UnixListener, UnixStream};
-
-use tokio_util::codec::{FramedRead, FramedWrite, LengthDelimitedCodec};
 
 #[cfg(not(unix))]
 #[allow(dead_code)]
 type UnixStream = !;
 
 #[cfg(not(unix))]
+#[allow(dead_code)]
 type UnixListener = !;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -168,7 +168,7 @@ impl BoundConnection {
 
                 #[cfg(not(unix))]
                 {
-                    let _ = listener;
+                    let _ = tempdir;
                     panic!("Unix sockets are not supported on this platform")
                 }
             }
