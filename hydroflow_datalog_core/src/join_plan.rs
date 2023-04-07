@@ -16,7 +16,8 @@ use crate::{
 /// Captures the tree of joins used to compute contributions from a single rule.
 pub enum JoinPlan<'a> {
     /// A single relation without any joins, leaves of the tree.
-    Source(&'a Spanned<InputRelationExpr>),
+    /// Second element is whether this is a persisted relation.
+    Source(&'a Spanned<InputRelationExpr>, bool),
     /// A join between two subtrees.
     Join(Box<JoinPlan<'a>>, Box<JoinPlan<'a>>),
     AntiJoin(Box<JoinPlan<'a>>, Box<JoinPlan<'a>>),
@@ -30,6 +31,8 @@ pub enum JoinPlan<'a> {
 pub struct IntermediateJoinNode {
     /// The name of the Hydroflow node that this join outputs to.
     pub name: syn::Ident,
+    /// If true, the correct dataflow for this node ends in a `persist()` operator.
+    pub persisted: bool,
     /// If this join node outputs data through a `tee()` operator, this is the index to consume the node with.
     /// (this is only used for cases where we are directly reading a relation)
     pub tee_idx: Option<isize>,
@@ -114,12 +117,20 @@ fn emit_join_input_pipeline(
         parse_quote_spanned!(source_expanded.span=> map(|_v: #source_type| ((#(#hash_keys, )*), (#(#not_hash_keys, )*))) -> [#out_index] #join_node)
     };
 
+    let rhs = if anti_join && source_expanded.persisted {
+        parse_quote_spanned!(source_expanded.span=> persist() -> unique::<'tick>() -> #rhs)
+    } else {
+        rhs
+    };
+
     let statement = match source_expanded.tee_idx {
         Some(i) => {
             let in_index = syn::LitInt::new(&format!("{}", i), Span::call_site());
             parse_quote_spanned!(source_expanded.span=> #source_name [#in_index] -> #rhs)
         }
-        None => parse_quote_spanned!(source_expanded.span=> #source_name -> #rhs),
+        None => {
+            parse_quote_spanned!(source_expanded.span=> #source_name -> #rhs)
+        }
     };
 
     flat_graph_builder.add_statement(statement);
@@ -216,7 +227,7 @@ pub fn expand_join_plan(
     get_span: &impl Fn((usize, usize)) -> Span,
 ) -> IntermediateJoinNode {
     match plan {
-        JoinPlan::Source(target) => {
+        JoinPlan::Source(target, persisted) => {
             let mut variable_mapping = BTreeMap::new();
             let mut row_types: Vec<syn::Type> = vec![];
 
@@ -244,6 +255,7 @@ pub fn expand_join_plan(
             if local_constraints.is_empty() {
                 return IntermediateJoinNode {
                     name: syn::Ident::new(&target.name.name, get_span(target.name.span)),
+                    persisted: *persisted,
                     tee_idx: Some(tee_index),
                     variable_mapping,
                     tuple_type: row_type,
@@ -270,6 +282,7 @@ pub fn expand_join_plan(
 
             IntermediateJoinNode {
                 name: filter_node,
+                persisted: *persisted,
                 tee_idx: None,
                 variable_mapping,
                 tuple_type: row_type,
@@ -397,12 +410,24 @@ pub fn expand_join_plan(
                 parse_quote!(|kv: (#key_type, (#left_type, #right_type))| (#(#flattened_tuple_elems, )*))
             };
 
+            let (lt_left, lt_right, is_persist): (syn::Lifetime, syn::Lifetime, bool) =
+                if left_expanded.persisted && !right_expanded.persisted && !is_anti {
+                    (parse_quote!('static), parse_quote!('tick), false)
+                } else if !left_expanded.persisted && right_expanded.persisted && !is_anti {
+                    (parse_quote!('tick), parse_quote!('static), false)
+                } else if left_expanded.persisted && right_expanded.persisted && !is_anti {
+                    (parse_quote!('static), parse_quote!('static), true)
+                } else {
+                    (parse_quote!('tick), parse_quote!('tick), false)
+                };
+
             if is_anti {
+                // this is always a 'tick join, so we place a persist operator in the join input pipeline
                 flat_graph_builder
                     .add_statement(parse_quote_spanned!(get_span(rule_span)=> #join_node = anti_join() -> map(#flatten_closure)));
             } else {
                 flat_graph_builder.add_statement(
-                    parse_quote_spanned!(get_span(rule_span)=> #join_node = join::<'tick>() -> map(#flatten_closure)),
+                    parse_quote_spanned!(get_span(rule_span)=> #join_node = join::<#lt_left, #lt_right>() -> map(#flatten_closure)),
                 );
             }
 
@@ -413,6 +438,7 @@ pub fn expand_join_plan(
 
             let intermediate = IntermediateJoinNode {
                 name: join_node.clone(),
+                persisted: is_persist,
                 tee_idx: None,
                 variable_mapping: flattened_mapping,
                 tuple_type: output_type,
@@ -508,6 +534,7 @@ pub fn expand_join_plan(
 
             IntermediateJoinNode {
                 name: predicate_filter_node,
+                persisted: inner_expanded.persisted,
                 tee_idx: None,
                 variable_mapping: inner_expanded.variable_mapping,
                 tuple_type: row_type,
@@ -580,6 +607,7 @@ pub fn expand_join_plan(
 
             IntermediateJoinNode {
                 name: magic_node,
+                persisted: inner_expanded.persisted,
                 tee_idx: None,
                 variable_mapping: flattened_mapping,
                 tuple_type: repeat_tuple::<syn::Type, syn::Type>(
