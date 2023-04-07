@@ -1,5 +1,3 @@
-use super::clear::Clear;
-
 /// A map-like interface which in reality only stores one value at a time. The keys must be
 /// monotonically increasing (i.e. timestamps). For Hydroflow, this allows state to be stored which
 /// resets each tick by using the tick counter as the key. In the generic `Map` case it can be
@@ -8,7 +6,6 @@ use super::clear::Clear;
 pub struct MonotonicMap<K, V>
 where
     K: PartialOrd,
-    V: Clear,
 {
     key: Option<K>,
     val: V,
@@ -17,7 +14,7 @@ where
 impl<K, V> Default for MonotonicMap<K, V>
 where
     K: PartialOrd,
-    V: Clear + Default,
+    V: Default,
 {
     fn default() -> Self {
         Self {
@@ -30,7 +27,6 @@ where
 impl<K, V> MonotonicMap<K, V>
 where
     K: PartialOrd,
-    V: Clear,
 {
     /// Creates a new `MonotonicMap` initialized with the given value. The
     /// vaue will be `Clear`ed before it is accessed.
