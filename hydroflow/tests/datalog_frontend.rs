@@ -73,6 +73,28 @@ pub fn test_join_with_self() {
 }
 
 #[multiplatform_test]
+pub fn test_wildcard_fields() {
+    let (in_send, input) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (out, mut out_recv) = hydroflow::util::unbounded_channel::<(usize,)>();
+
+    let mut flow = datalog!(
+        r#"
+        .input input `source_stream(input)`
+        .output out `for_each(|v| out.send(v).unwrap())`
+
+        out(x) :- input(x, _), input(_, x).
+        "#
+    );
+
+    in_send.send((1, 2)).unwrap();
+    in_send.send((3, 1)).unwrap();
+
+    flow.run_tick();
+
+    assert_eq!(&*collect_ready::<Vec<_>, _>(&mut out_recv), &[(1,)]);
+}
+
+#[multiplatform_test]
 pub fn test_multi_use_intermediate() {
     let (in_send, input) = hydroflow::util::unbounded_channel::<(usize, usize)>();
     let (out, mut out_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
