@@ -583,6 +583,15 @@
 <a href="#583" id="583">583</a>
 <a href="#584" id="584">584</a>
 <a href="#585" id="585">585</a>
+<a href="#586" id="586">586</a>
+<a href="#587" id="587">587</a>
+<a href="#588" id="588">588</a>
+<a href="#589" id="589">589</a>
+<a href="#590" id="590">590</a>
+<a href="#591" id="591">591</a>
+<a href="#592" id="592">592</a>
+<a href="#593" id="593">593</a>
+<a href="#594" id="594">594</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::collections::{btree_map::Entry, BTreeMap, HashMap};
 
 <span class="kw">use </span>hydroflow_lang::diagnostic::Level;
@@ -722,11 +731,13 @@
 ) -&gt; BTreeMap&lt;String, Vec&lt;usize&gt;&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>indices_grouped_by_var = BTreeMap::new();
     <span class="kw">for </span>(i, ident) <span class="kw">in </span>fields.enumerate() {
-        <span class="kw">let </span>entry = indices_grouped_by_var
-            <span class="comment">// TODO(shadaj): Can we avoid cloning here?
-            </span>.entry(ident.name.clone())
-            .or_insert_with(Vec::new);
-        entry.push(i);
+        <span class="kw">if </span>ident.name != <span class="string">&quot;_&quot; </span>{
+            <span class="kw">let </span>entry = indices_grouped_by_var
+                <span class="comment">// TODO(shadaj): Can we avoid cloning here?
+                </span>.entry(ident.name.clone())
+                .or_insert_with(Vec::new);
+            entry.push(i);
+        }
     }
 
     indices_grouped_by_var.retain(|<span class="kw">_</span>, v| v.len() &gt; <span class="number">1</span>);
@@ -819,8 +830,10 @@
             <span class="kw">for </span>(i, ident) <span class="kw">in </span>target.fields.iter().enumerate() {
                 row_types.push(<span class="macro">parse_quote!</span>(<span class="kw">_</span>));
 
-                <span class="kw">if let </span>Entry::Vacant(e) = variable_mapping.entry(ident.name.clone()) {
-                    e.insert(i);
+                <span class="kw">if </span>ident.name != <span class="string">&quot;_&quot; </span>{
+                    <span class="kw">if let </span>Entry::Vacant(e) = variable_mapping.entry(ident.name.clone()) {
+                        e.insert(i);
+                    }
                 }
             }
 
@@ -1149,7 +1162,12 @@
             }
 
             flattened_elements.push(<span class="macro">parse_quote!</span>(v));
-            flattened_mapping.insert(less_than.name.clone(), flattened_elements.len() - <span class="number">1</span>);
+
+            <span class="kw">if </span>less_than.name == threshold.name {
+                <span class="macro">panic!</span>(<span class="string">&quot;The threshold and less_than variables must be different&quot;</span>)
+            } <span class="kw">else if </span>less_than.name != <span class="string">&quot;_&quot; </span>{
+                flattened_mapping.insert(less_than.name.clone(), flattened_elements.len() - <span class="number">1</span>);
+            }
 
             flat_graph_builder.add_statement(<span class="macro">parse_quote_spanned! </span>{get_span(rule_span)=&gt;
                 #magic_node = #inner_name -&gt; flat_map(|row: #row_type| (<span class="number">0</span>..(row.#threshold_index)).map(<span class="kw">move </span>|v| (#(#flattened_elements, )<span class="kw-2">*</span>)) )

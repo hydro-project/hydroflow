@@ -951,6 +951,19 @@
 <a href="#951" id="951">951</a>
 <a href="#952" id="952">952</a>
 <a href="#953" id="953">953</a>
+<a href="#954" id="954">954</a>
+<a href="#955" id="955">955</a>
+<a href="#956" id="956">956</a>
+<a href="#957" id="957">957</a>
+<a href="#958" id="958">958</a>
+<a href="#959" id="959">959</a>
+<a href="#960" id="960">960</a>
+<a href="#961" id="961">961</a>
+<a href="#962" id="962">962</a>
+<a href="#963" id="963">963</a>
+<a href="#964" id="964">964</a>
+<a href="#965" id="965">965</a>
+<a href="#966" id="966">966</a>
 </pre><pre class="rust"><code><span class="kw">use </span>rust_sitter::{
     errors::{ParseError, ParseErrorReason},
     Spanned,
@@ -959,7 +972,7 @@
 
 <span class="kw">use </span>hydroflow_lang::{
     diagnostic::{Diagnostic, Level},
-    graph::{partition_graph, FlatGraphBuilder, HydroflowGraph},
+    graph::{eliminate_extra_merges_tees, partition_graph, FlatGraphBuilder, HydroflowGraph},
     parse::{IndexInt, Indexing, Pipeline, PipelineLink},
 };
 <span class="kw">use </span>proc_macro2::{Span, TokenStream};
@@ -1146,11 +1159,12 @@
     <span class="kw">if </span>!diagnostics.is_empty() {
         <span class="prelude-val">Err</span>(diagnostics)
     } <span class="kw">else </span>{
-        <span class="kw">let </span>(flat_graph, <span class="kw-2">mut </span>diagnostics) = flat_graph_builder.build();
+        <span class="kw">let </span>(<span class="kw-2">mut </span>flat_graph, <span class="kw-2">mut </span>diagnostics) = flat_graph_builder.build();
         diagnostics.retain(Diagnostic::is_error);
         <span class="kw">if </span>!diagnostics.is_empty() {
             <span class="prelude-val">Err</span>(diagnostics)
         } <span class="kw">else </span>{
+            eliminate_extra_merges_tees(<span class="kw-2">&amp;mut </span>flat_graph);
             <span class="prelude-val">Ok</span>(flat_graph)
         }
     }
@@ -1690,6 +1704,18 @@
             .output out `for_each(|v| out.send(v).unwrap())`
 
             out(x, y) :- input(x, y), input(y, x).
+            &quot;#
+        </span>);
+    }
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>wildcard_fields() {
+        <span class="macro">test_snapshots!</span>(
+            <span class="string">r#&quot;
+            .input input `source_stream(input)`
+            .output out `for_each(|v| out.send(v).unwrap())`
+
+            out(x) :- input(x, _), input(_, x).
             &quot;#
         </span>);
     }

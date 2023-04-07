@@ -298,6 +298,25 @@
 <a href="#298" id="298">298</a>
 <a href="#299" id="299">299</a>
 <a href="#300" id="300">300</a>
+<a href="#301" id="301">301</a>
+<a href="#302" id="302">302</a>
+<a href="#303" id="303">303</a>
+<a href="#304" id="304">304</a>
+<a href="#305" id="305">305</a>
+<a href="#306" id="306">306</a>
+<a href="#307" id="307">307</a>
+<a href="#308" id="308">308</a>
+<a href="#309" id="309">309</a>
+<a href="#310" id="310">310</a>
+<a href="#311" id="311">311</a>
+<a href="#312" id="312">312</a>
+<a href="#313" id="313">313</a>
+<a href="#314" id="314">314</a>
+<a href="#315" id="315">315</a>
+<a href="#316" id="316">316</a>
+<a href="#317" id="317">317</a>
+<a href="#318" id="318">318</a>
+<a href="#319" id="319">319</a>
 </pre><pre class="rust"><code><span class="attr">#![deny(missing_docs)]
 
 </span><span class="kw">use </span>std::collections::BTreeSet;
@@ -384,8 +403,8 @@
             <span class="macro">assert_eq!</span>(set.len(), pred_list.len());
         }
 
-        <span class="comment">// Missing edges and duplicate edges could cancel each other out. But this would be caught
-        // by the above.
+        <span class="comment">// Note: Missing edges and duplicate edges could cancel each other out. But that case is
+        // caught by the above.
         </span><span class="macro">assert_eq!</span>(
             <span class="self">self</span>.edges.len(),
             <span class="self">self</span>.succs.values().map(|vec| vec.len()).sum::&lt;usize&gt;(),
@@ -455,6 +474,25 @@
 
         <span class="self">self</span>.assert_valid();
         <span class="prelude-val">Some</span>((e0, e1))
+    }
+
+    <span class="doccomment">/// For a vertex with one incoming edge and one outgoing edge, removes the vertex. Inserts a new edge.
+    /// Returns `(new edge, (old edge in, old edge out))`.
+    /// Returns `None` if `vertex` is not in the graph or does not have the right degree in/out.
+    </span><span class="kw">pub fn </span>remove_intermediate_vertex(<span class="kw-2">&amp;mut </span><span class="self">self</span>, vertex: V) -&gt; <span class="prelude-ty">Option</span>&lt;(E, (E, E))&gt; {
+        <span class="kw">let </span>preds = <span class="self">self</span>.preds.remove(vertex)<span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">&amp;</span>[pred_edge] = <span class="kw-2">&amp;*</span>preds <span class="kw">else </span>{ <span class="kw">return </span><span class="prelude-val">None</span>; };
+        <span class="kw">let </span>succs = <span class="self">self</span>.succs.remove(vertex).unwrap();
+        <span class="kw">let </span><span class="kw-2">&amp;</span>[succ_edge] = <span class="kw-2">&amp;*</span>succs <span class="kw">else </span>{ <span class="kw">return </span><span class="prelude-val">None</span>; };
+
+        <span class="kw">let </span>(src, _v) = <span class="self">self</span>.edges.remove(pred_edge).unwrap();
+        <span class="kw">let </span>(_v, dst) = <span class="self">self</span>.edges.remove(succ_edge).unwrap();
+
+        <span class="self">self</span>.succs[src].retain(|<span class="kw-2">&amp;</span>e| e != pred_edge);
+        <span class="self">self</span>.preds[dst].retain(|<span class="kw-2">&amp;</span>e| e != succ_edge);
+
+        <span class="kw">let </span>new_edge = <span class="self">self</span>.insert_edge(src, dst);
+        <span class="prelude-val">Some</span>((new_edge, (pred_edge, succ_edge)))
     }
 
     <span class="doccomment">/// Get the source and destination vertex IDs for the given edge ID.

@@ -1102,6 +1102,35 @@
 <a href="#1102" id="1102">1102</a>
 <a href="#1103" id="1103">1103</a>
 <a href="#1104" id="1104">1104</a>
+<a href="#1105" id="1105">1105</a>
+<a href="#1106" id="1106">1106</a>
+<a href="#1107" id="1107">1107</a>
+<a href="#1108" id="1108">1108</a>
+<a href="#1109" id="1109">1109</a>
+<a href="#1110" id="1110">1110</a>
+<a href="#1111" id="1111">1111</a>
+<a href="#1112" id="1112">1112</a>
+<a href="#1113" id="1113">1113</a>
+<a href="#1114" id="1114">1114</a>
+<a href="#1115" id="1115">1115</a>
+<a href="#1116" id="1116">1116</a>
+<a href="#1117" id="1117">1117</a>
+<a href="#1118" id="1118">1118</a>
+<a href="#1119" id="1119">1119</a>
+<a href="#1120" id="1120">1120</a>
+<a href="#1121" id="1121">1121</a>
+<a href="#1122" id="1122">1122</a>
+<a href="#1123" id="1123">1123</a>
+<a href="#1124" id="1124">1124</a>
+<a href="#1125" id="1125">1125</a>
+<a href="#1126" id="1126">1126</a>
+<a href="#1127" id="1127">1127</a>
+<a href="#1128" id="1128">1128</a>
+<a href="#1129" id="1129">1129</a>
+<a href="#1130" id="1130">1130</a>
+<a href="#1131" id="1131">1131</a>
+<a href="#1132" id="1132">1132</a>
+<a href="#1133" id="1133">1133</a>
 </pre><pre class="rust"><code><span class="attr">#![deny(missing_docs)]
 
 </span><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet, HashSet};
@@ -1457,6 +1486,35 @@
             .insert(e1, (PortIndexValue::Elided(span), dst_idx));
 
         (node_id, e1)
+    }
+
+    <span class="doccomment">/// Remove the node `node_id` but preserves and connects the single predecessor and single successor.
+    /// Panics if the node does not have exactly one predecessor and one successor, or is not in the graph.
+    </span><span class="kw">pub fn </span>remove_intermediate_node(<span class="kw-2">&amp;mut </span><span class="self">self</span>, node_id: GraphNodeId) {
+        <span class="macro">assert_eq!</span>(
+            <span class="number">1</span>,
+            <span class="self">self</span>.node_degree_in(node_id),
+            <span class="string">&quot;Removed intermediate node must have one predecessor&quot;
+        </span>);
+        <span class="macro">assert_eq!</span>(
+            <span class="number">1</span>,
+            <span class="self">self</span>.node_degree_out(node_id),
+            <span class="string">&quot;Removed intermediate node must have one successor&quot;
+        </span>);
+        <span class="macro">assert!</span>(
+            <span class="self">self</span>.node_subgraph.is_empty() &amp;&amp; <span class="self">self</span>.subgraph_nodes.is_empty(),
+            <span class="string">&quot;Should not remove intermediate node after subgraph partitioning&quot;
+        </span>);
+
+        <span class="macro">assert!</span>(<span class="self">self</span>.nodes.remove(node_id).is_some());
+        <span class="kw">let </span>(new_edge_id, (pred_edge_id, succ_edge_id)) =
+            <span class="self">self</span>.graph.remove_intermediate_vertex(node_id).unwrap();
+        <span class="self">self</span>.operator_instances.remove(node_id);
+        <span class="self">self</span>.node_varnames.remove(node_id);
+
+        <span class="kw">let </span>(src_port, <span class="kw">_</span>) = <span class="self">self</span>.ports.remove(pred_edge_id).unwrap();
+        <span class="kw">let </span>(<span class="kw">_</span>, dst_port) = <span class="self">self</span>.ports.remove(succ_edge_id).unwrap();
+        <span class="self">self</span>.ports.insert(new_edge_id, (src_port, dst_port));
     }
 }
 <span class="comment">// Edge methods.
