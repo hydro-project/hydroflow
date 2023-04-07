@@ -1,9 +1,13 @@
 import asyncio
 import sys
+import gc
 
 async def wrap(inner, args):
     try:
         return (await inner(args), None)
+    except asyncio.CancelledError:
+        exc = sys.exc_info()
+        return (None, [exc[0], exc[1].with_traceback(None), None])
     except:
         return (None, sys.exc_info())
 
@@ -39,6 +43,8 @@ def run(inner, args):
 
     del task
     del event_loop
+
+    gc.collect()
 
     if res[1]:
         raise res[1][1].with_traceback(res[1][2])
