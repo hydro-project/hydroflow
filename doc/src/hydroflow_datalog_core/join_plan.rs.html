@@ -591,18 +591,6 @@
 <a href="#591" id="591">591</a>
 <a href="#592" id="592">592</a>
 <a href="#593" id="593">593</a>
-<a href="#594" id="594">594</a>
-<a href="#595" id="595">595</a>
-<a href="#596" id="596">596</a>
-<a href="#597" id="597">597</a>
-<a href="#598" id="598">598</a>
-<a href="#599" id="599">599</a>
-<a href="#600" id="600">600</a>
-<a href="#601" id="601">601</a>
-<a href="#602" id="602">602</a>
-<a href="#603" id="603">603</a>
-<a href="#604" id="604">604</a>
-<a href="#605" id="605">605</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::collections::{btree_map::Entry, BTreeMap, HashMap};
 <span class="kw">use </span>std::ops::Deref;
 
@@ -789,8 +777,9 @@
     diagnostics: <span class="kw-2">&amp;mut </span>Vec&lt;Diagnostic&gt;,
     get_span: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Fn((usize, usize)) -&gt; Span,
 ) -&gt; syn::Expr {
-    <span class="kw">match </span>expr {
-        IntExpr::Ident(ident) =&gt; {
+    <span class="kw">crate</span>::gen_value_expr(
+        expr,
+        <span class="kw-2">&amp;mut </span>|ident| {
             <span class="kw">if let </span><span class="prelude-val">Some</span>(col) = variable_mapping.get(<span class="kw-2">&amp;</span>ident.name) {
                 <span class="kw">let </span>idx = syn::Index::from(<span class="kw-2">*</span>col);
                 <span class="macro">parse_quote_spanned!</span>(get_span(ident.span)=&gt; row.#idx)
@@ -802,22 +791,9 @@
                 ));
                 <span class="macro">parse_quote!</span>(())
             }
-        }
-        IntExpr::Integer(i) =&gt; syn::Expr::Lit(syn::ExprLit {
-            attrs: Vec::new(),
-            lit: syn::Lit::Int(syn::LitInt::new(<span class="kw-2">&amp;</span>i.to_string(), get_span(i.span))),
-        }),
-        IntExpr::Add(l, <span class="kw">_</span>, r) =&gt; {
-            <span class="kw">let </span>l = gen_predicate_value_expr(l, variable_mapping, diagnostics, get_span);
-            <span class="kw">let </span>r = gen_predicate_value_expr(r, variable_mapping, diagnostics, get_span);
-            <span class="macro">parse_quote!</span>(#l + #r)
-        }
-        IntExpr::Sub(l, <span class="kw">_</span>, r) =&gt; {
-            <span class="kw">let </span>l = gen_predicate_value_expr(l, variable_mapping, diagnostics, get_span);
-            <span class="kw">let </span>r = gen_predicate_value_expr(r, variable_mapping, diagnostics, get_span);
-            <span class="macro">parse_quote!</span>(#l - #r)
-        }
-    }
+        },
+        get_span,
+    )
 }
 
 <span class="doccomment">/// Generates a Hydroflow pipeline that computes the output to a given [`JoinPlan`].

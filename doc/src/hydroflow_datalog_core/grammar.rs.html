@@ -241,6 +241,23 @@
 <a href="#241" id="241">241</a>
 <a href="#242" id="242">242</a>
 <a href="#243" id="243">243</a>
+<a href="#244" id="244">244</a>
+<a href="#245" id="245">245</a>
+<a href="#246" id="246">246</a>
+<a href="#247" id="247">247</a>
+<a href="#248" id="248">248</a>
+<a href="#249" id="249">249</a>
+<a href="#250" id="250">250</a>
+<a href="#251" id="251">251</a>
+<a href="#252" id="252">252</a>
+<a href="#253" id="253">253</a>
+<a href="#254" id="254">254</a>
+<a href="#255" id="255">255</a>
+<a href="#256" id="256">256</a>
+<a href="#257" id="257">257</a>
+<a href="#258" id="258">258</a>
+<a href="#259" id="259">259</a>
+<a href="#260" id="260">260</a>
 </pre><pre class="rust"><code><span class="attr">#[rust_sitter::grammar(<span class="string">&quot;datalog&quot;</span>)]
 #[allow(dead_code)]
 </span><span class="kw">pub mod </span>datalog {
@@ -451,6 +468,11 @@
             <span class="attr">#[rust_sitter::leaf(pattern = <span class="string">r&quot;[0-9]+&quot;</span>, transform = |s| s.parse().unwrap())]
             </span>Spanned&lt;i64&gt;,
         ),
+        Parenthesized(
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;(&quot;</span>)] </span>(),
+            Box&lt;IntExpr&gt;,
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;)&quot;</span>)] </span>(),
+        ),
         <span class="attr">#[rust_sitter::prec_left(<span class="number">1</span>)]
         </span>Add(
             Box&lt;IntExpr&gt;,
@@ -463,6 +485,12 @@
             <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;-&quot;</span>)] </span>(),
             Box&lt;IntExpr&gt;,
         ),
+        <span class="attr">#[rust_sitter::prec_left(<span class="number">1</span>)]
+        </span>Mod(
+            Box&lt;IntExpr&gt;,
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;%&quot;</span>)] </span>(),
+            Box&lt;IntExpr&gt;,
+        ),
     }
 
     <span class="kw">impl </span>IntExpr {
@@ -470,12 +498,18 @@
             <span class="kw">match </span><span class="self">self </span>{
                 IntExpr::Ident(i) =&gt; <span class="macro">vec!</span>[i],
                 IntExpr::Integer(<span class="kw">_</span>) =&gt; <span class="macro">vec!</span>[],
+                IntExpr::Parenthesized(<span class="kw">_</span>, e, <span class="kw">_</span>) =&gt; e.idents(),
                 IntExpr::Add(l, <span class="kw">_</span>, r) =&gt; {
                     <span class="kw">let </span><span class="kw-2">mut </span>idents = l.idents();
                     idents.extend(r.idents());
                     idents
                 }
                 IntExpr::Sub(l, <span class="kw">_</span>, r) =&gt; {
+                    <span class="kw">let </span><span class="kw-2">mut </span>idents = l.idents();
+                    idents.extend(r.idents());
+                    idents
+                }
+                IntExpr::Mod(l, <span class="kw">_</span>, r) =&gt; {
                     <span class="kw">let </span><span class="kw-2">mut </span>idents = l.idents();
                     idents.extend(r.idents());
                     idents

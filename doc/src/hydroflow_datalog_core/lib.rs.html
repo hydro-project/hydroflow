@@ -926,44 +926,6 @@
 <a href="#926" id="926">926</a>
 <a href="#927" id="927">927</a>
 <a href="#928" id="928">928</a>
-<a href="#929" id="929">929</a>
-<a href="#930" id="930">930</a>
-<a href="#931" id="931">931</a>
-<a href="#932" id="932">932</a>
-<a href="#933" id="933">933</a>
-<a href="#934" id="934">934</a>
-<a href="#935" id="935">935</a>
-<a href="#936" id="936">936</a>
-<a href="#937" id="937">937</a>
-<a href="#938" id="938">938</a>
-<a href="#939" id="939">939</a>
-<a href="#940" id="940">940</a>
-<a href="#941" id="941">941</a>
-<a href="#942" id="942">942</a>
-<a href="#943" id="943">943</a>
-<a href="#944" id="944">944</a>
-<a href="#945" id="945">945</a>
-<a href="#946" id="946">946</a>
-<a href="#947" id="947">947</a>
-<a href="#948" id="948">948</a>
-<a href="#949" id="949">949</a>
-<a href="#950" id="950">950</a>
-<a href="#951" id="951">951</a>
-<a href="#952" id="952">952</a>
-<a href="#953" id="953">953</a>
-<a href="#954" id="954">954</a>
-<a href="#955" id="955">955</a>
-<a href="#956" id="956">956</a>
-<a href="#957" id="957">957</a>
-<a href="#958" id="958">958</a>
-<a href="#959" id="959">959</a>
-<a href="#960" id="960">960</a>
-<a href="#961" id="961">961</a>
-<a href="#962" id="962">962</a>
-<a href="#963" id="963">963</a>
-<a href="#964" id="964">964</a>
-<a href="#965" id="965">965</a>
-<a href="#966" id="966">966</a>
 </pre><pre class="rust"><code><span class="kw">use </span>rust_sitter::{
     errors::{ParseError, ParseErrorReason},
     Spanned,
@@ -1387,109 +1349,49 @@
     ));
 }
 
-<span class="kw">fn </span>gen_value_expr(
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>gen_value_expr(
     expr: <span class="kw-2">&amp;</span>IntExpr,
-    field_use_count: <span class="kw-2">&amp;</span>HashMap&lt;String, i32&gt;,
-    field_use_cur: <span class="kw-2">&amp;mut </span>HashMap&lt;String, i32&gt;,
-    out_expanded: <span class="kw-2">&amp;</span>IntermediateJoinNode,
-    diagnostics: <span class="kw-2">&amp;mut </span>Vec&lt;Diagnostic&gt;,
+    lookup_ident: <span class="kw-2">&amp;mut </span><span class="kw">impl </span>FnMut(<span class="kw-2">&amp;</span>Spanned&lt;Ident&gt;) -&gt; syn::Expr,
     get_span: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Fn((usize, usize)) -&gt; Span,
 ) -&gt; syn::Expr {
     <span class="kw">match </span>expr {
-        IntExpr::Ident(ident) =&gt; {
-            <span class="kw">if let </span><span class="prelude-val">Some</span>(col) = out_expanded.variable_mapping.get(<span class="kw-2">&amp;</span>ident.name) {
-                <span class="kw">let </span>cur_count = field_use_cur
-                    .entry(ident.name.clone())
-                    .and_modify(|e| <span class="kw-2">*</span>e += <span class="number">1</span>)
-                    .or_insert(<span class="number">1</span>);
-
-                <span class="kw">let </span>source_col_idx = syn::Index::from(<span class="kw-2">*</span>col);
-                <span class="kw">let </span>base = <span class="macro">parse_quote_spanned!</span>(get_span(ident.span)=&gt; row.#source_col_idx);
-
-                <span class="kw">if </span><span class="kw-2">*</span>cur_count &lt; field_use_count[<span class="kw-2">&amp;</span>ident.name] &amp;&amp; field_use_count[<span class="kw-2">&amp;</span>ident.name] &gt; <span class="number">1 </span>{
-                    <span class="macro">parse_quote!</span>(#base.clone())
-                } <span class="kw">else </span>{
-                    base
-                }
-            } <span class="kw">else </span>{
-                diagnostics.push(Diagnostic::spanned(
-                    get_span(ident.span),
-                    Level::Error,
-                    <span class="macro">format!</span>(<span class="string">&quot;Could not find column {} in RHS of rule&quot;</span>, <span class="kw-2">&amp;</span>ident.name),
-                ));
-                <span class="macro">parse_quote!</span>(())
-            }
-        }
+        IntExpr::Ident(ident) =&gt; lookup_ident(ident),
         IntExpr::Integer(i) =&gt; syn::Expr::Lit(syn::ExprLit {
             attrs: Vec::new(),
             lit: syn::Lit::Int(syn::LitInt::new(<span class="kw-2">&amp;</span>i.to_string(), get_span(i.span))),
         }),
+        IntExpr::Parenthesized(<span class="kw">_</span>, e, <span class="kw">_</span>) =&gt; {
+            <span class="kw">let </span>inner = gen_value_expr(e, lookup_ident, get_span);
+            <span class="macro">parse_quote!</span>((#inner))
+        }
         IntExpr::Add(l, <span class="kw">_</span>, r) =&gt; {
-            <span class="kw">let </span>l = gen_value_expr(
-                l,
-                field_use_count,
-                field_use_cur,
-                out_expanded,
-                diagnostics,
-                get_span,
-            );
-            <span class="kw">let </span>r = gen_value_expr(
-                r,
-                field_use_count,
-                field_use_cur,
-                out_expanded,
-                diagnostics,
-                get_span,
-            );
+            <span class="kw">let </span>l = gen_value_expr(l, lookup_ident, get_span);
+            <span class="kw">let </span>r = gen_value_expr(r, lookup_ident, get_span);
             <span class="macro">parse_quote!</span>(#l + #r)
         }
         IntExpr::Sub(l, <span class="kw">_</span>, r) =&gt; {
-            <span class="kw">let </span>l = gen_value_expr(
-                l,
-                field_use_count,
-                field_use_cur,
-                out_expanded,
-                diagnostics,
-                get_span,
-            );
-            <span class="kw">let </span>r = gen_value_expr(
-                r,
-                field_use_count,
-                field_use_cur,
-                out_expanded,
-                diagnostics,
-                get_span,
-            );
+            <span class="kw">let </span>l = gen_value_expr(l, lookup_ident, get_span);
+            <span class="kw">let </span>r = gen_value_expr(r, lookup_ident, get_span);
             <span class="macro">parse_quote!</span>(#l - #r)
+        }
+        IntExpr::Mod(l, <span class="kw">_</span>, r) =&gt; {
+            <span class="kw">let </span>l = gen_value_expr(l, lookup_ident, get_span);
+            <span class="kw">let </span>r = gen_value_expr(r, lookup_ident, get_span);
+            <span class="macro">parse_quote!</span>(#l % #r)
         }
     }
 }
 
 <span class="kw">fn </span>gen_target_expr(
     expr: <span class="kw-2">&amp;</span>TargetExpr,
-    field_use_count: <span class="kw-2">&amp;</span>HashMap&lt;String, i32&gt;,
-    field_use_cur: <span class="kw-2">&amp;mut </span>HashMap&lt;String, i32&gt;,
-    out_expanded: <span class="kw-2">&amp;</span>IntermediateJoinNode,
-    diagnostics: <span class="kw-2">&amp;mut </span>Vec&lt;Diagnostic&gt;,
+    lookup_ident: <span class="kw-2">&amp;mut </span><span class="kw">impl </span>FnMut(<span class="kw-2">&amp;</span>Spanned&lt;Ident&gt;) -&gt; syn::Expr,
     get_span: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Fn((usize, usize)) -&gt; Span,
 ) -&gt; syn::Expr {
     <span class="kw">match </span>expr {
-        TargetExpr::Expr(expr) =&gt; gen_value_expr(
-            expr,
-            field_use_count,
-            field_use_cur,
-            out_expanded,
-            diagnostics,
-            get_span,
-        ),
-        TargetExpr::Aggregation(Aggregation { ident, .. }) =&gt; gen_value_expr(
-            <span class="kw-2">&amp;</span>IntExpr::Ident(ident.clone()),
-            field_use_count,
-            field_use_cur,
-            out_expanded,
-            diagnostics,
-            get_span,
-        ),
+        TargetExpr::Expr(expr) =&gt; gen_value_expr(expr, lookup_ident, get_span),
+        TargetExpr::Aggregation(Aggregation { ident, .. }) =&gt; {
+            gen_value_expr(<span class="kw-2">&amp;</span>IntExpr::Ident(ident.clone()), lookup_ident, get_span)
+        }
     }
 }
 
@@ -1527,10 +1429,31 @@
     {
         <span class="kw">let </span>expr: syn::Expr = gen_target_expr(
             field,
-            <span class="kw-2">&amp;</span>field_use_count,
-            <span class="kw-2">&amp;mut </span>field_use_cur,
-            out_expanded,
-            diagnostics,
+            <span class="kw-2">&amp;mut </span>|ident| {
+                <span class="kw">if let </span><span class="prelude-val">Some</span>(col) = out_expanded.variable_mapping.get(<span class="kw-2">&amp;</span>ident.name) {
+                    <span class="kw">let </span>cur_count = field_use_cur
+                        .entry(ident.name.clone())
+                        .and_modify(|e| <span class="kw-2">*</span>e += <span class="number">1</span>)
+                        .or_insert(<span class="number">1</span>);
+
+                    <span class="kw">let </span>source_col_idx = syn::Index::from(<span class="kw-2">*</span>col);
+                    <span class="kw">let </span>base = <span class="macro">parse_quote_spanned!</span>(get_span(ident.span)=&gt; row.#source_col_idx);
+
+                    <span class="kw">if </span><span class="kw-2">*</span>cur_count &lt; field_use_count[<span class="kw-2">&amp;</span>ident.name] &amp;&amp; field_use_count[<span class="kw-2">&amp;</span>ident.name] &gt; <span class="number">1
+                    </span>{
+                        <span class="macro">parse_quote!</span>(#base.clone())
+                    } <span class="kw">else </span>{
+                        base
+                    }
+                } <span class="kw">else </span>{
+                    diagnostics.push(Diagnostic::spanned(
+                        get_span(ident.span),
+                        Level::Error,
+                        <span class="macro">format!</span>(<span class="string">&quot;Could not find column {} in RHS of rule&quot;</span>, <span class="kw-2">&amp;</span>ident.name),
+                    ));
+                    <span class="macro">parse_quote!</span>(())
+                }
+            },
             get_span,
         );
 
@@ -1911,6 +1834,7 @@
             result(a + 123) :- ints(a)
             result(a + a) :- ints(a)
             result(123 - a) :- ints(a)
+            result(123 % (a + 5)) :- ints(a)
             &quot;#
         </span>);
     }
