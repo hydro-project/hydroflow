@@ -98,18 +98,18 @@ pub const UNIQUE: OperatorConstraints = OperatorConstraints {
             Persistence::Tick => {
                 let write_prologue = quote_spanned! {op_span=>
                     let #uniquedata_ident = #hydroflow.add_state(::std::cell::RefCell::new(
-                        #root::lang::monotonic_map::MonotonicMap::<_, ::std::collections::HashSet<_>>::default(),
+                        #root::lang::monotonic_map::MonotonicMap::<_, #root::rustc_hash::FxHashSet<_>>::default(),
                     ));
                 };
                 let get_set = quote_spanned! {op_span=>
                     let mut borrow = #context.state_ref(#uniquedata_ident).borrow_mut();
-                    let set = borrow.try_insert_with((#context.current_tick(), #context.current_stratum()), ::std::collections::HashSet::new);
+                    let set = borrow.try_insert_with((#context.current_tick(), #context.current_stratum()), #root::rustc_hash::FxHashSet::default);
                 };
                 (write_prologue, get_set)
             }
             Persistence::Static => {
                 let write_prologue = quote_spanned! {op_span=>
-                    let #uniquedata_ident = #hydroflow.add_state(::std::cell::RefCell::new(::std::collections::HashSet::new()));
+                    let #uniquedata_ident = #hydroflow.add_state(::std::cell::RefCell::new(#root::rustc_hash::FxHashSet::default()));
                 };
                 let get_set = quote_spanned! {op_span=>
                     let mut set = #context.state_ref(#uniquedata_ident).borrow_mut();
