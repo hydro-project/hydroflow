@@ -184,8 +184,9 @@ fn gen_predicate_value_expr(
     diagnostics: &mut Vec<Diagnostic>,
     get_span: &dyn Fn((usize, usize)) -> Span,
 ) -> syn::Expr {
-    match expr {
-        IntExpr::Ident(ident) => {
+    crate::gen_value_expr(
+        expr,
+        &mut |ident| {
             if let Some(col) = variable_mapping.get(&ident.name) {
                 let idx = syn::Index::from(*col);
                 parse_quote_spanned!(get_span(ident.span)=> row.#idx)
@@ -197,22 +198,9 @@ fn gen_predicate_value_expr(
                 ));
                 parse_quote!(())
             }
-        }
-        IntExpr::Integer(i) => syn::Expr::Lit(syn::ExprLit {
-            attrs: Vec::new(),
-            lit: syn::Lit::Int(syn::LitInt::new(&i.to_string(), get_span(i.span))),
-        }),
-        IntExpr::Add(l, _, r) => {
-            let l = gen_predicate_value_expr(l, variable_mapping, diagnostics, get_span);
-            let r = gen_predicate_value_expr(r, variable_mapping, diagnostics, get_span);
-            parse_quote!(#l + #r)
-        }
-        IntExpr::Sub(l, _, r) => {
-            let l = gen_predicate_value_expr(l, variable_mapping, diagnostics, get_span);
-            let r = gen_predicate_value_expr(r, variable_mapping, diagnostics, get_span);
-            parse_quote!(#l - #r)
-        }
-    }
+        },
+        get_span,
+    )
 }
 
 /// Generates a Hydroflow pipeline that computes the output to a given [`JoinPlan`].

@@ -421,109 +421,49 @@ fn generate_rule(
     ));
 }
 
-fn gen_value_expr(
+pub(crate) fn gen_value_expr(
     expr: &IntExpr,
-    field_use_count: &HashMap<String, i32>,
-    field_use_cur: &mut HashMap<String, i32>,
-    out_expanded: &IntermediateJoinNode,
-    diagnostics: &mut Vec<Diagnostic>,
+    lookup_ident: &mut impl FnMut(&Spanned<Ident>) -> syn::Expr,
     get_span: &dyn Fn((usize, usize)) -> Span,
 ) -> syn::Expr {
     match expr {
-        IntExpr::Ident(ident) => {
-            if let Some(col) = out_expanded.variable_mapping.get(&ident.name) {
-                let cur_count = field_use_cur
-                    .entry(ident.name.clone())
-                    .and_modify(|e| *e += 1)
-                    .or_insert(1);
-
-                let source_col_idx = syn::Index::from(*col);
-                let base = parse_quote_spanned!(get_span(ident.span)=> row.#source_col_idx);
-
-                if *cur_count < field_use_count[&ident.name] && field_use_count[&ident.name] > 1 {
-                    parse_quote!(#base.clone())
-                } else {
-                    base
-                }
-            } else {
-                diagnostics.push(Diagnostic::spanned(
-                    get_span(ident.span),
-                    Level::Error,
-                    format!("Could not find column {} in RHS of rule", &ident.name),
-                ));
-                parse_quote!(())
-            }
-        }
+        IntExpr::Ident(ident) => lookup_ident(ident),
         IntExpr::Integer(i) => syn::Expr::Lit(syn::ExprLit {
             attrs: Vec::new(),
             lit: syn::Lit::Int(syn::LitInt::new(&i.to_string(), get_span(i.span))),
         }),
+        IntExpr::Parenthesized(_, e, _) => {
+            let inner = gen_value_expr(e, lookup_ident, get_span);
+            parse_quote!((#inner))
+        }
         IntExpr::Add(l, _, r) => {
-            let l = gen_value_expr(
-                l,
-                field_use_count,
-                field_use_cur,
-                out_expanded,
-                diagnostics,
-                get_span,
-            );
-            let r = gen_value_expr(
-                r,
-                field_use_count,
-                field_use_cur,
-                out_expanded,
-                diagnostics,
-                get_span,
-            );
+            let l = gen_value_expr(l, lookup_ident, get_span);
+            let r = gen_value_expr(r, lookup_ident, get_span);
             parse_quote!(#l + #r)
         }
         IntExpr::Sub(l, _, r) => {
-            let l = gen_value_expr(
-                l,
-                field_use_count,
-                field_use_cur,
-                out_expanded,
-                diagnostics,
-                get_span,
-            );
-            let r = gen_value_expr(
-                r,
-                field_use_count,
-                field_use_cur,
-                out_expanded,
-                diagnostics,
-                get_span,
-            );
+            let l = gen_value_expr(l, lookup_ident, get_span);
+            let r = gen_value_expr(r, lookup_ident, get_span);
             parse_quote!(#l - #r)
+        }
+        IntExpr::Mod(l, _, r) => {
+            let l = gen_value_expr(l, lookup_ident, get_span);
+            let r = gen_value_expr(r, lookup_ident, get_span);
+            parse_quote!(#l % #r)
         }
     }
 }
 
 fn gen_target_expr(
     expr: &TargetExpr,
-    field_use_count: &HashMap<String, i32>,
-    field_use_cur: &mut HashMap<String, i32>,
-    out_expanded: &IntermediateJoinNode,
-    diagnostics: &mut Vec<Diagnostic>,
+    lookup_ident: &mut impl FnMut(&Spanned<Ident>) -> syn::Expr,
     get_span: &dyn Fn((usize, usize)) -> Span,
 ) -> syn::Expr {
     match expr {
-        TargetExpr::Expr(expr) => gen_value_expr(
-            expr,
-            field_use_count,
-            field_use_cur,
-            out_expanded,
-            diagnostics,
-            get_span,
-        ),
-        TargetExpr::Aggregation(Aggregation { ident, .. }) => gen_value_expr(
-            &IntExpr::Ident(ident.clone()),
-            field_use_count,
-            field_use_cur,
-            out_expanded,
-            diagnostics,
-            get_span,
-        ),
+        TargetExpr::Expr(expr) => gen_value_expr(expr, lookup_ident, get_span),
+        TargetExpr::Aggregation(Aggregation { ident, .. }) => {
+            gen_value_expr(&IntExpr::Ident(ident.clone()), lookup_ident, get_span)
+        }
     }
 }
 
@@ -561,10 +501,31 @@ fn apply_aggregations(
     {
         let expr: syn::Expr = gen_target_expr(
             field,
-            &field_use_count,
-            &mut field_use_cur,
-            out_expanded,
-            diagnostics,
+            &mut |ident| {
+                if let Some(col) = out_expanded.variable_mapping.get(&ident.name) {
+                    let cur_count = field_use_cur
+                        .entry(ident.name.clone())
+                        .and_modify(|e| *e += 1)
+                        .or_insert(1);
+
+                    let source_col_idx = syn::Index::from(*col);
+                    let base = parse_quote_spanned!(get_span(ident.span)=> row.#source_col_idx);
+
+                    if *cur_count < field_use_count[&ident.name] && field_use_count[&ident.name] > 1
+                    {
+                        parse_quote!(#base.clone())
+                    } else {
+                        base
+                    }
+                } else {
+                    diagnostics.push(Diagnostic::spanned(
+                        get_span(ident.span),
+                        Level::Error,
+                        format!("Could not find column {} in RHS of rule", &ident.name),
+                    ));
+                    parse_quote!(())
+                }
+            },
             get_span,
         );
 
@@ -945,6 +906,7 @@ mod tests {
             result(a + 123) :- ints(a)
             result(a + a) :- ints(a)
             result(123 - a) :- ints(a)
+            result(123 % (a + 5)) :- ints(a)
             "#
         );
     }
