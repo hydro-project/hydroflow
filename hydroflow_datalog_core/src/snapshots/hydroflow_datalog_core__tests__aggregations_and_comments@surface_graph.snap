@@ -2,15 +2,11 @@
 source: hydroflow_datalog_core/src/lib.rs
 expression: flat_graph_ref.surface_syntax_string()
 ---
-1v1 = merge ();
 2v1 = unique :: < 'tick > ();
 3v1 = tee ();
 4v1 = merge ();
 5v1 = unique :: < 'tick > ();
-6v1 = tee ();
-7v1 = merge ();
 8v1 = unique :: < 'tick > ();
-9v1 = tee ();
 10v1 = source_stream (ints);
 11v1 = for_each (| v | result . send (v) . unwrap ());
 12v1 = for_each (| v | result2 . send (v) . unwrap ());
@@ -26,14 +22,11 @@ expression: flat_graph_ref.surface_syntax_string()
 22v1 = map (| (g , a) | (a . 0 . unwrap () , g . 0 ,));
 
 2v1 -> 3v1;
-1v1 -> 2v1;
-5v1 -> 6v1;
+10v1 -> 2v1;
 4v1 -> 5v1;
-8v1 -> 9v1;
-7v1 -> 8v1;
-10v1 -> 1v1;
-6v1 -> 11v1;
-9v1 -> 12v1;
+22v1 -> 8v1;
+5v1 -> 11v1;
+8v1 -> 12v1;
 15v1 -> 4v1;
 14v1 -> 15v1;
 13v1 -> 14v1;
@@ -43,7 +36,6 @@ expression: flat_graph_ref.surface_syntax_string()
 17v1 -> 18v1;
 16v1 -> 17v1;
 3v1 -> 16v1;
-22v1 -> 7v1;
 21v1 -> 22v1;
 20v1 -> 21v1;
 3v1 -> 20v1;

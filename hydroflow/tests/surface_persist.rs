@@ -99,7 +99,7 @@ pub fn test_persist_replay_join() {
             -> persist()
             -> fold::<'tick>(0, |a, b| (a + b))
             -> next_stratum()
-            -> [0] product_node;
+            -> [0]product_node;
 
         source_stream(other_input) -> [1] product_node;
 

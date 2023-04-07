@@ -77,6 +77,12 @@ pub mod datalog {
     }
 
     #[derive(Debug, Clone)]
+    pub enum IdentOrUnderscore {
+        Ident(Spanned<Ident>),
+        Underscore(#[rust_sitter::leaf(text = "_")] Spanned<()>),
+    }
+
+    #[derive(Debug, Clone)]
     pub struct InputRelationExpr {
         pub name: Spanned<Ident>,
 
@@ -87,7 +93,7 @@ pub mod datalog {
             #[rust_sitter::leaf(text = ",")]
             ()
         )]
-        pub fields: Vec<Spanned<Ident>>,
+        pub fields: Vec<Spanned<IdentOrUnderscore>>,
 
         #[rust_sitter::leaf(text = ")")]
         _r_paren: (),
@@ -157,7 +163,7 @@ pub mod datalog {
 
     #[derive(Clone, PartialEq, Eq, Hash, Ord, PartialOrd, Debug)]
     pub struct Ident {
-        #[rust_sitter::leaf(pattern = r"[a-zA-Z_][a-zA-Z0-9_]*", transform = |s| s.to_string())]
+        #[rust_sitter::leaf(pattern = r"[a-zA-Z][a-zA-Z0-9_]*", transform = |s| s.to_string())]
         pub name: String,
     }
 
