@@ -11,6 +11,7 @@ use pyo3::exceptions::PyException;
 use pyo3::types::{PyBytes, PyDict};
 use pyo3::{create_exception, prelude::*, wrap_pymodule};
 use pythonize::pythonize;
+use tokio::sync::oneshot::Sender;
 use tokio::sync::RwLock;
 
 use crate::core::hydroflow_crate::ports::HydroflowSource;
@@ -20,17 +21,69 @@ pub mod core;
 
 create_exception!(hydro_cli_core, AnyhowError, PyException);
 
+#[pyclass]
+struct SafeCancelToken {
+    cancel_tx: Option<Sender<()>>,
+}
+
+#[pymethods]
+impl SafeCancelToken {
+    fn safe_cancel(&mut self) {
+        if let Some(token) = self.cancel_tx.take() {
+            eprintln!("Received cancellation, cleaning up...");
+            token.send(()).unwrap();
+        } else {
+            eprintln!("Already received cancellation, please be patient!");
+        }
+    }
+}
+
 fn interruptible_future_to_py<F, T>(py: Python<'_>, fut: F) -> PyResult<&PyAny>
 where
     F: Future<Output = PyResult<T>> + Send + 'static,
     T: IntoPy<PyObject>,
 {
-    pyo3_asyncio::tokio::future_into_py(py, async move {
+    let module = PyModule::from_code(
+        py,
+        r#"
+import asyncio
+import sys
+async def coroutine_to_safely_cancellable(c, cancel_token):
+    while True:
+        try:
+            ok, cancel = await asyncio.shield(c)
+        except asyncio.CancelledError:
+            cancel_token.safe_cancel()
+
+        if not cancel:
+            return ok
+        else:
+            raise asyncio.CancelledError()
+"#,
+        "coro_converter",
+        "coro_converter",
+    )?;
+
+    let (cancel_tx, cancel_rx) = tokio::sync::oneshot::channel::<()>();
+
+    let base_coro = pyo3_asyncio::tokio::future_into_py(py, async move {
         tokio::select! {
-            _ = tokio::signal::ctrl_c() => Err(PyErr::new::<pyo3::exceptions::PyKeyboardInterrupt, _>("received Ctrl-C")),
-            r = fut => r,
+            _ = cancel_rx => {
+                Ok((None, true))
+            },
+            r = fut => r.map(|o| (Some(o), false))
         }
-    })
+    })?;
+
+    module.call_method1(
+        "coroutine_to_safely_cancellable",
+        (
+            base_coro,
+            SafeCancelToken {
+                cancel_tx: Some(cancel_tx),
+            },
+        ),
+    )
 }
 
 #[pyclass]
@@ -722,11 +775,6 @@ impl PythonStream {
 
 #[pymodule]
 pub fn _core(py: Python<'_>, module: &PyModule) -> PyResult<()> {
-    ctrlc::set_handler(move || {
-        eprintln!("Received Ctrl-C, cleaning up...");
-    })
-    .unwrap();
-
     module.add("AnyhowError", py.get_type::<AnyhowError>())?;
     module.add_class::<AnyhowWrapper>()?;
 
