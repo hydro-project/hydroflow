@@ -163,6 +163,44 @@ pub fn test_join_order() {
 }
 
 #[multiplatform_test]
+pub fn test_no_set_union_join() {
+    // HalfJoinStateSetUnion
+    {
+        use hydroflow::compiled::pull::HalfJoinStateSetUnion;
+
+        let (out_tx, mut out_rx) = hydroflow::util::unbounded_channel::<(usize, (usize, usize))>();
+
+        let mut df = hydroflow_syntax! {
+            my_join = join::<HalfJoinStateSetUnion>() -> for_each(|m| out_tx.send(m).unwrap());
+            source_iter([(0, 1), (0, 1)]) -> [0]my_join;
+            source_iter([(0, 2)]) -> [1]my_join;
+        };
+
+        df.run_available();
+
+        let out: Vec<_> = collect_ready(&mut out_rx);
+        assert_eq!(out, vec![(0, (1, 2))]);
+    }
+
+    // HalfJoinStateNoSetUnion
+    {
+        use hydroflow::compiled::pull::HalfJoinStateNoSetUnion;
+        let (out_tx, mut out_rx) = hydroflow::util::unbounded_channel::<(usize, (usize, usize))>();
+
+        let mut df = hydroflow_syntax! {
+            my_join = join::<HalfJoinStateNoSetUnion>() -> for_each(|m| out_tx.send(m).unwrap());
+            source_iter([(0, 1), (0, 1)]) -> [0]my_join;
+            source_iter([(0, 2)]) -> [1]my_join;
+        };
+
+        df.run_available();
+
+        let out: Vec<_> = collect_ready(&mut out_rx);
+        assert_eq!(out, vec![(0, (1, 2)), (0, (1, 2))]);
+    }
+}
+
+#[multiplatform_test]
 pub fn test_cross_join() {
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<(usize, &str)>();
 
