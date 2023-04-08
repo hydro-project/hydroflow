@@ -74,9 +74,9 @@ async fn main() {
 
         // # Phase 1b, Phase 2a
         AllVotes(i, msg, res, l_from) :- voteFromParticipant(i, msg, res, l_from)
-        unanimous(count(addr)) :- participants(addr)
+        unanimous(count(*)) :- participants(addr)
 
-        NumYesVotes(i, msg, count(l_from)) :- AllVotes(i, msg, res, l_from), success(res)
+        NumYesVotes(i, msg, count(*)) :- AllVotes(i, msg, res, l_from), success(res)
         msgCommitted(i, msg) :- NumYesVotes(i, msg, size), unanimous(size)
         instructToParticipant@addr(i, msg, type) :~ msgCommitted(i, msg), participants(addr), commitInstruct(type)
 
@@ -85,7 +85,7 @@ async fn main() {
 
         # Phase 2b
         AllAcks(i, msg, l_from) :- ackFromParticipant(i, msg, l_from)
-        NumAcks(i, msg, count(l_from)) :- AllAcks(i, msg, l_from)
+        NumAcks(i, msg, count(*)) :- AllAcks(i, msg, l_from)
         outputted(i) :+ NumAcks(i, msg, size), unanimous(size)
         clientOut(i, msg) :- NumAcks(i, msg, size), unanimous(size), !outputted(i)
     "#
