@@ -926,6 +926,67 @@
 <a href="#926" id="926">926</a>
 <a href="#927" id="927">927</a>
 <a href="#928" id="928">928</a>
+<a href="#929" id="929">929</a>
+<a href="#930" id="930">930</a>
+<a href="#931" id="931">931</a>
+<a href="#932" id="932">932</a>
+<a href="#933" id="933">933</a>
+<a href="#934" id="934">934</a>
+<a href="#935" id="935">935</a>
+<a href="#936" id="936">936</a>
+<a href="#937" id="937">937</a>
+<a href="#938" id="938">938</a>
+<a href="#939" id="939">939</a>
+<a href="#940" id="940">940</a>
+<a href="#941" id="941">941</a>
+<a href="#942" id="942">942</a>
+<a href="#943" id="943">943</a>
+<a href="#944" id="944">944</a>
+<a href="#945" id="945">945</a>
+<a href="#946" id="946">946</a>
+<a href="#947" id="947">947</a>
+<a href="#948" id="948">948</a>
+<a href="#949" id="949">949</a>
+<a href="#950" id="950">950</a>
+<a href="#951" id="951">951</a>
+<a href="#952" id="952">952</a>
+<a href="#953" id="953">953</a>
+<a href="#954" id="954">954</a>
+<a href="#955" id="955">955</a>
+<a href="#956" id="956">956</a>
+<a href="#957" id="957">957</a>
+<a href="#958" id="958">958</a>
+<a href="#959" id="959">959</a>
+<a href="#960" id="960">960</a>
+<a href="#961" id="961">961</a>
+<a href="#962" id="962">962</a>
+<a href="#963" id="963">963</a>
+<a href="#964" id="964">964</a>
+<a href="#965" id="965">965</a>
+<a href="#966" id="966">966</a>
+<a href="#967" id="967">967</a>
+<a href="#968" id="968">968</a>
+<a href="#969" id="969">969</a>
+<a href="#970" id="970">970</a>
+<a href="#971" id="971">971</a>
+<a href="#972" id="972">972</a>
+<a href="#973" id="973">973</a>
+<a href="#974" id="974">974</a>
+<a href="#975" id="975">975</a>
+<a href="#976" id="976">976</a>
+<a href="#977" id="977">977</a>
+<a href="#978" id="978">978</a>
+<a href="#979" id="979">979</a>
+<a href="#980" id="980">980</a>
+<a href="#981" id="981">981</a>
+<a href="#982" id="982">982</a>
+<a href="#983" id="983">983</a>
+<a href="#984" id="984">984</a>
+<a href="#985" id="985">985</a>
+<a href="#986" id="986">986</a>
+<a href="#987" id="987">987</a>
+<a href="#988" id="988">988</a>
+<a href="#989" id="989">989</a>
 </pre><pre class="rust"><code><span class="kw">use </span>rust_sitter::{
     errors::{ParseError, ParseErrorReason},
     Spanned,
@@ -997,6 +1058,7 @@
 
     <span class="kw">let </span><span class="kw-2">mut </span>inputs = Vec::new();
     <span class="kw">let </span><span class="kw-2">mut </span>outputs = Vec::new();
+    <span class="kw">let </span><span class="kw-2">mut </span>persists = HashSet::new();
     <span class="kw">let </span><span class="kw-2">mut </span>asyncs = Vec::new();
     <span class="kw">let </span><span class="kw-2">mut </span>rules = Vec::new();
 
@@ -1009,6 +1071,9 @@
             Declaration::Output(<span class="kw">_</span>, ident, hf_code) =&gt; {
                 <span class="macro">assert!</span>(!MAGIC_RELATIONS.contains(<span class="kw-2">&amp;</span>ident.name.as_str()));
                 outputs.push((ident, hf_code))
+            }
+            Declaration::Persist(<span class="kw">_</span>, ident) =&gt; {
+                persists.insert(ident.name.clone());
             }
             Declaration::Async(<span class="kw">_</span>, ident, send_hf, recv_hf) =&gt; {
                 <span class="macro">assert!</span>(!MAGIC_RELATIONS.contains(<span class="kw-2">&amp;</span>ident.name.as_str()));
@@ -1030,6 +1095,7 @@
         <span class="kw">let </span>target_ident = <span class="kw">match </span>decl {
             Declaration::Input(<span class="kw">_</span>, ident, <span class="kw">_</span>) =&gt; ident.clone(),
             Declaration::Output(<span class="kw">_</span>, ident, <span class="kw">_</span>) =&gt; ident.clone(),
+            Declaration::Persist(<span class="kw">_</span>, ident) =&gt; ident.clone(),
             Declaration::Async(<span class="kw">_</span>, ident, <span class="kw">_</span>, <span class="kw">_</span>) =&gt; ident.clone(),
             Declaration::Rule(rule) =&gt; rule.target.name.clone(),
         };
@@ -1037,6 +1103,7 @@
         <span class="kw">if </span>!created_rules.contains(<span class="kw-2">&amp;</span>target_ident.value) {
             created_rules.insert(target_ident.value.clone());
             <span class="kw">let </span>name = syn::Ident::new(<span class="kw-2">&amp;</span>target_ident.name, get_span(target_ident.span));
+
             flat_graph_builder
                 .add_statement(<span class="macro">parse_quote_spanned!</span>(get_span(target_ident.span)=&gt; #name = merge() -&gt; unique::&lt;<span class="lifetime">&#39;tick</span>&gt;() -&gt; tee()));
         }
@@ -1072,6 +1139,11 @@
         <span class="kw">let </span>target_ident = syn::Ident::new(<span class="kw-2">&amp;</span>target.name, get_span(target.span));
 
         <span class="kw">let </span>output_pipeline: Pipeline = parse_pipeline(<span class="kw-2">&amp;</span>hf_code.code, <span class="kw-2">&amp;</span>get_span)<span class="question-mark">?</span>;
+        <span class="kw">let </span>output_pipeline = <span class="kw">if </span>persists.contains(<span class="kw-2">&amp;</span>target.name) {
+            <span class="macro">parse_quote_spanned! </span>{get_span(target.span)=&gt; persist() -&gt; unique::&lt;<span class="lifetime">&#39;tick</span>&gt;() -&gt; #output_pipeline}
+        } <span class="kw">else </span>{
+            output_pipeline
+        };
 
         flat_graph_builder.add_statement(<span class="macro">parse_quote_spanned! </span>{get_span(target.span)=&gt;
             #target_ident [#my_tee_index_lit] -&gt; #output_pipeline
@@ -1107,7 +1179,9 @@
     <span class="kw">let </span><span class="kw-2">mut </span>next_join_idx = <span class="number">0</span>..;
     <span class="kw">let </span><span class="kw-2">mut </span>diagnostics = Vec::new();
     <span class="kw">for </span>rule <span class="kw">in </span>rules {
+        <span class="kw">let </span>plan = compute_join_plan(<span class="kw-2">&amp;</span>rule.sources, <span class="kw-2">&amp;</span>persists);
         generate_rule(
+            plan,
             rule,
             <span class="kw-2">&amp;mut </span>flat_graph_builder,
             <span class="kw-2">&amp;mut </span>tee_counter,
@@ -1187,7 +1261,9 @@
     code_tokens
 }
 
-<span class="kw">fn </span>generate_rule(
+<span class="attr">#[allow(clippy::too_many_arguments)]
+</span><span class="kw">fn </span>generate_rule(
+    plan: JoinPlan&lt;<span class="lifetime">&#39;_</span>&gt;,
     rule: <span class="kw-2">&amp;</span>Spanned&lt;Rule&gt;,
     flat_graph_builder: <span class="kw-2">&amp;mut </span>FlatGraphBuilder,
     tee_counter: <span class="kw-2">&amp;mut </span>HashMap&lt;String, Counter&gt;,
@@ -1198,71 +1274,6 @@
 ) {
     <span class="kw">let </span>target = <span class="kw-2">&amp;</span>rule.target.name;
     <span class="kw">let </span>target_ident = syn::Ident::new(<span class="kw-2">&amp;</span>target.name, get_span(target.span));
-
-    <span class="kw">let </span>sources: Vec&lt;Atom&gt; = rule.sources.to_vec();
-
-    <span class="comment">// TODO(shadaj): smarter plans
-    </span><span class="kw">let </span><span class="kw-2">mut </span>plan: JoinPlan = sources
-        .iter()
-        .filter_map(|x| <span class="kw">match </span>x {
-            Atom::Relation(negated, e) =&gt; {
-                <span class="kw">if </span>negated.is_none() &amp;&amp; !MAGIC_RELATIONS.contains(<span class="kw-2">&amp;</span>e.name.name.as_str()) {
-                    <span class="prelude-val">Some</span>(JoinPlan::Source(e))
-                } <span class="kw">else </span>{
-                    <span class="prelude-val">None
-                </span>}
-            }
-            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
-        })
-        .reduce(|a, b| JoinPlan::Join(Box::new(a), Box::new(b)))
-        .unwrap();
-
-    plan = sources
-        .iter()
-        .filter_map(|x| <span class="kw">match </span>x {
-            Atom::Relation(negated, e) =&gt; {
-                <span class="kw">if </span>negated.is_some() {
-                    <span class="prelude-val">Some</span>(JoinPlan::Source(e))
-                } <span class="kw">else </span>{
-                    <span class="prelude-val">None
-                </span>}
-            }
-            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
-        })
-        .fold(plan, |a, b| JoinPlan::AntiJoin(Box::new(a), Box::new(b)));
-
-    <span class="kw">let </span>predicates = sources
-        .iter()
-        .filter_map(|x| <span class="kw">match </span>x {
-            Atom::Predicate(e) =&gt; <span class="prelude-val">Some</span>(e),
-            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
-        })
-        .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
-
-    <span class="kw">if </span>!predicates.is_empty() {
-        plan = JoinPlan::Predicate(predicates, Box::new(plan))
-    }
-
-    plan = sources.iter().fold(plan, |acc, atom| <span class="kw">match </span>atom {
-        Atom::Relation(negated, e) =&gt; {
-            <span class="kw">if </span>MAGIC_RELATIONS.contains(<span class="kw-2">&amp;</span>e.name.name.as_str()) {
-                <span class="kw">match </span>e.name.name.as_str() {
-                    <span class="string">&quot;less_than&quot; </span>=&gt; {
-                        <span class="macro">assert!</span>(negated.is_none());
-                        JoinPlan::MagicNatLt(
-                            Box::new(acc),
-                            e.fields[<span class="number">0</span>].value.clone(),
-                            e.fields[<span class="number">1</span>].value.clone(),
-                        )
-                    }
-                    o =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Unknown magic relation {}&quot;</span>, o),
-                }
-            } <span class="kw">else </span>{
-                acc
-            }
-        }
-        <span class="kw">_ </span>=&gt; acc,
-    });
 
     <span class="kw">let </span>out_expanded = expand_join_plan(
         <span class="kw-2">&amp;</span>plan,
@@ -1347,6 +1358,73 @@
             rhs: Box::new(after_join_and_send),
         }),
     ));
+}
+
+<span class="kw">fn </span>compute_join_plan&lt;<span class="lifetime">&#39;a</span>&gt;(sources: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[Atom], persisted_rules: <span class="kw-2">&amp;</span>HashSet&lt;String&gt;) -&gt; JoinPlan&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="comment">// TODO(shadaj): smarter plans
+    </span><span class="kw">let </span><span class="kw-2">mut </span>plan: JoinPlan = sources
+        .iter()
+        .filter_map(|x| <span class="kw">match </span>x {
+            Atom::Relation(negated, e) =&gt; {
+                <span class="kw">if </span>negated.is_none() &amp;&amp; !MAGIC_RELATIONS.contains(<span class="kw-2">&amp;</span>e.name.name.as_str()) {
+                    <span class="prelude-val">Some</span>(JoinPlan::Source(e, persisted_rules.contains(<span class="kw-2">&amp;</span>e.name.name)))
+                } <span class="kw">else </span>{
+                    <span class="prelude-val">None
+                </span>}
+            }
+            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
+        })
+        .reduce(|a, b| JoinPlan::Join(Box::new(a), Box::new(b)))
+        .unwrap();
+
+    plan = sources
+        .iter()
+        .filter_map(|x| <span class="kw">match </span>x {
+            Atom::Relation(negated, e) =&gt; {
+                <span class="kw">if </span>negated.is_some() {
+                    <span class="prelude-val">Some</span>(JoinPlan::Source(e, persisted_rules.contains(<span class="kw-2">&amp;</span>e.name.name)))
+                } <span class="kw">else </span>{
+                    <span class="prelude-val">None
+                </span>}
+            }
+            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
+        })
+        .fold(plan, |a, b| JoinPlan::AntiJoin(Box::new(a), Box::new(b)));
+
+    <span class="kw">let </span>predicates = sources
+        .iter()
+        .filter_map(|x| <span class="kw">match </span>x {
+            Atom::Predicate(e) =&gt; <span class="prelude-val">Some</span>(e),
+            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
+        })
+        .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+
+    <span class="kw">if </span>!predicates.is_empty() {
+        plan = JoinPlan::Predicate(predicates, Box::new(plan))
+    }
+
+    plan = sources.iter().fold(plan, |acc, atom| <span class="kw">match </span>atom {
+        Atom::Relation(negated, e) =&gt; {
+            <span class="kw">if </span>MAGIC_RELATIONS.contains(<span class="kw-2">&amp;</span>e.name.name.as_str()) {
+                <span class="kw">match </span>e.name.name.as_str() {
+                    <span class="string">&quot;less_than&quot; </span>=&gt; {
+                        <span class="macro">assert!</span>(negated.is_none());
+                        JoinPlan::MagicNatLt(
+                            Box::new(acc),
+                            e.fields[<span class="number">0</span>].value.clone(),
+                            e.fields[<span class="number">1</span>].value.clone(),
+                        )
+                    }
+                    o =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Unknown magic relation {}&quot;</span>, o),
+                }
+            } <span class="kw">else </span>{
+                acc
+            }
+        }
+        <span class="kw">_ </span>=&gt; acc,
+    });
+
+    plan
 }
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>gen_value_expr(
@@ -1470,7 +1548,7 @@
 
     <span class="kw">let </span>flattened_tuple_type = <span class="kw-2">&amp;</span>out_expanded.tuple_type;
 
-    <span class="kw">if </span>agg_exprs.is_empty() {
+    <span class="kw">let </span>without_persist: Pipeline = <span class="kw">if </span>agg_exprs.is_empty() {
         <span class="macro">parse_quote!</span>(map(|row: #flattened_tuple_type| (#(#group_by_exprs, )<span class="kw-2">*</span>)))
     } <span class="kw">else </span>{
         <span class="kw">let </span>agg_initial =
@@ -1572,6 +1650,12 @@
         <span class="macro">parse_quote! </span>{
             map(#pre_group_by_map) -&gt; group_by::&lt;<span class="lifetime">&#39;tick</span>, #group_by_input_type, #agg_type&gt;(|| #agg_initial, #group_by_fn) -&gt; map(#after_group_map)
         }
+    };
+
+    <span class="kw">if </span>out_expanded.persisted {
+        <span class="macro">parse_quote!</span>(persist() -&gt; unique::&lt;<span class="lifetime">&#39;tick</span>&gt;() -&gt; #without_persist)
+    } <span class="kw">else </span>{
+        without_persist
     }
 }
 
@@ -1850,6 +1934,44 @@
             result(2) :- ints(a), (a != 0)
             result(3) :- ints(a), (a - 1 == 0)
             result(4) :- ints(a), (a - 1 == 1 - 1)
+            &quot;#
+        </span>);
+    }
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>test_persist() {
+        <span class="macro">test_snapshots!</span>(
+            <span class="string">r#&quot;
+            .input ints1 `source_stream(ints1)`
+            .persist ints1
+
+            .input ints2 `source_stream(ints2)`
+            .persist ints2
+
+            .input ints3 `source_stream(ints3)`
+            
+            .output result `for_each(|v| result.send(v).unwrap())`
+            .output result2 `for_each(|v| result2.send(v).unwrap())`
+
+            result(a, b, c) :- ints1(a), ints2(b), ints3(c)
+            result2(a) :- ints1(a), !ints2(a)
+            &quot;#
+        </span>);
+    }
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>test_persist_uniqueness() {
+        <span class="macro">test_snapshots!</span>(
+            <span class="string">r#&quot;
+            .persist ints1
+
+            .input ints2 `source_stream(ints2)`
+            
+            ints1(a) :- ints2(a)
+            
+            .output result `for_each(|v| result.send(v).unwrap())`
+
+            result(count(a)) :- ints1(a)
             &quot;#
         </span>);
     }

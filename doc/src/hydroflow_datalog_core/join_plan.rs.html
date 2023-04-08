@@ -591,6 +591,31 @@
 <a href="#591" id="591">591</a>
 <a href="#592" id="592">592</a>
 <a href="#593" id="593">593</a>
+<a href="#594" id="594">594</a>
+<a href="#595" id="595">595</a>
+<a href="#596" id="596">596</a>
+<a href="#597" id="597">597</a>
+<a href="#598" id="598">598</a>
+<a href="#599" id="599">599</a>
+<a href="#600" id="600">600</a>
+<a href="#601" id="601">601</a>
+<a href="#602" id="602">602</a>
+<a href="#603" id="603">603</a>
+<a href="#604" id="604">604</a>
+<a href="#605" id="605">605</a>
+<a href="#606" id="606">606</a>
+<a href="#607" id="607">607</a>
+<a href="#608" id="608">608</a>
+<a href="#609" id="609">609</a>
+<a href="#610" id="610">610</a>
+<a href="#611" id="611">611</a>
+<a href="#612" id="612">612</a>
+<a href="#613" id="613">613</a>
+<a href="#614" id="614">614</a>
+<a href="#615" id="615">615</a>
+<a href="#616" id="616">616</a>
+<a href="#617" id="617">617</a>
+<a href="#618" id="618">618</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::collections::{btree_map::Entry, BTreeMap, HashMap};
 <span class="kw">use </span>std::ops::Deref;
 
@@ -609,7 +634,8 @@
 <span class="doccomment">/// Captures the tree of joins used to compute contributions from a single rule.
 </span><span class="kw">pub enum </span>JoinPlan&lt;<span class="lifetime">&#39;a</span>&gt; {
     <span class="doccomment">/// A single relation without any joins, leaves of the tree.
-    </span>Source(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Spanned&lt;InputRelationExpr&gt;),
+    /// Second element is whether this is a persisted relation.
+    </span>Source(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Spanned&lt;InputRelationExpr&gt;, bool),
     <span class="doccomment">/// A join between two subtrees.
     </span>Join(Box&lt;JoinPlan&lt;<span class="lifetime">&#39;a</span>&gt;&gt;, Box&lt;JoinPlan&lt;<span class="lifetime">&#39;a</span>&gt;&gt;),
     AntiJoin(Box&lt;JoinPlan&lt;<span class="lifetime">&#39;a</span>&gt;&gt;, Box&lt;JoinPlan&lt;<span class="lifetime">&#39;a</span>&gt;&gt;),
@@ -623,6 +649,8 @@
 </span><span class="kw">pub struct </span>IntermediateJoinNode {
     <span class="doccomment">/// The name of the Hydroflow node that this join outputs to.
     </span><span class="kw">pub </span>name: syn::Ident,
+    <span class="doccomment">/// If true, the correct dataflow for this node ends in a `persist()` operator.
+    </span><span class="kw">pub </span>persisted: bool,
     <span class="doccomment">/// If this join node outputs data through a `tee()` operator, this is the index to consume the node with.
     /// (this is only used for cases where we are directly reading a relation)
     </span><span class="kw">pub </span>tee_idx: <span class="prelude-ty">Option</span>&lt;isize&gt;,
@@ -707,12 +735,20 @@
         <span class="macro">parse_quote_spanned!</span>(source_expanded.span=&gt; map(|_v: #source_type| ((#(#hash_keys, )<span class="kw-2">*</span>), (#(#not_hash_keys, )<span class="kw-2">*</span>))) -&gt; [#out_index] #join_node)
     };
 
+    <span class="kw">let </span>rhs = <span class="kw">if </span>anti_join &amp;&amp; source_expanded.persisted {
+        <span class="macro">parse_quote_spanned!</span>(source_expanded.span=&gt; persist() -&gt; unique::&lt;<span class="lifetime">&#39;tick</span>&gt;() -&gt; #rhs)
+    } <span class="kw">else </span>{
+        rhs
+    };
+
     <span class="kw">let </span>statement = <span class="kw">match </span>source_expanded.tee_idx {
         <span class="prelude-val">Some</span>(i) =&gt; {
             <span class="kw">let </span>in_index = syn::LitInt::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, i), Span::call_site());
             <span class="macro">parse_quote_spanned!</span>(source_expanded.span=&gt; #source_name [#in_index] -&gt; #rhs)
         }
-        <span class="prelude-val">None </span>=&gt; <span class="macro">parse_quote_spanned!</span>(source_expanded.span=&gt; #source_name -&gt; #rhs),
+        <span class="prelude-val">None </span>=&gt; {
+            <span class="macro">parse_quote_spanned!</span>(source_expanded.span=&gt; #source_name -&gt; #rhs)
+        }
     };
 
     flat_graph_builder.add_statement(statement);
@@ -809,7 +845,7 @@
     get_span: <span class="kw-2">&amp;</span><span class="kw">impl </span>Fn((usize, usize)) -&gt; Span,
 ) -&gt; IntermediateJoinNode {
     <span class="kw">match </span>plan {
-        JoinPlan::Source(target) =&gt; {
+        JoinPlan::Source(target, persisted) =&gt; {
             <span class="kw">let </span><span class="kw-2">mut </span>variable_mapping = BTreeMap::new();
             <span class="kw">let </span><span class="kw-2">mut </span>row_types: Vec&lt;syn::Type&gt; = <span class="macro">vec!</span>[];
 
@@ -837,6 +873,7 @@
             <span class="kw">if </span>local_constraints.is_empty() {
                 <span class="kw">return </span>IntermediateJoinNode {
                     name: syn::Ident::new(<span class="kw-2">&amp;</span>target.name.name, get_span(target.name.span)),
+                    persisted: <span class="kw-2">*</span>persisted,
                     tee_idx: <span class="prelude-val">Some</span>(tee_index),
                     variable_mapping,
                     tuple_type: row_type,
@@ -863,6 +900,7 @@
 
             IntermediateJoinNode {
                 name: filter_node,
+                persisted: <span class="kw-2">*</span>persisted,
                 tee_idx: <span class="prelude-val">None</span>,
                 variable_mapping,
                 tuple_type: row_type,
@@ -990,12 +1028,21 @@
                 <span class="macro">parse_quote!</span>(|kv: (#key_type, (#left_type, #right_type))| (#(#flattened_tuple_elems, )<span class="kw-2">*</span>))
             };
 
+            <span class="kw">let </span>(lt_left, lt_right, is_persist): (syn::Lifetime, syn::Lifetime, bool) =
+                <span class="kw">match </span>(left_expanded.persisted, right_expanded.persisted, is_anti) {
+                    (<span class="bool-val">true</span>, <span class="bool-val">false</span>, <span class="bool-val">false</span>) =&gt; (<span class="macro">parse_quote!</span>(<span class="lifetime">&#39;static</span>), <span class="macro">parse_quote!</span>(<span class="lifetime">&#39;tick</span>), <span class="bool-val">false</span>),
+                    (<span class="bool-val">false</span>, <span class="bool-val">true</span>, <span class="bool-val">false</span>) =&gt; (<span class="macro">parse_quote!</span>(<span class="lifetime">&#39;tick</span>), <span class="macro">parse_quote!</span>(<span class="lifetime">&#39;static</span>), <span class="bool-val">false</span>),
+                    (<span class="bool-val">true</span>, <span class="bool-val">true</span>, <span class="bool-val">false</span>) =&gt; (<span class="macro">parse_quote!</span>(<span class="lifetime">&#39;static</span>), <span class="macro">parse_quote!</span>(<span class="lifetime">&#39;static</span>), <span class="bool-val">true</span>),
+                    <span class="kw">_ </span>=&gt; (<span class="macro">parse_quote!</span>(<span class="lifetime">&#39;tick</span>), <span class="macro">parse_quote!</span>(<span class="lifetime">&#39;tick</span>), <span class="bool-val">false</span>),
+                };
+
             <span class="kw">if </span>is_anti {
-                flat_graph_builder
+                <span class="comment">// this is always a &#39;tick join, so we place a persist operator in the join input pipeline
+                </span>flat_graph_builder
                     .add_statement(<span class="macro">parse_quote_spanned!</span>(get_span(rule_span)=&gt; #join_node = anti_join() -&gt; map(#flatten_closure)));
             } <span class="kw">else </span>{
                 flat_graph_builder.add_statement(
-                    <span class="macro">parse_quote_spanned!</span>(get_span(rule_span)=&gt; #join_node = join::&lt;<span class="lifetime">&#39;tick</span>&gt;() -&gt; map(#flatten_closure)),
+                    <span class="macro">parse_quote_spanned!</span>(get_span(rule_span)=&gt; #join_node = join::&lt;#lt_left, #lt_right&gt;() -&gt; map(#flatten_closure)),
                 );
             }
 
@@ -1006,6 +1053,7 @@
 
             <span class="kw">let </span>intermediate = IntermediateJoinNode {
                 name: join_node.clone(),
+                persisted: is_persist,
                 tee_idx: <span class="prelude-val">None</span>,
                 variable_mapping: flattened_mapping,
                 tuple_type: output_type,
@@ -1101,6 +1149,7 @@
 
             IntermediateJoinNode {
                 name: predicate_filter_node,
+                persisted: inner_expanded.persisted,
                 tee_idx: <span class="prelude-val">None</span>,
                 variable_mapping: inner_expanded.variable_mapping,
                 tuple_type: row_type,
@@ -1173,6 +1222,7 @@
 
             IntermediateJoinNode {
                 name: magic_node,
+                persisted: inner_expanded.persisted,
                 tee_idx: <span class="prelude-val">None</span>,
                 variable_mapping: flattened_mapping,
                 tuple_type: repeat_tuple::&lt;syn::Type, syn::Type&gt;(

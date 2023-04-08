@@ -258,6 +258,7 @@
 <a href="#258" id="258">258</a>
 <a href="#259" id="259">259</a>
 <a href="#260" id="260">260</a>
+<a href="#261" id="261">261</a>
 </pre><pre class="rust"><code><span class="attr">#[rust_sitter::grammar(<span class="string">&quot;datalog&quot;</span>)]
 #[allow(dead_code)]
 </span><span class="kw">pub mod </span>datalog {
@@ -281,6 +282,7 @@
             Spanned&lt;Ident&gt;,
             RustSnippet,
         ),
+        Persist(<span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;.persist&quot;</span>)] </span>(), Spanned&lt;Ident&gt;),
         Async(
             <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;.async&quot;</span>)] </span>(),
             Spanned&lt;Ident&gt;,
