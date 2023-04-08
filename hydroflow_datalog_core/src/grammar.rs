@@ -137,28 +137,44 @@ pub mod datalog {
         pub fn idents(&self) -> Vec<&Ident> {
             match self {
                 TargetExpr::Expr(e) => e.idents(),
-                TargetExpr::Aggregation(a) => vec![&a.ident],
+                TargetExpr::Aggregation(Aggregation::Count(_)) => vec![],
+                TargetExpr::Aggregation(
+                    Aggregation::Min(_, _, a, _)
+                    | Aggregation::Max(_, _, a, _)
+                    | Aggregation::Sum(_, _, a, _)
+                    | Aggregation::Choose(_, _, a, _),
+                ) => vec![a],
             }
         }
     }
 
     #[derive(Debug, Clone)]
-    pub struct Aggregation {
-        pub tpe: AggregationType,
-        #[rust_sitter::leaf(text = "(")]
-        _lparen: (),
-        pub ident: Spanned<Ident>,
-        #[rust_sitter::leaf(text = ")")]
-        _rparen: (),
-    }
-
-    #[derive(Debug, Clone)]
-    pub enum AggregationType {
-        Min(#[rust_sitter::leaf(text = "min")] ()),
-        Max(#[rust_sitter::leaf(text = "max")] ()),
-        Sum(#[rust_sitter::leaf(text = "sum")] ()),
-        Count(#[rust_sitter::leaf(text = "count")] ()),
-        Choose(#[rust_sitter::leaf(text = "choose")] ()),
+    pub enum Aggregation {
+        Min(
+            #[rust_sitter::leaf(text = "min")] (),
+            #[rust_sitter::leaf(text = "(")] (),
+            Spanned<Ident>,
+            #[rust_sitter::leaf(text = ")")] (),
+        ),
+        Max(
+            #[rust_sitter::leaf(text = "max")] (),
+            #[rust_sitter::leaf(text = "(")] (),
+            Spanned<Ident>,
+            #[rust_sitter::leaf(text = ")")] (),
+        ),
+        Sum(
+            #[rust_sitter::leaf(text = "sum")] (),
+            #[rust_sitter::leaf(text = "(")] (),
+            Spanned<Ident>,
+            #[rust_sitter::leaf(text = ")")] (),
+        ),
+        Count(#[rust_sitter::leaf(text = "count(*)")] ()),
+        Choose(
+            #[rust_sitter::leaf(text = "choose")] (),
+            #[rust_sitter::leaf(text = "(")] (),
+            Spanned<Ident>,
+            #[rust_sitter::leaf(text = ")")] (),
+        ),
     }
 
     #[derive(Clone, PartialEq, Eq, Hash, Ord, PartialOrd, Debug)]
